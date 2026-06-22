@@ -1,8 +1,8 @@
-import type { Burg } from "../generators/burgs-generator";
-import type { Deal } from "../generators/markets-generator";
-import type { Point } from "../generators/voronoi";
+import { clear, draw } from "../renderers/draw-trade-animation";
 import { ra } from "../utils";
-import { clear, draw } from "./draw-trade-animation";
+import type { Burg } from "./burgs-generator";
+import type { Deal } from "./markets-generator";
+import type { Point } from "./voronoi";
 
 export type TradeBatch = {
   id: string;

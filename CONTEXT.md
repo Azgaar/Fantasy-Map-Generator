@@ -10,16 +10,13 @@
 
 # Repository Structure
 
-- `src/generators/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
-- `src/controllers/`: The UI layer — editors and tools that mutate state, plus read-only overviews/dialogs that present it.
+- `src/modules/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
+- `src/controllers/`: UI editors and tool controllers mutating the state.
 - `src/renderers/`: Code responsible for transforming world data into SVG overlays.
-- `src/io/`: Serialization and persistence — save, load, export (legacy `public/modules/io/`).
-- `src/services/`: App-shell & platform lifecycle, unrelated to map state (e.g., PWA installation, auto-update).
-- `src/data/`: Static content / reference data (e.g., supporters list, heightmap templates).
 - `src/types/`: Shared TypeScript interfaces and domain models.
 - `src/utils/`: Generic helper functions.
-- `public/`: Static assets and NON-MIGRATED JS Code in `public/modules`. `public/libs/` holds vendored third-party scripts for legacy code only — new `src/` code imports deps from npm (no `src/libs/`).
-- `docs/`: Domain and architectural documentation. See `docs/architecture/architecture.md` "Project Structure" for the full layout and a "where does my file go?" guide.
+- `public/`: Static assets and NON-MIGRATED JS Code in `public/modules`.
+- `docs/`: Domain and architectural documentation.
 - `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.
 - `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing.
 
@@ -37,7 +34,6 @@
 - **Linting and formatting**: Enforced via Biome (`biome.json`).
 - **Style**: Double quotes, no trailing commas, 120 line width, semicolons required.
 - **Typing**: Use explicit TypeScript interfaces for all shared domain objects. `any` should be avoided.
-- **Imports**: `@/*` aliases `src/*` (set in `vite.config.ts` + `tsconfig.json`). Prefer it over deep `../../` relative paths; keep sibling imports relative.
 
 # Workflow Rules
 

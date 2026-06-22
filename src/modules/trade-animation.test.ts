@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./draw-trade-animation", () => ({
+vi.mock("../renderers/draw-trade-animation", () => ({
   draw: vi.fn(),
   clear: vi.fn(),
   highlight: vi.fn(),
   clearHighlight: vi.fn()
 }));
 
-import * as drawTrade from "./draw-trade-animation";
+import * as drawTrade from "../renderers/draw-trade-animation";
 import { TradeAnimationModule } from "./trade-animation";
 
 // ─── helpers ────────────────────────────────────────────────────────────────

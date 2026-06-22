@@ -1,6 +1,6 @@
 import { color, pointer } from "d3";
-import type { Burg } from "../generators/burgs-generator";
-import type { Deal, Market } from "../generators/markets-generator";
+import type { Burg } from "../modules/burgs-generator";
+import type { Deal, Market } from "../modules/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
 import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, getIsolines, getVertexPath, rn } from "../utils";
 

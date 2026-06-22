@@ -82,7 +82,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const { supporters } = await window.lazy.supporters();
+  const { supporters } = await import("../dynamic/supporters.js?v=1.123.0");
   const list = supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
@@ -709,7 +709,7 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await window.lazy.heightmapSelection();
+  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.120.5");
   HeightmapSelectionDialog.open();
 }
 
@@ -786,7 +786,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const { exportToJson } = await window.lazy.exportJson();
+  const { exportToJson } = await import("../dynamic/export-json.js?v=1.125.0");
   exportToJson(type);
 }
 

@@ -1,6 +1,6 @@
 import { mean, min } from "d3";
 import { ensureEl, rn } from "../utils";
-import type { Feature } from "./features";
+import type { PackedGraphFeature } from "./features";
 
 declare global {
   var Lakes: LakesModule;
@@ -9,20 +9,20 @@ declare global {
 export class LakesModule {
   private LAKE_ELEVATION_DELTA = 0.1;
 
-  getHeight(feature: Feature) {
+  getHeight(feature: PackedGraphFeature) {
     const heights = pack.cells.h;
     const minShoreHeight = min(feature.shoreline.map(cellId => heights[cellId])) || 20;
     return rn(minShoreHeight - this.LAKE_ELEVATION_DELTA, 2);
   }
 
   defineNames() {
-    pack.features.forEach((feature: Feature) => {
+    pack.features.forEach((feature: PackedGraphFeature) => {
       if (feature.type !== "lake") return;
       feature.name = this.getName(feature);
     });
   }
 
-  getName(feature: Feature): string {
+  getName(feature: PackedGraphFeature): string {
     const landCell = feature.shoreline[0];
     const culture = pack.cells.culture[landCell];
     return Names.getCulture(culture);
@@ -50,22 +50,22 @@ export class LakesModule {
     const { cells, features } = pack;
     const lakeOutCells = new Uint16Array(cells.i.length);
 
-    const getFlux = (lake: Feature) => {
+    const getFlux = (lake: PackedGraphFeature) => {
       return lake.shoreline.reduce((acc, c) => acc + grid.cells.prec[cells.g[c]], 0);
     };
 
-    const getLakeTemp = (lake: Feature) => {
+    const getLakeTemp = (lake: PackedGraphFeature) => {
       if (lake.cells < 6) return grid.cells.temp[cells.g[lake.firstCell]];
       return rn(mean(lake.shoreline.map(c => grid.cells.temp[cells.g[c]])) as number, 1);
     };
 
-    const getLakeEvaporation = (lake: Feature) => {
+    const getLakeEvaporation = (lake: PackedGraphFeature) => {
       const height = (lake.height - 18) ** Number(heightExponentInput.value); // height in meters
       const evaporation = ((700 * (lake.temp + 0.006 * height)) / 50 + 75) / (80 - lake.temp); // based on Penman formula, [1-11]
       return rn(evaporation * lake.cells);
     };
 
-    const getLowestShoreCell = (lake: Feature) => {
+    const getLowestShoreCell = (lake: PackedGraphFeature) => {
       return lake.shoreline.reduce((minCell, c) => (heights[c] < heights[minCell] ? c : minCell));
     };
 

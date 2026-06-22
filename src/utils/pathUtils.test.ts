@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Point } from "../generators/voronoi";
+import type { Point } from "../modules/voronoi";
 import { meander } from "./pathUtils";
 
 describe("addMeandering", () => {
