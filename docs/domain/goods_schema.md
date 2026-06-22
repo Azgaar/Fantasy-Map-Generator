@@ -113,7 +113,9 @@ Coverage is used during the burg worker loop to calculate demand effects (boosti
 
 | Method / property       | Purpose                                                                                                     |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `generate(regenerate?)` | Place bonus resources on the map; initialize `pack.goods` from `defaultGoods` on first run or if regenerate |
+| `generate({ randomSeed? })` | Place bonus resources on the map from the current catalogue; seeds the RNG from the map `seed` for deterministic output, or from `randomSeed` for manual rerolls. Never resets the catalogue; initialises `pack.goods` from `defaultGoods` only when none exists yet |
+| `restoreDefaults()`     | Replace `pack.goods` with a deep clone of `defaultGoods`, discarding customisations. The only method that resets the catalogue; callers re-place goods afterwards |
+| `regeneratePlacement(goodId)` | Reroll bonus-resource placement for a single good without touching the rest of the catalogue              |
 | `getBiomesProduction()` | Build biome→production index from current `pack.goods`                                                      |
 | `get(i)`                | Fast id→Good lookup (uses `goodById` sparse array)                                                          |
 | `sync()`                | Rebuild `goodById` after `pack.goods` is mutated                                                            |

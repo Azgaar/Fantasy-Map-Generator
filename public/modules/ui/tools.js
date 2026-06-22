@@ -96,6 +96,7 @@ function processFeatureRegeneration(event, button) {
   else if (button === "regenerateBurgs") regenerateBurgs();
   else if (button === "regenerateGoods") regenerateGoods();
   else if (button === "regenerateMarkets") regenerateMarkets();
+  else if (button === "regenerateEconomy") regenerateEconomy();
   else if (button === "regenerateProduction") regenerateProduction();
   else if (button === "regenerateEmblems") regenerateEmblems();
   else if (button === "regenerateReligions") regenerateReligions();
@@ -492,7 +493,7 @@ function regenerateBurgs() {
 }
 
 function regenerateGoods() {
-  Goods.generate(true);
+  Goods.generate({ randomSeed: Math.random() });
   if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
   refreshAllEditors();
 }
@@ -503,8 +504,26 @@ function regenerateMarkets() {
   refreshAllEditors();
 }
 
+function regenerateEconomy() {
+  if (!pack.goods?.length) Goods.generate();
+  else Goods.sync();
+
+  Markets.expandTerritories(pack.markets);
+  for (const market of pack.markets) market.goods = {};
+
+  pack.deals = [];
+  Production.produce();
+  States.collectTaxes();
+
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
+  if (layerIsOn("toggleTrade")) TradeAnimation.restart();
+  refreshAllEditors();
+}
+
 function regenerateProduction() {
-  pack.markets.forEach(m => (m.goods = {})); // empty Markets stock
+  pack.deals = [];
+  for (const m of pack.markets || []) m.goods = {}; // empty Markets stock
   Production.produce();
   States.collectTaxes();
   if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
