@@ -1,6 +1,6 @@
-import { CULTURE_TYPES } from "../modules/cultures-generator";
-import type { DemandCategory, Good } from "../modules/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
+import { CULTURE_TYPES } from "../generators/cultures-generator";
+import type { DemandCategory, Good } from "../generators/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
 import { ensureEl, getRandomColor, unique } from "../utils";
 import { DistributionEditor } from "./goods-distribution-editor";
 

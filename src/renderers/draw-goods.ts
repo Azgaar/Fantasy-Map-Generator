@@ -1,4 +1,4 @@
-import type { Good } from "../modules/goods-generator";
+import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
 

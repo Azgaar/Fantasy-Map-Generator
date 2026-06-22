@@ -1,4 +1,6 @@
 import { color, drag, interpolateString, max, pack as packLayout, pointer, select, stratify } from "d3";
+import type { Province } from "@/generators/provinces-generator";
+import type { State } from "@/generators/states-generator";
 import {
   ensureEl,
   findAllCellsInRadius,
@@ -137,7 +139,7 @@ function addListeners(): void {
     const stateId = Number(($element.parentNode as HTMLElement)?.dataset?.id);
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
     else if (classList.contains("name")) editStateName(stateId);
-    else if (classList.contains("coaIcon")) editEmblem("state", `stateCOA${stateId}`, (pack.states as any[])[stateId]);
+    else if (classList.contains("coaIcon")) editEmblem("state", `stateCOA${stateId}`, pack.states[stateId]);
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) overviewBurgs({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
@@ -183,18 +185,18 @@ function statesEditorAddLines(): void {
   let totalPopulation = 0;
   let totalBurgs = 0;
 
-  for (const s of pack.states as any[]) {
+  for (const s of pack.states) {
     if (s.removed) continue;
-    const area = getArea(s.area);
-    const rural = s.rural * populationRate;
-    const urban = s.urban * populationRate * urbanization;
+    const area = getArea(s.area || 0);
+    const rural = (s.rural || 0) * populationRate;
+    const urban = (s.urban || 0) * populationRate * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
     )}. Click to change`;
     totalArea += area;
     totalPopulation += population;
-    totalBurgs += s.burgs;
+    totalBurgs += s.burgs || 0;
     const focused = defs.select(`#fog #focusState${s.i}`).size();
     const treasuryTip = `Treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
@@ -239,7 +241,7 @@ function statesEditorAddLines(): void {
       continue;
     }
 
-    const capital = (pack.burgs as any[])[s.capital].name;
+    const capital = pack.burgs[s.capital].name;
     COArenderer.trigger(`stateCOA${s.i}`, s.coa);
     lines += /* html */ `<div
       class="states"
@@ -253,7 +255,7 @@ function statesEditorAddLines(): void {
       data-population=${population}
       data-burgs=${s.burgs}
       data-treasury="${s.treasury}"
-      data-culture=${(pack.cultures as any[])[s.culture].name}
+      data-culture=${pack.cultures[s.culture].name}
       data-type=${s.type}
       data-expansionism=${s.expansionism}
     >
@@ -294,7 +296,7 @@ function statesEditorAddLines(): void {
   $body.innerHTML = lines;
 
   // update footer
-  ensureEl("statesFooterStates").innerHTML = String((pack.states as any[]).filter(s => s.i && !s.removed).length);
+  ensureEl("statesFooterStates").innerHTML = String(pack.states.filter(s => s.i && !s.removed).length);
   ensureEl("statesFooterBurgs").innerHTML = String(totalBurgs);
   ensureEl("statesFooterArea").innerHTML = si(totalArea) + unit;
   ensureEl("statesFooterArea").dataset.area = String(totalArea);
@@ -318,7 +320,7 @@ function statesEditorAddLines(): void {
 
 function getCultureOptions(culture: number): string {
   let options = "";
-  (pack.cultures as any[]).forEach(c => {
+  pack.cultures.forEach(c => {
     if (!c.removed) {
       options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`;
     }
@@ -374,7 +376,7 @@ function stateChangeFill(el: HTMLElement): void {
 
   const callback = (newFill: string) => {
     (el as any).fill = newFill;
-    (pack.states as any[])[state].color = newFill;
+    pack.states[state].color = newFill;
     statesBody.select(`#state${state}`).attr("fill", newFill);
     statesBody.select(`#state-gap${state}`).attr("stroke", newFill);
     const halo = color(newFill)?.darker().hex() ?? "#666666";
@@ -402,10 +404,10 @@ function editStateName(state: number): void {
     stateNameEditorSelectForm.style.display = "inline-block";
   }
 
-  const s = (pack.states as any[])[state];
+  const s = pack.states[state];
   ensureEl("stateNameEditor").dataset.state = String(state);
   ensureEl<HTMLInputElement>("stateNameEditorShort").value = s.name || "";
-  applyOption(stateNameEditorSelectForm, s.formName);
+  applyOption(stateNameEditorSelectForm, s.formName || "");
   ensureEl<HTMLInputElement>("stateNameEditorFull").value = s.fullName || "";
 
   $("#stateNameEditor").dialog({
@@ -435,7 +437,7 @@ function editStateName(state: number): void {
 
   function regenerateShortNameCulture() {
     const state = +ensureEl("stateNameEditor").dataset.state!;
-    const culture = (pack.states as any[])[state].culture;
+    const culture = pack.states[state].culture;
     const name = Names.getState(Names.getCultureShort(culture), culture);
     ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
   }
@@ -496,21 +498,21 @@ function editStateName(state: number): void {
 
 function stateChangeCapitalName(state: number, line: HTMLElement, value: string): void {
   line.dataset.capital = value;
-  const capital = (pack.states as any[])[state].capital;
+  const capital = pack.states[state].capital;
   if (!capital) return;
-  (pack.burgs as any[])[capital].name = value;
+  pack.burgs[capital].name = value;
   (document.querySelector(`#burgLabel${capital}`) as HTMLElement).textContent = value;
 }
 
 function changePopulation(stateId: number): void {
-  const state = (pack.states as any[])[stateId];
+  const state = pack.states[stateId];
   if (!state.cells) {
     tip("State does not have any cells, cannot change population", false, "error");
     return;
   }
 
-  const rural = rn(state.rural * populationRate);
-  const urban = rn(state.urban * populationRate * urbanization);
+  const rural = rn((state.rural || 0) * populationRate);
+  const urban = rn((state.urban || 0) * populationRate * urbanization);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
@@ -575,14 +577,14 @@ function changePopulation(stateId: number): void {
 
     const urbanChange = +urbanPop.value / urban;
     if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-      const burgs = (pack.burgs as any[]).filter(b => !b.removed && b.state === stateId);
+      const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       burgs.forEach(b => {
-        b.population = rn(b.population * urbanChange, 4);
+        b.population = rn((b.population || 0) * urbanChange, 4);
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
       const points = +urbanPop.value / populationRate / urbanization;
-      const burgs = (pack.burgs as any[]).filter(b => !b.removed && b.state === stateId);
+      const burgs = pack.burgs.filter(b => !b.removed && b.state === stateId);
       const population = rn(points / burgs.length, 4);
       burgs.forEach(b => {
         b.population = population;
@@ -595,19 +597,19 @@ function changePopulation(stateId: number): void {
 }
 
 function openTreasuryDialog(stateId: number): void {
-  const state = (pack.states as any[])[stateId];
+  const state = pack.states[stateId];
   if (!stateId || !state || state.removed) return;
 
   const pollTaxRevenue = rn(state.pollTax * ((state.rural || 0) + (state.urban || 0)), 2);
-  const salesTaxRevenue = (pack.deals as any[]).reduce((sum, deal) => {
+  const salesTaxRevenue = pack.deals.reduce((sum, deal) => {
     if (!deal.tax) return sum;
     let sellerStateId = 0;
     if (deal.sellerType === "burg") {
-      sellerStateId = (pack.burgs as any[])[deal.seller]?.state || 0;
+      sellerStateId = pack.burgs[deal.seller]?.state || 0;
     } else if (deal.sellerType === "market") {
       const market = Markets.get(deal.seller);
       const centerBurgId = market?.centerBurgId;
-      sellerStateId = centerBurgId ? (pack.burgs as any[])[centerBurgId]?.state || 0 : 0;
+      sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
     }
     return sellerStateId === stateId ? sum + deal.tax : sum;
   }, 0);
@@ -648,7 +650,7 @@ function openTreasuryDialog(stateId: number): void {
 }
 
 function stateCapitalZoomIn(state: number): void {
-  const capital = (pack.states as any[])[state].capital;
+  const capital = pack.states[state].capital;
   const label = burgLabels.select(`[data-id='${capital}']`);
   const x = +label.attr("x");
   const y = +label.attr("y");
@@ -656,18 +658,18 @@ function stateCapitalZoomIn(state: number): void {
 }
 
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
-  (pack.states as any[])[state].culture = +value;
+  pack.states[state].culture = +value;
   line.dataset.base = String(+value);
 }
 
 function stateChangeType(state: number, line: HTMLElement, value: string): void {
-  (pack.states as any[])[state].type = value;
+  pack.states[state].type = value;
   line.dataset.type = value;
   recalculateStates();
 }
 
 function stateChangeExpansionism(state: number, line: HTMLElement, value: string): void {
-  (pack.states as any[])[state].expansionism = value;
+  pack.states[state].expansionism = Number(value);
   line.dataset.expansionism = value;
   recalculateStates();
 }
@@ -700,7 +702,7 @@ function stateRemove(stateId: number): void {
 
   unfog(`focusState${stateId}`);
 
-  (pack.burgs as any[]).forEach(burg => {
+  pack.burgs.forEach(burg => {
     if (burg.state === stateId) {
       burg.state = 0;
       if (burg.capital) {
@@ -720,8 +722,8 @@ function stateRemove(stateId: number): void {
   emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
   // remove provinces
-  (pack.states as any[])[stateId].provinces.forEach((p: number) => {
-    (pack.provinces as any[])[p] = { i: p, removed: true };
+  (pack.states[stateId].provinces || []).forEach((p: number) => {
+    pack.provinces[p] = { i: p, removed: true } as Province;
     pack.cells.province.forEach((pr: number, i: number) => {
       if (pr === p) pack.cells.province[i] = 0;
     });
@@ -735,7 +737,7 @@ function stateRemove(stateId: number): void {
   });
 
   // remove military
-  (pack.states as any[])[stateId].military.forEach((m: any) => {
+  (pack.states[stateId].military || []).forEach((m: any) => {
     const id = `regiment${stateId}-${m.i}`;
     const index = notes.findIndex(n => n.id === id);
     if (index !== -1) notes.splice(index, 1);
@@ -743,12 +745,12 @@ function stateRemove(stateId: number): void {
   armies.select(`g#army${stateId}`).remove();
 
   // clean up neighbors references from other states
-  (pack.states as any[]).forEach(state => {
+  pack.states.forEach(state => {
     if (!state.i || state.removed || !state.neighbors) return;
     state.neighbors = state.neighbors.filter((n: number) => n !== stateId);
   });
 
-  (pack.states as any[])[stateId] = { i: stateId, removed: true };
+  pack.states[stateId] = { i: stateId, removed: true } as State;
 
   debug.selectAll(".highlight").remove();
 
@@ -765,9 +767,9 @@ function toggleLegend(): void {
     return;
   }
 
-  const data = (pack.states as any[])
+  const data = pack.states
     .filter(s => s.i && !s.removed && s.cells)
-    .sort((a, b) => b.area - a.area)
+    .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(s => [s.i, s.color, s.name]);
   drawLegend("States", data);
 }
@@ -778,7 +780,7 @@ function togglePercentageMode(): void {
     const totalBurgs = +ensureEl("statesFooterBurgs").innerText;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
-    const totalTreasury = (pack.states as any[]).reduce((sum, s) => sum + (s.treasury || 0), 0);
+    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
 
     $body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
       const { burgs, area, population, treasury } = el.dataset;
@@ -794,7 +796,7 @@ function togglePercentageMode(): void {
 }
 
 function showStatesChart(): void {
-  const statesData = (pack.states as any[]).filter(s => !s.removed);
+  const statesData = pack.states.filter(s => !s.removed);
   if (statesData.length < 2) {
     tip("There are no states to show", false, "error");
     return;
@@ -970,7 +972,7 @@ function recalculateStates(must?: boolean): void {
 }
 
 function randomizeStatesExpansion(): void {
-  (pack.states as any[]).forEach(s => {
+  pack.states.forEach(s => {
     if (!s.i || s.removed) return;
     const expansionism = rn(Math.random() * 4 + 1, 1);
     s.expansionism = expansionism;
@@ -1067,7 +1069,7 @@ function changeStateForSelection(selection: number[]): void {
 
   const $selected = $body.querySelector<HTMLElement>("div.selected")!;
   const stateNew = +$selected.dataset.id!;
-  const color = (pack.states as any[])[stateNew].color || "#ffffff";
+  const color = pack.states[stateNew].color || "#ffffff";
   const preventOverwrite = (document.getElementById("statesManuallyProtect") as HTMLInputElement | null)?.checked;
 
   selection.forEach(i => {
@@ -1075,7 +1077,7 @@ function changeStateForSelection(selection: number[]): void {
     const stateOld = exists.size() ? +exists.attr("data-state") : pack.cells.state[i];
     if (stateNew === stateOld) return;
     if (preventOverwrite && stateOld) return;
-    if (i === (pack.states as any[])[stateOld].center) return;
+    if (i === pack.states[stateOld].center) return;
 
     // change of append new element
     if (exists.size()) exists.attr("data-state", stateNew).attr("fill", color).attr("stroke", color);
@@ -1111,7 +1113,7 @@ function applyStatesManualAssignent(): void {
       affectedStates.push(cells.state[i], c);
       affectedProvinces.push(cells.province[i]);
       cells.state[i] = c;
-      if (cells.burg[i]) (pack.burgs as any[])[cells.burg[i]].state = c;
+      if (cells.burg[i]) pack.burgs[cells.burg[i]].state = c;
     });
 
   if (affectedStates.length) {
@@ -1367,7 +1369,7 @@ function addState(this: any, event: any): void {
   const color = getRandomColor();
 
   // generate emblem
-  const cultureType = (pack.cultures as any[])[culture].type;
+  const cultureType = pack.cultures[culture].type;
   const coa = COA.generate(burgs[burgId].coa, 0.4, null, cultureType);
   coa.shield = COA.getShield(culture, undefined);
 
@@ -1447,7 +1449,7 @@ function exitAddStateMode(): void {
 function openStateMergeDialog(): void {
   const emblem = (i: number) =>
     /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
-  const validStates = (pack.states as any[]).filter(s => s.i && !s.removed);
+  const validStates = pack.states.filter(s => s.i && !s.removed);
 
   const statesSelector = validStates
     .map(
@@ -1522,7 +1524,7 @@ function openStateMergeDialog(): void {
           tip("Please select a state to merge into", false, "error");
           return;
         }
-        const rullingState = (pack.states as any[])[rulingStateId];
+        const rullingState = pack.states[rulingStateId];
 
         const statesToMerge = formData
           .getAll("statesToMerge")
@@ -1537,7 +1539,7 @@ function openStateMergeDialog(): void {
           title: "Merge states",
           // prettier-ignore
           message: /* html */ `
-            <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${emblem(stateId)}${(pack.states as any[])[stateId].name}`).join(", ")}.</p>
+            <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${emblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
             <p>Removed states data (burgs, provinces, regiments) will be assigned to ${emblem(rullingState.i)}${rullingState.name}.</p>
             <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
           confirm: "Merge",
@@ -1554,12 +1556,12 @@ function openStateMergeDialog(): void {
   });
 
   function mergeStates(statesToMerge: number[], rulingStateId: number) {
-    const rulingState = (pack.states as any[])[rulingStateId];
+    const rulingState = pack.states[rulingStateId];
     const rulingStateArmy = ensureEl(`army${rulingStateId}`);
 
     // remove states to be merged
     statesToMerge.forEach(stateId => {
-      const state = (pack.states as any[])[stateId];
+      const state = pack.states[stateId];
       state.removed = true;
 
       statesBody.select(`#state${stateId}`).remove();
@@ -1572,10 +1574,10 @@ function openStateMergeDialog(): void {
       emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
       // add merged state regiments to the ruling state
-      state.military.forEach((regiment: any) => {
+      (state.military || []).forEach((regiment: any) => {
         const oldId = `regiment${stateId}-${regiment.i}`;
-        const newIndex = rulingState.military.length;
-        rulingState.military.push({ ...regiment, i: newIndex });
+        const newIndex = (rulingState.military || []).length;
+        (rulingState.military || []).push({ ...regiment, i: newIndex });
         const newId = `regiment${rulingStateId}-${newIndex}`;
 
         const note = notes.find(n => n.id === oldId);
@@ -1594,8 +1596,8 @@ function openStateMergeDialog(): void {
     });
 
     // reassing burgs
-    (pack.burgs as any[]).forEach(burg => {
-      if (statesToMerge.includes(burg.state)) {
+    pack.burgs.forEach(burg => {
+      if (statesToMerge.includes(burg.state ?? 0)) {
         if (burg.capital) {
           burg.capital = 0;
           Burgs.changeGroup(burg, null);
@@ -1605,7 +1607,7 @@ function openStateMergeDialog(): void {
     });
 
     // reassign provinces
-    (pack.provinces as any[]).forEach(province => {
+    pack.provinces.forEach(province => {
       if (statesToMerge.includes(province.state)) province.state = rulingStateId;
     });
 
@@ -1634,9 +1636,9 @@ function downloadStatesCsv(): void {
   const data = lines.map($line => {
     const { id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population } =
       $line.dataset;
-    const { fullName = "", rural, urban } = (pack.states as any[])[+id!];
-    const ruralPopulation = Math.round(rural * populationRate);
-    const urbanPopulation = Math.round(urban * populationRate * urbanization);
+    const { fullName = "", rural, urban } = pack.states[+id!];
+    const ruralPopulation = Math.round((rural ?? 0) * populationRate);
+    const urbanPopulation = Math.round((urban ?? 0) * populationRate * urbanization);
     return [
       id,
       name,
@@ -1669,7 +1671,7 @@ function closeStatesEditor(): void {
 }
 
 function updateLockStatus(stateId: number, classList: DOMTokenList): void {
-  const s = (pack.states as any[])[stateId];
+  const s = pack.states[stateId];
   s.lock = !s.lock;
 
   classList.toggle("icon-lock-open");

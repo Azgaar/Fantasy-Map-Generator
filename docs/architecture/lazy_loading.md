@@ -10,26 +10,29 @@ splits into its own chunk, fetched on demand.
    casing inside the module itself.
 
 2. **Never import it statically.** It must not appear in any `import "./x"`
-   line reachable from `controllers/index.ts` / `modules/index.ts` /
+   line reachable from `controllers/index.ts` / `generators/index.ts` /
    `renderers/index.ts` — that eager graph is what ends up in the main chunk.
 
-3. **Add one line to the registry** in `src/controllers/lazy-loaders.ts`
-   (itself imported eagerly from `controllers/index.ts` — its only job is to
-   hold these loader thunks, so its eager cost is a few bytes, not the module
-   bodies). All loaders live in a single object exposed as `window.lazy`:
+3. **Add one line to the registry** in `src/lazy-loaders.ts` — a top-level,
+   **layer-agnostic** file (lazy modules span layers: `data/`, `services/`,
+   `io/`, `controllers/`, so the registry belongs to none of them). It is
+   loaded eagerly via its own `<script type="module" src="lazy-loaders.ts">`
+   in `index.html`; its only job is to hold these loader thunks, so its eager
+   cost is a few bytes, not the module bodies. All loaders live in a single
+   object exposed as `window.lazy`:
 
    ```ts
-   // src/controllers/lazy-loaders.ts
+   // src/lazy-loaders.ts
    const lazyLoaders = {
-     supporters: () => import("./supporters")
-     // ...add your module here
+     supporters: () => import("@/data/supporters")
+     // ...add your module here, pointing at whatever layer it lives in
    };
+
+   window.lazy = lazyLoaders;
 
    declare global {
      var lazy: typeof lazyLoaders;
    }
-
-   window.lazy = lazyLoaders;
    ```
 
    Rollup sees the string literal inside each `import()` and emits
@@ -83,4 +86,4 @@ ls dist/assets | grep supporters   # expect supporters-<hash>.js as its own file
 
 If the module's code shows up inside the main entry chunk instead of its own
 file, something in the eager graph is importing it statically — check
-`controllers/index.ts` / `modules/index.ts` and anything they pull in.
+`controllers/index.ts` / `generators/index.ts` and anything they pull in.

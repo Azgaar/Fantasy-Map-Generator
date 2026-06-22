@@ -11,7 +11,7 @@ Pick the layer by responsibility, name the file `kebab-case.ts`:
 | Layer              | Holds                                                 |
 | ------------------ | ----------------------------------------------------- |
 | `src/utils/`       | pure, dependency-free helpers                         |
-| `src/modules/`     | domain generators / data logic (`Goods`, …)           |
+| `src/generators/`  | domain generators / data logic (`Goods`, …)           |
 | `src/renderers/`   | code that draws SVG layers                            |
 | `src/controllers/` | dialogs, panels, UI flows, overviews                  |
 | `src/io/`          | save / load / export / serialization                  |
@@ -30,7 +30,10 @@ If it **serializes or persists** state it goes in `io/`. See
   is genuinely open. `any` silently disables checking and spreads.
 - Prefer **module getters over re-implementing lookups**: `Markets.get(id)`,
   `Goods.get(id)` (both `=> T | undefined`) instead of `pack.markets.find(...)`.
-- Import shared helpers from [`../utils`](../../src/utils/index.ts)
+- **Path alias**: `@/*` resolves to `src/*` (configured in `vite.config.ts` and
+  `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils`,
+  `@/generators/markets-generator`. Sibling imports stay relative (`./box`).
+- Import shared helpers from [`@/utils`](../../src/utils/index.ts)
   (`ensureEl`, `rn`, `si`, `capitalize`, `convertTemperature`, …). Note
   `isWater(cellId, pack)` is the 2-arg util — distinct from the 1-arg
   `window.isWater`. `element.on("click", fn)` is typed via the
@@ -103,8 +106,10 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
     ```
     and add `import "./market-overview";` to the layer's `index.ts` barrel.
   - _Rarely used_ (a tiny fraction of sessions): do **not** add it to any
-    eager barrel. Register it in the `lazyLoaders` registry so it ships as its
-    own on-demand chunk — see [lazy_loading.md](./lazy_loading.md).
+    eager barrel. Register it in the `lazyLoaders` registry
+    ([`src/lazy-loaders.ts`](../../src/lazy-loaders.ts), a top-level
+    layer-agnostic file) so it ships as its own on-demand chunk — see
+    [lazy_loading.md](./lazy_loading.md).
 
 ## The eval-order gotcha (read this)
 

@@ -1,11 +1,11 @@
 import type * as THREE from "three";
-import * as ErosionBake from "../modules/erosion-bake";
 import {
   disposeRiverFlowTexture,
   disposeSatelliteTexture,
   generateRiverFlowTexture,
   generateSatelliteTexture
 } from "../renderers/draw-satellite-texture";
+import * as ErosionBake from "../renderers/erosion-bake";
 import { minmax, rn, throttle } from "../utils";
 
 let Three!: typeof import("three");

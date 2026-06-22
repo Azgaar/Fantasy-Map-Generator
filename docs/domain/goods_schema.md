@@ -135,8 +135,8 @@ Coverage is used during the burg worker loop to calculate demand effects (boosti
 
 ## Source Files
 
-- [`src/modules/goods-generator.ts`](../../src/modules/goods-generator.ts) — `Good` interface, `GOODS_DATA`, `GoodsModule`
-- [`src/modules/production-generator.ts`](../../src/modules/production-generator.ts) — `getModifiers`, production channels, `getCellProduction`
+- [`src/generators/goods-generator.ts`](../../src/generators/goods-generator.ts) — `Good` interface, `GOODS_DATA`, `GoodsModule`
+- [`src/generators/production-generator.ts`](../../src/generators/production-generator.ts) — `getModifiers`, production channels, `getCellProduction`
 - [`src/controllers/goods-editor.ts`](../../src/controllers/goods-editor.ts) — Goods Editor (the catalogue list UI)
 - [`src/controllers/good-editor.ts`](../../src/controllers/good-editor.ts) — single-good editor: multiplier popups, biome output, demand coverage
 - [`src/controllers/goods-distribution-editor.ts`](../../src/controllers/goods-distribution-editor.ts) — visual builder for a good's `distribution` expression

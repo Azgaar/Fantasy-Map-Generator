@@ -208,7 +208,7 @@ home.
 | ------------------ | ----------------- | ------------------------------------------------------------- |
 | `src/types/`       | State (shape)     | shared TypeScript interfaces / domain models                  |
 | `src/utils/`       | —                 | pure, dependency-free helpers                                 |
-| `src/modules/`     | Generators (Model)| procedural generators & domain logic (`Goods`, `Markets`, …)  |
+| `src/generators/`  | Generators (Model)| procedural generators & domain logic (`Goods`, `Markets`, …)  |
 | `src/renderers/`   | View              | code that draws SVG / WebGL layers                            |
 | `src/controllers/` | Editors / UI      | editors, tools, dialogs, panels, overviews                    |
 | `src/io/`          | —                 | save / load / export / serialization                          |
@@ -233,6 +233,18 @@ services, or serialization — those have their own folders. (A 3D viewer such a
 `view-3d` is effectively an alternate renderer launched from the UI; it currently lives
 in `controllers/` for convenience. Reusable UI building blocks like `hierarchy-tree` and
 `minimap` may later move to a `controllers/components/` subfolder if they multiply.)
+
+## Cross-layer subsystems
+
+Most folders are flat. A tightly-coupled subsystem that genuinely spans layers appears as
+a **same-named subfolder inside each layer it touches**, rather than one mixed folder.
+Heraldry is the current example:
+
+- `src/generators/emblems/` — emblem generation + heraldry data (registers `window.COA`)
+- `src/renderers/emblems/` — SVG drawing of emblems (registers `window.COArenderer`)
+
+This keeps each half under the correct layer (generation vs view) while the shared
+`emblems/` name signals they form one feature.
 
 ## Why no `core/`
 
@@ -270,8 +282,8 @@ As classic code migrates out of `public/`, it lands in the matching `src/` folde
 
 - Mutates world state from user input → **editor** in `controllers/`
 - Presents map state read-only (dialog, chart, list) → **overview** in `controllers/`
-- Draws an SVG / WebGL layer → `renderers/`
-- Generates or simulates world data → `modules/`
+- Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
+- Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `io/`
 - Manages browser / app lifecycle (install, update, analytics) → `services/`
 - A constant list or template, no behavior → `data/`

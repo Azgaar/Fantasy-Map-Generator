@@ -1,5 +1,5 @@
 import { select } from "d3";
-import type { PackedGraphFeature } from "../modules/features";
+import type { PackedGraphFeature } from "../generators/features";
 import { clipPoly, round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 

@@ -6,7 +6,7 @@ declare global {
   var Military: MilitaryModule;
 }
 
-export interface MilitaryRegiment {
+export interface Regiment {
   i: number;
   t: number; // total troops
   name: string;
@@ -21,7 +21,7 @@ export interface MilitaryRegiment {
   n: number; // naval unit flag
   type: string; // unit type
   icon?: string;
-  children?: MilitaryRegiment[]; // merged regiments
+  children?: Regiment[]; // merged regiments
   state: number;
   angle?: number;
 }
@@ -362,7 +362,7 @@ class MilitaryModule {
 
     const expected = 3 * populationRate; // expected regiment size
     const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
-    const createRegiments = (nodes: Platoon[], s: State): MilitaryRegiment[] => {
+    const createRegiments = (nodes: Platoon[], s: State): Regiment[] => {
       if (!nodes.length) return [];
       nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
       const tree = quadtree(
@@ -405,7 +405,7 @@ class MilitaryModule {
       });
 
       // parse regiments data
-      const regiments: Omit<MilitaryRegiment, "s" | "t" | "type">[] = nodes
+      const regiments: Omit<Regiment, "s" | "t" | "type">[] = nodes
         .filter(n => n.t)
         .sort((a, b) => b.t - a.t)
         .map((r, i) => {
@@ -430,13 +430,13 @@ class MilitaryModule {
         });
 
       // generate name for regiments
-      regiments.forEach((r: Omit<MilitaryRegiment, "s" | "t" | "type">) => {
-        r.name = this.getName(r as MilitaryRegiment, regiments as MilitaryRegiment[]);
-        r.icon = this.getEmblem(r as MilitaryRegiment);
-        this.generateNote(r as MilitaryRegiment, s);
+      regiments.forEach((r: Omit<Regiment, "s" | "t" | "type">) => {
+        r.name = this.getName(r as Regiment, regiments as Regiment[]);
+        r.icon = this.getEmblem(r as Regiment);
+        this.generateNote(r as Regiment, s);
       });
 
-      return regiments as MilitaryRegiment[];
+      return regiments as Regiment[];
     };
 
     // remove all existing regiment notes before regenerating
@@ -508,7 +508,7 @@ class MilitaryModule {
     ];
   }
 
-  getName(r: MilitaryRegiment, regiments: MilitaryRegiment[]) {
+  getName(r: Regiment, regiments: Regiment[]) {
     const cells = pack.cells;
     const proper = r.n
       ? null
@@ -523,11 +523,11 @@ class MilitaryModule {
   }
 
   // utilize si function to make regiment total text fit regiment box
-  getTotal(reg: MilitaryRegiment) {
+  getTotal(reg: Regiment) {
     return reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
   }
 
-  generateNote(r: MilitaryRegiment, s: State) {
+  generateNote(r: Regiment, s: State) {
     const cells = pack.cells;
     const base =
       cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
@@ -563,7 +563,7 @@ class MilitaryModule {
   }
 
   // get default regiment emblem
-  getEmblem(r: MilitaryRegiment) {
+  getEmblem(r: Regiment) {
     if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
     if (
       !r.n &&
@@ -577,4 +577,5 @@ class MilitaryModule {
     return unit ? unit.icon : "⚔️";
   }
 }
+
 window.Military = new MilitaryModule();

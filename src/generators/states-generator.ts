@@ -15,17 +15,10 @@ import {
   rw,
   trimVowels
 } from "../utils";
+import type { Regiment } from "./military-generator";
 
 declare global {
   var States: StatesModule;
-}
-
-export interface Campaign {
-  attacker: number;
-  defender: number;
-  name: string;
-  start: number;
-  end?: number;
 }
 
 export interface State {
@@ -52,13 +45,21 @@ export interface State {
   formName?: string;
   fullName?: string;
   form?: string;
-  military?: any[];
+  military?: Regiment[];
   provinces?: number[];
   temp?: any;
   alert?: number;
   salesTax: number;
   pollTax: number;
   treasury: number;
+}
+
+interface Campaign {
+  attacker: number;
+  defender: number;
+  name: string;
+  start: number;
+  end?: number;
 }
 
 type TaxBases = { salesTax: number; pollTax: number };

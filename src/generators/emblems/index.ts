@@ -1,2 +1,1 @@
 import "./generator";
-import "./renderer";

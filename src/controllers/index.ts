@@ -11,21 +11,3 @@ import "./production-chains";
 import "./trade-animation-editor";
 import "./trade-details";
 import "./view-3d";
-
-const lazyLoaders = {
-  supporters: () => import("../data/supporters"),
-  installation: () => import("../services/installation"),
-  minimap: () => import("./minimap"),
-  exportJson: () => import("../io/export-json"),
-  hierarchyTree: () => import("./hierarchy-tree"),
-  heightmapSelection: () => import("./heightmap-selection"),
-  culturesEditor: () => import("./cultures-editor"),
-  religionsEditor: () => import("./religions-editor"),
-  statesEditor: () => import("./states-editor")
-};
-
-window.lazy = lazyLoaders;
-
-declare global {
-  var lazy: typeof lazyLoaders;
-}

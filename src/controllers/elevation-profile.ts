@@ -14,10 +14,10 @@ import {
   scaleLinear,
   select
 } from "d3";
-import type { Burg } from "../modules/burgs-generator";
-import type { PackedGraphFeature } from "../modules/features";
-import type { Province } from "../modules/provinces-generator";
-import type { State } from "../modules/states-generator";
+import type { Burg } from "../generators/burgs-generator";
+import type { PackedGraphFeature } from "../generators/features";
+import type { Province } from "../generators/provinces-generator";
+import type { State } from "../generators/states-generator";
 import { ensureEl, rn } from "../utils";
 
 export function open(cells: number[], routeLen: number, isRiver: boolean): void {

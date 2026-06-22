@@ -10,7 +10,7 @@
 
 # Repository Structure
 
-- `src/modules/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
+- `src/generators/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
 - `src/controllers/`: The UI layer — editors and tools that mutate state, plus read-only overviews/dialogs that present it.
 - `src/renderers/`: Code responsible for transforming world data into SVG overlays.
 - `src/io/`: Serialization and persistence — save, load, export (legacy `public/modules/io/`).
@@ -37,6 +37,7 @@
 - **Linting and formatting**: Enforced via Biome (`biome.json`).
 - **Style**: Double quotes, no trailing commas, 120 line width, semicolons required.
 - **Typing**: Use explicit TypeScript interfaces for all shared domain objects. `any` should be avoided.
+- **Imports**: `@/*` aliases `src/*` (set in `vite.config.ts` + `tsconfig.json`). Prefer it over deep `../../` relative paths; keep sibling imports relative.
 
 # Workflow Rules
 

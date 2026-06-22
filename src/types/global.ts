@@ -1,8 +1,8 @@
 import type { Selection } from "d3";
-import type { GoodsModule } from "../modules/goods-generator";
-import type { MarketsModule } from "../modules/markets-generator";
-import type { NameBase } from "../modules/names-generator";
-import type { ProductionModule } from "../modules/production-generator";
+import type { GoodsModule } from "../generators/goods-generator";
+import type { MarketsModule } from "../generators/markets-generator";
+import type { NameBase } from "../generators/names-generator";
+import type { ProductionModule } from "../generators/production-generator";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
