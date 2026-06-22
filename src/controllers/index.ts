@@ -13,10 +13,10 @@ import "./trade-details";
 import "./view-3d";
 
 const lazyLoaders = {
-  supporters: () => import("./supporters"),
-  installation: () => import("./installation"),
+  supporters: () => import("../data/supporters"),
+  installation: () => import("../services/installation"),
   minimap: () => import("./minimap"),
-  exportJson: () => import("./export-json"),
+  exportJson: () => import("../io/export-json"),
   hierarchyTree: () => import("./hierarchy-tree"),
   heightmapSelection: () => import("./heightmap-selection"),
   culturesEditor: () => import("./cultures-editor"),

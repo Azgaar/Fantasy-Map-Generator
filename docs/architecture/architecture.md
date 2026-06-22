@@ -195,6 +195,91 @@ The same world state could theoretically support:
 
 ---
 
+# Project Structure
+
+The four-layer model above (state → generators → editors → renderers) is the *conceptual*
+core, but a real application also needs code that is none of those: persistence,
+app-shell lifecycle, static content, and shared helpers. The `src/` tree therefore has a
+few more folders than the model has layers. This is the **real, intended layout** — not
+an aspiration. Each top-level folder is named by **role**, so every file has an obvious
+home.
+
+| Folder             | Layer (model)     | Holds                                                         |
+| ------------------ | ----------------- | ------------------------------------------------------------- |
+| `src/types/`       | State (shape)     | shared TypeScript interfaces / domain models                  |
+| `src/utils/`       | —                 | pure, dependency-free helpers                                 |
+| `src/modules/`     | Generators (Model)| procedural generators & domain logic (`Goods`, `Markets`, …)  |
+| `src/renderers/`   | View              | code that draws SVG / WebGL layers                            |
+| `src/controllers/` | Editors / UI      | editors, tools, dialogs, panels, overviews                    |
+| `src/io/`          | —                 | save / load / export / serialization                          |
+| `src/services/`    | —                 | app-shell & platform lifecycle (PWA install, auto-update)     |
+| `src/data/`        | —                 | static content / reference data (supporters, templates)       |
+
+## What a "controller" is
+
+`src/controllers/` is the **UI / interaction layer**, deliberately broader than the
+textbook MVC "controller." It holds three kinds of UI:
+
+- **Editors** — user-driven mutations of world data (`coastline-editor`,
+  `cultures-editor`, `states-editor`). These are the "C" of the conceptual model.
+- **Tools** — interactive map tools and workflows.
+- **Overviews / visualizations** — read-only views that *present* map state without
+  mutating it (`market-overview`, `charts-overview`, `production-chains`,
+  `elevation-profile`).
+
+The unifying rule: *UI that wraps the map and either routes user interaction or presents
+map state in a dialog/panel.* A controller does **not** hold pure static data, app-shell
+services, or serialization — those have their own folders. (A 3D viewer such as
+`view-3d` is effectively an alternate renderer launched from the UI; it currently lives
+in `controllers/` for convenience. Reusable UI building blocks like `hierarchy-tree` and
+`minimap` may later move to a `controllers/components/` subfolder if they multiply.)
+
+## Why no `core/`
+
+Folders are named by **role**, never by vague importance. A generic `core/` becomes a
+junk drawer — everything feels "core," so unrelated code accretes there and the name
+stops meaning anything. If a genuinely foundational bucket is ever needed, prefer a
+meaningful name like `src/state/` (the `pack`/`grid` container and the serialization
+contract) over `core/`.
+
+## Libraries
+
+New bundled code imports third-party dependencies from **npm**; Vite tree-shakes them
+into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no vendored
+`libs/` under `src/`**.
+
+`public/libs/*.min.js` (d3 v5, jQuery, three, …) is loaded via `<script>` tags **only**
+for classic `public/**/*.js` that still depend on runtime globals. It is legacy-only and
+shrinks as modules migrate: when a feature ports to `src/`, its dependency flips from a
+vendored global script to an npm import, and the vendored script is dropped once nothing
+classic needs it.
+
+## Legacy → target mapping
+
+As classic code migrates out of `public/`, it lands in the matching `src/` folder:
+
+| Legacy                  | Target            |
+| ----------------------- | ----------------- |
+| `public/modules/ui/`    | `src/controllers/`|
+| `public/modules/io/`    | `src/io/`         |
+| `public/config/`        | `src/data/`       |
+| `public/modules/dynamic/` (auto-update) | `src/services/` |
+| `public/libs/`          | npm imports       |
+
+## Where does my file go?
+
+- Mutates world state from user input → **editor** in `controllers/`
+- Presents map state read-only (dialog, chart, list) → **overview** in `controllers/`
+- Draws an SVG / WebGL layer → `renderers/`
+- Generates or simulates world data → `modules/`
+- Serializes, saves, loads, or exports state → `io/`
+- Manages browser / app lifecycle (install, update, analytics) → `services/`
+- A constant list or template, no behavior → `data/`
+- A pure, reusable helper with no domain knowledge → `utils/`
+- A shared type / interface → `types/`
+
+---
+
 # Migration Strategy
 
 The refactor is explicitly incremental and is already in progress. The project is too large for a full rewrite, so the architecture aims for:
@@ -221,20 +306,9 @@ Goals:
 - Explicit contracts between systems
 - Better discoverability for contributors
 
-Likely future structure:
-
-```text
-src/
-  core/
-  generators/
-  editors/
-  renderers/
-  state/
-  ui/
-  utils/
-```
-
-The transition is designed to coexist with legacy JavaScript.
+For the concrete `src/` layout the code actually uses — and a guide to where each new
+file belongs — see [Project Structure](#project-structure) below. The transition is
+designed to coexist with legacy JavaScript.
 
 ---
 

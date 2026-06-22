@@ -8,12 +8,21 @@ runtime globals) into a typed module inside Vite's graph. See also [lazy_loading
 
 Pick the layer by responsibility, name the file `kebab-case.ts`:
 
-| Layer              | Holds                                       |
-| ------------------ | ------------------------------------------- |
-| `src/utils/`       | pure, dependency-free helpers               |
-| `src/modules/`     | domain generators / data logic (`Goods`, …) |
-| `src/renderers/`   | code that draws SVG layers                  |
-| `src/controllers/` | dialogs, panels, UI flows, overviews        |
+| Layer              | Holds                                                 |
+| ------------------ | ----------------------------------------------------- |
+| `src/utils/`       | pure, dependency-free helpers                         |
+| `src/modules/`     | domain generators / data logic (`Goods`, …)           |
+| `src/renderers/`   | code that draws SVG layers                            |
+| `src/controllers/` | dialogs, panels, UI flows, overviews                  |
+| `src/io/`          | save / load / export / serialization                  |
+| `src/services/`    | app-shell & platform lifecycle (PWA install, …)       |
+| `src/data/`        | static content / reference data (supporters, …)       |
+
+Not everything is Model/View/Controller. If a file is **static content** (a constant
+list, a template table) it goes in `data/`, not `controllers/`. If it manages
+**browser/app lifecycle** (PWA install, auto-update, analytics) it goes in `services/`.
+If it **serializes or persists** state it goes in `io/`. See
+[architecture.md](./architecture.md) "Project Structure" for the full decision guide.
 
 ## TypeScript — avoid `any`
 
