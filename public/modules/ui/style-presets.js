@@ -221,7 +221,7 @@ function addStylePreset() {
       "#landmass": ["opacity", "fill", "filter"],
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
-      "#population": ["opacity", "filter", "mask"],
+      "#population": ["opacity", "filter"],
       "#markets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "filter"],
       "#goodsCells": ["opacity", "filter"],
       "#goodsIcons": ["opacity", "stroke-width", "data-circle", "filter"],
