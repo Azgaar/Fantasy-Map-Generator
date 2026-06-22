@@ -326,7 +326,7 @@ function confirmHeightmapEdit(el: HTMLElement): void {
 }
 
 function getHeightmapPreview(heights: Uint8Array | null): string {
-  const scheme = getColorScheme(ensureEl<HTMLInputElement>("heightmapSelectionColorScheme").value);
+  const scheme = getColorScheme(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
   const renderOcean = ensureEl<HTMLInputElement>("heightmapSelectionRenderOcean").checked;
   const dataUrl = drawHeights({
     heights: heights as unknown as number[],

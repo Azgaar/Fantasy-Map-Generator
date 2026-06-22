@@ -50,7 +50,7 @@ function openDialog(): void {
     },
     open: function (this: HTMLElement) {
       const checkbox =
-        '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>';
+        '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label></span>';
       const pane = this.parentElement!.querySelector(".ui-dialog-buttonpane")!;
       pane.insertAdjacentHTML("afterbegin", checkbox);
     },
