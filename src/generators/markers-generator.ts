@@ -10,6 +10,8 @@ export interface Marker {
   i: number;
   type: string;
   icon: string;
+  x: number;
+  y: number;
   dx?: number;
   dy?: number;
   px?: number;

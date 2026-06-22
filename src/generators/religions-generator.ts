@@ -1022,12 +1022,12 @@ class ReligionsModule {
         ? (rw({ Organized: 4, Cult: 1, Heresy: 2 }) as "Organized" | "Cult" | "Heresy")
         : (rw({ Organized: 5, Cult: 2 }) as "Organized" | "Cult");
     const form = rw(forms[type]);
-    const deity =
+    const deity: string | null =
       type === "Heresy"
         ? religions[religionId].deity
         : form === "Non-theism" || form === "Animism"
           ? null
-          : this.getDeityName(cultureId);
+          : this.getDeityName(cultureId) ?? null;
 
     const [name, expansion] = this.generateReligionName(type, form, deity!, center);
 
