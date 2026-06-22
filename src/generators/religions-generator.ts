@@ -1027,7 +1027,7 @@ class ReligionsModule {
         ? religions[religionId].deity
         : form === "Non-theism" || form === "Animism"
           ? null
-          : this.getDeityName(cultureId) ?? null;
+          : (this.getDeityName(cultureId) ?? null);
 
     const [name, expansion] = this.generateReligionName(type, form, deity!, center);
 
