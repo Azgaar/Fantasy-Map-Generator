@@ -373,6 +373,8 @@ function togglePopulation(event) {
 function drawPopulation() {
   TIME && console.time("drawPopulation");
 
+  population.attr("mask", "url(#land)");
+
   const { cells, burgs } = pack;
   const urban = new Float64Array(cells.i.length);
   const total = new Float64Array(cells.i.length);
@@ -395,14 +397,24 @@ function drawPopulation() {
     colors[cellId] = getPopulationColor(urban[cellId], total[cellId], maxPopulation);
   }
 
-  const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true, waterGap: true });
-  const paths = Object.entries(isolines).map(([color, { fill, waterGap }], index) =>
-    getGappedFillPaths("population", fill, waterGap, color, index)
+  const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true });
+  const paths = Object.entries(isolines).map(([color, { fill }], index) =>
+    getGappedFillPaths("population", closeSvgPathRings(fill), "", color, index)
   );
 
   ensureEl("population").innerHTML = paths.join("");
 
   TIME && console.timeEnd("drawPopulation");
+}
+
+function closeSvgPathRings(pathData) {
+  if (!pathData) return "";
+
+  return pathData
+    .split(/(?=M)/)
+    .filter(Boolean)
+    .map(ring => (/[zZ]\s*$/.test(ring) ? ring : `${ring}Z`))
+    .join("");
 }
 
 function getPopulationColor(urbanPopulation, totalPopulation, maxPopulation) {
