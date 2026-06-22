@@ -149,7 +149,7 @@ function religionsEditorAddLines(): void {
   let totalArea = 0;
   let totalPopulation = 0;
 
-  for (const r of pack.religions as any[]) {
+  for (const r of pack.religions) {
     if (r.removed) continue;
     if (r.i && !r.cells && $body.dataset.extinct !== "show") continue; // hide extinct religions
 
@@ -236,7 +236,7 @@ function religionsEditorAddLines(): void {
   $body.innerHTML = lines;
 
   // update footer
-  const validReligions = (pack.religions as any[]).filter(r => r.i && !r.removed);
+  const validReligions = pack.religions.filter(r => r.i && !r.removed);
   ensureEl("religionsOrganized").innerHTML = String(validReligions.filter(r => r.type === "Organized").length);
   ensureEl("religionsHeresies").innerHTML = String(validReligions.filter(r => r.type === "Heresy").length);
   ensureEl("religionsCults").innerHTML = String(validReligions.filter(r => r.type === "Cult").length);
@@ -356,7 +356,7 @@ function religionChangeColor(this: HTMLElement): void {
 
   const callback = (newFill: string) => {
     (this as any).fill = newFill;
-    (pack.religions as any[])[religionId].color = newFill;
+    pack.religions[religionId].color = newFill;
     relig.select(`#religion${religionId}`).attr("fill", newFill);
     debug.select(`#religionsCenter${religionId}`).attr("fill", newFill);
   };
@@ -367,7 +367,7 @@ function religionChangeColor(this: HTMLElement): void {
 function religionChangeName(this: HTMLInputElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.name = this.value;
-  const religions = pack.religions as any[];
+  const religions = pack.religions;
   religions[religionId].name = this.value;
   religions[religionId].code = abbreviate(
     this.value,
@@ -378,33 +378,33 @@ function religionChangeName(this: HTMLInputElement): void {
 function religionChangeType(this: HTMLSelectElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.type = this.value;
-  (pack.religions as any[])[religionId].type = this.value;
+  pack.religions[religionId].type = this.value;
 }
 
 function religionChangeForm(this: HTMLInputElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.form = this.value;
-  (pack.religions as any[])[religionId].form = this.value;
+  pack.religions[religionId].form = this.value;
 }
 
 function religionChangeDeity(this: HTMLInputElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.deity = this.value;
-  (pack.religions as any[])[religionId].deity = this.value;
+  pack.religions[religionId].deity = this.value;
 }
 
 function regenerateDeity(this: HTMLElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
-  const cultureId = (pack.religions as any[])[religionId].culture;
+  const cultureId = pack.religions[religionId].culture;
   const deity = Religions.getDeityName(cultureId) ?? "";
   (this.parentNode as HTMLElement).dataset.deity = deity;
-  (pack.religions as any[])[religionId].deity = deity;
+  pack.religions[religionId].deity = deity;
   (this.nextElementSibling as HTMLInputElement).value = deity;
 }
 
 function changePopulation(this: HTMLElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
-  const religion = (pack.religions as any[])[religionId];
+  const religion = pack.religions[religionId];
   if (!religion.cells) {
     tip("Religion does not have any cells, cannot change population", false, "error");
     return;
@@ -414,7 +414,7 @@ function changePopulation(this: HTMLElement): void {
   const urban = rn(religion.urban * populationRate * urbanization);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
-  const burgs = (pack.burgs as any[]).filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
+  const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
 
   alertMessage.innerHTML = /* html */ `<div>
     <i>All population of religion territory is considered believers of this religion. It means believers number change will directly affect population</i>
@@ -498,14 +498,14 @@ function changePopulation(this: HTMLElement): void {
 function religionChangeExtent(this: HTMLSelectElement): void {
   const religion = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.expansion = this.value;
-  (pack.religions as any[])[religion].expansion = this.value;
+  pack.religions[religion].expansion = this.value;
   recalculateReligions();
 }
 
 function religionChangeExpansionism(this: HTMLInputElement): void {
   const religion = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.expansionism = this.value;
-  (pack.religions as any[])[religion].expansionism = +this.value;
+  pack.religions[religion].expansionism = +this.value;
   recalculateReligions();
 }
 
@@ -529,9 +529,9 @@ function removeReligion(religionId: number): void {
   pack.cells.religion.forEach((r: number, i: number) => {
     if (r === religionId) pack.cells.religion[i] = 0;
   });
-  (pack.religions as any[])[religionId].removed = true;
+  pack.religions[religionId].removed = true;
 
-  (pack.religions as any[])
+  pack.religions
     .filter(r => r.i && !r.removed)
     .forEach(r => {
       r.origins = r.origins.filter((origin: number) => origin !== religionId);
@@ -550,7 +550,7 @@ function drawReligionCenters(): void {
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
-  let data = (pack.religions as any[]).filter(r => r.i && r.center && !r.removed);
+  let data = pack.religions.filter(r => r.i && r.center && !r.removed);
   const showExtinct = $body.dataset.extinct === "show";
   if (!showExtinct) data = data.filter(r => r.cells > 0);
 
@@ -588,7 +588,7 @@ function religionCenterDrag(this: any, event: any): void {
     const cell = findCell(x, y);
     if (pack.cells.h[cell!] < 20) return; // ignore dragging on water
 
-    (pack.religions as any[])[religionId].center = cell;
+    pack.religions[religionId].center = cell;
     recalculateReligions();
   }
 
@@ -602,7 +602,7 @@ function toggleLegend(): void {
     return;
   }
 
-  const data = (pack.religions as any[])
+  const data = pack.religions
     .filter(r => r.i && !r.removed && r.area)
     .sort((a, b) => b.area - a.area)
     .map(r => [r.i, r.color, r.name]);
@@ -740,7 +740,7 @@ function changeReligionForSelection(selection: number[]): void {
   const temp = relig.select("#temp");
   const selected = $body.querySelector<HTMLElement>("div.selected")!;
   const religionNew = +selected.dataset.id!;
-  const color = (pack.religions as any[])[religionNew].color || "#ffffff";
+  const color = pack.religions[religionNew].color || "#ffffff";
   const preventOverwrite = (document.getElementById("religionsManuallyProtect") as HTMLInputElement | null)?.checked;
 
   selection.forEach(i => {
@@ -845,7 +845,7 @@ function addReligion(this: any, event: any): void {
     return;
   }
 
-  const occupied = (pack.religions as any[]).some(r => !r.removed && r.center === center);
+  const occupied = pack.religions.some(r => !r.removed && r.center === center);
   if (occupied) {
     tip("This cell is already a religion center. Please select a different cell", false, "error");
     return;
@@ -866,10 +866,10 @@ function downloadReligionsCsv(): void {
   const data = lines.map($line => {
     const { id, name, color, type, form, deity, area, population, expansion, expansionism } = $line.dataset;
     const deityText = `"${deity}"`;
-    const { origins } = (pack.religions as any[])[+id!];
+    const { origins } = pack.religions[+id!];
     const originList = (origins || [])
       .filter((origin: number) => origin)
-      .map((origin: number) => (pack.religions as any[])[origin].name);
+      .map((origin: number) => pack.religions[origin].name);
     const originText = `"${originList.join(", ")}"`;
     return [id, name, color, type, form, deityText, area, population, originText, expansion, expansionism].join(",");
   });
@@ -890,7 +890,7 @@ function updateLockStatus(this: HTMLElement): void {
 
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   const classList = this.classList;
-  const r = (pack.religions as any[])[religionId];
+  const r = pack.religions[religionId];
   r.lock = !r.lock;
 
   classList.toggle("icon-lock-open");

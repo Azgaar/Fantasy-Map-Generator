@@ -1,9 +1,20 @@
 import { mean } from "d3";
-import type { PackedGraph } from "../types/PackedGraph";
+import type { PackedGraph } from "@/types/PackedGraph";
 import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rand, rn, rw } from "../utils";
 
 declare global {
   var Markers: MarkersModule;
+}
+
+export interface Marker {
+  i: number;
+  type: string;
+  icon: string;
+  dx?: number;
+  dy?: number;
+  px?: number;
+  cell: number;
+  lock?: boolean;
 }
 
 type MarkerConfig = {
@@ -18,17 +29,6 @@ type MarkerConfig = {
   list: (pack: PackedGraph) => number[];
   add: (id: string, cell: number) => void;
 };
-
-interface Marker {
-  i: number;
-  type: string;
-  icon: string;
-  dx?: number;
-  dy?: number;
-  px?: number;
-  cell: number;
-  lock?: boolean;
-}
 
 class MarkersModule {
   private config: MarkerConfig[];

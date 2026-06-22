@@ -13,7 +13,7 @@ import "./zones-generator";
 import "./religions-generator";
 import "./provinces-generator";
 import "./emblems";
-import "./ice";
+import "./ice-generator";
 import "./military-generator";
 import "./markers-generator";
 import "./goods-generator";

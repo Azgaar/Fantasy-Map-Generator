@@ -18,7 +18,8 @@ declare global {
 
 type FeatureType = "ocean" | "lake" | "island";
 
-export interface PackedGraphFeature {
+/* Pack features interface */
+export interface Feature {
   i: number;
   type: FeatureType;
   land: boolean;
@@ -212,7 +213,7 @@ class FeatureModule {
       border: boolean;
       featureId: number;
       totalCells: number;
-    }): PackedGraphFeature => {
+    }): Feature => {
       const type = land ? "island" : border ? "ocean" : "lake";
       const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(
@@ -223,7 +224,7 @@ class FeatureModule {
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
 
-      const feature: Partial<PackedGraphFeature> = {
+      const feature: Partial<Feature> = {
         i: featureId,
         type,
         land,
@@ -243,12 +244,12 @@ class FeatureModule {
             vertices.c[vertexIndex].filter(index => isLand(index, pack))
           )
         );
-        feature.height = Lakes.getHeight(feature as PackedGraphFeature);
+        feature.height = Lakes.getHeight(feature as Feature);
       }
 
       return {
         ...feature
-      } as PackedGraphFeature;
+      } as Feature;
     };
 
     TIME && console.time("markupPack");
@@ -265,7 +266,7 @@ class FeatureModule {
       length: packCellsNumber
     }); // haven: opposite water cell
     const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
-    const features: PackedGraphFeature[] = [];
+    const features: Feature[] = [];
 
     const queue = [0];
     for (let featureId = 1; queue[0] !== -1; featureId++) {
@@ -324,7 +325,7 @@ class FeatureModule {
     pack.cells.f = featureIds;
     pack.cells.haven = haven;
     pack.cells.harbor = harbor;
-    pack.features = [0 as unknown as PackedGraphFeature, ...features];
+    pack.features = [0 as unknown as Feature, ...features];
     TIME && console.timeEnd("markupPack");
   }
 
@@ -338,7 +339,7 @@ class FeatureModule {
     const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
     const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
 
-    const defineIslandGroup = (feature: PackedGraphFeature) => {
+    const defineIslandGroup = (feature: Feature) => {
       const prevFeature = pack.features[pack.cells.f[feature.firstCell - 1]];
       if (prevFeature && prevFeature.type === "lake") return "lake_island";
       if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
@@ -346,13 +347,13 @@ class FeatureModule {
       return "isle";
     };
 
-    const defineOceanGroup = (feature: PackedGraphFeature) => {
+    const defineOceanGroup = (feature: Feature) => {
       if (feature.cells > OCEAN_MIN_SIZE) return "ocean";
       if (feature.cells > SEA_MIN_SIZE) return "sea";
       return "gulf";
     };
 
-    const defineLakeGroup = (feature: PackedGraphFeature) => {
+    const defineLakeGroup = (feature: Feature) => {
       if (feature.temp < -3) return "frozen";
       if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
 
@@ -366,7 +367,7 @@ class FeatureModule {
       return "freshwater";
     };
 
-    const defineGroup = (feature: PackedGraphFeature) => {
+    const defineGroup = (feature: Feature) => {
       if (feature.type === "island") return defineIslandGroup(feature);
       if (feature.type === "ocean") return defineOceanGroup(feature);
       if (feature.type === "lake") return defineLakeGroup(feature);

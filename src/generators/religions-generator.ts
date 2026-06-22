@@ -18,6 +18,18 @@ declare global {
   var Religions: ReligionsModule;
 }
 
+export interface Religion extends NamedReligion {
+  i: number;
+  code?: string;
+  origins?: number[] | null;
+  lock?: boolean;
+  removed?: boolean;
+  cells?: number;
+  area?: number;
+  rural?: number;
+  urban?: number;
+}
+
 interface ReligionBase {
   type: "Folk" | "Organized" | "Cult" | "Heresy";
   form: string;
@@ -31,18 +43,6 @@ interface NamedReligion extends ReligionBase {
   expansion: string;
   expansionism: number;
   color: string;
-}
-
-export interface Religion extends NamedReligion {
-  i: number;
-  code?: string;
-  origins?: number[] | null;
-  lock?: boolean;
-  removed?: boolean;
-  cells?: number;
-  area?: number;
-  rural?: number;
-  urban?: number;
 }
 
 // name generation approach and relative chance to be selected

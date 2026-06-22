@@ -459,7 +459,7 @@ function editStateName(state: number): void {
 
   function regenerateFullName() {
     const short = ensureEl<HTMLInputElement>("stateNameEditorShort").value;
-    const form = ensureEl<HTMLInputElement>("stateNameEditorSelectForm").value;
+    const form = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm").value;
     ensureEl<HTMLInputElement>("stateNameEditorFull").value = getFullName();
 
     function getFullName() {

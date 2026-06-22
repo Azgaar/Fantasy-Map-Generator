@@ -15,7 +15,7 @@ import {
   select
 } from "d3";
 import type { Burg } from "../generators/burgs-generator";
-import type { PackedGraphFeature } from "../generators/features";
+import type { Feature } from "../generators/features";
 import type { Province } from "../generators/provinces-generator";
 import type { State } from "../generators/states-generator";
 import { ensureEl, rn } from "../utils";
@@ -84,7 +84,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
     let h = pack.cells.h[cell];
 
     if (h < 20) {
-      const f = pack.features[pack.cells.f[cell]] as PackedGraphFeature;
+      const f = pack.features[pack.cells.f[cell]] as Feature;
       h = f.type === "lake" ? f.height : 20;
     }
 
