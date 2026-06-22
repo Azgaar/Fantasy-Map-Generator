@@ -367,7 +367,6 @@ function togglePopulation(event) {
     if (event && isCtrlClick(event)) return editStyle("population");
     turnButtonOff("togglePopulation");
     population.selectAll("*").remove();
-    document.getElementById("populationOceanCover")?.remove();
   }
 }
 
@@ -375,14 +374,14 @@ function drawPopulation() {
   TIME && console.time("drawPopulation");
 
   population
-    .attr("mask", null)
-    .attr("stroke", "none")
-    .attr("stroke-width", 0)
+    .attr("mask", "url(#land)")
+    .attr("stroke", null)
+    .attr("stroke-width", null)
     .attr("stroke-dasharray", null)
     .attr("stroke-linecap", null)
-    .style("stroke", "none")
-    .style("stroke-width", 0)
-    .style("stroke-dasharray", "none");
+    .style("stroke", null)
+    .style("stroke-width", null)
+    .style("stroke-dasharray", null);
 
   const { cells, burgs } = pack;
   const urban = new Float64Array(cells.i.length);
@@ -407,28 +406,14 @@ function drawPopulation() {
   }
 
   const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true });
-  const paths = Object.entries(isolines).map(([color, { fill }], index) =>
-    getGappedFillPaths("population", closeSvgPathRings(fill), "", color, index)
-  );
+  const paths = Object.entries(isolines).map(([color, { fill }], index) => {
+    const closedFill = closeSvgPathRings(fill);
+    return /* html */ `<path d="${closedFill}" fill="${color}" stroke="${color}" stroke-width="1" stroke-linejoin="round" id="population${index}" />`;
+  });
 
   ensureEl("population").innerHTML = paths.join("");
-  drawPopulationOceanCover();
 
   TIME && console.timeEnd("drawPopulation");
-}
-
-function drawPopulationOceanCover() {
-  document.getElementById("populationOceanCover")?.remove();
-
-  coastline.node().before(population.node());
-
-  const cover = document.createElementNS("http://www.w3.org/2000/svg", "use");
-  cover.id = "populationOceanCover";
-  cover.setAttribute("href", "#ocean");
-  cover.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#ocean");
-  cover.setAttribute("mask", "url(#water)");
-  cover.setAttribute("pointer-events", "none");
-  population.node().after(cover);
 }
 
 function closeSvgPathRings(pathData) {
@@ -1084,7 +1069,6 @@ function moveLayer(event, ui) {
   const next = getLayer(ui.item.next().attr("id"));
   if (prev) el.insertAfter(prev);
   else if (next) el.insertBefore(next);
-  if (population.selectAll("*").size()) drawPopulationOceanCover();
 }
 
 // define connection between option layer buttons and actual svg groups to move the element

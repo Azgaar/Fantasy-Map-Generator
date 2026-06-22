@@ -225,14 +225,13 @@ t,
 
 #population,
 #population path {
-  stroke: none !important;
-  stroke-width: 0 !important;
   stroke-dasharray: none !important;
 }
 
 #statesBody,
 #provincesBody,
 #relig,
+#population,
 #cults {
   mask: url(#land);
 }
