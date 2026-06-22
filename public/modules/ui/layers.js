@@ -373,7 +373,7 @@ function togglePopulation(event) {
 function drawPopulation() {
   TIME && console.time("drawPopulation");
 
-  cells.node().before(population.node());
+  biomes.node().after(population.node());
 
   population
     .attr("mask", "url(#land)")
