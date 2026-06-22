@@ -227,18 +227,6 @@ function selectStyleElement() {
     styleReliefSet.value = terrain.attr("set");
   }
 
-  if (styleElement === "population") {
-    stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population
-      .select("#rural")
-      .attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population
-      .select("#urban")
-      .attr("stroke");
-    styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
-  }
-
   if (styleElement === "regions") {
     styleStates.style.display = "block";
     styleStatesBodyOpacity.value = statesBody.attr("opacity") || 1;

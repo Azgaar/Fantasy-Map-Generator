@@ -122,7 +122,6 @@ a {
   user-select: none;
 }
 
-#population,
 #cells,
 #compass {
   fill: none;
@@ -179,6 +178,7 @@ t,
 #cults,
 #relig,
 #biomes,
+#population,
 #provincesBody,
 #terrs,
 #tooltip,
@@ -217,6 +217,7 @@ t,
 #provincesBody,
 #relig,
 #biomes,
+#population,
 #cults {
   stroke-linejoin: round;
   fill-rule: evenodd;

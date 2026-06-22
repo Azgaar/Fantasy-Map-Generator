@@ -359,76 +359,77 @@ function drawPrecipitation() {
 }
 
 function togglePopulation(event) {
-  if (!population.selectAll("line").size()) {
+  if (!population.selectAll("path, line").size()) {
     turnButtonOn("togglePopulation");
     drawPopulation();
     if (event && isCtrlClick(event)) editStyle("population");
   } else {
     if (event && isCtrlClick(event)) return editStyle("population");
     turnButtonOff("togglePopulation");
-
-    const isD3data = population.select("line").datum();
-    if (!isD3data) {
-      // just remove
-      population.selectAll("line").remove();
-    } else {
-      // remove with animation
-      const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
-      population
-        .select("#rural")
-        .selectAll("line")
-        .transition(hide)
-        .attr("y2", d => d[1])
-        .remove();
-      population
-        .select("#urban")
-        .selectAll("line")
-        .transition(hide)
-        .delay(1000)
-        .attr("y2", d => d[1])
-        .remove();
-    }
+    population.selectAll("*").remove();
   }
 }
 
 function drawPopulation() {
-  population.selectAll("line").remove();
+  TIME && console.time("drawPopulation");
 
   const { cells, burgs } = pack;
-  const show = d3.transition().duration(2000).ease(d3.easeSinIn);
+  const urban = new Float64Array(cells.i.length);
+  const total = new Float64Array(cells.i.length);
+  let maxPopulation = 0;
 
-  const rural = Array.from(
-    cells.i.filter(i => cells.pop[i] > 0),
-    i => [...cells.p[i], cells.p[i][1] - cells.pop[i] / 5]
+  for (const cellId of cells.i) {
+    if (cells.h[cellId] < 20) continue;
+
+    const burg = burgs[cells.burg[cellId]];
+    const ruralPopulation = cells.pop[cellId] * populationRate;
+    urban[cellId] =
+      burg && !burg.removed ? (burg.population || 0) * populationRate * urbanization : 0;
+    total[cellId] = ruralPopulation + urban[cellId];
+    if (total[cellId] > maxPopulation) maxPopulation = total[cellId];
+  }
+
+  const colors = new Array(cells.i.length);
+  for (const cellId of cells.i) {
+    if (cells.h[cellId] < 20) continue;
+    colors[cellId] = getPopulationColor(urban[cellId], total[cellId], maxPopulation);
+  }
+
+  const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true, waterGap: true });
+  const paths = Object.entries(isolines).map(([color, { fill, waterGap }], index) =>
+    getGappedFillPaths("population", fill, waterGap, color, index)
   );
 
-  population
-    .select("#rural")
-    .selectAll("line")
-    .data(rural)
-    .enter()
-    .append("line")
-    .attr("x1", d => d[0])
-    .attr("y1", d => d[1])
-    .attr("x2", d => d[0])
-    .attr("y2", d => d[1])
-    .transition(show)
-    .attr("y2", d => d[2]);
+  ensureEl("population").innerHTML = paths.join("");
 
-  const urban = burgs.filter(b => b.i && !b.removed).map(b => [b.x, b.y, b.y - (b.population / 5) * urbanization]);
-  population
-    .select("#urban")
-    .selectAll("line")
-    .data(urban)
-    .enter()
-    .append("line")
-    .attr("x1", d => d[0])
-    .attr("y1", d => d[1])
-    .attr("x2", d => d[0])
-    .attr("y2", d => d[1])
-    .transition(show)
-    .delay(500)
-    .attr("y2", d => d[2]);
+  TIME && console.timeEnd("drawPopulation");
+}
+
+function getPopulationColor(urbanPopulation, totalPopulation, maxPopulation) {
+  if (!totalPopulation || !maxPopulation) return "#000000";
+
+  const hue = urbanPopulation / totalPopulation;
+  const value = (Math.log1p(totalPopulation) / Math.log1p(maxPopulation)) ** 1.5;
+  return hsvToHex(hue, 1, value);
+}
+
+function hsvToHex(hueDegrees, saturation, value) {
+  const hue = ((hueDegrees % 360) + 360) % 360;
+  const chroma = value * saturation;
+  const segment = hue / 60;
+  const intermediate = chroma * (1 - Math.abs((segment % 2) - 1));
+
+  let [red, green, blue] = [0, 0, 0];
+  if (segment < 1) [red, green] = [chroma, intermediate];
+  else if (segment < 2) [red, green] = [intermediate, chroma];
+  else if (segment < 3) [green, blue] = [chroma, intermediate];
+  else if (segment < 4) [green, blue] = [intermediate, chroma];
+  else if (segment < 5) [red, blue] = [intermediate, chroma];
+  else [red, blue] = [chroma, intermediate];
+
+  const match = value - chroma;
+  const toHex = channel => Math.round((channel + match) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
 }
 
 function toggleCells(event) {
