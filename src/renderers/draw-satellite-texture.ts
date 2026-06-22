@@ -1,6 +1,6 @@
 import { color as parseColor } from "d3";
 import type * as THREEType from "three";
-import { type ErosionBakeResult, heightAt } from "./erosion-bake";
+import { type ErosionBakeResult, heightAt } from "../modules/erosion-bake";
 
 let renderTarget: THREEType.WebGLRenderTarget | null = null;
 

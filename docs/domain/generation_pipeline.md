@@ -60,7 +60,7 @@ Because the entity arrays themselves are preserved (not their derived economic s
 
 ### 3. Map resample / submap
 
-**File:** [`src/generators/resample.ts`](../../src/generators/resample.ts) → `Resampler.process()`
+**File:** [`src/modules/resample.ts`](../../src/modules/resample.ts) → `Resampler.process()`
 
 Used by `transform-tool` (in-place transform) and `submap-tool` (extract sub-region at scale). The flow:
 
@@ -97,6 +97,6 @@ When extending the pipeline, audit each of these for whether their scope reaches
 1. Add the call in `public/main.js` `generate()` at the correct phase boundary.
 2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.js` `regenerateErasedData()` at the matching boundary.
 3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.js` `restoreRiskedData()`.
-4. For `src/generators/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
+4. For `src/modules/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
 5. Add or update the version-bump migration block in `public/modules/dynamic/auto-update.js` so older saves gain the new fields on load.
 6. Update the canonical sequence table at the top of this file.

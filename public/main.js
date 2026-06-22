@@ -24,7 +24,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await window.lazy.installation();
+      const Installation = await import("./modules/dynamic/installation.js?v=1.89.19");
       Installation.init(event);
     },
     { once: true }

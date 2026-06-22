@@ -1,25 +1,21 @@
-type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
-
-const typeMap = {
-  Full: getFullDataJson,
-  Minimal: getMinimalDataJson,
-  PackCells: getPackDataJson,
-  GridCells: getGridDataJson
-};
-
-export function exportToJson(type: ExportJsonType): void {
-  if (customization) {
-    tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
-    return;
-  }
+export function exportToJson(type) {
+  if (customization)
+    return tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
   closeDialogs("#alert");
 
   TIME && console.time("exportToJson");
+  const typeMap = {
+    Full: getFullDataJson,
+    Minimal: getMinimalDataJson,
+    PackCells: getPackDataJson,
+    GridCells: getGridDataJson
+  };
+
   const mapData = typeMap[type]();
-  const blob = new Blob([mapData], { type: "application/json" });
+  const blob = new Blob([mapData], {type: "application/json"});
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = `${getFileName(type)}.json`;
+  link.download = getFileName(type) + ".json";
   link.href = URL;
   link.click();
   tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
@@ -27,25 +23,25 @@ export function exportToJson(type: ExportJsonType): void {
   TIME && console.timeEnd("exportToJson");
 }
 
-function getFullDataJson(): string {
+function getFullDataJson() {
   const info = getMapInfo();
   const settings = getSettings();
-  const packData = getPackCellsData();
-  const gridData = getGridCellsData();
+  const pack = getPackCellsData();
+  const grid = getGridCellsData();
 
   return JSON.stringify({
     info,
     settings,
     mapCoordinates,
-    pack: packData,
-    grid: gridData,
+    pack,
+    grid,
     biomesData,
     notes,
     nameBases
   });
 }
 
-function getMinimalDataJson(): string {
+function getMinimalDataJson() {
   const info = getMapInfo();
   const settings = getSettings();
   const packData = {
@@ -63,19 +59,19 @@ function getMinimalDataJson(): string {
     routes: pack.routes,
     zones: pack.zones
   };
-  return JSON.stringify({ info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases });
+  return JSON.stringify({info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases});
 }
 
-function getPackDataJson(): string {
+function getPackDataJson() {
   const info = getMapInfo();
   const cells = getPackCellsData();
-  return JSON.stringify({ info, cells });
+  return JSON.stringify({info, cells});
 }
 
-function getGridDataJson(): string {
+function getGridDataJson() {
   const info = getMapInfo();
   const cells = getGridCellsData();
-  return JSON.stringify({ info, cells });
+  return JSON.stringify({info, cells});
 }
 
 function getMapInfo() {
@@ -99,18 +95,18 @@ function getSettings() {
     heightUnit: heightUnit.value,
     heightExponent: heightExponentInput.value,
     temperatureScale: temperatureScale.value,
-    populationRate,
-    urbanization,
+    populationRate: populationRate,
+    urbanization: urbanization,
     mapSize: mapSizeOutput.value,
     latitude: latitudeOutput.value,
     longitude: longitudeOutput.value,
     prec: precOutput.value,
-    options,
+    options: options,
     mapName: mapName.value,
     hideLabels: hideLabels.checked,
     stylePreset: stylePreset.value,
     rescaleLabels: rescaleLabels.checked,
-    urbanDensity
+    urbanDensity: urbanDensity
   };
 }
 
@@ -201,7 +197,7 @@ function getGridCellsData() {
   };
 
   const gridData = {
-    cells: (Array.from(grid.cells.i) as number[]).map((cellId: number) => ({
+    cells: Array.from(grid.cells.i).map(cellId => ({
       i: cellId,
       v: dataArrays.v[cellId],
       c: dataArrays.c[cellId],
@@ -212,7 +208,7 @@ function getGridCellsData() {
       temp: dataArrays.temp[cellId],
       prec: dataArrays.prec[cellId]
     })),
-    vertices: Array.from(grid.vertices.p).map((_: unknown, vertexId: number) => ({
+    vertices: Array.from(grid.vertices.p).map((_, vertexId) => ({
       i: vertexId,
       p: grid.vertices.p[vertexId],
       v: grid.vertices.v[vertexId],

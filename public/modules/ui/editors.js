@@ -998,19 +998,19 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await window.lazy.statesEditor();
+  const Editor = await import("../dynamic/editors/states-editor.js?v=1.125.0");
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await window.lazy.culturesEditor();
+  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.122.11");
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await window.lazy.religionsEditor();
+  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.122.11");
   Editor.open();
 }
 

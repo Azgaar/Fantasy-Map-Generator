@@ -1,6 +1,6 @@
 import { pointer } from "d3";
-import type { Good } from "../generators/goods-generator";
-import { isDealRecord, isMfgRecord } from "../generators/production-generator";
+import type { Good } from "../modules/goods-generator";
+import { isDealRecord, isMfgRecord } from "../modules/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
 import { goodEditor } from "./good-editor";
