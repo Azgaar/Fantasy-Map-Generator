@@ -165,7 +165,6 @@ function selectStyleElement() {
       "compass",
       "coordinates",
       "gridOverlay",
-      "population",
       "prec",
       "routes",
       "temperature",

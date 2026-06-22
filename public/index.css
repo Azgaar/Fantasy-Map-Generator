@@ -226,6 +226,7 @@ t,
 #statesBody,
 #provincesBody,
 #relig,
+#population,
 #cults {
   mask: url(#land);
 }

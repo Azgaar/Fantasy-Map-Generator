@@ -408,7 +408,8 @@ function drawPopulation() {
 function getPopulationColor(urbanPopulation, totalPopulation, maxPopulation) {
   if (!totalPopulation || !maxPopulation) return "#000000";
 
-  const hue = urbanPopulation / totalPopulation;
+  const urbanShare = urbanPopulation / totalPopulation;
+  const hue = 240 + 120 * urbanShare;
   const value = (Math.log1p(totalPopulation) / Math.log1p(maxPopulation)) ** 1.5;
   return hsvToHex(hue, 1, value);
 }
