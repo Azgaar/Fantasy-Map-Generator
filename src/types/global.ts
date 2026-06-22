@@ -169,7 +169,7 @@ declare global {
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
   var refreshAllEditors: () => void;
   var toggleCells: () => void;
-  var drawGoods: (displayedGoods: Set<number>) => void;
+  var drawGoods: () => void;
   var regenerateGoods: () => void;
   var regenerateMarkets: () => void;
   var regenerateEconomy: () => void;

@@ -283,18 +283,28 @@ export class MarketsModule {
     if (centerBurg) centerBurg.plaza = 0;
 
     pack.markets.splice(marketIndex, 1);
-    pack.deals = [];
 
-    if (pack.markets.length) {
-      this.expandTerritories();
-    } else {
-      if (pack.cells.market) pack.cells.market.fill(0);
-      for (const burg of pack.burgs as Burg[]) {
-        if (!burg.i || burg.removed) continue;
-        burg.market = 0;
-        burg.plaza = 0;
+    // drop only the deals tied to this market; keep the rest of the economy intact
+    pack.deals = (pack.deals || []).filter(
+      deal =>
+        !(
+          (deal.sellerType === "market" && deal.seller === marketId) ||
+          (deal.buyerType === "market" && deal.buyer === marketId)
+        )
+    );
+
+    // unassign only the removed market's cells and burgs; leave other markets' territories untouched
+    if (pack.cells.market) {
+      for (let i = 0; i < pack.cells.market.length; i++) {
+        if (pack.cells.market[i] === marketId) pack.cells.market[i] = 0;
       }
     }
+    for (const burg of pack.burgs as Burg[]) {
+      if (!burg.i || burg.removed) continue;
+      if (burg.market === marketId) burg.market = 0;
+    }
+
+    this.indexMarkets();
 
     return true;
   }

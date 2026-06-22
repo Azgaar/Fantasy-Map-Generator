@@ -20,7 +20,7 @@ const PLATE_FILL = "#f5f5f5";
 export function toggleGoods(event?: MouseEvent) {
   if (!layerIsOn("toggleGoods")) {
     turnButtonOn("toggleGoods");
-    drawGoods(GoodsEditor.getDisplayedGoods());
+    drawGoods();
     if (event && isCtrlClick(event)) editStyle("goodsIcons");
   } else {
     if (event && isCtrlClick(event)) return editStyle("goodsIcons");
@@ -29,22 +29,20 @@ export function toggleGoods(event?: MouseEvent) {
   }
 }
 
-export function drawGoods(displayedGoods: Set<number>) {
+export function drawGoods() {
   TIME && console.time("drawGoods");
-  ensureSubgroups();
 
-  goods.select("#goodsCells").html(buildGoodsCellsContent(displayedGoods));
-  goods.select("#goodsIcons").html(buildGoodsIconsContent(displayedGoods));
-  goods.select("#goodsBurgs").html(buildGoodsBurgsContent(displayedGoods));
-
-  goods.style("display", null);
-  TIME && console.timeEnd("drawGoods");
-}
-
-function ensureSubgroups() {
   for (const id of SUBGROUPS) {
     if (goods.select(`#${id}`).empty()) goods.append("g").attr("id", id);
   }
+
+  const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
+  goods.select("#goodsCells").html(buildGoodsCellsContent(visible));
+  goods.select("#goodsIcons").html(buildGoodsIconsContent(visible));
+  goods.select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
+
+  goods.style("display", null);
+  TIME && console.timeEnd("drawGoods");
 }
 
 function buildGoodsCellsContent(displayedGoods: Set<number>): string {

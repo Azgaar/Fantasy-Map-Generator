@@ -285,6 +285,8 @@ function statesEditorAddLines(): void {
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
       <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
         class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
+      <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
+      <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
       <span data-tip="Locate the state" class="icon-target hide"></span>
       <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
       <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${

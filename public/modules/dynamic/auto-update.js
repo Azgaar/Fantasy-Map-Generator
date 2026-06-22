@@ -1153,4 +1153,9 @@ export function resolveVersionConflicts(mapVersion) {
     Production.produce();
     States.collectTaxes();
   }
+
+  if (isOlderThan("1.127.0")) {
+    // goods visibility moved onto the good itself; default to showing the first good
+    if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
+  }
 }

@@ -991,7 +991,7 @@ emblemsBurgSizeInput.on("change", e => {
 
 styleGoodsCircle.addEventListener("change", function () {
   goods.select("#goodsIcons").attr("data-circle", +this.checked);
-  drawGoods(GoodsEditor?.getDisplayedGoods?.());
+  drawGoods();
 });
 
 styleMarketsLayerFillOpacity.on("input", e => {

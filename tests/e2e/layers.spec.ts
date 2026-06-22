@@ -1,332 +1,331 @@
-import { Browser, BrowserContext, expect, Page, test } from '@playwright/test'
+import { Browser, BrowserContext, expect, Page, test } from "@playwright/test";
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
-let sharedContext: BrowserContext
-let sharedPage: Page
+let sharedContext: BrowserContext;
+let sharedPage: Page;
 
-test.describe('map layers', () => {
+test.describe("map layers", () => {
   test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    sharedContext = await browser.newContext()
-    sharedPage = await sharedContext.newPage()
+    sharedContext = await browser.newContext();
+    sharedPage = await sharedContext.newPage();
 
-    await sharedContext.clearCookies()
-    await sharedPage.goto('/')
+    await sharedContext.clearCookies();
+    await sharedPage.goto("/");
     await sharedPage.evaluate(() => {
-      localStorage.clear()
-      sessionStorage.clear()
-    })
+      localStorage.clear();
+      sessionStorage.clear();
+    });
 
     // Navigate with seed parameter and wait for full load
     // NOTE:
     // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.
     // - Snapshots are OS-independent (configured in playwright.config.ts).
-    await sharedPage.goto('/?seed=test-seed&&width=1280&height=720')
+    await sharedPage.goto("/?seed=test-seed&&width=1280&height=720");
 
     // Wait for map generation to complete by checking window.mapId
     // mapId is exposed on window at the very end of showStatistics()
-    await sharedPage.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 })
+    await sharedPage.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
     // Additional wait for any rendering/animations to settle
-    await sharedPage.waitForTimeout(500)
-  })
+    await sharedPage.waitForTimeout(500);
+  });
 
   test.afterAll(async () => {
-    await sharedPage.close()
-    await sharedContext.close()
-  })
+    await sharedPage.close();
+    await sharedContext.close();
+  });
 
   // Ocean and water layers
-  test('ocean layer', async () => {
-    const ocean = sharedPage.locator('#ocean')
-    await expect(ocean).toBeAttached()
-    const html = await ocean.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('ocean.html')
-  })
+  test("ocean layer", async () => {
+    const ocean = sharedPage.locator("#ocean");
+    await expect(ocean).toBeAttached();
+    const html = await ocean.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("ocean.html");
+  });
 
-  test('lakes layer', async () => {
-    const lakes = sharedPage.locator('#lakes')
-    await expect(lakes).toBeAttached()
-    const html = await lakes.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('lakes.html')
-  })
+  test("lakes layer", async () => {
+    const lakes = sharedPage.locator("#lakes");
+    await expect(lakes).toBeAttached();
+    const html = await lakes.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("lakes.html");
+  });
 
-  test('coastline layer', async () => {
-    const coastline = sharedPage.locator('#coastline')
-    await expect(coastline).toBeAttached()
-    const html = await coastline.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('coastline.html')
-  })
+  test("coastline layer", async () => {
+    const coastline = sharedPage.locator("#coastline");
+    await expect(coastline).toBeAttached();
+    const html = await coastline.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("coastline.html");
+  });
 
   // Terrain and heightmap layers
-  test('terrain layer', async () => {
-    const terrs = sharedPage.locator('#terrs')
-    await expect(terrs).toBeAttached()
-    const html = await terrs.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('terrain.html')
-  })
+  test("terrain layer", async () => {
+    const terrs = sharedPage.locator("#terrs");
+    await expect(terrs).toBeAttached();
+    const html = await terrs.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("terrain.html");
+  });
 
-  test('landmass layer', async () => {
-    const landmass = sharedPage.locator('#landmass')
-    await expect(landmass).toBeAttached()
-    const html = await landmass.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('landmass.html')
-  })
+  test("landmass layer", async () => {
+    const landmass = sharedPage.locator("#landmass");
+    await expect(landmass).toBeAttached();
+    const html = await landmass.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("landmass.html");
+  });
 
   // Climate and environment layers
-  test('biomes layer', async () => {
-    const biomes = sharedPage.locator('#biomes')
-    await expect(biomes).toBeAttached()
-    const html = await biomes.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('biomes.html')
-  })
+  test("biomes layer", async () => {
+    const biomes = sharedPage.locator("#biomes");
+    await expect(biomes).toBeAttached();
+    const html = await biomes.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("biomes.html");
+  });
 
-  test('ice layer', async () => {
-    const ice = sharedPage.locator('#ice')
-    await expect(ice).toBeAttached()
-    const html = await ice.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('ice.html')
-  })
+  test("ice layer", async () => {
+    const ice = sharedPage.locator("#ice");
+    await expect(ice).toBeAttached();
+    const html = await ice.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("ice.html");
+  });
 
-  test('temperature layer', async () => {
-    const temperature = sharedPage.locator('#temperature')
-    await expect(temperature).toBeAttached()
-    const html = await temperature.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('temperature.html')
-  })
+  test("temperature layer", async () => {
+    const temperature = sharedPage.locator("#temperature");
+    await expect(temperature).toBeAttached();
+    const html = await temperature.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("temperature.html");
+  });
 
-  test('precipitation layer', async () => {
-    const prec = sharedPage.locator('#prec')
-    await expect(prec).toBeAttached()
-    const html = await prec.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('precipitation.html')
-  })
+  test("precipitation layer", async () => {
+    const prec = sharedPage.locator("#prec");
+    await expect(prec).toBeAttached();
+    const html = await prec.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("precipitation.html");
+  });
 
   // Geographic features
-  test('rivers layer', async () => {
-    const rivers = sharedPage.locator('#rivers')
-    await expect(rivers).toBeAttached()
-    const html = await rivers.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('rivers.html')
-  })
+  test("rivers layer", async () => {
+    const rivers = sharedPage.locator("#rivers");
+    await expect(rivers).toBeAttached();
+    const html = await rivers.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("rivers.html");
+  });
 
-  test('relief layer', async () => {
-    const terrain = sharedPage.locator('#terrain')
-    await expect(terrain).toBeAttached()
-    const html = await terrain.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('relief.html')
-  })
+  test("relief layer", async () => {
+    const terrain = sharedPage.locator("#terrain");
+    await expect(terrain).toBeAttached();
+    const html = await terrain.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("relief.html");
+  });
 
   // Political layers
-  test('states/regions layer', async () => {
-    const regions = sharedPage.locator('#regions')
-    await expect(regions).toBeAttached()
-    const html = await regions.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('regions.html')
-  })
+  test("states/regions layer", async () => {
+    const regions = sharedPage.locator("#regions");
+    await expect(regions).toBeAttached();
+    const html = await regions.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("regions.html");
+  });
 
-  test('provinces layer', async () => {
-    const provs = sharedPage.locator('#provs')
-    await expect(provs).toBeAttached()
-    const html = await provs.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('provinces.html')
-  })
+  test("provinces layer", async () => {
+    const provs = sharedPage.locator("#provs");
+    await expect(provs).toBeAttached();
+    const html = await provs.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("provinces.html");
+  });
 
-  test('borders layer', async () => {
-    const borders = sharedPage.locator('#borders')
-    await expect(borders).toBeAttached()
-    const html = await borders.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('borders.html')
-  })
+  test("borders layer", async () => {
+    const borders = sharedPage.locator("#borders");
+    await expect(borders).toBeAttached();
+    const html = await borders.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("borders.html");
+  });
 
   // Cultural layers
-  test('cultures layer', async () => {
-    const cults = sharedPage.locator('#cults')
-    await expect(cults).toBeAttached()
-    const html = await cults.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('cultures.html')
-  })
+  test("cultures layer", async () => {
+    const cults = sharedPage.locator("#cults");
+    await expect(cults).toBeAttached();
+    const html = await cults.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("cultures.html");
+  });
 
-  test('religions layer', async () => {
-    const relig = sharedPage.locator('#relig')
-    await expect(relig).toBeAttached()
-    const html = await relig.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('religions.html')
-  })
+  test("religions layer", async () => {
+    const relig = sharedPage.locator("#relig");
+    await expect(relig).toBeAttached();
+    const html = await relig.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("religions.html");
+  });
 
   // Infrastructure layers
-  test('routes layer', async () => {
-    const routes = sharedPage.locator('#routes')
-    await expect(routes).toBeAttached()
-    const html = await routes.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('routes.html')
-  })
+  test("routes layer", async () => {
+    const routes = sharedPage.locator("#routes");
+    await expect(routes).toBeAttached();
+    const html = await routes.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("routes.html");
+  });
 
   // Settlement layers
-  test('burgs/icons layer', async () => {
-    const icons = sharedPage.locator('#icons')
-    await expect(icons).toBeAttached()
-    const html = await icons.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('icons.html')
-  })
+  test("burgs/icons layer", async () => {
+    const icons = sharedPage.locator("#icons");
+    await expect(icons).toBeAttached();
+    const html = await icons.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("icons.html");
+  });
 
-  test('anchors layer', async () => {
-    const anchors = sharedPage.locator('#anchors')
-    await expect(anchors).toBeAttached()
-    const html = await anchors.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('anchors.html')
-  })
+  test("anchors layer", async () => {
+    const anchors = sharedPage.locator("#anchors");
+    await expect(anchors).toBeAttached();
+    const html = await anchors.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("anchors.html");
+  });
 
   // Labels layer (without text content due to font rendering)
-  test('labels layer', async () => {
-    const labels = sharedPage.locator('#labels')
-    await expect(labels).toBeAttached()
+  test("labels layer", async () => {
+    const labels = sharedPage.locator("#labels");
+    await expect(labels).toBeAttached();
     // Remove text content but keep structure (text rendering varies)
-    const html = await labels.evaluate((el) => {
-      const clone = el.cloneNode(true) as Element
-      clone.querySelectorAll('text, tspan').forEach((t) => t.remove())
-      return clone.outerHTML
-    })
-    expect(html).toMatchSnapshot('labels.html')
-  })
+    const html = await labels.evaluate(el => {
+      const clone = el.cloneNode(true) as Element;
+      clone.querySelectorAll("text, tspan").forEach(t => t.remove());
+      return clone.outerHTML;
+    });
+    expect(html).toMatchSnapshot("labels.html");
+  });
 
-  test('labels group can be hidden with display:none', async () => {
+  test("labels group can be hidden with display:none", async () => {
     await sharedPage.evaluate(() => {
-      const styleElementSelect = document.getElementById('styleElementSelect') as HTMLSelectElement
-      const styleGroupSelect = document.getElementById('styleGroupSelect') as HTMLSelectElement
-      const styleLabelsHideGroup = document.getElementById('styleLabelsHideGroup') as HTMLInputElement
+      const styleElementSelect = document.getElementById("styleElementSelect") as HTMLSelectElement;
+      const styleGroupSelect = document.getElementById("styleGroupSelect") as HTMLSelectElement;
+      const styleLabelsHideGroup = document.getElementById("styleLabelsHideGroup") as HTMLInputElement;
 
-      styleElementSelect.value = 'labels'
-      styleElementSelect.dispatchEvent(new Event('change', { bubbles: true }))
+      styleElementSelect.value = "labels";
+      styleElementSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      styleGroupSelect.value = 'states'
-      styleGroupSelect.dispatchEvent(new Event('change', { bubbles: true }))
+      styleGroupSelect.value = "states";
+      styleGroupSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
-      styleLabelsHideGroup.checked = true
-      styleLabelsHideGroup.dispatchEvent(new Event('change', { bubbles: true }))
-    })
+      styleLabelsHideGroup.checked = true;
+      styleLabelsHideGroup.dispatchEvent(new Event("change", { bubbles: true }));
+    });
 
-    const statesGroup = sharedPage.locator('#labels #states')
-    await expect(statesGroup).toHaveCSS('display', 'none')
+    const statesGroup = sharedPage.locator("#labels #states");
+    await expect(statesGroup).toHaveCSS("display", "none");
 
     await sharedPage.evaluate(() => {
-      const styleLabelsHideGroup = document.getElementById('styleLabelsHideGroup') as HTMLInputElement
-      styleLabelsHideGroup.checked = false
-      styleLabelsHideGroup.dispatchEvent(new Event('change', { bubbles: true }))
-    })
+      const styleLabelsHideGroup = document.getElementById("styleLabelsHideGroup") as HTMLInputElement;
+      styleLabelsHideGroup.checked = false;
+      styleLabelsHideGroup.dispatchEvent(new Event("change", { bubbles: true }));
+    });
 
-    const inlineDisplay = await statesGroup.evaluate(el => (el as SVGGElement).style.display)
-    expect(inlineDisplay).toBe('')
-  })
+    const inlineDisplay = await statesGroup.evaluate(el => (el as SVGGElement).style.display);
+    expect(inlineDisplay).toBe("");
+  });
 
   // Military and markers
-  test('markers layer', async () => {
-    const markers = sharedPage.locator('#markers')
-    await expect(markers).toBeAttached()
-    const html = await markers.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('markers.html')
-  })
+  test("markers layer", async () => {
+    const markers = sharedPage.locator("#markers");
+    await expect(markers).toBeAttached();
+    const html = await markers.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("markers.html");
+  });
 
-  test('armies layer', async () => {
-    const armies = sharedPage.locator('#armies')
-    await expect(armies).toBeAttached()
-    const html = await armies.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('armies.html')
-  })
+  test("armies layer", async () => {
+    const armies = sharedPage.locator("#armies");
+    await expect(armies).toBeAttached();
+    const html = await armies.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("armies.html");
+  });
 
   // Special features
-  test('zones layer', async () => {
-    const zones = sharedPage.locator('#zones')
-    await expect(zones).toBeAttached()
-    const html = await zones.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('zones.html')
-  })
+  test("zones layer", async () => {
+    const zones = sharedPage.locator("#zones");
+    await expect(zones).toBeAttached();
+    const html = await zones.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("zones.html");
+  });
 
-  test('emblems layer', async () => {
-    const emblems = sharedPage.locator('#emblems')
-    await expect(emblems).toBeAttached()
-    const html = await emblems.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('emblems.html')
-  })
+  test("emblems layer", async () => {
+    const emblems = sharedPage.locator("#emblems");
+    await expect(emblems).toBeAttached();
+    const html = await emblems.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("emblems.html");
+  });
 
   // Economy layers (off by default — require activation)
-  test('goods layer', async () => {
+  test("goods layer", async () => {
     // goods is off by default — toggle it on, then display every good so all
     // four sub-groups (markets, heatmap cells, icons, burg panels) render
     await sharedPage.evaluate(() => {
-      ;(window as any).toggleGoods()
-      const all = new Set((window as any).pack.goods.map((g: any) => g.i))
-      ;(window as any).drawGoods(all)
+      (window as any).toggleGoods();
+      (window as any).drawGoods();
       // markets render in a standalone layer, toggled independently
-      ;(window as any).toggleMarketsLayer()
-    })
-    await sharedPage.waitForTimeout(300)
+      (window as any).toggleMarketsLayer();
+    });
+    await sharedPage.waitForTimeout(300);
 
-    const goodsEl = sharedPage.locator('#goods')
-    await expect(goodsEl).toBeAttached()
+    const goodsEl = sharedPage.locator("#goods");
+    await expect(goodsEl).toBeAttached();
 
     // The three named sub-groups are drawn back to front
-    await expect(goodsEl.locator('#goodsCells')).toBeAttached()
-    await expect(goodsEl.locator('#goodsIcons')).toBeAttached()
-    await expect(goodsEl.locator('#goodsBurgs')).toBeAttached()
+    await expect(goodsEl.locator("#goodsCells")).toBeAttached();
+    await expect(goodsEl.locator("#goodsIcons")).toBeAttached();
+    await expect(goodsEl.locator("#goodsBurgs")).toBeAttached();
 
     // Market zones render as <g data-id="N"> groups inside the standalone #markets layer
-    const marketsEl = sharedPage.locator('#markets')
-    await expect(marketsEl).toBeAttached()
-    await expect(marketsEl.locator('g[data-id]').first()).toBeAttached()
+    const marketsEl = sharedPage.locator("#markets");
+    await expect(marketsEl).toBeAttached();
+    await expect(marketsEl.locator("g[data-id]").first()).toBeAttached();
 
     // Good icons are <use> elements pointing to a #good-* SVG symbol
-    const icons = goodsEl.locator('use')
-    await expect(icons.first()).toBeAttached()
+    const icons = goodsEl.locator("use");
+    await expect(icons.first()).toBeAttached();
 
-    const href = await icons.first().getAttribute('href')
-    expect(href).toMatch(/^#good-/)
+    const href = await icons.first().getAttribute("href");
+    expect(href).toMatch(/^#good-/);
 
-    const html = await goodsEl.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('goods.html')
+    const html = await goodsEl.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("goods.html");
 
     // Restore: toggle goods and markets layers off
     await sharedPage.evaluate(() => {
-      ;(window as any).toggleGoods()
-      ;(window as any).toggleMarketsLayer()
-    })
-  })
+      (window as any).toggleGoods();
+      (window as any).toggleMarketsLayer();
+    });
+  });
 
-  test('trade animation layer structure', async () => {
-    const tradeAnim = sharedPage.locator('#tradeAnimation')
-    await expect(tradeAnim).toBeAttached()
+  test("trade animation layer structure", async () => {
+    const tradeAnim = sharedPage.locator("#tradeAnimation");
+    await expect(tradeAnim).toBeAttached();
 
     // No animation running — layer starts empty (transient groups are appended only during animation)
-    await expect(tradeAnim.locator('> *')).toHaveCount(0)
-  })
+    await expect(tradeAnim.locator("> *")).toHaveCount(0);
+  });
 
   // Grid and coordinates
-  test('cells layer', async () => {
-    const cells = sharedPage.locator('g#cells')
-    await expect(cells).toBeAttached()
-    const html = await cells.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('cells.html')
-  })
+  test("cells layer", async () => {
+    const cells = sharedPage.locator("g#cells");
+    await expect(cells).toBeAttached();
+    const html = await cells.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("cells.html");
+  });
 
-  test('coordinates layer', async () => {
-    const coordinates = sharedPage.locator('#coordinates')
-    await expect(coordinates).toBeAttached()
-    const html = await coordinates.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('coordinates.html')
-  })
+  test("coordinates layer", async () => {
+    const coordinates = sharedPage.locator("#coordinates");
+    await expect(coordinates).toBeAttached();
+    const html = await coordinates.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("coordinates.html");
+  });
 
-  test('compass layer', async () => {
-    const compass = sharedPage.locator('#compass')
-    await expect(compass).toBeAttached()
-    const html = await compass.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('compass.html')
-  })
+  test("compass layer", async () => {
+    const compass = sharedPage.locator("#compass");
+    await expect(compass).toBeAttached();
+    const html = await compass.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("compass.html");
+  });
 
   // Population layer
-  test('population layer', async () => {
-    const population = sharedPage.locator('#population')
-    await expect(population).toBeAttached()
-    const html = await population.evaluate((el) => el.outerHTML)
-    expect(html).toMatchSnapshot('population.html')
-  })
-})
+  test("population layer", async () => {
+    const population = sharedPage.locator("#population");
+    await expect(population).toBeAttached();
+    const html = await population.evaluate(el => el.outerHTML);
+    expect(html).toMatchSnapshot("population.html");
+  });
+});

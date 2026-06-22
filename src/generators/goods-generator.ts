@@ -34,6 +34,7 @@ export interface Good {
   // ui
   icon: string;
   color: string;
+  visible?: boolean; // whether the good is shown on the Goods layer
 }
 
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
@@ -964,6 +965,9 @@ export class GoodsModule {
     const shuffle = shuffler(() => Math.random());
 
     if (!pack.goods?.length) this.restoreDefaults();
+
+    // by default show the first good on the Goods layer
+    if (pack.goods.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
 
     this.cells = pack.cells;
     this.cells.good = new Uint16Array(this.cells.i.length);

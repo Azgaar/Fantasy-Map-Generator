@@ -422,6 +422,13 @@ async function parseLoadedData(data, mapVersion) {
       pack.deals = data[43] ? JSON.parse(data[43]) : [];
       pack.cells.market = data[44] ? Uint16Array.from(data[44].split(",")) : new Uint16Array(pack.cells.i.length);
 
+      // restore custom good icons (stored outside the map svg, in #good-icons)
+      const goodIconsDefs = document.getElementById("good-icons");
+      if (goodIconsDefs) {
+        goodIconsDefs.querySelectorAll('[id^="good-custom-"]').forEach(el => el.remove());
+        if (data[45]) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
+      }
+
       if (data[31]) {
         const namesDL = data[31].split("/");
         namesDL.forEach((d, i) => {
