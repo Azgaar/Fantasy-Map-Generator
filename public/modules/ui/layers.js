@@ -408,15 +408,21 @@ function drawPopulation() {
   }
 
   const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true, waterGap: true });
-  const paths = Object.entries(isolines).map(([color, { fill, waterGap }], index) => {
+  const populationShapes = Object.entries(isolines).map(([color, { fill, waterGap }], index) => {
     const closedFill = closeSvgPathRings(fill);
+    const coastalClipId = `population-coast-clip${index}`;
+    const outsideFillClip = /* html */ `<clipPath id="${coastalClipId}"><path d="M0,0H${graphWidth}V${graphHeight}H0Z${closedFill}" clip-rule="evenodd" /></clipPath>`;
     const coastalStroke = waterGap
-      ? /* html */ `<path d="${waterGap}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" id="population-coast${index}" />`
+      ? /* html */ `<path d="${waterGap}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#${coastalClipId})" id="population-coast${index}" />`
       : "";
-    return /* html */ `<path d="${closedFill}" fill="${color}" stroke="none" id="population${index}" />${coastalStroke}`;
+    const fillPath = /* html */ `<path d="${closedFill}" fill="${color}" stroke="none" id="population${index}" />`;
+    return { outsideFillClip, coastalStroke, fillPath };
   });
 
-  ensureEl("population").innerHTML = paths.join("");
+  const coastClips = populationShapes.map(({ outsideFillClip }) => outsideFillClip).join("");
+  const coastalStrokes = populationShapes.map(({ coastalStroke }) => coastalStroke).join("");
+  const fillPaths = populationShapes.map(({ fillPath }) => fillPath).join("");
+  ensureEl("population").innerHTML = `<defs>${coastClips}</defs>${coastalStrokes}${fillPaths}`;
 
   TIME && console.timeEnd("drawPopulation");
 }
