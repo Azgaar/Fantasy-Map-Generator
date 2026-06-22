@@ -407,10 +407,13 @@ function drawPopulation() {
     colors[cellId] = getPopulationColor(urban[cellId], total[cellId], maxPopulation);
   }
 
-  const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true });
-  const paths = Object.entries(isolines).map(([color, { fill }], index) => {
+  const isolines = getIsolines(pack, cellId => colors[cellId] || null, { fill: true, waterGap: true });
+  const paths = Object.entries(isolines).map(([color, { fill, waterGap }], index) => {
     const closedFill = closeSvgPathRings(fill);
-    return /* html */ `<path d="${closedFill}" fill="${color}" stroke="${color}" stroke-width="6" stroke-linejoin="round" paint-order="stroke fill" id="population${index}" />`;
+    const coastalStroke = waterGap
+      ? /* html */ `<path d="${waterGap}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" id="population-coast${index}" />`
+      : "";
+    return /* html */ `<path d="${closedFill}" fill="${color}" stroke="none" id="population${index}" />${coastalStroke}`;
   });
 
   ensureEl("population").innerHTML = paths.join("");
