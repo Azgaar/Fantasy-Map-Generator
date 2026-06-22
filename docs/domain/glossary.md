@@ -19,7 +19,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Editor**: A Controller that mutates world data (e.g., coastline-editor, states-editor). The "C" of the conceptual MVC model.
 - **Overview**: A read-only Controller that presents world data without mutating it (e.g., production-overview, market-overview, charts-overview).
 - **Renderer**: The system that visualizes world data as SVG or WebGL graphics (`src/renderers/`).
-- **Service**: App-shell / platform lifecycle code, unrelated to map domain state (e.g., PWA installation, auto-update). Lives in `src/services/`.
+- **Service**: App-shell / platform & asset infrastructure, unrelated to map domain state (e.g., PWA installation, auto-update, the font catalog & loading). Cross-cutting (may be consumed by IO, UI, and rendering alike) but owns no world data. Lives in `src/services/`.
 - **IO**: Serialization and persistence — save, load, export, cloud storage (`src/io/`, legacy `public/modules/io/`).
 
 ## World Data & State

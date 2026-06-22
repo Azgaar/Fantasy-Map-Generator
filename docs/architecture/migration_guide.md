@@ -15,7 +15,7 @@ Pick the layer by responsibility, name the file `kebab-case.ts`:
 | `src/renderers/`   | code that draws SVG layers                            |
 | `src/controllers/` | dialogs, panels, UI flows, overviews                  |
 | `src/io/`          | save / load / export / serialization                  |
-| `src/services/`    | app-shell & platform lifecycle (PWA install, …)       |
+| `src/services/`    | app-shell & platform/asset infra (install, fonts, …)  |
 | `src/data/`        | static content / reference data (supporters, …)       |
 
 Not everything is Model/View/Controller. If a file is **static content** (a constant

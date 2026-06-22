@@ -212,7 +212,7 @@ home.
 | `src/renderers/`   | View              | code that draws SVG / WebGL layers                            |
 | `src/controllers/` | Editors / UI      | editors, tools, dialogs, panels, overviews                    |
 | `src/io/`          | —                 | save / load / export / serialization                          |
-| `src/services/`    | —                 | app-shell & platform lifecycle (PWA install, auto-update)     |
+| `src/services/`    | —                 | app-shell & platform/asset infra (install, auto-update, fonts)|
 | `src/data/`        | —                 | static content / reference data (supporters, templates)       |
 
 ## What a "controller" is
@@ -285,7 +285,7 @@ As classic code migrates out of `public/`, it lands in the matching `src/` folde
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `io/`
-- Manages browser / app lifecycle (install, update, analytics) → `services/`
+- Manages browser/app lifecycle or a platform asset (install, update, fonts) → `services/`
 - A constant list or template, no behavior → `data/`
 - A pure, reusable helper with no domain knowledge → `utils/`
 - A shared type / interface → `types/`
