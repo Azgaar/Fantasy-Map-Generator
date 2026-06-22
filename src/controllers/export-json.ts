@@ -1,5 +1,12 @@
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
+const typeMap = {
+  Full: getFullDataJson,
+  Minimal: getMinimalDataJson,
+  PackCells: getPackDataJson,
+  GridCells: getGridDataJson
+};
+
 export function exportToJson(type: ExportJsonType): void {
   if (customization) {
     tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
@@ -8,13 +15,6 @@ export function exportToJson(type: ExportJsonType): void {
   closeDialogs("#alert");
 
   TIME && console.time("exportToJson");
-  const typeMap = {
-    Full: getFullDataJson,
-    Minimal: getMinimalDataJson,
-    PackCells: getPackDataJson,
-    GridCells: getGridDataJson
-  };
-
   const mapData = typeMap[type]();
   const blob = new Blob([mapData], { type: "application/json" });
   const URL = window.URL.createObjectURL(blob);
