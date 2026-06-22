@@ -905,7 +905,9 @@ function exitAddCultureMode(): void {
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");
 }
 
-function addCulture(this: any, event: any): void {
+function addCulture(this: SVGElement): void {
+  // registered on the d3 v5 `viewbox` selection, which does not pass the event as an argument
+  const event = window.event as MouseEvent;
   const point = pointer(event, this);
   const center = findCell(point[0], point[1])!;
 

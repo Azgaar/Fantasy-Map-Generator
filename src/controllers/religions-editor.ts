@@ -838,7 +838,9 @@ function exitAddReligionMode(): void {
   if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");
 }
 
-function addReligion(this: any, event: any): void {
+function addReligion(this: SVGElement): void {
+  // registered on the d3 v5 `viewbox` selection, which does not pass the event as an argument
+  const event = window.event as MouseEvent;
   const [x, y] = pointer(event, this);
   const center = findCell(x, y)!;
   if (pack.cells.h[center] < 20) {

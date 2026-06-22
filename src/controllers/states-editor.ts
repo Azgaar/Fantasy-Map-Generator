@@ -1336,7 +1336,9 @@ function enterAddStateMode(this: HTMLElement): void {
   });
 }
 
-function addState(this: any, event: any): void {
+function addState(this: SVGElement): void {
+  // registered on the d3 v5 `viewbox` selection, which does not pass the event as an argument
+  const event = window.event as MouseEvent;
   const { cells, states, burgs } = pack as any;
   const point = pointer(event, this);
   const center = findCell(point[0], point[1])!;
