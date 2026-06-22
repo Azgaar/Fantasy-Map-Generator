@@ -373,7 +373,15 @@ function togglePopulation(event) {
 function drawPopulation() {
   TIME && console.time("drawPopulation");
 
-  population.attr("mask", "url(#land)");
+  population
+    .attr("mask", "url(#land)")
+    .attr("stroke", "none")
+    .attr("stroke-width", 0)
+    .attr("stroke-dasharray", null)
+    .attr("stroke-linecap", null)
+    .style("stroke", "none")
+    .style("stroke-width", 0)
+    .style("stroke-dasharray", "none");
 
   const { cells, burgs } = pack;
   const urban = new Float64Array(cells.i.length);

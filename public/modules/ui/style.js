@@ -146,7 +146,6 @@ function selectStyleElement() {
       "coordinates",
       "gridOverlay",
       "legend",
-      "population",
       "routes",
       "temperature",
       "zones"
