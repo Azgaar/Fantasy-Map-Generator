@@ -4,6 +4,7 @@
     "module": "ESNext",
     "target": "esnext",
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["src/*"]
     },

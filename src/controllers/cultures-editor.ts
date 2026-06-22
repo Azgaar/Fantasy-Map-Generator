@@ -145,9 +145,9 @@ function culturesEditorAddLines(): void {
 
   for (const c of pack.cultures) {
     if (c.removed) continue;
-    const area = getArea(c.area);
-    const rural = c.rural * populationRate;
-    const urban = c.urban * populationRate * urbanization;
+    const area = getArea(c.area ?? 0);
+    const rural = (c.rural ?? 0) * populationRate;
+    const urban = (c.urban ?? 0) * populationRate * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
@@ -349,7 +349,7 @@ function cultureChangeName(this: HTMLInputElement): void {
   cultures[culture].name = this.value;
   cultures[culture].code = abbreviate(
     this.value,
-    cultures.map(c => c.code)
+    cultures.flatMap(c => (c.code ? [c.code] : []))
   );
 }
 
@@ -376,7 +376,8 @@ function cultureChangeExpansionism(this: HTMLInputElement): void {
 function cultureChangeType(this: HTMLSelectElement): void {
   const culture = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.type = this.value;
-  pack.cultures[culture].type = this.value;
+  const type = this.value as (typeof pack.cultures)[number]["type"];
+  pack.cultures[culture].type = type;
   recalculateCultures();
 }
 
@@ -436,8 +437,8 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn(culture.rural * populationRate);
-  const urban = rn(culture.urban * populationRate * urbanization);
+  const rural = rn((culture.rural ?? 0) * populationRate);
+  const urban = rn((culture.urban ?? 0) * populationRate * urbanization);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
@@ -513,7 +514,7 @@ function applyPopulationChange(
   const urbanChange = newUrban / oldUrban;
   if (Number.isFinite(urbanChange) && urbanChange !== 1) {
     burgs.forEach(b => {
-      b.population = rn(b.population * urbanChange, 4);
+      b.population = rn((b.population ?? 0) * urbanChange, 4);
     });
   }
   if (!Number.isFinite(urbanChange) && +newUrban > 0) {
@@ -568,7 +569,7 @@ function removeCulture(cultureId: number): void {
   cultures
     .filter((c: any) => c.i && !c.removed)
     .forEach((c: any) => {
-      c.origins = c.origins.filter((origin: number) => origin !== cultureId);
+      c.origins = (c.origins ?? []).filter((origin: number) => origin !== cultureId);
       if (!c.origins.length) c.origins = [0];
     });
   refreshCulturesEditor();
@@ -636,7 +637,7 @@ function cultureCenterDrag(this: any, event: any): void {
     const { x, y } = dragEvent;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = findCell(x, y);
-    if (pack.cells.h[cell!] < 20) return; // ignore dragging on water
+    if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
     pack.cultures[cultureId].center = cell;
     recalculateCultures();
@@ -654,7 +655,7 @@ function toggleLegend(): void {
 
   const data = pack.cultures
     .filter(c => c.i && !c.removed && c.cells)
-    .sort((a, b) => b.area - a.area)
+    .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(c => [c.i, c.color, c.name]);
   drawLegend("Cultures", data);
 }
@@ -934,7 +935,9 @@ function downloadCulturesCsv(): void {
     const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
     const namesbase = nameBases[+base!].name;
     const { origins } = pack.cultures[+id!];
-    const originList = origins.filter((origin: number) => origin).map((origin: number) => pack.cultures[origin].name);
+    const originList = (origins ?? [])
+      .filter((origin: number | null): origin is number => Boolean(origin))
+      .map((origin: number) => pack.cultures[origin].name);
     const originText = `"${originList.join(", ")}"`;
     return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, originText].join(",");
   });

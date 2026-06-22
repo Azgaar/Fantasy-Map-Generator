@@ -153,9 +153,9 @@ function religionsEditorAddLines(): void {
     if (r.removed) continue;
     if (r.i && !r.cells && $body.dataset.extinct !== "show") continue; // hide extinct religions
 
-    const area = getArea(r.area);
-    const rural = r.rural * populationRate;
-    const urban = r.urban * populationRate * urbanization;
+    const area = getArea(r.area ?? 0);
+    const rural = (r.rural ?? 0) * populationRate;
+    const urban = (r.urban ?? 0) * populationRate * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
       urban
@@ -371,14 +371,15 @@ function religionChangeName(this: HTMLInputElement): void {
   religions[religionId].name = this.value;
   religions[religionId].code = abbreviate(
     this.value,
-    religions.map(c => c.code)
+    religions.flatMap(c => (c.code ? [c.code] : []))
   );
 }
 
 function religionChangeType(this: HTMLSelectElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
   (this.parentNode as HTMLElement).dataset.type = this.value;
-  pack.religions[religionId].type = this.value;
+  const type = this.value as (typeof pack.religions)[number]["type"];
+  pack.religions[religionId].type = type;
 }
 
 function religionChangeForm(this: HTMLInputElement): void {
@@ -410,8 +411,8 @@ function changePopulation(this: HTMLElement): void {
     return;
   }
 
-  const rural = rn(religion.rural * populationRate);
-  const urban = rn(religion.urban * populationRate * urbanization);
+  const rural = rn((religion.rural ?? 0) * populationRate);
+  const urban = rn((religion.urban ?? 0) * populationRate * urbanization);
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
@@ -479,7 +480,7 @@ function changePopulation(this: HTMLElement): void {
     const urbanChange = +urbanPop.value / urban;
     if (Number.isFinite(urbanChange) && urbanChange !== 1) {
       burgs.forEach(b => {
-        b.population = rn(b.population * urbanChange, 4);
+        b.population = rn((b.population ?? 0) * urbanChange, 4);
       });
     }
     if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
@@ -534,7 +535,7 @@ function removeReligion(religionId: number): void {
   pack.religions
     .filter(r => r.i && !r.removed)
     .forEach(r => {
-      r.origins = r.origins.filter((origin: number) => origin !== religionId);
+      r.origins = (r.origins ?? []).filter((origin: number) => origin !== religionId);
       if (!r.origins.length) r.origins = [0];
     });
 
@@ -552,7 +553,7 @@ function drawReligionCenters(): void {
 
   let data = pack.religions.filter(r => r.i && r.center && !r.removed);
   const showExtinct = $body.dataset.extinct === "show";
-  if (!showExtinct) data = data.filter(r => r.cells > 0);
+  if (!showExtinct) data = data.filter(r => (r.cells ?? 0) > 0);
 
   religionCenters
     .selectAll("circle")
@@ -586,7 +587,7 @@ function religionCenterDrag(this: any, event: any): void {
     const { x, y } = dragEvent;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = findCell(x, y);
-    if (pack.cells.h[cell!] < 20) return; // ignore dragging on water
+    if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
     pack.religions[religionId].center = cell;
     recalculateReligions();
@@ -604,7 +605,7 @@ function toggleLegend(): void {
 
   const data = pack.religions
     .filter(r => r.i && !r.removed && r.area)
-    .sort((a, b) => b.area - a.area)
+    .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(r => [r.i, r.color, r.name]);
   drawLegend("Religions", data);
 }
