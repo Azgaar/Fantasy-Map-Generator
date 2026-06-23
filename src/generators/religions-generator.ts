@@ -18,6 +18,18 @@ declare global {
   var Religions: ReligionsModule;
 }
 
+export interface Religion extends NamedReligion {
+  i: number;
+  code?: string;
+  origins?: number[] | null;
+  lock?: boolean;
+  removed?: boolean;
+  cells?: number;
+  area?: number;
+  rural?: number;
+  urban?: number;
+}
+
 interface ReligionBase {
   type: "Folk" | "Organized" | "Cult" | "Heresy";
   form: string;
@@ -31,18 +43,6 @@ interface NamedReligion extends ReligionBase {
   expansion: string;
   expansionism: number;
   color: string;
-}
-
-export interface Religion extends NamedReligion {
-  i: number;
-  code?: string;
-  origins?: number[] | null;
-  lock?: boolean;
-  removed?: boolean;
-  cells?: number;
-  area?: number;
-  rural?: number;
-  urban?: number;
 }
 
 // name generation approach and relative chance to be selected
@@ -1022,12 +1022,12 @@ class ReligionsModule {
         ? (rw({ Organized: 4, Cult: 1, Heresy: 2 }) as "Organized" | "Cult" | "Heresy")
         : (rw({ Organized: 5, Cult: 2 }) as "Organized" | "Cult");
     const form = rw(forms[type]);
-    const deity =
+    const deity: string | null =
       type === "Heresy"
         ? religions[religionId].deity
         : form === "Non-theism" || form === "Animism"
           ? null
-          : this.getDeityName(cultureId);
+          : (this.getDeityName(cultureId) ?? null);
 
     const [name, expansion] = this.generateReligionName(type, form, deity!, center);
 

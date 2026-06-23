@@ -22,7 +22,7 @@ This PRD introduces a unified five-dimension multiplier system on `Good`, replac
 
 ## Data model changes
 
-### `Good` interface (`src/modules/goods-generator.ts`)
+### `Good` interface (`src/generators/goods-generator.ts`)
 
 ```typescript
 export interface Good {
@@ -60,7 +60,7 @@ export interface Good {
 }
 ```
 
-### `GOODS_DATA` (`src/modules/goods-generator.ts`)
+### `GOODS_DATA` (`src/generators/goods-generator.ts`)
 
 - Every `biome: {...}` entry → `biomeOutput: {...}`.
 - Every `culture: {...}` entry → `multipliers: { cultureType: {...} }`.
@@ -78,7 +78,7 @@ Example diff:
 
 Update to read `good.biomeOutput` instead of `good.biome`.
 
-## Production logic changes (`src/modules/production-generator.ts`)
+## Production logic changes (`src/generators/production-generator.ts`)
 
 ### New helper: `getModifiers`
 
@@ -203,13 +203,13 @@ The existing `renderCulture` function and its grid are removed. Replace with a `
 
 ### Modified
 
-- `src/modules/goods-generator.ts`
+- `src/generators/goods-generator.ts`
   - Update `Good` interface: rename `biome` → `biomeOutput`, move `culture` → `multipliers.cultureType`, add remaining multiplier dimensions
   - Update all `GOODS_DATA` entries: rename fields as above
   - Update `getBiomesProduction` to read `good.biomeOutput`
   - Update `GoodData` type alias accordingly
 
-- `src/modules/production-generator.ts`
+- `src/generators/production-generator.ts`
   - Add `getModifiers(good, cellId)` helper
   - Update `getCellProduction`: replace per-good modifier with `getModifiers`
   - Update `executeManufacture`: replace `cultureModifier` lookup with `getModifiers`

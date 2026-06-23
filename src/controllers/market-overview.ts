@@ -1,5 +1,5 @@
-import type { Burg } from "../modules/burgs-generator";
-import type { Market } from "../modules/markets-generator";
+import type { Burg } from "../generators/burgs-generator";
+import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;

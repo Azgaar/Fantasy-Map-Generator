@@ -1,12 +1,12 @@
 import { select } from "d3";
-import type { PackedGraphFeature } from "../modules/features";
+import type { Feature } from "../generators/features";
 import { clipPoly, round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 
 declare global {
   var drawFeatures: () => void;
   var simplify: (points: [number, number][], tolerance: number, highestQuality?: boolean) => [number, number][];
-  var getFeaturePath: (feature: PackedGraphFeature) => string;
+  var getFeaturePath: (feature: Feature) => string;
 }
 
 interface FeaturesHtml {
@@ -69,7 +69,7 @@ const featuresRenderer = (): void => {
   TIME && console.timeEnd("drawFeatures");
 };
 
-function featurePathRenderer(feature: PackedGraphFeature): string {
+function featurePathRenderer(feature: Feature): string {
   const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
   if (points.some(point => point === undefined)) {
     ERROR && console.error("Undefined point in getFeaturePath");

@@ -1,9 +1,9 @@
-import type { Burg } from "../modules/burgs-generator";
-import type { DemandCategory } from "../modules/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../modules/goods-generator";
-import type { Deal } from "../modules/markets-generator";
-import type { ProductionCandidate } from "../modules/production-generator";
-import { isDealRecord, isMfgRecord } from "../modules/production-generator";
+import type { Burg } from "../generators/burgs-generator";
+import type { DemandCategory } from "../generators/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../generators/goods-generator";
+import type { Deal } from "../generators/markets-generator";
+import type { ProductionCandidate } from "../generators/production-generator";
+import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { formatPrice, rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";

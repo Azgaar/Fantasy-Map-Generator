@@ -1,8 +1,8 @@
-import type { Burg } from "../modules/burgs-generator";
-import type { Deal } from "../modules/markets-generator";
-import type { TradeBatch } from "../modules/trade-animation";
-import type { Point } from "../modules/voronoi";
+import type { Burg } from "../generators/burgs-generator";
+import type { Deal } from "../generators/markets-generator";
+import type { Point } from "../generators/voronoi";
 import { clearHighlight, highlight } from "../renderers/draw-trade-animation";
+import type { TradeBatch } from "../renderers/trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let isInitialized = false;

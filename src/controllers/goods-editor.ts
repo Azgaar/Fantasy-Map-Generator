@@ -1,6 +1,6 @@
-import { pointer } from "d3";
-import type { Good } from "../modules/goods-generator";
-import { isDealRecord, isMfgRecord } from "../modules/production-generator";
+import { pointer, select } from "d3";
+import type { Good } from "../generators/goods-generator";
+import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
 import { goodEditor } from "./good-editor";
@@ -472,7 +472,7 @@ function enterResourceAssignMode(this: HTMLElement) {
   $("#goodsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
   tip("Select good line in editor, click on cells to remove or add a bonus resource", true);
-  viewbox.on("click", changeResourceOnCellClick);
+  select<SVGElement, unknown>("#viewbox").on("click", changeResourceOnCellClick);
 }
 
 function selectResourceOnLineClick(this: HTMLElement) {
@@ -482,7 +482,7 @@ function selectResourceOnLineClick(this: HTMLElement) {
   this.classList.add("selected");
 }
 
-function changeResourceOnCellClick(this: SVGElement) {
+function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
   const body = ensureEl("goodsBody");
   const point = pointer(event, this);
   const cellId = findCell(...point);

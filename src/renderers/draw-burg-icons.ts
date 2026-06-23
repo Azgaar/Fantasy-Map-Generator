@@ -1,4 +1,4 @@
-import type { Burg } from "../modules/burgs-generator";
+import type { Burg } from "../generators/burgs-generator";
 
 declare global {
   var drawBurgIcons: () => void;
