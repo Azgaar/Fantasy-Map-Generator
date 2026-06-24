@@ -276,7 +276,7 @@ export class MarketsModule {
 
   removeMarket(marketId: number) {
     const market = this.get(marketId);
-    if (!market) return false;
+    if (!market) return;
 
     const centerBurg = pack.burgs[market.centerBurgId];
     if (centerBurg) centerBurg.plaza = 0;
