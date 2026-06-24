@@ -1,4 +1,4 @@
-import { drag, easeSinIn, pointer, transition } from "d3";
+import { drag, easeSinIn, pointer, select, transition } from "d3";
 import {
   abbreviate,
   debounce,
@@ -543,8 +543,9 @@ function removeReligion(religionId: number): void {
 }
 
 function drawReligionCenters(): void {
-  debug.select("#religionCenters").remove();
-  const religionCenters = debug
+  const debugLayer = select("#debug");
+  debugLayer.select("#religionCenters").remove();
+  const religionCenters = debugLayer
     .append("g")
     .attr("id", "religionCenters")
     .attr("stroke-width", 0.8)
@@ -694,7 +695,7 @@ function enterReligionsManualAssignent(): void {
   $("#religionsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   tip("Click on religion to select, drag the circle to change religion", true);
-  viewbox
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .on("click", selectReligionOnMapClick)
     .call(drag<SVGElement, unknown>().on("start", dragReligionBrush))
@@ -821,7 +822,7 @@ function enterAddReligionMode(this: HTMLElement): void {
   customization = 8;
   this.classList.add("pressed");
   tip("Click on the map to add a new religion", true);
-  viewbox.style("cursor", "crosshair").on("click", addReligion);
+  select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addReligion);
   $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
     e.style.pointerEvents = "none";
   });
@@ -838,7 +839,7 @@ function exitAddReligionMode(): void {
   if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");
 }
 
-function addReligion(this: any, event: any): void {
+function addReligion(this: SVGElement, event: MouseEvent): void {
   const [x, y] = pointer(event, this);
   const center = findCell(x, y)!;
   if (pack.cells.h[center] < 20) {

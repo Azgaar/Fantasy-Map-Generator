@@ -1021,7 +1021,7 @@ function enterStatesManualAssignent(): void {
   $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
   tip("Click on state to select, drag the circle to change state", true);
-  viewbox
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .on("click", selectStateOnMapClick)
     .call(drag<SVGElement, unknown>().on("start", dragStateBrush))
@@ -1332,13 +1332,13 @@ function enterAddStateMode(this: HTMLElement): void {
   customization = 3;
   this.classList.add("pressed");
   tip("Click on the map to create a new capital or promote an existing burg", true);
-  viewbox.style("cursor", "crosshair").on("click", addState);
+  select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addState);
   $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
     e.style.pointerEvents = "none";
   });
 }
 
-function addState(this: any, event: any): void {
+function addState(this: SVGElement, event: MouseEvent): void {
   const { cells, states, burgs } = pack as any;
   const point = pointer(event, this);
   const center = findCell(point[0], point[1])!;
