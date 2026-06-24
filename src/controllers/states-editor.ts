@@ -199,7 +199,7 @@ function statesEditorAddLines(): void {
     totalPopulation += population;
     totalBurgs += s.burgs || 0;
     const focused = defs.select(`#fog #focusState${s.i}`).size();
-    const treasuryTip = `Treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
+    const treasuryTip = `Current treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
     if (!s.i) {
       // Neutral line
