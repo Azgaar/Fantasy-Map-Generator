@@ -254,6 +254,8 @@ test.describe("map layers", () => {
     // goods is off by default — toggle it on, then display every good so all
     // four sub-groups (markets, heatmap cells, icons, burg panels) render
     await sharedPage.evaluate(() => {
+      // only the first good is visible by default; make all of them visible for this test
+      (window as any).pack.goods.forEach((good: any) => (good.visible = true));
       (window as any).toggleGoods();
       (window as any).drawGoods();
       // markets render in a standalone layer, toggled independently
