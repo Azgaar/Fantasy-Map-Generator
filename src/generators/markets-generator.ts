@@ -284,8 +284,10 @@ export class MarketsModule {
     // drop the deals tied to this market
     pack.deals = pack.deals.filter(
       deal =>
-        (deal.sellerType === "market" && deal.seller === marketId) ||
-        (deal.buyerType === "market" && deal.buyer === marketId)
+        !(
+          (deal.sellerType === "market" && deal.seller === marketId) ||
+          (deal.buyerType === "market" && deal.buyer === marketId)
+        )
     );
 
     for (let i = 0; i < pack.cells.market.length; i++) {

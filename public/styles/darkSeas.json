@@ -628,6 +628,9 @@
     "stroke-width": 1.0,
     "fill-opacity": 0,
     "stroke-opacity": 0.8,
+    "data-size": 3,
+    "font-size": 5,
+    "data-icon": "⚖️",
     "filter": null
   },
   "#goodsCells": {
@@ -638,12 +641,14 @@
     "opacity": 1,
     "stroke-width": 0.3,
     "data-circle": 1,
+    "data-size": 6,
     "filter": "url(#dropShadow01)"
   },
   "#goodsBurgs": {
     "opacity": 1,
     "stroke": "#41414f",
-    "stroke-width": 0.2
+    "stroke-width": 0.2,
+    "data-size": 3
   },
   "#tradeAnimation": {
     "opacity": 1,

@@ -177,6 +177,35 @@ describe("MarketsModule", () => {
       expect(globalThis.pack.markets).toHaveLength(1);
     });
 
+    it("removeMarket() should drop only the removed market's deals, cells and burg link", () => {
+      const market1: Market = { i: 1, centerBurgId: 1, color: "#ff0000", goods: {} };
+      const market2: Market = { i: 2, centerBurgId: 2, color: "#00ff00", goods: {} };
+      globalThis.pack.markets = [market1, market2];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [undefined as any, market1, market2];
+
+      const burg1: Burg = { i: 1, cell: 0, market: 1, plaza: 1 } as any;
+      const burg2: Burg = { i: 2, cell: 1, market: 2, plaza: 1 } as any;
+      globalThis.pack.burgs = [{ i: 0 } as any, burg1, burg2];
+      globalThis.pack.cells = { i: [0, 1], market: Uint16Array.from([1, 2]) } as any;
+      globalThis.pack.deals = [
+        { i: 1, seller: 1, sellerType: "market", buyer: 0, buyerType: "burg", good: 0, units: 1, price: 1, tax: 0 },
+        { i: 2, seller: 2, sellerType: "market", buyer: 0, buyerType: "burg", good: 0, units: 1, price: 1, tax: 0 }
+      ] as any;
+
+      marketsModule.removeMarket(1);
+
+      expect(globalThis.pack.markets).toEqual([market2]);
+      // Only market 1's deal is dropped; market 2's deal survives.
+      expect(globalThis.pack.deals).toHaveLength(1);
+      expect(globalThis.pack.deals[0].seller).toBe(2);
+      // Only market 1's cell and burg link are unassigned.
+      expect(Array.from(globalThis.pack.cells.market)).toEqual([0, 2]);
+      expect(burg1.market).toBe(0);
+      expect(burg1.plaza).toBe(0);
+      expect(burg2.market).toBe(2);
+    });
+
     it("collectRuralProduction() should ignore cells with no market (market 0)", () => {
       const market1: Market = { i: 1, centerBurgId: 1, color: "#ff0000", goods: {} };
       globalThis.pack.markets = [market1];

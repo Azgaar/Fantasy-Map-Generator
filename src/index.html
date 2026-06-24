@@ -1376,10 +1376,24 @@
               </tr>
             </tbody>
             <tbody id="styleGoods" style="display: none">
+              <tr data-tip="Set good marker (icon and circle) size in pixels">
+                <td>Marker size</td>
+                <td>
+                  <slider-input id="styleGoodsSize" min="1" max="20" step=".5"></slider-input>
+                </td>
+              </tr>
               <tr data-tip="Show or hide circle around good icons">
                 <td colspan="2">
                   <input id="styleGoodsCircle" class="checkbox" type="checkbox" />
                   <label for="styleGoodsCircle" class="checkbox-label">Show circle</label>
+                </td>
+              </tr>
+            </tbody>
+            <tbody id="styleGoodsBurgs" style="display: none">
+              <tr data-tip="Set burg production plate icon size in pixels. Plate and font scale together with it">
+                <td>Plate size</td>
+                <td>
+                  <slider-input id="styleGoodsBurgsSize" min="1" max="12" step=".5"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1388,6 +1402,24 @@
                 <td>Fill opacity</td>
                 <td>
                   <slider-input id="styleMarketsLayerFillOpacity" min="0" max="1" step=".01"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set market marker (circle) size in pixels">
+                <td>Marker size</td>
+                <td>
+                  <slider-input id="styleMarketsSize" min="1" max="12" step=".5"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set market marker emoji icon size in pixels">
+                <td>Icon size</td>
+                <td>
+                  <slider-input id="styleMarketsIconSize" min="1" max="20" step=".5"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set the emoji icon shown inside the market marker">
+                <td>Marker icon</td>
+                <td>
+                  <button id="styleMarketsIcon" type="button" style="background: none; padding: 0;">⚖️</button>
                 </td>
               </tr>
             </tbody>
@@ -8666,7 +8698,9 @@
             <metadata description="Wood by Callum Taylor from the Noun Project, redrawn by Azgaar" source="https://thenounproject.com/search/?q=Wood&i=53364" license="https://creativecommons.org/licenses/by/3.0"/>
             <g fill="#fff" stroke="#000" stroke-width="3"><path d="M23 33L49.5 5.6S58-3 68.2 4.705c5.8 5.3 6.8 11.3-3.18 21.3-.714.929-17 19-18 20m-4 5l22-25s9.01-9.02 19-1.02c10 8 1.02 19 1.02 19l-29 35m-51-17l14-16 41 20m-6-38l17-19m-12 54l15-17"/><circle cx="33" cy="43" r="14"/><path d="M33 50c-3 0-7-2-7-7"/><circle cx="17" cy="69" r="14"/><circle cx="46" cy="69" r="14"/><path d="M17 76c-3 0-7-2-7-7m36 7c-3 0-7-2-7-7"/></g>
           </symbol>
-        <g id="rose-coord-line" stroke="#3f3f3f">
+        </g>
+        <g id="defs-compass-rose" stroke-width="1.1">
+          <g id="rose-coord-line" stroke="#3f3f3f">
             <line id="sL1" x1="0" y1="-20000" x2="0" y2="20000" />
             <line id="sL2" x1="-20000" y1="0" x2="20000" y2="0" />
           </g>

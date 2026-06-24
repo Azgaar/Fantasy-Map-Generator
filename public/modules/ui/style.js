@@ -375,6 +375,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "";
     styleGoods.style.display = "block";
     styleGoodsCircle.checked = +el.attr("data-circle");
+    styleGoodsSize.value = el.attr("data-size") || 6;
   }
 
   if (styleElement === "goodsBurgs") {
@@ -382,6 +383,8 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.2";
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
+    styleGoodsBurgs.style.display = "block";
+    styleGoodsBurgsSize.value = el.attr("data-size") || 3;
   }
 
   if (styleElement === "markets") {
@@ -389,6 +392,9 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
     styleMarketsLayer.style.display = "block";
     styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
+    styleMarketsSize.value = el.attr("data-size") || 3;
+    styleMarketsIconSize.value = el.attr("font-size") || 5;
+    styleMarketsIcon.innerHTML = el.attr("data-icon") || "⚖️";
   }
 
   // update group options
@@ -994,8 +1000,36 @@ styleGoodsCircle.addEventListener("change", function () {
   drawGoods();
 });
 
+styleGoodsSize.on("change", function () {
+  goods.select("#goodsIcons").attr("data-size", this.value);
+  drawGoods();
+});
+
+styleGoodsBurgsSize.on("change", function () {
+  goods.select("#goodsBurgs").attr("data-size", this.value);
+  drawGoods();
+});
+
 styleMarketsLayerFillOpacity.on("input", e => {
   markets.attr("fill-opacity", e.target.value);
+});
+
+styleMarketsSize.on("change", function () {
+  markets.attr("data-size", this.value);
+  drawMarketsLayer();
+});
+
+styleMarketsIconSize.on("change", function () {
+  markets.attr("font-size", this.value);
+  drawMarketsLayer();
+});
+
+styleMarketsIcon.on("click", function () {
+  selectIcon(markets.attr("data-icon") || "⚖️", value => {
+    markets.attr("data-icon", value);
+    this.innerHTML = value;
+    drawMarketsLayer();
+  });
 });
 
 // request a URL to image to be used as a texture
