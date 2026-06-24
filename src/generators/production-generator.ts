@@ -230,7 +230,7 @@ export class ProductionModule {
 
   private buildMinWorkersByGood(goods: Good[], recipesByOutput: Recipe[][]): number[] {
     const minWorkersByGood: number[] = [];
-    for (const good of goods) minWorkersByGood[good.i] = 1;
+    for (const good of goods) minWorkersByGood[good.i] = recipesByOutput[good.i]?.length ? Infinity : 1;
 
     for (let iteration = 0; iteration < goods.length; iteration++) {
       let changed = false;

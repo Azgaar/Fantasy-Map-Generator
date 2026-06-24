@@ -518,8 +518,8 @@ function getProduction(pool) {
     const resource = Goods.get(+resourceId);
     if (!resource) continue;
     const { name, unit, icon } = resource;
-    const unitName = production > 1 ? unit + "s" : unit;
-    html += `<span data-tip="${name}: ${production} ${unitName}">
+    const unitName = production === 1 ? unit : unit + "s";
+    html += `<span data-tip="${name}: ${production} ${unitName} per day">
       <svg class="resIcon" width="1em" height="1em"><use href="#${icon}"></use></svg>
       <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
     </span>`;

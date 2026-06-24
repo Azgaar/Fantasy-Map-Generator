@@ -22,10 +22,19 @@ export function drawMarketsLayer() {
   TIME && console.timeEnd("drawMarketsLayer");
 }
 
+const MARKET_RADIUS = 3;
+const MARKET_FONT = 5;
+const MARKET_ICON = "⚖️";
+
 function buildMarketsContent(): string {
   const linegen = line().curve(curveBasisClosed);
   const getType = (cellId: number) => pack.cells.market[cellId];
   const isolines = getIsolines(pack, getType, { polygons: true });
+
+  // marker circle size, emoji size and emoji icon are independently user-configurable
+  const baseRadius = +markets.attr("data-size") || MARKET_RADIUS;
+  const baseFont = +markets.attr("font-size") || MARKET_FONT;
+  const icon = markets.attr("data-icon") || MARKET_ICON;
 
   return pack.markets
     .map(market => {
@@ -45,12 +54,12 @@ function buildMarketsContent(): string {
       const centerBurg = pack.burgs[market.centerBurgId];
       if (centerBurg) {
         const { x, y } = centerBurg;
-        const radius = Math.max(rn(3 + 1 / scale, 2), 2);
-        const fontSize = Math.max(rn(5 + 1 / scale, 2), 2);
+        const radius = Math.max(rn(baseRadius + 1 / scale, 2), 2);
+        const fontSize = Math.max(rn(baseFont + 1 / scale, 2), 2);
         const strokeWidth = rn(radius / 8, 2);
 
         content += `<circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" fill-opacity="1" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-        content += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">⚖️</text>`;
+        content += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">${icon}</text>`;
       }
 
       return `<g id="market${market.i}" data-id="${market.i}">${content}</g>`;

@@ -431,6 +431,12 @@ async function parseLoadedData(data, mapVersion) {
           nameBases[i] = { name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b };
         });
       }
+
+      // data[45]: custom good icons
+      if (data[45]) {
+        const goodIconsDefs = document.getElementById("good-icons");
+        if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
+      }
     }
 
     {

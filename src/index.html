@@ -1376,10 +1376,24 @@
               </tr>
             </tbody>
             <tbody id="styleGoods" style="display: none">
+              <tr data-tip="Set good marker (icon and circle) size in pixels">
+                <td>Marker size</td>
+                <td>
+                  <slider-input id="styleGoodsSize" min="1" max="20" step=".5"></slider-input>
+                </td>
+              </tr>
               <tr data-tip="Show or hide circle around good icons">
                 <td colspan="2">
                   <input id="styleGoodsCircle" class="checkbox" type="checkbox" />
                   <label for="styleGoodsCircle" class="checkbox-label">Show circle</label>
+                </td>
+              </tr>
+            </tbody>
+            <tbody id="styleGoodsBurgs" style="display: none">
+              <tr data-tip="Set burg production plate icon size in pixels. Plate and font scale together with it">
+                <td>Plate size</td>
+                <td>
+                  <slider-input id="styleGoodsBurgsSize" min="1" max="12" step=".5"></slider-input>
                 </td>
               </tr>
             </tbody>
@@ -1388,6 +1402,24 @@
                 <td>Fill opacity</td>
                 <td>
                   <slider-input id="styleMarketsLayerFillOpacity" min="0" max="1" step=".01"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set market marker (circle) size in pixels">
+                <td>Marker size</td>
+                <td>
+                  <slider-input id="styleMarketsSize" min="1" max="12" step=".5"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set market marker emoji icon size in pixels">
+                <td>Icon size</td>
+                <td>
+                  <slider-input id="styleMarketsIconSize" min="1" max="20" step=".5"></slider-input>
+                </td>
+              </tr>
+              <tr data-tip="Set the emoji icon shown inside the market marker">
+                <td>Marker icon</td>
+                <td>
+                  <button id="styleMarketsIcon" type="button" style="background: none; padding: 0;">⚖️</button>
                 </td>
               </tr>
             </tbody>
@@ -3401,7 +3433,7 @@
                 ></span>
                 <span
                   id="burgPlaza"
-                  data-tip="Shows whether the burg is a trade center (has big marketplace). Click to toggle"
+                  data-tip="Shows whether the burg is a trade center (market center). Click to toggle"
                   data-feature="plaza"
                   class="burgFeature icon-store"
                   style="font-size: 1em"
@@ -3425,11 +3457,11 @@
                 <div class="label">Production:</div>
                 <span id="burgProduction" style="display: inline-flex; flex-wrap: wrap; column-gap: 0.3em; max-width: 110px;"></span>
               </div>
-              <div data-tip="Wealth is gross product per population point for the current production run. It is a per-capita productivity measure, not the burg's cumulative treasury.">
+              <div data-tip="Gross product per population point, daily average">
                 <div class="label">Wealth</div>
                 <span id="burgWealth"></span>
               </div>
-              <div data-tip="Treasury is the burg's cumulative cash balance after all production, purchases, and sales.">
+              <div data-tip="Treasury balance after production, purchases, and sales">
                 <div class="label">Treasury</div>
                 <span id="burgTreasury"></span>
               </div>
@@ -5035,7 +5067,7 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 7em 6.8em 6em 4.6em 1.6em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 6em 5em 6.8em 6em 4.6em 1.6em;">
           <input
             type="checkbox"
             data-tip="Show or hide all goods on the Goods map"
@@ -5049,7 +5081,10 @@
           <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">
             Type&nbsp;
           </div>
-          <div data-tip="Total production units aggregated from cells and burgs. Click to sort" class="sortable icon-sort-number-down hide" data-sortby="produced">
+          <div data-tip="Unit of production. Click to sort" class="sortable alphabetically hide" data-sortby="unit">
+            Unit&nbsp;
+          </div>
+          <div data-tip="Total units produced daily in cells (raw) and burgs (manufactured). Click to sort" class="sortable icon-sort-number-down hide" data-sortby="produced">
             Produced&nbsp;
           </div>
           <div data-tip="Total units in stock across all markets and burg inventories. Click to sort" class="sortable hide" data-sortby="stock">
@@ -5062,7 +5097,7 @@
         <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
         <div id="goodsFooter" class="totalLine hide">
           <div data-tip="Number of goods (displayed / total)" style="margin-left: 5px">Goods:&nbsp;<span id="goodsDisplayed">0</span> of <span id="goodsNumber">0</span></div>
-          <div data-tip="Total amount of goods produced by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
+          <div data-tip="Total units produced daily by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
           <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
         </div>
         <div id="goodsBottom">
@@ -8666,7 +8701,9 @@
             <metadata description="Wood by Callum Taylor from the Noun Project, redrawn by Azgaar" source="https://thenounproject.com/search/?q=Wood&i=53364" license="https://creativecommons.org/licenses/by/3.0"/>
             <g fill="#fff" stroke="#000" stroke-width="3"><path d="M23 33L49.5 5.6S58-3 68.2 4.705c5.8 5.3 6.8 11.3-3.18 21.3-.714.929-17 19-18 20m-4 5l22-25s9.01-9.02 19-1.02c10 8 1.02 19 1.02 19l-29 35m-51-17l14-16 41 20m-6-38l17-19m-12 54l15-17"/><circle cx="33" cy="43" r="14"/><path d="M33 50c-3 0-7-2-7-7"/><circle cx="17" cy="69" r="14"/><circle cx="46" cy="69" r="14"/><path d="M17 76c-3 0-7-2-7-7m36 7c-3 0-7-2-7-7"/></g>
           </symbol>
-        <g id="rose-coord-line" stroke="#3f3f3f">
+        </g>
+        <g id="defs-compass-rose" stroke-width="1.1">
+          <g id="rose-coord-line" stroke="#3f3f3f">
             <line id="sL1" x1="0" y1="-20000" x2="0" y2="20000" />
             <line id="sL2" x1="-20000" y1="0" x2="20000" y2="0" />
           </g>

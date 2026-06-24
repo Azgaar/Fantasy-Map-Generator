@@ -149,15 +149,14 @@ export function open(): void {
 
   for (const { id, key } of SLIDER_DEFS) {
     const slider = ensureEl<HTMLInputElement>(id);
-    const output = ensureEl(`${id}Out`);
     const resetBtn = ensureEl(`${id}Reset`);
 
     const defaultVal = defaultCoastSettings[key] as number;
 
-    slider.on("input", () => {
-      const value = slider.valueAsNumber;
-      defaultCoastSettings[key] = value;
-      output.textContent = String(value);
+    slider.on("input", e => {
+      // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
+      if (e.target !== e.currentTarget) return;
+      defaultCoastSettings[key] = slider.valueAsNumber;
       updatePreviews();
       drawFeatures();
     });
@@ -165,7 +164,6 @@ export function open(): void {
     resetBtn.on("click", () => {
       (defaultCoastSettings[key] as number) = defaultVal;
       slider.value = String(defaultVal);
-      output.textContent = String(defaultVal);
       updatePreviews();
       drawFeatures();
     });
@@ -206,9 +204,7 @@ export function open(): void {
         const val = preset[key as keyof typeof preset];
         defaultCoastSettings[key] = val;
         const slider = ensureEl<HTMLInputElement>(id);
-        const output = ensureEl(`${id}Out`);
         slider.value = String(val);
-        output.textContent = String(val);
       }
       updatePreviews();
       drawFeatures();
@@ -237,11 +233,7 @@ function buildDialogHTML(): string {
       <tr data-tip="${tip}">
         <td style="padding:2px 0;white-space:nowrap">${label}</td>
         <td style="padding:2px 4px">
-          <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"
-            style="width:160px;vertical-align:middle"/>
-        </td>
-        <td style="padding:2px 6px;min-width:2em;text-align:right">
-          <span id="${id}Out" style="font-family:monospace;font-size:.85em">${value}</span>
+          <slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${value}"></slider-input>
         </td>
         <td style="padding:2px 0">
           <button id="${id}Reset" title="Reset to default"
@@ -252,6 +244,9 @@ function buildDialogHTML(): string {
 
   return /* html */ `
     <div id="coastlineSettingsDialog" style="display:none">
+      <style>
+        #coastlineSettingsDialog slider-input input[type=range] { width:100%; }
+      </style>
       <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #ddd">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
           <input id="coastEnabled" type="checkbox" ${defaultCoastSettings.enabled ? "checked" : ""}
@@ -267,6 +262,11 @@ function buildDialogHTML(): string {
       </div>
       <div id="coastSliders">
         <table style="border-collapse:collapse;width:100%">
+          <colgroup>
+            <col style="width:35%">
+            <col style="width:60%">
+            <col style="width:5%">
+          </colgroup>
           <tbody>${rows}</tbody>
         </table>
       </div>

@@ -109,6 +109,13 @@ function prepareMapData() {
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
 
+  // store custom good icons
+  const goodIconsEl = ensureEl("good-icons");
+  const customGoodIcons = Array.from(goodIconsEl.querySelectorAll('[id^="good-custom-"]') || [])
+    .map(el => el.outerHTML)
+    .join("")
+    .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load
+
   // store name array only if not the same as default
   const defaultNB = Names.getNameBases();
   const namesData = nameBases
@@ -167,7 +174,8 @@ function prepareMapData() {
     goods,
     markets,
     deals,
-    pack.cells.market
+    pack.cells.market,
+    customGoodIcons
   ].join("\r\n");
   return mapData;
 }

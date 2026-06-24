@@ -439,8 +439,6 @@ button.options {
 
 button.active {
   background-color: var(--header);
-  border-color: var(--dark-solid);
-  border-radius: 3px;
   color: white;
 }
 
@@ -2498,6 +2496,10 @@ div.states > .goodIcon {
 }
 div.states > .goodName {
   width: 7em;
+}
+
+div.states > .goodUnit {
+  width: 4em;
 }
 
 div.states > .goodProduced,

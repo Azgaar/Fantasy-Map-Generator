@@ -191,11 +191,10 @@ function showMapTooltip(point, e, i, g) {
   if (group === "goods") {
     const el = e.target;
     const bonusGoodId = pack.cells.good[i];
-    const displayedGoods = GoodsEditor.getDisplayedGoods();
     const name = id => (Goods.get(+id)?.name || "unknown").toLowerCase();
     const formatProduct = produced =>
       Object.entries(produced).reduce((acc, [goodId, amount]) => {
-        if (displayedGoods.has(+goodId))
+        if (Goods.get(+goodId)?.visible)
           acc.push(`${name(goodId)} ${amount}${+goodId === bonusGoodId ? " (bonus)" : ""}`);
         return acc;
       }, []);

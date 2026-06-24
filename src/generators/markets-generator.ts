@@ -6,8 +6,8 @@ import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
 
-const PRICE_FLOOR_FACTOR = 0.25;
-const PRICE_CEILING_FACTOR = 3.0;
+const PRICE_FLOOR_FACTOR = 0.1;
+const PRICE_CEILING_FACTOR = 5.0;
 const LAPLACE_PRICE_SMOOTHING = 5;
 const MARKET_PRESSURE_FACTOR = 0.01;
 const MARKET_MARGIN = 0.1;
@@ -274,29 +274,33 @@ export class MarketsModule {
     return market;
   }
 
-  removeMarket(marketId: number): boolean {
-    const marketIndex = pack.markets.findIndex(m => m.i === marketId);
-    if (marketIndex === -1) return false;
+  removeMarket(marketId: number) {
+    const market = this.get(marketId);
+    if (!market) return;
 
-    const market = pack.markets[marketIndex];
-    const centerBurg = (pack.burgs as Burg[])[market.centerBurgId];
+    const centerBurg = pack.burgs[market.centerBurgId];
     if (centerBurg) centerBurg.plaza = 0;
 
-    pack.markets.splice(marketIndex, 1);
-    pack.deals = [];
+    // drop the deals tied to this market
+    pack.deals = pack.deals.filter(
+      deal =>
+        !(
+          (deal.sellerType === "market" && deal.seller === marketId) ||
+          (deal.buyerType === "market" && deal.buyer === marketId)
+        )
+    );
 
-    if (pack.markets.length) {
-      this.expandTerritories();
-    } else {
-      if (pack.cells.market) pack.cells.market.fill(0);
-      for (const burg of pack.burgs as Burg[]) {
-        if (!burg.i || burg.removed) continue;
-        burg.market = 0;
-        burg.plaza = 0;
-      }
+    for (let i = 0; i < pack.cells.market.length; i++) {
+      if (pack.cells.market[i] === marketId) pack.cells.market[i] = 0;
     }
 
-    return true;
+    for (const burg of pack.burgs) {
+      if (!burg.i || burg.removed) continue;
+      if (burg.market === marketId) burg.market = 0;
+    }
+
+    pack.markets = pack.markets.filter(m => m.i !== marketId);
+    this.indexMarkets();
   }
 
   quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {
@@ -383,7 +387,7 @@ export class MarketsModule {
     const TRADE_RESERVE_FACTOR = 0.2;
     const MIN_UNIT = 0.1;
     const MIN_PROFIT = 1;
-    const DISTANCE_COST_FACTOR = 0.5;
+    const DISTANCE_COST_FACTOR = 1;
 
     const travelCost: Record<number, Record<number, number>> = {};
     for (const m1 of pack.markets) {

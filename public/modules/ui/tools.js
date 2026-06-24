@@ -494,7 +494,7 @@ function regenerateBurgs() {
 
 function regenerateGoods() {
   Goods.generate({ randomSeed: Math.random() });
-  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
+  if (layerIsOn("toggleGoods")) drawGoods();
   refreshAllEditors();
 }
 
@@ -516,7 +516,7 @@ function regenerateEconomy() {
   States.collectTaxes();
 
   if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
-  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
+  if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleTrade")) TradeAnimation.restart();
   refreshAllEditors();
 }
@@ -526,7 +526,7 @@ function regenerateProduction() {
   for (const m of pack.markets || []) m.goods = {}; // empty Markets stock
   Production.produce();
   States.collectTaxes();
-  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor.getDisplayedGoods());
+  if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleTrade")) TradeAnimation.restart();
   refreshAllEditors();
 }
