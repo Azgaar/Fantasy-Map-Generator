@@ -245,8 +245,7 @@ function buildDialogHTML(): string {
   return /* html */ `
     <div id="coastlineSettingsDialog" style="display:none">
       <style>
-        #coastlineSettingsDialog slider-input input[type=range] { width:150px; vertical-align:middle; }
-        #coastlineSettingsDialog slider-input input[type=number] { width:3.5em; }
+        #coastlineSettingsDialog slider-input input[type=range] { width:100%; }
       </style>
       <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #ddd">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
@@ -263,6 +262,11 @@ function buildDialogHTML(): string {
       </div>
       <div id="coastSliders">
         <table style="border-collapse:collapse;width:100%">
+          <colgroup>
+            <col style="width:35%">
+            <col style="width:60%">
+            <col style="width:5%">
+          </colgroup>
           <tbody>${rows}</tbody>
         </table>
       </div>

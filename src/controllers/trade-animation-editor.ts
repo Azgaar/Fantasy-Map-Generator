@@ -131,7 +131,6 @@ function buildDialogHTML(): string {
       <style>
         #tradeAnimationEditor slider-input { width: 100%; }
         #tradeAnimationEditor slider-input input[type=range] { flex: 1; min-width: 0; }
-        #tradeAnimationEditor slider-input input[type=number] { width: 4em; }
       </style>
       <table style="border-collapse: collapse;width:100%">
         <tbody>${rows}</tbody>
