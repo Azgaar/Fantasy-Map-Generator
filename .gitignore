@@ -8,5 +8,6 @@
 /test-results
 /_bmad
 /_bmad-output
+/memory
 .github/agents/bmad-*
 .github/prompts/bmad-*

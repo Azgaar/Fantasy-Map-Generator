@@ -178,6 +178,56 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
+  if (group === "markets") {
+    const marketEl = e.target.closest("[data-id]");
+    if (marketEl) {
+      const market = Markets.marketById[+marketEl.dataset.id];
+      const centerBurg = market && pack.burgs[market.centerBurgId];
+      if (!centerBurg) return;
+      return tip(`${centerBurg.name} market. Click to view`);
+    }
+  }
+
+  if (group === "goods") {
+    const el = e.target;
+    const bonusGoodId = pack.cells.good[i];
+    const displayedGoods = GoodsEditor.getDisplayedGoods();
+    const name = id => (Goods.get(+id)?.name || "unknown").toLowerCase();
+    const formatProduct = produced =>
+      Object.entries(produced).reduce((acc, [goodId, amount]) => {
+        if (displayedGoods.has(+goodId))
+          acc.push(`${name(goodId)} ${amount}${+goodId === bonusGoodId ? " (bonus)" : ""}`);
+        return acc;
+      }, []);
+
+    if (el.closest("#goodsIcons")) {
+      const good = Goods.get(+el.closest("[data-i]")?.dataset.i);
+      return tip(`${good?.name} bonus resource. Click to open Goods Editor and select displayed goods`);
+    }
+
+    if (el.closest("#goodsCells")) {
+      const pop = pack.cells.pop[i];
+      const biomeId = pack.cells.biome[i];
+      const cultureType = pack.cultures[pack.cells.culture[i]]?.type || "Generic";
+      const produced = Production.getCellProduction(i, Goods.getBiomesProduction());
+      return tip(
+        `Cell rural production: ${formatProduct(produced).join(", ")}. Click to select displayed goods in Goods Editor`
+      );
+    }
+
+    if (el.closest("#goodsBurgs")) {
+      const burgEl = el.closest("[data-id]");
+      const burgId = burgEl && +burgEl.dataset.id;
+      const burg = burgId && pack.burgs[burgId];
+      if (!burg || burg.removed) return;
+      d3.select(burgEl).raise();
+      const produced = Production.getBurgProduction(burg);
+      return tip(`${burg.name} urban production: ${formatProduct(produced).join(", ")}. Click to view`);
+    }
+
+    return;
+  }
+
   if (group === "ruler") {
     const tag = e.target.tagName;
     const className = e.target.getAttribute("class");
@@ -239,7 +289,8 @@ function showMapTooltip(point, e, i, g) {
     if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
     if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
     if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
-    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(ensureEl("mergeStatesForm"), state);
+    if (document.getElementById("mergeStatesForm")?.offsetParent)
+      highlightEditorLine(ensureEl("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
@@ -289,8 +340,36 @@ function updateCellInfo(point, i, g) {
     : "no";
   infoPopulation.innerHTML = getFriendlyPopulation(i);
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
-  infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
+  infoFeature.innerHTML = f ? (pack.features[f].group || pack.features[f].type) + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
+  infoGood.innerHTML = cells.good[i] ? Goods.get(cells.good[i]).name + " (" + cells.good[i] + ")" : "no";
+
+  const marketId = cells.market && cells.market[i];
+  if (marketId) {
+    const market = Markets.get(marketId);
+    const centerBurg = market && pack.burgs[market.centerBurgId];
+    infoMarket.innerHTML = centerBurg ? `${centerBurg.name} market (${marketId})` : `market ${marketId}`;
+  } else {
+    infoMarket.innerHTML = "no";
+  }
+
+  const produced = Production.getCellProduction(i, Goods.getBiomesProduction());
+  const cellEntries = Object.entries(produced).filter(([, amt]) => amt > 0);
+  infoCellProduction.innerHTML = cellEntries.length
+    ? cellEntries.map(([id, amt]) => `${Goods.get(+id)?.name || id}: ${rn(amt, 2)}`).join(", ")
+    : "none";
+
+  const burgId = cells.burg[i];
+  if (burgId) {
+    const burg = pack.burgs[burgId];
+    const produced = Production.getBurgProduction(burg);
+    const burgEntries = Object.entries(produced).filter(([, amt]) => amt > 0);
+    infoBurgProduction.innerHTML = burgEntries.length
+      ? burgEntries.map(([id, amt]) => `${Goods.get(+id)?.name || id}: ${rn(amt, 2)}`).join(", ")
+      : "none";
+  } else {
+    infoBurgProduction.innerHTML = "n/a";
+  }
 }
 
 function getGeozone(latitude) {
@@ -344,21 +423,6 @@ function getFriendlyHeight([x, y]) {
   return getHeight(h);
 }
 
-function getHeight(h, abs) {
-  const unit = heightUnit.value;
-  let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m")
-    unitRatio = 1; // if meter
-  else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-  let height = -990;
-  if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
-  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
-
-  if (abs) height = Math.abs(height);
-  return rn(height * unitRatio) + " " + unit;
-}
-
 function getPrecipitation(prec) {
   return prec * 100 + " mm";
 }
@@ -397,7 +461,7 @@ function highlightEmblemElement(type, el) {
   const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
   if (type === "burg") {
-    const {x, y} = el;
+    const { x, y } = el;
     debug
       .append("circle")
       .attr("cx", x)
@@ -576,6 +640,6 @@ function showInfo() {
         $(this).dialog("close");
       }
     },
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }

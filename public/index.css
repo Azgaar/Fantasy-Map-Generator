@@ -141,8 +141,18 @@ a {
 #coastline,
 #armies,
 #ice,
-#emblems {
+#emblems,
+#goodsCells,
+#goodsIcons,
+#goodsBurgs,
+#markets {
   cursor: pointer;
+}
+
+#markets > g > path,
+#markets > g > text {
+  user-select: none;
+  pointer-events: none;
 }
 
 #temperature {
@@ -429,6 +439,8 @@ button.options {
 
 button.active {
   background-color: var(--header);
+  border-color: var(--dark-solid);
+  border-radius: 3px;
   color: white;
 }
 
@@ -1451,7 +1463,7 @@ div.totalLine > div {
   display: inline-block;
 }
 
-div.states > input {
+div.states > input:not([type="checkbox"]) {
   width: 7em;
   background: none;
   border: 0;
@@ -1481,7 +1493,8 @@ div.states .icon-pin,
 div.states .icon-flag-empty,
 div.states .icon-cw,
 div.states .icon-lock,
-div.states .icon-lock-open {
+div.states .icon-lock-open,
+div.states .icon-target {
   cursor: pointer;
 }
 
@@ -2409,6 +2422,48 @@ svg.button {
   }
 }
 
+#tourPromptButton {
+  position: fixed;
+  bottom: 100px;
+  right: 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--bg-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  animation: fadeIn 1s ease-in;
+  z-index: 9999;
+}
+
+#tourPromptButton button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#tourPromptButton svg path {
+  fill: #000000;
+  stroke: none;
+}
+
+#tourPromptButton:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+#tourPromptButton:hover svg path {
+  fill: none;
+  stroke: #000000;
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
 @media print {
   div,
   canvas {
@@ -2434,4 +2489,122 @@ svg.button {
   body {
     background: #25252a;
   }
+}
+
+/* Goods */
+div.states > .goodIcon {
+  margin: 0;
+  vertical-align: middle;
+}
+div.states > .goodName {
+  width: 7em;
+}
+
+div.states > .goodProduced,
+div.states > .goodStock,
+div.states > .goodBasePrice,
+div.states > .goodBuyPrice,
+div.states > .goodSellPrice {
+  width: 5em;
+  text-align: right;
+}
+
+div.states > .goodEdit {
+  padding-left: 1em;
+}
+
+/* Market Goods */
+div.states > .marketGoodName {
+  width: 8.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+div.states > .marketGoodStock,
+div.states > .marketGoodPrice,
+div.states > .goodUnits,
+div.states > .goodPrice,
+div.states > .goodValue {
+  width: 5em;
+  text-align: right;
+}
+
+/* Market Deals */
+div.states > .marketDealUnits {
+  width: 4em;
+  text-align: right;
+}
+
+div.states > .marketDealParty {
+  width: 8em;
+}
+
+div.states > .marketDealIncome {
+  width: 5em;
+  text-align: right;
+}
+
+div.states .marketBadge {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0 0.4em;
+  font-size: 0.8em;
+  font-weight: bold;
+  line-height: 1.35;
+}
+
+.fmg-tour.driver-popover {
+  border-radius: 4px;
+}
+
+.fmg-tour .driver-popover-title {
+  font-size: 1.1em;
+  border-bottom: 1px solid;
+  padding-bottom: 0.4em;
+  margin-bottom: 0.5em;
+}
+
+.fmg-tour .driver-popover-description {
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.fmg-tour .driver-popover-footer button {
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.fmg-tour .driver-popover-footer button:hover {
+  background-color: #e0e0e0;
+}
+
+.fmg-tour .driver-popover-progress-text {
+  font-size: 0.8em;
+}
+
+/* Tooltip demo step: hide overlay and restore all pointer events so the map is fully hoverable */
+body.tour-free-roam .driver-overlay {
+  opacity: 0 !important;
+}
+
+body.tour-free-roam * {
+  pointer-events: auto !important;
+}
+
+#startTourButton {
+  display: block;
+  margin: 0.8em auto 0.4em auto;
+  padding: 0.4em 1.2em;
+  background-color: #3a3a5c;
+  border: 1px solid #5a5a7a;
+  color: #e8d5a3;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+
+#startTourButton:hover {
+  background-color: #4a4a6c;
 }

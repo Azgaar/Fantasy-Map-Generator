@@ -7,6 +7,8 @@ function editBurg(id) {
 
   const burg = id || d3.event.target.dataset.id;
   elSelected = burgLabels.select("[data-id='" + burg + "']");
+  if (!elSelected.size()) elSelected = burgIcons.select("[data-id='" + burg + "']");
+
   burgLabels.selectAll("text").call(d3.drag().on("start", dragBurgLabel)).classed("draggable", true);
   updateGroupsList();
   updateBurgValues();
@@ -15,7 +17,7 @@ function editBurg(id) {
     title: "Edit Burg",
     resizable: false,
     close: closeBurgEditor,
-    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"}
+    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
   });
 
   if (modules.editBurg) return;
@@ -48,10 +50,11 @@ function editBurg(id) {
   ensureEl("burgLock").on("click", toggleBurgLockButton);
   ensureEl("burgRemove").on("click", removeSelectedBurg);
   ensureEl("burgTemperatureGraph").on("click", showTemperatureGraph);
+  ensureEl("burgProductionOverview").on("click", showProductionOverview);
 
   function updateGroupsList() {
     ensureEl("burgGroup").options.length = 0; // remove all options
-    for (const {name} of options.burgs.groups) {
+    for (const { name } of options.burgs.groups) {
       ensureEl("burgGroup").options.add(new Option(name, name));
     }
   }
@@ -68,6 +71,8 @@ function editBurg(id) {
     ensureEl("burgGroup").value = b.group;
     ensureEl("burgType").value = b.type || "Generic";
     ensureEl("burgPopulation").value = rn(b.population * populationRate * urbanization);
+    ensureEl("burgWealth").innerHTML = "🟡 " + rn(b.population > 0 ? (b.product || 0) / b.population : 0, 2);
+    ensureEl("burgTreasury").innerHTML = "🟡 " + rn(b.treasury || 0, 2);
     ensureEl("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // update list and select culture
@@ -82,7 +87,6 @@ function editBurg(id) {
       "Average yearly temperature is like in " + getTemperatureLikeness(temperature);
     ensureEl("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
-    // toggle features
     ensureEl("burgCapital").classList.toggle("inactive", !b.capital);
     ensureEl("burgPort").classList.toggle("inactive", !b.port);
     ensureEl("burgCitadel").classList.toggle("inactive", !b.citadel);
@@ -90,6 +94,7 @@ function editBurg(id) {
     ensureEl("burgPlaza").classList.toggle("inactive", !b.plaza);
     ensureEl("burgTemple").classList.toggle("inactive", !b.temple);
     ensureEl("burgShanty").classList.toggle("inactive", !b.shanty);
+    ensureEl("burgProduction").innerHTML = getProduction(Production.getBurgProduction(b));
 
     updateBurgLockIcon();
 
@@ -182,10 +187,26 @@ function editBurg(id) {
       const anchor = document.querySelector("#anchors [data-id='" + burgId + "']");
       if (anchor) anchor.remove();
     } else {
-      const haven = pack.cells.haven[burg.cell];
-      if (!haven) tip("Port haven is not found, system won't be able to make a searoute", false, "warn");
-      const portFeature = haven ? pack.cells.f[haven] : -1;
-      burg.port = portFeature;
+      const { cells, features } = pack;
+      const haven = cells.haven[burg.cell];
+      let portFeatureId;
+
+      if (haven) {
+        const featureId = cells.f[haven];
+        const feature = features[featureId];
+        portFeatureId =
+          feature?.type === "lake" && feature.outlet
+            ? (Rivers.resolveLakeDrainFeature(featureId) ?? featureId)
+            : featureId;
+      } else {
+        portFeatureId = Rivers.resolveDrainFeature(burg.cell);
+        if (!portFeatureId) {
+          tip("No navigable water body found downstream, cannot assign port", false, "warn");
+          return;
+        }
+      }
+
+      burg.port = portFeatureId;
 
       anchors
         .select("#" + burg.group)
@@ -199,7 +220,7 @@ function editBurg(id) {
   }
 
   function toggleCapital(burgId) {
-    const {burgs, states} = pack;
+    const { burgs, states } = pack;
 
     if (burgs[burgId].capital)
       return tip("To change capital please assign a capital status to another burg of this state", false, "error");
@@ -301,7 +322,7 @@ function editBurg(id) {
 
     prompt(
       "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
-      {default: Burgs.getPreview(burg).link, required: false},
+      { default: Burgs.getPreview(burg).link, required: false },
       link => {
         if (link) burg.link = link;
         else delete burg.link;
@@ -398,12 +419,28 @@ function editBurg(id) {
     showBurgTemperatureGraph(id);
   }
 
+  function showProductionOverview() {
+    const id = +elSelected.attr("data-id");
+    ProductionOverview.open(id);
+  }
+
   function removeSelectedBurg() {
     const burgId = +elSelected.attr("data-id");
     const burg = pack.burgs[burgId];
 
     if (burg.capital) {
       alertMessage.innerHTML = /* html */ `You cannot remove the capital. You must change the state capital first`;
+      $("#alert").dialog({
+        resizable: false,
+        title: "Remove burg",
+        buttons: {
+          Ok: function () {
+            $(this).dialog("close");
+          }
+        }
+      });
+    } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
+      alertMessage.innerHTML = /* html */ `You cannot remove a market center burg. Please remove the market first`;
       $("#alert").dialog({
         resizable: false,
         title: "Remove burg",
@@ -472,6 +509,23 @@ const meanTempCityMap = {
   29: "Niamey (Niger)",
   30: "Khartoum (Sudan)"
 };
+
+function getProduction(pool) {
+  if (!pool) return "";
+  let html = "";
+  const sorted = Object.entries(pool).sort(([, a], [, b]) => b - a);
+  for (const [resourceId, production] of sorted) {
+    const resource = Goods.get(+resourceId);
+    if (!resource) continue;
+    const { name, unit, icon } = resource;
+    const unitName = production > 1 ? unit + "s" : unit;
+    html += `<span data-tip="${name}: ${production} ${unitName}">
+      <svg class="resIcon" width="1em" height="1em"><use href="#${icon}"></use></svg>
+      <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
+    </span>`;
+  }
+  return html;
+}
 
 function getTemperatureLikeness(temperature) {
   if (temperature < -5) return "Yakutsk (Russia)";

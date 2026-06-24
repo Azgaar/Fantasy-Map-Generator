@@ -163,7 +163,7 @@ function applyStyleWithUiRefresh(style) {
 }
 
 function addStylePreset() {
-  $("#styleSaver").dialog({title: "Style Saver", width: "26em", position: {my: "center", at: "center", of: "svg"}});
+  $("#styleSaver").dialog({ title: "Style Saver", width: "26em", position: { my: "center", at: "center", of: "svg" } });
 
   const styleName = stylePreset.value.replace(customPresetPrefix, "");
   document.getElementById("styleSaverName").value = styleName;
@@ -222,6 +222,11 @@ function addStylePreset() {
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+      "#markets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "filter"],
+      "#goodsCells": ["opacity", "filter"],
+      "#goodsIcons": ["opacity", "stroke-width", "data-circle", "filter"],
+      "#goodsBurgs": ["opacity", "stroke", "stroke-width", "filter"],
+      "#tradeAnimation": ["opacity", "filter"],
       "#rural": ["stroke"],
       "#urban": ["stroke"],
       "#freshwater": ["opacity", "fill", "stroke", "stroke-width", "filter"],
@@ -355,7 +360,7 @@ function addStylePreset() {
       "filter"
     ];
     const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
-    options.burgs.groups.forEach(({name}) => {
+    options.burgs.groups.forEach(({ name }) => {
       attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
       attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#anchors > g#${name}`] = anchorsAttributes;

@@ -1,4 +1,5 @@
 "use strict";
+
 function editProvinces() {
   if (customization) return;
   closeDialogs("#provincesEditor, .stable");
@@ -19,7 +20,7 @@ function editProvinces() {
     resizable: false,
     width: fitContent(),
     close: closeProvincesEditor,
-    position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 
   // add listeners
@@ -36,6 +37,7 @@ function editProvinces() {
   ensureEl("provincesManuallyCancel").on("click", () => exitProvincesManualAssignment());
   ensureEl("provincesRelease").on("click", triggerProvincesRelease);
   ensureEl("provincesAdd").on("click", enterAddProvinceMode);
+  ensureEl("provincesMerge").on("click", openProvinceMergeDialog);
   ensureEl("provincesRecolor").on("click", recolorProvinces);
 
   body.on("click", function (ev) {
@@ -51,8 +53,9 @@ function editProvinces() {
     else if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA" + p, pack.provinces[p]);
     else if (cl.contains("icon-star-empty")) capitalZoomIn(p);
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
-    else if (cl.contains("icon-dot-circled")) overviewBurgs({stateId});
+    else if (cl.contains("icon-dot-circled")) overviewBurgs({ stateId });
     else if (cl.contains("culturePopulation")) changePopulation(p);
+    else if (cl.contains("icon-target")) highlightElement(provs.select("#province" + p).node(), 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
     else if (cl.contains("icon-lock") || cl.contains("icon-lock-open")) updateLockStatus(p, cl);
@@ -73,7 +76,7 @@ function editProvinces() {
   }
 
   function collectStatistics() {
-    const {cells, provinces, burgs} = pack;
+    const { cells, provinces, burgs } = pack;
 
     provinces.forEach(p => {
       if (!p.i || p.removed) return;
@@ -178,6 +181,7 @@ function editProvinces() {
           data-tip="Declare province independence (turn non-capital province with burgs into a new state)"
           class="icon-flag-empty ${separable ? "" : "placeholder"} hide"
         ></span>
+        <span data-tip="Locate the province" class="icon-target hide"></span>
         <span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
         <span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"} hide"></span>
         <span data-tip="Remove the province" class="icon-trash-empty hide"></span>
@@ -195,8 +199,8 @@ function editProvinces() {
 
     body.querySelectorAll("div.states").forEach(el => {
       el.on("click", selectProvinceOnLineClick);
-      el.on("mouseenter", ev => provinceHighlightOn(ev));
-      el.on("mouseleave", ev => provinceHighlightOff(ev));
+      el.on("mouseenter", provinceHighlightOn);
+      el.on("mouseleave", provinceHighlightOff);
     });
 
     if (body.dataset.type === "percentage") {
@@ -204,7 +208,7 @@ function editProvinces() {
       togglePercentageMode();
     }
     applySorting(provincesHeader);
-    $("#provincesEditor").dialog({width: fitContent()});
+    $("#provincesEditor").dialog({ width: fitContent() });
   }
 
   function getCapitalOptions(burgs, capital) {
@@ -232,16 +236,22 @@ function editProvinces() {
   }
 
   function provinceHighlightOff(event) {
-    const province = +event.target.dataset.id;
-    const el = body.querySelector(`div[data-id='${province}']`);
-    if (el) el.classList.remove("active");
+    const province = event?.target ? +event.target.dataset.id : null;
+    if (province) {
+      const el = body.querySelector(`div[data-id='${province}']`);
+      if (el) el.classList.remove("active");
+    }
 
-    if (!layerIsOn("toggleProvinces")) return;
+    if (!layerIsOn("toggleProvinces") || !province) {
+      debug.selectAll(".highlight").remove();
+      return;
+    }
     provs
       .select("#province" + province)
       .transition()
       .attr("stroke-width", null)
       .attr("stroke", null);
+    debug.selectAll(".highlight").remove();
   }
 
   function changeFill(el) {
@@ -280,9 +290,9 @@ function editProvinces() {
   }
 
   function declareProvinceIndependence(provinceId) {
-    const {states, provinces, cells, burgs} = pack;
+    const { states, provinces, cells, burgs } = pack;
     const province = provinces[provinceId];
-    const {name, burg: burgId, burgs: provinceBurgs} = province;
+    const { name, burg: burgId, burgs: provinceBurgs } = province;
 
     if (provinceBurgs.some(b => burgs[b].capital))
       return tip(
@@ -304,7 +314,7 @@ function editProvinces() {
     province.burgs.forEach(b => (burgs[b].state = newStateId));
 
     // define new state attributes
-    const {cell: center, culture} = burgs[burgId];
+    const { cell: center, culture } = burgs[burgId];
     const color = getRandomColor();
     const coa = province.coa;
     const coaEl = ensureEl("provinceCOA" + provinceId);
@@ -360,7 +370,7 @@ function editProvinces() {
 
     // remove old province
     states[oldStateId].provinces = states[oldStateId].provinces.filter(p => p !== provinceId);
-    provinces[provinceId] = {i: provinceId, removed: true};
+    provinces[provinceId] = { i: provinceId, removed: true };
 
     return [oldStateId, newStateId];
   }
@@ -381,7 +391,7 @@ function editProvinces() {
     // redraw emblems
     allStates.forEach(stateId => {
       emblems.select(`#stateEmblems > use[data-i='${stateId}']`)?.remove();
-      const {coa, pole} = pack.states[stateId];
+      const { coa, pole } = pack.states[stateId];
       COArenderer.add("state", stateId, coa, ...pole);
     });
 
@@ -408,11 +418,11 @@ function editProvinces() {
 
     alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
       <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${
-      p.burgs.length ? "" : "disabled"
-    } />
+        p.burgs.length ? "" : "disabled"
+      } />
       <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(
-      total
-    )}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+        total
+      )}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
     const update = function () {
       const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -437,7 +447,7 @@ function editProvinces() {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
 
     function applyPopulationChange() {
@@ -493,7 +503,7 @@ function editProvinces() {
           if (ensureEl(coaId)) ensureEl(coaId).remove();
           emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
 
-          pack.provinces[p] = {i: p, removed: true};
+          pack.provinces[p] = { i: p, removed: true };
 
           const g = provs.select("#provincesBody");
           g.select("#province" + p).remove();
@@ -531,7 +541,7 @@ function editProvinces() {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
 
     if (modules.editProvinceName) return;
@@ -599,7 +609,7 @@ function editProvinces() {
       const totalPopulation = +provincesFooterPopulation.dataset.population;
 
       body.querySelectorAll(":scope > div").forEach(function (el) {
-        const {cells, burgs, area, population} = el.dataset;
+        const { cells, burgs, area, population } = el.dataset;
         el.querySelector(".provinceBurgs").innerText = rn((+burgs / totalBurgs) * 100) + "%";
         el.querySelector(".biomeArea").innerHTML = rn((+area / totalArea) * 100) + "%";
         el.querySelector(".culturePopulation").innerHTML = rn((+population / totalPopulation) * 100) + "%";
@@ -613,7 +623,7 @@ function editProvinces() {
   function showChart() {
     // build hierarchy tree
     const getColor = s => (!s.i || s.removed || s.color[0] !== "#" ? "#666" : d3.color(s.color).darker());
-    const states = pack.states.map(s => ({id: s.i, state: s.i ? 0 : null, color: getColor(s)}));
+    const states = pack.states.map(s => ({ id: s.i, state: s.i ? 0 : null, color: getColor(s) }));
     const provinces = pack.provinces
       .filter(p => p.i && !p.removed)
       .map(p => {
@@ -637,7 +647,7 @@ function editProvinces() {
 
     const width = 300 + 300 * uiSize.value,
       height = 90 + 90 * uiSize.value;
-    const margin = {top: 10, right: 10, bottom: 0, left: 10};
+    const margin = { top: 10, right: 10, bottom: 0, left: 10 };
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
     const treeLayout = d3.treemap().size([w, h]).padding(2);
@@ -684,10 +694,10 @@ function editProvinces() {
         provincesTreeType.value === "area"
           ? "Area: " + area
           : provincesTreeType.value === "rural"
-          ? "Rural population: " + si(rural)
-          : provincesTreeType.value === "urban"
-          ? "Urban population: " + si(urban)
-          : "Population: " + si(rural + urban);
+            ? "Rural population: " + si(rural)
+            : provincesTreeType.value === "urban"
+              ? "Urban population: " + si(urban)
+              : "Population: " + si(rural + urban);
 
       provinceInfo.innerHTML = /* html */ `${name}. ${state}. ${value}`;
       provinceHighlightOn(ev);
@@ -740,10 +750,10 @@ function editProvinces() {
         this.value === "area"
           ? d => d.area
           : this.value === "rural"
-          ? d => d.rural
-          : this.value === "urban"
-          ? d => d.urban
-          : d => d.rural + d.urban;
+            ? d => d.rural
+            : this.value === "urban"
+              ? d => d.urban
+              : d => d.rural + d.urban;
 
       root.sum(value);
       node.data(treeLayout(root).leaves());
@@ -770,7 +780,7 @@ function editProvinces() {
     $("#alert").dialog({
       title: "Provinces chart",
       width: fitContent(),
-      position: {my: "left bottom", at: "left+10 bottom-10", of: "svg"},
+      position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
       buttons: {},
       close: () => {
         alertMessage.innerHTML = "";
@@ -840,7 +850,7 @@ function editProvinces() {
     provincesHeader.querySelector("div[data-sortby='state']").style.left = "7.7em";
     provincesFooter.style.display = "none";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "none"));
-    $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+    $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
     tip("Click on a province to select, drag the circle to change province", true);
     viewbox
@@ -854,11 +864,12 @@ function editProvinces() {
   }
 
   function selectProvinceOnLineClick() {
-    if (customization !== 11) return;
     if (this.parentNode.id !== "provincesBodySection") return;
-    body.querySelector("div.selected").classList.remove("selected");
-    this.classList.add("selected");
-    selectProvince(+this.dataset.id);
+    if (customization === 11) {
+      body.querySelector("div.selected").classList.remove("selected");
+      this.classList.add("selected");
+      selectProvince(+this.dataset.id);
+    }
   }
 
   function selectProvinceOnMapClick() {
@@ -985,7 +996,9 @@ function editProvinces() {
     provincesFooter.style.display = "block";
     body.querySelectorAll("div > input, select, span, svg").forEach(e => (e.style.pointerEvents = "all"));
     if (!close)
-      $("#provincesEditor").dialog({position: {my: "right top", at: "right-10 top+10", of: "svg", collision: "fit"}});
+      $("#provincesEditor").dialog({
+        position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+      });
 
     restoreDefaultEvents();
     clearMainTip();
@@ -1004,7 +1017,7 @@ function editProvinces() {
   }
 
   function addProvince() {
-    const {cells, provinces} = pack;
+    const { cells, provinces } = pack;
     const point = d3.mouse(this);
     const center = findCell(point[0], point[1]);
     if (cells.h[center] < 20)
@@ -1043,7 +1056,7 @@ function editProvinces() {
     coa.shield = COA.getShield(c, state);
     COArenderer.add("province", province, coa, point[0], point[1]);
 
-    provinces.push({i: province, state, center, burg, name, formName, fullName, color, coa});
+    provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa });
 
     cells.province[center] = province;
     cells.c[center].forEach(c => {
@@ -1155,6 +1168,198 @@ function editProvinces() {
     provs.selectAll("text").call(d3.drag().on("drag", null)).attr("class", null);
     if (customization === 11) exitProvincesManualAssignment("close");
     if (customization === 12) exitAddProvinceMode();
+  }
+
+  function openProvinceMergeDialog() {
+    const selectedState = +ensureEl("provincesFilterState").value;
+    if (selectedState === -1) {
+      alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
+      $("#alert").dialog({
+        title: "Merge Provinces",
+        buttons: {
+          OK: function () {
+            $(this).dialog("close");
+          }
+        }
+      });
+      return;
+    }
+    const provincesToMerge = pack.provinces.filter(p => p.i && !p.removed && p.state === selectedState);
+    if (provincesToMerge.length < 2) {
+      alertMessage.innerHTML = "Not enough provinces in the selected state to merge.";
+      $("#alert").dialog({
+        title: "Merge Provinces",
+        buttons: {
+          OK: function () {
+            $(this).dialog("close");
+          }
+        }
+      });
+      return;
+    }
+
+    const emblem = i =>
+      /* html */ `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#provinceCOA${i}"></use></svg>`;
+    const provincesSelector = provincesToMerge
+      .map(
+        p => /* html */ `
+      <div data-id="${p.i}" data-tip="${p.fullName || p.name}" style="cursor:default">
+        <input type="radio" name="rulingProvince" value="${p.i}" />
+        <input id="selectProvince${p.i}" class="checkbox" type="checkbox" name="provincesToMerge" value="${p.i}" />
+        <label for="selectProvince${p.i}" class="checkbox-label"><fill-box fill="${p.color}" disabled></fill-box>${emblem(p.i)}${p.name}</label>
+      </div>
+    `
+      )
+      .join("");
+
+    alertMessage.innerHTML = /* html */ `
+      <form id='mergeProvincesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
+        <p style="margin:0">
+          Check the <b>checkbox</b> next to each province you want to merge.
+          Use the <b>radio button</b> to pick the <em>primary province</em> that will absorb all others.
+          Hover over a row to highlight the province on the map.
+        </p>
+        <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
+          ${provincesSelector}
+        </main>
+      </form>
+    `;
+
+    ensureEl("mergeProvincesForm")
+      .querySelectorAll("div[data-id]")
+      .forEach(el => {
+        el.addEventListener("mouseenter", highlightProvinceOnMergeHover);
+        el.addEventListener("mouseleave", provinceHighlightOff);
+      });
+
+    function highlightProvinceOnMergeHover(event) {
+      if (!layerIsOn("toggleProvinces")) return;
+      const province = +event.currentTarget.dataset.id;
+      if (!province) return;
+      const d = provs.select("#province" + province).attr("d");
+      if (!d) return;
+
+      provinceHighlightOff(event);
+
+      const path = debug
+        .append("path")
+        .attr("class", "highlight")
+        .attr("d", d)
+        .attr("fill", "none")
+        .attr("stroke", "red")
+        .attr("stroke-width", 1)
+        .attr("opacity", 1)
+        .attr("filter", "url(#blur1)");
+
+      const totalLength = path.node().getTotalLength();
+      const duration = (totalLength + 5000) / 2;
+      const interpolate = d3.interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
+      path
+        .transition()
+        .duration(duration)
+        .attrTween("stroke-dasharray", () => interpolate);
+    }
+
+    $("#alert").dialog({
+      width: 600,
+      title: `Merge provinces`,
+      close: provinceHighlightOff,
+      buttons: {
+        Merge: function () {
+          const formData = new FormData(ensureEl("mergeProvincesForm"));
+          const primaryProvinceId = Number(formData.get("rulingProvince"));
+          if (!primaryProvinceId) return tip("Please select a province to merge into", false, "error");
+
+          const provincesToMergeIds = formData
+            .getAll("provincesToMerge")
+            .map(Number)
+            .filter(provinceId => provinceId !== primaryProvinceId);
+          if (!provincesToMergeIds.length) return tip("Please select several provinces to merge", false, "error");
+
+          confirmationDialog({
+            title: "Merge provinces",
+            // prettier-ignore
+            message: /* html */ `
+              <p>The following provinces will be <strong>removed</strong>: ${provincesToMergeIds
+                .map(provinceId => `${emblem(provinceId)}${pack.provinces[provinceId].name}`)
+                .join(", ")}.</p>
+              <p>Removed provinces data (burgs and cells) will be assigned to ${emblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
+              <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
+            confirm: "Merge",
+            onConfirm: () => {
+              mergeProvinces(provincesToMergeIds, primaryProvinceId);
+              $(this).dialog("close");
+            }
+          });
+        },
+        Cancel: function () {
+          $(this).dialog("close");
+        }
+      }
+    });
+  }
+
+  function cleanupMergedProvince(provinceId) {
+    // Clean up UI artifacts for a province being merged (similar to removeProvince cleanup)
+    unfog("focusProvince" + provinceId);
+
+    const coaId = "provinceCOA" + provinceId;
+    if (ensureEl(coaId)) ensureEl(coaId).remove();
+    emblems.select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
+  }
+
+  function mergeProvinces(ids, primary) {
+    const primaryProvince = pack.provinces[primary];
+    const provinceIdMap = new Map();
+
+    ids.forEach(id => {
+      if (id === primary) return;
+      const province = pack.provinces[id];
+
+      // merge burgs
+      province.burgs.forEach(b => {
+        pack.burgs[b].province = primary;
+        if (!primaryProvince.burgs.includes(b)) primaryProvince.burgs.push(b);
+      });
+      if (!primaryProvince.burg && province.burg) {
+        primaryProvince.burg = province.burg;
+      }
+
+      // Add to map for later cell reassignment
+      provinceIdMap.set(id, primary);
+
+      // Clean up UI artifacts before marking as removed
+      cleanupMergedProvince(id);
+
+      // remove province
+      pack.provinces[id] = { i: id, removed: true };
+    });
+
+    // Single pass over cells to remap all merged province ids at once
+    pack.cells.province.forEach((oldProvinceId, cellIndex) => {
+      const newProvinceId = provinceIdMap.get(oldProvinceId);
+      if (newProvinceId !== undefined) {
+        pack.cells.province[cellIndex] = newProvinceId;
+      }
+    });
+
+    // update state's provinces list
+    const state = pack.states[primaryProvince.state];
+    state.provinces = state.provinces.filter(p => !pack.provinces[p].removed);
+
+    // recalculate province statistics and poles
+    collectStatistics();
+    Provinces.getPoles();
+
+    // redraw layers that may have changed
+    if (layerIsOn("toggleProvinces")) drawProvinces();
+    if (layerIsOn("toggleBorders")) drawBorders();
+
+    // clear any fog or debug highlights
+    unfog();
+    debug.selectAll(".highlight").remove();
+
+    if (typeof refreshProvincesEditor === "function") refreshProvincesEditor();
   }
 }
 

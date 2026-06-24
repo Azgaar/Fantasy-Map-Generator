@@ -1,4 +1,4 @@
-import type { Burg } from "../modules/burgs-generator";
+import type { Burg } from "../generators/burgs-generator";
 
 declare global {
   var drawBurgLabels: () => void;
@@ -6,19 +6,12 @@ declare global {
   var removeBurgLabel: (burgId: number) => void;
 }
 
-interface BurgGroup {
-  name: string;
-  order: number;
-}
-
 const burgLabelsRenderer = (): void => {
   TIME && console.time("drawBurgLabels");
   createLabelGroups();
 
-  for (const { name } of options.burgs.groups as BurgGroup[]) {
-    const burgsInGroup = pack.burgs.filter(
-      (b) => b.group === name && !b.removed,
-    );
+  for (const { name } of options.burgs.groups) {
+    const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
     if (!burgsInGroup.length) continue;
 
     const labelGroup = burgLabels.select<SVGGElement>(`#${name}`);
@@ -33,13 +26,13 @@ const burgLabelsRenderer = (): void => {
       .enter()
       .append("text")
       .attr("text-rendering", "optimizeSpeed")
-      .attr("id", (d) => `burgLabel${d.i}`)
-      .attr("data-id", (d) => d.i!)
-      .attr("x", (d) => d.x)
-      .attr("y", (d) => d.y)
+      .attr("id", d => `burgLabel${d.i}`)
+      .attr("data-id", d => d.i!)
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
       .attr("dx", `${dx}em`)
       .attr("dy", `${dy}em`)
-      .text((d) => d.name!);
+      .text(d => d.name!);
   }
 
   TIME && console.timeEnd("drawBurgLabels");
@@ -75,23 +68,17 @@ const removeBurgLabelRenderer = (burgId: number): void => {
 
 function createLabelGroups(): void {
   // save existing styles and remove all groups
-  document.querySelectorAll("g#burgLabels > g").forEach((group) => {
-    style.burgLabels[group.id] = Array.from(group.attributes).reduce(
-      (acc: { [key: string]: string }, attribute) => {
-        acc[attribute.name] = attribute.value;
-        return acc;
-      },
-      {},
-    );
+  document.querySelectorAll("g#burgLabels > g").forEach(group => {
+    style.burgLabels[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
+      acc[attribute.name] = attribute.value;
+      return acc;
+    }, {});
     group.remove();
   });
 
   // create groups for each burg group and apply stored or default style
-  const defaultStyle =
-    style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort(
-    (a, b) => a.order - b.order,
-  );
+  const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const group = burgLabels.append("g");
     const styles = style.burgLabels[name] || defaultStyle;

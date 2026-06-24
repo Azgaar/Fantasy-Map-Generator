@@ -19,7 +19,7 @@ const bordersRenderer = () => {
 
     // bordering cell of another province
     if (provinceId) {
-      const provToCell = cells.c[cellId].find((neibId) => {
+      const provToCell = cells.c[cellId].find(neibId => {
         const neibProvinceId = cells.province[neibId];
         return (
           neibProvinceId &&
@@ -31,15 +31,13 @@ const bordersRenderer = () => {
 
       if (provToCell !== undefined) {
         const addToChecked = (cellId: number) => {
-          checked[
-            `prov-${provinceId}-${cells.province[provToCell]}-${cellId}`
-          ] = true;
+          checked[`prov-${provinceId}-${cells.province[provToCell]}-${cellId}`] = true;
         };
         const border = getBorder({
           type: "province",
           fromCell: cellId,
           toCell: provToCell,
-          addToChecked,
+          addToChecked
         });
 
         if (border) {
@@ -51,25 +49,20 @@ const bordersRenderer = () => {
     }
 
     // if cell is on state border
-    const stateToCell = cells.c[cellId].find((neibId) => {
+    const stateToCell = cells.c[cellId].find(neibId => {
       const neibStateId = cells.state[neibId];
-      return (
-        isLand(neibId) &&
-        stateId > neibStateId &&
-        !checked[`state-${stateId}-${neibStateId}-${cellId}`]
-      );
+      return isLand(neibId) && stateId > neibStateId && !checked[`state-${stateId}-${neibStateId}-${cellId}`];
     });
 
     if (stateToCell !== undefined) {
       const addToChecked = (cellId: number) => {
-        checked[`state-${stateId}-${cells.state[stateToCell]}-${cellId}`] =
-          true;
+        checked[`state-${stateId}-${cells.state[stateToCell]}-${cellId}`] = true;
       };
       const border = getBorder({
         type: "state",
         fromCell: cellId,
         toCell: stateToCell,
-        addToChecked,
+        addToChecked
       });
 
       if (border) {
@@ -79,18 +72,15 @@ const bordersRenderer = () => {
     }
   }
 
-  svg.select("#borders").selectAll("path").remove();
+  svg.select("#borders").attr("fill", "none").selectAll("path").remove();
   svg.select("#stateBorders").append("path").attr("d", statePath.join(" "));
-  svg
-    .select("#provinceBorders")
-    .append("path")
-    .attr("d", provincePath.join(" "));
+  svg.select("#provinceBorders").append("path").attr("d", provincePath.join(" "));
 
   function getBorder({
     type,
     fromCell,
     toCell,
-    addToChecked,
+    addToChecked
   }: {
     type: "state" | "province";
     fromCell: number;
@@ -98,29 +88,23 @@ const bordersRenderer = () => {
     addToChecked: (cellId: number) => void;
   }): string | null {
     const getType = (cellId: number) => cells[type][cellId];
-    const isTypeFrom = (cellId: number) =>
-      cellId < cells.i.length && getType(cellId) === getType(fromCell);
-    const isTypeTo = (cellId: number) =>
-      cellId < cells.i.length && getType(cellId) === getType(toCell);
+    const isTypeFrom = (cellId: number) => cellId < cells.i.length && getType(cellId) === getType(fromCell);
+    const isTypeTo = (cellId: number) => cellId < cells.i.length && getType(cellId) === getType(toCell);
 
     addToChecked(fromCell);
-    const startingVertex = cells.v[fromCell].find((v) =>
-      vertices.c[v].some((i) => isLand(i) && isTypeTo(i)),
-    );
+    const startingVertex = cells.v[fromCell].find(v => vertices.c[v].some(i => isLand(i) && isTypeTo(i)));
     if (startingVertex === undefined) return null;
 
     const checkVertex = (vertex: number) =>
-      vertices.c[vertex].some(isTypeFrom) &&
-      vertices.c[vertex].some((c) => isLand(c) && isTypeTo(c));
+      vertices.c[vertex].some(isTypeFrom) && vertices.c[vertex].some(c => isLand(c) && isTypeTo(c));
     const chain = getVerticesLine({
       vertices,
       startingVertex,
       checkCell: isTypeFrom,
       checkVertex,
-      addToChecked,
+      addToChecked
     });
-    if (chain.length > 1)
-      return `M${chain.map((cellId) => vertices.p[cellId]).join(" ")}`;
+    if (chain.length > 1) return `M${chain.map(cellId => vertices.p[cellId]).join(" ")}`;
 
     return null;
   }
@@ -131,7 +115,7 @@ const bordersRenderer = () => {
     startingVertex,
     checkCell,
     checkVertex,
-    addToChecked,
+    addToChecked
   }: {
     vertices: typeof pack.vertices;
     startingVertex: number;

@@ -29,6 +29,10 @@ function clicked() {
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
+  else if (grand.id === "markets" && el.tagName !== "path") MarketOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "goodsIcons") GoodsEditor.open();
+  else if (parent.id === "goodsCells") GoodsEditor.open();
+  else if (grand.id === "goodsBurgs") ProductionOverview.open(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment();
@@ -606,7 +610,7 @@ function getFileName(dataType) {
 }
 
 function downloadFile(data, name, type = "text/plain") {
-  const dataBlob = new Blob([data], {type});
+  const dataBlob = new Blob([data], { type });
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   link.download = name;
@@ -627,7 +631,7 @@ function getBBox(element) {
   const y = +element.getAttribute("y");
   const width = +element.getAttribute("width");
   const height = +element.getAttribute("height");
-  return {x, y, width, height};
+  return { x, y, width, height };
 }
 
 function highlightElement(element, zoom) {
@@ -938,7 +942,9 @@ function selectIcon(initial, callback) {
 }
 
 function getAreaUnit(squareMark = "²") {
-  return ensureEl("areaUnit").value === "square" ? ensureEl("distanceUnitInput").value + squareMark : ensureEl("areaUnit").value;
+  return ensureEl("areaUnit").value === "square"
+    ? ensureEl("distanceUnitInput").value + squareMark
+    : ensureEl("areaUnit").value;
 }
 
 function getArea(rawArea) {
@@ -967,7 +973,7 @@ function confirmationDialog(options) {
   };
 
   ensureEl("alertMessage").innerHTML = message;
-  $("#alert").dialog({resizable: false, title, buttons});
+  $("#alert").dialog({ resizable: false, title, buttons });
 }
 
 // add and register event listeners to clean up on editor closure
@@ -978,33 +984,33 @@ function listen(element, event, handler) {
 
 // Calls the refresh functionality on all editors currently open.
 function refreshAllEditors() {
-  TIME && console.time("refreshAllEditors");
   if (document.getElementById("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
-  if (ensureEl("biomesEditorRefresh").offsetParent) biomesEditorRefresh.click();
-  if (ensureEl("diplomacyEditorRefresh").offsetParent) diplomacyEditorRefresh.click();
-  if (ensureEl("provincesEditorRefresh").offsetParent) provincesEditorRefresh.click();
+  if (document.getElementById("biomesEditorRefresh").offsetParent) biomesEditorRefresh.click();
+  if (document.getElementById("diplomacyEditorRefresh").offsetParent) diplomacyEditorRefresh.click();
+  if (document.getElementById("provincesEditorRefresh").offsetParent) provincesEditorRefresh.click();
   if (document.getElementById("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
-  TIME && console.timeEnd("refreshAllEditors");
+  if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+  if (document.getElementById("goodsEditorRefresh").offsetParent) goodsEditorRefresh.click();
+  if (document.getElementById("marketsOverviewRefresh")?.offsetParent) marketsOverviewRefresh.click();
 }
 
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.120.5");
+  const Editor = await window.lazy.statesEditor();
   Editor.open();
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.120.5");
+  const Editor = await window.lazy.culturesEditor();
   Editor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.120.5");
+  const Editor = await window.lazy.religionsEditor();
   Editor.open();
 }
 
@@ -1012,4 +1018,9 @@ async function editReligions() {
 function editCoastlineSettings() {
   if (customization) return;
   window.CoastlineEditor.open();
+}
+
+function editTradeAnimation() {
+  if (customization) return;
+  window.TradeAnimationEditor.open();
 }

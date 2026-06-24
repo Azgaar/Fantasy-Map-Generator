@@ -1,9 +1,12 @@
 name: Bump version on PR merge
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [master]
     types: [closed]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -25,9 +28,8 @@ jobs:
           ref: ${{ github.event.pull_request.base.ref }}
           # fetch-depth 2 so HEAD~1 resolves to the pre-merge master commit
           fetch-depth: 2
-          # Use a PAT so the pushed bump commit can trigger deploy.yml.
-          # Falls back to github.token if RELEASE_BOT_TOKEN is not configured.
-          token: ${{ secrets.RELEASE_BOT_TOKEN || github.token }}
+          # pull_request_target grants the workflow token write access on merged PRs.
+          token: ${{ github.token }}
 
       - name: Set up Node
         uses: actions/setup-node@v6

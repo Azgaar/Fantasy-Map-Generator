@@ -88,14 +88,14 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
+  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
   }
 
   // opacity
-  if (!["landmass", "ocean", "regions", "legend"].includes(styleElement)) {
+  if (!["landmass", "legend", "ocean", "regions"].includes(styleElement)) {
     styleOpacity.style.display = "block";
     styleOpacityInput.value = el.attr("opacity") || 1;
   }
@@ -107,7 +107,7 @@ function selectStyleElement() {
   }
 
   // fill
-  if (["rivers", "lakes", "landmass", "prec", "ice", "fogging", "scaleBar", "vignette"].includes(styleElement)) {
+  if (["fogging", "ice", "lakes", "landmass", "prec", "rivers", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill");
   }
@@ -272,6 +272,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
     styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
     styleShadowInput.value = el.style("text-shadow") || "";
+    styleLabelsHideGroup.checked = el.node().style.display === "none";
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
@@ -319,7 +320,7 @@ function selectStyleElement() {
     styleSize.style.display = "block";
 
     styleLegend.style.display = "block";
-    styleLegendColItems.value = el.attr("data-columns");
+    styleLegendColItems.value = el.attr("data-columns") || 8;
     const legendBox = el.select("#legendBox");
     styleLegendBack.value = styleLegendBackOutput.value = legendBox.size() ? legendBox.attr("fill") : "#ffffff";
     styleLegendOpacity.value = legendBox.size() ? legendBox.attr("fill-opacity") : 1;
@@ -369,12 +370,33 @@ function selectStyleElement() {
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
   }
 
+  if (styleElement === "goodsIcons") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
+    styleGoods.style.display = "block";
+    styleGoodsCircle.checked = +el.attr("data-circle");
+  }
+
+  if (styleElement === "goodsBurgs") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.2";
+    styleStroke.style.display = "block";
+    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
+  }
+
+  if (styleElement === "markets") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
+    styleMarketsLayer.style.display = "block";
+    styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["routes", "labels", "coastline", "lakes", "anchors", "burgIcons", "borders", "terrs"].includes(styleElement)) {
+  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const groups = ensureEl(styleElement).querySelectorAll("g");
     groups.forEach(el => {
-      if (el.id === "burgLabels") return;
+      if (el.id === "burgLabels") return; // skip the container; its subgroups (capital, town, ...) are listed individually
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });
@@ -471,8 +493,16 @@ styleStrokeLinecapInput.on("change", function () {
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
+styleDisplayInput.on("change", function () {
+  getEl().attr("display", this.value || null);
+});
+
 styleOpacityInput.on("input", e => {
   getEl().attr("opacity", e.target.value);
+});
+
+styleLabelsHideGroup.on("change", function () {
+  getEl().style("display", this.checked ? "none" : null);
 });
 
 styleFilterInput.on("change", function () {
@@ -697,7 +727,7 @@ openCreateHeightmapSchemeButton.on("click", function () {
       Create: handleCreate,
       Cancel: handleClose
     },
-    position: {my: "center top+150", at: "center top", of: "svg"}
+    position: { my: "center top+150", at: "center top", of: "svg" }
   });
 });
 
@@ -826,7 +856,7 @@ styleFontAdd.on("click", function () {
   $("#addFontDialog").dialog({
     title: "Add custom font",
     width: "26em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Add: function () {
         const family = addFontNameInput.value;
@@ -959,6 +989,15 @@ emblemsBurgSizeInput.on("change", e => {
   drawEmblems();
 });
 
+styleGoodsCircle.addEventListener("change", function () {
+  goods.select("#goodsIcons").attr("data-circle", +this.checked);
+  drawGoods(GoodsEditor?.getDisplayedGoods?.());
+});
+
+styleMarketsLayerFillOpacity.on("input", e => {
+  markets.attr("fill-opacity", e.target.value);
+});
+
 // request a URL to image to be used as a texture
 function textureProvideURL() {
   alertMessage.innerHTML = /* html */ `Provide a texture image URL:
@@ -1073,7 +1112,7 @@ styleScaleBar.on("input", function (event) {
   const scaleBarBack = scaleBar.select("#scaleBarBack");
   if (!scaleBarBack.size()) return;
 
-  const {id, value} = event.target;
+  const { id, value } = event.target;
 
   if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
   else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
