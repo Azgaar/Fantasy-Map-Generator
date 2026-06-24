@@ -6,8 +6,8 @@ import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
 
-const PRICE_FLOOR_FACTOR = 0.25;
-const PRICE_CEILING_FACTOR = 3.0;
+const PRICE_FLOOR_FACTOR = 0.1;
+const PRICE_CEILING_FACTOR = 5.0;
 const LAPLACE_PRICE_SMOOTHING = 5;
 const MARKET_PRESSURE_FACTOR = 0.01;
 const MARKET_MARGIN = 0.1;
@@ -387,7 +387,7 @@ export class MarketsModule {
     const TRADE_RESERVE_FACTOR = 0.2;
     const MIN_UNIT = 0.1;
     const MIN_PROFIT = 1;
-    const DISTANCE_COST_FACTOR = 0.5;
+    const DISTANCE_COST_FACTOR = 1;
 
     const travelCost: Record<number, Record<number, number>> = {};
     for (const m1 of pack.markets) {

@@ -84,7 +84,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "pallet",
     demandCoverage: { construction: 1 },
     multipliers: { cultureType: { Hunting: 0.6, Nomadic: 0.6 } },
-    biomeOutput: { 1: 0.1, 2: 0.1 }
+    biomeOutput: { 1: 0.05, 2: 0.05 }
   },
   {
     name: "Marble",
@@ -186,7 +186,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "good-fish",
     color: "#7fcdff",
     value: 1,
-    chance: 2,
+    chance: 4,
     distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
     demandCoverage: { food: 1 },
@@ -203,7 +203,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "wain",
     demandCoverage: { food: 1 },
     multipliers: { cultureType: { Naval: 0.6, Nomadic: 1.4, Hunting: 2 } },
-    biomeOutput: { 3: 0.02, 4: 0.02, 5: 0.04, 6: 0.04, 7: 0.04, 8: 0.04, 9: 0.08 }
+    biomeOutput: { 3: 0.01, 4: 0.01, 5: 0.02, 6: 0.02, 7: 0.02, 8: 0.02, 9: 0.05 }
   },
   {
     name: "Wine",
@@ -281,7 +281,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "head",
     demandCoverage: { utilities: 0.6, military: 0.4 },
     multipliers: { cultureType: { Nomadic: 2 } },
-    biomeOutput: { 4: 0.05 }
+    biomeOutput: { 4: 0.01 }
   },
   {
     name: "Elephants",
@@ -383,7 +383,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "good-spices",
     color: "#e99c75",
-    value: 14,
+    value: 15,
     chance: 2,
     distribution: "biome(7)",
     unit: "chest",
@@ -413,7 +413,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "pelt",
     demandCoverage: { luxury: 0.5, utilities: 0.3 },
     multipliers: { cultureType: { Hunting: 2 } },
-    biomeOutput: { 9: 0.025, 10: 0.025, 6: 0.025, 8: 0.025, 12: 0.025 }
+    biomeOutput: { 9: 0.02, 10: 0.02, 6: 0.02, 8: 0.02, 12: 0.02 }
   },
   {
     name: "Sheep",
@@ -433,7 +433,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["supply"],
     icon: "good-slaves",
     color: "#757575",
-    value: 7,
+    value: 8,
     chance: 2,
     distribution: "shore(1) && minHabitability(1) && !habitability()",
     unit: "slave",
@@ -642,7 +642,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "good-paper",
     color: "#f5f5dc",
-    value: 4,
+    value: 5,
     chance: 0,
     recipes: [{ Hemp: 1 }],
     unit: "ream",
@@ -664,7 +664,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "good-books",
     color: "#deb887",
-    value: 12,
+    value: 13,
     chance: 0,
     recipes: [
       { Paper: 1, Ink: 0.5 },
@@ -690,9 +690,9 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "good-ships",
     color: "#654321",
-    value: 20,
+    value: 50,
     chance: 0,
-    recipes: [{ Wood: 2, Sails: 2, Ropes: 2, Tar: 1 }],
+    recipes: [{ Wood: 4, Sails: 4, Ropes: 4, Tar: 2 }],
     unit: "ship",
     demandCoverage: { military: 0.5 },
     multipliers: { cultureType: { Naval: 2 } }
@@ -768,11 +768,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "good-arms",
     color: "#333333",
-    value: 22,
+    value: 25,
     chance: 0,
     recipes: [
       { Iron: 0.5, Coal: 1, Leather: 0.5 },
-      { Bronze: 0.5, Coal: 1, Leather: 0.5 }
+      { Bronze: 0.25, Coal: 1, Leather: 0.5 }
     ],
     unit: "set",
     demandCoverage: { military: 1 }
@@ -941,12 +941,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "good-perfume",
     color: "#ff69b4",
-    value: 18,
+    value: 17,
     chance: 0,
     recipes: [
-      { Olives: 1, Incense: 0.25, Glass: 0.5 },
-      { Olives: 1, Game: 2, Glass: 0.5 },
-      { Liquor: 0.25, Incense: 0.25, Whales: 0.5, Ceramics: 0.5 }
+      { Olives: 1, Incense: 0.5, Glass: 0.5 },
+      { Olives: 1, Game: 3, Glass: 0.5 },
+      { Liquor: 0.25, Incense: 0.5, Whales: 0.5, Ceramics: 0.5 }
     ],
     unit: "bottle",
     demandCoverage: { luxury: 2 }
