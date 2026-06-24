@@ -274,39 +274,31 @@ export class MarketsModule {
     return market;
   }
 
-  removeMarket(marketId: number): boolean {
-    const marketIndex = pack.markets.findIndex(m => m.i === marketId);
-    if (marketIndex === -1) return false;
+  removeMarket(marketId: number) {
+    const market = this.get(marketId);
+    if (!market) return false;
 
-    const market = pack.markets[marketIndex];
-    const centerBurg = (pack.burgs as Burg[])[market.centerBurgId];
+    const centerBurg = pack.burgs[market.centerBurgId];
     if (centerBurg) centerBurg.plaza = 0;
 
-    pack.markets.splice(marketIndex, 1);
-
-    // drop only the deals tied to this market; keep the rest of the economy intact
-    pack.deals = (pack.deals || []).filter(
+    // drop the deals tied to this market
+    pack.deals = pack.deals.filter(
       deal =>
-        !(
-          (deal.sellerType === "market" && deal.seller === marketId) ||
-          (deal.buyerType === "market" && deal.buyer === marketId)
-        )
+        (deal.sellerType === "market" && deal.seller === marketId) ||
+        (deal.buyerType === "market" && deal.buyer === marketId)
     );
 
-    // unassign only the removed market's cells and burgs; leave other markets' territories untouched
-    if (pack.cells.market) {
-      for (let i = 0; i < pack.cells.market.length; i++) {
-        if (pack.cells.market[i] === marketId) pack.cells.market[i] = 0;
-      }
+    for (let i = 0; i < pack.cells.market.length; i++) {
+      if (pack.cells.market[i] === marketId) pack.cells.market[i] = 0;
     }
-    for (const burg of pack.burgs as Burg[]) {
+
+    for (const burg of pack.burgs) {
       if (!burg.i || burg.removed) continue;
       if (burg.market === marketId) burg.market = 0;
     }
 
+    pack.markets = pack.markets.filter(m => m.i !== marketId);
     this.indexMarkets();
-
-    return true;
   }
 
   quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {

@@ -41,12 +41,13 @@ export function open(): void {
 
 function insertEditorHtml(): HTMLElement {
   const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable">
-    <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 6em 6em 7em 7em 6em 7em">
+    <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 5em 6em 6em 7em 7em 6em 7em">
       <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
       <div data-tip="Click to sort by state form name" class="sortable alphabetically" data-sortby="form">Form&nbsp;</div>
       <div data-tip="Click to sort by capital name" class="sortable alphabetically" data-sortby="capital">Capital&nbsp;</div>
       <div data-tip="Click to sort by state dominant culture" class="sortable alphabetically hide" data-sortby="culture">Culture&nbsp;</div>
       <div data-tip="Click to sort by state burgs count" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
+      <div data-tip="Click to sort by state cells count" class="sortable hide" data-sortby="cells">Cells&nbsp;</div>
       <div data-tip="Click to sort by state area" class="sortable hide icon-sort-number-down" data-sortby="area">Area&nbsp;</div>
       <div data-tip="Click to sort by state population" class="sortable hide" data-sortby="population">Population&nbsp;</div>
       <div data-tip="Click to sort by state treasury. Click on a value to view and edit taxes" class="sortable hide" data-sortby="treasury">Treasury&nbsp;</div>
@@ -229,6 +230,8 @@ function statesEditorAddLines(): void {
         <select class="stateCulture placeholder hide">${getCultureOptions(0)}</select>
         <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer hide" style="padding-right: 1px"></span>
         <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
+        <span data-tip="Cells count" class="icon-check-empty hide"></span>
+        <div data-tip="Cells count" class="stateCells hide">${s.cells}</div>
         <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o hide"></span>
         <div data-tip="Neutral lands area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
         <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -274,6 +277,8 @@ function statesEditorAddLines(): void {
       )}</select>
       <span data-tip="Click to overview state burgs" style="padding-right: 1px" class="icon-dot-circled pointer hide"></span>
       <div data-tip="Burgs count" class="stateBurgs hide">${s.burgs}</div>
+      <span data-tip="Cells count" class="icon-check-empty hide"></span>
+      <div data-tip="Cells count" class="stateCells hide">${s.cells}</div>
       <span data-tip="State area" style="padding-right: 4px" class="icon-map-o hide"></span>
       <div data-tip="State area" class="stateArea hide" style="width: 6em">${si(area)} ${unit}</div>
       <span data-tip="${populationTip}" class="icon-male hide"></span>
@@ -285,8 +290,6 @@ function statesEditorAddLines(): void {
       <span data-tip="State expansionism" class="icon-resize-full ${hidden} show hide"></span>
       <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
         class="statePower ${hidden} show hide" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
-      <span data-tip="Cells count" class="icon-check-empty ${hidden} show hide"></span>
-      <div data-tip="Cells count" class="stateCells ${hidden} show hide">${s.cells}</div>
       <span data-tip="Locate the state" class="icon-target hide"></span>
       <span data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
       <span data-tip="Lock the state to protect it from re-generation" class="icon-lock${
@@ -783,10 +786,12 @@ function togglePercentageMode(): void {
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
+    const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
     $body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      const { burgs, area, population, treasury } = el.dataset;
+      const { burgs, area, population, treasury, cells } = el.dataset;
       el.querySelector<HTMLElement>(".stateBurgs")!.innerText = `${rn((+burgs! / totalBurgs) * 100)}%`;
+      el.querySelector<HTMLElement>(".stateCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
       el.querySelector<HTMLElement>(".stateArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
       el.querySelector<HTMLElement>(".statePopulation")!.innerText = `${rn((+population! / totalPopulation) * 100)}%`;
       el.querySelector<HTMLElement>(".stateTreasury")!.innerText = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
