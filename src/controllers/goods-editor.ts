@@ -79,11 +79,11 @@ function goodsEditorAddLines() {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
     const goodProduction = production[good.i] || { burg: 0, cell: 0 };
     const produced = rn(goodProduction.burg + goodProduction.cell);
-    const producedTip = `Total good production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒`;
+    const producedTip = `Good daily production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒`;
     const stock = rn(stockData[good.i]?.total ?? 0);
     const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
 
-    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-stock="${stock}" data-type="${types.join(",")}" data-tags="${good.tags?.join(",")}">
+    lines += /*html*/ `<div class="states goods" data-id=${good.i} data-name="${good.name}" data-color="${good.color}" data-baseprice="${good.value}" data-produced="${produced}" data-stock="${stock}" data-type="${types.join(",")}" data-unit="${good.unit ?? ""}" data-tags="${good.tags?.join(",")}">
         <input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed hide" style="padding: 0; margin: 0; vertical-align: middle; width: 1.2em;" ${good.visible ? "checked" : ""} />
         <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
           <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
@@ -91,6 +91,7 @@ function goodsEditorAddLines() {
         </svg>
         <div data-tip="Good name" class="goodName">${good.name}</div>
         <div data-tip="Good types" class="goodType" style="width: 6em;">${types.map(renderTypeBadge).join(" ")}</div>
+        <div data-tip="Unit of production" class="goodUnit hide">${good.unit ?? ""}</div>
         <div data-tip="${producedTip}. Click to see burgs producing this good" class="goodProduced pointer hide" style="vertical-align: middle;">
           <div style="display: inline-block;">${produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
@@ -494,7 +495,7 @@ function exitResourceAssignMode(close?: string) {
   ensureEl("goodsEditor")
     .querySelectorAll(".hide")
     .forEach(el => void el.classList.remove("hidden"));
-  ensureEl("goodsHeader").style = "grid-template-columns: 4em 7.4em 7em 6.8em 6em 4.6em 1.6em;";
+  ensureEl("goodsHeader").style = "grid-template-columns: 4em 7.4em 6em 5em 6.8em 6em 4.6em 1.6em;";
 
   if (!close) goodsEditorAddLines();
 
@@ -513,7 +514,7 @@ function downloadGoodsData() {
   const production = getProduction();
   const stockData = getAllStockData();
 
-  let data = "Id,Good,Color,Type,Tags,Value,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
+  let data = "Id,Good,Color,Type,Tags,Value,Unit,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
 
   for (const good of pack.goods) {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
@@ -526,7 +527,7 @@ function downloadGoodsData() {
     const produced = rn(goodProduction.burg + goodProduction.cell);
     const stock = stockData[good.i]?.total ?? 0;
 
-    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
+    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${good.unit ?? ""},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
   }
 
   const name = `${getFileName("Goods")}.csv`;

@@ -5067,7 +5067,7 @@
         </div>
       </div>
       <div id="goodsEditor" class="dialog stable" style="display: none">
-        <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 7em 6.8em 6em 4.6em 1.6em;">
+        <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 6em 5em 6.8em 6em 4.6em 1.6em;">
           <input
             type="checkbox"
             data-tip="Show or hide all goods on the Goods map"
@@ -5081,7 +5081,10 @@
           <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">
             Type&nbsp;
           </div>
-          <div data-tip="Total production units aggregated from cells and burgs. Click to sort" class="sortable icon-sort-number-down hide" data-sortby="produced">
+          <div data-tip="Unit of production. Click to sort" class="sortable alphabetically hide" data-sortby="unit">
+            Unit&nbsp;
+          </div>
+          <div data-tip="Total units produced daily in cells (raw) and burgs (manufactured). Click to sort" class="sortable icon-sort-number-down hide" data-sortby="produced">
             Produced&nbsp;
           </div>
           <div data-tip="Total units in stock across all markets and burg inventories. Click to sort" class="sortable hide" data-sortby="stock">
@@ -5094,7 +5097,7 @@
         <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
         <div id="goodsFooter" class="totalLine hide">
           <div data-tip="Number of goods (displayed / total)" style="margin-left: 5px">Goods:&nbsp;<span id="goodsDisplayed">0</span> of <span id="goodsNumber">0</span></div>
-          <div data-tip="Total amount of goods produced by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
+          <div data-tip="Total units produced daily by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
           <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
         </div>
         <div id="goodsBottom">
