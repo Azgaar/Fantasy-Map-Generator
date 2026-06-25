@@ -905,19 +905,19 @@ function getRegimentStatus(losses: number): string {
 function applyResults(): void {
   const b = battle!;
   const battleName = b.name;
-  const maxCasualties = Math.max(b.attackers.casualties, b.attackers.casualties);
-  const relativeCasualties = b.defenders.casualties / (b.attackers.casualties + b.attackers.casualties);
+  const maxCasualties = Math.max(b.attackers.casualties, b.defenders.casualties);
+  const totalCasualties = b.attackers.casualties + b.defenders.casualties;
+  const relativeCasualties = totalCasualties ? b.defenders.casualties / totalCasualties : NaN;
   const battleStatus = getBattleStatus(relativeCasualties, maxCasualties);
 
   function getBattleStatus(relative: number, max: number): [string, string] {
     if (Number.isNaN(relative)) return ["standoff", "standoff"]; // if no casualties at all
     if (max < 0.05) return ["minor skirmishes", "minor skirmishes"];
-    if (relative > 95) return ["attackers flawless victory", "disorderly retreat of defenders"];
+    if (relative > 0.95) return ["attackers flawless victory", "disorderly retreat of defenders"];
     if (relative > 0.7) return ["attackers decisive victory", "defenders disastrous defeat"];
     if (relative > 0.6) return ["attackers victory", "defenders defeat"];
     if (relative > 0.4) return ["stalemate", "stalemate"];
     if (relative > 0.3) return ["attackers defeat", "defenders victory"];
-    if (relative > 0.5) return ["attackers disastrous defeat", "decisive victory of defenders"];
     if (relative >= 0) return ["attackers disorderly retreat", "flawless victory of defenders"];
     return ["stalemate", "stalemate"]; // exception
   }

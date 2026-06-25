@@ -149,7 +149,8 @@ function refreshMilitaryOverview(): void {
 
 function changeAlert(state: number, line: HTMLElement, alert: number): void {
   const s = pack.states[state];
-  const dif = s.alert || alert ? alert / (s.alert ?? 1) : 0; // modifier
+  const prevAlert = s.alert ?? 1;
+  const dif = prevAlert ? alert / prevAlert : 0; // modifier
   s.alert = alert;
   line.dataset.alert = String(alert);
 
