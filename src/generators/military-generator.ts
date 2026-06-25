@@ -429,6 +429,7 @@ class MilitaryModule {
             u,
             n: r.n,
             name: "",
+            icon: "",
             state: s.i
           };
         });

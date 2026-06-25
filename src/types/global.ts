@@ -223,6 +223,21 @@ declare global {
   var statesBody: Selection<SVGGElement, unknown, null, undefined>;
   var statesHalo: Selection<SVGGElement, unknown, null, undefined>;
   var armies: Selection<SVGGElement, unknown, null, undefined>;
+
+  type MilitaryUnit = {
+    icon: string;
+    name: string;
+    rural: number;
+    urban: number;
+    crew: number;
+    power: number;
+    type: string;
+    separate: number;
+    biomes?: number[];
+    states?: number[];
+    cultures?: number[];
+    religions?: number[];
+  };
 }
 
 type Options = {
@@ -243,21 +258,6 @@ type Options = {
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };
-};
-
-type MilitaryUnit = {
-  icon: string;
-  name: string;
-  rural: number;
-  urban: number;
-  crew: number;
-  power: number;
-  type: string;
-  separate: number;
-  biomes?: number[];
-  states?: number[];
-  cultures?: number[];
-  religions?: number[];
 };
 
 type BurgGroup = {
