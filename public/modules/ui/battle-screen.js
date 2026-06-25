@@ -10,8 +10,8 @@ class Battle {
     this.x = defender.x;
     this.y = defender.y;
     this.cell = findCell(this.x, this.y);
-    this.attackers = {regiments: [], distances: [], morale: 100, casualties: 0, power: 0};
-    this.defenders = {regiments: [], distances: [], morale: 100, casualties: 0, power: 0};
+    this.attackers = { regiments: [], distances: [], morale: 100, casualties: 0, power: 0 };
+    this.defenders = { regiments: [], distances: [], morale: 100, casualties: 0, power: 0 };
     this.phasesRecord = [];
 
     this.addHeaders();
@@ -29,7 +29,7 @@ class Battle {
       title: this.name,
       resizable: false,
       width: fitContent(),
-      position: {my: "center", at: "center", of: "#map"},
+      position: { my: "center", at: "center", of: "#map" },
       close: () => Battle.prototype.context.cancelResults()
     });
 
@@ -225,7 +225,7 @@ class Battle {
       resizable: false,
       width: fitContent(),
       title: "Add regiment to the battle",
-      position: {my: "left center", at: "right+10 center", of: "#battleScreen"},
+      position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
       close: addSideClosed,
       buttons: {
         "Add to attackers": () => addSideClicked("attackers"),
@@ -291,7 +291,7 @@ class Battle {
 
   changeName(ev) {
     this.name = ev.target.value;
-    $("#battleScreen").dialog({title: this.name});
+    $("#battleScreen").dialog({ title: this.name });
   }
 
   generateName(type) {
@@ -301,7 +301,7 @@ class Battle {
         : Names.getBase(rand(nameBases.length - 1));
     ensureEl("battleNamePlace").value = this.place = place;
     ensureEl("battleNameFull").value = this.name = this.defineName();
-    $("#battleScreen").dialog({title: this.name});
+    $("#battleScreen").dialog({ title: this.name });
   }
 
   getJoinedForces(regiments) {
@@ -327,8 +327,17 @@ class Battle {
         aviation: 1.8,
         magical: 1.8
       }, // ranged excel
-      melee: {melee: 2, ranged: 1.2, mounted: 1.5, machinery: 0.5, naval: 0.2, armored: 2, aviation: 0.8, magical: 0.8}, // melee excel
-      pursue: {melee: 1, ranged: 1, mounted: 4, machinery: 0.05, naval: 1, armored: 1, aviation: 1.5, magical: 0.6}, // mounted excel
+      melee: {
+        melee: 2,
+        ranged: 1.2,
+        mounted: 1.5,
+        machinery: 0.5,
+        naval: 0.2,
+        armored: 2,
+        aviation: 0.8,
+        magical: 0.8
+      }, // melee excel
+      pursue: { melee: 1, ranged: 1, mounted: 4, machinery: 0.05, naval: 1, armored: 1, aviation: 1.5, magical: 0.6 }, // mounted excel
       retreat: {
         melee: 0.1,
         ranged: 0.01,
@@ -341,7 +350,7 @@ class Battle {
       }, // reduced
 
       // naval battle phases
-      shelling: {melee: 0, ranged: 0.2, mounted: 0, machinery: 2, naval: 2, armored: 0, aviation: 0.1, magical: 0.5}, // naval and machinery excel
+      shelling: { melee: 0, ranged: 0.2, mounted: 0, machinery: 2, naval: 2, armored: 0, aviation: 0.1, magical: 0.5 }, // naval and machinery excel
       boarding: {
         melee: 1,
         ranged: 0.5,
@@ -352,7 +361,7 @@ class Battle {
         aviation: 0,
         magical: 0.2
       }, // melee excel
-      chase: {melee: 0, ranged: 0.15, mounted: 0, machinery: 1, naval: 1, armored: 0, aviation: 0.15, magical: 0.5}, // reduced
+      chase: { melee: 0, ranged: 0.15, mounted: 0, machinery: 1, naval: 1, armored: 0, aviation: 0.15, magical: 0.5 }, // reduced
       withdrawal: {
         melee: 0,
         ranged: 0.02,
@@ -385,7 +394,16 @@ class Battle {
         aviation: 0.25,
         magical: 0.25
       }, // no active actions
-      sortie: {melee: 2, ranged: 0.5, mounted: 1.2, machinery: 0.2, naval: 0.1, armored: 0.5, aviation: 1, magical: 1}, // melee excel
+      sortie: {
+        melee: 2,
+        ranged: 0.5,
+        mounted: 1.2,
+        machinery: 0.2,
+        naval: 0.1,
+        armored: 0.5,
+        aviation: 1,
+        magical: 1
+      }, // melee excel
       bombardment: {
         melee: 0.2,
         ranged: 0.5,
@@ -406,7 +424,7 @@ class Battle {
         aviation: 0.5,
         magical: 0.5
       }, // melee excel
-      defense: {melee: 2, ranged: 3, mounted: 1, machinery: 1, naval: 0.1, armored: 1, aviation: 0.5, magical: 1}, // ranged excel
+      defense: { melee: 2, ranged: 3, mounted: 1, machinery: 1, naval: 0.1, armored: 1, aviation: 0.5, magical: 1 }, // ranged excel
       looting: {
         melee: 1.6,
         ranged: 1.6,
@@ -429,7 +447,7 @@ class Battle {
       }, // reduced
 
       // ambush phases
-      surprise: {melee: 2, ranged: 2.4, mounted: 1, machinery: 1, naval: 1, armored: 1, aviation: 0.8, magical: 1.2}, // increased
+      surprise: { melee: 2, ranged: 2.4, mounted: 1, machinery: 1, naval: 1, armored: 1, aviation: 0.8, magical: 1.2 }, // increased
       shock: {
         melee: 0.5,
         ranged: 0.5,
@@ -474,8 +492,17 @@ class Battle {
       }, // reduced
 
       // air battle phases
-      maneuvering: {melee: 0, ranged: 0.1, mounted: 0, machinery: 0.2, naval: 0, armored: 0, aviation: 1, magical: 0.2}, // aviation
-      dogfight: {melee: 0, ranged: 0.1, mounted: 0, machinery: 0.1, naval: 0, armored: 0, aviation: 2, magical: 0.1} // aviation
+      maneuvering: {
+        melee: 0,
+        ranged: 0.1,
+        mounted: 0,
+        machinery: 0.2,
+        naval: 0,
+        armored: 0,
+        aviation: 1,
+        magical: 0.2
+      }, // aviation
+      dogfight: { melee: 0, ranged: 0.1, mounted: 0, machinery: 0.1, naval: 0, armored: 0, aviation: 2, magical: 0.1 } // aviation
     };
 
     const forces = this.getJoinedForces(this[side].regiments);
@@ -681,11 +708,10 @@ class Battle {
       return;
     }
 
-    // record phase
-    const currentPhase = `Attackers: ${capitalize(this.attackers.phase)}, Defenders: ${capitalize(this.defenders.phase)}`;
-    const lastRecord = this.phasesRecord.length ? this.phasesRecord[this.phasesRecord.length - 1] : null;
-    if (lastRecord && lastRecord.phase === currentPhase) lastRecord.count += 1;
-    else this.phasesRecord.push({phase: currentPhase, count: 1});
+    const currentPhase = `Attackers: ${this.attackers.phase}, defenders: ${this.defenders.phase}`;
+    const lastRecord = this.phasesRecord.at(-1);
+    if (lastRecord?.phase === currentPhase) lastRecord.count += 1;
+    else this.phasesRecord.push({ phase: currentPhase, count: 1 });
 
     // calculate casualties
     const attack = this.attackers.power * (this.attackers.die / 10 + 0.4);
@@ -789,7 +815,7 @@ class Battle {
     button.style.opacity = 0.5;
     div.style.display = "block";
 
-    document.getElementsByTagName("body")[0].on("click", hideSection, {once: true});
+    document.getElementsByTagName("body")[0].on("click", hideSection, { once: true });
   }
 
   changeType(ev) {
@@ -800,7 +826,7 @@ class Battle {
     this.calculateStrength("attackers");
     this.calculateStrength("defenders");
     this.name = this.defineName();
-    $("#battleScreen").dialog({title: this.name});
+    $("#battleScreen").dialog({ title: this.name });
   }
 
   changePhase(ev, side) {
@@ -845,18 +871,18 @@ class Battle {
           losses === 1
             ? "is destroyed"
             : losses > 0.8
-            ? "is almost completely destroyed"
-            : losses > 0.5
-            ? "suffered terrible losses"
-            : losses > 0.3
-            ? "suffered severe losses"
-            : losses > 0.2
-            ? "suffered heavy losses"
-            : losses > 0.05
-            ? "suffered significant losses"
-            : losses > 0
-            ? "suffered unsignificant losses"
-            : "left the battle without loss";
+              ? "is almost completely destroyed"
+              : losses > 0.5
+                ? "suffered terrible losses"
+                : losses > 0.3
+                  ? "suffered severe losses"
+                  : losses > 0.2
+                    ? "suffered heavy losses"
+                    : losses > 0.05
+                      ? "suffered significant losses"
+                      : losses > 0
+                        ? "suffered unsignificant losses"
+                        : "left the battle without loss";
         const casualties = Object.keys(r.casualties)
           .map(t => (r.casualties[t] ? `${Math.abs(r.casualties[t])} ${t}` : null))
           .filter(c => c);
@@ -875,7 +901,7 @@ class Battle {
     const i = last(pack.markers)?.i + 1 || 0;
     {
       // append battlefield marker
-      const marker = {i, x: this.x, y: this.y, cell: this.cell, icon: "⚔️", type: "battlefields", dy: 52};
+      const marker = { i, x: this.x, y: this.y, cell: this.cell, icon: "⚔️", type: "battlefields", dy: 52 };
       pack.markers.push(marker);
       const markerHTML = drawMarker(marker);
       ensureEl("markers").insertAdjacentHTML("beforeend", markerHTML);
@@ -894,15 +920,15 @@ class Battle {
       1
     )} and ${getSide(this.defenders.regiments, 0)}. ${result}.
       <br>Attackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(
-      this.defenders.casualties
-    )}%`;
+        this.defenders.casualties
+      )}%`;
 
-    if (this.phasesRecord && this.phasesRecord.length) {
+    if (this.phasesRecord.length) {
       const phasesText = this.phasesRecord.map(r => (r.count > 1 ? `${r.phase} (x${r.count})` : r.phase)).join("<br>");
       legend += `<br><br>Engagement progression:<br>${phasesText}`;
     }
 
-    notes.push({id: `marker${i}`, name: this.name, legend});
+    notes.push({ id: `marker${i}`, name: this.name, legend });
 
     tip(`${this.name} is over. ${result}`, true, "success", 4000);
 
