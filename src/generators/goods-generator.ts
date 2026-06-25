@@ -225,11 +225,11 @@ const GOODS_DATA: GoodData[] = [
     color: "#BDBD7D",
     value: 2,
     chance: 3,
-    distribution: "biome(6) || (biome(4) && random(50) && river())",
+    distribution: "biome(3) && shore(1, 2)",
     unit: "barrel",
     demandCoverage: { food: 1 },
     multipliers: { cultureType: { Generic: 0.8, Nomadic: 0.5 } },
-    biomeOutput: { 6: 0.1 }
+    biomeOutput: { 3: 0.1 }
   },
   {
     name: "Honey",
