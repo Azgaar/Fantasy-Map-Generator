@@ -12,6 +12,7 @@ class Battle {
     this.cell = findCell(this.x, this.y);
     this.attackers = {regiments: [], distances: [], morale: 100, casualties: 0, power: 0};
     this.defenders = {regiments: [], distances: [], morale: 100, casualties: 0, power: 0};
+    this.phasesRecord = [];
 
     this.addHeaders();
     this.addRegiment("attackers", attacker);
@@ -680,6 +681,12 @@ class Battle {
       return;
     }
 
+    // record phase
+    const currentPhase = `Attackers: ${capitalize(this.attackers.phase)}, Defenders: ${capitalize(this.defenders.phase)}`;
+    const lastRecord = this.phasesRecord.length ? this.phasesRecord[this.phasesRecord.length - 1] : null;
+    if (lastRecord && lastRecord.phase === currentPhase) lastRecord.count += 1;
+    else this.phasesRecord.push({phase: currentPhase, count: 1});
+
     // calculate casualties
     const attack = this.attackers.power * (this.attackers.die / 10 + 0.4);
     const defense = this.defenders.power * (this.defenders.die / 10 + 0.4);
@@ -882,13 +889,19 @@ class Battle {
 
     const status = battleStatus[+P(0.7)];
     const result = `The ${this.getTypeName(this.type)} ended in ${status}`;
-    const legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(
+    let legend = `${this.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(
       this.attackers.regiments,
       1
     )} and ${getSide(this.defenders.regiments, 0)}. ${result}.
-      \r\nAttackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(
+      <br>Attackers losses: ${getLosses(this.attackers.casualties)}%, defenders losses: ${getLosses(
       this.defenders.casualties
     )}%`;
+
+    if (this.phasesRecord && this.phasesRecord.length) {
+      const phasesText = this.phasesRecord.map(r => (r.count > 1 ? `${r.phase} (x${r.count})` : r.phase)).join("<br>");
+      legend += `<br><br>Engagement progression:<br>${phasesText}`;
+    }
+
     notes.push({id: `marker${i}`, name: this.name, legend});
 
     tip(`${this.name} is over. ${result}`, true, "success", 4000);

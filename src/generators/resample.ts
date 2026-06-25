@@ -271,8 +271,6 @@ class Resampler {
     });
 
     States.getPoles();
-    const regimentCellsMap: Record<number, number> = {};
-    const VERTICAL_GAP = 8;
 
     pack.states = pack.states.map(state => {
       if (!state.i || state.removed) return state;
@@ -281,30 +279,31 @@ class Resampler {
       const [poleX, poleY] = state.pole as Point;
       state.center = !capital || capital.removed ? findClosestCell(poleX, poleY, Infinity, pack)! : capital.cell;
 
-      const military = state.military!.map(regiment => {
-        const cellCoords = projection(...parentMap.pack.cells.p[regiment.cell]);
-        const cell = this.isInMap(...cellCoords) ? findClosestCell(...cellCoords, Infinity, pack)! : state.center;
+      const military = state.military!.reduce(
+        (acc, regiment) => {
+          const [xPos, yPos] = projection(regiment.x, regiment.y);
 
-        const [xPos, yPos] = projection(regiment.x, regiment.y);
-        const [xBase, yBase] = projection(regiment.bx, regiment.by);
-        const [xCell, yCell] = pack.cells.p[cell];
+          if (!this.isInMap(xPos, yPos)) {
+            const noteIndex = notes.findIndex(n => n.id === `regiment${state.i}-${regiment.i}`);
+            if (noteIndex !== -1) notes.splice(noteIndex, 1);
+            return acc;
+          }
 
-        const regsOnCell = regimentCellsMap[cell] || 0;
-        regimentCellsMap[cell] = regsOnCell + 1;
+          const cellCoords = projection(...parentMap.pack.cells.p[regiment.cell]);
+          const cell = this.isInMap(...cellCoords) ? findClosestCell(...cellCoords, Infinity, pack)! : state.center;
 
-        const name =
-          this.isInMap(xPos, yPos) || regiment.name.includes("[relocated]")
-            ? regiment.name
-            : `[relocated] ${regiment.name}`;
+          const [xBase, yBase] = projection(regiment.bx, regiment.by);
+          const [xCell, yCell] = pack.cells.p[cell];
 
-        const pos = this.isInMap(xPos, yPos)
-          ? { x: rn(xPos, 2), y: rn(yPos, 2) }
-          : { x: xCell, y: yCell + regsOnCell * VERTICAL_GAP };
+          const name = regiment.name.replace("[relocated] ", "");
+          const pos = { x: rn(xPos, 2), y: rn(yPos, 2) };
+          const base = this.isInMap(xBase, yBase) ? { bx: rn(xBase, 2), by: rn(yBase, 2) } : { bx: xCell, by: yCell };
 
-        const base = this.isInMap(xBase, yBase) ? { bx: rn(xBase, 2), by: rn(yBase, 2) } : { bx: xCell, by: yCell };
-
-        return { ...regiment, cell, name, ...base, ...pos };
-      });
+          acc.push({ ...regiment, cell, name, ...base, ...pos });
+          return acc;
+        },
+        [] as NonNullable<typeof state.military>
+      );
 
       const neighbors = state.neighbors!.filter(stateId => validStates.has(stateId));
       return { ...state, neighbors, military };
