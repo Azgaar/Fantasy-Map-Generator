@@ -569,7 +569,7 @@ class BurgModule {
     const citadel = +(burg.citadel as number);
     const urban_castle = +(citadel && each(2)(i as number));
 
-    const hub = Routes.isCrossroad(cell);
+    const hub = Number(Routes.isCrossroad(cell));
     const walls = +(burg.walls as number);
     const plaza = +(burg.plaza as number);
     const temple = +(burg.temple as number);
@@ -590,10 +590,10 @@ class BurgModule {
       urban_castle: urban_castle.toString(),
       hub: hub.toString(),
       plaza: plaza.toString(),
+      greens: plaza ? "1" : "0",
       temple: temple.toString(),
       walls: walls.toString(),
       shantytown: shantytown.toString(),
-      gates: (-1).toString(),
       style
     }).toString();
     if (sea) url.searchParams.append("sea", sea.toString());
