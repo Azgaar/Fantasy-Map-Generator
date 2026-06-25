@@ -194,6 +194,12 @@ declare global {
   var toggleProvinces: () => void;
   var toggleBorders: () => void;
   var togglePopulation: () => void;
+  var toggleMilitary: (event?: MouseEvent) => void;
+
+  var clicked: () => void;
+  var selectIcon: (initial: string, callback: (value: string) => void) => void;
+  var sortLines: (headerElement: HTMLElement) => void;
+  var editNotes: (id: string, name: string) => void;
 
   var highlightElement: (element: Element | null, duration?: number) => void;
   var applySortingByHeader: (headerId: string) => void;
@@ -219,35 +225,6 @@ declare global {
   var armies: Selection<SVGGElement, unknown, null, undefined>;
 }
 
-type BurgGroup = {
-  name: string;
-  order: number;
-  active?: boolean;
-  isDefault?: boolean;
-  removed?: boolean;
-  min?: number;
-  max?: number;
-  percentile?: number;
-  features?: Record<string, boolean>;
-  biomes?: number[];
-  preview?: string;
-};
-
-type MilitaryUnit = {
-  icon: string;
-  name: string;
-  rural: number;
-  urban: number;
-  crew: number;
-  power: number;
-  type: string;
-  separate: number;
-  biomes?: number[];
-  states?: number[];
-  cultures?: number[];
-  religions?: number[];
-};
-
 type Options = {
   year: number;
   era: string;
@@ -266,4 +243,33 @@ type Options = {
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };
+};
+
+type MilitaryUnit = {
+  icon: string;
+  name: string;
+  rural: number;
+  urban: number;
+  crew: number;
+  power: number;
+  type: string;
+  separate: number;
+  biomes?: number[];
+  states?: number[];
+  cultures?: number[];
+  religions?: number[];
+};
+
+type BurgGroup = {
+  name: string;
+  order: number;
+  active?: boolean;
+  isDefault?: boolean;
+  removed?: boolean;
+  min?: number;
+  max?: number;
+  percentile?: number;
+  features?: Record<string, boolean>;
+  biomes?: number[];
+  preview?: string;
 };
