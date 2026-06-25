@@ -20,10 +20,14 @@ export interface Regiment {
   u: Record<string, number>; // units composition
   n: number; // naval unit flag
   type: string; // unit type
-  icon?: string;
+  icon: string;
   children?: Regiment[]; // merged regiments
   state: number;
   angle?: number;
+  casualties?: Record<string, number>; // battle-screen: per-unit casualties while a battle is in progress
+  survivors?: Record<string, number>; // battle-screen: per-unit survivors while a battle is in progress
+  px?: number; // battle-screen: position before being moved into a battle, restored afterward
+  py?: number;
 }
 
 interface Platoon {
@@ -425,6 +429,7 @@ class MilitaryModule {
             u,
             n: r.n,
             name: "",
+            icon: "",
             state: s.i
           };
         });

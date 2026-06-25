@@ -10,7 +10,11 @@ const lazyLoaders = {
   heightmapSelection: () => import("@/controllers/heightmap-selection"),
   culturesEditor: () => import("@/controllers/cultures-editor"),
   religionsEditor: () => import("@/controllers/religions-editor"),
-  statesEditor: () => import("@/controllers/states-editor")
+  statesEditor: () => import("@/controllers/states-editor"),
+  battleScreen: () => import("@/controllers/battle-screen"),
+  regimentEditor: () => import("@/controllers/regiment-editor"),
+  militaryOverview: () => import("@/controllers/military-overview"),
+  regimentsOverview: () => import("@/controllers/regiments-overview")
 };
 
 window.lazy = lazyLoaders;

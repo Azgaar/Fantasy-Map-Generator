@@ -35,7 +35,7 @@ function clicked() {
   else if (grand.id === "goodsBurgs") ProductionOverview.open(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
-  else if (great.id === "armies") editRegiment();
+  else if (great.id === "armies") editRegiment("#" + parent.id);
 }
 
 // clear elSelected variable
@@ -1012,6 +1012,18 @@ async function editReligions() {
   if (customization) return;
   const Editor = await window.lazy.religionsEditor();
   Editor.open();
+}
+
+async function overviewMilitary() {
+  if (customization) return;
+  const { MilitaryOverview } = await window.lazy.militaryOverview();
+  MilitaryOverview.open();
+}
+
+async function editRegiment(selector) {
+  if (customization) return;
+  const { RegimentEditor } = await window.lazy.regimentEditor();
+  RegimentEditor.open(selector);
 }
 
 // TS-migrated editors. TODO: import from module when editors.js is migrated to TS
