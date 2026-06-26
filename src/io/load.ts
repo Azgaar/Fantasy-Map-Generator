@@ -1,6 +1,5 @@
 import { lazy } from "@/lazy-loaders";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
-import { Cloud } from "./cloud";
 
 export async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -26,6 +25,7 @@ export async function createSharableDropboxLink(): Promise<void> {
   const sharableLinkContainer = ensureEl("sharableLinkContainer");
 
   try {
+    const { Cloud } = await lazy.cloud();
     const previewLink = await Cloud.providers.dropbox.getLink(mapFile);
     const directLink = previewLink.replace("www.dropbox.com", "dl.dropboxusercontent.com"); // DL allows CORS
     const finalLink = `${location.origin}${location.pathname}?maplink=${directLink}`;
