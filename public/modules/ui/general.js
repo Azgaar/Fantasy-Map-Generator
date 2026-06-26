@@ -20,6 +20,7 @@ const onDataTipMove = debounce(showDataTip, 50);
 document.getElementById("dialogs").addEventListener("mousemove", onDataTipMove);
 document.getElementById("optionsContainer").addEventListener("mousemove", onDataTipMove);
 document.getElementById("exitCustomization").addEventListener("mousemove", onDataTipMove);
+document.getElementById("tourPromptButton").addEventListener("mousemove", onDataTipMove);
 
 const tipBackgroundMap = {
   info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",

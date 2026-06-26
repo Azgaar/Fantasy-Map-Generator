@@ -804,6 +804,7 @@ async function showLoadPane() {
   });
 
   // already connected to Dropbox: list saved maps
+  const { Cloud } = await window.lazy.cloud();
   if (Cloud.providers.dropbox.api) {
     ensureEl("dropboxConnectButton").style.display = "none";
     ensureEl("loadFromDropboxSelect").style.display = "block";
@@ -839,6 +840,7 @@ async function showLoadPane() {
 }
 
 async function connectToDropbox() {
+  const { Cloud } = await window.lazy.cloud();
   await Cloud.providers.dropbox.initialize();
   if (Cloud.providers.dropbox.api) showLoadPane();
 }
@@ -860,7 +862,7 @@ function loadURL() {
           tip("Please provide a valid URL", false, "error");
           return;
         }
-        loadMapFromURL(value);
+        window.lazy.load().then(m => m.loadMapFromURL(value));
         $(this).dialog("close");
       },
       Cancel: function () {
@@ -875,7 +877,7 @@ ensureEl("mapToLoad").addEventListener("change", function () {
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
-  uploadMap(fileToLoad);
+  window.lazy.load().then(m => m.uploadMap(fileToLoad));
 });
 
 function openExportToPngTiles() {
@@ -891,7 +893,7 @@ function openExportToPngTiles() {
     title: "Download tiles",
     width: "23em",
     buttons: {
-      Download: () => exportToPngTiles(),
+      Download: () => window.lazy.exportMap().then(m => m.exportToPngTiles()),
       Cancel: function () {
         $(this).dialog("close");
       }

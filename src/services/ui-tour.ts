@@ -1,39 +1,12 @@
 import { driver } from "driver.js";
+import { ensureEl } from "@/utils/nodeUtils";
 import "driver.js/dist/driver.css";
 
-const byId = (id: string) => document.getElementById(id);
-
-function clickTab(tabId: string) {
-  byId(tabId)?.click();
-}
-
-function openOptionsPanel() {
-  const options = byId("options");
-  if (options && options.style.display === "none") {
-    byId("optionsTrigger")?.click();
-  }
-}
-
 function closeOptionsPanel() {
-  const options = byId("options");
+  const options = ensureEl("options");
   if (options && options.style.display !== "none") {
-    byId("optionsHide")?.click();
+    ensureEl("optionsHide")?.click();
   }
-}
-
-function showHeightmapCustomizationPanel() {
-  const toolsContent = byId("toolsContent");
-  const customizationMenu = byId("customizationMenu");
-  if (toolsContent) toolsContent.style.display = "none";
-  if (customizationMenu) customizationMenu.style.display = "block";
-}
-
-function hideHeightmapCustomizationPanel() {
-  const toolsContent = byId("toolsContent");
-  const customizationMenu = byId("customizationMenu");
-  if (!customizationMenu || customizationMenu.style.display !== "block") return;
-  customizationMenu.style.display = "none";
-  if (toolsContent) toolsContent.style.display = "block";
 }
 
 function start() {
@@ -120,7 +93,8 @@ function start() {
           description: "Click this arrow button to open the main options panel where all configuration tabs live.",
           side: "right",
           onNextClick: () => {
-            openOptionsPanel();
+            const options = ensureEl("options");
+            if (options.style.display === "none") ensureEl("optionsTrigger").click();
             tour.moveNext();
           }
         }
@@ -130,7 +104,7 @@ function start() {
       {
         element: "#layersTab",
         onHighlightStarted: () => {
-          clickTab("layersTab");
+          ensureEl("layersTab")?.click();
         },
         popover: {
           title: "Layers Tab",
@@ -141,7 +115,7 @@ function start() {
       {
         element: "#layersPreset",
         onHighlightStarted: () => {
-          clickTab("layersTab");
+          ensureEl("layersTab")?.click();
         },
         popover: {
           title: "Layer Presets",
@@ -153,7 +127,7 @@ function start() {
       {
         element: "#mapLayers",
         onHighlightStarted: () => {
-          clickTab("layersTab");
+          ensureEl("layersTab")?.click();
         },
         popover: {
           title: "Toggle Individual Layers",
@@ -167,7 +141,7 @@ function start() {
       {
         element: "#styleTab",
         onHighlightStarted: () => {
-          clickTab("styleTab");
+          ensureEl("styleTab")?.click();
         },
         popover: {
           title: "Style Tab",
@@ -179,7 +153,7 @@ function start() {
       {
         element: "#stylePreset",
         onHighlightStarted: () => {
-          clickTab("styleTab");
+          ensureEl("styleTab")?.click();
         },
         popover: {
           title: "Style Presets",
@@ -191,7 +165,7 @@ function start() {
       {
         element: "#styleElementSelect",
         onHighlightStarted: () => {
-          clickTab("styleTab");
+          ensureEl("styleTab")?.click();
         },
         popover: {
           title: "Individual Style Settings",
@@ -205,7 +179,7 @@ function start() {
       {
         element: "#optionsTab",
         onHighlightStarted: () => {
-          clickTab("optionsTab");
+          ensureEl("optionsTab")?.click();
         },
         popover: {
           title: "Options Tab",
@@ -217,7 +191,7 @@ function start() {
       {
         element: "#optionsContent",
         onHighlightStarted: () => {
-          clickTab("optionsTab");
+          ensureEl("optionsTab")?.click();
         },
         popover: {
           title: "Generation Options",
@@ -230,7 +204,7 @@ function start() {
         element: "#configureWorld",
         onHighlightStarted: () => {
           closeDialogs();
-          clickTab("optionsTab");
+          ensureEl("optionsTab")?.click();
         },
         popover: {
           title: "Configure World",
@@ -255,7 +229,7 @@ function start() {
           side: "right",
           onNextClick: () => {
             closeDialogs();
-            clickTab("toolsTab");
+            ensureEl("toolsTab")?.click();
             tour.moveNext();
           }
         }
@@ -265,7 +239,7 @@ function start() {
       {
         element: "#toolsTab",
         onHighlightStarted: () => {
-          clickTab("toolsTab");
+          ensureEl("toolsTab")?.click();
         },
         popover: {
           title: "Tools Tab",
@@ -277,7 +251,7 @@ function start() {
       {
         element: "#editHeightmapButton",
         onHighlightStarted: () => {
-          clickTab("toolsTab");
+          ensureEl("toolsTab")?.click();
         },
         popover: {
           title: "Edit the Heightmap",
@@ -293,7 +267,10 @@ function start() {
         element: "#customizationMenu",
         disableActiveInteraction: false,
         onHighlightStarted: () => {
-          showHeightmapCustomizationPanel();
+          const toolsContent = ensureEl("toolsContent");
+          const customizationMenu = ensureEl("customizationMenu");
+          toolsContent.style.display = "none";
+          customizationMenu.style.display = "block";
         },
         onDeselected: () => {
           hideHeightmapCustomizationPanel();
@@ -310,7 +287,7 @@ function start() {
       {
         element: "#aboutTab",
         onHighlightStarted: () => {
-          clickTab("aboutTab");
+          ensureEl("aboutTab")?.click();
         },
         popover: {
           title: "About Tab",
@@ -322,7 +299,7 @@ function start() {
       {
         element: "#aboutContent",
         onHighlightStarted: () => {
-          clickTab("aboutTab");
+          ensureEl("aboutTab")?.click();
         },
         popover: {
           title: "About & Resources",
@@ -389,14 +366,18 @@ function start() {
 
   function handleKeydown(e: KeyboardEvent): void {
     if (!tour.isActive() || isEditableTarget(e.target)) return;
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
       e.preventDefault();
       e.stopPropagation();
       document.querySelector<HTMLElement>(".driver-popover-next-btn")?.click();
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
       e.preventDefault();
       e.stopPropagation();
       document.querySelector<HTMLElement>(".driver-popover-prev-btn")?.click();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      tour.destroy();
     }
   }
 
@@ -404,4 +385,11 @@ function start() {
   tour.drive();
 }
 
-window.UITour = { start };
+function hideHeightmapCustomizationPanel() {
+  const customizationMenu = ensureEl("customizationMenu");
+  if (!customizationMenu || customizationMenu.style.display !== "block") return;
+  customizationMenu.style.display = "none";
+  ensureEl("toolsContent").style.display = "block";
+}
+
+export const UiTour = { start };

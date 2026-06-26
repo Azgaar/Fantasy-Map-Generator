@@ -1026,13 +1026,14 @@ async function editRegiment(selector) {
   RegimentEditor.open(selector);
 }
 
-// TS-migrated editors. TODO: import from module when editors.js is migrated to TS
-function editCoastlineSettings() {
+async function editCoastlineSettings() {
   if (customization) return;
-  window.CoastlineEditor.open();
+  const { CoastlineEditor } = await window.lazy.coastlineEditor();
+  CoastlineEditor.open();
 }
 
-function editTradeAnimation() {
+async function editTradeAnimation() {
   if (customization) return;
-  window.TradeAnimationEditor.open();
+  const { TradeAnimationEditor } = await window.lazy.tradeAnimationEditor();
+  TradeAnimationEditor.open();
 }

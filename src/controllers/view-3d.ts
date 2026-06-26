@@ -683,6 +683,7 @@ function deleteLabels() {
 }
 
 async function createMeshTextureUrl(): Promise<string> {
+  const { getMapURL } = await window.lazy.exportMap();
   const url = await getMapURL("mesh", {
     noLabels: options.labels3d,
     noWater: options.extendedWater,
@@ -1060,6 +1061,7 @@ async function updateGlobeTexure(addMesh?: boolean) {
     material.map = texture;
     if (addMesh) addGlobe3dMesh();
   };
+  const { getMapURL } = await window.lazy.exportMap();
   img2.src = await getMapURL("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
 }
 

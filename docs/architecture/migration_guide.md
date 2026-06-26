@@ -8,15 +8,15 @@ runtime globals) into a typed module inside Vite's graph. See also [lazy_loading
 
 Pick the layer by responsibility, name the file `kebab-case.ts`:
 
-| Layer              | Holds                                                 |
-| ------------------ | ----------------------------------------------------- |
-| `src/utils/`       | pure, dependency-free helpers                         |
-| `src/generators/`  | domain generators / data logic (`Goods`, …)           |
-| `src/renderers/`   | code that draws SVG layers                            |
-| `src/controllers/` | dialogs, panels, UI flows, overviews                  |
-| `src/io/`          | save / load / export / serialization                  |
-| `src/services/`    | app-shell & platform/asset infra (install, fonts, …)  |
-| `src/data/`        | static content / reference data (supporters, …)       |
+| Layer              | Holds                                                |
+| ------------------ | ---------------------------------------------------- |
+| `src/utils/`       | pure, dependency-free helpers                        |
+| `src/generators/`  | domain generators / data logic (`Goods`, …)          |
+| `src/renderers/`   | code that draws SVG layers                           |
+| `src/controllers/` | dialogs, panels, UI flows, overviews                 |
+| `src/io/`          | save / load / export / serialization                 |
+| `src/services/`    | app-shell & platform/asset infra (install, fonts, …) |
+| `src/data/`        | static content / reference data (supporters, …)      |
 
 Not everything is Model/View/Controller. If a file is **static content** (a constant
 list, a template table) it goes in `data/`, not `controllers/`. If it manages
@@ -110,6 +110,147 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
     ([`src/lazy-loaders.ts`](../../src/lazy-loaders.ts), a top-level
     layer-agnostic file) so it ships as its own on-demand chunk — see
     [lazy_loading.md](./lazy_loading.md).
+
+## Canonical module skeletons
+
+Migrate _toward_ clean code. Each
+skeleton below is the shape to aim for — small, explicit, and testable — embodying the principles in [architecture.md](./architecture.md).
+
+The recurring move is **separate the logic from the legacy seam**: write the real work as
+plain exported functions that take their inputs as arguments (so a unit test can call them
+without the app), then add a thin `window` bridge at the bottom that wires those functions
+to the ambient globals classic callers expect. The bridge is a temporary interop
+concession — keep it to a few lines and delete it once every caller is TypeScript. Globals
+referenced bare (`pack`, `grid`, `seed`, `TIME`, `customization`, `$`, `layerIsOn`, …) come
+from `main.js`/legacy and are typed in [`src/types/global.ts`](../../src/types/global.ts) or
+by the owning module — import or declare, never `as any`.
+
+### Generator
+
+```ts
+// src/generators/module-generator.ts
+import Alea from "alea";
+
+export interface Module {
+  i: number;
+  name: string; /* serializable fields only */
+}
+
+// Clean core: explicit inputs → data out. Deterministic, no DOM, trivially unit-tested
+function generate(seed: string): Module[] {
+  Math.random = Alea(seed); // seed once; same seed - same world
+  return [];
+}
+export const Module = { generate, get };
+
+// Temporary Legacy seam — classic callers reach the generator as a global.
+declare global {
+  var Module: { generate: typeof generate; get: typeof get };
+}
+window.Module = {
+  generate: () => void (pack[module] = generate(pack, seed)),
+  get: i => getWidget(pack.widgets, i)
+};
+```
+
+Reach for a `class` if the subsystem owns mutable runtime state.
+
+### Data
+
+```ts
+// src/data/module-data.ts
+// co-located: a const at the top of the generator that consumes it
+const MODULE_DATA = [{ name: "Cog", value: 1 } /* … */] as const;
+
+// split out once large
+export const charges = {
+  types: {
+    /* … */
+  }
+};
+```
+
+No logic here — the data says _what_, the generator decides _how_.
+
+### Renderer
+
+```ts
+// src/renderers/module-renderer.ts
+// Clean core: a pure projection of state → markup. Same state ⇒ same output; reads only.
+function draw(): string {
+  return (document.getElementById("moduleLayer").innerHTML = buildModule(pack));
+}
+export const ModuleRenderer = { draw };
+
+// Legacy seam: apply to the layer + a toggle, registered for classic callers
+declare global {
+  interface Window {
+    drawModule: typeof draw;
+  }
+}
+window.drawModule = draw;
+```
+
+### Controller (overview / editor)
+
+```ts
+// src/controllers/module-editor.ts
+// thin: intent → state change/redraw
+import { ensureEl } from "../utils";
+
+let controllerState: unknown; // optional, for a panel that preserves some UI state across opens
+
+function open(id: number): void {
+  const dialog = render();
+  addListeners(dialog);
+
+  dialog.open({ title: "Module Editor", onClose: cleanup });
+}
+
+function render(): void {
+  /* build innerHTML, set values from pack */
+}
+
+function addListeners(dialog): void {
+  /* wire event handlers to update pack, redraw, etc. */
+}
+
+function cleanup(): void {
+  /* clear innerHTML, remove listeners */
+}
+
+export const ModuleEditor = { open };
+
+// Legacy seam: registered for classic callers
+declare global {
+  interface Window {
+    ModuleEditor: { open: typeof open };
+  }
+}
+window.WidgetOverview = { open };
+```
+
+Most of controllers should be [`lazy-loaded`](../../src/lazy-loaders.ts).
+
+### IO (serialization)
+
+```ts
+// src/io/export-module.ts — pure; the serialized shape is the .map contract
+export function serializeModule(): string {
+  return JSON.stringify({ data });
+}
+```
+
+Reached via a direct import or `window.lazy.exportModule()` — never `window.X = …`.
+
+### Service (app-shell lifecycle)
+
+```ts
+// src/services/something.ts — app/browser lifecycle only; never reads or writes pack/grid
+export function init(event: Event): void {
+  /* PWA install, fonts, tour, auto-update … */
+}
+```
 
 ## The eval-order gotcha (read this)
 
