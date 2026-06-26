@@ -329,10 +329,10 @@ async function checkLoadParameters() {
     const valid = pattern.test(maplink);
     if (valid) {
       setTimeout(() => {
-        window.lazy.load().then(m => m.loadMapFromURL(maplink, 1));
+        loadMapFromURL(maplink, 1);
       }, 1000);
       return;
-    } else window.lazy.load().then(m => m.showUploadErrorMessage("Map link is not a valid URL", maplink));
+    } else showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
 
   // if there is a seed (user of MFCG provided), generate map for it
@@ -348,7 +348,7 @@ async function checkLoadParameters() {
       const blob = await ldb.get("lastMap");
       if (blob) {
         WARN && console.warn("Loading last stored map");
-        window.lazy.load().then(m => m.uploadMap(blob));
+        uploadMap(blob);
         return;
       }
     } catch (error) {
@@ -446,20 +446,17 @@ function toggleAssistant() {
 function initTourPromptButton() {
   const MAX_SHOWS = 3;
   const STORAGE_KEY = "fmg-tour-prompt-count";
+  const btn = document.getElementById("tourPromptButton");
+  if (!btn) return;
 
   const count = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   if (count >= MAX_SHOWS) return;
 
-  const btn = document.getElementById("tourPromptButton");
-  if (!btn) return;
-
-  btn.style.display = "flex";
-  btn.addEventListener("click", async () => {
-    const { UiTour } = await window.lazy.uiTour();
-    UiTour.start();
-    localStorage.setItem(STORAGE_KEY, MAX_SHOWS);
-  });
   localStorage.setItem(STORAGE_KEY, count + 1);
+  btn.style.display = "flex";
+  btn.addEventListener("click", () => {
+    UITour.start();
+  });
 }
 
 // find burg for MFCG and focus on it
@@ -642,12 +639,10 @@ void (function addDragToUpload() {
     overlay.style.display = null;
     overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
     if (closeDialogs) closeDialogs();
-    window.lazy.load().then(m =>
-      m.uploadMap(file, () => {
-        overlay.style.display = "none";
-        overlay.innerHTML = "Drop a map file to open";
-      })
-    );
+    uploadMap(file, () => {
+      overlay.style.display = "none";
+      overlay.innerHTML = "Drop a map file to open";
+    });
   });
 })();
 

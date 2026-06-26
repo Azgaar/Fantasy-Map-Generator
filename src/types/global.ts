@@ -12,7 +12,6 @@ declare global {
   var graphHeight: number;
   var graphWidth: number;
   var TIME: boolean;
-  var INFO: boolean;
   var WARN: boolean;
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
@@ -78,31 +77,6 @@ declare global {
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
   var debug: Selection<SVGElement, unknown, null, undefined>;
-
-  // SVG layer selections reassigned on map load (main.js)
-  var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
-  var ocean: Selection<SVGGElement, unknown, null, undefined>;
-  var oceanPattern: Selection<SVGGElement, unknown, null, undefined>;
-  var landmass: Selection<SVGGElement, unknown, null, undefined>;
-  var texture: Selection<SVGGElement, unknown, null, undefined>;
-  var biomes: Selection<SVGGElement, unknown, null, undefined>;
-  var cells: Selection<SVGGElement, unknown, null, undefined>;
-  var gridOverlay: Selection<SVGGElement, unknown, null, undefined>;
-  var coordinates: Selection<SVGGElement, unknown, null, undefined>;
-  var compass: Selection<SVGGElement, unknown, null, undefined>;
-  var terrain: Selection<SVGGElement, unknown, null, undefined>;
-  var zones: Selection<SVGGElement, unknown, null, undefined>;
-  var borders: Selection<SVGGElement, unknown, null, undefined>;
-  var stateBorders: Selection<SVGGElement, unknown, null, undefined>;
-  var provinceBorders: Selection<SVGGElement, unknown, null, undefined>;
-  var roads: Selection<SVGGElement, unknown, null, undefined>;
-  var trails: Selection<SVGGElement, unknown, null, undefined>;
-  var searoutes: Selection<SVGGElement, unknown, null, undefined>;
-  var prec: Selection<SVGGElement, unknown, null, undefined>;
-  var population: Selection<SVGGElement, unknown, null, undefined>;
-  var icons: Selection<SVGGElement, unknown, null, undefined>;
-  var ruler: Selection<SVGGElement, unknown, null, undefined>;
-  var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var biomesData: {
     i: number[];
     name: string[];
@@ -126,54 +100,13 @@ declare global {
   var getAreaUnit: (squareMark?: string) => string;
   var getPrecipitation: (prec: number) => string;
 
-  // IO / loading helpers defined in classic public/ scripts
-  var ldb: {
-    get: (key: string) => Promise<Blob | undefined>;
-    set: (key: string, value: Blob) => Promise<void>;
-  };
-  var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
-  var rulers: any; // Rulers instance (classic)
-  var Rulers: any;
-  var Ruler: any;
-  var Opisometer: any;
-  var Planimeter: any;
-  var mapHistory: { created: number; [key: string]: unknown }[];
-  var customPresetPrefix: string;
-
-  type VersionComparison = { isEqual: boolean; isNewer: boolean; isOlder: boolean };
-  var compareVersions: (
-    version1: string,
-    version2: string,
-    options?: { major?: boolean; minor?: boolean; patch?: boolean }
-  ) => VersionComparison;
-  var parseMapVersion: (version: string) => string;
-  var isValidVersion: (versionString: string) => boolean;
-
-  var getCellPopulation: (i: number) => [number, number];
-  var getCurrentPreset: () => void;
-  var focusOn: () => void;
-  var fitMapToScreen: () => void;
-  var cleanupData: () => void;
-  var regenerateMap: (reason?: string) => void;
-  var generateMapOnLoad: () => void;
-  var addCustomColorScheme: (scheme: string) => void;
-  var updateTextureSelectValue: (href: string) => void;
-  var editUnits: () => void;
-
-  var drawTexture: () => void;
-  var drawRoutes: () => void;
-  var drawZones: () => void;
-  var drawGrid: () => void;
-  var regenerateEmblems: () => void;
-  var toggleEmblems: (event?: MouseEvent) => void;
-  var shiftCompass: () => void;
-
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;
   var FlatQueue: any;
 
   var THREE: any; // lazy-loaded
+  var getMapURL: (type: string, options?: Record<string, unknown>) => Promise<string>;
 
   var tip: (
     message: string,
@@ -197,6 +130,7 @@ declare global {
   var closeDialogs: (except?: string) => void;
   var editWorld: () => void;
   var showExportPane: () => void;
+  var UITour: { start: () => void };
   var TradeDetails: { open: (batch: any) => void };
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;

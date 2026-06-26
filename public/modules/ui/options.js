@@ -804,7 +804,6 @@ async function showLoadPane() {
   });
 
   // already connected to Dropbox: list saved maps
-  const { Cloud } = await window.lazy.cloud();
   if (Cloud.providers.dropbox.api) {
     ensureEl("dropboxConnectButton").style.display = "none";
     ensureEl("loadFromDropboxSelect").style.display = "block";
@@ -840,7 +839,6 @@ async function showLoadPane() {
 }
 
 async function connectToDropbox() {
-  const { Cloud } = await window.lazy.cloud();
   await Cloud.providers.dropbox.initialize();
   if (Cloud.providers.dropbox.api) showLoadPane();
 }
@@ -862,7 +860,7 @@ function loadURL() {
           tip("Please provide a valid URL", false, "error");
           return;
         }
-        window.lazy.load().then(m => m.loadMapFromURL(value));
+        loadMapFromURL(value);
         $(this).dialog("close");
       },
       Cancel: function () {
@@ -877,7 +875,7 @@ ensureEl("mapToLoad").addEventListener("change", function () {
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
-  window.lazy.load().then(m => m.uploadMap(fileToLoad));
+  uploadMap(fileToLoad);
 });
 
 function openExportToPngTiles() {
@@ -893,7 +891,7 @@ function openExportToPngTiles() {
     title: "Download tiles",
     width: "23em",
     buttons: {
-      Download: () => window.lazy.exportMap().then(m => m.exportToPngTiles()),
+      Download: () => exportToPngTiles(),
       Cancel: function () {
         $(this).dialog("close");
       }
@@ -973,7 +971,7 @@ function enterStandardView() {
   heightmap3DView.classList.remove("pressed");
   viewStandard.classList.add("pressed");
 
-  if (!findEl("canvas3d")) return;
+  if (!ensureEl("canvas3d")) return;
   ThreeD.stop();
   ensureEl("canvas3d").remove();
   if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
@@ -1021,8 +1019,7 @@ async function enter3dView(type) {
 }
 
 function resize3d() {
-  const canvas = findEl("canvas3d");
-  if (!canvas) return;
+  const canvas = ensureEl("canvas3d");
   canvas.width = parseFloat(preview3d.style.width);
   canvas.height = parseFloat(preview3d.style.height) - 2;
   ThreeD.redraw();
@@ -1080,7 +1077,7 @@ function toggle3dOptions() {
   ensureEl("options3dSatellite").addEventListener("change", toggleSatellite3d);
 
   function updateValues() {
-    const globe = findEl("canvas3d")?.dataset.type === "viewGlobe";
+    const globe = ensureEl("canvas3d").dataset.type === "viewGlobe";
     options3dMesh.style.display = globe ? "none" : "block";
     options3dGlobe.style.display = globe ? "block" : "none";
     options3dOBJSave.style.display = globe ? "none" : "inline-block";

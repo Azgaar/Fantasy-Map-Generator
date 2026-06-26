@@ -2428,13 +2428,13 @@ svg.button {
   height: 36px;
   border-radius: 50%;
   background-color: var(--bg-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   user-select: none;
-  opacity: 0;
-  animation: fadeIn 1s ease-in 1s forwards;
+  animation: fadeIn 1s ease-in;
   z-index: 9999;
 }
 
@@ -2448,16 +2448,18 @@ svg.button {
 
 #tourPromptButton svg path {
   fill: #000000;
-  stroke: #000000;
-  fill-opacity: 1;
-  stroke-width: 0;
-  transition: all 0.3s ease-out;
-  stroke-linejoin: round;
+  stroke: none;
+}
+
+#tourPromptButton:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
 #tourPromptButton:hover svg path {
-  fill-opacity: 0;
+  fill: none;
+  stroke: #000000;
   stroke-width: 5;
+  stroke-linejoin: round;
 }
 
 @media print {
