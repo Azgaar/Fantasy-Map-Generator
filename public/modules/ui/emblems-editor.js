@@ -17,7 +17,7 @@ function editEmblem(type, id, el) {
     resizable: true,
     width: "18.2em",
     height: "auto",
-    position: {my: "left top", at: "left+10 top+10", of: "svg", collision: "fit"},
+    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
     close: closeEmblemEditor
   });
 
@@ -48,8 +48,8 @@ function editEmblem(type, id, el) {
       parent.id === "burgEmblems"
         ? [pack.burgs, "burg"]
         : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
+          ? [pack.provinces, "province"]
+          : [pack.states, "state"];
     const i = +e.target.dataset.i;
     type = t;
     id = type + "COA" + i;
@@ -223,7 +223,7 @@ function editEmblem(type, id, el) {
   }
 
   function openInArmoria() {
-    const coa = el.coa && !el.coa.custom ? el.coa : {t1: "sable"};
+    const coa = el.coa && !el.coa.custom ? el.coa : { t1: "sable" };
     const json = JSON.stringify(coa).replaceAll("#", "%23");
     const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
     openURL(url);
@@ -285,7 +285,7 @@ function editEmblem(type, id, el) {
 
       if (oldEmblem) oldEmblem.remove();
 
-      const customCoa = {custom: true};
+      const customCoa = { custom: true };
       if (el.coa.size) customCoa.size = el.coa.size;
       if (el.coa.x) customCoa.x = el.coa.x;
       if (el.coa.y) customCoa.y = el.coa.y;
@@ -344,7 +344,7 @@ function editEmblem(type, id, el) {
 
   async function getURL(svg, size) {
     const serialized = getSVG(svg, size);
-    const blob = new Blob([serialized], {type: "image/svg+xml;charset=utf-8"});
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
     return url;
@@ -407,6 +407,7 @@ function editEmblem(type, id, el) {
               const provinceBurgFigures = provinceBurgs
                 .map(burg => {
                   const el = document.getElementById("burgCOA" + burg.i);
+                  if (!el) return "";
                   return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
                 })
                 .join("");
@@ -420,6 +421,7 @@ function editEmblem(type, id, el) {
           const stateBurgOutOfProvincesFigures = stateBurgOutOfProvinces
             .map(burg => {
               const el = document.getElementById("burgCOA" + burg.i);
+              if (!el) return "";
               return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
             })
             .join("");
@@ -435,6 +437,7 @@ function editEmblem(type, id, el) {
           neutralBurgs
             .map(burg => {
               const el = document.getElementById("burgCOA" + burg.i);
+              if (!el) return "";
               return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
             })
             .join("") +
