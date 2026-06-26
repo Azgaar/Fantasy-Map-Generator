@@ -973,7 +973,7 @@ function enterStandardView() {
   heightmap3DView.classList.remove("pressed");
   viewStandard.classList.add("pressed");
 
-  if (!ensureEl("canvas3d")) return;
+  if (!findEl("canvas3d")) return;
   ThreeD.stop();
   ensureEl("canvas3d").remove();
   if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
@@ -1021,7 +1021,8 @@ async function enter3dView(type) {
 }
 
 function resize3d() {
-  const canvas = ensureEl("canvas3d");
+  const canvas = findEl("canvas3d");
+  if (!canvas) return;
   canvas.width = parseFloat(preview3d.style.width);
   canvas.height = parseFloat(preview3d.style.height) - 2;
   ThreeD.redraw();
@@ -1079,7 +1080,7 @@ function toggle3dOptions() {
   ensureEl("options3dSatellite").addEventListener("change", toggleSatellite3d);
 
   function updateValues() {
-    const globe = ensureEl("canvas3d").dataset.type === "viewGlobe";
+    const globe = findEl("canvas3d")?.dataset.type === "viewGlobe";
     options3dMesh.style.display = globe ? "none" : "block";
     options3dGlobe.style.display = globe ? "block" : "none";
     options3dOBJSave.style.display = globe ? "none" : "inline-block";

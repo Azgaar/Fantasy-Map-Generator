@@ -14,6 +14,15 @@ export const ensureEl = <T extends HTMLElement>(id: string): T => {
 };
 
 /**
+ * @param id - The ID of the element to retrieve
+ * @typeParam T - The type of the element to retrieve, extending HTMLElement
+ * @returns The element with the specified ID, cast to the specified type, or null if not found
+ */
+export const findEl = <T extends HTMLElement>(id: string): T | null => {
+  return document.getElementById(id) as T | null;
+};
+
+/**
  * Get the composed path of a node (including shadow DOM and window)
  * @param {Node | Window} node - The starting node or window
  * @returns {Array<Node>} - The composed path as an array
@@ -43,5 +52,6 @@ declare global {
     getComposedPath: typeof getComposedPath;
     getNextId: typeof getNextId;
     ensureEl: typeof ensureEl;
+    findEl: typeof findEl;
   }
 }

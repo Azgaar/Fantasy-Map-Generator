@@ -127,7 +127,7 @@ function buildDialogHTML(): string {
   }).join("");
 
   return /* html */ `
-    <div id="tradeAnimationEditor" style="display:none">
+    <div id="tradeAnimationEditor" class="dialog" style="display:none">
       <style>
         #tradeAnimationEditor slider-input { width: 100%; }
         #tradeAnimationEditor slider-input input[type=range] { flex: 1; min-width: 0; }
