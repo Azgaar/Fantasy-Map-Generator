@@ -142,7 +142,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
 
 const PREVIEW_SEED = "preview_coastline";
 
-export function open(): void {
+function open(): void {
   if (!document.getElementById("coastlineSettingsDialog")) {
     document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
   }
@@ -476,10 +476,4 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
   }
 }
 
-declare global {
-  interface Window {
-    CoastlineEditor: { open: () => void };
-  }
-}
-
-window.CoastlineEditor = { open };
+export const CoastlineEditor = { open };

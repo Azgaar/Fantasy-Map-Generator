@@ -68,7 +68,7 @@ const INPUTS = [
   }
 ];
 
-export function open(): void {
+function open(): void {
   closeDialogs("#tradeAnimationEditor, .stable");
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
@@ -127,7 +127,7 @@ function buildDialogHTML(): string {
   }).join("");
 
   return /* html */ `
-    <div id="tradeAnimationEditor" style="display:none">
+    <div id="tradeAnimationEditor" class="dialog" style="display:none">
       <style>
         #tradeAnimationEditor slider-input { width: 100%; }
         #tradeAnimationEditor slider-input input[type=range] { flex: 1; min-width: 0; }
@@ -138,10 +138,4 @@ function buildDialogHTML(): string {
     </div>`;
 }
 
-declare global {
-  interface Window {
-    TradeAnimationEditor: { open: () => void };
-  }
-}
-
-window.TradeAnimationEditor = { open };
+export const TradeAnimationEditor = { open };

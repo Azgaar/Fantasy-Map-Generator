@@ -172,7 +172,7 @@ function handleLayersPresetChange(preset) {
     if (isOn && !shouldBeOn) el.click();
   });
 
-  if (ensureEl("canvas3d")) setTimeout(() => ThreeD.update(), 400);
+  if (findEl("canvas3d")) setTimeout(() => ThreeD.update(), 400);
 }
 
 function savePreset() {
