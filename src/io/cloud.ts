@@ -107,7 +107,11 @@ const dropbox: DropboxProvider = {
     const height = 480;
     const left = window.innerWidth / 2 - width / 2;
     const top = window.innerHeight / 2 - height / 2.5;
-    this.authWindow = window.open("./dropbox.html", "auth", `width=${width}, height=${height}, top=${top}, left=${left}`);
+    this.authWindow = window.open(
+      "./dropbox.html",
+      "auth",
+      `width=${width}, height=${height}, top=${top}, left=${left}`
+    );
 
     return new Promise<void>((resolve, reject) => {
       const channel = new BroadcastChannel("dropbox-auth");
