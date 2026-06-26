@@ -111,11 +111,3 @@ function closeTradeDetails(): void {
   ensureEl("tradeDetailsSummary").innerHTML = "";
   clearHighlight();
 }
-
-declare global {
-  interface Window {
-    TradeDetails: { open: typeof open };
-  }
-}
-
-window.TradeDetails = { open };

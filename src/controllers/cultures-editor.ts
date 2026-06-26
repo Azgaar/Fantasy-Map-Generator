@@ -1,4 +1,5 @@
 import { csvParse, drag, easeSinIn, pointer, select, transition } from "d3";
+import { lazy } from "@/lazy-loaders";
 import {
   abbreviate,
   capitalize,
@@ -103,7 +104,7 @@ function addListeners(): void {
   ensureEl("culturesManuallyUndo").on("click", undoCulturesManualAssignment);
   ensureEl("culturesManuallyApply").on("click", applyCultureManualAssignent);
   ensureEl("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
-  ensureEl("culturesEditNamesBase").on("click", window.NamesbaseEditor.open);
+  ensureEl("culturesEditNamesBase").on("click", () => lazy.namesbaseEditor().then(m => m.open()));
   ensureEl("culturesAdd").on("click", enterAddCulturesMode);
   ensureEl("culturesExport").on("click", downloadCulturesCsv);
   ensureEl("culturesImport").on("click", () => ensureEl("culturesCSVToLoad").click());
@@ -682,7 +683,7 @@ function togglePercentageMode(): void {
 
 async function showHierarchy(): Promise<void> {
   if (customization) return;
-  const HeirarchyTree = await window.lazy.hierarchyTree();
+  const HeirarchyTree = await lazy.hierarchyTree();
 
   const getDescription = (culture: any) => {
     const { name, type, rural, urban } = culture;

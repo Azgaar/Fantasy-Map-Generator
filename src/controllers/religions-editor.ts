@@ -1,4 +1,5 @@
 import { drag, easeSinIn, pointer, select, transition } from "d3";
+import { lazy } from "@/lazy-loaders";
 import {
   abbreviate,
   debounce,
@@ -631,7 +632,7 @@ function togglePercentageMode(): void {
 
 async function showHierarchy(): Promise<void> {
   if (customization) return;
-  const HeirarchyTree = await window.lazy.hierarchyTree();
+  const HeirarchyTree = await lazy.hierarchyTree();
 
   const getDescription = (religion: any) => {
     const { name, type, form, rural, urban } = religion;

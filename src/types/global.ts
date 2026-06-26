@@ -197,7 +197,6 @@ declare global {
   var closeDialogs: (except?: string) => void;
   var editWorld: () => void;
   var showExportPane: () => void;
-  var TradeDetails: { open: (batch: any) => void };
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
   var getLongitude: (x: number, precision?: number) => number;

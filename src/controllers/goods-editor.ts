@@ -1,4 +1,5 @@
 import { pointer, select } from "d3";
+import { lazy } from "@/lazy-loaders";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
@@ -136,7 +137,7 @@ function goodsEditorAddLines() {
     el.addEventListener("click", ev => {
       ev.stopPropagation();
       const goodId = Number((el.closest<HTMLElement>(".states") as HTMLElement).dataset.id);
-      window.ComparePrices.open(goodId, "#goodsEditor");
+      lazy.comparePrices().then(m => m.open(goodId, "#goodsEditor"));
     });
   });
 
@@ -607,9 +608,3 @@ function closeGoodsEditor() {
   if (customization === 14) exitResourceAssignMode("close");
   ensureEl("goodsBody").innerHTML = "";
 }
-
-declare global {
-  var GoodsEditor: { open: () => void };
-}
-
-window.GoodsEditor = { open };

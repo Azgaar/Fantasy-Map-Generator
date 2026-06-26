@@ -563,13 +563,3 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
     modules.elevation = false;
   }
 }
-
-declare global {
-  interface Window {
-    ElevationProfile: {
-      open: (cells: number[], routeLen: number, isRiver: boolean) => void;
-    };
-  }
-}
-
-window.ElevationProfile = { open };

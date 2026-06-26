@@ -1,3 +1,4 @@
+import { lazy } from "@/lazy-loaders";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 import { Cloud } from "./cloud";
 
@@ -14,7 +15,7 @@ export async function loadFromDropbox(): Promise<void> {
   const mapPath = ensureEl<HTMLInputElement>("loadFromDropboxSelect").value;
 
   console.info("Loading map from Dropbox:", mapPath);
-  const { Cloud } = await window.lazy.cloud();
+  const { Cloud } = await lazy.cloud();
   const blob = await Cloud.providers.dropbox.load(mapPath);
   uploadMap(blob);
 }

@@ -1,11 +1,1 @@
-import "./charts-overview";
-import "./compare-prices";
-import "./elevation-profile";
-import "./market-deals-overview";
-import "./market-overview";
-import "./markets-overview";
-import "./namesbase-editor";
-import "./production-overview";
-import "./production-chains";
-import "./trade-details";
 import "./view-3d";

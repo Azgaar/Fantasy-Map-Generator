@@ -1,4 +1,5 @@
 // Save the whole .map project to storage, machine or cloud
+import { lazy } from "@/lazy-loaders";
 import { ensureEl, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
@@ -205,7 +206,7 @@ function saveToMachine(mapData: string, filename: string): void {
 }
 
 async function saveToDropbox(mapData: string, filename: string): Promise<void> {
-  const { Cloud } = await window.lazy.cloud();
+  const { Cloud } = await lazy.cloud();
   await Cloud.providers.dropbox.save(filename, mapData);
   tip("Map is saved to your Dropbox", true, "success", 8000);
 }

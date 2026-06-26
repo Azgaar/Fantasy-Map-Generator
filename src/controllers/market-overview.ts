@@ -1,3 +1,4 @@
+import { lazy } from "@/lazy-loaders";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
@@ -36,7 +37,7 @@ export function open(marketId: number): void {
   if (!isInitialized) {
     ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
     ensureEl("marketOverviewExport").on("click", downloadStockCsv);
-    ensureEl("marketOverviewOpenDeals").on("click", () => window.MarketDealsOverview.open(activeMarketId));
+    ensureEl("marketOverviewOpenDeals").on("click", () => lazy.marketDealsOverview().then(m => m.open(activeMarketId)));
     ensureEl("marketOverviewName").on("input", onRenameInput);
     ensureEl("marketOverviewNameReset").on("click", resetMarketName);
     isInitialized = true;
@@ -138,12 +139,3 @@ function closeMarketOverview() {
   ensureEl("marketOverviewGoodsBody").innerHTML = "";
   ensureEl("marketOverviewSummary").innerHTML = "";
 }
-
-declare global {
-  interface Window {
-    MarketOverview: { open: typeof open };
-    MarketDealsOverview: { open: (marketId: number) => void };
-  }
-}
-
-window.MarketOverview = { open };

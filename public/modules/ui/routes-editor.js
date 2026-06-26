@@ -354,10 +354,12 @@ function editRoute(id) {
   function showRouteElevationProfile() {
     const route = getRoute();
     const length = rn(route.length * distanceScale);
-    ElevationProfile.open(
-      route.points.map(p => p[2]),
-      length,
-      false
+    window.lazy.elevationProfile().then(m =>
+      m.open(
+        route.points.map(p => p[2]),
+        length,
+        false
+      )
     );
   }
 

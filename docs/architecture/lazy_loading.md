@@ -23,36 +23,46 @@ splits into its own chunk, fetched on demand.
 
    ```ts
    // src/lazy-loaders.ts
-   const lazyLoaders = {
+   export const lazy = {
      supporters: () => import("@/data/supporters")
      // ...add your module here, pointing at whatever layer it lives in
    };
 
-   window.lazy = lazyLoaders;
+   window.lazy = lazy;
 
    declare global {
-     var lazy: typeof lazyLoaders;
+     var lazy: Record<string, () => Promise<any>>;
    }
    ```
 
    Rollup sees the string literal inside each `import()` and emits
    `supporters-<hash>.js` as an independent chunk — it is not pulled into the
-   main bundle just because `lazy-loaders.ts` is eager. **No separate type
-   declaration is needed**: `typeof lazyLoaders` infers each loader's return
-   type (`Promise<typeof import("./supporters")>`) from the thunk itself, so
-   adding a module is genuinely one line with no boilerplate to keep in sync.
+   main bundle just because `lazy-loaders.ts` is eager. Adding a module is one
+   line. Migrated TS gets each loader's exact return type
+   (`Promise<typeof import("./supporters")>`) from the exported `lazy` const;
+   the loosely-typed `window.lazy` global is only there for the legacy JS.
 
-4. **Update the call site.** Call sites are almost always still-legacy
-   `public/modules/**/*.js` files. Replace the old raw dynamic import of a
-   static file with a call to the bridge:
+4. **Update the call site**, and which handle you use depends on the caller's
+   layer:
 
-   ```diff
-   - const { supporters } = await import("../dynamic/supporters.js?v=1.123.0");
-   + const { supporters } = await window.lazy.supporters();
-   ```
+   - **Migrated TS** (`src/**/*.ts`) imports the registry directly — no global:
 
-   This is a one-line change per call site — the legacy file otherwise stays
-   untouched.
+     ```ts
+     import { lazy } from "@/lazy-loaders";
+     const { supporters } = await lazy.supporters();
+     ```
+
+   - **Legacy `public/modules/**/*.js`** can't import the bundle, so it reaches
+     the same registry through the `window.lazy` global, which exists only for
+     this compatibility:
+
+     ```diff
+     - const { supporters } = await import("../dynamic/supporters.js?v=1.123.0");
+     + const { supporters } = await window.lazy.supporters();
+     ```
+
+   Either way it's a one-line change per call site — the legacy file otherwise
+   stays untouched.
 
 5. **Delete the old `.js` file** from `public/modules/` once ported. Don't
    leave a duplicate copy around.

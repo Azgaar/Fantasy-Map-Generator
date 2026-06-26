@@ -400,11 +400,3 @@ export function open(burgId: number): void {
     }
   });
 }
-
-declare global {
-  interface Window {
-    ProductionOverview: { open: typeof open };
-  }
-}
-
-window.ProductionOverview = { open };
