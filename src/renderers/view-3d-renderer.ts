@@ -1,16 +1,16 @@
 import type * as THREE from "three";
 import { lazy } from "@/lazy-loaders";
+import { options, timeOfDayPresets } from "../controllers/view-3d";
+import { minmax, rn, throttle } from "../utils";
 import {
   disposeRiverFlowTexture,
   disposeSatelliteTexture,
   generateRiverFlowTexture,
   generateSatelliteTexture
-} from "../renderers/draw-satellite-texture";
-import * as ErosionBake from "../renderers/erosion-bake";
-import { minmax, rn, throttle } from "../utils";
-import { options, timeOfDayPresets } from "./view-3d";
+} from "./draw-satellite-texture";
+import * as ErosionBake from "./erosion-bake";
 
-export { heightAt, isCached } from "../renderers/erosion-bake";
+export { heightAt, isCached } from "./erosion-bake";
 
 let Three!: typeof import("three");
 let threeLoadPromise: Promise<boolean> | null = null;
@@ -179,7 +179,7 @@ const setLightness = (intensity: number) => {
   render();
 };
 
-const setSun = (x: number, y: number, z: number) => {
+const setSun = (x: number, y: number, z: number = options.sun.z) => {
   if (!spotLight) return;
   options.sun = { x, y, z };
   spotLight.position.set(x, y, z);

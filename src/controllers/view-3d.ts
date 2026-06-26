@@ -1,8 +1,3 @@
-// Eager shim for the 3D view. The heavy three.js renderer lives in the lazily-loaded
-// `view-3d-impl` chunk; this file keeps `ThreeD`/`ThreeDErosion` and the shared `options`
-// available synchronously (e.g. main.js reads `ThreeD.options.isOn` on every redraw) and
-// forwards every method to the impl, importing it on first use. See docs/architecture/lazy_loading.md
-
 type Options = {
   isOn: boolean;
   isGlobe: boolean;
@@ -96,46 +91,45 @@ export const timeOfDayPresets: Record<string, TimeOfDayPreset> = {
   }
 };
 
-type Impl = typeof import("./view-3d-impl");
+type Impl = typeof import("../renderers/view-3d-renderer");
 
-let impl: Impl | null = null;
-const loadImpl = (): Promise<Impl> => (impl ? Promise.resolve(impl) : import("./view-3d-impl").then(m => (impl = m)));
+let renderer: Impl | null = null;
+const loadRenderer = (): Promise<Impl> =>
+  renderer ? Promise.resolve(renderer) : import("../renderers/view-3d-renderer").then(m => (renderer = m));
 
 const threeD = {
   options,
   timeOfDayPresets,
-  create: (canvas: HTMLCanvasElement, type = "viewMesh") => loadImpl().then(m => m.create(canvas, type)),
-  redraw: () => loadImpl().then(m => m.redraw()),
-  update: () => loadImpl().then(m => m.update()),
-  stop: () => loadImpl().then(m => m.stop()),
-  setSunColor: (color: string) => loadImpl().then(m => m.setSunColor(color)),
-  setScale: (scale: number) => loadImpl().then(m => m.setScale(scale)),
-  setResolutionScale: (scale: number) => loadImpl().then(m => m.setResolutionScale(scale)),
-  setLightness: (intensity: number) => loadImpl().then(m => m.setLightness(intensity)),
-  setSun: (x: number, y: number, z: number) => loadImpl().then(m => m.setSun(x, y, z)),
-  setRotation: (speed: number) => loadImpl().then(m => m.setRotation(speed)),
-  toggleLabels: () => loadImpl().then(m => m.toggleLabels()),
-  toggle3dSubdivision: () => loadImpl().then(m => m.toggle3dSubdivision()),
-  toggleErosion: () => loadImpl().then(m => m.toggleErosion()),
-  setErosionStrength: (value: number) => loadImpl().then(m => m.setErosionStrength(value)),
-  setErosionRiverDepth: (value: number) => loadImpl().then(m => m.setErosionRiverDepth(value)),
-  setErosionDetail: (value: number) => loadImpl().then(m => m.setErosionDetail(value)),
-  setErosionOctaves: (value: number) => loadImpl().then(m => m.setErosionOctaves(value)),
-  toggleSatellite: () => loadImpl().then(m => m.toggleSatellite()),
-  toggleWireframe: () => loadImpl().then(m => m.toggleWireframe()),
-  toggleSky: () => loadImpl().then(m => m.toggleSky()),
-  setResolution: (resolution: number) => loadImpl().then(m => m.setResolution(resolution)),
-  setColors: (sky: string, water: string) => loadImpl().then(m => m.setColors(sky, water)),
-  setTimeOfDay: (presetName: string) => loadImpl().then(m => m.setTimeOfDay(presetName)),
-  saveScreenshot: () => loadImpl().then(m => m.saveScreenshot()),
-  saveOBJ: () => loadImpl().then(m => m.saveOBJ())
+  create: (canvas: HTMLCanvasElement, type = "viewMesh") => loadRenderer().then(m => m.create(canvas, type)),
+  redraw: () => loadRenderer().then(m => m.redraw()),
+  update: () => loadRenderer().then(m => m.update()),
+  stop: () => loadRenderer().then(m => m.stop()),
+  setSunColor: (color: string) => loadRenderer().then(m => m.setSunColor(color)),
+  setScale: (scale: number) => loadRenderer().then(m => m.setScale(scale)),
+  setResolutionScale: (scale: number) => loadRenderer().then(m => m.setResolutionScale(scale)),
+  setLightness: (intensity: number) => loadRenderer().then(m => m.setLightness(intensity)),
+  setSun: (x: number, y: number, z?: number) => loadRenderer().then(m => m.setSun(x, y, z)),
+  setRotation: (speed: number) => loadRenderer().then(m => m.setRotation(speed)),
+  toggleLabels: () => loadRenderer().then(m => m.toggleLabels()),
+  toggle3dSubdivision: () => loadRenderer().then(m => m.toggle3dSubdivision()),
+  toggleErosion: () => loadRenderer().then(m => m.toggleErosion()),
+  setErosionStrength: (value: number) => loadRenderer().then(m => m.setErosionStrength(value)),
+  setErosionRiverDepth: (value: number) => loadRenderer().then(m => m.setErosionRiverDepth(value)),
+  setErosionDetail: (value: number) => loadRenderer().then(m => m.setErosionDetail(value)),
+  setErosionOctaves: (value: number) => loadRenderer().then(m => m.setErosionOctaves(value)),
+  toggleSatellite: () => loadRenderer().then(m => m.toggleSatellite()),
+  toggleWireframe: () => loadRenderer().then(m => m.toggleWireframe()),
+  toggleSky: () => loadRenderer().then(m => m.toggleSky()),
+  setResolution: (resolution: number) => loadRenderer().then(m => m.setResolution(resolution)),
+  setColors: (sky: string, water: string) => loadRenderer().then(m => m.setColors(sky, water)),
+  setTimeOfDay: (presetName: string) => loadRenderer().then(m => m.setTimeOfDay(presetName)),
+  saveScreenshot: () => loadRenderer().then(m => m.saveScreenshot()),
+  saveOBJ: () => loadRenderer().then(m => m.saveOBJ())
 };
 
-// exposes the erosion bake cache for runtime/e2e checks (e.g. window.ThreeDErosion.isCached()).
-// Reads are synchronous; before the impl loads the cache is necessarily empty.
 const threeDErosion = {
-  isCached: (key?: string) => impl?.isCached(key) ?? false,
-  heightAt: (x: number, y: number, scale: number) => impl?.heightAt(x, y, scale) ?? 0
+  isCached: (key?: string) => renderer?.isCached(key) ?? false,
+  heightAt: (x: number, y: number, scale: number) => renderer?.heightAt(x, y, scale) ?? 0
 };
 
 declare global {
