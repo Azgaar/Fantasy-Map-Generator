@@ -244,8 +244,7 @@ function addSide(): void {
   const body = ensureEl("regimentSelectorBody");
   const regiments = pack.states.filter(s => s.military && !s.removed).flatMap(s => s.military!);
 
-  const distance = (reg: Regiment): string =>
-    `${rn(Math.hypot(b.y - reg.y, b.x - reg.x) * distanceScale)} ${distanceUnitInput.value}`;
+  const distance = (reg: Regiment): number => rn(Math.hypot(b.y - reg.y, b.x - reg.x) * distanceScale);
   const isAdded = (reg: Regiment): boolean =>
     b.defenders.regiments.some(r => r === reg) || b.attackers.regiments.some(r => r === reg);
 
@@ -253,7 +252,8 @@ function addSide(): void {
     .map(r => {
       const s = pack.states[r.state];
       const added = isAdded(r);
-      const dist = added ? `0 ${distanceUnitInput.value}` : distance(r);
+      const dist = added ? 0 : distance(r);
+      const distLabel = `${dist} ${distanceUnitInput.value}`;
       return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
         s.name
       } data-regiment=${r.name}
@@ -265,7 +265,7 @@ function addSide(): void {
         <div style="width:1.2em">${r.icon}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
         <div style="width:4em">${r.a}</div>
-        <div style="width:4em">${dist}</div>
+        <div style="width:4em">${distLabel}</div>
       </div>`;
     })
     .join("");
