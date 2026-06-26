@@ -1,15 +1,13 @@
-// Save the whole .map project to storage, machine or cloud
-import { ensureEl, link, parseError, rn } from "@/utils";
+"use strict";
 
-type SaveMethod = "storage" | "machine" | "dropbox";
-
-export async function saveMap(method: SaveMethod): Promise<void> {
+// functions to save the whole .map project
+async function saveMap(method) {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
 
   try {
     const mapData = prepareMapData();
-    const filename = `${getFileName()}.map`;
+    const filename = getFileName() + ".map";
 
     if (method === "storage") await saveToStorage(mapData, true);
     if (method === "machine") saveToMachine(mapData, filename);
@@ -19,18 +17,18 @@ export async function saveMap(method: SaveMethod): Promise<void> {
     alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
       "GitHub"
-    )}. <p id="errorBox">${parseError(error as Error)}</p>`;
+    )}. <p id="errorBox">${parseError(error)}</p>`;
 
     $("#alert").dialog({
       resizable: false,
       title: "Saving error",
       width: "28em",
       buttons: {
-        Retry: function (this: HTMLElement) {
+        Retry: function () {
           $(this).dialog("close");
           saveMap(method);
         },
-        Close: function (this: HTMLElement) {
+        Close: function () {
           $(this).dialog("close");
         }
       },
@@ -39,9 +37,9 @@ export async function saveMap(method: SaveMethod): Promise<void> {
   }
 }
 
-export function prepareMapData(): string {
+function prepareMapData() {
   const date = new Date();
-  const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
   const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
   const settings = [
@@ -71,24 +69,23 @@ export function prepareMapData(): string {
     +rescaleLabels.checked,
     urbanDensity,
     longitudeOutput.value,
-    ensureEl<HTMLInputElement>("growthRate").value
+    growthRate.value
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
   const rulersString = rulers.toString();
-  const fonts = JSON.stringify(getUsedFonts(svg.node()!));
+  const fonts = JSON.stringify(getUsedFonts(svg.node()));
 
   // save svg
-  const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  const cloneEl = document.getElementById("map").cloneNode(true);
 
   // reset transform values to default
-  cloneEl.setAttribute("width", String(graphWidth));
-  cloneEl.setAttribute("height", String(graphHeight));
-  cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
+  cloneEl.setAttribute("width", graphWidth);
+  cloneEl.setAttribute("height", graphHeight);
+  cloneEl.querySelector("#viewbox").removeAttribute("transform");
 
-  const cloneRuler = cloneEl.querySelector("#ruler");
-  if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
+  cloneEl.querySelector("#ruler").innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
 
@@ -184,14 +181,14 @@ export function prepareMapData(): string {
 }
 
 // save map file to indexedDB
-export async function saveToStorage(mapData: string, showTip = false): Promise<void> {
+async function saveToStorage(mapData, showTip = false) {
   const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
-function saveToMachine(mapData: string, filename: string): void {
+function saveToMachine(mapData, filename) {
   const blob = new Blob([mapData], { type: "text/plain" });
   const URL = window.URL.createObjectURL(blob);
 
@@ -204,8 +201,70 @@ function saveToMachine(mapData: string, filename: string): void {
   setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
-async function saveToDropbox(mapData: string, filename: string): Promise<void> {
-  const { Cloud } = await window.lazy.cloud();
+async function saveToDropbox(mapData, filename) {
   await Cloud.providers.dropbox.save(filename, mapData);
   tip("Map is saved to your Dropbox", true, "success", 8000);
+}
+
+async function initiateAutosave() {
+  const MINUTE = 60000; // minute in milliseconds
+  let lastSavedAt = Date.now();
+
+  async function autosave() {
+    const timeoutMinutes = ensureEl("autosaveIntervalOutput").valueAsNumber;
+    if (!timeoutMinutes) return;
+
+    const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
+    if (diffInMinutes < timeoutMinutes) return;
+    if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warning", 2000);
+
+    try {
+      tip("Autosave: saving map...", false, "warning", 3000);
+      const mapData = prepareMapData();
+      await saveToStorage(mapData);
+      tip("Autosave: map is saved", false, "success", 2000);
+
+      lastSavedAt = Date.now();
+    } catch (error) {
+      ERROR && console.error(error);
+      tip(`Autosave failed: ${error?.message || "Unknown error"}`, true, "error", 4000);
+    }
+  }
+
+  setInterval(autosave, MINUTE / 2);
+}
+
+const saveReminder = function () {
+  if (localStorage.getItem("noReminder")) return;
+  const message = [
+    "Please don't forget to save the project to desktop from time to time",
+    "Please remember to save the map to your desktop",
+    "Saving will ensure your data won't be lost in case of issues",
+    "Safety is number one priority. Please save the map",
+    "Don't forget to save your map on a regular basis!",
+    "Just a gentle reminder for you to save the map",
+    "Please don't forget to save your progress (saving to desktop is the best option)",
+    "Don't want to get reminded about need to save? Press CTRL+Q"
+  ];
+  const interval = 15 * 60 * 1000; // remind every 15 minutes
+
+  saveReminder.reminder = setInterval(() => {
+    if (customization) return;
+    tip(ra(message), true, "warn", 2500);
+  }, interval);
+  saveReminder.status = 1;
+};
+saveReminder();
+
+function toggleSaveReminder() {
+  if (saveReminder.status) {
+    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
+    clearInterval(saveReminder.reminder);
+    localStorage.setItem("noReminder", true);
+    saveReminder.status = 0;
+  } else {
+    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
+    localStorage.removeItem("noReminder");
+    saveReminder();
+  }
 }
