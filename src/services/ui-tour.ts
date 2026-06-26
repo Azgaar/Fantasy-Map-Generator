@@ -387,7 +387,7 @@ function start() {
 
 function hideHeightmapCustomizationPanel() {
   const customizationMenu = ensureEl("customizationMenu");
-  if (!customizationMenu || customizationMenu.style.display !== "block") return;
+  if (customizationMenu.style.display !== "block") return;
   customizationMenu.style.display = "none";
   ensureEl("toolsContent").style.display = "block";
 }
