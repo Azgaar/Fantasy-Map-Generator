@@ -1,2 +1,2 @@
+import "./autosave";
 import "./fonts";
-import "./ui-tour";

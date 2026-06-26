@@ -1,7 +1,7 @@
-"use strict";
+import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { Cloud } from "./cloud";
 
-// Functions to load and parse .map/.gz files
-async function quickLoad() {
+export async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
   else {
@@ -10,16 +10,17 @@ async function quickLoad() {
   }
 }
 
-async function loadFromDropbox() {
-  const mapPath = ensureEl("loadFromDropboxSelect").value;
+export async function loadFromDropbox(): Promise<void> {
+  const mapPath = ensureEl<HTMLInputElement>("loadFromDropboxSelect").value;
 
   console.info("Loading map from Dropbox:", mapPath);
+  const { Cloud } = await window.lazy.cloud();
   const blob = await Cloud.providers.dropbox.load(mapPath);
   uploadMap(blob);
 }
 
-async function createSharableDropboxLink() {
-  const mapFile = document.querySelector("#loadFromDropbox select").value;
+export async function createSharableDropboxLink(): Promise<void> {
+  const mapFile = (document.querySelector("#loadFromDropbox select") as HTMLSelectElement).value;
   const sharableLink = ensureEl("sharableLink");
   const sharableLinkContainer = ensureEl("sharableLinkContainer");
 
@@ -28,7 +29,7 @@ async function createSharableDropboxLink() {
     const directLink = previewLink.replace("www.dropbox.com", "dl.dropboxusercontent.com"); // DL allows CORS
     const finalLink = `${location.origin}${location.pathname}?maplink=${directLink}`;
 
-    sharableLink.innerText = finalLink.slice(0, 45) + "...";
+    sharableLink.innerText = `${finalLink.slice(0, 45)}...`;
     sharableLink.setAttribute("href", finalLink);
     sharableLinkContainer.style.display = "block";
   } catch (error) {
@@ -37,7 +38,7 @@ async function createSharableDropboxLink() {
   }
 }
 
-function loadMapPrompt(blob) {
+function loadMapPrompt(blob: Blob): void {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 5) {
     loadLastSavedMap();
@@ -50,10 +51,10 @@ function loadMapPrompt(blob) {
     resizable: false,
     title: "Load saved map",
     buttons: {
-      Cancel: function () {
+      Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       },
-      Load: function () {
+      Load: function (this: HTMLElement) {
         loadLastSavedMap();
         $(this).dialog("close");
       }
@@ -71,7 +72,7 @@ function loadMapPrompt(blob) {
   }
 }
 
-async function loadMapFromURL(maplink, random) {
+export async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> {
   const controller = new AbortController();
   const TIMEOUT = 120000; // 120 seconds
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
@@ -84,7 +85,10 @@ async function loadMapFromURL(maplink, random) {
     const blob = await response.blob();
     uploadMap(blob);
   } catch (error) {
-    const message = error?.name === "AbortError" ? "Cannot load map from URL: request timed out" : error.message;
+    const message =
+      (error as Error)?.name === "AbortError"
+        ? "Cannot load map from URL: request timed out"
+        : (error as Error).message;
     showUploadErrorMessage(message, maplink, random);
     if (random) generateMapOnLoad();
   } finally {
@@ -92,7 +96,7 @@ async function loadMapFromURL(maplink, random) {
   }
 }
 
-function showUploadErrorMessage(error, maplink, random) {
+export function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
   ERROR && console.error(error);
   alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
     random ? `A new random map is generated. ` : ""
@@ -103,48 +107,50 @@ function showUploadErrorMessage(error, maplink, random) {
     width: "32em",
     buttons: {
       "Clear cache": () => cleanupData(),
-      OK: function () {
+      OK: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
 }
 
-function uploadMap(file, callback) {
-  uploadMap.timeStart = performance.now();
+let uploadTimeStart = 0;
+
+export function uploadMap(file: Blob, callback?: () => void): void {
+  uploadTimeStart = performance.now();
 
   const fileReader = new FileReader();
-  fileReader.onloadend = async function (fileLoadedEvent) {
+  fileReader.onloadend = async fileLoadedEvent => {
     if (callback) callback();
     ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
 
-    const result = fileLoadedEvent.target.result;
+    const result = fileLoadedEvent.target!.result as ArrayBuffer;
     const { mapData, mapVersion } = await parseLoadedResult(result);
 
-    const isInvalid = !mapData || !isValidVersion(mapVersion) || mapData.length < 10 || !mapData[5];
+    const isInvalid = !mapData || !isValidVersion(mapVersion!) || mapData.length < 10 || !mapData[5];
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
 
-    const isUpdated = compareVersions(mapVersion, VERSION).isEqual;
+    const isUpdated = compareVersions(mapVersion!, VERSION).isEqual;
     if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
 
-    const isAncient = compareVersions(mapVersion, "0.70.0").isOlder;
+    const isAncient = compareVersions(mapVersion!, "0.70.0").isOlder;
     if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
 
-    const isNewer = compareVersions(mapVersion, VERSION).isNewer;
+    const isNewer = compareVersions(mapVersion!, VERSION).isNewer;
     if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
 
-    const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
+    const isOutdated = compareVersions(mapVersion!, VERSION).isOlder;
     if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
   };
 
   fileReader.readAsArrayBuffer(file);
 }
 
-async function uncompress(compressedData) {
+async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | null> {
   try {
     const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
 
-    let uncompressedData = [];
+    let uncompressedData: number[] = [];
     for await (const chunk of uncompressedStream) {
       uncompressedData = uncompressedData.concat(Array.from(chunk));
     }
@@ -156,7 +162,9 @@ async function uncompress(compressedData) {
   }
 }
 
-async function parseLoadedResult(result) {
+async function parseLoadedResult(
+  result: ArrayBuffer | Uint8Array
+): Promise<{ mapData: string[] | null; mapVersion: string | null }> {
   try {
     const resultAsString = new TextDecoder().decode(result);
 
@@ -166,7 +174,7 @@ async function parseLoadedResult(result) {
 
     // fix if svg part has CRLF line endings instead of LF
     const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
-    const svgContent = svgMatch[0];
+    const svgContent = svgMatch![0];
     const hasCrlfEndings = svgContent.includes("\r\n");
     if (hasCrlfEndings) {
       const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
@@ -178,7 +186,7 @@ async function parseLoadedResult(result) {
 
     return { mapData, mapVersion };
   } catch (error) {
-    const uncompressedData = await uncompress(result); // file can be gzip compressed
+    const uncompressedData = await uncompress(result as ArrayBuffer); // file can be gzip compressed
     if (uncompressedData) return parseLoadedResult(uncompressedData);
 
     ERROR && console.error(error);
@@ -186,14 +194,15 @@ async function parseLoadedResult(result) {
   }
 }
 
-function showUploadMessage(type, mapData, mapVersion) {
-  let message, title;
+function showUploadMessage(type: string, mapData: string[] | null, mapVersion: string | null): void {
+  let message = "";
+  let title = "";
 
   if (type === "invalid") {
     message = "The file does not look like a valid save file.<br>Please check the data format";
     title = "Invalid file";
   } else if (type === "updated") {
-    parseLoadedData(mapData, mapVersion);
+    parseLoadedData(mapData!, mapVersion);
     return;
   } else if (type === "ancient") {
     const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
@@ -204,7 +213,7 @@ function showUploadMessage(type, mapData, mapVersion) {
     title = "Newer file";
   } else if (type === "outdated") {
     INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
-    parseLoadedData(mapData, mapVersion);
+    parseLoadedData(mapData!, mapVersion);
     return;
   }
 
@@ -213,26 +222,26 @@ function showUploadMessage(type, mapData, mapVersion) {
     title,
     buttons: {
       "Clear cache": () => cleanupData(),
-      OK: function () {
+      OK: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
 }
 
-async function parseLoadedData(data, mapVersion) {
+async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
   try {
     // exit customization
-    if (window.closeDialogs) closeDialogs();
+    if (typeof window.closeDialogs === "function") closeDialogs();
     customization = 0;
-    if (customizationMenu.offsetParent) styleTab.click();
+    if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
     {
       const params = data[0].split("|");
       if (params[3]) {
         seed = params[3];
-        optionsSeed.value = seed;
-        INFO && console.group("Loaded Map " + seed);
+        ensureEl<HTMLInputElement>("optionsSeed").value = seed;
+        INFO && console.group(`Loaded Map ${seed}`);
       } else INFO && console.group("Loaded Map");
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
@@ -242,53 +251,74 @@ async function parseLoadedData(data, mapVersion) {
     {
       const settings = data[1].split("|");
       if (settings[0]) applyOption(distanceUnitInput, settings[0]);
-      if (settings[1]) distanceScale = distanceScaleInput.value = settings[1];
+      if (settings[1]) {
+        ensureEl<HTMLInputElement>("distanceScaleInput").value = settings[1];
+        distanceScale = +settings[1];
+      }
       if (settings[2]) areaUnit.value = settings[2];
       if (settings[3]) applyOption(heightUnit, settings[3]);
       if (settings[4]) heightExponentInput.value = settings[4];
       if (settings[5]) temperatureScale.value = settings[5];
       // setting 6-11 (scaleBar) are part of style now, kept as "" in newer versions for compatibility
-      if (settings[12]) populationRate = populationRateInput.value = settings[12];
-      if (settings[13]) urbanization = urbanizationInput.value = settings[13];
-      if (settings[14]) mapSizeInput.value = mapSizeOutput.value = minmax(settings[14], 1, 100);
-      if (settings[15]) latitudeInput.value = latitudeOutput.value = minmax(settings[15], 0, 100);
-      if (settings[18]) precInput.value = precOutput.value = settings[18];
+      if (settings[12]) {
+        ensureEl<HTMLInputElement>("populationRateInput").value = settings[12];
+        populationRate = +settings[12];
+      }
+      if (settings[13]) {
+        ensureEl<HTMLInputElement>("urbanizationInput").value = settings[13];
+        urbanization = +settings[13];
+      }
+      if (settings[14]) {
+        const mapSize = String(minmax(+settings[14], 1, 100));
+        ensureEl<HTMLInputElement>("mapSizeInput").value = mapSize;
+        mapSizeOutput.value = mapSize;
+      }
+      if (settings[15]) {
+        const latitude = String(minmax(+settings[15], 0, 100));
+        ensureEl<HTMLInputElement>("latitudeInput").value = latitude;
+        latitudeOutput.value = latitude;
+      }
+      if (settings[18]) {
+        ensureEl<HTMLInputElement>("precInput").value = settings[18];
+        precOutput.value = settings[18];
+      }
       if (settings[19]) options = JSON.parse(settings[19]);
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
       if (settings[20]) mapName.value = settings[20];
-      if (settings[21]) hideLabels.checked = +settings[21];
+      if (settings[21]) hideLabels.checked = Boolean(+settings[21]);
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = +settings[23];
-      if (settings[24]) urbanDensity = urbanDensityInput.value = +settings[24];
-      if (settings[25]) longitudeInput.value = longitudeOutput.value = minmax(settings[25] || 50, 0, 100);
-      if (settings[26]) growthRate.value = settings[26];
-    }
-
-    {
-      stateLabelsModeInput.value = options.stateLabelsMode;
-      yearInput.value = options.year;
-      eraInput.value = options.era;
-      shapeRendering.value = viewbox.attr("shape-rendering") || "geometricPrecision";
-    }
-
-    {
-      if (data[2]) mapCoordinates = JSON.parse(data[2]);
-      if (data[4]) notes = JSON.parse(data[4]);
-      if (data[33]) rulers.fromString(data[33]);
-      if (data[34]) {
-        const usedFonts = JSON.parse(data[34]);
-        usedFonts.forEach(usedFont => {
-          const { family: usedFamily, unicodeRange: usedRange, variant: usedVariant } = usedFont;
-          const defaultFont = fonts.find(
-            ({ family, unicodeRange, variant }) =>
-              family === usedFamily && unicodeRange === usedRange && variant === usedVariant
-          );
-          if (!defaultFont) fonts.push(usedFont);
-          declareFont(usedFont);
-        });
+      if (settings[23]) rescaleLabels.checked = Boolean(+settings[23]);
+      if (settings[24]) {
+        ensureEl<HTMLInputElement>("urbanDensityInput").value = settings[24];
+        urbanDensity = +settings[24];
       }
+      if (settings[25]) {
+        const longitude = String(minmax(+(settings[25] || 50), 0, 100));
+        ensureEl<HTMLInputElement>("longitudeInput").value = longitude;
+        longitudeOutput.value = longitude;
+      }
+      if (settings[26]) ensureEl<HTMLInputElement>("growthRate").value = settings[26];
+    }
+    ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode;
+    ensureEl<HTMLInputElement>("yearInput").value = String(options.year);
+    ensureEl<HTMLInputElement>("eraInput").value = options.era;
+    ensureEl<HTMLInputElement>("shapeRendering").value = viewbox.attr("shape-rendering") || "geometricPrecision";
+    if (data[2]) mapCoordinates = JSON.parse(data[2]);
+    if (data[4]) notes = JSON.parse(data[4]);
+    if (data[33]) rulers.fromString(data[33]);
+    if (data[34]) {
+      const usedFonts = JSON.parse(data[34]);
+      usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
+        const { family: usedFamily, unicodeRange: usedRange, variant: usedVariant } = usedFont;
+        const defaultFont = fonts.find(
+          ({ family, unicodeRange, variant }) =>
+            family === usedFamily && unicodeRange === usedRange && variant === usedVariant
+        );
+        if (!defaultFont) fonts.push(usedFont);
+        declareFont(usedFont);
+      });
     }
 
     {
@@ -305,75 +335,77 @@ async function parseLoadedData(data, mapVersion) {
         biomesData.cost.push(50);
       }
     }
+    svg.remove();
+    document.body.insertAdjacentHTML("afterbegin", data[5]);
+    // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
+    // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
+    // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
+    // v5 global `d3.event`, breaking mouse/zoom handlers after a map load (#1508).
+    // Every layer selection below chains off `svg`, so they all inherit v5.
+    svg = (window as any).d3.select("#map") as typeof svg;
+    defs = svg.select<SVGDefsElement>("#deftemp");
+    viewbox = svg.select<SVGElement>("#viewbox");
+    scaleBar = svg.select<SVGGElement>("#scaleBar");
+    legend = svg.select("#legend");
+    ocean = viewbox.select<SVGGElement>("#ocean");
+    oceanLayers = ocean.select<SVGGElement>("#oceanLayers");
+    oceanPattern = ocean.select<SVGGElement>("#oceanPattern");
+    lakes = viewbox.select<SVGGElement>("#lakes");
+    landmass = viewbox.select<SVGGElement>("#landmass");
+    texture = viewbox.select<SVGGElement>("#texture");
+    terrs = viewbox.select<SVGGElement>("#terrs");
+    biomes = viewbox.select<SVGGElement>("#biomes");
+    ice = viewbox.select<SVGGElement>("#ice");
+    cells = viewbox.select<SVGGElement>("#cells");
+    gridOverlay = viewbox.select<SVGGElement>("#gridOverlay");
+    coordinates = viewbox.select<SVGGElement>("#coordinates");
+    compass = viewbox.select<SVGGElement>("#compass");
+    rivers = viewbox.select<SVGElement>("#rivers");
+    terrain = viewbox.select<SVGGElement>("#terrain");
+    relig = viewbox.select<SVGGElement>("#relig");
+    cults = viewbox.select<SVGGElement>("#cults");
+    regions = viewbox.select<SVGGElement>("#regions");
+    statesBody = regions.select<SVGGElement>("#statesBody");
+    statesHalo = regions.select<SVGGElement>("#statesHalo");
+    provs = viewbox.select<SVGGElement>("#provs");
+    zones = viewbox.select<SVGGElement>("#zones");
+    borders = viewbox.select<SVGGElement>("#borders");
+    stateBorders = borders.select<SVGGElement>("#stateBorders");
+    provinceBorders = borders.select<SVGGElement>("#provinceBorders");
+    routes = viewbox.select<SVGElement>("#routes");
+    roads = routes.select<SVGGElement>("#roads");
+    trails = routes.select<SVGGElement>("#trails");
+    searoutes = routes.select<SVGGElement>("#searoutes");
+    temperature = viewbox.select<SVGGElement>("#temperature");
+    coastline = viewbox.select<SVGGElement>("#coastline");
+    prec = viewbox.select<SVGGElement>("#prec");
+    population = viewbox.select<SVGGElement>("#population");
+    goods = viewbox.select<SVGGElement>("#goods");
+    markets = viewbox.select<SVGGElement>("#markets");
+    emblems = viewbox.select<SVGElement>("#emblems");
+    labels = viewbox.select<SVGGElement>("#labels");
+    icons = viewbox.select<SVGGElement>("#icons");
+    burgIcons = icons.select<SVGGElement>("#burgIcons");
+    anchors = icons.select<SVGGElement>("#anchors");
+    armies = viewbox.select<SVGGElement>("#armies");
+    markers = viewbox.select<SVGGElement>("#markers");
+    tradeAnimation = viewbox.select<SVGGElement>("#tradeAnimation");
+    ruler = viewbox.select<SVGGElement>("#ruler");
+    fogging = viewbox.select<SVGGElement>("#fogging");
+    debug = viewbox.select<SVGElement>("#debug");
+    burgLabels = labels.select<SVGGElement>("#burgLabels");
 
-    {
-      svg.remove();
-      document.body.insertAdjacentHTML("afterbegin", data[5]);
+    if (!texture.size()) {
+      texture = viewbox
+        .insert("g", "#landmass")
+        .attr("id", "texture")
+        .attr("data-href", "./images/textures/plaster.jpg");
     }
-
-    {
-      svg = d3.select("#map");
-      defs = svg.select("#deftemp");
-      viewbox = svg.select("#viewbox");
-      scaleBar = svg.select("#scaleBar");
-      legend = svg.select("#legend");
-      ocean = viewbox.select("#ocean");
-      oceanLayers = ocean.select("#oceanLayers");
-      oceanPattern = ocean.select("#oceanPattern");
-      lakes = viewbox.select("#lakes");
-      landmass = viewbox.select("#landmass");
-      texture = viewbox.select("#texture");
-      terrs = viewbox.select("#terrs");
-      biomes = viewbox.select("#biomes");
-      ice = viewbox.select("#ice");
-      cells = viewbox.select("#cells");
-      gridOverlay = viewbox.select("#gridOverlay");
-      coordinates = viewbox.select("#coordinates");
-      compass = viewbox.select("#compass");
-      rivers = viewbox.select("#rivers");
-      terrain = viewbox.select("#terrain");
-      relig = viewbox.select("#relig");
-      cults = viewbox.select("#cults");
-      regions = viewbox.select("#regions");
-      statesBody = regions.select("#statesBody");
-      statesHalo = regions.select("#statesHalo");
-      provs = viewbox.select("#provs");
-      zones = viewbox.select("#zones");
-      borders = viewbox.select("#borders");
-      stateBorders = borders.select("#stateBorders");
-      provinceBorders = borders.select("#provinceBorders");
-      routes = viewbox.select("#routes");
-      roads = routes.select("#roads");
-      trails = routes.select("#trails");
-      searoutes = routes.select("#searoutes");
-      temperature = viewbox.select("#temperature");
-      coastline = viewbox.select("#coastline");
-      prec = viewbox.select("#prec");
-      population = viewbox.select("#population");
-      goods = viewbox.select("#goods");
-      markets = viewbox.select("#markets");
-      emblems = viewbox.select("#emblems");
-      labels = viewbox.select("#labels");
-      icons = viewbox.select("#icons");
-      burgIcons = icons.select("#burgIcons");
-      anchors = icons.select("#anchors");
-      armies = viewbox.select("#armies");
-      markers = viewbox.select("#markers");
-      tradeAnimation = viewbox.select("#tradeAnimation");
-      ruler = viewbox.select("#ruler");
-      fogging = viewbox.select("#fogging");
-      debug = viewbox.select("#debug");
-      burgLabels = labels.select("#burgLabels");
-
-      if (!texture.size()) {
-        texture = viewbox
-          .insert("g", "#landmass")
-          .attr("id", "texture")
-          .attr("data-href", "./images/textures/plaster.jpg");
-      }
-      if (!emblems.size()) {
-        emblems = viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
-      }
+    if (!emblems.size()) {
+      emblems = viewbox
+        .insert("g", "#labels")
+        .attr("id", "emblems")
+        .style("display", "none") as unknown as typeof emblems;
     }
 
     {
@@ -381,75 +413,80 @@ async function parseLoadedData(data, mapVersion) {
       const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
-      grid.cells.h = Uint8Array.from(data[7].split(","));
-      grid.cells.prec = Uint8Array.from(data[8].split(","));
-      grid.cells.f = Uint16Array.from(data[9].split(","));
-      grid.cells.t = Int8Array.from(data[10].split(","));
-      grid.cells.temp = Int8Array.from(data[11].split(","));
+      grid.cells.h = Uint8Array.from(data[7].split(","), Number);
+      grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
+      grid.cells.f = Uint16Array.from(data[9].split(","), Number);
+      grid.cells.t = Int8Array.from(data[10].split(","), Number);
+      grid.cells.temp = Int8Array.from(data[11].split(","), Number);
+    }
+    reGraph();
+    Features.markupPack();
+    pack.features = JSON.parse(data[12]);
+    pack.cultures = JSON.parse(data[13]);
+    pack.states = JSON.parse(data[14]);
+    pack.burgs = JSON.parse(data[15]);
+    pack.religions = data[29] ? JSON.parse(data[29]) : ([{ i: 0, name: "No religion" }] as typeof pack.religions);
+    pack.provinces = data[30] ? JSON.parse(data[30]) : ([0] as unknown as typeof pack.provinces);
+    pack.rivers = data[32] ? JSON.parse(data[32]) : [];
+    pack.markers = data[35] ? JSON.parse(data[35]) : [];
+    pack.routes = data[37] ? JSON.parse(data[37]) : [];
+    pack.zones = data[38] ? JSON.parse(data[38]) : [];
+    pack.cells.biome = Uint8Array.from(data[16].split(","), Number);
+    pack.cells.burg = Uint16Array.from(data[17].split(","), Number);
+    pack.cells.conf = Uint8Array.from(data[18].split(","), Number);
+    pack.cells.culture = Uint16Array.from(data[19].split(","), Number);
+    pack.cells.fl = Uint16Array.from(data[20].split(","), Number);
+    pack.cells.pop = Float32Array.from(data[21].split(","), Number);
+    pack.cells.r = Uint16Array.from(data[22].split(","), Number);
+    // data[23] had deprecated cells.road
+    pack.cells.s = Uint16Array.from(data[24].split(","), Number);
+    pack.cells.state = Uint16Array.from(data[25].split(","), Number);
+    pack.cells.religion = data[26]
+      ? Uint16Array.from(data[26].split(","), Number)
+      : new Uint16Array(pack.cells.i.length);
+    pack.cells.province = data[27]
+      ? Uint16Array.from(data[27].split(","), Number)
+      : new Uint16Array(pack.cells.i.length);
+    // data[28] had deprecated cells.crossroad
+    pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
+    pack.ice = data[39] ? JSON.parse(data[39]) : [];
+    pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.goods = data[41] ? JSON.parse(data[41]) : [];
+    pack.markets = data[42] ? JSON.parse(data[42]) : [];
+    pack.deals = data[43] ? JSON.parse(data[43]) : [];
+    pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
+
+    if (data[31]) {
+      const namesDL = data[31].split("/");
+      namesDL.forEach((d, i) => {
+        const e = d.split("|");
+        if (!e.length) return;
+        const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
+        nameBases[i] = { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
+      });
+    }
+
+    // data[45]: custom good icons
+    if (data[45]) {
+      const goodIconsDefs = document.getElementById("good-icons");
+      if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
     {
-      reGraph();
-      Features.markupPack();
-      pack.features = JSON.parse(data[12]);
-      pack.cultures = JSON.parse(data[13]);
-      pack.states = JSON.parse(data[14]);
-      pack.burgs = JSON.parse(data[15]);
-      pack.religions = data[29] ? JSON.parse(data[29]) : [{ i: 0, name: "No religion" }];
-      pack.provinces = data[30] ? JSON.parse(data[30]) : [0];
-      pack.rivers = data[32] ? JSON.parse(data[32]) : [];
-      pack.markers = data[35] ? JSON.parse(data[35]) : [];
-      pack.routes = data[37] ? JSON.parse(data[37]) : [];
-      pack.zones = data[38] ? JSON.parse(data[38]) : [];
-      pack.cells.biome = Uint8Array.from(data[16].split(","));
-      pack.cells.burg = Uint16Array.from(data[17].split(","));
-      pack.cells.conf = Uint8Array.from(data[18].split(","));
-      pack.cells.culture = Uint16Array.from(data[19].split(","));
-      pack.cells.fl = Uint16Array.from(data[20].split(","));
-      pack.cells.pop = Float32Array.from(data[21].split(","));
-      pack.cells.r = Uint16Array.from(data[22].split(","));
-      // data[23] had deprecated cells.road
-      pack.cells.s = Uint16Array.from(data[24].split(","));
-      pack.cells.state = Uint16Array.from(data[25].split(","));
-      pack.cells.religion = data[26] ? Uint16Array.from(data[26].split(",")) : new Uint16Array(pack.cells.i.length);
-      pack.cells.province = data[27] ? Uint16Array.from(data[27].split(",")) : new Uint16Array(pack.cells.i.length);
-      // data[28] had deprecated cells.crossroad
-      pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
-      pack.ice = data[39] ? JSON.parse(data[39]) : [];
-      pack.cells.good = data[40] ? Uint16Array.from(data[40].split(",")) : new Uint16Array(pack.cells.i.length);
-      pack.goods = data[41] ? JSON.parse(data[41]) : [];
-      pack.markets = data[42] ? JSON.parse(data[42]) : [];
-      pack.deals = data[43] ? JSON.parse(data[43]) : [];
-      pack.cells.market = data[44] ? Uint16Array.from(data[44].split(",")) : new Uint16Array(pack.cells.i.length);
-
-      if (data[31]) {
-        const namesDL = data[31].split("/");
-        namesDL.forEach((d, i) => {
-          const e = d.split("|");
-          if (!e.length) return;
-          const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
-          nameBases[i] = { name: e[0], min: e[1], max: e[2], d: e[3], m: e[4], b };
-        });
-      }
-
-      // data[45]: custom good icons
-      if (data[45]) {
-        const goodIconsDefs = document.getElementById("good-icons");
-        if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
-      }
-    }
-
-    {
-      const isVisible = selection => selection.node() && selection.style("display") !== "none";
-      const isVisibleNode = node => node && node.style.display !== "none";
-      const hasChildren = selection => selection.node()?.hasChildNodes();
-      const hasChild = (selection, selector) => selection.node()?.querySelector(selector);
-      const turnOn = el => ensureEl(el).classList.remove("buttonoff");
+      const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
+        selection.node() && selection.style("display") !== "none";
+      const isVisibleNode = (node: HTMLElement | null) => node && node.style.display !== "none";
+      const hasChildren = (selection: { node(): Element | null }) => selection.node()?.hasChildNodes();
+      const hasChild = (selection: { node(): Element | null }, selector: string) =>
+        selection.node()?.querySelector(selector);
+      const turnOn = (el: string) => ensureEl(el).classList.remove("buttonoff");
 
       // turn all layers off
       ensureEl("mapLayers")
         .querySelectorAll("li")
-        .forEach(el => el.classList.add("buttonoff"));
+        .forEach(el => {
+          el.classList.add("buttonoff");
+        });
 
       // turn on active layers
       if (hasChild(texture, "image")) turnOn("toggleTexture");
@@ -491,18 +528,15 @@ async function parseLoadedData(data, mapVersion) {
       Routes.sync();
       TradeAnimation.sync();
     }
-
-    {
-      scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
-      legend
-        .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-        .on("click", () => clearLegend());
-    }
+    scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+    legend
+      .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
+      .on("click", () => clearLegend());
 
     {
       // dynamically import and run auto-update script
-      const { resolveVersionConflicts } = await import("../dynamic/auto-update.js?v=1.128.1");
-      resolveVersionConflicts(mapVersion);
+      const { resolveVersionConflicts } = await import("./auto-update");
+      resolveVersionConflicts(mapVersion!);
     }
 
     // add custom heightmap color scheme if any
@@ -536,23 +570,29 @@ async function parseLoadedData(data, mapVersion) {
       const invalidStates = [...new Set(cells.state)].filter(s => !pack.states[s] || pack.states[s].removed);
       invalidStates.forEach(s => {
         const invalidCells = cells.i.filter(i => cells.state[i] === s);
-        invalidCells.forEach(i => (cells.state[i] = 0));
+        invalidCells.forEach(i => {
+          cells.state[i] = 0;
+        });
         ERROR && console.error("[Data integrity] Invalid state", s, "is assigned to cells", invalidCells);
       });
 
       const invalidProvinces = [...new Set(cells.province)].filter(
-        p => p && (!pack.provinces[p] || pack.provinces[p].removed)
+        p => p && (!pack.provinces[p] || (pack.provinces[p] as { removed?: boolean }).removed)
       );
       invalidProvinces.forEach(p => {
         const invalidCells = cells.i.filter(i => cells.province[i] === p);
-        invalidCells.forEach(i => (cells.province[i] = 0));
+        invalidCells.forEach(i => {
+          cells.province[i] = 0;
+        });
         ERROR && console.error("[Data integrity] Invalid province", p, "is assigned to cells", invalidCells);
       });
 
       const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
       invalidCultures.forEach(c => {
         const invalidCells = cells.i.filter(i => cells.culture[i] === c);
-        invalidCells.forEach(i => (cells.province[i] = 0));
+        invalidCells.forEach(i => {
+          cells.province[i] = 0;
+        });
         ERROR && console.error("[Data integrity] Invalid culture", c, "is assigned to cells", invalidCells);
       });
 
@@ -561,7 +601,9 @@ async function parseLoadedData(data, mapVersion) {
       );
       invalidReligions.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.religion[i] === r);
-        invalidCells.forEach(i => (cells.religion[i] = 0));
+        invalidCells.forEach(i => {
+          cells.religion[i] = 0;
+        });
         ERROR && console.error("[Data integrity] Invalid religion", r, "is assigned to cells", invalidCells);
       });
 
@@ -577,15 +619,19 @@ async function parseLoadedData(data, mapVersion) {
       );
       invalidBurgs.forEach(burgId => {
         const invalidCells = cells.i.filter(i => cells.burg[i] === burgId);
-        invalidCells.forEach(i => (cells.burg[i] = 0));
+        invalidCells.forEach(i => {
+          cells.burg[i] = 0;
+        });
         ERROR && console.error("[Data integrity] Invalid burg", burgId, "is assigned to cells", invalidCells);
       });
 
       const invalidRivers = [...new Set(cells.r)].filter(r => r && !pack.rivers.find(river => river.i === r));
       invalidRivers.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.r[i] === r);
-        invalidCells.forEach(i => (cells.r[i] = 0));
-        rivers.select("river" + r).remove();
+        invalidCells.forEach(i => {
+          cells.r[i] = 0;
+        });
+        rivers.select(`river${r}`).remove();
         ERROR && console.error("[Data integrity] Invalid river", r, "is assigned to cells", invalidCells);
       });
 
@@ -612,15 +658,19 @@ async function parseLoadedData(data, mapVersion) {
           burg.removed = true;
         }
 
-        if (burg.port < 0) {
+        if ((burg.port ?? 0) < 0) {
           ERROR && console.error("[Data integrity] Burg", burg.i, "has invalid port value", burg.port);
           burg.port = 0;
         }
 
         if (burg.cell >= cells.i.length) {
           ERROR && console.error("[Data integrity] Burg", burg.i, "is linked to invalid cell", burg.cell);
-          burg.cell = findCell(burg.x, burg.y);
-          cells.i.filter(i => cells.burg[i] === burg.i).forEach(i => (cells.burg[i] = 0));
+          burg.cell = findCell(burg.x, burg.y)!;
+          cells.i
+            .filter(i => cells.burg[i] === burg.i)
+            .forEach(i => {
+              cells.burg[i] = 0;
+            });
           cells.burg[burg.cell] = burg.i;
         }
 
@@ -654,7 +704,7 @@ async function parseLoadedData(data, mapVersion) {
 
           capitalBurgs.forEach(burg => {
             burg.capital = 0;
-            Burgs.changeGroup(burg);
+            Burgs.changeGroup(burg, null);
           });
 
           return;
@@ -669,7 +719,7 @@ async function parseLoadedData(data, mapVersion) {
           capitalBurgs.forEach((burg, i) => {
             if (!i) return;
             burg.capital = 0;
-            Burgs.changeGroup(burg);
+            Burgs.changeGroup(burg, null);
           });
 
           return;
@@ -679,13 +729,14 @@ async function parseLoadedData(data, mapVersion) {
           ERROR && console.error(`[Data integrity] State ${state.i} has no capital. Making the first burg capital`);
           const capital = stateBurgs[0];
           capital.capital = 1;
-          Burgs.changeGroup(capital);
+          Burgs.changeGroup(capital, null);
         }
       });
 
       pack.provinces.forEach(p => {
-        if (!p.i || p.removed) return;
-        if (pack.states[p.state] && !pack.states[p.state].removed) return;
+        if (!p?.i || p?.removed) return;
+        const state = pack.states[p.state];
+        if (state && !state.removed) return;
         ERROR &&
           console.error(
             `[Data integrity] Province ${p.i} is linked to removed state ${p.state}. Removing the province`
@@ -701,39 +752,39 @@ async function parseLoadedData(data, mapVersion) {
       });
 
       for (const from in pack.cells.routes) {
-        const value = pack.cells.routes[from];
+        const value = pack.cells.routes[+from];
         if (!value) continue;
 
         if (Object.keys(value).length === 0) {
           // remove empty object
-          delete pack.cells.routes[from];
+          delete pack.cells.routes[+from];
           continue;
         }
 
         for (const to in value) {
-          const routeId = value[to];
+          const routeId = value[+to];
           const route = pack.routes.find(r => r.i === routeId);
           if (!route) {
             ERROR &&
               console.error(`[Data integrity] Route ${routeId} from ${from} to ${to} is missing. Removing the route`);
-            delete pack.cells.routes[from][to];
+            delete pack.cells.routes[+from][+to];
           }
         }
       }
 
       {
-        const markerIds = [];
-        let nextId = last(pack.markers)?.i + 1 || 0;
+        const markerIds: boolean[] = [];
+        let nextId = (last(pack.markers)?.i ?? -1) + 1 || 0;
 
         pack.markers.forEach(marker => {
           if (markerIds[marker.i]) {
             ERROR && console.error("[Data integrity] Marker", marker.i, "has non-unique id. Changing to", nextId);
 
-            const domElements = document.querySelectorAll("#marker" + marker.i);
-            if (domElements[1]) domElements[1].id = "marker" + nextId; // rename 2nd dom element
+            const domElements = document.querySelectorAll<HTMLElement>(`#marker${marker.i}`);
+            if (domElements[1]) domElements[1].id = `marker${nextId}`; // rename 2nd dom element
 
-            const noteElements = notes.filter(note => note.id === "marker" + marker.i);
-            if (noteElements[1]) noteElements[1].id = "marker" + nextId; // rename 2nd note
+            const noteElements = notes.filter(note => note.id === `marker${marker.i}`);
+            if (noteElements[1]) noteElements[1].id = `marker${nextId}`; // rename 2nd note
 
             marker.i = nextId;
             nextId += 1;
@@ -746,35 +797,26 @@ async function parseLoadedData(data, mapVersion) {
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
+    // remove href from emblems, to trigger rendering on load
+    emblems.selectAll("use").attr("href", null);
+    // draw data layers (not kept in svg)
+    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (layerIsOn("toggleGrid")) drawGrid();
+    if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
+    focusOn(); // based on searchParams focus on point, cell or burg
+    invokeActiveZooming();
+    fitMapToScreen();
 
-    {
-      // remove href from emblems, to trigger rendering on load
-      emblems.selectAll("use").attr("href", null);
-    }
-
-    {
-      // draw data layers (not kept in svg)
-      if (rulers && layerIsOn("toggleRulers")) rulers.draw();
-      if (layerIsOn("toggleGrid")) drawGrid();
-    }
-
-    {
-      if (window.restoreDefaultEvents) restoreDefaultEvents();
-      focusOn(); // based on searchParams focus on point, cell or burg
-      invokeActiveZooming();
-      fitMapToScreen();
-    }
-
-    WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadMap.timeStart) / 1000, 2)}s`);
+    WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd("Loaded Map " + seed);
+    INFO && console.groupEnd();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
 
     alertMessage.innerHTML = /* html */ `An error occurred while loading the map. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
-      <p id="errorBox">${parseError(error)}</p>`;
+      <p id="errorBox">${parseError(error as Error)}</p>`;
 
     $("#alert").dialog({
       resizable: false,
@@ -782,15 +824,15 @@ async function parseLoadedData(data, mapVersion) {
       maxWidth: "40em",
       buttons: {
         "Clear cache": () => cleanupData(),
-        "Select file": function () {
+        "Select file": function (this: HTMLElement) {
           $(this).dialog("close");
-          mapToLoad.click();
+          ensureEl("mapToLoad").click();
         },
-        "New map": function () {
+        "New map": function (this: HTMLElement) {
           $(this).dialog("close");
           regenerateMap("loading error");
         },
-        Cancel: function () {
+        Cancel: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       },
