@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 import { Cloud } from "./cloud";
 
@@ -338,7 +337,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
     svg.remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    svg = select<SVGSVGElement, unknown>("#map") as unknown as typeof svg;
+    // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
+    // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
+    // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
+    // v5 global `d3.event`, breaking mouse/zoom handlers after a map load (#1508).
+    // Every layer selection below chains off `svg`, so they all inherit v5.
+    svg = (window as any).d3.select("#map") as typeof svg;
     defs = svg.select<SVGDefsElement>("#deftemp");
     viewbox = svg.select<SVGElement>("#viewbox");
     scaleBar = svg.select<SVGGElement>("#scaleBar");
