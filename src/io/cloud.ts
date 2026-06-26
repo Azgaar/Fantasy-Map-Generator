@@ -110,12 +110,14 @@ const dropbox: DropboxProvider = {
     this.authWindow = window.open("./dropbox.html", "auth", `width=${width}, height=${height}, top=${top}, left=${left}`);
 
     return new Promise<void>((resolve, reject) => {
+      const channel = new BroadcastChannel("dropbox-auth");
+
       const watchDog = setTimeout(() => {
+        channel.close();
         this.authWindow?.close();
         reject(new Error("Timeout. No auth for Dropbox"));
       }, 120 * 1000);
 
-      const channel = new BroadcastChannel("dropbox-auth");
       channel.onmessage = async ({ data }) => {
         channel.close();
         clearTimeout(watchDog);
