@@ -29,10 +29,12 @@ function clicked() {
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "markets" && el.tagName !== "path") MarketOverview.open(Number(parent.dataset.id));
-  else if (grand.id === "goodsIcons") GoodsEditor.open();
-  else if (parent.id === "goodsCells") GoodsEditor.open();
-  else if (grand.id === "goodsBurgs") ProductionOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "markets" && el.tagName !== "path")
+    window.lazy.marketOverview().then(m => m.open(Number(parent.dataset.id)));
+  else if (grand.id === "goodsIcons") window.lazy.goodsEditor().then(m => m.open());
+  else if (parent.id === "goodsCells") window.lazy.goodsEditor().then(m => m.open());
+  else if (grand.id === "goodsBurgs")
+    window.lazy.productionOverview().then(m => m.open(Number(parent.dataset.id)));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment("#" + parent.id);

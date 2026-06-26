@@ -882,11 +882,3 @@ export class ProductionChains {
     };
   }
 }
-
-declare global {
-  interface Window {
-    ProductionChains: { open: typeof ProductionChains.open };
-  }
-}
-
-window.ProductionChains = { open: ProductionChains.open };

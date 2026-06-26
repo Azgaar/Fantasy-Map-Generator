@@ -356,11 +356,3 @@ interface ParseError {
   line: string;
   error: string;
 }
-
-declare global {
-  interface Window {
-    NamesbaseEditor: { open: () => void };
-  }
-}
-
-window.NamesbaseEditor = { open };

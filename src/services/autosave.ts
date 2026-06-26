@@ -1,4 +1,5 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
+import { lazy } from "@/lazy-loaders";
 import { ensureEl, ra } from "@/utils";
 
 const MINUTE = 60000; // minute in milliseconds
@@ -16,7 +17,7 @@ export function initiateAutosave(): void {
 
     try {
       tip("Autosave: saving map...", false, "warn", 3000);
-      const { prepareMapData, saveToStorage } = await window.lazy.save();
+      const { prepareMapData, saveToStorage } = await lazy.save();
       await saveToStorage(prepareMapData());
       tip("Autosave: map is saved", false, "success", 2000);
 

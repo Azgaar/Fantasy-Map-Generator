@@ -153,11 +153,3 @@ function downloadDealsCsv(): void {
 
   downloadFile(csv, `${getFileName(`Market_${activeMarketId}_Deals`)}.csv`);
 }
-
-declare global {
-  interface Window {
-    MarketDealsOverview: { open: typeof open };
-  }
-}
-
-window.MarketDealsOverview = { open };

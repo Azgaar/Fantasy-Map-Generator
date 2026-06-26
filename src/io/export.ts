@@ -786,7 +786,7 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-// reached lazily via window.lazy.exportMap()
+// reached lazily via lazy.exportMap()
 declare global {
   interface Window {
     JSZip: any; // registered on demand by libs/jszip.min.js (see exportToPngTiles)

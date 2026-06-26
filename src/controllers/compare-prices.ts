@@ -117,11 +117,3 @@ function rebuildGoodSelect(): void {
     select.value = String(activeGoodId);
   }
 }
-
-declare global {
-  interface Window {
-    ComparePrices: { open: typeof open };
-  }
-}
-
-window.ComparePrices = { open };

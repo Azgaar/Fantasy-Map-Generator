@@ -1,4 +1,5 @@
 import { curveCatmullRom, easeLinear, line } from "d3";
+import { lazy } from "@/lazy-loaders";
 import type { Point } from "../generators/voronoi";
 import { ensureEl, minmax } from "../utils";
 import type { TradeBatch } from "./trade-animation";
@@ -73,7 +74,7 @@ export async function draw(
       .attr("stroke", "none")
       .attr("pointer-events", "all")
       .style("cursor", "pointer")
-      .on("click", () => TradeDetails.open(batch));
+      .on("click", () => lazy.tradeDetails().then(m => m.open(batch)));
 
     // Animate along the path; samples computed lazily and cached at ~1px spacing
     const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");

@@ -989,11 +989,3 @@ function sortData(data: ChartDatum[], sorting: string): ChartDatum[] {
 
   return data;
 }
-
-declare global {
-  interface Window {
-    ChartsOverview: { open: typeof open };
-  }
-}
-
-window.ChartsOverview = { open };
