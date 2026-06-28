@@ -74,7 +74,7 @@ export async function draw(
       .attr("stroke", "none")
       .attr("pointer-events", "all")
       .style("cursor", "pointer")
-      .on("click", () => lazy.tradeDetails().then(m => m.open(batch)));
+      .on("click", () => lazy.tradeDetails().then(m => m.TradeDetails.open(batch)));
 
     // Animate along the path; samples computed lazily and cached at ~1px spacing
     const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");

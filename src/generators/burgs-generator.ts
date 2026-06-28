@@ -748,7 +748,7 @@ class BurgModule {
     return burgId;
   }
 
-  changeGroup(burg: Burg, group: string | null) {
+  changeGroup(burg: Burg, group: string | null = null) {
     if (group) {
       burg.group = group;
     } else {

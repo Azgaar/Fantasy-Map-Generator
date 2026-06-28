@@ -50,7 +50,7 @@ let onNodeLeave: (d: any) => void;
 let getDescription: (dataElement: HierarchyElement) => string;
 let getShape: (dataElement: HierarchyElement) => string | undefined;
 
-export function open(props: OpenProps): void {
+function open(props: OpenProps): void {
   closeDialogs("#hierarchyTree, .stable");
 
   dataElements = props.data;
@@ -556,3 +556,5 @@ function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from:
     updateTree();
   });
 }
+
+export const HierarchyTree = { open };

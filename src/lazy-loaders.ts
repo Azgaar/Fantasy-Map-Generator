@@ -3,6 +3,9 @@
 // legacy `public/modules/**/*.js` files can reach the same registry.
 export const lazy = {
   battleScreen: () => import("@/controllers/battle-screen"),
+  burgEditor: () => import("@/controllers/burg-editor"),
+  burgGroupEditor: () => import("@/controllers/burg-group-editor"),
+  burgsOverview: () => import("@/controllers/burgs-overview"),
   chartsOverview: () => import("@/controllers/charts-overview"),
   cloud: () => import("@/io/cloud"),
   coastlineEditor: () => import("@/controllers/coastline-editor"),

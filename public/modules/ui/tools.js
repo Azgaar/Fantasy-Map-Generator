@@ -17,19 +17,19 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editTradeAnimationButton") editTradeAnimation();
   else if (button === "editCulturesButton") editCultures();
   else if (button === "editReligions") editReligions();
-  else if (button === "editGoods") window.lazy.goodsEditor().then(m => m.open());
+  else if (button === "editGoods") window.lazy.goodsEditor().then(m => m.GoodsEditor.open());
   else if (button === "editEmblemButton") openEmblemEditor();
-  else if (button === "editNamesBaseButton") window.lazy.namesbaseEditor().then(m => m.open());
+  else if (button === "editNamesBaseButton") window.lazy.namesbaseEditor().then(m => m.NamesbaseEditor.open());
   else if (button === "editUnitsButton") editUnits();
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
-  else if (button === "overviewChartsButton") window.lazy.chartsOverview().then(m => m.open());
+  else if (button === "overviewChartsButton") window.lazy.chartsOverview().then(m => m.ChartsOverview.open());
   else if (button === "overviewBurgsButton") overviewBurgs();
   else if (button === "overviewRoutesButton") overviewRoutes();
   else if (button === "overviewRiversButton") overviewRivers();
   else if (button === "overviewMilitaryButton") overviewMilitary();
   else if (button === "overviewMarkersButton") overviewMarkers();
-  else if (button === "overviewMarketsButton") window.lazy.marketsOverview().then(m => m.open());
+  else if (button === "overviewMarketsButton") window.lazy.marketsOverview().then(m => m.MarketsOverview.open());
   else if (button === "overviewCellsButton") viewCellDetails();
   else if (button === "openMinimapButton") openMinimap();
 
@@ -1052,6 +1052,6 @@ function viewCellDetails() {
 }
 
 async function openMinimap() {
-  const Minimap = await window.lazy.minimap();
-  Minimap.openMinimapDialog();
+  const { Minimap } = await window.lazy.minimap();
+  Minimap.open();
 }

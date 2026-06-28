@@ -20,7 +20,7 @@ let culturesManualHistory: string[] = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
-export function open(): void {
+function open(): void {
   closeDialogs("#culturesEditor, .stable");
   if (!layerIsOn("toggleCultures")) toggleCultures();
   if (layerIsOn("toggleStates")) toggleStates();
@@ -104,7 +104,7 @@ function addListeners(): void {
   ensureEl("culturesManuallyUndo").on("click", undoCulturesManualAssignment);
   ensureEl("culturesManuallyApply").on("click", applyCultureManualAssignent);
   ensureEl("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
-  ensureEl("culturesEditNamesBase").on("click", () => lazy.namesbaseEditor().then(m => m.open()));
+  ensureEl("culturesEditNamesBase").on("click", () => lazy.namesbaseEditor().then(m => m.NamesbaseEditor.open()));
   ensureEl("culturesAdd").on("click", enterAddCulturesMode);
   ensureEl("culturesExport").on("click", downloadCulturesCsv);
   ensureEl("culturesImport").on("click", () => ensureEl("culturesCSVToLoad").click());
@@ -683,7 +683,7 @@ function togglePercentageMode(): void {
 
 async function showHierarchy(): Promise<void> {
   if (customization) return;
-  const HeirarchyTree = await lazy.hierarchyTree();
+  const { HierarchyTree } = await lazy.hierarchyTree();
 
   const getDescription = (culture: any) => {
     const { name, type, rural, urban } = culture;
@@ -703,7 +703,7 @@ async function showHierarchy(): Promise<void> {
     if (type === "Hunting") return "pentagon";
   };
 
-  HeirarchyTree.open({
+  HierarchyTree.open({
     type: "cultures",
     data: pack.cultures as any,
     onNodeEnter: cultureHighlightOn,
@@ -1055,3 +1055,5 @@ function updateLockStatus(this: HTMLElement): void {
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");
 }
+
+export const CulturesEditor = { open };

@@ -216,7 +216,7 @@ declare global {
   var drawMarketsLayer: () => void;
   var toggleTrade: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
-  var editStyle: (layer: string) => void;
+  var editStyle: (layer: string, group?: string) => void;
   var fitContent: () => number;
   var applySorting: (header: HTMLElement) => void;
   var capitalize: (str: string) => string;
@@ -260,8 +260,11 @@ declare global {
   var toggleBorders: () => void;
   var togglePopulation: () => void;
   var toggleMilitary: (event?: MouseEvent) => void;
+  var toggleLabels: (event?: MouseEvent) => void;
+  var toggleBurgIcons: (event?: MouseEvent) => void;
 
   var clicked: () => void;
+  var unselect: () => void;
   var selectIcon: (initial: string, callback: (value: string) => void) => void;
   var sortLines: (headerElement: HTMLElement) => void;
   var editNotes: (id: string, name: string) => void;

@@ -6,7 +6,7 @@ import { ensureEl, formatPrice, rn } from "../utils";
 let isInitialized = false;
 let activeMarketId = 0;
 
-export function open(marketId: number): void {
+function open(marketId: number): void {
   if (customization) return;
 
   const market = Markets.get(marketId);
@@ -37,7 +37,9 @@ export function open(marketId: number): void {
   if (!isInitialized) {
     ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
     ensureEl("marketOverviewExport").on("click", downloadStockCsv);
-    ensureEl("marketOverviewOpenDeals").on("click", () => lazy.marketDealsOverview().then(m => m.open(activeMarketId)));
+    ensureEl("marketOverviewOpenDeals").on("click", () =>
+      lazy.marketDealsOverview().then(m => m.MarketDealsOverview.open(activeMarketId))
+    );
     ensureEl("marketOverviewName").on("input", onRenameInput);
     ensureEl("marketOverviewNameReset").on("click", resetMarketName);
     isInitialized = true;
@@ -139,3 +141,5 @@ function closeMarketOverview() {
   ensureEl("marketOverviewGoodsBody").innerHTML = "";
   ensureEl("marketOverviewSummary").innerHTML = "";
 }
+
+export const MarketOverview = { open };

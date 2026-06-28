@@ -356,7 +356,7 @@ let charts: ChartOptions[] = [];
 let prevMapId: number | undefined;
 let isInitialized = false;
 
-export function open() {
+function open() {
   if (!isInitialized) {
     appendStyleSheet();
     insertHtml();
@@ -1015,3 +1015,5 @@ function sortData(data: ChartDatum[], sorting: string): ChartDatum[] {
 
   return data;
 }
+
+export const ChartsOverview = { open };

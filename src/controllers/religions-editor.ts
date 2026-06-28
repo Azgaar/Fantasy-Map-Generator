@@ -15,7 +15,7 @@ import {
 const $body = insertEditorHtml();
 addListeners();
 
-export function open(): void {
+function open(): void {
   closeDialogs("#religionsEditor, .stable");
   if (!layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleStates")) toggleStates();
@@ -632,7 +632,7 @@ function togglePercentageMode(): void {
 
 async function showHierarchy(): Promise<void> {
   if (customization) return;
-  const HeirarchyTree = await lazy.hierarchyTree();
+  const { HierarchyTree } = await lazy.hierarchyTree();
 
   const getDescription = (religion: any) => {
     const { name, type, form, rural, urban } = religion;
@@ -658,7 +658,7 @@ async function showHierarchy(): Promise<void> {
     if (type === "Heresy") return "diamond";
   };
 
-  HeirarchyTree.open({
+  HierarchyTree.open({
     type: "religions",
     data: pack.religions as any,
     onNodeEnter: religionHighlightOn,
@@ -915,3 +915,5 @@ function closeReligionsEditor(): void {
   exitReligionsManualAssignment("close");
   exitAddReligionMode();
 }
+
+export const ReligionsEditor = { open };

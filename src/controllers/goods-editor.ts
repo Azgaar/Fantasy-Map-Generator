@@ -4,7 +4,7 @@ import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
-import { goodEditor } from "./good-editor";
+import { GoodEditor } from "./good-editor";
 import { ProductionChains } from "./production-chains";
 
 let isInitialized = false;
@@ -19,7 +19,7 @@ function refreshEditor() {
   drawGoods();
 }
 
-export function open() {
+function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
 
@@ -39,7 +39,7 @@ export function open() {
     ensureEl("goodsPercentage").on("click", togglePercentageMode);
     ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
     ensureEl("goodsAssign").on("click", enterResourceAssignMode);
-    ensureEl("goodsAdd").on("click", () => goodEditor(undefined, refreshEditor));
+    ensureEl("goodsAdd").on("click", () => GoodEditor.open(undefined, refreshEditor));
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
@@ -53,7 +53,7 @@ export function open() {
       const line = el.parentNode as HTMLElement;
       const good = Goods.get(+line.dataset.id!);
       if (!good) return;
-      if (cl.contains("goodEdit")) return goodEditor(good, refreshEditor);
+      if (cl.contains("goodEdit")) return GoodEditor.open(good, refreshEditor);
       if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
       if (cl.contains("icon-trash-empty")) return removeGood(good, line);
     });
@@ -137,7 +137,7 @@ function goodsEditorAddLines() {
     el.addEventListener("click", ev => {
       ev.stopPropagation();
       const goodId = Number((el.closest<HTMLElement>(".states") as HTMLElement).dataset.id);
-      lazy.comparePrices().then(m => m.open(goodId, "#goodsEditor"));
+      lazy.comparePrices().then(m => m.ComparePrices.open(goodId, "#goodsEditor"));
     });
   });
 
@@ -608,3 +608,5 @@ function closeGoodsEditor() {
   if (customization === 14) exitResourceAssignMode("close");
   ensureEl("goodsBody").innerHTML = "";
 }
+
+export const GoodsEditor = { open };

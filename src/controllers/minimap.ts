@@ -2,7 +2,7 @@ import { ensureEl, minmax, rn } from "../utils";
 
 let minimapInitialized = false;
 
-export function openMinimapDialog(): void {
+function open(): void {
   closeDialogs("#minimap, .stable");
   ensureMinimapStyles();
   ensureMinimapMarkup();
@@ -137,3 +137,5 @@ declare global {
     updateMinimap: () => void;
   }
 }
+
+export const Minimap = { open };

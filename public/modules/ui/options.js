@@ -709,8 +709,8 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await window.lazy.heightmapSelection();
-  HeightmapSelectionDialog.open();
+  const { HeightmapSelection } = await window.lazy.heightmapSelection();
+  HeightmapSelection.open();
 }
 
 // Sticked menu Options listeners

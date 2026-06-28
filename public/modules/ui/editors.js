@@ -24,17 +24,13 @@ function clicked() {
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute(el.id);
   else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
-  else if (grand.id === "burgLabels") editBurg();
-  else if (grand.id === "burgIcons") editBurg();
+  else if (grand.id === "burgLabels" || grand.id === "burgIcons") editBurgs(el.dataset.id);
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "markets" && el.tagName !== "path")
-    window.lazy.marketOverview().then(m => m.open(Number(parent.dataset.id)));
-  else if (grand.id === "goodsIcons") window.lazy.goodsEditor().then(m => m.open());
-  else if (parent.id === "goodsCells") window.lazy.goodsEditor().then(m => m.open());
-  else if (grand.id === "goodsBurgs")
-    window.lazy.productionOverview().then(m => m.open(Number(parent.dataset.id)));
+  else if (grand.id === "markets" && el.tagName !== "path") overviewMarket(Number(parent.dataset.id));
+  else if (grand.id === "goodsIcons" || parent.id === "goodsCells") editGoods();
+  else if (grand.id === "goodsBurgs") overviewProduction(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
   else if (great.id === "armies") editRegiment("#" + parent.id);
@@ -1000,20 +996,32 @@ function refreshAllEditors() {
 // dynamically loaded editors
 async function editStates() {
   if (customization) return;
-  const Editor = await window.lazy.statesEditor();
-  Editor.open();
+  const { StatesEditor } = await window.lazy.statesEditor();
+  StatesEditor.open();
+}
+
+async function editBurgs(id) {
+  if (customization) return;
+  const { BurgEditor } = await window.lazy.burgEditor();
+  BurgEditor.open(id);
+}
+
+async function overviewBurgs(settings) {
+  if (customization) return;
+  const Overview = await window.lazy.burgsOverview();
+  Overview.BurgsOverview.open(settings);
 }
 
 async function editCultures() {
   if (customization) return;
-  const Editor = await window.lazy.culturesEditor();
-  Editor.open();
+  const { CulturesEditor } = await window.lazy.culturesEditor();
+  CulturesEditor.open();
 }
 
 async function editReligions() {
   if (customization) return;
-  const Editor = await window.lazy.religionsEditor();
-  Editor.open();
+  const { ReligionsEditor } = await window.lazy.religionsEditor();
+  ReligionsEditor.open();
 }
 
 async function overviewMilitary() {
@@ -1032,6 +1040,24 @@ async function editCoastlineSettings() {
   if (customization) return;
   const { CoastlineEditor } = await window.lazy.coastlineEditor();
   CoastlineEditor.open();
+}
+
+async function editGoods() {
+  if (customization) return;
+  const { GoodsEditor } = await window.lazy.goodsEditor();
+  GoodsEditor.open();
+}
+
+async function overviewProduction(id) {
+  if (customization) return;
+  const { ProductionOverview } = await window.lazy.productionOverview();
+  ProductionOverview.open();
+}
+
+async function overviewMarket(id) {
+  if (customization) return;
+  const { MarketOverview } = await window.lazy.marketOverview();
+  MarketOverview.open(id);
 }
 
 async function editTradeAnimation() {

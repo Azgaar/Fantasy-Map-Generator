@@ -21,7 +21,7 @@ const $body = insertEditorHtml();
 addListeners();
 let statesManualHistory: string[] = [];
 
-export function open(): void {
+function open(): void {
   closeDialogs("#statesEditor, .stable");
   if (!layerIsOn("toggleStates")) toggleStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
@@ -1684,3 +1684,5 @@ function updateLockStatus(stateId: number, classList: DOMTokenList): void {
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");
 }
+
+export const StatesEditor = { open };

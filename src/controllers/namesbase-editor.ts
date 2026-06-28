@@ -3,7 +3,7 @@ import { ensureEl, openURL, rn, unique } from "../utils";
 
 addListeners();
 
-export function open(): void {
+function open(): void {
   if (customization) return;
   closeDialogs("#namesbaseEditor, .stable");
 
@@ -356,3 +356,5 @@ interface ParseError {
   line: string;
   error: string;
 }
+
+export const NamesbaseEditor = { open };

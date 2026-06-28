@@ -91,10 +91,9 @@ export const timeOfDayPresets: Record<string, TimeOfDayPreset> = {
   }
 };
 
-type Impl = typeof import("../renderers/view-3d-renderer");
-
-let renderer: Impl | null = null;
-const loadRenderer = (): Promise<Impl> =>
+type Renderer = typeof import("../renderers/view-3d-renderer");
+let renderer: Renderer | null = null;
+const loadRenderer = (): Promise<Renderer> =>
   renderer ? Promise.resolve(renderer) : import("../renderers/view-3d-renderer").then(m => (renderer = m));
 
 const threeD = {

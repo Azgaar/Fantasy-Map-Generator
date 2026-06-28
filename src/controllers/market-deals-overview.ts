@@ -6,7 +6,7 @@ let isInitialized = false;
 let activeMarketId = 0;
 let activeFilter: "all" | "local" | "global" = "all";
 
-export function open(marketId: number): void {
+function open(marketId: number): void {
   const market = Markets.get(marketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
@@ -153,3 +153,5 @@ function downloadDealsCsv(): void {
 
   downloadFile(csv, `${getFileName(`Market_${activeMarketId}_Deals`)}.csv`);
 }
+
+export const MarketDealsOverview = { open };
