@@ -1,6 +1,7 @@
 import { createBurgsAdapter } from "./adapters/burgs-adapter";
 import { createMarkersAdapter } from "./adapters/markers-adapter";
 import { createProvincesAdapter } from "./adapters/provinces-adapter";
+import { createRiversAdapter } from "./adapters/rivers-adapter";
 import { createRoutesAdapter } from "./adapters/routes-adapter";
 import { createZonesAdapter } from "./adapters/zones-adapter";
 import { BulkActionBar } from "./bulk-action-bar";
@@ -22,6 +23,7 @@ const factories: Record<string, AdapterFactory> = {
   burgs: createBurgsAdapter,
   provinces: createProvincesAdapter,
   markers: createMarkersAdapter,
+  rivers: createRiversAdapter,
   routes: createRoutesAdapter,
   zones: createZonesAdapter
 };
