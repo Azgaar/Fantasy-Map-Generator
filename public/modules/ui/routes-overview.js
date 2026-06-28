@@ -7,6 +7,7 @@ function overviewRoutes() {
 
   const body = ensureEl("routesBody");
   routesOverviewAddLines();
+  window.bulkBars?.mount("routes", {redraw: routesOverviewAddLines});
   $("#routesOverview").dialog();
 
   if (modules.overviewRoutes) return;
@@ -83,6 +84,8 @@ function overviewRoutes() {
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRouteRemove));
 
     applySorting(routesHeader);
+
+    window.bulkBars?.sync("routes");
   }
 
   function routeHighlightOn(event) {

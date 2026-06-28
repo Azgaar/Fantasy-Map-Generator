@@ -21,6 +21,8 @@ function overviewMarkers() {
 
   addLines();
 
+  window.bulkBars?.mount("markers", {redraw: addLines});
+
   $("#markersOverview").dialog({
     title: "Markers Overview",
     resizable: false,
@@ -109,6 +111,8 @@ function overviewMarkers() {
     markersFooterTotal.innerText = pack.markers.length;
 
     applySorting(markersHeader);
+
+    window.bulkBars?.sync("markers");
   }
 
   function invertPin() {

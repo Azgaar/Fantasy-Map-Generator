@@ -4,6 +4,10 @@ import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
 import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, getIsolines, getVertexPath, rn } from "../utils";
+import { createMarketsAdapter } from "./bulk-action/adapters/markets-adapter";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+
+const marketsBulkBar = new BulkActionBar(createMarketsAdapter(redrawMarketsAfterBulkDelete));
 
 let isInitialized = false;
 // Working copy of pack.cells.market mutated during manual assignment; applied on commit.
@@ -16,6 +20,7 @@ export function open(): void {
   if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
 
   marketsOverviewAddLines();
+  marketsBulkBar.mount();
 
   $("#marketsOverview").dialog({
     title: "Markets Overview",
@@ -148,8 +153,16 @@ function marketsOverviewAddLines(): void {
     count ? rn(totalValue / count, 2) : 0
   );
   applySorting(ensureEl("marketsOverviewHeader"));
+  marketsBulkBar.sync();
 
   $("#marketsOverview").dialog({ width: fitContent() });
+}
+
+// Redraw after a bulk market action: redraw the markets layer (if shown) and the
+// list. Mirrors the single-delete redraw; Markets.removeMarket mutates data only.
+function redrawMarketsAfterBulkDelete(): void {
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+  marketsOverviewAddLines();
 }
 
 function enterMarketsManualAssignment(): void {

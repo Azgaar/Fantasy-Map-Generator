@@ -1,6 +1,4 @@
 import { color, drag, interpolateString, max, pack as packLayout, pointer, select, stratify } from "d3";
-import type { Province } from "@/generators/provinces-generator";
-import type { State } from "@/generators/states-generator";
 import {
   ensureEl,
   findAllCellsInRadius,
@@ -16,10 +14,15 @@ import {
   rn,
   si
 } from "../utils";
+import { createStatesAdapter } from "./bulk-action/adapters/states-adapter";
+import { removeStateCascade } from "./bulk-action/adapters/states-cascade";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
 
 const $body = insertEditorHtml();
 addListeners();
 let statesManualHistory: string[] = [];
+
+const statesBulkBar = new BulkActionBar(createStatesAdapter(redrawStatesAfterBulkDelete));
 
 export function open(): void {
   closeDialogs("#statesEditor, .stable");
@@ -30,6 +33,7 @@ export function open(): void {
   if (layerIsOn("toggleReligions")) toggleReligions();
 
   refreshStatesEditor();
+  statesBulkBar.mount();
 
   $("#statesEditor").dialog({
     title: "States Editor",
@@ -320,6 +324,7 @@ function statesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting(ensureEl("statesHeader"));
+  statesBulkBar.sync();
   $("#statesEditor").dialog({ width: fitContent() });
 }
 
@@ -699,40 +704,48 @@ function stateRemovePrompt(state: number): void {
 }
 
 function stateRemove(stateId: number): void {
+  const state = pack.states[stateId];
+  if (!stateId || !state || state.removed) return;
+
+  // capture refs needed for DOM cleanup before the data cascade clears them
+  const provinceIds = [...(state.provinces || [])];
+  const capitalBurgId = state.capital;
+
+  removeStateDom(stateId, provinceIds);
+
+  // shared data cascade: burgs → neutral, cells released, provinces & military
+  // notes removed, neighbor refs cleaned, state marked removed
+  removeStateCascade(stateId);
+
+  // re-group the former capital AFTER the cascade clears its `capital` flag, so
+  // defineGroup demotes it out of the capital group (which keys on features.capital);
+  // doing this before the cascade would re-pick the capital group and keep its icon
+  if (capitalBurgId) {
+    const capital = pack.burgs[capitalBurgId];
+    if (capital) Burgs.changeGroup(capital, null);
+  }
+
+  debug.selectAll(".highlight").remove();
+  redrawStatesAfterDelete();
+}
+
+// Remove the SVG/DOM artifacts for a single state. Kept separate from the data
+// cascade so single-delete and bulk-delete share one data path; the bulk path
+// instead relies on redrawStatesAfterBulkDelete to clear removed-state artifacts.
+function removeStateDom(stateId: number, provinceIds: number[]): void {
   statesBody.select(`#state${stateId}`).remove();
   statesBody.select(`#state-gap${stateId}`).remove();
   statesHalo.select(`#state-border${stateId}`).remove();
   labels.select(`#stateLabel${stateId}`).remove();
   defs.select(`#textPath_stateLabel${stateId}`).remove();
-
   unfog(`focusState${stateId}`);
 
-  pack.burgs.forEach(burg => {
-    if (burg.state === stateId) {
-      burg.state = 0;
-      if (burg.capital) {
-        burg.capital = 0;
-        Burgs.changeGroup(burg, null);
-      }
-    }
-  });
-
-  pack.cells.state.forEach((s: number, i: number) => {
-    if (s === stateId) pack.cells.state[i] = 0;
-  });
-
   // remove emblem
-  const coaId = `stateCOA${stateId}`;
-  ensureEl(coaId).remove();
+  ensureEl(`stateCOA${stateId}`).remove();
   emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
-  // remove provinces
-  (pack.states[stateId].provinces || []).forEach((p: number) => {
-    pack.provinces[p] = { i: p, removed: true } as Province;
-    pack.cells.province.forEach((pr: number, i: number) => {
-      if (pr === p) pack.cells.province[i] = 0;
-    });
-
+  // remove provinces' DOM
+  provinceIds.forEach(p => {
     const coaId = `provinceCOA${p}`;
     if (document.getElementById(coaId)) ensureEl(coaId).remove();
     emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
@@ -741,29 +754,65 @@ function stateRemove(stateId: number): void {
     g.select(`#province-gap${p}`).remove();
   });
 
-  // remove military
-  (pack.states[stateId].military || []).forEach((m: any) => {
-    const id = `regiment${stateId}-${m.i}`;
-    const index = notes.findIndex(n => n.id === id);
-    if (index !== -1) notes.splice(index, 1);
-  });
+  // remove military army group
   armies.select(`g#army${stateId}`).remove();
+}
 
-  // clean up neighbors references from other states
-  pack.states.forEach(state => {
-    if (!state.i || state.removed || !state.neighbors) return;
-    state.neighbors = state.neighbors.filter((n: number) => n !== stateId);
-  });
-
-  pack.states[stateId] = { i: stateId, removed: true } as State;
-
-  debug.selectAll(".highlight").remove();
-
+function redrawStatesAfterDelete(): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-
   refreshStatesEditor();
+}
+
+// Redraw after a bulk delete. The bulk path mutates pack via the shared cascade
+// only, so here we clear the SVG/DOM artifacts of every removed state/province
+// (those a full redraw does not rebuild) before the single batch redraw.
+function redrawStatesAfterBulkDelete(): void {
+  pack.states.forEach(s => {
+    if (!s.removed) return;
+    const id = s.i;
+    document.getElementById(`stateCOA${id}`)?.remove();
+    emblems.select(`#stateEmblems > use[data-i='${id}']`).remove();
+    labels.select(`#stateLabel${id}`).remove();
+    defs.select(`#textPath_stateLabel${id}`).remove();
+    armies.select(`g#army${id}`).remove();
+    unfog(`focusState${id}`);
+  });
+  pack.provinces.forEach(p => {
+    if (!p?.removed) return;
+    document.getElementById(`provinceCOA${p.i}`)?.remove();
+    emblems.select(`#provinceEmblems > use[data-i='${p.i}']`).remove();
+  });
+  // child-delete may have removed contained burgs; clear their map artifacts
+  pack.burgs.forEach(burg => {
+    if (!burg.i || !burg.removed) return;
+    document.getElementById(`burgCOA${burg.i}`)?.remove();
+    emblems.select(`#burgEmblems > use[data-i='${burg.i}']`).remove();
+    removeBurgIcon(burg.i);
+    removeBurgLabel(burg.i);
+  });
+  regroupOrphanedCapitals();
+  debug.selectAll(".highlight").remove();
+  redrawStatesAfterDelete();
+}
+
+// A deleted state's former capital is reassigned to neutral with its `capital` flag
+// cleared, but it still sits in its old capital group, so its icon stays a capital.
+// Single-delete re-groups it directly (it has the capital id to hand); the bulk
+// cascade loses that reference, so here we find burgs left in a capital-keyed group
+// without the flag and demote them. Keyed on the group's `features.capital`, so a
+// renamed capital group still works.
+function regroupOrphanedCapitals(): void {
+  const capitalGroupNames = new Set(
+    (options.burgs?.groups ?? []).filter(group => group.features?.capital).map(group => group.name)
+  );
+  if (!capitalGroupNames.size) return;
+
+  pack.burgs.forEach(burg => {
+    if (!burg.i || burg.removed || burg.capital) return;
+    if (burg.group && capitalGroupNames.has(burg.group)) Burgs.changeGroup(burg, null);
+  });
 }
 
 function toggleLegend(): void {

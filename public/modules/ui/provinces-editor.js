@@ -12,6 +12,15 @@ function editProvinces() {
   const body = ensureEl("provincesBodySection");
   refreshProvincesEditor();
 
+  window.bulkBars?.mount("provinces", {
+    redraw: () => {
+      // drawProvinces repaints region fills so a bulk Set color shows on the map
+      if (layerIsOn("toggleProvinces")) drawProvinces();
+      if (layerIsOn("toggleBorders")) drawBorders();
+      refreshProvincesEditor();
+    }
+  });
+
   if (modules.editProvinces) return;
   modules.editProvinces = true;
 
@@ -209,6 +218,8 @@ function editProvinces() {
     }
     applySorting(provincesHeader);
     $("#provincesEditor").dialog({ width: fitContent() });
+
+    window.bulkBars?.sync("provinces");
   }
 
   function getCapitalOptions(burgs, capital) {

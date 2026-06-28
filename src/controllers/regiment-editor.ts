@@ -2,6 +2,7 @@ import { type D3DragEvent, drag, easeSinInOut, pointer, select, sum, transition 
 import { lazy } from "@/lazy-loaders";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, rn } from "../utils";
+import { removeRegimentData } from "./bulk-action/adapters/regiments-cascade";
 
 let isInitialized = false;
 let selectedRegiment: SVGGElement | null = null;
@@ -472,14 +473,14 @@ function removeRegiment(): void {
       Remove: function () {
         $(this).dialog("close");
         if (!selectedRegiment) return;
-        const military = pack.states[+selectedRegiment.dataset.state!].military!;
+        const stateId = +selectedRegiment.dataset.state!;
         const reg = getRegiment();
-        const regIndex = reg ? military.indexOf(reg) : -1;
-        if (regIndex === -1) return;
-        military.splice(regIndex, 1);
+        if (!reg) return;
 
-        const index = notes.findIndex(n => n.id === selectedRegiment!.id);
-        if (index !== -1) notes.splice(index, 1);
+        // route the data mutations (military splice + note removal) through the
+        // shared cascade so single and bulk delete stay in sync; the editor keeps
+        // its own DOM cleanup and overview refreshes below
+        removeRegimentData(stateId, reg.i);
         selectedRegiment.remove();
 
         refreshMilitaryOverviewIfOpen();

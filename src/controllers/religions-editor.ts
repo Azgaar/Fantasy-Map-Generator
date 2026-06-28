@@ -11,9 +11,14 @@ import {
   rn,
   si
 } from "../utils";
+import { createReligionsAdapter } from "./bulk-action/adapters/religions-adapter";
+import { removeReligionCascade } from "./bulk-action/adapters/religions-cascade";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
 
 const $body = insertEditorHtml();
 addListeners();
+
+const religionsBulkBar = new BulkActionBar(createReligionsAdapter(redrawReligionsAfterBulkDelete));
 
 export function open(): void {
   closeDialogs("#religionsEditor, .stable");
@@ -25,6 +30,7 @@ export function open(): void {
 
   refreshReligionsEditor();
   drawReligionCenters();
+  religionsBulkBar.mount();
 
   $("#religionsEditor").dialog({
     title: "Religions Editor",
@@ -275,6 +281,7 @@ function religionsEditorAddLines(): void {
   }
 
   applySorting(ensureEl("religionsHeader"));
+  religionsBulkBar.sync();
   $("#religionsEditor").dialog({ width: fitContent() });
 }
 
@@ -528,18 +535,24 @@ function removeReligion(religionId: number): void {
   relig.select(`#religion-gap${religionId}`).remove();
   debug.select(`#religionsCenter${religionId}`).remove();
 
-  pack.cells.religion.forEach((r: number, i: number) => {
-    if (r === religionId) pack.cells.religion[i] = 0;
+  // shared data cascade: cells released to "no religion", origin refs cleaned,
+  // religion marked removed
+  removeReligionCascade(religionId);
+
+  refreshReligionsEditor();
+}
+
+// Redraw after a bulk religion action. Clears removed religions' SVG artifacts, repaints
+// the religion regions from pack (so a bulk Set color shows on the map, not just in the
+// list), then refreshes the list.
+function redrawReligionsAfterBulkDelete(): void {
+  pack.religions.forEach(r => {
+    if (!r.removed) return;
+    relig.select(`#religion${r.i}`).remove();
+    relig.select(`#religion-gap${r.i}`).remove();
+    debug.select(`#religionsCenter${r.i}`).remove();
   });
-  pack.religions[religionId].removed = true;
-
-  pack.religions
-    .filter(r => r.i && !r.removed)
-    .forEach(r => {
-      r.origins = (r.origins ?? []).filter((origin: number) => origin !== religionId);
-      if (!r.origins.length) r.origins = [0];
-    });
-
+  drawReligions();
   refreshReligionsEditor();
 }
 

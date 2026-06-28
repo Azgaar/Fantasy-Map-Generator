@@ -174,6 +174,7 @@ export interface Route {
   points: number[][];
   cells?: number[];
   merged?: boolean;
+  lock?: boolean;
 }
 
 type RiverEdge = { riverId: number; fromIndex: number };

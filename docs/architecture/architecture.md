@@ -248,6 +248,20 @@ Heraldry is the current example:
 This keeps each half under the correct layer (generation vs view) while the shared
 `emblems/` name signals they form one feature.
 
+### Bulk Action Bar bridge (`window.bulkBars`)
+
+The shared multi-select Bulk Action Bar lives in `src/controllers/bulk-action/` (a pure
+selection core, per-type adapters, the DOM bar). Migrated TS menus attach it directly by
+importing the adapter factory + `BulkActionBar`. The remaining **legacy menus**
+(`public/modules/ui/*.js`) load as plain `<script>` tags and cannot import ES modules, so
+`src/controllers/bulk-action/legacy-bridge.ts` registers `window.bulkBars` (eagerly, via
+`src/controllers/index.ts`) — the same `window.X` cross-layer pattern used for
+`window.COA`, `window.tip`, `window.ensureEl`, etc. A legacy menu calls
+`window.bulkBars.mount(type, {redraw})` on open and `window.bulkBars.sync(type)` after each
+row-render. This bridge is a **deliberate, temporary seam**: as each legacy menu is
+migrated to TS it switches to the direct-import path, and the bridge is deleted once all
+are migrated. See `docs/prd/bulk-action-bar.md`.
+
 ## Why no `core/`
 
 Folders are named by **role**, never by vague importance. A generic `core/` becomes a
