@@ -1,6 +1,7 @@
 import type { Burg } from "@/generators/burgs-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { plural } from "../utils/stringUtils";
 import type { BulkDeleteOptions, CascadeSummary } from "./bulk-action/bulk-entity-adapter";
 
 /**
@@ -13,9 +14,6 @@ import type { BulkDeleteOptions, CascadeSummary } from "./bulk-action/bulk-entit
 export const isStateDeletable = (id: number): boolean => id !== 0 && !!pack.states[id] && !pack.states[id].removed;
 
 export const isStateLocked = (id: number): boolean => !!pack.states[id]?.lock;
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 /** Summarize the effect of bulk-deleting the given states, for the confirmation dialog. */
 export function describeStatesCascade(ids: number[], options: BulkDeleteOptions = {}): CascadeSummary {
   const deletableIds = ids.filter(id => isStateDeletable(id) && !isStateLocked(id));

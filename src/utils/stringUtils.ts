@@ -22,6 +22,15 @@ export const capitalize = (inputString: string) => {
 };
 
 /**
+ * Format a count with a regular-plural noun, e.g. plural(1, "state") -> "1 state",
+ * plural(3, "burg") -> "3 burgs". Only handles nouns pluralized by a trailing "s".
+ * @param {number} count - The count
+ * @param {string} noun - The singular noun
+ * @returns {string} - "<count> <noun>", noun pluralized when count !== 1
+ */
+export const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
+
+/**
  * Split a string into two parts, trying to balance their lengths
  * @param {string} inputString - The input string
  * @returns {[string, string]} - An array with two parts of the string

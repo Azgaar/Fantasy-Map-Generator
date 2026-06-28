@@ -1,3 +1,4 @@
+import { plural } from "../utils/stringUtils";
 import type { CascadeSummary } from "./bulk-action/bulk-entity-adapter";
 
 /**
@@ -11,9 +12,6 @@ export const isCultureDeletable = (id: number): boolean =>
   id !== 0 && !!pack.cultures[id] && !pack.cultures[id].removed;
 
 export const isCultureLocked = (id: number): boolean => !!pack.cultures[id]?.lock;
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 /** Summarize the effect of bulk-deleting the given cultures, for the confirmation dialog. */
 export function describeCulturesCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(id => isCultureDeletable(id) && !isCultureLocked(id));

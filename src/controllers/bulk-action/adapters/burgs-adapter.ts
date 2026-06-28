@@ -1,3 +1,4 @@
+import { plural } from "../../../utils/stringUtils";
 import type { BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 
 // Capitals are excluded to match single-delete, which forbids removing a capital
@@ -5,9 +6,6 @@ import type { BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 const isBurgDeletable = (id: number): boolean =>
   id !== 0 && !!pack.burgs[id] && !pack.burgs[id].removed && !pack.burgs[id].capital;
 const isBurgLocked = (id: number): boolean => !!pack.burgs[id]?.lock;
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 function describeCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(id => isBurgDeletable(id) && !isBurgLocked(id));
   const skippedLocked = ids.filter(id => isBurgDeletable(id) && isBurgLocked(id)).length;

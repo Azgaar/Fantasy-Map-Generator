@@ -1,10 +1,8 @@
+import { plural } from "../../../utils/stringUtils";
 import type { BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 
 const findZone = (id: number) => pack.zones.find(zone => zone.i === id);
 const isZoneDeletable = (id: number): boolean => !!findZone(id);
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 function describeCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(id => isZoneDeletable(id));
   return {

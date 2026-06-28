@@ -1,11 +1,9 @@
+import { plural } from "../../../utils/stringUtils";
 import type { BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 
 const findMarker = (id: number) => pack.markers.find(marker => marker.i === id);
 const isMarkerDeletable = (id: number): boolean => !!findMarker(id);
 const isMarkerLocked = (id: number): boolean => !!findMarker(id)?.lock;
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 function describeCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(id => isMarkerDeletable(id) && !isMarkerLocked(id));
   const skippedLocked = ids.filter(id => isMarkerDeletable(id) && isMarkerLocked(id)).length;

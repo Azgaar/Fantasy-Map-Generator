@@ -1,20 +1,26 @@
+import { plural } from "../../../utils/stringUtils";
 import type { BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 
 const findRiver = (id: number) => pack.rivers.find(river => river.i === id);
 const isRiverDeletable = (id: number): boolean => !!findRiver(id);
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 function describeCascade(ids: number[]): CascadeSummary {
-  const deletableIds = ids.filter(isRiverDeletable);
-  return {
-    lines: [
-      `${plural(deletableIds.length, "river")} will be removed`,
-      "tributaries of removed rivers are auto-removed too"
-    ],
-    deletable: deletableIds.length,
-    skippedLocked: 0
-  };
+  const selectedIds = new Set(ids.filter(isRiverDeletable));
+
+  // Rivers.remove(id) also purges every river whose parent or basin is that id, so the
+  // actual deletion is the union of the selected rivers and their basins — not just the
+  // selected rows. Count that union so the confirmation does not understate the loss.
+  const removedIds = new Set<number>();
+  for (const river of pack.rivers) {
+    if (selectedIds.has(river.i) || selectedIds.has(river.parent) || selectedIds.has(river.basin)) {
+      removedIds.add(river.i);
+    }
+  }
+
+  const tributaries = removedIds.size - selectedIds.size;
+  const lines = [`${plural(removedIds.size, "river")} will be removed`];
+  if (tributaries > 0) lines.push(`includes ${tributaries} auto-removed from the selected basins`);
+
+  return { lines, deletable: selectedIds.size, skippedLocked: 0 };
 }
 
 /**

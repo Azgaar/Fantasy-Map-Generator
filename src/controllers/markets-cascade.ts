@@ -1,3 +1,4 @@
+import { plural } from "../utils/stringUtils";
 import type { CascadeSummary } from "./bulk-action/bulk-entity-adapter";
 
 /**
@@ -13,9 +14,6 @@ import type { CascadeSummary } from "./bulk-action/bulk-entity-adapter";
 const findMarket = (id: number) => pack.markets.find(market => market.i === id);
 
 export const isMarketDeletable = (id: number): boolean => id !== 0 && !!findMarket(id);
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 /** Summarize the effect of bulk-deleting the given markets, for the confirmation dialog. */
 export function describeMarketsCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(isMarketDeletable);

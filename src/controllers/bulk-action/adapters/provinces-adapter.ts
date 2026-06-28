@@ -1,11 +1,9 @@
 import type { Province } from "@/generators/provinces-generator";
+import { plural } from "../../../utils/stringUtils";
 import type { BulkDeleteOptions, BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 
 const isProvinceDeletable = (id: number): boolean => id !== 0 && !!pack.provinces[id] && !pack.provinces[id].removed;
 const isProvinceLocked = (id: number): boolean => !!pack.provinces[id]?.lock;
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 /**
  * Burgs contained in a province, enumerated from cells the way the editor's
  * collectStatistics does (a burg belongs to the province of the cell it sits in).

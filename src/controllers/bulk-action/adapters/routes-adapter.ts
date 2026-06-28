@@ -1,11 +1,9 @@
+import { plural } from "../../../utils/stringUtils";
 import type { BulkEntityAdapter, CascadeSummary } from "../bulk-entity-adapter";
 
 const findRoute = (id: number) => pack.routes.find(route => route.i === id);
 const isRouteDeletable = (id: number): boolean => !!findRoute(id);
 const isRouteLocked = (id: number): boolean => !!findRoute(id)?.lock;
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 function describeCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(id => isRouteDeletable(id) && !isRouteLocked(id));
   const skippedLocked = ids.filter(id => isRouteDeletable(id) && isRouteLocked(id)).length;

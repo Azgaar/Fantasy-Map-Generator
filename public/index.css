@@ -1423,8 +1423,11 @@ div.slider .ui-slider-handle {
   gap: 0.5em;
 }
 
+/* `!important` so an editor's footer show-all handler (`#xBottom > * { display:inline-block }`,
+   run when exiting manual-assignment) cannot force-reveal the bulk controls while bulk mode
+   is off — a non-important inline style loses to an important stylesheet rule. */
 .bulkInline[hidden] {
-  display: none;
+  display: none !important;
 }
 
 .bulkInline .bulkSelectAll {

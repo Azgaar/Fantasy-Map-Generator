@@ -129,7 +129,13 @@ export class BulkActionBar {
 
   private toggleBulkMode(): void {
     this.bulkMode = !this.bulkMode;
-    if (this.inline) this.inline.hidden = !this.bulkMode;
+    if (this.inline) {
+      this.inline.hidden = !this.bulkMode;
+      // clear any leftover inline `display` an editor's footer show-all handler may
+      // have set (e.g. exit-manual-assignment does `#xBottom > * { display:inline-block }`),
+      // so the stylesheet's `.bulkInline` layout applies when we reveal it
+      if (this.bulkMode) this.inline.style.display = "";
+    }
     this.toggle?.setAttribute("aria-pressed", String(this.bulkMode));
     this.toggle?.classList.toggle("active", this.bulkMode);
     this.toggle?.classList.toggle("icon-check-empty", !this.bulkMode);
@@ -151,6 +157,10 @@ export class BulkActionBar {
   }
 
   private onDelete(): void {
+    // Mirror single-delete's guard: never mutate the pack while a manual-assignment /
+    // regeneration mode is active (those modes hide the footer's own buttons but the
+    // bulk controls live in a span the hide-handler doesn't reach).
+    if (customization) return;
     const ids = this.selection.getSelected();
     bulkDeleteConfirm({
       typeLabel: this.adapter.type,
@@ -169,6 +179,7 @@ export class BulkActionBar {
   }
 
   private onSetLock(locked: boolean): void {
+    if (customization) return;
     if (!this.adapter.setLock) return;
     this.selection.getSelected().forEach(id => {
       this.adapter.setLock?.(id, locked);
@@ -178,6 +189,7 @@ export class BulkActionBar {
   }
 
   private onSetColor(): void {
+    if (customization) return;
     if (!this.adapter.setColor) return;
     const ids = this.selection.getSelected();
     if (!ids.length) return;

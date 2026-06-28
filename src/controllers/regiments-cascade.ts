@@ -1,3 +1,4 @@
+import { plural } from "../utils/stringUtils";
 import type { CascadeSummary } from "./bulk-action/bulk-entity-adapter";
 
 /**
@@ -39,9 +40,6 @@ export function isRegimentDeletable(compositeId: number): boolean {
   if (!state || state.removed || !state.military) return false;
   return state.military.some(regiment => regiment.i === regimentId);
 }
-
-const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
 /** Summarize the effect of bulk-deleting the given regiments, for the confirmation dialog. */
 export function describeRegimentsCascade(ids: number[]): CascadeSummary {
   const deletableIds = ids.filter(id => isRegimentDeletable(id));
