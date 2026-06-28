@@ -250,9 +250,12 @@ This keeps each half under the correct layer (generation vs view) while the shar
 
 ### Bulk Action Bar bridge (`window.bulkBars`)
 
-The shared multi-select Bulk Action Bar lives in `src/controllers/bulk-action/` (a pure
-selection core, per-type adapters, the DOM bar). Migrated TS menus attach it directly by
-importing the adapter factory + `BulkActionBar`. The remaining **legacy menus**
+The generic, type-agnostic Bulk Action Bar machinery lives in `src/controllers/bulk-action/`
+(a pure selection core, the `BulkEntityAdapter` interface, the DOM bar, the delete
+confirmation). The per-type adapter is supplied by each menu: a migrated TS menu's
+controller assembles its adapter inline — with the delete cascade/summary in a co-located
+`*-cascade.ts` — and passes it to `BulkActionBar`, so the menu-specific logic stays in the
+menu's own module. The remaining **legacy menus**
 (`public/modules/ui/*.js`) load as plain `<script>` tags and cannot import ES modules, so
 `src/controllers/bulk-action/legacy-bridge.ts` registers `window.bulkBars` (eagerly, via
 `src/controllers/index.ts`) — the same `window.X` cross-layer pattern used for
