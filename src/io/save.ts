@@ -1,6 +1,7 @@
 // Save the whole .map project to storage, machine or cloud
 import { lazy } from "@/lazy-loaders";
 import { ensureEl, link, parseError, rn } from "@/utils";
+import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
@@ -13,7 +14,7 @@ export async function saveMap(method: SaveMethod): Promise<void> {
     const filename = `${getFileName()}.map`;
 
     if (method === "storage") await saveToStorage(mapData, true);
-    if (method === "machine") saveToMachine(mapData, filename);
+    if (method === "machine") await saveToMachine(mapData, filename);
     if (method === "dropbox") await saveToDropbox(mapData, filename);
   } catch (error) {
     ERROR && console.error(error);
@@ -191,18 +192,63 @@ export async function saveToStorage(mapData: string, showTip = false): Promise<v
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
-// download map file
-function saveToMachine(mapData: string, filename: string): void {
-  const blob = new Blob([mapData], { type: "text/plain" });
-  const URL = window.URL.createObjectURL(blob);
+const DOWNLOADS_FALLBACK_NOTICE_KEY = "savePickerFallbackNoticeShown";
 
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = URL;
-  link.click();
+// Whether the one-time fallback explanation has already been shown on this
+// browser. Guarded because localStorage can throw (e.g. Safari private mode);
+// a save must never fail just because we couldn't read/write this flag.
+function fallbackNoticeAlreadyShown(): boolean {
+  try {
+    return localStorage.getItem(DOWNLOADS_FALLBACK_NOTICE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
 
-  tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
-  setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+function rememberFallbackNoticeShown(): void {
+  try {
+    localStorage.setItem(DOWNLOADS_FALLBACK_NOTICE_KEY, "true");
+  } catch {
+    // Storage unavailable — the note may show again next time; harmless.
+  }
+}
+
+// A single tip per fallback save: the first time also explains why no picker was
+// offered. (One tip, not two — a second tip() would overwrite the first, since
+// tip() replaces the tooltip's contents.)
+function notifyDownloadsFallback(): void {
+  if (fallbackNoticeAlreadyShown()) {
+    tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
+    return;
+  }
+
+  tip(
+    'Map is saved to the "Downloads" folder (CTRL + J). Your browser can\'t offer a save-location picker — use a Chromium browser (Chrome, Edge) to choose where maps are saved.',
+    true,
+    "success",
+    12000
+  );
+  rememberFallbackNoticeShown();
+}
+
+// Map a save outcome to user feedback. A cancelled picker is a silent no-op.
+export function notifySaveOutcome(outcome: SaveOutcome): void {
+  if (outcome.type === "cancelled") return;
+
+  if (outcome.type === "downloaded-fallback") {
+    notifyDownloadsFallback();
+    return;
+  }
+
+  // saved — written to the file the user chose in the picker.
+  tip(`Map is saved to "${outcome.filename}"`, true, "success", 8000);
+}
+
+// Save the .map file to the user's machine via the save-location picker (or the
+// Downloads fallback where unsupported), then report the outcome.
+async function saveToMachine(mapData: string, filename: string): Promise<void> {
+  const outcome = await saveToFileSystem(mapData, filename);
+  notifySaveOutcome(outcome);
 }
 
 async function saveToDropbox(mapData: string, filename: string): Promise<void> {

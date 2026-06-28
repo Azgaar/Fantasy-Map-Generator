@@ -131,6 +131,13 @@ declare global {
     get: (key: string) => Promise<Blob | undefined>;
     set: (key: string, value: Blob) => Promise<void>;
   };
+
+  // File System Access API — Chromium-only, absent in Firefox/Safari.
+  // Declared here so the save-location picker can feature-detect it.
+  var showSaveFilePicker: (options?: {
+    suggestedName?: string;
+    types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+  }) => Promise<FileSystemFileHandle>;
   var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
   var rulers: any; // Rulers instance (classic)
   var Rulers: any;
