@@ -4,6 +4,33 @@ import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
 import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, getIsolines, getVertexPath, rn } from "../utils";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import { describeMarketsCascade, isMarketDeletable } from "./markets-cascade";
+
+// The Markets bulk adapter — defined here in the controller (its predicates/summary
+// live in ./markets-cascade) and passed to the generic BulkActionBar fixture. Markets
+// have a color but no lock and no children; delete delegates to Markets.removeMarket.
+const marketsBulkAdapter: BulkEntityAdapter = {
+  type: "markets",
+  containerId: "marketsOverviewBody",
+  footerId: "marketsOverviewBottom",
+  supportsColor: true,
+  getRowId: row => {
+    const id = Number(row.dataset.id);
+    return Number.isFinite(id) ? id : null;
+  },
+  isDeletable: isMarketDeletable,
+  isLocked: () => false,
+  setColor: (id, color) => {
+    const market = pack.markets.find(m => m.i === id);
+    if (market) market.color = color;
+  },
+  deleteEntity: id => Markets.removeMarket(id),
+  describeCascade: describeMarketsCascade,
+  redraw: redrawMarketsAfterBulkDelete
+};
+const marketsBulkBar = new BulkActionBar(marketsBulkAdapter);
 
 let isInitialized = false;
 // Working copy of pack.cells.market mutated during manual assignment; applied on commit.
@@ -16,6 +43,7 @@ export function open(): void {
   if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
 
   marketsOverviewAddLines();
+  marketsBulkBar.mount();
 
   $("#marketsOverview").dialog({
     title: "Markets Overview",
@@ -148,8 +176,16 @@ function marketsOverviewAddLines(): void {
     count ? rn(totalValue / count, 2) : 0
   );
   applySorting(ensureEl("marketsOverviewHeader"));
+  marketsBulkBar.sync();
 
   $("#marketsOverview").dialog({ width: fitContent() });
+}
+
+// Redraw after a bulk market action: redraw the markets layer (if shown) and the
+// list. Mirrors the single-delete redraw; Markets.removeMarket mutates data only.
+function redrawMarketsAfterBulkDelete(): void {
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+  marketsOverviewAddLines();
 }
 
 function enterMarketsManualAssignment(): void {

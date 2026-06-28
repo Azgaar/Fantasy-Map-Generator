@@ -7,6 +7,7 @@ function overviewRivers() {
 
   const body = ensureEl("riversBody");
   riversOverviewAddLines();
+  window.bulkBars?.mount("rivers", {redraw: riversOverviewAddLines});
   $("#riversOverview").dialog();
 
   if (modules.overviewRivers) return;
@@ -95,6 +96,7 @@ function overviewRivers() {
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.on("click", triggerRiverRemove));
 
     applySorting(riversHeader);
+    window.bulkBars?.sync("rivers");
   }
 
   function riverHighlightOn(event) {

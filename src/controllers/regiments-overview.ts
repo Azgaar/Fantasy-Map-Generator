@@ -2,8 +2,60 @@ import { pointer, select, sum } from "d3";
 import { lazy } from "@/lazy-loaders";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, si } from "../utils";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import {
+  decodeId,
+  describeRegimentsCascade,
+  encodeId,
+  isRegimentDeletable,
+  removeRegimentData
+} from "./regiments-cascade";
 
 let isInitialized = false;
+
+// The Regiments bulk adapter — defined here in the controller (its delete/summary logic
+// lives in ./regiments-cascade) and passed to the generic BulkActionBar fixture. Regiments
+// have no lock or color, so this adapter offers neither (no setLock/setColor, supportsColor:false).
+// Rows carry both a state id (data-s) and a per-state regiment id (data-id), encoded into one
+// composite id because the bar keys rows by a single number.
+const regimentsBulkAdapter: BulkEntityAdapter = {
+  type: "regiments",
+  containerId: "regimentsBody",
+  footerId: "regimentsBottom",
+  supportsColor: false,
+  getRowId: row => {
+    const stateId = Number(row.dataset.s);
+    const regimentId = Number(row.dataset.id);
+    if (!Number.isFinite(stateId) || !Number.isFinite(regimentId)) return null;
+    return encodeId(stateId, regimentId);
+  },
+  isDeletable: isRegimentDeletable,
+  isLocked: () => false,
+  deleteEntity: compositeId => {
+    const { stateId, regimentId } = decodeId(compositeId);
+    removeRegimentData(stateId, regimentId);
+  },
+  describeCascade: describeRegimentsCascade,
+  redraw: redrawRegimentsAfterBulkDelete
+};
+const regimentsBulkBar = new BulkActionBar(regimentsBulkAdapter);
+
+// Redraw after a bulk regiment delete. The bulk path mutates pack via the shared
+// cascade only (splicing regiments from their states' military arrays), so here we
+// remove the SVG army group of every regiment that no longer exists in the data,
+// then re-render the overview list.
+function redrawRegimentsAfterBulkDelete(): void {
+  const armyGroups = document.querySelectorAll<SVGGElement>("#armies > g > g[id^='regiment']");
+  armyGroups.forEach(group => {
+    const stateId = Number(group.dataset.state);
+    const regimentId = Number(group.dataset.id);
+    const state = pack.states[stateId];
+    const stillExists = !!state && !state.removed && !!state.military?.some(regiment => regiment.i === regimentId);
+    if (!stillExists) group.remove();
+  });
+  refreshRegimentsOverview();
+}
 
 function open(state = -1): void {
   if (customization) return;
@@ -13,6 +65,7 @@ function open(state = -1): void {
   const body = ensureEl("regimentsBody");
   updateFilter(state);
   refreshRegimentsOverview();
+  regimentsBulkBar.mount();
   $("#regimentsOverview").dialog();
 
   if (!isInitialized) {
@@ -126,6 +179,8 @@ function refreshRegimentsOverview(): void {
   body.querySelectorAll<HTMLElement>("div.states").forEach(el => {
     el.on("mouseleave", event => regimentHighlightOff(event));
   });
+
+  regimentsBulkBar.sync();
 }
 
 function updateFilter(state: number): void {

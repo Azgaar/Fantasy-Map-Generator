@@ -1410,6 +1410,42 @@ div.slider .ui-slider-handle {
   width: max-content;
 }
 
+/* The single footer entry button is styled like the menu's other icon buttons.
+   When bulk mode is on it is highlighted so it reads as a pressed toggle. */
+.bulkToggle.active {
+  color: #a00;
+}
+
+/* The inline controls that appear in the footer while bulk mode is on. */
+.bulkInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+/* `!important` so an editor's footer show-all handler (`#xBottom > * { display:inline-block }`,
+   run when exiting manual-assignment) cannot force-reveal the bulk controls while bulk mode
+   is off — a non-important inline style loses to an important stylesheet rule. */
+.bulkInline[hidden] {
+  display: none !important;
+}
+
+.bulkInline .bulkSelectAll {
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulkInline .bulkCount {
+  font-style: italic;
+  color: #666;
+}
+
+.bulkRowCheckbox {
+  cursor: pointer;
+  margin-right: 0.3em;
+  vertical-align: middle;
+}
+
 div.header {
   display: grid;
   width: 0;

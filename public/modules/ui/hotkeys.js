@@ -109,7 +109,6 @@ function handleKeyup(event) {
   else if (key === "7") zoom.scaleTo(svg, 7);
   else if (key === "8") zoom.scaleTo(svg, 8);
   else if (key === "9") zoom.scaleTo(svg, 9);
-  else if (ctrl) toggleMode();
 }
 
 function allowHotkeys() {
@@ -165,14 +164,6 @@ function handleBracketSizeChange(code) {
 
   handleSizeChange(code === "BracketLeft" ? "-" : "+");
   return true;
-}
-
-function toggleMode() {
-  if (zonesRemove?.offsetParent) {
-    zonesRemove.classList.contains("pressed")
-      ? zonesRemove.classList.remove("pressed")
-      : zonesRemove.classList.add("pressed");
-  }
 }
 
 function removeElementOnKey() {

@@ -8,6 +8,14 @@ function editZones() {
   updateFilters();
   zonesEditorAddLines();
 
+  window.bulkBars?.mount("zones", {
+    redraw: () => {
+      // drawZones repaints zone polygons so a bulk Set color shows on the map
+      drawZones();
+      zonesEditorAddLines();
+    }
+  });
+
   if (modules.editZones) return;
   modules.editZones = true;
 
@@ -30,7 +38,6 @@ function editZones() {
   ensureEl("zonesManuallyCancel").on("click", cancelZonesManualAssignent);
   ensureEl("zonesAdd").on("click", addZonesLayer);
   ensureEl("zonesExport").on("click", downloadZonesData);
-  ensureEl("zonesRemove").on("click", e => e.target.classList.toggle("pressed"));
 
   body.on("click", function (ev) {
     const line = ev.target.closest("div.states");
@@ -134,6 +141,8 @@ function editZones() {
       togglePercentageMode();
     }
     $("#zonesEditor").dialog({width: fitContent()});
+
+    window.bulkBars?.sync("zones");
   }
 
   function zoneHighlightOn(event) {
@@ -219,7 +228,6 @@ function editZones() {
 
   function dragZoneBrush() {
     const radius = +ensureEl("zonesBrush").value;
-    const eraseMode = ensureEl("zonesRemove").classList.contains("pressed");
     const landOnly = ensureEl("zonesBrushLandOnly").checked;
 
     d3.event.on("drag", () => {
@@ -235,28 +243,16 @@ function editZones() {
       const zone = pack.zones.find(z => z.i === zoneId);
       if (!zone) return;
 
-      if (eraseMode) {
-        const data = zones
-          .selectAll("polygon")
-          .data()
-          .filter(d => !(d.zoneId === zoneId && selection.includes(d.cell)));
-        zones
-          .selectAll("polygon")
-          .data(data, d => `${d.zoneId}-${d.cell}`)
-          .exit()
-          .remove();
-      } else {
-        const data = selection.map(cell => ({cell, zoneId, fill: zone.color}));
-        zones
-          .selectAll("polygon")
-          .data(data, d => `${d.zoneId}-${d.cell}`)
-          .enter()
-          .append("polygon")
-          .attr("points", d => getPackPolygon(d.cell))
-          .attr("fill", d => d.fill)
-          .attr("data-zone", d => d.zoneId)
-          .attr("data-cell", d => d.cell);
-      }
+      const data = selection.map(cell => ({cell, zoneId, fill: zone.color}));
+      zones
+        .selectAll("polygon")
+        .data(data, d => `${d.zoneId}-${d.cell}`)
+        .enter()
+        .append("polygon")
+        .attr("points", d => getPackPolygon(d.cell))
+        .attr("fill", d => d.fill)
+        .attr("data-zone", d => d.zoneId)
+        .attr("data-cell", d => d.cell);
     });
   }
 

@@ -11,9 +11,42 @@ import {
   rn,
   si
 } from "../utils";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import {
+  describeReligionsCascade,
+  isReligionDeletable,
+  isReligionLocked,
+  removeReligionCascade
+} from "./religions-cascade";
 
 const $body = insertEditorHtml();
 addListeners();
+
+// The Religions bulk adapter — defined here in the controller (its delete/summary logic
+// lives in ./religions-cascade) and passed to the generic BulkActionBar fixture.
+const religionsBulkAdapter: BulkEntityAdapter = {
+  type: "religions",
+  containerId: "religionsBody",
+  footerId: "religionsBottom",
+  supportsColor: true,
+  getRowId: row => {
+    const id = Number(row.dataset.id);
+    return Number.isFinite(id) ? id : null;
+  },
+  isDeletable: isReligionDeletable,
+  isLocked: isReligionLocked,
+  setLock: (id, locked) => {
+    if (pack.religions[id]) pack.religions[id].lock = locked;
+  },
+  setColor: (id, color) => {
+    if (pack.religions[id]) pack.religions[id].color = color;
+  },
+  deleteEntity: id => removeReligionCascade(id),
+  describeCascade: describeReligionsCascade,
+  redraw: redrawReligionsAfterBulkDelete
+};
+const religionsBulkBar = new BulkActionBar(religionsBulkAdapter);
 
 export function open(): void {
   closeDialogs("#religionsEditor, .stable");
@@ -25,6 +58,7 @@ export function open(): void {
 
   refreshReligionsEditor();
   drawReligionCenters();
+  religionsBulkBar.mount();
 
   $("#religionsEditor").dialog({
     title: "Religions Editor",
@@ -275,6 +309,7 @@ function religionsEditorAddLines(): void {
   }
 
   applySorting(ensureEl("religionsHeader"));
+  religionsBulkBar.sync();
   $("#religionsEditor").dialog({ width: fitContent() });
 }
 
@@ -528,18 +563,24 @@ function removeReligion(religionId: number): void {
   relig.select(`#religion-gap${religionId}`).remove();
   debug.select(`#religionsCenter${religionId}`).remove();
 
-  pack.cells.religion.forEach((r: number, i: number) => {
-    if (r === religionId) pack.cells.religion[i] = 0;
+  // shared data cascade: cells released to "no religion", origin refs cleaned,
+  // religion marked removed
+  removeReligionCascade(religionId);
+
+  refreshReligionsEditor();
+}
+
+// Redraw after a bulk religion action. Clears removed religions' SVG artifacts, repaints
+// the religion regions from pack (so a bulk Set color shows on the map, not just in the
+// list), then refreshes the list.
+function redrawReligionsAfterBulkDelete(): void {
+  pack.religions.forEach(r => {
+    if (!r.removed) return;
+    relig.select(`#religion${r.i}`).remove();
+    relig.select(`#religion-gap${r.i}`).remove();
+    debug.select(`#religionsCenter${r.i}`).remove();
   });
-  pack.religions[religionId].removed = true;
-
-  pack.religions
-    .filter(r => r.i && !r.removed)
-    .forEach(r => {
-      r.origins = (r.origins ?? []).filter((origin: number) => origin !== religionId);
-      if (!r.origins.length) r.origins = [0];
-    });
-
+  drawReligions();
   refreshReligionsEditor();
 }
 

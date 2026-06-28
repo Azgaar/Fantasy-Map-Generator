@@ -60,3 +60,4 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Overview Tool**: A summary UI for a particular system (e.g., production-overview, market-overview).
 - **Configurator**: A UI for setting up world generation parameters.
 - **Submap**: A tool to generate a new, more detailed map strictly from a selected area of the current map.
+- **Bulk Action Bar**: A reusable multi-select control attached to each list-style overview/editor dialog. A button in the menu's footer toggles bulk mode, which adds a per-row checkbox column plus inline footer controls — a filter-aware "select all", a selected-count, and bulk actions (Delete, Lock, Unlock, Set color) on the current selection. Selection is scoped to the open menu (per-type), not cross-type.

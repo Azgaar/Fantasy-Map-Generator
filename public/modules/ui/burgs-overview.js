@@ -9,6 +9,7 @@ function overviewBurgs(settings = { stateId: null, cultureId: null }) {
   updateFilter();
   updateLockAllIcon();
   burgsOverviewAddLines();
+  window.bulkBars?.mount("burgs", {redraw: burgsOverviewAddLines});
   $("#burgsOverview").dialog();
 
   if (modules.overviewBurgs) return;
@@ -37,7 +38,6 @@ function overviewBurgs(settings = { stateId: null, cultureId: null }) {
     uploadFile(this, importBurgNames);
   });
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
-  ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 
   function refreshBurgsEditor() {
     updateFilter();
@@ -174,6 +174,7 @@ function overviewBurgs(settings = { stateId: null, cultureId: null }) {
     body.querySelectorAll("div > span.icon-trash-empty").forEach(el => el.addEventListener("click", triggerBurgRemove));
 
     applySorting(burgsHeader);
+    window.bulkBars?.sync("burgs");
   }
 
   function getCultureOptions(culture) {
@@ -573,21 +574,6 @@ function overviewBurgs(settings = { stateId: null, cultureId: null }) {
       message,
       confirm: "Rename",
       onConfirm
-    });
-  }
-
-  function triggerAllBurgsRemove() {
-    const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;
-    confirmationDialog({
-      title: `Remove ${number} burgs`,
-      message: `
-        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals?
-        <br><i>To remove a capital you have to remove its state first</i>`,
-      confirm: "Remove",
-      onConfirm: () => {
-        pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => Burgs.remove(b.i));
-        burgsOverviewAddLines();
-      }
     });
   }
 

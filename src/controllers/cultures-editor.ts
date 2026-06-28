@@ -13,12 +13,40 @@ import {
   rn,
   si
 } from "../utils";
+import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import { describeCulturesCascade, isCultureDeletable, isCultureLocked, removeCultureCascade } from "./cultures-cascade";
 
 const $body = insertEditorHtml();
 addListeners();
 let culturesManualHistory: string[] = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
+
+// The Cultures bulk adapter — defined here in the controller (its delete/summary logic
+// lives in ./cultures-cascade) and passed to the generic BulkActionBar fixture.
+const culturesBulkAdapter: BulkEntityAdapter = {
+  type: "cultures",
+  containerId: "culturesBody",
+  footerId: "culturesBottom",
+  supportsColor: true,
+  getRowId: row => {
+    const id = Number(row.dataset.id);
+    return Number.isFinite(id) ? id : null;
+  },
+  isDeletable: isCultureDeletable,
+  isLocked: isCultureLocked,
+  setLock: (id, locked) => {
+    if (pack.cultures[id]) pack.cultures[id].lock = locked;
+  },
+  setColor: (id, color) => {
+    if (pack.cultures[id]) pack.cultures[id].color = color;
+  },
+  deleteEntity: id => removeCultureCascade(id),
+  describeCascade: describeCulturesCascade,
+  redraw: redrawCulturesAfterBulkDelete
+};
+const culturesBulkBar = new BulkActionBar(culturesBulkAdapter);
 
 export function open(): void {
   closeDialogs("#culturesEditor, .stable");
@@ -29,6 +57,7 @@ export function open(): void {
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   refreshCulturesEditor();
+  culturesBulkBar.mount();
 
   $("#culturesEditor").dialog({
     title: "Cultures Editor",
@@ -280,6 +309,7 @@ function culturesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting($culturesHeader);
+  culturesBulkBar.sync();
   $("#culturesEditor").dialog({ width: fitContent() });
 }
 
@@ -552,27 +582,23 @@ function removeCulture(cultureId: number): void {
   cults.select(`#culture${cultureId}`).remove();
   debug.select(`#cultureCenter${cultureId}`).remove();
 
-  const { burgs, states, cells, cultures } = pack as any;
+  // shared data cascade: burgs & states → neutral culture, cells released,
+  // origin refs cleaned, culture marked removed
+  removeCultureCascade(cultureId);
 
-  burgs
-    .filter((b: any) => b.culture === cultureId)
-    .forEach((b: any) => {
-      b.culture = 0;
-    });
-  states.forEach((s: any) => {
-    if (s.culture === cultureId) s.culture = 0;
-  });
-  cells.culture.forEach((c: number, i: number) => {
-    if (c === cultureId) cells.culture[i] = 0;
-  });
-  cultures[cultureId].removed = true;
+  refreshCulturesEditor();
+}
 
-  cultures
-    .filter((c: any) => c.i && !c.removed)
-    .forEach((c: any) => {
-      c.origins = (c.origins ?? []).filter((origin: number) => origin !== cultureId);
-      if (!c.origins.length) c.origins = [0];
-    });
+// Redraw after a bulk culture action. Clears removed cultures' SVG artifacts, repaints
+// the culture regions from pack (so a bulk Set color shows on the map, not just in the
+// list), then refreshes the list, stats, and culture centers.
+function redrawCulturesAfterBulkDelete(): void {
+  pack.cultures.forEach(c => {
+    if (!c.removed) return;
+    cults.select(`#culture${c.i}`).remove();
+    debug.select(`#cultureCenter${c.i}`).remove();
+  });
+  drawCultures();
   refreshCulturesEditor();
 }
 
