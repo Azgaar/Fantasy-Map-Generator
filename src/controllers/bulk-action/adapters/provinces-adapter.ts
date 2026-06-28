@@ -91,6 +91,7 @@ export function createProvincesAdapter(redraw: () => void): BulkEntityAdapter {
   return {
     type: "provinces",
     containerId: "provincesBodySection",
+    footerId: "provincesBottom",
     supportsColor: true,
     childKind: "burgs",
     getRowId: row => {

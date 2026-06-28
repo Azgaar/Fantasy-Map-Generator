@@ -1,6 +1,45 @@
 import type { Burg } from "@/generators/burgs-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import type { BulkDeleteOptions, CascadeSummary } from "./bulk-action/bulk-entity-adapter";
+
+/**
+ * States bulk logic, kept in the States controller's domain (not in the generic
+ * bulk-action fixture). Pure and DOM-free so the States editor can assemble its bulk
+ * adapter from these and pass it to the BulkActionBar, while single-delete reuses the
+ * same cascade — the two delete paths cannot diverge — and the logic stays unit-tested.
+ */
+
+export const isStateDeletable = (id: number): boolean => id !== 0 && !!pack.states[id] && !pack.states[id].removed;
+
+export const isStateLocked = (id: number): boolean => !!pack.states[id]?.lock;
+
+const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
+
+/** Summarize the effect of bulk-deleting the given states, for the confirmation dialog. */
+export function describeStatesCascade(ids: number[], options: BulkDeleteOptions = {}): CascadeSummary {
+  const deletableIds = ids.filter(id => isStateDeletable(id) && !isStateLocked(id));
+  const skippedLocked = ids.filter(id => isStateDeletable(id) && isStateLocked(id)).length;
+
+  let burgs = 0;
+  let provinces = 0;
+  deletableIds.forEach(id => {
+    burgs += pack.burgs.filter(b => b.i && !b.removed && b.state === id).length;
+    provinces += (pack.states[id].provinces || []).filter(p => pack.provinces[p] && !pack.provinces[p].removed).length;
+  });
+
+  const lines = [`${plural(deletableIds.length, "state")} will be removed`];
+  if (burgs) {
+    lines.push(
+      options.deleteChildren
+        ? `${plural(burgs, "burg")} will be removed`
+        : `${plural(burgs, "burg")} will be reassigned to neutral`
+    );
+  }
+  if (provinces) lines.push(`${plural(provinces, "province")} will be removed`);
+
+  return { lines, deletable: deletableIds.length, skippedLocked };
+}
 
 /** Data-only burg removal (mirrors Burgs.remove minus its DOM cleanup). */
 function removeBurgData(burg: Burg): void {
@@ -11,11 +50,6 @@ function removeBurgData(burg: Burg): void {
   if (burg.coa) delete burg.coa;
 }
 
-interface RemoveStateOptions {
-  /** Delete the state's contained burgs instead of reassigning them to neutral. */
-  deleteChildren?: boolean;
-}
-
 /**
  * Pure data cascade for removing a state from `pack`: by default reassigns the
  * state's burgs to neutral (with `deleteChildren` it removes them instead), releases
@@ -24,7 +58,7 @@ interface RemoveStateOptions {
  * data mutations of the States editor's single-state delete (and, for child burgs,
  * Burgs.remove) so bulk delete and single delete share one cascade.
  */
-export function removeStateCascade(stateId: number, options: RemoveStateOptions = {}): void {
+export function removeStateCascade(stateId: number, options: BulkDeleteOptions = {}): void {
   const state = pack.states[stateId];
   if (!stateId || !state || state.removed) return;
 

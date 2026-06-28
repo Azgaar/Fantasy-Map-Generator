@@ -24,6 +24,7 @@ export function createZonesAdapter(redraw: () => void): BulkEntityAdapter {
   return {
     type: "zones",
     containerId: "zonesBodySection",
+    footerId: "zonesBottom",
     supportsColor: true,
     getRowId: row => {
       const id = Number(row.dataset.id);

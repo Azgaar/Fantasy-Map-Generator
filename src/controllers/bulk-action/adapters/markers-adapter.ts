@@ -26,6 +26,7 @@ export function createMarkersAdapter(redraw: () => void): BulkEntityAdapter {
   return {
     type: "markers",
     containerId: "markersBody",
+    footerId: "markersBottom",
     supportsColor: false,
     getRowId: row => {
       const id = Number(row.dataset.i);

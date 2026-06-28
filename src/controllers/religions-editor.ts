@@ -11,14 +11,42 @@ import {
   rn,
   si
 } from "../utils";
-import { createReligionsAdapter } from "./bulk-action/adapters/religions-adapter";
-import { removeReligionCascade } from "./bulk-action/adapters/religions-cascade";
 import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import {
+  describeReligionsCascade,
+  isReligionDeletable,
+  isReligionLocked,
+  removeReligionCascade
+} from "./religions-cascade";
 
 const $body = insertEditorHtml();
 addListeners();
 
-const religionsBulkBar = new BulkActionBar(createReligionsAdapter(redrawReligionsAfterBulkDelete));
+// The Religions bulk adapter — defined here in the controller (its delete/summary logic
+// lives in ./religions-cascade) and passed to the generic BulkActionBar fixture.
+const religionsBulkAdapter: BulkEntityAdapter = {
+  type: "religions",
+  containerId: "religionsBody",
+  footerId: "religionsBottom",
+  supportsColor: true,
+  getRowId: row => {
+    const id = Number(row.dataset.id);
+    return Number.isFinite(id) ? id : null;
+  },
+  isDeletable: isReligionDeletable,
+  isLocked: isReligionLocked,
+  setLock: (id, locked) => {
+    if (pack.religions[id]) pack.religions[id].lock = locked;
+  },
+  setColor: (id, color) => {
+    if (pack.religions[id]) pack.religions[id].color = color;
+  },
+  deleteEntity: id => removeReligionCascade(id),
+  describeCascade: describeReligionsCascade,
+  redraw: redrawReligionsAfterBulkDelete
+};
+const religionsBulkBar = new BulkActionBar(religionsBulkAdapter);
 
 export function open(): void {
   closeDialogs("#religionsEditor, .stable");

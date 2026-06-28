@@ -1410,58 +1410,31 @@ div.slider .ui-slider-handle {
   width: max-content;
 }
 
-.bulkActionBar {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0.1em 0 0.2em;
-  font-size: 0.9em;
+/* The single footer entry button is styled like the menu's other icon buttons.
+   When bulk mode is on it is highlighted so it reads as a pressed toggle. */
+.bulkToggle.active {
+  color: #a00;
 }
 
-/* override `.dialog > div { width: max-content }` so the bar spans the menu width
-   and its top-right toggle actually sits at the right */
-.dialog > .bulkActionBar {
-  width: 100%;
-}
-
-.bulkActionBar .bulkOptionsToggle {
-  align-self: flex-end;
-  cursor: pointer;
-  font-size: 0.9em;
-  padding: 0.1em 0.5em;
-}
-
-.bulkActionBar .bulkOptionsToggle.active {
-  font-weight: bold;
-}
-
-.bulkActionBar .bulkToolbar {
-  display: flex;
+/* The inline controls that appear in the footer while bulk mode is on. */
+.bulkInline {
+  display: inline-flex;
   align-items: center;
-  gap: 0.6em;
-  flex-wrap: wrap;
-  margin-top: 0.2em;
-  padding: 0.2em 0.3em;
+  gap: 0.5em;
 }
 
-.bulkActionBar .bulkToolbar[hidden] {
+.bulkInline[hidden] {
   display: none;
 }
 
-.bulkActionBar .bulkSelectAll {
+.bulkInline .bulkSelectAll {
   cursor: pointer;
   user-select: none;
 }
 
-.bulkActionBar .bulkCount {
+.bulkInline .bulkCount {
   font-style: italic;
   color: #666;
-}
-
-.bulkActionBar .bulkToolbar button {
-  cursor: pointer;
 }
 
 .bulkRowCheckbox {

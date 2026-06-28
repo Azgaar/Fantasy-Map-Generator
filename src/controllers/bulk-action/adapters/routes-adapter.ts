@@ -26,6 +26,7 @@ export function createRoutesAdapter(redraw: () => void): BulkEntityAdapter {
   return {
     type: "routes",
     containerId: "routesBody",
+    footerId: "routesBottom",
     supportsColor: false,
     getRowId: row => {
       const id = Number(row.dataset.id);

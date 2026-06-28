@@ -27,6 +27,7 @@ export function createBurgsAdapter(redraw: () => void): BulkEntityAdapter {
   return {
     type: "burgs",
     containerId: "burgsBody",
+    footerId: "burgsBottom",
     supportsColor: false,
     getRowId: row => {
       const id = Number(row.dataset.id);

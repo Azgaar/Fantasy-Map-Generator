@@ -14,15 +14,39 @@ import {
   rn,
   si
 } from "../utils";
-import { createStatesAdapter } from "./bulk-action/adapters/states-adapter";
-import { removeStateCascade } from "./bulk-action/adapters/states-cascade";
 import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import { describeStatesCascade, isStateDeletable, isStateLocked, removeStateCascade } from "./states-cascade";
 
 const $body = insertEditorHtml();
 addListeners();
 let statesManualHistory: string[] = [];
 
-const statesBulkBar = new BulkActionBar(createStatesAdapter(redrawStatesAfterBulkDelete));
+// The States bulk adapter — defined here in the controller (its delete/summary logic
+// lives in ./states-cascade) and passed to the generic BulkActionBar fixture.
+const statesBulkAdapter: BulkEntityAdapter = {
+  type: "states",
+  containerId: "statesBodySection",
+  footerId: "statesBottom",
+  supportsColor: true,
+  childKind: "burgs",
+  getRowId: row => {
+    const id = Number(row.dataset.id);
+    return Number.isFinite(id) ? id : null;
+  },
+  isDeletable: isStateDeletable,
+  isLocked: isStateLocked,
+  setLock: (id, locked) => {
+    if (pack.states[id]) pack.states[id].lock = locked;
+  },
+  setColor: (id, color) => {
+    if (pack.states[id]) pack.states[id].color = color;
+  },
+  deleteEntity: (id, options) => removeStateCascade(id, options),
+  describeCascade: describeStatesCascade,
+  redraw: redrawStatesAfterBulkDelete
+};
+const statesBulkBar = new BulkActionBar(statesBulkAdapter);
 
 export function open(): void {
   closeDialogs("#statesEditor, .stable");

@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { removeStateCascade } from "./states-cascade";
+import { describeStatesCascade, isStateDeletable, isStateLocked, removeStateCascade } from "./states-cascade";
 
 // Minimal world: 3 real states (+ neutral 0).
 //   state 1 owns burgs 1 (capital) & 2, province 1, regiment, neighbor 2
 //   state 2 owns burg 3, province 2, neighbors 1 & 3
-//   state 3 owns burg 4, neighbor 2  (kept, used to check neighbor cleanup)
+//   state 3 owns burg 4, neighbor 2  (kept, used to check neighbor cleanup); locked
 function makeWorld() {
   return {
     states: [
       { i: 0, name: "Neutrals" },
-      { i: 1, name: "Alpha", provinces: [1], military: [{ i: 0 }], neighbors: [2] },
-      { i: 2, name: "Beta", provinces: [2], neighbors: [1, 3] },
-      { i: 3, name: "Gamma", neighbors: [2] }
+      { i: 1, name: "Alpha", provinces: [1], military: [{ i: 0 }], neighbors: [2], lock: false },
+      { i: 2, name: "Beta", provinces: [2], neighbors: [1, 3], lock: false },
+      { i: 3, name: "Gamma", neighbors: [2], lock: true }
     ],
     burgs: [
       0,
@@ -29,12 +29,12 @@ function makeWorld() {
   };
 }
 
-describe("removeStateCascade", () => {
-  beforeEach(() => {
-    (globalThis as any).pack = makeWorld();
-    (globalThis as any).notes = [{ id: "regiment1-0" }, { id: "note-keep" }];
-  });
+beforeEach(() => {
+  (globalThis as any).pack = makeWorld();
+  (globalThis as any).notes = [{ id: "regiment1-0" }, { id: "note-keep" }];
+});
 
+describe("removeStateCascade", () => {
   it("reassigns the state's burgs to neutral and clears capital flag", () => {
     removeStateCascade(1);
     const { burgs } = (globalThis as any).pack;
@@ -70,7 +70,6 @@ describe("removeStateCascade", () => {
     expect(states[1].removed).toBe(true);
     expect(states[2].removed).toBe(true);
     expect(states[3].removed).toBeUndefined();
-    // all burgs of states 1 & 2 are now neutral; state 3's burg untouched
     expect(burgs.slice(1).map((b: any) => b.state)).toEqual([0, 0, 0, 3]);
     expect(provinces[1].removed).toBe(true);
     expect(provinces[2].removed).toBe(true);
@@ -93,5 +92,45 @@ describe("removeStateCascade", () => {
     removeStateCascade(0);
     removeStateCascade(99);
     expect(JSON.stringify((globalThis as any).pack)).toBe(before);
+  });
+});
+
+describe("states bulk predicates and summary", () => {
+  it("treats the neutral state and removed states as non-deletable", () => {
+    expect(isStateDeletable(0)).toBe(false);
+    expect(isStateDeletable(1)).toBe(true);
+    expect(isStateDeletable(99)).toBe(false);
+  });
+
+  it("reports lock status", () => {
+    expect(isStateLocked(1)).toBe(false);
+    expect(isStateLocked(3)).toBe(true);
+  });
+
+  it("describeStatesCascade counts states, reassigned burgs and removed provinces", () => {
+    const summary = describeStatesCascade([1, 2]);
+    const text = summary.lines.join(" ");
+    expect(summary.deletable).toBe(2);
+    expect(summary.skippedLocked).toBe(0);
+    expect(text.includes("2 states")).toBe(true);
+    expect(text.includes("3 burgs")).toBe(true); // burgs 1,2 (state1) + 3 (state2)
+    expect(text.includes("2 provinces")).toBe(true);
+  });
+
+  it("describeStatesCascade excludes the neutral state and reports locked rows as skipped", () => {
+    const summary = describeStatesCascade([0, 1, 3]); // 0 not deletable, 3 locked
+    expect(summary.deletable).toBe(1); // only state 1
+    expect(summary.skippedLocked).toBe(1); // state 3
+  });
+
+  it("describeStatesCascade reflects the deleteChildren option", () => {
+    const reassign = describeStatesCascade([1, 2]);
+    expect(reassign.lines.join(" ").includes("reassigned to neutral")).toBe(true);
+
+    const withChildren = describeStatesCascade([1, 2], { deleteChildren: true });
+    const text = withChildren.lines.join(" ");
+    expect(text.includes("3 burgs")).toBe(true);
+    expect(text.includes("removed")).toBe(true);
+    expect(text.includes("reassigned to neutral")).toBe(false);
   });
 });

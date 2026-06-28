@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { removeCultureCascade } from "./cultures-cascade";
+import { describeCulturesCascade, isCultureDeletable, isCultureLocked, removeCultureCascade } from "./cultures-cascade";
 
 // Minimal world: 3 real cultures (+ neutral 0).
 //   culture 1 owns burgs 1 & 2, state 1, origin [0]
 //   culture 2 owns burg 3, state 2, origin [1]    (origin cleared when 1 removed)
-//   culture 3 owns burg 4, origins [1, 2]         (keeps 2 when 1 removed)
+//   culture 3 owns burg 4, origins [1, 2]         (keeps 2 when 1 removed); locked
 function makeWorld() {
   return {
     cultures: [
       { i: 0, name: "Wildlands" },
-      { i: 1, name: "Alpha", origins: [0] },
-      { i: 2, name: "Beta", origins: [1] },
-      { i: 3, name: "Gamma", origins: [1, 2] }
+      { i: 1, name: "Alpha", origins: [0], lock: false },
+      { i: 2, name: "Beta", origins: [1], lock: false },
+      { i: 3, name: "Gamma", origins: [1, 2], lock: true }
     ],
     burgs: [0, { i: 1, culture: 1 }, { i: 2, culture: 1 }, { i: 3, culture: 2 }, { i: 4, culture: 3 }],
     states: [
@@ -23,11 +23,11 @@ function makeWorld() {
   };
 }
 
-describe("removeCultureCascade", () => {
-  beforeEach(() => {
-    (globalThis as any).pack = makeWorld();
-  });
+beforeEach(() => {
+  (globalThis as any).pack = makeWorld();
+});
 
+describe("removeCultureCascade", () => {
   it("reassigns the culture's burgs and states to the neutral culture", () => {
     removeCultureCascade(1);
     const { burgs, states } = (globalThis as any).pack;
@@ -70,5 +70,33 @@ describe("removeCultureCascade", () => {
     removeCultureCascade(0);
     removeCultureCascade(99);
     expect(JSON.stringify((globalThis as any).pack)).toBe(before);
+  });
+});
+
+describe("cultures bulk predicates and summary", () => {
+  it("treats the neutral culture and removed cultures as non-deletable", () => {
+    expect(isCultureDeletable(0)).toBe(false);
+    expect(isCultureDeletable(1)).toBe(true);
+    expect(isCultureDeletable(99)).toBe(false);
+  });
+
+  it("reports lock status", () => {
+    expect(isCultureLocked(1)).toBe(false);
+    expect(isCultureLocked(3)).toBe(true);
+  });
+
+  it("describeCulturesCascade counts cultures and reassigned cells", () => {
+    const summary = describeCulturesCascade([1, 2]);
+    const text = summary.lines.join(" ");
+    expect(summary.deletable).toBe(2);
+    expect(summary.skippedLocked).toBe(0);
+    expect(text.includes("2 cultures")).toBe(true);
+    expect(text.includes("3 cells")).toBe(true); // cells of culture 1 (2) + culture 2 (1)
+  });
+
+  it("describeCulturesCascade excludes the neutral culture and reports locked rows as skipped", () => {
+    const summary = describeCulturesCascade([0, 1, 3]); // 0 not deletable, 3 locked
+    expect(summary.deletable).toBe(1); // only culture 1
+    expect(summary.skippedLocked).toBe(1); // culture 3
   });
 });

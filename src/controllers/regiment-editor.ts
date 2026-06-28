@@ -2,7 +2,7 @@ import { type D3DragEvent, drag, easeSinInOut, pointer, select, sum, transition 
 import { lazy } from "@/lazy-loaders";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, rn } from "../utils";
-import { removeRegimentData } from "./bulk-action/adapters/regiments-cascade";
+import { removeRegimentData } from "./regiments-cascade";
 
 let isInitialized = false;
 let selectedRegiment: SVGGElement | null = null;

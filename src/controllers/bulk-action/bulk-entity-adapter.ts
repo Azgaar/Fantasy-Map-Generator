@@ -23,8 +23,10 @@ export interface BulkDeleteOptions {
 export interface BulkEntityAdapter {
   /** Stable type name, e.g. "states". */
   readonly type: string;
-  /** DOM id of the list container (`<div class="table">`) the bar mounts on. */
+  /** DOM id of the list container (`<div class="table">`) whose rows get checkboxes. */
   readonly containerId: string;
+  /** DOM id of the menu's footer button row (`<prefix>Bottom`) where the bulk controls live. */
+  readonly footerId: string;
   /** Whether the "Set color" action is offered for this type. */
   readonly supportsColor: boolean;
   /** Name of the contained child entity, e.g. "burgs" — only set for States/Provinces. */

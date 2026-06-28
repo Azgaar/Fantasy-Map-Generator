@@ -13,9 +13,9 @@ import {
   rn,
   si
 } from "../utils";
-import { createCulturesAdapter } from "./bulk-action/adapters/cultures-adapter";
-import { removeCultureCascade } from "./bulk-action/adapters/cultures-cascade";
 import { BulkActionBar } from "./bulk-action/bulk-action-bar";
+import type { BulkEntityAdapter } from "./bulk-action/bulk-entity-adapter";
+import { describeCulturesCascade, isCultureDeletable, isCultureLocked, removeCultureCascade } from "./cultures-cascade";
 
 const $body = insertEditorHtml();
 addListeners();
@@ -23,7 +23,30 @@ let culturesManualHistory: string[] = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
-const culturesBulkBar = new BulkActionBar(createCulturesAdapter(redrawCulturesAfterBulkDelete));
+// The Cultures bulk adapter — defined here in the controller (its delete/summary logic
+// lives in ./cultures-cascade) and passed to the generic BulkActionBar fixture.
+const culturesBulkAdapter: BulkEntityAdapter = {
+  type: "cultures",
+  containerId: "culturesBody",
+  footerId: "culturesBottom",
+  supportsColor: true,
+  getRowId: row => {
+    const id = Number(row.dataset.id);
+    return Number.isFinite(id) ? id : null;
+  },
+  isDeletable: isCultureDeletable,
+  isLocked: isCultureLocked,
+  setLock: (id, locked) => {
+    if (pack.cultures[id]) pack.cultures[id].lock = locked;
+  },
+  setColor: (id, color) => {
+    if (pack.cultures[id]) pack.cultures[id].color = color;
+  },
+  deleteEntity: id => removeCultureCascade(id),
+  describeCascade: describeCulturesCascade,
+  redraw: redrawCulturesAfterBulkDelete
+};
+const culturesBulkBar = new BulkActionBar(culturesBulkAdapter);
 
 export function open(): void {
   closeDialogs("#culturesEditor, .stable");
