@@ -51,8 +51,16 @@ function editBurgGroups(): void {
     if (el.getAttribute("name") === "cultures") return selectLimitation(el, pack.cultures);
     if (el.getAttribute("name") === "religions") return selectLimitation(el, pack.religions);
     if (el.getAttribute("name") === "features") return selectFeaturesLimitation(el);
-    if (el.getAttribute("name") === "up") return line.parentNode!.insertBefore(line, line.previousElementSibling);
-    if (el.getAttribute("name") === "down") return line.parentNode!.insertBefore(line.nextElementSibling!, line);
+    if (el.getAttribute("name") === "up") {
+      const prev = line.previousElementSibling;
+      if (prev) line.parentNode!.insertBefore(line, prev);
+      return;
+    }
+    if (el.getAttribute("name") === "down") {
+      const next = line.nextElementSibling;
+      if (next) line.parentNode!.insertBefore(next, line);
+      return;
+    }
     if (el.getAttribute("name") === "remove") return removeLine(line);
   });
 }
