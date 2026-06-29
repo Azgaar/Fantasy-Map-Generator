@@ -240,7 +240,7 @@ function editRiver(id) {
       .map(([x, y]) => findCell(x, y));
     const river = getRiver();
     const riverLen = rn(river.length * distanceScale);
-    window.lazy.elevationProfile().then(m => m.open(points, riverLen, true));
+    window.Controllers.ElevationProfile.open(points, riverLen, true);
   }
 
   function editRiverLegend() {

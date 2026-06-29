@@ -30,7 +30,7 @@ interface BattleState {
 
 let battle: BattleState | null = null;
 
-function openBattle(attacker: Regiment, defender: Regiment): void {
+function open(attacker: Regiment, defender: Regiment): void {
   if (customization) return;
   closeDialogs(".stable");
   customization = 13; // enter customization to avoid unwanted dialog closing
@@ -1050,4 +1050,4 @@ function cleanData(): void {
   battle = null;
 }
 
-export const Battle = { open: openBattle };
+export const BattleScreen = { open };

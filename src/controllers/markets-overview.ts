@@ -1,5 +1,5 @@
 import { color, drag, pointer, select } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
@@ -10,7 +10,7 @@ let isInitialized = false;
 let marketsWorking: Uint16Array | null = null;
 let marketsManualHistory: Uint16Array[] = [];
 
-export function open(): void {
+function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
   if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
@@ -28,7 +28,7 @@ export function open(): void {
   if (!isInitialized) {
     ensureEl("marketsOverviewRefresh").on("click", marketsOverviewAddLines);
     ensureEl("marketsOverviewExport").on("click", downloadMarketsCsv);
-    ensureEl("marketsOverviewCompare").on("click", () => lazy.comparePrices().then(m => m.open()));
+    ensureEl("marketsOverviewCompare").on("click", () => Controllers.ComparePrices.open());
     ensureEl("marketsOverviewPercentage").on("click", togglePercentageMode);
     ensureEl("marketsManually").on("click", () => {
       if (customization === 15) exitMarketsManualAssignment(false);
@@ -73,7 +73,7 @@ export function open(): void {
         line.classList.add("selected");
       } else if (marketId) {
         // marketId 0 is the non-editable "No market" summary row — no detail dialog
-        lazy.marketOverview().then(m => m.open(marketId));
+        Controllers.MarketOverview.open(marketId);
       }
     });
 
@@ -579,3 +579,5 @@ function closeMarketsOverview(): void {
   if (customization === 16) exitAddMarketMode();
   ensureEl("marketsOverviewBody").innerHTML = "";
 }
+
+export const MarketsOverview = { open };

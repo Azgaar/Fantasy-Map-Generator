@@ -1,5 +1,5 @@
 import { interpolateString, select, sum } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
 let isInitialized = false;
@@ -53,8 +53,7 @@ function open(): void {
 }
 
 async function openRegimentsOverview(state: number): Promise<void> {
-  const { RegimentsOverview } = await lazy.regimentsOverview();
-  RegimentsOverview.open(state);
+  Controllers.RegimentsOverview.open(state);
 }
 
 // update military types in header and tooltips

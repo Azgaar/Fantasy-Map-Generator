@@ -7,7 +7,7 @@ appendStyleSheet();
 insertHtml();
 addListeners();
 
-export function open(): void {
+function open(): void {
   closeDialogs(".stable");
 
   const $templateInput = ensureEl<HTMLInputElement>("templateInput");
@@ -337,3 +337,5 @@ function getHeightmapPreview(heights: Uint8Array | null): string {
   });
   return dataUrl;
 }
+
+export const HeightmapSelection = { open };

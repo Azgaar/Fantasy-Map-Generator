@@ -206,16 +206,15 @@ few more folders than the model has layers. This is the **real, intended layout*
 an aspiration. Each top-level folder is named by **role**, so every file has an obvious
 home.
 
-| Folder             | Layer (model)      | Holds                                                          |
-| ------------------ | ------------------ | -------------------------------------------------------------- |
-| `src/types/`       | State (shape)      | shared TypeScript interfaces / domain models                   |
-| `src/utils/`       | —                  | pure, dependency-free helpers                                  |
-| `src/generators/`  | Generators (Model) | procedural generators & domain logic (`Goods`, `Markets`, …)   |
-| `src/renderers/`   | View               | code that draws SVG / WebGL layers                             |
-| `src/controllers/` | Editors / UI       | editors, tools, dialogs, panels, overviews                     |
-| `src/io/`          | —                  | save / load / export / serialization                           |
-| `src/services/`    | —                  | app-shell & platform/asset infra (install, auto-update, fonts) |
-| `src/data/`        | —                  | static content / reference data (supporters, templates)        |
+| Folder             | Layer (model)      | Holds                                                              |
+| ------------------ | ------------------ | ------------------------------------------------------------------ |
+| `src/types/`       | State (shape)      | shared TypeScript interfaces / domain models                       |
+| `src/utils/`       | —                  | pure, dependency-free helpers                                      |
+| `src/generators/`  | Generators (Model) | procedural generators & domain logic (`Goods`, `Markets`, …)       |
+| `src/renderers/`   | View               | code that draws SVG / WebGL layers                                 |
+| `src/controllers/` | Editors / UI       | editors, tools, dialogs, panels, overviews                         |
+| `src/services/`    | —                  | app-shell & platform/asset infra (install, auto-update, fonts, io) |
+| `src/data/`        | —                  | static content / reference data (supporters, templates)            |
 
 ## What a "controller" is
 
@@ -232,9 +231,11 @@ textbook MVC "controller." It holds three kinds of UI:
 The unifying rule: _UI that wraps the map and either routes user interaction or presents
 map state in a dialog/panel._ A controller does **not** hold pure static data, app-shell
 services, or serialization — those have their own folders. (A 3D viewer such as
-`view-3d` is effectively an alternate renderer launched from the UI; it currently lives
-in `controllers/` for convenience. Reusable UI building blocks like `hierarchy-tree` and
-`minimap` may later move to a `controllers/components/` subfolder if they multiply.)
+`view-3d` is a controller that launches an alternate WebGL renderer; like any controller it
+exposes an object reached through the registry, while its configuration lives on the global
+`options.threeD` rather than inside the controller. Reusable UI building blocks like
+`hierarchy-tree` and `minimap` may later move to a `controllers/components/` subfolder if they
+multiply.)
 
 ## Cross-layer subsystems
 
@@ -275,7 +276,7 @@ As classic code migrates out of `public/`, it lands in the matching `src/` folde
 | Legacy                                  | Target             |
 | --------------------------------------- | ------------------ |
 | `public/modules/ui/`                    | `src/controllers/` |
-| `public/modules/io/`                    | `src/io/`          |
+| `public/modules/io/`                    | `src/services/io/` |
 | `public/config/`                        | `src/data/`        |
 | `public/modules/dynamic/` (auto-update) | `src/services/`    |
 | `public/libs/`                          | npm imports        |
@@ -286,7 +287,7 @@ As classic code migrates out of `public/`, it lands in the matching `src/` folde
 - Presents map state read-only (dialog, chart, list) → **overview** in `controllers/`
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
 - Generates or simulates world data → `generators/`
-- Serializes, saves, loads, or exports state → `io/`
+- Serializes, saves, loads, or exports state → `services/io/`
 - Manages browser/app lifecycle or a platform asset (install, update, fonts) → `services/`
 - A constant list or template, no behavior → `data/`
 - A pure, reusable helper with no domain knowledge → `utils/`
@@ -354,6 +355,9 @@ A controller is the thin seam between a user action and the state.
   an overview presents state read-only. Keep the two honest.
 - **Safe to re-enter.** Opening a panel twice must be harmless: wire one-time handlers once
   and keep per-session state minimal and local.
+- **One object, lazily reached.** A controller exports a single named object —
+  `export const StatesEditor = { open }` — and is reached through the `Controllers` registry
+  (`Controllers.StatesEditor.open()`), never imported eagerly. See [Lazy module registry](#lazy-module-registry).
 
 ## Configurations and data
 
@@ -379,6 +383,31 @@ Static content: lookup tables, templates, tuning constants, reference lists.
 - **No world state.** Services handle app-shell and platform concerns (install, fonts,
   lifecycle) and must never read or write `pack`/`grid`. A service that touches world data is
   mis-filed — it is really a generator, editor, or io module.
+- **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
+  service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
+  through the `Services` registry (`Services.Save.saveMap(...)`).
+
+## Lazy module registry
+
+Controllers and services are never imported eagerly by their callers; they are reached through
+two typed registries — `Controllers` (built in `src/controllers/index.ts`) and `Services` (in
+`src/services/index.ts`) — backed by one factory in `src/utils/registry.ts`.
+
+- **One export per module (the convention).** Each registered module exports a single named
+  object whose properties are its public methods — `export const StatesEditor = { open }`,
+  `export const Save = { saveMap, prepareMapData, saveToStorage }`. The registry key matches
+  that export name. A module exposing data or a nested object wraps it in a method facade (e.g.
+  `CloudStorage` flattens `Cloud.providers.dropbox`) so it fits the dispatch contract.
+- **Lazy by default, async at the call site.** `Controllers.X.method(...)` dynamically imports
+  the module on first use (its own code-split chunk, evaluated once) and then dispatches — so
+  every call returns a Promise. The factory infers each module's real signatures, so callers
+  get precise, type-checked contracts rather than `any`.
+- **Same handle everywhere.** Migrated TS imports `{ Controllers }` / `{ Services }`; legacy
+  `public/**/*.js` and inline handlers use the `window.Controllers` / `window.Services` globals.
+
+Generators and renderers are different: they are **eager** and self-register their own globals
+(`window.Markets`, `window.drawRoutes`) because classic code calls them directly. See
+[lazy_loading.md](./lazy_loading.md) for the full pattern and how to add a module.
 
 ---
 

@@ -632,3 +632,10 @@ y John
 Sean O'Daniels
 ShadowMole
 FlightlessDutchman`;
+
+// temp legacy compatibility
+window.Supporters = supporters;
+
+declare global {
+  var Supporters: typeof supporters;
+}

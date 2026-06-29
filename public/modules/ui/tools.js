@@ -10,26 +10,26 @@ toolsContent.addEventListener("click", function (event) {
   // click on open Editor buttons
   if (button === "editHeightmapButton") editHeightmap();
   else if (button === "editBiomesButton") editBiomes();
-  else if (button === "editStatesButton") editStates();
+  else if (button === "editStatesButton") window.Controllers.StatesEditor.open();
   else if (button === "editProvincesButton") editProvinces();
   else if (button === "editDiplomacyButton") editDiplomacy();
-  else if (button === "editCoastlineSettings") editCoastlineSettings();
-  else if (button === "editTradeAnimationButton") editTradeAnimation();
-  else if (button === "editCulturesButton") editCultures();
-  else if (button === "editReligions") editReligions();
-  else if (button === "editGoods") window.lazy.goodsEditor().then(m => m.open());
+  else if (button === "editCoastlineSettings") window.Controllers.CoastlineEditor.open();
+  else if (button === "editTradeAnimationButton") window.Controllers.TradeAnimationEditor.open();
+  else if (button === "editCulturesButton") window.Controllers.CulturesEditor.open();
+  else if (button === "editReligions") window.Controllers.ReligionsEditor.open();
+  else if (button === "editGoods") window.Controllers.GoodsEditor.open();
   else if (button === "editEmblemButton") openEmblemEditor();
-  else if (button === "editNamesBaseButton") window.lazy.namesbaseEditor().then(m => m.open());
+  else if (button === "editNamesBaseButton") window.Controllers.NamesbaseEditor.open();
   else if (button === "editUnitsButton") editUnits();
   else if (button === "editNotesButton") editNotes();
   else if (button === "editZonesButton") editZones();
-  else if (button === "overviewChartsButton") window.lazy.chartsOverview().then(m => m.open());
-  else if (button === "overviewBurgsButton") overviewBurgs();
+  else if (button === "overviewChartsButton") window.Controllers.ChartsOverview.open();
+  else if (button === "overviewBurgsButton") window.Controllers.BurgsOverview.open();
   else if (button === "overviewRoutesButton") overviewRoutes();
   else if (button === "overviewRiversButton") overviewRivers();
-  else if (button === "overviewMilitaryButton") overviewMilitary();
+  else if (button === "overviewMilitaryButton") window.Controllers.MilitaryOverview.open();
   else if (button === "overviewMarkersButton") overviewMarkers();
-  else if (button === "overviewMarketsButton") window.lazy.marketsOverview().then(m => m.open());
+  else if (button === "overviewMarketsButton") window.Controllers.MarketsOverview.open();
   else if (button === "overviewCellsButton") viewCellDetails();
   else if (button === "openMinimapButton") openMinimap();
 
@@ -729,7 +729,7 @@ function addLabelOnClick() {
 function toggleAddBurg() {
   unpressClickToAddButton();
   ensureEl("addBurgTool").classList.add("pressed");
-  overviewBurgs();
+  window.Controllers.BurgsOverview.open();
   ensureEl("addNewBurg").click();
 }
 
@@ -1052,6 +1052,5 @@ function viewCellDetails() {
 }
 
 async function openMinimap() {
-  const Minimap = await window.lazy.minimap();
-  Minimap.openMinimapDialog();
+  window.Controllers.Minimap.open();
 }

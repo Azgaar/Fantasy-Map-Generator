@@ -42,7 +42,7 @@ import { ensureEl, findEl, getComposedPath, getNextId } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
-import { convertTemperature, formatPrice, getHeight, getIntegerFromSI, si } from "./unitUtils";
+import { convertTemperature, formatPrice, getHeight, getIntegerFromSI, getTemperatureLikeness, si } from "./unitUtils";
 
 window.rn = rn;
 window.lim = lim;
@@ -224,6 +224,7 @@ export {
   getPolesOfInaccessibility,
   getRandomColor,
   getSegmentId,
+  getTemperatureLikeness,
   getTypedArray,
   getVertexPath,
   initializePrompt,

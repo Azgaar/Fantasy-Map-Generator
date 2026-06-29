@@ -1,7 +1,7 @@
 let installButton: HTMLButtonElement | null = null;
 let deferredPrompt: (Event & { prompt: () => void }) | null = null;
 
-export function init(event: Event & { prompt: () => void }): void {
+function init(event: Event & { prompt: () => void }): void {
   const dontAskforInstallation = localStorage.getItem("installationDontAsk");
   if (dontAskforInstallation) return;
 
@@ -70,3 +70,5 @@ function cleanup(): void {
   installButton = null;
   deferredPrompt = null;
 }
+
+export const Installation = { init };

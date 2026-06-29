@@ -143,6 +143,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
 const PREVIEW_SEED = "preview_coastline";
 
 function open(): void {
+  if (customization) return;
   if (!document.getElementById("coastlineSettingsDialog")) {
     document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
   }

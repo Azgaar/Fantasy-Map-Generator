@@ -104,9 +104,8 @@ test.describe("Zone Export", () => {
         capturedJson = JSON.parse(data);
       };
 
-      // Call the production code (loaded on demand via the lazy registry)
-      const exportMap = await (window as any).lazy.exportMap();
-      exportMap.saveGeoJsonZones();
+      // Call the production code (loaded on demand via the service registry)
+      await (window as any).Services.ExportMap.saveGeoJsonZones();
 
       // Restore original downloadFile
       (window as any).downloadFile = originalDownloadFile;

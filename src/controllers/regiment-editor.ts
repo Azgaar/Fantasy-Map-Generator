@@ -1,5 +1,5 @@
 import { type D3DragEvent, drag, easeSinInOut, pointer, select, sum, transition } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, rn } from "../utils";
 
@@ -380,10 +380,7 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
     .transition(attackTransition)
     .attr("font-size", 1000)
     .attr("opacity", 0.2)
-    .on("end", async () => {
-      const { Battle } = await lazy.battleScreen();
-      Battle.open(attacker, defender);
-    })
+    .on("end", () => Controllers.BattleScreen.open(attacker, defender))
     .remove();
 
   clearMainTip();
@@ -444,7 +441,7 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
 
   refreshRegimentsOverviewIfOpen();
   $("#regimentEditor").dialog("close");
-  editRegiment(`#${regSelected.id}`);
+  Controllers.RegimentEditor.open(`#${regSelected.id}`);
 }
 
 function regenerateLegend(): void {
@@ -573,14 +570,12 @@ function closeEditor(): void {
 
 async function refreshMilitaryOverviewIfOpen(): Promise<void> {
   if (!ensureEl("militaryOverview").offsetParent) return;
-  const { MilitaryOverview } = await lazy.militaryOverview();
-  MilitaryOverview.refresh();
+  Controllers.MilitaryOverview.refresh();
 }
 
 async function refreshRegimentsOverviewIfOpen(): Promise<void> {
   if (!ensureEl("regimentsOverview").offsetParent) return;
-  const { RegimentsOverview } = await lazy.regimentsOverview();
-  RegimentsOverview.refresh();
+  Controllers.RegimentsOverview.refresh();
 }
 
 export const RegimentEditor = { open: editRegiment };

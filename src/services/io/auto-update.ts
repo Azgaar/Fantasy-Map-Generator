@@ -1,5 +1,4 @@
-// Update an old map file to the current version. Reached lazily via a dynamic
-// import from load.ts, so each legacy-only migration step ships in its own chunk.
+// Update an old map file to the current version
 import { color, min, select } from "d3";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 

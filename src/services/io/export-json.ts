@@ -7,7 +7,7 @@ const typeMap = {
   GridCells: getGridDataJson
 };
 
-export function exportToJson(type: ExportJsonType): void {
+function exportToJson(type: ExportJsonType): void {
   if (customization) {
     tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
     return;
@@ -229,3 +229,5 @@ function getGridCellsData() {
   };
   return gridData;
 }
+
+export const ExportJson = { exportToJson };

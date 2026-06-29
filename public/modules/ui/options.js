@@ -82,8 +82,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const { supporters } = await window.lazy.supporters();
-  const list = supporters.split("\n").sort();
+  const list = window.Supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
   alertMessage.innerHTML =
@@ -709,8 +708,7 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await window.lazy.heightmapSelection();
-  HeightmapSelectionDialog.open();
+  window.Controllers.HeightmapSelection.open();
 }
 
 // Sticked menu Options listeners
@@ -786,8 +784,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const { exportToJson } = await window.lazy.exportJson();
-  exportToJson(type);
+  window.Services.ExportJson.exportToJson(type);
 }
 
 async function showLoadPane() {
@@ -804,15 +801,14 @@ async function showLoadPane() {
   });
 
   // already connected to Dropbox: list saved maps
-  const { Cloud } = await window.lazy.cloud();
-  if (Cloud.providers.dropbox.api) {
+  if (await window.Services.Cloud.isConnected()) {
     ensureEl("dropboxConnectButton").style.display = "none";
     ensureEl("loadFromDropboxSelect").style.display = "block";
     const loadFromDropboxButtons = ensureEl("loadFromDropboxButtons");
     const fileSelect = ensureEl("loadFromDropboxSelect");
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
-    const files = await Cloud.providers.dropbox.list();
+    const files = await window.Services.Cloud.list();
 
     if (!files) {
       loadFromDropboxButtons.style.display = "none";
@@ -840,9 +836,8 @@ async function showLoadPane() {
 }
 
 async function connectToDropbox() {
-  const { Cloud } = await window.lazy.cloud();
-  await Cloud.providers.dropbox.initialize();
-  if (Cloud.providers.dropbox.api) showLoadPane();
+  await window.Services.Cloud.connect();
+  if (await window.Services.Cloud.isConnected()) showLoadPane();
 }
 
 function loadURL() {
@@ -862,7 +857,7 @@ function loadURL() {
           tip("Please provide a valid URL", false, "error");
           return;
         }
-        window.lazy.load().then(m => m.loadMapFromURL(value));
+        window.Services.Load.loadMapFromURL(value);
         $(this).dialog("close");
       },
       Cancel: function () {
@@ -877,7 +872,7 @@ ensureEl("mapToLoad").addEventListener("change", function () {
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
-  window.lazy.load().then(m => m.uploadMap(fileToLoad));
+  window.Services.Load.uploadMap(fileToLoad);
 });
 
 function openExportToPngTiles() {
@@ -893,7 +888,7 @@ function openExportToPngTiles() {
     title: "Download tiles",
     width: "23em",
     buttons: {
-      Download: () => window.lazy.exportMap().then(m => m.exportToPngTiles()),
+      Download: () => window.Services.ExportMap.exportToPngTiles(),
       Cancel: function () {
         $(this).dialog("close");
       }
@@ -959,291 +954,6 @@ function changeViewMode(event) {
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
   const pressed = button.classList.contains("pressed");
-  enterStandardView();
-
-  if (!pressed && button.id !== "viewStandard") {
-    viewStandard.classList.remove("pressed");
-    button.classList.add("pressed");
-    enter3dView(button.id);
-  }
-}
-
-function enterStandardView() {
-  viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
-  heightmap3DView.classList.remove("pressed");
-  viewStandard.classList.add("pressed");
-
-  if (!findEl("canvas3d")) return;
-  ThreeD.stop();
-  ensureEl("canvas3d").remove();
-  if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
-  if (preview3d.offsetParent) $("#preview3d").dialog("close");
-}
-
-async function enter3dView(type) {
-  const canvas = document.createElement("canvas");
-  canvas.id = "canvas3d";
-  canvas.dataset.type = type;
-
-  if (type === "heightmap3DView") {
-    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
-    canvas.height = canvas.width / (graphWidth / graphHeight);
-    canvas.style.display = "block";
-  } else {
-    canvas.width = svgWidth;
-    canvas.height = svgHeight;
-    canvas.style.position = "absolute";
-    canvas.style.display = "none";
-  }
-
-  const started = await ThreeD.create(canvas, type);
-  if (!started) return;
-
-  canvas.style.display = "block";
-  canvas.onmouseenter = () => {
-    const help = "Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options";
-    +canvas.dataset.hovered > 2 ? tip("") : tip(help);
-    canvas.dataset.hovered = (+canvas.dataset.hovered | 0) + 1;
-  };
-
-  if (type === "heightmap3DView") {
-    ensureEl("preview3d").appendChild(canvas);
-    $("#preview3d").dialog({
-      title: "3D Preview",
-      resizable: true,
-      position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
-      resizeStop: resize3d,
-      close: enterStandardView
-    });
-  } else document.body.insertBefore(canvas, optionsContainer);
-
-  toggle3dOptions();
-}
-
-function resize3d() {
-  const canvas = findEl("canvas3d");
-  if (!canvas) return;
-  canvas.width = parseFloat(preview3d.style.width);
-  canvas.height = parseFloat(preview3d.style.height) - 2;
-  ThreeD.redraw();
-}
-
-function toggle3dOptions() {
-  if (options3dUpdate.offsetParent) {
-    $("#options3d").dialog("close");
-    return;
-  }
-  $("#options3d").dialog({
-    title: "3D mode settings",
-    resizable: false,
-    width: fitContent(),
-    position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" }
-  });
-
-  updateValues();
-
-  if (modules.options3d) return;
-  modules.options3d = true;
-
-  ensureEl("options3dUpdate").addEventListener("click", ThreeD.update);
-  ensureEl("options3dSave").addEventListener("click", ThreeD.saveScreenshot);
-  ensureEl("options3dOBJSave").addEventListener("click", ThreeD.saveOBJ);
-
-  ensureEl("options3dScaleRange").addEventListener("input", changeHeightScale);
-  ensureEl("options3dScaleNumber").addEventListener("change", changeHeightScale);
-  ensureEl("options3dLightnessRange").addEventListener("input", changeLightness);
-  ensureEl("options3dLightnessNumber").addEventListener("change", changeLightness);
-  ensureEl("options3dSunX").addEventListener("change", changeSunPosition);
-  ensureEl("options3dSunY").addEventListener("change", changeSunPosition);
-  ensureEl("options3dMeshSkinResolution").addEventListener("change", changeResolutionScale);
-  ensureEl("options3dMeshRotationRange").addEventListener("input", changeRotation);
-  ensureEl("options3dMeshRotationNumber").addEventListener("change", changeRotation);
-  ensureEl("options3dGlobeRotationRange").addEventListener("input", changeRotation);
-  ensureEl("options3dGlobeRotationNumber").addEventListener("change", changeRotation);
-  ensureEl("options3dMeshLabels3d").addEventListener("change", toggleLabels3d);
-  ensureEl("options3dMeshSkyMode").addEventListener("change", toggleSkyMode);
-  ensureEl("options3dMeshSky").addEventListener("input", changeColors);
-  ensureEl("options3dMeshWater").addEventListener("input", changeColors);
-  ensureEl("options3dGlobeResolution").addEventListener("change", changeResolution);
-  ensureEl("options3dMeshWireframeMode").addEventListener("change", toggleWireframe3d);
-  ensureEl("options3dSunColor").addEventListener("input", changeSunColor);
-  ensureEl("options3dSubdivide").addEventListener("change", toggle3dSubdivision);
-  ensureEl("options3dTimeOfDay").addEventListener("change", changeTimeOfDay);
-  ensureEl("options3dErosion").addEventListener("change", toggleErosion3d);
-  ensureEl("options3dErosionDetail").addEventListener("change", changeErosionDetail);
-  // "change" instead of "input": every value change triggers a GPU re-bake
-  ensureEl("options3dErosionStrengthRange").addEventListener("change", changeErosionStrength);
-  ensureEl("options3dErosionStrengthNumber").addEventListener("change", changeErosionStrength);
-  ensureEl("options3dErosionRiverDepthRange").addEventListener("change", changeErosionRiverDepth);
-  ensureEl("options3dErosionRiverDepthNumber").addEventListener("change", changeErosionRiverDepth);
-  ensureEl("options3dErosionOctaves").addEventListener("change", changeErosionOctaves);
-  ensureEl("options3dSatellite").addEventListener("change", toggleSatellite3d);
-
-  function updateValues() {
-    const globe = findEl("canvas3d")?.dataset.type === "viewGlobe";
-    options3dMesh.style.display = globe ? "none" : "block";
-    options3dGlobe.style.display = globe ? "block" : "none";
-    options3dOBJSave.style.display = globe ? "none" : "inline-block";
-    options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;
-    options3dLightnessRange.value = options3dLightnessNumber.value = ThreeD.options.lightness * 100;
-    options3dSunX.value = ThreeD.options.sun.x;
-    options3dSunY.value = ThreeD.options.sun.y;
-    options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
-    options3dMeshSkinResolution.value = ThreeD.options.resolutionScale;
-    options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
-    options3dMeshLabels3d.value = ThreeD.options.labels3d;
-    options3dMeshSkyMode.value = ThreeD.options.extendedWater;
-    options3dColorSection.style.display = ThreeD.options.extendedWater ? "block" : "none";
-    options3dMeshSky.value = ThreeD.options.skyColor;
-    options3dMeshWater.value = ThreeD.options.waterColor;
-    options3dGlobeResolution.value = ThreeD.options.resolution;
-    options3dSunColor.value = ThreeD.options.sunColor;
-    options3dSubdivide.value = ThreeD.options.subdivide;
-    options3dSubdivide.disabled = Boolean(ThreeD.options.erosion);
-    options3dErosion.checked = Boolean(ThreeD.options.erosion);
-    options3dErosionSection.style.display = ThreeD.options.erosion ? "block" : "none";
-    options3dErosionDetail.value = ThreeD.options.erosionDetail;
-    options3dErosionStrengthRange.value = options3dErosionStrengthNumber.value = ThreeD.options.erosionStrength;
-    options3dErosionRiverDepthRange.value = options3dErosionRiverDepthNumber.value = ThreeD.options.erosionRiverDepth;
-    options3dErosionOctaves.value = ThreeD.options.erosionOctaves;
-    options3dSatellite.checked = Boolean(ThreeD.options.satellite);
-    updateTimeOfDayPreset();
-  }
-
-  function updateTimeOfDayPreset() {
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (!presetSelect) return;
-
-    const currentSunX = ThreeD.options.sun.x;
-    const currentSunY = ThreeD.options.sun.y;
-    const currentSunZ = ThreeD.options.sun.z;
-    const currentSunColor = ThreeD.options.sunColor;
-    const currentLightness = ThreeD.options.lightness;
-
-    let matchingPreset = "custom";
-    for (const [name, preset] of Object.entries(ThreeD.timeOfDayPresets)) {
-      if (
-        preset.sun.x === currentSunX &&
-        preset.sun.y === currentSunY &&
-        preset.sun.z === currentSunZ &&
-        preset.sunColor === currentSunColor &&
-        Math.abs(preset.lightness - currentLightness) < 0.05
-      ) {
-        matchingPreset = name;
-        break;
-      }
-    }
-
-    presetSelect.value = matchingPreset;
-  }
-
-  function changeTimeOfDay() {
-    const presetName = this.value;
-    if (presetName === "custom") return;
-    ThreeD.setTimeOfDay(presetName);
-    updateValues();
-  }
-
-  function changeHeightScale() {
-    options3dScaleRange.value = options3dScaleNumber.value = this.value;
-    ThreeD.setScale(+this.value);
-  }
-
-  function changeResolutionScale() {
-    options3dMeshSkinResolution.value = this.value;
-    ThreeD.setResolutionScale(+this.value);
-  }
-
-  function changeLightness() {
-    options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
-    ThreeD.setLightness(this.value / 100);
-    // Mark as custom when user manually changes lightness
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (presetSelect && presetSelect.value !== "custom") {
-      presetSelect.value = "custom";
-    }
-  }
-
-  function changeSunColor() {
-    ThreeD.setSunColor(options3dSunColor.value);
-    // Mark as custom when user manually changes sun color
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (presetSelect && presetSelect.value !== "custom") {
-      presetSelect.value = "custom";
-    }
-  }
-
-  function changeSunPosition() {
-    const x = +options3dSunX.value;
-    const y = +options3dSunY.value;
-    ThreeD.setSun(x, y);
-    // Mark as custom when user manually changes sun position
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (presetSelect && presetSelect.value !== "custom") {
-      presetSelect.value = "custom";
-    }
-  }
-
-  function changeRotation() {
-    (this.nextElementSibling || this.previousElementSibling).value = this.value;
-    const speed = +this.value;
-    ThreeD.setRotation(speed);
-  }
-
-  function toggleLabels3d() {
-    ThreeD.toggleLabels();
-  }
-
-  function toggle3dSubdivision() {
-    ThreeD.toggle3dSubdivision();
-  }
-
-  function toggleErosion3d() {
-    const enabled = !ThreeD.options.erosion;
-    options3dErosionSection.style.display = enabled ? "block" : "none";
-    options3dSubdivide.disabled = enabled; // geometry is dense already, subdivision is ignored
-    if (enabled) tip("Baking eroded terrain...", false, "warn", 4000);
-    ThreeD.toggleErosion();
-  }
-
-  function changeErosionDetail() {
-    ThreeD.setErosionDetail(+this.value);
-  }
-
-  function changeErosionStrength() {
-    options3dErosionStrengthRange.value = options3dErosionStrengthNumber.value = this.value;
-    ThreeD.setErosionStrength(+this.value);
-  }
-
-  function changeErosionRiverDepth() {
-    options3dErosionRiverDepthRange.value = options3dErosionRiverDepthNumber.value = this.value;
-    ThreeD.setErosionRiverDepth(+this.value);
-  }
-
-  function toggleSatellite3d() {
-    if (!ThreeD.options.satellite) tip("Baking satellite texture...", false, "warn", 4000);
-    ThreeD.toggleSatellite();
-  }
-
-  function changeErosionOctaves() {
-    ThreeD.setErosionOctaves(+this.value);
-  }
-
-  function toggleWireframe3d() {
-    ThreeD.toggleWireframe();
-  }
-
-  function toggleSkyMode() {
-    const hide = ThreeD.options.extendedWater;
-    options3dColorSection.style.display = hide ? "none" : "block";
-    ThreeD.toggleSky();
-  }
-
-  function changeColors() {
-    ThreeD.setColors(options3dMeshSky.value, options3dMeshWater.value);
-  }
-
-  function changeResolution() {
-    ThreeD.setResolution(this.value);
-  }
+  if (!pressed && button.id !== "viewStandard") window.Controllers.View3d.open(button.id);
+  else window.Controllers.View3d.enterStandard();
 }

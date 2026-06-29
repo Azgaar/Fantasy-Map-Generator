@@ -24,20 +24,16 @@ function clicked() {
   else if (parent.id === "rivers") editRiver(el.id);
   else if (grand.id === "routes") editRoute(el.id);
   else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
-  else if (grand.id === "burgLabels") editBurg();
-  else if (grand.id === "burgIcons") editBurg();
+  else if (grand.id === "burgLabels" || grand.id === "burgIcons") window.Controllers.BurgEditor.open(el.dataset.id);
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "markets" && el.tagName !== "path")
-    window.lazy.marketOverview().then(m => m.open(Number(parent.dataset.id)));
-  else if (grand.id === "goodsIcons") window.lazy.goodsEditor().then(m => m.open());
-  else if (parent.id === "goodsCells") window.lazy.goodsEditor().then(m => m.open());
-  else if (grand.id === "goodsBurgs")
-    window.lazy.productionOverview().then(m => m.open(Number(parent.dataset.id)));
+  else if (grand.id === "markets" && el.tagName !== "path") window.Controllers.MarketOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "goodsIcons" || parent.id === "goodsCells") window.Controllers.GoodsEditor.open();
+  else if (grand.id === "goodsBurgs") window.Controllers.ProductionOverview.open(Number(parent.dataset.id));
   else if (grand.id === "coastline") editCoastline();
   else if (grand.id === "lakes") editLake();
-  else if (great.id === "armies") editRegiment("#" + parent.id);
+  else if (great.id === "armies") window.Controllers.RegimentEditor.open("#" + parent.id);
 }
 
 // clear elSelected variable
@@ -995,47 +991,4 @@ function refreshAllEditors() {
   if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
   if (document.getElementById("goodsEditorRefresh").offsetParent) goodsEditorRefresh.click();
   if (document.getElementById("marketsOverviewRefresh")?.offsetParent) marketsOverviewRefresh.click();
-}
-
-// dynamically loaded editors
-async function editStates() {
-  if (customization) return;
-  const Editor = await window.lazy.statesEditor();
-  Editor.open();
-}
-
-async function editCultures() {
-  if (customization) return;
-  const Editor = await window.lazy.culturesEditor();
-  Editor.open();
-}
-
-async function editReligions() {
-  if (customization) return;
-  const Editor = await window.lazy.religionsEditor();
-  Editor.open();
-}
-
-async function overviewMilitary() {
-  if (customization) return;
-  const { MilitaryOverview } = await window.lazy.militaryOverview();
-  MilitaryOverview.open();
-}
-
-async function editRegiment(selector) {
-  if (customization) return;
-  const { RegimentEditor } = await window.lazy.regimentEditor();
-  RegimentEditor.open(selector);
-}
-
-async function editCoastlineSettings() {
-  if (customization) return;
-  const { CoastlineEditor } = await window.lazy.coastlineEditor();
-  CoastlineEditor.open();
-}
-
-async function editTradeAnimation() {
-  if (customization) return;
-  const { TradeAnimationEditor } = await window.lazy.tradeAnimationEditor();
-  TradeAnimationEditor.open();
 }

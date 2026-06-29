@@ -53,7 +53,7 @@ function editProvinces() {
     else if (cl.contains("coaIcon")) editEmblem("province", "provinceCOA" + p, pack.provinces[p]);
     else if (cl.contains("icon-star-empty")) capitalZoomIn(p);
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
-    else if (cl.contains("icon-dot-circled")) overviewBurgs({ stateId });
+    else if (cl.contains("icon-dot-circled")) window.Controllers.BurgsOverview.open({ stateId });
     else if (cl.contains("culturePopulation")) changePopulation(p);
     else if (cl.contains("icon-target")) highlightElement(provs.select("#province" + p).node(), 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
@@ -401,7 +401,7 @@ function editProvinces() {
 
     unfog();
     closeDialogs();
-    editStates();
+    window.Controllers.StatesEditor.open();
   }
 
   function changePopulation(province) {

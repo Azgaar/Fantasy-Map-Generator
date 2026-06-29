@@ -167,3 +167,14 @@ const dropbox: DropboxProvider = {
 };
 
 export const Cloud = { providers: { dropbox } };
+
+// Method facade so the registry (which dispatches method calls, not property
+// reads) can reach cloud storage uniformly as `Services.Cloud.<method>()`.
+export const CloudStorage = {
+  save: (fileName: string, contents: string) => dropbox.save(fileName, contents),
+  load: (path: string) => dropbox.load(path),
+  getLink: (path: string) => dropbox.getLink(path),
+  list: () => dropbox.list(),
+  connect: () => dropbox.initialize(),
+  isConnected: () => Boolean(dropbox.api)
+};

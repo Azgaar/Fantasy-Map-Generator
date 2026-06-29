@@ -1,10 +1,10 @@
+import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
 import { ensureEl, getRandomColor, unique } from "../utils";
-import { DistributionEditor } from "./goods-distribution-editor";
 
-export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
+function open(editedGood?: Good, onUpdate?: () => void) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
@@ -312,7 +312,7 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
 
   ensureEl("newGoodDistributionEditor").on("click", () => {
     const distEl = ensureEl("newGoodDistribution");
-    DistributionEditor.open(dist => {
+    Controllers.DistributionEditor.open((dist: string) => {
       distEl.textContent = dist;
       updateTypeNotes();
     }, distEl.textContent?.trim() ?? "");
@@ -707,3 +707,5 @@ function openBiomeProductionPopup(
     }
   });
 }
+
+export const GoodEditor = { open };

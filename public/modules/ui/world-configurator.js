@@ -97,7 +97,7 @@ function editWorld() {
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
     if (layerIsOn("toggleRivers")) drawRivers();
-    if (findEl("canvas3d")) setTimeout(() => ThreeD.update(), 500);
+    if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
   }
 
   function updateGlobePosition() {

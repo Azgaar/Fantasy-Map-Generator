@@ -3,7 +3,7 @@ import { ensureEl, formatPrice, rn } from "../utils";
 let isInitialized = false;
 let activeGoodId = -1;
 
-export function open(goodId?: number, anchor = "#marketsOverview"): void {
+function open(goodId?: number, anchor = "#marketsOverview"): void {
   if (goodId !== undefined) activeGoodId = goodId;
   rebuildGoodSelect();
   addLines();
@@ -117,3 +117,5 @@ function rebuildGoodSelect(): void {
     select.value = String(activeGoodId);
   }
 }
+
+export const ComparePrices = { open };
