@@ -29,7 +29,7 @@ function editHeightmap(options) {
     <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
     <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-    <p>Please <span class="pseudoLink" onclick="window.lazy.save().then(m => m.saveMap('machine'))">save the map</span> before editing the heightmap!</p>
+    <p>Please <span class="pseudoLink" onclick="window.Services.Save.saveMap('machine')">save the map</span> before editing the heightmap!</p>
     <p style="margin-bottom: 0">Check out ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization",
       "wiki"
@@ -187,7 +187,7 @@ function editHeightmap(options) {
     resetZoom();
 
     document.getElementById("preview")?.remove();
-    if (document.getElementById("canvas3d")) enterStandardView();
+    if (document.getElementById("canvas3d")) window.Controllers.View3d.enterStandard();
 
     const mode = heightmapEditMode.innerHTML;
     if (mode === "erase") regenerateErasedData();
@@ -586,7 +586,7 @@ function editHeightmap(options) {
     if (!noStat) {
       updateStatistics();
       if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+      if (document.getElementById("canvas3d")) window.Controllers.View3d.redraw(); // update 3d heightmap preview if opened
     }
   }
 
@@ -601,7 +601,7 @@ function editHeightmap(options) {
     updateStatistics();
 
     if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-    if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+    if (document.getElementById("canvas3d")) window.Controllers.View3d.redraw(); // update 3d heightmap preview if opened
   }
 
   // restart edits from 1st step
@@ -1269,7 +1269,7 @@ function editHeightmap(options) {
       updateStatistics();
       mockHeightmap();
       if (document.getElementById("preview")) drawHeightmapPreview(); // update heightmap preview if opened
-      if (document.getElementById("canvas3d")) ThreeD.redraw(); // update 3d heightmap preview if opened
+      if (document.getElementById("canvas3d")) window.Controllers.View3d.redraw(); // update 3d heightmap preview if opened
     }
 
     function downloadTemplate() {

@@ -1,10 +1,10 @@
 // Save the whole .map project to storage, machine or cloud
-import { lazy } from "@/lazy-loaders";
+import { Services } from "@/services";
 import { ensureEl, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
-export async function saveMap(method: SaveMethod): Promise<void> {
+async function saveMap(method: SaveMethod): Promise<void> {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
 
@@ -40,7 +40,7 @@ export async function saveMap(method: SaveMethod): Promise<void> {
   }
 }
 
-export function prepareMapData(): string {
+function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -185,7 +185,7 @@ export function prepareMapData(): string {
 }
 
 // save map file to indexedDB
-export async function saveToStorage(mapData: string, showTip = false): Promise<void> {
+async function saveToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
@@ -206,7 +206,8 @@ function saveToMachine(mapData: string, filename: string): void {
 }
 
 async function saveToDropbox(mapData: string, filename: string): Promise<void> {
-  const { Cloud } = await lazy.cloud();
-  await Cloud.providers.dropbox.save(filename, mapData);
+  await Services.Cloud.save(filename, mapData);
   tip("Map is saved to your Dropbox", true, "success", 8000);
 }
+
+export const Save = { saveMap, prepareMapData, saveToStorage };

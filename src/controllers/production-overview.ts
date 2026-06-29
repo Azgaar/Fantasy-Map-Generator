@@ -9,6 +9,7 @@ import { formatPrice, rn } from "../utils";
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
 function open(burgId: number): void {
+  if (customization) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {
     tip("Invalid burg. The selected burg does not exist or was removed.", true, "error", 5000);

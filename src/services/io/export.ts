@@ -18,7 +18,7 @@ export interface GetMapURLOptions {
   noViewbox?: boolean; // accepted by some callers (view-3d); currently unused here
 }
 
-export async function exportToSvg(): Promise<void> {
+async function exportToSvg(): Promise<void> {
   TIME && console.time("exportToSvg");
   try {
     const url = await getMapURL("svg", { fullMap: true });
@@ -37,7 +37,7 @@ export async function exportToSvg(): Promise<void> {
   }
 }
 
-export async function exportToPng(): Promise<void> {
+async function exportToPng(): Promise<void> {
   TIME && console.time("exportToPng");
   try {
     const url = await getMapURL("png");
@@ -79,7 +79,7 @@ export async function exportToPng(): Promise<void> {
   }
 }
 
-export async function exportToJpeg(): Promise<void> {
+async function exportToJpeg(): Promise<void> {
   TIME && console.time("exportToJpeg");
   try {
     const url = await getMapURL("png");
@@ -121,7 +121,7 @@ export async function exportToJpeg(): Promise<void> {
   }
 }
 
-export async function exportToPngTiles(): Promise<void> {
+async function exportToPngTiles(): Promise<void> {
   const status = ensureEl("tileStatus");
   status.innerHTML = "Preparing files...";
 
@@ -226,7 +226,7 @@ export async function exportToPngTiles(): Promise<void> {
 }
 
 // parse map svg to object url
-export async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<string> {
+async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<string> {
   const {
     debug = false,
     noLabels = false,
@@ -562,7 +562,7 @@ function inlineStyle(clone: MapSelection): void {
   emptyG.remove();
 }
 
-export function saveGeoJsonCells(): void {
+function saveGeoJsonCells(): void {
   const { cells, vertices } = pack;
   const json: { type: string; features: unknown[] } = { type: "FeatureCollection", features: [] };
 
@@ -602,7 +602,7 @@ export function saveGeoJsonCells(): void {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-export function saveGeoJsonRoutes(): void {
+function saveGeoJsonRoutes(): void {
   const features = pack.routes.map(route => {
     const { i, points, group } = route;
     const name = (route as { name?: string }).name ?? null;
@@ -619,7 +619,7 @@ export function saveGeoJsonRoutes(): void {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-export function saveGeoJsonRivers(): void {
+function saveGeoJsonRivers(): void {
   const features = pack.rivers.map(
     ({ i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type }) => {
       if (!cells || cells.length < 2) return null;
@@ -638,7 +638,7 @@ export function saveGeoJsonRivers(): void {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-export function saveGeoJsonMarkers(): void {
+function saveGeoJsonMarkers(): void {
   const features = pack.markers.map(marker => {
     const { i, type, icon, x, y, size, fill, stroke } = marker as typeof marker & {
       size?: number;
@@ -657,7 +657,7 @@ export function saveGeoJsonMarkers(): void {
   downloadFile(JSON.stringify(json), fileName, "application/json");
 }
 
-export function saveGeoJsonZones(): void {
+function saveGeoJsonZones(): void {
   const { zones, cells, vertices } = pack;
   const json: { type: string; features: unknown[] } = { type: "FeatureCollection", features: [] };
 
@@ -786,9 +786,22 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-// reached lazily via lazy.exportMap()
+// reached lazily via Services.ExportMap
 declare global {
   interface Window {
     JSZip: any; // registered on demand by libs/jszip.min.js (see exportToPngTiles)
   }
 }
+
+export const ExportMap = {
+  exportToSvg,
+  exportToPng,
+  exportToJpeg,
+  exportToPngTiles,
+  getMapURL,
+  saveGeoJsonCells,
+  saveGeoJsonRoutes,
+  saveGeoJsonRivers,
+  saveGeoJsonMarkers,
+  saveGeoJsonZones
+};

@@ -1,5 +1,5 @@
 import { pack as packLayout, pointer, select, stratify } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 let isInitialized = false;
@@ -229,7 +229,7 @@ function toggleBurgLockStatus(this: HTMLElement): void {
 
 function openBurgEditor(this: HTMLElement): void {
   const burg = +(this.parentNode as HTMLElement).dataset.id!;
-  lazy.burgEditor().then(m => m.BurgEditor.open(burg));
+  Controllers.BurgEditor.open(burg);
 }
 
 function triggerBurgRemove(this: HTMLElement): void {
@@ -637,7 +637,7 @@ function updateLockAllIcon(): void {
 }
 
 function editBurgGroups(): void {
-  lazy.burgGroupEditor().then(m => m.BurgGroupEditor.open());
+  Controllers.BurgGroupEditor.open();
 }
 
 export const BurgsOverview = { open: overviewBurgs };

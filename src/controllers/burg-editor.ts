@@ -1,5 +1,5 @@
 import { drag, pointer, type Selection, select } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
 import { convertTemperature, ensureEl, getTemperatureLikeness, parseTransform, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
@@ -459,7 +459,7 @@ function showTemperatureGraph(): void {
 
 function showProductionOverview(): void {
   const id = getSelectedId();
-  lazy.productionOverview().then(m => m.ProductionOverview.open(id));
+  Controllers.ProductionOverview.open(id);
 }
 
 function removeSelectedBurg(): void {
@@ -502,7 +502,7 @@ function removeSelectedBurg(): void {
 }
 
 function editBurgGroups(): void {
-  lazy.burgGroupEditor().then(m => m.BurgGroupEditor.open());
+  Controllers.BurgGroupEditor.open();
 }
 
 function closeBurgEditor(): void {

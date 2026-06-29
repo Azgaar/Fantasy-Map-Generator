@@ -24,8 +24,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await window.lazy.installation();
-      Installation.init(event);
+      window.Services.Installation.init(event);
     },
     { once: true }
   );
@@ -167,6 +166,32 @@ let options = {
   },
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
+  },
+  // 3D view configuration (read/written by the View3d controller and its renderer)
+  threeD: {
+    isOn: false,
+    isGlobe: false,
+    scale: 50,
+    lightness: 0.6,
+    shadow: 0.5,
+    sun: {x: 100, y: 800, z: 1000},
+    rotateMesh: 0,
+    rotateGlobe: 0.5,
+    skyColor: "#9ecef5",
+    waterColor: "#466eab",
+    sunColor: "#cccccc",
+    extendedWater: false,
+    labels3d: false,
+    satellite: false,
+    wireframe: false,
+    resolution: 2,
+    resolutionScale: 4096,
+    subdivide: false,
+    erosion: false,
+    erosionDetail: 1024,
+    erosionStrength: 30,
+    erosionRiverDepth: 10,
+    erosionOctaves: 2
   }
 };
 
@@ -329,10 +354,10 @@ async function checkLoadParameters() {
     const valid = pattern.test(maplink);
     if (valid) {
       setTimeout(() => {
-        window.lazy.load().then(m => m.loadMapFromURL(maplink, 1));
+        window.Services.Load.loadMapFromURL(maplink, 1);
       }, 1000);
       return;
-    } else window.lazy.load().then(m => m.showUploadErrorMessage("Map link is not a valid URL", maplink));
+    } else window.Services.Load.showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
 
   // if there is a seed (user of MFCG provided), generate map for it
@@ -348,7 +373,7 @@ async function checkLoadParameters() {
       const blob = await ldb.get("lastMap");
       if (blob) {
         WARN && console.warn("Loading last stored map");
-        window.lazy.load().then(m => m.uploadMap(blob));
+        window.Services.Load.uploadMap(blob);
         return;
       }
     } catch (error) {
@@ -455,8 +480,7 @@ function initTourPromptButton() {
 
   btn.style.display = "flex";
   btn.addEventListener("click", async () => {
-    const { UiTour } = await window.lazy.uiTour();
-    UiTour.start();
+    window.Services.UiTour.start();
     localStorage.setItem(STORAGE_KEY, MAX_SHOWS);
   });
   localStorage.setItem(STORAGE_KEY, count + 1);
@@ -642,12 +666,10 @@ void (function addDragToUpload() {
     overlay.style.display = null;
     overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
     if (closeDialogs) closeDialogs();
-    window.lazy.load().then(m =>
-      m.uploadMap(file, () => {
+    window.Services.Load.uploadMap(file, () => {
         overlay.style.display = "none";
         overlay.innerHTML = "Drop a map file to open";
-      })
-    );
+      });
   });
 })();
 
@@ -1319,7 +1341,7 @@ const regenerateMap = debounce(async function (options) {
   undraw();
   await generate(options);
   drawLayers();
-  if (ThreeD.options.isOn) ThreeD.redraw();
+  if (options.threeD.isOn) window.Controllers.View3d.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
 
   fitMapToScreen();

@@ -8,21 +8,18 @@ runtime globals) into a typed module inside Vite's graph. See also [lazy_loading
 
 Pick the layer by responsibility, name the file `kebab-case.ts`:
 
-| Layer              | Holds                                                |
-| ------------------ | ---------------------------------------------------- |
-| `src/utils/`       | pure, dependency-free helpers                        |
-| `src/generators/`  | domain generators / data logic (`Goods`, …)          |
-| `src/renderers/`   | code that draws SVG layers                           |
-| `src/controllers/` | dialogs, panels, UI flows, overviews                 |
-| `src/io/`          | save / load / export / serialization                 |
-| `src/services/`    | app-shell & platform/asset infra (install, fonts, …) |
-| `src/data/`        | static content / reference data (supporters, …)      |
+| Layer              | Holds                                                 |
+| ------------------ | ----------------------------------------------------- |
+| `src/utils/`       | pure, dependency-free helpers                         |
+| `src/generators/`  | domain generators / data logic (`Goods`, …)           |
+| `src/renderers/`   | code that draws SVG layers                            |
+| `src/controllers/` | dialogs, panels, UI flows, overviews                  |
+| `src/services/`    | app-shell & platform/asset infra (install, fonts, io) |
+| `src/data/`        | static content / reference data (supporters, …)       |
 
 Not everything is Model/View/Controller. If a file is **static content** (a constant
 list, a template table) it goes in `data/`, not `controllers/`. If it manages
-**browser/app lifecycle** (PWA install, auto-update, analytics) it goes in `services/`.
-If it **serializes or persists** state it goes in `io/`. See
-[architecture.md](./architecture.md) "Project Structure" for the full decision guide.
+**browser/app lifecycle** (PWA install, auto-update, analytics, io) it goes in `services/`.
 
 ## TypeScript — avoid `any`
 
@@ -70,8 +67,7 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
 - **Import named symbols from `"d3"`** — never the `window.d3` global, and prefer
   named imports over a `* as d3` namespace (better tree-shaking, explicit deps):
   ```ts
-  import { select, scaleLinear, max } from "d3";
-  import type { Selection } from "d3";
+  import { type Selection, select, scaleLinear, max } from "d3";
   ```
   The page still loads a legacy global D3 (v5) via `<script src="libs/d3.min.js">`
   for the old classic code; bundled TS must not depend on it.
@@ -232,24 +228,15 @@ window.WidgetOverview = { open };
 
 Most of controllers should be [`lazy-loaded`](../../src/lazy-loaders.ts).
 
-### IO (serialization)
-
-```ts
-// src/io/export-module.ts — pure; the serialized shape is the .map contract
-export function serializeModule(): string {
-  return JSON.stringify({ data });
-}
-```
-
-Reached via a direct import or `window.lazy.exportModule()` — never `window.X = …`.
-
 ### Service (app-shell lifecycle)
 
 ```ts
 // src/services/something.ts — app/browser lifecycle only; never reads or writes pack/grid
-export function init(event: Event): void {
+function init(event: Event): void {
   /* PWA install, fonts, tour, auto-update … */
 }
+
+export const Something = { init };
 ```
 
 ## The eval-order gotcha (read this)

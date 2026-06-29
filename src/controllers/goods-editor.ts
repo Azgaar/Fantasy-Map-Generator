@@ -1,11 +1,9 @@
 import { pointer, select } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
-import { GoodEditor } from "./good-editor";
-import { ProductionChains } from "./production-chains";
 
 let isInitialized = false;
 const visibleTags = new Set<string>();
@@ -39,11 +37,11 @@ function open() {
     ensureEl("goodsPercentage").on("click", togglePercentageMode);
     ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
     ensureEl("goodsAssign").on("click", enterResourceAssignMode);
-    ensureEl("goodsAdd").on("click", () => GoodEditor.open(undefined, refreshEditor));
+    ensureEl("goodsAdd").on("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
     ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
     ensureEl("goodsExport").on("click", downloadGoodsData);
     ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
-    ensureEl("goodsChains").on("click", () => ProductionChains.open());
+    ensureEl("goodsChains").on("click", () => Controllers.ProductionChains.open());
     ensureEl("goodsRegenerateGoods").on("click", requestGoodsRegeneration);
     ensureEl("goodsRegenerateProduction").on("click", requestProductionRegeneration);
 
@@ -53,7 +51,7 @@ function open() {
       const line = el.parentNode as HTMLElement;
       const good = Goods.get(+line.dataset.id!);
       if (!good) return;
-      if (cl.contains("goodEdit")) return GoodEditor.open(good, refreshEditor);
+      if (cl.contains("goodEdit")) return Controllers.GoodEditor.open(good, refreshEditor);
       if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
       if (cl.contains("icon-trash-empty")) return removeGood(good, line);
     });
@@ -137,7 +135,7 @@ function goodsEditorAddLines() {
     el.addEventListener("click", ev => {
       ev.stopPropagation();
       const goodId = Number((el.closest<HTMLElement>(".states") as HTMLElement).dataset.id);
-      lazy.comparePrices().then(m => m.ComparePrices.open(goodId, "#goodsEditor"));
+      Controllers.ComparePrices.open(goodId, "#goodsEditor");
     });
   });
 

@@ -2316,7 +2316,7 @@
           <p style="text-align: center; margin-top: 1em">
             <button
               id="startTourButton"
-              onclick="window.lazy.uiTour().then(m => m.UiTour.start())"
+              onclick="window.Services.UiTour.start()"
               data-tip="Take an interactive tour of the map generator"
             >
               &#9654; Take an Interactive Tour
@@ -6159,16 +6159,16 @@
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
           <button
-            onclick="window.lazy.exportMap().then(m => m.exportToSvg())"
+            onclick="window.Services.ExportMap.exportToSvg()"
             data-tip="Download the map as vector image (open directly in browser or Inkscape)"
           >
             .svg
           </button>
-          <button onclick="window.lazy.exportMap().then(m => m.exportToPng())" data-tip="Download visible part of the map as .png (lossless compressed)">
+          <button onclick="window.Services.ExportMap.exportToPng()" data-tip="Download visible part of the map as .png (lossless compressed)">
             .png
           </button>
           <button
-            onclick="window.lazy.exportMap().then(m => m.exportToJpeg())"
+            onclick="window.Services.ExportMap.exportToJpeg()"
             data-tip="Download visible part of the map as .jpeg (lossy compressed) image"
           >
             .jpeg
@@ -6212,11 +6212,11 @@
         <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export to GeoJSON</div>
         <div>
-          <button onclick="window.lazy.exportMap().then(m => m.saveGeoJsonCells())" data-tip="Download cells data in GeoJSON format">cells</button>
-          <button onclick="window.lazy.exportMap().then(m => m.saveGeoJsonRoutes())" data-tip="Download routes data in GeoJSON format">routes</button>
-          <button onclick="window.lazy.exportMap().then(m => m.saveGeoJsonRivers())" data-tip="Download rivers data in GeoJSON format">rivers</button>
-          <button onclick="window.lazy.exportMap().then(m => m.saveGeoJsonMarkers())" data-tip="Download markers data in GeoJSON format">markers</button>
-          <button onclick="window.lazy.exportMap().then(m => m.saveGeoJsonZones())" data-tip="Download zones data in GeoJSON format">zones</button>
+          <button onclick="window.Services.ExportMap.saveGeoJsonCells()" data-tip="Download cells data in GeoJSON format">cells</button>
+          <button onclick="window.Services.ExportMap.saveGeoJsonRoutes()" data-tip="Download routes data in GeoJSON format">routes</button>
+          <button onclick="window.Services.ExportMap.saveGeoJsonRivers()" data-tip="Download rivers data in GeoJSON format">rivers</button>
+          <button onclick="window.Services.ExportMap.saveGeoJsonMarkers()" data-tip="Download markers data in GeoJSON format">markers</button>
+          <button onclick="window.Services.ExportMap.saveGeoJsonZones()" data-tip="Download zones data in GeoJSON format">zones</button>
         </div>
         <p>
           GeoJSON format is used in GIS tools such as QGIS. Check out
@@ -6240,17 +6240,17 @@
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
           <button
-            onclick="window.lazy.save().then(m => m.saveMap('machine'))"
+            onclick="window.Services.Save.saveMap('machine')"
             data-tip="Download map file to your local disk"
             data-shortcut="Ctrl + S"
             style="font-weight: 600"
           >
             machine
           </button>
-          <button onclick="window.lazy.save().then(m => m.saveMap('dropbox'))" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button onclick="window.Services.Save.saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
             dropbox
           </button>
-          <button onclick="window.lazy.save().then(m => m.saveMap('storage'))" data-tip="Save the project to browser storage only" data-shortcut="F6">
+          <button onclick="window.Services.Save.saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
             browser
           </button>
         </div>
@@ -6271,7 +6271,7 @@
           >
             URL
           </button>
-          <button onclick="window.lazy.load().then(m => m.quickLoad())" data-tip="Load map from browser storage (if saved before)">storage</button>
+          <button onclick="window.Services.Load.quickLoad()" data-tip="Load map from browser storage (if saved before)">storage</button>
         </div>
         <p>Click on <i>storage</i> to open the last saved map.</p>
         <div id="loadFromDropbox">
@@ -6287,9 +6287,9 @@
           </p>
           <select id="loadFromDropboxSelect" style="width: 22em"></select>
           <div id="loadFromDropboxButtons" style="margin-bottom: 0.6em">
-            <button onclick="window.lazy.load().then(m => m.loadFromDropbox())" data-tip="Load map file (.map or .gz) from your Dropbox">Load</button>
+            <button onclick="window.Services.Load.loadFromDropbox()" data-tip="Load map file (.map or .gz) from your Dropbox">Load</button>
             <button
-              onclick="window.lazy.load().then(m => m.createSharableDropboxLink())"
+              onclick="window.Services.Load.createSharableDropboxLink()"
               data-tip="Select file and create a link to share with your friends"
             >
               Share
@@ -8959,12 +8959,12 @@
     <script src="libs/flatqueue.js"></script>
     <script src="libs/delaunator.min.js"></script>
     <script src="libs/indexedDB.js?v=1.99.00"></script>
+    <script type="module" src="data/supporters.ts"></script>
     <script type="module" src="utils/index.ts"></script>
     <script type="module" src="generators/index.ts"></script>
     <script type="module" src="renderers/index.ts"></script>
     <script type="module" src="controllers/index.ts"></script>
     <script type="module" src="services/index.ts"></script>
-    <script type="module" src="lazy-loaders.ts"></script>
     <script defer src="config/heightmap-templates.js"></script>
     <script defer src="config/precreated-heightmaps.js"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>

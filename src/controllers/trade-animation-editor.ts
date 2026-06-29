@@ -69,6 +69,7 @@ const INPUTS = [
 ];
 
 function open(): void {
+  if (customization) return;
   closeDialogs("#tradeAnimationEditor, .stable");
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 

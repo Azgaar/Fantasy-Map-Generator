@@ -1,5 +1,5 @@
 import { drag, easeSinIn, pointer, select, transition } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import {
   abbreviate,
   debounce,
@@ -16,6 +16,7 @@ const $body = insertEditorHtml();
 addListeners();
 
 function open(): void {
+  if (customization) return;
   closeDialogs("#religionsEditor, .stable");
   if (!layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleStates")) toggleStates();
@@ -632,7 +633,6 @@ function togglePercentageMode(): void {
 
 async function showHierarchy(): Promise<void> {
   if (customization) return;
-  const { HierarchyTree } = await lazy.hierarchyTree();
 
   const getDescription = (religion: any) => {
     const { name, type, form, rural, urban } = religion;
@@ -658,7 +658,7 @@ async function showHierarchy(): Promise<void> {
     if (type === "Heresy") return "diamond";
   };
 
-  HierarchyTree.open({
+  Controllers.HierarchyTree.open({
     type: "religions",
     data: pack.religions as any,
     onNodeEnter: religionHighlightOn,

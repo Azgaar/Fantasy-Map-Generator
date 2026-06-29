@@ -1,4 +1,5 @@
 import type { Selection } from "d3";
+import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { NameBase } from "../generators/names-generator";
@@ -273,7 +274,6 @@ declare global {
   var applySortingByHeader: (headerId: string) => void;
   var fog: (id: string, path: string) => void;
   var unfog: (id?: string) => void;
-  var overviewBurgs: (options: { stateId: number }) => void;
   var editEmblem: (type: string, id: string, el: any) => void;
   var l: (n: number) => string;
 
@@ -326,6 +326,7 @@ type Options = {
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };
+  threeD: ThreeDOptions;
 };
 
 type BurgGroup = {

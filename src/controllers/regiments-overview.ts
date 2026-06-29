@@ -1,5 +1,5 @@
 import { pointer, select, sum } from "d3";
-import { lazy } from "@/lazy-loaders";
+import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, si } from "../utils";
 
@@ -35,8 +35,7 @@ function open(state = -1): void {
     body.on("click", async event => {
       const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
       if (!target) return;
-      const { RegimentEditor } = await lazy.regimentEditor();
-      RegimentEditor.open(`#${target.dataset.editRegiment}`);
+      Controllers.RegimentEditor.open(`#${target.dataset.editRegiment}`);
     });
 
     isInitialized = true;

@@ -1,4 +1,5 @@
 import { color, drag, interpolateString, max, pack as packLayout, pointer, select, stratify } from "d3";
+import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import {
@@ -22,6 +23,7 @@ addListeners();
 let statesManualHistory: string[] = [];
 
 function open(): void {
+  if (customization) return;
   closeDialogs("#statesEditor, .stable");
   if (!layerIsOn("toggleStates")) toggleStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
@@ -142,7 +144,7 @@ function addListeners(): void {
     else if (classList.contains("name")) editStateName(stateId);
     else if (classList.contains("coaIcon")) editEmblem("state", `stateCOA${stateId}`, pack.states[stateId]);
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
-    else if (classList.contains("icon-dot-circled")) overviewBurgs({ stateId });
+    else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
