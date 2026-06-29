@@ -37,7 +37,7 @@ export function createRegistry<T extends Record<string, object>>(
 
   return new Proxy({} as Registry<T>, {
     get(_target, name) {
-      if (typeof name !== "string" || !Object.prototype.hasOwnProperty.call(loaders, name)) return undefined;
+      if (typeof name !== "string" || !Object.hasOwn(loaders, name)) return undefined;
 
       let entry = entryProxies.get(name);
       if (!entry) {
