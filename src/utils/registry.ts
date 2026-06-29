@@ -1,6 +1,18 @@
 type Loader<T> = () => Promise<T>;
 type DispatchFn = (...args: unknown[]) => unknown;
 
+let pendingLoads = 0;
+function trackLoad<T>(promise: Promise<T>): Promise<T> {
+  pendingLoads++;
+  tip("Loading…", false, "info");
+  return promise.finally(() => {
+    if (--pendingLoads <= 0) {
+      pendingLoads = 0;
+      clearMainTip();
+    }
+  });
+}
+
 // Every method of a registered module becomes async
 type AsyncMethods<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R ? (...args: A) => Promise<Awaited<R>> : T[K];
@@ -15,11 +27,9 @@ export const eager =
   () =>
     Promise.resolve(value);
 
-export function createRegistry<T extends Record<string, object>>(
-  loaders: {
-    [K in keyof T]: Loader<T[K]>;
-  }
-): Registry<T> {
+export function createRegistry<T extends Record<string, object>>(loaders: {
+  [K in keyof T]: Loader<T[K]>;
+}): Registry<T> {
   const modulePromises = new Map<string, Promise<unknown>>();
   const entryProxies = new Map<string, object>();
 
@@ -29,7 +39,7 @@ export function createRegistry<T extends Record<string, object>>(
   const load = (name: string): Promise<unknown> => {
     let promise = modulePromises.get(name);
     if (!promise) {
-      promise = loaderByName[name]();
+      promise = trackLoad(loaderByName[name]());
       modulePromises.set(name, promise);
     }
     return promise;
