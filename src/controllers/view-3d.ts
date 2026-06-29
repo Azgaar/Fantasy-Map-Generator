@@ -36,6 +36,10 @@ const setColors = (sky: string, water: string) => loadRenderer().then(m => m.set
 const setTimeOfDay = (presetName: string) => loadRenderer().then(m => m.setTimeOfDay(presetName));
 const saveScreenshot = () => loadRenderer().then(m => m.saveScreenshot());
 const saveOBJ = () => loadRenderer().then(m => m.saveOBJ());
+// read access to view/erosion state (used by label/icon placement and e2e tests)
+const isOn = () => options.threeD.isOn;
+const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));
+const heightAt = (x: number, y: number, scale: number) => loadRenderer().then(m => m.heightAt(x, y, scale));
 
 // --- enter / exit ------------------------------------------------------------
 function teardown(): void {
@@ -325,4 +329,4 @@ function onChangeResolution(this: HTMLInputElement): void {
   void setResolution(+this.value);
 }
 
-export const View3d = { open, enterStandard, toggleOptions, redraw, update };
+export const View3d = { open, enterStandard, toggleOptions, redraw, update, isOn, isCached, heightAt };
