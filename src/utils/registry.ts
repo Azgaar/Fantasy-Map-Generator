@@ -15,9 +15,11 @@ export const eager =
   () =>
     Promise.resolve(value);
 
-export function createRegistry<T extends Record<string, object>>(loaders: {
-  [K in keyof T]: Loader<T[K]>;
-}): Registry<T> {
+export function createRegistry<T extends Record<string, object>>(
+  loaders: {
+    [K in keyof T]: Loader<T[K]>;
+  }
+): Registry<T> {
   const modulePromises = new Map<string, Promise<unknown>>();
   const entryProxies = new Map<string, object>();
 
