@@ -167,32 +167,7 @@ let options = {
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
   },
-  // 3D view configuration (read/written by the View3d controller and its renderer)
-  threeD: {
-    isOn: false,
-    isGlobe: false,
-    scale: 50,
-    lightness: 0.6,
-    shadow: 0.5,
-    sun: {x: 100, y: 800, z: 1000},
-    rotateMesh: 0,
-    rotateGlobe: 0.5,
-    skyColor: "#9ecef5",
-    waterColor: "#466eab",
-    sunColor: "#cccccc",
-    extendedWater: false,
-    labels3d: false,
-    satellite: false,
-    wireframe: false,
-    resolution: 2,
-    resolutionScale: 4096,
-    subdivide: false,
-    erosion: false,
-    erosionDetail: 1024,
-    erosionStrength: 30,
-    erosionRiverDepth: 10,
-    erosionOctaves: 2
-  }
+  threeD: { ...window.ThreeDOptions }
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
@@ -667,9 +642,9 @@ void (function addDragToUpload() {
     overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
     if (closeDialogs) closeDialogs();
     window.Services.Load.uploadMap(file, () => {
-        overlay.style.display = "none";
-        overlay.innerHTML = "Drop a map file to open";
-      });
+      overlay.style.display = "none";
+      overlay.innerHTML = "Drop a map file to open";
+    });
   });
 })();
 

@@ -832,9 +832,6 @@ function extendWater(width: number, height: number) {
 
 async function update3dTexture() {
   if (!material || !Renderer) return;
-  // satellite mode: the texture is fully procedural (no SVG render
-  // involved) — re-bake it from the cached field, e.g. after a height
-  // scale change (slope thresholds depend on it)
   if (options.threeD.satellite && erosionBakeData && !options.threeD.isGlobe && !options.threeD.wireframe) {
     const satelliteTexture = generateSatelliteTexture(Renderer, erosionBakeData, {
       scale: options.threeD.scale,

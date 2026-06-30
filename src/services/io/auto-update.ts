@@ -1,5 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
+import { defaultOptions } from "@/data/view-3d-options";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 
 export function resolveVersionConflicts(mapVersion: string): void {
@@ -1180,5 +1181,10 @@ export function resolveVersionConflicts(mapVersion: string): void {
   if (isOlderThan("1.127.0")) {
     // goods visibility moved onto the good itself; default to showing the first good
     if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
+  }
+
+  if (isOlderThan("1.132.0")) {
+    // v1.132.0 added global 3D view options
+    options.threeD = { ...defaultOptions };
   }
 }
