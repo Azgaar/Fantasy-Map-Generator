@@ -79,6 +79,7 @@ declare global {
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
   var debug: Selection<SVGElement, unknown, null, undefined>;
+  var elSelected: Selection<SVGElement, unknown, HTMLElement, any>;
 
   // SVG layer selections reassigned on map load (main.js)
   var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
@@ -263,6 +264,9 @@ declare global {
   var toggleMilitary: (event?: MouseEvent) => void;
   var toggleLabels: (event?: MouseEvent) => void;
   var toggleBurgIcons: (event?: MouseEvent) => void;
+  var toggleRoutes: (event?: MouseEvent) => void;
+  var toggleRivers: (event?: MouseEvent) => void;
+  var toggleAddRiver: () => void;
 
   var clicked: () => void;
   var unselect: () => void;
