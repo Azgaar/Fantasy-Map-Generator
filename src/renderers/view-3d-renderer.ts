@@ -88,7 +88,7 @@ const redraw = () => {
   deleteLabels();
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
-  if (options.threeD.isGlobe) updateGlobeTexure();
+  if (options.threeD.isGlobe) updateGlobeTexure(true);
   else createMesh(graphWidth, graphHeight, grid.cellsX, grid.cellsY);
   render();
 };
