@@ -263,6 +263,8 @@ declare global {
   var toggleMilitary: (event?: MouseEvent) => void;
   var toggleLabels: (event?: MouseEvent) => void;
   var toggleBurgIcons: (event?: MouseEvent) => void;
+  var toggleRoutes: (event?: MouseEvent) => void;
+  var toggleRivers: (event?: MouseEvent) => void;
 
   var clicked: () => void;
   var unselect: () => void;
