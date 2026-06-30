@@ -846,8 +846,8 @@ class RoutesModule {
       return null;
     }
 
-    const model = rw(models[group]);
-    const suffix = rw(suffixes[group]);
+    const model = rw(models[group] || models.roads);
+    const suffix = rw(suffixes[group] || suffixes.roads);
 
     const burgName = getBurgName();
     if (model === "burg_suffix" && burgName) return `${burgName} ${suffix}`;
