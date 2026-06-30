@@ -1303,7 +1303,7 @@ function showStatistics() {
   window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
 }
 
-const regenerateMap = debounce(async function (options) {
+const regenerateMap = debounce(async function (config) {
   WARN && console.warn("Generate new random map");
 
   const cellsDesired = +ensureEl("pointsInput").dataset.cells;
@@ -1314,7 +1314,7 @@ const regenerateMap = debounce(async function (options) {
   customization = 0;
   resetZoom(1000);
   undraw();
-  await generate(options);
+  await generate(config);
   drawLayers();
   if (options.threeD.isOn) window.Controllers.View3d.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
