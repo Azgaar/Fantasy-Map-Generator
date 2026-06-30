@@ -3,37 +3,64 @@ import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { ensureEl, rn } from "../utils";
 
-// legacy global defined in public/modules/ui/tools.js
-declare const toggleAddRiver: () => void;
+const DIALOG_HTML = /* html */ `
+  <div id="riversHeader" class="header" style="grid-template-columns: 9em 4em 7em 5em 5em 9em">
+    <div data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">River&nbsp;</div>
+    <div data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+    <div data-tip="Click to sort by discharge (flux in m3/s)" class="sortable icon-sort-number-down" data-sortby="discharge">Discharge&nbsp;</div>
+    <div data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
+    <div data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
+    <div data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">Basin&nbsp;</div>
+  </div>
+  <div id="riversBody" class="table"></div>
+  <div id="riversFooter" class="totalLine">
+    <div data-tip="Rivers number" style="margin-left: 4px">Rivers:&nbsp;<span id="riversFooterNumber">0</span></div>
+    <div data-tip="Average discharge" style="margin-left: 12px">Average discharge:&nbsp;<span id="riversFooterDischarge">0</span></div>
+    <div data-tip="Average length" style="margin-left: 12px">Length:&nbsp;<span id="riversFooterLength">0</span></div>
+    <div data-tip="Average mouth width" style="margin-left: 12px">Width:&nbsp;<span id="riversFooterWidth">0</span></div>
+  </div>
+  <div id="riversBottom">
+    <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+    <button id="addNewRiver" data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple" class="icon-plus"></button>
+    <button id="riverCreateNew" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
+    <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
+    <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
+    <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
+    <label for="riversSearch" data-tip="Filter by name, type or basin" style="margin-left: 0.2em">Search: <input id="riversSearch" type="search" /></label>
+  </div>`;
 
-let isInitialized = false;
-
-function overviewRivers(): void {
+function open(): void {
   if (customization) return;
   closeDialogs("#riversOverview, .stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
+  ensureEl("riversOverview").innerHTML = DIALOG_HTML;
   riversOverviewAddLines();
-  $("#riversOverview").dialog();
 
-  if (isInitialized) return;
-  isInitialized = true;
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("riversOverviewRefresh").on("click", riversOverviewAddLines);
+  ensureEl("addNewRiver").on("click", toggleAddRiver);
+  ensureEl("riverCreateNew").on("click", createNewRiver);
+  ensureEl("riversBasinHighlight").on("click", toggleBasinsHightlight);
+  ensureEl("riversExport").on("click", downloadRiversData);
+  ensureEl("riversRemoveAll").on("click", triggerAllRiversRemove);
+  ensureEl("riversSearch").on("input", riversOverviewAddLines);
 
   $("#riversOverview").dialog({
     title: "Rivers Overview",
     resizable: false,
     width: fitContent(),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    close: closeRiversOverview
   });
+}
 
-  // add listeners
-  ensureEl("riversOverviewRefresh").on("click", riversOverviewAddLines);
-  ensureEl("addNewRiver").on("click", toggleAddRiver);
-  ensureEl("riverCreateNew").on("click", () => void Controllers.RiverCreator.open());
-  ensureEl("riversBasinHighlight").on("click", toggleBasinsHightlight);
-  ensureEl("riversExport").on("click", downloadRiversData);
-  ensureEl("riversRemoveAll").on("click", triggerAllRiversRemove);
-  ensureEl("riversSearch").on("input", riversOverviewAddLines);
+function closeRiversOverview(): void {
+  ensureEl("riversOverview").innerHTML = "";
+}
+
+function createNewRiver(): void {
+  void Controllers.RiverCreator.open();
 }
 
 // add line for each river
@@ -221,4 +248,4 @@ function removeAllRivers(): void {
   riversOverviewAddLines();
 }
 
-export const RiversOverview = { open: overviewRivers };
+export const RiversOverview = { open };

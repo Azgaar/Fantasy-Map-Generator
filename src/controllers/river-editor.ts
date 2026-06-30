@@ -4,11 +4,57 @@ import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
 import { ensureEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
 
-declare let elSelected: any;
+const DIALOG_HTML = /* html */ `
+  <div id="riverBody" style="padding-bottom: 0.3em">
+    <div>
+      <div class="label" style="width: 4.8em">Name:</div>
+      <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
+      <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+      <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
+      <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+    </div>
+    <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
+      <div class="label">Type:</div>
+      <input id="riverType" autocorrect="off" spellcheck="false" />
+    </div>
+    <div data-tip="Select parent river">
+      <div class="label">Mainstem:</div>
+      <select id="riverMainstem"></select>
+    </div>
+    <div data-tip="River drainage basin (watershed)">
+      <div class="label">Basin:</div>
+      <input id="riverBasin" disabled />
+    </div>
+    <div data-tip="River discharge (flux power)">
+      <div class="label">Discharge:</div>
+      <input id="riverDischarge" disabled />
+    </div>
+    <div data-tip="River length in selected units">
+      <div class="label">Length:</div>
+      <input id="riverLength" disabled />
+    </div>
+    <div data-tip="River mouth width in selected units">
+      <div class="label">Mouth width:</div>
+      <input id="riverWidth" disabled />
+    </div>
+    <div data-tip="River source additional width. Default value is 0">
+      <div class="label">Source width:</div>
+      <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
+    </div>
+    <div data-tip="River width multiplier. Default value is 1">
+      <div class="label">Width modifier:</div>
+      <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
+    </div>
+  </div>
+  <div id="riverBottom">
+    <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
+    <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
+    <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
+    <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+    <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+  </div>`;
 
-let isInitialized = false;
-
-function editRiver(id: string): void {
+function open(id: string): void {
   if (customization) return;
   if (elSelected && id === elSelected.attr("id")) return;
   closeDialogs(".stable");
@@ -17,7 +63,7 @@ function editRiver(id: string): void {
   ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
   if (!layerIsOn("toggleCells")) toggleCells();
 
-  elSelected = select(`#${id}`).on("click", addControlPoint);
+  elSelected = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
     "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
@@ -26,6 +72,7 @@ function editRiver(id: string): void {
   debug.append("g").attr("id", "controlCells");
   debug.append("g").attr("id", "controlPoints");
 
+  ensureEl("riverEditor").innerHTML = DIALOG_HTML;
   updateRiverData();
 
   const river = getRiver();
@@ -34,19 +81,9 @@ function editRiver(id: string): void {
   drawControlPoints(riverPoints);
   drawCells(cells);
 
-  $("#riverEditor").dialog({
-    title: "Edit River",
-    resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRiverEditor
-  });
-
-  if (isInitialized) return;
-  isInitialized = true;
-
-  // add listeners
-  ensureEl("riverCreateSelectingCells").on("click", () => void Controllers.RiverCreator.open());
-  ensureEl("riverEditStyle").on("click", () => editStyle("rivers"));
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("riverCreateSelectingCells").on("click", openRiverCreator);
+  ensureEl("riverEditStyle").on("click", openRiverStyle);
   ensureEl("riverElevationProfile").on("click", showRiverElevationProfile);
   ensureEl("riverLegend").on("click", editRiverLegend);
   ensureEl("riverRemove").on("click", removeRiver);
@@ -57,6 +94,21 @@ function editRiver(id: string): void {
   ensureEl("riverMainstem").on("change", changeParent);
   ensureEl("riverSourceWidth").on("input", changeSourceWidth);
   ensureEl("riverWidthFactor").on("input", changeWidthFactor);
+
+  $("#riverEditor").dialog({
+    title: "Edit River",
+    resizable: false,
+    position: { my: "left top", at: "left+10 top+10", of: "#map" },
+    close: closeRiverEditor
+  });
+}
+
+function openRiverCreator(): void {
+  void Controllers.RiverCreator.open();
+}
+
+function openRiverStyle(): void {
+  editStyle("rivers");
 }
 
 function getRiver(): River {
@@ -89,7 +141,7 @@ function updateRiverData(): void {
 }
 
 function updateRiverLength(river: River): void {
-  river.length = rn(elSelected.node().getTotalLength() / 2, 2);
+  river.length = rn((elSelected.node() as SVGGeometryElement).getTotalLength() / 2, 2);
   const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
@@ -113,13 +165,13 @@ function updateRiverWidth(river: River): void {
 function drawControlPoints(points: Point[]): void {
   debug
     .select("#controlPoints")
-    .selectAll("circle")
+    .selectAll<SVGCircleElement, Point>("circle")
     .data(points)
     .join("circle")
     .attr("cx", (d: Point) => d[0])
     .attr("cy", (d: Point) => d[1])
     .attr("r", 0.6)
-    .call(drag().on("start", dragControlPoint) as any)
+    .call(drag<SVGCircleElement, Point>().on("start", dragControlPoint))
     .on("click", removeControlPoint);
 }
 
@@ -286,6 +338,8 @@ function closeRiverEditor(): void {
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
+
+  ensureEl("riverEditor").innerHTML = "";
 }
 
-export const RiverEditor = { open: editRiver };
+export const RiverEditor = { open };

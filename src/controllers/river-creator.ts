@@ -3,10 +3,16 @@ import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
 import { ensureEl, getPackPolygon, last, rn } from "../utils";
 
-let isInitialized = false;
 let creatorCells: number[] = [];
 
-function createRiver(): void {
+const DIALOG_HTML = /* html */ `
+  <div id="riverCreatorBody" class="table"></div>
+  <div id="riverCreatorBottom">
+    <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+    <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+  </div>`;
+
+function open(): void {
   if (customization) return;
   closeDialogs();
   if (!layerIsOn("toggleRivers")) toggleRivers();
@@ -19,7 +25,12 @@ function createRiver(): void {
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onCellClick);
 
   creatorCells = [];
-  const body = ensureEl("riverCreatorBody");
+  ensureEl("riverCreator").innerHTML = DIALOG_HTML;
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("riverCreatorComplete").on("click", addRiver);
+  ensureEl("riverCreatorCancel").on("click", cancelCreation);
+  ensureEl("riverCreatorBody").on("click", onBodyClick);
 
   $("#riverCreator").dialog({
     title: "Create River",
@@ -27,47 +38,45 @@ function createRiver(): void {
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRiverCreator
   });
+}
 
-  if (isInitialized) return;
-  isInitialized = true;
+function cancelCreation(): void {
+  $("#riverCreator").dialog("close");
+}
 
-  // add listeners
-  ensureEl("riverCreatorComplete").addEventListener("click", addRiver);
-  ensureEl("riverCreatorCancel").addEventListener("click", () => $("#riverCreator").dialog("close"));
-  body.addEventListener("click", ev => {
-    const el = ev.target as HTMLElement;
-    const cl = el.classList;
-    const cell = +(el.parentNode as HTMLElement).dataset.cell!;
-    if (cl.contains("editFlux")) pack.cells.fl[cell] = +(el as HTMLInputElement).value;
-    else if (cl.contains("icon-trash-empty")) removeCell(cell);
-  });
+function onBodyClick(ev: Event): void {
+  const el = ev.target as HTMLElement;
+  const cl = el.classList;
+  const cell = +(el.parentNode as HTMLElement).dataset.cell!;
+  if (cl.contains("editFlux")) pack.cells.fl[cell] = +(el as HTMLInputElement).value;
+  else if (cl.contains("icon-trash-empty")) removeCell(cell);
+}
 
-  function onCellClick(this: any, event: any): void {
-    const cell = findCell(...(pointer(event, this) as [number, number]))!;
+function onCellClick(this: any, event: any): void {
+  const cell = findCell(...(pointer(event, this) as [number, number]))!;
 
-    if (creatorCells.includes(cell)) removeCell(cell);
-    else addCell(cell);
-  }
+  if (creatorCells.includes(cell)) removeCell(cell);
+  else addCell(cell);
+}
 
-  function addCell(cell: number): void {
-    creatorCells.push(cell);
-    drawCells(creatorCells);
+function addCell(cell: number): void {
+  creatorCells.push(cell);
+  drawCells(creatorCells);
 
-    const flux = pack.cells.fl[cell];
-    const line = `<div class="editorLine" data-cell="${cell}">
+  const flux = pack.cells.fl[cell];
+  const line = `<div class="editorLine" data-cell="${cell}">
       <span>Cell ${cell}</span>
       <span data-tip="Set flux affects river width" style="margin-left: 0.4em">Flux</span>
       <input type="number" min=0 value="${flux}" class="editFlux" style="width: 5em"/>
       <span data-tip="Remove the cell" class="icon-trash-empty pointer"></span>
     </div>`;
-    body.innerHTML += line;
-  }
+  ensureEl("riverCreatorBody").innerHTML += line;
+}
 
-  function removeCell(cell: number): void {
-    creatorCells = creatorCells.filter(c => c !== cell);
-    drawCells(creatorCells);
-    body.querySelector(`div[data-cell='${cell}']`)?.remove();
-  }
+function removeCell(cell: number): void {
+  creatorCells = creatorCells.filter(c => c !== cell);
+  drawCells(creatorCells);
+  ensureEl("riverCreatorBody").querySelector(`div[data-cell='${cell}']`)?.remove();
 }
 
 function drawCells(cells: number[]): void {
@@ -143,7 +152,6 @@ function addRiver(): void {
 }
 
 function closeRiverCreator(): void {
-  ensureEl("riverCreatorBody").innerHTML = "";
   debug.select("#controlCells").remove();
   restoreDefaultEvents();
   clearMainTip();
@@ -151,6 +159,8 @@ function closeRiverCreator(): void {
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
+
+  ensureEl("riverCreator").innerHTML = "";
 }
 
-export const RiverCreator = { open: createRiver };
+export const RiverCreator = { open };

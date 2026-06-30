@@ -3,11 +3,36 @@ import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
 import { ensureEl, getPackPolygon, getSegmentId, rn } from "../utils";
 
-declare let elSelected: any;
+const DIALOG_HTML = /* html */ `
+  <div id="routeBody" style="padding-bottom: 0.3em">
+    <div>
+      <div class="label">Name:</div>
+      <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
+      <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+      <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
+    </div>
+    <div data-tip="Select route group">
+      <div class="label">Group:</div>
+      <select id="routeGroup"></select>
+      <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+      <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
+    </div>
+    <div data-tip="Route length in selected units">
+      <div class="label">Length:</div>
+      <input id="routeLength" disabled />
+    </div>
+  </div>
+  <div id="routeBottom">
+    <button id="routeCreateSelectingCells" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
+    <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
+    <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
+    <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
+    <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+    <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+    <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+  </div>`;
 
-let isInitialized = false;
-
-function editRoute(id: string): void {
+function open(id: string): void {
   if (customization) return;
   if (elSelected && id === elSelected.attr("id")) return;
   closeDialogs(".stable");
@@ -16,7 +41,7 @@ function editRoute(id: string): void {
   ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
   if (!layerIsOn("toggleCells")) toggleCells();
 
-  elSelected = select(`#${id}`).on("click", addControlPoint);
+  elSelected = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
     "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
@@ -24,6 +49,8 @@ function editRoute(id: string): void {
   );
   debug.append("g").attr("id", "controlCells");
   debug.append("g").attr("id", "controlPoints");
+
+  ensureEl("routeEditor").innerHTML = DIALOG_HTML;
 
   {
     const route = getRoute();
@@ -33,17 +60,7 @@ function editRoute(id: string): void {
     updateLockIcon();
   }
 
-  $("#routeEditor").dialog({
-    title: "Edit Route",
-    resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRouteEditor
-  });
-
-  if (isInitialized) return;
-  isInitialized = true;
-
-  // add listeners
+  // add listeners — dropped together with the dialog HTML on close
   ensureEl("routeCreateSelectingCells").on("click", showCreationDialog);
   ensureEl("routeSplit").on("click", togglePressed);
   ensureEl("routeJoin").on("click", openJoinRoutesDialog);
@@ -53,9 +70,20 @@ function editRoute(id: string): void {
   ensureEl("routeRemove").on("click", removeRoute);
   ensureEl("routeName").on("input", changeName);
   ensureEl("routeGroup").on("input", changeGroup);
-  ensureEl("routeGroupEdit").on("click", () => void Controllers.RouteGroupsEditor.open());
+  ensureEl("routeGroupEdit").on("click", openRouteGroupsEditor);
   ensureEl("routeEditStyle").on("click", editRouteGroupStyle);
   ensureEl("routeGenerateName").on("click", generateName);
+
+  $("#routeEditor").dialog({
+    title: "Edit Route",
+    resizable: false,
+    position: { my: "left top", at: "left+10 top+10", of: "#map" },
+    close: closeRouteEditor
+  });
+}
+
+function openRouteGroupsEditor(): void {
+  void Controllers.RouteGroupsEditor.open();
 }
 
 function getRoute(): Route {
@@ -87,13 +115,13 @@ function updateRouteLength(route: Route): void {
 function drawControlPoints(points: number[][]): void {
   debug
     .select("#controlPoints")
-    .selectAll("circle")
+    .selectAll<SVGCircleElement, number[]>("circle")
     .data(points)
     .join("circle")
     .attr("cx", (d: number[]) => d[0])
     .attr("cy", (d: number[]) => d[1])
     .attr("r", 0.6)
-    .call(drag().on("start", dragControlPoint) as any)
+    .call(drag<SVGCircleElement, number[]>().on("start", dragControlPoint))
     .on("click", handleControlPointClick);
 }
 
@@ -351,7 +379,7 @@ function changeName(this: HTMLInputElement): void {
 
 function changeGroup(this: HTMLInputElement): void {
   const group = this.value;
-  ensureEl(group).appendChild(elSelected.node());
+  ensureEl(group).appendChild(elSelected.node()!);
   getRoute().group = group;
 }
 
@@ -421,6 +449,8 @@ function closeRouteEditor(): void {
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
+
+  ensureEl("routeEditor").innerHTML = "";
 }
 
-export const RouteEditor = { open: editRoute };
+export const RouteEditor = { open };

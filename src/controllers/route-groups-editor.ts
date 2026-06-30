@@ -5,46 +5,59 @@ import { ensureEl } from "../utils";
 declare const prompt: (text: string, options: { default: string }, callback: (value: string) => void) => void;
 
 const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
-let isInitialized = false;
+
+const DIALOG_HTML = /* html */ `
+  <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
+  <div id="routeGroupsEditorBottom">
+    <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
+  </div>`;
 
 function open(): void {
   if (customization) return;
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
+  ensureEl("routeGroupsEditor").innerHTML = DIALOG_HTML;
   addLines();
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("routeGroupsEditorAdd").on("click", addGroup);
+  ensureEl("routeGroupsEditorBody").on("click", onBodyClick);
 
   $("#routeGroupsEditor").dialog({
     title: "Edit Route groups",
     resizable: false,
-    position: { my: "left top", at: "left+10 top+140", of: "#map" }
+    position: { my: "left top", at: "left+10 top+140", of: "#map" },
+    close: closeRouteGroupsEditor
   });
+}
 
-  if (isInitialized) return;
-  isInitialized = true;
+function closeRouteGroupsEditor(): void {
+  ensureEl("routeGroupsEditor").innerHTML = "";
+}
 
-  // add listeners
-  ensureEl("routeGroupsEditorAdd").addEventListener("click", addGroup);
-  ensureEl("routeGroupsEditorBody").on("click", (ev: Event) => {
-    const target = ev.target as HTMLElement;
-    const group = target.closest<HTMLElement>(".states")?.dataset.id;
-    if (target.classList.contains("editStyle")) editStyle("routes", group);
-    else if (target.classList.contains("removeGroup") && group) removeGroup(group);
-  });
+function onBodyClick(ev: Event): void {
+  const target = ev.target as HTMLElement;
+  const group = target.closest<HTMLElement>(".states")?.dataset.id;
+  if (target.classList.contains("editStyle")) editStyle("routes", group);
+  else if (target.classList.contains("removeGroup") && group) removeGroup(group);
 }
 
 function addLines(): void {
   ensureEl("routeGroupsEditorBody").innerHTML = "";
 
-  const lines = Array.from((routes.selectAll("g") as any)._groups[0] as HTMLElement[]).map(el => {
-    const count = el.children.length;
-    return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
+  const lines = routes
+    .selectAll<SVGGElement, unknown>("g")
+    .nodes()
+    .map(el => {
+      const count = el.children.length;
+      return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
           <span>${el.id} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
             <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
             <span data-tip="Remove group" class="removeGroup icon-trash pointer"></span>
           </div>
         </div>`;
-  });
+    });
 
   ensureEl("routeGroupsEditorBody").innerHTML = lines.join("");
 }
