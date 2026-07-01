@@ -7,7 +7,6 @@ import type { PromptOptions } from "../utils/commonUtils";
 declare const showBurgTemperatureGraph: (id: string) => void;
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
-let isInitialized = false;
 let selected: Selection<any, any, any, any> | null = null;
 
 function open(id: number | string): void {
@@ -23,6 +22,7 @@ function open(id: number | string): void {
     .selectAll<SVGTextElement, unknown>("text")
     .call(drag<SVGTextElement, unknown>().on("start", dragBurgLabel))
     .classed("draggable", true);
+  renderDialog();
   updateGroupsList();
   updateBurgValues();
 
@@ -32,11 +32,200 @@ function open(id: number | string): void {
     close: closeBurgEditor,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
   });
+}
 
-  if (isInitialized) return;
-  isInitialized = true;
+function renderDialog(): void {
+  document.getElementById("burgEditor")?.remove();
+  const editorHtml = /* html */ `<div id="burgEditor" class="dialog">
+      <div id="burgBody" style="padding-bottom: 0.3em">
+        <div style="display: flex; align-items: center">
+          <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">
+            <use id="burgEmblem"></use>
+          </svg>
+          <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
+            <div id="burgProvinceAndState" style="font-weight: bold; max-width: 16em"></div>
+            <div>
+              <div class="label">Name:</div>
+              <input
+                id="burgName"
+                data-tip="Type to rename the burg"
+                autocorrect="off"
+                spellcheck="false"
+                style="width: 9em"
+              />
+              <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span
+                id="burgNameReRandom"
+                data-tip="Generate random name for the burg"
+                class="icon-globe pointer"
+              ></span>
+            </div>
+            <div data-tip="Select burg group. Groups defines burg icon, label size and style">
+              <div class="label">Group:</div>
+              <select id="burgGroup" style="width: 9em"></select>
+              <span id="burgGroupConfigure" data-tip="Configure burg groups" class="icon-cog pointer"></span>
+            </div>
+            <div data-tip="Select burg type. Type slightly affects emblem generation">
+              <div class="label">Type:</div>
+              <select id="burgType" style="width: 9em">
+                <option value="Generic">Generic</option>
+                <option value="River">River</option>
+                <option value="Lake">Lake</option>
+                <option value="Naval">Naval</option>
+                <option value="Nomadic">Nomadic</option>
+                <option value="Hunting">Hunting</option>
+                <option value="Highland">Highland</option>
+              </select>
+            </div>
+            <div data-tip="Select dominant culture">
+              <div class="label">Culture:</div>
+              <select id="burgCulture" style="width: 9em"></select>
+              <span
+                id="burgNameReCulture"
+                data-tip="Generate culture-specific name for the burg"
+                class="icon-book pointer"
+              ></span>
+            </div>
+            <div data-tip="Set burg population">
+              <div class="label">Population:</div>
+              <input id="burgPopulation" type="number" min="0" step="1" style="width: 9em" />
+            </div>
+            <div data-tip="Burg average yearly temperature" style="display: flex; justify-content: space-between">
+              <div>
+                <div class="label">Temperature:</div>
+                <span id="burgTemperature"></span>
+              </div>
+              <div style="display: flex; gap: 0.5em">
+                <i class="icon-info-circled" id="burgTemperatureLikeIn"></i>
+                <i
+                  id="burgTemperatureGraph"
+                  data-tip="Show temperature graph for the burg"
+                  class="icon-chart-area pointer"
+                ></i>
+              </div>
+            </div>
+            <div data-tip="Burg height above mean sea level">
+              <div class="label">Elevation:</div>
+              <span id="burgElevation"></span> above sea level
+            </div>
+            <div>
+              <div class="label">Features:</div>
+              <span
+                id="burgCapital"
+                data-tip="Shows whether the burg is a state capital. Click to toggle"
+                data-feature="capital"
+                class="burgFeature icon-star"
+              ></span>
+              <span
+                id="burgPort"
+                data-tip="Shows whether the burg is a port. Click to toggle"
+                data-feature="port"
+                class="burgFeature icon-anchor"
+              ></span>
+              <span
+                id="burgCitadel"
+                data-tip="Shows whether the burg has a citadel (castle). Click to toggle"
+                data-feature="citadel"
+                class="burgFeature icon-chess-rook"
+                style="font-size: 1.1em"
+              ></span>
+              <span
+                id="burgWalls"
+                data-tip="Shows whether the burg is walled. Click to toggle"
+                data-feature="walls"
+                class="burgFeature icon-fort-awesome"
+              ></span>
+              <span
+                id="burgPlaza"
+                data-tip="Shows whether the burg is a trade center (market center). Click to toggle"
+                data-feature="plaza"
+                class="burgFeature icon-store"
+                style="font-size: 1em"
+              ></span>
+              <span
+                id="burgTemple"
+                data-tip="Shows whether the burg is a religious center. Click to toggle"
+                data-feature="temple"
+                class="burgFeature icon-chess-bishop"
+                style="font-size: 1.1em; margin-left: 3px"
+              ></span>
+              <span
+                id="burgShanty"
+                data-tip="Shows whether the burg has a shanty town. Click to toggle"
+                data-feature="shanty"
+                class="burgFeature icon-campground"
+                style="font-size: 1em"
+              ></span>
+            </div>
+            <div data-tip="Burg average daily production">
+              <div class="label">Production:</div>
+              <span id="burgProduction" style="display: inline-flex; flex-wrap: wrap; column-gap: 0.3em; max-width: 110px;"></span>
+            </div>
+            <div data-tip="Gross product per population point, daily average">
+              <div class="label">Wealth</div>
+              <span id="burgWealth"></span>
+            </div>
+            <div data-tip="Treasury balance after production, purchases, and sales">
+              <div class="label">Treasury</div>
+              <span id="burgTreasury"></span>
+            </div>
+          </div>
+        </div>
+        <div id="burgPreviewSection" data-tip="Burg map preview" style="display: flex; flex-direction: column">
+          <div style="display: flex; justify-content: space-between">
+            <span>Burg preview:</span>
+            <div style="display: flex; gap: 0.5em">
+              <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
+            </div>
+          </div>
+          <div id="burgPreviewObject" style="pointer-events: none"></div>
+        </div>
+      </div>
+      <div id="burgBottom">
+        <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
+        <div id="burgStyleSection" style="display: none">
+          <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
+          <button
+            id="burgEditLabelStyle"
+            data-tip="Edit label style for burg group in Style Editor"
+            class="icon-font"
+          ></button>
+          <button
+            id="burgEditIconStyle"
+            data-tip="Edit icon style for burg group in Style Editor"
+            class="icon-dot-circled"
+          ></button>
+          <button
+            id="burgEditAnchorStyle"
+            data-tip="Edit port icon (anchor) style for burg group in Style Editor"
+            class="icon-anchor"
+          ></button>
+        </div>
+        <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
+        <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
+        <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
+        <button
+          id="burgProductionOverview"
+          data-tip="Show production overview for this burg"
+          class="icon-chart-bar"
+        ></button>
+        <button
+          id="burgRelocate"
+          data-tip="Relocate burg. Click on map to move the burg"
+          class="icon-map-pin"
+        ></button>
+        <button id="burglLegend" data-tip="Edit free text notes (legend) for this burg" class="icon-edit"></button>
+        <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+        <button
+          id="burgRemove"
+          data-tip="Remove non-capital burg"
+          data-shortcut="Delete"
+          class="icon-trash fastDelete"
+        ></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  // add listeners
   ensureEl("burgName").on("input", changeName);
   ensureEl("burgNameReRandom").on("click", generateNameRandom);
   ensureEl("burgGroup").on("change", changeGroup);
@@ -512,6 +701,8 @@ function closeBurgEditor(): void {
     .call(drag<SVGTextElement, unknown>().on("drag", null))
     .classed("draggable", false);
   unselect();
+  $("#burgEditor").dialog("destroy");
+  ensureEl("burgEditor").remove();
 }
 
 function getProduction(pool: Record<number, number>): string {

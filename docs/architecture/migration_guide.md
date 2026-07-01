@@ -265,8 +265,8 @@ export const Something = { init };
 deferred `main.js`, where `let mapId` and many globals are declared. So a
 bundled module must **not read a mutable/late global at module top level** —
 that throws `ReferenceError` and your `window.X` registration silently never
-runs. Read such globals lazily _inside_ the function, and gate first-run DOM
-setup behind an `isInitialized` flag. (A `import { … } from "d3"` at top level
+runs. Read such globals lazily _inside_ the function, and gate run DOM
+setup. (A `import { … } from "d3"` at top level
 is safe — it's part of the module graph, not a runtime global.)
 
 ## Finish the port

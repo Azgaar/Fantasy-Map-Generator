@@ -3,7 +3,6 @@ import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, rn } from "../utils";
 
-let isInitialized = false;
 let selectedRegiment: SVGGElement | null = null;
 
 function editRegiment(selector: string): void {
@@ -20,6 +19,7 @@ function editRegiment(selector: string): void {
   const regiment = getRegiment();
   if (!regiment) return;
 
+  renderDialog();
   updateRegimentData(regiment);
   drawBase();
   drawRotationControl();
@@ -30,24 +30,66 @@ function editRegiment(selector: string): void {
     close: closeEditor,
     position: { my: "left top", at: "left+10 top+10", of: "#map" }
   });
-
-  if (!isInitialized) {
-    ensureEl("regimentNameRestore").addEventListener("click", restoreName);
-    ensureEl("regimentType").addEventListener("click", changeType);
-    ensureEl("regimentName").addEventListener("change", changeName);
-    ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
-    ensureEl("regimentAttack").addEventListener("click", toggleAttack);
-    ensureEl("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
-    ensureEl("regimentLegend").addEventListener("click", editLegend);
-    ensureEl("regimentSplit").addEventListener("click", splitRegiment);
-    ensureEl("regimentAdd").addEventListener("click", toggleAdd);
-    ensureEl("regimentAttach").addEventListener("click", toggleAttach);
-    ensureEl("regimentRemove").addEventListener("click", removeRegiment);
-    isInitialized = true;
-  }
 }
 
-// get regiment data element
+function renderDialog(): void {
+  document.getElementById("regimentEditor")?.remove();
+  const editorHtml = /* html */ `<div id="regimentEditor" class="dialog">
+    <div id="regimentBody" style="padding-bottom: 0.3em">
+      <div style="padding-bottom: 0.2em">
+        <button id="regimentType" data-tip="Regiment type (land or naval). Click to change"></button>
+        <input
+          id="regimentName"
+          data-tip="Type to rename the regiment"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 13em"
+        />
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
+      </div>
+      <div data-tip="Regiment emblem" style="display: flex; align-items: center">
+        <div class="label">Emblem:</div>
+        <div id="regimentEmblem" style="font-size: 1.5em; width: 3.7em"></div>
+        <button id="regimentEmblemChange" style="padding: 0; width: 4.5em">change</button>
+      </div>
+      <div id="regimentComposition" class="table"></div>
+    </div>
+    <div id="regimentBottom">
+      <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-target"></button>
+      <button id="regimentAdd" data-tip="Create a new regiment or fleet" class="icon-user-plus"></button>
+      <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
+      <button
+        id="regimentAttach"
+        data-tip="Attach regiment to another one (include this regiment to another one)"
+        class="icon-attach"
+      ></button>
+      <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
+      <button id="regimentLegend" data-tip="Edit free text notes (legend) for this regiment" class="icon-edit"></button>
+      <button
+        id="regimentRemove"
+        data-tip="Remove regiment"
+        data-shortcut="Delete"
+        class="icon-trash fastDelete"
+      ></button>
+    </div>
+  </div>`;
+
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+
+  ensureEl("regimentNameRestore").addEventListener("click", restoreName);
+  ensureEl("regimentType").addEventListener("click", changeType);
+  ensureEl("regimentName").addEventListener("change", changeName);
+  ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
+  ensureEl("regimentAttack").addEventListener("click", toggleAttack);
+  ensureEl("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
+  ensureEl("regimentLegend").addEventListener("click", editLegend);
+  ensureEl("regimentSplit").addEventListener("click", splitRegiment);
+  ensureEl("regimentAdd").addEventListener("click", toggleAdd);
+  ensureEl("regimentAttach").addEventListener("click", toggleAttach);
+  ensureEl("regimentRemove").addEventListener("click", removeRegiment);
+}
+
 function getRegiment(): Regiment | undefined {
   if (!selectedRegiment) return undefined;
   return pack.states[+selectedRegiment.dataset.state!]?.military?.find(r => r.i === +selectedRegiment!.dataset.id!);
@@ -566,15 +608,17 @@ function closeEditor(): void {
   ensureEl("regimentAttach").classList.remove("pressed");
   restoreDefaultEvents();
   selectedRegiment = null;
+  $("#regimentEditor").dialog("destroy");
+  ensureEl("regimentEditor").remove();
 }
 
 async function refreshMilitaryOverviewIfOpen(): Promise<void> {
-  if (!ensureEl("militaryOverview").offsetParent) return;
+  if (!document.getElementById("militaryOverview")?.offsetParent) return;
   Controllers.MilitaryOverview.refresh();
 }
 
 async function refreshRegimentsOverviewIfOpen(): Promise<void> {
-  if (!ensureEl("regimentsOverview").offsetParent) return;
+  if (!document.getElementById("regimentsOverview")?.offsetParent) return;
   Controllers.RegimentsOverview.refresh();
 }
 

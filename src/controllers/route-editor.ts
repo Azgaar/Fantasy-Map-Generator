@@ -172,7 +172,7 @@ function dragControlPoint(event: any): void {
 function redrawRoute(route: Route): void {
   elSelected.attr("d", Routes.getPath(route));
   updateRouteLength(route);
-  if (ensureEl("elevationProfile").offsetParent) showRouteElevationProfile();
+  if (document.getElementById("elevationProfile")?.offsetParent) showRouteElevationProfile();
 }
 
 function addControlPoint(this: any, event: any): void {

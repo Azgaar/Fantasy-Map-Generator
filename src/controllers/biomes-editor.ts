@@ -1,10 +1,6 @@
 import { drag, easeSinIn, pointer, select, sum, transition } from "d3";
 import { ensureEl, getPackPolygon, getRandomColor, isLand, rn, si } from "../utils";
 
-// The #biomesEditor chrome (header, footer, buttons) is authored in index.html and the body
-// rows are generated at runtime, so this module does not own that markup. Listeners on the
-// static parts are wired once behind this flag.
-let initialized = false;
 let animate: ReturnType<typeof transition>;
 
 const biomesSel = () => select<SVGGElement, unknown>(biomes.node()!);
@@ -20,10 +16,9 @@ function open(): void {
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   animate = transition().duration(2000).ease(easeSinIn);
-  refreshBiomesEditor();
 
-  if (initialized) return;
-  initialized = true;
+  renderDialog();
+  refreshBiomesEditor();
 
   $("#biomesEditor").dialog({
     title: "Biomes Editor",
@@ -32,6 +27,86 @@ function open(): void {
     close: closeBiomesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
+}
+
+function renderDialog(): void {
+  document.getElementById("biomesEditor")?.remove();
+  const editorHtml = /* html */ `<div id="biomesEditor" class="dialog stable">
+      <div id="biomesHeader" class="header" style="grid-template-columns: 13em 7em 5em 5em 7em">
+        <div data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">
+          Biome&nbsp;
+        </div>
+        <div data-tip="Click to sort by biome habitability" class="sortable hide" data-sortby="habitability">
+          Habitability&nbsp;
+        </div>
+        <div
+          data-tip="Click to sort by biome cells number"
+          class="sortable hide icon-sort-number-down"
+          data-sortby="cells"
+        >
+          Cells&nbsp;
+        </div>
+        <div data-tip="Click to sort by biome area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div data-tip="Click to sort by biome population" class="sortable hide" data-sortby="population">
+          Population&nbsp;
+        </div>
+      </div>
+      <div id="biomesBody" class="table" data-type="absolute"></div>
+      <div id="biomesFooter" class="totalLine">
+        <div data-tip="Number of land biomes" style="margin-left: 12px">
+          Biomes:&nbsp;<span id="biomesFooterBiomes">0</span>
+        </div>
+        <div data-tip="Total land cells number" style="margin-left: 12px">
+          Cells:&nbsp;<span id="biomesFooterCells">0</span>
+        </div>
+        <div data-tip="Total land area" style="margin-left: 12px">
+          Land Area:&nbsp;<span id="biomesFooterArea">0</span>
+        </div>
+        <div data-tip="Total population" style="margin-left: 12px">
+          Population:&nbsp;<span id="biomesFooterPopulation">0</span>
+        </div>
+      </div>
+      <div id="biomesBottom">
+        <button id="biomesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="biomesEditStyle" data-tip="Edit biomes style in Style Editor" class="icon-adjust"></button>
+        <button id="biomesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
+        <button
+          id="biomesPercentage"
+          data-tip="Toggle percentage / absolute values views"
+          class="icon-percent"
+        ></button>
+        <button
+          id="biomesManually"
+          data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern"
+          class="icon-brush"
+        ></button>
+        <div id="biomesManuallyButtons" style="display: none">
+          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
+            Brush size:
+            <slider-input id="biomesBrush" min="1" max="100" value="15"></slider-input>
+          </div>
+          <button id="biomesManuallyApply" data-tip="Apply current assignment" class="icon-check"></button>
+          <button id="biomesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+        </div>
+        <button id="biomesAdd" data-tip="Add a custom biome" class="icon-plus"></button>
+        <button
+          id="biomesRestore"
+          data-tip="Restore the defaults and re-define biomes based on current moisture and temperature"
+          class="icon-history"
+        ></button>
+        <button
+          id="biomesRegenerateReliefIcons"
+          data-tip="Regenerate relief icons based on current biomes and elevation"
+          class="icon-tree"
+        ></button>
+        <button
+          id="biomesExport"
+          data-tip="Save biomes-related data as a text file (.csv)"
+          class="icon-download"
+        ></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("biomesEditorRefresh").on("click", refreshBiomesEditor);
   ensureEl("biomesEditStyle").on("click", () => editStyle("biomes"));
@@ -501,6 +576,8 @@ function restoreInitialBiomes(): void {
 
 function closeBiomesEditor(): void {
   exitBiomesCustomizationMode(true);
+  $("#biomesEditor").dialog("destroy");
+  ensureEl("biomesEditor").remove();
 }
 
 export const BiomesEditor = { open };

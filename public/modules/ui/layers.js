@@ -976,7 +976,7 @@ function toggleZones(event) {
 }
 
 function drawZones() {
-  const filterBy = ensureEl("zonesFilterType").value;
+  const filterBy = document.getElementById("zonesFilterType")?.value;
   const isFiltered = filterBy && filterBy !== "all";
   const visibleZones = pack.zones.filter(
     ({ hidden, cells, type }) => !hidden && cells.length && (!isFiltered || type === filterBy)

@@ -17,13 +17,167 @@ import {
 
 import type { PromptOptions } from "../utils/commonUtils";
 
+insertEditorHtml();
+addToolbarListeners();
+addBrushesListeners();
+
+function insertEditorHtml(): void {
+  const editorHtml = /* html */ `<div id="templateEditor" class="dialog stable">
+      <div id="templateTop">
+        <i>Select template: </i>
+        <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
+          <option value="custom" selected>Custom</option>
+          <option value="volcano">Volcano</option>
+          <option value="highIsland">High Island</option>
+          <option value="lowIsland">Low Island</option>
+          <option value="continents">Continents</option>
+          <option value="archipelago">Archipelago</option>
+          <option value="atoll">Atoll</option>
+          <option value="mediterranean">Mediterranean</option>
+          <option value="peninsula">Peninsula</option>
+          <option value="pangea">Pangea</option>
+          <option value="isthmus">Isthmus</option>
+          <option value="shattered">Shattered</option>
+          <option value="taklamakan">Taklamakan</option>
+          <option value="oldWorld">Old World</option>
+          <option value="fractious">Fractious</option>
+        </select>
+      </div>
+      <div id="templateTools">
+        <button data-type="Hill" data-tip="Hill: small blob">H</button>
+        <button data-type="Pit" data-tip="Pit: round depression">P</button>
+        <button data-type="Range" data-tip="Range: elongated elevation">R</button>
+        <button data-type="Trough" data-tip="Trough: elongated depression">T</button>
+        <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression">S</button>
+        <button data-type="Mask" data-tip="Mask: lower cells near edges or in map center">M</button>
+        <button data-type="Invert" data-tip="Invert heightmap along the axes">I</button>
+        <button data-type="Add" data-tip="Add or subtract value from all heights in range">+</button>
+        <button data-type="Multiply" data-tip="Multiply all heights in range by factor">*</button>
+        <button
+          data-type="Smooth"
+          data-tip="Smooth the map replacing cell heights by an average values of its neighbors"
+        >
+          ~
+        </button>
+      </div>
+      <div id="templateBody" data-changed="0" class="table" style="padding: 2px 0">
+        <div data-type="Hill">
+          <div class="icon-check" data-tip="Click to skip the step"></div>
+          <div style="width: 4em">Hill</div>
+          <i class="icon-trash-empty pointer" data-tip="Remove the step"></i>
+          <i class="icon-resize-vertical" data-tip="Drag to reorder"></i>
+          <span
+            >y:<input class="templateY" data-tip="Y axis position in percentage (minY-maxY or Y)" value="47-53"
+          /></span>
+          <span
+            >x:<input class="templateX" data-tip="X axis position in percentage (minX-maxX or X)" value="65-75"
+          /></span>
+          <span
+            >h:<input
+              class="templateHeight"
+              data-tip="Blob maximum height, use hyphen to get a random number in range"
+              value="90-100"
+          /></span>
+          <span
+            >n:<input
+              class="templateCount"
+              data-tip="Blobs to add, use hyphen to get a random number in range"
+              value="1"
+          /></span>
+        </div>
+      </div>
+      <div id="templateBottom">
+        <button id="templateRun" data-tip="Execute the template" class="icon-play-circled2"></button>
+        <button id="templateUndo" data-tip="Undo the latest action" class="icon-ccw" disabled></button>
+        <button id="templateRedo" data-tip="Redo the action" class="icon-cw" disabled></button>
+        <button id="templateSave" data-tip="Download the template as a text file" class="icon-download"></button>
+        <button id="templateLoad" data-tip="Open previously downloaded template" class="icon-upload"></button>
+        <button
+          id="templateCA"
+          data-tip="Find or share custom template on Cartography Assets portal"
+          class="icon-drafting-compass"
+          onclick="
+            openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')
+          "
+        ></button>
+        <button
+          id="templateTutorial"
+          data-tip="Open Template Editor Tutorial"
+          class="icon-info"
+          onclick="wiki('Heightmap-template-editor')"
+        ></button>
+        <label
+          data-tip="Lock seed (click on lock icon) if you want template to generate the same heightmap each time"
+        >
+          Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 8em" />
+          <i data-locked="0" id="lock_templateSeed" class="icon-lock-open"></i>
+        </label>
+      </div>
+    </div>
+    <div id="imageConverter" class="dialog stable">
+      <div id="convertImageButtons">
+        <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
+        <button
+          id="convertAutoLum"
+          data-tip="Auto-assign colors based on liminosity (good for monochrome images)"
+          class="icon-adjust"
+        ></button>
+        <button
+          id="convertAutoHue"
+          data-tip="Auto-assign colors based on hue (good for colored images)"
+          class="icon-paint-roller"
+        ></button>
+        <button
+          id="convertAutoFMG"
+          data-tip="Auto-assign colors using generator scheme (for exported colored heightmaps)"
+          class="icon-layer-group"
+        ></button>
+        <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
+        <input id="convertColors" value="100" style="display: none" />
+        <button
+          id="convertCancel"
+          data-tip="Cancel the conversion. Previous heightmap will be restored"
+          class="icon-cancel"
+        ></button>
+      </div>
+      <div data-tip="Set opacity of the loaded image" style="padding-top: 0.4em">
+        <i>Overlay opacity:</i><br />
+        <input id="convertOverlay" type="range" min="0" max="1" step=".01" value="0" style="width: 12.6em" />
+        <input id="convertOverlayNumber" type="number" min="0" max="1" step=".01" value="0" style="width: 4.2em" />
+      </div>
+      <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
+        <i>Set height: </i>
+        <span id="colorsSelectValue"></span>
+        <span>(<span id="colorsSelectFriendly">0</span>)</span><br />
+        <div id="imageConverterPalette"></div>
+      </div>
+      <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
+        <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i>
+        <div id="colorsAssignedContainer" class="colorsContainer"></div>
+      </div>
+      <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
+        <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i>
+        <div id="colorsUnassignedContainer" class="colorsContainer"></div>
+      </div>
+      <button
+        id="convertComplete"
+        data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
+        style="margin: 0.4em 0"
+        class="glow"
+      >
+        Complete the conversion
+      </button>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+}
+
 // Custom app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor).
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
-// The #customizationMenu / brushes / template / image-converter markup is authored in
-// index.html, so this module does not own it. Panel listeners wire once behind these flags.
-let initialized = false;
-let brushesInit = false;
+// Toolbar, brushes, template editor and image converter are all persistent chrome for the one
+// long-lived heightmap-editing session (entered/exited as a whole via customization mode), not
+// per-open dialogs — so this module builds their markup once at load and wires listeners once
+// instead of the usual render-on-open/destroy-on-close cycle used by other controllers.
 let templateInit = false;
 let imageConverterInit = false;
 let storedLayers: string[] = [];
@@ -39,10 +193,9 @@ function open(options?: { mode?: string; tool?: string }): void {
 
   if (!mode) showModeDialog(tool);
   else enterHeightmapEditMode(mode, tool);
+}
 
-  if (initialized) return;
-  initialized = true;
-
+function addToolbarListeners(): void {
   ensureEl("paintBrushes").on("click", openBrushesPanel);
   ensureEl("applyTemplate").on("click", openTemplateEditor);
   ensureEl("convertImage").on("click", openImageConverter);
@@ -664,10 +817,9 @@ function openBrushesPanel(): void {
       position: { my: "right top", at: "right-10 top+10", of: "svg" }
     })
     .on("dialogclose", exitBrushMode);
+}
 
-  if (brushesInit) return;
-  brushesInit = true;
-
+function addBrushesListeners(): void {
   ensureEl("brushesButtons").on("click", toggleBrushMode);
   ensureEl("cellTypeFilter").on("change", cellTypeFilterChange);
   ensureEl("undo").on("click", () => restoreHistory(edits.n - 1));

@@ -2,8 +2,6 @@ import { type D3DragEvent, drag, polygonArea, select } from "d3";
 import type { Feature } from "@/generators/features";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
-// Vertex/group editor for coastline features (the "Edit Coastline" dialog), distinct from the
-// Coastline Settings panel (CoastlineEditor). Owns its dialog HTML: injected on open, cleared on close.
 const DIALOG_HTML = /* html */ `
   <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
   <div id="coastlineGroupsSelection" style="display: none">

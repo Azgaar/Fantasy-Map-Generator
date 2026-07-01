@@ -6,26 +6,25 @@ interface Note {
   legend: string;
 }
 
-const DIALOG_HTML = /* html */ `
-  <div style="margin-bottom: 0.3em">
-    <strong>Element: </strong>
-    <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
-    <strong>Element name: </strong>
-    <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
-    <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-  </div>
-  <div id="notesLegend" contenteditable="true"></div>
-  <div style="margin-top: 0.3em">
-    <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
-    <button id="notesGenerateWithAi" data-tip="Generate note with AI" class="icon-robot"></button>
-    <button id="notesPin" data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move" class="icon-pin"></button>
-    <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
-    <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-    <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
-  </div>`;
-
 function open(id?: string, name?: string): void {
-  ensureEl("notesEditor").innerHTML = DIALOG_HTML;
+  const html = /* html */ `
+    <div style="margin-bottom: 0.3em">
+      <strong>Element: </strong>
+      <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
+      <strong>Element name: </strong>
+      <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
+      <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+    </div>
+    <div id="notesLegend" contenteditable="true"></div>
+    <div style="margin-top: 0.3em">
+      <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
+      <button id="notesGenerateWithAi" data-tip="Generate note with AI" class="icon-robot"></button>
+      <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
+      <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
+      <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
+      <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+    </div>`;
+  ensureEl("notesEditor").innerHTML = html;
 
   const notesLegend = ensureEl("notesLegend");
   const notesName = ensureEl<HTMLInputElement>("notesName");

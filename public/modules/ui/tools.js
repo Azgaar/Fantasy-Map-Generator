@@ -188,9 +188,9 @@ function regenerateStates() {
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
 }
 
 function recreateStates() {
@@ -488,7 +488,7 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
 }
 
@@ -621,7 +621,7 @@ function regenerateMilitary() {
   if (layerIsOn("toggleMilitary")) drawMilitary();
   else toggleMilitary();
 
-  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateIce() {
@@ -646,7 +646,7 @@ function regenerateZones(event) {
 
   function addNumberOfZones(number) {
     Zones.generate(number);
-    if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    if (document.getElementById("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
     if (layerIsOn("toggleZones")) drawZones();
   }
 }
@@ -726,10 +726,10 @@ function addLabelOnClick() {
   if (d3.event.shiftKey === false) unpressClickToAddButton();
 }
 
-function toggleAddBurg() {
+async function toggleAddBurg() {
   unpressClickToAddButton();
   ensureEl("addBurgTool").classList.add("pressed");
-  window.Controllers.BurgsOverview.open();
+  await window.Controllers.BurgsOverview.open();
   ensureEl("addNewBurg").click();
 }
 

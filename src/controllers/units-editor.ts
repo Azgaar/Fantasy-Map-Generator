@@ -10,7 +10,7 @@ type ScaleBarSelection = Selection<SVGGElement, unknown, HTMLElement, unknown>;
 // The #unitsEditor inputs (distanceUnitInput, heightUnit, temperatureScale, …) are app-wide
 // settings cached as globals at load and read across the codebase, so this module does NOT
 // own that markup — it stays in index.html. Listeners are wired once behind this flag.
-let initialized = false;
+let initialized = false; // TODO: refactor to eliminate initialization arc
 
 function open(): void {
   closeDialogs("#unitsEditor, .stable");

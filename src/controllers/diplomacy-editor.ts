@@ -1,11 +1,6 @@
 import { color as d3Color, interpolateString, pointer, select } from "d3";
 import { ensureEl, getAdjective } from "../utils";
 
-// The #diplomacyEditor chrome is authored in index.html and the body rows are generated at
-// runtime, so this module does not own that markup. Listeners on the static parts are wired
-// once behind this flag.
-let initialized = false;
-
 interface Relation {
   inText: string;
   color: string;
@@ -71,11 +66,9 @@ function open(): void {
   if (layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleReligions")) toggleReligions();
 
+  renderDialog();
   refreshDiplomacyEditor();
   select(viewbox.node()!).style("cursor", "crosshair").on("click", selectStateOnMapClick);
-
-  if (initialized) return;
-  initialized = true;
 
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",
@@ -84,6 +77,48 @@ function open(): void {
     close: closeDiplomacyEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
+}
+
+function renderDialog(): void {
+  document.getElementById("diplomacyEditor")?.remove();
+  const editorHtml = /* html */ `<div id="diplomacyEditor" class="dialog stable">
+      <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
+        <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
+          State&nbsp;
+        </div>
+        <div
+          data-tip="Click to sort by diplomatical relations"
+          class="sortable alphabetically"
+          data-sortby="relations"
+        >
+          Relations&nbsp;
+        </div>
+      </div>
+      <div id="diplomacyBodySection" class="table"></div>
+      <div class="info-line">Click on state name to see relations.<br />Click on relations name to change it</div>
+      <div id="diplomacyBottom" style="margin-top: 0.1em">
+        <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button
+          id="diplomacyEditStyle"
+          data-tip="Edit states (including diplomacy view) style in Style Editor"
+          class="icon-adjust"
+        ></button>
+        <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
+        <button
+          id="diplomacyReset"
+          data-tip="Reset diplomatical relations of selected state to Neutral"
+          class="icon-eraser"
+        ></button>
+        <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
+        <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
+        <button
+          id="diplomacyExport"
+          data-tip="Save state relations matrix as a text file (.csv)"
+          class="icon-download"
+        ></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("diplomacyEditorRefresh").on("click", refreshDiplomacyEditor);
   ensureEl("diplomacyEditStyle").on("click", () => editStyle("regions"));
@@ -393,10 +428,7 @@ function changeRelation(subjectId: number, objectId: number, oldRelation: string
   else chronicle.push(change());
 
   refreshDiplomacyEditor();
-  if (ensureEl("diplomacyMatrix").offsetParent) {
-    ensureEl("diplomacyMatrixBody").innerHTML = "";
-    showRelationsMatrix();
-  }
+  if (document.getElementById("diplomacyMatrix")?.offsetParent) showRelationsMatrix();
 }
 
 function regenerateRelations(): void {
@@ -472,6 +504,7 @@ function changeReliationsHistory(this: HTMLElement): void {
 }
 
 function showRelationsMatrix(): void {
+  renderMatrix();
   const states = pack.states.filter(s => s.i && !s.removed);
   const valid = states.map(state => state.i);
   const diplomacyMatrixBody = ensureEl("diplomacyMatrixBody");
@@ -514,8 +547,22 @@ function showRelationsMatrix(): void {
   $("#diplomacyMatrix").dialog({
     title: "Relations matrix",
     position: { my: "center", at: "center", of: "svg" },
+    close: closeDiplomacyMatrix,
     buttons: {}
   });
+}
+
+function renderMatrix(): void {
+  document.getElementById("diplomacyMatrix")?.remove();
+  const matrixHtml = /* html */ `<div id="diplomacyMatrix" class="dialog">
+      <div id="diplomacyMatrixBody" class="matrix-table"></div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", matrixHtml);
+}
+
+function closeDiplomacyMatrix(): void {
+  $("#diplomacyMatrix").dialog("destroy");
+  ensureEl("diplomacyMatrix").remove();
 }
 
 function downloadDiplomacyData(): void {
@@ -540,6 +587,8 @@ function closeDiplomacyEditor(): void {
   if (layerIsOn("toggleStates")) drawStates();
   else toggleStates();
   debug.selectAll(".highlight").remove();
+  $("#diplomacyEditor").dialog("destroy");
+  ensureEl("diplomacyEditor").remove();
 }
 
 export const DiplomacyEditor = { open };

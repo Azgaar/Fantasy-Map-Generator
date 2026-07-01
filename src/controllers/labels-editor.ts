@@ -2,10 +2,6 @@ import { curveNatural, drag, line, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import { ensureEl, findEl, parseTransform, round } from "../utils";
 
-// The #labelEditor markup (toggle sections and buttons) is authored in index.html and only
-// queried here, so this module does not own it. Listeners are wired once behind this flag.
-let initialized = false;
-
 const lineGen = line<[number, number]>().curve(curveNatural);
 const labelsSel = () => select<SVGGElement, unknown>(labels.node()!);
 const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
@@ -22,6 +18,8 @@ function open(tspan: SVGTSpanElement): void {
     .classed("draggable", true) as unknown as typeof elSelected;
   select(viewbox.node()!).on("touchmove mousemove", showEditorTips);
 
+  renderDialog();
+
   $("#labelEditor").dialog({
     title: "Edit Label",
     resizable: false,
@@ -33,9 +31,103 @@ function open(tspan: SVGTSpanElement): void {
   drawControlPointsAndLine();
   selectLabelGroup(text);
   updateValues(textPath);
+}
 
-  if (initialized) return;
-  initialized = true;
+function renderDialog(): void {
+  document.getElementById("labelEditor")?.remove();
+  const editorHtml = /* html */ `<div id="labelEditor" class="dialog">
+      <button id="labelGroupShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <div id="labelGroupSection" style="display: none">
+        <button id="labelGroupHide" data-tip="Hide the group selection" class="icon-tags"></button>
+        <select id="labelGroupSelect" data-tip="Select a group for this label" style="width: 10em"></select>
+        <input
+          id="labelGroupInput"
+          placeholder="new group name"
+          data-tip="Provide a name for the new group"
+          style="display: none; width: 10em"
+        />
+        <span id="labelGroupNew" data-tip="Create a new group for this label" class="icon-plus pointer"></span>
+        <span
+          id="labelGroupRemove"
+          data-tip="Remove the Group with all labels"
+          class="icon-trash-empty pointer"
+        ></span>
+      </div>
+      <button id="labelTextShow" data-tip="Show the edit label text section" class="icon-pencil"></button>
+      <div id="labelTextSection" style="display: none">
+        <button id="labelTextHide" data-tip="Hide the edit label text section" class="icon-pencil"></button>
+        <input
+          id="labelText"
+          data-tip='Type to change the label. Enter "|" to move to a new line'
+          style="width: 12em"
+        />
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
+      </div>
+      <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
+      <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
+      <div id="labelSizeSection" style="display: none">
+        <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
+        <span data-tip="Set relative size for the particular label">Size:</span>
+        <input
+          id="labelRelativeSize"
+          data-tip="Set relative size for the particular label (% of group default)"
+          type="number"
+          min="30"
+          max="300"
+          step="1"
+          style="width: 4.5em"
+        />
+      </div>
+      <button id="labelOffsetShow" data-tip="Show the label offset section" class="icon-sliders"></button>
+      <div id="labelOffsetSection" style="display: none">
+        <button id="labelOffsetHide" data-tip="Hide the label offset section" class="icon-sliders"></button>
+        <span data-tip="Set starting offset for the particular label">Offset:</span>
+        <input
+          id="labelStartOffset"
+          data-tip="Set starting offset for the particular label (% along the path)"
+          type="range"
+          min="20"
+          max="80"
+          style="width: 8em"
+        />
+        <input
+          id="labelStartOffsetValue"
+          type="number"
+          min="20"
+          max="80"
+          step="1"
+          style="width: 3.5em"
+          data-tip="Set starting offset numerically"
+        />
+      </div>
+      <button id="labelLetterSpacingShow" data-tip="Show the letter spacing section" class="icon-text-width"></button>
+      <div id="labelLetterSpacingSection" style="display: none">
+        <button
+          id="labelLetterSpacingHide"
+          data-tip="Hide the letter spacing section"
+          class="icon-text-width"
+        ></button>
+        <slider-input
+          id="labelLetterSpacingSize"
+          style="display: inline-block"
+          data-tip="Set the letter spacing size for this label"
+          min="0"
+          max="20"
+          step=".01"
+          value="0"
+        ></slider-input>
+      </div>
+      <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
+      <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
+      <button
+        id="labelRemoveSingle"
+        data-tip="Remove the label"
+        data-shortcut="Delete"
+        class="icon-trash fastDelete"
+      ></button>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("labelGroupShow").on("click", showGroupSection);
   ensureEl("labelGroupHide").on("click", hideGroupSection);
@@ -468,6 +560,8 @@ function removeLabel(): void {
 function closeLabelEditor(): void {
   debug.select("#controlPoints").remove();
   unselect();
+  $("#labelEditor").dialog("destroy");
+  ensureEl("labelEditor").remove();
 }
 
 export const LabelsEditor = { open };

@@ -2,11 +2,6 @@ import { drag, pointer, select, sum } from "d3";
 import type { Zone } from "@/generators/zones-generator";
 import { ensureEl, getPackPolygon, rn, si, unique } from "../utils";
 
-// The #zonesEditor chrome is authored in index.html and the body rows are generated at
-// runtime, so this module does not own that markup. Listeners on the static parts are wired
-// once behind this flag.
-let initialized = false;
-
 interface ZoneCellDatum {
   cell: number;
   zoneId: number;
@@ -20,20 +15,86 @@ function open(): void {
   closeDialogs("#zonesEditor, .stable");
   if (!layerIsOn("toggleZones")) toggleZones();
 
+  renderDialog();
   updateFilters();
   zonesEditorAddLines();
-
-  if (initialized) return;
-  initialized = true;
-
-  const body = getBody();
 
   $("#zonesEditor").dialog({
     title: "Zones Editor",
     resizable: false,
-    close: () => exitZonesManualAssignment("close"),
+    close: closeZonesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
+}
+
+function renderDialog(): void {
+  document.getElementById("zonesEditor")?.remove();
+  const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable">
+      <div id="customHeader" class="header" style="grid-template-columns: 13em 7em 6em 5em 9em">
+        <div data-tip="Zone description">Description&nbsp;</div>
+        <div data-tip="Zone type">Type&nbsp;</div>
+        <div data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
+        <div data-tip="Zone area" class="hide">Area&nbsp;</div>
+        <div data-tip="Zone population" class="hide">Population&nbsp;</div>
+      </div>
+      <div id="zonesBodySection" class="table" data-type="absolute"></div>
+      <div id="zonesFooter" class="totalLine">
+        <div data-tip="Number of zones" style="margin-left: 5px">
+          Zones:&nbsp;<span id="zonesFooterNumber">0</span>
+        </div>
+        <div data-tip="Total cells number" style="margin-left: 12px">
+          Cells:&nbsp;<span id="zonesFooterCells">0</span>
+        </div>
+        <div data-tip="Total map area" style="margin-left: 12px">Area:&nbsp;<span id="zonesFooterArea">0</span></div>
+        <div data-tip="Total map population" style="margin-left: 12px">
+          Population:&nbsp;<span id="zonesFooterPopulation">0</span>
+        </div>
+      </div>
+      <div id="zonesBottom">
+        <button id="zonesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="zonesEditStyle" data-tip="Edit zones style in Style Editor" class="icon-adjust"></button>
+        <button
+          id="zonesLegend"
+          data-tip="Toggle Legend box (shows all non-hidden zones)"
+          class="icon-list-bullet"
+        ></button>
+        <button
+          id="zonesPercentage"
+          data-tip="Toggle percentage / absolute values views"
+          class="icon-percent"
+        ></button>
+        <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
+        <div id="zonesManuallyButtons" style="display: none">
+          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
+            Brush size:
+            <slider-input id="zonesBrush" min="1" max="100" value="8"></slider-input>
+          </div>
+          <div>
+            <input id="zonesBrushLandOnly" class="checkbox" type="checkbox" checked />
+            <label for="zonesBrushLandOnly" class="checkbox-label"><i>Change land only</i></label>
+          </div>
+          <div style="margin-top: 0.3em">
+            <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
+            <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+            <button
+              id="zonesRemove"
+              data-tip="Click to toggle the removal mode on brush dragging"
+              data-shortcut="Ctrl"
+              class="icon-eraser"
+            ></button>
+          </div>
+        </div>
+        <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
+        <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
+        <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">
+          Type:
+          <select id="zonesFilterType"></select>
+        </div>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+
+  const body = getBody();
 
   ensureEl("zonesFilterType").on("click", updateFilters);
   ensureEl("zonesFilterType").on("change", filterZonesByType);
@@ -88,6 +149,12 @@ function open(): void {
     axis: "y",
     update: movezone
   });
+}
+
+function closeZonesEditor(): void {
+  exitZonesManualAssignment("close");
+  $("#zonesEditor").dialog("destroy");
+  ensureEl("zonesEditor").remove();
 }
 
 // update type filter with a list of used types

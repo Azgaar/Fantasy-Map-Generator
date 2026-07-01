@@ -14,12 +14,6 @@ import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import { ensureEl, getPackPolygon, getRandomColor, isLand, P, parseTransform, rand, rn, si, unique } from "../utils";
 
-// The #provincesEditor chrome is authored in index.html and the body rows are generated at
-// runtime, so this module does not own that markup. Listeners on the static parts are wired
-// once behind this flag.
-let initialized = false;
-let nameEditorInitialized = false;
-
 const provsSel = () => select<SVGGElement, unknown>(provs.node()!);
 const emblemsSel = () => select<SVGElement, unknown>(emblems.node()!);
 const getBody = () => ensureEl("provincesBodySection");
@@ -36,10 +30,9 @@ function open(): void {
     .selectAll<SVGTextElement, unknown>("text")
     .call(drag<SVGTextElement, unknown>().on("drag", dragLabel))
     .classed("draggable", true);
-  refreshProvincesEditor();
 
-  if (initialized) return;
-  initialized = true;
+  renderDialog();
+  refreshProvincesEditor();
 
   $("#provincesEditor").dialog({
     title: "Provinces Editor",
@@ -48,6 +41,101 @@ function open(): void {
     close: closeProvincesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
+}
+
+function renderDialog(): void {
+  document.getElementById("provincesEditor")?.remove();
+  const editorHtml = /* html */ `<div id="provincesEditor" class="dialog stable">
+      <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
+        <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
+          Province&nbsp;
+        </div>
+        <div data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">
+          Form&nbsp;
+        </div>
+        <div data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">
+          Capital&nbsp;
+        </div>
+        <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
+          State&nbsp;
+        </div>
+        <div data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">
+          Burgs&nbsp;
+        </div>
+        <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
+        <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
+          Population&nbsp;
+        </div>
+      </div>
+      <div id="provincesBodySection" class="table" data-type="absolute"></div>
+      <div id="provincesFooter" class="totalLine">
+        <div data-tip="Provinces displayed" style="margin-left: 4px">
+          Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
+        </div>
+        <div data-tip="Total burgs number" style="margin-left: 12px">
+          Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
+        </div>
+        <div data-tip="Average area" style="margin-left: 14px">
+          Mean area:&nbsp;<span id="provincesFooterArea">0</span>
+        </div>
+        <div data-tip="Average population" style="margin-left: 14px">
+          Mean population:&nbsp;<span id="provincesFooterPopulation">0</span>
+        </div>
+      </div>
+      <div id="provincesBottom">
+        <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
+        <button
+          id="provincesRecolor"
+          data-tip="Recolor listed provinces based on state color"
+          class="icon-paint-roller"
+        ></button>
+        <button
+          id="provincesPercentage"
+          data-tip="Toggle percentage / absolute values views"
+          class="icon-percent"
+        ></button>
+        <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
+        <button
+          id="provincesToggleLabels"
+          data-tip="Toggle province labels. Change size in Menu ⭢ Style ⭢ Provinces"
+          class="icon-font"
+        ></button>
+        <button
+          id="provincesExport"
+          data-tip="Save provinces-related data as a text file (.csv)"
+          class="icon-download"
+        ></button>
+        <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
+        <div id="provincesManuallyButtons" style="display: none">
+          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
+            Brush size:
+            <slider-input id="provincesBrush" min="1" max="100" value="8"></slider-input>
+          </div>
+          <button id="provincesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
+          <button id="provincesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+        </div>
+        <button
+          id="provincesRelease"
+          data-tip="Release all provinces. It will make all provinces with burgs independent"
+          class="icon-flag"
+        ></button>
+        <button
+          id="provincesAdd"
+          data-tip="Add a new province. Hold Shift to add multiple"
+          class="icon-plus"
+        ></button>
+        <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
+        <button
+          id="provincesRemoveAll"
+          data-tip="Remove all provinces. States will remain as they are"
+          class="icon-trash"
+        ></button>
+        <span>State: </span>
+        <select id="provincesFilterState"></select>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("provincesEditorRefresh").on("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").on("click", () => editStyle("provs"));
@@ -555,6 +643,7 @@ function removeProvince(p: number): void {
 }
 
 function editProvinceName(province: number): void {
+  renderNameEditor();
   const p = pack.provinces[province];
   ensureEl("provinceNameEditor").dataset.province = String(province);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = p.name;
@@ -576,16 +665,119 @@ function editProvinceName(province: number): void {
         $(this).dialog("close");
       }
     },
-    position: { my: "center", at: "center", of: "svg" }
+    position: { my: "center", at: "center", of: "svg" },
+    close: closeProvinceNameEditor
   });
+}
 
-  if (nameEditorInitialized) return;
-  nameEditorInitialized = true;
+function renderNameEditor(): void {
+  document.getElementById("provinceNameEditor")?.remove();
+  const nameEditorHtml = /* html */ `<div id="provinceNameEditor" class="dialog" data-province="0">
+      <div>
+        <div data-tip="Province short name" class="label">Short name:</div>
+        <input
+          id="provinceNameEditorShort"
+          data-tip="Type to change the short name"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 11em"
+        />
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span
+          id="provinceNameEditorShortCulture"
+          data-tip="Generate culture-specific name for the province"
+          class="icon-book pointer"
+        ></span>
+        <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+      </div>
+      <div data-tip="Select form name">
+        <div data-tip="Province form name" class="label">Form name:</div>
+        <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
+          <option value="">blank</option>
+          <option value="Area">Area</option>
+          <option value="Autonomy">Autonomy</option>
+          <option value="Barony">Barony</option>
+          <option value="Canton">Canton</option>
+          <option value="Captaincy">Captaincy</option>
+          <option value="Chiefdom">Chiefdom</option>
+          <option value="Clan">Clan</option>
+          <option value="Colony">Colony</option>
+          <option value="Council">Council</option>
+          <option value="County">County</option>
+          <option value="Deanery">Deanery</option>
+          <option value="Department">Department</option>
+          <option value="Dependency">Dependency</option>
+          <option value="Diaconate">Diaconate</option>
+          <option value="District">District</option>
+          <option value="Earldom">Earldom</option>
+          <option value="Governorate">Governorate</option>
+          <option value="Island">Island</option>
+          <option value="Islands">Islands</option>
+          <option value="Land">Land</option>
+          <option value="Landgrave">Landgrave</option>
+          <option value="Mandate">Mandate</option>
+          <option value="Margrave">Margrave</option>
+          <option value="Municipality">Municipality</option>
+          <option value="Occupation zone">Occupation zone</option>
+          <option value="Parish">Parish</option>
+          <option value="Prefecture">Prefecture</option>
+          <option value="Province">Province</option>
+          <option value="Region">Region</option>
+          <option value="Republic">Republic</option>
+          <option value="Reservation">Reservation</option>
+          <option value="Seneschalty">Seneschalty</option>
+          <option value="Shire">Shire</option>
+          <option value="State">State</option>
+          <option value="Territory">Territory</option>
+          <option value="Tribe">Tribe</option>
+        </select>
+        <input
+          id="provinceNameEditorCustomForm"
+          placeholder="type form name"
+          data-tip="Create custom province form name"
+          style="display: none; width: 11em"
+        />
+        <span
+          id="provinceNameEditorAddForm"
+          data-tip="Click to add custom province form name to the list"
+          class="icon-plus pointer"
+        ></span>
+      </div>
+      <div>
+        <div data-tip="Province full name" class="label">Full name:</div>
+        <input
+          id="provinceNameEditorFull"
+          data-tip="Type to change the full name"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 11em"
+        />
+        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span
+          id="provinceNameEditorFullRegenerate"
+          data-tip="Click to re-generate full name"
+          class="icon-arrows-cw pointer"
+        ></span>
+      </div>
+      <div
+        id="provinceCultureName"
+        data-tip="Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor"
+        style="margin-top: 0.2em"
+      >
+        Dominant culture:&nbsp;<span id="provinceCultureDisplay"></span>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
 
   ensureEl("provinceNameEditorShortCulture").on("click", regenerateShortNameCulture);
   ensureEl("provinceNameEditorShortRandom").on("click", regenerateShortNameRandom);
   ensureEl("provinceNameEditorAddForm").on("click", addCustomForm);
   ensureEl("provinceNameEditorFullRegenerate").on("click", regenerateFullName);
+}
+
+function closeProvinceNameEditor(): void {
+  $("#provinceNameEditor").dialog("destroy");
+  ensureEl("provinceNameEditor").remove();
 }
 
 function regenerateShortNameCulture(): void {
@@ -1254,6 +1446,8 @@ function closeProvincesEditor(): void {
     .attr("class", null);
   if (customization === 11) exitProvincesManualAssignment("close");
   if (customization === 12) exitAddProvinceMode();
+  $("#provincesEditor").dialog("destroy");
+  ensureEl("provincesEditor").remove();
 }
 
 function openProvinceMergeDialog(): void {
