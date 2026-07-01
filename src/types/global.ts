@@ -172,6 +172,15 @@ declare global {
   var calculateFriendlyGridSize: () => void;
   var recalculatePopulation: () => void;
   var findAll: (x: number, y: number, radius: number) => number[];
+  // heightmap editor globals
+  var color: (value: number) => string;
+  var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
+  var undraw: () => void;
+  var rankCells: () => void;
+  var generatePrecipitation: () => void;
+  var changeViewMode: (event?: Event) => void;
+  var resetZoom: (duration?: number) => void;
+  var RgbQuant: any; // external RgbQuant image-quantization lib
 
   var drawTexture: () => void;
   var drawRoutes: () => void;
@@ -308,7 +317,6 @@ declare global {
   var lock: (option: string) => void;
   var applyOption: (select: HTMLElement, value: string, text?: string) => void;
   var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
-  var editHeightmap: (options: { mode: string; tool: string }) => void;
 
   var cults: Selection<SVGGElement, unknown, null, undefined>;
   var relig: Selection<SVGGElement, unknown, null, undefined>;

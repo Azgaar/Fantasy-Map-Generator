@@ -36,7 +36,7 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyC") window.Services.Save.saveMap("dropbox");
   else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
   else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
-  else if ((shift || altShift) && code === "KeyH") editHeightmap();
+  else if ((shift || altShift) && code === "KeyH") window.Controllers.HeightmapEditor.open();
   else if ((shift || altShift) && code === "KeyB") window.Controllers.BiomesEditor.open();
   else if ((shift || altShift) && code === "KeyS") window.Controllers.StatesEditor.open();
   else if ((shift || altShift) && code === "KeyP") window.Controllers.ProvincesEditor.open();

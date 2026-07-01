@@ -8,7 +8,7 @@ toolsContent.addEventListener("click", function (event) {
   const button = event.target.id;
 
   // click on open Editor buttons
-  if (button === "editHeightmapButton") editHeightmap();
+  if (button === "editHeightmapButton") window.Controllers.HeightmapEditor.open();
   else if (button === "editBiomesButton") window.Controllers.BiomesEditor.open();
   else if (button === "editStatesButton") window.Controllers.StatesEditor.open();
   else if (button === "editProvincesButton") window.Controllers.ProvincesEditor.open();
