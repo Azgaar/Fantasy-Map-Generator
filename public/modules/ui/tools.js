@@ -25,8 +25,8 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editZonesButton") editZones();
   else if (button === "overviewChartsButton") window.Controllers.ChartsOverview.open();
   else if (button === "overviewBurgsButton") window.Controllers.BurgsOverview.open();
-  else if (button === "overviewRoutesButton") overviewRoutes();
-  else if (button === "overviewRiversButton") overviewRivers();
+  else if (button === "overviewRoutesButton") window.Controllers.RoutesOverview.open();
+  else if (button === "overviewRiversButton") window.Controllers.RiversOverview.open();
   else if (button === "overviewMilitaryButton") window.Controllers.MilitaryOverview.open();
   else if (button === "overviewMarkersButton") overviewMarkers();
   else if (button === "overviewMarketsButton") window.Controllers.MarketsOverview.open();
@@ -72,7 +72,7 @@ toolsContent.addEventListener("click", function (event) {
   if (button === "addLabel") toggleAddLabel();
   else if (button === "addBurgTool") toggleAddBurg();
   else if (button === "addRiver") toggleAddRiver();
-  else if (button === "addRoute") createRoute();
+  else if (button === "addRoute") window.Controllers.RouteCreator.open();
   else if (button === "addMarker") toggleAddMarker();
   // click to create a new map buttons
   else if (button === "openSubmapTool") openSubmapTool();

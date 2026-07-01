@@ -1,21 +1,21 @@
 # Migration Guide: legacy `public/**/*.js` → bundled `src/**/*.ts`
 
-How to port a classic, un-bundled module (served as-is from `public/`, leaning on
-runtime globals) into a typed module inside Vite's graph. See also [lazy_loading.md](./lazy_loading.md),
+How to port a classic, un-bundled module served as-is from `public/`, leaning on
+runtime globals, into a typed module inside Vite's graph. See also [lazy_loading.md](./lazy_loading.md),
 [architecture.md](./architecture.md), and [data_model.md](./data_model.md).
 
 ## Where the file goes
 
 Pick the layer by responsibility, name the file `kebab-case.ts`:
 
-| Layer              | Holds                                                 |
-| ------------------ | ----------------------------------------------------- |
-| `src/utils/`       | pure, dependency-free helpers                         |
-| `src/generators/`  | domain generators / data logic (`Goods`, …)           |
-| `src/renderers/`   | code that draws SVG layers                            |
-| `src/controllers/` | dialogs, panels, UI flows, overviews                  |
-| `src/services/`    | app-shell & platform/asset infra (install, fonts, io) |
-| `src/data/`        | static content / reference data (supporters, …)       |
+| Layer              | Holds                                |
+| ------------------ | ------------------------------------ |
+| `src/generators/`  | domain generators / data logic       |
+| `src/renderers/`   | code that draws SVG layers           |
+| `src/controllers/` | dialogs, panels, UI flows, overviews |
+| `src/services/`    | app-shell & platform/asset infra     |
+| `src/data/`        | static content / preferences         |
+| `src/utils/`       | pure, dependency-free helpers        |
 
 Not everything is Model/View/Controller. If a file is **static content** (a constant
 list, a template table) it goes in `data/`, not `controllers/`. If it manages
@@ -81,6 +81,19 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
 - **`d3.event` is gone in v7.** Old drag/zoom handlers that read `d3.event`
   must move to the event-arg style: take `event` as the listener's first
   param, use `event.transform`, `event.x/y`, and `pointer(event)`.
+- **Don't use the legacy global d3 selections.** Always create selections from the imported v7 `select` function and work with them explicitly, global selections use d3 v5 and can lead to bugs.
+  - **Never attach a v7 behaviour (`drag`, `zoom`) through a v5 selection.** When
+    you `.call(drag(...))` on a selection that descends from a global v5 selection
+    (e.g. `debug`, `viewbox`, `svg` created in `public/main.js`), the v5 selection
+    registers the v7 handlers but dispatches them with the **v5 calling convention**
+    (datum-first: `handler(d, i, nodes)`). The v7 drag internals expect the event
+    first (`handler(event, d)`), so they receive the bound datum instead of the DOM
+    event and the gesture silently never starts — the elements look draggable but
+    don't move. Fix: reselect the container with the bundled v7 `select` before
+    binding data and calling the behaviour, e.g.
+    `select<SVGGElement, unknown>("#controlPoints").selectAll("circle").data(...).join("circle").call(drag()…)`
+    instead of `debug.select("#controlPoints")…`. This was the river/route control-point
+    drag bug (`river-editor.ts`, `route-editor.ts`).
 
 ## File structure & exports
 
@@ -89,28 +102,10 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
 - **Function over class** unless you genuinely need instances with shared
   state. Most controllers are a few exported functions over module-scoped
   `let` state.
-- **Two ways a module reaches the legacy UI**, pick by usage frequency:
-  - _Eager_ (used by most sessions, e.g. overviews): self-register at the
-    bottom and type it on `Window`:
-    ```ts
-    declare global {
-      interface Window {
-        MarketOverview: { open: typeof open };
-      }
-    }
-    window.MarketOverview = { open };
-    ```
-    and add `import "./market-overview";` to the layer's `index.ts` barrel.
-  - _Rarely used_ (a tiny fraction of sessions): do **not** add it to any
-    eager barrel. Register it in the `lazyLoaders` registry
-    ([`src/lazy-loaders.ts`](../../src/lazy-loaders.ts), a top-level
-    layer-agnostic file) so it ships as its own on-demand chunk — see
-    [lazy_loading.md](./lazy_loading.md).
 
 ## Canonical module skeletons
 
-Migrate _toward_ clean code. Each
-skeleton below is the shape to aim for — small, explicit, and testable — embodying the principles in [architecture.md](./architecture.md).
+Each skeleton below is the shape to aim for — small, explicit, and testable — embodying the principles in [architecture.md](./architecture.md).
 
 The recurring move is **separate the logic from the legacy seam**: write the real work as
 plain exported functions that take their inputs as arguments (so a unit test can call them
@@ -187,7 +182,7 @@ declare global {
 window.drawModule = draw;
 ```
 
-### Controller (overview / editor)
+### Controller
 
 ```ts
 // src/controllers/module-editor.ts
@@ -223,10 +218,10 @@ declare global {
     ModuleEditor: { open: typeof open };
   }
 }
-window.WidgetOverview = { open };
+window.ModuleEditor = { open };
 ```
 
-Most of controllers should be [`lazy-loaded`](../../src/lazy-loaders.ts).
+All controllers must be [`lazy-loaded`](../../src/lazy-loaders.ts), unless they are needed immediately on app start.
 
 ### Service (app-shell lifecycle)
 
