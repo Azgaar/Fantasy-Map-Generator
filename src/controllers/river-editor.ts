@@ -69,8 +69,8 @@ function open(id: string): void {
     "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
     true
   );
-  debug.append("g").attr("id", "controlCells");
-  debug.append("g").attr("id", "controlPoints");
+  select("#debug").append("g").attr("id", "controlCells");
+  select("#debug").append("g").attr("id", "controlPoints");
 
   ensureEl("riverEditor").innerHTML = DIALOG_HTML;
   updateRiverData();
@@ -176,8 +176,7 @@ function drawControlPoints(points: Point[]): void {
 
 function drawCells(cells: number[]): void {
   const validCells = [...new Set(cells)].filter(i => pack.cells.i[i]);
-  debug
-    .select("#controlCells")
+  select<SVGGElement, unknown>("#controlCells")
     .selectAll(`polygon`)
     .data(validCells)
     .join("polygon")
@@ -221,7 +220,7 @@ function dragControlPoint(event: any): void {
 
 function redrawRiver(): void {
   const river = getRiver();
-  river.points = debug.selectAll("#controlPoints > *").data() as Point[];
+  river.points = select("#controlPoints").selectAll("*").data() as Point[];
   river.cells = river.points.map(([x, y]) => findCell(x, y)!);
 
   const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
@@ -237,7 +236,7 @@ function addControlPoint(this: any, event: any): void {
   const point: Point = [rn(x, 1), rn(y, 1)];
 
   const river = getRiver();
-  if (!river.points) river.points = debug.selectAll("#controlPoints > *").data() as Point[];
+  if (!river.points) river.points = select("#controlPoints").selectAll("*").data() as Point[];
 
   const index = getSegmentId(river.points, point, 2);
   river.points.splice(index, 0, point);
@@ -293,7 +292,7 @@ function changeWidthFactor(this: HTMLInputElement): void {
 }
 
 function showRiverElevationProfile(): void {
-  const points = (debug.selectAll("#controlPoints > *").data() as Point[]).map(([x, y]) => findCell(x, y)!);
+  const points = (select("#controlPoints").selectAll("*").data() as Point[]).map(([x, y]) => findCell(x, y)!);
   const river = getRiver();
   const riverLen = rn(river.length * distanceScale);
   void Controllers.ElevationProfile.open(points, riverLen, true);
@@ -327,8 +326,8 @@ function removeRiver(): void {
 }
 
 function closeRiverEditor(): void {
-  debug.select("#controlPoints").remove();
-  debug.select("#controlCells").remove();
+  select("#controlPoints").remove();
+  select("#controlCells").remove();
 
   elSelected.on("click", null);
   unselect();
