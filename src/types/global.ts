@@ -168,6 +168,7 @@ declare global {
   var updateTextureSelectValue: (href: string) => void;
   var toggleRulers: () => void;
   var toggleRelief: () => void;
+  var toggleZones: () => void;
   var calculateFriendlyGridSize: () => void;
   var recalculatePopulation: () => void;
   var findAll: (x: number, y: number, radius: number) => number[];

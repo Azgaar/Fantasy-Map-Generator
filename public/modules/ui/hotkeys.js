@@ -44,7 +44,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyL") window.Controllers.CoastlineEditor.open();
   else if ((shift || altShift) && code === "KeyC") window.Controllers.CulturesEditor.open();
   else if ((shift || altShift) && code === "KeyN") window.Controllers.NamesbaseEditor.open();
-  else if ((shift || altShift) && code === "KeyZ") editZones();
+  else if ((shift || altShift) && code === "KeyZ") window.Controllers.ZonesEditor.open();
   else if ((shift || altShift) && code === "KeyR") window.Controllers.ReligionsEditor.open();
   else if ((shift || altShift) && code === "KeyY") openEmblemEditor();
   else if ((shift || altShift) && code === "KeyQ") window.Controllers.UnitsEditor.open();

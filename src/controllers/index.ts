@@ -44,7 +44,8 @@ export const Controllers = createRegistry({
   TradeAnimationEditor: () => import("@/controllers/trade-animation-editor").then(m => m.TradeAnimationEditor),
   TradeDetails: () => import("@/controllers/trade-details").then(m => m.TradeDetails),
   UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
-  View3d: () => import("@/controllers/view-3d").then(m => m.View3d)
+  View3d: () => import("@/controllers/view-3d").then(m => m.View3d),
+  ZonesEditor: () => import("@/controllers/zones-editor").then(m => m.ZonesEditor)
 });
 
 type ControllersRegistry = typeof Controllers;

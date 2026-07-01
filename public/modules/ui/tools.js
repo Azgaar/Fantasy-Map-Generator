@@ -22,7 +22,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editNamesBaseButton") window.Controllers.NamesbaseEditor.open();
   else if (button === "editUnitsButton") window.Controllers.UnitsEditor.open();
   else if (button === "editNotesButton") window.Controllers.NotesEditor.open();
-  else if (button === "editZonesButton") editZones();
+  else if (button === "editZonesButton") window.Controllers.ZonesEditor.open();
   else if (button === "overviewChartsButton") window.Controllers.ChartsOverview.open();
   else if (button === "overviewBurgsButton") window.Controllers.BurgsOverview.open();
   else if (button === "overviewRoutesButton") window.Controllers.RoutesOverview.open();
