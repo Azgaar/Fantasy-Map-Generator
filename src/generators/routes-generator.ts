@@ -169,14 +169,11 @@ const suffixes: Record<string, Record<string, number>> = {
 
 export interface Route {
   i: number;
-  group: string;
+  group: "roads" | "trails" | "searoutes";
   feature: number;
   points: number[][];
   cells?: number[];
   merged?: boolean;
-  name?: string;
-  length?: number;
-  lock?: boolean;
 }
 
 type RiverEdge = { riverId: number; fromIndex: number };
@@ -817,7 +814,7 @@ class RoutesModule {
     const connections = pack.cells.routes[cellId];
     if (!connections) return 0;
 
-    const connectivityRateMap: Record<string, number> = {
+    const connectivityRateMap = {
       roads: 0.2,
       trails: 0.1,
       searoutes: 0.2,
@@ -846,8 +843,8 @@ class RoutesModule {
       return null;
     }
 
-    const model = rw(models[group] || models.roads);
-    const suffix = rw(suffixes[group] || suffixes.roads);
+    const model = rw(models[group]);
+    const suffix = rw(suffixes[group]);
 
     const burgName = getBurgName();
     if (model === "burg_suffix" && burgName) return `${burgName} ${suffix}`;

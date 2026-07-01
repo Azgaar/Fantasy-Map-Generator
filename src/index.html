@@ -2756,8 +2756,80 @@
           class="icon-trash fastDelete"
         ></button>
       </div>
-      <div id="riverEditor" class="dialog" style="display: none"></div>
-      <div id="riverCreator" class="dialog" style="display: none"></div>
+      <div id="riverEditor" class="dialog" style="display: none">
+        <div id="riverBody" style="padding-bottom: 0.3em">
+          <div>
+            <div class="label" style="width: 4.8em">Name:</div>
+            <span
+              id="riverNameCulture"
+              data-tip="Generate culture-specific name for the river"
+              class="icon-book pointer"
+            ></span>
+            <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+            <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
+            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+          </div>
+          <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
+            <div class="label">Type:</div>
+            <input id="riverType" autocorrect="off" spellcheck="false" />
+          </div>
+          <div data-tip="Select parent river">
+            <div class="label">Mainstem:</div>
+            <select id="riverMainstem"></select>
+          </div>
+          <div data-tip="River drainage basin (watershed)">
+            <div class="label">Basin:</div>
+            <input id="riverBasin" disabled />
+          </div>
+          <div data-tip="River discharge (flux power)">
+            <div class="label">Discharge:</div>
+            <input id="riverDischarge" disabled />
+          </div>
+          <div data-tip="River length in selected units">
+            <div class="label">Length:</div>
+            <input id="riverLength" disabled />
+          </div>
+          <div data-tip="River mouth width in selected units">
+            <div class="label">Mouth width:</div>
+            <input id="riverWidth" disabled />
+          </div>
+          <div data-tip="River source additional width. Default value is 0">
+            <div class="label">Source width:</div>
+            <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
+          </div>
+          <div data-tip="River width multiplier. Default value is 1">
+            <div class="label">Width modifier:</div>
+            <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
+          </div>
+        </div>
+        <div id="riverBottom">
+          <button
+            id="riverCreateSelectingCells"
+            data-tip="Create a new river selecting river cells"
+            class="icon-map-pin"
+          ></button>
+          <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
+          <button
+            id="riverElevationProfile"
+            data-tip="Show the elevation profile for the river"
+            class="icon-chart-area"
+          ></button>
+          <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+          <button
+            id="riverRemove"
+            data-tip="Remove river"
+            data-shortcut="Delete"
+            class="icon-trash fastDelete"
+          ></button>
+        </div>
+      </div>
+      <div id="riverCreator" class="dialog" style="display: none">
+        <div id="riverCreatorBody" class="table"></div>
+        <div id="riverCreatorBottom">
+          <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+          <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+        </div>
+      </div>
       <div id="lakeEditor" class="dialog" style="display: none">
         <div id="lakeBody" style="padding-bottom: 0.3em">
           <div>
@@ -2852,9 +2924,75 @@
           </div>
         </div>
       </div>
-      <div id="routeEditor" class="dialog" style="display: none"></div>
-      <div id="routeCreator" class="dialog" style="display: none"></div>
-      <div id="routeGroupsEditor" class="dialog" style="display: none"></div>
+      <div id="routeEditor" class="dialog" style="display: none">
+        <div id="routeBody" style="padding-bottom: 0.3em">
+          <div>
+            <div class="label">Name:</div>
+            <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
+            <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+            <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
+          </div>
+          <div data-tip="Select route group">
+            <div class="label">Group:</div>
+            <select id="routeGroup"></select>
+            <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+            <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
+          </div>
+          <div data-tip="Route length in selected units">
+            <div class="label">Length:</div>
+            <input id="routeLength" disabled />
+          </div>
+        </div>
+        <div id="routeBottom">
+          <button
+            id="routeCreateSelectingCells"
+            data-tip="Create a new route selecting route cells"
+            class="icon-map-pin"
+          ></button>
+          <button
+            id="routeJoin"
+            data-tip="Click to join the route to another route that starts or ends at the same cell"
+            class="icon-link"
+          ></button>
+          <button
+            id="routeSplit"
+            data-tip="Click on a control point to split the route there"
+            class="icon-unlink"
+          ></button>
+          <button
+            id="routeElevationProfile"
+            data-tip="Show the elevation profile for the route"
+            class="icon-chart-area"
+          ></button>
+          <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+          <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+          <button
+            id="routeRemove"
+            data-tip="Remove route"
+            data-shortcut="Delete"
+            class="icon-trash fastDelete"
+          ></button>
+        </div>
+      </div>
+      <div id="routeCreator" class="dialog" style="display: none">
+        <div>Click on map to add/remove route points</div>
+        <div id="routeCreatorBody" class="table" style="margin: 0.3em 0"></div>
+        <div id="routeCreatorBottom">
+          <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
+          <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+          <div style="display: inline-block">
+            Group:
+            <select id="routeCreatorGroupSelect"></select>
+            <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+          </div>
+        </div>
+      </div>
+      <div id="routeGroupsEditor" class="dialog" style="display: none">
+        <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
+        <div id="routeGroupsEditorBottom">
+          <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
+        </div>
+      </div>
       <div id="iceEditor" class="dialog" style="display: none">
         <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
         <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
@@ -5366,8 +5504,106 @@
           </table>
         </form>
       </div>
-      <div id="routesOverview" class="dialog stable" style="display: none"></div>
-      <div id="riversOverview" class="dialog stable" style="display: none"></div>
+      <div id="routesOverview" class="dialog stable" style="display: none">
+        <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
+          <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">
+            Route&nbsp;
+          </div>
+          <div data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">
+            Group&nbsp;
+          </div>
+          <div data-tip="Click to sort by route length" class="sortable icon-sort-number-down" data-sortby="length">
+            Length&nbsp;
+          </div>
+        </div>
+        <div id="routesBody" class="table"></div>
+        <div id="routesFooter" class="totalLine">
+          <div data-tip="Routes number" style="margin-left: 4px">
+            Routes:&nbsp;<span id="routesFooterNumber">0</span>
+          </div>
+          <div data-tip="Average length" style="margin-left: 12px">
+            Average length:&nbsp;<span id="routesFooterLength">0</span>
+          </div>
+        </div>
+        <div id="routesBottom">
+          <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+          <button
+            id="routesCreateNew"
+            data-tip="Create a new route selecting route cells"
+            class="icon-map-pin"
+          ></button>
+          <button
+            id="routesExport"
+            data-tip="Save routes-related data as a text file (.csv)"
+            class="icon-download"
+          ></button>
+          <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
+          <button
+            id="routesRemoveAll"
+            data-tip="Remove all unlocked routes (locked routes are kept)"
+            class="icon-trash"
+          ></button>
+          <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em"
+            >Search: <input id="routesSearch" type="search"
+          /></label>
+        </div>
+      </div>
+      <div id="riversOverview" class="dialog stable" style="display: none">
+        <div id="riversHeader" class="header" style="grid-template-columns: 9em 4em 7em 5em 5em 9em">
+          <div data-tip="Click to sort by river name" class="sortable alphabetically" data-sortby="name">
+            River&nbsp;
+          </div>
+          <div data-tip="Click to sort by river type name" class="sortable alphabetically" data-sortby="type">
+            Type&nbsp;
+          </div>
+          <div
+            data-tip="Click to sort by discharge (flux in m3/s)"
+            class="sortable icon-sort-number-down"
+            data-sortby="discharge"
+          >
+            Discharge&nbsp;
+          </div>
+          <div data-tip="Click to sort by river length" class="sortable" data-sortby="length">Length&nbsp;</div>
+          <div data-tip="Click to sort by river mouth width" class="sortable" data-sortby="width">Width&nbsp;</div>
+          <div data-tip="Click to sort by river basin" class="sortable alphabetically" data-sortby="basin">
+            Basin&nbsp;
+          </div>
+        </div>
+        <div id="riversBody" class="table"></div>
+        <div id="riversFooter" class="totalLine">
+          <div data-tip="Rivers number" style="margin-left: 4px">
+            Rivers:&nbsp;<span id="riversFooterNumber">0</span>
+          </div>
+          <div data-tip="Average discharge" style="margin-left: 12px">
+            Average discharge:&nbsp;<span id="riversFooterDischarge">0</span>
+          </div>
+          <div data-tip="Average length" style="margin-left: 12px">
+            Length:&nbsp;<span id="riversFooterLength">0</span>
+          </div>
+          <div data-tip="Average mouth width" style="margin-left: 12px">
+            Width:&nbsp;<span id="riversFooterWidth">0</span>
+          </div>
+        </div>
+        <div id="riversBottom">
+          <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+          <button
+            id="addNewRiver"
+            data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple"
+            class="icon-plus"
+          ></button>
+          <button id="riverCreateNew" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
+          <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
+          <button
+            id="riversExport"
+            data-tip="Save rivers-related data as a text file (.csv)"
+            class="icon-download"
+          ></button>
+          <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
+          <label for="riversSearch" data-tip="Filter by name, type or basin" style="margin-left: 0.2em"
+            >Search: <input id="riversSearch" type="search"
+          /></label>
+        </div>
+      </div>
       <div id="militaryOverview" class="dialog stable" style="display: none">
         <div id="militaryHeader" class="header">
           <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
@@ -8749,16 +8985,23 @@
     <script defer src="modules/ui/provinces-editor.js?v=1.131.0"></script>
     <script defer src="modules/ui/biomes-editor.js?v=1.112.0"></script>
     <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
+    <script defer src="modules/ui/routes-editor.js?v=1.131.0"></script>
+    <script defer src="modules/ui/routes-creator.js?v=1.120.5"></script>
+    <script defer src="modules/ui/route-group-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/ice-editor.js?v=1.111.0"></script>
     <script defer src="modules/ui/lakes-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/coastline-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/labels-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/rivers-editor.js?v=1.131.0"></script>
+    <script defer src="modules/ui/rivers-creator.js?v=1.106.0"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/units-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/notes-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.120.5"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/zones-editor.js?v=1.120.5"></script>
+    <script defer src="modules/ui/routes-overview.js?v=1.120.5"></script>
+    <script defer src="modules/ui/rivers-overview.js?v=1.120.5"></script>
     <script defer src="modules/ui/markers-overview.js?v=1.125.0"></script>
     <script defer src="modules/ui/emblems-editor.js?v=1.122.11"></script>
     <script defer src="modules/ui/markers-editor.js?v=1.122.11"></script>

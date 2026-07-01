@@ -51,8 +51,8 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyO") editNotes();
   else if ((shift || altShift) && code === "KeyA") window.Controllers.ChartsOverview.open();
   else if ((shift || altShift) && code === "KeyT") window.Controllers.BurgsOverview.open();
-  else if ((shift || altShift) && code === "KeyU") window.Controllers.RoutesOverview.open();
-  else if ((shift || altShift) && code === "KeyV") window.Controllers.RiversOverview.open();
+  else if ((shift || altShift) && code === "KeyU") overviewRoutes();
+  else if ((shift || altShift) && code === "KeyV") overviewRivers();
   else if ((shift || altShift) && code === "KeyM") window.Controllers.MilitaryOverview.open();
   else if ((shift || altShift) && code === "KeyK") overviewMarkers();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
@@ -60,7 +60,7 @@ function handleKeyup(event) {
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
-  else if (key === "$") window.Controllers.RouteCreator.open();
+  else if (key === "$") createRoute();
   else if (key === "%") toggleAddMarker();
   else if (code === "KeyX") toggleTexture();
   else if (code === "KeyH") toggleHeight();
