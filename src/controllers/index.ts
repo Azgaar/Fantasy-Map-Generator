@@ -40,6 +40,7 @@ export const Controllers = createRegistry({
   StatesEditor: () => import("@/controllers/states-editor").then(m => m.StatesEditor),
   TradeAnimationEditor: () => import("@/controllers/trade-animation-editor").then(m => m.TradeAnimationEditor),
   TradeDetails: () => import("@/controllers/trade-details").then(m => m.TradeDetails),
+  UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
   View3d: () => import("@/controllers/view-3d").then(m => m.View3d)
 });
 

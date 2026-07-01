@@ -139,6 +139,7 @@ declare global {
   var Ruler: any;
   var Opisometer: any;
   var Planimeter: any;
+  var RouteOpisometer: any;
   var mapHistory: { created: number; [key: string]: unknown }[];
   var customPresetPrefix: string;
 
@@ -160,7 +161,8 @@ declare global {
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
   var updateTextureSelectValue: (href: string) => void;
-  var editUnits: () => void;
+  var toggleRulers: () => void;
+  var calculateFriendlyGridSize: () => void;
 
   var drawTexture: () => void;
   var drawRoutes: () => void;
