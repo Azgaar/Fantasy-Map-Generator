@@ -8,7 +8,7 @@ function editMarker(markerI) {
 
   elSelected = d3.select(element).raise().call(d3.drag().on("start", dragMarker)).classed("draggable", true);
 
-  if (ensureEl("notesEditor").offsetParent) editNotes(element.id, element.id);
+  if (ensureEl("notesEditor").offsetParent) window.Controllers.NotesEditor.open(element.id, element.id);
 
   // dom elements
   const markerType = ensureEl("markerType");
@@ -222,7 +222,7 @@ function editMarker(markerI) {
 
   function editMarkerLegend() {
     const id = element.id;
-    editNotes(id, id);
+    window.Controllers.NotesEditor.open(id, id);
   }
 
   function toggleMarkerLock() {

@@ -4693,28 +4693,7 @@
           </div>
         </div>
       </div>
-      <div id="notesEditor" class="dialog stable" style="display: none">
-        <div style="margin-bottom: 0.3em">
-          <strong>Element: </strong>
-          <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
-          <strong>Element name: </strong>
-          <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
-          <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-        </div>
-        <div id="notesLegend" contenteditable="true"></div>
-        <div style="margin-top: 0.3em">
-          <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
-          <button id="notesGenerateWithAi" data-tip="Generate note with AI" class="icon-robot"></button>
-          <button
-            id="notesPin"
-            data-tip="Toggle notes box dispay: hide or do not hide the box on mouse move"
-            class="icon-pin"
-          ></button>
-          <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
-          <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-          <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
-        </div>
-      </div>
+      <div id="notesEditor" class="dialog stable" style="display: none"></div>
       <div id="aiGenerator" class="dialog stable" style="display: none">
         <div style="display: flex; flex-direction: column; gap: 0.3em; width: 100%">
           <textarea id="aiGeneratorResult" placeholder="Generated text will appear here" cols="30" rows="10"></textarea>
@@ -8743,7 +8722,6 @@
     <script defer src="modules/ui/labels-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/relief-editor.js?v=1.99.00"></script>
     <script defer src="modules/ui/units-editor.js?v=1.120.5"></script>
-    <script defer src="modules/ui/notes-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/ai-generator.js?v=1.120.5"></script>
     <script defer src="modules/ui/diplomacy-editor.js?v=1.120.5"></script>
     <script defer src="modules/ui/zones-editor.js?v=1.120.5"></script>

@@ -48,7 +48,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyR") window.Controllers.ReligionsEditor.open();
   else if ((shift || altShift) && code === "KeyY") openEmblemEditor();
   else if ((shift || altShift) && code === "KeyQ") editUnits();
-  else if ((shift || altShift) && code === "KeyO") editNotes();
+  else if ((shift || altShift) && code === "KeyO") window.Controllers.NotesEditor.open();
   else if ((shift || altShift) && code === "KeyA") window.Controllers.ChartsOverview.open();
   else if ((shift || altShift) && code === "KeyT") window.Controllers.BurgsOverview.open();
   else if ((shift || altShift) && code === "KeyU") window.Controllers.RoutesOverview.open();

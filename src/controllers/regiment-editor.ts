@@ -457,7 +457,7 @@ function regenerateLegend(): void {
 function editLegend(): void {
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  editNotes(selectedRegiment.id, reg.name);
+  void Controllers.NotesEditor.open(selectedRegiment.id, reg.name);
 }
 
 function removeRegiment(): void {

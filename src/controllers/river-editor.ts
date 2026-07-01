@@ -303,7 +303,7 @@ function showRiverElevationProfile(): void {
 function editRiverLegend(): void {
   const id = elSelected.attr("id");
   const river = getRiver();
-  editNotes(id, `${river.name} ${river.type}`);
+  void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
 }
 
 function removeRiver(): void {

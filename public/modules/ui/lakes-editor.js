@@ -248,7 +248,7 @@ function editLake() {
 
   function editLakeLegend() {
     const id = elSelected.attr("id");
-    editNotes(id, getLake().name + " " + lakeGroup.value + " lake");
+    window.Controllers.NotesEditor.open(id, getLake().name + " " + lakeGroup.value + " lake");
   }
 
   function closeLakesEditor() {

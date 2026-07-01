@@ -273,7 +273,15 @@ declare global {
   var unselect: () => void;
   var selectIcon: (initial: string, callback: (value: string) => void) => void;
   var sortLines: (headerElement: HTMLElement) => void;
-  var editNotes: (id: string, name: string) => void;
+  var generateWithAi: (defaultPrompt: string, onApply: (result: string) => void) => void;
+  var tinymce:
+    | {
+        _setBaseUrl: (url: string) => void;
+        init: (config: Record<string, unknown>) => void;
+        remove: () => void;
+        activeEditor?: { getContent: () => string; setContent: (content: string) => void };
+      }
+    | undefined;
 
   var highlightElement: (element: Element | null, duration?: number) => void;
   var applySortingByHeader: (headerId: string) => void;

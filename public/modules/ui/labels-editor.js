@@ -409,7 +409,7 @@ function editLabel() {
   function editLabelLegend() {
     const id = elSelected.attr("id");
     const name = elSelected.text();
-    editNotes(id, name);
+    window.Controllers.NotesEditor.open(id, name);
   }
 
   function removeLabel() {

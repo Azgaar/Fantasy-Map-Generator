@@ -22,6 +22,7 @@ export const Controllers = createRegistry({
   MilitaryOverview: () => import("@/controllers/military-overview").then(m => m.MilitaryOverview),
   Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
   NamesbaseEditor: () => import("@/controllers/namesbase-editor").then(m => m.NamesbaseEditor),
+  NotesEditor: () => import("@/controllers/notes-editor").then(m => m.NotesEditor),
   ProductionChains: () => import("@/controllers/production-chains").then(m => m.ProductionChains),
   ProductionOverview: () => import("@/controllers/production-overview").then(m => m.ProductionOverview),
   RegimentEditor: () => import("@/controllers/regiment-editor").then(m => m.RegimentEditor),
