@@ -266,6 +266,7 @@ declare global {
   var toggleBurgIcons: (event?: MouseEvent) => void;
   var toggleRoutes: (event?: MouseEvent) => void;
   var toggleRivers: (event?: MouseEvent) => void;
+  var toggleIce: (event?: MouseEvent) => void;
   var toggleAddRiver: () => void;
 
   var clicked: () => void;

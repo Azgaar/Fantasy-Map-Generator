@@ -25,7 +25,7 @@ function clicked() {
   else if (grand.id === "routes") window.Controllers.RouteEditor.open(el.id);
   else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
   else if (grand.id === "burgLabels" || grand.id === "burgIcons") window.Controllers.BurgEditor.open(el.dataset.id);
-  else if (parent.id === "ice") editIce(el);
+  else if (parent.id === "ice") window.Controllers.IceEditor.open(el);
   else if (parent.id === "terrain") editReliefIcon();
   else if (grand.id === "markers" || great.id === "markers") editMarker();
   else if (grand.id === "markets" && el.tagName !== "path") window.Controllers.MarketOverview.open(Number(parent.dataset.id));
