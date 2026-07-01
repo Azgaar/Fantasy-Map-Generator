@@ -23,7 +23,7 @@ function clicked() {
   if (grand.id === "emblems") editEmblem();
   else if (parent.id === "rivers") window.Controllers.RiverEditor.open(el.id);
   else if (grand.id === "routes") window.Controllers.RouteEditor.open(el.id);
-  else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
+  else if (ancestor.id === "labels" && el.tagName === "tspan") window.Controllers.LabelsEditor.open(el);
   else if (grand.id === "burgLabels" || grand.id === "burgIcons") window.Controllers.BurgEditor.open(el.dataset.id);
   else if (parent.id === "ice") window.Controllers.IceEditor.open(el);
   else if (parent.id === "terrain") window.Controllers.ReliefEditor.open(el);
