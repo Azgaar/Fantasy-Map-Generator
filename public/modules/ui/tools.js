@@ -12,7 +12,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editBiomesButton") window.Controllers.BiomesEditor.open();
   else if (button === "editStatesButton") window.Controllers.StatesEditor.open();
   else if (button === "editProvincesButton") editProvinces();
-  else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editDiplomacyButton") window.Controllers.DiplomacyEditor.open();
   else if (button === "editCoastlineSettings") window.Controllers.CoastlineEditor.open();
   else if (button === "editTradeAnimationButton") window.Controllers.TradeAnimationEditor.open();
   else if (button === "editCulturesButton") window.Controllers.CulturesEditor.open();

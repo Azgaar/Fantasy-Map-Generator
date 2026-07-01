@@ -10,6 +10,7 @@ export const Controllers = createRegistry({
   CoastlineEditor: () => import("@/controllers/coastline-editor").then(m => m.CoastlineEditor),
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
+  DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
   DistributionEditor: () => import("@/controllers/goods-distribution-editor").then(m => m.DistributionEditor),
   ElevationProfile: () => import("@/controllers/elevation-profile").then(m => m.ElevationProfile),
   GoodEditor: () => import("@/controllers/good-editor").then(m => m.GoodEditor),

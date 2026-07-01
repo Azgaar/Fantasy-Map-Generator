@@ -40,7 +40,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyB") window.Controllers.BiomesEditor.open();
   else if ((shift || altShift) && code === "KeyS") window.Controllers.StatesEditor.open();
   else if ((shift || altShift) && code === "KeyP") editProvinces();
-  else if ((shift || altShift) && code === "KeyD") editDiplomacy();
+  else if ((shift || altShift) && code === "KeyD") window.Controllers.DiplomacyEditor.open();
   else if ((shift || altShift) && code === "KeyL") window.Controllers.CoastlineEditor.open();
   else if ((shift || altShift) && code === "KeyC") window.Controllers.CulturesEditor.open();
   else if ((shift || altShift) && code === "KeyN") window.Controllers.NamesbaseEditor.open();
