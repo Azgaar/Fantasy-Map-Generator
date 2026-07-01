@@ -47,8 +47,8 @@ function open(id: string): void {
     "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
     true
   );
-  debug.append("g").attr("id", "controlCells");
-  debug.append("g").attr("id", "controlPoints");
+  select("#debug").append("g").attr("id", "controlCells");
+  select("#debug").append("g").attr("id", "controlPoints");
 
   ensureEl("routeEditor").innerHTML = DIALOG_HTML;
 
@@ -113,8 +113,7 @@ function updateRouteLength(route: Route): void {
 }
 
 function drawControlPoints(points: number[][]): void {
-  debug
-    .select("#controlPoints")
+  select<SVGGElement, unknown>("#controlPoints")
     .selectAll<SVGCircleElement, number[]>("circle")
     .data(points)
     .join("circle")
@@ -126,8 +125,7 @@ function drawControlPoints(points: number[][]): void {
 }
 
 function drawCells(points: number[][]): void {
-  debug
-    .select("#controlCells")
+  select<SVGGElement, unknown>("#controlCells")
     .selectAll("polygon")
     .data(points)
     .join("polygon")
@@ -439,8 +437,8 @@ function removeRoute(): void {
 }
 
 function closeRouteEditor(): void {
-  debug.select("#controlPoints").remove();
-  debug.select("#controlCells").remove();
+  select("#controlPoints").remove();
+  select("#controlCells").remove();
 
   elSelected.on("click", null);
   unselect();
