@@ -8,11 +8,11 @@ toolsContent.addEventListener("click", function (event) {
   const button = event.target.id;
 
   // click on open Editor buttons
-  if (button === "editHeightmapButton") editHeightmap();
-  else if (button === "editBiomesButton") editBiomes();
+  if (button === "editHeightmapButton") window.Controllers.HeightmapEditor.open();
+  else if (button === "editBiomesButton") window.Controllers.BiomesEditor.open();
   else if (button === "editStatesButton") window.Controllers.StatesEditor.open();
-  else if (button === "editProvincesButton") editProvinces();
-  else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editProvincesButton") window.Controllers.ProvincesEditor.open();
+  else if (button === "editDiplomacyButton") window.Controllers.DiplomacyEditor.open();
   else if (button === "editCoastlineSettings") window.Controllers.CoastlineEditor.open();
   else if (button === "editTradeAnimationButton") window.Controllers.TradeAnimationEditor.open();
   else if (button === "editCulturesButton") window.Controllers.CulturesEditor.open();
@@ -20,15 +20,15 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editGoods") window.Controllers.GoodsEditor.open();
   else if (button === "editEmblemButton") openEmblemEditor();
   else if (button === "editNamesBaseButton") window.Controllers.NamesbaseEditor.open();
-  else if (button === "editUnitsButton") editUnits();
-  else if (button === "editNotesButton") editNotes();
-  else if (button === "editZonesButton") editZones();
+  else if (button === "editUnitsButton") window.Controllers.UnitsEditor.open();
+  else if (button === "editNotesButton") window.Controllers.NotesEditor.open();
+  else if (button === "editZonesButton") window.Controllers.ZonesEditor.open();
   else if (button === "overviewChartsButton") window.Controllers.ChartsOverview.open();
   else if (button === "overviewBurgsButton") window.Controllers.BurgsOverview.open();
   else if (button === "overviewRoutesButton") window.Controllers.RoutesOverview.open();
   else if (button === "overviewRiversButton") window.Controllers.RiversOverview.open();
   else if (button === "overviewMilitaryButton") window.Controllers.MilitaryOverview.open();
-  else if (button === "overviewMarkersButton") overviewMarkers();
+  else if (button === "overviewMarkersButton") window.Controllers.MarkersOverview.open();
   else if (button === "overviewMarketsButton") window.Controllers.MarketsOverview.open();
   else if (button === "overviewCellsButton") viewCellDetails();
   else if (button === "openMinimapButton") openMinimap();
@@ -127,7 +127,7 @@ async function openEmblemEditor() {
   }
 
   await COArenderer.trigger(id, el.coa);
-  editEmblem(type, id, el);
+  window.Controllers.EmblemsEditor.open(type, id, el);
 }
 
 function regenerateRoutes() {
@@ -188,9 +188,9 @@ function regenerateStates() {
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
 }
 
 function recreateStates() {
@@ -488,7 +488,7 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
+  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
 }
 
@@ -621,7 +621,7 @@ function regenerateMilitary() {
   if (layerIsOn("toggleMilitary")) drawMilitary();
   else toggleMilitary();
 
-  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateIce() {
@@ -634,7 +634,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
-  if (ensureEl("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+  if (document.getElementById("markersOverviewRefresh")?.offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
@@ -646,7 +646,7 @@ function regenerateZones(event) {
 
   function addNumberOfZones(number) {
     Zones.generate(number);
-    if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    if (document.getElementById("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
     if (layerIsOn("toggleZones")) drawZones();
   }
 }
@@ -726,10 +726,10 @@ function addLabelOnClick() {
   if (d3.event.shiftKey === false) unpressClickToAddButton();
 }
 
-function toggleAddBurg() {
+async function toggleAddBurg() {
   unpressClickToAddButton();
   ensureEl("addBurgTool").classList.add("pressed");
-  window.Controllers.BurgsOverview.open();
+  await window.Controllers.BurgsOverview.open();
   ensureEl("addNewBurg").click();
 }
 
@@ -905,7 +905,7 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
-  markersAddFromOverview.classList.add("pressed");
+  document.getElementById("markersAddFromOverview")?.classList.add("pressed");
 
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
   tip("Click on map to add a marker. Hold Shift to add multiple", true);
@@ -940,8 +940,8 @@ function addMarkerOnClick() {
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
   if (d3.event.shiftKey === false) {
-    ensureEl("markerAdd").classList.remove("pressed");
-    ensureEl("markersAddFromOverview").classList.remove("pressed");
+    document.getElementById("markerAdd")?.classList.remove("pressed");
+    document.getElementById("markersAddFromOverview")?.classList.remove("pressed");
     unpressClickToAddButton();
   }
 }

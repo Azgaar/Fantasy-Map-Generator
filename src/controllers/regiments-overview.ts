@@ -3,43 +3,88 @@ import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, last, si } from "../utils";
 
-let isInitialized = false;
-
 function open(state = -1): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
-  const body = ensureEl("regimentsBody");
+  renderDialog();
   updateFilter(state);
+  updateHeaders();
   refreshRegimentsOverview();
-  $("#regimentsOverview").dialog();
 
-  if (!isInitialized) {
-    updateHeaders();
+  $("#regimentsOverview").dialog({
+    title: "Regiments Overview",
+    resizable: false,
+    width: fitContent(),
+    close: closeRegimentsOverview,
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+  });
+}
 
-    $("#regimentsOverview").dialog({
-      title: "Regiments Overview",
-      resizable: false,
-      width: fitContent(),
-      position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
-    });
+function renderDialog(): void {
+  document.getElementById("regimentsOverview")?.remove();
+  const editorHtml = /* html */ `<div id="regimentsOverview" class="dialog stable">
+      <div id="regimentsHeader" class="header">
+        <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
+          State&nbsp;
+        </div>
+        <div
+          data-tip="Regiment emblem and name. Click to sort by name"
+          class="sortable alphabetically"
+          data-sortby="name"
+        >
+          Name&nbsp;
+        </div>
+        <div
+          data-tip="Total military personnel (not considering crew). Click to sort"
+          id="regimentsTotal"
+          class="sortable icon-sort-number-down"
+          data-sortby="total"
+        >
+          Total&nbsp;
+        </div>
+      </div>
+      <div id="regimentsBody" class="table" data-type="absolute"></div>
+      <div id="regimentsBottom">
+        <button id="regimentsOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
+        <button
+          id="regimentsPercentage"
+          data-tip="Toggle percentage / absolute values views"
+          class="icon-percent"
+        ></button>
+        <button id="regimentsAddNew" data-tip="Add new Regiment" class="icon-user-plus"></button>
+        <div data-tip="Select state" style="display: inline-block">
+          <span>State: </span
+          ><select id="regimentsFilter"></select>
+        </div>
+        <button
+          id="regimentsExport"
+          data-tip="Save military-related data as a text file (.csv)"
+          class="icon-download"
+        ></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-    // add listeners
-    ensureEl("regimentsOverviewRefresh").on("click", refreshRegimentsOverview);
-    ensureEl("regimentsPercentage").on("click", togglePercentageMode);
-    ensureEl("regimentsAddNew").on("click", toggleAdd);
-    ensureEl("regimentsExport").on("click", downloadRegimentsData);
-    ensureEl("regimentsFilter").on("change", refreshRegimentsOverview);
+  const body = ensureEl("regimentsBody");
 
-    body.on("click", async event => {
-      const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
-      if (!target) return;
-      Controllers.RegimentEditor.open(`#${target.dataset.editRegiment}`);
-    });
+  ensureEl("regimentsOverviewRefresh").on("click", refreshRegimentsOverview);
+  ensureEl("regimentsPercentage").on("click", togglePercentageMode);
+  ensureEl("regimentsAddNew").on("click", toggleAdd);
+  ensureEl("regimentsExport").on("click", downloadRegimentsData);
+  ensureEl("regimentsFilter").on("change", refreshRegimentsOverview);
 
-    isInitialized = true;
-  }
+  body.on("click", async event => {
+    const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
+    if (!target) return;
+    Controllers.RegimentEditor.open(`#${target.dataset.editRegiment}`);
+  });
+}
+
+function closeRegimentsOverview(): void {
+  $("#regimentsOverview").dialog("destroy");
+  ensureEl("regimentsOverview").remove();
 }
 
 // update military types in header and tooltips

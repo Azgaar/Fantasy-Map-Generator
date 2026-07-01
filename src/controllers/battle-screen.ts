@@ -33,7 +33,9 @@ let battle: BattleState | null = null;
 function open(attacker: Regiment, defender: Regiment): void {
   if (customization) return;
   closeDialogs(".stable");
-  customization = 13; // enter customization to avoid unwanted dialog closing
+  customization = 13; // enter customization to avoid unwanted dialogs
+
+  renderDialog();
 
   const x = defender.x;
   const y = defender.y;
@@ -70,11 +72,346 @@ function open(attacker: Regiment, defender: Regiment): void {
     position: { my: "center", at: "center", of: "#map" },
     close: cancelResults
   });
+}
 
-  if (modules.Battle) return;
-  modules.Battle = true;
+function renderDialog(): void {
+  document.getElementById("battleScreen")?.remove();
+  document.getElementById("regimentSelectorScreen")?.remove();
+  const editorHtml = /* html */ `<div id="battleScreen" class="dialog stable">
+      <div id="battleBody">
+        <template id="battlePhases_field">
+          <button
+            data-tip="Skirmish phase. Ranged units excel"
+            data-phase="skirmish"
+            class="icon-button-skirmish"
+          ></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button
+            data-tip="Pursue phase. Mounted units excel"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+          <button
+            data-tip="Retreat phase. Units strength reduced"
+            data-phase="retreat"
+            class="icon-button-retreat"
+          ></button>
+        </template>
+        <template id="battlePhases_naval">
+          <button
+            data-tip="Shelling phase. Naval artillery bombardment of enemy fleet"
+            data-phase="shelling"
+            class="icon-button-shelling"
+          ></button>
+          <button
+            data-tip="Boarding phase. Melee units go aboard"
+            data-phase="boarding"
+            class="icon-button-boarding"
+          ></button>
+          <button
+            data-tip="Сhase phase. Naval units pursue and rarely shell enemy fleet"
+            data-phase="chase"
+            class="icon-button-chase"
+          ></button>
+          <button
+            data-tip="Withdrawal phase. Naval units try to escape enemy fleet"
+            data-phase="withdrawal"
+            class="icon-button-withdrawal"
+          ></button>
+        </template>
+        <template id="battlePhases_siege_attackers">
+          <button
+            data-tip="Blockade phase. Prepare or hold the blockade"
+            data-phase="blockade"
+            class="icon-button-blockade"
+          ></button>
+          <button
+            data-tip="Bombardment phase. Attack enemy with machinery units"
+            data-phase="bombardment"
+            class="icon-button-bombardment"
+          ></button>
+          <button
+            data-tip="Storming phase. Storm enemy town. Melee units excel"
+            data-phase="storming"
+            class="icon-button-storming"
+          ></button>
+          <button
+            data-tip="Looting phase. Plunder the town. Units strength increased"
+            data-phase="looting"
+            class="icon-button-looting"
+          ></button>
+          <button
+            data-tip="Retreat phase. Units strength reduced"
+            data-phase="retreat"
+            class="icon-button-retreat"
+          ></button>
+        </template>
+        <template id="battlePhases_siege_defenders">
+          <button
+            data-tip="Sheltering phase. Hide behind the walls and wait"
+            data-phase="sheltering"
+            class="icon-button-sheltering"
+          ></button>
+          <button
+            data-tip="Sortie phase. Make a sortie from besieged town. Melee units excel"
+            data-phase="sortie"
+            class="icon-button-sortie"
+          ></button>
+          <button
+            data-tip="Bombardment phase. Attack enemy with machinery units"
+            data-phase="bombardment"
+            class="icon-button-bombardment"
+          ></button>
+          <button
+            data-tip="Defense phase. Ranged and melee units excel"
+            data-phase="defense"
+            class="icon-button-defense"
+          ></button>
+          <button
+            data-tip="Surrendering phase. Give up the defense. Units strength reduced"
+            data-phase="surrendering"
+            class="icon-button-surrendering"
+          ></button>
+          <button
+            data-tip="Pursue phase. Mounted units excel"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+        </template>
+        <template id="battlePhases_ambush_attackers">
+          <button
+            data-tip="Shock phase. Units strength reduced"
+            data-phase="shock"
+            class="icon-button-shock"
+          ></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button
+            data-tip="Pursue phase. Mounted units excel"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+          <button
+            data-tip="Retreat phase. Units strength reduced"
+            data-phase="retreat"
+            class="icon-button-retreat"
+          ></button>
+        </template>
+        <template id="battlePhases_ambush_defenders">
+          <button
+            data-tip="Surprice attack phase. Units strength increased, ranged units excel"
+            data-phase="surprise"
+            class="icon-button-surprise"
+          ></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button
+            data-tip="Pursue phase. Mounted units excel"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+          <button
+            data-tip="Retreat phase. Units strength reduced"
+            data-phase="retreat"
+            class="icon-button-retreat"
+          ></button>
+        </template>
+        <template id="battlePhases_landing_attackers">
+          <button
+            data-tip="Landing phase. Amphibious attack. Units are vulnerable against prepared defense"
+            data-phase="landing"
+            class="icon-button-landing"
+          ></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button
+            data-tip="Pursue phase. Mounted units excel"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+          <button data-tip="Flee phase. Units strength reduced" data-phase="flee" class="icon-button-flee"></button>
+        </template>
+        <template id="battlePhases_landing_defenders">
+          <button
+            data-tip="Shock phase. Units are not prepared for a defense"
+            data-phase="shock"
+            class="icon-button-shock"
+          ></button>
+          <button
+            data-tip="Defense phase. Prepared defense. Units strength increased"
+            data-phase="defense"
+            class="icon-button-defense"
+          ></button>
+          <button data-tip="Melee phase. Melee units excel" data-phase="melee" class="icon-button-melee"></button>
+          <button
+            data-tip="Waiting phase. Cannot pursue fleeing naval"
+            data-phase="waiting"
+            class="icon-button-waiting"
+          ></button>
+          <button
+            data-tip="Pursue phase. Try to intercept fleeing attackers. Mounted units excel"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+          <button
+            data-tip="Retreat phase. Units strength reduced"
+            data-phase="retreat"
+            class="icon-button-retreat"
+          ></button>
+        </template>
+        <template id="battlePhases_air">
+          <button
+            data-tip="Maneuvering phase. Units strength reduced"
+            data-phase="maneuvering"
+            class="icon-button-maneuvering"
+          ></button>
+          <button
+            data-tip="Dogfight phase. Units strength increased"
+            data-phase="dogfight"
+            class="icon-button-dogfight"
+          ></button>
+          <button
+            data-tip="Pursue phase. Units strength increased"
+            data-phase="pursue"
+            class="icon-button-pursue"
+          ></button>
+          <button
+            data-tip="Retreat phase. Units strength reduced"
+            data-phase="retreat"
+            class="icon-button-retreat"
+          ></button>
+        </template>
+        <div style="font-size: 1.2em; font-weight: bold; width: unset">
+          <span>Attackers</span>
+          <div style="float: right; font-size: 0.7em">
+            <meter
+              id="battleMorale_attackers"
+              data-tip="Attackers morale: "
+              min="0"
+              max="100"
+              low="33"
+              high="66"
+              optimum="80"
+            ></meter>
+            <div
+              id="battlePower_attackers"
+              data-tip="Attackers strength during this phase. Strength defines dealt damage"
+              style="display: inline-block; text-align: center"
+              class="icon-button-power"
+            ></div>
+            <div style="display: inline-block">
+              <button id="battlePhase_attackers" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none"></div>
+            </div>
+            <button
+              id="battleDie_attackers"
+              data-tip="Random factor for attackers. Click to re-roll"
+              style="padding: 0.1em 0.2em; width: 3.2em"
+              class="icon-button-die"
+            ></button>
+          </div>
+        </div>
+        <table id="battleAttackers"></table>
+        <div style="font-size: 1.2em; font-weight: bold; width: unset">
+          <span>Defenders</span>
+          <div style="float: right; font-size: 0.7em">
+            <meter
+              id="battleMorale_defenders"
+              data-tip="Defenders morale: "
+              min="0"
+              max="100"
+              low="33"
+              high="66"
+              optimum="80"
+            ></meter>
+            <div
+              id="battlePower_defenders"
+              data-tip="Defenders strength during this phase. Strength defines dealt damage"
+              style="display: inline-block; text-align: center"
+              class="icon-button-power"
+            ></div>
+            <div style="display: inline-block">
+              <button id="battlePhase_defenders" style="width: 3.2em"></button>
+              <div class="battlePhases" style="display: none"></div>
+            </div>
+            <button
+              id="battleDie_defenders"
+              data-tip="Random factor for defenders. Click to re-roll"
+              style="padding: 0.1em 0.2em; width: 3.2em"
+              class="icon-button-die"
+            ></button>
+          </div>
+        </div>
+        <table id="battleDefenders"></table>
+      </div>
+      <div id="battleBottom">
+        <button id="battleType" data-tip="Battle type. Click to change"></button>
+        <div class="battleTypes" style="display: none">
+          <button
+            data-tip="Field Battle: a standard type of combat"
+            data-type="field"
+            class="icon-button-field"
+          ></button>
+          <button data-tip="Naval Battle: naval units combat" data-type="naval" class="icon-button-naval"></button>
+          <button data-tip="Siege: burg blockade and storming" data-type="siege" class="icon-button-siege"></button>
+          <button data-tip="Ambush: surprise attack" data-type="ambush" class="icon-button-ambush"></button>
+          <button data-tip="Landing: amphibious attack" data-type="landing" class="icon-button-landing"></button>
+          <button
+            data-tip="Air Battle: maneuring fight of avia units"
+            data-type="air"
+            class="icon-button-air"
+          ></button>
+        </div>
+        <button id="battleNameShow" data-tip="Set battle name" class="icon-font"></button>
+        <div id="battleNameSection" style="display: none">
+          <button id="battleNameHide" data-tip="Hide the battle name section" class="icon-font"></button>
+          <input id="battleNamePlace" data-tip="Type place name" style="width: 30%" />
+          <input id="battleNameFull" data-tip="Type full battle name" style="width: 46%" />
+          <button
+            id="battleNameCulture"
+            data-tip="Generate culture-specific name for place and battle"
+            class="icon-book"
+          ></button>
+          <button
+            id="battleNameRandom"
+            data-tip="Generate random name for place and battle"
+            class="icon-globe"
+          ></button>
+        </div>
+        <button id="battleAddRegiment" data-tip="Add regiment to the battle" class="icon-user-plus"></button>
+        <button id="battleRoll" data-tip="Roll dice to update random factor" class="icon-die"></button>
+        <button id="battleRun" data-tip="Iterate battle" class="icon-play"></button>
+        <button
+          id="battleApply"
+          data-tip="End battle: apply current results and close the screen"
+          class="icon-check"
+        ></button>
+        <button
+          id="battleCancel"
+          data-tip="Cancel battle: roll back results and close the screen"
+          class="icon-cancel"
+        ></button>
+        <button id="battleWiki" data-tip="Open Battle Simulation Tutorial" class="icon-info"></button>
+      </div>
+    </div>
+    <div id="regimentSelectorScreen" class="dialog">
+      <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
+        <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">
+          State&nbsp;
+        </div>
+        <div data-tip="Click to sort by regiment name" class="sortable alphabetically" data-sortby="regiment">
+          Regiment&nbsp;
+        </div>
+        <div data-tip="Click to sort by total military forces" class="sortable" data-sortby="total">Total&nbsp;</div>
+        <div
+          data-tip="Click to sort by distance to the battlefield"
+          class="sortable icon-sort-number-up"
+          data-sortby="distance"
+        >
+          Distance&nbsp;
+        </div>
+      </div>
+      <div id="regimentSelectorBody" class="table"></div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  // add listeners
   ensureEl("battleType").on("click", event => toggleChange(event));
   ensureEl("battleType").nextElementSibling!.on("click", event => changeType(event));
   ensureEl("battleNameShow").on("click", () => showNameSection());
@@ -1016,7 +1353,7 @@ function applyResults(): void {
 
   tip(`${b.name} is over. ${result}`, true, "success", 4000);
 
-  $("#battleScreen").dialog("destroy");
+  closeBattleScreen();
   cleanData();
 }
 
@@ -1029,8 +1366,17 @@ function cancelResults(): void {
     moveRegiment(r, r.px!, r.py!);
   });
 
-  $("#battleScreen").dialog("close");
+  closeBattleScreen();
   cleanData();
+}
+
+function closeBattleScreen(): void {
+  $("#battleScreen").dialog("destroy");
+  ensureEl("battleScreen").remove();
+
+  const regimentSelector = document.getElementById("regimentSelectorScreen");
+  if (regimentSelector?.classList.contains("ui-dialog-content")) $("#regimentSelectorScreen").dialog("destroy");
+  regimentSelector?.remove();
 }
 
 function cleanData(): void {

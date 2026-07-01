@@ -565,8 +565,7 @@ reason a session can climb toward gigabytes. The target:
   `open` created it, `close` destroys it — no orphaned subtrees, no half-freed state.
 - **Bound large lists.** A panel over N entities must not materialize N rows when N is large:
   render only the visible window (windowing — not a virtual DOM) or page, and rebuild on scroll.
-- **Wire on build, not "once forever."** The legacy `isInitialized` wire-once flag only makes
-  sense because the DOM is permanent. In the target, listeners are born with the DOM and die
+- **Wire on build, not "once forever."** Listeners are born with the DOM and die
   with it; re-wiring on each open is cheap and leak-free, whereas keeping the DOM alive just to
   avoid re-wiring _is_ the bug.
 

@@ -527,7 +527,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       Routes.sync();
       TradeAnimation.sync();
     }
-    scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+    scaleBar
+      .on("mousemove", () => tip("Click to open Units Editor"))
+      .on("click", () => window.Controllers.UnitsEditor.open());
     legend
       .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
       .on("click", () => clearLegend());

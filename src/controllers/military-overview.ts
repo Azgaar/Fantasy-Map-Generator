@@ -2,8 +2,6 @@ import { interpolateString, select, sum } from "d3";
 import { Controllers } from "@/controllers";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
-let isInitialized = false;
-
 function open(): void {
   if (customization) return;
   closeDialogs("#militaryOverview, .stable");
@@ -11,45 +9,122 @@ function open(): void {
   if (!layerIsOn("toggleBorders")) toggleBorders();
   if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
-  const body = ensureEl("militaryBody");
+  renderDialog();
+  updateHeaders();
   refreshMilitaryOverview();
-  $("#militaryOverview").dialog();
 
-  if (!isInitialized) {
-    updateHeaders();
+  $("#militaryOverview").dialog({
+    title: "Military Overview",
+    resizable: false,
+    width: fitContent(),
+    close: closeMilitaryOverview,
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+  });
+}
 
-    $("#militaryOverview").dialog({
-      title: "Military Overview",
-      resizable: false,
-      width: fitContent(),
-      position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
-    });
+function renderDialog(): void {
+  document.getElementById("militaryOverview")?.remove();
+  const editorHtml = /* html */ `<div id="militaryOverview" class="dialog stable">
+      <div id="militaryHeader" class="header">
+        <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
+          State&nbsp;
+        </div>
+        <div
+          data-tip="Total military personnel (considering crew). Click to sort"
+          id="militaryTotal"
+          class="sortable icon-sort-number-down"
+          data-sortby="total"
+        >
+          Total&nbsp;
+        </div>
+        <div data-tip="State population. Click to sort" class="sortable" data-sortby="population">
+          Population&nbsp;
+        </div>
+        <div
+          data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort"
+          class="sortable"
+          data-sortby="rate"
+        >
+          Rate&nbsp;
+        </div>
+        <div
+          data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort"
+          class="sortable"
+          data-sortby="alert"
+        >
+          War Alert&nbsp;
+        </div>
+      </div>
+      <div id="militaryBody" class="table" data-type="absolute"></div>
+      <div id="militaryFooter" class="totalLine">
+        <div data-tip="States number" style="margin-left: 4px">
+          States:&nbsp;<span id="militaryFooterStates">0</span>
+        </div>
+        <div data-tip="Total military forces" style="margin-left: 14px">
+          Total forces:&nbsp;<span id="militaryFooterForcesTotal">0</span>
+        </div>
+        <div data-tip="Average military forces per state" style="margin-left: 14px">
+          Average forces:&nbsp;<span id="militaryFooterForces">0</span>
+        </div>
+        <div data-tip="Average forces rate per state" style="margin-left: 14px">
+          Average rate:&nbsp;<span id="militaryFooterRate">0%</span>
+        </div>
+        <div data-tip="Average War Alert" style="margin-left: 14px">
+          Average alert:&nbsp;<span id="militaryFooterAlert">0</span>
+        </div>
+      </div>
+      <div id="militaryBottom">
+        <button id="militaryOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
+        <button id="militaryOptionsButton" data-tip="Edit Military units" class="icon-cog"></button>
+        <button id="militaryRegimentsList" data-tip="Show regiments list" class="icon-list-bullet"></button>
+        <button
+          id="militaryPercentage"
+          data-tip="Toggle percentage / absolute values views"
+          class="icon-percent"
+        ></button>
+        <button
+          id="militaryOverviewRecalculate"
+          data-tip="Recalculate military forces based on current options"
+          class="icon-retweet"
+        ></button>
+        <button
+          id="militaryExport"
+          data-tip="Save military-related data as a text file (.csv)"
+          class="icon-download"
+        ></button>
+        <button id="militaryWiki" data-tip="Open Military Forces Tutorial" class="icon-info"></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-    // add listeners
-    ensureEl("militaryOverviewRefresh").addEventListener("click", refreshMilitaryOverview);
-    ensureEl("militaryPercentage").addEventListener("click", togglePercentageMode);
-    ensureEl("militaryOptionsButton").addEventListener("click", militaryCustomize);
-    ensureEl("militaryRegimentsList").addEventListener("click", () => openRegimentsOverview(-1));
-    ensureEl("militaryOverviewRecalculate").addEventListener("click", militaryRecalculate);
-    ensureEl("militaryExport").addEventListener("click", downloadMilitaryData);
-    ensureEl("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
+  const body = ensureEl("militaryBody");
 
-    body.addEventListener("change", event => {
-      const el = event.target as HTMLInputElement;
-      const line = el.parentNode as HTMLElement;
-      const state = +line.dataset.id!;
-      changeAlert(state, line, +el.value);
-    });
+  ensureEl("militaryOverviewRefresh").addEventListener("click", refreshMilitaryOverview);
+  ensureEl("militaryPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("militaryOptionsButton").addEventListener("click", militaryCustomize);
+  ensureEl("militaryRegimentsList").addEventListener("click", () => openRegimentsOverview(-1));
+  ensureEl("militaryOverviewRecalculate").addEventListener("click", militaryRecalculate);
+  ensureEl("militaryExport").addEventListener("click", downloadMilitaryData);
+  ensureEl("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
 
-    body.addEventListener("click", event => {
-      const el = event.target as HTMLElement;
-      const line = el.parentNode as HTMLElement;
-      const state = +line.dataset.id!;
-      if (el.tagName === "SPAN") openRegimentsOverview(state);
-    });
+  body.addEventListener("change", event => {
+    const el = event.target as HTMLInputElement;
+    const line = el.parentNode as HTMLElement;
+    const state = +line.dataset.id!;
+    changeAlert(state, line, +el.value);
+  });
 
-    isInitialized = true;
-  }
+  body.addEventListener("click", event => {
+    const el = event.target as HTMLElement;
+    const line = el.parentNode as HTMLElement;
+    const state = +line.dataset.id!;
+    if (el.tagName === "SPAN") openRegimentsOverview(state);
+  });
+}
+
+function closeMilitaryOverview(): void {
+  $("#militaryOverview").dialog("destroy");
+  ensureEl("militaryOverview").remove();
 }
 
 async function openRegimentsOverview(state: number): Promise<void> {
@@ -261,6 +336,7 @@ function togglePercentageMode(): void {
 }
 
 function militaryCustomize(): void {
+  renderOptions();
   const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
   removeUnitLines();
@@ -271,6 +347,7 @@ function militaryCustomize(): void {
     resizable: false,
     width: fitContent(),
     position: { my: "center", at: "center", of: "svg" },
+    close: closeMilitaryOptions,
     buttons: {
       Apply: applyMilitaryOptions,
       Add: () =>
@@ -528,6 +605,41 @@ function militaryCustomize(): void {
     updateHeaders();
     refreshMilitaryOverview();
   }
+}
+
+function renderOptions(): void {
+  document.getElementById("militaryOptions")?.remove();
+  const optionsHtml = /* html */ `<div id="militaryOptions" class="dialog stable">
+      <div class="table">
+        <table id="militaryOptionsTable">
+          <thead>
+            <tr>
+              <th data-tip="Unit icon">Icon</th>
+              <th data-tip="Unit name. If name is changed for existing unit, old unit will be replaced">Unit name</th>
+              <th style="width: 5em" data-tip="Select allowed biomes">Biomes</th>
+              <th style="width: 5em" data-tip="Select allowed states">States</th>
+              <th style="width: 5em" data-tip="Select allowed cultures">Cultures</th>
+              <th style="width: 5em" data-tip="Select allowed religions">Religions</th>
+              <th data-tip="Conscription percentage for rural population">Rural</th>
+              <th data-tip="Conscription percentage for urban population">Urban</th>
+              <th data-tip="Average number of people in crew (used for total personnel calculation)">Crew</th>
+              <th data-tip="Unit military power (used for battle simulation)">Power</th>
+              <th data-tip="Unit type to apply special rules on forces recalculation">Type</th>
+              <th data-tip="Check if unit is separate and can be stacked only with units of the same type">
+                Separate
+              </th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", optionsHtml);
+}
+
+function closeMilitaryOptions(): void {
+  $("#militaryOptions").dialog("destroy");
+  ensureEl("militaryOptions").remove();
 }
 
 function militaryRecalculate(): void {

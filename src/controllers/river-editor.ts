@@ -228,7 +228,7 @@ function redrawRiver(): void {
   elSelected.attr("d", path);
 
   updateRiverLength(river);
-  if (ensureEl("elevationProfile").offsetParent) showRiverElevationProfile();
+  if (document.getElementById("elevationProfile")?.offsetParent) showRiverElevationProfile();
 }
 
 function addControlPoint(this: any, event: any): void {
@@ -301,7 +301,7 @@ function showRiverElevationProfile(): void {
 function editRiverLegend(): void {
   const id = elSelected.attr("id");
   const river = getRiver();
-  editNotes(id, `${river.name} ${river.type}`);
+  void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
 }
 
 function removeRiver(): void {

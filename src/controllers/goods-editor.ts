@@ -5,8 +5,24 @@ import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
 
-let isInitialized = false;
 const visibleTags = new Set<string>();
+
+function open() {
+  if (customization) return;
+  closeDialogs("#goodsEditor, .stable");
+
+  if (!layerIsOn("toggleGoods")) toggleGoods();
+  else drawGoods();
+
+  renderDialog();
+  goodsEditorAddLines();
+
+  $("#goodsEditor").dialog({
+    title: "Goods Editor",
+    close: closeGoodsEditor,
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
+  });
+}
 
 function getVisibleCount(): number {
   return pack.goods.reduce((count, good) => count + (good.visible ? 1 : 0), 0);
@@ -17,47 +33,87 @@ function refreshEditor() {
   drawGoods();
 }
 
-function open() {
-  if (customization) return;
-  closeDialogs("#goodsEditor, .stable");
+function renderDialog(): void {
+  document.getElementById("goodsEditor")?.remove();
+  const editorHtml = /* html */ `<div id="goodsEditor" class="dialog stable">
+      <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 6em 5em 6.8em 6em 4.6em 1.6em;">
+        <input
+          type="checkbox"
+          data-tip="Show or hide all goods on the Goods map"
+          class="native hide"
+          id="goodsDisplayAll"
+          style="margin: 0 .3em; vertical-align: middle; width: 1.2em;"
+        />
+        <div data-tip="Click to sort by good name" class="sortable alphabetically" data-sortby="name">
+          Name&nbsp;
+        </div>
+        <div data-tip="Click to sort by type" class="sortable alphabetically" data-sortby="type">
+          Type&nbsp;
+        </div>
+        <div data-tip="Unit of production. Click to sort" class="sortable alphabetically hide" data-sortby="unit">
+          Unit&nbsp;
+        </div>
+        <div data-tip="Total units produced daily in cells (raw) and burgs (manufactured). Click to sort" class="sortable icon-sort-number-down hide" data-sortby="produced">
+          Produced&nbsp;
+        </div>
+        <div data-tip="Total units in stock across all markets and burg inventories. Click to sort" class="sortable hide" data-sortby="stock">
+          Stock&nbsp;
+        </div>
+        <div data-tip="Base (initial) price. Click to sort" class="sortable hide" data-sortby="baseprice">
+          Price&nbsp;
+        </div>
+      </div>
+      <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
+      <div id="goodsFooter" class="totalLine hide">
+        <div data-tip="Number of goods (displayed / total)" style="margin-left: 5px">Goods:&nbsp;<span id="goodsDisplayed">0</span> of <span id="goodsNumber">0</span></div>
+        <div data-tip="Total units produced daily by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
+        <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
+      </div>
+      <div id="goodsBottom">
+        <button id="goodsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button
+          id="goodsPercentage"
+          data-tip="Toggle percentage / absolute values display mode"
+          class="icon-percent"
+        ></button>
+        <button id="goodsTagsFilter" data-tip="Filter visible goods by tags" class="icon-tags"></button>
+        <button id="goodsAssign" data-tip="Manually assign goods to cells" class="icon-brush"></button>
+        <button id="goodsAdd" data-tip="Add a new good" class="icon-plus hide"></button>
+        <button id="goodsRegenerateGoods" data-tip="Regenerate bonus goods placement" class="icon-arrows-cw hide"></button>
+        <button id="goodsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet hide"></button>
+        <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-line hide"></button>
+        <button
+          id="goodsRestore"
+          data-tip="Restore default list and regenerate goods"
+          class="icon-history hide"
+        ></button>
+        <button id="goodsExport" data-tip="Download goods-related data" class="icon-download hide"></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  if (!layerIsOn("toggleGoods")) toggleGoods();
-  else drawGoods();
+  ensureEl("goodsEditorRefresh").on("click", goodsEditorAddLines);
+  ensureEl("goodsPercentage").on("click", togglePercentageMode);
+  ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
+  ensureEl("goodsAssign").on("click", enterResourceAssignMode);
+  ensureEl("goodsAdd").on("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
+  ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
+  ensureEl("goodsExport").on("click", downloadGoodsData);
+  ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
+  ensureEl("goodsChains").on("click", () => Controllers.ProductionChains.open());
+  ensureEl("goodsRegenerateGoods").on("click", requestGoodsRegeneration);
+  ensureEl("goodsRegenerateProduction").on("click", requestProductionRegeneration);
 
-  goodsEditorAddLines();
-
-  $("#goodsEditor").dialog({
-    title: "Goods Editor",
-    close: closeGoodsEditor,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" }
+  ensureEl("goodsBody").on("click", ev => {
+    const el = ev.target as HTMLElement;
+    const cl = el.classList;
+    const line = el.parentNode as HTMLElement;
+    const good = Goods.get(+line.dataset.id!);
+    if (!good) return;
+    if (cl.contains("goodEdit")) return Controllers.GoodEditor.open(good, refreshEditor);
+    if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
+    if (cl.contains("icon-trash-empty")) return removeGood(good, line);
   });
-
-  if (!isInitialized) {
-    ensureEl("goodsEditorRefresh").on("click", goodsEditorAddLines);
-    ensureEl("goodsPercentage").on("click", togglePercentageMode);
-    ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
-    ensureEl("goodsAssign").on("click", enterResourceAssignMode);
-    ensureEl("goodsAdd").on("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
-    ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
-    ensureEl("goodsExport").on("click", downloadGoodsData);
-    ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
-    ensureEl("goodsChains").on("click", () => Controllers.ProductionChains.open());
-    ensureEl("goodsRegenerateGoods").on("click", requestGoodsRegeneration);
-    ensureEl("goodsRegenerateProduction").on("click", requestProductionRegeneration);
-
-    ensureEl("goodsBody").on("click", ev => {
-      const el = ev.target as HTMLElement;
-      const cl = el.classList;
-      const line = el.parentNode as HTMLElement;
-      const good = Goods.get(+line.dataset.id!);
-      if (!good) return;
-      if (cl.contains("goodEdit")) return Controllers.GoodEditor.open(good, refreshEditor);
-      if (cl.contains("goodDisplayed")) return toggleDisplayedGood(good, el as HTMLInputElement);
-      if (cl.contains("icon-trash-empty")) return removeGood(good, line);
-    });
-
-    isInitialized = true;
-  }
 }
 
 function goodsEditorAddLines() {
@@ -604,7 +660,8 @@ function removeGood(good: Good, line: HTMLElement) {
 
 function closeGoodsEditor() {
   if (customization === 14) exitResourceAssignMode("close");
-  ensureEl("goodsBody").innerHTML = "";
+  $("#goodsEditor").dialog("destroy");
+  ensureEl("goodsEditor").remove();
 }
 
 export const GoodsEditor = { open };

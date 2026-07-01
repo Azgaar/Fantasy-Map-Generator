@@ -11,6 +11,7 @@ export interface Zone {
   type: string;
   cells: number[];
   color: string;
+  hidden?: boolean;
 }
 
 type ZoneGenerator = (usedCells: Uint8Array) => void;
