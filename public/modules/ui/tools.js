@@ -11,7 +11,7 @@ toolsContent.addEventListener("click", function (event) {
   if (button === "editHeightmapButton") editHeightmap();
   else if (button === "editBiomesButton") window.Controllers.BiomesEditor.open();
   else if (button === "editStatesButton") window.Controllers.StatesEditor.open();
-  else if (button === "editProvincesButton") editProvinces();
+  else if (button === "editProvincesButton") window.Controllers.ProvincesEditor.open();
   else if (button === "editDiplomacyButton") window.Controllers.DiplomacyEditor.open();
   else if (button === "editCoastlineSettings") window.Controllers.CoastlineEditor.open();
   else if (button === "editTradeAnimationButton") window.Controllers.TradeAnimationEditor.open();

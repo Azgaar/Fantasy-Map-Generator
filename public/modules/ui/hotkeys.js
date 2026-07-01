@@ -39,7 +39,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyH") editHeightmap();
   else if ((shift || altShift) && code === "KeyB") window.Controllers.BiomesEditor.open();
   else if ((shift || altShift) && code === "KeyS") window.Controllers.StatesEditor.open();
-  else if ((shift || altShift) && code === "KeyP") editProvinces();
+  else if ((shift || altShift) && code === "KeyP") window.Controllers.ProvincesEditor.open();
   else if ((shift || altShift) && code === "KeyD") window.Controllers.DiplomacyEditor.open();
   else if ((shift || altShift) && code === "KeyL") window.Controllers.CoastlineEditor.open();
   else if ((shift || altShift) && code === "KeyC") window.Controllers.CulturesEditor.open();
