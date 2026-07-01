@@ -38,7 +38,7 @@ function closeRouteGroupsEditor(): void {
 function onBodyClick(ev: Event): void {
   const target = ev.target as HTMLElement;
   const group = target.closest<HTMLElement>(".states")?.dataset.id;
-  if (target.classList.contains("editStyle")) editStyle("routes", group);
+  if (target.classList.contains("editStyle") && group) editStyle("routes", group);
   else if (target.classList.contains("removeGroup") && group) removeGroup(group);
 }
 
