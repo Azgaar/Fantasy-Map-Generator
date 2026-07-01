@@ -1,4 +1,4 @@
-import { drag, polygonArea, select } from "d3";
+import { type D3DragEvent, drag, polygonArea, select } from "d3";
 import type { Feature } from "@/generators/features";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
@@ -86,7 +86,11 @@ function drawCoastlineVertices(): void {
   ensureEl("coastlineArea").innerHTML = `${si(getArea(area))} ${getAreaUnit()}`;
 }
 
-function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number): void {
+function handleVertexDrag(
+  this: SVGCircleElement,
+  event: D3DragEvent<SVGCircleElement, number, number>,
+  vertexId: number
+): void {
   const { vertices, features } = pack;
 
   const x = rn(event.x, 2);
