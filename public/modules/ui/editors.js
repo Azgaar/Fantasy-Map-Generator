@@ -31,7 +31,7 @@ function clicked() {
   else if (grand.id === "markets" && el.tagName !== "path") window.Controllers.MarketOverview.open(Number(parent.dataset.id));
   else if (grand.id === "goodsIcons" || parent.id === "goodsCells") window.Controllers.GoodsEditor.open();
   else if (grand.id === "goodsBurgs") window.Controllers.ProductionOverview.open(Number(parent.dataset.id));
-  else if (grand.id === "coastline") editCoastline();
+  else if (grand.id === "coastline") window.Controllers.CoastlineVertexEditor.open(el);
   else if (grand.id === "lakes") window.Controllers.LakesEditor.open(el);
   else if (great.id === "armies") window.Controllers.RegimentEditor.open("#" + parent.id);
 }

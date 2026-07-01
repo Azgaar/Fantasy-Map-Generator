@@ -8,6 +8,7 @@ export const Controllers = createRegistry({
   BurgsOverview: () => import("@/controllers/burgs-overview").then(m => m.BurgsOverview),
   ChartsOverview: () => import("@/controllers/charts-overview").then(m => m.ChartsOverview),
   CoastlineEditor: () => import("@/controllers/coastline-editor").then(m => m.CoastlineEditor),
+  CoastlineVertexEditor: () => import("@/controllers/coastline-vertex-editor").then(m => m.CoastlineVertexEditor),
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
