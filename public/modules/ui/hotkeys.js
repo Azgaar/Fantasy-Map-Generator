@@ -54,7 +54,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyU") window.Controllers.RoutesOverview.open();
   else if ((shift || altShift) && code === "KeyV") window.Controllers.RiversOverview.open();
   else if ((shift || altShift) && code === "KeyM") window.Controllers.MilitaryOverview.open();
-  else if ((shift || altShift) && code === "KeyK") overviewMarkers();
+  else if ((shift || altShift) && code === "KeyK") window.Controllers.MarkersOverview.open();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
   else if ((shift || altShift) && code === "KeyG") window.Controllers.GoodsEditor.open();
   else if (key === "!") toggleAddBurg();

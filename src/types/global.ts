@@ -289,6 +289,10 @@ declare global {
   var toggleRivers: (event?: MouseEvent) => void;
   var toggleIce: (event?: MouseEvent) => void;
   var toggleAddRiver: () => void;
+  var toggleMarkers: (event?: MouseEvent) => void;
+  var drawMarkers: () => void;
+  var regenerateMarkers: () => void;
+  var configMarkersGeneration: () => void;
 
   var clicked: () => void;
   var unselect: () => void;

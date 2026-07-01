@@ -22,6 +22,7 @@ export interface Marker {
   hidden?: boolean;
   cell: number;
   lock?: boolean;
+  pinned?: boolean;
 }
 
 type MarkerConfig = {

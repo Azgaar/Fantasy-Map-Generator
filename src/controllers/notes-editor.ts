@@ -7,7 +7,59 @@ interface Note {
 }
 
 function open(id?: string, name?: string): void {
-  const html = /* html */ `
+  renderDialog();
+
+  const notesLegend = ensureEl("notesLegend");
+  const notesName = ensureEl<HTMLInputElement>("notesName");
+  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
+  const notesPin = ensureEl("notesPin");
+
+  const notesList = notes as Note[];
+
+  // update list of objects
+  notesList.forEach(note => {
+    notesSelect.options.add(new Option(note.id, note.id));
+  });
+
+  // update pin notes icon
+  if (options.pinNotes) notesPin.classList.add("pressed");
+  else notesPin.classList.remove("pressed");
+
+  // select an object
+  if (notesList.length || id) {
+    if (!id) id = notesList[0].id;
+    let note = notesList.find(note => note.id === id);
+    if (!note) {
+      if (!name) name = id;
+      note = { id, name, legend: "" };
+      notesList.push(note);
+      notesSelect.options.add(new Option(id, id));
+    }
+
+    notesSelect.value = id;
+    notesName.value = note.name;
+    notesLegend.innerHTML = note.legend;
+    void initEditor();
+    updateNotesBox(note);
+  } else {
+    // if notes array is empty
+    notesName.value = "";
+    notesLegend.innerHTML = "No notes added. Click on an element (e.g. label or marker) and add a free text note";
+  }
+
+  $("#notesEditor").dialog({
+    title: "Notes Editor",
+    width: svgWidth * 0.8,
+    height: svgHeight * 0.75,
+    position: { my: "center", at: "center", of: "svg" },
+    close: closeNotesEditor
+  });
+}
+
+function renderDialog(): void {
+  window.tinymce?.remove();
+  document.getElementById("notesEditor")?.remove();
+  const editorHtml = /* html */ `<div id="notesEditor" class="dialog stable">
     <div style="margin-bottom: 0.3em">
       <strong>Element: </strong>
       <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
@@ -24,50 +76,13 @@ function open(id?: string, name?: string): void {
       <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
       <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
     </div>`;
-  ensureEl("notesEditor").innerHTML = html;
 
-  const notesLegend = ensureEl("notesLegend");
-  const notesName = ensureEl<HTMLInputElement>("notesName");
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const notesPin = ensureEl("notesPin");
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  // update list of objects
-  notesSelect.options.length = 0;
-  (notes as Note[]).forEach(note => {
-    notesSelect.options.add(new Option(note.id, note.id));
-  });
-
-  // update pin notes icon
-  if (options.pinNotes) notesPin.classList.add("pressed");
-  else notesPin.classList.remove("pressed");
-
-  // select an object
-  if (notes.length || id) {
-    if (!id) id = (notes as Note[])[0].id;
-    let note = (notes as Note[]).find(note => note.id === id);
-    if (!note) {
-      if (!name) name = id;
-      note = { id, name, legend: "" };
-      notes.push(note);
-      notesSelect.options.add(new Option(id, id));
-    }
-
-    notesSelect.value = id;
-    notesName.value = note.name;
-    notesLegend.innerHTML = note.legend;
-    void initEditor();
-    updateNotesBox(note);
-  } else {
-    // if notes array is empty
-    notesName.value = "";
-    notesLegend.innerHTML = "No notes added. Click on an element (e.g. label or marker) and add a free text note";
-  }
-
-  // add listeners — dropped together with the dialog HTML on close
-  notesSelect.on("change", changeElement);
-  notesName.on("input", changeName);
-  notesLegend.on("blur", updateLegend);
-  notesPin.on("click", toggleNotesPin);
+  ensureEl<HTMLSelectElement>("notesSelect").on("change", changeElement);
+  ensureEl<HTMLInputElement>("notesName").on("input", changeName);
+  ensureEl("notesLegend").on("blur", updateLegend);
+  ensureEl("notesPin").on("click", toggleNotesPin);
   ensureEl("notesFocus").on("click", validateHighlightElement);
   ensureEl("notesGenerateWithAi").on("click", openAiGenerator);
   ensureEl("notesDownload").on("click", downloadLegends);
@@ -76,14 +91,12 @@ function open(id?: string, name?: string): void {
     uploadFile(this, uploadLegends);
   });
   ensureEl("notesRemove").on("click", triggerNotesRemove);
+}
 
-  $("#notesEditor").dialog({
-    title: "Notes Editor",
-    width: svgWidth * 0.8,
-    height: svgHeight * 0.75,
-    position: { my: "center", at: "center", of: "svg" },
-    close: removeEditor
-  });
+function closeNotesEditor(): void {
+  window.tinymce?.remove();
+  $("#notesEditor").dialog("destroy");
+  ensureEl("notesEditor").remove();
 }
 
 async function initEditor(): Promise<void> {
@@ -191,7 +204,6 @@ function removeSelectedNote(): void {
     return;
   }
 
-  removeEditor();
   open((notes as Note[])[0].id, (notes as Note[])[0].name);
 }
 
@@ -227,7 +239,6 @@ function uploadLegends(dataLoaded: string): void {
     return;
   }
   notes = JSON.parse(dataLoaded);
-  ensureEl<HTMLSelectElement>("notesSelect").options.length = 0;
   open((notes as Note[])[0].id, (notes as Note[])[0].name);
 }
 
@@ -243,11 +254,6 @@ function triggerNotesRemove(): void {
 function toggleNotesPin(this: HTMLElement): void {
   options.pinNotes = !options.pinNotes;
   this.classList.toggle("pressed");
-}
-
-function removeEditor(): void {
-  window.tinymce?.remove();
-  ensureEl("notesEditor").innerHTML = "";
 }
 
 export const NotesEditor = { open };

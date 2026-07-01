@@ -28,7 +28,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "overviewRoutesButton") window.Controllers.RoutesOverview.open();
   else if (button === "overviewRiversButton") window.Controllers.RiversOverview.open();
   else if (button === "overviewMilitaryButton") window.Controllers.MilitaryOverview.open();
-  else if (button === "overviewMarkersButton") overviewMarkers();
+  else if (button === "overviewMarkersButton") window.Controllers.MarkersOverview.open();
   else if (button === "overviewMarketsButton") window.Controllers.MarketsOverview.open();
   else if (button === "overviewCellsButton") viewCellDetails();
   else if (button === "openMinimapButton") openMinimap();
@@ -634,7 +634,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
-  if (ensureEl("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+  if (document.getElementById("markersOverviewRefresh")?.offsetParent) markersOverviewRefresh.click();
 }
 
 function regenerateZones(event) {
@@ -905,7 +905,7 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
-  markersAddFromOverview.classList.add("pressed");
+  document.getElementById("markersAddFromOverview")?.classList.add("pressed");
 
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
   tip("Click on map to add a marker. Hold Shift to add multiple", true);
@@ -940,8 +940,8 @@ function addMarkerOnClick() {
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
   if (d3.event.shiftKey === false) {
-    ensureEl("markerAdd").classList.remove("pressed");
-    ensureEl("markersAddFromOverview").classList.remove("pressed");
+    document.getElementById("markerAdd")?.classList.remove("pressed");
+    document.getElementById("markersAddFromOverview")?.classList.remove("pressed");
     unpressClickToAddButton();
   }
 }

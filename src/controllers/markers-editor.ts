@@ -71,7 +71,7 @@ function open(markerI?: number, target?: Element): void {
     .call(drag<SVGElement, unknown>().on("start", dragMarker))
     .classed("draggable", true) as unknown as typeof elSelected;
 
-  if (ensureEl("notesEditor").offsetParent) {
+  if (document.getElementById("notesEditor")?.offsetParent) {
     void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
   }
 
@@ -300,7 +300,7 @@ function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
   $("#markerEditor").dialog("close");
-  if (ensureEl("markersOverviewRefresh").offsetParent) ensureEl("markersOverviewRefresh").click();
+  if (document.getElementById("markersOverviewRefresh")?.offsetParent) ensureEl("markersOverviewRefresh").click();
 }
 
 function closeMarkerEditor(): void {

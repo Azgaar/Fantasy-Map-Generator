@@ -24,6 +24,7 @@ export const Controllers = createRegistry({
   LabelsEditor: () => import("@/controllers/labels-editor").then(m => m.LabelsEditor),
   LakesEditor: () => import("@/controllers/lakes-editor").then(m => m.LakesEditor),
   MarkersEditor: () => import("@/controllers/markers-editor").then(m => m.MarkersEditor),
+  MarkersOverview: () => import("@/controllers/markers-overview").then(m => m.MarkersOverview),
   MarketDealsOverview: () => import("@/controllers/market-deals-overview").then(m => m.MarketDealsOverview),
   MarketOverview: () => import("@/controllers/market-overview").then(m => m.MarketOverview),
   MarketsOverview: () => import("@/controllers/markets-overview").then(m => m.MarketsOverview),
