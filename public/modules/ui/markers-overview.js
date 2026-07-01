@@ -138,7 +138,7 @@ function overviewMarkers() {
 
     const { x, y } = marker;
     zoomTo(x, y, 8, 2000);
-    editMarker(i);
+    window.Controllers.MarkersEditor.open(i);
   }
 
   function highlightMarker(i) {
