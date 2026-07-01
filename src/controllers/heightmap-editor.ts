@@ -1,7 +1,6 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, pointer, range, select } from "d3";
 import { Controllers } from "@/controllers";
 import {
-  createTypedArray,
   ensureEl,
   findGridAll,
   findGridCell,
@@ -14,14 +13,26 @@ import {
   rn,
   unique
 } from "../utils";
-
 import type { PromptOptions } from "../utils/commonUtils";
 
-insertEditorHtml();
+// Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
+declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
+
+function open(options?: { mode?: string; tool?: string }): void {
+  const { mode, tool } = options || {};
+  restartHistory();
+  viewboxSel().selectAll("#heights").remove();
+  viewboxSel().insert("g", "#terrs").attr("id", "heights");
+
+  if (!mode) showModeDialog(tool);
+  else enterHeightmapEditMode(mode, tool);
+}
+
 addToolbarListeners();
 addBrushesListeners();
 
-function insertEditorHtml(): void {
+function renderTemplateEditor(): void {
+  document.getElementById("templateEditor")?.remove();
   const editorHtml = /* html */ `<div id="templateEditor" class="dialog stable">
       <div id="templateTop">
         <i>Select template: </i>
@@ -113,8 +124,60 @@ function insertEditorHtml(): void {
           <i data-locked="0" id="lock_templateSeed" class="icon-lock-open"></i>
         </label>
       </div>
-    </div>
-    <div id="imageConverter" class="dialog stable">
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+
+  const $body = ensureEl("templateBody");
+
+  $("#templateBody").sortable({
+    items: "> div",
+    handle: ".icon-resize-vertical",
+    containment: "#templateBody",
+    axis: "y"
+  });
+
+  $body.on("click", (ev: Event) => {
+    const el = ev.target as HTMLElement;
+    if (el.classList.contains("icon-check")) {
+      el.classList.remove("icon-check");
+      el.classList.add("icon-check-empty");
+      (el.parentElement as HTMLElement).style.opacity = "0.5";
+      $body.dataset.changed = "1";
+      return;
+    }
+    if (el.classList.contains("icon-check-empty")) {
+      el.classList.add("icon-check");
+      el.classList.remove("icon-check-empty");
+      (el.parentElement as HTMLElement).style.opacity = "1";
+      return;
+    }
+    if (el.classList.contains("icon-trash-empty")) {
+      (el.parentElement as HTMLElement).remove();
+    }
+  });
+
+  ensureEl("templateEditor").on("keypress", (event: Event) => {
+    if ((event as KeyboardEvent).key === "Enter") {
+      event.preventDefault();
+      executeTemplate();
+    }
+  });
+
+  ensureEl("templateTools").on("click", addStepOnClick);
+  ensureEl("templateSelect").on("change", selectTemplate);
+  ensureEl("templateRun").on("click", executeTemplate);
+  ensureEl("templateSave").on("click", downloadTemplate);
+  ensureEl("templateLoad").on("click", () => ensureEl("templateToLoad").click());
+  // templateToLoad is a static file input outside the dialog; use property assignment
+  // (idempotent, replaces rather than accumulates) so re-rendering doesn't stack listeners.
+  ensureEl<HTMLInputElement>("templateToLoad").onchange = () => {
+    uploadFile(ensureEl<HTMLInputElement>("templateToLoad"), uploadTemplate);
+  };
+}
+
+function renderImageConverter(): void {
+  document.getElementById("imageConverter")?.remove();
+  const editorHtml = /* html */ `<div id="imageConverter" class="dialog stable">
       <div id="convertImageButtons">
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
         <button
@@ -169,31 +232,43 @@ function insertEditorHtml(): void {
       </button>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+
+  // add color pallete
+  select("#imageConverterPalette")
+    .selectAll("div")
+    .data(range(101))
+    .enter()
+    .append("div")
+    .attr("data-color", (i: number) => i)
+    .style("background-color", (i: number) => color(1 - (i < 20 ? i - 5 : i) / 100))
+    .style("width", (i: number) => (i < 40 || i > 68 ? ".2em" : ".1em"))
+    .on("touchmove mousemove", showPalleteHeight)
+    .on("click", assignHeight);
+
+  ensureEl("convertImageLoad").on("click", () => ensureEl("imageToLoad").click());
+  // imageToLoad is a static file input outside the dialog; use property assignment
+  // (idempotent, replaces rather than accumulates) so re-rendering doesn't stack listeners.
+  ensureEl<HTMLInputElement>("imageToLoad").onchange = () => loadImage.call(ensureEl<HTMLInputElement>("imageToLoad"));
+  ensureEl("convertAutoLum").on("click", () => autoAssing("lum"));
+  ensureEl("convertAutoHue").on("click", () => autoAssing("hue"));
+  ensureEl("convertAutoFMG").on("click", () => autoAssing("scheme"));
+  ensureEl("convertColorsButton").on("click", setConvertColorsNumber);
+  ensureEl("convertComplete").on("click", applyConversion);
+  ensureEl("convertCancel").on("click", cancelConversion);
+  ensureEl<HTMLInputElement>("convertOverlay").on("input", function (this: HTMLInputElement) {
+    setOverlayOpacity(+this.value);
+  });
+  ensureEl<HTMLInputElement>("convertOverlayNumber").on("input", function (this: HTMLInputElement) {
+    setOverlayOpacity(+this.value);
+  });
 }
 
-// Custom app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor).
-declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
-
-// Toolbar, brushes, template editor and image converter are all persistent chrome for the one
-// long-lived heightmap-editing session (entered/exited as a whole via customization mode), not
-// per-open dialogs — so this module builds their markup once at load and wires listeners once
-// instead of the usual render-on-open/destroy-on-close cycle used by other controllers.
-let templateInit = false;
-let imageConverterInit = false;
+// The toolbar and brushes panel are static in index.html; they're part of the one long-lived
+// heightmap-editing session, so listeners are wired once at load rather than per open/close.
 let storedLayers: string[] = [];
 
 const viewboxSel = () => select<SVGElement, unknown>(viewbox.node()!);
 const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
-
-function open(options?: { mode?: string; tool?: string }): void {
-  const { mode, tool } = options || {};
-  restartHistory();
-  viewboxSel().selectAll("#heights").remove();
-  viewboxSel().insert("g", "#terrs").attr("id", "heights");
-
-  if (!mode) showModeDialog(tool);
-  else enterHeightmapEditMode(mode, tool);
-}
 
 function addToolbarListeners(): void {
   ensureEl("paintBrushes").on("click", openBrushesPanel);
@@ -209,12 +284,12 @@ function addToolbarListeners(): void {
 
 function showModeDialog(tool?: string): void {
   alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
-  <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
-  <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
-  <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
-  <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-  <p>Please <span class="pseudoLink" onclick="window.Services.Save.saveMap('machine')">save the map</span> before editing the heightmap!</p>
-  <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
+    <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
+    <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
+    <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
+    <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
+    <p>Please <span class="pseudoLink" onclick="window.Services.Save.saveMap('machine')">save the map</span> before editing the heightmap!</p>
+    <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -1202,62 +1277,22 @@ function startFromScratch(): void {
 }
 
 function openTemplateEditor(): void {
-  if ($("#templateEditor").is(":visible")) return;
-  const $body = ensureEl("templateBody");
+  if (document.getElementById("templateEditor")) return;
+  renderTemplateEditor();
 
   $("#templateEditor").dialog({
     title: "Template Editor",
     minHeight: "auto",
     width: "fit-content",
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    close: closeTemplateEditor
   });
+}
 
-  if (templateInit) return;
-  templateInit = true;
-
-  $("#templateBody").sortable({
-    items: "> div",
-    handle: ".icon-resize-vertical",
-    containment: "#templateBody",
-    axis: "y"
-  });
-
-  $body.on("click", (ev: Event) => {
-    const el = ev.target as HTMLElement;
-    if (el.classList.contains("icon-check")) {
-      el.classList.remove("icon-check");
-      el.classList.add("icon-check-empty");
-      (el.parentElement as HTMLElement).style.opacity = "0.5";
-      $body.dataset.changed = "1";
-      return;
-    }
-    if (el.classList.contains("icon-check-empty")) {
-      el.classList.add("icon-check");
-      el.classList.remove("icon-check-empty");
-      (el.parentElement as HTMLElement).style.opacity = "1";
-      return;
-    }
-    if (el.classList.contains("icon-trash-empty")) {
-      (el.parentElement as HTMLElement).remove();
-    }
-  });
-
-  ensureEl("templateEditor").on("keypress", (event: Event) => {
-    if ((event as KeyboardEvent).key === "Enter") {
-      event.preventDefault();
-      executeTemplate();
-    }
-  });
-
-  ensureEl("templateTools").on("click", addStepOnClick);
-  ensureEl("templateSelect").on("change", selectTemplate);
-  ensureEl("templateRun").on("click", executeTemplate);
-  ensureEl("templateSave").on("click", downloadTemplate);
-  ensureEl("templateLoad").on("click", () => ensureEl("templateToLoad").click());
-  ensureEl<HTMLInputElement>("templateToLoad").on("change", function (this: HTMLInputElement) {
-    uploadFile(this, uploadTemplate);
-  });
+function closeTemplateEditor(): void {
+  $("#templateEditor").dialog("destroy");
+  ensureEl("templateEditor").remove();
 }
 
 function addStepOnClick(e: Event): void {
@@ -1457,7 +1492,7 @@ function executeTemplate(): void {
   Math.random = aleaPRNG(seed);
   ensureEl<HTMLInputElement>("templateSeed").value = seed;
 
-  grid.cells.h = createTypedArray({ maxValue: 100, length: grid.points.length });
+  grid.cells.h = new Uint8Array(grid.points.length);
   HeightmapGenerator.setGraph(grid);
   restartHistory();
 
@@ -1537,9 +1572,11 @@ function uploadTemplate(dataLoaded: string): void {
 }
 
 function openImageConverter(): void {
-  if ($("#imageConverter").is(":visible")) return;
+  if (document.getElementById("imageConverter")) return;
   ensureEl("imageToLoad").click();
   closeDialogs("#imageConverter");
+
+  renderImageConverter();
 
   $("#imageConverter").dialog({
     title: "Image Converter",
@@ -1565,36 +1602,6 @@ function openImageConverter(): void {
   grid.cells.h = new Uint8Array(grid.cells.i.length);
   viewboxSel().select("#heights").selectAll("*").remove();
   updateHistory();
-
-  if (imageConverterInit) return;
-  imageConverterInit = true;
-
-  // add color pallete
-  select("#imageConverterPalette")
-    .selectAll("div")
-    .data(range(101))
-    .enter()
-    .append("div")
-    .attr("data-color", (i: number) => i)
-    .style("background-color", (i: number) => color(1 - (i < 20 ? i - 5 : i) / 100))
-    .style("width", (i: number) => (i < 40 || i > 68 ? ".2em" : ".1em"))
-    .on("touchmove mousemove", showPalleteHeight)
-    .on("click", assignHeight);
-
-  ensureEl("convertImageLoad").on("click", () => ensureEl("imageToLoad").click());
-  ensureEl("imageToLoad").on("change", loadImage);
-  ensureEl("convertAutoLum").on("click", () => autoAssing("lum"));
-  ensureEl("convertAutoHue").on("click", () => autoAssing("hue"));
-  ensureEl("convertAutoFMG").on("click", () => autoAssing("scheme"));
-  ensureEl("convertColorsButton").on("click", setConvertColorsNumber);
-  ensureEl("convertComplete").on("click", applyConversion);
-  ensureEl("convertCancel").on("click", cancelConversion);
-  ensureEl<HTMLInputElement>("convertOverlay").on("input", function (this: HTMLInputElement) {
-    setOverlayOpacity(+this.value);
-  });
-  ensureEl<HTMLInputElement>("convertOverlayNumber").on("input", function (this: HTMLInputElement) {
-    setOverlayOpacity(+this.value);
-  });
 }
 
 function showPalleteHeight(this: HTMLElement): void {
@@ -1852,6 +1859,7 @@ function restoreImageConverterState(): void {
   viewboxSel().style("cursor", "default").on(".drag", null);
   tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
   $("#imageConverter").dialog("destroy");
+  ensureEl("imageConverter").remove();
   openBrushesPanel();
 }
 
