@@ -2,6 +2,7 @@ import { createRegistry } from "@/utils/registry";
 
 export const Controllers = createRegistry({
   BattleScreen: () => import("@/controllers/battle-screen").then(m => m.BattleScreen),
+  BiomesEditor: () => import("@/controllers/biomes-editor").then(m => m.BiomesEditor),
   BurgEditor: () => import("@/controllers/burg-editor").then(m => m.BurgEditor),
   BurgGroupEditor: () => import("@/controllers/burg-group-editor").then(m => m.BurgGroupEditor),
   BurgsOverview: () => import("@/controllers/burgs-overview").then(m => m.BurgsOverview),

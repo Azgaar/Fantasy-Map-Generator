@@ -114,6 +114,11 @@ declare global {
     iconsDensity: number[];
     icons: string[][];
     cost: number[];
+    // statistics computed by the biomes editor
+    cells?: number[];
+    area?: number[];
+    rural?: number[];
+    urban?: number[];
   };
   var notes: any[];
   var style: {
@@ -164,6 +169,8 @@ declare global {
   var toggleRulers: () => void;
   var toggleRelief: () => void;
   var calculateFriendlyGridSize: () => void;
+  var recalculatePopulation: () => void;
+  var findAll: (x: number, y: number, radius: number) => number[];
 
   var drawTexture: () => void;
   var drawRoutes: () => void;

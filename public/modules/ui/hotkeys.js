@@ -37,7 +37,7 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
   else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
   else if ((shift || altShift) && code === "KeyH") editHeightmap();
-  else if ((shift || altShift) && code === "KeyB") editBiomes();
+  else if ((shift || altShift) && code === "KeyB") window.Controllers.BiomesEditor.open();
   else if ((shift || altShift) && code === "KeyS") window.Controllers.StatesEditor.open();
   else if ((shift || altShift) && code === "KeyP") editProvinces();
   else if ((shift || altShift) && code === "KeyD") editDiplomacy();
