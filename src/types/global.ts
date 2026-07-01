@@ -162,6 +162,7 @@ declare global {
   var addCustomColorScheme: (scheme: string) => void;
   var updateTextureSelectValue: (href: string) => void;
   var toggleRulers: () => void;
+  var toggleRelief: () => void;
   var calculateFriendlyGridSize: () => void;
 
   var drawTexture: () => void;
