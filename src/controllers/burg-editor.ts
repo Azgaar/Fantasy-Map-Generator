@@ -367,7 +367,7 @@ function setCustomPreview(): void {
 function openEmblemEdit(): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
-  editEmblem("burg", `burgCOA${id}`, burg);
+  void Controllers.EmblemsEditor.open("burg", `burgCOA${id}`, burg);
 }
 
 function zoomIntoBurg(): void {

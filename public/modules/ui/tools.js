@@ -127,7 +127,7 @@ async function openEmblemEditor() {
   }
 
   await COArenderer.trigger(id, el.coa);
-  editEmblem(type, id, el);
+  window.Controllers.EmblemsEditor.open(type, id, el);
 }
 
 function regenerateRoutes() {

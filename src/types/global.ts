@@ -299,7 +299,7 @@ declare global {
   var applySortingByHeader: (headerId: string) => void;
   var fog: (id: string, path: string) => void;
   var unfog: (id?: string) => void;
-  var editEmblem: (type: string, id: string, el: any) => void;
+  var highlightEmblemElement: (type: string, el: any) => void;
   var l: (n: number) => string;
 
   var aleaPRNG: (seed: string | number) => () => number;

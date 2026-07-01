@@ -142,7 +142,8 @@ function addListeners(): void {
     const stateId = Number(($element.parentNode as HTMLElement)?.dataset?.id);
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
     else if (classList.contains("name")) editStateName(stateId);
-    else if (classList.contains("coaIcon")) editEmblem("state", `stateCOA${stateId}`, pack.states[stateId]);
+    else if (classList.contains("coaIcon"))
+      void Controllers.EmblemsEditor.open("state", `stateCOA${stateId}`, pack.states[stateId]);
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);

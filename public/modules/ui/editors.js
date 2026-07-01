@@ -20,7 +20,7 @@ function clicked() {
   const ancestor = great?.parentElement;
   if (!ancestor) return;
 
-  if (grand.id === "emblems") editEmblem();
+  if (grand.id === "emblems") window.Controllers.EmblemsEditor.open(undefined, undefined, undefined, el);
   else if (parent.id === "rivers") window.Controllers.RiverEditor.open(el.id);
   else if (grand.id === "routes") window.Controllers.RouteEditor.open(el.id);
   else if (ancestor.id === "labels" && el.tagName === "tspan") window.Controllers.LabelsEditor.open(el);

@@ -13,6 +13,7 @@ export const Controllers = createRegistry({
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
   DistributionEditor: () => import("@/controllers/goods-distribution-editor").then(m => m.DistributionEditor),
   ElevationProfile: () => import("@/controllers/elevation-profile").then(m => m.ElevationProfile),
+  EmblemsEditor: () => import("@/controllers/emblems-editor").then(m => m.EmblemsEditor),
   GoodEditor: () => import("@/controllers/good-editor").then(m => m.GoodEditor),
   GoodsEditor: () => import("@/controllers/goods-editor").then(m => m.GoodsEditor),
   HeightmapSelection: () => import("@/controllers/heightmap-selection").then(m => m.HeightmapSelection),
