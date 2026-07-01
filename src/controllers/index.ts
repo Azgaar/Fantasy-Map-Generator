@@ -16,6 +16,7 @@ export const Controllers = createRegistry({
   HeightmapSelection: () => import("@/controllers/heightmap-selection").then(m => m.HeightmapSelection),
   HierarchyTree: () => import("@/controllers/hierarchy-tree").then(m => m.HierarchyTree),
   IceEditor: () => import("@/controllers/ice-editor").then(m => m.IceEditor),
+  LakesEditor: () => import("@/controllers/lakes-editor").then(m => m.LakesEditor),
   MarketDealsOverview: () => import("@/controllers/market-deals-overview").then(m => m.MarketDealsOverview),
   MarketOverview: () => import("@/controllers/market-overview").then(m => m.MarketOverview),
   MarketsOverview: () => import("@/controllers/markets-overview").then(m => m.MarketsOverview),
