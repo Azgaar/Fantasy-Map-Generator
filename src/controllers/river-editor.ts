@@ -163,8 +163,7 @@ function updateRiverWidth(river: River): void {
 }
 
 function drawControlPoints(points: Point[]): void {
-  debug
-    .select("#controlPoints")
+  select<SVGGElement, unknown>("#controlPoints")
     .selectAll<SVGCircleElement, Point>("circle")
     .data(points)
     .join("circle")

@@ -82,6 +82,18 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
   must move to the event-arg style: take `event` as the listener's first
   param, use `event.transform`, `event.x/y`, and `pointer(event)`.
 - **Don't use the legacy global d3 selections.** Always create selections from the imported v7 `select` function and work with them explicitly, global selections use d3 v5 and can lead to bugs.
+  - **Never attach a v7 behaviour (`drag`, `zoom`) through a v5 selection.** When
+    you `.call(drag(...))` on a selection that descends from a global v5 selection
+    (e.g. `debug`, `viewbox`, `svg` created in `public/main.js`), the v5 selection
+    registers the v7 handlers but dispatches them with the **v5 calling convention**
+    (datum-first: `handler(d, i, nodes)`). The v7 drag internals expect the event
+    first (`handler(event, d)`), so they receive the bound datum instead of the DOM
+    event and the gesture silently never starts — the elements look draggable but
+    don't move. Fix: reselect the container with the bundled v7 `select` before
+    binding data and calling the behaviour, e.g.
+    `select<SVGGElement, unknown>("#controlPoints").selectAll("circle").data(...).join("circle").call(drag()…)`
+    instead of `debug.select("#controlPoints")…`. This was the river/route control-point
+    drag bug (`river-editor.ts`, `route-editor.ts`).
 
 ## File structure & exports
 

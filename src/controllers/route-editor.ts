@@ -113,8 +113,7 @@ function updateRouteLength(route: Route): void {
 }
 
 function drawControlPoints(points: number[][]): void {
-  debug
-    .select("#controlPoints")
+  select<SVGGElement, unknown>("#controlPoints")
     .selectAll<SVGCircleElement, number[]>("circle")
     .data(points)
     .join("circle")
