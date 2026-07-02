@@ -12,7 +12,19 @@ import {
 } from "d3";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
-import { ensureEl, getPackPolygon, getRandomColor, isLand, P, parseTransform, rand, rn, si, unique } from "../utils";
+import {
+  destroyDialogIfExists,
+  ensureEl,
+  getPackPolygon,
+  getRandomColor,
+  isLand,
+  P,
+  parseTransform,
+  rand,
+  rn,
+  si,
+  unique
+} from "../utils";
 
 const provsSel = () => select<SVGGElement, unknown>(provs.node()!);
 const emblemsSel = () => select<SVGElement, unknown>(emblems.node()!);
@@ -44,7 +56,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("provincesEditor")?.remove();
+  destroyDialogIfExists("provincesEditor");
   const editorHtml = /* html */ `<div id="provincesEditor" class="dialog stable">
       <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
         <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
@@ -671,7 +683,7 @@ function editProvinceName(province: number): void {
 }
 
 function renderNameEditor(): void {
-  document.getElementById("provinceNameEditor")?.remove();
+  destroyDialogIfExists("provinceNameEditor");
   const nameEditorHtml = /* html */ `<div id="provinceNameEditor" class="dialog" data-province="0">
       <div>
         <div data-tip="Province short name" class="label">Short name:</div>

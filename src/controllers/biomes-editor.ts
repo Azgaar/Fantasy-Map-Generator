@@ -1,5 +1,5 @@
 import { drag, easeSinIn, pointer, select, sum, transition } from "d3";
-import { ensureEl, getPackPolygon, getRandomColor, isLand, rn, si } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, getRandomColor, isLand, rn, si } from "../utils";
 
 let animate: ReturnType<typeof transition>;
 
@@ -30,7 +30,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("biomesEditor")?.remove();
+  destroyDialogIfExists("biomesEditor");
   const editorHtml = /* html */ `<div id="biomesEditor" class="dialog stable">
       <div id="biomesHeader" class="header" style="grid-template-columns: 13em 7em 5em 5em 7em">
         <div data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">

@@ -3,7 +3,7 @@ import { Controllers } from "@/controllers";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
-import { ensureEl, unique } from "../utils";
+import { destroyDialogIfExists, ensureEl, unique } from "../utils";
 
 const visibleTags = new Set<string>();
 
@@ -34,7 +34,7 @@ function refreshEditor() {
 }
 
 function renderDialog(): void {
-  document.getElementById("goodsEditor")?.remove();
+  destroyDialogIfExists("goodsEditor");
   const editorHtml = /* html */ `<div id="goodsEditor" class="dialog stable">
       <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 6em 5em 6.8em 6em 4.6em 1.6em;">
         <input

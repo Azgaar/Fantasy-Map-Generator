@@ -1,5 +1,5 @@
 import { drag, select } from "d3";
-import { ensureEl, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
 // el is a State | Province | Burg; coa is the untyped Armoria structure — kept loose here as
 // this is a legacy interop boundary shared with classic callers.
@@ -40,7 +40,7 @@ function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): v
 }
 
 function renderDialog(): void {
-  document.getElementById("emblemEditor")?.remove();
+  destroyDialogIfExists("emblemEditor");
   const editorHtml = /* html */ `<div id="emblemEditor" class="dialog stable">
       <svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg>
       <div id="emblemBody">

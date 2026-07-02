@@ -1,5 +1,5 @@
 import { color as d3Color, interpolateString, pointer, select } from "d3";
-import { ensureEl, getAdjective } from "../utils";
+import { destroyDialogIfExists, ensureEl, getAdjective } from "../utils";
 
 interface Relation {
   inText: string;
@@ -80,7 +80,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("diplomacyEditor")?.remove();
+  destroyDialogIfExists("diplomacyEditor");
   const editorHtml = /* html */ `<div id="diplomacyEditor" class="dialog stable">
       <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
         <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
@@ -553,7 +553,7 @@ function showRelationsMatrix(): void {
 }
 
 function renderMatrix(): void {
-  document.getElementById("diplomacyMatrix")?.remove();
+  destroyDialogIfExists("diplomacyMatrix");
   const matrixHtml = /* html */ `<div id="diplomacyMatrix" class="dialog">
       <div id="diplomacyMatrixBody" class="matrix-table"></div>
     </div>`;

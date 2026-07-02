@@ -1,6 +1,6 @@
 import { drag, pointer, select, sum } from "d3";
 import type { Zone } from "@/generators/zones-generator";
-import { ensureEl, getPackPolygon, rn, si, unique } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, rn, si, unique } from "../utils";
 
 interface ZoneCellDatum {
   cell: number;
@@ -28,7 +28,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("zonesEditor")?.remove();
+  destroyDialogIfExists("zonesEditor");
   const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable">
       <div id="customHeader" class="header" style="grid-template-columns: 13em 7em 6em 5em 9em">
         <div data-tip="Zone description">Description&nbsp;</div>

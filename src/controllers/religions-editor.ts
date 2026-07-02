@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import {
   abbreviate,
   debounce,
+  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
   getPackPolygon,
@@ -34,7 +35,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("religionsEditor")?.remove();
+  destroyDialogIfExists("religionsEditor");
   const editorHtml = /* html */ `<div id="religionsEditor" class="dialog stable">
     <div id="religionsHeader" class="header" style="grid-template-columns: 13em 6em 7em 18em 6em 7em 6em 7em">
       <div data-tip="Click to sort by religion name" class="sortable alphabetically" data-sortby="name">Religion&nbsp;</div>

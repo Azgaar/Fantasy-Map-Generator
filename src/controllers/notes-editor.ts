@@ -1,4 +1,4 @@
-import { ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 interface Note {
   id: string;
@@ -58,7 +58,7 @@ function open(id?: string, name?: string): void {
 
 function renderDialog(): void {
   window.tinymce?.remove();
-  document.getElementById("notesEditor")?.remove();
+  destroyDialogIfExists("notesEditor");
   const editorHtml = /* html */ `<div id="notesEditor" class="dialog stable">
     <div style="margin-bottom: 0.3em">
       <strong>Element: </strong>

@@ -1,6 +1,6 @@
 import { curveNatural, drag, line, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
-import { ensureEl, findEl, parseTransform, round } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, parseTransform, round } from "../utils";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 const labelsSel = () => select<SVGGElement, unknown>(labels.node()!);
@@ -34,7 +34,7 @@ function open(tspan: SVGTSpanElement): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("labelEditor")?.remove();
+  destroyDialogIfExists("labelEditor");
   const editorHtml = /* html */ `<div id="labelEditor" class="dialog">
       <button id="labelGroupShow" data-tip="Show the group selection" class="icon-tags"></button>
       <div id="labelGroupSection" style="display: none">

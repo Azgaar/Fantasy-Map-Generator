@@ -1,7 +1,9 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, pointer, range, select } from "d3";
 import { Controllers } from "@/controllers";
 import {
+  destroyDialogIfExists,
   ensureEl,
+  findEl,
   findGridAll,
   findGridCell,
   generateSeed,
@@ -32,7 +34,7 @@ addToolbarListeners();
 addBrushesListeners();
 
 function renderTemplateEditor(): void {
-  document.getElementById("templateEditor")?.remove();
+  destroyDialogIfExists("templateEditor");
   const editorHtml = /* html */ `<div id="templateEditor" class="dialog stable">
       <div id="templateTop">
         <i>Select template: </i>
@@ -166,6 +168,8 @@ function renderTemplateEditor(): void {
   ensureEl("templateTools").on("click", addStepOnClick);
   ensureEl("templateSelect").on("change", selectTemplate);
   ensureEl("templateRun").on("click", executeTemplate);
+  ensureEl("templateUndo").on("click", () => restoreHistory(edits.n - 1));
+  ensureEl("templateRedo").on("click", () => restoreHistory(edits.n + 1));
   ensureEl("templateSave").on("click", downloadTemplate);
   ensureEl("templateLoad").on("click", () => ensureEl("templateToLoad").click());
   // templateToLoad is a static file input outside the dialog; use property assignment
@@ -176,7 +180,7 @@ function renderTemplateEditor(): void {
 }
 
 function renderImageConverter(): void {
-  document.getElementById("imageConverter")?.remove();
+  destroyDialogIfExists("imageConverter");
   const editorHtml = /* html */ `<div id="imageConverter" class="dialog stable">
       <div id="convertImageButtons">
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
@@ -278,8 +282,6 @@ function addToolbarListeners(): void {
   ensureEl("heightmap3DView").on("click", changeViewMode);
   ensureEl("finalizeHeightmap").on("click", finalizeHeightmap);
   ensureEl("renderOcean").on("click", mockHeightmap);
-  ensureEl("templateUndo").on("click", () => restoreHistory(edits.n - 1));
-  ensureEl("templateRedo").on("click", () => restoreHistory(edits.n + 1));
 }
 
 function showModeDialog(tool?: string): void {
@@ -437,8 +439,7 @@ function finalizeHeightmap(): void {
   }
 
   window.edits = undefined; // remove global variable
-  ensureEl<HTMLButtonElement>("redo").disabled = ensureEl<HTMLButtonElement>("templateRedo").disabled = true;
-  ensureEl<HTMLButtonElement>("undo").disabled = ensureEl<HTMLButtonElement>("templateUndo").disabled = true;
+  setHistoryButtonsDisabled(true, true);
 
   customization = 0;
   ensureEl("customizationMenu").style.display = "none";
@@ -844,14 +845,24 @@ function updateStatistics(): void {
   ensureEl("landmassAverage").innerText = String(rn(mean(grid.cells.h) ?? 0));
 }
 
+// the template editor's undo/redo buttons only exist once the template editor has been rendered,
+// which happens after a heightmap edit mode is chosen — so they must be looked up defensively
+function setHistoryButtonsDisabled(undo: boolean, redo: boolean): void {
+  ensureEl<HTMLButtonElement>("undo").disabled = undo;
+  ensureEl<HTMLButtonElement>("redo").disabled = redo;
+  const templateUndo = findEl<HTMLButtonElement>("templateUndo");
+  if (templateUndo) templateUndo.disabled = undo;
+  const templateRedo = findEl<HTMLButtonElement>("templateRedo");
+  if (templateRedo) templateRedo.disabled = redo;
+}
+
 function updateHistory(noStat?: string): void {
   const step = edits.n;
   edits = edits.slice(0, step);
   edits[step] = grid.cells.h.slice();
   edits.n = step + 1;
 
-  ensureEl<HTMLButtonElement>("undo").disabled = ensureEl<HTMLButtonElement>("templateUndo").disabled = edits.n <= 1;
-  ensureEl<HTMLButtonElement>("redo").disabled = ensureEl<HTMLButtonElement>("templateRedo").disabled = true;
+  setHistoryButtonsDisabled(edits.n <= 1, true);
   if (!noStat) {
     updateStatistics();
     if (document.getElementById("preview")) drawHeightmapPreview();
@@ -862,9 +873,7 @@ function updateHistory(noStat?: string): void {
 // restoreHistory
 function restoreHistory(step: number): void {
   edits.n = step;
-  ensureEl<HTMLButtonElement>("redo").disabled = ensureEl<HTMLButtonElement>("templateRedo").disabled =
-    edits.n >= edits.length;
-  ensureEl<HTMLButtonElement>("undo").disabled = ensureEl<HTMLButtonElement>("templateUndo").disabled = edits.n <= 1;
+  setHistoryButtonsDisabled(edits.n <= 1, edits.n >= edits.length);
   if (edits[edits.n - 1] === undefined) return;
   grid.cells.h = edits[edits.n - 1].slice();
   mockHeightmap();
@@ -878,8 +887,7 @@ function restoreHistory(step: number): void {
 function restartHistory(): void {
   window.edits = []; // declare temp global variable
   edits.n = 0;
-  ensureEl<HTMLButtonElement>("redo").disabled = ensureEl<HTMLButtonElement>("templateRedo").disabled = true;
-  ensureEl<HTMLButtonElement>("undo").disabled = ensureEl<HTMLButtonElement>("templateUndo").disabled = true;
+  setHistoryButtonsDisabled(true, true);
   updateHistory();
 }
 

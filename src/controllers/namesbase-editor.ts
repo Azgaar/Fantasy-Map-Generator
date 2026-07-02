@@ -1,5 +1,5 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { ensureEl, openURL, rn, unique } from "../utils";
+import { destroyDialogIfExists, ensureEl, openURL, rn, unique } from "../utils";
 
 function open(): void {
   if (customization) return;
@@ -18,7 +18,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("namesbaseEditor")?.remove();
+  destroyDialogIfExists("namesbaseEditor");
   const editorHtml = /* html */ `<div id="namesbaseEditor" class="dialog stable textual">
       <div id="namesbaseBasesTop">
         <span>Select base: </span>

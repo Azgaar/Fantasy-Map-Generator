@@ -1,5 +1,5 @@
 import { drag, pointer, quadtree, range, select } from "d3";
-import { ensureEl, findAllInQuadtree, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, findAllInQuadtree, rn } from "../utils";
 
 const terrain = select<SVGGElement, unknown>("#terrain");
 
@@ -29,7 +29,7 @@ function open(element: SVGElement): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("reliefEditor")?.remove();
+  destroyDialogIfExists("reliefEditor");
   const html = /* html */ `<div id="reliefEditor" class="dialog">
     <div id="reliefTools" data-tip="Select mode of operation">
       <div class="reliefEditorLabel">Mode:</div>

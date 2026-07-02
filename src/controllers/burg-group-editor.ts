@@ -1,4 +1,4 @@
-import { ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
@@ -31,7 +31,7 @@ function editBurgGroups(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("burgGroupsEditor")?.remove();
+  destroyDialogIfExists("burgGroupsEditor");
   const editorHtml = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
     <form id="burgGroupsForm">
       <table class="table">

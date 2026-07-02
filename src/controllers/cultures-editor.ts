@@ -5,6 +5,7 @@ import {
   abbreviate,
   capitalize,
   debounce,
+  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
   getPackPolygon,
@@ -38,7 +39,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("culturesEditor")?.remove();
+  destroyDialogIfExists("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable">
     <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 9em 4em 8em 5em 7em 8em">
       <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>

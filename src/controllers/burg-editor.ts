@@ -1,7 +1,15 @@
 import { drag, pointer, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
-import { convertTemperature, ensureEl, getTemperatureLikeness, parseTransform, rand, rn } from "../utils";
+import {
+  convertTemperature,
+  destroyDialogIfExists,
+  ensureEl,
+  getTemperatureLikeness,
+  parseTransform,
+  rand,
+  rn
+} from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const showBurgTemperatureGraph: (id: string) => void;
@@ -35,7 +43,7 @@ function open(id: number | string): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("burgEditor")?.remove();
+  destroyDialogIfExists("burgEditor");
   const editorHtml = /* html */ `<div id="burgEditor" class="dialog">
       <div id="burgBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">

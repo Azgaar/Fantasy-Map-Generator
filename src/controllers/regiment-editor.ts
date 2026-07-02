@@ -1,7 +1,7 @@
 import { type D3DragEvent, drag, easeSinInOut, pointer, select, sum, transition } from "d3";
 import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, last, rn } from "../utils";
+import { capitalize, destroyDialogIfExists, ensureEl, last, rn } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -33,7 +33,7 @@ function editRegiment(selector: string): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("regimentEditor")?.remove();
+  destroyDialogIfExists("regimentEditor");
   const editorHtml = /* html */ `<div id="regimentEditor" class="dialog">
     <div id="regimentBody" style="padding-bottom: 0.3em">
       <div style="padding-bottom: 0.2em">

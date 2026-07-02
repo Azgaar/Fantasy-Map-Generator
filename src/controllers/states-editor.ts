@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import {
+  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
   formatPrice,
@@ -42,7 +43,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("statesEditor")?.remove();
+  destroyDialogIfExists("statesEditor");
   const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable">
     <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 5em 6em 6em 7em 7em 6em 7em">
       <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
@@ -510,7 +511,7 @@ function editStateName(state: number): void {
 }
 
 function renderNameEditor(): void {
-  document.getElementById("stateNameEditor")?.remove();
+  destroyDialogIfExists("stateNameEditor");
   const nameEditorHtml = /* html */ `    <div id="stateNameEditor" class="dialog" data-state="0">
       <div>
         <div data-tip="State short name" class="label">Short name:</div>
