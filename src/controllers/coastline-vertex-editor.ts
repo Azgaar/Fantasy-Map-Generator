@@ -1,18 +1,6 @@
 import { type D3DragEvent, drag, polygonArea, select } from "d3";
 import type { Feature } from "@/generators/features";
-import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
-
-const DIALOG_HTML = /* html */ `
-  <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
-  <div id="coastlineGroupsSelection" style="display: none">
-    <button id="coastlineGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
-    <select id="coastlineGroup" data-tip="Select a group for this coastline" style="width: 9em"></select>
-    <input id="coastlineGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display: none; width: 9em" />
-    <span id="coastlineGroupAdd" data-tip="Create a new group for this coastline" class="icon-plus pointer"></span>
-    <span id="coastlineGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
-  </div>
-  <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
-  <button id="coastlineArea" data-tip="Landmass area in selected units">0</button>`;
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
 const coastlineSel = () => select<SVGGElement, unknown>(coastline.node()!);
 const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
@@ -22,13 +10,38 @@ function open(element: SVGElement): void {
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();
 
-  ensureEl("coastlineEditor").innerHTML = DIALOG_HTML;
+  renderDialog();
 
   debug.append("g").attr("id", "vertices");
   elSelected = select<SVGElement, unknown>(element) as unknown as typeof elSelected;
   selectCoastlineGroup(element);
   drawCoastlineVertices();
   select(viewbox.node()!).on("touchmove mousemove", null);
+
+  $("#coastlineEditor").dialog({
+    title: "Edit Coastline",
+    resizable: false,
+    position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
+    close: closeCoastlineEditor
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("coastlineEditor");
+
+  const html = /* html */ `<div id="coastlineEditor" class="dialog">
+    <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
+    <div id="coastlineGroupsSelection" style="display: none">
+      <button id="coastlineGroupsHide" data-tip="Hide the group section" class="icon-tags"></button>
+      <select id="coastlineGroup" data-tip="Select a group for this coastline" style="width: 9em"></select>
+      <input id="coastlineGroupName" placeholder="new group name" data-tip="Provide a name for the new group" style="display: none; width: 9em" />
+      <span id="coastlineGroupAdd" data-tip="Create a new group for this coastline" class="icon-plus pointer"></span>
+      <span id="coastlineGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
+    </div>
+    <button id="coastlineEditStyle" data-tip="Edit coastline group style in Style Editor" class="icon-brush"></button>
+    <button id="coastlineArea" data-tip="Landmass area in selected units">0</button>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("coastlineGroupsShow").on("click", showGroupSection);
@@ -38,13 +51,6 @@ function open(element: SVGElement): void {
   ensureEl("coastlineGroupRemove").on("click", removeCoastlineGroup);
   ensureEl("coastlineGroupsHide").on("click", hideGroupSection);
   ensureEl("coastlineEditStyle").on("click", editGroupStyle);
-
-  $("#coastlineEditor").dialog({
-    title: "Edit Coastline",
-    resizable: false,
-    position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
-    close: closeCoastlineEditor
-  });
 }
 
 function getFeature(): Feature {
@@ -256,7 +262,7 @@ function editGroupStyle(): void {
 function closeCoastlineEditor(): void {
   debug.select("#vertices").remove();
   unselect();
-  ensureEl("coastlineEditor").innerHTML = "";
+  destroyDialogIfExists("coastlineEditor");
 }
 
 export const CoastlineVertexEditor = { open };

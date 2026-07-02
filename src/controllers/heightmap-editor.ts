@@ -19,6 +19,7 @@ import type { PromptOptions } from "../utils/commonUtils";
 
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
+let defaultCellTypeFilter: "all" | "land" | "water" = "all";
 
 function open(options?: { mode?: string; tool?: string }): void {
   const { mode, tool } = options || {};
@@ -31,7 +32,6 @@ function open(options?: { mode?: string; tool?: string }): void {
 }
 
 addToolbarListeners();
-addBrushesListeners();
 
 function renderTemplateEditor(): void {
   destroyDialogIfExists("templateEditor");
@@ -332,16 +332,18 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
 
   if (mode === "erase") {
     undraw();
-    ensureEl<HTMLSelectElement>("cellTypeFilter").value = "all";
+    defaultCellTypeFilter = "all";
   } else if (mode === "keep") {
     viewboxSel().selectAll("#landmass, #lakes").style("display", "none");
-    ensureEl<HTMLSelectElement>("cellTypeFilter").value = "land";
+    defaultCellTypeFilter = "land";
   } else if (mode === "risk") {
     defsSel().selectAll("#land, #water").selectAll("path").remove();
     defsSel().select("#featurePaths").selectAll("path").remove();
     viewboxSel().selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
-    ensureEl<HTMLSelectElement>("cellTypeFilter").value = "all";
+    defaultCellTypeFilter = "all";
   }
+  const cellTypeFilterEl = findEl<HTMLSelectElement>("cellTypeFilter");
+  if (cellTypeFilterEl) cellTypeFilterEl.value = defaultCellTypeFilter;
 
   // show convert and template buttons for Erase mode only
   ensureEl("applyTemplate").style.display = mode === "erase" ? "inline-block" : "none";
@@ -395,8 +397,8 @@ function moveCursor(this: SVGElement, event: any): void {
   ensureEl("heightmapInfoHeight").innerHTML = `${grid.cells.h[cell]} (${getFriendlyHeight(grid.cells.h[cell])})`;
   if (ensureEl("tooltip").dataset.main) showMainTip();
 
-  // move radius circle if drag mode is active
-  const pressed = ensureEl("brushesButtons").querySelector<HTMLElement>("button.pressed");
+  // move radius circle if drag mode is active (brushes panel may not be the open tool)
+  const pressed = findEl("brushesButtons")?.querySelector<HTMLElement>("button.pressed");
   if (!pressed) return;
 
   if (pressed.id === "brushLine") {
@@ -779,7 +781,7 @@ function updateHeightmap(): void {
   tip(`Cells changed: ${changed}`);
   if (!changed) return;
 
-  const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
+  const cellTypeFilter = findEl<HTMLSelectElement>("cellTypeFilter")?.value ?? defaultCellTypeFilter;
   // check ocean cells are not changed if only land edit is allowed
   if (cellTypeFilter === "land") {
     for (const i of grid.cells.i) {
@@ -798,7 +800,7 @@ function updateHeightmap(): void {
   updateHistory();
 }
 
-function getColor(value: number, scheme = getColorScheme(null)): string {
+function getColor(value: number, scheme = getColorScheme("bright")): string {
   return scheme(1 - (value < 20 ? value - 5 : value) / 100);
 }
 
@@ -845,15 +847,17 @@ function updateStatistics(): void {
   ensureEl("landmassAverage").innerText = String(rn(mean(grid.cells.h) ?? 0));
 }
 
-// the template editor's undo/redo buttons only exist once the template editor has been rendered,
+// the brushes panel's and template editor's undo/redo buttons only exist once rendered,
 // which happens after a heightmap edit mode is chosen — so they must be looked up defensively
 function setHistoryButtonsDisabled(undo: boolean, redo: boolean): void {
-  ensureEl<HTMLButtonElement>("undo").disabled = undo;
-  ensureEl<HTMLButtonElement>("redo").disabled = redo;
-  const templateUndo = findEl<HTMLButtonElement>("templateUndo");
-  if (templateUndo) templateUndo.disabled = undo;
-  const templateRedo = findEl<HTMLButtonElement>("templateRedo");
-  if (templateRedo) templateRedo.disabled = redo;
+  const setPair = (undoId: string, redoId: string) => {
+    const undoEl = findEl<HTMLButtonElement>(undoId);
+    if (undoEl) undoEl.disabled = undo;
+    const redoEl = findEl<HTMLButtonElement>(redoId);
+    if (redoEl) redoEl.disabled = redo;
+  };
+  setPair("undo", "redo");
+  setPair("templateUndo", "templateRedo");
 }
 
 function updateHistory(noStat?: string): void {
@@ -892,14 +896,138 @@ function restartHistory(): void {
 }
 
 function openBrushesPanel(): void {
-  if ($("#brushesPanel").is(":visible")) return;
-  $("#brushesPanel")
-    .dialog({
-      title: "Paint Brushes",
-      resizable: false,
-      position: { my: "right top", at: "right-10 top+10", of: "svg" }
-    })
-    .on("dialogclose", exitBrushMode);
+  if (document.getElementById("brushesPanel")) return;
+  renderBrushesPanel();
+
+  $("#brushesPanel").dialog({
+    title: "Paint Brushes",
+    resizable: false,
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    close: closeBrushesPanel
+  });
+}
+
+function renderBrushesPanel(): void {
+  destroyDialogIfExists("brushesPanel");
+
+  const html = /* html */ `<div id="brushesPanel" class="dialog stable">
+    <div id="brushesButtons" style="display: inline-block">
+      <button id="brushRaise" data-tip="Raise brush: increase height of cells in radius by Power value">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="m20,39 h60 M50,85 v-35 l-12,8 m12,-8 l12,8" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushElevate" data-tip="Elevate brush: drag to gradually increase height of cells in radius by Power value">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="m20,50 q30,-35 60,0 M50,85 v-35 l-12,8 m12,-8 l12,8" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushLower" data-tip="Lower brush: drag to decrease height of cells in radius by Power value">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="M50,30 v35 l-12,-8 m12,8 l12,-8 M20,78 h60" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushDepress" data-tip="Depress brush: drag to gradually decrease height of cells in radius by Power value">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="M50,30 v35 l-12,-8 m12,8 l12,-8 M20,63 q30,35 60,0" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushAlign" data-tip="Align brush: drag to set height of cells in radius to height of the cell at mousepoint">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="m20,50 h56 m0,20 h-56" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushSmooth" data-tip="Smooth brush: drag to level height of cells in radius to height of adjacent cells">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="m15,60 q15,-15 30,0 q15,15 35,0" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushDisrupt" data-tip="Disrupt brush: drag to randomize height of cells in radius based on Power value">
+        <svg viewBox="15 15 70 70" height="1em" width="1.6em">
+          <path d="m15,63 l15,-13 15,20 15,-20 15,19 15,-14" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushFill" data-tip="Fill: click enclosed water or same-height land area to create a cone blob">
+        <svg viewBox="20 10 60 60" height="1em" width="1.6em">
+          <path d="M30,70 h40 M30,70 q0,-20 20,-20 q20,0 20,20" fill="none" stroke="#000" stroke-width="5" />
+          <path d="M50,20 v25 M50,20 l-10,8 M50,20 l10,8" fill="none" stroke="#000" stroke-width="5" />
+        </svg>
+      </button>
+      <button id="brushLine" data-tip="Line: select two points to change heights along the line">
+        <svg viewBox="0 -5 100 100" height="1em" width="1.6em">
+          <path d="M0 90 L100 10" fill="none" stroke="#000" stroke-width="7"></path>
+        </svg>
+      </button>
+    </div>
+    <div id="brushesSliders" style="display: none">
+      <div data-tip="Change brush size. Shortcut: + to increase; – to decrease">
+        <slider-input id="heightmapBrushRadius" min="1" max="100" value="25">
+          <div style="width: 3.5em">Radius:</div>
+        </slider-input>
+      </div>
+      <div data-tip="Change brush power">
+        <slider-input id="heightmapBrushPower" min="1" max="10" value="5">
+          <div style="width: 3.5em">Power:</div>
+        </slider-input>
+      </div>
+    </div>
+    <div id="lineSlider" style="display: none">
+      <div data-tip="Change tool power. Shortcut: + to increase; – to decrease">
+        <slider-input id="heightmapLinePower" min="-100" max="100" value="30">
+          <div style="width: 3.5em">Power:</div>
+        </slider-input>
+      </div>
+    </div>
+    <div data-tip="Restrict brush to specific cell types" style="margin-bottom: 0.6em">
+      <label for="cellTypeFilter"><i>Cells to change:</i></label>
+      <select id="cellTypeFilter">
+        <option value="all" ${defaultCellTypeFilter === "all" ? "selected" : ""}>all cells</option>
+        <option value="land" ${defaultCellTypeFilter === "land" ? "selected" : ""}>only land cells</option>
+        <option value="water" ${defaultCellTypeFilter === "water" ? "selected" : ""}>only water cells</option>
+      </select>
+    </div>
+    <div id="modifyButtons">
+      <button id="undo" data-tip="Undo the latest action (Ctrl + Z)" class="icon-ccw" disabled></button>
+      <button id="redo" data-tip="Redo the action (Ctrl + Y)" class="icon-cw" disabled></button>
+      <button id="rescaleShow" data-tip="Show rescaler slider" class="icon-exchange"></button>
+      <button id="rescaleCondShow" data-tip="Rescaler: change height if condition is fulfilled" class="icon-if"></button>
+      <button id="smoothHeights" data-tip="Smooth all heights a bit" class="icon-smooth"></button>
+      <button id="disruptHeights" data-tip="Disrupt (randomize) heights a bit" class="icon-disrupt"></button>
+      <button id="brushClear" data-tip="Set height for all cells to 0 (erase the map)" class="icon-eraser"></button>
+    </div>
+    <div id="rescaleSection" style="display: none">
+      <button id="rescaleHide" data-tip="Hide rescaler slider" class="icon-exchange"></button>
+      <input id="rescaler" data-tip="Change height for all cells" type="range" min="-10" max="10" step="1" value="0" />
+    </div>
+    <div
+      id="rescaleCondSection"
+      data-tip="If height is greater or equal to X and less or equal to Y, then perform an operation Z with operand V"
+      style="display: none"
+    >
+      <button id="rescaleCondHide" data-tip="Hide rescaler" class="icon-if"></button>
+      <label>h ≥</label>
+      <input id="rescaleLower" value="20" type="number" min="0" max="100" />
+      <label>≤</label>
+      <input id="rescaleHigher" value="100" type="number" min="1" max="100" />
+      <label>⇒</label>
+      <select id="conditionSign">
+        <option value="multiply" selected>×</option>
+        <option value="divide">÷</option>
+        <option value="add">+</option>
+        <option value="subtract">-</option>
+        <option value="exponent">^</option>
+      </select>
+      <input id="rescaleModifier" type="number" value="0.9" min="0" max="1.5" step="0.01" />
+      <button id="rescaleExecute" data-tip="Click to perform an operation" class="icon-play-circled2"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  addBrushesListeners();
+}
+
+function closeBrushesPanel(): void {
+  exitBrushMode();
+  destroyDialogIfExists("brushesPanel");
 }
 
 function addBrushesListeners(): void {

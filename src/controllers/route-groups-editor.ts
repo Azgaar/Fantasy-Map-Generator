@@ -1,27 +1,17 @@
 import type { Route } from "@/generators/routes-generator";
-import { ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 // custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)
 declare const prompt: (text: string, options: { default: string }, callback: (value: string) => void) => void;
 
 const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
 
-const DIALOG_HTML = /* html */ `
-  <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
-  <div id="routeGroupsEditorBottom">
-    <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
-  </div>`;
-
 function open(): void {
   if (customization) return;
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
-  ensureEl("routeGroupsEditor").innerHTML = DIALOG_HTML;
+  renderDialog();
   addLines();
-
-  // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routeGroupsEditorAdd").on("click", addGroup);
-  ensureEl("routeGroupsEditorBody").on("click", onBodyClick);
 
   $("#routeGroupsEditor").dialog({
     title: "Edit Route groups",
@@ -31,8 +21,24 @@ function open(): void {
   });
 }
 
+function renderDialog(): void {
+  destroyDialogIfExists("routeGroupsEditor");
+
+  const html = /* html */ `<div id="routeGroupsEditor" class="dialog">
+    <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
+    <div id="routeGroupsEditorBottom">
+      <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("routeGroupsEditorAdd").on("click", addGroup);
+  ensureEl("routeGroupsEditorBody").on("click", onBodyClick);
+}
+
 function closeRouteGroupsEditor(): void {
-  ensureEl("routeGroupsEditor").innerHTML = "";
+  destroyDialogIfExists("routeGroupsEditor");
 }
 
 function onBodyClick(ev: Event): void {

@@ -1,12 +1,5 @@
 import { drag, pointer, select } from "d3";
-import { ensureEl, findGridCell, parseTransform } from "../utils";
-
-const DIALOG_HTML = /* html */ `
-  <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
-  <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
-  <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="2" step=".01" />
-  <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
-  <button id="iceRemove" data-tip="Remove the element" data-shortcut="Delete" class="icon-trash fastDelete"></button>`;
+import { destroyDialogIfExists, ensureEl, findGridCell, parseTransform } from "../utils";
 
 function open(element: SVGElement): void {
   if (customization) return;
@@ -21,7 +14,7 @@ function open(element: SVGElement): void {
   const isGlacier = elSelected.attr("type") === "glacier";
   const type = isGlacier ? "Glacier" : "Iceberg";
 
-  ensureEl("iceEditor").innerHTML = DIALOG_HTML;
+  renderDialog();
 
   const randomizeBtn = ensureEl("iceRandomize");
   const sizeInput = ensureEl<HTMLInputElement>("iceSize");
@@ -34,19 +27,32 @@ function open(element: SVGElement): void {
     .classed("draggable", true)
     .call(drag<SVGElement, unknown>().on("drag", dragElement));
 
-  // add listeners — dropped together with the dialog HTML on close
-  ensureEl("iceEditStyle").on("click", () => editStyle("ice"));
-  randomizeBtn.on("click", randomizeShape);
-  sizeInput.on("input", changeSize);
-  ensureEl("iceNew").on("click", toggleAdd);
-  ensureEl("iceRemove").on("click", removeIce);
-
   $("#iceEditor").dialog({
     title: `Edit ${type}`,
     resizable: false,
     position: { my: "center top+60", at: "top", of: "svg", collision: "fit" },
     close: closeEditor
   });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("iceEditor");
+
+  const html = /* html */ `<div id="iceEditor" class="dialog">
+    <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
+    <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
+    <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="2" step=".01" />
+    <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
+    <button id="iceRemove" data-tip="Remove the element" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("iceEditStyle").on("click", () => editStyle("ice"));
+  ensureEl("iceRandomize").on("click", randomizeShape);
+  ensureEl<HTMLInputElement>("iceSize").on("input", changeSize);
+  ensureEl("iceNew").on("click", toggleAdd);
+  ensureEl("iceRemove").on("click", removeIce);
 }
 
 function randomizeShape(): void {
@@ -128,7 +134,7 @@ function closeEditor(): void {
   clearMainTip();
   ensureEl("iceNew").classList.remove("pressed");
   unselect();
-  ensureEl("iceEditor").innerHTML = "";
+  destroyDialogIfExists("iceEditor");
 }
 
 export const IceEditor = { open };

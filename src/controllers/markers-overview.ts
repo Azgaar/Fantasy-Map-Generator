@@ -2,50 +2,6 @@ import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { ensureEl } from "../utils";
 
-const DIALOG_HTML = /* html */ `
-  <div id="markersOverview" class="dialog stable">
-    <div id="markersHeader" class="header" style="grid-template-columns: 15em 1em 3em">
-      <div data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-      <div
-        id="markersInverPin"
-        style="color: #6e5e66"
-        data-tip="Click to invert pin state for all markers"
-        class="icon-pin pointer"
-      ></div>
-      <div
-        id="markersInverLock"
-        style="color: #6e5e66"
-        data-tip="Click to invert lock state for all markers"
-        class="icon-lock pointer"
-      ></div>
-    </div>
-    <div id="markersBody" class="table"></div>
-    <div>
-      <label for="markersSearch" data-tip="Filter by type">Search: <input id="markersSearch" type="search" /></label>
-    </div>
-    <div id="markersFooter" class="totalLine">
-      <div data-tip="Markers number">
-        Markers: <span id="markersFooterNumber">0</span> of <span id="markersFooterTotal">0</span>
-      </div>
-    </div>
-    <div id="markersBottom">
-      <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
-      <button id="markersRegenerate" data-tip="Regenerate unlocked markers" class="icon-shuffle"></button>
-      <span id="markerTypeSelectorWrapper">
-        <button id="markerTypeSelector" data-tip="Select marker type for newly added markers.">❓</button>
-        <div id="markerTypeSelectMenu"></div>
-      </span>
-      <button
-        id="markersAddFromOverview"
-        data-tip="Add a new marker. Hold Shift to add multiple"
-        class="icon-plus"
-      ></button>
-      <button id="markersGenerationConfig" data-tip="Config markers generation options" class="icon-cog"></button>
-      <button id="markersRemoveAll" data-tip="Remove all unlocked markers" class="icon-trash"></button>
-      <button id="markersExport" data-tip="Save markers data as a text file (.csv)" class="icon-download"></button>
-    </div>
-  </div>`;
-
 function open(): void {
   if (customization) return;
   closeDialogs("#markersOverview, .stable");
@@ -65,7 +21,51 @@ function open(): void {
 
 function renderDialog(): void {
   document.getElementById("markersOverview")?.remove();
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", DIALOG_HTML);
+
+  const html = /* html */ `
+    <div id="markersOverview" class="dialog stable">
+      <div id="markersHeader" class="header" style="grid-template-columns: 15em 1em 3em">
+        <div data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
+        <div
+          id="markersInverPin"
+          style="color: #6e5e66"
+          data-tip="Click to invert pin state for all markers"
+          class="icon-pin pointer"
+        ></div>
+        <div
+          id="markersInverLock"
+          style="color: #6e5e66"
+          data-tip="Click to invert lock state for all markers"
+          class="icon-lock pointer"
+        ></div>
+      </div>
+      <div id="markersBody" class="table"></div>
+      <div>
+        <label for="markersSearch" data-tip="Filter by type">Search: <input id="markersSearch" type="search" /></label>
+      </div>
+      <div id="markersFooter" class="totalLine">
+        <div data-tip="Markers number">
+          Markers: <span id="markersFooterNumber">0</span> of <span id="markersFooterTotal">0</span>
+        </div>
+      </div>
+      <div id="markersBottom">
+        <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
+        <button id="markersRegenerate" data-tip="Regenerate unlocked markers" class="icon-shuffle"></button>
+        <span id="markerTypeSelectorWrapper">
+          <button id="markerTypeSelector" data-tip="Select marker type for newly added markers.">❓</button>
+          <div id="markerTypeSelectMenu"></div>
+        </span>
+        <button
+          id="markersAddFromOverview"
+          data-tip="Add a new marker. Hold Shift to add multiple"
+          class="icon-plus"
+        ></button>
+        <button id="markersGenerationConfig" data-tip="Config markers generation options" class="icon-cog"></button>
+        <button id="markersRemoveAll" data-tip="Remove all unlocked markers" class="icon-trash"></button>
+        <button id="markersExport" data-tip="Save markers data as a text file (.csv)" class="icon-download"></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   ensureEl("markersBody").addEventListener("click", handleLineClick);
   ensureEl("markersInverPin").addEventListener("click", invertPin);

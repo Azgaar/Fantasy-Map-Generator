@@ -1,4 +1,4 @@
-import { ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
 const INPUTS = [
@@ -71,6 +71,20 @@ const INPUTS = [
 function open(): void {
   if (customization) return;
   closeDialogs("#tradeAnimationEditor, .stable");
+  renderDialog();
+
+  $("#tradeAnimationEditor").dialog({
+    title: "Trade Animation Editor",
+    resizable: false,
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    close: () => {
+      destroyDialogIfExists("tradeAnimationEditor");
+    }
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("tradeAnimationEditor");
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const def of INPUTS) {
@@ -98,15 +112,6 @@ function open(): void {
       TradeAnimation.restart();
     });
   }
-
-  $("#tradeAnimationEditor").dialog({
-    title: "Trade Animation Editor",
-    resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: () => {
-      $("#tradeAnimationEditor").dialog("destroy").remove();
-    }
-  });
 }
 
 function buildDialogHTML(): string {

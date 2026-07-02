@@ -1,59 +1,7 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
-import { ensureEl, rn } from "../utils";
-
-const DIALOG_HTML = /* html */ `
-  <div id="markerBody" style="padding-bottom: 0.3em">
-    <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
-      <div class="label">Type:</div>
-      <input id="markerType" style="width: 10.3em" />
-    </div>
-    <div data-tip="Marker icon" style="display: flex; align-items: center">
-      <div class="label">Icon:</div>
-      <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
-      <button id="markerIconSelect" style="width: 5em">select</button>
-    </div>
-    <div data-tip="Marker marker element and icon sizes in pixels">
-      <div class="label">Size:</div>
-      <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="2" max="500" style="width: 5em" />
-      <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="2" max="20" step="0.5" style="width: 5em" />
-    </div>
-    <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
-      <div class="label">Icon shift:</div>
-      <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width: 5em" />
-      <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width: 5em" />
-    </div>
-    <div data-tip="Marker pin shape">
-      <div class="label">Pin shape:</div>
-      <select id="markerPin" style="width: 10.3em">
-        <option value="bubble">Bubble</option>
-        <option value="pin">Pin</option>
-        <option value="square">Square</option>
-        <option value="squarish">Squarish</option>
-        <option value="diamond">Diamond</option>
-        <option value="hex">Hex</option>
-        <option value="hexy">Hexy</option>
-        <option value="shieldy">Shieldy</option>
-        <option value="shield">Shield</option>
-        <option value="pentagon">Pentagon</option>
-        <option value="heptagon">Heptagon</option>
-        <option value="circle">Circle</option>
-        <option value="no">No</option>
-      </select>
-    </div>
-    <div data-tip="Pin fill and stroke colors">
-      <div class="label">Pin colors:</div>
-      <input id="markerFill" type="color" style="width: 5em; height: 1.6em" />
-      <input id="markerStroke" type="color" style="width: 5em; height: 1.6em" />
-    </div>
-  </div>
-  <div id="markerBottom">
-    <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
-    <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
-    <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
-    <button id="markerRemove" data-tip="Remove the marker" data-shortcut="Delete" class="icon-trash fastDelete"></button>
-  </div>`;
+import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -75,8 +23,73 @@ function open(markerI?: number, target?: Element): void {
     void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
   }
 
-  ensureEl("markerEditor").innerHTML = DIALOG_HTML;
+  renderDialog();
   updateInputs();
+
+  $("#markerEditor").dialog({
+    title: "Edit Marker",
+    resizable: false,
+    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
+    close: closeMarkerEditor
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("markerEditor");
+
+  const html = /* html */ `<div id="markerEditor" class="dialog">
+    <div id="markerBody" style="padding-bottom: 0.3em">
+      <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
+        <div class="label">Type:</div>
+        <input id="markerType" style="width: 10.3em" />
+      </div>
+      <div data-tip="Marker icon" style="display: flex; align-items: center">
+        <div class="label">Icon:</div>
+        <div id="markerIcon" style="font-size: 1.5em; width: 3.7em">👑</div>
+        <button id="markerIconSelect" style="width: 5em">select</button>
+      </div>
+      <div data-tip="Marker marker element and icon sizes in pixels">
+        <div class="label">Size:</div>
+        <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="2" max="500" style="width: 5em" />
+        <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="2" max="20" step="0.5" style="width: 5em" />
+      </div>
+      <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
+        <div class="label">Icon shift:</div>
+        <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width: 5em" />
+        <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width: 5em" />
+      </div>
+      <div data-tip="Marker pin shape">
+        <div class="label">Pin shape:</div>
+        <select id="markerPin" style="width: 10.3em">
+          <option value="bubble">Bubble</option>
+          <option value="pin">Pin</option>
+          <option value="square">Square</option>
+          <option value="squarish">Squarish</option>
+          <option value="diamond">Diamond</option>
+          <option value="hex">Hex</option>
+          <option value="hexy">Hexy</option>
+          <option value="shieldy">Shieldy</option>
+          <option value="shield">Shield</option>
+          <option value="pentagon">Pentagon</option>
+          <option value="heptagon">Heptagon</option>
+          <option value="circle">Circle</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      <div data-tip="Pin fill and stroke colors">
+        <div class="label">Pin colors:</div>
+        <input id="markerFill" type="color" style="width: 5em; height: 1.6em" />
+        <input id="markerStroke" type="color" style="width: 5em; height: 1.6em" />
+      </div>
+    </div>
+    <div id="markerBottom">
+      <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+      <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
+      <button id="markerRemove" data-tip="Remove the marker" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("markerType").on("change", changeMarkerType);
@@ -92,13 +105,6 @@ function open(markerI?: number, target?: Element): void {
   ensureEl("markerLock").on("click", toggleMarkerLock);
   ensureEl("markerAdd").on("click", toggleAddMarker);
   ensureEl("markerRemove").on("click", confirmMarkerDeletion);
-
-  $("#markerEditor").dialog({
-    title: "Edit Marker",
-    resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    close: closeMarkerEditor
-  });
 }
 
 function getElement(markerI?: number, target?: Element): [SVGSVGElement, Marker] | null {
@@ -308,7 +314,7 @@ function closeMarkerEditor(): void {
   ensureEl("addMarker").classList.remove("pressed");
   restoreDefaultEvents();
   clearMainTip();
-  ensureEl("markerEditor").innerHTML = "";
+  destroyDialogIfExists("markerEditor");
 }
 
 export const MarkersEditor = { open };
