@@ -120,10 +120,9 @@ function renderTemplateEditor(): void {
           onclick="wiki('Heightmap-template-editor')"
         ></button>
         <label
-          data-tip="Lock seed (click on lock icon) if you want template to generate the same heightmap each time"
+          data-tip="Enter seed for template to generate the same heightmap each time"
         >
           Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 8em" />
-          <i data-locked="0" id="lock_templateSeed" class="icon-lock-open"></i>
         </label>
       </div>
     </div>`;
@@ -1624,9 +1623,7 @@ function executeTemplate(): void {
   if (!steps.length) return;
 
   const currentSeed = ensureEl<HTMLInputElement>("templateSeed").value;
-  const seed = (locked("templateSeed") && currentSeed) || generateSeed();
-  Math.random = aleaPRNG(seed);
-  ensureEl<HTMLInputElement>("templateSeed").value = seed;
+  Math.random = aleaPRNG(currentSeed || generateSeed());
 
   grid.cells.h = new Uint8Array(grid.points.length);
   HeightmapGenerator.setGraph(grid);

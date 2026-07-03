@@ -82,12 +82,6 @@ function fitContent() {
 }
 
 // apply sorting behaviour for lines on Editor header click
-document.querySelectorAll(".sortable").forEach(function (event) {
-  event.on("click", function () {
-    sortLines(this);
-  });
-});
-
 function applySortingByHeader(headerContainer) {
   document
     .getElementById(headerContainer)
