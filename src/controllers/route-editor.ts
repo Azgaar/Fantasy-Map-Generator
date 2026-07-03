@@ -1,7 +1,7 @@
 import { drag, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getSegmentId, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getSegmentId, rn } from "../utils";
 
 function open(id: string): void {
   if (customization) return;
@@ -47,7 +47,7 @@ function renderDialog(): void {
       <div>
         <div class="label">Name:</div>
         <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="routeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
       </div>
       <div data-tip="Select route group">
@@ -82,6 +82,7 @@ function renderDialog(): void {
   ensureEl("routeLock").on("click", toggleLockButton);
   ensureEl("routeRemove").on("click", removeRoute);
   ensureEl("routeName").on("input", changeName);
+  ensureEl("routeNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("routeName").value));
   ensureEl("routeGroup").on("input", changeGroup);
   ensureEl("routeGroupEdit").on("click", openRouteGroupsEditor);
   ensureEl("routeEditStyle").on("click", editRouteGroupStyle);
@@ -178,7 +179,7 @@ function dragControlPoint(event: any): void {
 function redrawRoute(route: Route): void {
   elSelected.attr("d", Routes.getPath(route));
   updateRouteLength(route);
-  if (document.getElementById("elevationProfile")?.offsetParent) showRouteElevationProfile();
+  if (findEl("elevationProfile")) showRouteElevationProfile();
 }
 
 function addControlPoint(this: any, event: any): void {

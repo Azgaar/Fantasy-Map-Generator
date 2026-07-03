@@ -1,7 +1,7 @@
 import { pointer, select, sum } from "d3";
 import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, last, si } from "../utils";
+import { capitalize, ensureEl, findEl, last, si } from "../utils";
 
 function open(state = -1): void {
   if (customization) return;
@@ -238,16 +238,14 @@ function toggleAdd(): void {
   if (button.classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addRegimentOnClick);
     tip("Click on map to create new regiment or fleet", true);
-    const regimentAdd = document.getElementById("regimentAdd");
-    if (regimentAdd?.offsetParent) regimentAdd.classList.add("pressed");
+    findEl("regimentAdd")?.classList.add("pressed");
   } else {
     clearMainTip();
     // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
     // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
     viewbox.on("click", clicked).style("cursor", "default");
     refreshRegimentsOverview();
-    const regimentAdd = document.getElementById("regimentAdd");
-    if (regimentAdd?.offsetParent) regimentAdd.classList.remove("pressed");
+    findEl("regimentAdd")?.classList.remove("pressed");
   }
 }
 

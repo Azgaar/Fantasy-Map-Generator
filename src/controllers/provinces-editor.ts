@@ -695,7 +695,7 @@ function renderNameEditor(): void {
           spellcheck="false"
           style="width: 11em"
         />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="provinceNameEditorShortSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span
           id="provinceNameEditorShortCulture"
           data-tip="Generate culture-specific name for the province"
@@ -765,7 +765,7 @@ function renderNameEditor(): void {
           spellcheck="false"
           style="width: 11em"
         />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="provinceNameEditorFullSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span
           id="provinceNameEditorFullRegenerate"
           data-tip="Click to re-generate full name"
@@ -784,8 +784,14 @@ function renderNameEditor(): void {
 
   ensureEl("provinceNameEditorShortCulture").on("click", regenerateShortNameCulture);
   ensureEl("provinceNameEditorShortRandom").on("click", regenerateShortNameRandom);
+  ensureEl("provinceNameEditorShortSpeak").on("click", () =>
+    speak(ensureEl<HTMLInputElement>("provinceNameEditorShort").value)
+  );
   ensureEl("provinceNameEditorAddForm").on("click", addCustomForm);
   ensureEl("provinceNameEditorFullRegenerate").on("click", regenerateFullName);
+  ensureEl("provinceNameEditorFullSpeak").on("click", () =>
+    speak(ensureEl<HTMLInputElement>("provinceNameEditorFull").value)
+  );
 }
 
 function closeProvinceNameEditor(): void {

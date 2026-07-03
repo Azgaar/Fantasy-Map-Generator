@@ -61,7 +61,7 @@ function renderDialog(): void {
           data-tip='Type to change the label. Enter "|" to move to a new line'
           style="width: 12em"
         />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="labelTextSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
       </div>
       <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
@@ -139,6 +139,7 @@ function renderDialog(): void {
   ensureEl("labelTextShow").on("click", showTextSection);
   ensureEl("labelTextHide").on("click", hideTextSection);
   ensureEl("labelText").on("input", changeText);
+  ensureEl("labelTextSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("labelText").value));
   ensureEl("labelTextRandom").on("click", generateRandomName);
 
   ensureEl("labelEditStyle").on("click", editGroupStyle);

@@ -61,7 +61,7 @@ function renderDialog(): void {
                 spellcheck="false"
                 style="width: 9em"
               />
-              <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span id="burgNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
               <span
                 id="burgNameReRandom"
                 data-tip="Generate random name for the burg"
@@ -235,6 +235,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("burgName").on("input", changeName);
+  ensureEl("burgNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
   ensureEl("burgNameReRandom").on("click", generateNameRandom);
   ensureEl("burgGroup").on("change", changeGroup);
   ensureEl("burgGroupConfigure").on("click", editBurgGroups);

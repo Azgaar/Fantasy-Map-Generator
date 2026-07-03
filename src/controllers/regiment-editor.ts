@@ -1,7 +1,7 @@
 import { type D3DragEvent, drag, easeSinInOut, pointer, select, sum, transition } from "d3";
 import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, destroyDialogIfExists, ensureEl, last, rn } from "../utils";
+import { capitalize, destroyDialogIfExists, ensureEl, findEl, last, rn } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -45,7 +45,12 @@ function renderDialog(): void {
           spellcheck="false"
           style="width: 13em"
         />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span
+          id="regimentNameSpeak"
+          data-tip="Speak the name. You can change voice and language in options"
+          class="speaker"
+          >🔊</span
+        >
         <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
       </div>
       <div data-tip="Regiment emblem" style="display: flex; align-items: center">
@@ -78,6 +83,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("regimentNameRestore").addEventListener("click", restoreName);
+  ensureEl("regimentNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("regimentName").value));
   ensureEl("regimentType").addEventListener("click", changeType);
   ensureEl("regimentName").addEventListener("change", changeName);
   ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
@@ -613,12 +619,12 @@ function closeEditor(): void {
 }
 
 async function refreshMilitaryOverviewIfOpen(): Promise<void> {
-  if (!document.getElementById("militaryOverview")?.offsetParent) return;
+  if (!findEl("militaryOverview")) return;
   Controllers.MilitaryOverview.refresh();
 }
 
 async function refreshRegimentsOverviewIfOpen(): Promise<void> {
-  if (!document.getElementById("regimentsOverview")?.offsetParent) return;
+  if (!findEl("regimentsOverview")) return;
   Controllers.RegimentsOverview.refresh();
 }
 

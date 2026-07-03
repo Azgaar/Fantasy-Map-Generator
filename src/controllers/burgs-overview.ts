@@ -18,7 +18,6 @@ function open(filters: Filters = { stateId: null, cultureId: null }): void {
   $("#burgsOverview").dialog({
     title: "Burgs Overview",
     resizable: false,
-    width: fitContent(),
     close: closeBurgsOverview,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });

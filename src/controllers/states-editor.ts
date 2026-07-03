@@ -445,9 +445,11 @@ function editStateName(state: number): void {
 
   ensureEl("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
   ensureEl("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
+  ensureEl("stateNameEditorShortSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value));
   ensureEl("stateNameEditorAddForm").on("click", addCustomForm);
   ensureEl("stateNameEditorCustomForm").on("change", addCustomForm);
   ensureEl("stateNameEditorFullRegenerate").on("click", regenerateFullName);
+  ensureEl("stateNameEditorFullSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value));
 
   function regenerateShortNameCulture() {
     const state = +ensureEl("stateNameEditor").dataset.state!;
@@ -522,7 +524,7 @@ function renderNameEditor(): void {
           spellcheck="false"
           style="width: 11em"
         />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="stateNameEditorShortSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span
           id="stateNameEditorShortCulture"
           data-tip="Generate culture-specific name"
@@ -630,7 +632,7 @@ function renderNameEditor(): void {
           spellcheck="false"
           style="width: 11em"
         />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="stateNameEditorFullSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
         <span
           id="stateNameEditorFullRegenerate"
           data-tip="Click to re-generate full name"

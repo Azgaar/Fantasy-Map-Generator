@@ -36,7 +36,7 @@ function renderDialog(): void {
         <span id="lakeNameCulture" data-tip="Generate culture-specific name for the lake" class="icon-book pointer"></span>
         <span id="lakeNameRandom" data-tip="Generate random name for the lake" class="icon-globe pointer"></span>
         <input id="lakeName" data-tip="Type to rename the lake" autocorrect="off" spellcheck="false" />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="lakeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
       <div data-tip="Type to change lake type (group)">
         <div class="label" style="width: 4.8em">Type:</div>
@@ -91,6 +91,7 @@ function renderDialog(): void {
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("lakeName").on("input", changeName);
+  ensureEl("lakeNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
   ensureEl("lakeNameCulture").on("click", generateNameCulture);
   ensureEl("lakeNameRandom").on("click", generateNameRandom);
   ensureEl("lakeGroup").on("change", changeLakeGroup);

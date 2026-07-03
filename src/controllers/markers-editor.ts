@@ -1,7 +1,7 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
-import { destroyDialogIfExists, ensureEl, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -19,7 +19,7 @@ function open(markerI?: number, target?: Element): void {
     .call(drag<SVGElement, unknown>().on("start", dragMarker))
     .classed("draggable", true) as unknown as typeof elSelected;
 
-  if (document.getElementById("notesEditor")?.offsetParent) {
+  if (findEl("notesEditor")) {
     void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
   }
 
@@ -306,7 +306,7 @@ function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
   $("#markerEditor").dialog("close");
-  if (document.getElementById("markersOverviewRefresh")?.offsetParent) ensureEl("markersOverviewRefresh").click();
+  findEl<HTMLButtonElement>("markersOverviewRefresh")?.click();
 }
 
 function closeMarkerEditor(): void {

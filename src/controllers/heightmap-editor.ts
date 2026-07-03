@@ -435,7 +435,7 @@ function finalizeHeightmap(): void {
     tip("Insufficient land area. There should be at least 200 land cells!", false, "error");
     return;
   }
-  if (ensureEl("imageConverter").offsetParent) {
+  if (findEl("imageConverter")) {
     tip("Please exit the Image Conversion mode first", false, "error");
     return;
   }

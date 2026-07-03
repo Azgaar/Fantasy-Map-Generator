@@ -2,7 +2,7 @@ import { drag, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
 
 function open(id: string): void {
   if (customization) return;
@@ -49,7 +49,7 @@ function renderDialog(): void {
         <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
         <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
         <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
-        <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="riverNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
       </div>
       <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
         <div class="label">Type:</div>
@@ -101,6 +101,7 @@ function renderDialog(): void {
   ensureEl("riverLegend").on("click", editRiverLegend);
   ensureEl("riverRemove").on("click", removeRiver);
   ensureEl("riverName").on("input", changeName);
+  ensureEl("riverNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
   ensureEl("riverType").on("input", changeType);
   ensureEl("riverNameCulture").on("click", generateNameCulture);
   ensureEl("riverNameRandom").on("click", generateNameRandom);
@@ -234,7 +235,7 @@ function redrawRiver(): void {
   elSelected.attr("d", path);
 
   updateRiverLength(river);
-  if (document.getElementById("elevationProfile")?.offsetParent) showRiverElevationProfile();
+  if (findEl("elevationProfile")) showRiverElevationProfile();
 }
 
 function addControlPoint(this: any, event: any): void {

@@ -188,9 +188,9 @@ function regenerateStates() {
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
+  findEl("burgsOverviewRefresh")?.click();
+  findEl("statesEditorRefresh")?.click();
+  findEl("militaryOverviewRefresh")?.click();
 }
 
 function recreateStates() {
@@ -488,8 +488,8 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (document.getElementById("burgsOverviewRefresh")?.offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  findEl("burgsOverviewRefresh")?.click();
+  findEl("statesEditorRefresh")?.click();
 }
 
 function regenerateGoods() {
@@ -621,7 +621,7 @@ function regenerateMilitary() {
   if (layerIsOn("toggleMilitary")) drawMilitary();
   else toggleMilitary();
 
-  if (document.getElementById("militaryOverviewRefresh")?.offsetParent) militaryOverviewRefresh.click();
+  findEl("militaryOverviewRefresh")?.click();
 }
 
 function regenerateIce() {
@@ -634,7 +634,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
-  if (document.getElementById("markersOverviewRefresh")?.offsetParent) markersOverviewRefresh.click();
+  findEl("markersOverviewRefresh")?.click();
 }
 
 function regenerateZones(event) {
@@ -646,7 +646,7 @@ function regenerateZones(event) {
 
   function addNumberOfZones(number) {
     Zones.generate(number);
-    if (document.getElementById("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
+    findEl("zonesEditorRefresh")?.click();
     if (layerIsOn("toggleZones")) drawZones();
   }
 }
@@ -893,7 +893,7 @@ function addRiverOnClick() {
     Lakes.cleanupLakeData();
     unpressClickToAddButton();
     findEl("addNewRiver")?.classList.remove("pressed");
-    if (findEl("addNewRiver")?.offsetParent) riversOverviewRefresh.click();
+    findEl("riversOverviewRefresh")?.click();
   }
 }
 

@@ -34,8 +34,8 @@ function handleKeyup(event) {
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") window.Services.Save.saveMap("machine");
   else if (ctrl && code === "KeyC") window.Services.Save.saveMap("dropbox");
-  else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
-  else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
+  else if (ctrl && code === "KeyZ" && findEl("undo")) findEl("undo").click();
+  else if (ctrl && code === "KeyY" && findEl("redo")) findEl("redo").click();
   else if ((shift || altShift) && code === "KeyH") window.Controllers.HeightmapEditor.open();
   else if ((shift || altShift) && code === "KeyB") window.Controllers.BiomesEditor.open();
   else if ((shift || altShift) && code === "KeyS") window.Controllers.StatesEditor.open();
@@ -168,11 +168,7 @@ function handleBracketSizeChange(code) {
 }
 
 function toggleMode() {
-  if (zonesRemove?.offsetParent) {
-    zonesRemove.classList.contains("pressed")
-      ? zonesRemove.classList.remove("pressed")
-      : zonesRemove.classList.add("pressed");
-  }
+  if (findEl("zonesRemove")) findEl("zonesRemove").classList.toggle("pressed");
 }
 
 function removeElementOnKey() {

@@ -65,7 +65,7 @@ function renderDialog(): void {
       <select id="notesSelect" data-tip="Select element id" style="width: 12em"></select>
       <strong>Element name: </strong>
       <input id="notesName" data-tip="Set element name" autocorrect="off" spellcheck="false" style="width: 16em" />
-      <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+      <span id="notesNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
     </div>
     <div id="notesLegend" contenteditable="true"></div>
     <div style="margin-top: 0.3em">
@@ -81,6 +81,7 @@ function renderDialog(): void {
 
   ensureEl<HTMLSelectElement>("notesSelect").on("change", changeElement);
   ensureEl<HTMLInputElement>("notesName").on("input", changeName);
+  ensureEl("notesNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("notesName").value));
   ensureEl("notesLegend").on("blur", updateLegend);
   ensureEl("notesPin").on("click", toggleNotesPin);
   ensureEl("notesFocus").on("click", validateHighlightElement);

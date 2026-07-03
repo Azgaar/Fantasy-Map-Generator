@@ -1,5 +1,5 @@
 import { color as d3Color, interpolateString, pointer, select } from "d3";
-import { destroyDialogIfExists, ensureEl, getAdjective } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, getAdjective } from "../utils";
 
 interface Relation {
   inText: string;
@@ -429,7 +429,7 @@ function changeRelation(subjectId: number, objectId: number, oldRelation: string
   else chronicle.push(change());
 
   refreshDiplomacyEditor();
-  if (document.getElementById("diplomacyMatrix")?.offsetParent) showRelationsMatrix();
+  if (findEl("diplomacyMatrix")) showRelationsMatrix();
 }
 
 function regenerateRelations(): void {

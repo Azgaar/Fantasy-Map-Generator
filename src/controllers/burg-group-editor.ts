@@ -1,4 +1,4 @@
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
@@ -32,7 +32,7 @@ function editBurgGroups(): void {
 
 function renderDialog(): void {
   destroyDialogIfExists("burgGroupsEditor");
-  const editorHtml = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
+  const html = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
     <form id="burgGroupsForm">
       <table class="table">
         <thead>
@@ -56,9 +56,10 @@ function renderDialog(): void {
         <tbody id="burgGroupsBody"></tbody>
       </table>
     </form>
+    <div style="padding: 0.5em 0; font-style: italic;">Locked burgs are not affected by changes in groups.</div>
   </div>`;
 
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   ensureEl("burgGroupsForm")
     .on("change", validateForm)
@@ -398,8 +399,7 @@ function submitForm(event: Event): void {
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleLabels")) drawBurgLabels();
-  const refresh = document.getElementById("burgsOverviewRefresh");
-  if (refresh?.offsetParent) (refresh as HTMLButtonElement).click();
+  findEl<HTMLButtonElement>("burgsOverviewRefresh")?.click();
 
   $("#burgGroupsEditor").dialog("close");
 }

@@ -983,13 +983,13 @@ function listen(element, event, handler) {
 
 // Calls the refresh functionality on all editors currently open.
 function refreshAllEditors() {
-  if (document.getElementById("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
-  if (document.getElementById("biomesEditorRefresh")?.offsetParent) biomesEditorRefresh.click();
-  if (document.getElementById("diplomacyEditorRefresh")?.offsetParent) diplomacyEditorRefresh.click();
-  if (document.getElementById("provincesEditorRefresh")?.offsetParent) provincesEditorRefresh.click();
-  if (document.getElementById("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (document.getElementById("zonesEditorRefresh")?.offsetParent) zonesEditorRefresh.click();
-  if (document.getElementById("goodsEditorRefresh")?.offsetParent) goodsEditorRefresh.click();
-  if (document.getElementById("marketsOverviewRefresh")?.offsetParent) marketsOverviewRefresh.click();
+  findEl("culturesEditorRefresh")?.click();
+  findEl("biomesEditorRefresh")?.click();
+  findEl("diplomacyEditorRefresh")?.click();
+  findEl("provincesEditorRefresh")?.click();
+  findEl("religionsEditorRefresh")?.click();
+  findEl("statesEditorRefresh")?.click();
+  findEl("zonesEditorRefresh")?.click();
+  findEl("goodsEditorRefresh")?.click();
+  findEl("marketsOverviewRefresh")?.click();
 }
