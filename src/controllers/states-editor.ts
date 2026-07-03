@@ -445,11 +445,15 @@ function editStateName(state: number): void {
 
   ensureEl("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
   ensureEl("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
-  ensureEl("stateNameEditorShortSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value));
+  ensureEl("stateNameEditorShortSpeak").on("click", () =>
+    speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value)
+  );
   ensureEl("stateNameEditorAddForm").on("click", addCustomForm);
   ensureEl("stateNameEditorCustomForm").on("change", addCustomForm);
   ensureEl("stateNameEditorFullRegenerate").on("click", regenerateFullName);
-  ensureEl("stateNameEditorFullSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value));
+  ensureEl("stateNameEditorFullSpeak").on("click", () =>
+    speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value)
+  );
 
   function regenerateShortNameCulture() {
     const state = +ensureEl("stateNameEditor").dataset.state!;

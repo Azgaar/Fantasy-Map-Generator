@@ -83,7 +83,9 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("regimentNameRestore").addEventListener("click", restoreName);
-  ensureEl("regimentNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("regimentName").value));
+  ensureEl("regimentNameSpeak").addEventListener("click", () =>
+    speak(ensureEl<HTMLInputElement>("regimentName").value)
+  );
   ensureEl("regimentType").addEventListener("click", changeType);
   ensureEl("regimentName").addEventListener("change", changeName);
   ensureEl("regimentEmblemChange").addEventListener("click", changeEmblem);
