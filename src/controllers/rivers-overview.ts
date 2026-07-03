@@ -50,6 +50,7 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  applySortingByHeader("riversHeader");
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("riversOverviewRefresh").on("click", riversOverviewAddLines);

@@ -148,6 +148,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("provincesHeader");
 
   ensureEl("provincesEditorRefresh").on("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").on("click", () => editStyle("provs"));

@@ -96,6 +96,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("militaryHeader");
 
   const body = ensureEl("militaryBody");
 

@@ -51,6 +51,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("tradeDetailsHeader");
 
   ensureEl("tradeDetailsSummary").on("click", event => {
     const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");

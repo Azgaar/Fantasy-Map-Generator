@@ -64,6 +64,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  applySortingByHeader("marketOverviewHeader");
 
   ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
   ensureEl("marketOverviewExport").on("click", downloadStockCsv);

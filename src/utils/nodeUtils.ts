@@ -23,13 +23,11 @@ export const findEl = <T extends HTMLElement>(id: string): T | null => {
 };
 
 /**
- * Remove an element, destroying its jQuery UI dialog widget first if it has one.
- * Prevents orphaned `.ui-dialog` chrome when a dialog's markup is torn down and
- * rebuilt (e.g. re-opening an already-open editor) without going through `.dialog("close")`.
+ * Remove an element, destroying its jQuery UI dialog widget first if it has one
  * @param {string} id - The ID of the element to remove
  */
 export const destroyDialogIfExists = (id: string): void => {
-  const el = document.getElementById(id);
+  const el = findEl(id);
   if (!el) return;
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
   el.remove();

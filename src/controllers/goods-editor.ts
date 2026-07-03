@@ -91,6 +91,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("goodsHeader");
 
   ensureEl("goodsEditorRefresh").on("click", goodsEditorAddLines);
   ensureEl("goodsPercentage").on("click", togglePercentageMode);

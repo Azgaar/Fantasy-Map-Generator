@@ -119,6 +119,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("diplomacyHeader");
 
   ensureEl("diplomacyEditorRefresh").on("click", refreshDiplomacyEditor);
   ensureEl("diplomacyEditStyle").on("click", () => editStyle("regions"));

@@ -66,6 +66,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("regimentsHeader");
 
   const body = ensureEl("regimentsBody");
 

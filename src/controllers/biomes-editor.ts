@@ -1,11 +1,6 @@
 import { drag, easeSinIn, pointer, select, sum, transition } from "d3";
 import { destroyDialogIfExists, ensureEl, getPackPolygon, getRandomColor, isLand, rn, si } from "../utils";
 
-let animate: ReturnType<typeof transition>;
-
-const biomesSel = () => select<SVGGElement, unknown>(biomes.node()!);
-const getBody = () => ensureEl("biomesBody");
-
 function open(): void {
   if (customization) return;
   closeDialogs("#biomesEditor, .stable");
@@ -15,15 +10,12 @@ function open(): void {
   if (layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
-  animate = transition().duration(2000).ease(easeSinIn);
-
   renderDialog();
   refreshBiomesEditor();
 
   $("#biomesEditor").dialog({
     title: "Biomes Editor",
     resizable: false,
-    width: fitContent(),
     close: closeBiomesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
@@ -31,8 +23,8 @@ function open(): void {
 
 function renderDialog(): void {
   destroyDialogIfExists("biomesEditor");
-  const editorHtml = /* html */ `<div id="biomesEditor" class="dialog stable">
-      <div id="biomesHeader" class="header" style="grid-template-columns: 13em 7em 5em 5em 7em">
+  const html = /* html */ `<div id="biomesEditor" class="dialog stable">
+      <div id="biomesHeader" class="header" style="grid-template-columns: 12em 10em 5em 6em 7em">
         <div data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">
           Biome&nbsp;
         </div>
@@ -95,18 +87,13 @@ function renderDialog(): void {
           class="icon-history"
         ></button>
         <button
-          id="biomesRegenerateReliefIcons"
-          data-tip="Regenerate relief icons based on current biomes and elevation"
-          class="icon-tree"
-        ></button>
-        <button
           id="biomesExport"
           data-tip="Save biomes-related data as a text file (.csv)"
           class="icon-download"
         ></button>
       </div>
     </div>`;
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   ensureEl("biomesEditorRefresh").on("click", refreshBiomesEditor);
   ensureEl("biomesEditStyle").on("click", () => editStyle("biomes"));
@@ -117,10 +104,11 @@ function renderDialog(): void {
   ensureEl("biomesManuallyCancel").on("click", () => exitBiomesCustomizationMode());
   ensureEl("biomesRestore").on("click", restoreInitialBiomes);
   ensureEl("biomesAdd").on("click", addCustomBiome);
-  ensureEl("biomesRegenerateReliefIcons").on("click", regenerateIcons);
   ensureEl("biomesExport").on("click", downloadBiomesData);
 
-  getBody().addEventListener("click", ev => {
+  applySortingByHeader("biomesHeader");
+
+  ensureEl("biomesBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
     const cl = el.classList;
     if (el.tagName === "FILL-BOX") biomeChangeColor(el);
@@ -129,7 +117,7 @@ function renderDialog(): void {
     if (customization === 6) selectBiomeOnLineClick(el);
   });
 
-  getBody().addEventListener("change", ev => {
+  ensureEl("biomesBody").addEventListener("change", ev => {
     const el = ev.target as HTMLInputElement;
     const cl = el.classList;
     if (cl.contains("biomeName")) biomeChangeName(el);
@@ -204,7 +192,7 @@ function biomesEditorAddLines(): void {
       </div>
     `;
   }
-  const body = getBody();
+  const body = ensureEl("biomesBody");
   body.innerHTML = lines;
 
   // update footer
@@ -237,14 +225,15 @@ function biomesEditorAddLines(): void {
 function biomeHighlightOn(event: Event): void {
   if (customization === 6) return;
   const biome = +(event.target as HTMLElement).dataset.id!;
-  biomesSel().select(`#biome${biome}`).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
+  const animate = transition().duration(2000).ease(easeSinIn);
+  select(`#biomes > #biome${biome}`).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
 }
 
 function biomeHighlightOff(event: Event): void {
   if (customization === 6) return;
   const biome = +(event.target as HTMLElement).dataset.id!;
   const color = biomesData.color[biome];
-  biomesSel().select(`#biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);
+  select(`#biomes > #biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);
 }
 
 function biomeChangeColor(el: HTMLElement): void {
@@ -254,7 +243,7 @@ function biomeChangeColor(el: HTMLElement): void {
   const callback = (newFill: string): void => {
     el.setAttribute("fill", newFill);
     biomesData.color[biome] = newFill;
-    biomesSel().select(`#biome${biome}`).attr("fill", newFill).attr("stroke", newFill);
+    select(`#biomes > #biome${biome}`).attr("fill", newFill).attr("stroke", newFill);
   };
 
   openPicker(currentFill, callback);
@@ -321,7 +310,7 @@ function toggleLegend(): void {
 }
 
 function togglePercentageMode(): void {
-  const body = getBody();
+  const body = ensureEl("biomesBody");
   if (body.dataset.type === "absolute") {
     body.dataset.type = "percentage";
     const totalCells = +ensureEl("biomesFooterCells").innerHTML;
@@ -380,7 +369,7 @@ function addCustomBiome(): void {
     <span data-tip="Remove the custom biome" class="icon-trash-empty hide"></span>
   </div>`;
 
-  const body = getBody();
+  const body = ensureEl("biomesBody");
   body.insertAdjacentHTML("beforeend", line);
   ensureEl("biomesFooterBiomes").innerHTML = String(body.querySelectorAll(":scope > div").length);
   $("#biomesEditor").dialog({ width: fitContent() });
@@ -393,16 +382,11 @@ function removeCustomBiome(el: HTMLElement): void {
   ensureEl("biomesFooterBiomes").innerHTML = String(+ensureEl("biomesFooterBiomes").innerHTML - 1);
 }
 
-function regenerateIcons(): void {
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
-}
-
 function downloadBiomesData(): void {
   const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
   let data = `Id,Biome,Color,Habitability,Cells,Area ${unit},Population\n`; // headers
 
-  getBody()
+  ensureEl("biomesBody")
     .querySelectorAll<HTMLElement>(":scope > div")
     .forEach(el => {
       data += `${el.dataset.id},`;
@@ -429,14 +413,14 @@ function enterBiomesCustomizationMode(): void {
   document.querySelectorAll<HTMLElement>("#biomesBottom > div").forEach(el => {
     el.style.display = "block";
   });
-  getBody().querySelector("div.biomes")!.classList.add("selected");
+  ensureEl("biomesBody").querySelector("div.biomes")!.classList.add("selected");
 
   ensureEl("biomesEditor")
     .querySelectorAll(".hide")
     .forEach(el => {
       el.classList.add("hidden");
     });
-  getBody()
+  ensureEl("biomesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
       e.style.pointerEvents = "none";
@@ -453,7 +437,7 @@ function enterBiomesCustomizationMode(): void {
 }
 
 function selectBiomeOnLineClick(line: HTMLElement): void {
-  const selected = getBody().querySelector("div.selected");
+  const selected = ensureEl("biomesBody").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
   line.classList.add("selected");
 }
@@ -466,11 +450,11 @@ function selectBiomeOnMapClick(this: SVGElement, event: any): void {
     return;
   }
 
-  const assigned = biomesSel().select("#temp").select(`polygon[data-cell='${i}']`);
+  const assigned = select("#biomes").select("#temp").select(`polygon[data-cell='${i}']`);
   const biome = assigned.size() ? +assigned.attr("data-biome") : pack.cells.biome[i];
 
-  getBody().querySelector("div.selected")?.classList.remove("selected");
-  getBody().querySelector(`div[data-id='${biome}']`)!.classList.add("selected");
+  ensureEl("biomesBody").querySelector("div.selected")?.classList.remove("selected");
+  ensureEl("biomesBody").querySelector(`div[data-id='${biome}']`)!.classList.add("selected");
 }
 
 function dragBiomeBrush(this: SVGElement, event: any): void {
@@ -489,8 +473,8 @@ function dragBiomeBrush(this: SVGElement, event: any): void {
 
 // change region within selection
 function changeBiomeForSelection(selection: number[]): void {
-  const temp = biomesSel().select("#temp");
-  const selected = getBody().querySelector<HTMLElement>("div.selected")!;
+  const temp = select("#biomes").select("#temp");
+  const selected = ensureEl("biomesBody").querySelector<HTMLElement>("div.selected")!;
 
   const biomeNew = selected.dataset.id!;
   const color = biomesData.color[+biomeNew];
@@ -521,7 +505,7 @@ function moveBiomeBrush(this: SVGElement, event: any): void {
 }
 
 function applyBiomesChange(): void {
-  const changed = biomesSel().select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
+  const changed = select("#biomes").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
   changed.each(function () {
     const i = +this.dataset.cell!;
     const b = +this.dataset.biome!;
@@ -537,7 +521,7 @@ function applyBiomesChange(): void {
 
 function exitBiomesCustomizationMode(close?: boolean): void {
   customization = 0;
-  biomesSel().select("#temp").remove();
+  select("#biomes").select("#temp").remove();
   removeCircle();
 
   document.querySelectorAll<HTMLElement>("#biomesBottom > button").forEach(el => {
@@ -547,7 +531,7 @@ function exitBiomesCustomizationMode(close?: boolean): void {
     el.style.display = "none";
   });
 
-  getBody()
+  ensureEl("biomesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
       e.style.pointerEvents = "all";

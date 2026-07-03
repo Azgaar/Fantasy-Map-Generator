@@ -66,6 +66,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  applySortingByHeader("markersHeader");
 
   ensureEl("markersBody").addEventListener("click", handleLineClick);
   ensureEl("markersInverPin").addEventListener("click", invertPin);

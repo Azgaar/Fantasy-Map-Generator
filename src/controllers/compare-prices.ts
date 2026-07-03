@@ -41,6 +41,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("marketsGoodCompareHeader");
 
   ensureEl("marketsGoodCompareSelect").on("change", () => {
     activeGoodId = +ensureEl<HTMLSelectElement>("marketsGoodCompareSelect").value;

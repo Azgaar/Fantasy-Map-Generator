@@ -93,7 +93,7 @@ let currentNoteId = null; // store currently displayed node to not rerender to o
 
 // show note box on hover (if any)
 function showNotes(e) {
-  if (notesEditor?.offsetParent) return;
+  if (findEl("notesEditor")?.offsetParent) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
   if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id;
   else if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
@@ -106,7 +106,7 @@ function showNotes(e) {
     document.getElementById("notes").style.display = "block";
     document.getElementById("notesHeader").innerHTML = note.name;
     document.getElementById("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
+  } else if (!options.pinNotes && !findEl("markerEditor")?.offsetParent && !e.shiftKey) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";
     document.getElementById("notesBody").innerHTML = "";
