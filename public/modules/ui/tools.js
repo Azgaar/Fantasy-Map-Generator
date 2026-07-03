@@ -737,13 +737,14 @@ function toggleAddRiver() {
   const pressed = ensureEl("addRiver").classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
-    ensureEl("addNewRiver").classList.remove("pressed");
+    findEl("addNewRiver")?.classList.remove("pressed");
     return;
   }
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addRiver.classList.add("pressed");
-  ensureEl("addNewRiver").classList.add("pressed");
+  if (!document.getElementById("addNewRiver")) window.Controllers.RiversOverview.open();
+  findEl("addNewRiver")?.classList.add("pressed");
   closeDialogs(".stable");
   viewbox.style("cursor", "crosshair").on("click", addRiverOnClick);
   tip("Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers", true, "warn");
@@ -891,13 +892,13 @@ function addRiverOnClick() {
   if (d3.event.shiftKey === false) {
     Lakes.cleanupLakeData();
     unpressClickToAddButton();
-    ensureEl("addNewRiver").classList.remove("pressed");
-    if (addNewRiver.offsetParent) riversOverviewRefresh.click();
+    findEl("addNewRiver")?.classList.remove("pressed");
+    if (findEl("addNewRiver")?.offsetParent) riversOverviewRefresh.click();
   }
 }
 
 function toggleAddMarker() {
-  const pressed = ensureEl("addMarker").classList.contains("pressed");
+  const pressed = findEl("addMarker")?.classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
     return;
