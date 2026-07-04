@@ -22,7 +22,7 @@ function open(element: SVGElement): void {
   sizeInput.style.display = isGlacier ? "none" : "inline-block";
   if (!isGlacier) sizeInput.value = String(iceElement && "size" in iceElement ? iceElement.size : "");
 
-  select(ice.node()!)
+  select<SVGGElement, unknown>("#ice")
     .selectAll<SVGElement, unknown>("*")
     .classed("draggable", true)
     .call(drag<SVGElement, unknown>().on("drag", dragElement));
@@ -72,11 +72,12 @@ function toggleAdd(): void {
   const iceNewBtn = ensureEl("iceNew");
   iceNewBtn.classList.toggle("pressed");
   if (iceNewBtn.classList.contains("pressed")) {
-    select(viewbox.node()!).style("cursor", "crosshair").on("click", addIcebergOnClick);
+    select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addIcebergOnClick);
     tip("Click on map to create an iceberg. Hold Shift to add multiple", true);
   } else {
     clearMainTip();
-    select(viewbox.node()!).on("click", clicked).style("cursor", "default");
+    // use the legacy v5 viewbox selection: clicked relies on d3.event, which d3 v7 never sets
+    viewbox.on("click", clicked).style("cursor", "default");
   }
 }
 
@@ -127,7 +128,7 @@ function dragElement(this: SVGElement, event: any): void {
 }
 
 function closeEditor(): void {
-  select(ice.node()!)
+  select<SVGGElement, unknown>("#ice")
     .selectAll<SVGElement, unknown>("*")
     .classed("draggable", false)
     .call(drag<SVGElement, unknown>().on("drag", null));

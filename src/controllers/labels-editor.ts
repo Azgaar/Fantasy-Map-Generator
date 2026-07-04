@@ -3,8 +3,6 @@ import { Controllers } from "@/controllers";
 import { destroyDialogIfExists, ensureEl, findEl, parseTransform, round } from "../utils";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
-const labelsSel = () => select<SVGGElement, unknown>(labels.node()!);
-const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
 
 function open(tspan: SVGTSpanElement): void {
   if (customization) return;
@@ -16,7 +14,7 @@ function open(tspan: SVGTSpanElement): void {
   elSelected = select<SVGElement, unknown>(text)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true) as unknown as typeof elSelected;
-  select(viewbox.node()!).on("touchmove mousemove", showEditorTips);
+  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
 
   renderDialog();
 
@@ -195,15 +193,15 @@ function selectLabelGroup(text: SVGTextElement): void {
   }
 
   hideGroupSection();
-  const select = ensureEl<HTMLSelectElement>("labelGroupSelect");
-  select.options.length = 0; // remove all options
+  const groupSelect = ensureEl<HTMLSelectElement>("labelGroupSelect");
+  groupSelect.options.length = 0; // remove all options
 
-  labelsSel()
+  select<SVGGElement, unknown>("#labels")
     .selectAll<SVGGElement, unknown>(":scope > g")
     .each(function () {
       if (this.id === "states") return;
       if (this.id === "burgLabels") return;
-      select.options.add(new Option(this.id, this.id, false, this.id === group));
+      groupSelect.options.add(new Option(this.id, this.id, false, this.id === group));
     });
 }
 
@@ -405,14 +403,14 @@ function removeLabelsGroup(): void {
         $(this).dialog("close");
         $("#labelEditor").dialog("close");
         hideGroupSection();
-        labelsSel()
+        select<SVGGElement, unknown>("#labels")
           .select(`#${group}`)
           .selectAll<SVGTextElement, unknown>("text")
           .each(function () {
             ensureEl(`textPath_${this.id}`).remove();
             this.remove();
           });
-        if (!basic) labelsSel().select(`#${group}`).remove();
+        if (!basic) select<SVGGElement, unknown>("#labels").select(`#${group}`).remove();
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -526,7 +524,7 @@ function changeLetterSpacingSize(this: HTMLInputElement): void {
 function editLabelAlign(): void {
   const bbox = (elSelected.node() as SVGGraphicsElement).getBBox();
   const c = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
-  const path = defsSel().select(`#textPath_${elSelected.attr("id")}`);
+  const path = select<SVGElement, unknown>("#deftemp").select(`#textPath_${elSelected.attr("id")}`);
   path.attr("d", `M${c[0] - bbox.width},${c[1]}h${bbox.width * 2}`);
   drawControlPointsAndLine();
 }
@@ -545,7 +543,7 @@ function removeLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        defsSel()
+        select<SVGElement, unknown>("#deftemp")
           .select(`#textPath_${elSelected.attr("id")}`)
           .remove();
         elSelected.remove();

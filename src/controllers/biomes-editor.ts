@@ -429,7 +429,7 @@ function enterBiomesCustomizationMode(): void {
   $("#biomesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   tip("Click on biome to select, drag the circle to change biome", true);
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .on("click", selectBiomeOnMapClick)
     .call(drag<SVGElement, unknown>().on("start", dragBiomeBrush))

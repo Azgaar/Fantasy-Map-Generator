@@ -2,9 +2,6 @@ import { type D3DragEvent, drag, polygonArea, select } from "d3";
 import type { Feature } from "@/generators/features";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
-const coastlineSel = () => select<SVGGElement, unknown>(coastline.node()!);
-const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
-
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
@@ -16,7 +13,7 @@ function open(element: SVGElement): void {
   elSelected = select<SVGElement, unknown>(element) as unknown as typeof elSelected;
   selectCoastlineGroup(element);
   drawCoastlineVertices();
-  select(viewbox.node()!).on("touchmove mousemove", null);
+  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
   $("#coastlineEditor").dialog({
     title: "Edit Coastline",
@@ -108,7 +105,9 @@ function handleVertexDrag(
   const feature = features[featureId];
 
   // change coastline path
-  defsSel().select(`#featurePaths > path#feature_${featureId}`).attr("d", getFeaturePath(feature));
+  select<SVGElement, unknown>("#deftemp")
+    .select(`#featurePaths > path#feature_${featureId}`)
+    .attr("d", getFeaturePath(feature));
 
   // update area
   const points = feature.vertices.map(vertex => vertices.p[vertex] as [number, number]);
@@ -150,13 +149,13 @@ function hideGroupSection(): void {
 
 function selectCoastlineGroup(node: SVGElement): void {
   const group = (node.parentNode as SVGGElement).id;
-  const select = ensureEl<HTMLSelectElement>("coastlineGroup");
-  select.options.length = 0; // remove all options
+  const groupSelect = ensureEl<HTMLSelectElement>("coastlineGroup");
+  groupSelect.options.length = 0; // remove all options
 
-  coastlineSel()
+  select<SVGGElement, unknown>("#coastline")
     .selectAll<SVGGElement, unknown>("g")
     .each(function () {
-      select.options.add(new Option(this.id, this.id, false, this.id === group));
+      groupSelect.options.add(new Option(this.id, this.id, false, this.id === group));
     });
 }
 

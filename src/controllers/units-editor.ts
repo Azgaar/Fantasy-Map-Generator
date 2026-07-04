@@ -170,7 +170,7 @@ function toggleOpisometerMode(this: HTMLElement): void {
     });
   this.classList.add("pressed");
 
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .call(
       drag<SVGElement, unknown>().on("start", (event: any) => {
@@ -209,7 +209,7 @@ function toggleRouteOpisometerMode(this: HTMLElement): void {
     });
   this.classList.add("pressed");
 
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .call(
       drag<SVGElement, unknown>().on("start", (event: any) => {
@@ -262,7 +262,7 @@ function togglePlanimeterMode(this: HTMLElement): void {
     });
   this.classList.add("pressed");
 
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .call(
       drag<SVGElement, unknown>().on("start", (event: any) => {

@@ -49,7 +49,6 @@ const relations: Record<string, Relation> = {
 
 // state 0 stores the diplomacy chronicle (array of [title, ...messages]) rather than relations
 const getChronicle = () => pack.states[0].diplomacy as unknown as string[][];
-const getBody = () => ensureEl("diplomacyBodySection");
 
 function open(): void {
   if (customization) return;
@@ -68,7 +67,7 @@ function open(): void {
 
   renderDialog();
   refreshDiplomacyEditor();
-  select(viewbox.node()!).style("cursor", "crosshair").on("click", selectStateOnMapClick);
+  select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",
@@ -129,14 +128,14 @@ function renderDialog(): void {
   ensureEl("diplomacyHistory").on("click", showRelationsHistory);
   ensureEl("diplomacyExport").on("click", downloadDiplomacyData);
 
-  getBody().addEventListener("click", ev => {
+  ensureEl("diplomacyBodySection").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
     if ((el.parentElement as HTMLElement).classList.contains("Self")) return;
 
     if (el.classList.contains("changeRelations")) {
       const line = el.parentElement as HTMLElement;
       const subjectId = +line.dataset.id!;
-      const objectId = +getBody().querySelector<HTMLElement>("div.Self")!.dataset.id!;
+      const objectId = +ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self")!.dataset.id!;
       const currentRelation = line.dataset.relations!;
 
       selectRelation(subjectId, objectId, currentRelation);
@@ -144,7 +143,7 @@ function renderDialog(): void {
     }
 
     // select state of clicked line
-    getBody().querySelector("div.Self")!.classList.remove("Self");
+    ensureEl("diplomacyBodySection").querySelector("div.Self")!.classList.remove("Self");
     (el.parentElement as HTMLElement).classList.add("Self");
     refreshDiplomacyEditor();
   });
@@ -157,7 +156,7 @@ function refreshDiplomacyEditor(): void {
 
 // add line for each state
 function diplomacyEditorAddLines(): void {
-  const body = getBody();
+  const body = ensureEl("diplomacyBodySection");
   const states = pack.states;
   const selectedLine = body.querySelector<HTMLElement>("div.Self");
   const selectedId = selectedLine ? +selectedLine.dataset.id! : states.find(s => s.i && !s.removed)!.i;
@@ -208,7 +207,7 @@ function stateHighlightOn(event: Event): void {
   if (!layerIsOn("toggleStates")) return;
   const state = +(event.target as HTMLElement).dataset.id!;
   if (customization || !state) return;
-  const d = select<SVGGElement, unknown>(regions.node()!).select(`#state${state}`).attr("d");
+  const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
 
   const path = debug
     .append("path")
@@ -236,12 +235,12 @@ function stateHighlightOff(): void {
 }
 
 function showStateRelations(): void {
-  const selectedLine = getBody().querySelector<HTMLElement>("div.Self");
+  const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self");
   const sel = selectedLine ? +selectedLine.dataset.id! : pack.states.find(s => s.i && !s.removed)!.i;
   if (!sel) return;
   if (!layerIsOn("toggleStates")) toggleStates();
 
-  select<SVGGElement, unknown>(statesBody.node()!)
+  select<SVGGElement, unknown>("#statesBody")
     .selectAll<SVGPathElement, unknown>("path")
     .each(function () {
       if (this.id.slice(0, 9) === "state-gap") return; // exclude state gap element
@@ -251,8 +250,10 @@ function showStateRelations(): void {
       const color = relations[relation]?.color || "#4682b4";
 
       this.setAttribute("fill", color);
-      select(statesBody.node()!).select(`#state-gap${id}`).attr("stroke", color);
-      select(statesHalo.node()!).select(`#state-border${id}`).attr("stroke", d3Color(color)!.darker().hex());
+      select<SVGGElement, unknown>("#statesBody").select(`#state-gap${id}`).attr("stroke", color);
+      select<SVGGElement, unknown>("#statesHalo")
+        .select(`#state-border${id}`)
+        .attr("stroke", d3Color(color)!.darker().hex());
     });
 }
 
@@ -261,11 +262,11 @@ function selectStateOnMapClick(this: SVGElement, event: any): void {
   const i = findCell(point[0], point[1])!;
   const state = pack.cells.state[i];
   if (!state) return;
-  const selectedLine = getBody().querySelector<HTMLElement>("div.Self")!;
+  const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self")!;
   if (+selectedLine.dataset.id! === state) return;
 
   selectedLine.classList.remove("Self");
-  getBody().querySelector(`div[data-id='${state}']`)!.classList.add("Self");
+  ensureEl("diplomacyBodySection").querySelector(`div[data-id='${state}']`)!.classList.add("Self");
   refreshDiplomacyEditor();
 }
 
@@ -438,7 +439,7 @@ function regenerateRelations(): void {
 }
 
 function resetRelations(): void {
-  const selectedId = +getBody().querySelector<HTMLElement>("div.Self")!.dataset.id!;
+  const selectedId = +ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self")!.dataset.id!;
   if (!selectedId) return;
   const states = pack.states;
 
@@ -583,7 +584,7 @@ function downloadDiplomacyData(): void {
 function closeDiplomacyEditor(): void {
   restoreDefaultEvents();
   clearMainTip();
-  const selected = getBody().querySelector("div.Self");
+  const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");
   if (selected) selected.classList.remove("Self");
   if (layerIsOn("toggleStates")) drawStates();
   else toggleStates();

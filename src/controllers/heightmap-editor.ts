@@ -24,8 +24,8 @@ let defaultCellTypeFilter: "all" | "land" | "water" = "all";
 function open(options?: { mode?: string; tool?: string }): void {
   const { mode, tool } = options || {};
   restartHistory();
-  viewboxSel().selectAll("#heights").remove();
-  viewboxSel().insert("g", "#terrs").attr("id", "heights");
+  select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
+  select<SVGElement, unknown>("#viewbox").insert("g", "#terrs").attr("id", "heights");
 
   if (!mode) showModeDialog(tool);
   else enterHeightmapEditMode(mode, tool);
@@ -35,7 +35,7 @@ addToolbarListeners();
 
 function renderTemplateEditor(): void {
   destroyDialogIfExists("templateEditor");
-  const editorHtml = /* html */ `<div id="templateEditor" class="dialog stable">
+  const html = /* html */ `<div id="templateEditor" class="dialog stable">
       <div id="templateTop">
         <i>Select template: </i>
         <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
@@ -126,7 +126,7 @@ function renderTemplateEditor(): void {
         </label>
       </div>
     </div>`;
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   const $body = ensureEl("templateBody");
 
@@ -171,8 +171,7 @@ function renderTemplateEditor(): void {
   ensureEl("templateRedo").on("click", () => restoreHistory(edits.n + 1));
   ensureEl("templateSave").on("click", downloadTemplate);
   ensureEl("templateLoad").on("click", () => ensureEl("templateToLoad").click());
-  // templateToLoad is a static file input outside the dialog; use property assignment
-  // (idempotent, replaces rather than accumulates) so re-rendering doesn't stack listeners.
+
   ensureEl<HTMLInputElement>("templateToLoad").onchange = () => {
     uploadFile(ensureEl<HTMLInputElement>("templateToLoad"), uploadTemplate);
   };
@@ -270,9 +269,6 @@ function renderImageConverter(): void {
 // heightmap-editing session, so listeners are wired once at load rather than per open/close.
 let storedLayers: string[] = [];
 
-const viewboxSel = () => select<SVGElement, unknown>(viewbox.node()!);
-const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
-
 function addToolbarListeners(): void {
   ensureEl("paintBrushes").on("click", openBrushesPanel);
   ensureEl("applyTemplate").on("click", openTemplateEditor);
@@ -333,12 +329,12 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     undraw();
     defaultCellTypeFilter = "all";
   } else if (mode === "keep") {
-    viewboxSel().selectAll("#landmass, #lakes").style("display", "none");
+    select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", "none");
     defaultCellTypeFilter = "land";
   } else if (mode === "risk") {
-    defsSel().selectAll("#land, #water").selectAll("path").remove();
-    defsSel().select("#featurePaths").selectAll("path").remove();
-    viewboxSel().selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
+    select<SVGElement, unknown>("#deftemp").selectAll("#land, #water").selectAll("path").remove();
+    select<SVGElement, unknown>("#deftemp").select("#featurePaths").selectAll("path").remove();
+    select<SVGElement, unknown>("#viewbox").selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
     defaultCellTypeFilter = "all";
   }
   const cellTypeFilterEl = findEl<HTMLSelectElement>("cellTypeFilter");
@@ -379,8 +375,8 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   layersPreset.disabled = true;
   mockHeightmap();
 
-  viewboxSel().on("touchmove mousemove", moveCursor);
-  select(svg.node()!).on("dblclick.zoom", null);
+  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
+  select<SVGSVGElement, unknown>("#map").on("dblclick.zoom", null);
 
   if (tool === "templateEditor") openTemplateEditor();
   else if (tool === "imageConverter") openImageConverter();
@@ -430,7 +426,7 @@ function getFriendlyHeight(h: number): string {
 
 // Exit customization mode
 function finalizeHeightmap(): void {
-  if (viewboxSel().select("#heights").selectAll("*").size() < 200) {
+  if (select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").size() < 200) {
     tip("Insufficient land area. There should be at least 200 land cells!", false, "error");
     return;
   }
@@ -464,7 +460,7 @@ function finalizeHeightmap(): void {
 
   // restore initial layers
   drawFeatures();
-  viewboxSel().selectAll("#heights").remove();
+  select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
   turnButtonOff("toggleHeight");
   ensureEl("mapLayers")
@@ -551,7 +547,7 @@ function regenerateErasedData(): void {
 }
 
 function restoreKeptData(): void {
-  viewboxSel().selectAll("#landmass, #lakes").style("display", null);
+  select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", null);
   for (const i of pack.cells.i) {
     pack.cells.h[i] = grid.cells.h[pack.cells.g[i]];
   }
@@ -809,7 +805,7 @@ function mockHeightmap(): void {
     ? grid.cells.i
     : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
 
-  viewboxSel()
+  select<SVGElement, unknown>("#viewbox")
     .select("#heights")
     .selectAll<SVGPolygonElement, number>("polygon")
     .data<number>(data)
@@ -824,14 +820,14 @@ function mockHeightmapSelection(selection: number[]): void {
   const ocean = ensureEl<HTMLInputElement>("renderOcean").checked;
 
   selection.forEach(i => {
-    let cell: any = viewboxSel().select("#heights").select(`#cell${i}`);
+    let cell: any = select<SVGElement, unknown>("#viewbox").select("#heights").select(`#cell${i}`);
     if (!ocean && grid.cells.h[i] < 20) {
       cell.remove();
       return;
     }
 
     if (!cell.size())
-      cell = viewboxSel()
+      cell = select<SVGElement, unknown>("#viewbox")
         .select("#heights")
         .append("polygon")
         .attr("points", getGridPolygon(i, grid))
@@ -973,7 +969,12 @@ function renderBrushesPanel(): void {
     <div id="lineSlider" style="display: none">
       <div data-tip="Change tool power. Shortcut: + to increase; – to decrease">
         <slider-input id="heightmapLinePower" min="-100" max="100" value="30">
-          <div style="width: 3.5em">Power:</div>
+          <div style="width: 5.5em">Power:</div>
+        </slider-input>
+      </div>
+      <div data-tip="Change line randomness. Zero makes the line as straight as possible">
+        <slider-input id="heightmapLineRandomness" min="0" max="100" value="30">
+          <div style="width: 5.5em">Randomness:</div>
         </slider-input>
       </div>
     </div>
@@ -1061,7 +1062,8 @@ function exitBrushMode(): void {
   const pressed = document.querySelector("#brushesButtons > button.pressed");
   if (pressed) pressed.classList.remove("pressed");
 
-  viewboxSel().style("cursor", "default").on(".drag", null).on("click", clicked);
+  // use the legacy v5 viewbox selection: clicked relies on d3.event, which d3 v7 never sets
+  viewbox.style("cursor", "default").on(".drag", null).on("click", clicked);
   debug.selectAll(".lineCircle").remove();
   removeCircle();
 
@@ -1085,13 +1087,15 @@ function toggleBrushMode(event: Event): void {
 
   if (button.id === "brushLine") {
     ensureEl("lineSlider").style.display = "block";
-    viewboxSel().style("cursor", "crosshair").on("click", placeLinearFeature);
+    select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", placeLinearFeature);
   } else if (button.id === "brushFill") {
     ensureEl("brushesSliders").style.display = "block";
-    viewboxSel().style("cursor", "crosshair").on("click", applyFillBrush);
+    select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", applyFillBrush);
   } else {
     ensureEl("brushesSliders").style.display = "block";
-    viewboxSel().style("cursor", "crosshair").call(drag<SVGElement, unknown>().on("start", dragBrush));
+    select<SVGElement, unknown>("#viewbox")
+      .style("cursor", "crosshair")
+      .call(drag<SVGElement, unknown>().on("start", dragBrush));
   }
 }
 
@@ -1127,13 +1131,16 @@ function placeLinearFeature(this: SVGElement, event: any): void {
     return;
   }
 
+  // map slider 0-100 to halving probability 0-0.5: past 0.5 the ordering stabilizes again, so 0.5 is max meander
+  const randomness = ensureEl<HTMLInputElement>("heightmapLineRandomness").valueAsNumber / 200;
+
   const heights = grid.cells.h;
   const operation =
     power > 0
       ? HeightmapGenerator.addRange.bind(HeightmapGenerator)
       : HeightmapGenerator.addTrough.bind(HeightmapGenerator);
   HeightmapGenerator.setGraph(grid);
-  operation("1", String(Math.abs(power)), "", "", fromCell, toCell);
+  operation("1", String(Math.abs(power)), "", "", fromCell, toCell, randomness);
   const changedHeights = HeightmapGenerator.getHeights()!;
 
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
@@ -1264,10 +1271,9 @@ function applyConeToSelection(selection: number[], isWaterFill: boolean, targetH
 function dragBrush(this: SVGElement, event: any): void {
   const r = ensureEl<HTMLInputElement>("heightmapBrushRadius").valueAsNumber;
 
-  event.on("drag", (dragEvent: any) => {
-    const p = pointer(dragEvent, this);
+  const applyBrush = (pointerEvent: any) => {
+    const p = pointer(pointerEvent, this);
     moveCircle(p[0], p[1], r);
-    if (~~dragEvent.sourceEvent.timeStamp % 5 !== 0) return; // slow down the edit
 
     const inRadius = findGridAll(p[0], p[1], r, grid);
     let selection = inRadius;
@@ -1275,8 +1281,10 @@ function dragBrush(this: SVGElement, event: any): void {
     if (cellTypeFilter === "land") selection = inRadius.filter((i: number) => grid.cells.h[i] >= 20);
     else if (cellTypeFilter === "water") selection = inRadius.filter((i: number) => grid.cells.h[i] < 20);
     if (selection?.length) changeHeightForSelection(selection, findGridCell(p[0], p[1], grid));
-  });
+  };
 
+  applyBrush(event); // apply once on start so a plain click changes height
+  event.on("drag", applyBrush);
   event.on("end", updateHeightmap);
 }
 
@@ -1407,7 +1415,7 @@ function startFromScratch(): void {
   }
 
   grid.cells.h = new Uint8Array(grid.cells.i.length);
-  viewboxSel().select("#heights").selectAll("*").remove();
+  select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").remove();
   updateHistory();
 }
 
@@ -1733,7 +1741,7 @@ function openImageConverter(): void {
 
   // remove all heights
   grid.cells.h = new Uint8Array(grid.cells.i.length);
-  viewboxSel().select("#heights").selectAll("*").remove();
+  select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").remove();
   updateHistory();
 }
 
@@ -1781,14 +1789,14 @@ function heightsFromImage(count: number): void {
   const data = q.reduce(sampleCanvas);
   const pallete = q.palette(true);
 
-  viewboxSel().select("#heights").selectAll("*").remove();
+  select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").remove();
   select("#imageConverter").selectAll("div.color-div").remove();
   ensureEl("colorsSelect").style.display = "block";
   ensureEl("colorsUnassigned").style.display = "block";
   ensureEl("colorsAssigned").style.display = "none";
   sampleCanvas.remove(); // no need to keep
 
-  viewboxSel()
+  select<SVGElement, unknown>("#viewbox")
     .select("#heights")
     .selectAll<SVGPolygonElement, number>("polygon")
     .data<number>(grid.cells.i as number[])
@@ -1819,7 +1827,7 @@ function mapClicked(this: SVGElement): void {
 }
 
 function colorClicked(this: HTMLElement): void {
-  viewboxSel().select("#heights").selectAll(".selectedCell").attr("class", null);
+  select<SVGElement, unknown>("#viewbox").select("#heights").selectAll(".selectedCell").attr("class", null);
   const unselect = this.classList.contains("selectedColor");
 
   const selectedColor = ensureEl("imageConverter").querySelector("div.selectedColor");
@@ -1839,8 +1847,14 @@ function colorClicked(this: HTMLElement): void {
   }
 
   const clr = this.getAttribute("data-color");
-  viewboxSel().select("#heights").selectAll("polygon.selectedCell").classed("selectedCell", false);
-  viewboxSel().select("#heights").selectAll(`polygon[fill='${clr}']`).classed("selectedCell", true);
+  select<SVGElement, unknown>("#viewbox")
+    .select("#heights")
+    .selectAll("polygon.selectedCell")
+    .classed("selectedCell", false);
+  select<SVGElement, unknown>("#viewbox")
+    .select("#heights")
+    .selectAll(`polygon[fill='${clr}']`)
+    .classed("selectedCell", true);
 }
 
 function assignHeight(this: HTMLElement): void {
@@ -1851,7 +1865,7 @@ function assignHeight(this: HTMLElement): void {
   selectedColor.setAttribute("data-color", rgb);
   selectedColor.setAttribute("data-height", String(height));
 
-  viewboxSel()
+  select<SVGElement, unknown>("#viewbox")
     .select("#heights")
     .selectAll<SVGElement, unknown>(".selectedCell")
     .each(function () {
@@ -1910,7 +1924,7 @@ function autoAssing(type: string): void {
     const clr = el.dataset.color!;
     const height = type === "hue" ? getHeightByHue(clr) : type === "lum" ? getHeightByLum(clr) : getHeightByScheme(clr);
     const colorTo = color(1 - (height < 20 ? (height - 5) / 100 : height / 100));
-    viewboxSel()
+    select<SVGElement, unknown>("#viewbox")
       .select("#heights")
       .selectAll(`polygon[fill='${clr}']`)
       .attr("fill", colorTo)
@@ -1961,7 +1975,7 @@ function applyConversion(): void {
     return;
   }
 
-  viewboxSel()
+  select<SVGElement, unknown>("#viewbox")
     .select("#heights")
     .selectAll<SVGElement, unknown>("polygon")
     .each(function () {
@@ -1970,14 +1984,14 @@ function applyConversion(): void {
       grid.cells.h[i] = height;
     });
 
-  viewboxSel().select("#heights").selectAll("polygon").remove();
+  select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
   updateHeightmap();
   restoreImageConverterState();
 }
 
 function cancelConversion(): void {
   restoreImageConverterState();
-  viewboxSel().select("#heights").selectAll("polygon").remove();
+  select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
   restoreHistory(edits.n - 1);
 }
 
@@ -1989,7 +2003,7 @@ function restoreImageConverterState(): void {
   ensureEl("colorsAssigned").style.display = "none";
   ensureEl("colorsUnassigned").style.display = "none";
   ensureEl("colorsSelectValue").innerHTML = ensureEl("colorsSelectFriendly").innerHTML = "0";
-  viewboxSel().style("cursor", "default").on(".drag", null);
+  select<SVGElement, unknown>("#viewbox").style("cursor", "default").on(".drag", null);
   tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
   $("#imageConverter").dialog("destroy");
   ensureEl("imageConverter").remove();
@@ -2016,7 +2030,7 @@ function closeImageConverter(event: Event): void {
       Close: function (this: HTMLElement) {
         $(this).dialog("close");
         restoreImageConverterState();
-        viewboxSel().select("#heights").selectAll("polygon").remove();
+        select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
         restoreHistory(edits.n - 1);
       }
     }

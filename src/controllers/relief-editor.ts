@@ -436,7 +436,7 @@ function enterBulkAddMode(): void {
     reliefIconsDiv.querySelector("svg")?.classList.add("pressed");
   }
 
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .call(drag<SVGElement, unknown>().on("start", dragToAdd))
     .on("touchmove mousemove", moveBrush);
@@ -523,7 +523,7 @@ function enterBulkRemoveMode(): void {
   ensureEl("reliefSpacingDiv").style.display = "none";
   ensureEl("reliefIconsSeletionAny").style.display = "inline-block";
 
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .call(drag<SVGElement, unknown>().on("start", dragToRemove))
     .on("touchmove mousemove", moveBrush);

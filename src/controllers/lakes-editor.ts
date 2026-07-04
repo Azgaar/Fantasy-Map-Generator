@@ -16,7 +16,7 @@ function open(element: SVGElement): void {
   updateLakeValues();
   selectLakeGroup();
   drawLakeVertices();
-  select(viewbox.node()!).on("touchmove mousemove", null);
+  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
   $("#lakeEditor").dialog({
     title: "Edit Lake",
@@ -175,7 +175,9 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
   const feature = getLake();
 
   // update lake path
-  select(defs.node()!).select(`#featurePaths > path#feature_${feature.i}`).attr("d", getFeaturePath(feature));
+  select<SVGElement, unknown>("#deftemp")
+    .select(`#featurePaths > path#feature_${feature.i}`)
+    .attr("d", getFeaturePath(feature));
 
   // update area
   const points = feature.vertices.map(vertex => pack.vertices.p[vertex] as [number, number]);

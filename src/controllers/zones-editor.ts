@@ -8,9 +8,6 @@ interface ZoneCellDatum {
   fill: string;
 }
 
-const zonesSel = () => select<SVGGElement, unknown>(zones.node()!);
-const getBody = () => ensureEl("zonesBodySection");
-
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
   if (!layerIsOn("toggleZones")) toggleZones();
@@ -94,7 +91,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  const body = getBody();
+  const body = ensureEl("zonesBodySection");
 
   ensureEl("zonesFilterType").on("click", updateFilters);
   ensureEl("zonesFilterType").on("change", filterZonesByType);
@@ -171,7 +168,7 @@ function updateFilters(): void {
 
 // add line for each zone
 function zonesEditorAddLines(): void {
-  const body = getBody();
+  const body = ensureEl("zonesBodySection");
   const typeToFilterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
   const filteredZones = typeToFilterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === typeToFilterBy);
 
@@ -182,7 +179,7 @@ function zonesEditorAddLines(): void {
       sum(cells.map(c => pack.cells.burg[c]).map(b => pack.burgs[b]?.population ?? 0)) * populationRate * urbanization;
     const population = rn(rural + urban);
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
-    const focused = defsSel().select(`#fog #focusZone${i}`).size();
+    const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusZone${i}`).size();
 
     return /* html */ `<div class="states" data-id="${i}" data-color="${color}" data-description="${name}"
       data-type="${type}" data-cells=${cells.length} data-area=${area} data-population=${population} style="${hidden ? "opacity: 0.5" : ""}">
@@ -231,16 +228,14 @@ function zonesEditorAddLines(): void {
   $("#zonesEditor").dialog({ width: fitContent() });
 }
 
-const defsSel = () => select<SVGDefsElement, unknown>(defs.node()!);
-
 function zoneHighlightOn(this: HTMLElement): void {
   const zoneId = this.dataset.id;
-  zonesSel().select(`#zone${zoneId}`).style("outline", "1px solid red");
+  select<SVGGElement, unknown>("#zones").select(`#zone${zoneId}`).style("outline", "1px solid red");
 }
 
 function zoneHighlightOff(this: HTMLElement): void {
   const zoneId = this.dataset.id;
-  zonesSel().select(`#zone${zoneId}`).style("outline", null);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zoneId}`).style("outline", null);
 }
 
 function filterZonesByType(): void {
@@ -263,7 +258,7 @@ function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): 
 function enterZonesManualAssignent(): void {
   if (!layerIsOn("toggleZones")) toggleZones();
   customization = 10;
-  const body = getBody();
+  const body = ensureEl("zonesBodySection");
 
   document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
     el.style.display = "none";
@@ -281,7 +276,7 @@ function enterZonesManualAssignent(): void {
   $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
   tip("Click to select a zone, drag to paint a zone", true);
-  select(viewbox.node()!)
+  select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .on("click", selectZoneOnMapClick)
     .call(drag<SVGElement, unknown>().on("start", dragZoneBrush))
@@ -290,13 +285,13 @@ function enterZonesManualAssignent(): void {
   body.querySelector("div")?.classList.add("selected");
 
   // draw zones as individual cells
-  zonesSel().selectAll("*").remove();
+  select<SVGGElement, unknown>("#zones").selectAll("*").remove();
 
   const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
   const isFiltered = filterBy && filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.flatMap(({ i, cells, color }) => cells.map(cell => ({ cell, zoneId: i, fill: color })));
-  zonesSel()
+  select<SVGGElement, unknown>("#zones")
     .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
     .data(data, d => `${d.zoneId}-${d.cell}`)
     .enter()
@@ -311,9 +306,9 @@ function selectZoneOnMapClick(event: any): void {
   const target = event.target as HTMLElement;
   if ((target.parentElement as HTMLElement).id !== "zones") return;
   const zoneId = target.dataset.zone;
-  const el = getBody().querySelector(`div[data-id='${zoneId}']`);
+  const el = ensureEl("zonesBodySection").querySelector(`div[data-id='${zoneId}']`);
 
-  getBody().querySelector("div.selected")?.classList.remove("selected");
+  ensureEl("zonesBodySection").querySelector("div.selected")?.classList.remove("selected");
   el?.classList.add("selected");
 }
 
@@ -331,23 +326,23 @@ function dragZoneBrush(this: SVGElement, event: any): void {
     if (landOnly) selection = selection.filter(i => pack.cells.h[i] >= 20);
     if (!selection.length) return;
 
-    const zoneId = +getBody().querySelector<HTMLElement>("div.selected")!.dataset.id!;
+    const zoneId = +ensureEl("zonesBodySection").querySelector<HTMLElement>("div.selected")!.dataset.id!;
     const zone = pack.zones.find(z => z.i === zoneId);
     if (!zone) return;
 
     if (eraseMode) {
-      const data = zonesSel()
+      const data = select<SVGGElement, unknown>("#zones")
         .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
         .data()
         .filter(d => !(d.zoneId === zoneId && selection.includes(d.cell)));
-      zonesSel()
+      select<SVGGElement, unknown>("#zones")
         .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
         .data(data, d => `${d.zoneId}-${d.cell}`)
         .exit()
         .remove();
     } else {
       const data: ZoneCellDatum[] = selection.map(cell => ({ cell, zoneId, fill: zone.color }));
-      zonesSel()
+      select<SVGGElement, unknown>("#zones")
         .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
         .data(data, d => `${d.zoneId}-${d.cell}`)
         .enter()
@@ -368,7 +363,7 @@ function moveZoneBrush(this: SVGElement, event: any): void {
 }
 
 function applyZonesManualAssignent(): void {
-  const data = zonesSel().selectAll<SVGPolygonElement, ZoneCellDatum>("polygon").data();
+  const data = select<SVGGElement, unknown>("#zones").selectAll<SVGPolygonElement, ZoneCellDatum>("polygon").data();
   const zoneCells = data.reduce<Record<number, number[]>>((acc, d) => {
     if (!acc[d.zoneId]) acc[d.zoneId] = [];
     acc[d.zoneId].push(d.cell);
@@ -406,7 +401,7 @@ function exitZonesManualAssignment(close?: string): void {
       el.classList.remove("hidden");
     });
   ensureEl("zonesFooter").style.display = "block";
-  getBody()
+  ensureEl("zonesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, svg")
     .forEach(e => {
       e.style.pointerEvents = "all";
@@ -417,7 +412,7 @@ function exitZonesManualAssignment(close?: string): void {
   restoreDefaultEvents();
   clearMainTip();
 
-  const selected = getBody().querySelector("div.selected");
+  const selected = ensureEl("zonesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
 }
 
@@ -444,7 +439,7 @@ function toggleFog(zone: Zone, cl: DOMTokenList): void {
   cl.toggle("inactive");
 
   if (inactive) {
-    const path = zonesSel().select(`#zone${zone.i}`).attr("d");
+    const path = select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("d");
     fog(`focusZone${zone.i}`, path);
   } else {
     unfog(`focusZone${zone.i}`);
@@ -465,7 +460,7 @@ function toggleLegend(): void {
 }
 
 function togglePercentageMode(): void {
-  const body = getBody();
+  const body = ensureEl("zonesBodySection");
   if (body.dataset.type === "absolute") {
     body.dataset.type = "percentage";
     const totalCells = +ensureEl("zonesFooterCells").innerHTML;
@@ -498,7 +493,7 @@ function downloadZonesData(): void {
   const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
   let data = `Id,Color,Description,Type,Cells,Area ${unit},Population\n`; // headers
 
-  getBody()
+  ensureEl("zonesBodySection")
     .querySelectorAll<HTMLElement>(":scope > div")
     .forEach(el => {
       data += `${el.dataset.id},`;
@@ -516,12 +511,12 @@ function downloadZonesData(): void {
 
 function changeDescription(zone: Zone, value: string): void {
   zone.name = value;
-  zonesSel().select(`#zone${zone.i}`).attr("data-description", value);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", value);
 }
 
 function changeType(zone: Zone, value: string): void {
   zone.type = value;
-  zonesSel().select(`#zone${zone.i}`).attr("data-type", value);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", value);
 }
 
 function changePopulation(zone: Zone): void {
@@ -613,7 +608,7 @@ function zoneRemove(zone: Zone): void {
     confirm: "Remove",
     onConfirm: () => {
       pack.zones = pack.zones.filter(z => z.i !== zone.i);
-      zonesSel().select(`#zone${zone.i}`).remove();
+      select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
       unfog(`focusZone${zone.i}`);
       zonesEditorAddLines();
     }

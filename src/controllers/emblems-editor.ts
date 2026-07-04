@@ -9,8 +9,6 @@ let currentType: string;
 let currentId: string;
 let currentEl: EmblemEl;
 
-const emblemsSel = () => select<SVGElement, unknown>(emblems.node()!);
-
 function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): void {
   if (customization) return;
   if (!id && target) defineEmblemData(target);
@@ -22,7 +20,7 @@ function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): v
 
   renderDialog();
 
-  emblemsSel()
+  select<SVGElement, unknown>("#emblems")
     .selectAll<SVGUseElement, unknown>("use")
     .call(drag<SVGUseElement, unknown>().on("drag", dragEmblem))
     .classed("draggable", true);
@@ -385,7 +383,7 @@ function changeSize(ev: Event): void {
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 
-  const g = emblemsSel().select(`#${currentType}Emblems`);
+  const g = select<SVGElement, unknown>("#emblems").select(`#${currentType}Emblems`);
   g.select(`[data-i='${currentEl.i}']`).remove();
   if (!size) return;
 
@@ -695,7 +693,7 @@ function dragEmblem(this: SVGUseElement, event: any): void {
 }
 
 function closeEmblemEditor(): void {
-  emblemsSel()
+  select<SVGElement, unknown>("#emblems")
     .selectAll<SVGUseElement, unknown>("use")
     .call(drag<SVGUseElement, unknown>().on("drag", null))
     .attr("class", null);

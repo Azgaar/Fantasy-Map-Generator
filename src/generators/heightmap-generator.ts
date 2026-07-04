@@ -161,7 +161,8 @@ class HeightmapModule {
     rangeX: string,
     rangeY: string,
     startCellId?: number,
-    endCellId?: number
+    endCellId?: number,
+    randomness = 0.15
   ): void {
     if (!this.heights || !this.grid) return;
 
@@ -179,7 +180,7 @@ class HeightmapModule {
           this.grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() > 0.85) diff = diff / 2;
+            if (Math.random() < randomness) diff = diff / 2;
             if (diff < min) {
               min = diff;
               cur = e;
@@ -270,7 +271,8 @@ class HeightmapModule {
     rangeX: string,
     rangeY: string,
     startCellId?: number,
-    endCellId?: number
+    endCellId?: number,
+    randomness = 0.2
   ): void {
     const addOneTrough = () => {
       if (!this.heights || !this.grid) return;
@@ -286,7 +288,7 @@ class HeightmapModule {
           this.grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() > 0.8) diff = diff / 2;
+            if (Math.random() < randomness) diff = diff / 2;
             if (diff < min) {
               min = diff;
               cur = e;
