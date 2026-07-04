@@ -742,6 +742,7 @@ function recalculateCultures(force?: boolean): void {
     Cultures.expand();
     drawCultures();
     pack.burgs.forEach(b => {
+      if (!b.i || b.removed) return;
       b.culture = pack.cells.culture[b.cell];
     });
     refreshCulturesEditor();

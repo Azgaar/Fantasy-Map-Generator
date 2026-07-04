@@ -221,9 +221,9 @@ function zoomRaf() {
     }
 
     if (customization === 1) {
-      const canvas = ensureEl("canvas");
+      const canvas = findEl("canvas");
       if (canvas && canvas.style.opacity !== "0") {
-        const img = ensureEl("imageToConvert");
+        const img = findEl("imageToConvert");
         if (img) {
           const ctx = canvas.getContext("2d");
           ctx.clearRect(0, 0, canvas.width, canvas.height);
