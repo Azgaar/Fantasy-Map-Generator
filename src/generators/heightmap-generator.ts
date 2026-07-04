@@ -180,7 +180,8 @@ class HeightmapModule {
           this.grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() < randomness) diff = diff / 2;
+            // compare against the top of the [0,1) range to keep seeded generation identical to the legacy `> 0.85`/`> 0.8` checks
+            if (Math.random() > 1 - randomness) diff = diff / 2;
             if (diff < min) {
               min = diff;
               cur = e;
@@ -288,7 +289,8 @@ class HeightmapModule {
           this.grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() < randomness) diff = diff / 2;
+            // compare against the top of the [0,1) range to keep seeded generation identical to the legacy `> 0.85`/`> 0.8` checks
+            if (Math.random() > 1 - randomness) diff = diff / 2;
             if (diff < min) {
               min = diff;
               cur = e;
