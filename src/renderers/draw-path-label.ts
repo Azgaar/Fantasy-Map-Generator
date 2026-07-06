@@ -1,19 +1,12 @@
 import { curveNatural, line } from "d3";
 import type { CustomLabel, StateLabel } from "../generators/labels";
 
-// any label of the PathLabel family that knows its own container group
+// any label of the PathLabel family; rendered into g#labels > g#{label.group}
 type RenderablePathLabel = StateLabel | CustomLabel;
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 
-export function getPathLabelElementId(label: RenderablePathLabel): string {
-  return label.type === "state" ? `stateLabel${label.i}` : `customLabel${label.i}`;
-}
-
-function getContainerGroup(label: RenderablePathLabel): SVGGElement | null {
-  const groupId = label.type === "state" ? "states" : label.group;
-  return document.querySelector<SVGGElement>(`g#labels > g#${groupId}`);
-}
+export const getPathLabelElementId = (label: { i: number }): string => `pathLabel${label.i}`;
 
 // create or update the defs path the label text follows; returns the path element
 export function upsertLabelPath(label: RenderablePathLabel): SVGPathElement {
@@ -33,7 +26,7 @@ export function upsertLabelPath(label: RenderablePathLabel): SVGPathElement {
 
 // render a path-following label from its data; replaces an existing element with the same id
 export function drawPathLabel(label: RenderablePathLabel): SVGTextElement | null {
-  const container = getContainerGroup(label);
+  const container = document.querySelector<SVGGElement>(`g#labels > g#${label.group}`);
   if (!container) return null;
 
   const pathElement = upsertLabelPath(label);
@@ -71,4 +64,11 @@ export function drawPathLabel(label: RenderablePathLabel): SVGTextElement | null
   }
 
   return textElement;
+}
+
+// remove a path label's text element and its defs path
+export function removePathLabel(label: { i: number }): void {
+  const elementId = getPathLabelElementId(label);
+  document.getElementById(elementId)?.remove();
+  document.getElementById(`textPath_${elementId}`)?.remove();
 }

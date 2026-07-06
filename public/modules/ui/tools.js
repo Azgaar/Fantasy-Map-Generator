@@ -240,8 +240,12 @@ function recreateStates() {
     if (!state.i || state.removed || state.lock) continue;
 
     // remove state labels
-    document.getElementById(`stateLabel${state.i}`)?.remove();
-    document.getElementById(`textPath_stateLabel${state.i}`)?.remove();
+    const label = Labels.getStateLabel(state.i);
+    if (label) {
+      document.getElementById(`pathLabel${label.i}`)?.remove();
+      document.getElementById(`textPath_pathLabel${label.i}`)?.remove();
+      Labels.remove(label.i);
+    }
 
     // remove state emblems
     document.getElementById(`stateCOA${state.i}`)?.remove();
@@ -272,23 +276,18 @@ function recreateStates() {
 
   const newStates = [{ i: 0, name: pack.states[0].name }];
 
+  // collect locked state labels before renumbering to avoid stateId collisions
+  const lockedStateLabels = new Map(lockedStates.map(s => [s.i, Labels.getStateLabel(s.i)]));
+
   // restore locked states
   lockedStates.forEach(state => {
     const newId = newStates.length;
     const { x, y } = pack.burgs[state.capital];
     capitalsTree.add([x, y]);
 
-    // update label id reference
-    document.getElementById(`textPath_stateLabel${state.i}`)?.setAttribute("id", `textPath_stateLabel${newId}`);
-    const $label = document.getElementById(`stateLabel${state.i}`);
-    if ($label) {
-      $label.setAttribute("id", `stateLabel${newId}`);
-      const $textPath = $label.querySelector("textPath");
-      if ($textPath) {
-        $textPath.removeAttribute("href");
-        $textPath.setAttribute("href", `#textPath_stateLabel${newId}`);
-      }
-    }
+    // point the label to the renumbered state (element ids are label-based and stay valid)
+    const lockedLabel = lockedStateLabels.get(state.i);
+    if (lockedLabel) Labels.update(lockedLabel.i, { stateId: newId });
 
     // update emblem id reference
     document.getElementById(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);

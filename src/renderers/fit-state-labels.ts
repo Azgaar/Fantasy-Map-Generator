@@ -3,32 +3,9 @@ import type { StateLabel } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
+import { getStateLabels } from "./draw-labels";
 import { drawPathLabel, upsertLabelPath } from "./draw-path-label";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
-
-/**
- * Helper function to calculate offset width for raycast based on state size
- */
-function getOffsetWidth(cellsNumber: number): number {
-  if (cellsNumber < 40) return 0;
-  if (cellsNumber < 200) return 5;
-  return 10;
-}
-
-function checkExampleLetterLength(): number {
-  const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-  const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
-  const letterLength = (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
-  testLabel.remove();
-
-  return letterLength;
-}
-
-function getStateLabels(list?: number[]): StateLabel[] {
-  const stateLabels = Labels.getAll().filter((label): label is StateLabel => label.type === "state");
-  if (list && list.length > 0) return stateLabels.filter(label => list.includes(label.stateId));
-  return stateLabels;
-}
 
 /**
  * Fit state labels into their state borders and store the result (pathPoints, text, fontSize)
@@ -42,31 +19,7 @@ export const fitStateLabels = (list?: number[]): void => {
   TIME && console.timeEnd("fitStateLabels");
 };
 
-/**
- * Render state labels from pack.labels data to SVG.
- * Labels without stored pathPoints (not fitted yet) are fitted first;
- * already fitted labels are drawn as-is, preserving user edits.
- * list - optional array of stateIds to re-render
- */
-export const drawStateLabels = (list?: number[]): void => {
-  TIME && console.time("drawStateLabels");
-  const { states } = pack;
-
-  const stateLabels = getStateLabels(list);
-  const unfitted = stateLabels.filter(label => !label.pathPoints?.length);
-  if (unfitted.length) fitLabels(unfitted);
-
-  for (const label of stateLabels) {
-    if (unfitted.includes(label)) continue; // drawn by the fitting pass
-    const state = states[label.stateId];
-    if (!state?.i || state.removed) continue;
-    drawPathLabel(label);
-  }
-
-  TIME && console.timeEnd("drawStateLabels");
-};
-
-function fitLabels(labelDataList: StateLabel[]): void {
+export function fitLabels(labelDataList: StateLabel[]): void {
   // temporary make the labels visible for text measurements
   const layerDisplay = labels.style("display");
   labels.style("display", null);
@@ -141,6 +94,24 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
   drawPathLabel(labelData);
 }
 
+/**
+ * Helper function to calculate offset width for raycast based on state size
+ */
+function getOffsetWidth(cellsNumber: number): number {
+  if (cellsNumber < 40) return 0;
+  if (cellsNumber < 200) return 5;
+  return 10;
+}
+
+function checkExampleLetterLength(): number {
+  const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
+  const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
+  const letterLength = (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
+  testLabel.remove();
+
+  return letterLength;
+}
+
 function getLinesAndRatio(mode: string, name: string, fullName: string, pathLength: number): [string[], number] {
   if (mode === "short") return getShortOneLine();
   if (pathLength > fullName.length * 2) return getFullOneLine();
@@ -199,5 +170,4 @@ function checkIfInsideState(
   return false;
 }
 
-window.drawStateLabels = drawStateLabels;
 window.fitStateLabels = fitStateLabels;

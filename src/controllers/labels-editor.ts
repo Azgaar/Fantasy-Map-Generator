@@ -1,6 +1,7 @@
 import { curveNatural, drag, line, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
-import type { CustomLabel, StateLabel } from "../generators/labels";
+import { type CustomLabel, isPathLabel, type StateLabel } from "../generators/labels";
+import { removePathLabel } from "../renderers/draw-path-label";
 import { destroyDialogIfExists, ensureEl, findEl, parseTransform, round } from "../utils";
 import { extractPathPoints } from "../utils/pathUtils";
 
@@ -8,10 +9,10 @@ const lineGen = line<[number, number]>().curve(curveNatural);
 
 // find label data in the Labels data model for the selected SVG text element
 function getLabelData(): StateLabel | CustomLabel | undefined {
-  const match = (elSelected.attr("id") || "").match(/^(?:stateLabel|customLabel)(\d+)$/);
+  const match = (elSelected.attr("id") || "").match(/^pathLabel(\d+)$/);
   if (!match) return undefined;
   const label = Labels.get(+match[1]);
-  return label?.type === "burg" ? undefined : label;
+  return label && isPathLabel(label) ? label : undefined;
 }
 
 function open(tspan: SVGTSpanElement): void {
@@ -349,7 +350,7 @@ function hideGroupSection(): void {
 function changeGroup(this: HTMLSelectElement): void {
   ensureEl(this.value).appendChild(elSelected.node()!);
   const labelData = getLabelData();
-  if (labelData?.type === "custom") Labels.update(labelData.i, { group: this.value });
+  if (labelData) Labels.update(labelData.i, { group: this.value });
 }
 
 function toggleNewGroupInput(): void {
@@ -404,7 +405,7 @@ function createNewGroup(this: HTMLInputElement): void {
   ensureEl(group).appendChild(elSelected.node()!);
 
   const labelData = getLabelData();
-  if (labelData?.type === "custom") Labels.update(labelData.i, { group });
+  if (labelData) Labels.update(labelData.i, { group });
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("labelGroupInput").value = "";
@@ -426,8 +427,7 @@ function removeLabelsGroup(): void {
         $(this).dialog("close");
         $("#labelEditor").dialog("close");
         hideGroupSection();
-        if (basic && group === "states") Labels.removeByType("state");
-        else Labels.removeByGroup(group);
+        Labels.removeByGroup(group);
         select<SVGGElement, unknown>("#labels")
           .select(`#${group}`)
           .selectAll<SVGTextElement, unknown>("text")
@@ -467,7 +467,7 @@ function changeText(): void {
   const labelData = getLabelData();
   if (labelData) Labels.update(labelData.i, { text: input });
 
-  if (elSelected.attr("id").slice(0, 10) === "stateLabel")
+  if (labelData?.type === "state")
     tip("Use States Editor to change an actual state name, not just a label", false, "warn");
 }
 
@@ -584,11 +584,15 @@ function removeLabel(): void {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
         const labelData = getLabelData();
-        if (labelData) Labels.remove(labelData.i);
-        select<SVGElement, unknown>("#deftemp")
-          .select(`#textPath_${elSelected.attr("id")}`)
-          .remove();
-        elSelected.remove();
+        if (labelData) {
+          Labels.remove(labelData.i);
+          removePathLabel(labelData);
+        } else {
+          select<SVGElement, unknown>("#deftemp")
+            .select(`#textPath_${elSelected.attr("id")}`)
+            .remove();
+          elSelected.remove();
+        }
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {

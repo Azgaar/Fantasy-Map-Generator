@@ -2,6 +2,8 @@ import { color, drag, interpolateString, max, pack as packLayout, pointer, selec
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { drawBurgLabel } from "@/renderers/draw-burg-labels";
+import { removePathLabel } from "@/renderers/draw-path-label";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -662,7 +664,11 @@ function stateChangeCapitalName(state: number, line: HTMLElement, value: string)
   const capital = pack.states[state].capital;
   if (!capital) return;
   pack.burgs[capital].name = value;
-  (document.querySelector(`#burgLabel${capital}`) as HTMLElement).textContent = value;
+  const label = Labels.getBurgLabel(capital);
+  if (label) {
+    Labels.update(label.i, { text: value });
+    drawBurgLabel(label);
+  }
 }
 
 function changePopulation(stateId: number): void {
@@ -854,12 +860,18 @@ function stateRemovePrompt(state: number): void {
   });
 }
 
+function removeStateLabel(stateId: number): void {
+  const label = Labels.getStateLabel(stateId);
+  if (!label) return;
+  Labels.remove(label.i);
+  removePathLabel(label);
+}
+
 function stateRemove(stateId: number): void {
   statesBody.select(`#state${stateId}`).remove();
   statesBody.select(`#state-gap${stateId}`).remove();
   statesHalo.select(`#state-border${stateId}`).remove();
-  labels.select(`#stateLabel${stateId}`).remove();
-  defs.select(`#textPath_stateLabel${stateId}`).remove();
+  removeStateLabel(stateId);
 
   unfog(`focusState${stateId}`);
 
@@ -1742,8 +1754,7 @@ function openStateMergeDialog(): void {
       statesBody.select(`#state${stateId}`).remove();
       statesBody.select(`#state-gap${stateId}`).remove();
       statesHalo.select(`#state-border${stateId}`).remove();
-      labels.select(`#stateLabel${stateId}`).remove();
-      defs.select(`#textPath_stateLabel${stateId}`).remove();
+      removeStateLabel(stateId);
 
       ensureEl(`stateCOA${stateId}`).remove();
       emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();

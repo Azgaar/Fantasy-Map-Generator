@@ -274,6 +274,8 @@ declare global {
   var drawProvinces: () => void;
   var drawStateLabels: (ids?: number[]) => void;
   var fitStateLabels: (ids?: number[]) => void;
+  var drawCustomLabels: () => void;
+  var drawCustomLabel: (label: import("@/generators/labels").CustomLabel) => void;
   var drawPopulation: () => void;
 
   var toggleCultures: () => void;

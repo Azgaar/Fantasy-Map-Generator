@@ -4,10 +4,14 @@ declare global {
   var Labels: LabelsModule;
 }
 
+// SVG group id state labels are rendered into
+export const STATE_LABELS_GROUP = "states";
+
 // attributes every label shares, regardless of how it is rendered
 export interface BaseLabel {
   i: number;
   text: string;
+  group: string;
   dx?: number;
   dy?: number;
 }
@@ -34,12 +38,10 @@ export interface StateLabel extends PathLabel {
 export interface BurgLabel extends PointLabel {
   type: "burg";
   burgId: number;
-  group: string;
 }
 
 export interface CustomLabel extends PathLabel {
   type: "custom";
-  group: string;
   pathPoints: [number, number][];
 }
 
@@ -94,10 +96,8 @@ class LabelsModule {
     return pack.labels.find(l => l.i === id);
   }
 
-  getByGroup(group: string): (BurgLabel | CustomLabel)[] {
-    return pack.labels.filter(
-      (l): l is BurgLabel | CustomLabel => (l.type === "burg" || l.type === "custom") && l.group === group
-    );
+  getByGroup(group: string): LabelData[] {
+    return pack.labels.filter(l => l.group === group);
   }
 
   getBurgLabel(burgId: number): BurgLabel | undefined {
@@ -111,7 +111,8 @@ class LabelsModule {
   // get the label for a state, creating it if missing (e.g. for a newly created state)
   ensureStateLabel(stateId: number): StateLabel {
     return (
-      this.getStateLabel(stateId) ?? this.addStateLabel({ stateId, text: pack.states[stateId].name!, fontSize: 100 })
+      this.getStateLabel(stateId) ??
+      this.addStateLabel({ stateId, group: STATE_LABELS_GROUP, text: pack.states[stateId].name!, fontSize: 100 })
     );
   }
 
@@ -165,7 +166,7 @@ class LabelsModule {
 
   removeByGroup(group: string): void {
     this.initialized = false;
-    pack.labels = pack.labels.filter(l => !((l.type === "burg" || l.type === "custom") && l.group === group));
+    pack.labels = pack.labels.filter(l => l.group !== group);
   }
 
   clear(): void {
@@ -183,13 +184,16 @@ class LabelsModule {
 
     const { states } = pack;
 
-    this.removeByType("state");
+    // keep labels of locked states — they are not regenerated below
+    this.initialized = false;
+    pack.labels = pack.labels.filter(l => l.type !== "state" || states[l.stateId]?.lock);
 
     for (const state of states) {
       if (!state.i || state.removed || state.lock) continue;
 
       this.addStateLabel({
         stateId: state.i,
+        group: STATE_LABELS_GROUP,
         text: state.name!,
         fontSize: 100
       });

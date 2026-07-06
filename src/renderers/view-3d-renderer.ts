@@ -554,7 +554,7 @@ async function createLabels() {
       if (state.removed) continue;
 
       const [x, y, z] = get3dCoords(state.pole![0], state.pole![1]);
-      const text = states.select(`#stateLabel${state.i}`)?.text() || state.name;
+      const text = Labels.getStateLabel(state.i)?.text.replace(/\|/g, " ") || state.name;
       const stateSprite = await createTextLabel({ text, ...stateOptions });
 
       stateSprite.position.set(x, y + stateOptions.elevation, z);

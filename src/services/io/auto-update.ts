@@ -1234,6 +1234,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
             i: pack.labels.length,
             type: "state",
             stateId,
+            group: "states",
             text,
             pathPoints: extractPathPoints(pathElement),
             startOffset,
