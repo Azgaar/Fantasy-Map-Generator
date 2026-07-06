@@ -231,10 +231,10 @@ function updateValues(textPath: SVGTextPathElement): void {
 }
 
 function drawControlPointsAndLine(): void {
-  debug.select("#controlPoints").remove();
-  debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
+  select("#controlPoints").remove();
+  select("#debug").append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
   const path = ensureEl(`textPath_${elSelected.attr("id")}`) as unknown as SVGPathElement;
-  debug.select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
+  select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
   const l = path.getTotalLength();
   if (!l) return;
   const increment = l / Math.max(Math.ceil(l / 200), 2);
@@ -244,8 +244,7 @@ function drawControlPointsAndLine(): void {
 }
 
 function addControlPoint(point: DOMPoint): void {
-  debug
-    .select("#controlPoints")
+  select("#controlPoints")
     .append("circle")
     .attr("cx", point.x)
     .attr("cy", point.y)
@@ -264,15 +263,14 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 function redrawLabelPath(): void {
   const path = ensureEl(`textPath_${elSelected.attr("id")}`) as unknown as SVGPathElement;
   const points: [number, number][] = [];
-  debug
-    .select("#controlPoints")
+  select("#controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
       points.push([+this.getAttribute("cx")!, +this.getAttribute("cy")!]);
     });
   const d = round(lineGen(points) || "");
   path.setAttribute("d", d);
-  debug.select("#controlPoints > path").attr("d", d);
+  select("#controlPoints > path").attr("d", d);
 
   const labelData = getLabelData();
   if (labelData) Labels.update(labelData, { pathPoints: points });
@@ -287,8 +285,7 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   const point = pointer(event, this);
 
   const dists: number[] = [];
-  debug
-    .select("#controlPoints")
+  select("#controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
       const x = +this.getAttribute("cx")!;
@@ -305,8 +302,7 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   }
 
   const before = `:nth-child(${index + 2})`;
-  debug
-    .select("#controlPoints")
+  select("#controlPoints")
     .insert("circle", before)
     .attr("cx", point[0])
     .attr("cy", point[1])
@@ -327,7 +323,7 @@ function dragLabel(event: any): void {
     const [effectiveDx, effectiveDy] = [dx + dragEvent.x, dy + dragEvent.y];
     const transform = `translate(${effectiveDx},${effectiveDy})`;
     elSelected.attr("transform", transform);
-    debug.select("#controlPoints").attr("transform", transform);
+    select("#controlPoints").attr("transform", transform);
 
     const labelData = getLabelData();
     if (labelData) Labels.update(labelData, { dx: effectiveDx, dy: effectiveDy });
@@ -603,7 +599,7 @@ function removeLabel(): void {
 }
 
 function closeLabelEditor(): void {
-  debug.select("#controlPoints").remove();
+  select("#controlPoints").remove();
   unselect();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();
