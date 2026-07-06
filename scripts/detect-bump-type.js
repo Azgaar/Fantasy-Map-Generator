@@ -4,10 +4,9 @@
 /**
  * Uses the GitHub Models API (gpt-4o-mini, no extra secrets required —
  * GITHUB_TOKEN is enough when running inside GitHub Actions) to analyse
- * a PR diff and decide whether the release is a patch, minor, or major bump.
+ * a PR diff and decide whether the release is a patch or minor bump.
  *
  * Versioning rules (from public/versioning.js):
- *   MAJOR — incompatible changes that break existing .map files
  *   MINOR — backward-compatible additions or changes that may require
  *            old .map files to be updated / migrated
  *   PATCH — backward-compatible bug fixes and small features that do
@@ -16,7 +15,7 @@
  * Usage (called by bump-version.yml):
  *   node scripts/detect-bump-type.js --diff-file <path>
  *
- * Output:  prints exactly one of:  patch  |  minor  |  major
+ * Output:  prints exactly one of:  patch  |  minor
  * Exit 0 always (falls back to "patch" on any error).
  */
 
@@ -44,9 +43,6 @@ You are a semantic-version expert for Azgaar's Fantasy Map Generator.
 The project uses semantic versioning where the PUBLIC API is the .map save-file format.
 
 Rules:
-• MAJOR — any change that makes existing .map files incompatible or unreadable
-  (e.g. removing or renaming top-level save-data fields, changing data types of
-  stored values, restructuring the save format)
 • MINOR — backward-compatible additions or changes that may require old .map
   files to be silently migrated on load (e.g. adding new optional fields to the
   save format, changing default values that affect saved maps, adding new
@@ -54,7 +50,7 @@ Rules:
 • PATCH — everything else: UI improvements, bug fixes, refactors, new features
   that do not touch the .map file format at all, dependency updates, docs
 
-Respond with EXACTLY one lowercase word: patch  |  minor  |  major
+Respond with EXACTLY one lowercase word: patch  |  minor
 No explanation, no punctuation, no extra words.`;
 
 // ---------------------------------------------------------------------------
@@ -65,7 +61,7 @@ function httpsPost(host, pathStr, headers, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const req = https.request(
-      {host, path: pathStr, method: "POST", headers: {...headers, "Content-Length": Buffer.byteLength(data)}},
+      { host, path: pathStr, method: "POST", headers: { ...headers, "Content-Length": Buffer.byteLength(data) } },
       res => {
         let raw = "";
         res.on("data", c => (raw += c));
@@ -116,7 +112,7 @@ async function main() {
     console.error(`[detect-bump-type] Diff truncated to ${MAX_DIFF_CHARS} chars.`);
   }
 
-  const userMessage = `Analyse this git diff and respond with exactly one word (patch, minor, or major):\n\n${diff}`;
+  const userMessage = `Analyse this git diff and respond with exactly one word (patch or minor):\n\n${diff}`;
 
   try {
     const raw = await httpsPost(
@@ -129,8 +125,8 @@ async function main() {
       {
         model: MODEL,
         messages: [
-          {role: "system", content: SYSTEM_PROMPT},
-          {role: "user", content: userMessage}
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userMessage }
         ],
         temperature: 0,
         max_tokens: 5
@@ -140,7 +136,7 @@ async function main() {
     const json = JSON.parse(raw);
     const answer = json.choices?.[0]?.message?.content?.trim().toLowerCase() ?? "patch";
 
-    if (answer === "major" || answer === "minor" || answer === "patch") {
+    if (answer === "minor" || answer === "patch") {
       console.error(`[detect-bump-type] AI decision: ${answer}`);
       process.stdout.write(`${answer}\n`);
     } else {

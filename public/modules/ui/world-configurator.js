@@ -5,7 +5,7 @@ function editWorld() {
     title: "Configure World",
     resizable: false,
     width: "minmax(40em, 85vw)",
-    buttons: {"Update world": updateWorld},
+    buttons: { "Update world": updateWorld },
     open: function () {
       const checkbox = /* html */ `<div class="dontAsk" data-tip="Automatically update world on input changes and button clicks">
         <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
@@ -59,7 +59,7 @@ function editWorld() {
     ensureEl("temperatureSouthPoleF").innerText = convertTemperature(options.temperatureSouthPole, "°F");
   }
 
-  function handleControlsChange({target}) {
+  function handleControlsChange({ target }) {
     const stored = target.dataset.stored;
     ensureEl(stored + "Input").value = target.value;
     ensureEl(stored + "Output").value = target.value;
@@ -97,7 +97,7 @@ function editWorld() {
     if (layerIsOn("toggleBiomes")) drawBiomes();
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
     if (layerIsOn("toggleRivers")) drawRivers();
-    if (ensureEl("canvas3d")) setTimeout(() => ThreeD.update(), 500);
+    if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
   }
 
   function updateGlobePosition() {
@@ -109,11 +109,13 @@ function editWorld() {
     const unit = distanceUnitInput.value;
     const meridian = toKilometer(eqD * 2 * distanceScale);
     ensureEl("mapSize").innerHTML = `${graphWidth}x${graphHeight}`;
-    ensureEl("mapSizeFriendly").innerHTML = `${rn(graphWidth * distanceScale)}x${rn(graphHeight * distanceScale)} ${unit}`;
+    ensureEl("mapSizeFriendly").innerHTML =
+      `${rn(graphWidth * distanceScale)}x${rn(graphHeight * distanceScale)} ${unit}`;
     ensureEl("meridianLength").innerHTML = rn(eqD * 2);
     ensureEl("meridianLengthFriendly").innerHTML = `${rn(eqD * 2 * distanceScale)} ${unit}`;
     ensureEl("meridianLengthEarth").innerHTML = meridian ? " = " + rn(meridian / 200) + "%🌏" : "";
-    ensureEl("mapCoordinates").innerHTML = `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
+    ensureEl("mapCoordinates").innerHTML =
+      `${lat(mc.latN)} ${Math.abs(rn(mc.lonW))}°W; ${lat(mc.latS)} ${rn(mc.lonE)}°E`;
 
     function toKilometer(v) {
       if (unit === "km") return v;

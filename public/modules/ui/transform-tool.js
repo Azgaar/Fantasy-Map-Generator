@@ -43,7 +43,7 @@ async function openTransformTool() {
     ensureEl("transformPreview").style.height = height + "px";
 
     const options = {noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true};
-    const url = await getMapURL("png", options);
+    const url = await window.Services.ExportMap.getMapURL("png", options);
     const SCALE = 4;
 
     const img = new Image();

@@ -163,7 +163,7 @@ function applyStyleWithUiRefresh(style) {
 }
 
 function addStylePreset() {
-  $("#styleSaver").dialog({title: "Style Saver", width: "26em", position: {my: "center", at: "center", of: "svg"}});
+  $("#styleSaver").dialog({ title: "Style Saver", width: "26em", position: { my: "center", at: "center", of: "svg" } });
 
   const styleName = stylePreset.value.replace(customPresetPrefix, "");
   document.getElementById("styleSaverName").value = styleName;
@@ -222,6 +222,11 @@ function addStylePreset() {
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+      "#markets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "data-size", "font-size", "data-icon", "filter"],
+      "#goodsCells": ["opacity", "filter"],
+      "#goodsIcons": ["opacity", "stroke-width", "data-circle", "data-size", "filter"],
+      "#goodsBurgs": ["opacity", "stroke", "stroke-width", "data-size", "filter"],
+      "#tradeAnimation": ["opacity", "filter"],
       "#rural": ["stroke"],
       "#urban": ["stroke"],
       "#freshwater": ["opacity", "fill", "stroke", "stroke-width", "filter"],
@@ -355,7 +360,7 @@ function addStylePreset() {
       "filter"
     ];
     const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
-    options.burgs.groups.forEach(({name}) => {
+    options.burgs.groups.forEach(({ name }) => {
       attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
       attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#anchors > g#${name}`] = anchorsAttributes;
@@ -368,7 +373,9 @@ function addStylePreset() {
       style[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
-        if (attr === "font-size" && el.hasAttribute("data-size")) value = el.getAttribute("data-size");
+        // label-like layers store their base font size in data-size; markets use data-size for the marker circle, so keep its real font-size
+        if (attr === "font-size" && selector !== "#markets" && el.hasAttribute("data-size"))
+          value = el.getAttribute("data-size");
         style[selector][attr] = parseValue(value);
       }
     }

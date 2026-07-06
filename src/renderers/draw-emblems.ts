@@ -1,6 +1,6 @@
 import { forceCollide, forceSimulation, timeout } from "d3";
-import type { Burg } from "../modules/burgs-generator";
-import type { State } from "../modules/states-generator";
+import type { Burg } from "../generators/burgs-generator";
+import type { State } from "../generators/states-generator";
 import { minmax, rn } from "../utils";
 
 declare global {

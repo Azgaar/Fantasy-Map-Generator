@@ -1,8 +1,8 @@
-import { test, expect } from "@playwright/test";
+import {test, expect} from "@playwright/test";
 import path from "path";
 
 test.describe("Map loading", () => {
-  test.beforeEach(async ({ context, page }) => {
+  test.beforeEach(async ({context, page}) => {
     await context.clearCookies();
 
     await page.goto("/");
@@ -12,14 +12,17 @@ test.describe("Map loading", () => {
     });
 
     // Wait for the hidden file input to be available
-    await page.waitForSelector("#mapToLoad", { state: "attached" });
+    await page.waitForSelector("#mapToLoad", {state: "attached"});
   });
 
-  test("should load a saved map file", async ({ page }) => {
+  test("should load a saved map file", async ({page}) => {
     // Track errors during map loading
     const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
-    page.on("console", (msg) => {
+    page.on("pageerror", error => {
+      const message = error?.message || String(error);
+      if (message) errors.push(`pageerror: ${message}`);
+    });
+    page.on("console", msg => {
       if (msg.type() === "error") {
         errors.push(`console.error: ${msg.text()}`);
       }
@@ -33,7 +36,7 @@ test.describe("Map loading", () => {
     // Wait for map to be fully loaded
     // mapId is set at the very end of map loading in showStatistics()
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000,
+      timeout: 120000
     });
 
     // Additional wait for rendering to settle
@@ -47,7 +50,7 @@ test.describe("Map loading", () => {
         hasBurgs: pack.burgs && pack.burgs.length > 1,
         hasCells: pack.cells && pack.cells.i && pack.cells.i.length > 0,
         hasRivers: pack.rivers && pack.rivers.length > 0,
-        mapId: (window as any).mapId,
+        mapId: (window as any).mapId
       };
     });
 
@@ -60,7 +63,7 @@ test.describe("Map loading", () => {
     // Ensure no JavaScript errors occurred during loading
     // Filter out expected errors (external resources like Google Analytics, fonts)
     const criticalErrors = errors.filter(
-      (e) =>
+      e =>
         !e.includes("fonts.googleapis.com") &&
         !e.includes("google-analytics") &&
         !e.includes("googletagmanager") &&
@@ -69,10 +72,13 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  test("loaded map should have correct SVG structure", async ({ page }) => {
+  test("loaded map should have correct SVG structure", async ({page}) => {
     const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
-    page.on("console", (msg) => {
+    page.on("pageerror", error => {
+      const message = error?.message || String(error);
+      if (message) errors.push(`pageerror: ${message}`);
+    });
+    page.on("console", msg => {
       if (msg.type() === "error") {
         errors.push(`console.error: ${msg.text()}`);
       }
@@ -83,7 +89,7 @@ test.describe("Map loading", () => {
     await fileInput.setInputFiles(mapFilePath);
 
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000,
+      timeout: 120000
     });
     await page.waitForTimeout(500);
 
@@ -96,7 +102,7 @@ test.describe("Map loading", () => {
         rivers: !!document.getElementById("rivers"),
         borders: !!document.getElementById("borders"),
         burgs: !!document.getElementById("burgIcons"),
-        labels: !!document.getElementById("labels"),
+        labels: !!document.getElementById("labels")
       };
     });
 
@@ -109,7 +115,7 @@ test.describe("Map loading", () => {
     expect(layers.labels).toBe(true);
 
     const criticalErrors = errors.filter(
-      (e) =>
+      e =>
         !e.includes("fonts.googleapis.com") &&
         !e.includes("google-analytics") &&
         !e.includes("googletagmanager") &&
@@ -118,10 +124,13 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  test("loaded map should preserve state data", async ({ page }) => {
+  test("loaded map should preserve state data", async ({page}) => {
     const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
-    page.on("console", (msg) => {
+    page.on("pageerror", error => {
+      const message = error?.message || String(error);
+      if (message) errors.push(`pageerror: ${message}`);
+    });
+    page.on("console", msg => {
       if (msg.type() === "error") {
         errors.push(`console.error: ${msg.text()}`);
       }
@@ -132,7 +141,7 @@ test.describe("Map loading", () => {
     await fileInput.setInputFiles(mapFilePath);
 
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000,
+      timeout: 120000
     });
     await page.waitForTimeout(500);
 
@@ -145,7 +154,7 @@ test.describe("Map loading", () => {
         count: states.length,
         allHaveNames: states.every((s: any) => s.name && s.name.length > 0),
         allHaveCells: states.every((s: any) => s.cells > 0),
-        allHaveArea: states.every((s: any) => s.area > 0),
+        allHaveArea: states.every((s: any) => s.area > 0)
       };
     });
 
@@ -155,7 +164,7 @@ test.describe("Map loading", () => {
     expect(statesData.allHaveArea).toBe(true);
 
     const criticalErrors = errors.filter(
-      (e) =>
+      e =>
         !e.includes("fonts.googleapis.com") &&
         !e.includes("google-analytics") &&
         !e.includes("googletagmanager") &&
@@ -164,10 +173,13 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  test("loaded map should preserve burg data", async ({ page }) => {
+  test("loaded map should preserve burg data", async ({page}) => {
     const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
-    page.on("console", (msg) => {
+    page.on("pageerror", error => {
+      const message = error?.message || String(error);
+      if (message) errors.push(`pageerror: ${message}`);
+    });
+    page.on("console", msg => {
       if (msg.type() === "error") {
         errors.push(`console.error: ${msg.text()}`);
       }
@@ -178,7 +190,7 @@ test.describe("Map loading", () => {
     await fileInput.setInputFiles(mapFilePath);
 
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000,
+      timeout: 120000
     });
     await page.waitForTimeout(500);
 
@@ -186,21 +198,13 @@ test.describe("Map loading", () => {
     const burgsData = await page.evaluate(() => {
       const pack = (window as any).pack;
       // Filter out placeholder (i=0) and removed burgs (removed=true or no name)
-      const activeBurgs = pack.burgs.filter(
-        (b: any) => b.i !== 0 && !b.removed && b.name
-      );
+      const activeBurgs = pack.burgs.filter((b: any) => b.i !== 0 && !b.removed && b.name);
 
       return {
         count: activeBurgs.length,
-        allHaveNames: activeBurgs.every(
-          (b: any) => b.name && b.name.length > 0
-        ),
-        allHaveCoords: activeBurgs.every(
-          (b: any) => typeof b.x === "number" && typeof b.y === "number"
-        ),
-        allHaveCells: activeBurgs.every(
-          (b: any) => typeof b.cell === "number"
-        ),
+        allHaveNames: activeBurgs.every((b: any) => b.name && b.name.length > 0),
+        allHaveCoords: activeBurgs.every((b: any) => typeof b.x === "number" && typeof b.y === "number"),
+        allHaveCells: activeBurgs.every((b: any) => typeof b.cell === "number")
       };
     });
 
@@ -210,7 +214,7 @@ test.describe("Map loading", () => {
     expect(burgsData.allHaveCells).toBe(true);
 
     const criticalErrors = errors.filter(
-      (e) =>
+      e =>
         !e.includes("fonts.googleapis.com") &&
         !e.includes("google-analytics") &&
         !e.includes("googletagmanager") &&

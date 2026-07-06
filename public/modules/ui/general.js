@@ -20,6 +20,7 @@ const onDataTipMove = debounce(showDataTip, 50);
 document.getElementById("dialogs").addEventListener("mousemove", onDataTipMove);
 document.getElementById("optionsContainer").addEventListener("mousemove", onDataTipMove);
 document.getElementById("exitCustomization").addEventListener("mousemove", onDataTipMove);
+document.getElementById("tourPromptButton").addEventListener("mousemove", onDataTipMove);
 
 const tipBackgroundMap = {
   info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",
@@ -76,6 +77,7 @@ function showElementLockTip(event) {
 
 const onMouseMove = debounce(handleMouseMove, 100);
 function handleMouseMove() {
+  if (!this) return;
   const point = d3.mouse(this);
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
@@ -91,7 +93,7 @@ let currentNoteId = null; // store currently displayed node to not rerender to o
 
 // show note box on hover (if any)
 function showNotes(e) {
-  if (notesEditor?.offsetParent) return;
+  if (findEl("notesEditor")) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
   if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id;
   else if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
@@ -101,13 +103,13 @@ function showNotes(e) {
     if (currentNoteId === id) return;
     currentNoteId = id;
 
-    document.getElementById("notes").style.display = "block";
-    document.getElementById("notesHeader").innerHTML = note.name;
-    document.getElementById("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
-    document.getElementById("notes").style.display = "none";
-    document.getElementById("notesHeader").innerHTML = "";
-    document.getElementById("notesBody").innerHTML = "";
+    findEl("notes").style.display = "block";
+    findEl("notesHeader").innerHTML = note.name;
+    findEl("notesBody").innerHTML = note.legend;
+  } else if (!options.pinNotes && !findEl("markerEditor") && !e.shiftKey) {
+    findEl("notes").style.display = "none";
+    findEl("notesHeader").innerHTML = "";
+    findEl("notesBody").innerHTML = "";
     currentNoteId = null;
   }
 }
@@ -148,7 +150,8 @@ function showMapTooltip(point, e, i, g) {
     const r = pack.rivers.find(r => r.i === river);
     const name = r ? r.name + " " + r.type : "";
     tip(name + ". Click to edit");
-    if (riversOverview?.offsetParent) highlightEditorLine(riversOverview, river, 5000);
+    const riversOverviewEl = findEl("riversOverview");
+    if (riversOverviewEl) highlightEditorLine(riversOverviewEl, river, 5000);
     return;
   }
 
@@ -169,7 +172,8 @@ function showMapTooltip(point, e, i, g) {
       const burg = pack.burgs[burgId];
       const population = si(burg.population * populationRate * urbanization);
       tip(`${burg.name} ${burg.group}. Population: ${population}. Click to edit`);
-      if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burgId, 5000);
+      const burgsOverviewEl = findEl("burgsOverview");
+      if (burgsOverviewEl) highlightEditorLine(burgsOverviewEl, burgId, 5000);
       return;
     }
   }
@@ -177,6 +181,55 @@ function showMapTooltip(point, e, i, g) {
   if (group === "labels") return tip("Click to edit the Label");
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
+
+  if (group === "markets") {
+    const marketEl = e.target.closest("[data-id]");
+    if (marketEl) {
+      const market = Markets.marketById[+marketEl.dataset.id];
+      const centerBurg = market && pack.burgs[market.centerBurgId];
+      if (!centerBurg) return;
+      return tip(`${centerBurg.name} market. Click to view`);
+    }
+  }
+
+  if (group === "goods") {
+    const el = e.target;
+    const bonusGoodId = pack.cells.good[i];
+    const name = id => (Goods.get(+id)?.name || "unknown").toLowerCase();
+    const formatProduct = produced =>
+      Object.entries(produced).reduce((acc, [goodId, amount]) => {
+        if (Goods.get(+goodId)?.visible)
+          acc.push(`${name(goodId)} ${amount}${+goodId === bonusGoodId ? " (bonus)" : ""}`);
+        return acc;
+      }, []);
+
+    if (el.closest("#goodsIcons")) {
+      const good = Goods.get(+el.closest("[data-i]")?.dataset.i);
+      return tip(`${good?.name} bonus resource. Click to open Goods Editor and select displayed goods`);
+    }
+
+    if (el.closest("#goodsCells")) {
+      const pop = pack.cells.pop[i];
+      const biomeId = pack.cells.biome[i];
+      const cultureType = pack.cultures[pack.cells.culture[i]]?.type || "Generic";
+      const produced = Production.getCellProduction(i, Goods.getBiomesProduction());
+      return tip(
+        `Cell rural production: ${formatProduct(produced).join(", ")}. Click to select displayed goods in Goods Editor`
+      );
+    }
+
+    if (el.closest("#goodsBurgs")) {
+      const burgEl = el.closest("[data-id]");
+      const burgId = burgEl && +burgEl.dataset.id;
+      const burg = burgId && pack.burgs[burgId];
+      if (!burg || burg.removed) return;
+      d3.select(burgEl).raise();
+      const produced = Production.getBurgProduction(burg);
+      return tip(`${burg.name} urban production: ${formatProduct(produced).join(", ")}. Click to view`);
+    }
+
+    return;
+  }
 
   if (group === "ruler") {
     const tag = e.target.tagName;
@@ -209,7 +262,8 @@ function showMapTooltip(point, e, i, g) {
     const zoneId = +element.dataset.id;
     const zone = pack.zones.find(zone => zone.i === zoneId);
     tip(zone.name);
-    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zoneId, 5000);
+    const zonesEditorEl = findEl("zonesEditor");
+    if (zonesEditorEl) highlightEditorLine(zonesEditorEl, zoneId, 5000);
     return;
   }
 
@@ -222,28 +276,36 @@ function showMapTooltip(point, e, i, g) {
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
     const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);
-    if (biomesEditor?.offsetParent) highlightEditorLine(biomesEditor, biome);
+    const biomesEditorEl = findEl("biomesEditor");
+    if (biomesEditorEl) highlightEditorLine(biomesEditorEl, biome);
   } else if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
     const religion = pack.cells.religion[i];
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
-    if (document.getElementById("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
+    const religionsEditorEl = findEl("religionsEditor");
+    if (religionsEditorEl) highlightEditorLine(religionsEditorEl, religion);
   } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
     const province = pack.cells.province[i];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
     tip(prov + stateName);
-    if (document.getElementById("statesEditor")?.offsetParent) highlightEditorLine(statesEditor, state);
-    if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
-    if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
-    if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
-    if (document.getElementById("mergeStatesForm")?.offsetParent) highlightEditorLine(ensureEl("mergeStatesForm"), state);
+    const statesEditorEl = findEl("statesEditor");
+    if (statesEditorEl) highlightEditorLine(statesEditorEl, state);
+    const diplomacyEditorEl = findEl("diplomacyEditor");
+    if (diplomacyEditorEl) highlightEditorLine(diplomacyEditorEl, state);
+    const militaryOverviewEl = findEl("militaryOverview");
+    if (militaryOverviewEl) highlightEditorLine(militaryOverviewEl, state);
+    const provincesEditorEl = findEl("provincesEditor");
+    if (provincesEditorEl) highlightEditorLine(provincesEditorEl, province);
+    if (document.getElementById("mergeStatesForm")?.offsetParent)
+      highlightEditorLine(ensureEl("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
-    if (document.getElementById("culturesEditor")?.offsetParent) highlightEditorLine(culturesEditor, culture);
+    const culturesEditorEl = findEl("culturesEditor");
+    if (culturesEditorEl) highlightEditorLine(culturesEditorEl, culture);
   } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
@@ -289,8 +351,36 @@ function updateCellInfo(point, i, g) {
     : "no";
   infoPopulation.innerHTML = getFriendlyPopulation(i);
   infoBurg.innerHTML = cells.burg[i] ? pack.burgs[cells.burg[i]].name + " (" + cells.burg[i] + ")" : "no";
-  infoFeature.innerHTML = f ? pack.features[f].group + " (" + f + ")" : "n/a";
+  infoFeature.innerHTML = f ? (pack.features[f].group || pack.features[f].type) + " (" + f + ")" : "n/a";
   infoBiome.innerHTML = biomesData.name[cells.biome[i]];
+  infoGood.innerHTML = cells.good[i] ? Goods.get(cells.good[i]).name + " (" + cells.good[i] + ")" : "no";
+
+  const marketId = cells.market && cells.market[i];
+  if (marketId) {
+    const market = Markets.get(marketId);
+    const centerBurg = market && pack.burgs[market.centerBurgId];
+    infoMarket.innerHTML = centerBurg ? `${centerBurg.name} market (${marketId})` : `market ${marketId}`;
+  } else {
+    infoMarket.innerHTML = "no";
+  }
+
+  const produced = Production.getCellProduction(i, Goods.getBiomesProduction());
+  const cellEntries = Object.entries(produced).filter(([, amt]) => amt > 0);
+  infoCellProduction.innerHTML = cellEntries.length
+    ? cellEntries.map(([id, amt]) => `${Goods.get(+id)?.name || id}: ${rn(amt, 2)}`).join(", ")
+    : "none";
+
+  const burgId = cells.burg[i];
+  if (burgId) {
+    const burg = pack.burgs[burgId];
+    const produced = Production.getBurgProduction(burg);
+    const burgEntries = Object.entries(produced).filter(([, amt]) => amt > 0);
+    infoBurgProduction.innerHTML = burgEntries.length
+      ? burgEntries.map(([id, amt]) => `${Goods.get(+id)?.name || id}: ${rn(amt, 2)}`).join(", ")
+      : "none";
+  } else {
+    infoBurgProduction.innerHTML = "n/a";
+  }
 }
 
 function getGeozone(latitude) {
@@ -344,21 +434,6 @@ function getFriendlyHeight([x, y]) {
   return getHeight(h);
 }
 
-function getHeight(h, abs) {
-  const unit = heightUnit.value;
-  let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m")
-    unitRatio = 1; // if meter
-  else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-  let height = -990;
-  if (h >= 20) height = Math.pow(h - 18, +heightExponentInput.value);
-  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
-
-  if (abs) height = Math.abs(height);
-  return rn(height * unitRatio) + " " + unit;
-}
-
 function getPrecipitation(prec) {
   return prec * 100 + " mm";
 }
@@ -397,7 +472,7 @@ function highlightEmblemElement(type, el) {
   const animation = d3.transition().duration(1000).ease(d3.easeSinIn);
 
   if (type === "burg") {
-    const {x, y} = el;
+    const { x, y } = el;
     debug
       .append("circle")
       .attr("cx", x)
@@ -498,12 +573,6 @@ function store(key, value) {
   return localStorage.setItem(key, value);
 }
 
-// assign skeaker behaviour
-Array.from(document.getElementsByClassName("speaker")).forEach(el => {
-  const input = el.previousElementSibling;
-  el.addEventListener("click", () => speak(input.value));
-});
-
 function speak(text) {
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
@@ -576,6 +645,6 @@ function showInfo() {
         $(this).dialog("close");
       }
     },
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }

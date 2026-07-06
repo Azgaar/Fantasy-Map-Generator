@@ -1,13 +1,17 @@
-import type { Quadtree } from "d3";
-import type { Burg } from "../modules/burgs-generator";
-import type { Culture } from "../modules/cultures-generator";
-import type { PackedGraphFeature } from "../modules/features";
-import type { LabelData } from "../modules/labels";
-import type { Province } from "../modules/provinces-generator";
-import type { River } from "../modules/river-generator";
-import type { Route } from "../modules/routes-generator";
-import type { State } from "../modules/states-generator";
-import type { Zone } from "../modules/zones-generator";
+import type { Burg } from "@/generators/burgs-generator";
+import type { Culture } from "@/generators/cultures-generator";
+import type { Feature } from "@/generators/features";
+import type { Good } from "@/generators/goods-generator";
+import type { Ice } from "@/generators/ice-generator";
+import type { LabelData } from "@/generators/labels";
+import type { Marker } from "@/generators/markers-generator";
+import type { Deal, Market } from "@/generators/markets-generator";
+import type { Province } from "@/generators/provinces-generator";
+import type { Religion } from "@/generators/religions-generator";
+import type { River } from "@/generators/river-generator";
+import type { Route } from "@/generators/routes-generator";
+import type { State } from "@/generators/states-generator";
+import type { Zone } from "@/generators/zones-generator";
 
 export type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array | Float64Array;
 
@@ -19,8 +23,6 @@ export interface PackedGraph {
     p: [number, number][]; // cell polygon points
     b: boolean[]; // cell is on border
     h: TypedArray; // cell heights
-    q: Quadtree<[number, number, number]>; // cell quadtree index
-    /** Terrain type */
     t: TypedArray; // cell terrain types
     r: TypedArray; // river id passing through cell
     f: TypedArray; // feature id occupying cell
@@ -38,6 +40,8 @@ export interface PackedGraph {
     state: TypedArray; // cell state id
     area: TypedArray; // cell area
     province: TypedArray; // cell province id
+    good: Uint16Array; // cell good id
+    market: Uint16Array; // cell market id
     routes: Record<number, Record<number, number>>;
   };
   vertices: {
@@ -49,15 +53,18 @@ export interface PackedGraph {
     p: [number, number][]; // vertex points
   };
   rivers: River[];
-  features: PackedGraphFeature[];
+  features: Feature[];
   burgs: Burg[];
   states: State[];
   cultures: Culture[];
   routes: Route[];
-  religions: any[];
+  religions: Religion[];
   zones: Zone[];
-  markers: any[];
-  ice: any[];
-  labels: LabelData[];
+  markers: Marker[];
+  ice: Ice[];
   provinces: Province[];
+  goods: Good[];
+  markets: Market[];
+  deals: Deal[];
+  labels: LabelData[];
 }

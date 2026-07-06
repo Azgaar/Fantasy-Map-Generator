@@ -24,10 +24,9 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await import("./modules/dynamic/installation.js?v=1.89.19");
-      Installation.init(event);
+      window.Services.Installation.init(event);
     },
-    {once: true}
+    { once: true }
   );
 }
 
@@ -68,6 +67,9 @@ let searoutes = routes.append("g").attr("id", "searoutes");
 let temperature = viewbox.append("g").attr("id", "temperature");
 let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice");
+let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
+let markets = viewbox.append("g").attr("id", "markets");
+let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
@@ -108,6 +110,11 @@ let burgLabels = labels.append("g").attr("id", "burgLabels");
 population.append("g").attr("id", "rural");
 population.append("g").attr("id", "urban");
 
+// goods groups
+goods.append("g").attr("id", "goodsCells");
+goods.append("g").attr("id", "goodsIcons");
+goods.append("g").attr("id", "goodsBurgs");
+
 // emblem groups
 emblems.append("g").attr("id", "burgEmblems");
 emblems.append("g").attr("id", "provinceEmblems");
@@ -128,7 +135,7 @@ fogging
   .attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => window.Controllers.UnitsEditor.open());
 legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
@@ -156,11 +163,15 @@ let options = {
   showBurgPreview: true,
   burgs: {
     groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
-  }
+  },
+  trade: {
+    animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
+  },
+  threeD: { ...window.ThreeDOptions }
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = {burgLabels: {}, burgIcons: {}, anchors: {}};
+let style = { burgLabels: {}, burgIcons: {}, anchors: {} };
 
 let biomesData = Biomes.getDefault();
 let nameBases = Names.getNameBases(); // cultures-related data
@@ -176,7 +187,7 @@ let rafId = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
 function zoomRaf() {
-  const {k, x, y} = d3.event.transform;
+  const { k, x, y } = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
   const isPositionChanged = Boolean(viewX - x || viewY - y);
@@ -210,9 +221,9 @@ function zoomRaf() {
     }
 
     if (customization === 1) {
-      const canvas = ensureEl("canvas");
+      const canvas = findEl("canvas");
       if (canvas && canvas.style.opacity !== "0") {
-        const img = ensureEl("imageToConvert");
+        const img = findEl("imageToConvert");
         if (img) {
           const ctx = canvas.getContext("2d");
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -277,7 +288,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       resizable: false,
       title: "Loading error",
       width: "28em",
-      position: {my: "center center-4em", at: "center", of: "svg"},
+      position: { my: "center center-4em", at: "center", of: "svg" },
       buttons: {
         OK: function () {
           $(this).dialog("close");
@@ -318,10 +329,10 @@ async function checkLoadParameters() {
     const valid = pattern.test(maplink);
     if (valid) {
       setTimeout(() => {
-        loadMapFromURL(maplink, 1);
+        window.Services.Load.loadMapFromURL(maplink, 1);
       }, 1000);
       return;
-    } else showUploadErrorMessage("Map link is not a valid URL", maplink);
+    } else window.Services.Load.showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
 
   // if there is a seed (user of MFCG provided), generate map for it
@@ -337,7 +348,7 @@ async function checkLoadParameters() {
       const blob = await ldb.get("lastMap");
       if (blob) {
         WARN && console.warn("Loading last stored map");
-        uploadMap(blob);
+        window.Services.Load.uploadMap(blob);
         return;
       }
     } catch (error) {
@@ -396,7 +407,7 @@ function focusOn() {
       const burg = isNaN(+burgParam) ? pack.burgs.find(burg => burg.name === burgParam) : pack.burgs[+burgParam];
       if (!burg) return;
 
-      const {x, y} = burg;
+      const { x, y } = burg;
       zoomTo(x, y, scale, 1600);
       return;
     }
@@ -435,17 +446,19 @@ function toggleAssistant() {
 function initTourPromptButton() {
   const MAX_SHOWS = 3;
   const STORAGE_KEY = "fmg-tour-prompt-count";
-  const btn = document.getElementById("tourPromptButton");
-  if (!btn) return;
 
   const count = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   if (count >= MAX_SHOWS) return;
 
-  localStorage.setItem(STORAGE_KEY, count + 1);
+  const btn = document.getElementById("tourPromptButton");
+  if (!btn) return;
+
   btn.style.display = "flex";
-  btn.addEventListener("click", () => {
-    UITour.start();
+  btn.addEventListener("click", async () => {
+    window.Services.UiTour.start();
+    localStorage.setItem(STORAGE_KEY, MAX_SHOWS);
   });
+  localStorage.setItem(STORAGE_KEY, count + 1);
 }
 
 // find burg for MFCG and focus on it
@@ -569,7 +582,7 @@ function invokeActiveZooming() {
   // rescale map markers
   +markers.attr("rescale") &&
     pack.markers?.forEach(marker => {
-      const {i, x, y, size = 30, hidden} = marker;
+      const { i, x, y, size = 30, hidden } = marker;
       const el = !hidden && document.getElementById(`marker${i}`);
       if (!el) return;
 
@@ -614,7 +627,7 @@ void (function addDragToUpload() {
       $("#alert").dialog({
         resizable: false,
         title: "Invalid file format",
-        position: {my: "center", at: "center", of: "svg"},
+        position: { my: "center", at: "center", of: "svg" },
         buttons: {
           Close: function () {
             $(this).dialog("close");
@@ -628,7 +641,7 @@ void (function addDragToUpload() {
     overlay.style.display = null;
     overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
     if (closeDialogs) closeDialogs();
-    uploadMap(file, () => {
+    window.Services.Load.uploadMap(file, () => {
       overlay.style.display = "none";
       overlay.innerHTML = "Drop a map file to open";
     });
@@ -638,7 +651,7 @@ void (function addDragToUpload() {
 async function generate(options) {
   try {
     const timeStart = performance.now();
-    const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
+    const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
     invokeActiveZooming();
     setSeed(precreatedSeed);
@@ -672,6 +685,8 @@ async function generate(options) {
 
     Ice.generate();
 
+    Goods.generate();
+
     rankCells();
     Cultures.generate();
     Cultures.expand();
@@ -692,6 +707,10 @@ async function generate(options) {
 
     Rivers.specify();
     Lakes.defineNames();
+
+    Markets.generate();
+    Production.produce();
+    States.collectTaxes();
 
     Military.generate();
     Markers.generate();
@@ -724,7 +743,7 @@ async function generate(options) {
           $(this).dialog("close");
         }
       },
-      position: {my: "center", at: "center", of: "svg"}
+      position: { my: "center", at: "center", of: "svg" }
     });
   }
 }
@@ -751,8 +770,8 @@ function addLakesInDeepDepressions() {
   const elevationLimit = +ensureEl("lakeElevationLimitOutput").value;
   if (elevationLimit === 80) return;
 
-  const {cells, features} = grid;
-  const {c, h, b} = cells;
+  const { cells, features } = grid;
+  const { c, h, b } = cells;
 
   for (const i of cells.i) {
     if (b[i] || h[i] < 20) continue;
@@ -800,7 +819,7 @@ function addLakesInDeepDepressions() {
       c[i].forEach(n => !lakeCells.includes(n) && (cells.t[c] = 1));
     });
 
-    features.push({i: f, land: false, border: false, type: "lake"});
+    features.push({ i: f, land: false, border: false, type: "lake" });
   }
 
   TIME && console.timeEnd("addLakesInDeepDepressions");
@@ -871,7 +890,7 @@ function defineMapSize() {
     if (template === "europe-accented") return [14, 22, 44.8];
     if (template === "europe-and-central-asia") return [25, 10, 39.5];
     if (template === "europe-central") return [11, 22, 46.4];
-    if (template === "europe-north") return [7, 18, 48.9];
+    if (template === "north-sea-region") return [7, 18, 48.9];
     if (template === "greenland") return [22, 7, 55.8];
     if (template === "hellenica") return [8, 27, 43.5];
     if (template === "iceland") return [2, 15, 55.3];
@@ -921,7 +940,7 @@ function calculateMapCoordinates() {
   const lonT = rn(Math.min((graphWidth / graphHeight) * latT, 360), 1);
   const lonE = rn(180 - (360 - lonT) * lonShift, 1);
   const lonW = rn(lonE - lonT, 1);
-  mapCoordinates = {latT, latN, latS, lonT, lonW, lonE};
+  mapCoordinates = { latT, latN, latS, lonT, lonW, lonE };
 }
 
 // temperature model, trying to follow real-world data
@@ -931,7 +950,7 @@ function calculateTemperatures() {
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
-  const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
+  const { temperatureEquator, temperatureNorthPole, temperatureSouthPole } = options;
   const tropics = [16, -20]; // tropics zone
   const tropicalGradient = 0.15;
 
@@ -978,7 +997,7 @@ function calculateTemperatures() {
 function generatePrecipitation() {
   TIME && console.time("generatePrecipitation");
   prec.selectAll("*").remove();
-  const {cells, cellsX, cellsY} = grid;
+  const { cells, cellsX, cellsY } = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
   const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
@@ -1008,7 +1027,7 @@ function generatePrecipitation() {
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
     const latMod = latitudeModifier[latBand];
     const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
-    const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
+    const { isWest, isEast, isNorth, isSouth } = getWindDirections(windTier);
 
     if (isWest) westerly.push([c, latMod, windTier]);
     if (isEast) easterly.push([c + cellsX - 1, latMod, windTier]);
@@ -1043,7 +1062,7 @@ function generatePrecipitation() {
     const isNorth = angle > 100 && angle < 260;
     const isSouth = angle > 280 || angle < 80;
 
-    return {isWest, isEast, isNorth, isSouth};
+    return { isWest, isEast, isNorth, isSouth };
   }
 
   function passWind(source, maxPrec, next, steps) {
@@ -1140,8 +1159,8 @@ function generatePrecipitation() {
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
   TIME && console.time("reGraph");
-  const {cells: gridCells, points, features} = grid;
-  const newCells = {p: [], g: [], h: []}; // store new data
+  const { cells: gridCells, points, features } = grid;
+  const newCells = { p: [], g: [], h: [] }; // store new data
   const spacing2 = grid.spacing ** 2;
 
   for (const i of gridCells.i) {
@@ -1176,16 +1195,18 @@ function reGraph() {
     newCells.h.push(height);
   }
 
-  const {cells: packCells, vertices} = calculateVoronoi(newCells.p, grid.boundary);
+  const { cells: packCells, vertices } = calculateVoronoi(newCells.p, grid.boundary);
   pack.vertices = vertices;
   pack.cells = packCells;
   pack.cells.p = newCells.p;
-  pack.cells.g = createTypedArray({maxValue: grid.points.length, from: newCells.g});
-  pack.cells.h = createTypedArray({maxValue: 100, from: newCells.h});
-  pack.cells.area = createTypedArray({maxValue: UINT16_MAX, length: packCells.i.length}).map((_, cellId) => {
-    const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
-    return Math.min(area, UINT16_MAX);
-  });
+  pack.cells.g = createTypedArray({ maxValue: grid.points.length, from: newCells.g });
+  pack.cells.h = createTypedArray({ maxValue: 100, from: newCells.h });
+  pack.cells.area = createTypedArray({ maxValue: TYPED_ARRAY_MAX.UINT16, length: packCells.i.length }).map(
+    (_, cellId) => {
+      const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
+      return Math.min(area, TYPED_ARRAY_MAX.UINT16);
+    }
+  );
 
   TIME && console.timeEnd("reGraph");
 }
@@ -1199,13 +1220,14 @@ function isWetLand(moisture, temperature, height) {
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
   TIME && console.time("rankCells");
-  const {cells, features} = pack;
+  const { cells, features } = pack;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 
   const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
   const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
   const meanArea = d3.mean(cells.area); // to adjust population by cell area
+  const getResValue = i => (cells.good && cells.good[i] ? Goods.get(cells.good[i])?.value : 0);
 
   const scoreMap = {
     estuary: 15,
@@ -1239,6 +1261,13 @@ function rankCells() {
     }
 
     cells.s[i] = score / 5; // general population rate
+    // add bonus for goods around
+    if (cells.good && (cells.good[i] || cells.c[i].some(c => cells.good[c]))) {
+      const cellRes = getResValue(i);
+      const neibRes = d3.mean(cells.c[i].map(c => getResValue(c)));
+      const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
+      cells.s[i] += resBonus;
+    }
     // cell rural population is suitability adjusted by cell area
     cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
   }
@@ -1269,14 +1298,14 @@ function showStatistics() {
 
   mapId = Date.now(); // unique map id is it's creation date number
   window.mapId = mapId; // expose for test automation
-  mapHistory.push({seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId});
+  mapHistory.push({ seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId });
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent("map:generated", {detail: {seed, mapId}}));
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
 }
 
-const regenerateMap = debounce(async function (options) {
+const regenerateMap = debounce(async function (config) {
   WARN && console.warn("Generate new random map");
 
   const cellsDesired = +ensureEl("pointsInput").dataset.cells;
@@ -1287,9 +1316,9 @@ const regenerateMap = debounce(async function (options) {
   customization = 0;
   resetZoom(1000);
   undraw();
-  await generate(options);
+  await generate(config);
   drawLayers();
-  if (ThreeD.options.isOn) ThreeD.redraw();
+  if (options.threeD.isOn) window.Controllers.View3d.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
 
   fitMapToScreen();

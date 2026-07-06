@@ -14,14 +14,15 @@ import {
   scaleLinear,
   select
 } from "d3";
-import type { Burg } from "../modules/burgs-generator";
-import type { PackedGraphFeature } from "../modules/features";
-import type { Province } from "../modules/provinces-generator";
-import type { State } from "../modules/states-generator";
+import type { Burg } from "../generators/burgs-generator";
+import type { Feature } from "../generators/features";
+import type { Province } from "../generators/provinces-generator";
+import type { State } from "../generators/states-generator";
 import { ensureEl, rn } from "../utils";
 
-export function open(cells: number[], routeLen: number, isRiver: boolean): void {
+function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");
+  renderDialog();
   ensureEl("epCurve").on("change", draw);
   ensureEl("epSave").on("click", downloadCSV);
   ensureEl("epSaveSVG").on("click", downloadSVG);
@@ -84,7 +85,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
     let h = pack.cells.h[cell];
 
     if (h < 20) {
-      const f = pack.features[pack.cells.f[cell]] as PackedGraphFeature;
+      const f = pack.features[pack.cells.f[cell]] as Feature;
       h = f.type === "lake" ? f.height : 20;
     }
 
@@ -555,21 +556,38 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
   }
 
   function closeElevationProfile(): void {
-    ensureEl("epCurve").off("change", draw);
-    ensureEl("epSave").off("click", downloadCSV);
-    ensureEl("epSaveSVG").off("click", downloadSVG);
-    ensureEl("epSavePNG").off("click", downloadPNG);
-    ensureEl("elevationGraph").innerHTML = "";
     modules.elevation = false;
+    $("#elevationProfile").dialog("destroy");
+    ensureEl("elevationProfile").remove();
   }
 }
 
-declare global {
-  interface Window {
-    ElevationProfile: {
-      open: (cells: number[], routeLen: number, isRiver: boolean) => void;
-    };
-  }
+function renderDialog(): void {
+  document.getElementById("elevationProfile")?.remove();
+  const editorHtml = /* html */ `<div id="elevationProfile" class="dialog" width="100%">
+      <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div style="text-align: center">
+        <div id="epControls">
+          <span data-tip="Set curve profile"
+            >Curve:
+            <select id="epCurve">
+              <option>Linear</option>
+              <option>Bundle</option>
+              <option>Cubic Catmull-Rom</option>
+              <option selected>Monotone X</option>
+              <option>Natural</option>
+            </select>
+          </span>
+          <span
+            ><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button
+          ></span>
+          <span><button id="epSaveSVG" data-tip="Download the chart as an SVG image">SVG</button></span>
+          <span><button id="epSavePNG" data-tip="Download the chart as a PNG image">PNG</button></span>
+          <span id="epstats" style="margin-left: 1em; color: #555; font-size: 0.85em"></span>
+        </div>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 }
 
-window.ElevationProfile = { open };
+export const ElevationProfile = { open };

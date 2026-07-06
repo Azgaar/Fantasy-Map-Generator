@@ -1,9 +1,4 @@
-import type { BurgLabel } from "../modules/labels";
-
-interface BurgGroup {
-  name: string;
-  order: number;
-}
+import type { BurgLabel } from "@/generators/labels";
 
 // remove this section once layer.js is refactored--------------------------------
 declare global {
@@ -107,7 +102,7 @@ function createLabelGroups(): void {
 
   // create groups for each burg group and apply stored or default style
   const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort((a, b) => a.order - b.order);
+  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const group = burgLabels.append("g");
     const styles = style.burgLabels[name] || defaultStyle;

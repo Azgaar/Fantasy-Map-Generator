@@ -1,8 +1,8 @@
 // UI module to control the options (preferences)
 "use strict";
 
-$("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
-$("#exitCustomization").draggable({handle: "div"});
+$("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both" });
+$("#exitCustomization").draggable({ handle: "div" });
 $("#mapLayers").disableSelection();
 
 // remove glow if tip is aknowledged
@@ -82,8 +82,7 @@ document
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {
-  const {supporters} = await import("../dynamic/supporters.js?v=1.119.0");
-  const list = supporters.split("\n").sort();
+  const list = window.Supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
   alertMessage.innerHTML =
@@ -92,7 +91,7 @@ async function showSupporters() {
     resizable: false,
     title: "Patreon Supporters",
     width: "min-width",
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
@@ -127,7 +126,7 @@ function updateOutputToFollowInput(ev) {
 const optionsContent = ensureEl("optionsContent");
 
 optionsContent.addEventListener("input", event => {
-  const {id, value} = event.target;
+  const { id, value } = event.target;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
   else if (id === "pointsInput") changeCellsDensity(+value);
   else if (id === "culturesSet") changeCultureSet();
@@ -140,7 +139,7 @@ optionsContent.addEventListener("input", event => {
 });
 
 optionsContent.addEventListener("change", event => {
-  const {id, value} = event.target;
+  const { id, value } = event.target;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed("seed change");
   else if (id === "uiSize") changeUiSize(+value);
@@ -152,7 +151,7 @@ optionsContent.addEventListener("change", event => {
 });
 
 optionsContent.addEventListener("click", event => {
-  const {id} = event.target;
+  const { id } = event.target;
   if (id === "restoreDefaultCanvasSize") restoreDefaultCanvasSize();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
@@ -279,7 +278,7 @@ function testSpeaker() {
 
 function generateMapWithSeed() {
   if (optionsSeed.value === seed) return tip("The current map already has this seed", false, "error");
-  regeneratePrompt({seed: optionsSeed.value});
+  regeneratePrompt({ seed: optionsSeed.value });
 }
 
 function showSeedHistoryDialog() {
@@ -295,13 +294,13 @@ function showSeedHistoryDialog() {
   $("#alert").dialog({
     resizable: false,
     title: "Seed history",
-    position: {my: "center", at: "center", of: "svg"}
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
 // generate map with historical seed
 function restoreSeed(id) {
-  const {seed, width, height, template} = mapHistory[id];
+  const { seed, width, height, template } = mapHistory[id];
   ensureEl("optionsSeed").value = seed;
   ensureEl("mapWidthInput").value = width;
   ensureEl("mapHeightInput").value = height;
@@ -309,7 +308,7 @@ function restoreSeed(id) {
 
   if (locked("template")) unlock("template");
 
-  regeneratePrompt({seed});
+  regeneratePrompt({ seed });
 }
 
 function copyMapURL() {
@@ -434,7 +433,7 @@ function restoreDefaultThemeColor() {
 }
 
 function changeThemeHue(hue) {
-  const {s, l} = d3.hsl(themeColorInput.value);
+  const { s, l } = d3.hsl(themeColorInput.value);
   const newColor = d3.hsl(+hue, s, l).hex();
   changeDialogsTheme(newColor, transparencyInput.value);
 }
@@ -445,7 +444,7 @@ function changeDialogsTheme(themeColor, transparency) {
   const alpha = (100 - +transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
-  const {h, s, l} = d3.hsl(themeColor || THEME_COLOR);
+  const { h, s, l } = d3.hsl(themeColor || THEME_COLOR);
   themeColorInput.value = themeColor || THEME_COLOR;
   themeHueInput.value = h;
 
@@ -455,20 +454,20 @@ function changeDialogsTheme(themeColor, transparency) {
   };
 
   const theme = [
-    {name: "--bg-opacity", value: alpha},
-    {name: "--bg-main", h, s, l, alpha},
-    {name: "--bg-lighter", h, s, l: l + 0.02, alpha},
-    {name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha},
-    {name: "--light-solid", h, s: s + 0.01, l: l + 0.05, alpha: 1},
-    {name: "--dark-solid", h, s, l: l - 0.2, alpha: 1},
-    {name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced},
-    {name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced},
-    {name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced},
-    {name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha}
+    { name: "--bg-opacity", value: alpha },
+    { name: "--bg-main", h, s, l, alpha },
+    { name: "--bg-lighter", h, s, l: l + 0.02, alpha },
+    { name: "--bg-light", h, s: s - 0.02, l: l + 0.06, alpha },
+    { name: "--light-solid", h, s: s + 0.01, l: l + 0.05, alpha: 1 },
+    { name: "--dark-solid", h, s, l: l - 0.2, alpha: 1 },
+    { name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced },
+    { name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced },
+    { name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced },
+    { name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha }
   ];
 
   const sx = document.documentElement.style;
-  theme.forEach(({name, value, h, s, l, alpha}) => {
+  theme.forEach(({ name, value, h, s, l, alpha }) => {
     if (value !== undefined) sx.setProperty(name, value);
     else sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
@@ -495,7 +494,7 @@ function loadGoogleTranslate() {
 
 function initGoogleTranslate() {
   new google.translate.TranslateElement(
-    {pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
+    { pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL },
     "google_translate_element"
   );
 }
@@ -709,8 +708,7 @@ function changeEra() {
 }
 
 async function openTemplateSelectionDialog() {
-  const HeightmapSelectionDialog = await import("../dynamic/heightmap-selection.js?v=1.120.5");
-  HeightmapSelectionDialog.open();
+  window.Controllers.HeightmapSelection.open();
 }
 
 // Sticked menu Options listeners
@@ -754,7 +752,7 @@ function showSavePane() {
     title: "Save map",
     resizable: false,
     width: "25em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Close: function () {
         $(this).dialog("close");
@@ -776,7 +774,7 @@ function showExportPane() {
     title: "Export map data",
     resizable: false,
     width: "26em",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Close: function () {
         $(this).dialog("close");
@@ -786,8 +784,7 @@ function showExportPane() {
 }
 
 async function exportToJson(type) {
-  const {exportToJson} = await import("../dynamic/export-json.js?v=1.100.00");
-  exportToJson(type);
+  window.Services.ExportJson.exportToJson(type);
 }
 
 async function showLoadPane() {
@@ -795,7 +792,7 @@ async function showLoadPane() {
     title: "Load map",
     resizable: false,
     width: "auto",
-    position: {my: "center", at: "center", of: "svg"},
+    position: { my: "center", at: "center", of: "svg" },
     buttons: {
       Close: function () {
         $(this).dialog("close");
@@ -804,14 +801,14 @@ async function showLoadPane() {
   });
 
   // already connected to Dropbox: list saved maps
-  if (Cloud.providers.dropbox.api) {
+  if (await window.Services.Cloud.isConnected()) {
     ensureEl("dropboxConnectButton").style.display = "none";
     ensureEl("loadFromDropboxSelect").style.display = "block";
     const loadFromDropboxButtons = ensureEl("loadFromDropboxButtons");
     const fileSelect = ensureEl("loadFromDropboxSelect");
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
-    const files = await Cloud.providers.dropbox.list();
+    const files = await window.Services.Cloud.list();
 
     if (!files) {
       loadFromDropboxButtons.style.display = "none";
@@ -821,7 +818,7 @@ async function showLoadPane() {
 
     loadFromDropboxButtons.style.display = "block";
     fileSelect.innerHTML = "";
-    files.forEach(({name, updated, size, path}) => {
+    files.forEach(({ name, updated, size, path }) => {
       const sizeMB = rn(size / 1024 / 1024, 2) + " MB";
       const updatedOn = new Date(updated).toLocaleDateString();
       const nameFormatted = `${updatedOn}: ${name} [${sizeMB}]`;
@@ -839,8 +836,8 @@ async function showLoadPane() {
 }
 
 async function connectToDropbox() {
-  await Cloud.providers.dropbox.initialize();
-  if (Cloud.providers.dropbox.api) showLoadPane();
+  await window.Services.Cloud.connect();
+  if (await window.Services.Cloud.isConnected()) showLoadPane();
 }
 
 function loadURL() {
@@ -860,7 +857,7 @@ function loadURL() {
           tip("Please provide a valid URL", false, "error");
           return;
         }
-        loadMapFromURL(value);
+        window.Services.Load.loadMapFromURL(value);
         $(this).dialog("close");
       },
       Cancel: function () {
@@ -875,7 +872,7 @@ ensureEl("mapToLoad").addEventListener("change", function () {
   const fileToLoad = this.files[0];
   this.value = "";
   closeDialogs();
-  uploadMap(fileToLoad);
+  window.Services.Load.uploadMap(fileToLoad);
 });
 
 function openExportToPngTiles() {
@@ -891,7 +888,7 @@ function openExportToPngTiles() {
     title: "Download tiles",
     width: "23em",
     buttons: {
-      Download: () => exportToPngTiles(),
+      Download: () => window.Services.ExportMap.exportToPngTiles(),
       Cancel: function () {
         $(this).dialog("close");
       }
@@ -905,7 +902,7 @@ function openExportToPngTiles() {
 
 function updateTilesOptions() {
   if (this?.tagName === "INPUT") {
-    const {nextElementSibling: next, previousElementSibling: prev} = this;
+    const { nextElementSibling: next, previousElementSibling: prev } = this;
     if (next?.tagName === "INPUT") next.value = this.value;
     if (prev?.tagName === "INPUT") prev.value = this.value;
   }
@@ -957,242 +954,6 @@ function changeViewMode(event) {
   const button = event.target;
   if (button.tagName !== "BUTTON") return;
   const pressed = button.classList.contains("pressed");
-  enterStandardView();
-
-  if (!pressed && button.id !== "viewStandard") {
-    viewStandard.classList.remove("pressed");
-    button.classList.add("pressed");
-    enter3dView(button.id);
-  }
-}
-
-function enterStandardView() {
-  viewMode.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
-  heightmap3DView.classList.remove("pressed");
-  viewStandard.classList.add("pressed");
-
-  if (!ensureEl("canvas3d")) return;
-  ThreeD.stop();
-  ensureEl("canvas3d").remove();
-  if (options3dUpdate.offsetParent) $("#options3d").dialog("close");
-  if (preview3d.offsetParent) $("#preview3d").dialog("close");
-}
-
-async function enter3dView(type) {
-  const canvas = document.createElement("canvas");
-  canvas.id = "canvas3d";
-  canvas.dataset.type = type;
-
-  if (type === "heightmap3DView") {
-    canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
-    canvas.height = canvas.width / (graphWidth / graphHeight);
-    canvas.style.display = "block";
-  } else {
-    canvas.width = svgWidth;
-    canvas.height = svgHeight;
-    canvas.style.position = "absolute";
-    canvas.style.display = "none";
-  }
-
-  const started = await ThreeD.create(canvas, type);
-  if (!started) return;
-
-  canvas.style.display = "block";
-  canvas.onmouseenter = () => {
-    const help = "Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options";
-    +canvas.dataset.hovered > 2 ? tip("") : tip(help);
-    canvas.dataset.hovered = (+canvas.dataset.hovered | 0) + 1;
-  };
-
-  if (type === "heightmap3DView") {
-    ensureEl("preview3d").appendChild(canvas);
-    $("#preview3d").dialog({
-      title: "3D Preview",
-      resizable: true,
-      position: {my: "left bottom", at: "left+10 bottom-20", of: "svg"},
-      resizeStop: resize3d,
-      close: enterStandardView
-    });
-  } else document.body.insertBefore(canvas, optionsContainer);
-
-  toggle3dOptions();
-}
-
-function resize3d() {
-  const canvas = ensureEl("canvas3d");
-  canvas.width = parseFloat(preview3d.style.width);
-  canvas.height = parseFloat(preview3d.style.height) - 2;
-  ThreeD.redraw();
-}
-
-function toggle3dOptions() {
-  if (options3dUpdate.offsetParent) {
-    $("#options3d").dialog("close");
-    return;
-  }
-  $("#options3d").dialog({
-    title: "3D mode settings",
-    resizable: false,
-    width: fitContent(),
-    position: {my: "right top", at: "right-30 top+10", of: "svg", collision: "fit"}
-  });
-
-  updateValues();
-
-  if (modules.options3d) return;
-  modules.options3d = true;
-
-  ensureEl("options3dUpdate").addEventListener("click", ThreeD.update);
-  ensureEl("options3dSave").addEventListener("click", ThreeD.saveScreenshot);
-  ensureEl("options3dOBJSave").addEventListener("click", ThreeD.saveOBJ);
-
-  ensureEl("options3dScaleRange").addEventListener("input", changeHeightScale);
-  ensureEl("options3dScaleNumber").addEventListener("change", changeHeightScale);
-  ensureEl("options3dLightnessRange").addEventListener("input", changeLightness);
-  ensureEl("options3dLightnessNumber").addEventListener("change", changeLightness);
-  ensureEl("options3dSunX").addEventListener("change", changeSunPosition);
-  ensureEl("options3dSunY").addEventListener("change", changeSunPosition);
-  ensureEl("options3dMeshSkinResolution").addEventListener("change", changeResolutionScale);
-  ensureEl("options3dMeshRotationRange").addEventListener("input", changeRotation);
-  ensureEl("options3dMeshRotationNumber").addEventListener("change", changeRotation);
-  ensureEl("options3dGlobeRotationRange").addEventListener("input", changeRotation);
-  ensureEl("options3dGlobeRotationNumber").addEventListener("change", changeRotation);
-  ensureEl("options3dMeshLabels3d").addEventListener("change", toggleLabels3d);
-  ensureEl("options3dMeshSkyMode").addEventListener("change", toggleSkyMode);
-  ensureEl("options3dMeshSky").addEventListener("input", changeColors);
-  ensureEl("options3dMeshWater").addEventListener("input", changeColors);
-  ensureEl("options3dGlobeResolution").addEventListener("change", changeResolution);
-  ensureEl("options3dMeshWireframeMode").addEventListener("change", toggleWireframe3d);
-  ensureEl("options3dSunColor").addEventListener("input", changeSunColor);
-  ensureEl("options3dSubdivide").addEventListener("change", toggle3dSubdivision);
-  ensureEl("options3dTimeOfDay").addEventListener("change", changeTimeOfDay);
-
-  function updateValues() {
-    const globe = ensureEl("canvas3d").dataset.type === "viewGlobe";
-    options3dMesh.style.display = globe ? "none" : "block";
-    options3dGlobe.style.display = globe ? "block" : "none";
-    options3dOBJSave.style.display = globe ? "none" : "inline-block";
-    options3dScaleRange.value = options3dScaleNumber.value = ThreeD.options.scale;
-    options3dLightnessRange.value = options3dLightnessNumber.value = ThreeD.options.lightness * 100;
-    options3dSunX.value = ThreeD.options.sun.x;
-    options3dSunY.value = ThreeD.options.sun.y;
-    options3dMeshRotationRange.value = options3dMeshRotationNumber.value = ThreeD.options.rotateMesh;
-    options3dMeshSkinResolution.value = ThreeD.options.resolutionScale;
-    options3dGlobeRotationRange.value = options3dGlobeRotationNumber.value = ThreeD.options.rotateGlobe;
-    options3dMeshLabels3d.value = ThreeD.options.labels3d;
-    options3dMeshSkyMode.value = ThreeD.options.extendedWater;
-    options3dColorSection.style.display = ThreeD.options.extendedWater ? "block" : "none";
-    options3dMeshSky.value = ThreeD.options.skyColor;
-    options3dMeshWater.value = ThreeD.options.waterColor;
-    options3dGlobeResolution.value = ThreeD.options.resolution;
-    options3dSunColor.value = ThreeD.options.sunColor;
-    options3dSubdivide.value = ThreeD.options.subdivide;
-    updateTimeOfDayPreset();
-  }
-
-  function updateTimeOfDayPreset() {
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (!presetSelect) return;
-
-    const currentSunX = ThreeD.options.sun.x;
-    const currentSunY = ThreeD.options.sun.y;
-    const currentSunZ = ThreeD.options.sun.z;
-    const currentSunColor = ThreeD.options.sunColor;
-    const currentLightness = ThreeD.options.lightness;
-
-    let matchingPreset = "custom";
-    for (const [name, preset] of Object.entries(ThreeD.timeOfDayPresets)) {
-      if (
-        preset.sun.x === currentSunX &&
-        preset.sun.y === currentSunY &&
-        preset.sun.z === currentSunZ &&
-        preset.sunColor === currentSunColor &&
-        Math.abs(preset.lightness - currentLightness) < 0.05
-      ) {
-        matchingPreset = name;
-        break;
-      }
-    }
-
-    presetSelect.value = matchingPreset;
-  }
-
-  function changeTimeOfDay() {
-    const presetName = this.value;
-    if (presetName === "custom") return;
-    ThreeD.setTimeOfDay(presetName);
-    updateValues();
-  }
-
-  function changeHeightScale() {
-    options3dScaleRange.value = options3dScaleNumber.value = this.value;
-    ThreeD.setScale(+this.value);
-  }
-
-  function changeResolutionScale() {
-    options3dMeshSkinResolution.value = this.value;
-    ThreeD.setResolutionScale(+this.value);
-  }
-
-  function changeLightness() {
-    options3dLightnessRange.value = options3dLightnessNumber.value = this.value;
-    ThreeD.setLightness(this.value / 100);
-    // Mark as custom when user manually changes lightness
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (presetSelect && presetSelect.value !== "custom") {
-      presetSelect.value = "custom";
-    }
-  }
-
-  function changeSunColor() {
-    ThreeD.setSunColor(options3dSunColor.value);
-    // Mark as custom when user manually changes sun color
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (presetSelect && presetSelect.value !== "custom") {
-      presetSelect.value = "custom";
-    }
-  }
-
-  function changeSunPosition() {
-    const x = +options3dSunX.value;
-    const y = +options3dSunY.value;
-    ThreeD.setSun(x, y);
-    // Mark as custom when user manually changes sun position
-    const presetSelect = ensureEl("options3dTimeOfDay");
-    if (presetSelect && presetSelect.value !== "custom") {
-      presetSelect.value = "custom";
-    }
-  }
-
-  function changeRotation() {
-    (this.nextElementSibling || this.previousElementSibling).value = this.value;
-    const speed = +this.value;
-    ThreeD.setRotation(speed);
-  }
-
-  function toggleLabels3d() {
-    ThreeD.toggleLabels();
-  }
-
-  function toggle3dSubdivision() {
-    ThreeD.toggle3dSubdivision();
-  }
-
-  function toggleWireframe3d() {
-    ThreeD.toggleWireframe();
-  }
-
-  function toggleSkyMode() {
-    const hide = ThreeD.options.extendedWater;
-    options3dColorSection.style.display = hide ? "none" : "block";
-    ThreeD.toggleSky();
-  }
-
-  function changeColors() {
-    ThreeD.setColors(options3dMeshSky.value, options3dMeshWater.value);
-  }
-
-  function changeResolution() {
-    ThreeD.setResolution(this.value);
-  }
+  if (!pressed && button.id !== "viewStandard") window.Controllers.View3d.open(button.id);
+  else window.Controllers.View3d.enterStandard();
 }

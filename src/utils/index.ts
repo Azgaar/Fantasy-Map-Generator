@@ -1,4 +1,4 @@
-import { createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX_VALUES, unique } from "./arrayUtils";
+import { createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
@@ -38,7 +38,7 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
-import { ensureEl, getComposedPath, getNextId } from "./nodeUtils";
+import { destroyDialogIfExists, ensureEl, findEl, getComposedPath, getNextId } from "./nodeUtils";
 import {
   connectVertices,
   extractPathPoints,
@@ -49,7 +49,7 @@ import {
 } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
-import { convertTemperature, getIntegerFromSI, si } from "./unitUtils";
+import { convertTemperature, formatPrice, getHeight, getIntegerFromSI, getTemperatureLikeness, si } from "./unitUtils";
 
 window.rn = rn;
 window.lim = lim;
@@ -68,10 +68,6 @@ window.last = last;
 window.unique = unique;
 window.getTypedArray = getTypedArray;
 window.createTypedArray = createTypedArray;
-window.INT8_MAX = TYPED_ARRAY_MAX_VALUES.INT8_MAX;
-window.UINT8_MAX = TYPED_ARRAY_MAX_VALUES.UINT8_MAX;
-window.UINT16_MAX = TYPED_ARRAY_MAX_VALUES.UINT16_MAX;
-window.UINT32_MAX = TYPED_ARRAY_MAX_VALUES.UINT32_MAX;
 
 window.rand = rand;
 window.P = P;
@@ -88,6 +84,8 @@ window.convertTemperature = (temp: number, scale: any = (window as any).temperat
   convertTemperature(temp, scale);
 window.si = si;
 window.getInteger = getIntegerFromSI;
+window.getHeight = getHeight;
+window.formatPrice = formatPrice;
 window.toHEX = toHEX;
 window.getColors = getColors;
 window.getRandomColor = getRandomColor;
@@ -95,6 +93,8 @@ window.getMixedColor = getMixedColor;
 window.C_12 = C_12;
 
 window.ensureEl = ensureEl;
+window.findEl = findEl;
+window.destroyDialogIfExists = destroyDialogIfExists;
 window.getComposedPath = getComposedPath;
 window.getNextId = getNextId;
 
@@ -131,7 +131,6 @@ declare global {
     isValid: (str: string) => boolean;
     safeParse: (str: string) => any;
   }
-
   interface Node {
     on: (name: string, fn: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => Node;
     off: (name: string, fn: EventListenerOrEventListenerObject) => Node;
@@ -177,11 +176,13 @@ if (document.readyState === "loading") {
   initializePrompt();
 }
 
-window.drawCellsValue = (data: any[]) => drawCellsValue(data, (window as any).pack);
+window.drawCellsValue = drawCellsValue;
 window.drawPolygons = (data: any[]) => drawPolygons(data, (window as any).terrs, (window as any).grid);
 window.drawRouteConnections = () => drawRouteConnections((window as any).packedGraph);
 window.drawPoint = drawPoint;
 window.drawPath = drawPath;
+
+window.TYPED_ARRAY_MAX = TYPED_ARRAY_MAX;
 
 export {
   abbreviate,
@@ -194,6 +195,7 @@ export {
   convertTemperature,
   createTypedArray,
   debounce,
+  destroyDialogIfExists,
   distanceSquared,
   drawCellsValue,
   drawHeights,
@@ -206,9 +208,11 @@ export {
   findAllCellsInRadius,
   findAllInQuadtree,
   findClosestCell,
+  findEl,
   findGridAll,
   findGridCell,
   findPath,
+  formatPrice,
   gauss,
   generateDate,
   generateGrid,
@@ -230,6 +234,7 @@ export {
   getPolesOfInaccessibility,
   getRandomColor,
   getSegmentId,
+  getTemperatureLikeness,
   getTypedArray,
   getVertexPath,
   initializePrompt,
@@ -263,7 +268,7 @@ export {
   shouldRegenerateGrid,
   si,
   splitInTwo,
-  TYPED_ARRAY_MAX_VALUES,
+  TYPED_ARRAY_MAX,
   throttle,
   toHEX,
   trimVowels,

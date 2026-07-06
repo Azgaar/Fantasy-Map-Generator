@@ -1,4 +1,5 @@
 import { curveBundle, line, max, min } from "d3";
+import type { Point } from "../generators/voronoi";
 import { C_12 } from "./colorUtils";
 import { getGridPolygon } from "./graphUtils";
 import { normalize } from "./numberUtils";
@@ -6,19 +7,19 @@ import { round } from "./stringUtils";
 
 /**
  * Drawing cell values and polygons for debugging purposes
- * @param {any[]} data - Array of data values corresponding to each cell
- * @param {any} packedGraph - The packed graph object containing cell positions
+ * @param {unknown[]} data - Array of data values corresponding to each cell
+ * @param {Point[]} points - Array of points representing the positions of each cell
  */
-export const drawCellsValue = (data: any[], packedGraph: any): void => {
+export const drawCellsValue = (data: unknown[], points: Point[]): void => {
   window.debug.selectAll("text").remove();
   window.debug
     .selectAll("text")
     .data(data)
     .enter()
     .append("text")
-    .attr("x", (_d: any, i: number) => packedGraph.cells.p[i][0])
-    .attr("y", (_d: any, i: number) => packedGraph.cells.p[i][1])
-    .text((d: any) => d);
+    .attr("x", (_d: unknown, i: number) => points[i][0])
+    .attr("y", (_d: unknown, i: number) => points[i][1])
+    .text((d: unknown) => d);
 };
 /**
  * Drawing polygons colored according to data values for debugging purposes

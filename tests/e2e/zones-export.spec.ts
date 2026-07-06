@@ -93,9 +93,9 @@ test.describe("Zone Export", () => {
   }
 
   // Helper function to export zones to GeoJSON without file download
-  // This calls the production code from public/modules/io/export.js
+  // This calls the production code from src/io/export.ts
   async function exportZonesToGeoJson(page: any): Promise<any> {
-    return await page.evaluate(() => {
+    return await page.evaluate(async () => {
       // Mock downloadFile to capture the JSON instead of downloading
       const originalDownloadFile = (window as any).downloadFile;
       let capturedJson: any = null;
@@ -104,8 +104,8 @@ test.describe("Zone Export", () => {
         capturedJson = JSON.parse(data);
       };
 
-      // Call the production code
-      (window as any).saveGeoJsonZones();
+      // Call the production code (loaded on demand via the service registry)
+      await (window as any).Services.ExportMap.saveGeoJsonZones();
 
       // Restore original downloadFile
       (window as any).downloadFile = originalDownloadFile;

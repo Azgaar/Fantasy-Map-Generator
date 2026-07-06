@@ -20,18 +20,21 @@ function clicked() {
   const ancestor = great?.parentElement;
   if (!ancestor) return;
 
-  if (grand.id === "emblems") editEmblem();
-  else if (parent.id === "rivers") editRiver(el.id);
-  else if (grand.id === "routes") editRoute(el.id);
-  else if (ancestor.id === "labels" && el.tagName === "tspan") editLabel();
-  else if (grand.id === "burgLabels") editBurg();
-  else if (grand.id === "burgIcons") editBurg();
-  else if (parent.id === "ice") editIce(el);
-  else if (parent.id === "terrain") editReliefIcon();
-  else if (grand.id === "markers" || great.id === "markers") editMarker();
-  else if (grand.id === "coastline") editCoastline();
-  else if (grand.id === "lakes") editLake();
-  else if (great.id === "armies") editRegiment();
+  if (grand.id === "emblems") window.Controllers.EmblemsEditor.open(undefined, undefined, undefined, el);
+  else if (parent.id === "rivers") window.Controllers.RiverEditor.open(el.id);
+  else if (grand.id === "routes") window.Controllers.RouteEditor.open(el.id);
+  else if (ancestor.id === "labels" && el.tagName === "tspan") window.Controllers.LabelsEditor.open(el);
+  else if (grand.id === "burgLabels" || grand.id === "burgIcons") window.Controllers.BurgEditor.open(el.dataset.id);
+  else if (parent.id === "ice") window.Controllers.IceEditor.open(el);
+  else if (parent.id === "terrain") window.Controllers.ReliefEditor.open(el);
+  else if (grand.id === "markers" || great.id === "markers") window.Controllers.MarkersEditor.open(undefined, el);
+  else if (grand.id === "markets" && el.tagName !== "path")
+    window.Controllers.MarketOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "goodsIcons" || parent.id === "goodsCells") window.Controllers.GoodsEditor.open();
+  else if (grand.id === "goodsBurgs") window.Controllers.ProductionOverview.open(Number(parent.dataset.id));
+  else if (grand.id === "coastline") window.Controllers.CoastlineVertexEditor.open(el);
+  else if (grand.id === "lakes") window.Controllers.LakesEditor.open(el);
+  else if (great.id === "armies") window.Controllers.RegimentEditor.open("#" + parent.id);
 }
 
 // clear elSelected variable
@@ -79,12 +82,6 @@ function fitContent() {
 }
 
 // apply sorting behaviour for lines on Editor header click
-document.querySelectorAll(".sortable").forEach(function (event) {
-  event.on("click", function () {
-    sortLines(this);
-  });
-});
-
 function applySortingByHeader(headerContainer) {
   document
     .getElementById(headerContainer)
@@ -606,7 +603,7 @@ function getFileName(dataType) {
 }
 
 function downloadFile(data, name, type = "text/plain") {
-  const dataBlob = new Blob([data], {type});
+  const dataBlob = new Blob([data], { type });
   const url = window.URL.createObjectURL(dataBlob);
   const link = document.createElement("a");
   link.download = name;
@@ -627,7 +624,7 @@ function getBBox(element) {
   const y = +element.getAttribute("y");
   const width = +element.getAttribute("width");
   const height = +element.getAttribute("height");
-  return {x, y, width, height};
+  return { x, y, width, height };
 }
 
 function highlightElement(element, zoom) {
@@ -938,7 +935,9 @@ function selectIcon(initial, callback) {
 }
 
 function getAreaUnit(squareMark = "²") {
-  return ensureEl("areaUnit").value === "square" ? ensureEl("distanceUnitInput").value + squareMark : ensureEl("areaUnit").value;
+  return ensureEl("areaUnit").value === "square"
+    ? ensureEl("distanceUnitInput").value + squareMark
+    : ensureEl("areaUnit").value;
 }
 
 function getArea(rawArea) {
@@ -967,7 +966,7 @@ function confirmationDialog(options) {
   };
 
   ensureEl("alertMessage").innerHTML = message;
-  $("#alert").dialog({resizable: false, title, buttons});
+  $("#alert").dialog({ resizable: false, title, buttons });
 }
 
 // add and register event listeners to clean up on editor closure
@@ -978,38 +977,13 @@ function listen(element, event, handler) {
 
 // Calls the refresh functionality on all editors currently open.
 function refreshAllEditors() {
-  TIME && console.time("refreshAllEditors");
-  if (document.getElementById("culturesEditorRefresh")?.offsetParent) culturesEditorRefresh.click();
-  if (ensureEl("biomesEditorRefresh").offsetParent) biomesEditorRefresh.click();
-  if (ensureEl("diplomacyEditorRefresh").offsetParent) diplomacyEditorRefresh.click();
-  if (ensureEl("provincesEditorRefresh").offsetParent) provincesEditorRefresh.click();
-  if (document.getElementById("religionsEditorRefresh")?.offsetParent) religionsEditorRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
-  TIME && console.timeEnd("refreshAllEditors");
-}
-
-// dynamically loaded editors
-async function editStates() {
-  if (customization) return;
-  const Editor = await import("../dynamic/editors/states-editor.js?v=1.120.5");
-  Editor.open();
-}
-
-async function editCultures() {
-  if (customization) return;
-  const Editor = await import("../dynamic/editors/cultures-editor.js?v=1.120.5");
-  Editor.open();
-}
-
-async function editReligions() {
-  if (customization) return;
-  const Editor = await import("../dynamic/editors/religions-editor.js?v=1.120.5");
-  Editor.open();
-}
-
-// TS-migrated editors. TODO: import from module when editors.js is migrated to TS
-function editCoastlineSettings() {
-  if (customization) return;
-  window.CoastlineEditor.open();
+  findEl("culturesEditorRefresh")?.click();
+  findEl("biomesEditorRefresh")?.click();
+  findEl("diplomacyEditorRefresh")?.click();
+  findEl("provincesEditorRefresh")?.click();
+  findEl("religionsEditorRefresh")?.click();
+  findEl("statesEditorRefresh")?.click();
+  findEl("zonesEditorRefresh")?.click();
+  findEl("goodsEditorRefresh")?.click();
+  findEl("marketsOverviewRefresh")?.click();
 }

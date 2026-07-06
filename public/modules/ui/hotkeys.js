@@ -6,7 +6,7 @@ document.addEventListener("keyup", handleKeyup);
 function handleKeydown(event) {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
-  const {code, ctrlKey, altKey, shiftKey} = event;
+  const { code, ctrlKey, altKey, shiftKey } = event;
   if (altKey && !ctrlKey && !shiftKey) event.preventDefault(); // disallow plain alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
   if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
@@ -18,55 +18,57 @@ function handleKeyup(event) {
 
   event.stopPropagation();
 
-  const {code, key, ctrlKey, metaKey, shiftKey, altKey} = event;
+  const { code, key, ctrlKey, metaKey, shiftKey, altKey } = event;
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = (shiftKey || key === "Shift") && !altKey;
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
 
   if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
-  else if (code === "F6") saveMap("storage");
-  else if (code === "F9") quickLoad();
+  else if (code === "F6") window.Services.Save.saveMap("storage");
+  else if (code === "F9") window.Services.Load.quickLoad();
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") closeAllDialogs();
   else if (code === "Delete") removeElementOnKey();
-  else if (code === "KeyO" && ensureEl("canvas3d")) toggle3dOptions();
+  else if (code === "KeyO" && findEl("canvas3d")) window.Controllers.View3d.toggleOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
-  else if (ctrl && code === "KeyS") saveMap("machine");
-  else if (ctrl && code === "KeyC") saveMap("dropbox");
-  else if (ctrl && code === "KeyZ" && undo?.offsetParent) undo.click();
-  else if (ctrl && code === "KeyY" && redo?.offsetParent) redo.click();
-  else if ((shift || altShift) && code === "KeyH") editHeightmap();
-  else if ((shift || altShift) && code === "KeyB") editBiomes();
-  else if ((shift || altShift) && code === "KeyS") editStates();
-  else if ((shift || altShift) && code === "KeyP") editProvinces();
-  else if ((shift || altShift) && code === "KeyD") editDiplomacy();
-  else if ((shift || altShift) && code === "KeyL") editCoastlineSettings();
-  else if ((shift || altShift) && code === "KeyC") editCultures();
-  else if ((shift || altShift) && code === "KeyN") NamesbaseEditor.open();
-  else if ((shift || altShift) && code === "KeyZ") editZones();
-  else if ((shift || altShift) && code === "KeyR") editReligions();
+  else if (ctrl && code === "KeyS") window.Services.Save.saveMap("machine");
+  else if (ctrl && code === "KeyC") window.Services.Save.saveMap("dropbox");
+  else if (ctrl && code === "KeyZ" && findEl("undo")) findEl("undo").click();
+  else if (ctrl && code === "KeyY" && findEl("redo")) findEl("redo").click();
+  else if ((shift || altShift) && code === "KeyH") window.Controllers.HeightmapEditor.open();
+  else if ((shift || altShift) && code === "KeyB") window.Controllers.BiomesEditor.open();
+  else if ((shift || altShift) && code === "KeyS") window.Controllers.StatesEditor.open();
+  else if ((shift || altShift) && code === "KeyP") window.Controllers.ProvincesEditor.open();
+  else if ((shift || altShift) && code === "KeyD") window.Controllers.DiplomacyEditor.open();
+  else if ((shift || altShift) && code === "KeyL") window.Controllers.CoastlineEditor.open();
+  else if ((shift || altShift) && code === "KeyC") window.Controllers.CulturesEditor.open();
+  else if ((shift || altShift) && code === "KeyN") window.Controllers.NamesbaseEditor.open();
+  else if ((shift || altShift) && code === "KeyZ") window.Controllers.ZonesEditor.open();
+  else if ((shift || altShift) && code === "KeyR") window.Controllers.ReligionsEditor.open();
   else if ((shift || altShift) && code === "KeyY") openEmblemEditor();
-  else if ((shift || altShift) && code === "KeyQ") editUnits();
-  else if ((shift || altShift) && code === "KeyO") editNotes();
-  else if ((shift || altShift) && code === "KeyA") overviewCharts();
-  else if ((shift || altShift) && code === "KeyT") overviewBurgs();
-  else if ((shift || altShift) && code === "KeyU") overviewRoutes();
-  else if ((shift || altShift) && code === "KeyV") overviewRivers();
-  else if ((shift || altShift) && code === "KeyM") overviewMilitary();
-  else if ((shift || altShift) && code === "KeyK") overviewMarkers();
+  else if ((shift || altShift) && code === "KeyQ") window.Controllers.UnitsEditor.open();
+  else if ((shift || altShift) && code === "KeyO") window.Controllers.NotesEditor.open();
+  else if ((shift || altShift) && code === "KeyA") window.Controllers.ChartsOverview.open();
+  else if ((shift || altShift) && code === "KeyT") window.Controllers.BurgsOverview.open();
+  else if ((shift || altShift) && code === "KeyU") window.Controllers.RoutesOverview.open();
+  else if ((shift || altShift) && code === "KeyV") window.Controllers.RiversOverview.open();
+  else if ((shift || altShift) && code === "KeyM") window.Controllers.MilitaryOverview.open();
+  else if ((shift || altShift) && code === "KeyK") window.Controllers.MarkersOverview.open();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
+  else if ((shift || altShift) && code === "KeyG") window.Controllers.GoodsEditor.open();
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();
-  else if (key === "$") createRoute();
+  else if (key === "$") window.Controllers.RouteCreator.open();
   else if (key === "%") toggleAddMarker();
   else if (code === "KeyX") toggleTexture();
   else if (code === "KeyH") toggleHeight();
   else if (code === "KeyQ") toggleLakes();
   else if (code === "KeyB") toggleBiomes();
   else if (code === "KeyE") toggleCells();
-  else if (code === "KeyG") toggleGrid();
+  else if (code === "KeyG") toggleGoods();
+  else if (code === "Semicolon") toggleGrid();
   else if (code === "KeyO") toggleCoordinates();
   else if (code === "KeyW") toggleCompass();
   else if (code === "KeyV") toggleRivers();
@@ -91,6 +93,7 @@ function handleKeyup(event) {
   else if (code === "Slash") toggleScaleBar();
   else if (code === "BracketLeft" && !handleBracketSizeChange(code)) toggleVignette();
   else if (code === "BracketRight") handleBracketSizeChange(code);
+  else if (code === "Backquote") toggleTrade();
   else if (code === "ArrowLeft") zoom.translateBy(svg, 10, 0);
   else if (code === "ArrowRight") zoom.translateBy(svg, -10, 0);
   else if (code === "ArrowUp") zoom.translateBy(svg, 0, 10);
@@ -110,7 +113,7 @@ function handleKeyup(event) {
 }
 
 function allowHotkeys() {
-  const {tagName, contentEditable} = document.activeElement;
+  const { tagName, contentEditable } = document.activeElement;
   if (["INPUT", "SELECT", "TEXTAREA"].includes(tagName)) return false;
   if (tagName === "DIV" && contentEditable === "true") return false;
   if (document.getSelection().toString()) return false;
@@ -121,15 +124,15 @@ function allowHotkeys() {
 function handleSizeChange(key) {
   let brush = null;
 
-  if (ensureEl("heightmapBrushRadius").offsetParent) brush = ensureEl("heightmapBrushRadius");
-  else if (ensureEl("heightmapBrushPower").offsetParent) brush = ensureEl("heightmapBrushPower");
-  else if (ensureEl("heightmapLinePower").offsetParent) brush = ensureEl("heightmapLinePower");
-  else if (ensureEl("biomesBrush").offsetParent) brush = ensureEl("biomesBrush");
-  else if (document.getElementById("culturesBrush")?.offsetParent) brush = document.getElementById("culturesBrush");
-  else if (document.getElementById("statesBrush")?.offsetParent) brush = document.getElementById("statesBrush");
-  else if (ensureEl("provincesBrush").offsetParent) brush = ensureEl("provincesBrush");
-  else if (document.getElementById("religionsBrush")?.offsetParent) brush = document.getElementById("religionsBrush");
-  else if (ensureEl("zonesBrush").offsetParent) brush = ensureEl("zonesBrush");
+  if (findEl("heightmapBrushRadius")?.offsetParent) brush = findEl("heightmapBrushRadius");
+  else if (findEl("heightmapBrushPower")?.offsetParent) brush = findEl("heightmapBrushPower");
+  else if (findEl("heightmapLinePower")?.offsetParent) brush = findEl("heightmapLinePower");
+  else if (findEl("biomesBrush")?.offsetParent) brush = findEl("biomesBrush");
+  else if (findEl("culturesBrush")?.offsetParent) brush = findEl("culturesBrush");
+  else if (findEl("statesBrush")?.offsetParent) brush = findEl("statesBrush");
+  else if (findEl("provincesBrush")?.offsetParent) brush = findEl("provincesBrush");
+  else if (findEl("religionsBrush")?.offsetParent) brush = findEl("religionsBrush");
+  else if (findEl("zonesBrush")?.offsetParent) brush = findEl("zonesBrush");
 
   if (brush) {
     const change = key === "-" ? -5 : 5;
@@ -145,18 +148,18 @@ function handleSizeChange(key) {
 }
 
 function handleBracketSizeChange(code) {
-  const isHeightmapBrushPressed = Boolean(ensureEl("brushesButtons").querySelector("button.pressed"));
+  const isHeightmapBrushPressed = Boolean(findEl("brushesButtons")?.querySelector("button.pressed"));
   const hasActiveBrush =
     isHeightmapBrushPressed ||
-    ensureEl("heightmapBrushRadius").offsetParent ||
-    ensureEl("heightmapBrushPower").offsetParent ||
-    ensureEl("heightmapLinePower").offsetParent ||
-    ensureEl("biomesBrush").offsetParent ||
-    document.getElementById("culturesBrush")?.offsetParent ||
-    document.getElementById("statesBrush")?.offsetParent ||
-    ensureEl("provincesBrush").offsetParent ||
-    document.getElementById("religionsBrush")?.offsetParent ||
-    ensureEl("zonesBrush").offsetParent;
+    findEl("heightmapBrushRadius")?.offsetParent ||
+    findEl("heightmapBrushPower")?.offsetParent ||
+    findEl("heightmapLinePower")?.offsetParent ||
+    findEl("biomesBrush")?.offsetParent ||
+    findEl("culturesBrush")?.offsetParent ||
+    findEl("statesBrush")?.offsetParent ||
+    findEl("provincesBrush")?.offsetParent ||
+    findEl("religionsBrush")?.offsetParent ||
+    findEl("zonesBrush")?.offsetParent;
 
   if (!hasActiveBrush) return false;
 
@@ -165,11 +168,7 @@ function handleBracketSizeChange(code) {
 }
 
 function toggleMode() {
-  if (zonesRemove?.offsetParent) {
-    zonesRemove.classList.contains("pressed")
-      ? zonesRemove.classList.remove("pressed")
-      : zonesRemove.classList.add("pressed");
-  }
+  if (findEl("zonesRemove")) findEl("zonesRemove").classList.toggle("pressed");
 }
 
 function removeElementOnKey() {

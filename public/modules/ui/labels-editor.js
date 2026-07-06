@@ -1,5 +1,5 @@
 "use strict";
-
+// TODO: REMOVE this file when all label editing functionality is moved to the new file src/controllers/labels-editor.ts
 
 
 // Helper: find label data from the Labels data model for an SVG text element

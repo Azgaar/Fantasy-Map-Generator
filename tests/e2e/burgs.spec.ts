@@ -96,7 +96,7 @@ test.describe("Burgs.add", () => {
 
     // Open the burg editor
     await page.evaluate((id: number) => {
-      (window as any).editBurg(id);
+      (window as any).Controllers.BurgEditor.open(id);
     }, burgId!);
 
     // Wait for the editor dialog to appear

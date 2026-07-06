@@ -1,3 +1,4 @@
+import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 
 type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
@@ -48,10 +49,93 @@ export const getIntegerFromSI = (value: string): number => {
   return parseInt(value, 10);
 };
 
+/**
+ * Convert height value from generator scale to real-world height with unit
+ * @param {number} h - The height value from generator, [0, 100] scale
+ * @param {boolean} abs - Whether to return absolute height or signed height
+ * @returns {string} - The converted height with unit
+ */
+export function getHeight(h: number, abs = false): string {
+  const unit = ensureEl<HTMLSelectElement>("heightUnit").value;
+  let unitRatio = 3.281; // default calculations are in feet
+  if (unit === "m")
+    unitRatio = 1; // if meter
+  else if (unit === "f") unitRatio = 0.5468; // if fathom
+
+  let height = -990;
+  if (h >= 20) height = (h - 18) ** +heightExponentInput.value;
+  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
+
+  if (abs) height = Math.abs(height);
+  return `${rn(height * unitRatio)}${unit}`;
+}
+
+/**
+ * Format price value with currency symbol
+ * @param value - The price value to format
+ * @returns {string} - The formatted price string with money symbol
+ */
+export function formatPrice(value: number): string {
+  return `🟡 ${rn(value, 2)}`;
+}
+
+// in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_city_by_average_temperature
+const meanTempCityMap: Record<number, string> = {
+  [-5]: "Snag (Yukon)",
+  [-4]: "Yellowknife (Canada)",
+  [-3]: "Okhotsk (Russia)",
+  [-2]: "Fairbanks (Alaska)",
+  [-1]: "Nuuk (Greenland)",
+  0: "Murmansk (Russia)",
+  1: "Arkhangelsk (Russia)",
+  2: "Anchorage (Alaska)",
+  3: "Tromsø (Norway)",
+  4: "Reykjavik (Iceland)",
+  5: "Harbin (China)",
+  6: "Stockholm (Sweden)",
+  7: "Montreal (Canada)",
+  8: "Prague (Czechia)",
+  9: "Copenhagen (Denmark)",
+  10: "London (England)",
+  11: "Antwerp (Belgium)",
+  12: "Paris (France)",
+  13: "Milan (Italy)",
+  14: "Washington (D.C.)",
+  15: "Rome (Italy)",
+  16: "Dubrovnik (Croatia)",
+  17: "Lisbon (Portugal)",
+  18: "Barcelona (Spain)",
+  19: "Marrakesh (Morocco)",
+  20: "Alexandria (Egypt)",
+  21: "Tegucigalpa (Honduras)",
+  22: "Guangzhou (China)",
+  23: "Rio de Janeiro (Brazil)",
+  24: "Dakar (Senegal)",
+  25: "Miami (USA)",
+  26: "Jakarta (Indonesia)",
+  27: "Mogadishu (Somalia)",
+  28: "Bangkok (Thailand)",
+  29: "Niamey (Niger)",
+  30: "Khartoum (Sudan)"
+};
+
+/**
+ * Get a real-world city with a similar average yearly temperature
+ * @param temperature - Average yearly temperature in °C
+ * @returns {string | null} - Name of a city with a similar temperature
+ */
+export function getTemperatureLikeness(temperature: number): string | null {
+  if (temperature < -5) return "Yakutsk (Russia)";
+  if (temperature > 30) return "Mecca (Saudi Arabia)";
+  return meanTempCityMap[temperature] || null;
+}
+
 declare global {
   interface Window {
     convertTemperature: typeof convertTemperature;
     si: typeof si;
     getInteger: typeof getIntegerFromSI;
+    getHeight: typeof getHeight;
+    formatPrice: typeof formatPrice;
   }
 }
