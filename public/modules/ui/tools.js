@@ -287,7 +287,7 @@ function recreateStates() {
 
     // point the label to the renumbered state (element ids are label-based and stay valid)
     const lockedLabel = lockedStateLabels.get(state.i);
-    if (lockedLabel) Labels.update(lockedLabel.i, { stateId: newId });
+    if (lockedLabel) Labels.update(lockedLabel, { stateId: newId });
 
     // update emblem id reference
     document.getElementById(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);

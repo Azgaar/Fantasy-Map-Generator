@@ -1,6 +1,7 @@
 import { drag, pointer, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
+import { Labels } from "../generators/labels";
 import {
   convertTemperature,
   destroyDialogIfExists,
@@ -334,7 +335,7 @@ function dragBurgLabel(this: SVGTextElement, event: any): void {
     const [effectiveDx, effectiveDy] = [dx + dragEvent.x, dy + dragEvent.y];
     this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
     const label = Labels.getBurgLabel(+this.dataset.id!);
-    if (label) Labels.update(label.i, { dx: effectiveDx, dy: effectiveDy });
+    if (label) Labels.update(label, { dx: effectiveDx, dy: effectiveDy });
     tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warn");
   });
 }
@@ -346,7 +347,7 @@ function changeName(): void {
   selected!.text(value);
 
   const label = Labels.getBurgLabel(id);
-  if (label) Labels.update(label.i, { text: value });
+  if (label) Labels.update(label, { text: value });
 }
 
 function generateNameRandom(): void {
@@ -647,7 +648,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
 
-  if (label) Labels.update(label.i, { x, y, dx: 0, dy: 0 });
+  if (label) Labels.update(label, { x, y, dx: 0, dy: 0 });
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }

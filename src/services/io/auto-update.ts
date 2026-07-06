@@ -1,6 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
+import { Labels, STATE_LABELS_GROUP } from "@/generators/labels";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 import { extractPathPoints } from "@/utils/pathUtils";
 
@@ -1193,7 +1194,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
     // v1.133.0 moved labels data from SVG to data model
     // Migrate old SVG labels to pack.labels structure
     if (!pack.labels?.length) {
-      pack.labels = [];
+      Labels.clear();
 
       // Migrate state labels
       const stateLabelsGroup = document.querySelector("#labels > #states");
@@ -1230,11 +1231,9 @@ export function resolveVersionConflicts(mapVersion: string): void {
           const pathElement = document.querySelector<SVGPathElement>(`#${pathId}`);
           if (!pathElement) return;
 
-          pack.labels.push({
-            i: pack.labels.length,
-            type: "state",
+          Labels.addStateLabel({
             stateId,
-            group: "states",
+            group: STATE_LABELS_GROUP,
             text,
             pathPoints: extractPathPoints(pathElement),
             startOffset,
@@ -1274,9 +1273,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
             const x = burg.x;
             const y = burg.y;
 
-            pack.labels.push({
-              i: pack.labels.length,
-              type: "burg",
+            Labels.addBurgLabel({
               burgId,
               group,
               text,
@@ -1317,9 +1314,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
           const pathElement = document.querySelector<SVGPathElement>(`#${pathId}`);
           if (!pathElement) return;
 
-          pack.labels.push({
-            i: pack.labels.length,
-            type: "custom",
+          Labels.addCustomLabel({
             group,
             text,
             pathPoints: extractPathPoints(pathElement),

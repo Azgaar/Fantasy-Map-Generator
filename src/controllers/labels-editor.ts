@@ -1,7 +1,7 @@
 import { curveNatural, drag, line, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
-import { type CustomLabel, isPathLabel, type StateLabel } from "../generators/labels";
-import { removePathLabel } from "../renderers/draw-path-label";
+import { type CustomLabel, isPathLabel, Labels, type StateLabel } from "../generators/labels";
+import { removeLabel as removeLabelElements } from "../renderers/draw-labels";
 import { destroyDialogIfExists, ensureEl, findEl, parseTransform, round } from "../utils";
 import { extractPathPoints } from "../utils/pathUtils";
 
@@ -275,7 +275,7 @@ function redrawLabelPath(): void {
   debug.select("#controlPoints > path").attr("d", d);
 
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { pathPoints: points });
+  if (labelData) Labels.update(labelData, { pathPoints: points });
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -330,7 +330,7 @@ function dragLabel(event: any): void {
     debug.select("#controlPoints").attr("transform", transform);
 
     const labelData = getLabelData();
-    if (labelData) Labels.update(labelData.i, { dx: effectiveDx, dy: effectiveDy });
+    if (labelData) Labels.update(labelData, { dx: effectiveDx, dy: effectiveDy });
   });
 }
 
@@ -350,7 +350,7 @@ function hideGroupSection(): void {
 function changeGroup(this: HTMLSelectElement): void {
   ensureEl(this.value).appendChild(elSelected.node()!);
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { group: this.value });
+  if (labelData) Labels.update(labelData, { group: this.value });
 }
 
 function toggleNewGroupInput(): void {
@@ -391,7 +391,7 @@ function createNewGroup(this: HTMLInputElement): void {
   if (oldGroup.id !== "states" && oldGroup.id !== "addedLabels" && oldGroup.childElementCount === 1) {
     ensureEl<HTMLSelectElement>("labelGroupSelect").selectedOptions[0].remove();
     ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-    for (const label of Labels.getByGroup(oldGroup.id)) Labels.update(label.i, { group });
+    for (const label of Labels.getByGroup(oldGroup.id)) Labels.update(label, { group });
     oldGroup.id = group;
     toggleNewGroupInput();
     ensureEl<HTMLInputElement>("labelGroupInput").value = "";
@@ -405,7 +405,7 @@ function createNewGroup(this: HTMLInputElement): void {
   ensureEl(group).appendChild(elSelected.node()!);
 
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { group });
+  if (labelData) Labels.update(labelData, { group });
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("labelGroupInput").value = "";
@@ -465,7 +465,7 @@ function changeText(): void {
   } else el.innerHTML = `<tspan x="0">${lines}</tspan>`;
 
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { text: input });
+  if (labelData) Labels.update(labelData, { text: input });
 
   if (labelData?.type === "state")
     tip("Use States Editor to change an actual state name, not just a label", false, "warn");
@@ -538,14 +538,14 @@ function changeStartOffsetFromValue(this: HTMLInputElement): void {
 function setStartOffset(value: number): void {
   elSelected.select("textPath").attr("startOffset", `${value}%`);
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { startOffset: value });
+  if (labelData) Labels.update(labelData, { startOffset: value });
   tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
   elSelected.select("textPath").attr("font-size", `${this.value}%`);
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { fontSize: +this.value });
+  if (labelData) Labels.update(labelData, { fontSize: +this.value });
   tip(`Label relative size: ${this.value}%`);
   changeText();
 }
@@ -553,7 +553,7 @@ function changeRelativeSize(this: HTMLInputElement): void {
 function changeLetterSpacingSize(this: HTMLInputElement): void {
   elSelected.select("textPath").attr("letter-spacing", `${this.value}px`);
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { letterSpacing: +this.value });
+  if (labelData) Labels.update(labelData, { letterSpacing: +this.value });
   tip(`Label letter-spacing size: ${this.value}px`);
   changeText();
 }
@@ -566,7 +566,7 @@ function editLabelAlign(): void {
   drawControlPointsAndLine();
 
   const labelData = getLabelData();
-  if (labelData) Labels.update(labelData.i, { pathPoints: extractPathPoints(path.node() as SVGPathElement) });
+  if (labelData) Labels.update(labelData, { pathPoints: extractPathPoints(path.node() as SVGPathElement) });
 }
 
 function editLabelLegend(): void {
@@ -585,8 +585,8 @@ function removeLabel(): void {
         $(this).dialog("close");
         const labelData = getLabelData();
         if (labelData) {
-          Labels.remove(labelData.i);
-          removePathLabel(labelData);
+          Labels.remove(labelData);
+          removeLabelElements(labelData);
         } else {
           select<SVGElement, unknown>("#deftemp")
             .select(`#textPath_${elSelected.attr("id")}`)

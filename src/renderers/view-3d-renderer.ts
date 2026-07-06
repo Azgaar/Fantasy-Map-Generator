@@ -1,4 +1,5 @@
 import type * as THREE from "three";
+import { Labels } from "@/generators/labels";
 import { Services } from "@/services";
 import { timeOfDayPresets } from "../data/view-3d-options";
 import { minmax, rn, throttle } from "../utils";

@@ -1,9 +1,3 @@
-import { drawBurgLabel } from "../renderers/draw-burg-labels";
-
-declare global {
-  var Labels: LabelsModule;
-}
-
 // SVG group id state labels are rendered into
 export const STATE_LABELS_GROUP = "states";
 
@@ -100,6 +94,13 @@ class LabelsModule {
     return pack.labels.filter(l => l.group === group);
   }
 
+  getByType(type: "state"): StateLabel[];
+  getByType(type: "burg"): BurgLabel[];
+  getByType(type: "custom"): CustomLabel[];
+  getByType(type: LabelData["type"]): LabelData[] {
+    return pack.labels.filter(l => l.type === type);
+  }
+
   getBurgLabel(burgId: number): BurgLabel | undefined {
     return pack.labels.find((l): l is BurgLabel => l.type === "burg" && l.burgId === burgId);
   }
@@ -116,7 +117,7 @@ class LabelsModule {
     );
   }
 
-  private addStateLabel(data: Omit<StateLabel, "i" | "type">): StateLabel {
+  addStateLabel(data: Omit<StateLabel, "i" | "type">): StateLabel {
     const label: StateLabel = {
       ...data,
       i: this.getNextId(),
@@ -129,7 +130,6 @@ class LabelsModule {
   addBurgLabel(data: Omit<BurgLabel, "i" | "type">): BurgLabel {
     const label: BurgLabel = { ...data, i: this.getNextId(), type: "burg" };
     pack.labels.push(label);
-    drawBurgLabel(label);
     return label;
   }
 
@@ -143,16 +143,20 @@ class LabelsModule {
     return label;
   }
 
-  update(id: number, updates: Partial<LabelData>): void {
-    const label = pack.labels.find(l => l.i === id);
+  update<T extends LabelData>(label: T, updates: Partial<T>): T;
+  update(id: number, updates: Partial<LabelData>): LabelData | undefined;
+  update(target: number | LabelData, updates: Partial<LabelData>): LabelData | undefined {
+    const label = typeof target === "number" ? pack.labels.find(l => l.i === target) : target;
     if (!label) {
-      ERROR && console.error(`Label with id ${id} was not found for update.`);
-      return;
+      ERROR && console.error(`Label with id ${target} was not found for update.`);
+      return undefined;
     }
     Object.assign(label, updates, { i: label.i, type: label.type });
+    return label;
   }
 
-  remove(id: number): void {
+  remove(target: number | LabelData): void {
+    const id = typeof target === "number" ? target : target.i;
     const index = pack.labels.findIndex(l => l.i === id);
     if (index === -1) return;
     this.freeIds.add(id);
@@ -174,10 +178,18 @@ class LabelsModule {
     this.initialized = false;
   }
 
+  // replace all labels from deserialized data and reset id bookkeeping
+  load(labels: LabelData[]): void {
+    pack.labels = labels;
+    this.freeIds.clear();
+    this.maxId = 0;
+    this.initialized = false;
+  }
+
   /**
-   * Generate state labels data entries for each state.
-   * Only stores essential label data; raycast path calculation happens during rendering.
-   * @param list - Optional array of stateIds to regenerate only those
+   * Generate state labels data entries for each non-locked state.
+   * Only stores essential label data; raycast path calculation happens during the fitting pass.
+   * Labels of locked states are kept as they are.
    */
   generateStateLabels(): void {
     if (TIME) console.time("generateStateLabels");
@@ -229,4 +241,5 @@ class LabelsModule {
   }
 }
 
-window.Labels = new LabelsModule();
+export const Labels = new LabelsModule();
+window.Labels = Labels;

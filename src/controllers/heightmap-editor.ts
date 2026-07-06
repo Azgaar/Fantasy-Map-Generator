@@ -1,5 +1,6 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, pointer, range, select } from "d3";
 import { Controllers } from "@/controllers";
+import { Labels } from "@/generators/labels";
 import {
   destroyDialogIfExists,
   ensureEl,

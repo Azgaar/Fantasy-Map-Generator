@@ -1,5 +1,8 @@
+// NOTE: deliberate exception to "renderers must not modify world state" — this is a LAYOUT PASS.
+// Fitting needs DOM text measurement, and its results (pathPoints, text, fontSize) are derived
+// layout data that must be stored in the data model so labels serialize and redraw without refitting.
 import { max, select } from "d3";
-import type { StateLabel } from "@/generators/labels";
+import { Labels, type StateLabel } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
@@ -52,12 +55,12 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
 
   const pathPoints: [number, number][] = [[ray1.x, ray1.y], state.pole!, [ray2.x, ray2.y]];
   if (ray1.x > ray2.x) pathPoints.reverse();
-  Labels.update(labelData.i, { pathPoints });
+  Labels.update(labelData, { pathPoints });
 
   const pathElement = upsertLabelPath(labelData);
   const pathLength = pathElement.getTotalLength() / letterLength; // path length in letters
   const [lines, ratio] = getLinesAndRatio(mode, state.name!, state.fullName!, pathLength);
-  Labels.update(labelData.i, { text: lines.join("|"), fontSize: ratio });
+  Labels.update(labelData, { text: lines.join("|"), fontSize: ratio });
 
   // prolongate path if it's too short
   const longestLineLength = max(lines.map(line => line.length)) || 0;
@@ -70,7 +73,7 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
     pathPoints[0] = [x1 + dx - dx * mod, y1 + dy - dy * mod];
     pathPoints[pathPoints.length - 1] = [x2 - dx + dx * mod, y2 - dy + dy * mod];
 
-    Labels.update(labelData.i, { pathPoints });
+    Labels.update(labelData, { pathPoints });
     upsertLabelPath(labelData);
   }
 
@@ -90,7 +93,7 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
   // replace name to one-liner
   const text = pathLength > state.fullName!.length * 1.8 ? state.fullName! : state.name!;
   const correctedRatio = minmax(rn((pathLength / text.length) * 50), 50, 130);
-  Labels.update(labelData.i, { text, fontSize: correctedRatio });
+  Labels.update(labelData, { text, fontSize: correctedRatio });
   drawPathLabel(labelData);
 }
 

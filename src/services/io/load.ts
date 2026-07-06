@@ -1,3 +1,4 @@
+import { Labels } from "@/generators/labels";
 import { Services } from "@/services";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
@@ -454,7 +455,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
-    pack.labels = data[46] ? JSON.parse(data[46]) : [];
+    Labels.load(data[46] ? JSON.parse(data[46]) : []);
 
     if (data[31]) {
       const namesDL = data[31].split("/");

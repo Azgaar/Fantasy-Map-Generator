@@ -1,9 +1,9 @@
 import { color, drag, interpolateString, max, pack as packLayout, pointer, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { Labels } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import { drawBurgLabel } from "@/renderers/draw-burg-labels";
-import { removePathLabel } from "@/renderers/draw-path-label";
+import { drawLabel, removeLabel } from "@/renderers/draw-labels";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -666,8 +666,8 @@ function stateChangeCapitalName(state: number, line: HTMLElement, value: string)
   pack.burgs[capital].name = value;
   const label = Labels.getBurgLabel(capital);
   if (label) {
-    Labels.update(label.i, { text: value });
-    drawBurgLabel(label);
+    Labels.update(label, { text: value });
+    drawLabel(label);
   }
 }
 
@@ -863,8 +863,8 @@ function stateRemovePrompt(state: number): void {
 function removeStateLabel(stateId: number): void {
   const label = Labels.getStateLabel(stateId);
   if (!label) return;
-  Labels.remove(label.i);
-  removePathLabel(label);
+  Labels.remove(label);
+  removeLabel(label);
 }
 
 function stateRemove(stateId: number): void {

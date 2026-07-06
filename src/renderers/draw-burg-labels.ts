@@ -1,4 +1,4 @@
-import type { BurgLabel } from "@/generators/labels";
+import { type BurgLabel, Labels } from "@/generators/labels";
 
 // remove this section once layer.js is refactored--------------------------------
 declare global {
@@ -14,8 +14,7 @@ export function drawBurgLabelsRenderer(): void {
 
   // Get all burg labels grouped by group name
   const burgLabelsByGroup = new Map<string, BurgLabel[]>();
-  for (const label of Labels.getAll()) {
-    if (label.type !== "burg") continue;
+  for (const label of Labels.getByType("burg")) {
     if (!burgLabelsByGroup.has(label.group)) {
       burgLabelsByGroup.set(label.group, []);
     }

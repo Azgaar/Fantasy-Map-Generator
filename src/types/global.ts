@@ -272,6 +272,7 @@ declare global {
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;
+  var Labels: typeof import("@/generators/labels").Labels;
   var drawStateLabels: (ids?: number[]) => void;
   var fitStateLabels: (ids?: number[]) => void;
   var drawCustomLabels: () => void;
