@@ -273,6 +273,7 @@ declare global {
   var drawBorders: () => void;
   var drawProvinces: () => void;
   var drawStateLabels: (ids?: number[]) => void;
+  var fitStateLabels: (ids?: number[]) => void;
   var drawPopulation: () => void;
 
   var toggleCultures: () => void;

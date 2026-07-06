@@ -511,7 +511,7 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) drawStateLabels([s.i]);
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) fitStateLabels([s.i]);
     refreshStatesEditor();
   }
 }
@@ -1131,7 +1131,7 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels();
+  if (ensureEl<HTMLInputElement>("adjustLabels").checked) fitStateLabels();
 
   refreshStatesEditor();
 }
@@ -1288,7 +1288,7 @@ function applyStatesManualAssignent(): void {
     refreshStatesEditor();
     States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
-    if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels([...new Set(affectedStates)]);
+    if (ensureEl<HTMLInputElement>("adjustLabels").checked) fitStateLabels([...new Set(affectedStates)]);
     adjustProvinces([...new Set(affectedProvinces)]);
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     if (layerIsOn("toggleProvinces")) drawProvinces();
@@ -1597,7 +1597,8 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  drawStateLabels([newState]);
+  Labels.ensureStateLabel(newState);
+  fitStateLabels([newState]);
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
   layerIsOn("toggleProvinces") && toggleProvinces();
@@ -1797,7 +1798,7 @@ function openStateMergeDialog(): void {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
-    drawStateLabels([rulingStateId]);
+    fitStateLabels([rulingStateId]);
 
     refreshStatesEditor();
   }

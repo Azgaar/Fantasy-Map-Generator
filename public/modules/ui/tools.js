@@ -185,6 +185,7 @@ function regenerateStates() {
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 
+  Labels.generateStateLabels();
   drawStateLabels();
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();

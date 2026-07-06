@@ -4,45 +4,49 @@ declare global {
   var Labels: LabelsModule;
 }
 
-export interface StateLabel {
+// attributes every label shares, regardless of how it is rendered
+export interface BaseLabel {
   i: number;
-  type: "state";
-  stateId: number;
   text: string;
+  dx?: number;
+  dy?: number;
+}
+
+// label rendered along an SVG textPath; pathPoints may be absent until a fitting pass stores them
+export interface PathLabel extends BaseLabel {
   pathPoints?: [number, number][];
   startOffset?: number;
   fontSize?: number;
   letterSpacing?: number;
-  dx?: number;
-  dy?: number;
 }
 
-export interface BurgLabel {
-  i: number;
+// label anchored to a single map point
+export interface PointLabel extends BaseLabel {
+  x: number;
+  y: number;
+}
+
+export interface StateLabel extends PathLabel {
+  type: "state";
+  stateId: number;
+}
+
+export interface BurgLabel extends PointLabel {
   type: "burg";
   burgId: number;
   group: string;
-  text: string;
-  x: number;
-  y: number;
-  dx?: number;
-  dy?: number;
 }
 
-export interface CustomLabel {
-  i: number;
+export interface CustomLabel extends PathLabel {
   type: "custom";
   group: string;
-  text: string;
   pathPoints: [number, number][];
-  startOffset?: number;
-  fontSize?: number;
-  letterSpacing?: number;
-  dx?: number;
-  dy?: number;
 }
 
 export type LabelData = StateLabel | BurgLabel | CustomLabel;
+
+export const isPathLabel = (label: LabelData): label is StateLabel | CustomLabel =>
+  label.type === "state" || label.type === "custom";
 
 class LabelsModule {
   private freeIds: Set<number> = new Set();
@@ -98,6 +102,17 @@ class LabelsModule {
 
   getBurgLabel(burgId: number): BurgLabel | undefined {
     return pack.labels.find((l): l is BurgLabel => l.type === "burg" && l.burgId === burgId);
+  }
+
+  getStateLabel(stateId: number): StateLabel | undefined {
+    return pack.labels.find((l): l is StateLabel => l.type === "state" && l.stateId === stateId);
+  }
+
+  // get the label for a state, creating it if missing (e.g. for a newly created state)
+  ensureStateLabel(stateId: number): StateLabel {
+    return (
+      this.getStateLabel(stateId) ?? this.addStateLabel({ stateId, text: pack.states[stateId].name!, fontSize: 100 })
+    );
   }
 
   private addStateLabel(data: Omit<StateLabel, "i" | "type">): StateLabel {

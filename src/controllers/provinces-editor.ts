@@ -513,7 +513,7 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.findNeighbors();
   States.collectStatistics();
   States.defineStateForms(newStates);
-  drawStateLabels(allStates);
+  fitStateLabels(allStates);
 
   // redraw emblems
   allStates.forEach(stateId => {
