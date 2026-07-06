@@ -42,6 +42,9 @@ export function drawBurgLabelsRenderer(): void {
       textElement.setAttribute("y", labelData.y.toString());
       textElement.setAttribute("dx", `${dx}em`);
       textElement.setAttribute("dy", `${dy}em`);
+      if (labelData.dx || labelData.dy) {
+        textElement.setAttribute("transform", `translate(${labelData.dx || 0},${labelData.dy || 0})`);
+      }
       textElement.textContent = labelData.text;
       labelsHTML.push(textElement);
     }
@@ -69,7 +72,7 @@ export function drawBurgLabel(burgLabel: BurgLabel): void {
   const dx = dxAttr ? parseFloat(dxAttr) : 0;
   const dy = dyAttr ? parseFloat(dyAttr) : 0;
 
-  const existingLabel = document.getElementById(`burgLabel${burgLabel.burgId}`);
+  const existingLabel = document.getElementById(`burgLabel${burgLabel.i}`);
   if (existingLabel) existingLabel.remove();
 
   // Render to SVG
@@ -82,11 +85,12 @@ export function drawBurgLabel(burgLabel: BurgLabel): void {
     .attr("y", burgLabel.y)
     .attr("dx", `${dx}em`)
     .attr("dy", `${dy}em`)
+    .attr("transform", burgLabel.dx || burgLabel.dy ? `translate(${burgLabel.dx || 0},${burgLabel.dy || 0})` : null)
     .text(burgLabel.text);
 }
 
 export function removeBurgLabel(burgId: number): void {
-  const existingLabel = document.getElementById(`burgLabel${burgId}`);
+  const existingLabel = document.querySelector(`#burgLabels [data-id='${burgId}']`);
   if (existingLabel) existingLabel.remove();
 }
 

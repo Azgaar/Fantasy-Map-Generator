@@ -331,8 +331,10 @@ function dragBurgLabel(this: SVGTextElement, event: any): void {
   const dy = +tr[1] - event.y;
 
   event.on("drag", function (this: SVGTextElement, dragEvent: any) {
-    const { x, y } = dragEvent;
-    this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
+    const [effectiveDx, effectiveDy] = [dx + dragEvent.x, dy + dragEvent.y];
+    this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
+    const label = Labels.getBurgLabel(+this.dataset.id!);
+    if (label) Labels.update(label.i, { dx: effectiveDx, dy: effectiveDy });
     tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warn");
   });
 }
@@ -342,6 +344,9 @@ function changeName(): void {
   const value = ensureEl<HTMLInputElement>("burgName").value;
   pack.burgs[id].name = value;
   selected!.text(value);
+
+  const label = Labels.getBurgLabel(id);
+  if (label) Labels.update(label.i, { text: value });
 }
 
 function generateNameRandom(): void {
@@ -621,8 +626,9 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
 
+  const label = Labels.getBurgLabel(id);
   burgIcons.select(`#burg${id}`).attr("x", x).attr("y", y);
-  burgLabels.select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
+  if (label) burgLabels.select(`#burgLabel${label.i}`).attr("transform", null).attr("x", x).attr("y", y);
 
   const anchor = anchors.select(`use[data-id='${id}']`);
   if (anchor.size()) {
@@ -640,6 +646,8 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.x = x;
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
+
+  if (label) Labels.update(label.i, { x, y, dx: 0, dy: 0 });
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }

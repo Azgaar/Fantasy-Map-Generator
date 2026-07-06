@@ -3,7 +3,6 @@ import { drawBurgLabel, removeBurgLabel } from "../renderers/draw-burg-labels";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
-import type { BurgLabel } from "./labels";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
@@ -766,12 +765,11 @@ class BurgModule {
     }
 
     drawBurgIcon(burg);
-    const labelToChange = Labels.getAll()
-      .filter(l => l.type === "burg" && l.burgId === burg.i)
-      .at(0);
-    // Typescript cannot infer that labelToChange is guranteed to be a BurgLabel through the type check above.
-    // It can be cast without any issue.
-    if (labelToChange) drawBurgLabel(labelToChange as unknown as BurgLabel);
+    const label = Labels.getBurgLabel(burg.i!);
+    if (label) {
+      Labels.update(label.i, { group: burg.group });
+      drawBurgLabel(label);
+    }
   }
 
   remove(burgId: number) {
@@ -791,7 +789,7 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    const label = Labels.getAll().find(l => l.type === "burg" && l.burgId === burgId);
+    const label = Labels.getBurgLabel(burgId);
     if (label) Labels.remove(label.i);
     removeBurgLabel(burgId);
   }

@@ -1,5 +1,5 @@
 import { curveNatural, line } from "d3";
-import type { CustomLabel } from "../modules/labels";
+import type { CustomLabel } from "@/generators/labels";
 
 // remove this section once layer.js is refactored--------------------------------
 declare global {

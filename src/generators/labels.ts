@@ -90,8 +90,14 @@ class LabelsModule {
     return pack.labels.find(l => l.i === id);
   }
 
-  getByGroup(group: string): LabelData[] {
-    return pack.labels.filter(l => (l.type === "burg" || l.type === "custom") && l.group === group);
+  getByGroup(group: string): (BurgLabel | CustomLabel)[] {
+    return pack.labels.filter(
+      (l): l is BurgLabel | CustomLabel => (l.type === "burg" || l.type === "custom") && l.group === group
+    );
+  }
+
+  getBurgLabel(burgId: number): BurgLabel | undefined {
+    return pack.labels.find((l): l is BurgLabel => l.type === "burg" && l.burgId === burgId);
   }
 
   private addStateLabel(data: Omit<StateLabel, "i" | "type">): StateLabel {

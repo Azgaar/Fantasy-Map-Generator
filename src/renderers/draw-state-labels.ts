@@ -1,6 +1,6 @@
 import { curveNatural, line, max, select } from "d3";
-import type { StateLabel } from "../modules/labels";
-import type { TypedArray } from "../types/PackedGraph";
+import type { StateLabel } from "@/generators/labels";
+import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, round, splitInTwo } from "../utils";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
