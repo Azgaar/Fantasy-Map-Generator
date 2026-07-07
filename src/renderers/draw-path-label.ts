@@ -30,16 +30,17 @@ export function ensureLabelGroup(group: string): SVGGElement {
   return container;
 }
 
-// build a detached defs path element the label text follows
-function buildLabelPath(label: RenderablePathLabel): SVGPathElement {
+// build a detached defs path element the label text follows;
+// pathId overrides the default id so measurement copies don't collide with rendered elements
+function buildLabelPath(label: RenderablePathLabel, pathId?: string): SVGPathElement {
   const pathElement = document.createElementNS(SVG_NS, "path");
-  pathElement.setAttribute("id", getPathId(label));
+  pathElement.setAttribute("id", pathId ?? getPathId(label));
   pathElement.setAttribute("d", lineGen(label.pathPoints || []) || "");
   return pathElement;
 }
 
 // build a detached text element referencing the label's path
-function buildLabelText(label: RenderablePathLabel): SVGTextElement {
+function buildLabelText(label: RenderablePathLabel, pathId?: string): SVGTextElement {
   const lines = label.text.split("|");
   const tspans = lines.map((lineText, index) => {
     const tspan = document.createElementNS(SVG_NS, "tspan");
@@ -50,7 +51,7 @@ function buildLabelText(label: RenderablePathLabel): SVGTextElement {
   });
 
   const textPath = document.createElementNS(SVG_NS, "textPath");
-  textPath.setAttribute("href", `#${getPathId(label)}`);
+  textPath.setAttribute("href", `#${pathId ?? getPathId(label)}`);
   textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
   textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
   if (label.letterSpacing) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
@@ -58,7 +59,7 @@ function buildLabelText(label: RenderablePathLabel): SVGTextElement {
 
   const textElement = document.createElementNS(SVG_NS, "text");
   textElement.setAttribute("text-rendering", "optimizeSpeed");
-  textElement.setAttribute("id", getPathLabelElementId(label));
+  textElement.setAttribute("id", pathId ? `${pathId}_text` : getPathLabelElementId(label));
   if (label.dx || label.dy) {
     textElement.setAttribute("transform", `translate(${label.dx || 0}, ${label.dy || 0})`);
   }
@@ -67,9 +68,13 @@ function buildLabelText(label: RenderablePathLabel): SVGTextElement {
   return textElement;
 }
 
-// build both detached elements for batched insertion by bulk renderers
-export function buildPathLabelElements(label: RenderablePathLabel): { text: SVGTextElement; path: SVGPathElement } {
-  return { text: buildLabelText(label), path: buildLabelPath(label) };
+// build both detached elements for batched insertion by bulk renderers;
+// pass pathId to get a measurement copy whose ids don't collide with rendered elements
+export function buildPathLabelElements(
+  label: RenderablePathLabel,
+  pathId?: string
+): { text: SVGTextElement; path: SVGPathElement } {
+  return { text: buildLabelText(label, pathId), path: buildLabelPath(label, pathId) };
 }
 
 // create or update the defs path in the DOM; returns the attached path element

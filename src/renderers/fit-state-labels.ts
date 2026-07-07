@@ -1,19 +1,25 @@
 // NOTE: deliberate exception to "renderers must not modify world state" — this is a LAYOUT PASS.
 // Fitting needs DOM text measurement, and its results (pathPoints, text, fontSize) are derived
 // layout data that must be stored in the data model so labels serialize and redraw without refitting.
-import { max, select } from "d3";
+// It writes DATA ONLY: measurements run against throwaway elements in a hidden sandbox,
+// nothing is rendered — the caller renders afterwards via drawStateLabels.
+import { max } from "d3";
 import { Labels, type StateLabel } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
 import { getStateLabels } from "./draw-labels";
-import { drawPathLabel, upsertLabelPath } from "./draw-path-label";
+import { buildPathLabelElements, ensureLabelGroup } from "./draw-path-label";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+const MEASURE_PATH_ID = "measureLabelPath";
 
 /**
  * Fit state labels into their state borders and store the result (pathPoints, text, fontSize)
- * in the Labels data model, then render. Overwrites manual label edits — call it when the
- * underlying state changed (name, borders), not for a plain redraw.
+ * in the Labels data model. Does NOT render — call drawStateLabels afterwards to see the result.
+ * Overwrites manual label edits — call it when the underlying state changed (name, borders),
+ * not for a plain redraw.
  * list - optional array of stateIds to refit
  */
 export const fitStateLabels = (list?: number[]): void => {
@@ -23,25 +29,41 @@ export const fitStateLabels = (list?: number[]): void => {
 };
 
 export function fitLabels(labelDataList: StateLabel[]): void {
-  // temporary make the labels visible for text measurements
-  const layerDisplay = labels.style("display");
-  labels.style("display", null);
+  const sandbox = createMeasurementSandbox("states");
 
-  const { states } = pack;
-  const mode = options.stateLabelsMode || "auto";
-  const letterLength = checkExampleLetterLength();
+  try {
+    const { states } = pack;
+    const mode = options.stateLabelsMode || "auto";
+    const letterLength = checkExampleLetterLength(sandbox);
 
-  for (const labelData of labelDataList) {
-    const state = states[labelData.stateId];
-    if (!state?.i || state.removed) continue;
-    fitLabel(labelData, state, letterLength, mode);
+    for (const labelData of labelDataList) {
+      const state = states[labelData.stateId];
+      if (!state?.i || state.removed) continue;
+      fitLabel(labelData, state, letterLength, mode, sandbox);
+    }
+  } finally {
+    sandbox.remove();
   }
-
-  // restore labels visibility
-  labels.style("display", layerDisplay);
 }
 
-function fitLabel(labelData: StateLabel, state: State, letterLength: number, mode: string): void {
+// hidden group at the svg root carrying the label group's computed font context, so
+// measurements match the real render even while the labels layer itself is display:none
+function createMeasurementSandbox(group: string): SVGGElement {
+  const sandbox = document.createElementNS(SVG_NS, "g");
+  sandbox.id = "labelMeasurement";
+  // visibility (not display): getBBox/getComputedTextLength need layout to be computed
+  sandbox.style.visibility = "hidden";
+
+  const groupStyle = getComputedStyle(ensureLabelGroup(group));
+  sandbox.setAttribute("font-family", groupStyle.fontFamily);
+  sandbox.setAttribute("font-size", groupStyle.fontSize);
+  sandbox.setAttribute("letter-spacing", groupStyle.letterSpacing);
+
+  document.getElementById("map")!.appendChild(sandbox);
+  return sandbox;
+}
+
+function fitLabel(labelData: StateLabel, state: State, letterLength: number, mode: string, sandbox: SVGGElement): void {
   // calculate pathPoints using raycast algorithm
   const offset = getOffsetWidth(state.cells!);
   const maxLakeSize = state.cells! / 20;
@@ -57,7 +79,7 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
   if (ray1.x > ray2.x) pathPoints.reverse();
   Labels.update(labelData, { pathPoints });
 
-  const pathElement = upsertLabelPath(labelData);
+  const pathElement = measureLabelPath(labelData, sandbox);
   const pathLength = pathElement.getTotalLength() / letterLength; // path length in letters
   const [lines, ratio] = getLinesAndRatio(mode, state.name!, state.fullName!, pathLength);
   Labels.update(labelData, { text: lines.join("|"), fontSize: ratio });
@@ -74,25 +96,40 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
     pathPoints[pathPoints.length - 1] = [x2 - dx + dx * mod, y2 - dy + dy * mod];
 
     Labels.update(labelData, { pathPoints });
-    upsertLabelPath(labelData);
+    measureLabelPath(labelData, sandbox);
   }
 
-  const textElement = drawPathLabel(labelData);
   if (mode === "full" || lines.length === 1) return;
 
   // check if label fits state boundaries. If no, replace it with short name
+  const textElement = measureLabelText(labelData, sandbox);
   const { width, height } = textElement.getBBox();
   const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
   const angleRad = Math.atan2(y2 - y1, x2 - x1);
 
   const isInsideState = checkIfInsideState(textElement, angleRad, width / 2, height / 2, labelData.stateId);
+  textElement.remove();
   if (isInsideState) return;
 
   // replace name to one-liner
   const text = pathLength > state.fullName!.length * 1.8 ? state.fullName! : state.name!;
   const correctedRatio = minmax(rn((pathLength / text.length) * 50), 50, 130);
   Labels.update(labelData, { text, fontSize: correctedRatio });
-  drawPathLabel(labelData);
+}
+
+// create or update the sandbox measurement path for the label's current pathPoints
+function measureLabelPath(label: StateLabel, sandbox: SVGGElement): SVGPathElement {
+  const { path } = buildPathLabelElements(label, MEASURE_PATH_ID);
+  sandbox.querySelector(`#${MEASURE_PATH_ID}`)?.remove();
+  sandbox.appendChild(path);
+  return path;
+}
+
+// attach a measurement copy of the label's text to the sandbox; caller removes it after measuring
+function measureLabelText(label: StateLabel, sandbox: SVGGElement): SVGTextElement {
+  const { text } = buildPathLabelElements(label, MEASURE_PATH_ID);
+  sandbox.appendChild(text);
+  return text;
 }
 
 /**
@@ -104,10 +141,13 @@ function getOffsetWidth(cellsNumber: number): number {
   return 10;
 }
 
-function checkExampleLetterLength(): number {
-  const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-  const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
-  const letterLength = (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
+function checkExampleLetterLength(sandbox: SVGGElement): number {
+  const testLabel = document.createElementNS(SVG_NS, "text");
+  testLabel.setAttribute("x", "0");
+  testLabel.setAttribute("y", "0");
+  testLabel.textContent = "Example";
+  sandbox.appendChild(testLabel);
+  const letterLength = testLabel.getComputedTextLength() / 7; // approximate length of 1 letter
   testLabel.remove();
 
   return letterLength;

@@ -36,7 +36,7 @@ export function getStateLabels(list?: number[]): StateLabel[] {
 
 /**
  * Render state labels from pack.labels data to SVG.
- * Labels without stored pathPoints (not fitted yet) are fitted first;
+ * Labels without stored pathPoints (not fitted yet) are fitted (data-only) first;
  * already fitted labels are drawn as-is, preserving user edits.
  * list - optional array of stateIds to re-render
  */
@@ -48,13 +48,13 @@ export function drawStateLabels(list?: number[]): void {
   const unfitted = stateLabels.filter(label => !label.pathPoints?.length);
   if (unfitted.length) fitLabels(unfitted);
 
-  const fitted = stateLabels.filter(label => {
-    if (unfitted.includes(label)) return false; // drawn by the fitting pass
+  const drawable = stateLabels.filter(label => {
+    if (!label.pathPoints?.length) return false; // fitting skipped it (invalid state)
     const state = states[label.stateId];
     return Boolean(state?.i) && !state.removed;
   });
 
-  drawPathLabelsBatch(fitted);
+  drawPathLabelsBatch(drawable);
   TIME && console.timeEnd("drawStateLabels");
 }
 

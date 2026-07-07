@@ -514,6 +514,7 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.collectStatistics();
   States.defineStateForms(newStates);
   fitStateLabels(allStates);
+  drawStateLabels(allStates);
 
   // redraw emblems
   allStates.forEach(stateId => {
