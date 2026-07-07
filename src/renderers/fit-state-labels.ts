@@ -78,8 +78,6 @@ function fitLabel(labelData: StateLabel, state: State, letterLength: number, mod
   }
 
   const textElement = drawPathLabel(labelData);
-  if (!textElement) return;
-
   if (mode === "full" || lines.length === 1) return;
 
   // check if label fits state boundaries. If no, replace it with short name

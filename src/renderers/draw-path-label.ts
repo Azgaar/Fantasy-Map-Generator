@@ -10,6 +10,26 @@ const lineGen = line<[number, number]>().curve(curveNatural);
 export const getPathLabelElementId = (label: { i: number }): string => `pathLabel${label.i}`;
 const getPathId = (label: { i: number }): string => `textPath_${getPathLabelElementId(label)}`;
 
+// get a label group container, creating it with the default label style if missing,
+// so labels render even when their group is not part of the loaded SVG
+export function ensureLabelGroup(group: string): SVGGElement {
+  const labels = document.querySelector<SVGGElement>("g#labels")!;
+  const existing = labels.querySelector<SVGGElement>(`:scope > g#${group}`);
+  if (existing) return existing;
+
+  const container = document.createElementNS(SVG_NS, "g");
+  container.id = group;
+  container.setAttribute("fill", "#3e3e4b");
+  container.setAttribute("opacity", "1");
+  container.setAttribute("stroke", "#3a3a3a");
+  container.setAttribute("stroke-width", "0");
+  container.setAttribute("font-family", "Almendra SC");
+  container.setAttribute("font-size", "18");
+  container.setAttribute("data-size", "18");
+  labels.appendChild(container);
+  return container;
+}
+
 // build a detached defs path element the label text follows
 function buildLabelPath(label: RenderablePathLabel): SVGPathElement {
   const pathElement = document.createElementNS(SVG_NS, "path");
@@ -65,9 +85,8 @@ export function upsertLabelPath(label: RenderablePathLabel): SVGPathElement {
 }
 
 // render a single path-following label from its data; replaces an existing element with the same id
-export function drawPathLabel(label: RenderablePathLabel): SVGTextElement | null {
-  const container = document.querySelector<SVGGElement>(`g#labels > g#${label.group}`);
-  if (!container) return null;
+export function drawPathLabel(label: RenderablePathLabel): SVGTextElement {
+  const container = ensureLabelGroup(label.group);
 
   upsertLabelPath(label);
   const textElement = buildLabelText(label);

@@ -680,25 +680,12 @@ function addLabelOnClick() {
   const cell = findCell(point[0], point[1]);
   const culture = pack.cells.culture[cell];
   const name = Names.getCulture(culture);
-  const id = getNextId("label");
 
   // use most recently selected label group
   const lastSelected = labelGroupSelect.value;
   const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "addedLabels" :  lastSelected;
 
-  let group = labels.select(`#${groupId}`);
-  if (!group.size())
-    group = labels
-      .append("g")
-      .attr("id", "addedLabels")
-      .attr("fill", "#3e3e4b")
-      .attr("opacity", 1)
-      .attr("stroke", "#3a3a3a")
-      .attr("stroke-width", 0)
-      .attr("font-family", "Almendra SC")
-      .attr("font-size", 18)
-      .attr("data-size", 18)
-      .attr("filter", null);
+  const group = d3.select(ensureLabelGroup(groupId));
 
   const example = group.append("text").attr("x", 0).attr("y", 0).text(name);
   const width = example.node().getBBox().width;

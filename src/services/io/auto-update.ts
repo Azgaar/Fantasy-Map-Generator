@@ -1286,14 +1286,14 @@ export function resolveVersionConflicts(mapVersion: string): void {
         });
       }
 
-      // Migrate custom labels
-      const customLabelsGroup = document.querySelector("#labels > #addedLabels");
-      if (customLabelsGroup) {
-        customLabelsGroup.querySelectorAll("text").forEach(textElement => {
+      // Migrate custom labels: the default addedLabels group plus any user-created groups
+      const customLabelGroups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
+      customLabelGroups.forEach(groupElement => {
+        const group = groupElement.id;
+        groupElement.querySelectorAll("text").forEach(textElement => {
           const id = textElement.getAttribute("id");
           if (!id) return;
 
-          const group = "custom";
           const textPath = textElement.querySelector("textPath");
           if (!textPath) return;
 
@@ -1325,7 +1325,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
             dy
           });
         });
-      }
+      });
 
       // Clear old SVG labels and redraw from data
       if (stateLabelsGroup)
@@ -1336,10 +1336,11 @@ export function resolveVersionConflicts(mapVersion: string): void {
         burgLabelsGroup.querySelectorAll("text").forEach(el => {
           el.remove();
         });
-      if (customLabelsGroup)
-        customLabelsGroup.querySelectorAll("text").forEach(el => {
+      customLabelGroups.forEach(groupElement => {
+        groupElement.querySelectorAll("text").forEach(el => {
           el.remove();
         });
+      });
 
       // Regenerate labels from data
       if (layerIsOn("toggleLabels")) {

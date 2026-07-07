@@ -1,12 +1,19 @@
 import { type CustomLabel, isPathLabel, type LabelData, Labels, type StateLabel } from "../generators/labels";
 import { drawBurgLabel, removeBurgLabel } from "./draw-burg-labels";
-import { buildPathLabelElements, drawPathLabel, getPathLabelElementId, removePathLabel } from "./draw-path-label";
+import {
+  buildPathLabelElements,
+  drawPathLabel,
+  ensureLabelGroup,
+  getPathLabelElementId,
+  removePathLabel
+} from "./draw-path-label";
 import { fitLabels } from "./fit-state-labels";
 
 // remove this section once layer.js is refactored--------------------------------
 window.drawCustomLabels = drawCustomLabels;
 window.drawCustomLabel = drawPathLabel;
 window.drawStateLabels = drawStateLabels;
+window.ensureLabelGroup = ensureLabelGroup;
 // -------------------------------------------------------------------------------
 
 // render a single label based on its shape: along a path or at a point
@@ -83,6 +90,6 @@ function drawPathLabelsBatch(labelList: (StateLabel | CustomLabel)[]): void {
 
   pathGroup.append(...paths);
   for (const [group, texts] of textsByGroup) {
-    document.querySelector<SVGGElement>(`g#labels > g#${group}`)?.append(...texts);
+    ensureLabelGroup(group).append(...texts);
   }
 }

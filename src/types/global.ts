@@ -277,6 +277,7 @@ declare global {
   var fitStateLabels: (ids?: number[]) => void;
   var drawCustomLabels: () => void;
   var drawCustomLabel: (label: import("@/generators/labels").CustomLabel) => void;
+  var ensureLabelGroup: (group: string) => SVGGElement;
   var drawPopulation: () => void;
 
   var toggleCultures: () => void;
