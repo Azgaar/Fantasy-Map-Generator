@@ -22,6 +22,21 @@ const $body = insertEditorHtml();
 addListeners();
 let statesManualHistory: string[] = [];
 
+const statesPage = { page: 1 };
+const STATES_SORT_ACCESSORS: Record<string, (s: any) => unknown> = {
+  name: s => s.name,
+  form: s => s.formName,
+  capital: s => (s.i ? pack.burgs[s.capital].name : ""),
+  culture: s => (s.i ? pack.cultures[s.culture].name : ""),
+  burgs: s => s.burgs,
+  cells: s => s.cells,
+  area: s => s.area,
+  population: s => s.rural * populationRate + s.urban * populationRate * urbanization,
+  treasury: s => s.treasury || 0,
+  type: s => s.type || "",
+  expansionism: s => s.expansionism || 0
+};
+
 function open(): void {
   if (customization) return;
   closeDialogs("#statesEditor, .stable");
@@ -31,6 +46,7 @@ function open(): void {
   if (layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleReligions")) toggleReligions();
 
+  statesPage.page = 1;
   refreshStatesEditor();
 
   $("#statesEditor").dialog({
@@ -117,6 +133,10 @@ function insertEditorHtml(): HTMLElement {
 
 function addListeners(): void {
   applySortingByHeader("statesHeader");
+  bindEditorSortReset(ensureEl("statesHeader"), () => {
+    statesPage.page = 1;
+    statesEditorAddLines();
+  });
 
   ensureEl("statesEditorRefresh").on("click", refreshStatesEditor);
   ensureEl("statesEditStyle").on("click", () => editStyle("regions"));
@@ -179,17 +199,28 @@ function refreshStatesEditor(): void {
   statesEditorAddLines();
 }
 
-// add line for each state
+// add line for each state (current page only; sort + totals span all states)
 function statesEditorAddLines(): void {
   const unit = getAreaUnit();
   const hidden = ensureEl("statesRegenerateButtons").style.display === "block" ? "" : "hidden"; // toggle regenerate columns
-  let lines = "";
+
+  const allStates = pack.states.filter(s => !s.removed);
+  sortDataByActiveHeader(ensureEl("statesHeader"), allStates, STATES_SORT_ACCESSORS);
+
+  // footer totals over the full set, not just the current page
   let totalArea = 0;
   let totalPopulation = 0;
   let totalBurgs = 0;
+  for (const s of allStates) {
+    totalArea += getArea(s.area || 0);
+    totalPopulation += rn((s.rural || 0) * populationRate + (s.urban || 0) * populationRate * urbanization);
+    totalBurgs += s.burgs || 0;
+  }
 
-  for (const s of pack.states) {
-    if (s.removed) continue;
+  const pageInfo = getEditorPage(allStates, statesPage);
+  let lines = "";
+
+  for (const s of pageInfo.items) {
     const area = getArea(s.area || 0);
     const rural = (s.rural || 0) * populationRate;
     const urban = (s.urban || 0) * populationRate * urbanization;
@@ -197,9 +228,6 @@ function statesEditorAddLines(): void {
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
     )}. Click to change`;
-    totalArea += area;
-    totalPopulation += population;
-    totalBurgs += s.burgs || 0;
     const focused = defs.select(`#fog #focusState${s.i}`).size();
     const treasuryTip = `Current treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
@@ -310,6 +338,11 @@ function statesEditorAddLines(): void {
   ensureEl("statesFooterPopulation").innerHTML = si(totalPopulation);
   ensureEl("statesFooterPopulation").dataset.population = String(totalPopulation);
 
+  renderEditorPagination(ensureEl("statesFooter"), pageInfo, page => {
+    statesPage.page = page;
+    statesEditorAddLines();
+  });
+
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
     $line.on("mouseenter", stateHighlightOn);
@@ -321,7 +354,6 @@ function statesEditorAddLines(): void {
     $body.dataset.type = "absolute";
     togglePercentageMode();
   }
-  applySorting(ensureEl("statesHeader"));
   $("#statesEditor").dialog({ width: fitContent() });
 }
 
@@ -985,8 +1017,8 @@ function randomizeStatesExpansion(): void {
     if (!s.i || s.removed) return;
     const expansionism = rn(Math.random() * 4 + 1, 1);
     s.expansionism = expansionism;
-    ($body.querySelector(`div.states[data-id='${s.i}'] > input.statePower`) as HTMLInputElement).value =
-      String(expansionism);
+    const $power = $body.querySelector(`div.states[data-id='${s.i}'] > input.statePower`) as HTMLInputElement | null;
+    if ($power) $power.value = String(expansionism);
   });
   recalculateStates(true);
 }
@@ -1009,6 +1041,9 @@ function exitRegenerationMenu(): void {
 function enterStatesManualAssignent(): void {
   if (!layerIsOn("toggleStates")) toggleStates();
   customization = 2;
+  // reset to the first page so the default row selection below lands on a visible row
+  statesPage.page = 1;
+  statesEditorAddLines();
   statesBody.append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "none";
@@ -1053,8 +1088,10 @@ function selectStateOnMapClick(this: any, event: any): void {
   const assigned = statesBody.select("#temp").select(`polygon[data-cell='${i}']`);
   const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
 
+  const $row = $body.querySelector(`div[data-id='${state}']`);
+  if (!$row) return; // clicked state's row is on another page; ignore to avoid a crash
   $body.querySelector("div.selected")?.classList.remove("selected");
-  $body.querySelector(`div[data-id='${state}']`)?.classList.add("selected");
+  $row.classList.add("selected");
 }
 
 function dragStateBrush(this: any, event: any): void {
@@ -1303,7 +1340,7 @@ function exitStatesManualAssignment(close: boolean): void {
     .forEach(el => {
       el.classList.remove("hidden");
     });
-  ensureEl("statesFooter").style.display = "block";
+  ensureEl("statesFooter").style.display = "flex";
   $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
     e.style.pointerEvents = "all";
   });
@@ -1641,31 +1678,34 @@ function openStateMergeDialog(): void {
 function downloadStatesCsv(): void {
   const unit = getAreaUnit("2");
   const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
-  const lines = Array.from($body.querySelectorAll<HTMLElement>(":scope > div"));
-  const data = lines.map($line => {
-    const { id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population } =
-      $line.dataset;
-    const { fullName = "", rural, urban } = pack.states[+id!];
-    const ruralPopulation = Math.round((rural ?? 0) * populationRate);
-    const urbanPopulation = Math.round((urban ?? 0) * populationRate * urbanization);
-    return [
-      id,
-      name,
-      fullName,
-      form,
-      color,
-      capital,
-      culture,
-      type,
-      expansionism,
-      cells,
-      burgs,
-      area,
-      population,
-      ruralPopulation,
-      urbanPopulation
-    ].join(",");
-  });
+  // export the full data model, not the DOM (which only holds the current page)
+  const data = pack.states
+    .filter(s => !s.removed)
+    .map(s => {
+      const area = getArea(s.area || 0);
+      const ruralPopulation = Math.round((s.rural ?? 0) * populationRate);
+      const urbanPopulation = Math.round((s.urban ?? 0) * populationRate * urbanization);
+      const population = ruralPopulation + urbanPopulation;
+      const capital = s.i ? pack.burgs[s.capital].name : "";
+      const culture = s.i ? pack.cultures[s.culture].name : "";
+      return [
+        s.i,
+        s.name,
+        s.fullName || "",
+        s.formName || "",
+        s.color || "",
+        capital,
+        culture,
+        s.type || "",
+        s.expansionism ?? "",
+        s.cells,
+        s.burgs,
+        area,
+        population,
+        ruralPopulation,
+        urbanPopulation
+      ].join(",");
+    });
   const csvData = [headers].concat(data).join("\n");
 
   const name = `${getFileName("States")}.csv`;

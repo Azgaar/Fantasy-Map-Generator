@@ -3,6 +3,13 @@ import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
 import { ensureEl, rn } from "../utils";
 
+const routesPage = { page: 1 };
+const ROUTES_SORT_ACCESSORS: Record<string, (r: any) => unknown> = {
+  name: r => r.name || "",
+  group: r => r.group || "",
+  length: r => r.length
+};
+
 const DIALOG_HTML = /* html */ `
   <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
     <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">Route&nbsp;</div>
@@ -29,6 +36,7 @@ function open(): void {
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
   ensureEl("routesOverview").innerHTML = DIALOG_HTML;
+  routesPage.page = 1;
   routesOverviewAddLines();
 
   // add listeners — dropped together with the dialog HTML on close
@@ -37,7 +45,15 @@ function open(): void {
   ensureEl("routesExport").on("click", downloadRoutesData);
   ensureEl("routesLockAll").on("click", toggleLockAll);
   ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").on("input", routesOverviewAddLines);
+  ensureEl("routesSearch").on("input", () => {
+    routesPage.page = 1;
+    routesOverviewAddLines();
+  });
+  applySortingByHeader("routesHeader");
+  bindEditorSortReset(ensureEl("routesHeader"), () => {
+    routesPage.page = 1;
+    routesOverviewAddLines();
+  });
 
   $("#routesOverview").dialog({
     title: "Routes Overview",
@@ -62,7 +78,15 @@ function routesOverviewAddLines(): void {
   body.innerHTML = "";
   let lines = "";
 
-  let filteredRoutes: Route[] = pack.routes;
+  let filteredRoutes: Route[] = pack.routes.slice(); // copy so cross-page sort never mutates pack.routes order
+
+  // route name/length are computed lazily; populate them for the whole set so search,
+  // sort, footer averages and CSV export are consistent across all pages, not just the visible one
+  for (const route of filteredRoutes) {
+    if (!route.points || route.points.length < 2) continue;
+    route.name = route.name || Routes.generateName(route);
+    route.length = route.length || Routes.getLength(route.i);
+  }
 
   const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
   if (searchText) {
@@ -73,11 +97,12 @@ function routesOverviewAddLines(): void {
     });
   }
 
-  for (const route of filteredRoutes) {
+  sortDataByActiveHeader(ensureEl("routesHeader"), filteredRoutes, ROUTES_SORT_ACCESSORS);
+  const pageInfo = getEditorPage(filteredRoutes, routesPage);
+
+  for (const route of pageInfo.items) {
     if (!route.points || route.points.length < 2) continue;
-    route.name = route.name || Routes.generateName(route);
-    route.length = route.length || Routes.getLength(route.i);
-    const length = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
+    const length = `${rn((route.length ?? 0) * distanceScale)} ${distanceUnitInput.value}`;
 
     lines += /* html */ `<div
         class="states"
@@ -112,7 +137,10 @@ function routesOverviewAddLines(): void {
   body.querySelectorAll("div > span.locks").forEach(el => void el.on("click", toggleLockStatus));
   body.querySelectorAll("div > span.icon-trash-empty").forEach(el => void el.on("click", triggerRouteRemove));
 
-  applySorting(ensureEl("routesHeader"));
+  renderEditorPagination(ensureEl("routesFooter"), pageInfo, page => {
+    routesPage.page = page;
+    routesOverviewAddLines();
+  });
 }
 
 function routeHighlightOn(event: Event): void {
@@ -135,13 +163,22 @@ function zoomToRoute(this: HTMLElement): void {
 function downloadRoutesData(): void {
   let data = "Id,Route,Group,Length\n"; // headers
 
-  ensureEl("routesBody")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const d = el.dataset;
-      const length = `${rn(+d.length! * distanceScale)} ${distanceUnitInput.value}`;
-      data += `${[d.id, d.name, d.group, length].join(",")}\n`;
-    });
+  // export the full filtered set, not the DOM (which only holds the current page)
+  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
+  const exported = pack.routes.filter((route: Route) => {
+    if (!route.points || route.points.length < 2) return false; // skip degenerate routes (never rendered)
+    if (!searchText) return true;
+    const name = (route.name || "").toLowerCase();
+    const group = (route.group || "").toLowerCase();
+    return name.includes(searchText) || group.includes(searchText);
+  });
+
+  exported.forEach((route: Route) => {
+    route.name = route.name || Routes.generateName(route);
+    route.length = route.length || Routes.getLength(route.i);
+    const length = `${rn((route.length ?? 0) * distanceScale)} ${distanceUnitInput.value}`;
+    data += `${[route.i, route.name, route.group, length].join(",")}\n`;
+  });
 
   const name = `${getFileName("Routes")}.csv`;
   downloadFile(data, name);

@@ -20,6 +20,18 @@ let culturesManualHistory: string[] = [];
 
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
+const culturesPage = { page: 1 };
+const CULTURES_SORT_ACCESSORS: Record<string, (c: any) => unknown> = {
+  name: c => c.name,
+  type: c => c.type || "",
+  base: c => c.base,
+  cells: c => c.cells,
+  expansionism: c => c.expansionism || 0,
+  area: c => c.area,
+  population: c => c.rural * populationRate + c.urban * populationRate * urbanization,
+  emblems: c => c.shield
+};
+
 function open(): void {
   if (customization) return;
   closeDialogs("#culturesEditor, .stable");
@@ -29,6 +41,7 @@ function open(): void {
   if (layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
+  culturesPage.page = 1;
   refreshCulturesEditor();
 
   $("#culturesEditor").dialog({
@@ -94,6 +107,10 @@ function insertEditorHtml(): HTMLElement {
 
 function addListeners(): void {
   applySortingByHeader("culturesHeader");
+  bindEditorSortReset(ensureEl("culturesHeader"), () => {
+    culturesPage.page = 1;
+    culturesEditorAddLines();
+  });
 
   ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
   ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
@@ -137,16 +154,26 @@ function culturesCollectStatistics(): void {
 
 function culturesEditorAddLines(): void {
   const unit = getAreaUnit();
-  let lines = "";
-  let totalArea = 0;
-  let totalPopulation = 0;
 
   const emblemShapeGroup =
     ensureEl<HTMLSelectElement>("emblemShape").selectedOptions[0]?.parentElement?.getAttribute("label");
   const selectShape = emblemShapeGroup === "Diversiform";
 
-  for (const c of pack.cultures) {
-    if (c.removed) continue;
+  const allCultures = pack.cultures.filter(c => !c.removed);
+  sortDataByActiveHeader(ensureEl("culturesHeader"), allCultures, CULTURES_SORT_ACCESSORS);
+
+  // footer totals span the full set, not just the current page
+  let totalArea = 0;
+  let totalPopulation = 0;
+  for (const c of allCultures) {
+    totalArea += getArea(c.area ?? 0);
+    totalPopulation += rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+  }
+
+  const pageInfo = getEditorPage(allCultures, culturesPage);
+  let lines = "";
+
+  for (const c of pageInfo.items) {
     const area = getArea(c.area ?? 0);
     const rural = (c.rural ?? 0) * populationRate;
     const urban = (c.urban ?? 0) * populationRate * urbanization;
@@ -154,8 +181,6 @@ function culturesEditorAddLines(): void {
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
     )}. Click to edit`;
-    totalArea += area;
-    totalPopulation += population;
 
     if (!c.i) {
       // Uncultured (neutral) line
@@ -249,6 +274,11 @@ function culturesEditorAddLines(): void {
   ensureEl("culturesFooterArea").dataset.area = String(totalArea);
   ensureEl("culturesFooterPopulation").dataset.population = String(totalPopulation);
 
+  renderEditorPagination(ensureEl("culturesFooter"), pageInfo, page => {
+    culturesPage.page = page;
+    culturesEditorAddLines();
+  });
+
   // add listeners
   $body.querySelectorAll(":scope > div").forEach($line => {
     $line.on("mouseenter", cultureHighlightOn);
@@ -280,7 +310,6 @@ function culturesEditorAddLines(): void {
     $body.dataset.type = "absolute";
     togglePercentageMode();
   }
-  applySorting($culturesHeader);
   $("#culturesEditor").dialog({ width: fitContent() });
 }
 
@@ -727,6 +756,9 @@ function recalculateCultures(force?: boolean): void {
 function enterCultureManualAssignent(): void {
   if (!layerIsOn("toggleCultures")) toggleCultures();
   customization = 4;
+  // reset to the first page so the default row selection below lands on a visible row
+  culturesPage.page = 1;
+  culturesEditorAddLines();
   cults.append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
     el.style.display = "none";
@@ -853,7 +885,7 @@ function exitCulturesManualAssignment(close?: string): void {
     .forEach(el => {
       el.classList.remove("hidden");
     });
-  ensureEl("culturesFooter").style.display = "block";
+  ensureEl("culturesFooter").style.display = "flex";
   $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
     e.style.pointerEvents = "all";
   });
@@ -932,17 +964,32 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
 function downloadCulturesCsv(): void {
   const unit = getAreaUnit("2");
   const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
-  const lines = Array.from($body.querySelectorAll<HTMLElement>(":scope > div"));
-  const data = lines.map($line => {
-    const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
-    const namesbase = nameBases[+base!].name;
-    const { origins } = pack.cultures[+id!];
-    const originList = (origins ?? [])
-      .filter((origin: number | null): origin is number => Boolean(origin))
-      .map((origin: number) => pack.cultures[origin].name);
-    const originText = `"${originList.join(", ")}"`;
-    return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, originText].join(",");
-  });
+  // export the full data model, not the DOM (which only holds the current page)
+  const data = pack.cultures
+    .filter(c => !c.removed)
+    .map(c => {
+      const area = getArea(c.area ?? 0);
+      const population = rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+      const namesbase = nameBases[c.base].name;
+      const originList = (c.origins ?? [])
+        .filter((origin: number | null): origin is number => Boolean(origin))
+        .map((origin: number) => pack.cultures[origin].name);
+      const originText = `"${originList.join(", ")}"`;
+      const expansionism = c.i ? (c.expansionism ?? "") : "";
+      return [
+        c.i,
+        c.name,
+        c.color ?? "",
+        c.cells,
+        expansionism,
+        c.type ?? "",
+        area,
+        population,
+        namesbase,
+        c.shield,
+        originText
+      ].join(",");
+    });
   const csvData = [headers].concat(data).join("\n");
 
   const name = `${getFileName("Cultures")}.csv`;
