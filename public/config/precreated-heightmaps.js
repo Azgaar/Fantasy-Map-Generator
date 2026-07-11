@@ -12,7 +12,7 @@ const precreatedHeightmaps = {
   "europe-accented": {id: 8, name: "Europe Accented"},
   "europe-and-central-asia": {id: 9, name: "Europe and Central Asia"},
   "europe-central": {id: 10, name: "Europe Central"},
-  "north-sea-region": {id: 11, name: "North Sea Region"},
+  "europe-north": {id: 11, name: "Europe North"},
   greenland: {id: 12, name: "Greenland"},
   hellenica: {id: 13, name: "Hellenica"},
   iceland: {id: 14, name: "Iceland"},
