@@ -29,12 +29,22 @@ const DIALOG_HTML = /* html */ `
     <label for="riversSearch" data-tip="Filter by name, type or basin" style="margin-left: 0.2em">Search: <input id="riversSearch" type="search" /></label>
   </div>`;
 
+const riversPage = { page: 1 };
+const RIVERS_SORT_ACCESSORS: Record<string, (r: any) => unknown> = {
+  name: r => r.name || "",
+  type: r => r.type || "",
+  discharge: r => r.discharge,
+  length: r => r.length,
+  width: r => r.width
+};
+
 function open(): void {
   if (customization) return;
   closeDialogs("#riversOverview, .stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
   ensureEl("riversOverview").innerHTML = DIALOG_HTML;
+  riversPage.page = 1;
   riversOverviewAddLines();
 
   // add listeners — dropped together with the dialog HTML on close
@@ -44,7 +54,15 @@ function open(): void {
   ensureEl("riversBasinHighlight").on("click", toggleBasinsHightlight);
   ensureEl("riversExport").on("click", downloadRiversData);
   ensureEl("riversRemoveAll").on("click", triggerAllRiversRemove);
-  ensureEl("riversSearch").on("input", riversOverviewAddLines);
+  ensureEl("riversSearch").on("input", () => {
+    riversPage.page = 1;
+    riversOverviewAddLines();
+  });
+  applySortingByHeader("riversHeader");
+  bindEditorSortReset(ensureEl("riversHeader"), () => {
+    riversPage.page = 1;
+    riversOverviewAddLines();
+  });
 
   $("#riversOverview").dialog({
     title: "Rivers Overview",
@@ -73,7 +91,7 @@ function riversOverviewAddLines(): void {
   // Precompute a lookup map from river id to river for efficient basin lookup
   const riversById = new Map<number, River>(pack.rivers.map((river: River) => [river.i, river]));
 
-  let filteredRivers: River[] = pack.rivers;
+  let filteredRivers: River[] = pack.rivers.slice(); // copy so cross-page sort never mutates pack.rivers order
   const searchText = ensureEl<HTMLInputElement>("riversSearch").value.toLowerCase().trim();
   if (searchText) {
     filteredRivers = filteredRivers.filter(r => {
@@ -85,7 +103,13 @@ function riversOverviewAddLines(): void {
     });
   }
 
-  for (const r of filteredRivers) {
+  sortDataByActiveHeader(ensureEl("riversHeader"), filteredRivers, {
+    ...RIVERS_SORT_ACCESSORS,
+    basin: (r: any) => riversById.get(r.basin)?.name || ""
+  });
+  const pageInfo = getEditorPage(filteredRivers, riversPage);
+
+  for (const r of pageInfo.items) {
     const discharge = `${r.discharge} m³/s`;
     const length = `${rn(r.length * distanceScale)} ${unit}`;
     const width = `${rn(r.width * distanceScale, 3)} ${unit}`;
@@ -130,7 +154,10 @@ function riversOverviewAddLines(): void {
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.on("click", openRiverEditor));
   body.querySelectorAll("div > span.icon-trash-empty").forEach(el => void el.on("click", triggerRiverRemove));
 
-  applySorting(ensureEl("riversHeader"));
+  renderEditorPagination(ensureEl("riversFooter"), pageInfo, page => {
+    riversPage.page = page;
+    riversOverviewAddLines();
+  });
 }
 
 function riverHighlightOn(event: Event): void {
@@ -184,15 +211,25 @@ function toggleBasinsHightlight(): void {
 function downloadRiversData(): void {
   let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
-  ensureEl("riversBody")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const d = el.dataset;
-      const discharge = `${d.discharge} m³/s`;
-      const length = `${rn(+d.length! * distanceScale)} ${distanceUnitInput.value}`;
-      const width = `${rn(+d.width! * distanceScale, 3)} ${distanceUnitInput.value}`;
-      data += `${[d.id, d.name, d.type, discharge, length, width, d.basin].join(",")}\n`;
-    });
+  // export the full data model (filtered by the search box), not the DOM (which only holds the current page)
+  const riversById = new Map<number, River>(pack.rivers.map((river: River) => [river.i, river]));
+  const searchText = ensureEl<HTMLInputElement>("riversSearch").value.toLowerCase().trim();
+  const exported = pack.rivers.filter((r: River) => {
+    if (!searchText) return true;
+    const name = (r.name || "").toLowerCase();
+    const type = (r.type || "").toLowerCase();
+    const basin = riversById.get(r.basin);
+    const basinName = basin ? (basin.name || "").toLowerCase() : "";
+    return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
+  });
+
+  exported.forEach((r: River) => {
+    const discharge = `${r.discharge} m³/s`;
+    const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
+    const width = `${rn(r.width * distanceScale, 3)} ${distanceUnitInput.value}`;
+    const basin = riversById.get(r.basin)?.name || "";
+    data += `${[r.i, r.name, r.type, discharge, length, width, basin].join(",")}\n`;
+  });
 
   const name = `${getFileName("Rivers")}.csv`;
   downloadFile(data, name);

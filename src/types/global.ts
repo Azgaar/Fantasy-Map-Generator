@@ -276,6 +276,26 @@ declare global {
 
   var highlightElement: (element: Element | null, duration?: number) => void;
   var applySortingByHeader: (headerId: string) => void;
+
+  // Shared editor pagination helpers (public/modules/ui/editors.js)
+  var EDITOR_PAGE_SIZE: number;
+  var sortDataByActiveHeader: <T>(
+    headers: HTMLElement,
+    data: T[],
+    accessors: Record<string, (item: T) => unknown>
+  ) => T[];
+  var getEditorPage: <T>(
+    data: T[],
+    pageRef: { page: number },
+    size?: number
+  ) => { items: T[]; page: number; totalPages: number; total: number };
+  var renderEditorPagination: (
+    footerEl: HTMLElement,
+    info: { page: number; totalPages: number; total: number },
+    onGoto: (page: number) => void
+  ) => void;
+  var bindEditorSortReset: (headerEl: HTMLElement, onSort: () => void) => void;
+
   var fog: (id: string, path: string) => void;
   var unfog: (id?: string) => void;
   var editEmblem: (type: string, id: string, el: any) => void;

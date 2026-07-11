@@ -4,6 +4,28 @@ import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "..
 
 let isInitialized = false;
 
+const burgsPage = { page: 1 };
+const BURGS_SORT_ACCESSORS: Record<string, (b: any) => unknown> = {
+  name: b => b.name || "",
+  province: b => {
+    const p = pack.cells.province[b.cell];
+    return p ? pack.provinces[p]?.name || "" : "";
+  },
+  state: b => pack.states[b.state]?.name || "",
+  culture: b => pack.cultures[b.culture]?.name || "",
+  group: b => b.group || "",
+  population: b => b.population * populationRate * urbanization,
+  grossproduct: b => rn(b.product || 0, 2),
+  productpercapita: b => rn(b.population > 0 ? (b.product || 0) / b.population : 0, 2),
+  treasury: b => rn(b.treasury || 0, 2),
+  features: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
+};
+
+function resetBurgsPageAndRender(): void {
+  burgsPage.page = 1;
+  burgsOverviewAddLines();
+}
+
 function overviewBurgs(
   settings: { stateId?: number | null; cultureId?: number | null } = { stateId: null, cultureId: null }
 ): void {
@@ -14,6 +36,7 @@ function overviewBurgs(
 
   updateFilter(settings);
   updateLockAllIcon();
+  burgsPage.page = 1;
   burgsOverviewAddLines();
   $("#burgsOverview").dialog();
 
@@ -32,9 +55,9 @@ function overviewBurgs(
   ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
   ensureEl("burgsGroupsEditorButton").addEventListener("click", editBurgGroups);
   ensureEl("burgsChart").addEventListener("click", showBurgsChart);
-  ensureEl("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
-  ensureEl("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
-  ensureEl("burgsSearch").addEventListener("input", burgsOverviewAddLines);
+  ensureEl("burgsFilterState").addEventListener("change", resetBurgsPageAndRender);
+  ensureEl("burgsFilterCulture").addEventListener("change", resetBurgsPageAndRender);
+  ensureEl("burgsSearch").addEventListener("input", resetBurgsPageAndRender);
   ensureEl("regenerateBurgNames").addEventListener("click", regenerateNames);
   ensureEl("addNewBurg").addEventListener("click", enterAddBurgMode);
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
@@ -44,11 +67,45 @@ function overviewBurgs(
   });
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
+
+  // re-render on column sort so sorting applies across all pages, not just the visible one
+  bindEditorSortReset(ensureEl("burgsHeader"), resetBurgsPageAndRender);
 }
 
 function refreshBurgsEditor(): void {
   updateFilter();
+  burgsPage.page = 1;
   burgsOverviewAddLines();
+}
+
+// collect the burgs matching the current search + state/culture filters (all pages)
+function getFilteredBurgs() {
+  const searchText = ensureEl<HTMLInputElement>("burgsSearch").value.toLowerCase().trim();
+  const selectedStateId = +ensureEl<HTMLSelectElement>("burgsFilterState").value;
+  const selectedCultureId = +ensureEl<HTMLSelectElement>("burgsFilterCulture").value;
+
+  let filtered = pack.burgs.filter(b => b.i && !b.removed);
+
+  if (searchText) {
+    // filter by search text
+    filtered = filtered.filter(b => {
+      const name = b.name!.toLowerCase();
+      const state = (pack.states[b.state!]?.name || "").toLowerCase();
+      const prov = pack.cells.province[b.cell];
+      const province = prov ? pack.provinces[prov]?.name.toLowerCase() : "";
+      const culture = (pack.cultures[b.culture!]?.name || "").toLowerCase();
+      return (
+        name.includes(searchText) ||
+        state.includes(searchText) ||
+        province.includes(searchText) ||
+        culture.includes(searchText) ||
+        b.group!.toLowerCase().includes(searchText)
+      );
+    });
+  }
+  if (selectedStateId !== -1) filtered = filtered.filter(b => b.state === selectedStateId); // filtered by state
+  if (selectedCultureId !== -1) filtered = filtered.filter(b => b.culture === selectedCultureId); // filtered by culture
+  return filtered;
 }
 
 function updateFilter(settings: { stateId?: number | null; cultureId?: number | null } = {}): void {
@@ -73,52 +130,35 @@ function updateFilter(settings: { stateId?: number | null; cultureId?: number | 
   );
 }
 
-// add line for each burg
+// add line for each burg (current page only; sort, totals and footer span the full filtered set)
 function burgsOverviewAddLines(): void {
   const body = ensureEl("burgsBody");
-  const searchText = ensureEl<HTMLInputElement>("burgsSearch").value.toLowerCase().trim();
-  const selectedStateId = +ensureEl<HTMLSelectElement>("burgsFilterState").value;
-  const selectedCultureId = +ensureEl<HTMLSelectElement>("burgsFilterCulture").value;
+  const validCount = pack.burgs.filter(b => b.i && !b.removed).length;
+  const filtered = getFilteredBurgs();
+  sortDataByActiveHeader(ensureEl("burgsHeader"), filtered, BURGS_SORT_ACCESSORS);
 
-  const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
-  let filtered = validBurgs;
-
-  if (searchText) {
-    // filter by search text
-    filtered = filtered.filter(b => {
-      const name = b.name!.toLowerCase();
-      const state = (pack.states[b.state!]?.name || "").toLowerCase();
-      const prov = pack.cells.province[b.cell];
-      const province = prov ? pack.provinces[prov]?.name.toLowerCase() : "";
-      const culture = (pack.cultures[b.culture!]?.name || "").toLowerCase();
-      return (
-        name.includes(searchText) ||
-        state.includes(searchText) ||
-        province.includes(searchText) ||
-        culture.includes(searchText) ||
-        b.group!.toLowerCase().includes(searchText)
-      );
-    });
-  }
-  if (selectedStateId !== -1) filtered = filtered.filter(b => b.state === selectedStateId); // filtered by state
-  if (selectedCultureId !== -1) filtered = filtered.filter(b => b.culture === selectedCultureId); // filtered by culture
-
-  body.innerHTML = "";
-  let lines = "";
+  // footer totals/averages span the full filtered set, not just the current page
   let totalPopulation = 0;
   let totalProduct = 0;
   let totalProductPerCapita = 0;
   let totalTreasury = 0;
-
   for (const b of filtered) {
+    totalPopulation += b.population! * populationRate * urbanization;
+    totalProduct += rn(b.product || 0, 2);
+    totalProductPerCapita += rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
+    totalTreasury += rn(b.treasury || 0, 2);
+  }
+
+  const pageInfo = getEditorPage(filtered, burgsPage);
+
+  body.innerHTML = "";
+  let lines = "";
+
+  for (const b of pageInfo.items) {
     const population = b.population! * populationRate * urbanization;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
-    totalPopulation += population;
-    totalProduct += grossProduct;
-    totalProductPerCapita += productPerCapita;
-    totalTreasury += treasury;
     const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
     const state = pack.states[b.state!].name;
     const prov = pack.cells.province[b.cell];
@@ -170,14 +210,19 @@ function burgsOverviewAddLines(): void {
   if (!filtered.length) body.innerHTML = /* html */ `<div style="padding-block: 0.3em;">No burgs found</div>`;
   body.insertAdjacentHTML("beforeend", lines);
 
-  // update footer
-  ensureEl("burgsFooterBurgs").innerHTML = `${filtered.length} of ${validBurgs.length}`;
+  // update footer (counts/averages span the full filtered set, not just the page)
+  ensureEl("burgsFooterBurgs").innerHTML = `${filtered.length} of ${validCount}`;
   ensureEl("burgsFooterPopulation").innerHTML = filtered.length ? si(totalPopulation / filtered.length) : "0";
   ensureEl("burgsFooterGrossProduct").innerHTML = filtered.length ? String(rn(totalProduct / filtered.length, 2)) : "0";
   ensureEl("burgsFooterProductPerCapita").innerHTML = filtered.length
     ? String(rn(totalProductPerCapita / filtered.length, 2))
     : "0";
   ensureEl("burgsFooterTreasury").innerHTML = filtered.length ? String(rn(totalTreasury / filtered.length, 2)) : "0";
+
+  renderEditorPagination(ensureEl("burgsFooter"), pageInfo, page => {
+    burgsPage.page = page;
+    burgsOverviewAddLines();
+  });
 
   // add listeners
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", ev => burgHighlightOn(ev)));
@@ -188,8 +233,6 @@ function burgsOverviewAddLines(): void {
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerBurgRemove));
-
-  applySorting(ensureEl("burgsHeader"));
 }
 
 function burgHighlightOn(event: Event): void {
@@ -251,19 +294,14 @@ function triggerBurgRemove(this: HTMLElement): void {
 }
 
 function regenerateNames(): void {
-  ensureEl("burgsBody")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const burg = +el.dataset.id!;
-      if (pack.burgs[burg].lock) return;
-
-      const culture = pack.burgs[burg].culture!;
-      const name = Names.getCulture(culture);
-
-      el.querySelector<HTMLInputElement>(".burgName")!.value = name;
-      pack.burgs[burg].name = el.dataset.name = name;
-      burgLabels.select(`[data-id='${burg}']`).text(name);
-    });
+  // regenerate across the full filtered set (all pages), not just the visible page
+  for (const b of getFilteredBurgs()) {
+    if (b.lock) continue;
+    const name = Names.getCulture(b.culture!);
+    b.name = name;
+    burgLabels.select(`[data-id='${b.i}']`).text(name);
+  }
+  burgsOverviewAddLines();
 }
 
 function enterAddBurgMode(this: HTMLElement): void {
