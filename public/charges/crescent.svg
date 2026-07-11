@@ -1,7 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
-  <g id="crescent" stroke-width=".5">
-    <path d="M84 65c-32 15-24 68 16 68s48-53 16-68c18 20 2 41-16 41S67 85 84 65z"/>
-    <path fill="none" d="M84 65c-26 15-14 56 16 56s42-41 16-56"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="crescent" stroke-width=".5"><path d="M84 65c-32 15-24 68 16 68s48-53 16-68c18 20 2 41-16 41S67 85 84 65z"/><path fill="none" d="M84 65c-26 15-14 56 16 56s42-41 16-56"/></g></svg>
