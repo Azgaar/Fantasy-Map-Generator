@@ -49,7 +49,7 @@ function addLines(): void {
     .selectAll<SVGGElement, unknown>("g")
     .nodes()
     .map(el => {
-      const count = el.children.length;
+      const count = pack.routes.filter((route: Route) => route.group === el.id).length;
       return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
           <span>${el.id} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
@@ -83,6 +83,7 @@ function addGroup(): void {
       .attr("stroke-dasharray", "1 0.5")
       .attr("stroke-linecap", "butt");
     ensureEl<HTMLSelectElement>("routeGroup").options.add(new Option(group, group));
+    syncRouteLayers();
     addLines();
 
     ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").options.add(new Option(group, group));
@@ -98,6 +99,8 @@ function removeGroup(group: string): void {
     onConfirm: () => {
       pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
       if (!DEFAULT_GROUPS.includes(group)) routes.select(`#${group}`).remove();
+      syncRouteLayers();
+      renderViewport(getViewportBounds);
       addLines();
     }
   });

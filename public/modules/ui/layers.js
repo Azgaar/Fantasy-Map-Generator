@@ -258,6 +258,7 @@ function drawLayers() {
   if (layerIsOn("toggleRulers")) rulers.draw();
   // scale bar
   // vignette
+  renderViewport(getViewportBounds);
 }
 
 function toggleHeight(event) {
@@ -844,29 +845,14 @@ function toggleRoutes(event) {
 
 function drawRoutes() {
   TIME && console.time("drawRoutes");
-  const routePaths = {};
-
-  for (const route of pack.routes) {
-    const { i, group, points } = route;
-    if (!points || points.length < 2) continue;
-    if (!routePaths[group]) routePaths[group] = [];
-    routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
-  }
-
-  routes.attr("fill", "none").selectAll("path").remove();
-  for (const group in routePaths) {
-    routes.select("#" + group).html(routePaths[group].join(""));
-  }
-
+  syncRouteLayers();
+  renderViewport(getViewportBounds);
   TIME && console.timeEnd("drawRoutes");
 }
 
 function drawRoute(route) {
-  routes
-    .select("#" + route.group)
-    .append("path")
-    .attr("d", Routes.getPath(route))
-    .attr("id", "route" + route.i);
+  syncRouteLayers();
+  renderViewport(getViewportBounds);
 }
 
 function toggleMilitary(event) {
@@ -911,6 +897,7 @@ function toggleLabels(event) {
     $("#labels").fadeIn();
     // don't redraw labels as they are not stored in data yet
     if (labels.selectAll("text").size() === 0) drawLabels();
+    else renderViewport(getViewportBounds);
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
     if (event && isCtrlClick(event)) return editStyle("labels");
@@ -922,7 +909,7 @@ function toggleLabels(event) {
 function drawLabels() {
   drawStateLabels();
   drawBurgLabels();
-  invokeActiveZooming();
+  renderViewport(getViewportBounds);
 }
 
 function toggleBurgIcons(event) {
@@ -994,7 +981,7 @@ function toggleEmblems(event) {
     turnButtonOn("toggleEmblems");
     if (!emblems.selectAll("use").size()) drawEmblems();
     $("#emblems").fadeIn();
-    invokeActiveZooming();
+    renderViewport(getViewportBounds);
     if (event && isCtrlClick(event)) editStyle("emblems");
   } else {
     if (event && isCtrlClick(event)) return editStyle("emblems");

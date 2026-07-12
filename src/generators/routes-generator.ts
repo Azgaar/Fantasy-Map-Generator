@@ -811,6 +811,8 @@ class RoutesModule {
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
     viewbox.select(`#route${route.i}`).remove();
+    releaseViewportRoute(route.i);
+    syncRouteLayers();
   }
 
   getConnectivityRate(cellId: number): number {
@@ -874,7 +876,18 @@ class RoutesModule {
 
   getLength(routeId: number): number {
     const path = routes.select(`#route${routeId}`).node() as SVGPathElement;
-    return path.getTotalLength();
+    if (path) return path.getTotalLength();
+
+    const route = pack.routes.find(route => route.i === routeId);
+    if (!route) return 0;
+
+    const temporaryPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    temporaryPath.setAttribute("d", this.getPath(route));
+    temporaryPath.setAttribute("visibility", "hidden");
+    routes.node()?.appendChild(temporaryPath);
+    const length = temporaryPath.getTotalLength();
+    temporaryPath.remove();
+    return length;
   }
 
   // run on map load to restore connections based on routes data

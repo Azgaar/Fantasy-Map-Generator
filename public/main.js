@@ -183,10 +183,10 @@ let scale = 1;
 let viewX = 0;
 let viewY = 0;
 
-let rafId = null;
+let cameraFrameId = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
-function zoomRaf() {
+function handleZoom() {
   const { k, x, y } = d3.event.transform;
 
   const isScaleChanged = Boolean(scale - k);
@@ -203,49 +203,51 @@ function zoomRaf() {
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
 
-  if (rafId) return;
-  rafId = requestAnimationFrame(() => {
-    rafId = null;
+  if (!cameraFrameId) {
+    cameraFrameId = requestAnimationFrame(() => {
+      cameraFrameId = null;
 
-    // Safely clears these flags for future renders
-    const didScaleChange = pendingScaleChange;
-    const didPositionChange = pendingPositionChange;
-    pendingScaleChange = false;
-    pendingPositionChange = false;
+      // Safely clears these flags for future renders
+      const didScaleChange = pendingScaleChange;
+      const didPositionChange = pendingPositionChange;
+      pendingScaleChange = false;
+      pendingPositionChange = false;
 
-    // Uses global values, so each frame always draws using the latest positioning values
-    viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+      // Uses global values, so each frame always draws using the latest positioning values
+      viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
 
-    if (didPositionChange) {
-      if (layerIsOn("toggleCoordinates")) drawCoordinates();
-    }
+      if (didPositionChange) {
+        if (layerIsOn("toggleCoordinates")) drawCoordinates();
+      }
 
-    if (customization === 1) {
-      const canvas = ensureEl("canvas");
-      if (canvas && canvas.style.opacity !== "0") {
-        const img = ensureEl("imageToConvert");
-        if (img) {
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (customization === 1) {
+        const canvas = ensureEl("canvas");
+        if (canvas && canvas.style.opacity !== "0") {
+          const img = ensureEl("imageToConvert");
+          if (img) {
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
         }
       }
-    }
 
-    if (didScaleChange) {
-      invokeActiveZooming();
-      drawScaleBar(scaleBar, scale);
-      fitScaleBar(scaleBar, svgWidth, svgHeight);
-    }
+      if (didScaleChange) {
+        drawScaleBar(scaleBar, scale);
+        fitScaleBar(scaleBar, svgWidth, svgHeight);
+      }
 
-    if (didPositionChange || didScaleChange) {
-      window.updateMinimap && updateMinimap();
-    }
-  });
+      if (didPositionChange || didScaleChange) {
+        window.updateMinimap && updateMinimap();
+      }
+    });
+  }
+
+  scheduleViewportRender(getViewportBounds);
 }
 
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", handleZoom);
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +ensureEl("populationRateInput").value;
@@ -262,6 +264,19 @@ var graphHeight = +mapHeightInput.value;
 // svg canvas resolution, can be changed
 let svgWidth = graphWidth;
 let svgHeight = graphHeight;
+
+function getViewportBounds() {
+  const padding = 80 / scale;
+  return {
+    scale,
+    x0: Math.max(-viewX / scale - padding, 0),
+    y0: Math.max(-viewY / scale - padding, 0),
+    x1: Math.min((svgWidth - viewX) / scale + padding, graphWidth),
+    y1: Math.min((svgHeight - viewY) / scale + padding, graphHeight)
+  };
+}
+
+window.getViewportBounds = getViewportBounds;
 
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern
@@ -521,7 +536,7 @@ function findBurgForMFCG(params) {
   }
 
   zoomTo(b.x, b.y, 8, 1600);
-  invokeActiveZooming();
+  renderViewport(getViewportBounds);
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 
@@ -534,70 +549,6 @@ function zoomTo(x, y, z = 8, d = 2000) {
 // Reset zoom to initial
 function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
-}
-
-// active zooming feature
-function invokeActiveZooming() {
-  const isOptimized = shapeRendering.value === "optimizeSpeed";
-
-  if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
-    // toggle shade/blur filter for coatline on zoom
-    const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    coastline.select("#sea_island").attr("filter", filter);
-  }
-
-  // rescale labels on zoom
-  if (labels.style("display") !== "none") {
-    labels.selectAll("g").each(function () {
-      if (this.id === "burgLabels") return;
-      const desired = +this.dataset.size;
-      const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
-
-      const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-    });
-  }
-
-  // rescale emblems on zoom
-  if (emblems.style("display") !== "none") {
-    emblems.selectAll("g").each(function () {
-      const size = this.getAttribute("font-size") * scale;
-      const hidden = hideEmblems.checked && (size < 25 || size > 300);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href"))
-        renderGroupCOAs(this);
-    });
-  }
-
-  // change states halo width
-  if (!customization && !isOptimized) {
-    const desired = +statesHalo.attr("data-width");
-    const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
-  }
-
-  // rescale map markers
-  +markers.attr("rescale") &&
-    pack.markers?.forEach(marker => {
-      const { i, x, y, size = 30, hidden } = marker;
-      const el = !hidden && document.getElementById(`marker${i}`);
-      if (!el) return;
-
-      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
-      el.setAttribute("width", zoomedSize);
-      el.setAttribute("height", zoomedSize);
-      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
-      el.setAttribute("y", rn(y - zoomedSize, 1));
-    });
-
-  // rescale rulers to have always the same size
-  if (ruler.style("display") !== "none") {
-    const size = rn((10 / scale ** 0.3) * 2, 2);
-    ruler.selectAll("text").attr("font-size", size);
-  }
 }
 
 // add drag to upload logic, pull request from @evyatron
@@ -653,7 +604,7 @@ async function generate(options) {
     const timeStart = performance.now();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
-    invokeActiveZooming();
+    renderViewport(getViewportBounds);
     setSeed(precreatedSeed);
     INFO && console.group("Generated Map " + seed);
 
