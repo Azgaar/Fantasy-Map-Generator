@@ -21,6 +21,7 @@ function editUnits() {
   ensureEl("distanceScaleInput").on("change", changeDistanceScale);
   ensureEl("heightUnit").on("change", changeHeightUnit);
   ensureEl("heightExponentInput").on("input", changeHeightExponent);
+  ensureEl("altitudeLegend").on("click", toggleLegend);
   ensureEl("temperatureScale").on("change", changeTemperatureScale);
 
   ensureEl("populationRateInput").on("change", changePopulationRate);
@@ -56,17 +57,21 @@ function editUnits() {
   }
 
   function changeHeightUnit() {
-    if (this.value !== "custom_name") return;
-
-    prompt("Provide a custom name for a height unit", {default: ""}, custom => {
-      this.options.add(new Option(custom, custom, false, true));
-      lock("heightUnit");
-    });
+    if (this.value === "custom_name") {
+      prompt("Provide a custom name for a height unit", {default: ""}, custom => {
+        this.options.add(new Option(custom, custom, false, true));
+        lock("heightUnit");
+        updateLegendIfVisible();
+      });
+      return;
+    }
+    updateLegendIfVisible();
   }
 
   function changeHeightExponent() {
     calculateTemperatures();
     if (layerIsOn("toggleTemperature")) drawTemperature();
+    updateLegendIfVisible();
   }
 
   function changeTemperatureScale() {
@@ -117,7 +122,104 @@ function editUnits() {
     localStorage.removeItem("populationRate");
     localStorage.removeItem("urbanization");
     localStorage.removeItem("urbanDensity");
+
+    updateLegendIfVisible();
   }
+
+  function toggleLegend() {
+    const isVisible = legend.selectAll("*").size() > 0;
+
+    if (isVisible) {
+      clearLegend();
+    } else {
+      updateAndDisplayLegend();
+    }
+  }
+
+  let legendHeightsCache = null;
+
+  function getLegendHeightsCache() {
+    const heights = pack?.cells?.h;
+    if (!heights) return null;
+
+    if (
+      legendHeightsCache &&
+      legendHeightsCache.heightsRef === heights &&
+      legendHeightsCache.heightsLen === heights.length
+    ) {
+      return legendHeightsCache;
+    }
+
+    const countByHeight = new Map();
+    for (const h of heights) countByHeight.set(h, (countByHeight.get(h) || 0) + 1);
+
+    const sortedHeights = Array.from(countByHeight.keys()).sort((a, b) => a - b);
+
+    // Select a representative sample of heights across the range
+    const totalSamples = 10;
+    const step = Math.max(1, Math.floor(sortedHeights.length / totalSamples));
+    const sampledHeights = sortedHeights.filter(
+      (_, index) => index % step === 0 || index === sortedHeights.length - 1
+    );
+
+    legendHeightsCache = {
+      heightsRef: heights,
+      heightsLen: heights.length,
+      countByHeight,
+      sortedHeights,
+      sampledHeights
+    };
+
+    return legendHeightsCache;
+  }
+
+  function updateAndDisplayLegend() {
+    const cache = getLegendHeightsCache();
+    if (!cache) return;
+
+    const schemeName =
+      terrs.select("#landHeights").attr("scheme") ||
+      terrs.select("#oceanHeights").attr("scheme") ||
+      "bright";
+    const scheme = getColorScheme(schemeName);
+
+    const heightUnitSelect = ensureEl("heightUnit");
+    const selectedOpt = heightUnitSelect.selectedOptions[0];
+    const selectedText = selectedOpt?.text?.trim() ?? "";
+    const parenAbbrev = selectedText.match(/\(([^)]+)\)/)?.[1];
+    const heightUnitName =
+      heightUnitSelect.value === "custom_name"
+        ? heightUnitSelect.nextElementSibling?.value || selectedText
+        : (parenAbbrev ?? selectedText) || heightUnitSelect.value;
+
+    const sampled = cache.sampledHeights.map(height => {
+      const v = 1 - (height < 20 ? height - 5 : height) / 100;
+      const sRGB = scheme(v);
+      return {height, color: sRGB};
+    });
+
+    const data = sampled.map(c => [rn(c.height, 0), c.color, getHeight(c.height)]);
+
+    // Set the number of items per column
+    styleLegendColItems.value = data.length;
+
+    drawLegend(`Heights (in ${heightUnitName})`, data);
+
+    // Center the legend label
+    const legendLabel = legend.select("#legendLabel");
+    const bbox = legend.node().getBBox();
+    legendLabel.attr("x", bbox.width / 2);
+
+    // Use shared legend positioning logic (defaults near bottom-right when data-x/y are unset)
+    if (window.fitLegendBox) fitLegendBox();
+  }
+
+  function updateLegendIfVisible() {
+    if (legend.selectAll("*").size() > 0) {
+      updateAndDisplayLegend();
+    }
+  }
+  window.updateLegendIfVisible = updateLegendIfVisible;
 
   function addRuler() {
     if (!layerIsOn("toggleRulers")) toggleRulers();
