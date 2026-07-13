@@ -1,22 +1,9 @@
 import { pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { ensureEl, getPackPolygon, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
-
-const DIALOG_HTML = /* html */ `
-  <div>Click on map to add/remove route points</div>
-  <div id="routeCreatorBody" class="table" style="margin: 0.3em 0"></div>
-  <div id="routeCreatorBottom">
-    <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
-    <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
-    <div style="display: inline-block">
-      Group:
-      <select id="routeCreatorGroupSelect"></select>
-      <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
-    </div>
-  </div>`;
 
 function open(defaultGroup?: string): void {
   if (customization) return;
@@ -32,7 +19,7 @@ function open(defaultGroup?: string): void {
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
 
   creatorPoints = [];
-  ensureEl("routeCreator").innerHTML = DIALOG_HTML;
+  renderDialog();
 
   // update route groups
   ensureEl("routeCreatorGroupSelect").innerHTML = routes
@@ -44,19 +31,38 @@ function open(defaultGroup?: string): void {
     })
     .join("");
 
-  // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routeCreatorGroupSelect").on("change", redrawCreatorRoute);
-  ensureEl("routeCreatorGroupEdit").on("click", openRouteGroupsEditor);
-  ensureEl("routeCreatorComplete").on("click", completeCreation);
-  ensureEl("routeCreatorCancel").on("click", cancelCreation);
-  ensureEl("routeCreatorBody").on("click", onBodyClick);
-
   $("#routeCreator").dialog({
     title: "Create Route",
     resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRouteCreator
   });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("routeCreator");
+
+  const html = /* html */ `<div id="routeCreator" class="dialog">
+    <div>Click on map to add/remove route points</div>
+    <div id="routeCreatorBody" class="table" style="margin: 0.3em 0"></div>
+    <div id="routeCreatorBottom">
+      <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
+      <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+      <div style="display: inline-block">
+        Group:
+        <select id="routeCreatorGroupSelect"></select>
+        <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+      </div>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("routeCreatorGroupSelect").on("change", redrawCreatorRoute);
+  ensureEl("routeCreatorGroupEdit").on("click", openRouteGroupsEditor);
+  ensureEl("routeCreatorComplete").on("click", completeCreation);
+  ensureEl("routeCreatorCancel").on("click", cancelCreation);
+  ensureEl("routeCreatorBody").on("click", onBodyClick);
 }
 
 function redrawCreatorRoute(): void {
@@ -171,7 +177,7 @@ function closeRouteCreator(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  ensureEl("routeCreator").innerHTML = "";
+  destroyDialogIfExists("routeCreator");
 }
 
 export const RouteCreator = { open };

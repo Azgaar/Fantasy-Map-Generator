@@ -5,7 +5,6 @@ import { clearHighlight, highlight } from "../renderers/draw-trade-animation";
 import type { TradeBatch } from "../renderers/trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
-let isInitialized = false;
 let activeBatch: TradeBatch;
 
 function open(batch: TradeBatch): void {
@@ -19,6 +18,7 @@ function open(batch: TradeBatch): void {
   const path = TradeAnimation.findRoutePath(startBurg.cell, endBurg.cell);
   if (!path) return;
 
+  renderDialog();
   tradeDetailsAddLines(path.points);
   highlight(path.points);
 
@@ -28,18 +28,39 @@ function open(batch: TradeBatch): void {
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: closeTradeDetails
   });
+}
 
-  if (!isInitialized) {
-    ensureEl("tradeDetailsSummary").on("click", event => {
-      const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");
-      if (!activeBatch || !zoomEl) return;
-      const burgId = activeBatch[zoomEl.dataset.zoom === "start" ? "startBurgId" : "endBurgId"];
-      const burg = pack.burgs[burgId];
-      if (!burg) return;
-      zoomTo(burg.x, burg.y, 8, 1500);
-    });
-    isInitialized = true;
-  }
+function renderDialog(): void {
+  document.getElementById("tradeDetails")?.remove();
+  const editorHtml = /* html */ `<div id="tradeDetails" class="dialog stable">
+      <div>
+        <div id="tradeDetailsSummary" class="totalLine"></div>
+        <div id="tradeDetailsHeader" class="header" style="grid-template-columns: 2.5em 10em 5em 5.5em 3.6em;">
+          <div></div>
+          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+          <div data-tip="Click to sort by units" class="sortable icon-sort-number-down" data-sortby="units">Units&nbsp;</div>
+          <div data-tip="Click to sort by unit price" class="sortable" data-sortby="price">Price&nbsp;</div>
+          <div data-tip="Click to sort by value" class="sortable" data-sortby="value">Value&nbsp;</div>
+        </div>
+        <div id="tradeDetailsBody" class="table" style="max-height:30em"></div>
+        <div id="tradeDetailsFooter" class="totalLine">
+          <div style="margin-left: 5px">Distance: <span id="tradeDetailsFooterDistance">0</span></div>
+          <div style="margin-left: 12px" data-tip="Total traded units">Units: <span id="tradeDetailsFooterUnits">0</span></div>
+          <div style="margin-left: 12px" data-tip="Total deal value">Value: <span id="tradeDetailsFooterValue">0</span></div>
+        </div>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("tradeDetailsHeader");
+
+  ensureEl("tradeDetailsSummary").on("click", event => {
+    const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");
+    if (!activeBatch || !zoomEl) return;
+    const burgId = activeBatch[zoomEl.dataset.zoom === "start" ? "startBurgId" : "endBurgId"];
+    const burg = pack.burgs[burgId];
+    if (!burg) return;
+    zoomTo(burg.x, burg.y, 8, 1500);
+  });
 }
 
 function tradeDetailsAddLines(points: Point[]): void {
@@ -107,9 +128,9 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 }
 
 function closeTradeDetails(): void {
-  ensureEl("tradeDetailsBody").innerHTML = "";
-  ensureEl("tradeDetailsSummary").innerHTML = "";
   clearHighlight();
+  $("#tradeDetails").dialog("destroy");
+  ensureEl("tradeDetails").remove();
 }
 
 export const TradeDetails = { open };

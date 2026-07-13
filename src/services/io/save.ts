@@ -78,7 +78,7 @@ function prepareMapData(): string {
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
   const rulersString = rulers.toString();
-  const fonts = JSON.stringify(getUsedFonts(svg.node()!));
+  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
@@ -112,6 +112,7 @@ function prepareMapData(): string {
   const goods = JSON.stringify(pack.goods);
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
+  const labels = JSON.stringify(pack.labels || []);
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
@@ -179,7 +180,8 @@ function prepareMapData(): string {
     markets,
     deals,
     pack.cells.market,
-    customGoodIcons
+    customGoodIcons,
+    labels
   ].join("\r\n");
   return mapData;
 }

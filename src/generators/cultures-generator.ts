@@ -13,6 +13,9 @@ export interface Culture {
   lock?: boolean;
   code?: string;
   center?: number;
+  // transient coordinates cached by the heightmap editor across a re-graph
+  x?: number;
+  y?: number;
   sort?: (i: number) => number;
   odd?: number;
   color?: string;

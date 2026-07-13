@@ -8,11 +8,11 @@ toolsContent.addEventListener("click", function (event) {
   const button = event.target.id;
 
   // click on open Editor buttons
-  if (button === "editHeightmapButton") editHeightmap();
-  else if (button === "editBiomesButton") editBiomes();
+  if (button === "editHeightmapButton") window.Controllers.HeightmapEditor.open();
+  else if (button === "editBiomesButton") window.Controllers.BiomesEditor.open();
   else if (button === "editStatesButton") window.Controllers.StatesEditor.open();
-  else if (button === "editProvincesButton") editProvinces();
-  else if (button === "editDiplomacyButton") editDiplomacy();
+  else if (button === "editProvincesButton") window.Controllers.ProvincesEditor.open();
+  else if (button === "editDiplomacyButton") window.Controllers.DiplomacyEditor.open();
   else if (button === "editCoastlineSettings") window.Controllers.CoastlineEditor.open();
   else if (button === "editTradeAnimationButton") window.Controllers.TradeAnimationEditor.open();
   else if (button === "editCulturesButton") window.Controllers.CulturesEditor.open();
@@ -20,15 +20,15 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editGoods") window.Controllers.GoodsEditor.open();
   else if (button === "editEmblemButton") openEmblemEditor();
   else if (button === "editNamesBaseButton") window.Controllers.NamesbaseEditor.open();
-  else if (button === "editUnitsButton") editUnits();
-  else if (button === "editNotesButton") editNotes();
-  else if (button === "editZonesButton") editZones();
+  else if (button === "editUnitsButton") window.Controllers.UnitsEditor.open();
+  else if (button === "editNotesButton") window.Controllers.NotesEditor.open();
+  else if (button === "editZonesButton") window.Controllers.ZonesEditor.open();
   else if (button === "overviewChartsButton") window.Controllers.ChartsOverview.open();
   else if (button === "overviewBurgsButton") window.Controllers.BurgsOverview.open();
   else if (button === "overviewRoutesButton") window.Controllers.RoutesOverview.open();
   else if (button === "overviewRiversButton") window.Controllers.RiversOverview.open();
   else if (button === "overviewMilitaryButton") window.Controllers.MilitaryOverview.open();
-  else if (button === "overviewMarkersButton") overviewMarkers();
+  else if (button === "overviewMarkersButton") window.Controllers.MarkersOverview.open();
   else if (button === "overviewMarketsButton") window.Controllers.MarketsOverview.open();
   else if (button === "overviewCellsButton") viewCellDetails();
   else if (button === "openMinimapButton") openMinimap();
@@ -82,6 +82,7 @@ toolsContent.addEventListener("click", function (event) {
 function processFeatureRegeneration(event, button) {
   if (button === "regenerateStateLabels") {
     $("#labels").fadeIn();
+    Labels.generateStateLabels();
     drawStateLabels();
   } else if (button === "regenerateReliefIcons") {
     drawReliefIcons();
@@ -127,7 +128,7 @@ async function openEmblemEditor() {
   }
 
   await COArenderer.trigger(id, el.coa);
-  editEmblem(type, id, el);
+  window.Controllers.EmblemsEditor.open(type, id, el);
 }
 
 function regenerateRoutes() {
@@ -184,13 +185,14 @@ function regenerateStates() {
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
 
+  Labels.generateStateLabels();
   drawStateLabels();
   Military.generate();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
-  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  findEl("burgsOverviewRefresh")?.click();
+  findEl("statesEditorRefresh")?.click();
+  findEl("militaryOverviewRefresh")?.click();
 }
 
 function recreateStates() {
@@ -238,8 +240,12 @@ function recreateStates() {
     if (!state.i || state.removed || state.lock) continue;
 
     // remove state labels
-    document.getElementById(`stateLabel${state.i}`)?.remove();
-    document.getElementById(`textPath_stateLabel${state.i}`)?.remove();
+    const label = Labels.getStateLabel(state.i);
+    if (label) {
+      document.getElementById(`pathLabel${label.i}`)?.remove();
+      document.getElementById(`textPath_pathLabel${label.i}`)?.remove();
+      Labels.remove(label.i);
+    }
 
     // remove state emblems
     document.getElementById(`stateCOA${state.i}`)?.remove();
@@ -270,23 +276,18 @@ function recreateStates() {
 
   const newStates = [{ i: 0, name: pack.states[0].name }];
 
+  // collect locked state labels before renumbering to avoid stateId collisions
+  const lockedStateLabels = new Map(lockedStates.map(s => [s.i, Labels.getStateLabel(s.i)]));
+
   // restore locked states
   lockedStates.forEach(state => {
     const newId = newStates.length;
     const { x, y } = pack.burgs[state.capital];
     capitalsTree.add([x, y]);
 
-    // update label id reference
-    document.getElementById(`textPath_stateLabel${state.i}`)?.setAttribute("id", `textPath_stateLabel${newId}`);
-    const $label = document.getElementById(`stateLabel${state.i}`);
-    if ($label) {
-      $label.setAttribute("id", `stateLabel${newId}`);
-      const $textPath = $label.querySelector("textPath");
-      if ($textPath) {
-        $textPath.removeAttribute("href");
-        $textPath.setAttribute("href", `#textPath_stateLabel${newId}`);
-      }
-    }
+    // point the label to the renumbered state (element ids are label-based and stay valid)
+    const lockedLabel = lockedStateLabels.get(state.i);
+    if (lockedLabel) Labels.update(lockedLabel, { stateId: newId });
 
     // update emblem id reference
     document.getElementById(`stateCOA${state.i}`)?.setAttribute("id", `stateCOA${newId}`);
@@ -488,8 +489,8 @@ function regenerateBurgs() {
   emblems.selectAll("use").remove();
   if (layerIsOn("toggleEmblems")) drawEmblems();
 
-  if (ensureEl("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
-  if (document.getElementById("statesEditorRefresh")?.offsetParent) statesEditorRefresh.click();
+  findEl("burgsOverviewRefresh")?.click();
+  findEl("statesEditorRefresh")?.click();
 }
 
 function regenerateGoods() {
@@ -621,7 +622,7 @@ function regenerateMilitary() {
   if (layerIsOn("toggleMilitary")) drawMilitary();
   else toggleMilitary();
 
-  if (ensureEl("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+  findEl("militaryOverviewRefresh")?.click();
 }
 
 function regenerateIce() {
@@ -634,7 +635,7 @@ function regenerateMarkers() {
   Markers.regenerate();
   turnButtonOn("toggleMarkers");
   drawMarkers();
-  if (ensureEl("markersOverviewRefresh").offsetParent) markersOverviewRefresh.click();
+  findEl("markersOverviewRefresh")?.click();
 }
 
 function regenerateZones(event) {
@@ -646,7 +647,7 @@ function regenerateZones(event) {
 
   function addNumberOfZones(number) {
     Zones.generate(number);
-    if (ensureEl("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    findEl("zonesEditorRefresh")?.click();
     if (layerIsOn("toggleZones")) drawZones();
   }
 }
@@ -679,57 +680,34 @@ function addLabelOnClick() {
   const cell = findCell(point[0], point[1]);
   const culture = pack.cells.culture[cell];
   const name = Names.getCulture(culture);
-  const id = getNextId("label");
 
   // use most recently selected label group
   const lastSelected = labelGroupSelect.value;
-  const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "#addedLabels" : "#" + lastSelected;
+  const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "addedLabels" :  lastSelected;
 
-  let group = labels.select(groupId);
-  if (!group.size())
-    group = labels
-      .append("g")
-      .attr("id", "addedLabels")
-      .attr("fill", "#3e3e4b")
-      .attr("opacity", 1)
-      .attr("stroke", "#3a3a3a")
-      .attr("stroke-width", 0)
-      .attr("font-family", "Almendra SC")
-      .attr("font-size", 18)
-      .attr("data-size", 18)
-      .attr("filter", null);
+  const group = d3.select(ensureLabelGroup(groupId));
 
   const example = group.append("text").attr("x", 0).attr("y", 0).text(name);
   const width = example.node().getBBox().width;
   example.remove();
+  const newLabel = Labels.addCustomLabel({
+    group: groupId,
+    text: name,
+    pathPoints: [
+      [rn(point[0] - width), point[1]],
+      [rn(point[0] + width), point[1]]
+    ]
+  })
 
-  group.classed("hidden", false);
-  group
-    .append("text")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("id", id)
-    .append("textPath")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("xlink:href", "#textPath_" + id)
-    .attr("startOffset", "50%")
-    .attr("font-size", "100%")
-    .append("tspan")
-    .attr("x", 0)
-    .text(name);
-
-  defs
-    .select("#textPaths")
-    .append("path")
-    .attr("id", "textPath_" + id)
-    .attr("d", `M${point[0] - width},${point[1]} h${width * 2}`);
+  drawCustomLabel(newLabel);
 
   if (d3.event.shiftKey === false) unpressClickToAddButton();
 }
 
-function toggleAddBurg() {
+async function toggleAddBurg() {
   unpressClickToAddButton();
   ensureEl("addBurgTool").classList.add("pressed");
-  window.Controllers.BurgsOverview.open();
+  await window.Controllers.BurgsOverview.open();
   ensureEl("addNewBurg").click();
 }
 
@@ -893,7 +871,7 @@ function addRiverOnClick() {
     Lakes.cleanupLakeData();
     unpressClickToAddButton();
     findEl("addNewRiver")?.classList.remove("pressed");
-    if (findEl("addNewRiver")?.offsetParent) riversOverviewRefresh.click();
+    findEl("riversOverviewRefresh")?.click();
   }
 }
 
@@ -906,7 +884,7 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
-  markersAddFromOverview.classList.add("pressed");
+  document.getElementById("markersAddFromOverview")?.classList.add("pressed");
 
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
   tip("Click on map to add a marker. Hold Shift to add multiple", true);
@@ -941,8 +919,8 @@ function addMarkerOnClick() {
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
 
   if (d3.event.shiftKey === false) {
-    ensureEl("markerAdd").classList.remove("pressed");
-    ensureEl("markersAddFromOverview").classList.remove("pressed");
+    document.getElementById("markerAdd")?.classList.remove("pressed");
+    document.getElementById("markersAddFromOverview")?.classList.remove("pressed");
     unpressClickToAddButton();
   }
 }

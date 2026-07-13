@@ -38,8 +38,15 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
-import { ensureEl, findEl, getComposedPath, getNextId } from "./nodeUtils";
-import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
+import { destroyDialogIfExists, ensureEl, findEl, getComposedPath, getNextId } from "./nodeUtils";
+import {
+  connectVertices,
+  extractPathPoints,
+  findPath,
+  getIsolines,
+  getPolesOfInaccessibility,
+  getVertexPath
+} from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
 import { convertTemperature, formatPrice, getHeight, getIntegerFromSI, getTemperatureLikeness, si } from "./unitUtils";
@@ -87,6 +94,7 @@ window.C_12 = C_12;
 
 window.ensureEl = ensureEl;
 window.findEl = findEl;
+window.destroyDialogIfExists = destroyDialogIfExists;
 window.getComposedPath = getComposedPath;
 window.getNextId = getNextId;
 
@@ -98,6 +106,7 @@ window.getPolesOfInaccessibility = getPolesOfInaccessibility;
 window.connectVertices = connectVertices;
 window.findPath = (start, end, getCost) => findPath(start, end, getCost, (window as any).pack);
 window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).pack);
+window.extractPathPoints = extractPathPoints;
 
 window.round = round;
 window.capitalize = capitalize;
@@ -186,6 +195,7 @@ export {
   convertTemperature,
   createTypedArray,
   debounce,
+  destroyDialogIfExists,
   distanceSquared,
   drawCellsValue,
   drawHeights,

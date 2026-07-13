@@ -207,7 +207,7 @@ function addListeners(dialog): void {
 }
 
 function cleanup(): void {
-  /* clear innerHTML, remove listeners */
+  /* remove any DOM this module created, drop listeners, reset module-scoped state */
 }
 
 export const ModuleEditor = { open };
@@ -222,6 +222,31 @@ window.ModuleEditor = { open };
 ```
 
 All controllers must be [`lazy-loaded`](../../src/lazy-loaders.ts), unless they are needed immediately on app start.
+
+### Own your HTML — create it on open, remove it on close
+
+A module is responsible for the full lifecycle of any DOM it introduces. Classic
+`public/` code often appended dialogs, panels, tooltips, and SVG groups once and
+left them in the document forever, relying on `display:none` and re-use. When
+porting, **do not carry that pattern over.** A migrated module must:
+
+- **Create its own markup.** Don't rely on a node hand-authored in
+  [`index.html`](../../index.html) being present. If the module needs a dialog,
+  panel, overlay, or SVG layer, build it (via `innerHTML`, `createElement`, or a
+  `Dialog` helper) when `open()` runs — and guard against duplicating it if
+  `open()` is called twice.
+- **Remove it on close.** The `onClose`/`cleanup` path must delete every node the
+  module added (`el.remove()`, `select("#moduleLayer").remove()`), detach event
+  listeners it attached to shared/global targets (`window`, `document`, `svg`,
+  `body`), and reset module-scoped `let` state. Leave the DOM exactly as the
+  module found it — no orphaned nodes, no leaked handlers.
+- **Delete the old static markup.** When the legacy node lived in `index.html`
+  (or another shared template), remove it there as part of the port so the two
+  don't coexist — the same rule as `git rm`-ing the old `public/**/x.js`.
+
+Wiring `cleanup` through the dialog's `onClose` (as above) is the seam that makes
+this automatic: opening builds the UI, closing tears it down. A module that only
+ever toggles visibility of a pre-existing node is a smell to fix, not preserve.
 
 ### Service (app-shell lifecycle)
 
@@ -240,8 +265,8 @@ export const Something = { init };
 deferred `main.js`, where `let mapId` and many globals are declared. So a
 bundled module must **not read a mutable/late global at module top level** —
 that throws `ReferenceError` and your `window.X` registration silently never
-runs. Read such globals lazily _inside_ the function, and gate first-run DOM
-setup behind an `isInitialized` flag. (A `import { … } from "d3"` at top level
+runs. Read such globals lazily _inside_ the function, and gate run DOM
+setup. (A `import { … } from "d3"` at top level
 is safe — it's part of the module graph, not a runtime global.)
 
 ## Finish the port

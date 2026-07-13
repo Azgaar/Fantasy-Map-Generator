@@ -1,36 +1,7 @@
 import { drag, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { ensureEl, getPackPolygon, getSegmentId, rn } from "../utils";
-
-const DIALOG_HTML = /* html */ `
-  <div id="routeBody" style="padding-bottom: 0.3em">
-    <div>
-      <div class="label">Name:</div>
-      <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
-      <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-      <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
-    </div>
-    <div data-tip="Select route group">
-      <div class="label">Group:</div>
-      <select id="routeGroup"></select>
-      <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
-      <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
-    </div>
-    <div data-tip="Route length in selected units">
-      <div class="label">Length:</div>
-      <input id="routeLength" disabled />
-    </div>
-  </div>
-  <div id="routeBottom">
-    <button id="routeCreateSelectingCells" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
-    <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
-    <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
-    <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-    <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
-    <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
-    <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
-  </div>`;
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getSegmentId, rn } from "../utils";
 
 function open(id: string): void {
   if (customization) return;
@@ -50,7 +21,7 @@ function open(id: string): void {
   select("#debug").append("g").attr("id", "controlCells");
   select("#debug").append("g").attr("id", "controlPoints");
 
-  ensureEl("routeEditor").innerHTML = DIALOG_HTML;
+  renderDialog();
 
   {
     const route = getRoute();
@@ -59,6 +30,48 @@ function open(id: string): void {
     drawCells(route.points);
     updateLockIcon();
   }
+
+  $("#routeEditor").dialog({
+    title: "Edit Route",
+    resizable: false,
+    position: { my: "left top", at: "left+10 top+10", of: "#map" },
+    close: closeRouteEditor
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("routeEditor");
+
+  const html = /* html */ `<div id="routeEditor" class="dialog">
+    <div id="routeBody" style="padding-bottom: 0.3em">
+      <div>
+        <div class="label">Name:</div>
+        <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
+        <span id="routeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
+      </div>
+      <div data-tip="Select route group">
+        <div class="label">Group:</div>
+        <select id="routeGroup"></select>
+        <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+        <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
+      </div>
+      <div data-tip="Route length in selected units">
+        <div class="label">Length:</div>
+        <input id="routeLength" disabled />
+      </div>
+    </div>
+    <div id="routeBottom">
+      <button id="routeCreateSelectingCells" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
+      <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
+      <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
+      <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
+      <button id="routeLegend" data-tip="Edit free text notes (legend) for the route" class="icon-edit"></button>
+      <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+      <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("routeCreateSelectingCells").on("click", showCreationDialog);
@@ -69,17 +82,11 @@ function open(id: string): void {
   ensureEl("routeLock").on("click", toggleLockButton);
   ensureEl("routeRemove").on("click", removeRoute);
   ensureEl("routeName").on("input", changeName);
+  ensureEl("routeNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("routeName").value));
   ensureEl("routeGroup").on("input", changeGroup);
   ensureEl("routeGroupEdit").on("click", openRouteGroupsEditor);
   ensureEl("routeEditStyle").on("click", editRouteGroupStyle);
   ensureEl("routeGenerateName").on("click", generateName);
-
-  $("#routeEditor").dialog({
-    title: "Edit Route",
-    resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRouteEditor
-  });
 }
 
 function openRouteGroupsEditor(): void {
@@ -172,7 +179,7 @@ function dragControlPoint(event: any): void {
 function redrawRoute(route: Route): void {
   elSelected.attr("d", Routes.getPath(route));
   updateRouteLength(route);
-  if (ensureEl("elevationProfile").offsetParent) showRouteElevationProfile();
+  if (findEl("elevationProfile")) showRouteElevationProfile();
 }
 
 function addControlPoint(this: any, event: any): void {
@@ -399,7 +406,7 @@ function showRouteElevationProfile(): void {
 function editRouteLegend(): void {
   const id = elSelected.attr("id");
   const route = getRoute();
-  editNotes(id, route.name!);
+  void Controllers.NotesEditor.open(id, route.name!);
 }
 
 function editRouteGroupStyle(): void {
@@ -448,7 +455,7 @@ function closeRouteEditor(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  ensureEl("routeEditor").innerHTML = "";
+  destroyDialogIfExists("routeEditor");
 }
 
 export const RouteEditor = { open };

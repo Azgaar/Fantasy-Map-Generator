@@ -1,43 +1,15 @@
 import { mean } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { ensureEl, rn } from "../utils";
-
-const DIALOG_HTML = /* html */ `
-  <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
-    <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">Route&nbsp;</div>
-    <div data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">Group&nbsp;</div>
-    <div data-tip="Click to sort by route length" class="sortable icon-sort-number-down" data-sortby="length">Length&nbsp;</div>
-  </div>
-  <div id="routesBody" class="table"></div>
-  <div id="routesFooter" class="totalLine">
-    <div data-tip="Routes number" style="margin-left: 4px">Routes:&nbsp;<span id="routesFooterNumber">0</span></div>
-    <div data-tip="Average length" style="margin-left: 12px">Average length:&nbsp;<span id="routesFooterLength">0</span></div>
-  </div>
-  <div id="routesBottom">
-    <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-    <button id="routesCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
-    <button id="routesExport" data-tip="Save routes-related data as a text file (.csv)" class="icon-download"></button>
-    <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
-    <button id="routesRemoveAll" data-tip="Remove all unlocked routes (locked routes are kept)" class="icon-trash"></button>
-    <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em">Search: <input id="routesSearch" type="search" /></label>
-  </div>`;
+import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
 function open(): void {
   if (customization) return;
   closeDialogs("#routesOverview, .stable");
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
-  ensureEl("routesOverview").innerHTML = DIALOG_HTML;
+  renderDialog();
   routesOverviewAddLines();
-
-  // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routesOverviewRefresh").on("click", routesOverviewAddLines);
-  ensureEl("routesCreateNew").on("click", createNewRoute);
-  ensureEl("routesExport").on("click", downloadRoutesData);
-  ensureEl("routesLockAll").on("click", toggleLockAll);
-  ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").on("input", routesOverviewAddLines);
 
   $("#routesOverview").dialog({
     title: "Routes Overview",
@@ -48,8 +20,43 @@ function open(): void {
   });
 }
 
+function renderDialog(): void {
+  destroyDialogIfExists("routesOverview");
+
+  const html = /* html */ `<div id="routesOverview" class="dialog stable">
+    <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
+      <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">Route&nbsp;</div>
+      <div data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">Group&nbsp;</div>
+      <div data-tip="Click to sort by route length" class="sortable icon-sort-number-down" data-sortby="length">Length&nbsp;</div>
+    </div>
+    <div id="routesBody" class="table"></div>
+    <div id="routesFooter" class="totalLine">
+      <div data-tip="Routes number" style="margin-left: 4px">Routes:&nbsp;<span id="routesFooterNumber">0</span></div>
+      <div data-tip="Average length" style="margin-left: 12px">Average length:&nbsp;<span id="routesFooterLength">0</span></div>
+    </div>
+    <div id="routesBottom">
+      <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+      <button id="routesCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
+      <button id="routesExport" data-tip="Save routes-related data as a text file (.csv)" class="icon-download"></button>
+      <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
+      <button id="routesRemoveAll" data-tip="Remove all unlocked routes (locked routes are kept)" class="icon-trash"></button>
+      <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em">Search: <input id="routesSearch" type="search" /></label>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  applySortingByHeader("routesHeader");
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("routesOverviewRefresh").on("click", routesOverviewAddLines);
+  ensureEl("routesCreateNew").on("click", createNewRoute);
+  ensureEl("routesExport").on("click", downloadRoutesData);
+  ensureEl("routesLockAll").on("click", toggleLockAll);
+  ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
+  ensureEl("routesSearch").on("input", routesOverviewAddLines);
+}
+
 function closeRoutesOverview(): void {
-  ensureEl("routesOverview").innerHTML = "";
+  destroyDialogIfExists("routesOverview");
 }
 
 function createNewRoute(): void {

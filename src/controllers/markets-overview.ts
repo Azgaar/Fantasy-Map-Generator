@@ -5,7 +5,6 @@ import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
 import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, getIsolines, getVertexPath, rn } from "../utils";
 
-let isInitialized = false;
 // Working copy of pack.cells.market mutated during manual assignment; applied on commit.
 let marketsWorking: Uint16Array | null = null;
 let marketsManualHistory: Uint16Array[] = [];
@@ -15,6 +14,7 @@ function open(): void {
   closeDialogs("#marketsOverview, .stable");
   if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
 
+  renderDialog();
   marketsOverviewAddLines();
 
   $("#marketsOverview").dialog({
@@ -24,61 +24,100 @@ function open(): void {
     close: closeMarketsOverview,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
+}
 
-  if (!isInitialized) {
-    ensureEl("marketsOverviewRefresh").on("click", marketsOverviewAddLines);
-    ensureEl("marketsOverviewExport").on("click", downloadMarketsCsv);
-    ensureEl("marketsOverviewCompare").on("click", () => Controllers.ComparePrices.open());
-    ensureEl("marketsOverviewPercentage").on("click", togglePercentageMode);
-    ensureEl("marketsManually").on("click", () => {
-      if (customization === 15) exitMarketsManualAssignment(false);
-      else enterMarketsManualAssignment();
-    });
-    ensureEl("marketsManuallyUndo").on("click", undoMarketsManualStep);
-    ensureEl("marketsManuallyApply").on("click", () => exitMarketsManualAssignment(true));
-    ensureEl("marketsManuallyCancel").on("click", () => exitMarketsManualAssignment(false));
-    ensureEl("marketsAdd").on("click", () => {
-      if (customization === 16) exitAddMarketMode();
-      else enterAddMarketMode();
-    });
-    ensureEl("marketsRegenerate").on("click", regenerateMarkets);
-    ensureEl("marketsRegenerateProduction").on("click", regenerateProduction);
-    ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
-      const target = ev.target as HTMLElement;
+function renderDialog(): void {
+  document.getElementById("marketsOverview")?.remove();
+  const editorHtml = /* html */ `<div id="marketsOverview" class="dialog stable">
+      <div id="marketsOverviewHeader" class="header" style="grid-template-columns: 1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em 1.2em;">
+        <div></div>
+        <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
+        <div data-tip="Owning state. Click to sort" class="sortable alphabetically" data-sortby="owner">Owner&nbsp;</div>
+        <div data-tip="Number of cells in market territory. Click to sort" class="sortable" data-sortby="cells">Cells&nbsp;</div>
+        <div data-tip="Number of burgs in market territory. Click to sort" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
+        <div data-tip="Total stock of all goods. Click to sort" class="sortable hide" data-sortby="stock">Stock&nbsp;</div>
+        <div data-tip="Total gross sales revenue. Click to sort" class="sortable hide" data-sortby="sales">Sales&nbsp;</div>
+        <div data-tip="Total purchase spending. Click to sort" class="sortable hide" data-sortby="buys">Buys&nbsp;</div>
+        <div data-tip="Market value: net trading flow plus unsold inventory value minus tax. Click to sort" class="sortable hide icon-sort-number-down" data-sortby="value">Value&nbsp;</div>
+        <div></div>
+      </div>
+      <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
+      <div id="marketsOverviewFooter" class="totalLine">
+        <div data-tip="Total number of markets" style="margin-left:5px">Markets:&nbsp;<span id="marketsOverviewFooterMarkets">0</span></div>
+        <div data-tip="Average gross sales revenue per market" style="margin-left:12px">Avg Sales:&nbsp;<span id="marketsOverviewFooterSales">0</span></div>
+        <div data-tip="Average purchase spending per market" style="margin-left:12px">Avg Buys:&nbsp;<span id="marketsOverviewFooterBuys">0</span></div>
+        <div data-tip="Average market value per market" style="margin-left:12px">Avg Value:&nbsp;<span id="marketsOverviewFooterValue">0</span></div>
+      </div>
+      <div id="marketsOverviewBottom">
+        <button id="marketsOverviewRefresh" data-tip="Refresh the overview" class="icon-cw"></button>
+        <button id="marketsOverviewPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
+        <button id="marketsOverviewCompare" data-tip="Compare good stock across markets" class="icon-chart-bar"></button>
+        <button id="marketsOverviewExport" data-tip="Save markets data as a CSV file" class="icon-download"></button>
+        <slider-input id="marketsBrush" min="1" max="100" value="15" data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="display: none;"></slider-input>
+        <button id="marketsManually" data-tip="Manually re-assign market territories" class="icon-brush"></button>
+        <div id="marketsManuallyButtons" style="display: none">
+          <button id="marketsManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
+          <button id="marketsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
+          <button id="marketsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
+        </div>
+        <button id="marketsAdd" data-tip="Add a new market. Click on a burg on the map. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="marketsRegenerate" data-tip="Regenerate markets and their territories" class="icon-arrows-cw"></button>
+        <button id="marketsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet"></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("marketsOverviewHeader");
 
-      const fillBox = target.closest<HTMLElement>("fill-box");
-      if (fillBox) {
-        const row = fillBox.closest<HTMLElement>(".states.market");
-        const marketId = row ? +row.dataset.id! : 0;
-        // marketId 0 is the "No market" row — it has no color to edit
-        if (marketId) marketChangeFill(fillBox, marketId);
-        return;
-      }
+  ensureEl("marketsOverviewRefresh").on("click", marketsOverviewAddLines);
+  ensureEl("marketsOverviewExport").on("click", downloadMarketsCsv);
+  ensureEl("marketsOverviewCompare").on("click", () => Controllers.ComparePrices.open());
+  ensureEl("marketsOverviewPercentage").on("click", togglePercentageMode);
+  ensureEl("marketsManually").on("click", () => {
+    if (customization === 15) exitMarketsManualAssignment(false);
+    else enterMarketsManualAssignment();
+  });
+  ensureEl("marketsManuallyUndo").on("click", undoMarketsManualStep);
+  ensureEl("marketsManuallyApply").on("click", () => exitMarketsManualAssignment(true));
+  ensureEl("marketsManuallyCancel").on("click", () => exitMarketsManualAssignment(false));
+  ensureEl("marketsAdd").on("click", () => {
+    if (customization === 16) exitAddMarketMode();
+    else enterAddMarketMode();
+  });
+  ensureEl("marketsRegenerate").on("click", regenerateMarkets);
+  ensureEl("marketsRegenerateProduction").on("click", regenerateProduction);
+  ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
+    const target = ev.target as HTMLElement;
 
-      if (target.classList.contains("icon-trash-empty")) {
-        const line = target.closest<HTMLElement>(".states.market");
-        if (!line) return;
-        confirmRemoveMarket(+line.dataset.id!);
-        return;
-      }
+    const fillBox = target.closest<HTMLElement>("fill-box");
+    if (fillBox) {
+      const row = fillBox.closest<HTMLElement>(".states.market");
+      const marketId = row ? +row.dataset.id! : 0;
+      // marketId 0 is the "No market" row — it has no color to edit
+      if (marketId) marketChangeFill(fillBox, marketId);
+      return;
+    }
 
+    if (target.classList.contains("icon-trash-empty")) {
       const line = target.closest<HTMLElement>(".states.market");
       if (!line) return;
-      const marketId = +line.dataset.id!;
+      confirmRemoveMarket(+line.dataset.id!);
+      return;
+    }
 
-      if (customization === 15) {
-        ensureEl("marketsOverviewBody")
-          .querySelector<HTMLElement>(".states.market.selected")
-          ?.classList.remove("selected");
-        line.classList.add("selected");
-      } else if (marketId) {
-        // marketId 0 is the non-editable "No market" summary row — no detail dialog
-        Controllers.MarketOverview.open(marketId);
-      }
-    });
+    const line = target.closest<HTMLElement>(".states.market");
+    if (!line) return;
+    const marketId = +line.dataset.id!;
 
-    isInitialized = true;
-  }
+    if (customization === 15) {
+      ensureEl("marketsOverviewBody")
+        .querySelector<HTMLElement>(".states.market.selected")
+        ?.classList.remove("selected");
+      line.classList.add("selected");
+    } else if (marketId) {
+      // marketId 0 is the non-editable "No market" summary row — no detail dialog
+      Controllers.MarketOverview.open(marketId);
+    }
+  });
 }
 
 function marketsOverviewAddLines(): void {
@@ -577,7 +616,8 @@ function downloadMarketsCsv(): void {
 function closeMarketsOverview(): void {
   if (customization === 15) exitMarketsManualAssignment(false);
   if (customization === 16) exitAddMarketMode();
-  ensureEl("marketsOverviewBody").innerHTML = "";
+  $("#marketsOverview").dialog("destroy");
+  ensureEl("marketsOverview").remove();
 }
 
 export const MarketsOverview = { open };

@@ -354,17 +354,10 @@ const plotTypeMap: Record<
 
 let charts: ChartOptions[] = [];
 let prevMapId: number | undefined;
-let isInitialized = false;
-
 function open() {
-  if (!isInitialized) {
-    appendStyleSheet();
-    insertHtml();
-    addListeners();
-    changeViewColumns();
-    updateMetricInfo();
-    isInitialized = true;
-  }
+  renderDialog();
+  changeViewColumns();
+  updateMetricInfo();
 
   closeDialogs("#chartsOverview, .stable");
 
@@ -385,71 +378,8 @@ function open() {
   });
 }
 
-function appendStyleSheet() {
-  const style = document.createElement("style");
-  style.textContent = /* css */ `
-    #chartsOverview {
-      max-width: 90vw !important;
-      max-height: 90vh !important;
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
-
-    #chartsOverview__form {
-      display: grid;
-      font-size: 1.1em;
-      margin: 0.3em 0;
-    }
-
-    #chartsOverview__form > div:first-child {
-      display: flex;
-      align-items: center;
-      gap: 0.2em;
-    }
-
-    #chartsOverview__form > div:nth-child(2) {
-      display: flex;
-      align-items: center;
-      gap: 1em;
-    }
-
-    #chartsOverview__form label {
-      display: inline-flex;
-      align-items: center;
-    }
-
-    #chartsOverview__charts {
-      overflow: auto;
-      scroll-behavior: smooth;
-      display: grid;
-    }
-
-    #chartsOverview__charts figure {
-      margin: 0;
-      padding: 0.6em 0 1em;
-      border-top: 1px solid rgba(128, 128, 128, 0.4);
-    }
-
-    #chartsOverview__charts figcaption {
-      font-size: 1.2em;
-      margin: 0 1% 0.4em 4%;
-      display: grid;
-      align-items: center;
-      grid-template-columns: 1fr auto;
-    }
-
-    #chartsOverview__plotByInfo {
-      margin-left: 0.3em;
-      cursor: help;
-      opacity: 0.6;
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-function insertHtml() {
+function renderDialog() {
+  document.getElementById("chartsOverview")?.remove();
   const entities = Object.entries(entitiesMap).map(([entity, { label }]): [string, string] => [entity, label]);
   const plotBy = Object.entries(quantizationMap).map(([plotBy, { label }]): [string, string] => [plotBy, label]);
 
@@ -525,12 +455,73 @@ function insertHtml() {
   ensureEl<HTMLSelectElement>("chartsOverview__entitiesSelect").value = "states";
   ensureEl<HTMLSelectElement>("chartsOverview__plotBySelect").value = "total_population";
   ensureEl<HTMLSelectElement>("chartsOverview__groupBySelect").value = "cultures";
-}
 
-function addListeners() {
   ensureEl("chartsOverview__form").on("submit", addChart as EventListener);
   ensureEl("chartsOverview__viewColumns").on("change", changeViewColumns);
   ensureEl("chartsOverview__plotBySelect").on("change", updateMetricInfo);
+
+  document.getElementById("chartsOverviewStyle")?.remove();
+  const style = document.createElement("style");
+  style.id = "chartsOverviewStyle";
+  style.textContent = /* css */ `
+    #chartsOverview {
+      max-width: 90vw !important;
+      max-height: 90vh !important;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    #chartsOverview__form {
+      display: grid;
+      font-size: 1.1em;
+      margin: 0.3em 0;
+    }
+
+    #chartsOverview__form > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 0.2em;
+    }
+
+    #chartsOverview__form > div:nth-child(2) {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+    }
+
+    #chartsOverview__form label {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #chartsOverview__charts {
+      overflow: auto;
+      scroll-behavior: smooth;
+      display: grid;
+    }
+
+    #chartsOverview__charts figure {
+      margin: 0;
+      padding: 0.6em 0 1em;
+      border-top: 1px solid rgba(128, 128, 128, 0.4);
+    }
+
+    #chartsOverview__charts figcaption {
+      font-size: 1.2em;
+      margin: 0 1% 0.4em 4%;
+      display: grid;
+      align-items: center;
+      grid-template-columns: 1fr auto;
+    }
+
+    #chartsOverview__plotByInfo {
+      margin-left: 0.3em;
+      cursor: help;
+      opacity: 0.6;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // Show the selected metric's hint via an info icon tooltip (keeps the dropdown labels compact).
@@ -906,9 +897,9 @@ function updateDialogPosition() {
 }
 
 function handleClose() {
-  const $chartContainer = ensureEl("chartsOverview__charts");
-  $chartContainer.innerHTML = "";
   $("#chartsOverview").dialog("destroy");
+  ensureEl("chartsOverview").remove();
+  document.getElementById("chartsOverviewStyle")?.remove();
 }
 
 // config

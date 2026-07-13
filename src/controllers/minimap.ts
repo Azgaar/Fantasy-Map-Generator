@@ -1,12 +1,8 @@
 import { ensureEl, minmax, rn } from "../utils";
 
-let minimapInitialized = false;
-
 function open(): void {
   closeDialogs("#minimap, .stable");
-  ensureMinimapStyles();
-  ensureMinimapMarkup();
-
+  renderDialog();
   updateMinimap();
 
   $("#minimap").dialog({
@@ -17,15 +13,24 @@ function open(): void {
     open: function (this: HTMLElement) {
       $(this).parent().addClass("minimap-dialog");
     },
-    close: function (this: HTMLElement) {
-      $(this).dialog("destroy");
-    }
+    close: closeMinimap
   });
 }
 
-function ensureMinimapStyles(): void {
-  if (document.getElementById("minimapStyles")) return;
+function renderDialog(): void {
+  document.getElementById("minimap")?.remove();
+  const html = /* html */ `<div id="minimap" class="dialog stable">
+      <div id="minimapViewportWrap">
+        <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="Map minimap">
+          <use id="minimapMapUse" href="#viewbox"></use>
+          <rect id="minimapViewport"></rect>
+        </svg>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl("minimapSurface").addEventListener("click", minimapClickToPan);
 
+  document.getElementById("minimapStyles")?.remove();
   const style = document.createElement("style");
   style.id = "minimapStyles";
   style.textContent = /* css */ `
@@ -65,28 +70,13 @@ function ensureMinimapStyles(): void {
       pointer-events: none;
     }
   `;
-
   document.head.append(style);
 }
 
-function ensureMinimapMarkup(): void {
-  if (minimapInitialized) return;
-
-  const container = ensureEl("minimapContent");
-  if (!container) return;
-
-  minimapInitialized = true;
-  container.innerHTML = /* html */ `
-    <div id="minimapViewportWrap">
-      <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="Map minimap">
-        <use id="minimapMapUse" href="#viewbox"></use>
-        <rect id="minimapViewport"></rect>
-      </svg>
-    </div>
-  `;
-
-  ensureEl("minimapSurface").addEventListener("click", minimapClickToPan);
-  window.updateMinimap = updateMinimap;
+function closeMinimap(): void {
+  $("#minimap").dialog("destroy");
+  ensureEl("minimap").remove();
+  document.getElementById("minimapStyles")?.remove();
 }
 
 function minimapClickToPan(event: MouseEvent): void {
@@ -137,5 +127,6 @@ declare global {
     updateMinimap: () => void;
   }
 }
+window.updateMinimap = updateMinimap;
 
 export const Minimap = { open };

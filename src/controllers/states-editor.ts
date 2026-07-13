@@ -1,8 +1,11 @@
 import { color, drag, interpolateString, max, pack as packLayout, pointer, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { Labels } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { drawLabel, removeLabel } from "@/renderers/draw-labels";
 import {
+  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
   formatPrice,
@@ -18,12 +21,11 @@ import {
   si
 } from "../utils";
 
-const $body = insertEditorHtml();
-addListeners();
 let statesManualHistory: string[] = [];
 
 function open(): void {
   if (customization) return;
+
   closeDialogs("#statesEditor, .stable");
   if (!layerIsOn("toggleStates")) toggleStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
@@ -31,6 +33,7 @@ function open(): void {
   if (layerIsOn("toggleBiomes")) toggleBiomes();
   if (layerIsOn("toggleReligions")) toggleReligions();
 
+  renderDialog();
   refreshStatesEditor();
 
   $("#statesEditor").dialog({
@@ -41,7 +44,8 @@ function open(): void {
   });
 }
 
-function insertEditorHtml(): HTMLElement {
+function renderDialog(): void {
+  destroyDialogIfExists("statesEditor");
   const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable">
     <div id="statesHeader" class="header" style="grid-template-columns: 11em 8em 7em 7em 5em 6em 6em 7em 7em 6em 7em">
       <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">State&nbsp;</div>
@@ -110,12 +114,8 @@ function insertEditorHtml(): HTMLElement {
       <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
     </div>
   </div>`;
-
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  return ensureEl("statesBodySection");
-}
 
-function addListeners(): void {
   applySortingByHeader("statesHeader");
 
   ensureEl("statesEditorRefresh").on("click", refreshStatesEditor);
@@ -136,13 +136,14 @@ function addListeners(): void {
   ensureEl("statesMerge").on("click", openStateMergeDialog);
   ensureEl("statesExport").on("click", downloadStatesCsv);
 
-  $body.on("click", event => {
+  ensureEl("statesBodySection").on("click", event => {
     const $element = (event as MouseEvent).target as HTMLElement;
     const classList = $element.classList;
     const stateId = Number(($element.parentNode as HTMLElement)?.dataset?.id);
     if ($element.tagName === "FILL-BOX") stateChangeFill($element);
     else if (classList.contains("name")) editStateName(stateId);
-    else if (classList.contains("coaIcon")) editEmblem("state", `stateCOA${stateId}`, pack.states[stateId]);
+    else if (classList.contains("coaIcon"))
+      void Controllers.EmblemsEditor.open("state", `stateCOA${stateId}`, pack.states[stateId]);
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
@@ -155,7 +156,7 @@ function addListeners(): void {
       updateLockStatus(stateId, classList);
   });
 
-  $body.on("input", ev => {
+  ensureEl("statesBodySection").on("input", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
     const line = $element.parentNode as HTMLElement;
@@ -163,7 +164,7 @@ function addListeners(): void {
     if (classList.contains("stateCapital")) stateChangeCapitalName(state, line, $element.value);
   });
 
-  $body.on("change", ev => {
+  ensureEl("statesBodySection").on("change", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
     const line = $element.parentNode as HTMLElement;
@@ -172,6 +173,14 @@ function addListeners(): void {
     else if (classList.contains("cultureType")) stateChangeType(state, line, $element.value);
     else if (classList.contains("statePower")) stateChangeExpansionism(state, line, $element.value);
   });
+}
+
+function closeStatesEditor(): void {
+  if (customization === 2) exitStatesManualAssignment(true);
+  if (customization === 3) exitAddStateMode();
+  select("#debug").selectAll(".highlight").remove();
+  $("#statesEditor").dialog("destroy");
+  ensureEl("statesEditor").remove();
 }
 
 function refreshStatesEditor(): void {
@@ -300,7 +309,7 @@ function statesEditorAddLines(): void {
       <span data-tip="Remove the state" class="icon-trash-empty hide"></span>
     </div>`;
   }
-  $body.innerHTML = lines;
+  ensureEl("statesBodySection").innerHTML = lines;
 
   // update footer
   ensureEl("statesFooterStates").innerHTML = String(pack.states.filter(s => s.i && !s.removed).length);
@@ -311,14 +320,16 @@ function statesEditorAddLines(): void {
   ensureEl("statesFooterPopulation").dataset.population = String(totalPopulation);
 
   // add listeners
-  $body.querySelectorAll(":scope > div").forEach($line => {
-    $line.on("mouseenter", stateHighlightOn);
-    $line.on("mouseleave", stateHighlightOff);
-    $line.on("click", selectStateOnLineClick);
-  });
+  ensureEl("statesBodySection")
+    .querySelectorAll(":scope > div")
+    .forEach($line => {
+      $line.on("mouseenter", stateHighlightOn);
+      $line.on("mouseleave", stateHighlightOff);
+      $line.on("click", selectStateOnLineClick);
+    });
 
-  if ($body.dataset.type === "percentage") {
-    $body.dataset.type = "absolute";
+  if (ensureEl("statesBodySection").dataset.type === "percentage") {
+    ensureEl("statesBodySection").dataset.type = "absolute";
     togglePercentageMode();
   }
   applySorting(ensureEl("statesHeader"));
@@ -400,6 +411,7 @@ function stateChangeFill(el: HTMLElement): void {
 }
 
 function editStateName(state: number): void {
+  renderNameEditor();
   const stateNameEditorCustomForm = ensureEl<HTMLInputElement>("stateNameEditorCustomForm");
   const stateNameEditorSelectForm = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm");
 
@@ -429,18 +441,21 @@ function editStateName(state: number): void {
         $(this).dialog("close");
       }
     },
-    position: { my: "center", at: "center", of: "svg" }
+    position: { my: "center", at: "center", of: "svg" },
+    close: closeStateNameEditor
   });
 
-  if (modules.editStateName) return;
-  modules.editStateName = true;
-
-  // add listeners
   ensureEl("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
   ensureEl("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
+  ensureEl("stateNameEditorShortSpeak").on("click", () =>
+    speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value)
+  );
   ensureEl("stateNameEditorAddForm").on("click", addCustomForm);
   ensureEl("stateNameEditorCustomForm").on("change", addCustomForm);
   ensureEl("stateNameEditorFullRegenerate").on("click", regenerateFullName);
+  ensureEl("stateNameEditorFullSpeak").on("click", () =>
+    speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value)
+  );
 
   function regenerateShortNameCulture() {
     const state = +ensureEl("stateNameEditor").dataset.state!;
@@ -498,9 +513,153 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) drawStateLabels([s.i]);
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
+      fitStateLabels([s.i]);
+      drawStateLabels([s.i]);
+    }
     refreshStatesEditor();
   }
+}
+
+function renderNameEditor(): void {
+  destroyDialogIfExists("stateNameEditor");
+  const nameEditorHtml = /* html */ `    <div id="stateNameEditor" class="dialog" data-state="0">
+      <div>
+        <div data-tip="State short name" class="label">Short name:</div>
+        <input
+          id="stateNameEditorShort"
+          data-tip="Type to change the short name"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 11em"
+        />
+        <span id="stateNameEditorShortSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span
+          id="stateNameEditorShortCulture"
+          data-tip="Generate culture-specific name"
+          class="icon-book pointer"
+        ></span>
+        <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+      </div>
+      <div data-tip="Select form name">
+        <div data-tip="State form name" class="label">Form name:</div>
+        <select id="stateNameEditorSelectForm" style="width: 11em">
+          <option value="">blank</option>
+          <optgroup label="Monarchy">
+            <option value="Beylik">Beylik</option>
+            <option value="Despotate">Despotate</option>
+            <option value="Dominion">Dominion</option>
+            <option value="Duchy">Duchy</option>
+            <option value="Emirate">Emirate</option>
+            <option value="Empire">Empire</option>
+            <option value="Horde">Horde</option>
+            <option value="Grand Duchy">Grand Duchy</option>
+            <option value="Heptarchy">Heptarchy</option>
+            <option value="Khaganate">Khaganate</option>
+            <option value="Khanate">Khanate</option>
+            <option value="Kingdom">Kingdom</option>
+            <option value="Marches">Marches</option>
+            <option value="Principality">Principality</option>
+            <option value="Satrapy">Satrapy</option>
+            <option value="Shogunate">Shogunate</option>
+            <option value="Sultanate">Sultanate</option>
+            <option value="Tsardom">Tsardom</option>
+            <option value="Ulus">Ulus</option>
+            <option value="Viceroyalty">Viceroyalty</option>
+          </optgroup>
+          <optgroup label="Republic">
+            <option value="Chancellery">Chancellery</option>
+            <option value="City-state">City-state</option>
+            <option value="Diarchy">Diarchy</option>
+            <option value="Federation">Federation</option>
+            <option value="Free City">Free City</option>
+            <option value="Most Serene Republic">Most Serene Republic</option>
+            <option value="Oligarchy">Oligarchy</option>
+            <option value="Protectorate">Protectorate</option>
+            <option value="Republic">Republic</option>
+            <option value="Tetrarchy">Tetrarchy</option>
+            <option value="Trade Company">Trade Company</option>
+            <option value="Triumvirate">Triumvirate</option>
+          </optgroup>
+          <optgroup label="Union">
+            <option value="Confederacy">Confederacy</option>
+            <option value="Confederation">Confederation</option>
+            <option value="Conglomerate">Conglomerate</option>
+            <option value="Commonwealth">Commonwealth</option>
+            <option value="League">League</option>
+            <option value="Union">Union</option>
+            <option value="United Hordes">United Hordes</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="United Provinces">United Provinces</option>
+            <option value="United Republic">United Republic</option>
+            <option value="United States">United States</option>
+            <option value="United Tribes">United Tribes</option>
+          </optgroup>
+          <optgroup label="Theocracy">
+            <option value="Bishopric">Bishopric</option>
+            <option value="Brotherhood">Brotherhood</option>
+            <option value="Caliphate">Caliphate</option>
+            <option value="Diocese">Diocese</option>
+            <option value="Divine Duchy">Divine Duchy</option>
+            <option value="Divine Grand Duchy">Divine Grand Duchy</option>
+            <option value="Divine Principality">Divine Principality</option>
+            <option value="Divine Kingdom">Divine Kingdom</option>
+            <option value="Divine Empire">Divine Empire</option>
+            <option value="Eparchy">Eparchy</option>
+            <option value="Exarchate">Exarchate</option>
+            <option value="Holy State">Holy State</option>
+            <option value="Imamah">Imamah</option>
+            <option value="Patriarchate">Patriarchate</option>
+            <option value="Theocracy">Theocracy</option>
+          </optgroup>
+          <optgroup label="Anarchy">
+            <option value="Commune">Commune</option>
+            <option value="Community">Community</option>
+            <option value="Council">Council</option>
+            <option value="Free Territory">Free Territory</option>
+            <option value="Tribes">Tribes</option>
+          </optgroup>
+        </select>
+        <input
+          id="stateNameEditorCustomForm"
+          placeholder="type form name"
+          data-tip="Enter custom form name"
+          style="display: none; width: 11em"
+        />
+        <span
+          id="stateNameEditorAddForm"
+          data-tip="Click to add custom state form name to the list"
+          class="icon-plus pointer"
+        ></span>
+      </div>
+      <div>
+        <div data-tip="State full name" class="label">Full name:</div>
+        <input
+          id="stateNameEditorFull"
+          data-tip="Type to change the full name"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 11em"
+        />
+        <span id="stateNameEditorFullSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span
+          id="stateNameEditorFullRegenerate"
+          data-tip="Click to re-generate full name"
+          data-tick="0"
+          class="icon-arrows-cw pointer"
+        ></span>
+      </div>
+      <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
+        <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
+        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
+}
+
+function closeStateNameEditor(): void {
+  $("#stateNameEditor").dialog("destroy");
+  ensureEl("stateNameEditor").remove();
 }
 
 function stateChangeCapitalName(state: number, line: HTMLElement, value: string): void {
@@ -508,7 +667,11 @@ function stateChangeCapitalName(state: number, line: HTMLElement, value: string)
   const capital = pack.states[state].capital;
   if (!capital) return;
   pack.burgs[capital].name = value;
-  (document.querySelector(`#burgLabel${capital}`) as HTMLElement).textContent = value;
+  const label = Labels.getBurgLabel(capital);
+  if (label) {
+    Labels.update(label, { text: value });
+    drawLabel(label);
+  }
 }
 
 function changePopulation(stateId: number): void {
@@ -700,12 +863,18 @@ function stateRemovePrompt(state: number): void {
   });
 }
 
+function removeStateLabel(stateId: number): void {
+  const label = Labels.getStateLabel(stateId);
+  if (!label) return;
+  Labels.remove(label);
+  removeLabel(label);
+}
+
 function stateRemove(stateId: number): void {
   statesBody.select(`#state${stateId}`).remove();
   statesBody.select(`#state-gap${stateId}`).remove();
   statesHalo.select(`#state-border${stateId}`).remove();
-  labels.select(`#stateLabel${stateId}`).remove();
-  defs.select(`#textPath_stateLabel${stateId}`).remove();
+  removeStateLabel(stateId);
 
   unfog(`focusState${stateId}`);
 
@@ -782,24 +951,26 @@ function toggleLegend(): void {
 }
 
 function togglePercentageMode(): void {
-  if ($body.dataset.type === "absolute") {
-    $body.dataset.type = "percentage";
+  if (ensureEl("statesBodySection").dataset.type === "absolute") {
+    ensureEl("statesBodySection").dataset.type = "percentage";
     const totalBurgs = +ensureEl("statesFooterBurgs").innerText;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
-    $body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      const { burgs, area, population, treasury, cells } = el.dataset;
-      el.querySelector<HTMLElement>(".stateBurgs")!.innerText = `${rn((+burgs! / totalBurgs) * 100)}%`;
-      el.querySelector<HTMLElement>(".stateCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
-      el.querySelector<HTMLElement>(".stateArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
-      el.querySelector<HTMLElement>(".statePopulation")!.innerText = `${rn((+population! / totalPopulation) * 100)}%`;
-      el.querySelector<HTMLElement>(".stateTreasury")!.innerText = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
-    });
+    ensureEl("statesBodySection")
+      .querySelectorAll<HTMLElement>(":scope > div")
+      .forEach(el => {
+        const { burgs, area, population, treasury, cells } = el.dataset;
+        el.querySelector<HTMLElement>(".stateBurgs")!.innerText = `${rn((+burgs! / totalBurgs) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
+        el.querySelector<HTMLElement>(".statePopulation")!.innerText = `${rn((+population! / totalPopulation) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateTreasury")!.innerText = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
+      });
   } else {
-    $body.dataset.type = "absolute";
+    ensureEl("statesBodySection").dataset.type = "absolute";
     statesEditorAddLines();
   }
 }
@@ -975,7 +1146,10 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels();
+  if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
+    fitStateLabels();
+    drawStateLabels();
+  }
 
   refreshStatesEditor();
 }
@@ -985,8 +1159,9 @@ function randomizeStatesExpansion(): void {
     if (!s.i || s.removed) return;
     const expansionism = rn(Math.random() * 4 + 1, 1);
     s.expansionism = expansionism;
-    ($body.querySelector(`div.states[data-id='${s.i}'] > input.statePower`) as HTMLInputElement).value =
-      String(expansionism);
+    (
+      ensureEl("statesBodySection").querySelector(`div.states[data-id='${s.i}'] > input.statePower`) as HTMLInputElement
+    ).value = String(expansionism);
   });
   recalculateStates(true);
 }
@@ -1022,9 +1197,11 @@ function enterStatesManualAssignent(): void {
       el.classList.add("hidden");
     });
   ensureEl("statesFooter").style.display = "none";
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "none";
-  });
+  ensureEl("statesBodySection")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "none";
+    });
   $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
   tip("Click on state to select, drag the circle to change state", true);
@@ -1034,14 +1211,14 @@ function enterStatesManualAssignent(): void {
     .call(drag<SVGElement, unknown>().on("start", dragStateBrush))
     .on("touchmove mousemove", moveStateBrush);
 
-  $body.querySelector("div")?.classList.add("selected");
+  ensureEl("statesBodySection").querySelector("div")?.classList.add("selected");
   statesManualHistory = [];
 }
 
 function selectStateOnLineClick(this: HTMLElement): void {
   if (customization !== 2) return;
   if ((this.parentNode as HTMLElement).id !== "statesBodySection") return;
-  $body.querySelector("div.selected")?.classList.remove("selected");
+  ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
   this.classList.add("selected");
 }
 
@@ -1053,8 +1230,8 @@ function selectStateOnMapClick(this: any, event: any): void {
   const assigned = statesBody.select("#temp").select(`polygon[data-cell='${i}']`);
   const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
 
-  $body.querySelector("div.selected")?.classList.remove("selected");
-  $body.querySelector(`div[data-id='${state}']`)?.classList.add("selected");
+  ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
+  ensureEl("statesBodySection").querySelector(`div[data-id='${state}']`)?.classList.add("selected");
 }
 
 function dragStateBrush(this: any, event: any): void {
@@ -1076,7 +1253,7 @@ function dragStateBrush(this: any, event: any): void {
 function changeStateForSelection(selection: number[]): void {
   const temp = statesBody.select("#temp");
 
-  const $selected = $body.querySelector<HTMLElement>("div.selected")!;
+  const $selected = ensureEl("statesBodySection").querySelector<HTMLElement>("div.selected")!;
   const stateNew = +$selected.dataset.id!;
   const color = pack.states[stateNew].color || "#ffffff";
   const preventOverwrite = (document.getElementById("statesManuallyProtect") as HTMLInputElement | null)?.checked;
@@ -1129,7 +1306,11 @@ function applyStatesManualAssignent(): void {
     refreshStatesEditor();
     States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
-    if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels([...new Set(affectedStates)]);
+    if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
+      const statesToRefit = [...new Set(affectedStates)];
+      fitStateLabels(statesToRefit);
+      drawStateLabels(statesToRefit);
+    }
     adjustProvinces([...new Set(affectedProvinces)]);
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     if (layerIsOn("toggleProvinces")) drawProvinces();
@@ -1304,15 +1485,17 @@ function exitStatesManualAssignment(close: boolean): void {
       el.classList.remove("hidden");
     });
   ensureEl("statesFooter").style.display = "block";
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "all";
-  });
+  ensureEl("statesBodySection")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "all";
+    });
   if (!close)
     $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
   restoreDefaultEvents();
   clearMainTip();
-  const selected = $body.querySelector("div.selected");
+  const selected = ensureEl("statesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
 }
 
@@ -1340,9 +1523,11 @@ function enterAddStateMode(this: HTMLElement): void {
   this.classList.add("pressed");
   tip("Click on the map to create a new capital or promote an existing burg", true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addState);
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "none";
-  });
+  ensureEl("statesBodySection")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "none";
+    });
 }
 
 function addState(this: SVGElement, event: MouseEvent): void {
@@ -1434,6 +1619,8 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
+  Labels.ensureStateLabel(newState);
+  fitStateLabels([newState]);
   drawStateLabels([newState]);
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
@@ -1448,9 +1635,11 @@ function exitAddStateMode(): void {
   customization = 0;
   restoreDefaultEvents();
   clearMainTip();
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "all";
-  });
+  ensureEl("statesBodySection")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "all";
+    });
   const statesAdd = ensureEl("statesAdd");
   if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
 }
@@ -1576,8 +1765,7 @@ function openStateMergeDialog(): void {
       statesBody.select(`#state${stateId}`).remove();
       statesBody.select(`#state-gap${stateId}`).remove();
       statesHalo.select(`#state-border${stateId}`).remove();
-      labels.select(`#stateLabel${stateId}`).remove();
-      defs.select(`#textPath_stateLabel${stateId}`).remove();
+      removeStateLabel(stateId);
 
       ensureEl(`stateCOA${stateId}`).remove();
       emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
@@ -1632,6 +1820,7 @@ function openStateMergeDialog(): void {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
+    fitStateLabels([rulingStateId]);
     drawStateLabels([rulingStateId]);
 
     refreshStatesEditor();
@@ -1641,7 +1830,7 @@ function openStateMergeDialog(): void {
 function downloadStatesCsv(): void {
   const unit = getAreaUnit("2");
   const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
-  const lines = Array.from($body.querySelectorAll<HTMLElement>(":scope > div"));
+  const lines = Array.from(ensureEl("statesBodySection").querySelectorAll<HTMLElement>(":scope > div"));
   const data = lines.map($line => {
     const { id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population } =
       $line.dataset;
@@ -1670,13 +1859,6 @@ function downloadStatesCsv(): void {
 
   const name = `${getFileName("States")}.csv`;
   downloadFile(csvData, name);
-}
-
-function closeStatesEditor(): void {
-  if (customization === 2) exitStatesManualAssignment(true);
-  if (customization === 3) exitAddStateMode();
-  debug.selectAll(".highlight").remove();
-  $body.innerHTML = "";
 }
 
 function updateLockStatus(stateId: number, classList: DOMTokenList): void {

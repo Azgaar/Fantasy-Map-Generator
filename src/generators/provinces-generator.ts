@@ -19,6 +19,11 @@ export interface Province {
   color: string;
   coa: any;
   pole?: [number, number];
+  // statistics computed by the provinces editor
+  area?: number;
+  rural?: number;
+  urban?: number;
+  burgs?: number[];
 }
 
 class ProvinceModule {

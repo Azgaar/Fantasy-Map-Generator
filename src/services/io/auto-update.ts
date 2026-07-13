@@ -1,7 +1,9 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
+import { Labels, STATE_LABELS_GROUP } from "@/generators/labels";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
+import { extractPathPoints } from "@/utils/pathUtils";
 
 export function resolveVersionConflicts(mapVersion: string): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
@@ -1186,5 +1188,166 @@ export function resolveVersionConflicts(mapVersion: string): void {
   if (isOlderThan("1.132.0")) {
     // v1.132.0 added global 3D view options
     options.threeD = { ...defaultOptions };
+  }
+
+  if (isOlderThan("1.133.0")) {
+    // v1.133.0 moved labels data from SVG to data model
+    // Migrate old SVG labels to pack.labels structure
+    if (!pack.labels?.length) {
+      Labels.clear();
+
+      // Migrate state labels
+      const stateLabelsGroup = document.querySelector("#labels > #states");
+      if (stateLabelsGroup) {
+        stateLabelsGroup.querySelectorAll("text").forEach(textElement => {
+          const id = textElement.getAttribute("id");
+          if (!id) return;
+
+          const stateIdMatch = id.match(/stateLabel(\d+)/);
+          if (!stateIdMatch) return;
+
+          const stateId = +stateIdMatch[1];
+          const state = pack.states[stateId];
+          if (!state || state.removed) return;
+
+          const textPath = textElement.querySelector("textPath");
+          if (!textPath) return;
+
+          const text = textPath.textContent.trim();
+          const fontSizeAttr = textPath.getAttribute("font-size");
+          const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
+          const letterSpacingAttr = textPath.getAttribute("letter-spacing");
+          const letterSpacing = letterSpacingAttr ? parseFloat(letterSpacingAttr) : 0;
+          const startOffsetAttr = textPath.getAttribute("startOffset");
+          const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
+          const transform = textElement.getAttribute("transform");
+          const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
+
+          // Get path points from the referenced path
+          const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
+          if (!href) return;
+
+          const pathId = href.replace("#", "");
+          const pathElement = document.querySelector<SVGPathElement>(`#${pathId}`);
+          if (!pathElement) return;
+
+          Labels.addStateLabel({
+            stateId,
+            group: STATE_LABELS_GROUP,
+            text,
+            pathPoints: extractPathPoints(pathElement),
+            startOffset,
+            fontSize,
+            letterSpacing,
+            dx,
+            dy
+          });
+        });
+      }
+
+      // Migrate burg labels
+      const burgLabelsGroup = document.querySelector("#burgLabels");
+      if (burgLabelsGroup) {
+        burgLabelsGroup.querySelectorAll("g").forEach(groupElement => {
+          const group = groupElement.getAttribute("id");
+          if (!group) return;
+
+          const dxAttr = groupElement.getAttribute("data-dx");
+          const dyAttr = groupElement.getAttribute("data-dy");
+          const gdx = dxAttr ? parseFloat(dxAttr) : 0;
+          const gdy = dyAttr ? parseFloat(dyAttr) : 0;
+
+          groupElement.querySelectorAll("text").forEach(textElement => {
+            const burgIdStr = textElement.getAttribute("data-id");
+            if (!burgIdStr) return;
+
+            const burgId = Number(burgIdStr);
+            const burg = pack.burgs[burgId];
+            if (!burg || burg.removed) return;
+
+            const text = textElement.textContent.trim();
+            const transform = textElement.getAttribute("transform");
+            const [tdx, tdy] = transform ? parseTransform(transform) : [0, 0];
+            const dx = gdx + tdx;
+            const dy = gdy + tdy;
+            const x = burg.x;
+            const y = burg.y;
+
+            Labels.addBurgLabel({
+              burgId,
+              group,
+              text,
+              x,
+              y,
+              dx,
+              dy
+            });
+          });
+        });
+      }
+
+      // Migrate custom labels: the default addedLabels group plus any user-created groups
+      const customLabelGroups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
+      customLabelGroups.forEach(groupElement => {
+        const group = groupElement.id;
+        groupElement.querySelectorAll("text").forEach(textElement => {
+          const id = textElement.getAttribute("id");
+          if (!id) return;
+
+          const textPath = textElement.querySelector("textPath");
+          if (!textPath) return;
+
+          const text = textPath.textContent.trim();
+          const fontSizeAttr = textPath.getAttribute("font-size");
+          const fontSize = fontSizeAttr ? parseFloat(fontSizeAttr) : 100;
+          const letterSpacingAttr = textPath.getAttribute("letter-spacing");
+          const letterSpacing = letterSpacingAttr ? parseFloat(letterSpacingAttr) : 0;
+          const startOffsetAttr = textPath.getAttribute("startOffset");
+          const startOffset = startOffsetAttr ? parseFloat(startOffsetAttr) : 50;
+          const transform = textElement.getAttribute("transform");
+          const [dx, dy] = transform ? parseTransform(transform) : [0, 0];
+
+          const href = textPath.getAttribute("xlink:href") || textPath.getAttribute("href");
+          if (!href) return;
+
+          const pathId = href.replace("#", "");
+          const pathElement = document.querySelector<SVGPathElement>(`#${pathId}`);
+          if (!pathElement) return;
+
+          Labels.addCustomLabel({
+            group,
+            text,
+            pathPoints: extractPathPoints(pathElement),
+            startOffset,
+            fontSize,
+            letterSpacing,
+            dx,
+            dy
+          });
+        });
+      });
+
+      // Clear old SVG labels and redraw from data
+      if (stateLabelsGroup)
+        stateLabelsGroup.querySelectorAll("*").forEach(el => {
+          el.remove();
+        });
+      if (burgLabelsGroup)
+        burgLabelsGroup.querySelectorAll("text").forEach(el => {
+          el.remove();
+        });
+      customLabelGroups.forEach(groupElement => {
+        groupElement.querySelectorAll("text").forEach(el => {
+          el.remove();
+        });
+      });
+
+      // Regenerate labels from data
+      if (layerIsOn("toggleLabels")) {
+        drawStateLabels();
+        drawBurgLabels();
+        drawCustomLabels();
+      }
+    }
   }
 }

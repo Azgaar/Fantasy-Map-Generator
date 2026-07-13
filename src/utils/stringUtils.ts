@@ -64,7 +64,14 @@ export const parseTransform = (string: string) => {
     .replace(/[a-z()]/g, "")
     .replace(/[ ]/g, ",")
     .split(",");
-  return [a[0] || 0, a[1] || 0, a[2] || 0, a[3] || 0, a[4] || 0, a[5] || 1];
+  return [
+    Number(a[0] || 0),
+    Number(a[1] || 0),
+    Number(a[2] || 0),
+    Number(a[3] || 0),
+    Number(a[4] || 0),
+    Number(a[5] || 1)
+  ];
 };
 
 /**

@@ -1,16 +1,9 @@
 import { pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { ensureEl, getPackPolygon, last, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
-
-const DIALOG_HTML = /* html */ `
-  <div id="riverCreatorBody" class="table"></div>
-  <div id="riverCreatorBottom">
-    <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
-    <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
-  </div>`;
 
 function open(): void {
   if (customization) return;
@@ -25,12 +18,7 @@ function open(): void {
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onCellClick);
 
   creatorCells = [];
-  ensureEl("riverCreator").innerHTML = DIALOG_HTML;
-
-  // add listeners — dropped together with the dialog HTML on close
-  ensureEl("riverCreatorComplete").on("click", addRiver);
-  ensureEl("riverCreatorCancel").on("click", cancelCreation);
-  ensureEl("riverCreatorBody").on("click", onBodyClick);
+  renderDialog();
 
   $("#riverCreator").dialog({
     title: "Create River",
@@ -38,6 +26,24 @@ function open(): void {
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRiverCreator
   });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("riverCreator");
+
+  const html = /* html */ `<div id="riverCreator" class="dialog">
+    <div id="riverCreatorBody" class="table"></div>
+    <div id="riverCreatorBottom">
+      <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
+      <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  // add listeners — dropped together with the dialog HTML on close
+  ensureEl("riverCreatorComplete").on("click", addRiver);
+  ensureEl("riverCreatorCancel").on("click", cancelCreation);
+  ensureEl("riverCreatorBody").on("click", onBodyClick);
 }
 
 function cancelCreation(): void {
@@ -160,7 +166,7 @@ function closeRiverCreator(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  ensureEl("riverCreator").innerHTML = "";
+  destroyDialogIfExists("riverCreator");
 }
 
 export const RiverCreator = { open };

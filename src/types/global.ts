@@ -114,6 +114,11 @@ declare global {
     iconsDensity: number[];
     icons: string[][];
     cost: number[];
+    // statistics computed by the biomes editor
+    cells?: number[];
+    area?: number[];
+    rural?: number[];
+    urban?: number[];
   };
   var notes: any[];
   var style: {
@@ -139,6 +144,7 @@ declare global {
   var Ruler: any;
   var Opisometer: any;
   var Planimeter: any;
+  var RouteOpisometer: any;
   var mapHistory: { created: number; [key: string]: unknown }[];
   var customPresetPrefix: string;
 
@@ -160,7 +166,21 @@ declare global {
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
   var updateTextureSelectValue: (href: string) => void;
-  var editUnits: () => void;
+  var toggleRulers: () => void;
+  var toggleRelief: () => void;
+  var toggleZones: () => void;
+  var calculateFriendlyGridSize: () => void;
+  var recalculatePopulation: () => void;
+  var findAll: (x: number, y: number, radius: number) => number[];
+  // heightmap editor globals
+  var color: (value: number) => string;
+  var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
+  var undraw: () => void;
+  var rankCells: () => void;
+  var generatePrecipitation: () => void;
+  var changeViewMode: (event?: Event) => void;
+  var resetZoom: (duration?: number) => void;
+  var RgbQuant: any; // external RgbQuant image-quantization lib
 
   var drawTexture: () => void;
   var drawRoutes: () => void;
@@ -248,10 +268,16 @@ declare global {
   // Provinces, Burgs, COA, COArenderer) are used directly instead.
   var drawCultures: () => void;
   var drawReligions: () => void;
+  var drawBiomes: () => void;
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;
+  var Labels: typeof import("@/generators/labels").Labels;
   var drawStateLabels: (ids?: number[]) => void;
+  var fitStateLabels: (ids?: number[]) => void;
+  var drawCustomLabels: () => void;
+  var drawCustomLabel: (label: import("@/generators/labels").CustomLabel) => void;
+  var ensureLabelGroup: (group: string) => SVGGElement;
   var drawPopulation: () => void;
 
   var toggleCultures: () => void;
@@ -266,19 +292,32 @@ declare global {
   var toggleBurgIcons: (event?: MouseEvent) => void;
   var toggleRoutes: (event?: MouseEvent) => void;
   var toggleRivers: (event?: MouseEvent) => void;
+  var toggleIce: (event?: MouseEvent) => void;
   var toggleAddRiver: () => void;
+  var toggleMarkers: (event?: MouseEvent) => void;
+  var drawMarkers: () => void;
+  var regenerateMarkers: () => void;
+  var configMarkersGeneration: () => void;
 
   var clicked: () => void;
   var unselect: () => void;
   var selectIcon: (initial: string, callback: (value: string) => void) => void;
   var sortLines: (headerElement: HTMLElement) => void;
-  var editNotes: (id: string, name: string) => void;
+  var generateWithAi: (defaultPrompt: string, onApply: (result: string) => void) => void;
+  var tinymce:
+    | {
+        _setBaseUrl: (url: string) => void;
+        init: (config: Record<string, unknown>) => void;
+        remove: () => void;
+        activeEditor?: { getContent: () => string; setContent: (content: string) => void };
+      }
+    | undefined;
 
   var highlightElement: (element: Element | null, duration?: number) => void;
   var applySortingByHeader: (headerId: string) => void;
   var fog: (id: string, path: string) => void;
   var unfog: (id?: string) => void;
-  var editEmblem: (type: string, id: string, el: any) => void;
+  var highlightEmblemElement: (type: string, el: any) => void;
   var l: (n: number) => string;
 
   var aleaPRNG: (seed: string | number) => () => number;
@@ -287,7 +326,6 @@ declare global {
   var lock: (option: string) => void;
   var applyOption: (select: HTMLElement, value: string, text?: string) => void;
   var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
-  var editHeightmap: (options: { mode: string; tool: string }) => void;
 
   var cults: Selection<SVGGElement, unknown, null, undefined>;
   var relig: Selection<SVGGElement, unknown, null, undefined>;

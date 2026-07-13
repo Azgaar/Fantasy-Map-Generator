@@ -15,8 +15,14 @@ export interface Marker {
   dx?: number;
   dy?: number;
   px?: number;
+  size?: number;
+  pin?: string;
+  fill?: string;
+  stroke?: string;
+  hidden?: boolean;
   cell: number;
   lock?: boolean;
+  pinned?: boolean;
 }
 
 type MarkerConfig = {

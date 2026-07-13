@@ -93,7 +93,7 @@ let currentNoteId = null; // store currently displayed node to not rerender to o
 
 // show note box on hover (if any)
 function showNotes(e) {
-  if (notesEditor?.offsetParent) return;
+  if (findEl("notesEditor")) return;
   let id = e.target.id || e.target.parentNode.id || e.target.parentNode.parentNode.id;
   if (e.target.parentNode.parentNode.id === "burgLabels") id = "burg" + e.target.dataset.id;
   else if (e.target.parentNode.parentNode.id === "burgIcons") id = "burg" + e.target.dataset.id;
@@ -103,13 +103,13 @@ function showNotes(e) {
     if (currentNoteId === id) return;
     currentNoteId = id;
 
-    document.getElementById("notes").style.display = "block";
-    document.getElementById("notesHeader").innerHTML = note.name;
-    document.getElementById("notesBody").innerHTML = note.legend;
-  } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
-    document.getElementById("notes").style.display = "none";
-    document.getElementById("notesHeader").innerHTML = "";
-    document.getElementById("notesBody").innerHTML = "";
+    findEl("notes").style.display = "block";
+    findEl("notesHeader").innerHTML = note.name;
+    findEl("notesBody").innerHTML = note.legend;
+  } else if (!options.pinNotes && !findEl("markerEditor") && !e.shiftKey) {
+    findEl("notes").style.display = "none";
+    findEl("notesHeader").innerHTML = "";
+    findEl("notesBody").innerHTML = "";
     currentNoteId = null;
   }
 }
@@ -150,7 +150,8 @@ function showMapTooltip(point, e, i, g) {
     const r = pack.rivers.find(r => r.i === river);
     const name = r ? r.name + " " + r.type : "";
     tip(name + ". Click to edit");
-    if (riversOverview?.offsetParent) highlightEditorLine(riversOverview, river, 5000);
+    const riversOverviewEl = findEl("riversOverview");
+    if (riversOverviewEl) highlightEditorLine(riversOverviewEl, river, 5000);
     return;
   }
 
@@ -171,7 +172,8 @@ function showMapTooltip(point, e, i, g) {
       const burg = pack.burgs[burgId];
       const population = si(burg.population * populationRate * urbanization);
       tip(`${burg.name} ${burg.group}. Population: ${population}. Click to edit`);
-      if (burgsOverview?.offsetParent) highlightEditorLine(burgsOverview, burgId, 5000);
+      const burgsOverviewEl = findEl("burgsOverview");
+      if (burgsOverviewEl) highlightEditorLine(burgsOverviewEl, burgId, 5000);
       return;
     }
   }
@@ -260,7 +262,8 @@ function showMapTooltip(point, e, i, g) {
     const zoneId = +element.dataset.id;
     const zone = pack.zones.find(zone => zone.i === zoneId);
     tip(zone.name);
-    if (zonesEditor?.offsetParent) highlightEditorLine(zonesEditor, zoneId, 5000);
+    const zonesEditorEl = findEl("zonesEditor");
+    if (zonesEditorEl) highlightEditorLine(zonesEditorEl, zoneId, 5000);
     return;
   }
 
@@ -273,29 +276,36 @@ function showMapTooltip(point, e, i, g) {
   else if (layerIsOn("toggleBiomes") && pack.cells.biome[i]) {
     const biome = pack.cells.biome[i];
     tip("Biome: " + biomesData.name[biome]);
-    if (biomesEditor?.offsetParent) highlightEditorLine(biomesEditor, biome);
+    const biomesEditorEl = findEl("biomesEditor");
+    if (biomesEditorEl) highlightEditorLine(biomesEditorEl, biome);
   } else if (layerIsOn("toggleReligions") && pack.cells.religion[i]) {
     const religion = pack.cells.religion[i];
     const r = pack.religions[religion];
     const type = r.type === "Cult" || r.type == "Heresy" ? r.type : r.type + " religion";
     tip(type + ": " + r.name);
-    if (document.getElementById("religionsEditor")?.offsetParent) highlightEditorLine(religionsEditor, religion);
+    const religionsEditorEl = findEl("religionsEditor");
+    if (religionsEditorEl) highlightEditorLine(religionsEditorEl, religion);
   } else if (pack.cells.state[i] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
     const state = pack.cells.state[i];
     const stateName = pack.states[state].fullName;
     const province = pack.cells.province[i];
     const prov = province ? pack.provinces[province].fullName + ", " : "";
     tip(prov + stateName);
-    if (document.getElementById("statesEditor")?.offsetParent) highlightEditorLine(statesEditor, state);
-    if (document.getElementById("diplomacyEditor")?.offsetParent) highlightEditorLine(diplomacyEditor, state);
-    if (document.getElementById("militaryOverview")?.offsetParent) highlightEditorLine(militaryOverview, state);
-    if (document.getElementById("provincesEditor")?.offsetParent) highlightEditorLine(provincesEditor, province);
+    const statesEditorEl = findEl("statesEditor");
+    if (statesEditorEl) highlightEditorLine(statesEditorEl, state);
+    const diplomacyEditorEl = findEl("diplomacyEditor");
+    if (diplomacyEditorEl) highlightEditorLine(diplomacyEditorEl, state);
+    const militaryOverviewEl = findEl("militaryOverview");
+    if (militaryOverviewEl) highlightEditorLine(militaryOverviewEl, state);
+    const provincesEditorEl = findEl("provincesEditor");
+    if (provincesEditorEl) highlightEditorLine(provincesEditorEl, province);
     if (document.getElementById("mergeStatesForm")?.offsetParent)
       highlightEditorLine(ensureEl("mergeStatesForm"), state);
   } else if (layerIsOn("toggleCultures") && pack.cells.culture[i]) {
     const culture = pack.cells.culture[i];
     tip("Culture: " + pack.cultures[culture].name);
-    if (document.getElementById("culturesEditor")?.offsetParent) highlightEditorLine(culturesEditor, culture);
+    const culturesEditorEl = findEl("culturesEditor");
+    if (culturesEditorEl) highlightEditorLine(culturesEditorEl, culture);
   } else if (layerIsOn("toggleHeight")) tip("Height: " + getFriendlyHeight(point));
 }
 
@@ -562,12 +572,6 @@ function stored(key) {
 function store(key, value) {
   return localStorage.setItem(key, value);
 }
-
-// assign skeaker behaviour
-Array.from(document.getElementsByClassName("speaker")).forEach(el => {
-  const input = el.previousElementSibling;
-  el.addEventListener("click", () => speak(input.value));
-});
 
 function speak(text) {
   const speaker = new SpeechSynthesisUtterance(text);

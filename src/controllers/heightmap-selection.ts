@@ -321,7 +321,7 @@ function confirmHeightmapEdit(el: HTMLElement): void {
     title: el.dataset.tip ?? "",
     message: "Opening the tool will erase the current map. Are you sure you want to proceed?",
     confirm: "Continue",
-    onConfirm: () => editHeightmap({ mode: "erase", tool })
+    onConfirm: () => window.Controllers.HeightmapEditor.open({ mode: "erase", tool })
   });
 }
 

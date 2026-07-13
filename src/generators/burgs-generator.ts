@@ -1,7 +1,10 @@
 import { quadtree } from "d3-quadtree";
+import { removeBurgLabel } from "../renderers/draw-burg-labels";
+import { drawLabel } from "../renderers/draw-labels";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import { Labels } from "./labels";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
@@ -743,7 +746,14 @@ class BurgModule {
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    const label = Labels.addBurgLabel({
+      burgId,
+      group: burg.group!,
+      text: burg.name!,
+      x,
+      y
+    });
+    drawLabel(label);
 
     return burgId;
   }
@@ -758,7 +768,11 @@ class BurgModule {
     }
 
     drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    const label = Labels.getBurgLabel(burg.i!);
+    if (label) {
+      Labels.update(label, { group: burg.group });
+      drawLabel(label);
+    }
   }
 
   remove(burgId: number) {
@@ -778,7 +792,9 @@ class BurgModule {
     }
 
     removeBurgIcon(burg.i!);
-    removeBurgLabel(burg.i!);
+    const label = Labels.getBurgLabel(burgId);
+    if (label) Labels.remove(label);
+    removeBurgLabel(burgId); // by burgId: also cleans up if the label data was missing
   }
 }
 
