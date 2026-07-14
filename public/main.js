@@ -135,7 +135,7 @@ fogging
   .attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => window.Controllers.UnitsEditor.open());
 legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
@@ -221,9 +221,9 @@ function zoomRaf() {
     }
 
     if (customization === 1) {
-      const canvas = ensureEl("canvas");
+      const canvas = findEl("canvas");
       if (canvas && canvas.style.opacity !== "0") {
-        const img = ensureEl("imageToConvert");
+        const img = findEl("imageToConvert");
         if (img) {
           const ctx = canvas.getContext("2d");
           ctx.clearRect(0, 0, canvas.width, canvas.height);

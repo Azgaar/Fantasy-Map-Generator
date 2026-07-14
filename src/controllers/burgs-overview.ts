@@ -2,35 +2,124 @@ import { pack as packLayout, pointer, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
-let isInitialized = false;
+type Filters = { stateId?: number | null; cultureId?: number | null };
 
-function overviewBurgs(
-  settings: { stateId?: number | null; cultureId?: number | null } = { stateId: null, cultureId: null }
-): void {
+function open(filters: Filters = { stateId: null, cultureId: null }): void {
   if (customization) return;
   closeDialogs("#burgsOverview, .stable");
   if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  updateFilter(settings);
+  renderDialog();
+  updateFilter(filters);
   updateLockAllIcon();
   burgsOverviewAddLines();
-  $("#burgsOverview").dialog();
-
-  if (isInitialized) return;
-  isInitialized = true;
 
   $("#burgsOverview").dialog({
     title: "Burgs Overview",
     resizable: false,
-    width: fitContent(),
-    close: exitAddBurgMode,
+    close: closeBurgsOverview,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
+}
 
-  // add listeners
+function renderDialog(): void {
+  document.getElementById("burgsOverview")?.remove();
+  const HTML = /* html */ `<div id="burgsOverview" class="dialog stable">
+      <div id="burgsHeader" class="header" style="grid-template-columns: 9em 7em 7.5em 7.2em 6.5em 8em 6.5em 6.5em 5.5em 6em">
+        <div data-tip="Click to sort by burg name" class="sortable alphabetically" data-sortby="name">Burg</div>
+        <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="province">
+          Province
+        </div>
+        <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="state">State</div>
+        <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="culture">
+          Culture
+        </div>
+        <div data-tip="Click to sort by culture group" class="sortable alphabetically" data-sortby="group">Group</div>
+        <div
+          data-tip="Click to sort by burg population"
+          class="sortable icon-sort-number-down"
+          data-sortby="population"
+        >
+          Population
+        </div>
+        <div data-tip="Click to sort by burg product" class="sortable" data-sortby="grossproduct">
+          Product&nbsp;
+        </div>
+        <div data-tip="Click to sort by burg wealth (gross product per capita)" class="sortable" data-sortby="productpercapita">
+          Wealth&nbsp;
+        </div>
+        <div data-tip="Click to sort by burg treasury" class="sortable" data-sortby="treasury">
+          Treasury&nbsp;
+        </div>
+        <div data-tip="Click to sort by burg features" class="sortable alphabetically" data-sortby="features">
+          Features&nbsp;
+        </div>
+      </div>
+      <div id="burgsBody" class="table"></div>
+      <div
+        id="burgsFilters"
+        data-tip="Apply a filter"
+        style="padding-block: 0.1em; display: flex; gap: 0.5em; width: 100%"
+      >
+        <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
+          >Search: <input id="burgsSearch" type="search"
+        /></label>
+        <label for="burgsFilterState"
+          >State:
+          <select id="burgsFilterState"></select
+        ></label>
+        <label for="burgsFilterCulture"
+          >Culture:
+          <select id="burgsFilterCulture"></select
+        ></label>
+      </div>
+      <div id="burgsFooter" class="totalLine">
+        <div data-tip="Burgs displayed" style="margin-left: 5px">
+          Burgs:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
+        </div>
+        <div data-tip="Average population" style="margin-left: 12px">
+          Avg population:&nbsp;<span id="burgsFooterPopulation">0</span>
+        </div>
+        <div data-tip="Average gross product" style="margin-left: 12px">
+          Avg product:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
+        </div>
+        <div data-tip="Average wealth (product per capita)" style="margin-left: 12px">
+          Avg wealth:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
+        </div>
+        <div data-tip="Average treasury" style="margin-left: 12px">
+          Avg treasury:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
+        </div>
+      </div>
+      <div id="burgsBottom">
+        <button id="burgsOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="burgsGroupsEditorButton" data-tip="Edit burg groups" class="icon-cog"></button>
+        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
+        <button
+          id="regenerateBurgNames"
+          data-tip="Regenerate burg names based on assigned culture"
+          class="icon-retweet"
+        ></button>
+        <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
+        <button
+          id="burgsExport"
+          data-tip="Save burgs-related data as a text file (.csv)"
+          class="icon-download"
+        ></button>
+        <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
+        <button id="burgsLockAll" data-tip="Lock or unlock all burgs" class="icon-lock"></button>
+        <button
+          id="burgsRemoveAll"
+          data-tip="Remove all unlocked burgs except for capitals. To remove a capital remove its state first"
+          class="icon-trash"
+        ></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
+  applySortingByHeader("burgsHeader");
+
   ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
-  ensureEl("burgsGroupsEditorButton").addEventListener("click", editBurgGroups);
+  ensureEl("burgsGroupsEditorButton").addEventListener("click", () => Controllers.BurgGroupEditor.open());
   ensureEl("burgsChart").addEventListener("click", showBurgsChart);
   ensureEl("burgsFilterState").addEventListener("change", burgsOverviewAddLines);
   ensureEl("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
@@ -46,14 +135,20 @@ function overviewBurgs(
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 }
 
+function closeBurgsOverview(): void {
+  exitAddBurgMode();
+  $("#burgsOverview").dialog("destroy");
+  ensureEl("burgsOverview").remove();
+}
+
 function refreshBurgsEditor(): void {
   updateFilter();
   burgsOverviewAddLines();
 }
 
-function updateFilter(settings: { stateId?: number | null; cultureId?: number | null } = {}): void {
+function updateFilter(filters: { stateId?: number | null; cultureId?: number | null } = {}): void {
   const stateFilter = ensureEl<HTMLSelectElement>("burgsFilterState");
-  const selectedState = settings.stateId != null ? settings.stateId : +stateFilter.value || -1;
+  const selectedState = filters.stateId != null ? filters.stateId : +stateFilter.value || -1;
   stateFilter.options.length = 0; // remove all options
   stateFilter.options.add(new Option("all", "-1", false, selectedState === -1));
   stateFilter.options.add(new Option(pack.states[0].name, "0", false, selectedState === 0));
@@ -63,7 +158,7 @@ function updateFilter(settings: { stateId?: number | null; cultureId?: number | 
   );
 
   const cultureFilter = ensureEl<HTMLSelectElement>("burgsFilterCulture");
-  const selectedCulture = settings.cultureId != null ? settings.cultureId : +cultureFilter.value || -1;
+  const selectedCulture = filters.cultureId != null ? filters.cultureId : +cultureFilter.value || -1;
   cultureFilter.options.length = 0; // remove all options
   cultureFilter.options.add(new Option(`all`, "-1", false, selectedCulture === -1));
   cultureFilter.options.add(new Option(pack.cultures[0].name, "0", false, selectedCulture === 0));
@@ -636,8 +731,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-function editBurgGroups(): void {
-  Controllers.BurgGroupEditor.open();
-}
-
-export const BurgsOverview = { open: overviewBurgs };
+export const BurgsOverview = { open };

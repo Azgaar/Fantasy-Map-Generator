@@ -1,23 +1,106 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { ensureEl, openURL, rn, unique } from "../utils";
-
-addListeners();
+import { destroyDialogIfExists, ensureEl, openURL, rn, unique } from "../utils";
 
 function open(): void {
   if (customization) return;
   closeDialogs("#namesbaseEditor, .stable");
 
+  renderDialog();
   createBasesList();
   updateInputs();
 
   $("#namesbaseEditor").dialog({
     title: "Namesbase Editor",
     width: "60vw",
-    position: { my: "center", at: "center", of: "svg" }
+    position: { my: "center", at: "center", of: "svg" },
+    close: closeNamesbaseEditor
   });
 }
 
-function addListeners(): void {
+function renderDialog(): void {
+  destroyDialogIfExists("namesbaseEditor");
+  const editorHtml = /* html */ `<div id="namesbaseEditor" class="dialog stable textual">
+      <div id="namesbaseBasesTop">
+        <span>Select base: </span>
+        <select id="namesbaseSelect" data-tip="Select base to edit" style="width: 12em" value="0"></select>
+        <span style="margin-left: 2px">Names data: </span>
+      </div>
+      <div id="namesbaseBody" style="margin-block: 2px; width: auto">
+        <textarea
+          id="namesbaseTextarea"
+          data-base="0"
+          rows="13"
+          data-tip="Names data: a comma separated list of source names used for names generation"
+          placeholder="Provide a names data: a comma separated list of source names"
+          autocorrect="off"
+          spellcheck="false"
+          style="resize: none"
+        ></textarea>
+        <div>
+          <span>Name: </span>
+          <input
+            id="namesbaseName"
+            data-tip="Type to change a base name"
+            placeholder="Base name"
+            autocorrect="off"
+            spellcheck="false"
+            style="width: 12em"
+          />
+          <span>Length: </span>
+          <input id="namesbaseMin" data-tip="Recommended minimum name length" type="number" min="2" max="100" />
+          <input id="namesbaseMax" data-tip="Recommended maximum name length" type="number" min="2" value="10" />
+          <span>Doubled: </span>
+          <input
+            id="namesbaseDouble"
+            data-tip="Populate with letters that can be used twice in a row (geminates)"
+            autocorrect="off"
+            spellcheck="false"
+            style="width: 10em"
+          />
+        </div>
+        <fieldset>
+          <legend>Generated examples:</legend>
+          <div id="namesbaseExamples" data-tip="Examples. Click to re-generate"></div>
+        </fieldset>
+      </div>
+      <div id="namesbaseBottom">
+        <button
+          id="namesbaseUpdateExamples"
+          data-tip="Re-generate examples based on provided data"
+          class="icon-arrows-cw"
+        ></button>
+        <button id="namesbaseAdd" data-tip="Add new namesbase" class="icon-plus"></button>
+        <button id="namesbaseDefault" data-tip="Restore default namesbase" class="icon-cancel"></button>
+        <button id="namesbaseDownload" data-tip="Download namesbase to PC" class="icon-download"></button>
+        <button
+          id="namesbaseUpload"
+          data-tip="Upload a namesbase from PC, replacing the current set"
+          class="icon-upload"
+        ></button>
+        <button
+          id="namesbaseUploadExtend"
+          data-tip="Upload a namesbase from PC, extending the current set"
+          class="icon-up-circled2"
+        ></button>
+        <button
+          id="namesbaseCA"
+          data-tip="Find or share custom namesbase on Cartography Assets portal"
+          class="icon-drafting-compass"
+        ></button>
+        <button
+          id="namesbaseAnalyze"
+          data-tip="Analyze namesbase to get a validity and quality overview"
+          class="icon-flask"
+        ></button>
+        <button
+          id="namesbaseSpeak"
+          data-tip="Speak the examples. You can change voice and language in options"
+          class="icon-voice"
+        ></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+
   const uploader = ensureEl<HTMLInputElement>("namesbaseToLoad");
 
   ensureEl("namesbaseSelect").on("change", updateInputs);
@@ -46,6 +129,11 @@ function addListeners(): void {
     openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/")
   );
   ensureEl("namesbaseSpeak").on("click", () => speak(ensureEl("namesbaseExamples").textContent ?? ""));
+}
+
+function closeNamesbaseEditor(): void {
+  $("#namesbaseEditor").dialog("destroy");
+  ensureEl("namesbaseEditor").remove();
 }
 
 function createBasesList(): void {

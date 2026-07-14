@@ -1,9 +1,11 @@
 import { csvParse, drag, easeSinIn, pointer, select, transition } from "d3";
 import { Controllers } from "@/controllers";
+import { CULTURE_TYPES } from "@/generators/cultures-generator";
 import {
   abbreviate,
   capitalize,
   debounce,
+  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
   getPackPolygon,
@@ -14,11 +16,7 @@ import {
   si
 } from "../utils";
 
-const $body = insertEditorHtml();
-addListeners();
 let culturesManualHistory: string[] = [];
-
-const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
 function open(): void {
   if (customization) return;
@@ -29,6 +27,7 @@ function open(): void {
   if (layerIsOn("toggleReligions")) toggleReligions();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
+  renderDialog();
   refreshCulturesEditor();
 
   $("#culturesEditor").dialog({
@@ -37,10 +36,10 @@ function open(): void {
     close: closeCulturesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
-  $body.focus();
 }
 
-function insertEditorHtml(): HTMLElement {
+function renderDialog(): void {
+  destroyDialogIfExists("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable">
     <div id="culturesHeader" class="header" style="grid-template-columns: 10em 7em 9em 4em 8em 5em 7em 8em">
       <div data-tip="Click to sort by culture name" class="sortable alphabetically" data-sortby="name">Culture&nbsp;</div>
@@ -89,10 +88,6 @@ function insertEditorHtml(): HTMLElement {
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  return ensureEl("culturesBody");
-}
-
-function addListeners(): void {
   applySortingByHeader("culturesHeader");
 
   ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
@@ -239,7 +234,7 @@ function culturesEditorAddLines(): void {
         <span data-tip="Remove culture" class="icon-trash-empty hide"></span>
       </div>`;
   }
-  $body.innerHTML = lines;
+  ensureEl("culturesBody").innerHTML = lines;
 
   // update footer
   ensureEl("culturesFooterCultures").innerHTML = String(pack.cultures.filter(c => c.i && !c.removed).length);
@@ -250,34 +245,60 @@ function culturesEditorAddLines(): void {
   ensureEl("culturesFooterPopulation").dataset.population = String(totalPopulation);
 
   // add listeners
-  $body.querySelectorAll(":scope > div").forEach($line => {
-    $line.on("mouseenter", cultureHighlightOn);
-    $line.on("mouseleave", cultureHighlightOff);
-    $line.on("click", selectCultureOnLineClick);
-  });
-  $body.querySelectorAll("fill-box").forEach($el => void $el.on("click", cultureChangeColor));
-  $body.querySelectorAll("div > input.cultureName").forEach($el => void $el.on("input", cultureChangeName));
-  $body.querySelectorAll("div > span.icon-cw").forEach($el => void $el.on("click", cultureRegenerateName));
-  $body.querySelectorAll("div > input.cultureExpan").forEach($el => void $el.on("change", cultureChangeExpansionism));
-  $body.querySelectorAll("div > select.cultureType").forEach($el => void $el.on("change", cultureChangeType));
-  $body.querySelectorAll("div > select.cultureBase").forEach($el => void $el.on("change", cultureChangeBase));
-  $body
+  ensureEl("culturesBody")
+    .querySelectorAll(":scope > div")
+    .forEach($line => {
+      $line.on("mouseenter", cultureHighlightOn);
+      $line.on("mouseleave", cultureHighlightOff);
+      $line.on("click", selectCultureOnLineClick);
+    });
+  ensureEl("culturesBody")
+    .querySelectorAll("fill-box")
+    .forEach($el => void $el.on("click", cultureChangeColor));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > input.cultureName")
+    .forEach($el => void $el.on("input", cultureChangeName));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-cw")
+    .forEach($el => void $el.on("click", cultureRegenerateName));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > input.cultureExpan")
+    .forEach($el => void $el.on("change", cultureChangeExpansionism));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > select.cultureType")
+    .forEach($el => void $el.on("change", cultureChangeType));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > select.cultureBase")
+    .forEach($el => void $el.on("change", cultureChangeBase));
+  ensureEl("culturesBody")
     .querySelectorAll("div > select.cultureEmblems")
     .forEach($el => void $el.on("change", cultureChangeEmblemsShape));
-  $body.querySelectorAll("div > div.culturePopulation").forEach($el => void $el.on("click", changePopulation));
-  $body.querySelectorAll("div > span.icon-arrows-cw").forEach($el => void $el.on("click", cultureRegenerateBurgs));
-  $body.querySelectorAll("div > span.icon-target").forEach($el => void $el.on("click", cultureHighlightElement));
-  $body.querySelectorAll("div > span.icon-trash-empty").forEach($el => void $el.on("click", cultureRemovePrompt));
-  $body.querySelectorAll("div > span.icon-lock").forEach($el => void $el.on("click", updateLockStatus));
-  $body.querySelectorAll("div > span.icon-lock-open").forEach($el => void $el.on("click", updateLockStatus));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > div.culturePopulation")
+    .forEach($el => void $el.on("click", changePopulation));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-arrows-cw")
+    .forEach($el => void $el.on("click", cultureRegenerateBurgs));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-target")
+    .forEach($el => void $el.on("click", cultureHighlightElement));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-trash-empty")
+    .forEach($el => void $el.on("click", cultureRemovePrompt));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-lock")
+    .forEach($el => void $el.on("click", updateLockStatus));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > span.icon-lock-open")
+    .forEach($el => void $el.on("click", updateLockStatus));
 
   const $culturesHeader = ensureEl("culturesHeader");
   ($culturesHeader.querySelector("div[data-sortby='emblems']") as HTMLElement).style.display = selectShape
     ? "inline-block"
     : "none";
 
-  if ($body.dataset.type === "percentage") {
-    $body.dataset.type = "absolute";
+  if (ensureEl("culturesBody").dataset.type === "percentage") {
+    ensureEl("culturesBody").dataset.type = "absolute";
     togglePercentageMode();
   }
   applySorting($culturesHeader);
@@ -286,7 +307,7 @@ function culturesEditorAddLines(): void {
 
 function getTypeOptions(type: string): string {
   let options = "";
-  cultureTypes.forEach(t => {
+  CULTURE_TYPES.forEach(t => {
     options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`;
   });
   return options;
@@ -619,12 +640,12 @@ function drawCultureCenters(): void {
     .attr("cy", (d: any) => pack.cells.p[d.center][1])
     .on("mouseenter", (event: any, d: any) => {
       tip(tooltip, true);
-      $body.querySelector(`div[data-id='${d.i}']`)?.classList.add("selected");
+      ensureEl("culturesBody").querySelector(`div[data-id='${d.i}']`)?.classList.add("selected");
       cultureHighlightOn(event);
     })
     .on("mouseleave", (event: any, d: any) => {
       tip("", true);
-      $body.querySelector(`div[data-id='${d.i}']`)?.classList.remove("selected");
+      ensureEl("culturesBody").querySelector(`div[data-id='${d.i}']`)?.classList.remove("selected");
       cultureHighlightOff(event);
     })
     .call(drag<SVGCircleElement, any>().on("start", cultureCenterDrag));
@@ -664,20 +685,23 @@ function toggleLegend(): void {
 }
 
 function togglePercentageMode(): void {
-  if ($body.dataset.type === "absolute") {
-    $body.dataset.type = "percentage";
+  if (ensureEl("culturesBody").dataset.type === "absolute") {
+    ensureEl("culturesBody").dataset.type = "percentage";
     const totalCells = +ensureEl("culturesFooterCells").innerText;
     const totalArea = +ensureEl("culturesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("culturesFooterPopulation").dataset.population!;
 
-    $body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      const { cells, area, population } = el.dataset;
-      el.querySelector<HTMLElement>(".cultureCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
-      el.querySelector<HTMLElement>(".cultureArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
-      el.querySelector<HTMLElement>(".culturePopulation")!.innerText = `${rn((+population! / totalPopulation) * 100)}%`;
-    });
+    ensureEl("culturesBody")
+      .querySelectorAll<HTMLElement>(":scope > div")
+      .forEach(el => {
+        const { cells, area, population } = el.dataset;
+        el.querySelector<HTMLElement>(".cultureCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
+        el.querySelector<HTMLElement>(".cultureArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
+        el.querySelector<HTMLElement>(".culturePopulation")!.innerText =
+          `${rn((+population! / totalPopulation) * 100)}%`;
+      });
   } else {
-    $body.dataset.type = "absolute";
+    ensureEl("culturesBody").dataset.type = "absolute";
     culturesEditorAddLines();
   }
 }
@@ -718,6 +742,7 @@ function recalculateCultures(force?: boolean): void {
     Cultures.expand();
     drawCultures();
     pack.burgs.forEach(b => {
+      if (!b.i || b.removed) return;
       b.culture = pack.cells.culture[b.cell];
     });
     refreshCulturesEditor();
@@ -740,9 +765,11 @@ function enterCultureManualAssignent(): void {
       el.classList.add("hidden");
     });
   ensureEl("culturesFooter").style.display = "none";
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "none";
-  });
+  ensureEl("culturesBody")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "none";
+    });
   $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   tip("Click on culture to select, drag the circle to change culture", true);
@@ -752,13 +779,13 @@ function enterCultureManualAssignent(): void {
     .call(drag<SVGElement, unknown>().on("start", dragCultureBrush))
     .on("touchmove mousemove", moveCultureBrush);
 
-  $body.querySelector("div")?.classList.add("selected");
+  ensureEl("culturesBody").querySelector("div")?.classList.add("selected");
   culturesManualHistory = [];
 }
 
 function selectCultureOnLineClick(this: HTMLElement): void {
   if (customization !== 4) return;
-  const previous = $body.querySelector("div.selected");
+  const previous = ensureEl("culturesBody").querySelector("div.selected");
   if (previous) previous.classList.remove("selected");
   this.classList.add("selected");
 }
@@ -771,8 +798,8 @@ function selectCultureOnMapClick(this: any, event: any): void {
   const assigned = cults.select("#temp").select(`polygon[data-cell='${i}']`);
   const culture = assigned.size() ? +assigned.attr("data-culture") : pack.cells.culture[i!];
 
-  $body.querySelector("div.selected")?.classList.remove("selected");
-  $body.querySelector(`div[data-id='${culture}']`)?.classList.add("selected");
+  ensureEl("culturesBody").querySelector("div.selected")?.classList.remove("selected");
+  ensureEl("culturesBody").querySelector(`div[data-id='${culture}']`)?.classList.add("selected");
 }
 
 function dragCultureBrush(this: any, event: any): void {
@@ -792,7 +819,7 @@ function dragCultureBrush(this: any, event: any): void {
 
 function changeCultureForSelection(selection: number[]): void {
   const temp = cults.select("#temp");
-  const selected = $body.querySelector<HTMLElement>("div.selected")!;
+  const selected = ensureEl("culturesBody").querySelector<HTMLElement>("div.selected")!;
 
   const cultureNew = +selected.dataset.id!;
   const color = pack.cultures[cultureNew].color || "#ffffff";
@@ -854,15 +881,17 @@ function exitCulturesManualAssignment(close?: string): void {
       el.classList.remove("hidden");
     });
   ensureEl("culturesFooter").style.display = "block";
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "all";
-  });
+  ensureEl("culturesBody")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "all";
+    });
   if (!close) $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   debug.select("#cultureCenters").style("display", null);
   restoreDefaultEvents();
   clearMainTip();
-  const selected = $body.querySelector("div.selected");
+  const selected = ensureEl("culturesBody").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
 }
 
@@ -891,18 +920,22 @@ function enterAddCulturesMode(this: HTMLElement): void {
   this.classList.add("pressed");
   tip("Click on the map to add a new culture", true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addCulture);
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "none";
-  });
+  ensureEl("culturesBody")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "none";
+    });
 }
 
 function exitAddCultureMode(): void {
   customization = 0;
   restoreDefaultEvents();
   clearMainTip();
-  $body.querySelectorAll<HTMLElement>("div > input, select, span, svg").forEach(e => {
-    e.style.pointerEvents = "all";
-  });
+  ensureEl("culturesBody")
+    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
+    .forEach(e => {
+      e.style.pointerEvents = "all";
+    });
   const culturesAdd = ensureEl("culturesAdd");
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");
 }
@@ -932,7 +965,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
 function downloadCulturesCsv(): void {
   const unit = getAreaUnit("2");
   const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
-  const lines = Array.from($body.querySelectorAll<HTMLElement>(":scope > div"));
+  const lines = Array.from(ensureEl("culturesBody").querySelectorAll<HTMLElement>(":scope > div"));
   const data = lines.map($line => {
     const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
     const namesbase = nameBases[+base!].name;
@@ -950,9 +983,11 @@ function downloadCulturesCsv(): void {
 }
 
 function closeCulturesEditor(): void {
-  debug.select("#cultureCenters").remove();
+  select("#debug #cultureCenters").remove();
   exitCulturesManualAssignment("close");
   exitAddCultureMode();
+  $("#culturesEditor").dialog("destroy");
+  ensureEl("culturesEditor").remove();
 }
 
 async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
@@ -1009,7 +1044,7 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
       current.color = culture.color;
       current.expansionism = +culture.expansionism;
 
-      if (cultureTypes.includes(culture.type)) current.type = culture.type;
+      if (CULTURE_TYPES.includes(culture.type)) current.type = culture.type;
       else current.type = "Generic";
     }
 

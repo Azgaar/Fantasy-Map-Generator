@@ -2,57 +2,7 @@ import { drag, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
-import { ensureEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
-
-const DIALOG_HTML = /* html */ `
-  <div id="riverBody" style="padding-bottom: 0.3em">
-    <div>
-      <div class="label" style="width: 4.8em">Name:</div>
-      <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
-      <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
-      <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
-      <span data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-    </div>
-    <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
-      <div class="label">Type:</div>
-      <input id="riverType" autocorrect="off" spellcheck="false" />
-    </div>
-    <div data-tip="Select parent river">
-      <div class="label">Mainstem:</div>
-      <select id="riverMainstem"></select>
-    </div>
-    <div data-tip="River drainage basin (watershed)">
-      <div class="label">Basin:</div>
-      <input id="riverBasin" disabled />
-    </div>
-    <div data-tip="River discharge (flux power)">
-      <div class="label">Discharge:</div>
-      <input id="riverDischarge" disabled />
-    </div>
-    <div data-tip="River length in selected units">
-      <div class="label">Length:</div>
-      <input id="riverLength" disabled />
-    </div>
-    <div data-tip="River mouth width in selected units">
-      <div class="label">Mouth width:</div>
-      <input id="riverWidth" disabled />
-    </div>
-    <div data-tip="River source additional width. Default value is 0">
-      <div class="label">Source width:</div>
-      <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
-    </div>
-    <div data-tip="River width multiplier. Default value is 1">
-      <div class="label">Width modifier:</div>
-      <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
-    </div>
-  </div>
-  <div id="riverBottom">
-    <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
-    <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
-    <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-    <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
-    <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
-  </div>`;
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
 
 function open(id: string): void {
   if (customization) return;
@@ -72,7 +22,7 @@ function open(id: string): void {
   select("#debug").append("g").attr("id", "controlCells");
   select("#debug").append("g").attr("id", "controlPoints");
 
-  ensureEl("riverEditor").innerHTML = DIALOG_HTML;
+  renderDialog();
   updateRiverData();
 
   const river = getRiver();
@@ -81,6 +31,69 @@ function open(id: string): void {
   drawControlPoints(riverPoints);
   drawCells(cells);
 
+  $("#riverEditor").dialog({
+    title: "Edit River",
+    resizable: false,
+    position: { my: "left top", at: "left+10 top+10", of: "#map" },
+    close: closeRiverEditor
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("riverEditor");
+
+  const html = /* html */ `<div id="riverEditor" class="dialog">
+    <div id="riverBody" style="padding-bottom: 0.3em">
+      <div>
+        <div class="label" style="width: 4.8em">Name:</div>
+        <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
+        <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
+        <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
+        <span id="riverNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+      </div>
+      <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
+        <div class="label">Type:</div>
+        <input id="riverType" autocorrect="off" spellcheck="false" />
+      </div>
+      <div data-tip="Select parent river">
+        <div class="label">Mainstem:</div>
+        <select id="riverMainstem"></select>
+      </div>
+      <div data-tip="River drainage basin (watershed)">
+        <div class="label">Basin:</div>
+        <input id="riverBasin" disabled />
+      </div>
+      <div data-tip="River discharge (flux power)">
+        <div class="label">Discharge:</div>
+        <input id="riverDischarge" disabled />
+      </div>
+      <div data-tip="River length in selected units">
+        <div class="label">Length:</div>
+        <input id="riverLength" disabled />
+      </div>
+      <div data-tip="River mouth width in selected units">
+        <div class="label">Mouth width:</div>
+        <input id="riverWidth" disabled />
+      </div>
+      <div data-tip="River source additional width. Default value is 0">
+        <div class="label">Source width:</div>
+        <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
+      </div>
+      <div data-tip="River width multiplier. Default value is 1">
+        <div class="label">Width modifier:</div>
+        <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
+      </div>
+    </div>
+    <div id="riverBottom">
+      <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
+      <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
+      <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
+      <button id="riverLegend" data-tip="Edit free text notes (legend) for the river" class="icon-edit"></button>
+      <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("riverCreateSelectingCells").on("click", openRiverCreator);
   ensureEl("riverEditStyle").on("click", openRiverStyle);
@@ -88,19 +101,13 @@ function open(id: string): void {
   ensureEl("riverLegend").on("click", editRiverLegend);
   ensureEl("riverRemove").on("click", removeRiver);
   ensureEl("riverName").on("input", changeName);
+  ensureEl("riverNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
   ensureEl("riverType").on("input", changeType);
   ensureEl("riverNameCulture").on("click", generateNameCulture);
   ensureEl("riverNameRandom").on("click", generateNameRandom);
   ensureEl("riverMainstem").on("change", changeParent);
   ensureEl("riverSourceWidth").on("input", changeSourceWidth);
   ensureEl("riverWidthFactor").on("input", changeWidthFactor);
-
-  $("#riverEditor").dialog({
-    title: "Edit River",
-    resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRiverEditor
-  });
 }
 
 function openRiverCreator(): void {
@@ -228,7 +235,7 @@ function redrawRiver(): void {
   elSelected.attr("d", path);
 
   updateRiverLength(river);
-  if (ensureEl("elevationProfile").offsetParent) showRiverElevationProfile();
+  if (findEl("elevationProfile")) showRiverElevationProfile();
 }
 
 function addControlPoint(this: any, event: any): void {
@@ -301,7 +308,7 @@ function showRiverElevationProfile(): void {
 function editRiverLegend(): void {
   const id = elSelected.attr("id");
   const river = getRiver();
-  editNotes(id, `${river.name} ${river.type}`);
+  void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
 }
 
 function removeRiver(): void {
@@ -337,7 +344,7 @@ function closeRiverEditor(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  ensureEl("riverEditor").innerHTML = "";
+  destroyDialogIfExists("riverEditor");
 }
 
 export const RiverEditor = { open };

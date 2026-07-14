@@ -1,17 +1,17 @@
-import { ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
-let isInitialized = false;
-
 function editBurgGroups(): void {
   if (customization) return;
+  renderDialog();
   addLines();
 
   $("#burgGroupsEditor").dialog({
     title: "Configure Burg groups",
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
+    close: closeBurgGroupsEditor,
     buttons: {
       Apply: () => {
         ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
@@ -28,11 +28,39 @@ function editBurgGroups(): void {
       }
     }
   });
+}
 
-  if (isInitialized) return;
-  isInitialized = true;
+function renderDialog(): void {
+  destroyDialogIfExists("burgGroupsEditor");
+  const html = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
+    <form id="burgGroupsForm">
+      <table class="table">
+        <thead>
+          <tr>
+            <th data-tip="Rendering order: higher values are rendered on top">Order</th>
+            <th data-tip="Type group name">Name</th>
+            <th data-tip="Burg preview generator">Preview generator</th>
+            <th data-tip="Set min population constraint" colspan="3">Population</th>
+            <th data-tip="Select allowed biomes">Biomes</th>
+            <th data-tip="Select allowed states">States</th>
+            <th data-tip="Select allowed cultures">Cultures</th>
+            <th data-tip="Select allowed religions">Religions</th>
+            <th data-tip="Select allowed features">Features</th>
+            <th data-tip="Number of burgs in group">Count</th>
+            <th data-tip="Activate/deactivate group">Active</th>
+            <th data-tip="Select group to be assigned if burg doesn't pass the criteria for other groups">
+              Default
+            </th>
+          </tr>
+        </thead>
+        <tbody id="burgGroupsBody"></tbody>
+      </table>
+    </form>
+    <div style="padding: 0.5em 0; font-style: italic;">Locked burgs are not affected by changes in groups.</div>
+  </div>`;
 
-  // add listeners
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
   ensureEl("burgGroupsForm")
     .on("change", validateForm)
     .on("submit", submitForm as EventListener);
@@ -63,6 +91,11 @@ function editBurgGroups(): void {
     }
     if (el.getAttribute("name") === "remove") return removeLine(line);
   });
+}
+
+function closeBurgGroupsEditor(): void {
+  $("#burgGroupsEditor").dialog("destroy");
+  ensureEl("burgGroupsEditor").remove();
 }
 
 function addLines(): void {
@@ -366,8 +399,7 @@ function submitForm(event: Event): void {
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleLabels")) drawBurgLabels();
-  const refresh = ensureEl<HTMLButtonElement>("burgsOverviewRefresh");
-  if (refresh.offsetParent) refresh.click();
+  findEl<HTMLButtonElement>("burgsOverviewRefresh")?.click();
 
   $("#burgGroupsEditor").dialog("close");
 }

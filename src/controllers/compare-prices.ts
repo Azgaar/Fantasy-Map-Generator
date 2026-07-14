@@ -1,28 +1,60 @@
 import { ensureEl, formatPrice, rn } from "../utils";
 
-let isInitialized = false;
 let activeGoodId = -1;
 
 function open(goodId?: number, anchor = "#marketsOverview"): void {
   if (goodId !== undefined) activeGoodId = goodId;
+
+  renderDialog();
   rebuildGoodSelect();
   addLines();
 
   $("#marketsGoodCompare").dialog({
     title: "Compare Prices",
-    position: { my: "right top", at: "left-10 top", of: anchor, collision: "fit" }
+    position: { my: "right top", at: "left-10 top", of: anchor, collision: "fit" },
+    close: closeComparePrices
   });
+}
 
-  if (!isInitialized) {
-    ensureEl("marketsGoodCompareSelect").on("change", () => {
-      activeGoodId = +ensureEl<HTMLSelectElement>("marketsGoodCompareSelect").value;
-      addLines();
-    });
-    ensureEl("marketsGoodCompareRefresh").on("click", addLines);
-    ensureEl("marketsGoodComparePercentage").on("click", togglePercentageMode);
-    ensureEl("marketsGoodCompareExport").on("click", downloadCsv);
-    isInitialized = true;
-  }
+function renderDialog(): void {
+  document.getElementById("marketsGoodCompare")?.remove();
+  const editorHtml = /* html */ `<div id="marketsGoodCompare" class="dialog">
+      <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
+        <label for="marketsGoodCompareSelect" data-tip="Select good to compare stock across markets">Good:</label>
+        <select id="marketsGoodCompareSelect" style="flex:1; min-width:8em;"></select>
+      </div>
+      <div id="marketsGoodCompareHeader" class="header" style="grid-template-columns: 1.6em 9em 6em 7em;">
+        <div></div>
+        <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
+        <div data-tip="Good stock in this market. Click to sort" class="sortable icon-sort-number-down" data-sortby="stock">Stock&nbsp;</div>
+        <div data-tip="Price for this good. Click to sort" class="sortable" data-sortby="price">Price&nbsp;</div>
+      </div>
+      <div id="marketsGoodCompareBody" class="table" data-type="absolute" style="max-height:40em;"></div>
+      <div id="marketsGoodCompareFooter" class="totalLine">
+        <div data-tip="Total stock of this good across all markets" style="margin-left:5px">Total Stock:&nbsp;<span id="marketsGoodCompareFooterStock">0</span></div>
+        <div data-tip="Average price of this good across markets" style="margin-left:12px">Avg Price:&nbsp;<span id="marketsGoodCompareFooterPrice">0</span></div>
+      </div>
+      <div id="marketsGoodCompareBottom">
+        <button id="marketsGoodCompareRefresh" data-tip="Refresh" class="icon-cw"></button>
+        <button id="marketsGoodComparePercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
+        <button id="marketsGoodCompareExport" data-tip="Save data as a CSV file" class="icon-download"></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("marketsGoodCompareHeader");
+
+  ensureEl("marketsGoodCompareSelect").on("change", () => {
+    activeGoodId = +ensureEl<HTMLSelectElement>("marketsGoodCompareSelect").value;
+    addLines();
+  });
+  ensureEl("marketsGoodCompareRefresh").on("click", addLines);
+  ensureEl("marketsGoodComparePercentage").on("click", togglePercentageMode);
+  ensureEl("marketsGoodCompareExport").on("click", downloadCsv);
+}
+
+function closeComparePrices(): void {
+  $("#marketsGoodCompare").dialog("destroy");
+  ensureEl("marketsGoodCompare").remove();
 }
 
 function addLines(): void {

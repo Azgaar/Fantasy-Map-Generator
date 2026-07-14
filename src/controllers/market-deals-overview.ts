@@ -2,7 +2,6 @@ import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
-let isInitialized = false;
 let activeMarketId = 0;
 let activeFilter: "all" | "local" | "global" = "all";
 
@@ -15,32 +14,71 @@ function open(marketId: number): void {
 
   activeMarketId = marketId;
   activeFilter = "all";
+
+  renderDialog();
   (ensureEl("marketDealsFilter") as HTMLSelectElement).value = "all";
   marketDealsAddLines();
 
   $("#marketDeals").dialog({
     title: `${Markets.getName(market)} Market Deals`,
-    position: { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" }
+    position: { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" },
+    close: closeMarketDeals
   });
+}
 
-  if (!isInitialized) {
-    ensureEl("marketDealsRefresh").on("click", marketDealsAddLines);
-    ensureEl("marketDealsExport").on("click", downloadDealsCsv);
-    ensureEl("marketDealsBody").on("click", ev => {
-      const el = ev.target as HTMLElement;
-      const dealId = el.closest<HTMLElement>(".marketDealParty")?.parentElement?.dataset.id;
-      const deal = pack.deals.find(d => d.i === Number(dealId));
-      if (!deal) return;
+function renderDialog(): void {
+  document.getElementById("marketDeals")?.remove();
+  const editorHtml = /* html */ `<div id="marketDeals" class="dialog stable">
+      <div>
+        <div id="marketDealsHeader" class="header" style="grid-template-columns: 2em 6.8em 4em 10em 4em 4em;">
+          <div></div>
+          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+          <div data-tip="Click to sort by deal type" class="sortable alphabetically" data-sortby="direction">Type&nbsp;</div>
+          <div data-tip="Click to sort by counterparty" class="sortable alphabetically" data-sortby="counterparty">Counterparty&nbsp;</div>
+          <div data-tip="Click to sort by units" class="sortable" data-sortby="units">Units&nbsp;</div>
+          <div data-tip="Click to sort by income" class="sortable" data-sortby="income">Income&nbsp;</div>
+        </div>
+        <div id="marketDealsBody" class="table" style="max-height:30em"></div>
 
-      const party = getParty(deal);
-      if (party) zoomTo(party.x, party.y, 8, 2000);
-    });
-    ensureEl("marketDealsFilter").on("change", ev => {
-      activeFilter = (ev.target as HTMLSelectElement).value as typeof activeFilter;
-      marketDealsAddLines();
-    });
-    isInitialized = true;
-  }
+        <div id="marketDealsFooter" class="totalLine">
+          <div style="margin-left: 5px" data-tip="Deals count">Deals: <span id="marketDealsFooterDeals">0</span></div>
+          <div style="margin-left: 12px" data-tip="Net flow for this market">Net Flow: <span id="marketDealsFooterNet">🟡 0</span></div>
+        </div>
+
+        <div id="marketDealsBottom">
+          <button id="marketDealsRefresh" data-tip="Refresh the Deals screen" class="icon-cw"></button>
+          <button id="marketDealsExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
+          <select id="marketDealsFilter" data-tip="Filter deals by scope" style="margin-left: 8px">
+            <option value="all">All</option>
+            <option value="local">Local</option>
+            <option value="global">Global</option>
+          </select>
+        </div>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("marketDealsHeader");
+
+  ensureEl("marketDealsRefresh").on("click", marketDealsAddLines);
+  ensureEl("marketDealsExport").on("click", downloadDealsCsv);
+  ensureEl("marketDealsBody").on("click", ev => {
+    const el = ev.target as HTMLElement;
+    const dealId = el.closest<HTMLElement>(".marketDealParty")?.parentElement?.dataset.id;
+    const deal = pack.deals.find(d => d.i === Number(dealId));
+    if (!deal) return;
+
+    const party = getParty(deal);
+    if (party) zoomTo(party.x, party.y, 8, 2000);
+  });
+  ensureEl("marketDealsFilter").on("change", ev => {
+    activeFilter = (ev.target as HTMLSelectElement).value as typeof activeFilter;
+    marketDealsAddLines();
+  });
+}
+
+function closeMarketDeals(): void {
+  $("#marketDeals").dialog("destroy");
+  ensureEl("marketDeals").remove();
 }
 
 function marketDealsAddLines(): void {

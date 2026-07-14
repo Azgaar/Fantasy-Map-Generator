@@ -7,7 +7,7 @@ import {
   makeRoughnessProfile,
   PROFILE_SIZE
 } from "../renderers/coastline-fractal";
-import { ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 interface SliderDef {
   id: string;
@@ -144,9 +144,24 @@ const PREVIEW_SEED = "preview_coastline";
 
 function open(): void {
   if (customization) return;
-  if (!document.getElementById("coastlineSettingsDialog")) {
-    document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
-  }
+  closeDialogs("#culturesEditor, .stable");
+  renderDialog();
+  updatePreviews();
+
+  $("#coastlineSettingsDialog").dialog({
+    title: "Coastline Settings Editor",
+    resizable: false,
+    width: "auto",
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    close: () => {
+      destroyDialogIfExists("coastlineSettingsDialog");
+    }
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("coastlineSettingsDialog");
+  document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const { id, key } of SLIDER_DEFS) {
     const slider = ensureEl<HTMLInputElement>(id);
@@ -211,16 +226,6 @@ function open(): void {
       drawFeatures();
     });
   }
-
-  updatePreviews();
-  closeDialogs("#culturesEditor, .stable");
-
-  $("#coastlineSettingsDialog").dialog({
-    title: "Coastline Settings Editor",
-    resizable: false,
-    width: "auto",
-    position: { my: "right top", at: "right-10 top+10", of: "svg" }
-  });
 }
 
 function buildDialogHTML(): string {
