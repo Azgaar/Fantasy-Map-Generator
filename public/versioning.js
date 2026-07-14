@@ -16,11 +16,7 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-<<<<<<< HEAD
 const VERSION = "1.136.0";
-=======
-const VERSION = "1.135.2";
->>>>>>> d905306484aa76602f3092c625401d124f47de27
 if (parseMapVersion(VERSION) !== VERSION) alert("versioning.js: Invalid format or parsing function");
 
 {
