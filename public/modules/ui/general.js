@@ -12,6 +12,16 @@ if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
   window.onbeforeunload = () => "Are you sure you want to navigate away?";
 }
 
+// Mobile Dialogs fix: touch-punch preventDefaults touch sequences that start on the dialog titlebar (drag handle),
+// so taps on its buttons never produce a click
+document.addEventListener(
+  "touchstart",
+  event => {
+    if (event.target.closest?.(".ui-dialog-titlebar-close, .ui-dialog-titlebar-collapse")) event.stopPropagation();
+  },
+  { capture: true, passive: true }
+);
+
 // Tooltips
 const tooltip = document.getElementById("tooltip");
 const onDataTipMove = debounce(showDataTip, 50);
