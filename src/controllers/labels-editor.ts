@@ -4,6 +4,9 @@ import { destroyDialogIfExists, ensureEl, findEl, parseTransform, round } from "
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 
+// group selected in the editor most recently; used as the default group for newly added labels
+let lastSelectedGroup = "";
+
 function open(tspan: SVGTSpanElement): void {
   if (customization) return;
   closeDialogs();
@@ -192,6 +195,8 @@ function selectLabelGroup(text: SVGTextElement): void {
     return;
   }
 
+  lastSelectedGroup = group;
+
   hideGroupSection();
   const groupSelect = ensureEl<HTMLSelectElement>("labelGroupSelect");
   groupSelect.options.length = 0; // remove all options
@@ -330,6 +335,7 @@ function hideGroupSection(): void {
 }
 
 function changeGroup(this: HTMLSelectElement): void {
+  lastSelectedGroup = this.value;
   ensureEl(this.value).appendChild(elSelected.node()!);
 }
 
@@ -365,6 +371,8 @@ function createNewGroup(this: HTMLInputElement): void {
     tip("Group name should start with a letter", false, "error");
     return;
   }
+
+  lastSelectedGroup = group;
 
   // just rename if only 1 element left
   const oldGroup = elSelected.node()!.parentNode as SVGGElement;
@@ -563,4 +571,6 @@ function closeLabelEditor(): void {
   ensureEl("labelEditor").remove();
 }
 
-export const LabelsEditor = { open };
+const getLastSelectedGroup = (): string => lastSelectedGroup;
+
+export const LabelsEditor = { open, getLastSelectedGroup };

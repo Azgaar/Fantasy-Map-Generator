@@ -672,8 +672,9 @@ function toggleAddLabel() {
   if (!layerIsOn("toggleLabels")) toggleLabels();
 }
 
-function addLabelOnClick() {
+async function addLabelOnClick() {
   const point = d3.mouse(this);
+  const shiftKey = d3.event.shiftKey;
 
   // get culture in clicked point to generate a name
   const cell = findCell(point[0], point[1]);
@@ -682,7 +683,7 @@ function addLabelOnClick() {
   const id = getNextId("label");
 
   // use most recently selected label group
-  const lastSelected = labelGroupSelect.value;
+  const lastSelected = await window.Controllers.LabelsEditor.getLastSelectedGroup();
   const groupId = ["", "states", "burgLabels"].includes(lastSelected) ? "#addedLabels" : "#" + lastSelected;
 
   let group = labels.select(groupId);
@@ -723,7 +724,7 @@ function addLabelOnClick() {
     .attr("id", "textPath_" + id)
     .attr("d", `M${point[0] - width},${point[1]} h${width * 2}`);
 
-  if (d3.event.shiftKey === false) unpressClickToAddButton();
+  if (shiftKey === false) unpressClickToAddButton();
 }
 
 async function toggleAddBurg() {
