@@ -4,6 +4,7 @@ import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { NameBase } from "../generators/names-generator";
 import type { ProductionModule } from "../generators/production-generator";
+import type { Bounds } from "../renderers/layer_registry";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -43,7 +44,9 @@ declare global {
   var latitudeOutput: HTMLInputElement;
   var longitudeOutput: HTMLInputElement;
   var precOutput: HTMLInputElement;
+  var shapeRendering: HTMLSelectElement;
   var hideLabels: HTMLInputElement;
+  var hideEmblems: HTMLInputElement;
   var stylePreset: HTMLSelectElement;
   var rescaleLabels: HTMLInputElement;
   var temperatureScale: HTMLSelectElement;
@@ -172,7 +175,13 @@ declare global {
 
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
-  var invokeActiveZooming: () => void;
+  var getViewportBounds: () => Bounds;
+  var scheduleViewportRender: (getBounds: () => Bounds) => void;
+  var renderViewport: (getBounds: () => Bounds) => void;
+  var renderAllViewportLayers: (root: SVGSVGElement, getBounds: () => Bounds) => void;
+  var syncRouteLayers: () => void;
+  var forceViewportRoute: (routeId: number) => void;
+  var releaseViewportRoute: (routeId: number) => void;
   var FlatQueue: any;
 
   var THREE: any; // lazy-loaded

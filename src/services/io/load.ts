@@ -803,7 +803,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (layerIsOn("toggleGrid")) drawGrid();
     if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
-    invokeActiveZooming();
+    renderViewport(getViewportBounds);
     fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);

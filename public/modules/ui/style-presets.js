@@ -155,7 +155,7 @@ function applyStyleWithUiRefresh(style) {
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
-  invokeActiveZooming();
+  renderViewport(getViewportBounds);
   setPresetRemoveButtonVisibiliy();
 
   drawScaleBar(scaleBar, scale);

@@ -18,3 +18,4 @@ import "./draw-trade-animation";
 import "./ocean-layers";
 import "./trade-animation";
 import "./emblems";
+import "./viewport_layers";

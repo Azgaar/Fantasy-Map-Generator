@@ -239,6 +239,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
   const cloneEl = (document.getElementById("map") as unknown as SVGSVGElement).cloneNode(true) as SVGSVGElement; // clone svg
   cloneEl.id = "fantasyMap";
+  renderAllViewportLayers(cloneEl, getViewportBounds);
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
   if (!debug) clone.select("#debug").remove();

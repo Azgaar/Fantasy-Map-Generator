@@ -585,13 +585,13 @@ styleGridShiftY.on("input", function () {
 
 styleRescaleMarkers.on("change", function () {
   markers.attr("rescale", +this.checked);
-  invokeActiveZooming();
+  renderViewport(getViewportBounds);
 });
 
 styleCoastlineAuto.on("change", function () {
   coastline.select("#sea_island").attr("auto-filter", +this.checked);
   styleFilter.style.display = this.checked ? "none" : "block";
-  invokeActiveZooming();
+  renderViewport(getViewportBounds);
 });
 
 styleOceanFill.on("input", function () {
@@ -1185,7 +1185,7 @@ function updateElements() {
   if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
   oceanLayers.selectAll("path").remove();
   OceanLayers();
-  invokeActiveZooming();
+  renderViewport(getViewportBounds);
 }
 
 // GLOBAL FILTERS

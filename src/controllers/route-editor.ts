@@ -41,7 +41,14 @@ function open(id: string): void {
   ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
   if (!layerIsOn("toggleCells")) toggleCells();
 
+  const routeId = +id.slice(5);
+  forceViewportRoute(routeId);
+  renderViewport(getViewportBounds);
   elSelected = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
+  if (elSelected.empty()) {
+    releaseViewportRoute(routeId);
+    return;
+  }
 
   tip(
     "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
@@ -376,9 +383,13 @@ function changeName(this: HTMLInputElement): void {
 }
 
 function changeGroup(this: HTMLInputElement): void {
+  const routeId = +elSelected.attr("id").slice(5);
   const group = this.value;
   ensureEl(group).appendChild(elSelected.node()!);
   getRoute().group = group;
+  forceViewportRoute(routeId);
+  syncRouteLayers();
+  renderViewport(getViewportBounds);
 }
 
 function generateName(): void {
@@ -437,6 +448,9 @@ function removeRoute(): void {
 }
 
 function closeRouteEditor(): void {
+  const routeId = +elSelected.attr("id").slice(5);
+  releaseViewportRoute(routeId);
+
   select("#controlPoints").remove();
   select("#controlCells").remove();
 
@@ -449,6 +463,7 @@ function closeRouteEditor(): void {
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
   ensureEl("routeEditor").innerHTML = "";
+  renderViewport(getViewportBounds);
 }
 
 export const RouteEditor = { open };

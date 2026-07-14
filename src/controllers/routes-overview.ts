@@ -118,18 +118,38 @@ function routesOverviewAddLines(): void {
 function routeHighlightOn(event: Event): void {
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
   const routeId = +(event.target as HTMLElement).dataset.id!;
-  routes.select(`#route${routeId}`).attr("stroke", "red").attr("stroke-width", 2).attr("stroke-dasharray", "none");
+  forceViewportRoute(routeId);
+  renderViewport(getViewportBounds);
+  const route = routes.select(`#route${routeId}`);
+  if (route.empty()) {
+    releaseViewportRoute(routeId);
+    return;
+  }
+
+  route.attr("stroke", "red").attr("stroke-width", 2).attr("stroke-dasharray", "none");
 }
 
 function routeHighlightOff(e: Event): void {
   const routeId = +(e.target as HTMLElement).dataset.id!;
-  routes.select(`#route${routeId}`).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null);
+  const route = routes.select(`#route${routeId}`);
+  if (!route.empty()) route.attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null);
+  releaseViewportRoute(routeId);
+  renderViewport(getViewportBounds);
 }
 
 function zoomToRoute(this: HTMLElement): void {
   const routeId = +(this.parentNode as HTMLElement).dataset.id!;
-  const route = routes.select(`#route${routeId}`).node() as Element;
+  forceViewportRoute(routeId);
+  renderViewport(getViewportBounds);
+  const route = routes.select(`#route${routeId}`).node() as Element | null;
+  if (!route) {
+    releaseViewportRoute(routeId);
+    return;
+  }
+
   highlightElement(route, 3);
+  releaseViewportRoute(routeId);
+  renderViewport(getViewportBounds);
 }
 
 function downloadRoutesData(): void {
