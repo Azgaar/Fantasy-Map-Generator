@@ -888,7 +888,7 @@ function defineMapSize() {
     if (template === "europe-accented") return [14, 22, 44.8];
     if (template === "europe-and-central-asia") return [25, 10, 39.5];
     if (template === "europe-central") return [11, 22, 46.4];
-    if (template === "north-sea-region") return [7, 18, 48.9];
+    if (template === "europe-north") return [7, 18, 48.9];
     if (template === "greenland") return [22, 7, 55.8];
     if (template === "hellenica") return [8, 27, 43.5];
     if (template === "iceland") return [2, 15, 55.3];
