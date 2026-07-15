@@ -274,6 +274,27 @@ export class MarketsModule {
     return market;
   }
 
+  // Move the market center to another burg. Keeps territories, goods, production and deals intact.
+  relocateMarket(marketId: number, newBurgId: number): Market | null {
+    const market = this.get(marketId);
+    if (!market) return null;
+
+    const newCenter = pack.burgs[newBurgId];
+    if (!newCenter || newCenter.removed) return null;
+    if (market.centerBurgId === newBurgId) return null;
+    if (pack.markets.some(m => m.centerBurgId === newBurgId)) return null;
+
+    const oldCenter = pack.burgs[market.centerBurgId];
+    if (oldCenter) oldCenter.plaza = 0;
+
+    market.centerBurgId = newBurgId;
+    pack.cells.market[newCenter.cell] = marketId;
+    newCenter.market = marketId;
+    newCenter.plaza = 1;
+
+    return market;
+  }
+
   removeMarket(marketId: number) {
     const market = this.get(marketId);
     if (!market) return;

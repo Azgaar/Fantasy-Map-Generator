@@ -1,3 +1,4 @@
+import { pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
@@ -60,6 +61,11 @@ function renderDialog(): void {
       <div id="marketOverviewBottom">
         <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
         <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
+        <button
+          id="marketOverviewRelocate"
+          data-tip="Relocate market. Click on a burg on the map to move the market center"
+          class="icon-map-pin"
+        ></button>
         <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
       </div>
     </div>`;
@@ -69,6 +75,7 @@ function renderDialog(): void {
   ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
   ensureEl("marketOverviewExport").on("click", downloadStockCsv);
   ensureEl("marketOverviewOpenDeals").on("click", () => Controllers.MarketDealsOverview.open(activeMarketId));
+  ensureEl("marketOverviewRelocate").on("click", toggleRelocateMarket);
   ensureEl("marketOverviewName").on("input", onRenameInput);
   ensureEl("marketOverviewNameReset").on("click", resetMarketName);
 }
@@ -149,6 +156,53 @@ function marketOverviewAddLines() {
   $("#marketOverview").dialog({ width: fitContent() });
 }
 
+function toggleRelocateMarket(): void {
+  const button = ensureEl("marketOverviewRelocate");
+  button.classList.toggle("pressed");
+  if (button.classList.contains("pressed")) {
+    select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateMarketOnClick);
+    tip("Click on a burg on the map to relocate the market center", true);
+  } else {
+    clearMainTip();
+    restoreDefaultEvents();
+  }
+}
+
+function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
+  const market = Markets.get(activeMarketId);
+  if (!market) return;
+
+  const [x, y] = pointer(event, this);
+  const cellId = findCell(x, y);
+  if (cellId === undefined) return;
+
+  const burgId = pack.cells.burg[cellId];
+  const burg = pack.burgs[burgId] as Burg | undefined;
+  if (!burgId || !burg || burg.removed) {
+    tip("No valid burg in this cell. Click on a cell with a burg", false, "error");
+    return;
+  }
+
+  if (burgId === market.centerBurgId) {
+    tip("This burg is already the center of this market", false, "error");
+    return;
+  }
+
+  if (pack.markets.some(m => m.centerBurgId === burgId)) {
+    tip("This burg is already a center of another market", false, "error");
+    return;
+  }
+
+  if (!Markets.relocateMarket(activeMarketId, burgId)) return;
+
+  toggleRelocateMarket();
+  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+
+  refreshNameInput(market);
+  $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
+  marketOverviewAddLines();
+}
+
 function downloadStockCsv() {
   const market = Markets.get(activeMarketId);
   if (!market) return;
@@ -165,6 +219,7 @@ function downloadStockCsv() {
 }
 
 function closeMarketOverview() {
+  if (ensureEl("marketOverviewRelocate").classList.contains("pressed")) toggleRelocateMarket();
   $("#marketOverview").dialog("destroy");
   ensureEl("marketOverview").remove();
 }
