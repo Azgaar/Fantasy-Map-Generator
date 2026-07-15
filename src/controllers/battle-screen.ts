@@ -1381,8 +1381,6 @@ function closeBattleScreen(): void {
 }
 
 function cleanData(): void {
-  ensureEl("battleAttackers").innerHTML = "";
-  ensureEl("battleDefenders").innerHTML = ""; // clean DOM
   customization = 0; // exit edit mode
 
   // clean temp data
