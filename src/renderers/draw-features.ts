@@ -52,19 +52,23 @@ const featuresRenderer = (): void => {
     }
   }
 
-  defs.select("#featurePaths").html(html.paths.join(""));
-  defs.select("#land").html(html.landMask.join(""));
-  defs.select("#water").html(html.waterMask.join(""));
+  select("#deftemp").select("#featurePaths").html(html.paths.join(""));
+  select("#deftemp").select("#land").html(html.landMask.join(""));
+  select("#deftemp").select("#water").html(html.waterMask.join(""));
 
-  coastline.selectAll<SVGGElement, unknown>("g").each(function () {
-    const paths = html.coastline[this.id] || [];
-    select(this).html(paths.join(""));
-  });
+  select("#coastline")
+    .selectAll<SVGGElement, unknown>("g")
+    .each(function () {
+      const paths = html.coastline[this.id] || [];
+      select(this).html(paths.join(""));
+    });
 
-  lakes.selectAll<SVGGElement, unknown>("g").each(function () {
-    const paths = html.lakes[this.id] || [];
-    select(this).html(paths.join(""));
-  });
+  select("#lakes")
+    .selectAll<SVGGElement, unknown>("g")
+    .each(function () {
+      const paths = html.lakes[this.id] || [];
+      select(this).html(paths.join(""));
+    });
 
   TIME && console.timeEnd("drawFeatures");
 };

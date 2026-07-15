@@ -1,6 +1,6 @@
-import { drag, pointer, select, sum } from "d3";
+import { drag, select, sum } from "d3";
 import type { Zone } from "@/generators/zones-generator";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, rn, si, unique } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
 
 interface ZoneCellDatum {
   cell: number;
@@ -319,7 +319,7 @@ function dragZoneBrush(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = pointer(dragEvent, this);
+    const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, radius);
 
     let selection = radius > 5 ? findAll(x, y, radius) : [findCell(x, y)!];
@@ -357,7 +357,7 @@ function dragZoneBrush(this: SVGElement, event: any): void {
 
 function moveZoneBrush(this: SVGElement, event: any): void {
   showMainTip();
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const radius = +ensureEl<HTMLInputElement>("zonesBrush").value;
   moveCircle(x, y, radius);
 }
@@ -447,7 +447,7 @@ function toggleFog(zone: Zone, cl: DOMTokenList): void {
 }
 
 function toggleLegend(): void {
-  if (legend.selectAll("*").size()) {
+  if (select("#legend").selectAll("*").size()) {
     clearLegend();
     return;
   } // hide legend

@@ -210,7 +210,7 @@ function changeIconShiftY(this: HTMLInputElement): void {
 
 function changeMarkerSize(this: HTMLInputElement): void {
   const size = +this.value;
-  const rescale = +markers.attr("rescale");
+  const rescale = +select("#markers").attr("rescale");
 
   getSameTypeMarkers().forEach(marker => {
     marker.size = size;

@@ -301,7 +301,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   // add displayed emblems
-  if (layerIsOn("toggleEmblems") && emblems.selectAll("use").size()) {
+  if (layerIsOn("toggleEmblems") && select("#emblems").selectAll("use").size()) {
     cloneEl
       .getElementById("emblems")
       ?.querySelectorAll("use")
@@ -516,7 +516,7 @@ function removeUnusedElements(clone: MapSelection): void {
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
   const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(terrs.select("#landHeights").attr("scheme"));
+  const scheme = getColorScheme(select("#terrs").select("#landHeights").attr("scheme"));
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")

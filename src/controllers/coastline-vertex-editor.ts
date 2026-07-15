@@ -9,7 +9,7 @@ function open(element: SVGElement): void {
 
   renderDialog();
 
-  debug.append("g").attr("id", "vertices");
+  select("#debug").append("g").attr("id", "vertices");
   elSelected = select<SVGElement, unknown>(element) as unknown as typeof elSelected;
   selectCoastlineGroup(element);
   drawCoastlineVertices();
@@ -60,7 +60,7 @@ function drawCoastlineVertices(): void {
 
   const cellsNumber = pack.cells.i.length;
   const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v])).filter(cellId => cellId < cellsNumber);
-  debug
+  select("#debug")
     .select("#vertices")
     .selectAll<SVGPolygonElement, number>("polygon")
     .data(neibCells)
@@ -69,7 +69,7 @@ function drawCoastlineVertices(): void {
     .attr("points", (d: number) => getPackPolygon(d, pack))
     .attr("data-c", (d: number) => d);
 
-  debug
+  select<SVGGElement, unknown>("#debug")
     .select("#vertices")
     .selectAll<SVGCircleElement, number>("circle")
     .data(vertices)
@@ -115,7 +115,7 @@ function handleVertexDrag(
   ensureEl("coastlineArea").innerHTML = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell
-  debug
+  select("#debug")
     .select("#vertices")
     .selectAll<SVGPolygonElement, number>("polygon")
     .attr("points", d => getPackPolygon(d, pack));
@@ -259,7 +259,7 @@ function editGroupStyle(): void {
 }
 
 function closeCoastlineEditor(): void {
-  debug.select("#vertices").remove();
+  select("#debug").select("#vertices").remove();
   unselect();
   destroyDialogIfExists("coastlineEditor");
 }

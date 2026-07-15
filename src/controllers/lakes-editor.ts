@@ -11,7 +11,7 @@ function open(element: SVGElement): void {
 
   renderDialog();
 
-  debug.append("g").attr("id", "vertices");
+  select("#debug").append("g").attr("id", "vertices");
   elSelected = select<SVGElement, unknown>(element) as unknown as typeof elSelected;
   updateLakeValues();
   selectLakeGroup();
@@ -139,7 +139,7 @@ function drawLakeVertices(): void {
   const vertices = getLake().vertices;
 
   const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v]));
-  debug
+  select("#debug")
     .select("#vertices")
     .selectAll<SVGPolygonElement, number>("polygon")
     .data(neibCells)
@@ -148,7 +148,7 @@ function drawLakeVertices(): void {
     .attr("points", (d: number) => getPackPolygon(d, pack))
     .attr("data-c", (d: number) => d);
 
-  debug
+  select<SVGGElement, unknown>("#debug")
     .select("#vertices")
     .selectAll<SVGCircleElement, number>("circle")
     .data(vertices)
@@ -185,7 +185,7 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
   ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell
-  debug
+  select("#debug")
     .select("#vertices")
     .selectAll<SVGPolygonElement, number>("polygon")
     .attr("points", d => getPackPolygon(d, pack));
@@ -217,11 +217,13 @@ function generateNameRandom(): void {
 function selectLakeGroup(): void {
   const lake = getLake();
 
-  const select = ensureEl<HTMLSelectElement>("lakeGroup");
-  select.options.length = 0; // remove all options
-  lakes.selectAll<SVGGElement, unknown>("g").each(function () {
-    select.options.add(new Option(this.id, this.id, false, this.id === lake.group));
-  });
+  const groupSelect = ensureEl<HTMLSelectElement>("lakeGroup");
+  groupSelect.options.length = 0; // remove all options
+  select<SVGGElement, unknown>("#lakes")
+    .selectAll<SVGGElement, unknown>("g")
+    .each(function () {
+      groupSelect.options.add(new Option(this.id, this.id, false, this.id === lake.group));
+    });
 }
 
 function changeLakeGroup(this: HTMLSelectElement): void {
@@ -328,7 +330,7 @@ function editLakeLegend(): void {
 }
 
 function closeLakesEditor(): void {
-  debug.select("#vertices").remove();
+  select("#debug").select("#vertices").remove();
   unselect();
   destroyDialogIfExists("lakeEditor");
 }

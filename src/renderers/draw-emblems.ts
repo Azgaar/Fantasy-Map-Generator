@@ -1,4 +1,4 @@
-import { forceCollide, forceSimulation, timeout } from "d3";
+import { forceCollide, forceSimulation, select, timeout } from "d3";
 import type { Burg } from "../generators/burgs-generator";
 import type { State } from "../generators/states-generator";
 import { minmax, rn } from "../utils";
@@ -36,21 +36,21 @@ const emblemsRenderer = (): void => {
   const getStateEmblemsSize = (): number => {
     const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
     const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +emblems.select("#stateEmblems").attr("data-size") || 1;
+    const sizeMod = +select("#emblems").select("#stateEmblems").attr("data-size") || 1;
     return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
   };
 
   const getProvinceEmblemsSize = (): number => {
     const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
     const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +emblems.select("#provinceEmblems").attr("data-size") || 1;
+    const sizeMod = +select("#emblems").select("#provinceEmblems").attr("data-size") || 1;
     return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
   };
 
   const getBurgEmblemSize = (): number => {
     const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
     const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +emblems.select("#burgEmblems").attr("data-size") || 1;
+    const sizeMod = +select("#emblems").select("#burgEmblems").attr("data-size") || 1;
     return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
   };
 
@@ -125,7 +125,7 @@ const emblemsRenderer = (): void => {
           }em"/>`
       )
       .join("");
-    emblems.select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
+    select("#emblems").select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
     const provinceNodes = nodes.filter(node => node.type === "province");
     const provinceString = provinceNodes
@@ -136,7 +136,7 @@ const emblemsRenderer = (): void => {
           }em"/>`
       )
       .join("");
-    emblems.select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
+    select("#emblems").select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
     const stateNodes = nodes.filter(node => node.type === "state");
     const stateString = stateNodes
@@ -147,7 +147,7 @@ const emblemsRenderer = (): void => {
           }em"/>`
       )
       .join("");
-    emblems.select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
+    select("#emblems").select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
 
     invokeActiveZooming();
   });

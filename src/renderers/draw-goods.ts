@@ -1,3 +1,4 @@
+import { select } from "d3";
 import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
@@ -22,7 +23,7 @@ export function toggleGoods(event?: MouseEvent) {
     if (event && isCtrlClick(event)) editStyle("goodsIcons");
   } else {
     if (event && isCtrlClick(event)) return editStyle("goodsIcons");
-    SUBGROUPS.forEach(id => void goods.select(`#${id}`).html(""));
+    SUBGROUPS.forEach(id => void select("#goods").select(`#${id}`).html(""));
     turnButtonOff("toggleGoods");
   }
 }
@@ -31,15 +32,15 @@ export function drawGoods() {
   TIME && console.time("drawGoods");
 
   for (const id of SUBGROUPS) {
-    if (goods.select(`#${id}`).empty()) goods.append("g").attr("id", id);
+    if (select("#goods").select(`#${id}`).empty()) select("#goods").append("g").attr("id", id);
   }
 
   const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
-  goods.select("#goodsCells").html(buildGoodsCellsContent(visible));
-  goods.select("#goodsIcons").html(buildGoodsIconsContent(visible));
-  goods.select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
+  select("#goods").select("#goodsCells").html(buildGoodsCellsContent(visible));
+  select("#goods").select("#goodsIcons").html(buildGoodsIconsContent(visible));
+  select("#goods").select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
 
-  goods.style("display", null);
+  select("#goods").style("display", null);
   TIME && console.timeEnd("drawGoods");
 }
 
@@ -85,7 +86,7 @@ function buildGoodsCellsContent(displayedGoods: Set<number>): string {
 function buildGoodsIconsContent(displayedGoods: Set<number>): string {
   if (!displayedGoods.size || !pack.cells.good) return "";
 
-  const iconsGroup = goods.select("#goodsIcons");
+  const iconsGroup = select("#goods").select("#goodsIcons");
   const drawCircle = +iconsGroup.attr("data-circle");
   const iconSize = +iconsGroup.attr("data-size") || DEFAULT_SIZE;
   const half = iconSize / 2;
@@ -109,7 +110,7 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
   if (!displayedGoods.size) return "";
 
   // plate icon size is user-defined; the rest of the geometry and font scale with it
-  const plateIcon = +goods.select("#goodsBurgs").attr("data-size") || PLATE_ICON;
+  const plateIcon = +select("#goods").select("#goodsBurgs").attr("data-size") || PLATE_ICON;
   const scale = plateIcon / PLATE_ICON;
   const plateFont = PLATE_FONT * scale;
   const plateGap = PLATE_GAP * scale;

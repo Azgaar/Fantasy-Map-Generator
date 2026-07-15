@@ -1,3 +1,4 @@
+import { select } from "d3";
 import type { Burg } from "../generators/burgs-generator";
 
 declare global {
@@ -37,7 +38,7 @@ const burgIconsRenderer = (): void => {
 };
 
 const drawBurgIconRenderer = (burg: Burg): void => {
-  const iconGroup = burgIcons.select<SVGGElement>(`#${burg.group}`);
+  const iconGroup = select("#burgIcons").select<SVGGElement>(`#${burg.group}`);
   if (iconGroup.empty()) {
     drawBurgIcons();
     return; // redraw all icons if group is missing
@@ -45,7 +46,7 @@ const drawBurgIconRenderer = (burg: Burg): void => {
 
   removeBurgIconRenderer(burg.i!);
   const icon = iconGroup.attr("data-icon") || "#icon-circle";
-  burgIcons
+  select("#burgIcons")
     .select(`#${burg.group}`)
     .append("use")
     .attr("href", icon)
@@ -55,7 +56,7 @@ const drawBurgIconRenderer = (burg: Burg): void => {
     .attr("y", burg.y);
 
   if (burg.port) {
-    anchors
+    select("#anchors")
       .select(`#${burg.group}`)
       .append("use")
       .attr("href", "#icon-anchor")
@@ -97,14 +98,14 @@ function createIconGroups(): void {
   const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
-    const burgGroup = burgIcons.append("g");
+    const burgGroup = select("#burgIcons").append("g");
     const iconStyles = style.burgIcons[name] || defaultIconStyle;
     Object.entries(iconStyles).forEach(([key, value]) => {
       burgGroup.attr(key, value);
     });
     burgGroup.attr("id", name);
 
-    const anchorGroup = anchors.append("g");
+    const anchorGroup = select("#anchors").append("g");
     const anchorStyles = style.anchors[name] || defaultAnchorStyle;
     Object.entries(anchorStyles).forEach(([key, value]) => {
       anchorGroup.attr(key, value);
