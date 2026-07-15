@@ -1,9 +1,9 @@
-import { pointer, select } from "d3";
+import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
-import { destroyDialogIfExists, ensureEl, unique } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPointer, unique } from "../utils";
 
 const visibleTags = new Set<string>();
 
@@ -517,7 +517,7 @@ function selectResourceOnLineClick(this: HTMLElement) {
 
 function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
   const body = ensureEl("goodsBody");
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const cellId = findCell(...point);
   if (cellId === undefined) return;
 

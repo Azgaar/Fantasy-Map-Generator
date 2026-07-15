@@ -1,3 +1,4 @@
+import { select } from "d3";
 import { ensureEl } from "../utils";
 
 declare global {
@@ -352,7 +353,7 @@ window.getUsedFonts = (svg: SVGSVGElement) => {
     if (font) usedFontFamilies.add(font);
   }
 
-  const provinceFont = provs.attr("font-family");
+  const provinceFont = select("#provs").attr("font-family");
   if (provinceFont) usedFontFamilies.add(provinceFont);
 
   const legend = svg.querySelector("#legend");

@@ -1,5 +1,5 @@
-import { color as d3Color, interpolateString, pointer, select } from "d3";
-import { destroyDialogIfExists, ensureEl, findEl, getAdjective } from "../utils";
+import { color as d3Color, interpolateString, select } from "d3";
+import { destroyDialogIfExists, ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
 interface Relation {
   inText: string;
@@ -209,7 +209,7 @@ function stateHighlightOn(event: Event): void {
   if (customization || !state) return;
   const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
 
-  const path = debug
+  const path = select("#debug")
     .append("path")
     .attr("class", "highlight")
     .attr("d", d)
@@ -229,9 +229,11 @@ function stateHighlightOn(event: Event): void {
 }
 
 function stateHighlightOff(): void {
-  debug.selectAll<SVGElement, unknown>(".highlight").each(function () {
-    select(this).transition().duration(1000).attr("opacity", 0).remove();
-  });
+  select("#debug")
+    .selectAll<SVGElement, unknown>(".highlight")
+    .each(function () {
+      select(this).transition().duration(1000).attr("opacity", 0).remove();
+    });
 }
 
 function showStateRelations(): void {
@@ -258,7 +260,7 @@ function showStateRelations(): void {
 }
 
 function selectStateOnMapClick(this: SVGElement, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const i = findCell(point[0], point[1])!;
   const state = pack.cells.state[i];
   if (!state) return;
@@ -588,7 +590,7 @@ function closeDiplomacyEditor(): void {
   if (selected) selected.classList.remove("Self");
   if (layerIsOn("toggleStates")) drawStates();
   else toggleStates();
-  debug.selectAll(".highlight").remove();
+  select("#debug").selectAll(".highlight").remove();
   $("#diplomacyEditor").dialog("destroy");
   ensureEl("diplomacyEditor").remove();
 }

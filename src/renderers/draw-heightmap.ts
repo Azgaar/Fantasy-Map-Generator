@@ -19,7 +19,8 @@ import {
   curveStepAfter,
   curveStepBefore,
   line,
-  range
+  range,
+  select
 } from "d3";
 import { round } from "../utils";
 
@@ -50,8 +51,8 @@ declare global {
 const heightmapRenderer = (): void => {
   TIME && console.time("drawHeightmap");
 
-  const ocean = terrs.select<SVGGElement>("#oceanHeights");
-  const land = terrs.select<SVGGElement>("#landHeights");
+  const ocean = select("#terrs").select<SVGGElement>("#oceanHeights");
+  const land = select("#terrs").select<SVGGElement>("#landHeights");
 
   ocean.selectAll("*").remove();
   land.selectAll("*").remove();

@@ -4,7 +4,6 @@ import {
   easeSinIn,
   interpolate,
   interpolateString,
-  pointer,
   select,
   stratify,
   transition,
@@ -16,6 +15,7 @@ import {
   destroyDialogIfExists,
   ensureEl,
   getPackPolygon,
+  getPointer,
   getRandomColor,
   isLand,
   P,
@@ -363,7 +363,7 @@ function provinceHighlightOff(event: Event): void {
   }
 
   if (!layerIsOn("toggleProvinces") || !province) {
-    debug.selectAll(".highlight").remove();
+    select("#debug").selectAll(".highlight").remove();
     return;
   }
   select<SVGGElement, unknown>("#provs")
@@ -371,7 +371,7 @@ function provinceHighlightOff(event: Event): void {
     .transition()
     .attr("stroke-width", null)
     .attr("stroke", null);
-  debug.selectAll(".highlight").remove();
+  select("#debug").selectAll(".highlight").remove();
 }
 
 function changeFill(el: HTMLElement): void {
@@ -1149,7 +1149,7 @@ function selectProvinceOnLineClick(this: HTMLElement): void {
 }
 
 function selectProvinceOnMapClick(this: SVGElement, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const i = findCell(point[0], point[1])!;
   if (pack.cells.h[i] < 20 || !pack.cells.state[i]) return;
 
@@ -1168,9 +1168,9 @@ function selectProvinceOnMapClick(this: SVGElement, event: any): void {
 }
 
 function selectProvince(p: number): void {
-  debug.selectAll("path.selected").remove();
+  select("#debug").selectAll("path.selected").remove();
   const path = select<SVGGElement, unknown>("#provs").select(`#province${p}`).attr("d");
-  debug.append("path").attr("class", "selected").attr("d", path);
+  select("#debug").append("path").attr("class", "selected").attr("d", path);
 }
 
 function dragBrush(this: SVGElement, event: any): void {
@@ -1178,7 +1178,7 @@ function dragBrush(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = pointer(dragEvent, this);
+    const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
     const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])!];
@@ -1227,7 +1227,7 @@ function changeForSelection(selection: number[]): void {
 
 function moveBrush(this: SVGElement, event: any): void {
   showMainTip();
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const radius = +ensureEl<HTMLInputElement>("provincesBrush").value;
   moveCircle(point[0], point[1], radius);
 }
@@ -1258,7 +1258,7 @@ function exitProvincesManualAssignment(close?: string): void {
   // restore borders style
   select<SVGGElement, unknown>("#provinceBorders").select("path").attr("stroke", null).attr("stroke-width", null);
   select<SVGGElement, unknown>("#stateBorders").select("path").attr("stroke", null).attr("stroke-width", null);
-  debug.selectAll("path.selected").remove();
+  select("#debug").selectAll("path.selected").remove();
 
   document.querySelectorAll<HTMLElement>("#provincesBottom > *").forEach(el => {
     el.style.display = "inline-block";
@@ -1305,7 +1305,7 @@ function enterAddProvinceMode(this: HTMLElement): void {
 
 function addProvince(this: SVGElement, event: any): void {
   const { cells, provinces } = pack;
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const center = findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
     tip("You cannot place province into the water. Please click on a land cell", false, "error");
@@ -1589,7 +1589,7 @@ function highlightProvinceOnMergeHover(event: Event): void {
 
   provinceHighlightOff(event);
 
-  const path = debug
+  const path = select("#debug")
     .append("path")
     .attr("class", "highlight")
     .attr("d", d)
@@ -1666,7 +1666,7 @@ function mergeProvinces(ids: number[], primary: number): void {
 
   // clear any fog or debug highlights
   unfog();
-  debug.selectAll(".highlight").remove();
+  select("#debug").selectAll(".highlight").remove();
 
   refreshProvincesEditor();
 }

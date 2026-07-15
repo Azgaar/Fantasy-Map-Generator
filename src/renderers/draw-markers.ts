@@ -1,3 +1,4 @@
+import { select } from "d3";
 import { rn } from "../utils";
 
 interface Marker {
@@ -79,14 +80,14 @@ function markerRenderer(marker: Marker, rescale = 1): string {
 const markersRenderer = (): void => {
   TIME && console.time("drawMarkers");
 
-  const rescale = +markers.attr("rescale");
-  const pinned = +markers.attr("pinned");
+  const rescale = +select("#markers").attr("rescale");
+  const pinned = +select("#markers").attr("pinned");
 
   const markersData: Marker[] = pinned
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
   const html = markersData.map(marker => markerRenderer(marker, rescale));
-  markers.html(html.join(""));
+  select("#markers").html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");
 };

@@ -1,5 +1,5 @@
-import { drag, easeSinIn, pointer, select, sum, transition } from "d3";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getRandomColor, isLand, rn, si } from "../utils";
+import { drag, easeSinIn, select, sum, transition } from "d3";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, rn, si } from "../utils";
 
 function open(): void {
   if (customization) return;
@@ -297,7 +297,7 @@ function openWiki(el: HTMLElement): void {
 }
 
 function toggleLegend(): void {
-  if (legend.selectAll("*").size()) {
+  if (select("#legend").selectAll("*").size()) {
     clearLegend();
     return;
   } // hide legend
@@ -405,7 +405,7 @@ function downloadBiomesData(): void {
 function enterBiomesCustomizationMode(): void {
   if (!layerIsOn("toggleBiomes")) toggleBiomes();
   customization = 6;
-  biomes.append("g").attr("id", "temp");
+  select("#biomes").append("g").attr("id", "temp");
 
   document.querySelectorAll<HTMLElement>("#biomesBottom > button").forEach(el => {
     el.style.display = "none";
@@ -443,7 +443,7 @@ function selectBiomeOnLineClick(line: HTMLElement): void {
 }
 
 function selectBiomeOnMapClick(this: SVGElement, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const i = findCell(point[0], point[1])!;
   if (pack.cells.h[i] < 20) {
     tip("You cannot reassign water via biomes. Please edit the Heightmap to change water", false, "error");
@@ -462,7 +462,7 @@ function dragBiomeBrush(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = pointer(dragEvent, this);
+    const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
     const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])!];
@@ -499,7 +499,7 @@ function changeBiomeForSelection(selection: number[]): void {
 
 function moveBiomeBrush(this: SVGElement, event: any): void {
   showMainTip();
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const radius = +ensureEl<HTMLInputElement>("biomesBrush").value;
   moveCircle(point[0], point[1], radius);
 }

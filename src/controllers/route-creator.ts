@@ -1,7 +1,7 @@
-import { pointer, select } from "d3";
+import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
 
@@ -14,15 +14,15 @@ function open(defaultGroup?: string): void {
   if (!layerIsOn("toggleCells")) toggleCells();
 
   tip("Click to add route point", true);
-  debug.append("g").attr("id", "controlCells");
-  debug.append("g").attr("id", "controlPoints");
+  select("#debug").append("g").attr("id", "controlCells");
+  select("#debug").append("g").attr("id", "controlPoints");
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
 
   creatorPoints = [];
   renderDialog();
 
   // update route groups
-  ensureEl("routeCreatorGroupSelect").innerHTML = routes
+  ensureEl("routeCreatorGroupSelect").innerHTML = select("#routes")
     .selectAll<SVGGElement, unknown>("g")
     .nodes()
     .map(el => {
@@ -83,7 +83,7 @@ function onBodyClick(ev: Event): void {
 }
 
 function onClick(this: any, event: any): void {
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const cellId = findCell(x, y);
   const point = [rn(x, 2), rn(y, 2), cellId!];
   creatorPoints.push(point);
@@ -108,7 +108,7 @@ function removePoint(pointString: string): void {
 }
 
 function drawRoute(points: number[][]): void {
-  debug
+  select("#debug")
     .select("#controlCells")
     .selectAll("polygon")
     .data(points)
@@ -116,7 +116,7 @@ function drawRoute(points: number[][]): void {
     .attr("points", (p: number[]) => getPackPolygon(p[2], pack))
     .attr("class", "current");
 
-  debug
+  select("#debug")
     .select("#controlPoints")
     .selectAll("circle")
     .data(points)
@@ -127,8 +127,12 @@ function drawRoute(points: number[][]): void {
 
   const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
 
-  routes.select("#routeTemp").remove();
-  routes.select(`#${group}`).append("path").attr("d", Routes.getPath({ group, points })).attr("id", "routeTemp");
+  select("#routes").select("#routeTemp").remove();
+  select("#routes")
+    .select(`#${group}`)
+    .append("path")
+    .attr("d", Routes.getPath({ group, points }))
+    .attr("id", "routeTemp");
 }
 
 function completeCreation(): void {
@@ -161,14 +165,14 @@ function completeCreation(): void {
     }
   }
 
-  routes.select("#routeTemp").attr("id", `route${routeId}`);
+  select("#routes").select("#routeTemp").attr("id", `route${routeId}`);
   void Controllers.RouteEditor.open(`route${routeId}`);
 }
 
 function closeRouteCreator(): void {
-  debug.select("#controlCells").remove();
-  debug.select("#controlPoints").remove();
-  routes.select("#routeTemp").remove();
+  select("#debug").select("#controlCells").remove();
+  select("#debug").select("#controlPoints").remove();
+  select("#routes").select("#routeTemp").remove();
 
   restoreDefaultEvents();
   clearMainTip();

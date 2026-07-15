@@ -9,16 +9,16 @@ export function toggleMarketsLayer(event?: MouseEvent) {
     if (event && isCtrlClick(event)) editStyle("markets");
   } else {
     if (event && isCtrlClick(event)) return editStyle("markets");
-    markets.html("");
+    select("#markets").html("");
     turnButtonOff("toggleMarketsLayer");
   }
 }
 
 export function drawMarketsLayer() {
   TIME && console.time("drawMarketsLayer");
-  markets.html(buildMarketsContent());
+  select("#markets").html(buildMarketsContent());
   highlightMarketsOnHover();
-  markets.style("display", null);
+  select("#markets").style("display", null);
   TIME && console.timeEnd("drawMarketsLayer");
 }
 
@@ -32,9 +32,9 @@ function buildMarketsContent(): string {
   const isolines = getIsolines(pack, getType, { polygons: true });
 
   // marker circle size, emoji size and emoji icon are independently user-configurable
-  const baseRadius = +markets.attr("data-size") || MARKET_RADIUS;
-  const baseFont = +markets.attr("font-size") || MARKET_FONT;
-  const icon = markets.attr("data-icon") || MARKET_ICON;
+  const baseRadius = +select("#markets").attr("data-size") || MARKET_RADIUS;
+  const baseFont = +select("#markets").attr("font-size") || MARKET_FONT;
+  const icon = select("#markets").attr("data-icon") || MARKET_ICON;
 
   return pack.markets
     .map(market => {

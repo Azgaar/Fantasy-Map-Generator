@@ -12,8 +12,10 @@ function restoreDefaultEvents() {
 }
 
 // handle viewbox click
-function clicked() {
-  const el = d3.event.target;
+// dual-compatible: d3 v7 selections pass the event as the first argument,
+// the legacy v5 selection passes the datum (undefined for viewbox) and sets d3.event
+function clicked(event) {
+  const el = (event || d3.event)?.target;
   const parent = el?.parentElement;
   const grand = parent?.parentElement;
   const great = grand?.parentElement;

@@ -1,4 +1,4 @@
-import { mean } from "d3";
+import { mean, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
@@ -143,26 +143,26 @@ function riversOverviewAddLines(): void {
 function riverHighlightOn(event: Event): void {
   if (!layerIsOn("toggleRivers")) toggleRivers();
   const r = +(event.target as HTMLElement).dataset.id!;
-  rivers.select(`#river${r}`).attr("stroke", "red").attr("stroke-width", 1);
+  select("#rivers").select(`#river${r}`).attr("stroke", "red").attr("stroke-width", 1);
 }
 
 function riverHighlightOff(e: Event): void {
   const r = +(e.target as HTMLElement).dataset.id!;
-  rivers.select(`#river${r}`).attr("stroke", null).attr("stroke-width", null);
+  select("#rivers").select(`#river${r}`).attr("stroke", null).attr("stroke-width", null);
 }
 
 function zoomToRiver(this: HTMLElement): void {
   const r = +(this.parentNode as HTMLElement).dataset.id!;
-  const river = rivers.select(`#river${r}`).node() as Element;
+  const river = select("#rivers").select(`#river${r}`).node() as Element;
   highlightElement(river, 3);
 }
 
 function toggleBasinsHightlight(): void {
-  if (rivers.attr("data-basin") === "hightlighted") {
-    rivers.selectAll("*").attr("fill", null);
-    rivers.attr("data-basin", null);
+  if (select("#rivers").attr("data-basin") === "hightlighted") {
+    select("#rivers").selectAll("*").attr("fill", null);
+    select("#rivers").attr("data-basin", null);
   } else {
-    rivers.attr("data-basin", "hightlighted");
+    select("#rivers").attr("data-basin", "hightlighted");
     const basins = [...new Set(pack.rivers.map((r: River) => r.basin))];
     const colors = [
       "#1f77b4",
@@ -182,7 +182,7 @@ function toggleBasinsHightlight(): void {
       pack.rivers
         .filter((r: River) => r.basin === b)
         .forEach((r: River) => {
-          rivers.select(`#river${r.i}`).attr("fill", color);
+          select("#rivers").select(`#river${r.i}`).attr("fill", color);
         });
     });
   }
@@ -251,7 +251,7 @@ function triggerAllRiversRemove(): void {
 function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
-  rivers.selectAll("*").remove();
+  select("#rivers").selectAll("*").remove();
   riversOverviewAddLines();
 }
 

@@ -26,8 +26,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
   TIME && console.time("drawStateLabels");
 
   // temporary make the labels visible
-  const layerDisplay = labels.style("display");
-  labels.style("display", null);
+  const layerDisplay = select("#labels").style("display");
+  select("#labels").style("display", null);
 
   const { cells, states, features } = pack;
   const stateIds = cells.state;
@@ -46,7 +46,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
   drawLabelPath(letterLength);
 
   // restore labels visibility
-  labels.style("display", layerDisplay);
+  select("#labels").style("display", layerDisplay);
 
   function getLabelPaths(): [number, PathPoints][] {
     const labelPaths: [number, PathPoints][] = [];

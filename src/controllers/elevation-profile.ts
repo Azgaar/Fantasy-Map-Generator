@@ -9,7 +9,6 @@ import {
   curveMonotoneX,
   curveNatural,
   line,
-  pointer,
   type Selection,
   scaleLinear,
   select
@@ -18,7 +17,7 @@ import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features";
 import type { Province } from "../generators/provinces-generator";
 import type { State } from "../generators/states-generator";
-import { ensureEl, rn } from "../utils";
+import { ensureEl, getPointer, rn } from "../utils";
 
 function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");
@@ -440,7 +439,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .attr("fill", "transparent")
       .style("cursor", "crosshair")
       .on("mousemove", (event: MouseEvent) => {
-        const [mx] = pointer(event);
+        const [mx] = getPointer(event);
         const idx = Math.max(
           0,
           Math.min(cells.length - 1, Math.round(((mx - xOffset) / chartWidth) * (cells.length - 1)))

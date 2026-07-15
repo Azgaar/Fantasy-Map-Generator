@@ -1,7 +1,7 @@
-import { pointer, select, sum } from "d3";
+import { select, sum } from "d3";
 import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, findEl, last, si } from "../utils";
+import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
 function open(state = -1): void {
   if (customization) return;
@@ -243,7 +243,7 @@ function toggleAdd(): void {
     clearMainTip();
     // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
     // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    viewbox.on("click", clicked).style("cursor", "default");
+    select("#viewbox").on("click", clicked).style("cursor", "default");
     refreshRegimentsOverview();
     findEl("regimentAdd")?.classList.remove("pressed");
   }
@@ -256,7 +256,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
     return;
   }
 
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const cell = findCell(point[0], point[1]);
   if (cell === undefined) return;
   const x = pack.cells.p[cell][0];

@@ -1,3 +1,4 @@
+import { select } from "d3";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -313,7 +314,7 @@ class EmblemRenderModule {
     const id = `${type}COA${i}`;
     const g: HTMLElement = document.getElementById(`${type}Emblems`) as HTMLElement;
 
-    if (emblems.selectAll("use").size()) {
+    if (select("#emblems").selectAll("use").size()) {
       const size = parseFloat(g.getAttribute("font-size") || "50");
       const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
       g.insertAdjacentHTML("beforeend", use);

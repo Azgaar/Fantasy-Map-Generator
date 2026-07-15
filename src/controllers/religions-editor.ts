@@ -1,4 +1,4 @@
-import { drag, easeSinIn, pointer, select, transition } from "d3";
+import { drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import {
   abbreviate,
@@ -7,6 +7,7 @@ import {
   ensureEl,
   findAllCellsInRadius,
   getPackPolygon,
+  getPointer,
   isLand,
   parseTransform,
   rn,
@@ -356,13 +357,18 @@ const religionHighlightOn = debounce((event: any) => {
   if (customization) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
-  relig
+  select("#relig")
     .select(`#religion${religionId}`)
     .raise()
     .transition(animate)
     .attr("stroke-width", 2.5)
     .attr("stroke", "#d0240f");
-  debug.select(`#religionsCenter${religionId}`).raise().transition(animate).attr("r", 3).attr("stroke", "#d0240f");
+  select("#debug")
+    .select(`#religionsCenter${religionId}`)
+    .raise()
+    .transition(animate)
+    .attr("r", 3)
+    .attr("stroke", "#d0240f");
 }, 200);
 
 function religionHighlightOff(event: any): void {
@@ -370,8 +376,8 @@ function religionHighlightOff(event: any): void {
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.remove("active");
 
-  relig.select(`#religion${religionId}`).transition().attr("stroke-width", null).attr("stroke", null);
-  debug.select(`#religionsCenter${religionId}`).transition().attr("r", 2).attr("stroke", null);
+  select("#relig").select(`#religion${religionId}`).transition().attr("stroke-width", null).attr("stroke", null);
+  select("#debug").select(`#religionsCenter${religionId}`).transition().attr("r", 2).attr("stroke", null);
 }
 
 function religionChangeColor(this: HTMLElement): void {
@@ -381,8 +387,8 @@ function religionChangeColor(this: HTMLElement): void {
   const callback = (newFill: string) => {
     (this as any).fill = newFill;
     pack.religions[religionId].color = newFill;
-    relig.select(`#religion${religionId}`).attr("fill", newFill);
-    debug.select(`#religionsCenter${religionId}`).attr("fill", newFill);
+    select("#relig").select(`#religion${religionId}`).attr("fill", newFill);
+    select("#debug").select(`#religionsCenter${religionId}`).attr("fill", newFill);
   };
 
   openPicker(currentFill, callback);
@@ -547,9 +553,9 @@ function religionRemovePrompt(this: HTMLElement): void {
 }
 
 function removeReligion(religionId: number): void {
-  relig.select(`#religion${religionId}`).remove();
-  relig.select(`#religion-gap${religionId}`).remove();
-  debug.select(`#religionsCenter${religionId}`).remove();
+  select("#relig").select(`#religion${religionId}`).remove();
+  select("#relig").select(`#religion-gap${religionId}`).remove();
+  select("#debug").select(`#religionsCenter${religionId}`).remove();
 
   pack.cells.religion.forEach((r: number, i: number) => {
     if (r === religionId) pack.cells.religion[i] = 0;
@@ -623,7 +629,7 @@ function religionCenterDrag(this: any, event: any): void {
 }
 
 function toggleLegend(): void {
-  if (legend.selectAll("*").size()) {
+  if (select("#legend").selectAll("*").size()) {
     clearLegend(); // hide legend
     return;
   }
@@ -701,12 +707,12 @@ function toggleExtinct(): void {
 function enterReligionsManualAssignent(): void {
   if (!layerIsOn("toggleReligions")) toggleReligions();
   customization = 7;
-  relig.append("g").attr("id", "temp");
+  select("#relig").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
     el.style.display = "none";
   });
   ensureEl("religionsManuallyButtons").style.display = "inline-block";
-  debug.select("#religionCenters").style("display", "none");
+  select("#debug").select("#religionCenters").style("display", "none");
 
   ensureEl("religionsEditor")
     .querySelectorAll(".hide")
@@ -739,11 +745,11 @@ function selectReligionOnLineClick(this: HTMLElement): void {
 }
 
 function selectReligionOnMapClick(this: any, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const i = findCell(point[0], point[1]);
   if (pack.cells.h[i!] < 20) return;
 
-  const assigned = relig.select("#temp").select(`polygon[data-cell='${i}']`);
+  const assigned = select("#relig").select("#temp").select(`polygon[data-cell='${i}']`);
   const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i!];
 
   ensureEl("religionsBody").querySelector("div.selected")?.classList.remove("selected");
@@ -755,7 +761,7 @@ function dragReligionBrush(this: any, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = pointer(dragEvent, this);
+    const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, radius);
 
     const found = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y, radius)];
@@ -766,7 +772,7 @@ function dragReligionBrush(this: any, event: any): void {
 
 // change religion within selection
 function changeReligionForSelection(selection: number[]): void {
-  const temp = relig.select("#temp");
+  const temp = select("#relig").select("#temp");
   const selected = ensureEl("religionsBody").querySelector<HTMLElement>("div.selected")!;
   const religionNew = +selected.dataset.id!;
   const color = pack.religions[religionNew].color || "#ffffff";
@@ -792,13 +798,13 @@ function changeReligionForSelection(selection: number[]): void {
 
 function moveReligionBrush(this: any, event: any): void {
   showMainTip();
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const radius = +ensureEl<HTMLInputElement>("religionsBrush").value;
   moveCircle(x, y, radius);
 }
 
 function applyReligionsManualAssignent(): void {
-  const changed = relig.select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
+  const changed = select("#relig").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
   changed.each(function () {
     const i = +this.dataset.cell!;
     const r = +this.dataset.religion!;
@@ -815,7 +821,7 @@ function applyReligionsManualAssignent(): void {
 
 function exitReligionsManualAssignment(close?: string): void {
   customization = 0;
-  relig.select("#temp").remove();
+  select("#relig").select("#temp").remove();
   removeCircle();
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
     el.style.display = "inline-block";
@@ -835,7 +841,7 @@ function exitReligionsManualAssignment(close?: string): void {
     });
   if (!close) $("#religionsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
-  debug.select("#religionCenters").style("display", null);
+  select("#debug").select("#religionCenters").style("display", null);
   restoreDefaultEvents();
   clearMainTip();
   const $selected = ensureEl("religionsBody").querySelector("div.selected");
@@ -873,7 +879,7 @@ function exitAddReligionMode(): void {
 }
 
 function addReligion(this: SVGElement, event: MouseEvent): void {
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const center = findCell(x, y)!;
   if (pack.cells.h[center] < 20) {
     tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
@@ -916,7 +922,7 @@ function downloadReligionsCsv(): void {
 
 function highlightReligion(this: HTMLElement): void {
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
-  const el = relig.select(`#religion${religionId}`).node() as Element | null;
+  const el = select("#relig").select(`#religion${religionId}`).node() as Element | null;
   if (el) highlightElement(el, 4);
 }
 
@@ -943,7 +949,7 @@ function recalculateReligions(must?: boolean): void {
 }
 
 function closeReligionsEditor(): void {
-  debug.select("#religionCenters").remove();
+  select("#debug").select("#religionCenters").remove();
   exitReligionsManualAssignment("close");
   exitAddReligionMode();
   $("#religionsEditor").dialog("destroy");

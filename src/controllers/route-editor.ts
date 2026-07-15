@@ -1,7 +1,7 @@
-import { drag, pointer, select } from "d3";
+import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getSegmentId, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
 function open(id: string): void {
   if (customization) return;
@@ -104,9 +104,11 @@ function updateRouteData(route: Route): void {
 
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
   routeGroup.options.length = 0;
-  routes.selectAll<HTMLElement, unknown>("g").each(function () {
-    routeGroup.options.add(new Option(this.id, this.id, false, this.id === route.group));
-  });
+  select("#routes")
+    .selectAll<HTMLElement, unknown>("g")
+    .each(function () {
+      routeGroup.options.add(new Option(this.id, this.id, false, this.id === route.group));
+    });
 
   updateRouteLength(route);
 
@@ -184,7 +186,7 @@ function redrawRoute(route: Route): void {
 
 function addControlPoint(this: any, event: any): void {
   const route = getRoute();
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const cellId = findCell(x, y);
 
   const point = [rn(x, 2), rn(y, 2), cellId!];
@@ -251,7 +253,7 @@ function handleControlPointClick(this: any): void {
       if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
     }
 
-    routes
+    select("#routes")
       .select(`#${newRoute.group}`)
       .append("path")
       .attr("d", Routes.getPath(newRoute))

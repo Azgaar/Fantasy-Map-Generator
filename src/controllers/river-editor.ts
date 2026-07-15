@@ -1,8 +1,8 @@
-import { drag, pointer, select } from "d3";
+import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
-import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rand, rn } from "../utils";
 
 function open(id: string): void {
   if (customization) return;
@@ -239,7 +239,7 @@ function redrawRiver(): void {
 }
 
 function addControlPoint(this: any, event: any): void {
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const point: Point = [rn(x, 1), rn(y, 1)];
 
   const river = getRiver();

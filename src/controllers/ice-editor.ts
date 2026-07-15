@@ -1,5 +1,5 @@
-import { drag, pointer, select } from "d3";
-import { destroyDialogIfExists, ensureEl, findGridCell, parseTransform } from "../utils";
+import { drag, select } from "d3";
+import { destroyDialogIfExists, ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
 
 function open(element: SVGElement): void {
   if (customization) return;
@@ -76,13 +76,12 @@ function toggleAdd(): void {
     tip("Click on map to create an iceberg. Hold Shift to add multiple", true);
   } else {
     clearMainTip();
-    // use the legacy v5 viewbox selection: clicked relies on d3.event, which d3 v7 never sets
-    viewbox.on("click", clicked).style("cursor", "default");
+    select<SVGElement, unknown>("#viewbox").on("click", clicked).style("cursor", "default");
   }
 }
 
 function addIcebergOnClick(event: PointerEvent): void {
-  const [x, y] = pointer(event, viewbox.node());
+  const [x, y] = getPointer(event, select<SVGElement, unknown>("#viewbox").node());
   const i = findGridCell(x, y, grid);
   const size = +ensureEl<HTMLInputElement>("iceSize").value || 1;
 

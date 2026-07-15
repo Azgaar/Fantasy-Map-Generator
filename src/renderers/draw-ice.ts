@@ -1,3 +1,4 @@
+import { select } from "d3";
 import type { Ice } from "@/generators/ice-generator";
 
 declare global {
@@ -9,7 +10,7 @@ declare global {
 const iceRenderer = (): void => {
   TIME && console.time("drawIce");
 
-  ice.selectAll("*").remove();
+  select("#ice").selectAll("*").remove();
 
   let html = "";
 
@@ -21,22 +22,22 @@ const iceRenderer = (): void => {
     }
   });
 
-  ice.html(html);
+  select("#ice").html(html);
 
   TIME && console.timeEnd("drawIce");
 };
 
 const redrawIcebergRenderer = (id: number): void => {
   const iceberg = pack.ice.find((element: Ice) => element.i === id);
-  let el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
+  let el = select("#ice").selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
   if (!iceberg && !el.empty()) {
     el.remove();
   } else if (iceberg) {
     if (el.empty()) {
       // Create new element if it doesn't exist
       const polygon = getIcebergHtml(iceberg);
-      ice.node()?.insertAdjacentHTML("beforeend", polygon);
-      el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
+      select<SVGGElement, unknown>("#ice").node()?.insertAdjacentHTML("beforeend", polygon);
+      el = select("#ice").selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
     }
     el.attr("points", iceberg.points.toString());
     el.attr("transform", iceberg.offset ? `translate(${iceberg.offset[0]},${iceberg.offset[1]})` : null);
@@ -45,15 +46,15 @@ const redrawIcebergRenderer = (id: number): void => {
 
 const redrawGlacierRenderer = (id: number): void => {
   const glacier = pack.ice.find((element: Ice) => element.i === id);
-  let el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
+  let el = select("#ice").selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
   if (!glacier && !el.empty()) {
     el.remove();
   } else if (glacier) {
     if (el.empty()) {
       // Create new element if it doesn't exist
       const polygon = getGlacierHtml(glacier);
-      ice.node()?.insertAdjacentHTML("beforeend", polygon);
-      el = ice.selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
+      select<SVGGElement, unknown>("#ice").node()?.insertAdjacentHTML("beforeend", polygon);
+      el = select("#ice").selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
     }
     el.attr("points", glacier.points.toString());
     el.attr("transform", glacier.offset ? `translate(${glacier.offset[0]},${glacier.offset[1]})` : null);

@@ -42,7 +42,7 @@ function open(): void {
 }
 
 function renderScaleBar(): void {
-  const bar = scaleBar as unknown as ScaleBarSelection;
+  const bar = select("#scaleBar") as unknown as ScaleBarSelection;
   drawScaleBar(bar, scale);
   fitScaleBar(bar, svgWidth, svgHeight);
 }
@@ -144,7 +144,7 @@ function addRuler(): void {
   const pt = svg.createSVGPoint();
   pt.x = width / 2;
   pt.y = height / 4;
-  const p = pt.matrixTransform((viewbox.node() as SVGGraphicsElement).getScreenCTM()!.inverse());
+  const p = pt.matrixTransform((select("#viewbox").node() as SVGGraphicsElement).getScreenCTM()!.inverse());
 
   const dx = width / 4 / scale;
   const dy = (rulers.data.length * 40) % (height / 2);
