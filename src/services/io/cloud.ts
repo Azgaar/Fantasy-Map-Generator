@@ -14,6 +14,12 @@ export interface CloudFile {
   path: string;
 }
 
+interface DropboxTokens {
+  token: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
 interface DropboxProvider {
   name: string;
   clientId: string;
@@ -22,12 +28,12 @@ interface DropboxProvider {
   api: any;
   call(name: string, param?: unknown): Promise<any>;
   initialize(): Promise<void>;
-  connect(token: string): Promise<void>;
+  connect(tokens: DropboxTokens): Promise<void>;
   save(fileName: string, contents: string): Promise<boolean>;
   load(path: string): Promise<Blob>;
   list(): Promise<CloudFile[]>;
   auth(): Promise<void>;
-  setDropBoxToken(token: string): Promise<void>;
+  setDropBoxToken(tokens: DropboxTokens): Promise<void>;
   returnError(errorDescription: string): void;
   getLink(path: string): Promise<string>;
 }
@@ -36,6 +42,10 @@ interface DropboxProvider {
 const lSKey = (provider: string) => `auth-${provider}`;
 const setToken = (provider: string, key: string) => localStorage.setItem(lSKey(provider), key);
 const getToken = (provider: string) => localStorage.getItem(lSKey(provider));
+const setRefreshToken = (provider: string, key: string) => localStorage.setItem(`${lSKey(provider)}-refresh`, key);
+const getRefreshToken = (provider: string) => localStorage.getItem(`${lSKey(provider)}-refresh`);
+const setTokenExpiry = (provider: string, ts: number) => localStorage.setItem(`${lSKey(provider)}-expires`, String(ts));
+const getTokenExpiry = (provider: string) => Number(localStorage.getItem(`${lSKey(provider)}-expires`)) || undefined;
 
 // load a classic library bundle that registers a runtime global (e.g. window.Dropbox)
 function loadScript(src: string): Promise<void> {
@@ -68,13 +78,19 @@ const dropbox: DropboxProvider = {
 
   initialize() {
     const token = getToken(this.name);
-    return token ? this.connect(token) : this.auth();
+    if (!token) return this.auth();
+    const refreshToken = getRefreshToken(this.name) || undefined;
+    const expiresAt = getTokenExpiry(this.name);
+    return this.connect({ token, refreshToken, expiresAt });
   },
 
-  async connect(token) {
+  async connect({ token, refreshToken, expiresAt }) {
     await loadScript("libs/dropbox-sdk.min.js");
     const auth = new Dropbox.DropboxAuth({ clientId: this.clientId });
     auth.setAccessToken(token);
+    // with a refresh token set, the SDK refreshes the short-lived access token before each request
+    if (refreshToken) auth.setRefreshToken(refreshToken);
+    if (expiresAt) auth.setAccessTokenExpiresAt(new Date(expiresAt));
     this.api = new Dropbox.Dropbox({ auth });
   },
 
@@ -113,6 +129,12 @@ const dropbox: DropboxProvider = {
       `width=${width}, height=${height}, top=${top}, left=${left}`
     );
 
+    if (!this.authWindow) {
+      const message = "Dropbox sign-in window was blocked. Allow popups for this site and retry";
+      this.returnError(message);
+      return Promise.reject(new Error(message));
+    }
+
     return new Promise<void>((resolve, reject) => {
       const channel = new BroadcastChannel("dropbox-auth");
 
@@ -126,7 +148,7 @@ const dropbox: DropboxProvider = {
         channel.close();
         clearTimeout(watchDog);
         if (data.type === "token") {
-          await this.setDropBoxToken(data.token);
+          await this.setDropBoxToken({ token: data.token, refreshToken: data.refreshToken, expiresAt: data.expiresAt });
           resolve();
         } else {
           this.returnError(data.description);
@@ -136,10 +158,12 @@ const dropbox: DropboxProvider = {
     });
   },
 
-  async setDropBoxToken(token) {
-    DEBUG.cloud && console.info("Access token:", token);
+  async setDropBoxToken({ token, refreshToken, expiresAt }) {
+    DEBUG.cloud && console.info("Access token:", token, "refresh token:", refreshToken);
     setToken(this.name, token);
-    await this.connect(token);
+    if (refreshToken) setRefreshToken(this.name, refreshToken);
+    if (expiresAt) setTokenExpiry(this.name, expiresAt);
+    await this.connect({ token, refreshToken, expiresAt });
   },
 
   returnError(errorDescription) {
