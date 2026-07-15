@@ -73,8 +73,7 @@ window.biased = biased;
 window.getNumberInRange = getNumberInRange;
 window.generateSeed = generateSeed;
 
-window.convertTemperature = (temp: number, scale: any = (window as any).temperatureScale.value || "°C") =>
-  convertTemperature(temp, scale);
+window.convertTemperature = convertTemperature;
 window.si = si;
 window.getInteger = getIntegerFromSI;
 window.getHeight = getHeight;

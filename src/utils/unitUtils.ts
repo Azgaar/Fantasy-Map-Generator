@@ -8,7 +8,8 @@ type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" |
  * @param {string} targetScale - Target temperature scale
  * @returns {string} - Converted temperature with unit
  */
-export const convertTemperature = (temperatureInCelsius: number, targetScale: TemperatureScale = "°C") => {
+export const convertTemperature = (temperatureInCelsius: number, targetScale?: TemperatureScale) => {
+  const scale = targetScale || (ensureEl<HTMLSelectElement>("temperatureScale").value as TemperatureScale) || "°C";
   const temperatureConversionMap: { [key: string]: (temp: number) => string } = {
     "°C": (temp: number) => `${rn(temp)}°C`,
     "°F": (temp: number) => `${rn((temp * 9) / 5 + 32)}°F`,
@@ -19,7 +20,7 @@ export const convertTemperature = (temperatureInCelsius: number, targetScale: Te
     "°Ré": (temp: number) => `${rn((temp * 4) / 5)}°Ré`,
     "°Rø": (temp: number) => `${rn((temp * 21) / 40 + 7.5)}°Rø`
   };
-  return temperatureConversionMap[targetScale](temperatureInCelsius);
+  return temperatureConversionMap[scale](temperatureInCelsius);
 };
 
 /**
