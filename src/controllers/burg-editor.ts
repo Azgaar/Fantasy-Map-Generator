@@ -12,7 +12,6 @@ import {
 } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
-declare const showBurgTemperatureGraph: (id: string) => void;
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 let selected: Selection<any, any, any, any> | null = null;
@@ -651,8 +650,8 @@ function editBurgLegend(): void {
 }
 
 function showTemperatureGraph(): void {
-  const id = selected!.attr("data-id");
-  showBurgTemperatureGraph(id);
+  const id = +selected!.attr("data-id");
+  void Controllers.TemperatureGraph.open(id);
 }
 
 function showProductionOverview(): void {

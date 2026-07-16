@@ -569,6 +569,10 @@ function applyStoredOptions() {
   if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");
   if (stored("temperatureNorthPole")) options.temperatureNorthPole = +stored("temperatureNorthPole");
   if (stored("temperatureSouthPole")) options.temperatureSouthPole = +stored("temperatureSouthPole");
+  if (stored("mapSize")) options.mapSize = +stored("mapSize");
+  if (stored("latitude")) options.latitude = +stored("latitude");
+  if (stored("longitude")) options.longitude = +stored("longitude");
+  if (stored("prec")) options.prec = +stored("prec");
   if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
@@ -616,7 +620,7 @@ function randomizeOptions() {
   if (randomize || !locked("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
   if (randomize || !locked("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
   if (randomize || !locked("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
-  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
+  if (randomize || !locked("prec")) options.prec = gauss(100, 40, 5, 500);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";

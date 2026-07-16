@@ -220,7 +220,7 @@ function start() {
         element: "#worldConfigurator",
         disableActiveInteraction: false,
         onHighlightStarted: () => {
-          editWorld();
+          void Controllers.WorldConfigurator.open();
         },
         popover: {
           title: "World Configurator",

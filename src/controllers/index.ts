@@ -1,6 +1,7 @@
 import { createRegistry } from "@/utils/registry";
 
 export const Controllers = createRegistry({
+  AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),
   BattleScreen: () => import("@/controllers/battle-screen").then(m => m.BattleScreen),
   BiomesEditor: () => import("@/controllers/biomes-editor").then(m => m.BiomesEditor),
   BurgEditor: () => import("@/controllers/burg-editor").then(m => m.BurgEditor),
@@ -47,10 +48,14 @@ export const Controllers = createRegistry({
   RouteGroupsEditor: () => import("@/controllers/route-groups-editor").then(m => m.RouteGroupsEditor),
   RoutesOverview: () => import("@/controllers/routes-overview").then(m => m.RoutesOverview),
   StatesEditor: () => import("@/controllers/states-editor").then(m => m.StatesEditor),
+  SubmapTool: () => import("@/controllers/submap-tool").then(m => m.SubmapTool),
+  TemperatureGraph: () => import("@/controllers/temperature-graph").then(m => m.TemperatureGraph),
   TradeAnimationEditor: () => import("@/controllers/trade-animation-editor").then(m => m.TradeAnimationEditor),
   TradeDetails: () => import("@/controllers/trade-details").then(m => m.TradeDetails),
+  TransformTool: () => import("@/controllers/transform-tool").then(m => m.TransformTool),
   UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
   View3d: () => import("@/controllers/view-3d").then(m => m.View3d),
+  WorldConfigurator: () => import("@/controllers/world-configurator").then(m => m.WorldConfigurator),
   ZonesEditor: () => import("@/controllers/zones-editor").then(m => m.ZonesEditor)
 });
 

@@ -159,6 +159,10 @@ let options = {
   temperatureEquator: 27,
   temperatureNorthPole: -30,
   temperatureSouthPole: -15,
+  mapSize: 100, // map size in % of the world
+  latitude: 50, // North-South map shift in %, 50 is centered on equator
+  longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
+  prec: 100, // precipitation modifier in %
   stateLabelsMode: "auto",
   showBurgPreview: true,
   burgs: {
@@ -870,9 +874,9 @@ function openNearSeaLakes() {
 function defineMapSize() {
   const [size, latitude, longitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
-  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
-  if (randomize || !locked("longitude")) longitudeOutput.value = longitudeInput.value = longitude;
+  if (randomize || !locked("mapSize")) options.mapSize = size;
+  if (randomize || !locked("latitude")) options.latitude = latitude;
+  if (randomize || !locked("longitude")) options.longitude = longitude;
 
   function getSizeAndLatitude() {
     const template = ensureEl("templateInput").value; // heightmap template
@@ -927,9 +931,9 @@ function defineMapSize() {
 
 // calculate map position on globe
 function calculateMapCoordinates() {
-  const sizeFraction = +ensureEl("mapSizeOutput").value / 100;
-  const latShift = +ensureEl("latitudeOutput").value / 100;
-  const lonShift = +ensureEl("longitudeOutput").value / 100;
+  const sizeFraction = options.mapSize / 100;
+  const latShift = options.latitude / 100;
+  const lonShift = options.longitude / 100;
 
   const latT = rn(sizeFraction * 180, 1);
   const latN = rn(90 - (180 - latT) * latShift, 1);
@@ -999,7 +1003,7 @@ function generatePrecipitation() {
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
   const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
-  const precInputModifier = precInput.value / 100;
+  const precInputModifier = options.prec / 100;
   const modifier = cellsNumberModifier * precInputModifier;
 
   const westerly = [];
@@ -1286,7 +1290,7 @@ function showStatistics() {
     Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
-    Map size: ${mapSizeOutput.value}%
+    Map size: ${options.mapSize}%
     States: ${pack.states.length - 1}
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
@@ -1317,7 +1321,7 @@ const regenerateMap = debounce(async function (config) {
   await generate(config);
   drawLayers();
   if (options.threeD.isOn) window.Controllers.View3d.redraw();
-  if ($("#worldConfigurator").is(":visible")) editWorld();
+  if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 
   fitMapToScreen();
   shouldShowLoading && hideLoading();

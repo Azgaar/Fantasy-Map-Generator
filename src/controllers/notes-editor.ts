@@ -225,7 +225,7 @@ function openAiGenerator(): void {
     }
   };
 
-  generateWithAi(prompt, onApply);
+  void Controllers.AiGenerator.open(prompt, onApply);
 }
 
 function downloadLegends(): void {

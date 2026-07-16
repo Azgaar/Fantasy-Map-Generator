@@ -75,8 +75,8 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "addRoute") window.Controllers.RouteCreator.open();
   else if (button === "addMarker") toggleAddMarker();
   // click to create a new map buttons
-  else if (button === "openSubmapTool") openSubmapTool();
-  else if (button === "openTransformTool") openTransformTool();
+  else if (button === "openSubmapTool") window.Controllers.SubmapTool.open();
+  else if (button === "openTransformTool") window.Controllers.TransformTool.open();
 });
 
 function processFeatureRegeneration(event, button) {

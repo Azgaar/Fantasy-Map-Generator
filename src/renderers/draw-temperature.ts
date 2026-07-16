@@ -12,8 +12,7 @@ const temperatureRenderer = (): void => {
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
   const scheme = scaleSequential(interpolateSpectral);
 
-  const tMax = +(ensureEl("temperatureEquatorOutput") as HTMLInputElement).max;
-  const tMin = +(ensureEl("temperatureEquatorOutput") as HTMLInputElement).min;
+  const [tMin, tMax] = [-50, 50]; // supported temperature extremes
   const delta = tMax - tMin;
 
   const { cells, vertices } = grid;
