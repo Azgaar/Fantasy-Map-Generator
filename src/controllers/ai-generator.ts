@@ -25,24 +25,29 @@ const PROVIDERS: Record<Provider, { keyLink: string; generate: (options: Generat
   }
 };
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = "gpt-5.6-luna";
 
 const MODELS: Record<string, Provider> = {
-  "gpt-4o-mini": "openai",
-  "chatgpt-4o-latest": "openai",
-  "gpt-4o": "openai",
-  "gpt-4-turbo": "openai",
-  o3: "openai",
-  "o3-mini": "openai",
-  "o3-pro": "openai",
-  "o4-mini": "openai",
-  "claude-opus-4-20250514": "anthropic",
-  "claude-sonnet-4-20250514": "anthropic",
-  "claude-3-5-haiku-latest": "anthropic",
-  "claude-3-5-sonnet-latest": "anthropic",
-  "claude-3-opus-latest": "anthropic",
+  "gpt-5.6-luna": "openai",
+  "gpt-5.6-terra": "openai",
+  "gpt-5.6-sol": "openai",
+  "gpt-5-mini": "openai",
+  "gpt-5-nano": "openai",
+  "claude-opus-4-8": "anthropic",
+  "claude-sonnet-5": "anthropic",
+  "claude-haiku-4-5": "anthropic",
   "ollama (local models)": "ollama"
 };
+
+const FIXED_TEMPERATURE_MODELS = new Set([
+  "gpt-5.6-luna",
+  "gpt-5.6-terra",
+  "gpt-5.6-sol",
+  "gpt-5-mini",
+  "gpt-5-nano",
+  "claude-opus-4-8",
+  "claude-sonnet-5"
+]);
 
 const SYSTEM_MESSAGE = "I'm working on my fantasy map.";
 
@@ -57,10 +62,13 @@ async function generateWithOpenAI({ key, model, prompt, temperature, onContent }
     { role: "user", content: prompt }
   ];
 
+  const body: Record<string, unknown> = { model, messages, stream: true };
+  if (!FIXED_TEMPERATURE_MODELS.has(model)) body.temperature = temperature;
+
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers,
-    body: JSON.stringify({ model, messages, temperature, stream: true })
+    body: JSON.stringify(body)
   });
 
   const getContent = (json: StreamChunk): void => {
@@ -84,7 +92,14 @@ async function generateWithAnthropic({ key, model, prompt, temperature, onConten
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers,
-    body: JSON.stringify({ model, system: SYSTEM_MESSAGE, messages, temperature, max_tokens: 4096, stream: true })
+    body: JSON.stringify({
+      model,
+      system: SYSTEM_MESSAGE,
+      messages,
+      max_tokens: 4096,
+      stream: true,
+      ...(FIXED_TEMPERATURE_MODELS.has(model) ? {} : { temperature })
+    })
   });
 
   const getContent = (json: StreamChunk): void => {

@@ -874,9 +874,9 @@ function openNearSeaLakes() {
 function defineMapSize() {
   const [size, latitude, longitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !locked("mapSize")) options.mapSize = size;
-  if (randomize || !locked("latitude")) options.latitude = latitude;
-  if (randomize || !locked("longitude")) options.longitude = longitude;
+  if (randomize || !stored("mapSize")) options.mapSize = size;
+  if (randomize || !stored("latitude")) options.latitude = latitude;
+  if (randomize || !stored("longitude")) options.longitude = longitude;
 
   function getSizeAndLatitude() {
     const template = ensureEl("templateInput").value; // heightmap template
@@ -1282,7 +1282,7 @@ function showStatistics() {
   const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
-  const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";
+  const isRandomTemplate = isTemplate && !stored("template") ? "random " : "";
 
   const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight} px

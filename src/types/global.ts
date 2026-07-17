@@ -199,7 +199,7 @@ declare global {
     type?: "info" | "warn" | "error" | "success",
     timeout?: number
   ) => void;
-  var locked: (settingId: string) => boolean;
+  var stored: (key: string) => string | null;
   var unlock: (settingId: string) => void;
   var $: (selector: any) => any;
   var scale: number;

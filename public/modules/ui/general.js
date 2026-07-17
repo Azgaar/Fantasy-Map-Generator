@@ -567,12 +567,7 @@ function unlock(id) {
   el.className = "icon-lock-open";
 }
 
-// check if option is locked; stored options are locked, the icon is just a mirror
-function locked(id) {
-  return stored(id) !== null;
-}
-
-// return key value stored in localStorage or null
+// return key value stored in localStorage or null; stored options are locked, the icon is just a mirror
 function stored(key) {
   return localStorage.getItem(key) || null;
 }

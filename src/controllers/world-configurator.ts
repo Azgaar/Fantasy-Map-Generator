@@ -72,7 +72,7 @@ function addListeners(): void {
     .querySelectorAll<HTMLElement>("[data-locked]")
     .forEach(el => {
       const id = el.id.slice(5); // drop "lock_" prefix
-      setLockIcon(el, locked(id));
+      setLockIcon(el, stored(id) !== null);
 
       el.on("mouseover", (event: Event) => {
         event.stopPropagation();

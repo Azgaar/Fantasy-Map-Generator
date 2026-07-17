@@ -27,7 +27,7 @@ const path = require("path");
 // Config
 // ---------------------------------------------------------------------------
 
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-5.4-nano";
 const ENDPOINT_HOST = "models.inference.ai.azure.com";
 const ENDPOINT_PATH = "/chat/completions";
 // Keep the diff under ~20 000 chars to stay within the model's context window.
