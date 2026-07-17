@@ -1270,6 +1270,8 @@ function applyConeToSelection(selection: number[], isWaterFill: boolean, targetH
 
 function dragBrush(this: SVGElement, event: any): void {
   const r = ensureEl<HTMLInputElement>("heightmapBrushRadius").valueAsNumber;
+  const [startX, startY] = getPointer(event, this);
+  const start = findGridCell(startX, startY, grid); // fixed once per drag: Align replicates this cell's height
 
   const applyBrush = (pointerEvent: any) => {
     const p = getPointer(pointerEvent, this);
@@ -1280,7 +1282,7 @@ function dragBrush(this: SVGElement, event: any): void {
     const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
     if (cellTypeFilter === "land") selection = inRadius.filter((i: number) => grid.cells.h[i] >= 20);
     else if (cellTypeFilter === "water") selection = inRadius.filter((i: number) => grid.cells.h[i] < 20);
-    if (selection?.length) changeHeightForSelection(selection, findGridCell(p[0], p[1], grid));
+    if (selection?.length) changeHeightForSelection(selection, start);
   };
 
   applyBrush(event); // apply once on start so a plain click changes height
