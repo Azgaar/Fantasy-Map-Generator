@@ -226,7 +226,7 @@ function addListeners(): void {
   ensureEl("worldConfigurator")
     .querySelectorAll<HTMLElement>("[data-locked]")
     .forEach(el => {
-      const id = el.id.slice(5); // drop "lock_" prefix
+      const id = el.id.slice(5) as WorldOption; // drop "lock_" prefix
       setLockIcon(el, stored(id) !== null);
 
       el.on("mouseover", (event: Event) => {
@@ -236,10 +236,32 @@ function addListeners(): void {
         else tip("Click to lock the option and always use the current value on new map generation");
       });
       el.on("click", () => {
-        if (el.className === "icon-lock") unlock(id);
-        else lock(id);
+        if (el.className === "icon-lock") unlockOption(id);
+        else lockOption(id);
       });
     });
+}
+
+type WorldOption =
+  | "temperatureEquator"
+  | "temperatureNorthPole"
+  | "temperatureSouthPole"
+  | "mapSize"
+  | "latitude"
+  | "longitude"
+  | "prec";
+
+// stored options are locked (won't be randomized on new map generation), the icon is just a mirror
+function lockOption(id: WorldOption): void {
+  localStorage.setItem(id, String(options[id]));
+  const icon = findEl(`lock_${id}`);
+  if (icon) setLockIcon(icon, true);
+}
+
+function unlockOption(id: WorldOption): void {
+  localStorage.removeItem(id);
+  const icon = findEl(`lock_${id}`);
+  if (icon) setLockIcon(icon, false);
 }
 
 function setLockIcon(el: HTMLElement, isLocked: boolean): void {
@@ -259,7 +281,7 @@ function changeTemperatureEquator(this: HTMLInputElement): void {
   ensureEl<HTMLInputElement>("temperatureEquatorInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureEquatorOutput").value = this.value;
   ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(options.temperatureEquator);
-  lock("temperatureEquator");
+  lockOption("temperatureEquator");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -268,7 +290,7 @@ function changeTemperatureNorthPole(this: HTMLInputElement): void {
   ensureEl<HTMLInputElement>("temperatureNorthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureNorthPoleOutput").value = this.value;
   ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(options.temperatureNorthPole);
-  lock("temperatureNorthPole");
+  lockOption("temperatureNorthPole");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -277,7 +299,7 @@ function changeTemperatureSouthPole(this: HTMLInputElement): void {
   ensureEl<HTMLInputElement>("temperatureSouthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureSouthPoleOutput").value = this.value;
   ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(options.temperatureSouthPole);
-  lock("temperatureSouthPole");
+  lockOption("temperatureSouthPole");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -285,7 +307,7 @@ function changeMapSize(this: HTMLInputElement): void {
   options.mapSize = Number(this.value);
   ensureEl<HTMLInputElement>("mapSizeInput").value = this.value;
   ensureEl<HTMLInputElement>("mapSizeOutput").value = this.value;
-  lock("mapSize");
+  lockOption("mapSize");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -293,7 +315,7 @@ function changeLatitude(this: HTMLInputElement): void {
   options.latitude = Number(this.value);
   ensureEl<HTMLInputElement>("latitudeInput").value = this.value;
   ensureEl<HTMLInputElement>("latitudeOutput").value = this.value;
-  lock("latitude");
+  lockOption("latitude");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -301,7 +323,7 @@ function changeLongitude(this: HTMLInputElement): void {
   options.longitude = Number(this.value);
   ensureEl<HTMLInputElement>("longitudeInput").value = this.value;
   ensureEl<HTMLInputElement>("longitudeOutput").value = this.value;
-  lock("longitude");
+  lockOption("longitude");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -309,7 +331,7 @@ function changePrecipitation(this: HTMLInputElement): void {
   options.prec = Number(this.value);
   ensureEl<HTMLInputElement>("precInput").value = this.value;
   ensureEl<HTMLInputElement>("precOutput").value = this.value;
-  lock("prec");
+  lockOption("prec");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 
@@ -440,9 +462,11 @@ function updateWindDirections(): void {
 }
 
 function handleWindChange(event: Event): void {
-  const arrow = (event.target as SVGElement).nextElementSibling as SVGPathElement | null;
-  if (!arrow) return;
-  const tier = +(arrow.dataset.tier ?? 0);
+  const target = event.target as SVGElement;
+  // each arrow is a circle followed by a path; the click can land on either
+  const arrow = (target.tagName === "path" ? target : target.nextElementSibling) as SVGPathElement | null;
+  if (!arrow?.dataset.tier) return;
+  const tier = +arrow.dataset.tier;
   options.winds[tier] = (options.winds[tier] + 45) % 360;
   const tr = parseTransform(arrow.getAttribute("transform") ?? "");
   arrow.setAttribute("transform", `rotate(${options.winds[tier]} ${tr[1]} ${tr[2]})`);
@@ -466,8 +490,8 @@ function applyWorldPreset(size: number, latitude: number): void {
   options.mapSize = size;
   options.latitude = latitude;
   updateInputValues();
-  lock("mapSize");
-  lock("latitude");
+  lockOption("mapSize");
+  lockOption("latitude");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
 

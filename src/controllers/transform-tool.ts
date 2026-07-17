@@ -134,7 +134,9 @@ function handleInput(): void {
   const width = Math.min(400, window.innerWidth * 0.5);
   const previewScale = width / graphWidth;
 
-  const angle = (+ensureEl<HTMLInputElement>("transformAngleInput").value / 180) * Math.PI;
+  const angleDegrees = ensureEl<HTMLInputElement>("transformAngleInput").value;
+  ensureEl<HTMLOutputElement>("transformAngleOutput").value = angleDegrees;
+  const angle = (+angleDegrees / 180) * Math.PI;
   const shiftX = +ensureEl<HTMLInputElement>("transformShiftX").value;
   const shiftY = +ensureEl<HTMLInputElement>("transformShiftY").value;
   const mirrorH = ensureEl<HTMLInputElement>("transformMirrorH").checked;
