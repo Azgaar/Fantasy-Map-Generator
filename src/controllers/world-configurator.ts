@@ -45,7 +45,7 @@ function createDialogHtml(): string {
     <label data-tip="${dataTip}">
       <i>${label}:</i>
       <input id="${param}Input" type="number" min="-50" max="50" />
-      <span>°C = <span id="${param}F"></span></span>
+      <span>°C<span id="${param}Converted"></span></span>
       <input id="${param}Output" type="range" min="-50" max="50" />
     </label>
   </div>`;
@@ -247,11 +247,18 @@ function setLockIcon(el: HTMLElement, isLocked: boolean): void {
   el.className = isLocked ? "icon-lock" : "icon-lock-open";
 }
 
+// inputs are always in °C; show " = <value>" in user units if user units are not °C
+function convertedTemperature(temperatureCelsius: number): string {
+  const userUnits = ensureEl<HTMLSelectElement>("temperatureScale").value;
+  if (userUnits === "°C") return "";
+  return ` = ${convertTemperature(temperatureCelsius)}`;
+}
+
 function changeTemperatureEquator(this: HTMLInputElement): void {
   options.temperatureEquator = Number(this.value);
   ensureEl<HTMLInputElement>("temperatureEquatorInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureEquatorOutput").value = this.value;
-  ensureEl("temperatureEquatorF").innerText = String(convertTemperature(options.temperatureEquator, "°F"));
+  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(options.temperatureEquator);
   lock("temperatureEquator");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
@@ -260,7 +267,7 @@ function changeTemperatureNorthPole(this: HTMLInputElement): void {
   options.temperatureNorthPole = Number(this.value);
   ensureEl<HTMLInputElement>("temperatureNorthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureNorthPoleOutput").value = this.value;
-  ensureEl("temperatureNorthPoleF").innerText = String(convertTemperature(options.temperatureNorthPole, "°F"));
+  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(options.temperatureNorthPole);
   lock("temperatureNorthPole");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
@@ -269,7 +276,7 @@ function changeTemperatureSouthPole(this: HTMLInputElement): void {
   options.temperatureSouthPole = Number(this.value);
   ensureEl<HTMLInputElement>("temperatureSouthPoleInput").value = this.value;
   ensureEl<HTMLInputElement>("temperatureSouthPoleOutput").value = this.value;
-  ensureEl("temperatureSouthPoleF").innerText = String(convertTemperature(options.temperatureSouthPole, "°F"));
+  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(options.temperatureSouthPole);
   lock("temperatureSouthPole");
   if (ensureEl<HTMLInputElement>("wcAutoChange").checked) updateWorld();
 }
@@ -321,9 +328,9 @@ function updateInputValues(): void {
   ensureEl<HTMLInputElement>("longitudeOutput").value = String(options.longitude);
   ensureEl<HTMLInputElement>("precInput").value = String(options.prec);
   ensureEl<HTMLInputElement>("precOutput").value = String(options.prec);
-  ensureEl("temperatureEquatorF").innerText = String(convertTemperature(options.temperatureEquator, "°F"));
-  ensureEl("temperatureNorthPoleF").innerText = String(convertTemperature(options.temperatureNorthPole, "°F"));
-  ensureEl("temperatureSouthPoleF").innerText = String(convertTemperature(options.temperatureSouthPole, "°F"));
+  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(options.temperatureEquator);
+  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(options.temperatureNorthPole);
+  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(options.temperatureSouthPole);
 }
 
 function updateWorld(): void {
