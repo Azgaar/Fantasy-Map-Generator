@@ -2203,7 +2203,7 @@ svg.button {
 }
 
 #globeLatLabels {
-  font-size: 12px;
+  font-size: 9px;
   font-family: var(--monospace);
   stroke: none;
   fill: #001754;

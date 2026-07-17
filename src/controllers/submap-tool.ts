@@ -2,18 +2,18 @@ import { destroyDialogIfExists, ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
   renderDialog();
-  resetInputs();
+  addListeners();
 
   $("#submapTool").dialog({
     title: "Create a submap",
     resizable: false,
     width: "32em",
     position: { my: "center", at: "center", of: "svg" },
-    close: () => destroyDialogIfExists("submapTool"),
+    close: cleanup,
     buttons: {
-      Submap: () => {
-        closeDialogs();
+      Submap: function (this: HTMLElement) {
         generateSubmap();
+        $(this).dialog("close");
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -25,6 +25,9 @@ function open(): void {
 function renderDialog(): void {
   destroyDialogIfExists("submapTool");
 
+  const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
+  const cells = cellsDensityMap[+pointsValue];
+
   const html = /* html */ `<div id="submapTool" class="dialog">
     <p style="font-weight: bold">
       This operation is destructive and irreversible. It will create a completely new map based on the current one.
@@ -34,8 +37,8 @@ function renderDialog(): void {
       <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
         <div>Points number</div>
         <div>
-          <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
-          <output id="submapPointsFormatted" style="color: #053305">10K</output>
+          <input id="submapPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
+          <output id="submapPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>
       <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
@@ -47,20 +50,19 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 }
 
-function resetInputs(): void {
-  updateCellsNumber(ensureEl<HTMLInputElement>("pointsInput").value);
-  ensureEl<HTMLInputElement>("submapPointsInput").oninput = e =>
-    updateCellsNumber((e.target as HTMLInputElement).value);
+function addListeners(): void {
+  ensureEl<HTMLInputElement>("submapPointsInput").oninput = handlePointsInput;
+}
 
-  function updateCellsNumber(value: string): void {
-    const input = ensureEl<HTMLInputElement>("submapPointsInput");
-    input.value = value;
-    const cells = cellsDensityMap[+value];
-    input.dataset.cells = String(cells);
-    const output = ensureEl<HTMLOutputElement>("submapPointsFormatted");
-    output.value = `${cells / 1000}K`;
-    output.style.color = getCellsDensityColor(cells);
-  }
+function cleanup(): void {
+  destroyDialogIfExists("submapTool");
+}
+
+function handlePointsInput(e: Event): void {
+  const cells = cellsDensityMap[+(e.target as HTMLInputElement).value];
+  const output = ensureEl<HTMLOutputElement>("submapPointsFormatted");
+  output.value = `${cells / 1000}K`;
+  output.style.color = getCellsDensityColor(cells);
 }
 
 function generateSubmap(): void {
