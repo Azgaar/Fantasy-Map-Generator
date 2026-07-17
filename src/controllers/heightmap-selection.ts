@@ -1,3 +1,5 @@
+import { heightmapTemplates } from "@/data/heightmap-templates";
+import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights, ensureEl, generateGrid, generateSeed, shouldRegenerateGrid } from "../utils";
 
 const initialSeed = generateSeed();

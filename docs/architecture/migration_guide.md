@@ -13,6 +13,7 @@ Pick the layer by responsibility, name the file `kebab-case.ts`:
 | `src/generators/`  | domain generators / data logic       |
 | `src/renderers/`   | code that draws SVG layers           |
 | `src/controllers/` | dialogs, panels, UI flows, overviews |
+| `src/components/`  | reusable web components              |
 | `src/services/`    | app-shell & platform/asset infra     |
 | `src/data/`        | static content / preferences         |
 | `src/utils/`       | pure, dependency-free helpers        |

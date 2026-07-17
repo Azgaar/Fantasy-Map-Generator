@@ -1,3 +1,5 @@
+import { VERSION } from "@/services/versioning";
+
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
 const typeMap = {

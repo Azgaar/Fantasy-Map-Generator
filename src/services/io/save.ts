@@ -1,5 +1,6 @@
 // Save the whole .map project to storage, machine or cloud
 import { Services } from "@/services";
+import { VERSION } from "@/services/versioning";
 import { ensureEl, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
