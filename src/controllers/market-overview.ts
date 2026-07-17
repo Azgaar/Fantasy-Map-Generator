@@ -1,8 +1,8 @@
-import { pointer, select } from "d3";
+import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
-import { ensureEl, formatPrice, rn } from "../utils";
+import { ensureEl, formatPrice, getPointer, rn } from "../utils";
 
 let activeMarketId = 0;
 
@@ -172,7 +172,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
 
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const cellId = findCell(x, y);
   if (cellId === undefined) return;
 

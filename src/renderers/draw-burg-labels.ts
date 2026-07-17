@@ -1,3 +1,4 @@
+import { select } from "d3";
 import type { Burg } from "../generators/burgs-generator";
 
 declare global {
@@ -14,7 +15,7 @@ const burgLabelsRenderer = (): void => {
     const burgsInGroup = pack.burgs.filter(b => b.group === name && !b.removed);
     if (!burgsInGroup.length) continue;
 
-    const labelGroup = burgLabels.select<SVGGElement>(`#${name}`);
+    const labelGroup = select("#burgLabels").select<SVGGElement>(`#${name}`);
     if (labelGroup.empty()) continue;
 
     const dx = labelGroup.attr("data-dx") || 0;
@@ -39,7 +40,7 @@ const burgLabelsRenderer = (): void => {
 };
 
 const drawBurgLabelRenderer = (burg: Burg): void => {
-  const labelGroup = burgLabels.select<SVGGElement>(`#${burg.group}`);
+  const labelGroup = select("#burgLabels").select<SVGGElement>(`#${burg.group}`);
   if (labelGroup.empty()) {
     drawBurgLabels();
     return; // redraw all labels if group is missing
@@ -80,7 +81,7 @@ function createLabelGroups(): void {
   const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
-    const group = burgLabels.append("g");
+    const group = select("#burgLabels").append("g");
     const styles = style.burgLabels[name] || defaultStyle;
     Object.entries(styles).forEach(([key, value]) => {
       group.attr(key, value);

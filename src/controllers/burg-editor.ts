@@ -1,10 +1,11 @@
-import { drag, pointer, type Selection, select } from "d3";
+import { drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
 import {
   convertTemperature,
   destroyDialogIfExists,
   ensureEl,
+  getPointer,
   getTemperatureLikeness,
   parseTransform,
   rand,
@@ -429,7 +430,7 @@ function togglePort(burgId: number): void {
 
     burg.port = portFeatureId;
 
-    anchors
+    select("#anchors")
       .select(`#${burg.group}`)
       .append("use")
       .attr("href", "#icon-anchor")
@@ -595,7 +596,7 @@ function toggleRelocateBurg(): void {
 
 function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const cells = pack.cells;
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const cellId = findCell(point[0], point[1])!;
   const id = getSelectedId();
   const burg = pack.burgs[id];
@@ -620,10 +621,10 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
 
-  burgIcons.select(`#burg${id}`).attr("x", x).attr("y", y);
-  burgLabels.select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
+  select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
+  select("#burgLabels").select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
 
-  const anchor = anchors.select(`use[data-id='${id}']`);
+  const anchor = select("#anchors").select(`use[data-id='${id}']`);
   if (anchor.size()) {
     const size = +anchor.attr("width");
     const xa = rn(x - size * 0.47, 2);

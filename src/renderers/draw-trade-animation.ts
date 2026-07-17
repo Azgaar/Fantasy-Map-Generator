@@ -1,4 +1,4 @@
-import { curveCatmullRom, easeLinear, line } from "d3";
+import { curveCatmullRom, easeLinear, line, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Point } from "../generators/voronoi";
 import { ensureEl, minmax } from "../utils";
@@ -56,7 +56,7 @@ export async function draw(
     const duration = options.trade.animation.duration;
     const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
 
-    const group = tradeAnimation.append("g");
+    const group = select("#tradeAnimation").append("g");
     group
       .append("use")
       .attr("href", `#trade-marker-${segment.type}`)
@@ -128,7 +128,7 @@ export async function draw(
 }
 
 export function clear(): void {
-  tradeAnimation.selectAll("g").interrupt().remove();
+  select("#tradeAnimation").selectAll("g").interrupt().remove();
 }
 
 export function getPath(points: Point[]): string {
@@ -136,8 +136,8 @@ export function getPath(points: Point[]): string {
 }
 
 export function highlight(points: Point[]): void {
-  tradeAnimation.selectAll("path.highlight").remove();
-  tradeAnimation
+  select("#tradeAnimation").selectAll("path.highlight").remove();
+  select("#tradeAnimation")
     .append("path")
     .attr("class", "highlight")
     .attr("d", lineGen(points))
@@ -149,5 +149,5 @@ export function highlight(points: Point[]): void {
 }
 
 export function clearHighlight(): void {
-  tradeAnimation.selectAll("path.highlight").remove();
+  select("#tradeAnimation").selectAll("path.highlight").remove();
 }

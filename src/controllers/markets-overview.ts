@@ -1,9 +1,18 @@
-import { color, drag, pointer, select } from "d3";
+import { color, drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
-import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, getIsolines, getVertexPath, rn } from "../utils";
+import {
+  ensureEl,
+  findAllCellsInRadius,
+  findClosestCell,
+  formatPrice,
+  getIsolines,
+  getPointer,
+  getVertexPath,
+  rn
+} from "../utils";
 
 // Working copy of pack.cells.market mutated during manual assignment; applied on commit.
 let marketsWorking: Uint16Array | null = null;
@@ -197,7 +206,7 @@ function enterMarketsManualAssignment(): void {
   marketsManualHistory = [];
 
   document.getElementById("marketsTemp")?.remove();
-  markets.append("g").attr("id", "marketsTemp").style("fill-opacity", "0.7");
+  select("#markets").append("g").attr("id", "marketsTemp").style("fill-opacity", "0.7");
   marketsWorking = Uint16Array.from(pack.cells.market);
   renderMarketsTemp();
 
@@ -252,7 +261,7 @@ function renderNoMarketRow(): string {
 }
 
 function selectMarketOnMapClick(this: SVGElement, event: MouseEvent): void {
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const cellId = findCell(x, y);
   if (cellId === undefined) return;
 
@@ -275,7 +284,7 @@ function startMarketsBrushDrag(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = pointer(dragEvent, this);
+    const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, r);
 
     const found = r > 5 ? findAllCellsInRadius(x, y, r, pack) : [findClosestCell(x, y, Infinity, pack)];
@@ -347,7 +356,7 @@ function setMarketTempPath(temp: HTMLElement, marketId: number, d: string): void
 
 function onMarketsBrushMove(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const [x, y] = pointer(event, this);
+  const [x, y] = getPointer(event, this);
   const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
   moveCircle(x, y, r);
 }
@@ -415,7 +424,7 @@ function exitAddMarketMode(): void {
 }
 
 function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
-  const [x, y] = pointer(ev, this);
+  const [x, y] = getPointer(ev, this);
   const cellId = findCell(x, y);
   if (cellId === undefined) return;
 

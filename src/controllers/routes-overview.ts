@@ -1,4 +1,4 @@
-import { mean } from "d3";
+import { mean, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
@@ -125,17 +125,25 @@ function routesOverviewAddLines(): void {
 function routeHighlightOn(event: Event): void {
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
   const routeId = +(event.target as HTMLElement).dataset.id!;
-  routes.select(`#route${routeId}`).attr("stroke", "red").attr("stroke-width", 2).attr("stroke-dasharray", "none");
+  select("#routes")
+    .select(`#route${routeId}`)
+    .attr("stroke", "red")
+    .attr("stroke-width", 2)
+    .attr("stroke-dasharray", "none");
 }
 
 function routeHighlightOff(e: Event): void {
   const routeId = +(e.target as HTMLElement).dataset.id!;
-  routes.select(`#route${routeId}`).attr("stroke", null).attr("stroke-width", null).attr("stroke-dasharray", null);
+  select("#routes")
+    .select(`#route${routeId}`)
+    .attr("stroke", null)
+    .attr("stroke-width", null)
+    .attr("stroke-dasharray", null);
 }
 
 function zoomToRoute(this: HTMLElement): void {
   const routeId = +(this.parentNode as HTMLElement).dataset.id!;
-  const route = routes.select(`#route${routeId}`).node() as Element;
+  const route = select("#routes").select(`#route${routeId}`).node() as Element;
   highlightElement(route, 3);
 }
 

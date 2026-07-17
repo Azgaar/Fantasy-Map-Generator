@@ -1,6 +1,6 @@
-import { pack as packLayout, pointer, select, stratify } from "d3";
+import { pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
-import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 
@@ -289,12 +289,12 @@ function burgsOverviewAddLines(): void {
 
 function burgHighlightOn(event: Event): void {
   const burg = +(event.target as HTMLElement).dataset.id!;
-  const label = burgLabels.select(`[data-id='${burg}']`);
+  const label = select("#burgLabels").select(`[data-id='${burg}']`);
   if (label.size()) label.classed("drag", true);
 }
 
 function burgHighlightOff(): void {
-  burgLabels.selectAll("text.drag").classed("drag", false);
+  select("#burgLabels").selectAll("text.drag").classed("drag", false);
 }
 
 function zoomIntoBurg(this: HTMLElement): void {
@@ -357,7 +357,7 @@ function regenerateNames(): void {
 
       el.querySelector<HTMLInputElement>(".burgName")!.value = name;
       pack.burgs[burg].name = el.dataset.name = name;
-      burgLabels.select(`[data-id='${burg}']`).text(name);
+      select("#burgLabels").select(`[data-id='${burg}']`).text(name);
     });
 }
 
@@ -373,7 +373,7 @@ function enterAddBurgMode(this: HTMLElement): void {
 }
 
 function addBurgOnClick(this: SVGGElement, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const cell = findCell(point[0], point[1])!;
 
   if (pack.cells.h[cell] < 20) {
@@ -686,7 +686,7 @@ function importBurgNames(dataLoaded: string): void {
     for (let i = 0; i < change.length; i++) {
       const id = change[i].id;
       pack.burgs[id].name = change[i].name;
-      burgLabels.select(`[data-id='${id}']`).text(change[i].name);
+      select("#burgLabels").select(`[data-id='${id}']`).text(change[i].name);
     }
     burgsOverviewAddLines();
   };

@@ -1,3 +1,4 @@
+import { select } from "d3";
 import { Services } from "@/services";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
@@ -293,7 +294,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode;
     ensureEl<HTMLInputElement>("yearInput").value = String(options.year);
     ensureEl<HTMLInputElement>("eraInput").value = options.era;
-    ensureEl<HTMLInputElement>("shapeRendering").value = viewbox.attr("shape-rendering") || "geometricPrecision";
+    ensureEl<HTMLInputElement>("shapeRendering").value =
+      select("#viewbox").attr("shape-rendering") || "geometricPrecision";
     if (data[2]) mapCoordinates = JSON.parse(data[2]);
     if (data[4]) notes = JSON.parse(data[4]);
     if (data[33]) rulers.fromString(data[33]);
@@ -478,37 +480,37 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         });
 
       // turn on active layers
-      if (hasChild(texture, "image")) turnOn("toggleTexture");
-      if (hasChildren(terrs.select("#landHeights"))) turnOn("toggleHeight");
-      if (isVisible(lakes)) turnOn("toggleLakes");
-      if (hasChildren(biomes)) turnOn("toggleBiomes");
-      if (hasChildren(cells)) turnOn("toggleCells");
-      if (hasChildren(gridOverlay)) turnOn("toggleGrid");
-      if (hasChildren(coordinates)) turnOn("toggleCoordinates");
-      if (isVisible(compass) && hasChild(compass, "use")) turnOn("toggleCompass");
-      if (hasChildren(rivers)) turnOn("toggleRivers");
+      if (hasChild(select("#texture"), "image")) turnOn("toggleTexture");
+      if (hasChildren(select("#terrs").select("#landHeights"))) turnOn("toggleHeight");
+      if (isVisible(select("#lakes"))) turnOn("toggleLakes");
+      if (hasChildren(select("#biomes"))) turnOn("toggleBiomes");
+      if (hasChildren(select("#cells"))) turnOn("toggleCells");
+      if (hasChildren(select("#gridOverlay"))) turnOn("toggleGrid");
+      if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
+      if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
+      if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
       if (isVisible(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
-      if (hasChildren(relig)) turnOn("toggleReligions");
-      if (hasChildren(cults)) turnOn("toggleCultures");
-      if (hasChildren(statesBody)) turnOn("toggleStates");
-      if (hasChildren(provs)) turnOn("toggleProvinces");
-      if (hasChildren(zones) && isVisible(zones)) turnOn("toggleZones");
-      if (isVisible(borders) && hasChild(borders, "path")) turnOn("toggleBorders");
-      if (isVisible(routes) && hasChild(routes, "path")) turnOn("toggleRoutes");
-      if (hasChildren(temperature)) turnOn("toggleTemperature");
-      if (hasChild(population, "line")) turnOn("togglePopulation");
-      if (isVisible(ice)) turnOn("toggleIce");
-      if (hasChild(prec, "circle")) turnOn("togglePrecipitation");
-      if (isVisible(emblems) && hasChild(emblems, "use")) turnOn("toggleEmblems");
-      if (isVisible(labels)) turnOn("toggleLabels");
-      if (isVisible(icons)) turnOn("toggleBurgIcons");
+      if (hasChildren(select("#relig"))) turnOn("toggleReligions");
+      if (hasChildren(select("#cults"))) turnOn("toggleCultures");
+      if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
+      if (hasChildren(select("#provs"))) turnOn("toggleProvinces");
+      if (hasChildren(select("#zones")) && isVisible(select("#zones"))) turnOn("toggleZones");
+      if (isVisible(select("#borders")) && hasChild(select("#borders"), "path")) turnOn("toggleBorders");
+      if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
+      if (hasChildren(select("#temperature"))) turnOn("toggleTemperature");
+      if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
+      if (isVisible(select("#ice"))) turnOn("toggleIce");
+      if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
+      if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
+      if (isVisible(select("#labels"))) turnOn("toggleLabels");
+      if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
-      if (hasChild(markers, "svg")) turnOn("toggleMarkers");
-      if (isVisible(tradeAnimation)) turnOn("toggleTrade");
-      if (isVisible(goods) && hasChildren(goods)) turnOn("toggleGoods");
-      if (isVisible(markets) && hasChildren(markets)) turnOn("toggleMarketsLayer");
-      if (isVisible(ruler)) turnOn("toggleRulers");
-      if (isVisible(scaleBar)) turnOn("toggleScaleBar");
+      if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
+      if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
+      if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
+      if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
+      if (isVisible(select("#ruler"))) turnOn("toggleRulers");
+      if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
@@ -517,10 +519,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       Routes.sync();
       TradeAnimation.sync();
     }
-    scaleBar
+    select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
       .on("click", () => window.Controllers.UnitsEditor.open());
-    legend
+    select("#legend")
       .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
       .on("click", () => clearLegend());
 
@@ -542,7 +544,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     {
       // add custom texture if any
-      const textureHref = texture.attr("data-href");
+      const textureHref = select("#texture").attr("data-href");
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 
@@ -622,7 +624,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         invalidCells.forEach(i => {
           cells.r[i] = 0;
         });
-        rivers.select(`river${r}`).remove();
+        select("#rivers").select(`river${r}`).remove();
         ERROR && console.error("[Data integrity] Invalid river", r, "is assigned to cells", invalidCells);
       });
 
@@ -789,7 +791,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       }
     }
     // remove href from emblems, to trigger rendering on load
-    emblems.selectAll("use").attr("href", null);
+    select("#emblems").selectAll("use").attr("href", null);
     // draw data layers (not kept in svg)
     if (rulers && layerIsOn("toggleRulers")) rulers.draw();
     if (layerIsOn("toggleGrid")) drawGrid();

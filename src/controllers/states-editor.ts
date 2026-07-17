@@ -1,4 +1,4 @@
-import { color, drag, interpolateString, max, pack as packLayout, pointer, select, stratify } from "d3";
+import { color, drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
@@ -10,6 +10,7 @@ import {
   getAdjective,
   getMixedColor,
   getPackPolygon,
+  getPointer,
   getRandomColor,
   isLand,
   P,
@@ -148,7 +149,7 @@ function renderDialog(): void {
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
-      highlightElement(regions.select(`#state${stateId}`).node() as Element, 4);
+      highlightElement(select("#regions").select(`#state${stateId}`).node() as Element, 4);
     else if (classList.contains("icon-trash-empty")) stateRemovePrompt(stateId);
     else if (classList.contains("icon-lock") || classList.contains("icon-lock-open"))
       updateLockStatus(stateId, classList);
@@ -207,7 +208,7 @@ function statesEditorAddLines(): void {
     totalArea += area;
     totalPopulation += population;
     totalBurgs += s.burgs || 0;
-    const focused = defs.select(`#fog #focusState${s.i}`).size();
+    const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
     const treasuryTip = `Current treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
     if (!s.i) {
@@ -355,13 +356,13 @@ function getTypeOptions(type: string | number): string {
 
 function stateHighlightOn(event: any): void {
   if (!layerIsOn("toggleStates")) return;
-  if (defs.select("#fog path").size()) return;
+  if (select("#deftemp").select("#fog path").size()) return;
 
   const state = +event.target.dataset.id;
   if (customization || !state) return;
-  const d = regions.select(`#state${state}`).attr("d");
+  const d = select("#regions").select(`#state${state}`).attr("d");
 
-  const path = debug
+  const path = select("#debug")
     .append("path")
     .attr("class", "highlight")
     .attr("d", d)
@@ -381,9 +382,11 @@ function stateHighlightOn(event: any): void {
 }
 
 function stateHighlightOff(): void {
-  debug.selectAll(".highlight").each(function (this: any) {
-    select(this).transition().duration(1000).attr("opacity", 0).remove();
-  });
+  select("#debug")
+    .selectAll(".highlight")
+    .each(function (this: any) {
+      select(this).transition().duration(1000).attr("opacity", 0).remove();
+    });
 }
 
 function stateChangeFill(el: HTMLElement): void {
@@ -393,10 +396,10 @@ function stateChangeFill(el: HTMLElement): void {
   const callback = (newFill: string) => {
     (el as any).fill = newFill;
     pack.states[state].color = newFill;
-    statesBody.select(`#state${state}`).attr("fill", newFill);
-    statesBody.select(`#state-gap${state}`).attr("stroke", newFill);
+    select("#statesBody").select(`#state${state}`).attr("fill", newFill);
+    select("#statesBody").select(`#state-gap${state}`).attr("stroke", newFill);
     const halo = color(newFill)?.darker().hex() ?? "#666666";
-    statesHalo.select(`#state-border${state}`).attr("stroke", halo);
+    select("#statesHalo").select(`#state-border${state}`).attr("stroke", halo);
 
     // recolor regiments
     const solidColor = newFill[0] === "#" ? newFill : "#999";
@@ -812,7 +815,7 @@ function openTreasuryDialog(stateId: number): void {
 
 function stateCapitalZoomIn(state: number): void {
   const capital = pack.states[state].capital;
-  const label = burgLabels.select(`[data-id='${capital}']`);
+  const label = select("#burgLabels").select(`[data-id='${capital}']`);
   const x = +label.attr("x");
   const y = +label.attr("y");
   zoomTo(x, y, 8, 2000);
@@ -837,7 +840,7 @@ function stateChangeExpansionism(state: number, line: HTMLElement, value: string
 
 function toggleFog(state: number, cl: DOMTokenList): void {
   if (customization) return;
-  const path = statesBody.select(`#state${state}`).attr("d");
+  const path = select("#statesBody").select(`#state${state}`).attr("d");
   const id = `focusState${state}`;
   cl.contains("inactive") ? fog(id, path) : unfog(id);
   cl.toggle("inactive");
@@ -855,11 +858,11 @@ function stateRemovePrompt(state: number): void {
 }
 
 function stateRemove(stateId: number): void {
-  statesBody.select(`#state${stateId}`).remove();
-  statesBody.select(`#state-gap${stateId}`).remove();
-  statesHalo.select(`#state-border${stateId}`).remove();
-  labels.select(`#stateLabel${stateId}`).remove();
-  defs.select(`#textPath_stateLabel${stateId}`).remove();
+  select("#statesBody").select(`#state${stateId}`).remove();
+  select("#statesBody").select(`#state-gap${stateId}`).remove();
+  select("#statesHalo").select(`#state-border${stateId}`).remove();
+  select("#labels").select(`#stateLabel${stateId}`).remove();
+  select("#deftemp").select(`#textPath_stateLabel${stateId}`).remove();
 
   unfog(`focusState${stateId}`);
 
@@ -880,7 +883,7 @@ function stateRemove(stateId: number): void {
   // remove emblem
   const coaId = `stateCOA${stateId}`;
   ensureEl(coaId).remove();
-  emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
+  select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
   // remove provinces
   (pack.states[stateId].provinces || []).forEach((p: number) => {
@@ -891,8 +894,8 @@ function stateRemove(stateId: number): void {
 
     const coaId = `provinceCOA${p}`;
     if (document.getElementById(coaId)) ensureEl(coaId).remove();
-    emblems.select(`#provinceEmblems > use[data-i='${p}']`).remove();
-    const g = provs.select("#provincesBody");
+    select("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
+    const g = select("#provs").select("#provincesBody");
     g.select(`#province${p}`).remove();
     g.select(`#province-gap${p}`).remove();
   });
@@ -913,7 +916,7 @@ function stateRemove(stateId: number): void {
 
   pack.states[stateId] = { i: stateId, removed: true } as State;
 
-  debug.selectAll(".highlight").remove();
+  select("#debug").selectAll(".highlight").remove();
 
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
@@ -923,7 +926,7 @@ function stateRemove(stateId: number): void {
 }
 
 function toggleLegend(): void {
-  if (legend.selectAll("*").size()) {
+  if (select("#legend").selectAll("*").size()) {
     clearLegend(); // hide legend
     return;
   }
@@ -1166,7 +1169,7 @@ function exitRegenerationMenu(): void {
 function enterStatesManualAssignent(): void {
   if (!layerIsOn("toggleStates")) toggleStates();
   customization = 2;
-  statesBody.append("g").attr("id", "temp");
+  select("#statesBody").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "none";
   });
@@ -1205,11 +1208,11 @@ function selectStateOnLineClick(this: HTMLElement): void {
 }
 
 function selectStateOnMapClick(this: any, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const i = findCell(point[0], point[1]);
   if (pack.cells.h[i!] < 20) return;
 
-  const assigned = statesBody.select("#temp").select(`polygon[data-cell='${i}']`);
+  const assigned = select("#statesBody").select("#temp").select(`polygon[data-cell='${i}']`);
   const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
 
   ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
@@ -1222,7 +1225,7 @@ function dragStateBrush(this: any, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = pointer(dragEvent, this);
+    const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
     const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])];
@@ -1233,7 +1236,7 @@ function dragStateBrush(this: any, event: any): void {
 
 // change state within selection
 function changeStateForSelection(selection: number[]): void {
-  const temp = statesBody.select("#temp");
+  const temp = select("#statesBody").select("#temp");
 
   const $selected = ensureEl("statesBodySection").querySelector<HTMLElement>("div.selected")!;
   const stateNew = +$selected.dataset.id!;
@@ -1262,7 +1265,7 @@ function changeStateForSelection(selection: number[]): void {
 
 function moveStateBrush(this: any, event: any): void {
   showMainTip();
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const radius = +ensureEl<HTMLInputElement>("statesBrush").value;
   moveCircle(point[0], point[1], radius);
 }
@@ -1272,7 +1275,7 @@ function applyStatesManualAssignent(): void {
   const affectedStates: number[] = [];
   const affectedProvinces: number[] = [];
 
-  statesBody
+  select("#statesBody")
     .select("#temp")
     .selectAll<SVGPolygonElement, unknown>("polygon")
     .each(function () {
@@ -1449,7 +1452,7 @@ function adjustProvinces(affectedProvinces: number[]): void {
 function exitStatesManualAssignment(close: boolean): void {
   customization = 0;
   statesManualHistory = [];
-  statesBody.select("#temp").remove();
+  select("#statesBody").select("#temp").remove();
   removeCircle();
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "inline-block";
@@ -1478,7 +1481,7 @@ function exitStatesManualAssignment(close: boolean): void {
 }
 
 function saveStatesManualSnapshot(): void {
-  const temp = statesBody.select("#temp").node() as HTMLElement | null;
+  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
   if (!temp) return;
 
   statesManualHistory.push(temp.innerHTML);
@@ -1486,7 +1489,7 @@ function saveStatesManualSnapshot(): void {
 }
 
 function undoStatesManualAssignment(): void {
-  const temp = statesBody.select("#temp").node() as HTMLElement | null;
+  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
   if (!temp || !statesManualHistory.length) return;
 
   temp.innerHTML = statesManualHistory.pop()!;
@@ -1510,7 +1513,7 @@ function enterAddStateMode(this: HTMLElement): void {
 
 function addState(this: SVGElement, event: MouseEvent): void {
   const { cells, states, burgs } = pack as any;
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const center = findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
     tip("You cannot place state into the water. Please click on a land cell", false, "error");
@@ -1661,12 +1664,12 @@ function openStateMergeDialog(): void {
     if (!layerIsOn("toggleStates")) return;
     const state = +event.currentTarget.dataset.id;
     if (!state) return;
-    const d = regions.select(`#state${state}`).attr("d");
+    const d = select("#regions").select(`#state${state}`).attr("d");
     if (!d) return;
 
     stateHighlightOff();
 
-    const path = debug
+    const path = select("#debug")
       .append("path")
       .attr("class", "highlight")
       .attr("d", d)
@@ -1738,14 +1741,14 @@ function openStateMergeDialog(): void {
       const state = pack.states[stateId];
       state.removed = true;
 
-      statesBody.select(`#state${stateId}`).remove();
-      statesBody.select(`#state-gap${stateId}`).remove();
-      statesHalo.select(`#state-border${stateId}`).remove();
-      labels.select(`#stateLabel${stateId}`).remove();
-      defs.select(`#textPath_stateLabel${stateId}`).remove();
+      select("#statesBody").select(`#state${stateId}`).remove();
+      select("#statesBody").select(`#state-gap${stateId}`).remove();
+      select("#statesHalo").select(`#state-border${stateId}`).remove();
+      select("#labels").select(`#stateLabel${stateId}`).remove();
+      select("#deftemp").select(`#textPath_stateLabel${stateId}`).remove();
 
       ensureEl(`stateCOA${stateId}`).remove();
-      emblems.select(`#stateEmblems > use[data-i='${stateId}']`).remove();
+      select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
 
       // add merged state regiments to the ruling state
       (state.military || []).forEach((regiment: any) => {
@@ -1791,7 +1794,7 @@ function openStateMergeDialog(): void {
     });
 
     unfog();
-    debug.selectAll(".highlight").remove();
+    select("#debug").selectAll(".highlight").remove();
 
     States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();

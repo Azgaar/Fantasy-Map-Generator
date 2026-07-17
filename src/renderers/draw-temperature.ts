@@ -1,4 +1,15 @@
-import { color, curveBasisClosed, interpolateSpectral, leastIndex, line, max, min, range, scaleSequential } from "d3";
+import {
+  color,
+  curveBasisClosed,
+  interpolateSpectral,
+  leastIndex,
+  line,
+  max,
+  min,
+  range,
+  scaleSequential,
+  select
+} from "d3";
 import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
 
 declare global {
@@ -8,7 +19,7 @@ declare global {
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");
 
-  temperature.selectAll("*").remove();
+  select("#temperature").selectAll("*").remove();
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
   const scheme = scaleSequential(interpolateSpectral);
 
@@ -55,7 +66,7 @@ const temperatureRenderer = (): void => {
   }
 
   // min temp isoline covers all graph
-  temperature
+  select("#temperature")
     .append("path")
     .attr("d", `M0,0 h${graphWidth} v${graphHeight} h${-graphWidth} Z`)
     .attr("fill", scheme(1 - (minTemp - tMin) / delta))
@@ -69,12 +80,12 @@ const temperatureRenderer = (): void => {
     if (!path) continue;
     const fill = scheme(1 - (t - tMin) / delta);
     const stroke = color(fill)!.darker(0.2);
-    temperature.append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
+    select("#temperature").append("path").attr("d", path).attr("fill", fill).attr("stroke", stroke.toString());
   }
 
   const scale = (ensureEl("temperatureScale") as HTMLSelectElement).value as Parameters<typeof convertTemperature>[1];
 
-  const tempLabels = temperature.append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
+  const tempLabels = select("#temperature").append("g").attr("id", "tempLabels").attr("fill-opacity", 1);
   tempLabels
     .selectAll("text")
     .data(labels)

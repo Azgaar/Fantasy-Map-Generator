@@ -1,14 +1,12 @@
-import { drag, pointer, quadtree, range, select } from "d3";
-import { destroyDialogIfExists, ensureEl, findAllInQuadtree, rn } from "../utils";
-
-const terrain = select<SVGGElement, unknown>("#terrain");
+import { drag, quadtree, range, select } from "d3";
+import { destroyDialogIfExists, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRelief")) toggleRelief();
 
-  terrain
+  select<SVGGElement, unknown>("#terrain")
     .selectAll<SVGUseElement, unknown>("use")
     .call(drag<SVGUseElement, unknown>().on("drag", dragReliefIcon))
     .classed("draggable", true);
@@ -445,7 +443,7 @@ function enterBulkAddMode(): void {
 
 function moveBrush(this: SVGElement, event: any): void {
   showMainTip();
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const radius = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
   moveCircle(point[0], point[1], radius);
 }
@@ -465,16 +463,18 @@ function dragToAdd(this: SVGElement, event: any): void {
   // build a quadtree
   const tree = quadtree<[number, number, number?]>();
   const positions: number[] = [];
-  terrain.selectAll<SVGUseElement, unknown>("use").each(function () {
-    const x = +this.getAttribute("x")! + +this.getAttribute("width")! / 2;
-    const y = +this.getAttribute("y")! + +this.getAttribute("height")! / 2;
-    tree.add([x, y, x]);
-    const box = this.getBBox();
-    positions.push(box.y + box.height);
-  });
+  select<SVGGElement, unknown>("#terrain")
+    .selectAll<SVGUseElement, unknown>("use")
+    .each(function () {
+      const x = +this.getAttribute("x")! + +this.getAttribute("width")! / 2;
+      const y = +this.getAttribute("y")! + +this.getAttribute("height")! / 2;
+      tree.add([x, y, x]);
+      const box = this.getBBox();
+      positions.push(box.y + box.height);
+    });
 
   event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const p = pointer(dragEvent, this);
+    const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
     range(Math.ceil(r / 10)).forEach(() => {
@@ -499,7 +499,7 @@ function dragToAdd(this: SVGElement, event: any): void {
 
       tree.add([cx, cy]);
       positions.push(z);
-      terrain
+      select<SVGGElement, unknown>("#terrain")
         .insert("use", `:nth-child(${nth})`)
         .attr("href", type)
         .attr("x", x)
@@ -539,9 +539,10 @@ function dragToRemove(this: SVGElement, event: any): void {
 
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
   const type = pressed.dataset.type;
+  const terrainLayer = select<SVGGElement, unknown>("#terrain");
   const icons = type
-    ? terrain.selectAll<SVGUseElement, unknown>(`use[href='${type}']`)
-    : terrain.selectAll<SVGUseElement, unknown>("use");
+    ? terrainLayer.selectAll<SVGUseElement, unknown>(`use[href='${type}']`)
+    : terrainLayer.selectAll<SVGUseElement, unknown>("use");
   const tree = quadtree<[number, number, SVGUseElement]>();
   icons.each(function () {
     const x = +this.getAttribute("x")! + +this.getAttribute("width")! / 2;
@@ -550,7 +551,7 @@ function dragToRemove(this: SVGElement, event: any): void {
   });
 
   event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const p = pointer(dragEvent, this);
+    const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
     findAllInQuadtree(p[0], p[1], r, tree).forEach((f: any) => {
       f[2].remove();
@@ -619,9 +620,10 @@ function removeIcon(): void {
     selection = elSelected;
   } else {
     const type = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.type;
+    const terrainLayer = select<SVGGElement, unknown>("#terrain");
     selection = (type
-      ? terrain.selectAll(`use[href='${type}']`)
-      : terrain.selectAll("use")) as unknown as typeof elSelected;
+      ? terrainLayer.selectAll(`use[href='${type}']`)
+      : terrainLayer.selectAll("use")) as unknown as typeof elSelected;
     const size = selection.size();
     alertMessage.innerHTML = type
       ? `Are you sure you want to remove all ${type} icons (${size})?`
@@ -645,7 +647,7 @@ function removeIcon(): void {
 }
 
 function closeReliefEditor(): void {
-  terrain
+  select<SVGGElement, unknown>("#terrain")
     .selectAll<SVGUseElement, unknown>("use")
     .call(drag<SVGUseElement, unknown>().on("drag", null))
     .classed("draggable", false);

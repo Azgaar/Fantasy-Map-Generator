@@ -1,3 +1,5 @@
+import { select } from "d3";
+
 declare global {
   var drawBorders: () => void;
 }
@@ -72,9 +74,9 @@ const bordersRenderer = () => {
     }
   }
 
-  svg.select("#borders").attr("fill", "none").selectAll("path").remove();
-  svg.select("#stateBorders").append("path").attr("d", statePath.join(" "));
-  svg.select("#provinceBorders").append("path").attr("d", provincePath.join(" "));
+  select("#map").select("#borders").attr("fill", "none").selectAll("path").remove();
+  select("#map").select("#stateBorders").append("path").attr("d", statePath.join(" "));
+  select("#map").select("#provinceBorders").append("path").attr("d", provincePath.join(" "));
 
   function getBorder({
     type,

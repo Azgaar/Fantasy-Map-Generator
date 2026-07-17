@@ -1,6 +1,6 @@
-import { curveNatural, drag, line, pointer, select } from "d3";
+import { curveNatural, drag, line, select } from "d3";
 import { Controllers } from "@/controllers";
-import { destroyDialogIfExists, ensureEl, findEl, parseTransform, round } from "../utils";
+import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 
@@ -225,10 +225,14 @@ function updateValues(textPath: SVGTextPathElement): void {
 }
 
 function drawControlPointsAndLine(): void {
-  debug.select("#controlPoints").remove();
-  debug.append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
+  select("#debug").select("#controlPoints").remove();
+  select("#debug").append("g").attr("id", "controlPoints").attr("transform", elSelected.attr("transform"));
   const path = ensureEl(`textPath_${elSelected.attr("id")}`) as unknown as SVGPathElement;
-  debug.select("#controlPoints").append("path").attr("d", path.getAttribute("d")).on("click", addInterimControlPoint);
+  select<SVGGElement, unknown>("#debug")
+    .select("#controlPoints")
+    .append("path")
+    .attr("d", path.getAttribute("d"))
+    .on("click", addInterimControlPoint);
   const l = path.getTotalLength();
   if (!l) return;
   const increment = l / Math.max(Math.ceil(l / 200), 2);
@@ -238,7 +242,7 @@ function drawControlPointsAndLine(): void {
 }
 
 function addControlPoint(point: DOMPoint): void {
-  debug
+  select<SVGGElement, unknown>("#debug")
     .select("#controlPoints")
     .append("circle")
     .attr("cx", point.x)
@@ -258,7 +262,7 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 function redrawLabelPath(): void {
   const path = ensureEl(`textPath_${elSelected.attr("id")}`) as unknown as SVGPathElement;
   const points: [number, number][] = [];
-  debug
+  select("#debug")
     .select("#controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
@@ -266,7 +270,7 @@ function redrawLabelPath(): void {
     });
   const d = round(lineGen(points) || "");
   path.setAttribute("d", d);
-  debug.select("#controlPoints > path").attr("d", d);
+  select("#debug").select("#controlPoints > path").attr("d", d);
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -275,10 +279,10 @@ function clickControlPoint(this: SVGCircleElement): void {
 }
 
 function addInterimControlPoint(this: SVGPathElement, event: any): void {
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
 
   const dists: number[] = [];
-  debug
+  select("#debug")
     .select("#controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
@@ -296,7 +300,7 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   }
 
   const before = `:nth-child(${index + 2})`;
-  debug
+  select<SVGGElement, unknown>("#debug")
     .select("#controlPoints")
     .insert("circle", before)
     .attr("cx", point[0])
@@ -317,7 +321,7 @@ function dragLabel(event: any): void {
   event.on("drag", (dragEvent: any) => {
     const transform = `translate(${dx + dragEvent.x},${dy + dragEvent.y})`;
     elSelected.attr("transform", transform);
-    debug.select("#controlPoints").attr("transform", transform);
+    select("#debug").select("#controlPoints").attr("transform", transform);
   });
 }
 
@@ -565,7 +569,7 @@ function removeLabel(): void {
 }
 
 function closeLabelEditor(): void {
-  debug.select("#controlPoints").remove();
+  select("#debug").select("#controlPoints").remove();
   unselect();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();

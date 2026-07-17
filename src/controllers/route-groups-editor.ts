@@ -1,3 +1,4 @@
+import { select } from "d3";
 import type { Route } from "@/generators/routes-generator";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
@@ -51,7 +52,7 @@ function onBodyClick(ev: Event): void {
 function addLines(): void {
   ensureEl("routeGroupsEditorBody").innerHTML = "";
 
-  const lines = routes
+  const lines = select("#routes")
     .selectAll<SVGGElement, unknown>("g")
     .nodes()
     .map(el => {
@@ -81,7 +82,7 @@ function addGroup(): void {
       return tip("Element with this name already exists. Provide a unique name", false, "error");
     if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
 
-    routes
+    select("#routes")
       .append("g")
       .attr("id", group)
       .attr("stroke", "#000000")
@@ -103,7 +104,7 @@ function removeGroup(group: string): void {
     confirm: "Remove",
     onConfirm: () => {
       pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
-      if (!DEFAULT_GROUPS.includes(group)) routes.select(`#${group}`).remove();
+      if (!DEFAULT_GROUPS.includes(group)) select("#routes").select(`#${group}`).remove();
       addLines();
     }
   });

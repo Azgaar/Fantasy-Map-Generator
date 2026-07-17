@@ -38,7 +38,7 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
-import { destroyDialogIfExists, ensureEl, findEl, getComposedPath, getNextId } from "./nodeUtils";
+import { destroyDialogIfExists, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
@@ -222,6 +222,7 @@ export {
   getNextId,
   getNumberInRange,
   getPackPolygon,
+  getPointer,
   getPolesOfInaccessibility,
   getRandomColor,
   getSegmentId,

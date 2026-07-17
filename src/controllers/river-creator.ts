@@ -1,7 +1,7 @@
-import { pointer, select } from "d3";
+import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, last, rn } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
 
@@ -14,7 +14,7 @@ function open(): void {
   if (!layerIsOn("toggleCells")) toggleCells();
 
   tip("Click to add river point, click again to remove", true);
-  debug.append("g").attr("id", "controlCells");
+  select("#debug").append("g").attr("id", "controlCells");
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onCellClick);
 
   creatorCells = [];
@@ -59,7 +59,7 @@ function onBodyClick(ev: Event): void {
 }
 
 function onCellClick(this: any, event: any): void {
-  const cell = findCell(...(pointer(event, this) as [number, number]))!;
+  const cell = findCell(...(getPointer(event, this) as [number, number]))!;
 
   if (creatorCells.includes(cell)) removeCell(cell);
   else addCell(cell);
@@ -86,7 +86,7 @@ function removeCell(cell: number): void {
 }
 
 function drawCells(cells: number[]): void {
-  debug
+  select("#debug")
     .select("#controlCells")
     .selectAll(`polygon`)
     .data(cells)
@@ -148,7 +148,7 @@ function addRiver(): void {
   });
   const id = `river${riverId}`;
 
-  viewbox
+  select("#viewbox")
     .select("#rivers")
     .append("path")
     .attr("id", id)
@@ -158,7 +158,7 @@ function addRiver(): void {
 }
 
 function closeRiverCreator(): void {
-  debug.select("#controlCells").remove();
+  select("#debug").select("#controlCells").remove();
   restoreDefaultEvents();
   clearMainTip();
 

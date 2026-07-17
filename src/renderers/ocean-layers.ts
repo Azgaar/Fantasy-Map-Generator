@@ -1,5 +1,5 @@
 import type { Selection } from "d3";
-import { curveBasisClosed, line } from "d3";
+import { curveBasisClosed, line, select } from "d3";
 import { clipPoly, P, rn, round } from "../utils";
 
 declare global {
@@ -11,9 +11,9 @@ class OceanModule {
   private pointsN: any;
   private used: any;
   private lineGen = line().curve(curveBasisClosed);
-  private oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
+  private oceanLayers: Selection<SVGGElement, unknown, any, any>;
 
-  constructor(oceanLayers: Selection<SVGGElement, unknown, null, undefined>) {
+  constructor(oceanLayers: Selection<SVGGElement, unknown, any, any>) {
     this.oceanLayers = oceanLayers;
   }
 
@@ -109,4 +109,4 @@ class OceanModule {
   }
 }
 
-window.OceanLayers = () => new OceanModule(oceanLayers).draw();
+window.OceanLayers = () => new OceanModule(select<SVGGElement, unknown>("#oceanLayers")).draw();

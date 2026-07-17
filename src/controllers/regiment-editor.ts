@@ -1,7 +1,7 @@
-import { type D3DragEvent, drag, easeSinInOut, pointer, select, sum, transition } from "d3";
+import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
 import { Controllers } from "@/controllers";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, destroyDialogIfExists, ensureEl, findEl, last, rn } from "../utils";
+import { capitalize, destroyDialogIfExists, ensureEl, findEl, getPointer, last, rn } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -322,13 +322,13 @@ function toggleAdd(): void {
     clearMainTip();
     // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
     // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    viewbox.on("click", clicked).style("cursor", "default");
+    select("#viewbox").on("click", clicked).style("cursor", "default");
   }
 }
 
 function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!selectedRegiment) return;
-  const point = pointer(event, this);
+  const point = getPointer(event, this);
   const cell = findCell(point[0], point[1]);
   if (cell === undefined) return;
   const [x, y] = pack.cells.p[cell];
@@ -374,7 +374,7 @@ function toggleAttack(): void {
     select<SVGGElement, unknown>("#armies").selectAll(":scope > g").classed("draggable", true);
     // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
     // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    viewbox.on("click", clicked).style("cursor", "default");
+    select("#viewbox").on("click", clicked).style("cursor", "default");
   }
 }
 
@@ -449,7 +449,7 @@ function toggleAttach(): void {
     select<SVGGElement, unknown>("#armies").selectAll(":scope > g").classed("draggable", true);
     // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
     // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    viewbox.on("click", clicked).style("cursor", "default");
+    select("#viewbox").on("click", clicked).style("cursor", "default");
   }
 }
 
