@@ -268,21 +268,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ensureEl<HTMLInputElement>("urbanizationInput").value = settings[13];
         urbanization = +settings[13];
       }
-      if (settings[14]) {
-        const mapSize = String(minmax(+settings[14], 1, 100));
-        ensureEl<HTMLInputElement>("mapSizeInput").value = mapSize;
-        mapSizeOutput.value = mapSize;
-      }
-      if (settings[15]) {
-        const latitude = String(minmax(+settings[15], 0, 100));
-        ensureEl<HTMLInputElement>("latitudeInput").value = latitude;
-        latitudeOutput.value = latitude;
-      }
-      if (settings[18]) {
-        ensureEl<HTMLInputElement>("precInput").value = settings[18];
-        precOutput.value = settings[18];
-      }
       if (settings[19]) options = JSON.parse(settings[19]);
+      // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
+      if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
+      if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
+      if (settings[18]) options.prec = minmax(+settings[18], 0, 500);
+      options.mapSize ??= 100;
+      options.latitude ??= 50;
+      options.prec ??= 100;
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
@@ -294,11 +287,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ensureEl<HTMLInputElement>("urbanDensityInput").value = settings[24];
         urbanDensity = +settings[24];
       }
-      if (settings[25]) {
-        const longitude = String(minmax(+(settings[25] || 50), 0, 100));
-        ensureEl<HTMLInputElement>("longitudeInput").value = longitude;
-        longitudeOutput.value = longitude;
-      }
+      if (settings[25]) options.longitude = minmax(+settings[25], 0, 100);
+      options.longitude ??= 50;
       if (settings[26]) ensureEl<HTMLInputElement>("growthRate").value = settings[26];
     }
     ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode;

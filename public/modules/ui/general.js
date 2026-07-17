@@ -567,18 +567,10 @@ function unlock(id) {
   el.className = "icon-lock-open";
 }
 
-// check if option is locked
-function locked(id) {
-  const lockEl = document.getElementById("lock_" + id);
-  return lockEl.dataset.locked === "1";
-}
-
-// return key value stored in localStorage or null
 function stored(key) {
   return localStorage.getItem(key) || null;
 }
 
-// store key value in localStorage
 function store(key, value) {
   return localStorage.setItem(key, value);
 }

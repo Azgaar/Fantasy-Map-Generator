@@ -39,10 +39,6 @@ declare global {
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
   var areaUnit: HTMLInputElement;
-  var mapSizeOutput: HTMLInputElement;
-  var latitudeOutput: HTMLInputElement;
-  var longitudeOutput: HTMLInputElement;
-  var precOutput: HTMLInputElement;
   var hideLabels: HTMLInputElement;
   var stylePreset: HTMLSelectElement;
   var rescaleLabels: HTMLInputElement;
@@ -203,7 +199,7 @@ declare global {
     type?: "info" | "warn" | "error" | "success",
     timeout?: number
   ) => void;
-  var locked: (settingId: string) => boolean;
+  var stored: (key: string) => string | null;
   var unlock: (settingId: string) => void;
   var $: (selector: any) => any;
   var scale: number;
@@ -217,7 +213,14 @@ declare global {
   var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
-  var editWorld: () => void;
+  var drawLayers: () => void;
+  var drawPrecipitation: () => void;
+  var drawCoordinates: () => void;
+  var drawRivers: () => void;
+  var applyGraphSize: () => void;
+  var cellsDensityMap: Record<number, number>;
+  var changeCellsDensity: (value: string) => void;
+  var getCellsDensityColor: (cells: number) => string;
   var showExportPane: () => void;
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
@@ -298,7 +301,6 @@ declare global {
   var unselect: () => void;
   var selectIcon: (initial: string, callback: (value: string) => void) => void;
   var sortLines: (headerElement: HTMLElement) => void;
-  var generateWithAi: (defaultPrompt: string, onApply: (result: string) => void) => void;
   var tinymce:
     | {
         _setBaseUrl: (url: string) => void;
@@ -354,6 +356,10 @@ type Options = {
   temperatureEquator: number;
   temperatureNorthPole: number;
   temperatureSouthPole: number;
+  mapSize: number; // map size in % of the world
+  latitude: number; // North-South map shift in %, 50 is centered on equator
+  longitude: number; // West-East map shift in %, 50 is centered on prime meridian
+  prec: number; // precipitation modifier in %
   stateLabelsMode: string;
   showBurgPreview: boolean;
   burgs: {

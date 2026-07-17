@@ -2019,7 +2019,7 @@
             <button
               id="configureWorld"
               data-tip="Click to open world configurator to setup map position on Globe and World climate"
-              onclick="editWorld()"
+              onclick="window.Controllers.WorldConfigurator.open()"
             >
               Configure World
             </button>
@@ -2458,207 +2458,6 @@
       </div>
     </div>
     <div id="dialogs">
-      <div id="worldConfigurator" class="dialog stable" style="display: none">
-        <div style="display: flex">
-          <div id="worldControls">
-            <div>
-              <i data-locked="0" id="lock_temperatureEquator" class="icon-lock-open"></i>
-              <label data-tip="Set temperature at equator">
-                <i>Equator:</i>
-                <input id="temperatureEquatorInput" data-stored="temperatureEquator" type="number" min="-50" max="50" />
-                <span>°C = <span id="temperatureEquatorF"></span></span>
-                <input id="temperatureEquatorOutput" data-stored="temperatureEquator" type="range" min="-50" max="50" />
-              </label>
-            </div>
-            <div>
-              <label data-tip="Set the North Pole average yearly temperature">
-                <i data-locked="0" id="lock_temperatureNorthPole" class="icon-lock-open"></i>
-                <i>North Pole:</i>
-                <input
-                  id="temperatureNorthPoleInput"
-                  data-stored="temperatureNorthPole"
-                  type="number"
-                  min="-50"
-                  max="50"
-                />
-                <span>°C = <span id="temperatureNorthPoleF"></span></span>
-                <input
-                  id="temperatureNorthPoleOutput"
-                  data-stored="temperatureNorthPole"
-                  type="range"
-                  min="-50"
-                  max="50"
-                />
-              </label>
-            </div>
-            <div>
-              <label data-tip="Set the South Pole average yearly temperature">
-                <i data-locked="0" id="lock_temperatureSouthPole" class="icon-lock-open"></i>
-                <i>South Pole:</i>
-                <input
-                  id="temperatureSouthPoleInput"
-                  data-stored="temperatureSouthPole"
-                  type="number"
-                  min="-50"
-                  max="50"
-                />
-                <span>°C = <span id="temperatureSouthPoleF"></span></span>
-                <input
-                  id="temperatureSouthPoleOutput"
-                  data-stored="temperatureSouthPole"
-                  type="range"
-                  min="-50"
-                  max="50"
-                />
-              </label>
-            </div>
-            <div>
-              <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
-              <label data-tip="Set map size relative to the world size">
-                <i>Map size:</i>
-                <input id="mapSizeInput" data-stored="mapSize" type="number" min="1" max="100" step="0.1" />%
-                <input id="mapSizeOutput" data-stored="mapSize" type="range" min="1" max="100" step="0.1" />
-              </label>
-            </div>
-            <div>
-              <i data-locked="0" id="lock_latitude" class="icon-lock-open"></i>
-              <label data-tip="Set a North-South map shift, set to 50 to make map center lie on Equator">
-                <i>Latitudes:</i>
-                <input id="latitudeInput" data-stored="latitude" type="number" min="0" max="100" step="0.1" />
-                <br /><i>N</i
-                ><input
-                  id="latitudeOutput"
-                  data-stored="latitude"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  style="width: 10.3em"
-                /><i>S</i>
-              </label>
-            </div>
-            <div>
-              <i data-locked="0" id="lock_longitude" class="icon-lock-open"></i>
-              <label data-tip="Set a West-East map shift, set to 50 to make map center lie on Prime meridian">
-                <i>Longitudes:</i>
-                <input
-                  id="longitudeInput"
-                  data-stored="longitude"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value="50"
-                  step="0.1"
-                />
-                <br /><i>W</i
-                ><input
-                  id="longitudeOutput"
-                  data-stored="longitude"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  style="width: 10.3em"
-                /><i>E</i>
-              </label>
-            </div>
-            <div>
-              <label
-                data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation. Keep around 100% for default generation"
-              >
-                <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
-                <i>Precipitation:</i>
-                <input id="precInput" data-stored="prec" type="number" />%
-                <input id="precOutput" data-stored="prec" type="range" min="0" max="500" value="50" />
-              </label>
-            </div>
-            <div data-tip="Canvas size. Can be changed in general options on new map generation">
-              <i>Canvas size:</i><br />
-              <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
-            </div>
-            <div>
-              <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br />
-              <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
-              <span
-                id="meridianLengthFriendly"
-                data-tip="Length of Meridian is friendly units (depends on user configuration)"
-              ></span>
-              <span
-                id="meridianLengthEarth"
-                data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"
-              ></span>
-            </div>
-            <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
-          </div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end">
-            <svg id="globe" width="22em" viewBox="-20 -25 240 240">
-              <defs>
-                <linearGradient id="temperatureGradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop id="grad90" offset="0%" stop-color="blue" />
-                  <stop id="grad60" offset="16.6%" stop-color="green" />
-                  <stop id="grad30" offset="33.3%" stop-color="yellow" />
-                  <stop id="grad0" offset="50%" stop-color="red" />
-                  <stop id="grad-30" offset="66.6%" stop-color="yellow" />
-                  <stop id="grad-60" offset="83.3%" stop-color="green" />
-                  <stop id="grad-90" offset="100%" stop-color="blue" />
-                </linearGradient>
-              </defs>
-              <g id="globeNoteLines">
-                <line x1="5" x2="220" y1="0" y2="0" />
-                <line x1="5" x2="220" y1="13" y2="13" />
-                <line x1="5" x2="220" y1="49.5" y2="49.5" />
-                <line x1="-5" x2="220" y1="100" y2="100" />
-                <line x1="5" x2="220" y1="150.5" y2="150.5" />
-                <line x1="5" x2="220" y1="187" y2="187" />
-                <line x1="5" x2="220" y1="200" y2="200" />
-              </g>
-              <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
-                <circle cx="210" cy="6" r="12" />
-                <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
-                <circle cx="210" cy="30" r="12" />
-                <path data-tier="1" d="M210,35 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(45 210 30)" />
-                <circle cx="210" cy="75" r="12" />
-                <path data-tier="2" d="M210,80 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 75)" />
-                <circle cx="210" cy="130" r="12" />
-                <path data-tier="3" d="M210,135 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 130)" />
-                <circle cx="210" cy="173" r="12" />
-                <path data-tier="4" d="M210,178 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(135 210 173)" />
-                <circle cx="210" cy="194" r="12" />
-                <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
-              </g>
-              <g id="globaAxisLabels">
-                <text x="82%" y="-4%">wind</text>
-                <text x="-8%" y="-4%">latitude</text>
-              </g>
-              <g id="globeLatLabels">
-                <text x="-15" y="5">90°</text>
-                <text x="-15" y="18">60°</text>
-                <text x="-15" y="53">30°</text>
-                <text x="-15" y="103">0°</text>
-                <text x="-15" y="153">30°</text>
-                <text x="-15" y="190">60°</text>
-                <text x="-15" y="204">90°</text>
-              </g>
-              <circle id="globeGradient" cx="100" cy="100" r="100" fill="url(#temperatureGradient)" stroke="none" />
-              <line id="globePrimeMeridian" x1="100" x2="100" y1="0" y2="200" />
-              <line id="globeEquator" x1="1" x2="200" y1="100" y2="100" />
-              <circle id="globeOutline" cx="100" cy="100" r="100" fill="none" />
-              <path id="globeGraticule" />
-              <path id="globeArea" />
-            </svg>
-            <button id="restoreWinds" data-tip="Click to restore default (Earth-based) wind directions">
-              Restore winds
-            </button>
-          </div>
-        </div>
-        <div style="margin-top: 0.3em">
-          <i>Presets:</i>
-          <button id="wcWholeWorld" data-tip="Click to set map size to cover the whole world">Whole world</button>
-          <button id="wcNorthern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
-          <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
-          <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
-        </div>
-      </div>
       <div id="unitsEditor" class="dialog stable" style="display: none">
         <div id="unitsBody" style="margin-left: 1.1em">
           <div class="unitsHeader" style="margin-top: 0.4em">
@@ -2784,39 +2583,6 @@
             class="icon-trash"
           ></button>
           <button id="unitsRestore" data-tip="Restore default units settings" class="icon-ccw"></button>
-        </div>
-      </div>
-      <div id="aiGenerator" class="dialog stable" style="display: none">
-        <div style="display: flex; flex-direction: column; gap: 0.3em; width: 100%">
-          <textarea id="aiGeneratorResult" placeholder="Generated text will appear here" cols="30" rows="10"></textarea>
-          <textarea id="aiGeneratorPrompt" placeholder="Type a prompt here" cols="30" rows="5"></textarea>
-          <div style="display: flex; align-items: center; gap: 1em">
-            <label for="aiGeneratorModel"
-              >Model:
-              <select id="aiGeneratorModel"></select>
-            </label>
-            <label
-              for="aiGeneratorTemperature"
-              data-tip="Temperature controls response randomness; higher values mean more creativity, lower values mean more predictability"
-            >
-              Temperature:
-              <input id="aiGeneratorTemperature" type="number" min="-1" max="2" step=".1" class="icon-key" />
-            </label>
-            <label for="aiGeneratorKey"
-              >Key:
-              <input
-                id="aiGeneratorKey"
-                placeholder="Enter API key"
-                class="icon-key"
-                data-tip="Enter API key. Note: the Generator doesn't store the key or any generated data"
-              />
-              <button
-                id="aiGeneratorKeyHelp"
-                class="icon-help-circled"
-                data-tip="Click to see the usage instructions"
-              />
-            </label>
-          </div>
         </div>
       </div>
       <div id="styleSaver" class="dialog stable textual" style="display: none">
@@ -2946,73 +2712,6 @@
             <button id="addImage" type="button">Add</button>
           </div>
           <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
-        </div>
-      </div>
-      <div id="submapTool" style="display: none" class="dialog">
-        <p style="font-weight: bold">
-          This operation is destructive and irreversible. It will create a completely new map based on the current one.
-          Don't forget to save the .map file to your machine first!
-        </p>
-        <div style="display: flex; flex-direction: column; gap: 0.5em">
-          <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
-            <div>Points number</div>
-            <div>
-              <input id="submapPointsInput" type="range" min="1" max="13" value="4" />
-              <output id="submapPointsFormatted" style="color: #053305">10K</output>
-            </div>
-          </div>
-          <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
-            <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
-            <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
-          </div>
-        </div>
-      </div>
-      <div id="transformTool" style="display: none" class="dialog">
-        <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
-          This operation is destructive and irreversible. It will create a completely new map based on the current one.
-          Don't forget to save the .map file to your machine first!
-        </div>
-        <div
-          id="transformToolBody"
-          style="
-            padding: 0.5em 0;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(5, 1fr);
-            align-items: center;
-          "
-        >
-          <div>Points number</div>
-          <div>
-            <input id="transformPointsInput" type="range" min="1" max="13" value="4" />
-            <output id="transformPointsFormatted" style="color: #053305">10K</output>
-          </div>
-          <div>Shift</div>
-          <div>
-            <label>X: <input id="transformShiftX" type="number" size="4" value="0" /></label>
-            <label>Y: <input id="transformShiftY" type="number" size="4" value="0" /></label>
-          </div>
-          <div>Rotate</div>
-          <div>
-            <input id="transformAngleInput" type="range" min="0" max="359" value="0" />
-            <output id="transformAngleOutput">0</output>°
-          </div>
-          <div>Scale</div>
-          <div>
-            <input id="transformScaleInput" type="range" min="-25" max="25" value="0" />
-            <output id="transformScaleResult">1</output>x
-          </div>
-          <div>Mirror</div>
-          <div style="display: flex; gap: 0.5em">
-            <input type="checkbox" class="checkbox" id="transformMirrorH" />
-            <label for="transformMirrorH" class="checkbox-label">horizontally</label>
-            <input type="checkbox" class="checkbox" id="transformMirrorV" />
-            <label for="transformMirrorV" class="checkbox-label">vertically</label>
-          </div>
-        </div>
-        <div id="transformPreview" style="position: relative; overflow: hidden; outline: 1px solid #666">
-          <canvas id="transformPreviewCanvas" style="position: absolute; transform-origin: center"></canvas>
         </div>
       </div>
       <div id="exportMapData" style="display: none" class="dialog">
@@ -5840,11 +5539,6 @@
     <script defer src="modules/ui/style.js?v=1.127.0"></script>
     <script defer src="modules/ui/editors.js?v=1.137.4"></script>
     <script defer src="modules/ui/tools.js?v=1.136.0"></script>
-    <script defer src="modules/ui/world-configurator.js?v=1.131.0"></script>
-    <script defer src="modules/ui/temperature-graph.js?v=1.106.6"></script>
-    <script defer src="modules/ui/ai-generator.js?v=1.120.5"></script>
-    <script defer src="modules/ui/submap-tool.js?v=1.120.5"></script>
-    <script defer src="modules/ui/transform-tool.js?v=1.131.0"></script>
     <script defer src="modules/ui/hotkeys.js?v=1.136.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
