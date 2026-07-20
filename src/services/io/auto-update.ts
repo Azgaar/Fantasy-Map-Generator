@@ -1,10 +1,13 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
+import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import type { Point } from "@/generators/voronoi";
+import { drawMeasurers } from "@/renderers/draw-measurers";
 import { compareVersions } from "@/services/versioning";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 
-export function resolveVersionConflicts(mapVersion: string): void {
+export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
 
   if (isOlderThan("1.0.0")) {
@@ -208,7 +211,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
     select("#lakes").selectAll("path").remove();
 
     Features.markupPack();
-    createDefaultRuler();
+    Measurers.createDefaultRuler();
   }
 
   if (isOlderThan("1.11.0")) {
@@ -427,7 +430,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
   if (isOlderThan("1.61.0")) {
     // v1.61 changed rulers data
     select("#ruler").style("display", null);
-    rulers = new Rulers();
+    pack.measurers = [];
 
     select("#ruler")
       .selectAll<SVGLineElement, unknown>(".ruler > .white")
@@ -437,11 +440,11 @@ export function resolveVersionConflicts(mapVersion: string): void {
         const x2 = +this.getAttribute("x2")!;
         const y2 = +this.getAttribute("y2")!;
         if (Number.isNaN(x1) || Number.isNaN(y1) || Number.isNaN(x2) || Number.isNaN(y2)) return;
-        const points = [
+        const points: Point[] = [
           [x1, y1],
           [x2, y2]
         ];
-        rulers.create(Ruler, points);
+        pack.measurers.push({ type: "Ruler", points });
       });
 
     select("#ruler")
@@ -450,7 +453,7 @@ export function resolveVersionConflicts(mapVersion: string): void {
         const pointsString = this.dataset.points;
         if (!pointsString) return;
         const points = JSON.parse(pointsString);
-        rulers.create(Opisometer, points);
+        pack.measurers.push({ type: "Opisometer", points });
       });
 
     select("#ruler")
@@ -461,20 +464,20 @@ export function resolveVersionConflicts(mapVersion: string): void {
 
         const step = length > 1000 ? 40 : length > 400 ? 20 : 10;
         const increment = length / Math.ceil(length / step);
-        const points = [];
+        const points: Point[] = [];
         for (let i = 0; i <= length; i += increment) {
           const point = this.getPointAtLength(i);
           points.push([point.x | 0, point.y | 0]);
         }
 
-        rulers.create(Planimeter, points);
+        pack.measurers.push({ type: "Planimeter", points });
       });
 
     select("#ruler").selectAll("*").remove();
 
-    if (rulers.data.length) {
+    if (pack.measurers.length) {
       turnButtonOn("toggleRulers");
-      rulers.draw();
+      drawMeasurers();
     } else turnButtonOff("toggleRulers");
 
     // 1.61 changed oceanicPattern from rect to image
@@ -1213,5 +1216,28 @@ export function resolveVersionConflicts(mapVersion: string): void {
   if (isOlderThan("1.132.0")) {
     // v1.132.0 added global 3D view options
     options.threeD = { ...defaultOptions };
+  }
+
+  if (isOlderThan("1.138.0")) {
+    // v1.138.0 migrated measurers from the global rulers string (data[33]) to pack.measurers
+    const MEASURER_TYPES = ["Ruler", "Opisometer", "RouteOpisometer", "Planimeter"];
+    const isMeasurerType = (type: string): type is MeasurerType => MEASURER_TYPES.includes(type);
+
+    const parse = (serialized: string): Measurer[] => {
+      const measurers: Measurer[] = [];
+      for (const measurerString of serialized.split("; ")) {
+        const [type, pointsString] = measurerString.split(": ");
+        if (!type || !pointsString || !isMeasurerType(type)) continue;
+
+        const points = pointsString.split(" ").map(pair => {
+          const [x, y] = pair.split(",");
+          return [+x, +y] as Point;
+        });
+        measurers.push({ type, points });
+      }
+      return measurers;
+    };
+
+    if (data[33]) pack.measurers = parse(data[33]);
   }
 }

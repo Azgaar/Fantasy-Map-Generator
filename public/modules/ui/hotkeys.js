@@ -57,6 +57,7 @@ function handleKeyup(event) {
   else if ((shift || altShift) && code === "KeyK") window.Controllers.MarkersOverview.open();
   else if ((shift || altShift) && code === "KeyE") viewCellDetails();
   else if ((shift || altShift) && code === "KeyG") window.Controllers.GoodsEditor.open();
+  else if ((shift || altShift) && code === "Equal") window.Controllers.MeasurersEditor.open();
   else if (key === "!") toggleAddBurg();
   else if (key === "@") toggleAddLabel();
   else if (key === "#") toggleAddRiver();

@@ -192,6 +192,11 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
+  if (group === "ruler") {
+    if (findEl("measurersEditor")) return tip("Drag the measurer or its points to edit");
+    return tip("Click to open the Measurers Editor");
+  }
+
   if (group === "markets") {
     const marketEl = e.target.closest("[data-id]");
     if (marketEl) {

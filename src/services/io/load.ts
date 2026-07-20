@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
@@ -299,7 +300,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
     if (data[2]) mapCoordinates = JSON.parse(data[2]);
     if (data[4]) notes = JSON.parse(data[4]);
-    if (data[33]) rulers.fromString(data[33]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
       usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
@@ -440,6 +440,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       ? Uint16Array.from(data[27].split(","), Number)
       : new Uint16Array(pack.cells.i.length);
     // data[28] had deprecated cells.crossroad
+    // data[33] had deprecated rulers, now replaced by pack.measurers
     pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
     pack.ice = data[39] ? JSON.parse(data[39]) : [];
     pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
@@ -447,6 +448,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.measurers = data[46] ? JSON.parse(data[46]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -530,7 +532,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     {
       // dynamically import and run auto-update script
       const { resolveVersionConflicts } = await import("./auto-update");
-      resolveVersionConflicts(mapVersion!);
+      resolveVersionConflicts(mapVersion!, data);
     }
 
     // add custom heightmap color scheme if any
@@ -794,7 +796,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);
     // draw data layers (not kept in svg)
-    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
     if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg

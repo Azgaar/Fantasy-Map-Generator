@@ -133,12 +133,6 @@ declare global {
     set: (key: string, value: Blob) => Promise<void>;
   };
   var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
-  var rulers: any; // Rulers instance (classic)
-  var Rulers: any;
-  var Ruler: any;
-  var Opisometer: any;
-  var Planimeter: any;
-  var RouteOpisometer: any;
   var mapHistory: { created: number; [key: string]: unknown }[];
   var customPresetPrefix: string;
 
@@ -198,7 +192,6 @@ declare global {
   var calculateMapCoordinates: () => void;
   var calculateTemperatures: () => void;
   var reGraph: () => void;
-  var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
   var drawLayers: () => void;

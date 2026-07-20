@@ -78,7 +78,7 @@ function prepareMapData(): string {
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
-  const rulersString = rulers.toString();
+  const measurers = JSON.stringify(pack.measurers ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
   // save svg
@@ -168,7 +168,7 @@ function prepareMapData(): string {
     provinces,
     namesData,
     rivers,
-    rulersString,
+    "", // rulers are deprecated, use pack.measurers instead
     fonts,
     markers,
     cellRoutes,
@@ -180,7 +180,8 @@ function prepareMapData(): string {
     markets,
     deals,
     pack.cells.market,
-    customGoodIcons
+    customGoodIcons,
+    measurers
   ].join("\r\n");
   return mapData;
 }

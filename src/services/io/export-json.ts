@@ -63,7 +63,8 @@ function getMinimalDataJson(): string {
     markets: pack.markets,
     deals: pack.deals,
     routes: pack.routes,
-    zones: pack.zones
+    zones: pack.zones,
+    measurers: pack.measurers
   };
   return JSON.stringify({ info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases });
 }
@@ -182,7 +183,8 @@ function getPackCellsData() {
     markets: pack.markets,
     deals: pack.deals,
     routes: pack.routes,
-    zones: pack.zones
+    zones: pack.zones,
+    measurers: pack.measurers
   };
 }
 
