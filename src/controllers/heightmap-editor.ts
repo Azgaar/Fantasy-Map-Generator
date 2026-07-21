@@ -1,5 +1,6 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
 import { Controllers } from "@/controllers";
+import { heightmapTemplates } from "@/data/heightmap-templates";
 import {
   destroyDialogIfExists,
   ensureEl,

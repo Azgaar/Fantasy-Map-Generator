@@ -19,7 +19,6 @@ declare global {
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
   var options: Options;
 
-  var heightmapTemplates: any;
   var Goods: GoodsModule;
   var Production: ProductionModule;
   var Markets: MarketsModule;
@@ -44,10 +43,9 @@ declare global {
   var rescaleLabels: HTMLInputElement;
   var temperatureScale: HTMLSelectElement;
 
-  // Global variables defined in main.js / versioning.js
+  // Global variables defined in main.js
   var viewX: number;
   var viewY: number;
-  var VERSION: string;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -135,29 +133,13 @@ declare global {
     set: (key: string, value: Blob) => Promise<void>;
   };
   var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
-  var rulers: any; // Rulers instance (classic)
-  var Rulers: any;
-  var Ruler: any;
-  var Opisometer: any;
-  var Planimeter: any;
-  var RouteOpisometer: any;
   var mapHistory: { created: number; [key: string]: unknown }[];
   var customPresetPrefix: string;
-
-  type VersionComparison = { isEqual: boolean; isNewer: boolean; isOlder: boolean };
-  var compareVersions: (
-    version1: string,
-    version2: string,
-    options?: { major?: boolean; minor?: boolean; patch?: boolean }
-  ) => VersionComparison;
-  var parseMapVersion: (version: string) => string;
-  var isValidVersion: (versionString: string) => boolean;
 
   var getCellPopulation: (i: number) => [number, number];
   var getCurrentPreset: () => void;
   var focusOn: () => void;
   var fitMapToScreen: () => void;
-  var cleanupData: () => void;
   var regenerateMap: (reason?: string) => void;
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
@@ -210,7 +192,6 @@ declare global {
   var calculateMapCoordinates: () => void;
   var calculateTemperatures: () => void;
   var reGraph: () => void;
-  var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
   var drawLayers: () => void;
@@ -319,7 +300,6 @@ declare global {
 
   var aleaPRNG: (seed: string | number) => () => number;
   var heightmapColorSchemes: Record<string, unknown>;
-  var precreatedHeightmaps: Record<string, { name: string }>;
   var lock: (option: string) => void;
   var applyOption: (select: HTMLElement, value: string, text?: string) => void;
   var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;

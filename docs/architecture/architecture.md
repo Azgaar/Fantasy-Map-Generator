@@ -233,9 +233,10 @@ map state in a dialog/panel._ A controller does **not** hold pure static data, a
 services, or serialization — those have their own folders. (A 3D viewer such as
 `view-3d` is a controller that launches an alternate WebGL renderer; like any controller it
 exposes an object reached through the registry, while its configuration lives on the global
-`options.threeD` rather than inside the controller. Reusable UI building blocks like
-`hierarchy-tree` and `minimap` may later move to a `controllers/components/` subfolder if they
-multiply.)
+`options.threeD` rather than inside the controller. Reusable UI building blocks that are not
+tied to map state — web components such as `fill-box` and `slider-input` — live in their own
+top-level `src/components/` folder, registered eagerly via `components/index.ts`; widgets like
+`hierarchy-tree` and `minimap` may move there if they generalize.)
 
 ## Cross-layer subsystems
 

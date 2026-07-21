@@ -21,6 +21,7 @@ toolsContent.addEventListener("click", function (event) {
   else if (button === "editEmblemButton") openEmblemEditor();
   else if (button === "editNamesBaseButton") window.Controllers.NamesbaseEditor.open();
   else if (button === "editUnitsButton") window.Controllers.UnitsEditor.open();
+  else if (button === "editMeasurersButton") window.Controllers.MeasurersEditor.open();
   else if (button === "editNotesButton") window.Controllers.NotesEditor.open();
   else if (button === "editZonesButton") window.Controllers.ZonesEditor.open();
   else if (button === "overviewChartsButton") window.Controllers.ChartsOverview.open();

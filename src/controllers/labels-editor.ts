@@ -9,7 +9,7 @@ let lastSelectedGroup = "";
 
 function open(tspan: SVGTSpanElement): void {
   if (customization) return;
-  closeDialogs();
+  closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const textPath = tspan.parentNode as SVGTextPathElement;

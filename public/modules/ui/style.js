@@ -355,6 +355,19 @@ function selectStyleElement() {
     styleFontSize.value = el.attr("data-size");
   }
 
+  if (styleElement === "ruler") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || 2;
+
+    // show the effective dash, so maps predating the attribute don't display a misleading blank
+    styleStrokeDash.style.display = "block";
+    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") ?? "10";
+    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+
+    styleSize.style.display = "block";
+    styleFontSize.value = el.attr("data-size") || 20;
+  }
+
   if (styleElement === "armies") {
     styleArmies.style.display = "block";
     styleArmiesFillOpacity.value = el.attr("fill-opacity");
@@ -480,9 +493,15 @@ styleStrokeInput.on("input", function () {
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
+// measurers are rendered with baked-in sizes, so a style change requires a redraw
+function redrawMeasurersOnStyleChange() {
+  if (styleElementSelect.value === "ruler" && layerIsOn("toggleRulers")) drawMeasurers();
+}
+
 styleStrokeWidthInput.on("input", e => {
   getEl().attr("stroke-width", e.target.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  redrawMeasurersOnStyleChange();
 });
 
 styleLetterSpacingInput.on("input", e => {
@@ -492,6 +511,7 @@ styleLetterSpacingInput.on("input", e => {
 styleStrokeDasharrayInput.on("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  redrawMeasurersOnStyleChange();
 });
 
 styleStrokeLinecapInput.on("change", function () {
@@ -926,6 +946,7 @@ function changeFontSize(el, size) {
   el.attr("data-size", size).attr("font-size", scaleSize);
 
   if (styleElementSelect.value === "legend") redrawLegend();
+  redrawMeasurersOnStyleChange();
 }
 
 styleFontShiftX.on("input", e => {

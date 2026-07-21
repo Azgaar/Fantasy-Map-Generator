@@ -1,5 +1,6 @@
 import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
+import { Measurers } from "@/generators/measurers-generator";
 import type { PackedGraph } from "../types/PackedGraph";
 import {
   findAllCellsInRadius,
@@ -448,7 +449,7 @@ class Resampler {
     reGraph();
     Features.markupPack();
     Ice.generate();
-    createDefaultRuler();
+    Measurers.createDefaultRuler();
 
     this.restoreCellData(parentMap, inverse, scale);
     this.restoreRivers(riversData, projection, scale);

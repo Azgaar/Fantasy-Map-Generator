@@ -190,6 +190,11 @@
   },
   "#ruler": {
     "opacity": null,
+    "data-size": 20,
+    "font-size": 20,
+    "stroke-width": 2,
+    "stroke-dasharray": "10",
+    "stroke-linecap": null,
     "filter": null
   },
   "#roads": {
