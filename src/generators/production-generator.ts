@@ -1,4 +1,5 @@
 import { sum } from "d3";
+import { rn } from "@/utils";
 import { minmax } from "../utils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";

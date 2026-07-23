@@ -1,5 +1,11 @@
 import { select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawMarketsLayer } from "@/renderers/draw-markets";
+import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, getPointer, rn } from "../utils";
@@ -153,7 +159,7 @@ function marketOverviewAddLines() {
     <div style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
 
   applySorting(ensureEl("marketOverviewHeader"));
-  $("#marketOverview").dialog({ width: fitContent() });
+  $("#marketOverview").dialog({ width: "fit-content" });
 }
 
 function toggleRelocateMarket(): void {

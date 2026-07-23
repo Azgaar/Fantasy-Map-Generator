@@ -1,4 +1,5 @@
 import { driver } from "driver.js";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { ensureEl } from "@/utils/nodeUtils";
 import "driver.js/dist/driver.css";
 

@@ -1,5 +1,9 @@
 import { curveNatural, drag, line, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { showMainTip, tip } from "@/components/tooltips";
+import { unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
@@ -24,7 +28,7 @@ function open(tspan: SVGTSpanElement): void {
   $("#labelEditor").dialog({
     title: "Edit Label",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "center top+10", at: "bottom", of: text, collision: "fit" },
     close: closeLabelEditor
   });

@@ -23,11 +23,11 @@ if (typeof document === "undefined") {
   };
 }
 
-// Stub the tooltip globals (defined in classic ui/general.js) so the registry's
+// Stub the tooltip globals (registered by services/tooltips) so the registry's
 // lazy-load loading tip doesn't throw outside the browser
-if (typeof globalThis.tip === "undefined") {
-  (globalThis as Record<string, unknown>).tip = () => {};
+if (typeof window.tip === "undefined") {
+  window.tip = () => {};
 }
-if (typeof globalThis.clearMainTip === "undefined") {
-  (globalThis as Record<string, unknown>).clearMainTip = () => {};
+if (typeof window.clearMainTip === "undefined") {
+  window.clearMainTip = () => {};
 }

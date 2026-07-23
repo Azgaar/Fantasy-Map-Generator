@@ -1,6 +1,19 @@
 import { mean } from "d3";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rand, rn, rw } from "../utils";
+import {
+  capitalize,
+  convertTemperature,
+  gauss,
+  generateDate,
+  getAdjective,
+  getFriendlyHeight,
+  last,
+  P,
+  ra,
+  rand,
+  rn,
+  rw
+} from "../utils";
 
 declare global {
   var Markers: MarkersModule;
@@ -530,7 +543,7 @@ class MarkersModule {
     notes.push({
       id,
       name,
-      legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell])}.`
+      legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell], pack, grid)}.`
     });
   }
 
@@ -1115,7 +1128,7 @@ class MarkersModule {
     const culture = cells.c[cell].map(c => cells.culture[c]).find(c => c)!;
     const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Mountain`;
-    const height = getFriendlyHeight(cells.p[cell]);
+    const height = getFriendlyHeight(cells.p[cell], pack, grid);
     const legend = `A sacred mountain of ${religions[religion].name}. Height: ${height}.`;
     notes.push({ id, name, legend });
   }

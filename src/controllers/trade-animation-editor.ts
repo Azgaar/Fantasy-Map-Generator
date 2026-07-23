@@ -1,3 +1,4 @@
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();

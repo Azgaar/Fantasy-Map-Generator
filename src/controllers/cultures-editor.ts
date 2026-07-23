@@ -1,6 +1,15 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/generators/cultures-generator";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
   abbreviate,
   capitalize,
@@ -303,7 +312,7 @@ function culturesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting($culturesHeader);
-  $("#culturesEditor").dialog({ width: fitContent() });
+  $("#culturesEditor").dialog({ width: "fit-content" });
 }
 
 function getTypeOptions(type: string): string {
@@ -497,7 +506,7 @@ function changePopulation(this: HTMLElement): void {
   const update = () => {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
     if (Number.isNaN(totalNew)) return;
-    totalPop.innerHTML = l(totalNew);
+    totalPop.innerHTML = format(totalNew);
     totalPopPerc.innerHTML = String(rn((totalNew / total) * 100));
   };
 

@@ -1,5 +1,11 @@
 import { type D3DragEvent, drag, polygonArea, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { unselect } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
+import { drawBorders } from "@/renderers/draw-borders";
+import { getFeaturePath } from "@/renderers/draw-features";
+import { getArea, getAreaUnit } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
 function open(element: SVGElement): void {

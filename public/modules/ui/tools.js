@@ -988,7 +988,7 @@ function configMarkersGeneration() {
         const emoji = this.parentElement.querySelector(".emoji");
         const icon = image.getAttribute("src") || emoji.textContent;
 
-        selectIcon(icon, value => {
+        window.Controllers.IconSelector.open(icon, value => {
           const isExternal = value.startsWith("http") || value.startsWith("data:image");
           image.setAttribute("src", isExternal ? value : "");
           image.hidden = !isExternal;

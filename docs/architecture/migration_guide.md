@@ -8,19 +8,31 @@ runtime globals, into a typed module inside Vite's graph. See also [lazy_loading
 
 Pick the layer by responsibility, name the file `kebab-case.ts`:
 
-| Layer              | Holds                                |
-| ------------------ | ------------------------------------ |
-| `src/generators/`  | domain generators / data logic       |
-| `src/renderers/`   | code that draws SVG layers           |
-| `src/controllers/` | dialogs, panels, UI flows, overviews |
-| `src/components/`  | reusable web components              |
-| `src/services/`    | app-shell & platform/asset infra     |
-| `src/data/`        | static content / preferences         |
-| `src/utils/`       | pure, dependency-free helpers        |
+| Layer                     | Holds                                                   |
+| ------------------------- | ------------------------------------------------------- |
+| `src/generators/`         | domain generators / data logic                          |
+| `src/renderers/`          | code that draws SVG layers                              |
+| `src/renderers/overlays/` | transient feedback that removes itself (highlight, fog) |
+| `src/controllers/`        | map UI you open and close: editors, tools, overviews    |
+| `src/components/`         | web components + UI opened over the map that ignores it |
+| `src/components/dialog/`  | the shared dialog toolkit                               |
+| `src/services/`           | app-shell & platform infra, incl. preferences           |
+| `src/data/`               | static content / reference lists                        |
+| `src/utils/`              | pure helpers — no ambient state, ≥2 consumers           |
 
-Not everything is Model/View/Controller. If a file is **static content** (a constant
-list, a template table) it goes in `data/`, not `controllers/`. If it manages
-**browser/app lifecycle** (PWA install, auto-update, analytics, io) it goes in `services/`.
+Not everything is Model/View/Controller. Before reaching for `controllers/` or `utils/`, apply
+these three tests — a big classic module usually splits across four or five folders:
+
+- **Does the user open and close it, _and_ is it about the map?** Both yes → `controllers/`.
+  Always on screen → `components/`. Opened but not about the map (an About dialog, a
+  colour picker) → `components/`.
+- **Does it read `pack`/`grid`?** Then it is not a `service`, whatever else it is.
+- **Does it read an ambient global, or have only one consumer?** Then it is not a `util` —
+  put it in the module that uses it, or pass the state in as an argument.
+
+If a file is **static content** (a constant list, a template table) it goes in `data/`. If it
+manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it goes in
+`services/`. See [architecture.md](./architecture.md#project-structure) for the full rationale.
 
 ## TypeScript — avoid `any`
 
@@ -42,7 +54,12 @@ list, a template table) it goes in `data/`, not `controllers/`. If it manages
 A classic module reaches dozens of runtime globals. Resolve each by **origin**,
 and **never** use module-local `declare const` or `as any` to paper over one.
 
-1. **It lives in `src/` (migrated)** → **import it.** Utils
+1. **It lives in `src/` (migrated)** → **import it** — never call it through its `window.*`
+   global; that bridge exists for classic `public/` code, not for bundled modules. The one
+   exception is direction: imports may only point **down** the stack
+   (components/controllers/services → renderers → generators → utils). A generator or renderer
+   that needs `tip` keeps the bridge with a comment, because importing UI upward is the worse
+   bug. See [architecture.md](./architecture.md#imports-point-down-never-up). Utils
    (`src/utils`, e.g. `getPackPolygon`, `isLand`, `generateGrid`, `formatPrice`)
    and generators that self-register a global type (`Names`, `Cultures`, `States`,
    `COA`, …) are already typed; import the util, or use the global directly.
@@ -55,6 +72,12 @@ and **never** use module-local `declare const` or `as any` to paper over one.
    [`src/types/global.ts`](../../src/types/global.ts)** as `var X: …`, beside the
    existing ones. Do not redeclare a name `global.ts` (or a generator/util
    module) already types — duplicate `var` declarations are a compile error.
+
+   The reverse case — a function **you just migrated** that classic code still calls — goes in
+   the `interface Window` block instead, so bundled callers are forced to import it. Add the
+   entry only if a `public/**/*.js` file actually calls it; grep before you write it. If nothing
+   classic calls it, the module needs no `window.X = X` line at all.
+
 3. **It's a DOM element** (an `id`'d node the browser exposes as a global) →
    **don't declare it at all.** Use `ensureEl<HTMLInputElement>("brushSize")` (or
    `document.getElementById`). For an element used several times in a function —

@@ -1,6 +1,12 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { clicked, restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { drawFeatures } from "@/renderers/draw-features";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
   destroyDialogIfExists,
   ensureEl,

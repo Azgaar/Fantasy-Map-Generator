@@ -201,24 +201,22 @@ The same world state could theoretically support:
 
 The four-layer model above (state → generators → editors → renderers) is the _conceptual_
 core, but a real application also needs code that is none of those: persistence,
-app-shell lifecycle, static content, and shared helpers. The `src/` tree therefore has a
-few more folders than the model has layers. This is the **real, intended layout** — not
-an aspiration. Each top-level folder is named by **role**, so every file has an obvious
-home.
+app-shell lifecycle, static content, and shared helpers.
 
-| Folder             | Layer (model)      | Holds                                                              |
-| ------------------ | ------------------ | ------------------------------------------------------------------ |
-| `src/types/`       | State (shape)      | shared TypeScript interfaces / domain models                       |
-| `src/utils/`       | —                  | pure, dependency-free helpers                                      |
-| `src/generators/`  | Generators (Model) | procedural generators & domain logic (`Goods`, `Markets`, …)       |
-| `src/renderers/`   | View               | code that draws SVG / WebGL layers                                 |
-| `src/controllers/` | Editors / UI       | editors, tools, dialogs, panels, overviews                         |
-| `src/services/`    | —                  | app-shell & platform/asset infra (install, auto-update, fonts, io) |
-| `src/data/`        | —                  | static content / reference data (supporters, templates)            |
+| Folder             | Layer       | Holds                                                |
+| ------------------ | ----------- | ---------------------------------------------------- |
+| `src/generators/`  | Model       | procedural generators & domain logic                 |
+| `src/renderers/`   | View        | code that draws SVG / WebGL layers                   |
+| `src/controllers/` | Controller  | transient editors, tools, dialogs, panels, overviews |
+| `src/services/`    | —           | app-shell & platform infra                           |
+| `src/data/`        | —           | static content / reference data                      |
+| `src/components/`  | UI (shared) | reusable UI: web components, static UI elements      |
+| `src/utils/`       | —           | pure helpers: no ambient state, min 2 consumers      |
+| `src/types/`       | Shape       | shared TypeScript interfaces / domain models         |
 
 ## What a "controller" is
 
-`src/controllers/` is the **UI / interaction layer**, deliberately broader than the
+`src/controllers/` is the **UI / interaction layer** broader than the
 textbook MVC "controller." It holds three kinds of UI:
 
 - **Editors** — user-driven mutations of world data (`coastline-editor`,
@@ -228,15 +226,31 @@ textbook MVC "controller." It holds three kinds of UI:
   mutating it (`market-overview`, `charts-overview`, `production-chains`,
   `elevation-profile`).
 
-The unifying rule: _UI that wraps the map and either routes user interaction or presents
-map state in a dialog/panel._ A controller does **not** hold pure static data, app-shell
-services, or serialization — those have their own folders. (A 3D viewer such as
-`view-3d` is a controller that launches an alternate WebGL renderer; like any controller it
-exposes an object reached through the registry, while its configuration lives on the global
-`options.threeD` rather than inside the controller. Reusable UI building blocks that are not
-tied to map state — web components such as `fill-box` and `slider-input` — live in their own
-top-level `src/components/` folder, registered eagerly via `components/index.ts`; widgets like
-`hierarchy-tree` and `minimap` may move there if they generalize.)
+The unifying rule: _UI that is **opened and closed**, and that **mutates or presents map
+state**._ A controller does **not** hold pure static data, services, or serialization
+— those have their own folders.
+
+## What a "component" is
+
+`src/components/` holds UI that is **not owned by one editor**. Four kinds:
+
+- **Web components** — reusable custom elements with no map knowledge (`fill-box`,
+  `slider-input`).
+- **App-level UI** — dialogs and widgets that are opened over the map but say nothing about it:
+  the About dialog (`app-info`), the fill picker (`color-picker`). They have a controller's
+  lifecycle but not a controller's subject, so they live here and load with the shell.
+- **`dialog/` — the dialog toolkit.** What every editor dialog is assembled from and what acts
+  on dialogs as a set: `closeDialogs`, `confirmationDialog`, `fitContent`, header sorting, and
+  `refreshAllEditors`. These currently wrap jQuery UI; they are collected here so a single
+  self-contained `Dialog` component can replace them without touching the ~40 callers. The
+  toolkit operates on dialogs generically — it never knows what a particular editor does.
+
+Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they generalize.
+
+Why this distinction exists: persistent chrome reads world state, so it is not a service; it
+has no open/close, so it does not fit the controller contract. Filing it under `services/`
+(the mistake this section exists to prevent) breaks the one hard rule services have — no
+`pack`/`grid`.
 
 ## Cross-layer subsystems
 
@@ -270,29 +284,92 @@ shrinks as modules migrate: when a feature ports to `src/`, its dependency flips
 vendored global script to an npm import, and the vendored script is dropped once nothing
 classic needs it.
 
-## Legacy → target mapping
-
-As classic code migrates out of `public/`, it lands in the matching `src/` folder:
-
-| Legacy                                  | Target             |
-| --------------------------------------- | ------------------ |
-| `public/modules/ui/`                    | `src/controllers/` |
-| `public/modules/io/`                    | `src/services/io/` |
-| `public/config/`                        | `src/data/`        |
-| `public/modules/dynamic/` (auto-update) | `src/services/`    |
-| `public/libs/`                          | npm imports        |
-
 ## Where does my file go?
 
 - Mutates world state from user input → **editor** in `controllers/`
-- Presents map state read-only (dialog, chart, list) → **overview** in `controllers/`
+- Presents map state read-only in a dialog the user opens and closes → **overview** in `controllers/`
+- Presents map state but is _always_ on screen → **chrome** in `components/`
+- A dialog or widget that knows nothing about the map (About, pickers) → `components/`
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
+- Draws transient feedback that removes itself (highlight, brush circle, fog) → `renderers/overlays/`
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `services/io/`
-- Manages browser/app lifecycle or a platform asset (install, update, fonts) → `services/`
+- Manages browser/app lifecycle, a platform asset, or app preferences → `services/`
 - A constant list or template, no behavior → `data/`
-- A pure, reusable helper with no domain knowledge → `utils/`
+- A helper that reads no ambient state and has ≥2 consumers → `utils/`
 - A shared type / interface → `types/`
+
+## Imports point down, never up
+
+Bundled code **imports what it calls** — a migrated module must not reach a migrated function
+through its `window.*` global. The globals exist for classic `public/**/*.js`, not for `src/`.
+
+But an import is also a dependency, and dependencies only run **downhill**:
+
+```text
+components / controllers / services      ← may import anything below
+              ↑
+          renderers                       ← utils, types, data, generators
+              ↑
+          generators                      ← utils, types, data
+              ↑
+        utils / types / data              ← only each other
+```
+
+So `states-editor` imports `tip` from `components/tooltips`, but a **generator or a
+renderer that wants to show a tooltip may not** — that import would point up the stack. Those
+few call sites keep the `window` bridge with a comment saying why; the real fix is to move the
+message to the controller that owns the interaction, not to import across the layer boundary.
+`utils/registry.ts` is the standing example: it shows a loading tip through `window.tip`
+because utils must never depend on the UI.
+
+### The compiler enforces this
+
+The bridge at the bottom of a module (`window.tip = tip`) is for legacy callers only, and
+[`global.ts`](../../src/types/global.ts) declares those bridges as **`interface Window` members,
+never `var`**. That is deliberate: a `var` global is usable bare, an interface member is only
+reachable as `window.tip`. So a bundled module that forgets to import gets a compile error
+(`Cannot find name 'tip'`) instead of silently working through the global.
+
+Where a lower layer legitimately cannot import upward, it writes `window.tip(...)` explicitly.
+That is the entire list of exceptions, and it is greppable:
+
+```sh
+grep -rn 'window\.\w*(' src --include='*.ts' | grep -v 'window\.\w* ='
+```
+
+Everything it prints should be a generator, renderer, or util reaching UI — nothing else.
+
+**When the last classic caller of a function is gone, delete the bridge and its `global.ts`
+entry.** That is not cleanup for its own sake: every remaining entry is a to-do item naming a
+`public/**/*.js` file that still has to be migrated. Auditing the whole tree this way removed
+**84 bridges that nothing classic called** — `drawLegend`, `openPicker`, `highlightElement`,
+`moveCircle`, `getFileName`, `si`, `getHeight`, `isLand`, `convertTemperature`, the sorting
+helpers, and 74 more. Several of them (`getUsedFonts`, `drawRegiment`, `getPin`, `Resample`)
+existed _only_ as `window.X = …`, so the module had no real export at all; deleting the bridge
+is what forced them to become proper exports.
+
+Exactly two kinds of bridge legitimately survive without a classic caller, and both say so in a
+comment at the assignment:
+
+- **Upward calls.** Six generator→renderer bridges (`drawBurgIcon`, `drawBurgLabel`,
+  `redrawGlacier`, …). A generator that draws is the bug; the bridge just keeps it visible
+  instead of laundering it through an import that inverts the layers.
+- **Console debugging aids.** `drawPolygons`, `drawPoint`, `drawPath`, `drawCellsValue`,
+  `drawRouteConnections` — typed at the devtools prompt, so "no caller" is by design.
+
+Anything else without a classic caller is dead and should go.
+
+Two more tests worth applying literally, because both folders otherwise become junk drawers:
+
+- **`utils/`** — a helper qualifies only if it (a) reads **no ambient global** (`pack`, `grid`,
+  `options`, no `getElementById`) and (b) has **at least two consumers**. Take the state as an
+  argument (`getCellPopulation(cellId, pack)`) like `graphUtils` and `pathUtils` already do; the
+  `window.*` bridge binds the globals for classic callers. Domain knowledge is allowed, hidden
+  inputs are not. **A function used by exactly one module belongs in that module** — the cell
+  info formatters live in `cell-info.ts`, not in a shared `mapInfoUtils`.
+- **`services/`** — if it reads `pack` or `grid`, it is not a service. `grep -l 'pack\.' src/services`
+  should only ever match `io/`, which serializes state by definition.
 
 ---
 
@@ -336,6 +413,12 @@ A renderer is a pure projection of state into visuals.
 - **Isolate the rare stateful case.** An animation engine that owns frames or caches is the
   exception: encapsulate its runtime state and give it an explicit reset, so the rest of the
   renderer stays a plain function of state.
+- **Overlays are the other exception, and they live in `renderers/overlays/`.** A highlight
+  pulse, the brush circle, fogging — these are drawn from what the user is _doing_, not from
+  world state, so they are neither idempotent nor derivable. They are still view code (they
+  write SVG and return nothing), so they belong under `renderers/`, but quarantined in their
+  own folder and required to **clean themselves up**: an overlay ends by removing its own nodes.
+  A visual that is a projection of world state is a layer, not an overlay.
 - **Framework-free, direct injection.** Rendering is plain markup written straight into the
   DOM — assemble an HTML/SVG string and inject it in one write. No virtual DOM, no component
   runtime, no diffing layer: the renderer keeps full, granular control over exactly what is
@@ -383,7 +466,12 @@ Static content: lookup tables, templates, tuning constants, reference lists.
 
 - **No world state.** Services handle app-shell and platform concerns (install, fonts,
   lifecycle) and must never read or write `pack`/`grid`. A service that touches world data is
-  mis-filed — it is really a generator, editor, or io module.
+  mis-filed — it is really a generator, editor, io module, or (if it merely _presents_ state and
+  is always on screen) **chrome**.
+- **App preferences are a service.** The `localStorage` scope from
+  [Two scopes of configuration](#two-scopes-of-configuration) — UI prefs, locked generation
+  options, "don't ask again" flags — lives in `services/preferences.ts`. It is per-browser
+  platform state, never part of the `.map`. Map config is not a service; it is state.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
   through the `Services` registry (`Services.Save.saveMap(...)`).
@@ -406,8 +494,9 @@ two typed registries — `Controllers` (built in `src/controllers/index.ts`) and
 - **Same handle everywhere.** Migrated TS imports `{ Controllers }` / `{ Services }`; legacy
   `public/**/*.js` and inline handlers use the `window.Controllers` / `window.Services` globals.
 
-Generators and renderers are different: they are **eager** and self-register their own globals
-(`window.Markets`, `window.drawRoutes`) because classic code calls them directly. See
+Generators, renderers, and components are different: they are **eager** and self-register their
+own globals (`window.Markets`, `window.drawRoutes`, `window.tip`) because classic code calls them
+directly and, in chrome's case, because there is no moment at which they would be "opened". See
 [lazy_loading.md](./lazy_loading.md) for the full pattern and how to add a module.
 
 ---

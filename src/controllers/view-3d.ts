@@ -1,3 +1,4 @@
+import { tip } from "@/components/tooltips";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
 
@@ -139,7 +140,7 @@ function toggleOptions(): void {
   $("#options3d").dialog({
     title: "3D mode settings",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" },
     close: closeOptionsDialog
   });

@@ -1,4 +1,7 @@
 import { drag, select } from "d3";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { highlightEmblemElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getFileName, openURL } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
 // el is a State | Province | Burg; coa is the untyped Armoria structure — kept loose here as

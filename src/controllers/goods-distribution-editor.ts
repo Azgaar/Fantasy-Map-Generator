@@ -1,3 +1,4 @@
+import { getHeight, rn } from "@/utils";
 import { convertTemperature, ensureEl, list } from "../utils";
 
 type ParamType = "none" | "number" | "biomes" | "shore" | "featureType";

@@ -1,4 +1,5 @@
 import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime, select, timeFormat } from "d3";
+import { tip } from "@/components/tooltips";
 import { convertTemperature, rn, round } from "../utils";
 
 const MONTHS = [

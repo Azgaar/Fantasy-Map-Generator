@@ -1,5 +1,13 @@
 import { color, drag, select } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawMarketsLayer, toggleMarketsLayer } from "@/renderers/draw-markets";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
@@ -197,7 +205,7 @@ function marketsOverviewAddLines(): void {
   );
   applySorting(ensureEl("marketsOverviewHeader"));
 
-  $("#marketsOverview").dialog({ width: fitContent() });
+  $("#marketsOverview").dialog({ width: "fit-content" });
 }
 
 function enterMarketsManualAssignment(): void {
@@ -594,6 +602,7 @@ function regenerateMarkets() {
     confirm: "Regenerate",
     onConfirm: () => {
       const regenProduction = ensureEl<HTMLInputElement>("marketsRegenerateProductionToggle").checked;
+      // the generators themselves are still classic tools.js code, hence the bridge
       window.regenerateMarkets();
       if (regenProduction) window.regenerateProduction();
     }

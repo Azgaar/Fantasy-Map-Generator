@@ -373,3 +373,5 @@ const stateLabelsRenderer = (list?: number[]): void => {
 };
 
 window.drawStateLabels = stateLabelsRenderer;
+
+export { stateLabelsRenderer as drawStateLabels };

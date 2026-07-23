@@ -1,5 +1,14 @@
 import { drag, easeSinIn, select, transition } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
   abbreviate,
   debounce,
@@ -299,7 +308,7 @@ function religionsEditorAddLines(): void {
   }
 
   applySorting(ensureEl("religionsHeader"));
-  $("#religionsEditor").dialog({ width: fitContent() });
+  $("#religionsEditor").dialog({ width: "fit-content" });
 }
 
 function getTypeOptions(type: string): string {

@@ -1,3 +1,5 @@
+import type { PackedGraph } from "../types/PackedGraph";
+import { findClosestCell, findGridCell } from "./graphUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 
@@ -71,6 +73,31 @@ export function getHeight(h: number, abs = false): string {
   return `${rn(height * unitRatio)}${unit}`;
 }
 
+/** Format precipitation in millimeters */
+export function getPrecipitation(prec: number): string {
+  return `${prec * 100} mm`;
+}
+
+/** Get user-friendly precipitation value in a cell */
+export function getFriendlyPrecipitation(cellId: number, pack: PackedGraph, grid: any): string {
+  return getPrecipitation(grid.cells.prec[pack.cells.g[cellId]]);
+}
+
+/** Get user-friendly height value at a point */
+export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, grid: any): string {
+  const packH = pack.cells.h[findClosestCell(x, y, undefined, pack) as number];
+  const gridH = grid.cells.h[findGridCell(x, y, grid)];
+  return getHeight(packH < 20 ? gridH : packH);
+}
+
+/** Get [rural, urban] real-world population of a cell */
+export function getCellPopulation(cellId: number, pack: PackedGraph): [number, number] {
+  const rural = pack.cells.pop[cellId] * populationRate;
+  const burgId = pack.cells.burg[cellId];
+  const urban = burgId ? (pack.burgs[burgId].population || 0) * populationRate * urbanization : 0;
+  return [rural, urban];
+}
+
 /**
  * Format price value with currency symbol
  * @param value - The price value to format
@@ -131,12 +158,22 @@ export function getTemperatureLikeness(temperature: number): string | null {
   return meanTempCityMap[temperature] || null;
 }
 
-declare global {
-  interface Window {
-    convertTemperature: typeof convertTemperature;
-    si: typeof si;
-    getInteger: typeof getIntegerFromSI;
-    getHeight: typeof getHeight;
-    formatPrice: typeof formatPrice;
-  }
+/**
+ * Get the area unit as configured by the user
+ * @param squareMark - The mark appended to a linear unit to make it square
+ * @returns {string} - The area unit, e.g. "mi²"
+ */
+export function getAreaUnit(squareMark = "²"): string {
+  const areaUnit = ensureEl<HTMLSelectElement>("areaUnit").value;
+  if (areaUnit !== "square") return areaUnit;
+  return ensureEl<HTMLInputElement>("distanceUnitInput").value + squareMark;
+}
+
+/**
+ * Convert area from map units to real-world units
+ * @param rawArea - The area in map units
+ * @returns {number} - The area in real-world units
+ */
+export function getArea(rawArea: number): number {
+  return rawArea * distanceScale ** 2;
 }

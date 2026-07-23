@@ -1,4 +1,6 @@
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";

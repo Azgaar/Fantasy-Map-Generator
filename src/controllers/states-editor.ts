@@ -1,7 +1,19 @@
 import { color, drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { drawBorders } from "@/renderers/draw-borders";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawStateLabels } from "@/renderers/draw-state-labels";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { fog, unfog } from "@/renderers/overlays/fogging";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -332,7 +344,7 @@ function statesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting(ensureEl("statesHeader"));
-  $("#statesEditor").dialog({ width: fitContent() });
+  $("#statesEditor").dialog({ width: "fit-content" });
 }
 
 function getCultureOptions(culture: number): string {
@@ -1098,7 +1110,7 @@ function showStatesChart(): void {
 
   $("#alert").dialog({
     title: "States bubble chart",
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => {

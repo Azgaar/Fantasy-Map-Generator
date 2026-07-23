@@ -1,4 +1,7 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { destroyDialogIfExists, ensureEl, openURL, rn, unique } from "../utils";
 
 function open(): void {

@@ -32,10 +32,8 @@ test.describe("Temperature units", () => {
     });
   });
 
-  test("convertTemperature should respect the selected scale", async ({ page }) => {
-    const converted = await page.evaluate(() => (window as any).convertTemperature(20));
-    expect(converted).toBe("68°F");
-  });
+  // Pure conversion math is covered by the unit tests in src/utils/unitUtils.test.ts;
+  // the tests below verify the selected scale is respected end-to-end via the UI
 
   test("burg editor should show temperature in the selected scale", async ({ page }) => {
     await page.evaluate(async () => {

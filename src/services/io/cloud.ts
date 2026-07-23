@@ -7,6 +7,8 @@
 //   getLink(path): get a shareable link for a file
 //   initialize(): restore access tokens from storage if possible, else authenticate
 
+import { tip } from "@/components/tooltips";
+
 export interface CloudFile {
   name: string;
   updated: string;

@@ -139,11 +139,7 @@ declare global {
     P: typeof P;
     each: typeof each;
     gauss: typeof gauss;
-    Pint: typeof Pint;
-    ra: typeof ra;
     rw: typeof rw;
-    biased: typeof biased;
-    getNumberInRange: typeof getNumberInRange;
     generateSeed: typeof generateSeed;
   }
 }

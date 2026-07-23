@@ -67,7 +67,6 @@ export const distanceSquared = ([x1, y1]: [number, number], [x2, y2]: [number, n
 };
 declare global {
   interface Window {
-    rollups: typeof rollups;
     dist2: typeof distanceSquared;
   }
 }

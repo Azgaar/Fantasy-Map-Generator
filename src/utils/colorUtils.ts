@@ -74,9 +74,5 @@ export const getMixedColor = (colorToMix: string, mix = 0.2, bright = 0.3): stri
 declare global {
   interface Window {
     toHEX: typeof toHEX;
-    getColors: typeof getColors;
-    getRandomColor: typeof getRandomColor;
-    getMixedColor: typeof getMixedColor;
-    C_12: typeof C_12;
   }
 }

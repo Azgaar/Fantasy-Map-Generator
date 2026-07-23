@@ -1,6 +1,10 @@
 import { drag, select } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { clearMainTip } from "@/components/tooltips";
+import { restoreDefaultEvents, unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import { getPin } from "@/renderers/draw-markers";
 import { destroyDialogIfExists, ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
@@ -173,7 +177,7 @@ function changeMarkerType(this: HTMLInputElement): void {
 }
 
 function changeMarkerIcon(): void {
-  selectIcon(selectedMarker.icon, value => {
+  Controllers.IconSelector.open(selectedMarker.icon, value => {
     const isExternal = value.startsWith("http") || value.startsWith("data:image");
     ensureEl("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
 

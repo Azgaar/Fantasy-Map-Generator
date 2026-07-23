@@ -539,16 +539,9 @@ declare global {
     shouldRegenerateGrid: typeof shouldRegenerateGrid;
     generateGrid: typeof generateGrid;
     findCell: typeof findClosestCell;
-    findGridCell: typeof findGridCell;
-    findGridAll: typeof findGridAll;
     calculateVoronoi: typeof calculateVoronoi;
-    findAll: typeof findAllCellsInRadius;
     getPackPolygon: typeof getPackPolygon;
     getGridPolygon: typeof getGridPolygon;
-    poissonDiscSampler: typeof poissonDiscSampler;
-    isLand: typeof isLand;
-    isWater: typeof isWater;
-    findAllInQuadtree: typeof findAllInQuadtree;
     drawHeights: typeof drawHeights;
   }
 }

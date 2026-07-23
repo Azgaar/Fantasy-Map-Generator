@@ -13,6 +13,9 @@ import {
   scaleLinear,
   select
 } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features";
 import type { Province } from "../generators/provinces-generator";
@@ -493,8 +496,8 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         k + 1,
         x,
         y,
-        getLatitude(y, 2),
-        getLongitude(x, 2),
+        getLatitude(y, mapCoordinates, graphHeight, 2),
+        getLongitude(x, mapCoordinates, graphWidth, 2),
         cell,
         getHeight(h),
         h,

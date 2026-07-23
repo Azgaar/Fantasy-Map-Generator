@@ -1,3 +1,4 @@
+import { Resample } from "@/generators/resample";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
 let mouseIsDown = false;

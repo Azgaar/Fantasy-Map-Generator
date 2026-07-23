@@ -3,8 +3,6 @@ import type { Burg } from "../generators/burgs-generator";
 
 declare global {
   var drawBurgLabels: () => void;
-  var drawBurgLabel: (burg: Burg) => void;
-  var removeBurgLabel: (burgId: number) => void;
 }
 
 const burgLabelsRenderer = (): void => {
@@ -91,5 +89,11 @@ function createLabelGroups(): void {
 }
 
 window.drawBurgLabels = burgLabelsRenderer;
+
+export { drawBurgLabelRenderer as drawBurgLabel, removeBurgLabelRenderer as removeBurgLabel };
+
+// burgs-generator still draws labels directly; it cannot import upwards, so the bridge stays
 window.drawBurgLabel = drawBurgLabelRenderer;
 window.removeBurgLabel = removeBurgLabelRenderer;
+
+export { burgLabelsRenderer as drawBurgLabels };
