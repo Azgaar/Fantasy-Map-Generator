@@ -1,3 +1,5 @@
+import { VERSION } from "@/services/versioning";
+
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
 const typeMap = {
@@ -61,7 +63,8 @@ function getMinimalDataJson(): string {
     markets: pack.markets,
     deals: pack.deals,
     routes: pack.routes,
-    zones: pack.zones
+    zones: pack.zones,
+    measurers: pack.measurers
   };
   return JSON.stringify({ info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases });
 }
@@ -101,10 +104,6 @@ function getSettings() {
     temperatureScale: temperatureScale.value,
     populationRate,
     urbanization,
-    mapSize: mapSizeOutput.value,
-    latitude: latitudeOutput.value,
-    longitude: longitudeOutput.value,
-    prec: precOutput.value,
     options,
     mapName: mapName.value,
     hideLabels: hideLabels.checked,
@@ -184,7 +183,8 @@ function getPackCellsData() {
     markets: pack.markets,
     deals: pack.deals,
     routes: pack.routes,
-    zones: pack.zones
+    zones: pack.zones,
+    measurers: pack.measurers
   };
 }
 

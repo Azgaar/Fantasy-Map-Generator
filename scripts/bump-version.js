@@ -5,7 +5,7 @@
  * Bump the project version (patch / minor / major).
  *
  * Updates:
- *   - public/versioning.js   — VERSION constant
+ *   - src/services/versioning.ts — VERSION constant
  *   - package.json           — "version" field
  *   - package-lock.json      — top-level "version" and packages[""].version fields
  *   - src/index.html         — ?v= cache-busting hashes for changed public/*.js files
@@ -31,7 +31,7 @@ const {execSync} = require("child_process");
 const repoRoot = path.resolve(__dirname, "..");
 const packageJsonPath = path.join(repoRoot, "package.json");
 const packageLockJsonPath = path.join(repoRoot, "package-lock.json");
-const versioningPath = path.join(repoRoot, "public", "versioning.js");
+const versioningPath = path.join(repoRoot, "src", "services", "versioning.ts");
 const indexHtmlPath = path.join(repoRoot, "src", "index.html");
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ function writeFile(filePath, content) {
 function parseCurrentVersion() {
   const content = readFile(versioningPath);
   const match = content.match(/const VERSION = "(\d+\.\d+\.\d+)";/);
-  if (!match) throw new Error("Could not find VERSION constant in public/versioning.js");
+  if (!match) throw new Error("Could not find VERSION constant in src/services/versioning.ts");
   return match[1];
 }
 
@@ -124,12 +124,12 @@ function getChangedPublicJsFiles() {
 // File updaters
 // ---------------------------------------------------------------------------
 
-function updateVersioningJs(newVersion, dry) {
+function updateVersioningTs(newVersion, dry) {
   const original = readFile(versioningPath);
   const updated = original.replace(/const VERSION = "\d+\.\d+\.\d+";/, `const VERSION = "${newVersion}";`);
-  if (original === updated) throw new Error("Failed to update VERSION in public/versioning.js");
+  if (original === updated) throw new Error("Failed to update VERSION in src/services/versioning.ts");
   if (!dry) writeFile(versioningPath, updated);
-  console.log(`  public/versioning.js  →  ${newVersion}`);
+  console.log(`  src/services/versioning.ts  →  ${newVersion}`);
 }
 
 function updatePackageJson(newVersion, dry) {
@@ -311,7 +311,7 @@ async function main() {
   console.log(`\n[bump-version] ${bumpType}: ${currentVersion}  →  ${newVersion}\n`);
 
   const changedFiles = getChangedPublicJsFiles();
-  updateVersioningJs(newVersion, dry);
+  updateVersioningTs(newVersion, dry);
   updatePackageJson(newVersion, dry);
   updatePackageLockJson(newVersion, dry);
   updateIndexHtmlHashes(changedFiles, newVersion, dry);

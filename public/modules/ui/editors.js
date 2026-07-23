@@ -30,6 +30,7 @@ function clicked(event) {
   else if (parent.id === "ice") window.Controllers.IceEditor.open(el);
   else if (parent.id === "terrain") window.Controllers.ReliefEditor.open(el);
   else if (grand.id === "markers" || great.id === "markers") window.Controllers.MarkersEditor.open(undefined, el);
+  else if (grand.id === "ruler" || great.id === "ruler") window.Controllers.MeasurersEditor.open();
   else if (grand.id === "markets" && el.tagName !== "path")
     window.Controllers.MarketOverview.open(Number(parent.dataset.id));
   else if (grand.id === "goodsIcons" || parent.id === "goodsCells") window.Controllers.GoodsEditor.open();

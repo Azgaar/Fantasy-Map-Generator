@@ -192,6 +192,11 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
+  if (group === "ruler") {
+    if (findEl("measurersEditor")) return tip("Drag the measurer or its points to edit");
+    return tip("Click to open the Measurers Editor");
+  }
+
   if (group === "markets") {
     const marketEl = e.target.closest("[data-id]");
     if (marketEl) {
@@ -567,18 +572,10 @@ function unlock(id) {
   el.className = "icon-lock-open";
 }
 
-// check if option is locked
-function locked(id) {
-  const lockEl = document.getElementById("lock_" + id);
-  return lockEl.dataset.locked === "1";
-}
-
-// return key value stored in localStorage or null
 function stored(key) {
   return localStorage.getItem(key) || null;
 }
 
-// store key value in localStorage
 function store(key, value) {
   return localStorage.setItem(key, value);
 }

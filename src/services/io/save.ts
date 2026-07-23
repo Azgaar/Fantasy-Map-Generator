@@ -1,5 +1,6 @@
 // Save the whole .map project to storage, machine or cloud
 import { Services } from "@/services";
+import { VERSION } from "@/services/versioning";
 import { ensureEl, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
@@ -60,24 +61,24 @@ function prepareMapData(): string {
     "", // previously used for barPosY.value
     populationRate,
     urbanization,
-    mapSizeOutput.value,
-    latitudeOutput.value,
+    "", // previously used for mapSizeOutput.value, part of options now
+    "", // previously used for latitudeOutput.value, part of options now
     "", // previously used for temperatureEquatorOutput.value
     "", // previously used for tempNorthOutput.value
-    precOutput.value,
+    "", // previously used for precOutput.value, part of options now
     JSON.stringify(options),
     mapName.value,
     +hideLabels.checked,
     stylePreset.value,
     +rescaleLabels.checked,
     urbanDensity,
-    longitudeOutput.value,
+    "", // previously used for longitudeOutput.value, part of options now
     ensureEl<HTMLInputElement>("growthRate").value
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
-  const rulersString = rulers.toString();
+  const measurers = JSON.stringify(pack.measurers ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
   // save svg
@@ -167,7 +168,7 @@ function prepareMapData(): string {
     provinces,
     namesData,
     rivers,
-    rulersString,
+    "", // rulers are deprecated, use pack.measurers instead
     fonts,
     markers,
     cellRoutes,
@@ -179,7 +180,8 @@ function prepareMapData(): string {
     markets,
     deals,
     pack.cells.market,
-    customGoodIcons
+    customGoodIcons,
+    measurers
   ].join("\r\n");
   return mapData;
 }

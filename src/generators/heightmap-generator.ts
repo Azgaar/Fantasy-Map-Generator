@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
+import { heightmapTemplates } from "@/data/heightmap-templates";
 import { createTypedArray, ensureEl, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
 
 declare global {

@@ -308,7 +308,7 @@ function renderOptionsDialog(): void {
         <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
         <button
           data-tip="Configure world and map size and climate settings"
-          onclick="editWorld()"
+          onclick="window.Controllers.WorldConfigurator.open()"
           class="icon-globe"
         ></button>
         <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>

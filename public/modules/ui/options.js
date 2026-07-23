@@ -306,7 +306,7 @@ function restoreSeed(id) {
   ensureEl("mapHeightInput").value = height;
   ensureEl("templateInput").value = template;
 
-  if (locked("template")) unlock("template");
+  if (stored("template")) unlock("template");
 
   regeneratePrompt({ seed });
 }
@@ -569,6 +569,10 @@ function applyStoredOptions() {
   if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");
   if (stored("temperatureNorthPole")) options.temperatureNorthPole = +stored("temperatureNorthPole");
   if (stored("temperatureSouthPole")) options.temperatureSouthPole = +stored("temperatureSouthPole");
+  if (stored("mapSize")) options.mapSize = +stored("mapSize");
+  if (stored("latitude")) options.latitude = +stored("latitude");
+  if (stored("longitude")) options.longitude = +stored("longitude");
+  if (stored("prec")) options.prec = +stored("prec");
   if (stored("military")) options.military = JSON.parse(stored("military"));
 
   if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
@@ -585,6 +589,12 @@ function applyStoredOptions() {
   if (width) mapWidthInput.value = width;
   if (height) mapHeightInput.value = height;
 
+  // a zero-sized window (hidden or headless tab) or a stored 0 would produce a degenerate grid
+  if (!(+mapWidthInput.value > 0) || !(+mapHeightInput.value > 0)) {
+    mapWidthInput.value = window.innerWidth || 1280;
+    mapHeightInput.value = window.innerHeight || 800;
+  }
+
   const transparency = stored("transparency") || 5;
   const themeColor = stored("themeColor");
   changeDialogsTheme(themeColor, transparency);
@@ -598,29 +608,29 @@ function randomizeOptions() {
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
-  if (randomize || !locked("points")) changeCellsDensity(4); // reset to default, no need to randomize
-  if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
-  if (randomize || !locked("manors")) {
+  if (randomize || !stored("points")) changeCellsDensity(4); // reset to default, no need to randomize
+  if (randomize || !stored("template")) randomizeHeightmapTemplate();
+  if (randomize || !stored("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
+  if (randomize || !stored("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
+  if (randomize || !stored("manors")) {
     manorsInput.value = 1000;
     manorsOutput.value = "auto";
   }
-  if (randomize || !locked("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
-  if (randomize || !locked("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
-  if (randomize || !locked("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
-  if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
-  if (randomize || !locked("culturesSet")) randomizeCultureSet();
+  if (randomize || !stored("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
+  if (randomize || !stored("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
+  if (randomize || !stored("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
+  if (randomize || !stored("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  if (randomize || !stored("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
-  if (randomize || !locked("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
-  if (randomize || !locked("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
-  if (randomize || !locked("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
-  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
+  if (randomize || !stored("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
+  if (randomize || !stored("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
+  if (randomize || !stored("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
+  if (randomize || !stored("prec")) options.prec = gauss(100, 40, 5, 500);
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !stored("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";

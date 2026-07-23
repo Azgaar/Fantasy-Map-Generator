@@ -1,5 +1,7 @@
 import { select } from "d3";
+import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
+import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -268,21 +270,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ensureEl<HTMLInputElement>("urbanizationInput").value = settings[13];
         urbanization = +settings[13];
       }
-      if (settings[14]) {
-        const mapSize = String(minmax(+settings[14], 1, 100));
-        ensureEl<HTMLInputElement>("mapSizeInput").value = mapSize;
-        mapSizeOutput.value = mapSize;
-      }
-      if (settings[15]) {
-        const latitude = String(minmax(+settings[15], 0, 100));
-        ensureEl<HTMLInputElement>("latitudeInput").value = latitude;
-        latitudeOutput.value = latitude;
-      }
-      if (settings[18]) {
-        ensureEl<HTMLInputElement>("precInput").value = settings[18];
-        precOutput.value = settings[18];
-      }
       if (settings[19]) options = JSON.parse(settings[19]);
+      // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
+      if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
+      if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
+      if (settings[18]) options.prec = minmax(+settings[18], 0, 500);
+      options.mapSize ??= 100;
+      options.latitude ??= 50;
+      options.prec ??= 100;
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
@@ -294,11 +289,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ensureEl<HTMLInputElement>("urbanDensityInput").value = settings[24];
         urbanDensity = +settings[24];
       }
-      if (settings[25]) {
-        const longitude = String(minmax(+(settings[25] || 50), 0, 100));
-        ensureEl<HTMLInputElement>("longitudeInput").value = longitude;
-        longitudeOutput.value = longitude;
-      }
+      if (settings[25]) options.longitude = minmax(+settings[25], 0, 100);
+      options.longitude ??= 50;
       if (settings[26]) ensureEl<HTMLInputElement>("growthRate").value = settings[26];
     }
     ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode;
@@ -308,7 +300,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       select("#viewbox").attr("shape-rendering") || "geometricPrecision";
     if (data[2]) mapCoordinates = JSON.parse(data[2]);
     if (data[4]) notes = JSON.parse(data[4]);
-    if (data[33]) rulers.fromString(data[33]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
       usedFonts.forEach((usedFont: (typeof fonts)[number]) => {
@@ -449,6 +440,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       ? Uint16Array.from(data[27].split(","), Number)
       : new Uint16Array(pack.cells.i.length);
     // data[28] had deprecated cells.crossroad
+    // data[33] had deprecated rulers, now replaced by pack.measurers
     pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
     pack.ice = data[39] ? JSON.parse(data[39]) : [];
     pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
@@ -456,6 +448,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.measurers = data[46] ? JSON.parse(data[46]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -539,7 +532,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     {
       // dynamically import and run auto-update script
       const { resolveVersionConflicts } = await import("./auto-update");
-      resolveVersionConflicts(mapVersion!);
+      resolveVersionConflicts(mapVersion!, data);
     }
 
     // add custom heightmap color scheme if any
@@ -803,7 +796,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);
     // draw data layers (not kept in svg)
-    if (rulers && layerIsOn("toggleRulers")) rulers.draw();
+    if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
     if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
     focusOn(); // based on searchParams focus on point, cell or burg

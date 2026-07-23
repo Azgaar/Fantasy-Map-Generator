@@ -255,7 +255,7 @@ function drawLayers() {
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
-  if (layerIsOn("toggleRulers")) rulers.draw();
+  if (layerIsOn("toggleRulers")) drawMeasurers();
   // scale bar
   // vignette
 }
@@ -941,7 +941,7 @@ function toggleRulers(event) {
   if (!layerIsOn("toggleRulers")) {
     turnButtonOn("toggleRulers");
     if (event && isCtrlClick(event)) editStyle("ruler");
-    rulers.draw();
+    drawMeasurers();
     ruler.style("display", null);
   } else {
     if (event && isCtrlClick(event)) return editStyle("ruler");

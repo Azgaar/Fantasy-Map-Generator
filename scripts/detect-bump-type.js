@@ -6,7 +6,7 @@
  * GITHUB_TOKEN is enough when running inside GitHub Actions) to analyse
  * a PR diff and decide whether the release is a patch or minor bump.
  *
- * Versioning rules (from public/versioning.js):
+ * Versioning rules (from src/services/versioning.ts):
  *   MINOR — backward-compatible additions or changes that may require
  *            old .map files to be updated / migrated
  *   PATCH — backward-compatible bug fixes and small features that do
@@ -27,7 +27,7 @@ const path = require("path");
 // Config
 // ---------------------------------------------------------------------------
 
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-5.4-nano";
 const ENDPOINT_HOST = "models.inference.ai.azure.com";
 const ENDPOINT_PATH = "/chat/completions";
 // Keep the diff under ~20 000 chars to stay within the model's context window.

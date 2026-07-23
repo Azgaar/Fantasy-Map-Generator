@@ -160,6 +160,8 @@ function applyStyleWithUiRefresh(style) {
 
   drawScaleBar(scaleBar, scale);
   fitScaleBar(scaleBar, svgWidth, svgHeight);
+
+  if (layerIsOn("toggleRulers")) drawMeasurers();
 }
 
 function addStylePreset() {
@@ -239,7 +241,7 @@ function addStylePreset() {
       "#lake_island": ["opacity", "stroke", "stroke-width", "filter"],
       "#terrain": ["opacity", "set", "size", "density", "filter", "mask"],
       "#rivers": ["opacity", "filter", "fill"],
-      "#ruler": ["opacity", "filter"],
+      "#ruler": ["opacity", "data-size", "font-size", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],

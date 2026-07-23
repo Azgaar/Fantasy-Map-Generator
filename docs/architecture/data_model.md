@@ -328,6 +328,13 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 - `offset`: `[number, number]` - ice position offset in px, optional, only added for manually dragged ice elements
 - `points`: `number[][]` - ice element vertices positions
 
+## Measurers
+
+Measurers (rulers and other measuring tools drawn on top of the map) are stored in `pack.measurers: Measurer[]`. A default ruler across the largest landmass is created on map generation. Stored in .map file. Before v1.138.0 measurers were serialized as a standalone string (deprecated `rulers` data), auto-updated to `pack.measurers` on load. Object structure:
+
+- `type`: `Ruler | Opisometer | RouteOpisometer | Planimeter` - measurer type
+- `points`: `[number, number][]` - array of control points in `[x, y]` format
+
 ## Goods
 
 Goods (tradable resources and products) are stored in `pack.goods: Good[]`, where `i` equals the array index. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:

@@ -19,7 +19,6 @@ declare global {
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
   var options: Options;
 
-  var heightmapTemplates: any;
   var Goods: GoodsModule;
   var Production: ProductionModule;
   var Markets: MarketsModule;
@@ -39,19 +38,14 @@ declare global {
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
   var areaUnit: HTMLInputElement;
-  var mapSizeOutput: HTMLInputElement;
-  var latitudeOutput: HTMLInputElement;
-  var longitudeOutput: HTMLInputElement;
-  var precOutput: HTMLInputElement;
   var hideLabels: HTMLInputElement;
   var stylePreset: HTMLSelectElement;
   var rescaleLabels: HTMLInputElement;
   var temperatureScale: HTMLSelectElement;
 
-  // Global variables defined in main.js / versioning.js
+  // Global variables defined in main.js
   var viewX: number;
   var viewY: number;
-  var VERSION: string;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -139,29 +133,13 @@ declare global {
     set: (key: string, value: Blob) => Promise<void>;
   };
   var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
-  var rulers: any; // Rulers instance (classic)
-  var Rulers: any;
-  var Ruler: any;
-  var Opisometer: any;
-  var Planimeter: any;
-  var RouteOpisometer: any;
   var mapHistory: { created: number; [key: string]: unknown }[];
   var customPresetPrefix: string;
-
-  type VersionComparison = { isEqual: boolean; isNewer: boolean; isOlder: boolean };
-  var compareVersions: (
-    version1: string,
-    version2: string,
-    options?: { major?: boolean; minor?: boolean; patch?: boolean }
-  ) => VersionComparison;
-  var parseMapVersion: (version: string) => string;
-  var isValidVersion: (versionString: string) => boolean;
 
   var getCellPopulation: (i: number) => [number, number];
   var getCurrentPreset: () => void;
   var focusOn: () => void;
   var fitMapToScreen: () => void;
-  var cleanupData: () => void;
   var regenerateMap: (reason?: string) => void;
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
@@ -203,7 +181,7 @@ declare global {
     type?: "info" | "warn" | "error" | "success",
     timeout?: number
   ) => void;
-  var locked: (settingId: string) => boolean;
+  var stored: (key: string) => string | null;
   var unlock: (settingId: string) => void;
   var $: (selector: any) => any;
   var scale: number;
@@ -214,10 +192,16 @@ declare global {
   var calculateMapCoordinates: () => void;
   var calculateTemperatures: () => void;
   var reGraph: () => void;
-  var createDefaultRuler: () => void;
   var showStatistics: () => void;
   var closeDialogs: (except?: string) => void;
-  var editWorld: () => void;
+  var drawLayers: () => void;
+  var drawPrecipitation: () => void;
+  var drawCoordinates: () => void;
+  var drawRivers: () => void;
+  var applyGraphSize: () => void;
+  var cellsDensityMap: Record<number, number>;
+  var changeCellsDensity: (value: string) => void;
+  var getCellsDensityColor: (cells: number) => string;
   var showExportPane: () => void;
   var getHeight: (h: number) => string;
   var getLatitude: (y: number, precision?: number) => number;
@@ -298,7 +282,6 @@ declare global {
   var unselect: () => void;
   var selectIcon: (initial: string, callback: (value: string) => void) => void;
   var sortLines: (headerElement: HTMLElement) => void;
-  var generateWithAi: (defaultPrompt: string, onApply: (result: string) => void) => void;
   var tinymce:
     | {
         _setBaseUrl: (url: string) => void;
@@ -317,7 +300,6 @@ declare global {
 
   var aleaPRNG: (seed: string | number) => () => number;
   var heightmapColorSchemes: Record<string, unknown>;
-  var precreatedHeightmaps: Record<string, { name: string }>;
   var lock: (option: string) => void;
   var applyOption: (select: HTMLElement, value: string, text?: string) => void;
   var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
@@ -354,6 +336,10 @@ type Options = {
   temperatureEquator: number;
   temperatureNorthPole: number;
   temperatureSouthPole: number;
+  mapSize: number; // map size in % of the world
+  latitude: number; // North-South map shift in %, 50 is centered on equator
+  longitude: number; // West-East map shift in %, 50 is centered on prime meridian
+  prec: number; // precipitation modifier in %
   stateLabelsMode: string;
   showBurgPreview: boolean;
   burgs: {
