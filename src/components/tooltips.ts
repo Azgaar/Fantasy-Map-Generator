@@ -83,3 +83,4 @@ export const Tooltips = { tip, showMainTip, clearMainTip, showDataTip, showEleme
 window.tip = tip;
 window.clearMainTip = clearMainTip;
 window.showDataTip = showDataTip;
+window.showElementLockTip = showElementLockTip;

@@ -5,7 +5,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
-import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, ensureEl, findEl, getPointer, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 
@@ -403,7 +403,7 @@ function exitAddBurgMode(): void {
   restoreDefaultEvents();
   clearMainTip();
   ensureEl("addBurgTool").classList.remove("pressed");
-  ensureEl("addNewBurg").classList.remove("pressed");
+  findEl("addNewBurg")?.classList.remove("pressed");
 }
 
 function showBurgsChart(): void {
