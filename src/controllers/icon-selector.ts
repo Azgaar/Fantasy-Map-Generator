@@ -1,76 +1,10 @@
 // The Icon Selector: pick an emoji or add an external image to use as an icon
-
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
-import { ensureEl } from "@/utils";
+import { destroyDialogIfExists, ensureEl } from "@/utils";
 
-const DIALOG_ID = "iconSelector";
-
-const isExternal = (url: string) => url.startsWith("http") || url.startsWith("data:image");
-
-function render(): HTMLElement {
-  const existing = document.getElementById(DIALOG_ID);
-  if (existing) return existing;
-
-  const dialog = document.createElement("div");
-  dialog.id = DIALOG_ID;
-  dialog.className = "dialog";
-  dialog.style.display = "none";
-  dialog.innerHTML = /* html */ `<div>
-      <b>Unicode emojis</b>
-      <div style="font-style: italic">
-        <span>Select from the list or paste a Unicode character here: </span>
-        <input id="iconInput" style="width: 2.5em" />
-        <span>. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
-      </div>
-      <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
-    </div>
-    <div style="margin-top: 0.5em">
-      <b>External images</b>
-      <div style="font-style: italic">
-        <span>Paste link to the image here: </span>
-        <input id="imageInput" style="width: 20em" />
-        <button id="addImage" type="button">Add</button>
-      </div>
-      <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
-    </div>`;
-
-  ensureEl("dialogs").appendChild(dialog);
-  return dialog;
-}
-
-function renderIcons(table: HTMLTableElement): void {
-  let row: HTMLTableRowElement | null = null;
-  ICONS.forEach((icon, i) => {
-    if (i % ICONS_PER_ROW === 0) row = table.insertRow(Math.floor(i / ICONS_PER_ROW));
-    row?.insertCell(i % ICONS_PER_ROW).appendChild(document.createTextNode(icon));
-  });
-}
-
-/** Collect the external images already used as icons on this map */
-function getUsedImages(): Set<string> {
-  const images = new Set<string>();
-
-  for (const unit of options.military) if (isExternal(unit.icon)) images.add(unit.icon);
-  for (const state of pack.states) {
-    for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
-  }
-
-  return images;
-}
-
-function addImage(url: string, callback: (value: string) => void): void {
-  const image = document.createElement("div");
-  image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
-  image.onclick = () => callback(url);
-  ensureEl("addedIcons").appendChild(image);
-}
-
-/** Open the Icon Selector, calling back with every selected icon */
-export function open(initial: string, callback: (value: string) => void): void {
-  if (!callback) return;
-
-  const dialog = render();
+function open(initial: string, callback: (value: string) => void): void {
+  const dialog = renderDialog();
   const table = ensureEl<HTMLTableElement>("iconTable");
   const input = ensureEl<HTMLInputElement>("iconInput");
   input.value = initial;
@@ -113,6 +47,7 @@ export function open(initial: string, callback: (value: string) => void): void {
   $(dialog).dialog({
     width: "fit-content",
     title: "Select Icon",
+    close: () => destroyDialogIfExists("iconSelector"),
     buttons: {
       Apply: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -123,6 +58,64 @@ export function open(initial: string, callback: (value: string) => void): void {
       }
     }
   });
+}
+
+function renderDialog(): HTMLElement {
+  destroyDialogIfExists("iconSelector");
+
+  const dialog = document.createElement("div");
+  dialog.id = "iconSelector";
+  dialog.className = "dialog";
+  dialog.style.display = "none";
+  dialog.innerHTML = /* html */ `<div>
+      <b>Unicode emojis</b>
+      <div style="font-style: italic">
+        <span>Select from the list or paste a Unicode character here: </span>
+        <input id="iconInput" style="width: 2.5em" />
+        <span>. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
+      </div>
+      <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
+    </div>
+    <div style="margin-top: 0.5em">
+      <b>External images</b>
+      <div style="font-style: italic">
+        <span>Paste link to the image here: </span>
+        <input id="imageInput" style="width: 20em" />
+        <button id="addImage" type="button">Add</button>
+      </div>
+      <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
+    </div>`;
+
+  ensureEl("dialogs").appendChild(dialog);
+  return dialog;
+}
+
+function renderIcons(table: HTMLTableElement): void {
+  let row: HTMLTableRowElement | null = null;
+  ICONS.forEach((icon, i) => {
+    if (i % ICONS_PER_ROW === 0) row = table.insertRow(Math.floor(i / ICONS_PER_ROW));
+    row?.insertCell(i % ICONS_PER_ROW).appendChild(document.createTextNode(icon));
+  });
+}
+
+/** Collect the external images already used as icons on this map */
+function getUsedImages(): Set<string> {
+  const isExternal = (url: string) => url.startsWith("http") || url.startsWith("data:image");
+  const images = new Set<string>();
+
+  for (const unit of options.military) if (isExternal(unit.icon)) images.add(unit.icon);
+  for (const state of pack.states) {
+    for (const regiment of state?.military || []) if (isExternal(regiment.icon)) images.add(regiment.icon);
+  }
+
+  return images;
+}
+
+function addImage(url: string, callback: (value: string) => void): void {
+  const image = document.createElement("div");
+  image.style.cssText = `width: 2.2em; height: 2.2em; background-size: cover; background-image: url(${url})`;
+  image.onclick = () => callback(url);
+  ensureEl("addedIcons").appendChild(image);
 }
 
 export const IconSelector = { open };
