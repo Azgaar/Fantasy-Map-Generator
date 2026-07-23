@@ -1,3 +1,5 @@
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let activeGoodId = -1;
@@ -90,7 +92,7 @@ function addLines(): void {
   body.innerHTML = lines;
   updateFooter(rn(totalStock, 2), rn(priceSum / pack.markets.length, 2));
   applySorting(ensureEl("marketsGoodCompareHeader"));
-  $("#marketsGoodCompare").dialog({ width: fitContent() });
+  $("#marketsGoodCompare").dialog({ width: "fit-content" });
 }
 
 function updateFooter(totalStock: number, avgPrice: number): void {

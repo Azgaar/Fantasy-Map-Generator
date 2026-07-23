@@ -1,6 +1,11 @@
 import { mean, select } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
 function open(): void {
@@ -14,7 +19,7 @@ function open(): void {
   $("#routesOverview").dialog({
     title: "Routes Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close: closeRoutesOverview
   });

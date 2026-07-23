@@ -1,4 +1,9 @@
 import { mean, select, sum } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { tip } from "@/components/tooltips";
+import { drawMarker } from "@/renderers/draw-markers";
+import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getAdjective, last, list, minmax, P, Pint, rand, rn, wiki } from "../utils";
@@ -68,7 +73,7 @@ function open(attacker: Regiment, defender: Regiment): void {
   $("#battleScreen").dialog({
     title: battle.name,
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "center", at: "center", of: "#map" },
     close: cancelResults
   });
@@ -610,7 +615,7 @@ function addSide(): void {
 
   $("#regimentSelectorScreen").dialog({
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     title: "Add regiment to the battle",
     position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
     close: addSideClosed,

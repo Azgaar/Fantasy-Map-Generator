@@ -1,4 +1,8 @@
 import { drag, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { clicked, unselect } from "@/components/viewbox-events";
+import { redrawIceberg } from "@/renderers/draw-ice";
 import { destroyDialogIfExists, ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
 
 function open(element: SVGElement): void {

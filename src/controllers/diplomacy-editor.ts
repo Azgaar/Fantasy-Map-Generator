@@ -1,4 +1,9 @@
 import { color as d3Color, interpolateString, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
 interface Relation {
@@ -72,7 +77,7 @@ function open(): void {
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeDiplomacyEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -332,7 +337,7 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
   `;
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: "fit-content",
     title: `Change relations`,
     buttons: {
       Apply: function (this: HTMLElement) {

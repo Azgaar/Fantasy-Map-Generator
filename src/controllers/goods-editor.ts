@@ -1,5 +1,10 @@
 import { select } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
@@ -203,7 +208,7 @@ function goodsEditorAddLines() {
   updateDisplayAllCheckbox();
   applySorting(ensureEl("goodsHeader")!);
   applyTagVisibilityFilter();
-  $("#goodsEditor").dialog({ width: fitContent() });
+  $("#goodsEditor").dialog({ width: "fit-content" });
 }
 
 function openProducersDialog(goodId: number) {

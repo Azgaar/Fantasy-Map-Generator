@@ -518,9 +518,6 @@ export function projectToNearestEdge(point: Point, width: number, height: number
 declare global {
   interface Window {
     getIsolines: typeof getIsolines;
-    getPolesOfInaccessibility: typeof getPolesOfInaccessibility;
-    connectVertices: typeof connectVertices;
-    findPath: typeof findPath;
     getVertexPath: typeof getVertexPath;
   }
 }

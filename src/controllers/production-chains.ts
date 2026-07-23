@@ -1,4 +1,5 @@
 import { type Selection, select, zoom, zoomIdentity } from "d3";
+import { tip } from "@/components/tooltips";
 import type { Good } from "../generators/goods-generator";
 import { ensureEl } from "../utils";
 import { C_12 } from "../utils/colorUtils";

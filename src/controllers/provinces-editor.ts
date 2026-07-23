@@ -9,8 +9,19 @@ import {
   transition,
   treemap
 } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
+import { drawBorders } from "@/renderers/draw-borders";
+import { drawStateLabels } from "@/renderers/draw-state-labels";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { fog, unfog } from "@/renderers/overlays/fogging";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -45,7 +56,7 @@ function open(): void {
   $("#provincesEditor").dialog({
     title: "Provinces Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeProvincesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -328,7 +339,7 @@ function provincesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting(ensureEl("provincesHeader"));
-  $("#provincesEditor").dialog({ width: fitContent() });
+  $("#provincesEditor").dialog({ width: "fit-content" });
 }
 
 function getCapitalOptions(burgs: number[], capital: number): string {
@@ -1032,7 +1043,7 @@ function showChart(): void {
 
   $("#alert").dialog({
     title: "Provinces chart",
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => {
@@ -1181,7 +1192,7 @@ function dragBrush(this: SVGElement, event: any): void {
     const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])!];
+    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
     const selection = found.filter(i => isLand(i, pack));
     if (selection) changeForSelection(selection);
   });

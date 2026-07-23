@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
-import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
 import type { ProductionRecord } from "./production-generator";
@@ -708,7 +708,7 @@ class BurgModule {
     const { cells } = pack;
 
     const burgId = pack.burgs.length;
-    const cellId = window.findCell(x, y, undefined, pack);
+    const cellId = findClosestCell(x, y, undefined, pack);
     const culture = cells.culture[cellId as number];
     const name = Names.getCulture(culture);
     const state = cells.state[cellId as number];
@@ -743,8 +743,8 @@ class BurgModule {
     const newRoute = Routes.connect(cellId as number);
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
-    drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    window.drawBurgIcon(burg);
+    window.drawBurgLabel(burg);
 
     return burgId;
   }
@@ -758,13 +758,13 @@ class BurgModule {
       this.defineGroup(burg, populations);
     }
 
-    drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    window.drawBurgIcon(burg);
+    window.drawBurgLabel(burg);
   }
 
   remove(burgId: number) {
     const burg = pack.burgs[burgId];
-    if (!burg) return tip(`Burg ${burgId} not found`, false, "error");
+    if (!burg) return window.tip(`Burg ${burgId} not found`, false, "error");
 
     pack.cells.burg[burg.cell] = 0;
     burg.removed = true;
@@ -778,8 +778,8 @@ class BurgModule {
       delete burg.coa;
     }
 
-    removeBurgIcon(burg.i!);
-    removeBurgLabel(burg.i!);
+    window.removeBurgIcon(burg.i!);
+    window.removeBurgLabel(burg.i!);
   }
 }
 

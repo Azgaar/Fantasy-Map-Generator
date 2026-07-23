@@ -1,5 +1,11 @@
 import { select, sum } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader, sortLines } from "@/components/dialog/sorting";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { clicked } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawRegiment } from "@/renderers/draw-military";
+import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
@@ -16,7 +22,7 @@ function open(state = -1): void {
   $("#regimentsOverview").dialog({
     title: "Regiments Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeRegimentsOverview,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -304,13 +310,13 @@ function downloadRegimentsData(): void {
 
       data += `${r.x},`;
       data += `${r.y},`;
-      data += `${getLatitude(r.y, 2)},`;
-      data += `${getLongitude(r.x, 2)},`;
+      data += `${getLatitude(r.y, mapCoordinates, graphHeight, 2)},`;
+      data += `${getLongitude(r.x, mapCoordinates, graphWidth, 2)},`;
 
       data += `${r.bx},`;
       data += `${r.by},`;
-      data += `${getLatitude(r.by, 2)},`;
-      data += `${getLongitude(r.bx, 2)}\n`;
+      data += `${getLatitude(r.by, mapCoordinates, graphHeight, 2)},`;
+      data += `${getLongitude(r.bx, mapCoordinates, graphWidth, 2)}\n`;
     }
   }
 

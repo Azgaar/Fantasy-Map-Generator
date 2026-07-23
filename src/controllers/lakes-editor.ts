@@ -1,6 +1,12 @@
 import { drag, mean, min, polygonArea, polygonLength, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
+import { drawBorders } from "@/renderers/draw-borders";
+import { getFeaturePath } from "@/renderers/draw-features";
+import { getArea, getAreaUnit, speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 

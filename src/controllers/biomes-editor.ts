@@ -1,4 +1,12 @@
 import { drag, easeSinIn, select, sum, transition } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, rn, si } from "../utils";
 
 function open(): void {
@@ -219,7 +227,7 @@ function biomesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting(ensureEl("biomesHeader"));
-  $("#biomesEditor").dialog({ width: fitContent() });
+  $("#biomesEditor").dialog({ width: "fit-content" });
 }
 
 function biomeHighlightOn(event: Event): void {
@@ -372,7 +380,7 @@ function addCustomBiome(): void {
   const body = ensureEl("biomesBody");
   body.insertAdjacentHTML("beforeend", line);
   ensureEl("biomesFooterBiomes").innerHTML = String(body.querySelectorAll(":scope > div").length);
-  $("#biomesEditor").dialog({ width: fitContent() });
+  $("#biomesEditor").dialog({ width: "fit-content" });
 }
 
 function removeCustomBiome(el: HTMLElement): void {
@@ -465,7 +473,7 @@ function dragBiomeBrush(this: SVGElement, event: any): void {
     const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])!];
+    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
     const selection = found.filter(i => isLand(i, pack));
     if (selection) changeBiomeForSelection(selection);
   });

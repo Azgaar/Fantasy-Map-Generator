@@ -68,7 +68,6 @@ declare global {
   interface Window {
     last: typeof last;
     unique: typeof unique;
-    getTypedArray: typeof getTypedArray;
     createTypedArray: typeof createTypedArray;
     TYPED_ARRAY_MAX: typeof TYPED_ARRAY_MAX;
   }

@@ -1,4 +1,5 @@
 import { color, curveBasisClosed, line, select } from "d3";
+import { isCtrlClick } from "@/utils";
 import { rn } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
 
@@ -108,12 +109,8 @@ declare global {
   interface Window {
     toggleMarketsLayer: typeof toggleMarketsLayer;
     drawMarketsLayer: typeof drawMarketsLayer;
-    highlightMarketOn: typeof highlightMarketOn;
-    highlightMarketOff: typeof highlightMarketOff;
   }
 }
 
 window.toggleMarketsLayer = toggleMarketsLayer;
 window.drawMarketsLayer = drawMarketsLayer;
-window.highlightMarketOn = highlightMarketOn;
-window.highlightMarketOff = highlightMarketOff;

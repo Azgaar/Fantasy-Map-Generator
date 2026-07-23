@@ -100,7 +100,7 @@ class IceModule {
     const id = this.getNextId();
     const ice: Iceberg = { i: id, points, type: "iceberg", cellId, size };
     pack.ice.push(ice);
-    redrawIceberg(id);
+    window.redrawIceberg(id);
   }
 
   removeIce(id: number) {
@@ -109,9 +109,9 @@ class IceModule {
       const index = pack.ice.indexOf(ice);
       pack.ice.splice(index, 1);
       if (ice.type === "glacier") {
-        redrawGlacier(id);
+        window.redrawGlacier(id);
       } else {
-        redrawIceberg(id);
+        window.redrawIceberg(id);
       }
     }
   }

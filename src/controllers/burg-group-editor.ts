@@ -1,3 +1,7 @@
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { destroyDialogIfExists, ensureEl, findEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -180,7 +184,7 @@ function selectLimitation(
       </table>`;
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: "fit-content",
     title: "Limit group",
     buttons: {
       Invert: () => {
@@ -259,7 +263,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
       </form>`;
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: "fit-content",
     title: "Limit group by features",
     buttons: {
       Apply: function (this: HTMLElement) {

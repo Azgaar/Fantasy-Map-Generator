@@ -3,8 +3,6 @@ import type { Ice } from "@/generators/ice-generator";
 
 declare global {
   var drawIce: () => void;
-  var redrawIceberg: (id: number) => void;
-  var redrawGlacier: (id: number) => void;
 }
 
 const iceRenderer = (): void => {
@@ -70,5 +68,11 @@ function getIcebergHtml(iceberg: Ice): string {
 }
 
 window.drawIce = iceRenderer;
-window.redrawIceberg = redrawIcebergRenderer;
+
+export { redrawGlacierRenderer as redrawGlacier, redrawIcebergRenderer as redrawIceberg };
+
+// ice-generator still redraws directly; it cannot import upwards, so the bridge stays
 window.redrawGlacier = redrawGlacierRenderer;
+window.redrawIceberg = redrawIcebergRenderer;
+
+export { iceRenderer as drawIce };

@@ -165,3 +165,5 @@ const bordersRenderer = () => {
 };
 
 window.drawBorders = bordersRenderer;
+
+export { bordersRenderer as drawBorders };

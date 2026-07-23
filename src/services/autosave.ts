@@ -1,4 +1,6 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
+
+import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { ensureEl, ra } from "@/utils";
 

@@ -1,10 +1,8 @@
 import { select } from "d3";
+import { tip } from "@/components/tooltips";
 import { ensureEl } from "../utils";
 
 declare global {
-  var declareFont: (font: FontDefinition) => void;
-  var getUsedFonts: (svg: SVGSVGElement) => FontDefinition[];
-  var loadFontsAsDataURI: (fonts: FontDefinition[]) => Promise<FontDefinition[]>;
   var addGoogleFont: (family: string) => Promise<void>;
   var addLocalFont: (family: string) => void;
   var addWebFont: (family: string, src: string) => void;
@@ -269,14 +267,15 @@ window.fonts = [
   }
 ];
 
-window.declareFont = (font: FontDefinition) => {
+/** Register a font so the app can use and export it */
+export function declareFont(font: FontDefinition): void {
   const { family, src, ...rest } = font;
   addFontOption(family);
 
   if (!src) return;
   const fontFace = new FontFace(family, src, { ...rest, display: "block" });
   document.fonts.add(fontFace);
-};
+}
 
 declareDefaultFonts(); // execute once on load
 
@@ -330,7 +329,8 @@ function readBlobAsDataURL(blob: Blob) {
   });
 }
 
-window.loadFontsAsDataURI = async (fonts: FontDefinition[]) => {
+/** Inline the fonts as data URIs so an exported SVG renders without the network */
+export async function loadFontsAsDataURI(fonts: FontDefinition[]): Promise<FontDefinition[]> {
   const promises = fonts.map(async font => {
     const url = font.src?.match(/url\(['"]?(.+?)['"]?\)/)?.[1];
     if (!url) return font;
@@ -342,9 +342,10 @@ window.loadFontsAsDataURI = async (fonts: FontDefinition[]) => {
   });
 
   return await Promise.all(promises);
-};
+}
 
-window.getUsedFonts = (svg: SVGSVGElement) => {
+/** Collect the fonts actually referenced by the map's SVG */
+export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
   const usedFontFamilies = new Set();
 
   const labelGroups = svg.querySelectorAll("#labels g");
@@ -362,7 +363,7 @@ window.getUsedFonts = (svg: SVGSVGElement) => {
 
   const usedFonts = fonts.filter(font => usedFontFamilies.has(font.family));
   return usedFonts;
-};
+}
 
 window.addGoogleFont = async (family: string) => {
   const fontRanges = await fetchGoogleFont(family);

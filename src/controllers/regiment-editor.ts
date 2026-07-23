@@ -1,5 +1,10 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { clicked, restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
+import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, destroyDialogIfExists, ensureEl, findEl, getPointer, last, rn } from "../utils";
 
@@ -227,7 +232,7 @@ function changeEmblem(): void {
   const regiment = getRegiment();
   if (!regiment || !selectedRegiment) return;
 
-  selectIcon(regiment.icon ?? "", value => {
+  Controllers.IconSelector.open(regiment.icon ?? "", value => {
     regiment.icon = value;
     const isExternal = value.startsWith("http") || value.startsWith("data:image");
     ensureEl("regimentEmblem").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;

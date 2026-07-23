@@ -1,5 +1,13 @@
 import { drag, select, sum } from "d3";
+import { openPicker } from "@/components/color-picker";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import type { Zone } from "@/generators/zones-generator";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { fog, unfog } from "@/renderers/overlays/fogging";
+import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
 
 interface ZoneCellDatum {
@@ -225,7 +233,7 @@ function zonesEditorAddLines(): void {
     body.dataset.type = "absolute";
     togglePercentageMode();
   }
-  $("#zonesEditor").dialog({ width: fitContent() });
+  $("#zonesEditor").dialog({ width: "fit-content" });
 }
 
 function zoneHighlightOn(this: HTMLElement): void {
@@ -322,7 +330,7 @@ function dragZoneBrush(this: SVGElement, event: any): void {
     const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, radius);
 
-    let selection = radius > 5 ? findAll(x, y, radius) : [findCell(x, y)!];
+    let selection = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)!];
     if (landOnly) selection = selection.filter(i => pack.cells.h[i] >= 20);
     if (!selection.length) return;
 

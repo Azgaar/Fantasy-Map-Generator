@@ -1,4 +1,5 @@
 import { createRegistry } from "@/utils/registry";
+import "./app-shell";
 import "./autosave";
 import "./fonts";
 import "./versioning";

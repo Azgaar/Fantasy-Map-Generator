@@ -1,3 +1,4 @@
+import { stored, unlock } from "@/utils/preferences";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
 declare global {
@@ -94,7 +95,7 @@ class NamesGenerator {
 
     const data = this.chains[base];
     if (!data || data[""] === undefined) {
-      tip(`Namesbase ${base} is incorrect. Please check in namesbase editor`, false, "error");
+      window.tip(`Namesbase ${base} is incorrect. Please check in namesbase editor`, false, "error");
       ERROR && console.error(`Namebase ${base} is incorrect!`);
       return "ERROR";
     }
@@ -283,7 +284,7 @@ class NamesGenerator {
     if (force && stored("mapName")) unlock("mapName");
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!nameBases[base]) {
-      tip("Namebase is not found", false, "error");
+      window.tip("Namebase is not found", false, "error");
       return "";
     }
     const min = nameBases[base].min - 1;

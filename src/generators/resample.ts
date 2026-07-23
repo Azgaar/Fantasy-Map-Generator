@@ -14,9 +14,7 @@ import {
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
-declare global {
-  var Resample: Resampler;
-}
+declare global {}
 
 interface ResamplerProcessOptions {
   projection: (x: number, y: number) => [number, number];
@@ -468,4 +466,4 @@ class Resampler {
   }
 }
 
-window.Resample = new Resampler();
+export const Resample = new Resampler();

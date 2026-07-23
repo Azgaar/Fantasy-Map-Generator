@@ -92,26 +92,21 @@ test.describe("Zone Export", () => {
     });
   }
 
-  // Helper function to export zones to GeoJSON without file download
-  // This calls the production code from src/io/export.ts
+  // Helper function to export zones to GeoJSON, capturing the downloaded file
+  // This calls the production code from src/services/io/export.ts
   async function exportZonesToGeoJson(page: any): Promise<any> {
-    return await page.evaluate(async () => {
-      // Mock downloadFile to capture the JSON instead of downloading
-      const originalDownloadFile = (window as any).downloadFile;
-      let capturedJson: any = null;
+    const downloadPromise = page.waitForEvent("download");
 
-      (window as any).downloadFile = (data: string) => {
-        capturedJson = JSON.parse(data);
-      };
-
-      // Call the production code (loaded on demand via the service registry)
+    // Call the production code (loaded on demand via the service registry)
+    await page.evaluate(async () => {
       await (window as any).Services.ExportMap.saveGeoJsonZones();
-
-      // Restore original downloadFile
-      (window as any).downloadFile = originalDownloadFile;
-
-      return capturedJson;
     });
+
+    const download = await downloadPromise;
+    const stream = await download.createReadStream();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(chunk as Buffer);
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
   }
 
   test("should export zone with valid GeoJSON root structure", async ({ page }) => {

@@ -136,3 +136,5 @@ const temperatureRenderer = (): void => {
 };
 
 window.drawTemperature = temperatureRenderer;
+
+export { temperatureRenderer as drawTemperature };

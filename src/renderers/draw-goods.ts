@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { isCtrlClick } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";

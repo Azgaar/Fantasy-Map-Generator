@@ -1,5 +1,10 @@
 import { pack as packLayout, select, stratify } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { restoreDefaultEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
@@ -575,7 +580,7 @@ function showBurgsChart(): void {
 
   $("#alert").dialog({
     title: "Burgs bubble chart",
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => (alertMessage.innerHTML = "")
@@ -602,8 +607,8 @@ function downloadBurgsData(): void {
     // add geography data
     data += `${b.x},`;
     data += `${b.y},`;
-    data += `${getLatitude(b.y, 2)},`;
-    data += `${getLongitude(b.x, 2)},`;
+    data += `${getLatitude(b.y, mapCoordinates, graphHeight, 2)},`;
+    data += `${getLongitude(b.x, mapCoordinates, graphWidth, 2)},`;
     data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
     const temperature = grid.cells.temp[pack.cells.g[b.cell]];
     data += `${convertTemperature(temperature)},`;

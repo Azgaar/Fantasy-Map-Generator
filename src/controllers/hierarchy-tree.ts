@@ -1,5 +1,8 @@
 import type { D3DragEvent, D3ZoomEvent } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { capitalize } from "@/utils";
 import { ensureEl, minmax } from "../utils";
 
 type HierarchyElement = {

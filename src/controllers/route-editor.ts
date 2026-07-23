@@ -1,6 +1,10 @@
 import { drag, select } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
 function open(id: string): void {
@@ -308,7 +312,7 @@ function openJoinRoutesDialog(): void {
 
     $("#alert").dialog({
       title: "Join routes",
-      width: fitContent(),
+      width: "fit-content",
       position: { my: "left top", at: "left+10 top+150", of: "#map" },
       buttons: {
         Cancel: () => {
