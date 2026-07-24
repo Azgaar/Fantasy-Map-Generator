@@ -1,11 +1,14 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { clicked, restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents, clicked } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { drawFeatures } from "@/renderers/draw-features";
+import { drawGoods } from "@/renderers/draw-goods";
+import { drawMarkets } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
   destroyDialogIfExists,
@@ -453,7 +456,7 @@ function finalizeHeightmap(): void {
   ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
   ensureEl("exitCustomization").style.display = "none"; // hide finalize button
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   closeDialogs();
   resetZoom();
@@ -761,7 +764,11 @@ function restoreRiskedData(): void {
       const centerBurg = pack.burgs[market.centerBurgId];
       return Boolean(centerBurg && !centerBurg.removed);
     });
-    regenerateEconomy();
+    Production.regenerateEconomy();
+    if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+    if (layerIsOn("toggleGoods")) drawGoods();
+    if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+    refreshEditors();
   } else {
     Goods.generate();
     Markets.generate();

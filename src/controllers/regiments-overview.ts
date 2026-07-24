@@ -324,4 +324,4 @@ function downloadRegimentsData(): void {
   downloadFile(data, name);
 }
 
-export const RegimentsOverview = { open, refresh: refreshRegimentsOverview };
+export const RegimentsOverview = { open };

@@ -1341,6 +1341,21 @@ class CulturesModule {
 
     TIME && console.timeEnd("expandCultures");
   }
+
+  regenerate(): void {
+    this.generate();
+    this.expand();
+
+    pack.states = pack.states.map(state =>
+      !state.i || state.removed ? state : { ...state, culture: pack.cells.culture[state.center] }
+    );
+    pack.burgs = pack.burgs.map(burg =>
+      !burg.i || burg.removed ? burg : { ...burg, culture: pack.cells.culture[burg.cell] }
+    );
+    pack.religions = pack.religions.map(religion =>
+      !religion.i || religion.removed ? religion : { ...religion, culture: pack.cells.culture[religion.center] }
+    );
+  }
 }
 
 window.Cultures = new CulturesModule();

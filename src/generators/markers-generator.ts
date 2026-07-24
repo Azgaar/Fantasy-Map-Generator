@@ -81,7 +81,6 @@ class MarkersModule {
         return true;
       }
       const id = `marker${i}`;
-      document.getElementById(id)?.remove();
       const index = notes.findIndex(note => note.id === id);
       if (index !== -1) notes.splice(index, 1);
       return false;

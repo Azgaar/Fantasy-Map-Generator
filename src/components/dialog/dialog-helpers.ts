@@ -52,9 +52,8 @@ export function confirmationDialog(options: ConfirmationOptions): void {
   });
 }
 
-// TODO: inverted dependency — this knows every refreshable editor by its button id. Once editors
-// can register a refresh callback when they open, this list goes away and the loop walks the
-// registrations instead
+// TODO: editors should register a refresh callback when they open,
+// so it can call them without needing to know their button IDs
 const REFRESHABLE_EDITORS = [
   "culturesEditorRefresh",
   "biomesEditorRefresh",
@@ -64,14 +63,21 @@ const REFRESHABLE_EDITORS = [
   "statesEditorRefresh",
   "zonesEditorRefresh",
   "goodsEditorRefresh",
-  "marketsOverviewRefresh"
+  "marketsOverviewRefresh",
+  "marketOverviewRefresh",
+  "marketDealsRefresh",
+  "burgsOverviewRefresh",
+  "routesOverviewRefresh",
+  "riversOverviewRefresh",
+  "militaryOverviewRefresh",
+  "regimentsOverviewRefresh",
+  "markersOverviewRefresh"
 ];
 
 /** Refresh every editor that is currently open */
-export function refreshAllEditors(): void {
+export function refreshEditors(): void {
   for (const buttonId of REFRESHABLE_EDITORS) findEl(buttonId)?.click();
 }
 
-window.refreshAllEditors = refreshAllEditors;
 window.closeDialogs = closeDialogs;
 window.confirmationDialog = confirmationDialog;

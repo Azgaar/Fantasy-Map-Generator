@@ -11,9 +11,10 @@ import {
 } from "d3";
 import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import { drawBorders } from "@/renderers/draw-borders";
@@ -156,6 +157,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("provincesHeader");
+  applyLineHighlighting("provincesEditor", ({ cellId }) => pack.cells.province[cellId]);
 
   ensureEl("provincesEditorRefresh").on("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").on("click", () => editStyle("provs"));
@@ -849,7 +851,7 @@ function applyNameChange(p: Province): void {
   p.name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
   p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
   p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
-  select<SVGGElement, unknown>("#provs").select(`#provinceLabel${p.i}`).text(p.name);
+  if (layerIsOn("toggleProvinces")) drawProvinces();
   refreshProvincesEditor();
 }
 
@@ -1291,7 +1293,7 @@ function exitProvincesManualAssignment(close?: string): void {
   if (!close)
     $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("provincesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -1375,7 +1377,7 @@ function addProvince(this: SVGElement, event: any): void {
 
 function exitAddProvinceMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")

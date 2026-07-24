@@ -134,7 +134,7 @@ class Resampler {
       const burg = pack.burgs[market.centerBurgId];
       return Boolean(burg && !burg.removed);
     });
-    regenerateEconomy();
+    Production.regenerateEconomy();
   }
 
   private restoreRivers(

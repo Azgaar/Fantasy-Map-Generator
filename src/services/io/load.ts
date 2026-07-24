@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
@@ -803,7 +803,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     // draw data layers (not kept in svg)
     if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
-    if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
+    if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
     fitMapToScreen();

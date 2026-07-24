@@ -5,7 +5,7 @@ import { dragLegendBox } from "@/renderers/draw-legend";
 import { onMouseMove } from "./map-tooltip";
 
 /** Restore the default viewbox events, dropping whatever an editor bound to the map */
-export function restoreDefaultEvents(): void {
+export function applyDefaultViewboxEvents(): void {
   svg.call(zoom);
 
   select<SVGGElement, unknown>("#viewbox")
@@ -67,7 +67,7 @@ export function clicked(event: MouseEvent): void {
 
 /** Deselect the currently selected element and restore the default map events */
 export function unselect(): void {
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   if (!elSelected) return;
 
   elSelected.call(drag<SVGElement, unknown>().on("drag", null)).attr("class", null);
@@ -78,10 +78,10 @@ export function unselect(): void {
   elSelected = null as unknown as typeof elSelected;
 }
 
-export const ViewboxEvents = { restoreDefaultEvents, clicked, unselect };
+export const ViewboxEvents = { applyDefaultViewboxEvents, clicked, unselect };
 
 declare global {
   var zoom: any; // d3 v5 zoom behaviour created in main.js
 }
 
-window.restoreDefaultEvents = restoreDefaultEvents;
+window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

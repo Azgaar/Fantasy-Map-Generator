@@ -1,12 +1,12 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { clicked, restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents, clicked } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
 import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, destroyDialogIfExists, ensureEl, findEl, getPointer, last, rn } from "../utils";
+import { capitalize, destroyDialogIfExists, ensureEl, getPointer, last, rn } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -249,8 +249,7 @@ function changeUnit(this: HTMLInputElement): void {
   reg.a = sum(Object.values(reg.u));
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 
-  refreshMilitaryOverviewIfOpen();
-  refreshRegimentsOverviewIfOpen();
+  refreshEditors();
 }
 
 function splitRegiment(): void {
@@ -314,7 +313,7 @@ function splitRegiment(): void {
   Military.generateNote(newReg, pack.states[state]); // add legend
   drawRegiment(newReg, state); // draw new reg below
 
-  refreshRegimentsOverviewIfOpen();
+  refreshEditors();
 }
 
 function toggleAdd(): void {
@@ -363,7 +362,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   Military.generateNote(reg, pack.states[state]); // add legend
   drawRegiment(reg, state);
 
-  refreshRegimentsOverviewIfOpen();
+  refreshEditors();
   toggleAdd();
 }
 
@@ -494,7 +493,7 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   if (index !== -1) notes.splice(index, 1);
   selectedRegiment.remove();
 
-  refreshRegimentsOverviewIfOpen();
+  refreshEditors();
   $("#regimentEditor").dialog("close");
   Controllers.RegimentEditor.open(`#${regSelected.id}`);
 }
@@ -534,8 +533,7 @@ function removeRegiment(): void {
         if (index !== -1) notes.splice(index, 1);
         selectedRegiment.remove();
 
-        refreshMilitaryOverviewIfOpen();
-        refreshRegimentsOverviewIfOpen();
+        refreshEditors();
         $("#regimentEditor").dialog("close");
       },
       Cancel: function () {
@@ -619,20 +617,10 @@ function closeEditor(): void {
   ensureEl("regimentAdd").classList.remove("pressed");
   ensureEl("regimentAttack").classList.remove("pressed");
   ensureEl("regimentAttach").classList.remove("pressed");
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   selectedRegiment = null;
   $("#regimentEditor").dialog("destroy");
   ensureEl("regimentEditor").remove();
-}
-
-async function refreshMilitaryOverviewIfOpen(): Promise<void> {
-  if (!findEl("militaryOverview")) return;
-  Controllers.MilitaryOverview.refresh();
-}
-
-async function refreshRegimentsOverviewIfOpen(): Promise<void> {
-  if (!findEl("regimentsOverview")) return;
-  Controllers.RegimentsOverview.refresh();
 }
 
 export const RegimentEditor = { open: editRegiment };

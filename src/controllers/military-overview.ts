@@ -1,5 +1,6 @@
 import { interpolateString, select, sum } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader, sortLines } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -101,6 +102,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("militaryHeader");
+  applyLineHighlighting("militaryOverview", ({ cellId }) => pack.cells.state[cellId]);
 
   const body = ensureEl("militaryBody");
 
@@ -657,6 +659,7 @@ function militaryRecalculate(): void {
       Recalculate: function () {
         $(this).dialog("close");
         Military.generate();
+        if (layerIsOn("toggleMilitary")) drawMilitary();
         refreshMilitaryOverview();
       },
       Cancel: function () {
@@ -685,4 +688,4 @@ function downloadMilitaryData(): void {
   downloadFile(data, name);
 }
 
-export const MilitaryOverview = { open, refresh: refreshMilitaryOverview };
+export const MilitaryOverview = { open };

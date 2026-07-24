@@ -4,6 +4,8 @@ import "./app-info";
 import "./tooltips";
 import "./map-tooltip";
 import "./viewbox-events";
+import "./tools";
+import "./hotkeys";
 import "./color-picker";
 import "./dialog/dialog-helpers";
 import "./dialog/sorting";

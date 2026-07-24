@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { Controllers } from "@/controllers";
+import type { Point } from "@/generators/voronoi";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import {
   convertTemperature,
@@ -16,13 +16,11 @@ import {
 } from "@/utils";
 import { showMainTip, tip } from "./tooltips";
 
-type Point = [number, number];
-
 export const onMouseMove = debounce(handleMouseMove, 100);
 
 function handleMouseMove(event: MouseEvent | TouchEvent): void {
   const node = event.currentTarget as SVGElement | null;
-  if (!node) return;
+  if (!node || !pack.cells?.p) return;
 
   const point = getPointer(event, node);
   const cellId = findClosestCell(point[0], point[1], undefined, pack);
@@ -33,8 +31,6 @@ function handleMouseMove(event: MouseEvent | TouchEvent): void {
   const gridCellId = findGridCell(point[0], point[1], grid);
   if (findEl("tooltip")?.dataset.main) showMainTip();
   else showMapTooltip(point, event, cellId, gridCellId);
-
-  if (findEl("cellInfo")?.offsetParent) Controllers.CellInfo.update(point, cellId, gridCellId);
 }
 
 let currentNoteId: string | null = null; // currently displayed note, to not rerender too often
@@ -74,20 +70,6 @@ export function showNotes(event: Event): void {
   const body = findEl("notesBody");
   if (body) body.innerHTML = "";
   currentNoteId = null;
-}
-
-/** Highlight the line for an id in an open editor, so hovering the map points at the row */
-function highlightIn(editorId: string, id: number, timeout = 10000): void {
-  const editor = findEl(editorId);
-  if (!editor) return;
-
-  for (const el of Array.from(editor.getElementsByClassName("hovered"))) el.classList.remove("hovered");
-
-  const hovered = Array.from(editor.querySelectorAll("div")).find(el => el.dataset.id === String(id));
-  if (!hovered) return;
-
-  hovered.classList.add("hovered");
-  if (timeout) setTimeout(() => hovered.classList.remove("hovered"), timeout);
 }
 
 function getPopulationTip(cellId: number): string {
@@ -139,7 +121,6 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "rivers") {
     const riverId = Number(target.id.slice(5));
     const river = pack.rivers.find(river => river.i === riverId);
-    highlightIn("riversOverview", riverId, 5000);
     return `${river ? `${river.name} ${river.type}` : ""}. Click to edit`;
   }
 
@@ -157,7 +138,6 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
     if (burgId) {
       const burg = pack.burgs[burgId];
       const population = si((burg.population || 0) * populationRate * urbanization);
-      highlightIn("burgsOverview", burgId, 5000);
       return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
     }
     return "Click to edit the Burg";
@@ -186,7 +166,6 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   if (group === "zones") {
     const zoneId = Number(path[path.length - 8].dataset.id);
     const zone = pack.zones.find(zone => zone.i === zoneId);
-    highlightIn("zonesEditor", zoneId, 5000);
     return zone?.name;
   }
 
@@ -274,7 +253,6 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
 
   if (layerIsOn("toggleBiomes") && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
-    highlightIn("biomesEditor", biomeId);
     return void tip(`Biome: ${biomesData.name[biomeId]}`);
   }
 
@@ -282,7 +260,6 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     const religionId = cells.religion[cellId];
     const religion = pack.religions[religionId];
     const type = religion.type === "Cult" || religion.type === "Heresy" ? religion.type : `${religion.type} religion`;
-    highlightIn("religionsEditor", religionId);
     return void tip(`${type}: ${religion.name}`);
   }
 
@@ -291,18 +268,11 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     const provinceId = cells.province[cellId];
     const province = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";
 
-    highlightIn("statesEditor", stateId);
-    highlightIn("diplomacyEditor", stateId);
-    highlightIn("militaryOverview", stateId);
-    highlightIn("provincesEditor", provinceId);
-    if (findEl("mergeStatesForm")?.offsetParent) highlightIn("mergeStatesForm", stateId);
-
     return void tip(province + pack.states[stateId].fullName);
   }
 
   if (layerIsOn("toggleCultures") && cells.culture[cellId]) {
     const cultureId = cells.culture[cellId];
-    highlightIn("culturesEditor", cultureId);
     return void tip(`Culture: ${pack.cultures[cultureId].name}`);
   }
 

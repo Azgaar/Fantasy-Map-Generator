@@ -2,9 +2,9 @@ import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawMarketsLayer } from "@/renderers/draw-markets";
+import { drawMarkets } from "@/renderers/draw-markets";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
@@ -170,7 +170,7 @@ function toggleRelocateMarket(): void {
     tip("Click on a burg on the map to relocate the market center", true);
   } else {
     clearMainTip();
-    restoreDefaultEvents();
+    applyDefaultViewboxEvents();
   }
 }
 
@@ -202,7 +202,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!Markets.relocateMarket(activeMarketId, burgId)) return;
 
   toggleRelocateMarket();
-  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
 
   refreshNameInput(market);
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);

@@ -5,6 +5,7 @@ import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
@@ -387,7 +388,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
-    regenerateEmblems();
+    COA.regenerate();
+    drawEmblems();
     toggleEmblems();
 
     // v1.5 changed releif icons data

@@ -1,7 +1,7 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawMeasurers, undrawMeasurers } from "@/renderers/draw-measurers";
@@ -204,7 +204,7 @@ function startDrawingMode(button: HTMLElement, tipText: string, onStart: (event:
 }
 
 function exitDrawingMode(): void {
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   exitPressedButtons();
 }

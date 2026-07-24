@@ -1,7 +1,7 @@
 import { drag, select } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip } from "@/components/tooltips";
-import { restoreDefaultEvents, unselect } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents, unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
@@ -293,8 +293,7 @@ function toggleMarkerLock(): void {
 }
 
 function toggleAddMarker(): void {
-  ensureEl("markerAdd").classList.toggle("pressed");
-  ensureEl("addMarker").click();
+  void Controllers.MarkerCreator.toggle();
 }
 
 function confirmMarkerDeletion(): void {
@@ -310,13 +309,13 @@ function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
   $("#markerEditor").dialog("close");
-  findEl<HTMLButtonElement>("markersOverviewRefresh")?.click();
+  refreshEditors();
 }
 
 function closeMarkerEditor(): void {
   unselect();
   ensureEl("addMarker").classList.remove("pressed");
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   destroyDialogIfExists("markerEditor");
 }

@@ -1,15 +1,18 @@
 import { color, drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
 import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { drawBorders } from "@/renderers/draw-borders";
+import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
+import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawStateLabels } from "@/renderers/draw-state-labels";
+import { drawStateLabels, redrawStateLabels } from "@/renderers/draw-state-labels";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -126,8 +129,10 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-
   applySortingByHeader("statesHeader");
+  applyLineHighlighting("statesEditor", ({ cellId }) =>
+    pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]
+  );
 
   ensureEl("statesEditorRefresh").on("click", refreshStatesEditor);
   ensureEl("statesEditStyle").on("click", () => editStyle("regions"));
@@ -526,7 +531,9 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) drawStateLabels([s.i]);
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked && layerIsOn("toggleLabels")) {
+      redrawStateLabels();
+    }
     refreshStatesEditor();
   }
 }
@@ -1146,7 +1153,12 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels();
+  if (ensureEl<HTMLInputElement>("adjustLabels").checked && layerIsOn("toggleLabels")) redrawStateLabels();
+  if (layerIsOn("toggleGoods")) drawGoods();
+  if (layerIsOn("toggleEmblems")) {
+    clearEmblems(["state", "province"]);
+    drawEmblems();
+  }
 
   refreshStatesEditor();
 }
@@ -1486,7 +1498,7 @@ function exitStatesManualAssignment(close: boolean): void {
   if (!close)
     $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("statesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -1624,7 +1636,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
 
 function exitAddStateMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
@@ -1671,6 +1683,7 @@ function openStateMergeDialog(): void {
       el.addEventListener("mouseenter", highlightStateOnMergeHover);
       el.addEventListener("mouseleave", stateHighlightOff);
     });
+  applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
     if (!layerIsOn("toggleStates")) return;

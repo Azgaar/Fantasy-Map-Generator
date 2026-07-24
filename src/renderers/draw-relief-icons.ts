@@ -148,4 +148,6 @@ const reliefIconsRenderer = (): void => {
   }
 };
 
+export { reliefIconsRenderer as drawReliefIcons };
+
 window.drawReliefIcons = reliefIconsRenderer;

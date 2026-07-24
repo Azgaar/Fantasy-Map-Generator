@@ -1,8 +1,8 @@
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawBurgLabels } from "@/renderers/draw-burg-labels";
-import { destroyDialogIfExists, ensureEl, findEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
@@ -403,7 +403,7 @@ function submitForm(event: Event): void {
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleLabels")) drawBurgLabels();
-  findEl<HTMLButtonElement>("burgsOverviewRefresh")?.click();
+  refreshEditors();
 
   $("#burgGroupsEditor").dialog("close");
 }

@@ -1,11 +1,13 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
 import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/generators/cultures-generator";
+import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -99,6 +101,7 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("culturesHeader");
+  applyLineHighlighting("culturesEditor", ({ cellId }) => pack.cells.culture[cellId]);
 
   ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
   ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
@@ -585,8 +588,8 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
   cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
-    select("#labels").select(`[data-id='${b.i}']`).text(b.name);
   });
+  if (layerIsOn("toggleLabels")) drawBurgLabels();
   tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 
@@ -909,7 +912,7 @@ function exitCulturesManualAssignment(close?: string): void {
   if (!close) $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   select("#debug").select("#cultureCenters").style("display", null);
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("culturesBody").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -949,7 +952,7 @@ function enterAddCulturesMode(this: HTMLElement): void {
 
 function exitAddCultureMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("culturesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")

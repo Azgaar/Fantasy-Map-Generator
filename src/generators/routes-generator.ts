@@ -195,6 +195,11 @@ class RoutesModule {
   private riversById: Map<number, River> = new Map();
   private riverGeometryCache: Map<number, { points: Point[]; anchorIndices: number[] }> = new Map();
 
+  regenerate(): void {
+    const lockedRoutes = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));
+    this.generate(lockedRoutes);
+  }
+
   generate(lockedRoutes: Route[] = []) {
     this.connections = new Map();
     this.buildRiverEdges();

@@ -1,10 +1,13 @@
-// The Cell Info panel: everything known about the cell under the cursor.
-// An overview — read-only, opened and closed by the user, so it is a controller
-
+// The Cell Info panel: everything known about the cell under the cursor
+import { select } from "d3";
 import type { Feature } from "@/generators/features";
+import type { Point } from "@/generators/voronoi";
 import {
   convertTemperature,
+  debounce,
+  destroyDialogIfExists,
   ensureEl,
+  findClosestCell,
   findGridCell,
   getArea,
   getAreaUnit,
@@ -13,18 +16,72 @@ import {
   getHeight,
   getLatitude,
   getLongitude,
+  getPointer,
   rn,
   si
 } from "@/utils";
 
-type Point = [number, number];
+function open(): void {
+  cleanup();
+  renderDialog();
+  select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
 
-const set = (id: string, value: string | number) => {
-  ensureEl(id).innerHTML = String(value);
-};
+  $("#cellInfo").dialog({
+    resizable: false,
+    width: "22em",
+    title: "Cell Details",
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    close: cleanup
+  });
+}
 
-/** Update the Cell Info panel for the cell under the cursor */
-function updateCellInfo(point: Point, cellId: number, gridCellId: number): void {
+function cleanup(): void {
+  select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
+  destroyDialogIfExists("cellInfo");
+}
+
+function renderDialog(): void {
+  const HTML = /* html */ `<div id="cellInfo" class="dialog stable">
+    <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
+    <p><b>Latitude:</b> <span id="infoLat"></span></p>
+    <p><b>Longitude:</b> <span id="infoLon"></span></p>
+    <p><b>Geozone:</b> <span id="infoGeozone"></span></p>
+    <p><b>Area:</b> <span id="infoArea">0</span></p>
+    <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
+    <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
+    <p><b>River:</b> <span id="infoRiver">no</span></p>
+    <p><b>Population:</b> <span id="infoPopulation">0</span></p>
+    <p><b>Elevation:</b> <span id="infoElevation">0</span></p>
+    <p><b>Depth:</b> <span id="infoDepth">0</span></p>
+    <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
+    <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
+    <p><b>State:</b> <span id="infoState">n/a</span></p>
+    <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
+    <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
+    <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
+    <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
+    <p><b>Good:</b> <span id="infoGood">n/a</span></p>
+    <p><b>Market:</b> <span id="infoMarket">n/a</span></p>
+    <p><b>Cell Production:</b> <span id="infoCellProduction">n/a</span></p>
+    <p><b>Burg Production:</b> <span id="infoBurgProduction">n/a</span></p>
+  </div>`;
+
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
+}
+
+const updateCellInfo = debounce((event: MouseEvent | TouchEvent): void => {
+  const node = event.currentTarget as SVGElement | null;
+  if (!node || !pack.cells?.p) return;
+
+  const point = getPointer(event, node);
+  const packCellId = findClosestCell(...point, undefined, pack);
+  if (packCellId === undefined) return;
+
+  const gridCellId = findGridCell(point[0], point[1], grid);
+  updateFields(point, packCellId, gridCellId);
+}, 100);
+
+function updateFields(point: Point, cellId: number, gridCellId: number): void {
   const { cells } = pack;
   const x = rn(point[0]);
   const y = rn(point[1]);
@@ -61,6 +118,10 @@ function updateCellInfo(point: Point, cellId: number, gridCellId: number): void 
 
   const burgId = cells.burg[cellId];
   set("infoBurgProduction", burgId ? listProduction(Production.getBurgProduction(pack.burgs[burgId])) : "n/a");
+}
+
+function set(id: string, value: string | number) {
+  ensureEl(id).innerHTML = String(value);
 }
 
 function getNamedInfo<T, K extends keyof T>(elements: T[], id: number, key: K): string {
@@ -143,4 +204,4 @@ function getFriendlyPopulation(cellId: number): string {
   return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;
 }
 
-export const CellInfo = { update: updateCellInfo };
+export const CellInfo = { open };

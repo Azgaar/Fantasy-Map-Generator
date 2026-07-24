@@ -1,5 +1,6 @@
 import { mean, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
@@ -55,10 +56,16 @@ function renderDialog(): void {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   applySortingByHeader("riversHeader");
+  applyLineHighlighting("riversOverview", ({ target, cellId }) => {
+    const riverId = pack.cells.r[cellId];
+    if (riverId) return riverId;
+    const river = target.closest<SVGElement>("#rivers [id^='river']");
+    return river && /^river\d+$/.test(river.id) ? Number(river.id.slice(5)) : undefined;
+  });
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("riversOverviewRefresh").on("click", riversOverviewAddLines);
-  ensureEl("addNewRiver").on("click", toggleAddRiver);
+  ensureEl("addNewRiver").on("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").on("click", createNewRiver);
   ensureEl("riversBasinHighlight").on("click", toggleBasinsHightlight);
   ensureEl("riversExport").on("click", downloadRiversData);

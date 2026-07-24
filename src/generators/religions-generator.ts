@@ -615,6 +615,10 @@ const expansionismMap: Record<string, () => number> = {
 };
 
 class ReligionsModule {
+  regenerate(): void {
+    this.generate();
+  }
+
   generate() {
     TIME && console.time("generateReligions");
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];

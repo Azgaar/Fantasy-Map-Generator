@@ -22,7 +22,7 @@ interface AngleData {
 type PathPoints = [number, number][];
 
 // list - an optional array of stateIds to regenerate
-const stateLabelsRenderer = (list?: number[]): void => {
+const stateLabelsRenderer = (list?: number[], includeLocked = false): void => {
   TIME && console.time("drawStateLabels");
 
   // temporary make the labels visible
@@ -52,7 +52,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
     const labelPaths: [number, PathPoints][] = [];
 
     for (const state of states) {
-      if (!state.i || state.removed || state.lock) continue;
+      if (!state.i || state.removed || (!includeLocked && state.lock)) continue;
       if (list && !list.includes(state.i)) continue;
 
       const offset = getOffsetWidth(state.cells!);
@@ -372,6 +372,12 @@ const stateLabelsRenderer = (list?: number[]): void => {
   TIME && console.timeEnd("drawStateLabels");
 };
 
+const redrawStateLabelsRenderer = (): void => {
+  select("g#labels > g#states").selectAll("text").remove();
+  select("defs > g#deftemp > g#textPaths").selectAll("[id^=textPath_stateLabel]").remove();
+  stateLabelsRenderer(undefined, true);
+};
+
 window.drawStateLabels = stateLabelsRenderer;
 
-export { stateLabelsRenderer as drawStateLabels };
+export { redrawStateLabelsRenderer as redrawStateLabels, stateLabelsRenderer as drawStateLabels };

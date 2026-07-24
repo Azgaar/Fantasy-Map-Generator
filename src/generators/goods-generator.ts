@@ -958,6 +958,10 @@ export class GoodsModule {
   private cellId: number = 0;
   private goodById: Good[] = [];
 
+  regenerate(): void {
+    this.generate({ randomSeed: Math.random() });
+  }
+
   // Place a bonus good on every eligible cell based on the current catalogue
   generate(options: { randomSeed?: number } = {}) {
     TIME && console.time("generateGoods");

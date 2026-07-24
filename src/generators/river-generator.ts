@@ -44,6 +44,124 @@ class RiverModule {
 
   smallLength: number | null = null;
 
+  regenerate(): void {
+    this.generate();
+    this.specify();
+    Features.defineGroups();
+    Lakes.defineNames();
+  }
+
+  addDownhill(initialCell: number): { error?: string } {
+    const { cells, rivers } = pack;
+    let cell = initialCell;
+    const riverCells: number[] = [];
+    let riverId = this.getNextId(rivers);
+    let parent = riverId;
+
+    cells.fl[cell] = grid.cells.prec[cells.g[cell]];
+    const heights = this.alterHeights();
+    this.resolveDepressions(heights);
+
+    while (cell) {
+      cells.r[cell] = riverId;
+      riverCells.push(cell);
+
+      const nextCell: number = cells.c[cell].sort((a, b) => heights[a] - heights[b])[0];
+      if (heights[cell] <= heights[nextCell]) {
+        return { error: `Cell ${cell} is depressed, river cannot flow further` };
+      }
+
+      if (heights[nextCell] < 20) {
+        riverCells.push(nextCell);
+        const feature = pack.features[cells.f[nextCell]];
+        if (feature.type === "lake") {
+          if (feature.outlet) parent = feature.outlet;
+          if (feature.inlets) feature.inlets.push(riverId);
+          else feature.inlets = [riverId];
+        }
+        break;
+      }
+
+      if (cells.b[nextCell]) {
+        cells.fl[nextCell] += cells.fl[cell];
+        riverCells.push(-1);
+        break;
+      }
+
+      if (!cells.r[nextCell]) {
+        cells.fl[nextCell] += cells.fl[cell];
+        cell = nextCell;
+        continue;
+      }
+
+      const oldRiverId = cells.r[nextCell];
+      const oldRiver = rivers.find(river => river.i === oldRiverId);
+      const oldRiverCells = oldRiver?.cells || cells.i.filter(cellId => cells.r[cellId] === oldRiverId);
+      const oldRiverCellsUpper = oldRiverCells.filter(cellId => heights[cellId] > heights[nextCell]);
+
+      if (riverCells.length <= oldRiverCellsUpper.length) {
+        cells.conf[nextCell] += cells.fl[cell];
+        riverCells.push(nextCell);
+        parent = oldRiverId;
+        break;
+      }
+
+      riverCells.forEach(riverCell => {
+        cells.r[riverCell] = oldRiverId;
+      });
+      oldRiverCells.forEach(oldCell => {
+        if (heights[oldCell] > heights[nextCell]) {
+          cells.r[oldCell] = 0;
+          cells.fl[oldCell] = grid.cells.prec[cells.g[oldCell]];
+        } else {
+          riverCells.push(oldCell);
+          cells.fl[oldCell] += cells.fl[cell];
+        }
+      });
+      riverId = oldRiverId;
+      break;
+    }
+
+    const river = rivers.find(candidate => candidate.i === riverId);
+    const source = riverCells[0];
+    const mouth = riverCells[riverCells.length - 2];
+    const defaultWidthFactor = rn(1 / (grid.points.length / 10000) ** 0.25, 2);
+    const widthFactor =
+      river?.widthFactor || (!parent || parent === riverId ? defaultWidthFactor * 1.2 : defaultWidthFactor);
+    const sourceWidth = river?.sourceWidth || this.getSourceWidth(cells.fl[source]);
+    const meanderedPoints = this.addMeandering(riverCells);
+    const discharge = cells.fl[mouth];
+    const length = this.getApproximateLength(meanderedPoints.map(([x, y]) => [x, y]));
+    const width = this.getWidth(
+      this.getOffset({ flux: discharge, pointIndex: meanderedPoints.length, widthFactor, startingWidth: sourceWidth })
+    );
+
+    if (river) {
+      Object.assign(river, { source, length, discharge, width, cells: riverCells });
+    } else {
+      const basin = this.getBasin(parent);
+      const name = this.getName(mouth);
+      const type = this.getType({ i: riverId, length, parent } as River);
+      rivers.push({
+        i: riverId,
+        source,
+        mouth,
+        discharge,
+        length,
+        width,
+        widthFactor,
+        sourceWidth,
+        parent,
+        cells: riverCells,
+        basin,
+        name,
+        type
+      });
+    }
+
+    return {};
+  }
+
   generate(allowErosion = true) {
     TIME && console.time("generateRivers");
     Math.random = Alea(seed);

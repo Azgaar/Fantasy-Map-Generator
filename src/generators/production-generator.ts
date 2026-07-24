@@ -17,6 +17,21 @@ export class ProductionModule {
   private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers
   private zoneCellSetsSource: Zone[] | null = null;
 
+  regenerate(): void {
+    pack.deals = [];
+    for (const market of pack.markets) market.goods = {};
+    this.produce();
+    States.collectTaxes();
+  }
+
+  regenerateEconomy(): void {
+    if (!pack.goods?.length) Goods.generate();
+    else Goods.sync();
+
+    Markets.expandTerritories(pack.markets);
+    this.regenerate();
+  }
+
   produce() {
     TIME && console.time("generateProduction");
 

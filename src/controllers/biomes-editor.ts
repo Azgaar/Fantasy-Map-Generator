@@ -1,9 +1,12 @@
 import { drag, easeSinIn, select, sum, transition } from "d3";
 import { openPicker } from "@/components/color-picker";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Population } from "@/generators/population-generator";
+import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
@@ -115,6 +118,7 @@ function renderDialog(): void {
   ensureEl("biomesExport").on("click", downloadBiomesData);
 
   applySortingByHeader("biomesHeader");
+  applyLineHighlighting("biomesEditor", ({ cellId }) => cellId && pack.cells.biome[cellId]);
 
   ensureEl("biomesBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
@@ -273,7 +277,7 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
   }
   biomesData.habitability[biome] = +el.value;
   (el.parentNode as HTMLElement).dataset.habitability = el.value;
-  recalculatePopulation();
+  regeneratePopulation();
   refreshBiomesEditor();
 }
 
@@ -552,7 +556,7 @@ function exitBiomesCustomizationMode(close?: boolean): void {
   ensureEl("biomesFooter").style.display = "block";
   if (!close) $("#biomesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = document.querySelector("#biomesBody > div.selected");
   if (selected) selected.classList.remove("selected");
@@ -562,7 +566,7 @@ function restoreInitialBiomes(): void {
   biomesData = Biomes.getDefault();
   Biomes.define();
   drawBiomes();
-  recalculatePopulation();
+  regeneratePopulation();
   refreshBiomesEditor();
 }
 
@@ -570,6 +574,12 @@ function closeBiomesEditor(): void {
   exitBiomesCustomizationMode(true);
   $("#biomesEditor").dialog("destroy");
   ensureEl("biomesEditor").remove();
+}
+
+function regeneratePopulation(): void {
+  Population.regenerate();
+  if (layerIsOn("togglePopulation")) drawPopulation();
+  if (layerIsOn("toggleGoods")) drawGoods();
 }
 
 export const BiomesEditor = { open };

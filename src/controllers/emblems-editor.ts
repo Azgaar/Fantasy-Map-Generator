@@ -12,6 +12,21 @@ let currentType: string;
 let currentId: string;
 let currentEl: EmblemEl;
 
+async function openDefault(): Promise<void> {
+  const firstState = pack.states.find(state => state.i && !state.removed && state.coa);
+  const firstBurg = pack.burgs.find(burg => burg.i && !burg.removed && burg.coa);
+  const type = firstState ? "state" : "burg";
+  const element = firstState ?? firstBurg;
+  if (!element?.coa) {
+    tip("No emblems to edit, please generate states and burgs first", false, "error");
+    return;
+  }
+
+  const id = `${type}COA${element.i}`;
+  await COArenderer.trigger(id, element.coa);
+  open(type, id, element);
+}
+
 function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): void {
   if (customization) return;
   if (!id && target) defineEmblemData(target);
@@ -704,4 +719,4 @@ function closeEmblemEditor(): void {
   ensureEl("emblemEditor").remove();
 }
 
-export const EmblemsEditor = { open };
+export const EmblemsEditor = { open, openDefault };

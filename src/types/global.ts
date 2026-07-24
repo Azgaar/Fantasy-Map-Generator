@@ -30,7 +30,7 @@ declare global {
     lock: typeof import("../utils/preferences").lock;
     unlock: typeof import("../utils/preferences").unlock;
     stored: typeof import("../utils/preferences").stored;
-    restoreDefaultEvents: typeof import("../components/viewbox-events").restoreDefaultEvents;
+    applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
     redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;
@@ -40,7 +40,6 @@ declare global {
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
-    refreshAllEditors: typeof import("../components/dialog/dialog-helpers").refreshAllEditors;
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;
@@ -183,7 +182,6 @@ declare global {
   var toggleRelief: () => void;
   var toggleZones: () => void;
   var calculateFriendlyGridSize: () => void;
-  var recalculatePopulation: () => void;
   // heightmap editor globals
   var color: (value: number) => string;
   var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
@@ -198,7 +196,6 @@ declare global {
   var drawRoutes: () => void;
   var drawZones: () => void;
   var drawGrid: () => void;
-  var regenerateEmblems: () => void;
   var toggleEmblems: (event?: MouseEvent) => void;
   var shiftCompass: () => void;
 
@@ -229,9 +226,24 @@ declare global {
   var showExportPane: () => void;
   var customization: number;
   var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
+  var panMap: (x: number, y: number) => void;
+  var setMapZoom: (value: number) => void;
+  var changeMapZoom: (factor: number) => void;
   var modules: Record<string, boolean>;
 
   // Legacy UI globals
+  var toggleOptions: (event?: Event) => void;
+  var hideOptions: (event?: Event) => void;
+  var toggleTexture: (event?: Event) => void;
+  var toggleHeight: (event?: Event) => void;
+  var toggleLakes: (event?: Event) => void;
+  var toggleGrid: (event?: Event) => void;
+  var toggleCoordinates: (event?: Event) => void;
+  var toggleCompass: (event?: Event) => void;
+  var toggleTemperature: (event?: Event) => void;
+  var togglePrecipitation: (event?: Event) => void;
+  var toggleScaleBar: (event?: Event) => void;
+  var toggleVignette: (event?: Event) => void;
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
   var toggleGoods: (event?: MouseEvent) => void;
@@ -246,10 +258,6 @@ declare global {
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
   var toggleCells: () => void;
   var drawGoods: () => void;
-  var regenerateGoods: () => void;
-  var regenerateMarkets: () => void;
-  var regenerateEconomy: () => void;
-  var regenerateProduction: () => void;
   var legend: any;
 
   // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
@@ -277,11 +285,8 @@ declare global {
   var toggleRoutes: (event?: MouseEvent) => void;
   var toggleRivers: (event?: MouseEvent) => void;
   var toggleIce: (event?: MouseEvent) => void;
-  var toggleAddRiver: () => void;
   var toggleMarkers: (event?: MouseEvent) => void;
   var drawMarkers: () => void;
-  var regenerateMarkers: () => void;
-  var configMarkersGeneration: () => void;
 
   var tinymce:
     | {

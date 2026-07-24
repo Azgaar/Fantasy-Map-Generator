@@ -26,6 +26,10 @@ interface Iceberg {
 }
 
 class IceModule {
+  public regenerate(): void {
+    this.generate();
+  }
+
   // Generate glaciers and icebergs based on temperature and height
   public generate() {
     this.clear();

@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
 import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
@@ -162,7 +162,7 @@ function addRiver(): void {
 
 function closeRiverCreator(): void {
   select("#debug").select("#controlCells").remove();
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 
   const forced = +ensureEl("toggleCells").dataset.forced!;

@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  restoreDefaultEvents(); // apply default viewbox events
+  applyDefaultViewboxEvents();
   initiateAutosave();
   initTourPromptButton();
 });
@@ -539,6 +539,19 @@ function zoomTo(x, y, z = 8, d = 2000) {
 // Reset zoom to initial
 function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
+}
+
+// Bundled UI modules call these wrappers instead of using the legacy d3 selection directly
+function panMap(x, y) {
+  zoom.translateBy(svg, x, y);
+}
+
+function setMapZoom(value) {
+  zoom.scaleTo(svg, value);
+}
+
+function changeMapZoom(factor) {
+  zoom.scaleBy(svg, factor);
 }
 
 // active zooming feature

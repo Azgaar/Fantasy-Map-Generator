@@ -1,9 +1,12 @@
 import { pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, findEl, getPointer, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -122,6 +125,12 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
   applySortingByHeader("burgsHeader");
+  applyLineHighlighting("burgsOverview", ({ target, cellId }) => {
+    const burgId = pack.cells.burg[cellId];
+    if (burgId) return burgId;
+    const burg = target.closest<SVGElement>("#burgLabels [data-id], #burgIcons [data-id]");
+    return burg ? Number(burg.dataset.id) : undefined;
+  });
 
   ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
   ensureEl("burgsGroupsEditorButton").addEventListener("click", () => Controllers.BurgGroupEditor.open());
@@ -362,8 +371,9 @@ function regenerateNames(): void {
 
       el.querySelector<HTMLInputElement>(".burgName")!.value = name;
       pack.burgs[burg].name = el.dataset.name = name;
-      select("#burgLabels").select(`[data-id='${burg}']`).text(name);
     });
+
+  if (layerIsOn("toggleLabels")) drawBurgLabels();
 }
 
 function enterAddBurgMode(this: HTMLElement): void {
@@ -375,6 +385,13 @@ function enterAddBurgMode(this: HTMLElement): void {
   this.classList.add("pressed");
   tip("Click on the map to create a new burg. Hold Shift to add multiple", true, "warn");
   select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addBurgOnClick);
+}
+
+async function openAddMode(): Promise<void> {
+  stopMapPlacement();
+  ensureEl("addBurgTool").classList.add("pressed");
+  await open();
+  enterAddBurgMode.call(ensureEl("addNewBurg"));
 }
 
 function addBurgOnClick(this: SVGGElement, event: any): void {
@@ -400,7 +417,7 @@ function addBurgOnClick(this: SVGGElement, event: any): void {
 
 function exitAddBurgMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("addBurgTool").classList.remove("pressed");
   findEl("addNewBurg")?.classList.remove("pressed");
@@ -736,4 +753,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-export const BurgsOverview = { open };
+export const BurgsOverview = { open, openAddMode };

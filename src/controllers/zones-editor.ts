@@ -1,8 +1,9 @@
 import { drag, select, sum } from "d3";
 import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -98,9 +99,12 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applyLineHighlighting("zonesEditor", ({ target }) => {
+    const zone = target.closest<SVGElement>("#zones [id^='zone']");
+    return zone && /^zone\d+$/.test(zone.id) ? Number(zone.id.slice(4)) : undefined;
+  });
 
   const body = ensureEl("zonesBodySection");
-
   ensureEl("zonesFilterType").on("click", updateFilters);
   ensureEl("zonesFilterType").on("change", filterZonesByType);
   ensureEl("zonesEditorRefresh").on("click", zonesEditorAddLines);
@@ -417,7 +421,7 @@ function exitZonesManualAssignment(close?: string): void {
   if (!close)
     $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 
   const selected = ensureEl("zonesBodySection").querySelector("div.selected");

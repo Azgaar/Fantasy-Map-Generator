@@ -1,7 +1,7 @@
 import { drag, quadtree, range, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { restoreDefaultEvents, unselect } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents, unselect } from "@/components/viewbox-events";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { destroyDialogIfExists, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 
@@ -413,7 +413,7 @@ function enterIndividualMode(): void {
 
   removeCircle();
   updateReliefSizeInput();
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 }
 
