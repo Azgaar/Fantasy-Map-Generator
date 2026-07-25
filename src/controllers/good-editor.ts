@@ -24,7 +24,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
   const biomeOutputSummary = (): string => {
     const entries = Object.entries(biomeOutputState).filter(([, v]) => (v ?? 0) > 0);
     if (!entries.length) return "none";
-    return entries.map(([id, v]) => `${biomesData.name[Number(id)]}: ${v}`).join(", ");
+    return entries.map(([id, v]) => `${pack.biomes[Number(id)].name}: ${v}`).join(", ");
   };
 
   const multipliers: { [K in MultiplierDimKey]?: Partial<Record<string, number>> } = {
@@ -499,7 +499,7 @@ function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
   if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
   if (dim === "zone") return pack.zones.find(z => z.i === +id)?.name ?? `Zone ${id}`;
-  return biomesData.name[+id] ?? `Biome ${id}`;
+  return pack.biomes[+id]?.name ?? `Biome ${id}`;
 }
 
 function uploadImage(type: "image" | "svg", callback: (type: string, id: string) => void) {
@@ -597,7 +597,9 @@ function openMultiplierPopup(
       label = "Religion";
       break;
     case "biome":
-      entities = biomesData.i.map(id => ({ id: String(id), name: biomesData.name[id], color: biomesData.color[id] }));
+      entities = pack.biomes
+        .filter(biome => !biome.removed)
+        .map(({ i, name, color }) => ({ id: String(i), name, color }));
       label = "Biome";
       break;
     case "zone":
@@ -690,10 +692,11 @@ function openBiomeProductionPopup(
   currentValues: Partial<Record<number, number>>,
   onApply: (values: Partial<Record<number, number>>) => void
 ) {
-  const rows = (biomesData.i as number[])
-    .map(id => {
-      const val = currentValues[id] ?? 0;
-      return `<span>${biomesData.name[id] ?? `Biome ${id}`}</span><input type="number" class="bpPopupInput" data-id="${id}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
+  const rows = pack.biomes
+    .filter(biome => !biome.removed)
+    .map(({ i, name }) => {
+      const val = currentValues[i] ?? 0;
+      return `<span>${name}</span><input type="number" class="bpPopupInput" data-id="${i}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
     })
     .join("");
 

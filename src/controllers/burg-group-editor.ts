@@ -74,9 +74,7 @@ function renderDialog(): void {
     if (!line) return;
 
     if (el.getAttribute("name") === "biomes") {
-      const biomes = Array(biomesData.i.length)
-        .fill(null)
-        .map((_, i) => ({ i, name: biomesData.name[i], color: biomesData.color[i] }));
+      const biomes = pack.biomes.filter(biome => !biome.removed).map(({ i, name, color }) => ({ i, name, color }));
       return selectLimitation(el, biomes);
     }
     if (el.getAttribute("name") === "states") return selectLimitation(el, pack.states);

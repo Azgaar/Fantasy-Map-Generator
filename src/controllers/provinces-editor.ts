@@ -821,7 +821,7 @@ function regenerateShortNameCulture(): void {
 }
 
 function regenerateShortNameRandom(): void {
-  const base = rand(nameBases.length - 1);
+  const base = rand(Names.nameBases.length - 1);
   const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }

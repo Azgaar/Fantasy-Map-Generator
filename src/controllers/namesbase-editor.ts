@@ -142,22 +142,22 @@ function closeNamesbaseEditor(): void {
 function createBasesList(): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   select.innerHTML = "";
-  nameBases.forEach((b, i) => {
+  Names.nameBases.forEach((b, i) => {
     select.options.add(new Option(b.name, String(i)));
   });
 }
 
 function updateInputs(): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (!nameBases[base]) {
+  if (!Names.nameBases[base]) {
     tip(`Namesbase ${base} is not defined`, false, "error");
     return;
   }
-  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = nameBases[base].b;
-  (ensureEl("namesbaseName") as HTMLInputElement).value = nameBases[base].name;
-  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(nameBases[base].min);
-  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(nameBases[base].max);
-  (ensureEl("namesbaseDouble") as HTMLInputElement).value = nameBases[base].d;
+  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = Names.nameBases[base].b;
+  (ensureEl("namesbaseName") as HTMLInputElement).value = Names.nameBases[base].name;
+  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(Names.nameBases[base].min);
+  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(Names.nameBases[base].max);
+  (ensureEl("namesbaseDouble") as HTMLInputElement).value = Names.nameBases[base].d;
   updateExamples();
 }
 
@@ -184,7 +184,7 @@ function updateNamesData(): void {
     return;
   }
   const securedNamesData = input.value.replace(/[/|]/g, "");
-  nameBases[base].b = securedNamesData;
+  Names.nameBases[base].b = securedNamesData;
   input.value = securedNamesData;
   Names.updateChain(base);
 }
@@ -194,30 +194,30 @@ function updateBaseName(rawName: string): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   const name = rawName.replace(/[/|]/g, "");
   select.options[select.selectedIndex].innerHTML = name;
-  nameBases[base].name = name;
+  Names.nameBases[base].name = name;
 }
 
 function updateBaseMin(value: string): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (+value > nameBases[base].max) {
+  if (+value > Names.nameBases[base].max) {
     tip("Minimal length cannot be greater than maximal", false, "error");
     return;
   }
-  nameBases[base].min = +value;
+  Names.nameBases[base].min = +value;
 }
 
 function updateBaseMax(value: string): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (+value < nameBases[base].min) {
+  if (+value < Names.nameBases[base].min) {
     tip("Maximal length should be greater than minimal", false, "error");
     return;
   }
-  nameBases[base].max = +value;
+  Names.nameBases[base].max = +value;
 }
 
 function updateBaseDuplication(value: string): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  nameBases[base].d = value;
+  Names.nameBases[base].d = value;
 }
 
 function analyzeNamesbase(): void {
@@ -300,10 +300,10 @@ function analyzeNamesbase(): void {
 }
 
 function namesbaseAdd(): void {
-  const baseId = nameBases.length;
+  const baseId = Names.nameBases.length;
   const b =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
-  nameBases.push({
+  Names.nameBases.push({
     name: `Base${baseId}`,
     i: baseId,
     min: 5,
@@ -331,7 +331,7 @@ function namesbaseRestoreDefault(): void {
       Restore: function () {
         $(this).dialog("close");
         Names.clearChains();
-        nameBases = Names.getNameBases();
+        Names.nameBases = Names.getNameBases();
         createBasesList();
         updateInputs();
       },
@@ -343,7 +343,7 @@ function namesbaseRestoreDefault(): void {
 }
 
 function namesbaseDownload(): void {
-  const data = nameBases.map(b => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
+  const data = Names.nameBases.map(b => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
   const name = `${getFileName("Namesbase")}.txt`;
   downloadFile(data, name);
 }
@@ -359,7 +359,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
   }
 
   Names.clearChains();
-  if (override) nameBases = [];
+  if (override) Names.nameBases = [];
 
   const errors: ParseError[] = [];
   lines.forEach((line, index) => {
@@ -369,9 +369,9 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       if (!name) throw new Error("Name is missing");
       const names = rawNames?.replace(unsafe, "");
       if (!names) throw new Error("Names are missing");
-      nameBases.push({
+      Names.nameBases.push({
         name,
-        i: nameBases.length,
+        i: Names.nameBases.length,
         min: +min,
         max: +max,
         d,

@@ -272,7 +272,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       const religionName = (pack.religions[pack.cells.religion[cell]] as { name: string }).name;
       const cultureName = (pack.cultures[pack.cells.culture[cell]] as { name: string }).name;
       const dataTip = [
-        biomesData.name[biome],
+        pack.biomes[biome].name,
         provinceName,
         stateName,
         religionName,
@@ -289,8 +289,8 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         .attr("y", yOffset + chartHeight)
         .attr("width", tileWidth)
         .attr("height", biomesHeight)
-        .attr("fill", biomesData.color[biome])
-        .attr("stroke", biomesData.color[biome])
+        .attr("fill", pack.biomes[biome].color)
+        .attr("stroke", pack.biomes[biome].color)
         .attr("data-tip", dataTip);
     }
 
@@ -457,7 +457,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
           [
             `${dist} ${distanceUnitInput.value} from start`,
             `Elevation: ${chartData.height[idx]} ${heightUnit.value}`,
-            biomesData.name[chartData.biome[idx]],
+            pack.biomes[chartData.biome[idx]].name,
             burgId ? ((pack.burgs[burgId] as Burg).name ?? null) : null
           ]
             .filter(Boolean)
@@ -504,8 +504,8 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         rn(pop * populationRate),
         burg?.name ?? "",
         burgPop,
-        biomesData.name[pack.cells.biome[cell]],
-        biomesData.color[pack.cells.biome[cell]],
+        pack.biomes[pack.cells.biome[cell]].name,
+        pack.biomes[pack.cells.biome[cell]].color,
         culture.name,
         culture.color,
         religion.name,

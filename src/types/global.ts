@@ -2,7 +2,6 @@ import type { Selection } from "d3";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
-import type { NameBase } from "../generators/names-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { PackedGraph } from "./PackedGraph";
 
@@ -64,7 +63,6 @@ declare global {
   var urbanDensity: number;
   var urbanization: number;
   var distanceScale: number;
-  var nameBases: NameBase[];
 
   var pointsInput: HTMLInputElement;
   var culturesInput: HTMLInputElement;
@@ -135,21 +133,6 @@ declare global {
   var icons: Selection<SVGGElement, unknown, null, undefined>;
   var ruler: Selection<SVGGElement, unknown, null, undefined>;
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
-  var biomesData: {
-    i: number[];
-    name: string[];
-    color: string[];
-    biomesMatrix: Uint8Array[];
-    habitability: number[];
-    iconsDensity: number[];
-    icons: string[][];
-    cost: number[];
-    // statistics computed by the biomes editor
-    cells?: number[];
-    area?: number[];
-    rural?: number[];
-    urban?: number[];
-  };
   var notes: any[];
   var style: {
     burgLabels: { [key: string]: { [key: string]: string } };
@@ -263,7 +246,6 @@ declare global {
   // Provinces, Burgs, COA, COArenderer) are used directly instead.
   var drawCultures: () => void;
   var drawReligions: () => void;
-  var drawBiomes: () => void;
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;

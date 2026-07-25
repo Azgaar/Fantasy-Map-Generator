@@ -110,7 +110,7 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoPopulation", getFriendlyPopulation(cellId));
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
   set("infoFeature", featureId ? `${feature.group || feature.type} (${featureId})` : "n/a");
-  set("infoBiome", biomesData.name[cells.biome[cellId]]);
+  set("infoBiome", pack.biomes[cells.biome[cellId]].name);
   set("infoGood", getNamedInfo(pack.goods, cells.good[cellId], "name"));
   set("infoMarket", getMarketInfo(cells.market?.[cellId]));
 

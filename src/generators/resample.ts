@@ -88,6 +88,7 @@ class Resampler {
     inverse: (x: number, y: number) => [number, number],
     scale: number
   ) {
+    pack.biomes = parentMap.pack.biomes;
     pack.cells.biome = new Uint8Array(pack.cells.i.length);
     pack.cells.fl = new Uint16Array(pack.cells.i.length);
     pack.cells.s = new Int16Array(pack.cells.i.length);

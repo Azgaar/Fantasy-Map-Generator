@@ -403,10 +403,7 @@ function militaryCustomize(): void {
     }
 
     if (type === "biomes") {
-      const { i, name, color } = biomesData;
-      const biomes = Array(i.length)
-        .fill(null)
-        .map((_, idx) => ({ i: idx, name: name[idx], color: color[idx] }));
+      const biomes = pack.biomes.filter(biome => !biome.removed).map(({ i, name, color }) => ({ i, name, color }));
       selectLimitation(el, biomes);
       return;
     }

@@ -119,11 +119,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         const shift = this.getComputedTextLength() / -1.5;
         this.innerHTML = /* html */ `<tspan x="${shift}">${text}</tspan>`;
       });
-
-    // v1.0 added new biome - Wetland
-    biomesData.name.push("Wetland");
-    biomesData.color.push("#0b9131");
-    biomesData.habitability.push(12);
   }
 
   if (isOlderThan("1.1.0")) {
@@ -289,7 +284,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     // v1.3 added global options object
     const winds = (options as unknown as number[]).slice(); // previostly wind was saved in settings[19]
     const year = rand(100, 2000);
-    const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length))} Era`;
+    const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
     const eraShort = `${era[0]}E`;
     const military = Military.getDefaultOptions();
     options = { winds, year, era, eraShort, military } as typeof options;
@@ -1267,5 +1262,28 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("mask", null);
       if (layerIsOn("toggleHeight")) drawHeightmap();
     }
+
+    // v1.139.0 moved biomes data from global to pack.biomes
+    const [colorData = "", habitabilityData = "", nameData = ""] = data[3].split("|");
+    const colors = colorData.split(",");
+    const habitability = habitabilityData.split(",").map(Number);
+    const names = nameData.split(",");
+    const defaults = Biomes.getDefault();
+    const biomesCount = Math.max(defaults.length, colors.length, habitability.length, names.length);
+
+    pack.biomes = Array.from({ length: biomesCount }, (_, i) => {
+      const defaultBiome = defaults[i];
+      const name = names[i] || defaultBiome?.name || "Custom";
+      return {
+        i,
+        name,
+        color: colors[i] || defaultBiome?.color || "#999999",
+        habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
+        iconsDensity: defaultBiome?.iconsDensity ?? 0,
+        icons: defaultBiome?.icons ?? [],
+        cost: defaultBiome?.cost ?? 50,
+        ...(name === "removed" && { removed: true })
+      };
+    });
   }
 }

@@ -250,7 +250,7 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
 
   if (layerIsOn("toggleBiomes") && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
-    return void tip(`Biome: ${biomesData.name[biomeId]}`);
+    return void tip(`Biome: ${pack.biomes[biomeId].name}`);
   }
 
   if (layerIsOn("toggleReligions") && cells.religion[cellId]) {

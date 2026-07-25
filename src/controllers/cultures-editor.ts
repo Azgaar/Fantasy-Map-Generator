@@ -328,10 +328,10 @@ function getTypeOptions(type: string): string {
 
 function getBaseOptions(base: number): string {
   let options = "";
-  nameBases.forEach((n, i) => {
+  Names.nameBases.forEach((n, i) => {
     options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`;
   });
-  if (!nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
+  if (!Names.nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -402,7 +402,7 @@ function cultureChangeName(this: HTMLInputElement): void {
 function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
-  if (!nameBases[base]) {
+  if (!Names.nameBases[base]) {
     tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
     return;
   }
@@ -580,7 +580,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
 
   const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
-  if (!nameBases[base]) {
+  if (!Names.nameBases[base]) {
     tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
     return;
   }
@@ -991,7 +991,7 @@ function downloadCulturesCsv(): void {
   const lines = Array.from(ensureEl("culturesBody").querySelectorAll<HTMLElement>(":scope > div"));
   const data = lines.map($line => {
     const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
-    const namesbase = nameBases[+base!].name;
+    const namesbase = Names.nameBases[+base!].name;
     const { origins } = pack.cultures[+id!];
     const originList = (origins ?? [])
       .filter((origin: number | null): origin is number => Boolean(origin))
@@ -1073,7 +1073,7 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
 
     culture.origins = current.i ? restoreOrigins(culture.origins || "") : [null];
     current.shield = shapes.includes(culture.emblemsShape) ? culture.emblemsShape : "heater";
-    current.base = nameBases.findIndex(n => n.name === culture.namesbase); // can be -1 if namesbase is not found
+    current.base = Names.nameBases.findIndex(n => n.name === culture.namesbase); // can be -1 if namesbase is not found
 
     function restoreOrigins(originsString: string) {
       const originNames = originsString

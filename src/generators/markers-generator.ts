@@ -1590,7 +1590,7 @@ class MarkersModule {
   }
 
   private listRifts({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.pop[i] <= 3 && biomesData.habitability[cells.biome[i]]);
+    return cells.i.filter(i => !this.occupied[i] && cells.pop[i] <= 3 && pack.biomes[cells.biome[i]].habitability);
   }
 
   private addRift(id: string, _cell: number) {

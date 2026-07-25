@@ -80,7 +80,6 @@ function prepareMapData(): string {
     ensureEl<HTMLInputElement>("growthRate").value
   ].join("|");
   const coords = JSON.stringify(mapCoordinates);
-  const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
@@ -103,6 +102,7 @@ function prepareMapData(): string {
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
   const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
   const packFeatures = JSON.stringify(pack.features);
+  const biomes = JSON.stringify(pack.biomes);
   const cultures = JSON.stringify(pack.cultures);
   const states = JSON.stringify(pack.states);
   const burgs = JSON.stringify(pack.burgs);
@@ -126,10 +126,10 @@ function prepareMapData(): string {
     .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load
 
   // store name array only if not the same as default
-  const defaultNB = Names.getNameBases();
-  const namesData = nameBases
+  const defaultNameBases = Names.getNameBases();
+  const namesData = Names.nameBases
     .map((b, i) => {
-      const names = defaultNB[i] && defaultNB[i].b === b.b ? "" : b.b;
+      const names = defaultNameBases[i] && defaultNameBases[i].b === b.b ? "" : b.b;
       return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
     })
     .join("/");

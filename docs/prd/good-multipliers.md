@@ -158,7 +158,7 @@ Names are resolved from map data:
 - `culture` — `pack.cultures[id]?.name`
 - `state` — `pack.states[id]?.name`
 - `religion` — `pack.religions[id]?.name`
-- `biome` — `biomesData.name[id]`
+- `biome` — `pack.biomes[id].name`
 
 Example rows:
 ```
@@ -181,7 +181,7 @@ Opened by clicking the edit icon for a dimension. Follows the same modal pattern
 - Each entity: colored dot (using its map color) + name + number input pre-filled with `1`
 - Existing non-default values are pre-loaded from `good.multipliers.<dimension>[id]`
 - For `cultureType`: list is the fixed `CULTURE_TYPES` array (no color dot needed)
-- For `biome`: list is `biomesData.i` with `biomesData.name[id]` as label
+- For `biome`: list is `pack.biomes` with `biome.name` as label
 
 **Buttons:** Apply / Cancel (identical pattern to military units popup).
 

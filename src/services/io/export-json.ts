@@ -44,9 +44,8 @@ function getFullDataJson(): string {
     mapCoordinates,
     pack: packData,
     grid: gridData,
-    biomesData,
     notes,
-    nameBases
+    nameBases: Names.nameBases
   });
 }
 
@@ -55,6 +54,7 @@ function getMinimalDataJson(): string {
   const settings = getSettings();
   const packData = {
     features: pack.features,
+    biomes: pack.biomes,
     cultures: pack.cultures,
     burgs: pack.burgs,
     states: pack.states,
@@ -69,7 +69,14 @@ function getMinimalDataJson(): string {
     zones: pack.zones,
     measurers: pack.measurers
   };
-  return JSON.stringify({ info, settings, mapCoordinates, pack: packData, biomesData, notes, nameBases });
+  return JSON.stringify({
+    info,
+    settings,
+    mapCoordinates,
+    pack: packData,
+    notes,
+    nameBases: Names.nameBases
+  });
 }
 
 function getPackDataJson(): string {
@@ -175,6 +182,7 @@ function getPackCellsData() {
       c: pack.vertices.c[vertexId]
     })),
     features: pack.features,
+    biomes: pack.biomes,
     cultures: pack.cultures,
     burgs: pack.burgs,
     states: pack.states,

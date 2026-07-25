@@ -30,7 +30,7 @@ const reliefIconsRenderer = (): void => {
     if (height < 20) continue; // no icons on water
     if (cells.r[i]) continue; // no icons on rivers
     const biome = cells.biome[i];
-    if (height < 50 && biomesData.iconsDensity[biome] === 0) continue; // no icons for this biome
+    if (height < 50 && pack.biomes[biome].iconsDensity === 0) continue; // no icons for this biome
 
     const polygon = getPackPolygon(i);
     const [minX, maxX] = extent(polygon, p => p[0]) as [number, number];
@@ -40,14 +40,14 @@ const reliefIconsRenderer = (): void => {
     else placeReliefIcons();
 
     function placeBiomeIcons(): void {
-      const iconsDensity = biomesData.iconsDensity[biome] / 100;
+      const iconsDensity = pack.biomes[biome].iconsDensity / 100;
       const radius = 2 / iconsDensity / density;
       if (Math.random() > iconsDensity * 10) return;
 
       for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
         if (!polygonContains(polygon, [cx, cy])) continue;
         let h = (4 + Math.random()) * size;
-        const icon = getBiomeIcon(i, biomesData.icons[biome]);
+        const icon = getBiomeIcon(i, pack.biomes[biome].icons);
         if (icon === "#relief-grass-1") h *= 1.2;
         relief.push({
           i: icon,

@@ -26,7 +26,7 @@ export function getSatelliteBiomeData(biomeId: number, fallbackBiomeId: number) 
   const builtIn = BIOME_SATELLITE[biomeId];
   if (builtIn) return builtIn;
 
-  const customColor = parseColor(biomesData.color[biomeId])?.rgb();
+  const customColor = parseColor(pack.biomes[biomeId].color)?.rgb();
   if (!customColor) return fallback;
 
   return {
