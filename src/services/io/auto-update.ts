@@ -1251,4 +1251,21 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     if (data[33]) pack.measurers = parse(data[33]);
   }
+
+  if (isOlderThan("1.139.0")) {
+    // fix for old issue with heightmap getting styles on top level
+    const terrs = select("#terrs");
+    if (terrs.attr("opacity") !== null || terrs.attr("filter") !== null || terrs.attr("scheme") !== null) {
+      terrs
+        .attr("opacity", null)
+        .attr("filter", null)
+        .attr("scheme", null)
+        .attr("terracing", null)
+        .attr("skip", null)
+        .attr("relax", null)
+        .attr("curve", null)
+        .attr("mask", null);
+      if (layerIsOn("toggleHeight")) drawHeightmap();
+    }
+  }
 }
