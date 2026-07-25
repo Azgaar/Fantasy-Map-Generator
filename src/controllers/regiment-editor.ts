@@ -1,7 +1,7 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents, clicked } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
 import { speak } from "@/utils";
@@ -324,9 +324,7 @@ function toggleAdd(): void {
     tip("Click on map to create new regiment or fleet", true);
   } else {
     clearMainTip();
-    // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
-    // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    select("#viewbox").on("click", clicked).style("cursor", "default");
+    applyDefaultViewboxEvents();
   }
 }
 
@@ -376,9 +374,7 @@ function toggleAttack(): void {
   } else {
     clearMainTip();
     select<SVGGElement, unknown>("#armies").selectAll(":scope > g").classed("draggable", true);
-    // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
-    // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    select("#viewbox").on("click", clicked).style("cursor", "default");
+    applyDefaultViewboxEvents();
   }
 }
 
@@ -451,9 +447,7 @@ function toggleAttach(): void {
   } else {
     clearMainTip();
     select<SVGGElement, unknown>("#armies").selectAll(":scope > g").classed("draggable", true);
-    // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
-    // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    select("#viewbox").on("click", clicked).style("cursor", "default");
+    applyDefaultViewboxEvents();
   }
 }
 

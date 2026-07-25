@@ -2,7 +2,7 @@ import { select, sum } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader, sortLines } from "@/components/dialog/sorting";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { clicked } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment } from "@/renderers/draw-military";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
@@ -90,6 +90,7 @@ function renderDialog(): void {
 }
 
 function closeRegimentsOverview(): void {
+  if (ensureEl("regimentsAddNew").classList.contains("pressed")) toggleAdd();
   $("#regimentsOverview").dialog("destroy");
   ensureEl("regimentsOverview").remove();
 }
@@ -247,9 +248,7 @@ function toggleAdd(): void {
     findEl("regimentAdd")?.classList.add("pressed");
   } else {
     clearMainTip();
-    // `clicked` is unported classic code that reads the legacy `d3.event` global, so this one
-    // rebind must go through the classic v5 `viewbox` selection, not a fresh v7 one
-    select("#viewbox").on("click", clicked).style("cursor", "default");
+    applyDefaultViewboxEvents();
     refreshRegimentsOverview();
     findEl("regimentAdd")?.classList.remove("pressed");
   }

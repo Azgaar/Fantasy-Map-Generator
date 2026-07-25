@@ -1,23 +1,24 @@
-import { drag, select } from "d3";
+import { drag, type Selection, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rand, rn } from "../utils";
 
+let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
+
 function open(id: string): void {
   if (customization) return;
-  if (elSelected && id === elSelected.attr("id")) return;
+  if (findEl("riverEditor") && id === selectedRiver.attr("id")) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
   ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
   if (!layerIsOn("toggleCells")) toggleCells();
 
-  elSelected = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
+  selectedRiver = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
     "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
@@ -123,7 +124,7 @@ function openRiverStyle(): void {
 }
 
 function getRiver(): River {
-  const riverId = +elSelected.attr("id").slice(5);
+  const riverId = +selectedRiver.attr("id").slice(5);
   return pack.rivers.find((r: River) => r.i === riverId) as River;
 }
 
@@ -152,7 +153,7 @@ function updateRiverData(): void {
 }
 
 function updateRiverLength(river: River): void {
-  river.length = rn((elSelected.node() as SVGGeometryElement).getTotalLength() / 2, 2);
+  river.length = rn((selectedRiver.node() as SVGGeometryElement).getTotalLength() / 2, 2);
   const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
@@ -236,7 +237,7 @@ function redrawRiver(): void {
 
   const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
   const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
-  elSelected.attr("d", path);
+  selectedRiver.attr("d", path);
 
   updateRiverLength(river);
   if (findEl("elevationProfile")) showRiverElevationProfile();
@@ -310,7 +311,7 @@ function showRiverElevationProfile(): void {
 }
 
 function editRiverLegend(): void {
-  const id = elSelected.attr("id");
+  const id = selectedRiver.attr("id");
   const river = getRiver();
   void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
 }
@@ -324,9 +325,9 @@ function removeRiver(): void {
     buttons: {
       Remove: function (this: any) {
         $(this).dialog("close");
-        const river = +elSelected.attr("id").slice(5);
+        const river = +selectedRiver.attr("id").slice(5);
         Rivers.remove(river);
-        elSelected.remove();
+        selectedRiver.remove();
         $("#riverEditor").dialog("close");
       },
       Cancel: function (this: any) {
@@ -340,8 +341,7 @@ function closeRiverEditor(): void {
   select("#controlPoints").remove();
   select("#controlCells").remove();
 
-  elSelected.on("click", null);
-  unselect();
+  selectedRiver.on("click", null);
   clearMainTip();
 
   const forced = +ensureEl("toggleCells").dataset.forced!;

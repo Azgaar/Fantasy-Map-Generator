@@ -111,8 +111,6 @@ declare global {
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
   var debug: Selection<SVGElement, unknown, null, undefined>;
-  var elSelected: Selection<SVGElement, unknown, HTMLElement, any>;
-
   // SVG layer selections reassigned on map load (main.js)
   var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
   var ocean: Selection<SVGGElement, unknown, null, undefined>;

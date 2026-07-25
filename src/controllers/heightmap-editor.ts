@@ -1,7 +1,7 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents, clicked } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { drawFeatures } from "@/renderers/draw-features";
@@ -1077,7 +1077,9 @@ function exitBrushMode(): void {
   const pressed = document.querySelector("#brushesButtons > button.pressed");
   if (pressed) pressed.classList.remove("pressed");
 
-  select<SVGElement, unknown>("#viewbox").style("cursor", "default").on(".drag", null).on("click", clicked);
+  applyDefaultViewboxEvents();
+  select<SVGSVGElement, unknown>("#map").on("dblclick.zoom", null);
+  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
   select("#debug").selectAll(".lineCircle").remove();
   removeCircle();
 

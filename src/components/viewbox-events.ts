@@ -2,7 +2,10 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import { dragLegendBox } from "@/renderers/draw-legend";
-import { onMouseMove } from "./map-tooltip";
+import { debounce } from "@/utils/commonUtils";
+import { handleMouseMove } from "./map-tooltip";
+
+const onMouseMove = debounce(handleMouseMove, 100);
 
 /** Restore the default viewbox events, dropping whatever an editor bound to the map */
 export function applyDefaultViewboxEvents(): void {
@@ -11,7 +14,7 @@ export function applyDefaultViewboxEvents(): void {
   select<SVGGElement, unknown>("#viewbox")
     .style("cursor", "default")
     .on(".drag", null)
-    .on("click", clicked)
+    .on("click", onClick)
     .on("touchmove mousemove", onMouseMove);
 
   select<SVGGElement, unknown>("#legend").call(drag<SVGGElement, unknown>().on("start", dragLegendBox));
@@ -50,7 +53,7 @@ const GREAT_EDITORS: Record<string, Opener> = {
 };
 
 /** Handle a click on the map: open the editor for the clicked element */
-export function clicked(event: MouseEvent): void {
+function onClick(event: MouseEvent): void {
   const target = event?.target as SVGElement | null;
   const parent = target?.parentElement as SVGElement | null;
   const grand = parent?.parentElement as SVGElement | null;
@@ -64,21 +67,6 @@ export function clicked(event: MouseEvent): void {
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
 }
-
-/** Deselect the currently selected element and restore the default map events */
-export function unselect(): void {
-  applyDefaultViewboxEvents();
-  if (!elSelected) return;
-
-  elSelected.call(drag<SVGElement, unknown>().on("drag", null)).attr("class", null);
-  select(debug.node() as SVGGElement)
-    .selectAll("*")
-    .remove();
-  select("#viewbox").style("cursor", "default");
-  elSelected = null as unknown as typeof elSelected;
-}
-
-export const ViewboxEvents = { applyDefaultViewboxEvents, clicked, unselect };
 
 declare global {
   var zoom: any; // d3 v5 zoom behaviour created in main.js

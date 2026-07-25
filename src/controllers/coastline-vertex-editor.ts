@@ -1,12 +1,14 @@
-import { type D3DragEvent, drag, polygonArea, select } from "d3";
+import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { unselect } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
 import { drawBorders } from "@/renderers/draw-borders";
 import { getFeaturePath } from "@/renderers/draw-features";
 import { getArea, getAreaUnit } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
+
+let selectedCoastline: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 function open(element: SVGElement): void {
   if (customization) return;
@@ -16,7 +18,7 @@ function open(element: SVGElement): void {
   renderDialog();
 
   select("#debug").append("g").attr("id", "vertices");
-  elSelected = select<SVGElement, unknown>(element) as unknown as typeof elSelected;
+  selectedCoastline = select<SVGElement, unknown>(element) as unknown as typeof selectedCoastline;
   selectCoastlineGroup(element);
   drawCoastlineVertices();
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
@@ -57,7 +59,7 @@ function renderDialog(): void {
 }
 
 function getFeature(): Feature {
-  const featureId = +elSelected.attr("data-f");
+  const featureId = +selectedCoastline.attr("data-f");
   return pack.features[featureId];
 }
 
@@ -107,7 +109,7 @@ function handleVertexDrag(
 
   vertices.p[vertexId] = [x, y];
 
-  const featureId = +elSelected.attr("data-f");
+  const featureId = +selectedCoastline.attr("data-f");
   const feature = features[featureId];
 
   // change coastline path
@@ -166,7 +168,7 @@ function selectCoastlineGroup(node: SVGElement): void {
 }
 
 function changeCoastlineGroup(this: HTMLSelectElement): void {
-  ensureEl(this.value).appendChild(elSelected.node()!);
+  ensureEl(this.value).appendChild(selectedCoastline.node()!);
 }
 
 function toggleNewGroupInput(): void {
@@ -204,7 +206,7 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   // just rename if only 1 element left
-  const oldGroup = elSelected.node()!.parentNode as SVGGElement;
+  const oldGroup = selectedCoastline.node()!.parentNode as SVGGElement;
   const basic = ["sea_island", "lake_island"].includes(oldGroup.id);
   if (!basic && oldGroup.childElementCount === 1) {
     ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
@@ -216,24 +218,24 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   // create a new group
-  const newGroup = (elSelected.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
+  const newGroup = (selectedCoastline.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
   ensureEl("coastline").appendChild(newGroup);
   newGroup.id = group;
   ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
-  ensureEl(group).appendChild(elSelected.node()!);
+  ensureEl(group).appendChild(selectedCoastline.node()!);
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
 }
 
 function removeCoastlineGroup(): void {
-  const group = (elSelected.node()!.parentNode as SVGGElement).id;
+  const group = (selectedCoastline.node()!.parentNode as SVGGElement).id;
   if (["sea_island", "lake_island"].includes(group)) {
     tip("This is one of the default groups, it cannot be removed", false, "error");
     return;
   }
 
-  const count = (elSelected.node()!.parentNode as SVGGElement).childElementCount;
+  const count = (selectedCoastline.node()!.parentNode as SVGGElement).childElementCount;
   alertMessage.innerHTML = /* html */ `Are you sure you want to remove the group? All coastline elements of the group (${count}) will be moved under
     <i>sea_island</i> group`;
   $("#alert").dialog({
@@ -260,13 +262,13 @@ function removeCoastlineGroup(): void {
 }
 
 function editGroupStyle(): void {
-  const g = (elSelected.node()!.parentNode as SVGGElement).id;
+  const g = (selectedCoastline.node()!.parentNode as SVGGElement).id;
   editStyle("coastline", g);
 }
 
 function closeCoastlineEditor(): void {
   select("#debug").select("#vertices").remove();
-  unselect();
+  applyDefaultViewboxEvents();
   destroyDialogIfExists("coastlineEditor");
 }
 

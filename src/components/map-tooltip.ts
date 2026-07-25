@@ -3,7 +3,6 @@ import type { Point } from "@/generators/voronoi";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import {
   convertTemperature,
-  debounce,
   findClosestCell,
   findEl,
   findGridCell,
@@ -16,9 +15,7 @@ import {
 } from "@/utils";
 import { showMainTip, tip } from "./tooltips";
 
-export const onMouseMove = debounce(handleMouseMove, 100);
-
-function handleMouseMove(event: MouseEvent | TouchEvent): void {
+export function handleMouseMove(event: MouseEvent | TouchEvent): void {
   const node = event.currentTarget as SVGElement | null;
   if (!node || !pack.cells?.p) return;
 

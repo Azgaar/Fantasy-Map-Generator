@@ -1,7 +1,7 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents, unselect } from "@/components/viewbox-events";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -708,12 +708,12 @@ function editBurgGroups(): void {
 }
 
 function closeBurgEditor(): void {
-  ensureEl("burgRelocate").classList.remove("pressed");
+  if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   select<SVGTextElement, unknown>("#burgLabels")
     .selectAll<SVGTextElement, unknown>("text")
-    .call(drag<SVGTextElement, unknown>().on("drag", null))
+    .on(".drag", null)
     .classed("draggable", false);
-  unselect();
+  selected = null;
   $("#burgEditor").dialog("destroy");
   ensureEl("burgEditor").remove();
 }

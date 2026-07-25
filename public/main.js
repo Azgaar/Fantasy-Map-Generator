@@ -148,7 +148,6 @@ var pack = {}; // packed graph and data
 var seed;
 let mapId;
 let mapHistory = [];
-let elSelected;
 let modules = {};
 let notes = [];
 let customization = 0;

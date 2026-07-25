@@ -1,7 +1,7 @@
 import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents, unselect } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
@@ -18,10 +18,10 @@ function open(markerI?: number, target?: Element): void {
   if (!found) return;
   [selectedElement, selectedMarker] = found;
 
-  elSelected = select<SVGElement, unknown>(selectedElement)
+  select<SVGElement, unknown>(selectedElement)
     .raise()
     .call(drag<SVGElement, unknown>().on("start", dragMarker))
-    .classed("draggable", true) as unknown as typeof elSelected;
+    .classed("draggable", true);
 
   if (findEl("notesEditor")) {
     void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
@@ -293,7 +293,7 @@ function toggleMarkerLock(): void {
 }
 
 function toggleAddMarker(): void {
-  void Controllers.MarkerCreator.toggle();
+  void Controllers.MarkerCreator.toggle(selectedMarker);
 }
 
 function confirmMarkerDeletion(): void {
@@ -313,9 +313,8 @@ function deleteMarker(): void {
 }
 
 function closeMarkerEditor(): void {
-  unselect();
-  ensureEl("addMarker").classList.remove("pressed");
-  applyDefaultViewboxEvents();
+  select(selectedElement).on(".drag", null).classed("draggable", false);
+  if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
   destroyDialogIfExists("markerEditor");
 }
