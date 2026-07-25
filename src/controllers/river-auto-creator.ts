@@ -4,14 +4,18 @@ import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement
 import { tip } from "@/components/tooltips";
 
 function toggle(): void {
-  const active = toggleMapPlacement(
+  if (document.getElementById("addRiver")?.classList.contains("pressed")) {
+    stopMapPlacement();
+    return;
+  }
+
+  closeDialogs(".stable");
+  toggleMapPlacement(
     "addRiver",
     addOnClick,
     "Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers",
     "warn"
   );
-  if (!active) return;
-  closeDialogs(".stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 }
 

@@ -15,7 +15,9 @@ function toggle(baseMarker?: Marker): void {
   toggleMapPlacement(
     "addMarker",
     event => addOnClick(event, baseMarker),
-    "Click on map to add a marker. Hold Shift to add multiple"
+    "Click on map to add a marker. Hold Shift to add multiple",
+    undefined,
+    unpressProxyButtons
   );
   document.getElementById("markersAddFromOverview")?.classList.add("pressed");
   document.getElementById("markerAdd")?.classList.add("pressed");

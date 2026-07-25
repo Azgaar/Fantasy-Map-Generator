@@ -51,8 +51,8 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "overviewCellsButton") void Controllers.CellInfo.open();
   else if (buttonId === "openMinimapButton") void Controllers.Minimap.open();
   else if (buttonId === "configRegenerateMarkers") void Controllers.MarkersSettings.open();
+  else if (buttonId === "addBurgTool") void Controllers.BurgCreator.toggle();
   else if (buttonId === "addLabel") void Controllers.LabelCreator.toggle();
-  else if (buttonId === "addBurgTool") void Controllers.BurgsOverview.openAddMode();
   else if (buttonId === "addRiver") void Controllers.RiverAutoCreator.toggle();
   else if (buttonId === "addRoute") void Controllers.RouteCreator.open();
   else if (buttonId === "addMarker") void Controllers.MarkerCreator.toggle();

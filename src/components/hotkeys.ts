@@ -66,11 +66,11 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyE") Controllers.CellInfo.open();
   else if ((shift || altShift) && code === "KeyG") Controllers.GoodsEditor.open();
   else if ((shift || altShift) && code === "Equal") Controllers.MeasurersEditor.open();
-  else if (key === "!") Controllers.BurgsOverview.openAddMode();
+  else if (key === "!") Controllers.BurgCreator.toggle();
   else if (key === "@") Controllers.LabelCreator.toggle();
-  else if (key === "#") Controllers.RiverAutoCreator.toggle();
-  else if (key === "$") Controllers.RouteCreator.open();
-  else if (key === "%") Controllers.MarkerCreator.toggle();
+  else if (key === "#") Controllers.MarkerCreator.toggle();
+  else if (key === "$") Controllers.RiverAutoCreator.toggle();
+  else if (key === "%") Controllers.RouteCreator.open();
   else if (code === "KeyX") toggleTexture();
   else if (code === "KeyH") toggleHeight();
   else if (code === "KeyQ") toggleLakes();

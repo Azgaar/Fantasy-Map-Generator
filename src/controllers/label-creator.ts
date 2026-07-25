@@ -5,9 +5,13 @@ import { Controllers } from "@/controllers";
 import { getNextId } from "@/utils";
 
 function toggle(): void {
-  const active = toggleMapPlacement("addLabel", addOnClick, "Click on map to place label. Hold Shift to add multiple");
-  if (!active) return;
+  if (document.getElementById("addLabel")?.classList.contains("pressed")) {
+    stopMapPlacement();
+    return;
+  }
+
   closeDialogs(".stable");
+  toggleMapPlacement("addLabel", addOnClick, "Click on map to place label. Hold Shift to add multiple");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 }
 

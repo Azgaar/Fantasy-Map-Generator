@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -10,6 +11,7 @@ let creatorPoints: number[][] = [];
 
 function open(defaultGroup?: string): void {
   if (customization) return;
+  stopMapPlacement();
   closeDialogs();
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 

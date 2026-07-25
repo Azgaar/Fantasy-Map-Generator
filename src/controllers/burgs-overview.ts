@@ -2,13 +2,11 @@ import { pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
-import { stopMapPlacement } from "@/components/map-placement";
-import { clearMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
-import { convertTemperature, ensureEl, findEl, getPointer, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 
@@ -139,7 +137,7 @@ function renderDialog(): void {
   ensureEl("burgsFilterCulture").addEventListener("change", burgsOverviewAddLines);
   ensureEl("burgsSearch").addEventListener("input", burgsOverviewAddLines);
   ensureEl("regenerateBurgNames").addEventListener("click", regenerateNames);
-  ensureEl("addNewBurg").addEventListener("click", enterAddBurgMode);
+  ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
   ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
   ensureEl("burgsListToLoad").addEventListener("change", function (this: HTMLInputElement) {
@@ -150,7 +148,7 @@ function renderDialog(): void {
 }
 
 function closeBurgsOverview(): void {
-  exitAddBurgMode();
+  if (document.getElementById("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
   $("#burgsOverview").dialog("destroy");
   ensureEl("burgsOverview").remove();
 }
@@ -374,53 +372,6 @@ function regenerateNames(): void {
     });
 
   if (layerIsOn("toggleLabels")) drawBurgLabels();
-}
-
-function enterAddBurgMode(this: HTMLElement): void {
-  if (this.classList.contains("pressed")) {
-    exitAddBurgMode();
-    return;
-  }
-  customization = 3;
-  this.classList.add("pressed");
-  tip("Click on the map to create a new burg. Hold Shift to add multiple", true, "warn");
-  select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addBurgOnClick);
-}
-
-async function openAddMode(): Promise<void> {
-  stopMapPlacement();
-  ensureEl("addBurgTool").classList.add("pressed");
-  await open();
-  enterAddBurgMode.call(ensureEl("addNewBurg"));
-}
-
-function addBurgOnClick(this: SVGGElement, event: any): void {
-  const point = getPointer(event, this);
-  const cell = findCell(point[0], point[1])!;
-
-  if (pack.cells.h[cell] < 20) {
-    tip("You cannot place state into the water. Please click on a land cell", false, "error");
-    return;
-  }
-  if (pack.cells.burg[cell]) {
-    tip("There is already a burg in this cell. Please select a free cell", false, "error");
-    return;
-  }
-
-  Burgs.add(point as [number, number]); // add new burg
-
-  if (event.shiftKey === false) {
-    exitAddBurgMode();
-    burgsOverviewAddLines();
-  }
-}
-
-function exitAddBurgMode(): void {
-  customization = 0;
-  applyDefaultViewboxEvents();
-  clearMainTip();
-  ensureEl("addBurgTool").classList.remove("pressed");
-  findEl("addNewBurg")?.classList.remove("pressed");
 }
 
 function showBurgsChart(): void {
@@ -753,4 +704,4 @@ function updateLockAllIcon(): void {
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
 }
 
-export const BurgsOverview = { open, openAddMode };
+export const BurgsOverview = { open };
