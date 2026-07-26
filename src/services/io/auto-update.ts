@@ -20,6 +20,32 @@ import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
 
+  if (isOlderThan("1.139.0")) {
+    // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
+    // This must run before older migrations that consume biome data.
+    const [colorData = "", habitabilityData = "", nameData = ""] = data[3].split("|");
+    const colors = colorData.split(",");
+    const habitability = habitabilityData.split(",").map(Number);
+    const names = nameData.split(",");
+    const defaults = Biomes.getDefault();
+    const biomesCount = Math.max(defaults.length, colors.length, habitability.length, names.length);
+
+    pack.biomes = Array.from({ length: biomesCount }, (_, i) => {
+      const defaultBiome = defaults[i];
+      const name = names[i] || defaultBiome?.name || "Custom";
+      return {
+        i,
+        name,
+        color: colors[i] || defaultBiome?.color || "#999999",
+        habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
+        iconsDensity: defaultBiome?.iconsDensity ?? 0,
+        icons: defaultBiome?.icons ?? [],
+        cost: defaultBiome?.cost ?? 50,
+        ...(name === "removed" && { removed: true })
+      };
+    });
+  }
+
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
     relig = viewbox.insert("g", "#terrain").attr("id", "relig");
@@ -1262,28 +1288,5 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("mask", null);
       if (layerIsOn("toggleHeight")) drawHeightmap();
     }
-
-    // v1.139.0 moved biomes data from global to pack.biomes
-    const [colorData = "", habitabilityData = "", nameData = ""] = data[3].split("|");
-    const colors = colorData.split(",");
-    const habitability = habitabilityData.split(",").map(Number);
-    const names = nameData.split(",");
-    const defaults = Biomes.getDefault();
-    const biomesCount = Math.max(defaults.length, colors.length, habitability.length, names.length);
-
-    pack.biomes = Array.from({ length: biomesCount }, (_, i) => {
-      const defaultBiome = defaults[i];
-      const name = names[i] || defaultBiome?.name || "Custom";
-      return {
-        i,
-        name,
-        color: colors[i] || defaultBiome?.color || "#999999",
-        habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
-        iconsDensity: defaultBiome?.iconsDensity ?? 0,
-        icons: defaultBiome?.icons ?? [],
-        cost: defaultBiome?.cost ?? 50,
-        ...(name === "removed" && { removed: true })
-      };
-    });
   }
 }
