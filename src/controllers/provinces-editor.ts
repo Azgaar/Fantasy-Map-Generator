@@ -1288,7 +1288,7 @@ function exitProvincesManualAssignment(close?: string): void {
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close)
     $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
@@ -1382,7 +1382,7 @@ function exitAddProvinceMode(): void {
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const provincesAdd = ensureEl("provincesAdd");
   if (provincesAdd.classList.contains("pressed")) provincesAdd.classList.remove("pressed");

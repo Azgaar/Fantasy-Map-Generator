@@ -575,7 +575,7 @@ function exitBiomesCustomizationMode(close?: boolean): void {
   ensureEl("biomesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   ensureEl("biomesEditor")
     .querySelectorAll(".hide")

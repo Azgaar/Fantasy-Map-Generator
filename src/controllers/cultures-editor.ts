@@ -907,7 +907,7 @@ function exitCulturesManualAssignment(close?: string): void {
   ensureEl("culturesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close) $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
@@ -957,7 +957,7 @@ function exitAddCultureMode(): void {
   ensureEl("culturesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const culturesAdd = ensureEl("culturesAdd");
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");

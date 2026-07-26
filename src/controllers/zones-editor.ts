@@ -416,7 +416,7 @@ function exitZonesManualAssignment(close?: string): void {
   ensureEl("zonesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close)
     $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });

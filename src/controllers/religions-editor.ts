@@ -847,7 +847,7 @@ function exitReligionsManualAssignment(close?: string): void {
   ensureEl("religionsBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close) $("#religionsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
@@ -882,7 +882,7 @@ function exitAddReligionMode(): void {
   ensureEl("religionsBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const religionsAdd = ensureEl("religionsAdd");
   if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");

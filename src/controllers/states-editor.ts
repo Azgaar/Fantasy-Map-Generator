@@ -1493,7 +1493,7 @@ function exitStatesManualAssignment(close: boolean): void {
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close)
     $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
@@ -1641,7 +1641,7 @@ function exitAddStateMode(): void {
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const statesAdd = ensureEl("statesAdd");
   if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
