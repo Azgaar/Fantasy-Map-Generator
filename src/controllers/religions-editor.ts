@@ -1,5 +1,4 @@
 import { drag, easeSinIn, select, transition } from "d3";
-import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
@@ -401,7 +400,7 @@ function religionChangeColor(this: HTMLElement): void {
     select("#debug").select(`#religionsCenter${religionId}`).attr("fill", newFill);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function religionChangeName(this: HTMLInputElement): void {

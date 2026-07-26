@@ -25,7 +25,8 @@ these three tests — a big classic module usually splits across four or five fo
 
 - **Does the user open and close it, _and_ is it about the map?** Both yes → `controllers/`.
   Always on screen → `components/`. Opened but not about the map (an About dialog, a
-  colour picker) → `components/`.
+  shell-loaded widget) → `components/`. Transient UI loaded only when first opened (such as
+  the colour picker) → `controllers/`.
 - **Does it read `pack`/`grid`?** Then it is not a `service`, whatever else it is.
 - **Does it read an ambient global, or have only one consumer?** Then it is not a `util` —
   put it in the module that uses it, or pass the state in as an argument.

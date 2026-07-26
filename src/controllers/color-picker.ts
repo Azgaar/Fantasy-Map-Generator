@@ -1,7 +1,7 @@
 // The fill picker: an SVG overlay to pick a color or a hatching pattern.
 import { type D3DragEvent, drag, hsl, rgb, select } from "d3";
+import { tip } from "@/components/tooltips";
 import { parseTransform, rn } from "@/utils";
-import { tip } from "./tooltips";
 
 type ColorSpace = "hsl" | "rgb" | "hex";
 
@@ -15,7 +15,7 @@ const SWATCH_SIZE = 16;
 const PICKER_WIDTH = 315;
 
 /** Open the picker for the current fill, calling back on every pick */
-export function openPicker(fill: string, callback: (fill: string) => void): void {
+function open(fill: string, callback: (fill: string) => void): void {
   document.getElementById("pickerContainer")?.remove();
   const container = renderPicker();
   addListeners(container, callback);
@@ -333,4 +333,4 @@ function onPickerDrag(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
   });
 }
 
-export const ColorPicker = { open: openPicker };
+export const ColorPicker = { open };

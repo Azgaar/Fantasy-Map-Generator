@@ -1,10 +1,10 @@
 import { drag, easeSinIn, select, sum, transition } from "d3";
-import { openPicker } from "@/components/color-picker";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { drawBiomes } from "@/renderers/draw-biomes";
@@ -271,7 +271,7 @@ function biomeChangeColor(el: HTMLElement): void {
     select(`#biomes > #biome${biome}`).attr("fill", newFill).attr("stroke", newFill);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function biomeChangeName(el: HTMLInputElement): void {

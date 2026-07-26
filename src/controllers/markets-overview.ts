@@ -1,5 +1,4 @@
 import { color, drag, select } from "d3";
-import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
@@ -480,7 +479,7 @@ function marketChangeFill(fillBox: HTMLElement, marketId: number): void {
     applyMarketColor(marketId, newFill);
   };
 
-  openPicker(market.color, callback);
+  void Controllers.ColorPicker.open(market.color, callback);
 }
 
 // Recolor a single market's rendered shapes in place, matching draw-markets output.

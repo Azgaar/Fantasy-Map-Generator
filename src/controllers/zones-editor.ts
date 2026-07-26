@@ -1,9 +1,9 @@
 import { drag, select, sum } from "d3";
-import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -435,7 +435,7 @@ function changeFill(fill: string, zone: Zone): void {
     zonesEditorAddLines();
   };
 
-  openPicker(fill, callback);
+  void Controllers.ColorPicker.open(fill, callback);
 }
 
 function toggleVisibility(zone: Zone): void {

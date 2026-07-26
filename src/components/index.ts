@@ -6,7 +6,6 @@ import "./map-tooltip";
 import "./viewbox-events";
 import "./tools";
 import "./hotkeys";
-import "./color-picker";
 import "./dialog/dialog-helpers";
 import "./dialog/sorting";
 import "./fill-box";

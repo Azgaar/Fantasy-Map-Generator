@@ -12,6 +12,7 @@ export const Controllers = createRegistry({
   ChartsOverview: () => import("@/controllers/charts-overview").then(m => m.ChartsOverview),
   CoastlineEditor: () => import("@/controllers/coastline-editor").then(m => m.CoastlineEditor),
   CoastlineVertexEditor: () => import("@/controllers/coastline-vertex-editor").then(m => m.CoastlineVertexEditor),
+  ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),

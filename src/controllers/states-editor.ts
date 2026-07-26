@@ -1,5 +1,4 @@
 import { color, drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
-import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
@@ -425,7 +424,7 @@ function stateChangeFill(el: HTMLElement): void {
     armies.select(`#army${state}`).selectAll("g > rect:nth-of-type(2)").attr("fill", darkerColor);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function editStateName(state: number): void {

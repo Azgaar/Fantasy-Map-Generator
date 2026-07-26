@@ -9,7 +9,6 @@ import {
   transition,
   treemap
 } from "d3";
-import { openPicker } from "@/components/color-picker";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
@@ -399,7 +398,7 @@ function changeFill(el: HTMLElement): void {
     g.select(`#province-gap${p}`).attr("stroke", newFill);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function capitalZoomIn(p: number): void {

@@ -237,8 +237,8 @@ state**._ A controller does **not** hold pure static data, services, or serializ
 - **Web components** — reusable custom elements with no map knowledge (`fill-box`,
   `slider-input`).
 - **App-level UI** — dialogs and widgets that are opened over the map but say nothing about it:
-  the About dialog (`app-info`), the fill picker (`color-picker`). They have a controller's
-  lifecycle but not a controller's subject, so they live here and load with the shell.
+  the About dialog (`app-info`). They have a controller's lifecycle but not a controller's
+  subject, so they live here and load with the shell.
 - **`dialog/` — the dialog toolkit.** What every editor dialog is assembled from and what acts
   on dialogs as a set: `closeDialogs`, `confirmationDialog`, `fitContent`, header sorting, and
   `refreshAllEditors`. These currently wrap jQuery UI; they are collected here so a single
@@ -289,7 +289,8 @@ classic needs it.
 - Mutates world state from user input → **editor** in `controllers/`
 - Presents map state read-only in a dialog the user opens and closes → **overview** in `controllers/`
 - Presents map state but is _always_ on screen → **chrome** in `components/`
-- A dialog or widget that knows nothing about the map (About, pickers) → `components/`
+- A dialog or widget that knows nothing about the map and loads with the shell (About) → `components/`
+- Transient UI loaded only when opened (for example, the color picker) → `controllers/`
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
 - Draws transient feedback that removes itself (highlight, brush circle, fog) → `renderers/overlays/`
 - Generates or simulates world data → `generators/`
