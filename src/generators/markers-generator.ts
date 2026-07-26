@@ -1648,9 +1648,27 @@ class MarkersModule {
   }
 
   private addEncounter(id: string, cell: number) {
-    const name = "Random encounter";
-    const encounterSeed = cell; // use just cell Id to not overwhelm the Vercel KV database
-    const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
+    const { cells } = pack;
+    const cultureName = Names.getCulture(cells.culture[cell]);
+    const biomeName = (biomesData.name[cells.biome[cell]] || "wilderness").toLowerCase();
+
+    const kinds = [
+      { subject: "Bandits", verb: "have set an ambush" },
+      { subject: "Wild beasts", verb: "have been sighted" },
+      { subject: "A lone traveler", verb: "was seen wandering" },
+      { subject: "Cultists", verb: "gather in secret" },
+      { subject: "A pilgrim", verb: "walks the road" },
+      { subject: "Refugees", verb: "have made camp" },
+      { subject: "Smugglers", verb: "move under cover of night" },
+      { subject: "A hermit", verb: "dwells alone" },
+      { subject: "Mercenaries", verb: "ride through" },
+      { subject: "Poachers", verb: "have been active" }
+    ];
+    const { subject, verb } = ra(kinds);
+
+    const name = `${subject} of ${cultureName}`;
+    const legend = `${subject} ${verb} in the ${biomeName} of ${cultureName} lands.`;
+
     notes.push({ id, name, legend });
   }
 }
