@@ -1648,6 +1648,14 @@ class MarkersModule {
   }
 
   private addEncounter(id: string, cell: number) {
+    if (typeof navigator === "undefined" || navigator.onLine !== false) {
+      const name = "Random encounter";
+      const encounterSeed = cell;
+      const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
+      notes.push({ id, name, legend });
+      return;
+    }
+
     const { cells } = pack;
     const cultureName = Names.getCulture(cells.culture[cell]);
     const biomeName = (biomesData.name[cells.biome[cell]] || "wilderness").toLowerCase();
