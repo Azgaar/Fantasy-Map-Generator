@@ -152,7 +152,7 @@ function listProduction(produced: Record<string, number>): string {
 // The formatters below have this panel as their only consumer, so they live here rather than in utils
 
 /** Get the climate zone name for a latitude */
-function getGeozone(latitude: number): string {
+export function getGeozone(latitude: number): string {
   if (latitude > 66.5) return "Arctic";
   if (latitude > 35) return "Temperate North";
   if (latitude > 23.5) return "Subtropical North";
@@ -165,7 +165,7 @@ function getGeozone(latitude: number): string {
 }
 
 /** Convert a coordinate to degrees-minutes-seconds format */
-function toDMS(coord: number, type: "lat" | "lon"): string {
+export function toDMS(coord: number, type: "lat" | "lon"): string {
   const degrees = Math.floor(Math.abs(coord));
   const minutesNotTruncated = (Math.abs(coord) - degrees) * 60;
   const minutes = Math.floor(minutesNotTruncated);

@@ -91,17 +91,17 @@ function marketDealsAddLines(): void {
     return;
   }
 
-  const allDeals = getMarketDeals(activeMarketId);
+  const allDeals = getMarketDeals(pack.deals, activeMarketId);
   const deals = allDeals.filter(deal => {
     if (activeFilter === "all") return true;
-    const counterparty = getCounterparty(deal);
+    const counterparty = getCounterparty(deal, activeMarketId);
     return activeFilter === "local" ? counterparty.type === "burg" : counterparty.type === "market";
   });
   let netFlow = 0;
 
   let lines = "";
   for (const deal of deals) {
-    netFlow += getDealNet(deal);
+    netFlow += getDealNet(deal, activeMarketId);
     lines += renderDealLine(deal);
   }
 
@@ -112,34 +112,36 @@ function marketDealsAddLines(): void {
   applySorting(ensureEl("marketDealsHeader"));
 }
 
-function getMarketDeals(marketId: number): Deal[] {
-  return pack.deals.filter(
+export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[] {
+  return deals.filter(
     deal =>
       (deal.sellerType === "market" && deal.seller === marketId) ||
       (deal.buyerType === "market" && deal.buyer === marketId)
   );
 }
 
-function isMarketSeller(deal: Deal): boolean {
-  return deal.sellerType === "market" && deal.seller === activeMarketId;
+function isMarketSeller(deal: Deal, marketId: number): boolean {
+  return deal.sellerType === "market" && deal.seller === marketId;
 }
 
-function getDirection(deal: Deal): "in" | "out" {
-  return isMarketSeller(deal) ? "out" : "in";
+export function getDirection(deal: Deal, marketId: number): "in" | "out" {
+  return isMarketSeller(deal, marketId) ? "out" : "in";
 }
 
-function getCounterparty(deal: Deal): { id: number; type: "burg" | "market" } {
-  return isMarketSeller(deal) ? { id: deal.buyer, type: deal.buyerType } : { id: deal.seller, type: deal.sellerType };
+export function getCounterparty(deal: Deal, marketId: number): { id: number; type: "burg" | "market" } {
+  return isMarketSeller(deal, marketId)
+    ? { id: deal.buyer, type: deal.buyerType }
+    : { id: deal.seller, type: deal.sellerType };
 }
 
 function renderDealLine(deal: Deal): string {
   const good = Goods.get(deal.good);
   if (!good) return "";
 
-  const dealNet = getDealNet(deal);
+  const dealNet = getDealNet(deal, activeMarketId);
   const party = getParty(deal);
-  const counterparty = getCounterparty(deal);
-  const direction = getDirection(deal);
+  const counterparty = getCounterparty(deal, activeMarketId);
+  const direction = getDirection(deal, activeMarketId);
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
   const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
 
@@ -160,21 +162,22 @@ function renderDealLine(deal: Deal): string {
 }
 
 function getParty(deal: Deal): Burg | null {
-  const counterparty = getCounterparty(deal);
+  const counterparty = getCounterparty(deal, activeMarketId);
   const burgId = counterparty.type === "burg" ? counterparty.id : Markets.get(counterparty.id)?.centerBurgId;
   if (!burgId) return null;
   return pack.burgs[burgId] || null;
 }
 
-function getDealNet(deal: Deal): number {
-  return rn(deal.units * deal.price * (isMarketSeller(deal) ? 1 : -1), 2);
+export function getDealNet(deal: Deal, marketId: number): number {
+  const value = rn(deal.units * deal.price, 2);
+  return isMarketSeller(deal, marketId) ? value : -value;
 }
 
 function downloadDealsCsv(): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
 
-  const lines = getMarketDeals(activeMarketId);
+  const lines = getMarketDeals(pack.deals, activeMarketId);
   let csv = "Id,Good,Type,Client,Units,Price,Net\n";
   for (const deal of lines) {
     const good = Goods.get(deal.good);
@@ -183,11 +186,11 @@ function downloadDealsCsv(): void {
     csv += [
       deal.i,
       good.name,
-      getDirection(deal),
+      getDirection(deal, activeMarketId),
       getParty(deal)?.name ?? "",
       rn(deal.units, 2),
       rn(deal.price, 2),
-      rn(getDealNet(deal), 2)
+      rn(getDealNet(deal, activeMarketId), 2)
     ].join(",");
     csv += "\n";
   }

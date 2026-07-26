@@ -334,19 +334,9 @@ function openJoinRoutesDialog(): void {
 }
 
 function joinRoutes(route: Route, joinedRoute: Route): void {
-  if (route.points.at(-1)![2] === joinedRoute.points.at(0)![2]) {
-    // joinedRoute starts at the end of current route
-    route.points = [...route.points, ...joinedRoute.points.slice(1)];
-  } else if (route.points.at(0)![2] === joinedRoute.points.at(-1)![2]) {
-    // joinedRoute ends at the start of current route
-    route.points = [...joinedRoute.points, ...route.points.slice(1)];
-  } else if (route.points.at(0)![2] === joinedRoute.points.at(0)![2]) {
-    // joinedRoute and current route both start at the same cell
-    route.points = [...route.points.reverse(), ...joinedRoute.points.slice(1)];
-  } else if (route.points.at(-1)![2] === joinedRoute.points.at(-1)![2]) {
-    // joinedRoute and current route both end at the same cell
-    route.points = [...route.points, ...joinedRoute.points.reverse().slice(1)];
-  }
+  const mergedPoints = mergeRoutePoints(route.points, joinedRoute.points);
+  if (!mergedPoints) return;
+  route.points = mergedPoints;
 
   for (let i = 0; i < route.points.length; i++) {
     const point = route.points[i];
@@ -358,6 +348,21 @@ function joinRoutes(route: Route, joinedRoute: Route): void {
   drawControlPoints(route.points);
   redrawRoute(route);
   drawCells(route.points);
+}
+
+export function mergeRoutePoints(routePoints: number[][], joinedPoints: number[][]): number[][] | null {
+  if (!routePoints.length || !joinedPoints.length) return null;
+
+  const routeStart = routePoints.at(0)?.[2];
+  const routeEnd = routePoints.at(-1)?.[2];
+  const joinedStart = joinedPoints.at(0)?.[2];
+  const joinedEnd = joinedPoints.at(-1)?.[2];
+
+  if (routeEnd === joinedStart) return [...routePoints, ...joinedPoints.slice(1)];
+  if (routeStart === joinedEnd) return [...joinedPoints, ...routePoints.slice(1)];
+  if (routeStart === joinedStart) return [...[...routePoints].reverse(), ...joinedPoints.slice(1)];
+  if (routeEnd === joinedEnd) return [...routePoints, ...[...joinedPoints].reverse().slice(1)];
+  return null;
 }
 
 function showCreationDialog(): void {
