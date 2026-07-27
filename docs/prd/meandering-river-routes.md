@@ -66,7 +66,7 @@ The pathfinder already restricts route hops to river-adjacent steps along the ac
 
 ### `addMeandering` moves to `pathUtils` and becomes pure
 
-Current shape: an instance method on `RiverModule` that reaches into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, `graphHeight`. Three callers exist ([layers.js drawRivers](../../public/modules/ui/layers.js:816), [rivers-editor.js](../../public/modules/ui/rivers-editor.js), [export.js](../../public/modules/io/export.js:587), [rivers-creator.js](../../public/modules/ui/rivers-creator.js), [resample.ts](../../src/generators/resample.ts:35), [tools.js](../../public/modules/ui/tools.js:789)). New shape:
+Current shape: an instance method on `RiverModule` that reaches into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, `graphHeight`. Three callers exist ([layers.js drawRivers](../../public/modules/ui/layers.js:816), [rivers-editor.js](../../public/modules/ui/rivers-editor.js), [export.js](../../public/modules/io/export.js:587), [rivers-creator.js](../../public/modules/ui/rivers-creator.js), [resample.ts](../../src/generators/resample.ts:35), [tools.ts](../../src/components/tools.ts)). New shape:
 
 ```ts
 // src/utils/pathUtils.ts

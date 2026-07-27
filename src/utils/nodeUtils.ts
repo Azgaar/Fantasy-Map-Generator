@@ -75,12 +75,23 @@ export const getNextId = (core: string, i: number = 1): string => {
   return core + i;
 };
 
+/**
+ * Select a drop-down option by value, adding the option if it is not there yet
+ * @param {HTMLSelectElement} select - The select element
+ * @param {string} value - The value to select
+ * @param {string} name - The label to use if the option has to be added
+ */
+export const applyOption = (element: HTMLElement, value: string, name = value): void => {
+  const select = element as HTMLSelectElement;
+  const isExisting = Array.from(select.options).some(option => option.value === value);
+  if (!isExisting) select.options.add(new Option(name, value));
+  select.value = value;
+};
+
 declare global {
   interface Window {
-    getComposedPath: typeof getComposedPath;
     getNextId: typeof getNextId;
     ensureEl: typeof ensureEl;
     findEl: typeof findEl;
-    destroyDialogIfExists: typeof destroyDialogIfExists;
   }
 }

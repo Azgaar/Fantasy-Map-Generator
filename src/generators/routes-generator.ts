@@ -195,6 +195,11 @@ class RoutesModule {
   private riversById: Map<number, River> = new Map();
   private riverGeometryCache: Map<number, { points: Point[]; anchorIndices: number[] }> = new Map();
 
+  regenerate(): void {
+    const lockedRoutes = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));
+    this.generate(lockedRoutes);
+  }
+
   generate(lockedRoutes: Route[] = []) {
     this.connections = new Map();
     this.buildRiverEdges();
@@ -276,7 +281,7 @@ class RoutesModule {
   getLandPathCost(current: number, next: number) {
     if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
 
-    const habitability = biomesData.habitability[pack.cells.biome[next]];
+    const habitability = pack.biomes[pack.cells.biome[next]].habitability;
     if (!habitability) return Infinity; // inhabitable cells are not passable (e.g. glacier)
 
     const distanceCost = distanceSquared(pack.cells.p[current], pack.cells.p[next]);

@@ -22,7 +22,6 @@ interface Marker {
 declare global {
   var drawMarkers: () => void;
   var drawMarker: (marker: Marker, rescale?: number) => string;
-  var getPin: (shape?: string, fill?: string, stroke?: string) => string;
 }
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
@@ -71,7 +70,7 @@ function markerRenderer(marker: Marker, rescale = 1): string {
 
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
-      <g>${getPin(pin, fill, stroke)}</g>
+      <g>${getPinForShape(pin, fill, stroke)}</g>
       <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
       <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />
     </svg>`;
@@ -94,4 +93,5 @@ const markersRenderer = (): void => {
 
 window.drawMarkers = markersRenderer;
 window.drawMarker = markerRenderer;
-window.getPin = getPinForShape;
+
+export { getPinForShape as getPin, markerRenderer as drawMarker, markersRenderer as drawMarkers };

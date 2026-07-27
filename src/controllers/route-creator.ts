@@ -1,4 +1,8 @@
 import { select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { stopMapPlacement } from "@/components/map-placement";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
 import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn } from "../utils";
@@ -7,6 +11,7 @@ let creatorPoints: number[][] = [];
 
 function open(defaultGroup?: string): void {
   if (customization) return;
+  stopMapPlacement();
   closeDialogs();
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
@@ -174,7 +179,7 @@ function closeRouteCreator(): void {
   select("#debug").select("#controlPoints").remove();
   select("#routes").select("#routeTemp").remove();
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 
   const forced = +ensureEl("toggleCells").dataset.forced!;

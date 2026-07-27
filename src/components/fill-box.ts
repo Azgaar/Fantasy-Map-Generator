@@ -1,4 +1,6 @@
 // <fill-box> — a small clickable swatch previewing a fill style (color or hatch)
+import { tip } from "@/components/tooltips";
+
 const style = /* css */ `
   fill-box:not([disabled]) {
     cursor: pointer;

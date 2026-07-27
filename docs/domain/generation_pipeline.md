@@ -13,7 +13,7 @@ The canonical "build a world from scratch" routine lives in [`public/main.js`](.
 | 3   | **Hydrology base**                   | `Features.markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes`                                      | grid features, lake/ocean topology                                                                 |
 | 4   | **World position & climate**         | `OceanLayers`, `defineMapSize`, `calculateMapCoordinates`, `calculateTemperatures`, `generatePrecipitation` | `mapCoordinates`, `cells.temp`, `cells.prec`                                                       |
 | 5   | **Repack**                           | `reGraph`, `Features.markupPack`, `Measurers.createDefaultRuler`                                            | `pack.cells.*`, default ruler                                                                      |
-| 6   | **Rivers + biomes**                  | `Rivers.generate`, `Biomes.define`, `Features.defineGroups`                                                 | `pack.rivers`, `cells.biome`, feature groups                                                       |
+| 6   | **Rivers + biomes**                  | `Rivers.generate`, `Biomes.generate`, `Features.defineGroups`                                               | `pack.rivers`, `pack.biomes`, `cells.biome`, feature groups                                        |
 | 7   | **Climate art**                      | `Ice.generate`                                                                                              | ice layer                                                                                          |
 | 8   | **Goods catalogue**                  | `Goods.generate`                                                                                            | `pack.goods` (raw + manufactured definitions)                                                      |
 | 9   | **Cells ranking & cultures**         | `rankCells`, `Cultures.generate`, `Cultures.expand`                                                         | `cells.s`, `cells.pop`, `pack.cultures`                                                            |
@@ -86,8 +86,8 @@ Two consequences worth noting:
 
 These are partial regenerations triggered from the UI and do **not** replicate the full pipeline. They still belong to the same dependency graph and may need their own economy refresh when they touch upstream data:
 
-- [`public/modules/ui/tools.js`](../../public/modules/ui/tools.js): `regenerateRoutes`, `regenerateRivers`, `recalculatePopulation`, `regenerateStates`, `regenerateProvinces`, `regenerateBurgs`, `regenerateGoods`, `regenerateEconomy`, `regenerateCultures`, `regenerateMilitary`, `regenerateMarkers`, `regenerateZones`.
-- [`public/modules/dynamic/auto-update.js`](../../public/modules/dynamic/auto-update.js): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
+- Generator modules own their corresponding `regenerate` interfaces. [`src/components/tools.ts`](../../src/components/tools.ts) contains only Tools-tab event handlers that compose generator, renderer, and controller interfaces.
+- [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
 - [`public/modules/ui/world-configurator.js`](../../public/modules/ui/world-configurator.js) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
 
 When extending the pipeline, audit each of these for whether their scope reaches the new phase.

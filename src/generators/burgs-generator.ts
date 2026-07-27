@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
-import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
+import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
 import type { ProductionRecord } from "./production-generator";
@@ -708,7 +708,7 @@ class BurgModule {
     const { cells } = pack;
 
     const burgId = pack.burgs.length;
-    const cellId = window.findCell(x, y, undefined, pack);
+    const cellId = findClosestCell(x, y, undefined, pack);
     const culture = cells.culture[cellId as number];
     const name = Names.getCulture(culture);
     const state = cells.state[cellId as number];
@@ -743,13 +743,122 @@ class BurgModule {
     const newRoute = Routes.connect(cellId as number);
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
-    drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    window.drawBurgIcon(burg);
+    window.drawBurgLabel(burg);
 
     return burgId;
   }
 
-  changeGroup(burg: Burg, group: string | null = null) {
+  regenerate(): void {
+    const { cells, burgs, states, provinces } = pack;
+    rankCells();
+
+    notes = notes.filter(note => {
+      if (!note.id.startsWith("burg")) return true;
+      return burgs[+note.id.slice(4)]?.lock;
+    });
+
+    const newBurgs: Burg[] = [0 as unknown as Burg];
+    const burgsTree = quadtree<[number, number]>();
+    cells.burg = new Uint16Array(cells.i.length);
+    states
+      .filter(state => state.i)
+      .forEach(state => {
+        state.capital = 0;
+      });
+    provinces
+      .filter(province => province.i)
+      .forEach(province => {
+        province.burg = 0;
+      });
+
+    const lockedBurgs = burgs.filter(burg => burg.i && !burg.removed && burg.lock);
+    for (const lockedBurg of lockedBurgs) {
+      const newId = newBurgs.length;
+      const noteIndex = notes.findIndex(note => note.id === `burg${lockedBurg.i}`);
+      if (noteIndex !== -1) notes[noteIndex].id = `burg${newId}`;
+
+      lockedBurg.i = newId;
+      newBurgs.push(lockedBurg);
+      burgsTree.add([lockedBurg.x, lockedBurg.y]);
+      cells.burg[lockedBurg.cell] = newId;
+
+      if (lockedBurg.capital && lockedBurg.state !== undefined) {
+        states[lockedBurg.state].capital = newId;
+        states[lockedBurg.state].center = lockedBurg.cell;
+      }
+    }
+
+    const marketCenterIds = new Set(pack.markets.map(market => market.centerBurgId));
+    const unlockedMarketCenters = burgs.filter(
+      burg => burg.i && !burg.removed && !burg.lock && marketCenterIds.has(burg.i)
+    );
+    for (const centerBurg of unlockedMarketCenters) {
+      const oldId = centerBurg.i;
+      const newId = newBurgs.length;
+      const noteIndex = notes.findIndex(note => note.id === `burg${oldId}`);
+      if (noteIndex !== -1) notes[noteIndex].id = `burg${newId}`;
+      const market = pack.markets.find(market => market.centerBurgId === oldId);
+      if (market) market.centerBurgId = newId;
+
+      centerBurg.i = newId;
+      newBurgs.push(centerBurg);
+      burgsTree.add([centerBurg.x, centerBurg.y]);
+      cells.burg[centerBurg.cell] = newId;
+    }
+
+    const score = new Int16Array(cells.s.map(value => value * Math.random()));
+    const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
+    const statesCount = states.filter(state => state.i && !state.removed).length;
+    const manorsInput = ensureEl<HTMLInputElement>("manorsInput");
+    const burgsCount =
+      (manorsInput.value === "1000"
+        ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8)
+        : +manorsInput.value) + statesCount;
+    const spacing = (graphWidth + graphHeight) / 150 / (burgsCount ** 0.7 / 66);
+
+    for (let index = 0; index < sorted.length && newBurgs.length < burgsCount; index++) {
+      const id = newBurgs.length;
+      const cell = sorted[index];
+      const [x, y] = cells.p[cell];
+      const minDistance = spacing * gauss(1, 0.3, 0.2, 2, 2);
+      if (burgsTree.find(x, y, minDistance) !== undefined) continue;
+
+      const stateId = cells.state[cell];
+      const capital = Number(Boolean(stateId && !states[stateId].capital));
+      if (capital) {
+        states[stateId].capital = id;
+        states[stateId].center = cell;
+      }
+
+      const culture = cells.culture[cell];
+      const name = Names.getCulture(culture);
+      newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell] });
+      burgsTree.add([x, y]);
+      cells.burg[cell] = id;
+    }
+
+    pack.burgs = newBurgs;
+    this.assignPorts();
+
+    states
+      .filter(state => state.i && !state.removed && !state.capital)
+      .forEach(state => {
+        const [x, y] = cells.p[state.center];
+        const burgId = this.add([x, y]);
+        state.capital = burgId;
+        state.center = pack.burgs[burgId].cell;
+        const burg = pack.burgs[burgId];
+        burg.state = state.i;
+        burg.capital = 1;
+        this.changeGroup(burg, null, false);
+      });
+
+    this.specify();
+    Routes.regenerate();
+  }
+
+  changeGroup(burg: Burg, group: string | null = null, render = true) {
     if (group) {
       burg.group = group;
     } else {
@@ -758,13 +867,15 @@ class BurgModule {
       this.defineGroup(burg, populations);
     }
 
-    drawBurgIcon(burg);
-    drawBurgLabel(burg);
+    if (render) {
+      window.drawBurgIcon(burg);
+      window.drawBurgLabel(burg);
+    }
   }
 
   remove(burgId: number) {
     const burg = pack.burgs[burgId];
-    if (!burg) return tip(`Burg ${burgId} not found`, false, "error");
+    if (!burg) return window.tip(`Burg ${burgId} not found`, false, "error");
 
     pack.cells.burg[burg.cell] = 0;
     burg.removed = true;
@@ -778,8 +889,8 @@ class BurgModule {
       delete burg.coa;
     }
 
-    removeBurgIcon(burg.i!);
-    removeBurgLabel(burg.i!);
+    window.removeBurgIcon(burg.i!);
+    window.removeBurgLabel(burg.i!);
   }
 }
 

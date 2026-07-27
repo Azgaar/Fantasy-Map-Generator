@@ -1,3 +1,5 @@
+import { tip } from "@/components/tooltips";
+import { openURL } from "@/utils";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 type Provider = "openai" | "anthropic" | "ollama";

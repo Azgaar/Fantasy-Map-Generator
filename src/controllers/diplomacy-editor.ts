@@ -1,4 +1,10 @@
 import { color as d3Color, interpolateString, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
 interface Relation {
@@ -72,7 +78,7 @@ function open(): void {
   $("#diplomacyEditor").dialog({
     title: "Diplomacy Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeDiplomacyEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -119,6 +125,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("diplomacyHeader");
+  applyLineHighlighting("diplomacyEditor", ({ cellId }) => pack.cells.state[cellId]);
 
   ensureEl("diplomacyEditorRefresh").on("click", refreshDiplomacyEditor);
   ensureEl("diplomacyEditStyle").on("click", () => editStyle("regions"));
@@ -332,7 +339,7 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
   `;
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: "fit-content",
     title: `Change relations`,
     buttons: {
       Apply: function (this: HTMLElement) {
@@ -584,7 +591,7 @@ function downloadDiplomacyData(): void {
 }
 
 function closeDiplomacyEditor(): void {
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");
   if (selected) selected.classList.remove("Self");

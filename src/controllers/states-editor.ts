@@ -1,7 +1,21 @@
 import { color, drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { drawBorders } from "@/renderers/draw-borders";
+import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
+import { drawGoods } from "@/renderers/draw-goods";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawStateLabels, redrawStateLabels } from "@/renderers/draw-state-labels";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { fog, unfog } from "@/renderers/overlays/fogging";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -114,8 +128,10 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-
   applySortingByHeader("statesHeader");
+  applyLineHighlighting("statesEditor", ({ cellId }) =>
+    pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]
+  );
 
   ensureEl("statesEditorRefresh").on("click", refreshStatesEditor);
   ensureEl("statesEditStyle").on("click", () => editStyle("regions"));
@@ -332,7 +348,7 @@ function statesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting(ensureEl("statesHeader"));
-  $("#statesEditor").dialog({ width: fitContent() });
+  $("#statesEditor").dialog({ width: "fit-content" });
 }
 
 function getCultureOptions(culture: number): string {
@@ -408,7 +424,7 @@ function stateChangeFill(el: HTMLElement): void {
     armies.select(`#army${state}`).selectAll("g > rect:nth-of-type(2)").attr("fill", darkerColor);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function editStateName(state: number): void {
@@ -466,7 +482,7 @@ function editStateName(state: number): void {
   }
 
   function regenerateShortNameRandom() {
-    const base = rand(nameBases.length - 1);
+    const base = rand(Names.nameBases.length - 1);
     const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
     ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
   }
@@ -514,7 +530,9 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) drawStateLabels([s.i]);
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked && layerIsOn("toggleLabels")) {
+      redrawStateLabels();
+    }
     refreshStatesEditor();
   }
 }
@@ -1098,7 +1116,7 @@ function showStatesChart(): void {
 
   $("#alert").dialog({
     title: "States bubble chart",
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => {
@@ -1134,7 +1152,12 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels();
+  if (ensureEl<HTMLInputElement>("adjustLabels").checked && layerIsOn("toggleLabels")) redrawStateLabels();
+  if (layerIsOn("toggleGoods")) drawGoods();
+  if (layerIsOn("toggleEmblems")) {
+    clearEmblems(["state", "province"]);
+    drawEmblems();
+  }
 
   refreshStatesEditor();
 }
@@ -1469,12 +1492,12 @@ function exitStatesManualAssignment(close: boolean): void {
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close)
     $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("statesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -1612,12 +1635,12 @@ function addState(this: SVGElement, event: MouseEvent): void {
 
 function exitAddStateMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const statesAdd = ensureEl("statesAdd");
   if (statesAdd.classList.contains("pressed")) statesAdd.classList.remove("pressed");
@@ -1659,6 +1682,7 @@ function openStateMergeDialog(): void {
       el.addEventListener("mouseenter", highlightStateOnMergeHover);
       el.addEventListener("mouseleave", stateHighlightOff);
     });
+  applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
     if (!layerIsOn("toggleStates")) return;

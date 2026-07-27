@@ -631,9 +631,14 @@ Patrick McEntee
 y John
 Sean O'Daniels
 ShadowMole
-FlightlessDutchman`;
+FlightlessDutchman
+Gawain Yeo
+Tom Hollingworth
+Scott Gunn
+Gabe Hurd
+Benjamin Sardinsky
+Task_Failer`;
 
-// temp legacy compatibility
 window.Supporters = supporters;
 
 declare global {

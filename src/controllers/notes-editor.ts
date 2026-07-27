@@ -1,3 +1,7 @@
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 interface Note {

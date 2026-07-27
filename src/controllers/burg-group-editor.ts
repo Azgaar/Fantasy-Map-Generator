@@ -1,4 +1,8 @@
-import { destroyDialogIfExists, ensureEl, findEl } from "../utils";
+import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
@@ -70,9 +74,7 @@ function renderDialog(): void {
     if (!line) return;
 
     if (el.getAttribute("name") === "biomes") {
-      const biomes = Array(biomesData.i.length)
-        .fill(null)
-        .map((_, i) => ({ i, name: biomesData.name[i], color: biomesData.color[i] }));
+      const biomes = pack.biomes.filter(biome => !biome.removed).map(({ i, name, color }) => ({ i, name, color }));
       return selectLimitation(el, biomes);
     }
     if (el.getAttribute("name") === "states") return selectLimitation(el, pack.states);
@@ -180,7 +182,7 @@ function selectLimitation(
       </table>`;
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: "fit-content",
     title: "Limit group",
     buttons: {
       Invert: () => {
@@ -259,7 +261,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
       </form>`;
 
   $("#alert").dialog({
-    width: fitContent(),
+    width: "fit-content",
     title: "Limit group by features",
     buttons: {
       Apply: function (this: HTMLElement) {
@@ -399,7 +401,7 @@ function submitForm(event: Event): void {
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleLabels")) drawBurgLabels();
-  findEl<HTMLButtonElement>("burgsOverviewRefresh")?.click();
+  refreshEditors();
 
   $("#burgGroupsEditor").dialog("close");
 }

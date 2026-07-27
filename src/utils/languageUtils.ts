@@ -209,11 +209,7 @@ export const list = (array: string[]) => {
 
 declare global {
   interface Window {
-    vowel: typeof isVowel;
-    trimVowels: typeof trimVowels;
-    getAdjective: typeof getAdjective;
     nth: typeof nth;
-    abbreviate: typeof abbreviate;
     list: typeof list;
   }
 }

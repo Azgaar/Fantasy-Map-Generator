@@ -378,4 +378,5 @@ declare global {
   var TradeAnimation: TradeAnimationModule;
 }
 
-window.TradeAnimation = new TradeAnimationModule();
+export const tradeAnimation = new TradeAnimationModule();
+window.TradeAnimation = tradeAnimation;

@@ -1046,7 +1046,7 @@ styleMarketsIconSize.on("change", function () {
 });
 
 styleMarketsIcon.on("click", function () {
-  selectIcon(markets.attr("data-icon") || "⚖️", value => {
+  window.Controllers.IconSelector.open(markets.attr("data-icon") || "⚖️", value => {
     markets.attr("data-icon", value);
     this.innerHTML = value;
     drawMarketsLayer();

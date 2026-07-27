@@ -9,8 +9,19 @@ import {
   transition,
   treemap
 } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
+import { drawBorders } from "@/renderers/draw-borders";
+import { drawStateLabels } from "@/renderers/draw-state-labels";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { fog, unfog } from "@/renderers/overlays/fogging";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -45,7 +56,7 @@ function open(): void {
   $("#provincesEditor").dialog({
     title: "Provinces Editor",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeProvincesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -145,6 +156,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("provincesHeader");
+  applyLineHighlighting("provincesEditor", ({ cellId }) => pack.cells.province[cellId]);
 
   ensureEl("provincesEditorRefresh").on("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").on("click", () => editStyle("provs"));
@@ -328,7 +340,7 @@ function provincesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting(ensureEl("provincesHeader"));
-  $("#provincesEditor").dialog({ width: fitContent() });
+  $("#provincesEditor").dialog({ width: "fit-content" });
 }
 
 function getCapitalOptions(burgs: number[], capital: number): string {
@@ -386,7 +398,7 @@ function changeFill(el: HTMLElement): void {
     g.select(`#province-gap${p}`).attr("stroke", newFill);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function capitalZoomIn(p: number): void {
@@ -808,7 +820,7 @@ function regenerateShortNameCulture(): void {
 }
 
 function regenerateShortNameRandom(): void {
-  const base = rand(nameBases.length - 1);
+  const base = rand(Names.nameBases.length - 1);
   const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }
@@ -838,7 +850,7 @@ function applyNameChange(p: Province): void {
   p.name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
   p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
   p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
-  select<SVGGElement, unknown>("#provs").select(`#provinceLabel${p.i}`).text(p.name);
+  if (layerIsOn("toggleProvinces")) drawProvinces();
   refreshProvincesEditor();
 }
 
@@ -1032,7 +1044,7 @@ function showChart(): void {
 
   $("#alert").dialog({
     title: "Provinces chart",
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => {
@@ -1181,7 +1193,7 @@ function dragBrush(this: SVGElement, event: any): void {
     const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
 
-    const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1])!];
+    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
     const selection = found.filter(i => isLand(i, pack));
     if (selection) changeForSelection(selection);
   });
@@ -1275,12 +1287,12 @@ function exitProvincesManualAssignment(close?: string): void {
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close)
     $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("provincesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -1364,12 +1376,12 @@ function addProvince(this: SVGElement, event: any): void {
 
 function exitAddProvinceMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const provincesAdd = ensureEl("provincesAdd");
   if (provincesAdd.classList.contains("pressed")) provincesAdd.classList.remove("pressed");

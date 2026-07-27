@@ -615,6 +615,10 @@ const expansionismMap: Record<string, () => number> = {
 };
 
 class ReligionsModule {
+  regenerate(): void {
+    this.generate();
+  }
+
   generate() {
     TIME && console.time("generateReligions");
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
@@ -951,7 +955,7 @@ class ReligionsModule {
       const route = Routes.getRoute(cellId, nextCellId);
       if (isWater(cellId, pack)) return route ? 50 : 500;
 
-      const biomePassageCost = biomesData.cost[cells.biome[nextCellId]];
+      const biomePassageCost = pack.biomes[cells.biome[nextCellId]].cost;
 
       if (route) {
         if (route.group === "roads") return 1;

@@ -1,4 +1,6 @@
 import { select } from "d3";
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 

@@ -1,5 +1,14 @@
 import { drag, select, sum } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { fog, unfog } from "@/renderers/overlays/fogging";
+import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
 
 interface ZoneCellDatum {
@@ -90,9 +99,12 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applyLineHighlighting("zonesEditor", ({ target }) => {
+    const zone = target.closest<SVGElement>("#zones [id^='zone']");
+    return zone && /^zone\d+$/.test(zone.id) ? Number(zone.id.slice(4)) : undefined;
+  });
 
   const body = ensureEl("zonesBodySection");
-
   ensureEl("zonesFilterType").on("click", updateFilters);
   ensureEl("zonesFilterType").on("change", filterZonesByType);
   ensureEl("zonesEditorRefresh").on("click", zonesEditorAddLines);
@@ -225,7 +237,7 @@ function zonesEditorAddLines(): void {
     body.dataset.type = "absolute";
     togglePercentageMode();
   }
-  $("#zonesEditor").dialog({ width: fitContent() });
+  $("#zonesEditor").dialog({ width: "fit-content" });
 }
 
 function zoneHighlightOn(this: HTMLElement): void {
@@ -322,7 +334,7 @@ function dragZoneBrush(this: SVGElement, event: any): void {
     const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, radius);
 
-    let selection = radius > 5 ? findAll(x, y, radius) : [findCell(x, y)!];
+    let selection = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)!];
     if (landOnly) selection = selection.filter(i => pack.cells.h[i] >= 20);
     if (!selection.length) return;
 
@@ -404,12 +416,12 @@ function exitZonesManualAssignment(close?: string): void {
   ensureEl("zonesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close)
     $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 
   const selected = ensureEl("zonesBodySection").querySelector("div.selected");
@@ -423,7 +435,7 @@ function changeFill(fill: string, zone: Zone): void {
     zonesEditorAddLines();
   };
 
-  openPicker(fill, callback);
+  void Controllers.ColorPicker.open(fill, callback);
 }
 
 function toggleVisibility(zone: Zone): void {

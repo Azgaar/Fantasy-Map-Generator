@@ -1,3 +1,4 @@
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { ensureEl, minmax, rn } from "../utils";
 
 function open(): void {

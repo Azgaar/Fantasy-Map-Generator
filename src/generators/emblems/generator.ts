@@ -423,6 +423,48 @@ class EmblemGeneratorModule {
     return 0.7; // 1, 2
   }
 
+  regenerate(): void {
+    pack.states.forEach(state => {
+      if (!state.i || state.removed) return;
+      const cultureType = pack.cultures[state.culture].type;
+      state.coa = this.generate(null, null, null, cultureType);
+      state.coa.shield = this.getShield(state.culture);
+    });
+
+    pack.burgs.forEach(burg => {
+      if (!burg.i || burg.removed) return;
+      const state = burg.state === undefined ? undefined : pack.states[burg.state];
+      let kinship = state ? 0.25 : 0;
+      if (burg.capital) kinship += 0.1;
+      else if (burg.port) kinship -= 0.1;
+      if (state && burg.culture !== state.culture) kinship -= 0.25;
+      burg.coa = this.generate(state ? state.coa : null, kinship, null, burg.type);
+      burg.coa.shield = this.getShield(burg.culture ?? 0, state ? burg.state : 0);
+    });
+
+    pack.provinces.forEach(province => {
+      if (!province.i || province.removed) return;
+      const parent = province.burg ? pack.burgs[province.burg] : pack.states[province.state];
+      let dominion = false;
+      if (!province.burg) {
+        dominion = P(0.2);
+        if (province.formName === "Colony") dominion = P(0.95);
+        else if (province.formName === "Island") dominion = P(0.6);
+        else if (province.formName === "Islands") dominion = P(0.5);
+        else if (province.formName === "Territory") dominion = P(0.4);
+        else if (province.formName === "Land") dominion = P(0.3);
+      }
+
+      const nameByBurg = province.burg && province.name.slice(0, 3) === (parent.name ?? "").slice(0, 3);
+      const kinship = dominion ? 0 : nameByBurg ? 0.8 : 0.4;
+      const culture = pack.cells.culture[province.center];
+      const port = province.burg ? pack.burgs[province.burg].port : undefined;
+      const type = Burgs.getType(province.center, port);
+      province.coa = this.generate(parent.coa, kinship, Number(dominion), type);
+      province.coa.shield = this.getShield(culture, province.state);
+    });
+  }
+
   getShield(culture: number, state?: number): string {
     const emblemShape = ensureEl<HTMLSelectElement>("emblemShape");
     const shapeGroup = emblemShape.selectedOptions[0]?.parentElement?.getAttribute("label") || "Diversiform";

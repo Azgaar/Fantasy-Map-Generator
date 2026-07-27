@@ -67,6 +67,11 @@ class ProvinceModule {
     }
   };
 
+  regenerate(regenerateNames = true): void {
+    this.generate(true, regenerateNames);
+    this.getPoles();
+  }
+
   generate(regenerate = false, regenerateLockedStates = false) {
     TIME && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;

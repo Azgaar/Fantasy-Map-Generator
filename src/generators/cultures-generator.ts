@@ -2,7 +2,7 @@ import { max, quadtree, range } from "d3";
 import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 declare global {
-  var Cultures: CulturesModule;
+  var Cultures: CulturesGenerator;
 }
 
 export interface Culture {
@@ -33,7 +33,7 @@ export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake",
 export type CultureType = (typeof CULTURE_TYPES)[number];
 export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
-class CulturesModule {
+class CulturesGenerator {
   cells: any;
 
   getRandomShield() {
@@ -772,7 +772,7 @@ class CulturesModule {
 
     if (culturesSet.value === "random") {
       return range(count).map(() => {
-        const rnd = rand(nameBases.length - 1);
+        const rnd = rand(Names.nameBases.length - 1);
         const name = Names.getBaseShort(rnd);
         return { name, base: rnd, odd: 1, shield: this.getRandomShield() };
       });
@@ -1193,14 +1193,14 @@ class CulturesModule {
       type: DEFAULT_CULTURE_TYPE
     });
 
-    // make sure all bases exist in nameBases
-    if (!nameBases.length) {
+    // make sure all bases exist in Names.nameBases
+    if (!Names.nameBases.length) {
       ERROR && console.error("Name base is empty, default nameBases will be applied");
-      nameBases = Names.getNameBases();
+      Names.nameBases = Names.getNameBases();
     }
 
     cultures.forEach((c: Culture) => {
-      c.base = c.base % nameBases.length;
+      c.base = c.base % Names.nameBases.length;
     });
 
     TIME && console.timeEnd("generateCultures");
@@ -1276,9 +1276,9 @@ class CulturesModule {
 
     const getBiomeCost = (c: number, biome: number, type: string) => {
       if (cells.biome[cultures[c].center as number] === biome) return 10; // tiny penalty for native biome
-      if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
-      if (type === "Nomadic" && biome > 4 && biome < 10) return biomesData.cost[biome] * 10; // forest biome penalty for nomads
-      return biomesData.cost[biome] * 2; // general non-native biome penalty
+      if (type === "Hunting") return pack.biomes[biome].cost * 5; // non-native biome penalty for hunters
+      if (type === "Nomadic" && biome > 4 && biome < 10) return pack.biomes[biome].cost * 10; // forest biome penalty for nomads
+      return pack.biomes[biome].cost * 2; // general non-native biome penalty
     };
 
     const getHeightCost = (i: number, h: number, type: string) => {
@@ -1341,6 +1341,21 @@ class CulturesModule {
 
     TIME && console.timeEnd("expandCultures");
   }
+
+  regenerate(): void {
+    this.generate();
+    this.expand();
+
+    pack.states = pack.states.map(state =>
+      !state.i || state.removed ? state : { ...state, culture: pack.cells.culture[state.center] }
+    );
+    pack.burgs = pack.burgs.map(burg =>
+      !burg.i || burg.removed ? burg : { ...burg, culture: pack.cells.culture[burg.cell] }
+    );
+    pack.religions = pack.religions.map(religion =>
+      !religion.i || religion.removed ? religion : { ...religion, culture: pack.cells.culture[religion.center] }
+    );
+  }
 }
 
-window.Cultures = new CulturesModule();
+window.Cultures = new CulturesGenerator();

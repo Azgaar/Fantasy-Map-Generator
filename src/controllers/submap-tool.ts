@@ -1,3 +1,5 @@
+import { Resample } from "@/generators/resample";
+import { getLatitude, getLongitude } from "@/utils";
 import { destroyDialogIfExists, ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
@@ -94,11 +96,11 @@ function recalculateMapSize(x0: number, y0: number): void {
   options.mapSize = rn(options.mapSize / scale, 2);
 
   const latT = (mapCoordinates.latT ?? 0) / scale;
-  const latN = getLatitude(y0);
+  const latN = getLatitude(y0, mapCoordinates, graphHeight);
   options.latitude = rn(((90 - latN) / (180 - latT)) * 100, 2);
 
   const lotT = (mapCoordinates.lonT ?? 0) / scale;
-  const lonE = getLongitude(x0 + graphWidth / scale);
+  const lonE = getLongitude(x0 + graphWidth / scale, mapCoordinates, graphWidth);
   options.longitude = rn(((180 - lonE) / (360 - lotT)) * 100, 2);
 
   distanceScale = rn(distanceScale / scale, 2);

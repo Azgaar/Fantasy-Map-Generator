@@ -148,7 +148,6 @@ var pack = {}; // packed graph and data
 var seed;
 let mapId;
 let mapHistory = [];
-let elSelected;
 let modules = {};
 let notes = [];
 let customization = 0;
@@ -178,8 +177,6 @@ let options = {
 // global style object; in v2.0 to be used for all map styles and render settings
 let style = { burgLabels: {}, burgIcons: {}, anchors: {} };
 
-let biomesData = Biomes.getDefault();
-let nameBases = Names.getNameBases(); // cultures-related data
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
@@ -304,7 +301,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  restoreDefaultEvents(); // apply default viewbox events
+  applyDefaultViewboxEvents();
   initiateAutosave();
   initTourPromptButton();
 });
@@ -541,6 +538,19 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
+// Bundled UI modules call these wrappers instead of using the legacy d3 selection directly
+function panMap(x, y) {
+  zoom.translateBy(svg, x, y);
+}
+
+function setMapZoom(value) {
+  zoom.scaleTo(svg, value);
+}
+
+function changeMapZoom(factor) {
+  zoom.scaleBy(svg, factor);
+}
+
 // active zooming feature
 function invokeActiveZooming() {
   const isOptimized = shapeRendering.value === "optimizeSpeed";
@@ -679,7 +689,7 @@ async function generate(options) {
     Measurers.createDefaultRuler();
 
     Rivers.generate();
-    Biomes.define();
+    Biomes.generate();
     Features.defineGroups();
 
     Ice.generate();
@@ -1240,7 +1250,7 @@ function rankCells() {
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
-    let score = biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
+    let score = pack.biomes[cells.biome[i]].habitability; // base suitability derived from biome habitability
     if (!score) continue; // uninhabitable biomes has 0 suitability
 
     if (meanFlux) score += normalize(cells.fl[i] + cells.conf[i], meanFlux, maxFlux) * 250; // big rivers and confluences are valued

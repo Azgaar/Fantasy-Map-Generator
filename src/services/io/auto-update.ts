@@ -3,12 +3,48 @@ import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
+import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { drawEmblems } from "@/renderers/draw-emblems";
+import { drawFeatures } from "@/renderers/draw-features";
+import { drawHeightmap } from "@/renderers/draw-heightmap";
+import { drawIce } from "@/renderers/draw-ice";
+import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
+import { drawMilitary } from "@/renderers/draw-military";
+import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
+
+  if (isOlderThan("1.139.0")) {
+    // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
+    // This must run before older migrations that consume biome data.
+    const [colorData = "", habitabilityData = "", nameData = ""] = data[3].split("|");
+    const colors = colorData.split(",");
+    const habitability = habitabilityData.split(",").map(Number);
+    const names = nameData.split(",");
+    const defaults = Biomes.getDefault();
+    const biomesCount = Math.max(defaults.length, colors.length, habitability.length, names.length);
+
+    pack.biomes = Array.from({ length: biomesCount }, (_, i) => {
+      const defaultBiome = defaults[i];
+      const name = names[i] || defaultBiome?.name || "Custom";
+      return {
+        i,
+        name,
+        color: colors[i] || defaultBiome?.color || "#999999",
+        habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
+        iconsDensity: defaultBiome?.iconsDensity ?? 0,
+        icons: defaultBiome?.icons ?? [],
+        cost: defaultBiome?.cost ?? 50,
+        ...(name === "removed" && { removed: true })
+      };
+    });
+  }
 
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
@@ -109,11 +145,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         const shift = this.getComputedTextLength() / -1.5;
         this.innerHTML = /* html */ `<tspan x="${shift}">${text}</tspan>`;
       });
-
-    // v1.0 added new biome - Wetland
-    biomesData.name.push("Wetland");
-    biomesData.color.push("#0b9131");
-    biomesData.habitability.push(12);
   }
 
   if (isOlderThan("1.1.0")) {
@@ -279,7 +310,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     // v1.3 added global options object
     const winds = (options as unknown as number[]).slice(); // previostly wind was saved in settings[19]
     const year = rand(100, 2000);
-    const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length))} Era`;
+    const era = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
     const eraShort = `${era[0]}E`;
     const military = Military.getDefaultOptions();
     options = { winds, year, era, eraShort, military } as typeof options;
@@ -378,7 +409,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
-    regenerateEmblems();
+    COA.regenerate();
+    drawEmblems();
     toggleEmblems();
 
     // v1.5 changed releif icons data
@@ -1241,7 +1273,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     if (data[33]) pack.measurers = parse(data[33]);
   }
 
-  if (isOlderThan("1.138.1")) {
+  if (isOlderThan("1.139.0")) {
+    // fix for old issue with heightmap getting styles on top level
     const terrs = select("#terrs");
     if (terrs.attr("opacity") !== null || terrs.attr("filter") !== null || terrs.attr("scheme") !== null) {
       terrs

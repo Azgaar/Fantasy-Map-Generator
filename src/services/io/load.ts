@@ -1,8 +1,13 @@
 import { select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
+import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -313,20 +318,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    {
-      const biomes = data[3].split("|");
-      biomesData = Biomes.getDefault();
-      biomesData.color = biomes[0].split(",");
-      biomesData.habitability = biomes[1].split(",").map(h => +h);
-      biomesData.name = biomes[2].split(",");
-      // push custom biomes if any
-      for (let i = biomesData.i.length; i < biomesData.name.length; i++) {
-        biomesData.i.push(biomesData.i.length);
-        biomesData.iconsDensity.push(0);
-        biomesData.icons.push([]);
-        biomesData.cost.push(50);
-      }
-    }
     svg.remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
     // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
@@ -413,6 +404,24 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
     reGraph();
     Features.markupPack();
+    if (data[3]?.startsWith("[")) {
+      type LoadedBiome = (typeof pack.biomes)[number] & {
+        cells?: number;
+        area?: number;
+        rural?: number;
+        urban?: number;
+      };
+      const loadedBiomes: LoadedBiome[] = JSON.parse(data[3]);
+      for (const biome of loadedBiomes) {
+        delete biome.cells;
+        delete biome.area;
+        delete biome.rural;
+        delete biome.urban;
+      }
+      pack.biomes = loadedBiomes;
+    } else {
+      pack.biomes = [];
+    }
     pack.features = JSON.parse(data[12]);
     pack.cultures = JSON.parse(data[13]);
     pack.states = JSON.parse(data[14]);
@@ -455,8 +464,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       namesDL.forEach((d, i) => {
         const e = d.split("|");
         if (!e.length) return;
-        const b = e[5].split(",").length > 2 || !nameBases[i] ? e[5] : nameBases[i].b;
-        nameBases[i] = { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
+        const b = e[5].split(",").length > 2 || !Names.nameBases[i] ? e[5] : Names.nameBases[i].b;
+        Names.nameBases[i] = { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
       });
     }
 
@@ -798,7 +807,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     // draw data layers (not kept in svg)
     if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
-    if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
+    if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
     fitMapToScreen();

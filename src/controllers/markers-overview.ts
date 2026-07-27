@@ -1,5 +1,12 @@
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import { drawMarkers } from "@/renderers/draw-markers";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { ensureEl } from "../utils";
 
 function open(): void {
@@ -13,7 +20,7 @@ function open(): void {
   $("#markersOverview").dialog({
     title: "Markers Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeMarkersOverview,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -74,8 +81,8 @@ function renderDialog(): void {
   ensureEl("markersOverviewRefresh").addEventListener("click", addLines);
   ensureEl("markersRegenerate").addEventListener("click", regenerateMarkers);
   ensureEl("markerTypeSelector").addEventListener("click", toggleMarkerTypeMenu);
-  ensureEl("markersAddFromOverview").addEventListener("click", toggleAddMarker);
-  ensureEl("markersGenerationConfig").addEventListener("click", configMarkersGeneration);
+  ensureEl("markersAddFromOverview").addEventListener("click", () => void Controllers.MarkerCreator.toggle());
+  ensureEl("markersGenerationConfig").addEventListener("click", () => void Controllers.MarkersSettings.open());
   ensureEl("markersRemoveAll").addEventListener("click", triggerRemoveAll);
   ensureEl("markersExport").addEventListener("click", exportMarkers);
   ensureEl("markersSearch").addEventListener("input", addLines);
@@ -86,11 +93,17 @@ function renderDialog(): void {
 function closeMarkersOverview(): void {
   document.getElementById("addMarker")?.classList.remove("pressed");
   document.getElementById("markerAdd")?.classList.remove("pressed");
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 
   $("#markersOverview").dialog("destroy");
   ensureEl("markersOverview").remove();
+}
+
+function regenerateMarkers(): void {
+  Markers.regenerate();
+  if (layerIsOn("toggleMarkers")) drawMarkers();
+  addLines();
 }
 
 function populateMarkerTypeMenu(): void {
@@ -245,8 +258,7 @@ function toggleMarkerTypeMenu(): void {
 }
 
 function toggleAddMarker(): void {
-  ensureEl("markersAddFromOverview").classList.toggle("pressed");
-  ensureEl("addMarker").click();
+  void Controllers.MarkerCreator.toggle();
 }
 
 function changeMarkerType(): void {
@@ -293,8 +305,8 @@ function exportMarkers(): void {
     const name = note ? quote(note.name) : "Unknown";
     const legend = note ? quote(note.legend) : "";
 
-    const lat = getLatitude(y, 2);
-    const lon = getLongitude(x, 2);
+    const lat = getLatitude(y, mapCoordinates, graphHeight, 2);
+    const lon = getLongitude(x, mapCoordinates, graphWidth, 2);
 
     return [i, type, icon, name, legend, x, y, lat, lon].join(",");
   });

@@ -1,4 +1,5 @@
 import { sum } from "d3";
+import { rn } from "@/utils";
 import { minmax } from "../utils";
 import type { Burg } from "./burgs-generator";
 import { DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -15,6 +16,21 @@ const MAX_BONUS_PRODUCTION = 5;
 export class ProductionModule {
   private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers
   private zoneCellSetsSource: Zone[] | null = null;
+
+  regenerate(): void {
+    pack.deals = [];
+    for (const market of pack.markets) market.goods = {};
+    this.produce();
+    States.collectTaxes();
+  }
+
+  regenerateEconomy(): void {
+    if (!pack.goods?.length) Goods.generate();
+    else Goods.sync();
+
+    Markets.expandTerritories(pack.markets);
+    this.regenerate();
+  }
 
   produce() {
     TIME && console.time("generateProduction");

@@ -5,8 +5,6 @@ import { rn } from "../utils";
 declare global {
   var drawMilitary: () => void;
   var drawRegiments: (regiments: Regiment[], stateId: number) => void;
-  var drawRegiment: (reg: Regiment, stateId: number) => void;
-  var moveRegiment: (reg: Regiment, x: number, y: number) => void;
   var armies: import("d3").Selection<SVGGElement, unknown, null, undefined>;
 }
 
@@ -170,5 +168,5 @@ const moveRegimentRenderer = (reg: Regiment, x: number, y: number): void => {
 
 window.drawMilitary = militaryRenderer;
 window.drawRegiments = drawRegimentsRenderer;
-window.drawRegiment = drawRegimentRenderer;
-window.moveRegiment = moveRegimentRenderer;
+
+export { drawRegimentRenderer as drawRegiment, militaryRenderer as drawMilitary, moveRegimentRenderer as moveRegiment };

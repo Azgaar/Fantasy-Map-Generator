@@ -17,10 +17,12 @@ import {
   link,
   openURL,
   parseError,
+  speak,
   throttle,
   wiki
 } from "./commonUtils";
 import { drawCellsValue, drawPath, drawPoint, drawPolygons, drawRouteConnections } from "./debugUtils";
+import { downloadFile, getFileName, uploadFile } from "./fileUtils";
 import { distanceSquared, rollups } from "./functionUtils";
 import {
   calculateVoronoi,
@@ -38,72 +40,66 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
-import { destroyDialogIfExists, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
+import {
+  applyOption,
+  destroyDialogIfExists,
+  ensureEl,
+  findEl,
+  getComposedPath,
+  getNextId,
+  getPointer
+} from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
-import { convertTemperature, formatPrice, getHeight, getIntegerFromSI, getTemperatureLikeness, si } from "./unitUtils";
+import {
+  convertTemperature,
+  formatPrice,
+  getArea,
+  getAreaUnit,
+  getCellPopulation,
+  getFriendlyHeight,
+  getFriendlyPrecipitation,
+  getHeight,
+  getIntegerFromSI,
+  getPrecipitation,
+  getTemperatureLikeness,
+  si
+} from "./unitUtils";
 
 window.rn = rn;
-window.lim = lim;
 window.minmax = minmax;
 window.normalize = normalize;
-window.lerp = lerp as typeof window.lerp;
 
-window.vowel = isVowel;
-window.trimVowels = trimVowels;
-window.getAdjective = getAdjective;
 window.nth = nth;
-window.abbreviate = abbreviate;
 window.list = list;
 
 window.last = last;
 window.unique = unique;
-window.getTypedArray = getTypedArray;
 window.createTypedArray = createTypedArray;
 
 window.rand = rand;
 window.P = P;
 window.each = each;
 window.gauss = gauss;
-window.Pint = Pint;
-window.ra = ra;
 window.rw = rw;
-window.biased = biased;
-window.getNumberInRange = getNumberInRange;
 window.generateSeed = generateSeed;
 
-window.convertTemperature = convertTemperature;
-window.si = si;
-window.getInteger = getIntegerFromSI;
-window.getHeight = getHeight;
-window.formatPrice = formatPrice;
 window.toHEX = toHEX;
-window.getColors = getColors;
-window.getRandomColor = getRandomColor;
-window.getMixedColor = getMixedColor;
-window.C_12 = C_12;
 
 window.ensureEl = ensureEl;
 window.findEl = findEl;
-window.destroyDialogIfExists = destroyDialogIfExists;
-window.getComposedPath = getComposedPath;
+window.applyOption = applyOption;
 window.getNextId = getNextId;
 
-window.rollups = rollups;
 window.dist2 = distanceSquared;
 
 window.getIsolines = getIsolines;
-window.getPolesOfInaccessibility = getPolesOfInaccessibility;
-window.connectVertices = connectVertices;
-window.findPath = (start, end, getCost) => findPath(start, end, getCost, (window as any).pack);
 window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).pack);
 
 window.round = round;
 window.capitalize = capitalize;
-window.splitInTwo = splitInTwo;
 window.parseTransform = parseTransform;
-window.sanitizeId = sanitizeId;
 
 JSON.isValid = isValidJSON;
 JSON.safeParse = safeParseJSON;
@@ -131,34 +127,18 @@ declare global {
 window.shouldRegenerateGrid = (grid: any, expectedSeed: number) =>
   shouldRegenerateGrid(grid, expectedSeed, (window as any).graphWidth, (window as any).graphHeight);
 window.generateGrid = () => generateGrid((window as any).seed, (window as any).graphWidth, (window as any).graphHeight);
-window.findGridAll = (x: number, y: number, radius: number) => findGridAll(x, y, radius, (window as any).grid);
-window.findGridCell = (x: number, y: number) => findGridCell(x, y, (window as any).grid);
 window.findCell = (x: number, y: number, radius?: number) => findClosestCell(x, y, radius, (window as any).pack);
-window.findAll = (x: number, y: number, radius: number) => findAllCellsInRadius(x, y, radius, (window as any).pack);
 window.getPackPolygon = (cellIndex: number) => getPackPolygon(cellIndex, (window as any).pack);
 window.getGridPolygon = (cellIndex: number) => getGridPolygon(cellIndex, (window as any).grid);
 window.calculateVoronoi = calculateVoronoi;
-window.poissonDiscSampler = poissonDiscSampler;
-window.findAllInQuadtree = findAllInQuadtree;
 window.drawHeights = drawHeights;
-window.isLand = (i: number) => isLand(i, (window as any).pack);
-window.isWater = (i: number) => isWater(i, (window as any).pack);
 
-window.clipPoly = (points: [number, number][], secure?: number) => clipPoly(points, graphWidth, graphHeight, secure);
-window.getSegmentId = getSegmentId;
 window.debounce = debounce;
-window.throttle = throttle;
 window.parseError = parseError;
-window.getBase64 = getBase64;
 window.openURL = openURL;
 window.wiki = wiki;
 window.link = link;
 window.isCtrlClick = isCtrlClick;
-window.generateDate = generateDate;
-window.getLongitude = (x: number, decimals?: number) => getLongitude(x, mapCoordinates, graphWidth, decimals);
-window.getLatitude = (y: number, decimals?: number) => getLatitude(y, mapCoordinates, graphHeight, decimals);
-window.getCoordinates = (x: number, y: number, decimals?: number) =>
-  getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, decimals);
 
 // Initialize prompt when DOM is ready
 if (document.readyState === "loading") {
@@ -167,16 +147,23 @@ if (document.readyState === "loading") {
   initializePrompt();
 }
 
+// console debugging aids: no caller in the codebase by design, they are typed at the devtools prompt
 window.drawCellsValue = drawCellsValue;
 window.drawPolygons = (data: any[]) => drawPolygons(data, (window as any).terrs, (window as any).grid);
 window.drawRouteConnections = () => drawRouteConnections((window as any).packedGraph);
 window.drawPoint = drawPoint;
 window.drawPath = drawPath;
+window.downloadFile = downloadFile;
+window.uploadFile = uploadFile;
+
+// classic main.js still calls this one; the rest are imported by their consumers
+window.getPrecipitation = getPrecipitation;
 
 window.TYPED_ARRAY_MAX = TYPED_ARRAY_MAX;
 
 export {
   abbreviate,
+  applyOption,
   biased,
   C_12,
   calculateVoronoi,
@@ -188,6 +175,7 @@ export {
   debounce,
   destroyDialogIfExists,
   distanceSquared,
+  downloadFile,
   drawCellsValue,
   drawHeights,
   drawPath,
@@ -209,11 +197,18 @@ export {
   generateGrid,
   generateSeed,
   getAdjective,
+  getArea,
+  getAreaUnit,
   getBase64,
+  getCellPopulation,
   getColors,
   getComposedPath,
   getCoordinates,
+  getFileName,
+  getFriendlyHeight,
+  getFriendlyPrecipitation,
   getGridPolygon,
+  getHeight,
   getIntegerFromSI,
   getIsolines,
   getLatitude,
@@ -224,6 +219,7 @@ export {
   getPackPolygon,
   getPointer,
   getPolesOfInaccessibility,
+  getPrecipitation,
   getRandomColor,
   getSegmentId,
   getTemperatureLikeness,
@@ -259,11 +255,13 @@ export {
   sanitizeId,
   shouldRegenerateGrid,
   si,
+  speak,
   splitInTwo,
   TYPED_ARRAY_MAX,
   throttle,
   toHEX,
   trimVowels,
   unique,
+  uploadFile,
   wiki
 };

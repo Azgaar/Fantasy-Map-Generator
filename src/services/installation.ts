@@ -1,3 +1,5 @@
+import { tip } from "@/components/tooltips";
+
 let installButton: HTMLButtonElement | null = null;
 let deferredPrompt: (Event & { prompt: () => void }) | null = null;
 

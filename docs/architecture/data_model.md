@@ -363,22 +363,20 @@ Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note th
 - `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
 - `name`: `string` - optional market name, derived from the center burg's name
 
-# Secondary global data
-
-Secondary data exposed to global space.
-
 ## Biomes
 
-Biomes data object is globally available as `biomesData`. It stores a few arrays, making it different from other data. Object structure:
+Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the array index. Cells refer to a biome through `pack.cells.biome`. Object structure:
 
-- `i`: `number[]` - biome id
-- `name`: `string[]` - biome names
-- `color`: `string[]` - biome colors in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
-- `biomesMartix`: `number[][]` - 2d matrix used to define cell biome by temperature and moisture. Columns contain temperature data going from > `19` °C to < `-4` °C. Rows contain data for 5 moisture bands from the drier to the wettest one. Each row is a `Uint8Array`
-- `cost`: `number[]` - biome movement cost, must be `0` or positive. Extensively used during cultures, states and religions growth phase. `0` means spread to this biome costs nothing. Max value is not defined, but `5000` is the actual max used by default
-- `habitability`: `number[]` - biome habitability, must be `0` or positive. `0` means the biome is uninhabitable, max value is not defined, but `100` is the actual max used by default
-- `icons`: `string[][]` - non-weighed array of icons for each biome. Used for _relief icons_ rendering. Not-weighed means that random icons from array is selected, so the same icons can be mentioned multiple times
-- `iconsDensity`: `number[]` - defines how packed icons can be for the biome. An integer from `0` to `150`
+- `i`: `number` - biome id, always equal to the array index
+- `name`: `string` - biome name
+- `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern
+- `cost`: `number` - non-negative movement cost used during culture, state and religion growth
+- `habitability`: `number` - non-negative suitability value; `0` means uninhabitable
+- `icons`: `string[]` - non-weighted relief icon pool; repeated values increase an icon's selection weight
+- `iconsDensity`: `number` - defines how packed icons can be for the biome. An integer from `0` to `150`
+- `removed`: `boolean` - optional marker for a removed custom biome
+
+The temperature and moisture lookup matrix used to assign default biome ids is generator configuration, not map state. Cell count, area and population statistics are calculated on demand and are not stored on biome objects.
 
 ## Deals
 

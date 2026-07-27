@@ -1,3 +1,4 @@
+import type { Biome } from "@/generators/biomes-generator";
 import type { Burg } from "@/generators/burgs-generator";
 import type { Culture } from "@/generators/cultures-generator";
 import type { Feature } from "@/generators/features";
@@ -53,6 +54,7 @@ export interface PackedGraph {
     p: [number, number][]; // vertex points
   };
   rivers: River[];
+  biomes: Biome[];
   features: Feature[];
   burgs: Burg[];
   states: State[];
