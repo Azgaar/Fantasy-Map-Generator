@@ -1,4 +1,4 @@
-import { color, drag, select } from "d3";
+import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import type { FillBoxElement } from "@/components/fill-box";
@@ -107,7 +107,7 @@ function renderDialog(): void {
   ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
     const target = ev.target as HTMLElement;
 
-    const fillBox = target.closest<HTMLElement>("fill-box");
+    const fillBox = target.closest<FillBoxElement>("fill-box");
     if (fillBox) {
       const row = fillBox.closest<HTMLElement>(".states.market");
       const marketId = row ? +row.dataset.id! : 0;

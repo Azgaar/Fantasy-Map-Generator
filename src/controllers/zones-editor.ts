@@ -134,7 +134,7 @@ function renderDialog(): void {
 
     const target = ev.target as HTMLElement;
     const fillBox = target.closest("fill-box");
-    if (fillBox) changeFill(fillBox, zone);
+    if (fillBox) changeFill(fillBox as FillBoxElement, zone);
     else if (target.classList.contains("zonePopulation")) changePopulation(zone);
     else if (target.classList.contains("zoneRemove")) zoneRemove(zone);
     else if (target.classList.contains("zoneHide")) toggleVisibility(zone);

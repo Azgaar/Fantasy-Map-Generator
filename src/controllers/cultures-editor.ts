@@ -374,12 +374,12 @@ function cultureHighlightOff(event: any): void {
   select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
 }
 
-function cultureChangeColor(fillBox: FillBoxElement): void {
-  const currentFill = fillBox.getAttribute("fill") || "#ffffff";
-  const cultureId = +(fillBox.parentNode as HTMLElement).dataset.id!;
+function cultureChangeColor(this: FillBoxElement): void {
+  const currentFill = this.getAttribute("fill") || "#ffffff";
+  const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string) => {
-    fillBox.fill = newFill;
+    this.fill = newFill;
     pack.cultures[cultureId].color = newFill;
     select("#cults").select(`#culture${cultureId}`).attr("fill", newFill);
     select("#debug").select(`#cultureCenter${cultureId}`).attr("fill", newFill);

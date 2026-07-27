@@ -1,4 +1,4 @@
-import { color, drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
+import { drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
