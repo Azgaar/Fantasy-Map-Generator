@@ -1,6 +1,7 @@
 import { color, drag, select } from "d3";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -469,35 +470,17 @@ function confirmRemoveMarket(marketId: number): void {
   });
 }
 
-function marketChangeFill(fillBox: HTMLElement, marketId: number): void {
+function marketChangeFill(fillBox: FillBoxElement, marketId: number): void {
   const market = Markets.get(marketId);
   if (!market) return;
 
   const callback = (newFill: string) => {
-    (fillBox as unknown as { fill: string }).fill = newFill;
+    fillBox.fill = newFill;
     market.color = newFill;
-    applyMarketColor(marketId, newFill);
+    drawMarkets();
   };
 
   void Controllers.ColorPicker.open(market.color, callback);
-}
-
-// Recolor a single market's rendered shapes in place, matching draw-markets output.
-function applyMarketColor(marketId: number, fill: string): void {
-  const strokeColor = color(fill)?.darker().hex() || "#000";
-
-  const group = document.getElementById(`market${marketId}`);
-  if (group) {
-    group.querySelector<SVGPathElement>("path.fill")?.setAttribute("fill", fill);
-    group.querySelector<SVGPathElement>("path.border")?.setAttribute("stroke", strokeColor);
-    const circle = group.querySelector<SVGCircleElement>("circle");
-    if (circle) {
-      circle.setAttribute("fill", fill);
-      circle.setAttribute("stroke", strokeColor);
-    }
-  }
-
-  document.querySelector<SVGPathElement>(`#marketsTemp path[data-market="${marketId}"]`)?.setAttribute("fill", fill);
 }
 
 function getMarketTotalStock(market: Market): number {

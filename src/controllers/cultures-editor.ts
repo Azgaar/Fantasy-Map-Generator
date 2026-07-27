@@ -2,6 +2,7 @@ import { csvParse, drag, easeSinIn, select, transition } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -373,12 +374,12 @@ function cultureHighlightOff(event: any): void {
   select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
 }
 
-function cultureChangeColor(this: HTMLElement): void {
-  const currentFill = this.getAttribute("fill") || "#ffffff";
-  const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
+function cultureChangeColor(fillBox: FillBoxElement): void {
+  const currentFill = fillBox.getAttribute("fill") || "#ffffff";
+  const cultureId = +(fillBox.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string) => {
-    (this as any).fill = newFill;
+    fillBox.fill = newFill;
     pack.cultures[cultureId].color = newFill;
     select("#cults").select(`#culture${cultureId}`).attr("fill", newFill);
     select("#debug").select(`#cultureCenter${cultureId}`).attr("fill", newFill);

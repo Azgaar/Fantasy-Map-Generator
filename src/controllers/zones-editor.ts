@@ -1,6 +1,7 @@
 import { drag, select, sum } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -133,7 +134,7 @@ function renderDialog(): void {
 
     const target = ev.target as HTMLElement;
     const fillBox = target.closest("fill-box");
-    if (fillBox) changeFill(fillBox.getAttribute("fill")!, zone);
+    if (fillBox) changeFill(fillBox, zone);
     else if (target.classList.contains("zonePopulation")) changePopulation(zone);
     else if (target.classList.contains("zoneRemove")) zoneRemove(zone);
     else if (target.classList.contains("zoneHide")) toggleVisibility(zone);
@@ -428,14 +429,16 @@ function exitZonesManualAssignment(close?: string): void {
   if (selected) selected.classList.remove("selected");
 }
 
-function changeFill(fill: string, zone: Zone): void {
+function changeFill(fillBox: FillBoxElement, zone: Zone): void {
+  const currentFill = fillBox.getAttribute("fill")!;
+
   const callback = (newFill: string): void => {
+    fillBox.fill = newFill;
     zone.color = newFill;
     drawZones();
-    zonesEditorAddLines();
   };
 
-  void Controllers.ColorPicker.open(fill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function toggleVisibility(zone: Zone): void {

@@ -2,6 +2,7 @@ import { drag, easeSinIn, select, sum, transition } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -126,7 +127,7 @@ function renderDialog(): void {
   ensureEl("biomesBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
     const cl = el.classList;
-    if (el.tagName === "FILL-BOX") biomeChangeColor(el);
+    if (el.tagName === "FILL-BOX") biomeChangeColor(el as FillBoxElement);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
     if (customization === 6) selectBiomeOnLineClick(el);
@@ -261,14 +262,14 @@ function biomeHighlightOff(event: Event): void {
   select(`#biomes > #biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);
 }
 
-function biomeChangeColor(el: HTMLElement): void {
-  const currentFill = el.getAttribute("fill")!;
-  const biome = +(el.parentNode as HTMLElement).dataset.id!;
+function biomeChangeColor(fillBox: FillBoxElement): void {
+  const currentFill = fillBox.getAttribute("fill")!;
+  const biomeId = +(fillBox.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string): void => {
-    el.setAttribute("fill", newFill);
-    pack.biomes[biome].color = newFill;
-    select(`#biomes > #biome${biome}`).attr("fill", newFill).attr("stroke", newFill);
+    (fillBox as any).fill = newFill;
+    pack.biomes[biomeId].color = newFill;
+    drawBiomes();
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);

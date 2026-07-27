@@ -2,6 +2,7 @@ import { color, drag, interpolateString, max, pack as packLayout, select, strati
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -155,7 +156,7 @@ function renderDialog(): void {
     const $element = (event as MouseEvent).target as HTMLElement;
     const classList = $element.classList;
     const stateId = Number(($element.parentNode as HTMLElement)?.dataset?.id);
-    if ($element.tagName === "FILL-BOX") stateChangeFill($element);
+    if ($element.tagName === "FILL-BOX") stateChangeFill($element as FillBoxElement);
     else if (classList.contains("name")) editStateName(stateId);
     else if (classList.contains("coaIcon"))
       void Controllers.EmblemsEditor.open("state", `stateCOA${stateId}`, pack.states[stateId]);
@@ -405,23 +406,15 @@ function stateHighlightOff(): void {
     });
 }
 
-function stateChangeFill(el: HTMLElement): void {
-  const currentFill = el.getAttribute("fill") || "#ffffff";
-  const state = +(el.parentNode as HTMLElement).dataset.id!;
+function stateChangeFill(fillBox: FillBoxElement): void {
+  const currentFill = fillBox.getAttribute("fill") || "#ffffff";
+  const state = +(fillBox.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string) => {
-    (el as any).fill = newFill;
+    fillBox.fill = newFill;
     pack.states[state].color = newFill;
-    select("#statesBody").select(`#state${state}`).attr("fill", newFill);
-    select("#statesBody").select(`#state-gap${state}`).attr("stroke", newFill);
-    const halo = color(newFill)?.darker().hex() ?? "#666666";
-    select("#statesHalo").select(`#state-border${state}`).attr("stroke", halo);
-
-    // recolor regiments
-    const solidColor = newFill[0] === "#" ? newFill : "#999";
-    const darkerColor = color(solidColor)?.darker().hex() ?? "#666666";
-    armies.select(`#army${state}`).attr("fill", solidColor);
-    armies.select(`#army${state}`).selectAll("g > rect:nth-of-type(2)").attr("fill", darkerColor);
+    drawStates();
+    if (layerIsOn("toggleMilitary")) drawMilitary();
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);

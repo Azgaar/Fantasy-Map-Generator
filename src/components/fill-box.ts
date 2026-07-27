@@ -71,3 +71,5 @@ class FillBox extends HTMLElement {
 
 // cannot use Shadow DOM here as need an access to svg hatches
 customElements.define("fill-box", FillBox);
+
+export type FillBoxElement = InstanceType<typeof FillBox>;

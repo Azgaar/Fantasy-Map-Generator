@@ -12,6 +12,7 @@ import {
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -182,7 +183,7 @@ function renderDialog(): void {
     const p = +line.dataset.id!;
     const stateId = pack.provinces[p].state;
 
-    if (el.tagName === "FILL-BOX") changeFill(el);
+    if (el.tagName === "FILL-BOX") changeFill(el as FillBoxElement);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon"))
       void Controllers.EmblemsEditor.open("province", `provinceCOA${p}`, pack.provinces[p]);
@@ -386,16 +387,14 @@ function provinceHighlightOff(event: Event): void {
   select("#debug").selectAll(".highlight").remove();
 }
 
-function changeFill(el: HTMLElement): void {
-  const currentFill = el.getAttribute("fill")!;
-  const p = +(el.parentNode as HTMLElement).dataset.id!;
+function changeFill(fillBox: FillBoxElement): void {
+  const currentFill = fillBox.getAttribute("fill")!;
+  const p = +(fillBox.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string): void => {
-    el.setAttribute("fill", newFill);
+    fillBox.fill = newFill;
     pack.provinces[p].color = newFill;
-    const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
-    g.select(`#province${p}`).attr("fill", newFill);
-    g.select(`#province-gap${p}`).attr("stroke", newFill);
+    drawProvinces();
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
