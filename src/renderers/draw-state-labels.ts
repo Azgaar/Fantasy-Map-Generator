@@ -168,7 +168,7 @@ function measureLabelPath(label: Label, sandbox: SVGGElement): SVGPathElement {
 }
 
 // attach a measurement copy of the label's text to the sandbox; caller removes it after measuring
-function measureLabelText(label: PathLabel, sandbox: SVGGElement): SVGTextElement {
+function measureLabelText(label: Label & { text: string }, sandbox: SVGGElement): SVGTextElement {
   const lines = label.text.split("|");
   const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
