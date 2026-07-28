@@ -18,9 +18,6 @@ declare global {
     // called by a generator that cannot import a renderer (the generator is the smell, not this)
     drawBurgIcon: typeof import("../renderers/draw-burg-icons").drawBurgIcon;
     removeBurgIcon: typeof import("../renderers/draw-burg-icons").removeBurgIcon;
-    drawBurgLabel: typeof import("../renderers/draw-burg-labels").drawBurgLabel;
-    removeBurgLabel: typeof import("../renderers/draw-burg-labels").removeBurgLabel;
-    ensureLabelGroup: (group: string) => SVGGElement;
     redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
     redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;
@@ -136,6 +133,7 @@ declare global {
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
+    stateLabels: { [key: string]: string | number | null };
     burgLabels: { [key: string]: { [key: string]: string } };
     addedLabels: { [key: string]: { [key: string]: string } };
     burgIcons: { [key: string]: { [key: string]: string } };
@@ -249,7 +247,7 @@ declare global {
   var drawBorders: () => void;
   var drawProvinces: () => void;
   var drawLabels: () => void;
-  var drawCustomLabels: () => void;
+  var removeLabels: () => void;
   var drawPopulation: () => void;
   var toggleCultures: () => void;
   var toggleStates: () => void;

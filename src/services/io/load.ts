@@ -7,7 +7,13 @@ import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
+
+function getAttributes(element: Element | null): Record<string, string> {
+  return element
+    ? Object.fromEntries(Array.from(element.attributes, attribute => [attribute.name, attribute.value]))
+    : {};
+}
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -377,6 +383,18 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     fogging = viewbox.select<SVGGElement>("#fogging");
     debug = viewbox.select<SVGElement>("#debug");
     burgLabels = labels.select<SVGGElement>("#burgLabels");
+    const getGroupStyles = (selector: string) =>
+      Object.fromEntries(
+        labels
+          .selectAll<SVGGElement, unknown>(selector)
+          .nodes()
+          .map(group => [group.id, getAttributes(group)])
+      );
+    const labelStyles = safeParseJSON(labels.attr("data-label-styles")) || {};
+    labels.attr("data-label-styles", null);
+    style.stateLabels = labelStyles?.stateLabels || getAttributes(labels.select<SVGGElement>("#states").node());
+    style.burgLabels = labelStyles?.burgLabels || getGroupStyles("#burgLabels > g");
+    style.addedLabels = labelStyles?.addedLabels || getGroupStyles(":scope > g:not(#states):not(#burgLabels)");
 
     if (!texture.size()) {
       texture = viewbox
@@ -515,7 +533,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (isVisible(select("#ice"))) turnOn("toggleIce");
       if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
-      if (isVisible(select("#labels"))) turnOn("toggleLabels");
+      if (isVisible(select("#labels")) && select("#labels").selectAll("text").size()) turnOn("toggleLabels");
+      else removeLabels();
       if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");

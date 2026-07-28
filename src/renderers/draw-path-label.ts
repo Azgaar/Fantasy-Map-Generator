@@ -1,15 +1,42 @@
 import { curveNatural, line } from "d3";
 import type { Label } from "../generators/labels";
 
-export type PathLabel = Label & { id: string; text: string; group: string; pathPoints: [number, number][] };
 const lineGen = line<[number, number]>().curve(curveNatural);
+
+export type PathLabel = Label & { id: string; text: string; group: string; pathPoints: [number, number][] };
+type LabelGroupStyle = Record<string, string | number | null>;
+const DEFAULT_LABEL_STYLE: LabelGroupStyle = {
+  fill: "#3e3e4b",
+  opacity: 1,
+  stroke: "#3a3a3a",
+  "stroke-width": 0,
+  "font-family": "Almendra SC",
+  "font-size": 18,
+  "data-size": 18
+};
 
 export const getPathLabelElementId = (label: PathLabel): string => label.id;
 
 const getPathId = (label: PathLabel): string => `textPath_${getPathLabelElementId(label)}`;
 
-// get a label group container, creating it with the default label style if missing,
-// so labels render even when their group is not part of the loaded SVG
+export function drawPathLabels(labels: PathLabel[]): void {
+  const paths = document.querySelector<SVGGElement>("defs > g#deftemp > g#textPaths")!;
+  const texts = new Map<string, SVGTextElement[]>();
+
+  for (const label of labels) {
+    const text = buildLabelText(label);
+    const path = buildLabelPath(label);
+    document.getElementById(label.id)?.remove();
+    document.getElementById(path.id)?.remove();
+    paths.appendChild(path);
+    const groupTexts = texts.get(label.group) || [];
+    groupTexts.push(text);
+    texts.set(label.group, groupTexts);
+  }
+
+  for (const [group, groupTexts] of texts) ensureLabelGroup(group).append(...groupTexts);
+}
+
 export function ensureLabelGroup(group: string): SVGGElement {
   const labels = document.querySelector<SVGGElement>("g#labels")!;
   const existing = labels.querySelector<SVGGElement>(`:scope > g#${group}`);
@@ -17,20 +44,18 @@ export function ensureLabelGroup(group: string): SVGGElement {
 
   const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
   container.id = group;
-  container.setAttribute("fill", "#3e3e4b");
-  container.setAttribute("opacity", "1");
-  container.setAttribute("stroke", "#3a3a3a");
-  container.setAttribute("stroke-width", "0");
-  container.setAttribute("font-family", "Almendra SC");
-  container.setAttribute("font-size", "18");
-  container.setAttribute("data-size", "18");
+  const groupStyle =
+    group === "states" ? style.stateLabels : style.addedLabels[group] || style.addedLabels.addedLabels || {};
+  for (const [attribute, value] of Object.entries({ ...DEFAULT_LABEL_STYLE, ...groupStyle })) {
+    if (value !== null) container.setAttribute(attribute, String(value));
+  }
   labels.appendChild(container);
   return container;
 }
 
 // build a detached defs path element the label text follows;
 // pathId overrides the default id so measurement copies don't collide with rendered elements
-function buildLabelPath(label: PathLabel, pathId?: string): SVGPathElement {
+export function buildLabelPath(label: PathLabel, pathId?: string): SVGPathElement {
   const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
   pathElement.setAttribute("id", pathId ?? getPathId(label));
   pathElement.setAttribute("d", lineGen(label.pathPoints || []) || "");
@@ -38,7 +63,7 @@ function buildLabelPath(label: PathLabel, pathId?: string): SVGPathElement {
 }
 
 // build a detached text element referencing the label's path
-function buildLabelText(label: PathLabel, pathId?: string): SVGTextElement {
+export function buildLabelText(label: PathLabel, pathId?: string): SVGTextElement {
   const lines = (label.text || "").split("|");
   const tspans = lines.map((lineText, index) => {
     const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
@@ -66,13 +91,23 @@ function buildLabelText(label: PathLabel, pathId?: string): SVGTextElement {
   return textElement;
 }
 
-// build both detached elements for batched insertion by bulk renderers;
-// pass pathId to get a measurement copy whose ids don't collide with rendered elements
-export function buildPathLabelElements(
-  label: PathLabel,
-  pathId?: string
-): { text: SVGTextElement; path: SVGPathElement } {
-  return { text: buildLabelText(label, pathId), path: buildLabelPath(label, pathId) };
+export function getLabelPathMarkup(label: PathLabel): string {
+  const path = lineGen(label.pathPoints) || "";
+  return /*html*/ `<path id="${getPathId(label)}" d="${path}"></path>`;
+}
+
+export function getLabelTextMarkup(label: PathLabel): string {
+  const lines = label.text.split("|");
+  const tspans = lines
+    .map((text, index) => `<tspan x="0" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${text}</tspan>`)
+    .join("");
+  const transform = label.dx || label.dy ? ` transform="${`translate(${label.dx || 0}, ${label.dy || 0})`}"` : "";
+  const letterSpacing = label.letterSpacing ? ` letter-spacing="${`${label.letterSpacing}px`}"` : "";
+  const id = label.id;
+  const startOffset = `${label.startOffset ?? 50}%`;
+  const fontSize = `${label.fontSize ?? 100}%`;
+
+  return /*html*/ `<text text-rendering="optimizeSpeed" id="${id}"${transform}><textPath href="#${getPathId(label)}" startOffset="${startOffset}" font-size="${fontSize}"${letterSpacing}>${tspans}</textPath></text>`;
 }
 
 // create or update the defs path in the DOM; returns the attached path element
@@ -102,23 +137,6 @@ export function drawPathLabel(label: PathLabel): SVGTextElement {
   }
 
   return textElement;
-}
-
-export function drawPathLabels(labels: PathLabel[]): void {
-  const paths = document.querySelector<SVGGElement>("defs > g#deftemp > g#textPaths")!;
-  const texts = new Map<string, SVGTextElement[]>();
-
-  for (const label of labels) {
-    const { text, path } = buildPathLabelElements(label);
-    document.getElementById(label.id)?.remove();
-    document.getElementById(path.id)?.remove();
-    paths.appendChild(path);
-    const groupTexts = texts.get(label.group) || [];
-    groupTexts.push(text);
-    texts.set(label.group, groupTexts);
-  }
-
-  for (const [group, groupTexts] of texts) ensureLabelGroup(group).append(...groupTexts);
 }
 
 // remove a path label's text element and its defs path

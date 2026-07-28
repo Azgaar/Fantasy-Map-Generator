@@ -18,9 +18,21 @@
 }
 
 // store some style inputs as options
-styleElements.on("change", function (ev) {
+styleElements.on("input change", function (ev) {
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
+  storeLabelGroupStyle();
 });
+
+function storeLabelGroupStyle() {
+  if (styleElementSelect.value !== "labels") return;
+  const group = getEl().node();
+  if (!group) return;
+
+  const attributes = Object.fromEntries(Array.from(group.attributes, attribute => [attribute.name, attribute.value]));
+  if (group.id === "states") style.stateLabels = attributes;
+  else if (group.parentNode?.id === "burgLabels") style.burgLabels[group.id] = attributes;
+  else if (group.id !== "burgLabels") style.addedLabels[group.id] = attributes;
+}
 
 // select element to be edited
 function editStyle(element, group) {

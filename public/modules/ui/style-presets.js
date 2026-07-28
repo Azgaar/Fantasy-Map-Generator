@@ -78,7 +78,11 @@ function applyStyle(styleJSON) {
       style.burgLabels[group] = styleJSON[selector];
     }
 
-    if (selector.startsWith("#labels > #") && selector !== "#labels > #states") {
+    if (selector === "#labels > #states") {
+      style.stateLabels = styleJSON[selector];
+    }
+
+    if (selector.startsWith("#labels > #") && !["#labels > #states", "#labels > #burgLabels"].includes(selector)) {
       const group = selector.split("#").pop();
       style.addedLabels[group] = styleJSON[selector];
     }
@@ -185,7 +189,7 @@ function addStylePreset() {
   document.getElementById("styleToLoad").addEventListener("change", loadStyleFile);
 
   function collectStyleData() {
-    const style = {};
+    const presetStyle = {};
     const attributes = {
       "#map": ["background-color", "filter", "data-filter"],
       "#armies": ["font-size", "box-size", "stroke", "stroke-width", "fill-opacity", "filter"],
@@ -383,14 +387,29 @@ function addStylePreset() {
       const el = document.querySelector(selector);
       if (!el) continue;
 
-      style[selector] = {};
+      presetStyle[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
         // label-like layers store their base font size in data-size; markets use data-size for the marker circle, so keep its real font-size
         if (attr === "font-size" && selector !== "#markets" && el.hasAttribute("data-size"))
           value = el.getAttribute("data-size");
-        style[selector][attr] = parseValue(value);
+        presetStyle[selector][attr] = parseValue(value);
       }
+    }
+
+    addStoredLabelStyle("#labels > #states", style.stateLabels);
+    for (const [group, groupStyle] of Object.entries(style.addedLabels)) {
+      addStoredLabelStyle(`#labels > #${group}`, groupStyle);
+    }
+    for (const [group, groupStyle] of Object.entries(style.burgLabels)) {
+      addStoredLabelStyle(`#burgLabels > g#${group}`, groupStyle);
+    }
+
+    function addStoredLabelStyle(selector, groupStyle) {
+      if (!groupStyle) return;
+      presetStyle[selector] = Object.fromEntries(
+        Object.entries(groupStyle).map(([key, value]) => [key, parseValue(value)])
+      );
     }
 
     function parseValue(value) {
@@ -400,7 +419,7 @@ function addStylePreset() {
       return value;
     }
 
-    return style;
+    return presetStyle;
   }
 
   function checkName() {

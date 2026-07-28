@@ -3,6 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawLabel, removeLabel } from "@/renderers/draw-labels";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import {
@@ -350,10 +351,10 @@ function changeName(): void {
   const id = getSelectedId();
   const value = ensureEl<HTMLInputElement>("burgName").value;
   pack.burgs[id].name = value;
-  selected!.text(value);
 
   if (!pack.burgs[id].label) pack.burgs[id].label = {};
   Object.assign(pack.burgs[id].label, { text: value });
+  drawLabel("burg", id);
 }
 
 function generateNameRandom(): void {
@@ -366,6 +367,7 @@ function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
   Burgs.changeGroup(burg, this.value);
+  drawLabel("burg", id);
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -478,6 +480,7 @@ function toggleCapital(burgId: number): void {
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
   Burgs.changeGroup(oldCapital);
+  drawLabel("burg");
 }
 
 function toggleBurgLockButton(): void {
@@ -707,6 +710,7 @@ function removeSelectedBurg(): void {
       message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
+        removeLabel("burg", burgId);
         Burgs.remove(burgId);
         $("#burgEditor").dialog("close");
       }

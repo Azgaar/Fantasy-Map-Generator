@@ -896,7 +896,7 @@ function toggleLabels(event) {
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
     if (event && isCtrlClick(event)) return editStyle("labels");
-    labels.html("");
+    removeLabels();
     turnButtonOff("toggleLabels");
   }
 }

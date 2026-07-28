@@ -1,104 +1,69 @@
-import { select } from "d3";
 import type { Burg } from "../generators/burgs-generator";
 
-declare global {
-  var drawBurgLabels: () => void;
-}
+export function drawBurgLabels(): void {
+  const container = ensureBurgLabelsContainer();
+  container.replaceChildren();
 
-const burgLabelsRenderer = (): void => {
-  TIME && console.time("drawBurgLabels");
-  createLabelGroups();
-
-  for (const { name } of options.burgs.groups) {
-    const burgsInGroup = pack.burgs.filter(burg => !burg.removed && burg.group === name);
-    if (!burgsInGroup.length) continue;
-
-    const labelGroup = select("#burgLabels").select<SVGGElement>(`#${name}`);
-    if (labelGroup.empty()) continue;
-
-    const dx = labelGroup.attr("data-dx") || 0;
-    const dy = labelGroup.attr("data-dy") || 0;
-
-    labelGroup
-      .selectAll("text")
-      .data(burgsInGroup)
-      .enter()
-      .append("text")
-      .attr("text-rendering", "optimizeSpeed")
-      .attr("id", d => `burgLabel${d.i}`)
-      .attr("data-id", d => d.i!)
-      .attr("x", d => d.x)
-      .attr("y", d => d.y)
-      .attr("dx", `${dx}em`)
-      .attr("dy", `${dy}em`)
-      .attr("transform", d => (d.label?.dx || d.label?.dy ? `translate(${d.label.dx || 0}, ${d.label.dy || 0})` : null))
-      .text(d => d.label?.text ?? d.name!);
-  }
-
-  TIME && console.timeEnd("drawBurgLabels");
-};
-
-const drawBurgLabelRenderer = (burg: Burg): void => {
-  const labelGroup = select("#burgLabels").select<SVGGElement>(`#${burg.group}`);
-  if (labelGroup.empty()) {
-    drawBurgLabels();
-    return; // redraw all labels if group is missing
-  }
-
-  const dx = labelGroup.attr("data-dx") || 0;
-  const dy = labelGroup.attr("data-dy") || 0;
-
-  removeBurgLabelRenderer(burg.i!);
-  labelGroup
-    .append("text")
-    .attr("text-rendering", "optimizeSpeed")
-    .attr("id", `burgLabel${burg.i}`)
-    .attr("data-id", burg.i!)
-    .attr("x", burg.x)
-    .attr("y", burg.y)
-    .attr("dx", `${dx}em`)
-    .attr("dy", `${dy}em`)
-    .attr(
-      "transform",
-      burg.label?.dx || burg.label?.dy ? `translate(${burg.label.dx || 0}, ${burg.label.dy || 0})` : null
-    )
-    .text(burg.label?.text ?? burg.name!);
-};
-
-const removeBurgLabelRenderer = (burgId: number): void => {
-  const existingLabel = document.getElementById(`burgLabel${burgId}`);
-  if (existingLabel) existingLabel.remove();
-};
-
-function createLabelGroups(): void {
-  // save existing styles and remove all groups
-  document.querySelectorAll("g#burgLabels > g").forEach(group => {
-    style.burgLabels[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
-
-  // create groups for each burg group and apply stored or default style
   const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
-  const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
-  for (const { name } of sortedGroups) {
-    const group = select("#burgLabels").append("g");
-    const styles = style.burgLabels[name] || defaultStyle;
-    Object.entries(styles).forEach(([key, value]) => {
-      group.attr(key, value);
-    });
-    group.attr("id", name);
+  for (const { name } of [...options.burgs.groups].sort((a, b) => a.order - b.order)) {
+    const group = createGroup(name, style.burgLabels[name] || defaultStyle);
+    const labels = pack.burgs
+      .filter(burg => burg.i && !burg.removed && burg.group === name)
+      .map(burg => buildBurgLabel(burg, group));
+    group.append(...labels);
+    container.appendChild(group);
   }
 }
 
-window.drawBurgLabels = burgLabelsRenderer;
+export function drawBurgLabel(burg: Burg): void {
+  const container = ensureBurgLabelsContainer();
+  let group = container.querySelector<SVGGElement>(`:scope > g#${burg.group}`);
+  if (!group) {
+    const defaultStyle = style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
+    group = createGroup(burg.group || "town", style.burgLabels[burg.group || "town"] || defaultStyle);
+    container.appendChild(group);
+  }
 
-export { drawBurgLabelRenderer as drawBurgLabel, removeBurgLabelRenderer as removeBurgLabel };
+  removeBurgLabel(burg.i);
+  group.appendChild(buildBurgLabel(burg, group));
+}
 
-// burgs-generator still draws labels directly; it cannot import upwards, so the bridge stays
-window.drawBurgLabel = drawBurgLabelRenderer;
-window.removeBurgLabel = removeBurgLabelRenderer;
+export function removeBurgLabel(burgId: number): void {
+  document.getElementById(`burgLabel${burgId}`)?.remove();
+}
 
-export { burgLabelsRenderer as drawBurgLabels };
+function ensureBurgLabelsContainer(): SVGGElement {
+  const labels = document.querySelector<SVGGElement>("#labels")!;
+  const existing = labels.querySelector<SVGGElement>(":scope > #burgLabels");
+  if (existing) return existing;
+
+  const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  container.id = "burgLabels";
+  labels.appendChild(container);
+  return container;
+}
+
+function createGroup(name: string, groupStyle: Record<string, string>): SVGGElement {
+  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  group.id = name;
+  for (const [attribute, value] of Object.entries(groupStyle)) {
+    if (value !== null) group.setAttribute(attribute, String(value));
+  }
+  return group;
+}
+
+function buildBurgLabel(burg: Burg, group: SVGGElement): SVGTextElement {
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  text.setAttribute("text-rendering", "optimizeSpeed");
+  text.setAttribute("id", `burgLabel${burg.i}`);
+  text.setAttribute("data-id", String(burg.i));
+  text.setAttribute("x", String(burg.x));
+  text.setAttribute("y", String(burg.y));
+  text.setAttribute("dx", `${group?.getAttribute("data-dx") || 0}em`);
+  text.setAttribute("dy", `${group?.getAttribute("data-dy") || 0}em`);
+  if (burg.label?.dx || burg.label?.dy) {
+    text.setAttribute("transform", `translate(${burg.label.dx || 0}, ${burg.label.dy || 0})`);
+  }
+  text.textContent = burg.label?.text ?? burg.name ?? "";
+  return text;
+}

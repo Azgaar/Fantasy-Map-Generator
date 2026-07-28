@@ -746,7 +746,6 @@ class BurgModule {
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     window.drawBurgIcon(burg);
-    if (layerIsOn("toggleLabels")) window.drawBurgLabel(burg);
 
     return burgId;
   }
@@ -871,7 +870,6 @@ class BurgModule {
 
     if (render) {
       window.drawBurgIcon(burg);
-      if (layerIsOn("toggleLabels")) window.drawBurgLabel(burg);
     }
   }
 
@@ -892,7 +890,6 @@ class BurgModule {
     }
 
     window.removeBurgIcon(burg.i!);
-    window.removeBurgLabel(burg.i!);
   }
 }
 

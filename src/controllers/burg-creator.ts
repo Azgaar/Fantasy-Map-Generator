@@ -2,6 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
+import { drawLabel } from "@/renderers/draw-labels";
 
 function toggle(): void {
   if (isActive()) {
@@ -37,7 +38,8 @@ function addOnClick(event: MouseEvent): void {
     return;
   }
 
-  Burgs.add(point);
+  const burgId = Burgs.add(point);
+  drawLabel("burg", burgId);
   refreshEditors();
 
   if (!event.shiftKey) stop();

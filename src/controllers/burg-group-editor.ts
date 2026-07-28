@@ -1,7 +1,7 @@
 import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { drawLabel } from "@/renderers/draw-labels";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -400,7 +400,7 @@ function submitForm(event: Event): void {
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("burg");
   refreshEditors();
 
   $("#burgGroupsEditor").dialog("close");

@@ -18,7 +18,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawStateLabels } from "@/renderers/draw-state-labels";
+import { drawLabel } from "@/renderers/draw-labels";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -443,6 +443,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const capital = burgs[burgId];
   capital.capital = 1;
   Burgs.changeGroup(capital);
+  drawLabel("burg", burgId);
 
   // move all burgs to a new state
   province.burgs!.forEach(b => {
@@ -524,7 +525,9 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.findNeighbors();
   States.collectStatistics();
   States.defineStateForms(newStates);
-  drawStateLabels(allStates);
+  for (const stateId of allStates) {
+    drawLabel("state", stateId);
+  }
 
   // redraw emblems
   allStates.forEach(stateId => {

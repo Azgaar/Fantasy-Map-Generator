@@ -7,7 +7,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/generators/cultures-generator";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { drawLabel } from "@/renderers/draw-labels";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -589,7 +589,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
   });
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("burg");
   tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 

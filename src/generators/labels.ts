@@ -18,11 +18,7 @@ export interface AddedLabel extends Label {
   group: string;
 }
 
-class AddedLabelsModule {
-  initiate(): void {
-    pack.labels = [];
-  }
-
+export class AddedLabelsModule {
   get(i: number): AddedLabel | undefined {
     return pack.labels.find(label => label.i === i);
   }
@@ -39,4 +35,8 @@ class AddedLabelsModule {
   }
 }
 
-export const AddedLabels = new AddedLabelsModule();
+declare global {
+  var AddedLabels: AddedLabelsModule;
+}
+
+window.AddedLabels = new AddedLabelsModule();

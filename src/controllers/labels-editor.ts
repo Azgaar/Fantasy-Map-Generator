@@ -4,22 +4,22 @@ import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { type AddedLabel, AddedLabels, type Label } from "@/generators/labels";
-import { copyAddedLabelGroupStyle } from "@/renderers/draw-added-labels";
-import { drawLabel } from "@/renderers/draw-labels";
+import { drawLabel, removeLabel as removeRenderedLabel } from "@/renderers/draw-labels";
+import { fitStateLabel } from "@/renderers/draw-state-labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
-import { extractPathPoints } from "../utils/pathUtils";
 
 let lastSelectedGroup = ""; // group selected in the editor most recently; used as the default group for newly added labels
 let selectedLabel: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let stateLabelDraft: Label | undefined;
 
-function getLabel(): Label | AddedLabel | undefined {
+function getEditableLabel(): Label | AddedLabel | undefined {
   const id = selectedLabel.attr("id") || "";
   const stateId = id.match(/^stateLabel(\d+)$/)?.[1];
   if (stateId) {
-    const state = pack.states[+stateId];
-    if (!state.label) state.label = {};
-    return state.label;
+    if (!stateLabelDraft) return;
+    pack.states[+stateId].label = stateLabelDraft;
+    return stateLabelDraft;
   }
   const customId = id.match(/^addedLabel(\d+)$/)?.[1];
   return customId ? AddedLabels.get(+customId) : undefined;
@@ -46,6 +46,7 @@ function open(tspan: SVGTSpanElement): void {
   selectedLabel = select<SVGElement, unknown>(text)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true) as unknown as typeof selectedLabel;
+  stateLabelDraft = getStateLabelDraft();
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
 
   renderDialog();
@@ -61,6 +62,20 @@ function open(tspan: SVGTSpanElement): void {
   drawControlPointsAndLine();
   selectLabelGroup(text);
   updateValues(textPath);
+}
+
+function getStateLabelDraft(): Label | undefined {
+  if (!isStateLabel()) return;
+
+  const state = pack.states[+selectedLabel.attr("id").slice(10)];
+  if (state.label?.pathPoints?.length) {
+    return { ...state.label, pathPoints: state.label.pathPoints.map(point => [...point]) };
+  }
+
+  const fittedLabel = fitStateLabel(state.i);
+  if (!fittedLabel) return;
+  const { id: _id, group: _group, ...label } = fittedLabel;
+  return { ...label, pathPoints: label.pathPoints.map(point => [...point]) };
 }
 
 function renderDialog(): void {
@@ -188,7 +203,7 @@ function renderDialog(): void {
 
   ensureEl("labelAlign").on("click", editLabelAlign);
   ensureEl("labelLegend").on("click", editLabelLegend);
-  ensureEl("labelRemoveSingle").on("click", removeLabel);
+  ensureEl("labelRemoveSingle").on("click", removeSelectedLabel);
 }
 
 function hideTopButtons(): void {
@@ -289,7 +304,6 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
-  const path = ensureEl(`textPath_${selectedLabel.attr("id")}`) as unknown as SVGPathElement;
   const points: [number, number][] = [];
   select("#debug")
     .select("#controlPoints")
@@ -299,10 +313,9 @@ function redrawLabelPath(): void {
     });
   const lineGen = line<[number, number]>().curve(curveNatural);
   const d = round(lineGen(points) || "");
-  path.setAttribute("d", d);
   select("#debug").select("#controlPoints > path").attr("d", d);
-  const label = getLabel();
-  if (label) label.pathPoints = extractPathPoints(path);
+  const label = getEditableLabel();
+  if (label) label.pathPoints = points;
   renderSelectedLabel();
 }
 
@@ -352,7 +365,7 @@ function dragLabel(event: any): void {
   const dy = +tr[1] - event.y;
 
   event.on("drag", (dragEvent: any) => {
-    const label = getLabel();
+    const label = getEditableLabel();
     if (label) Object.assign(label, { dx: dx + dragEvent.x, dy: dy + dragEvent.y });
     renderSelectedLabel();
     select("#debug").select("#controlPoints").attr("transform", selectedLabel.attr("transform"));
@@ -374,7 +387,7 @@ function hideGroupSection(): void {
 
 function changeGroup(this: HTMLSelectElement): void {
   lastSelectedGroup = this.value;
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label && "group" in label) label.group = this.value;
   renderSelectedLabel();
 }
@@ -416,11 +429,11 @@ function createNewGroup(this: HTMLInputElement): void {
 
   // preserve the current group style when creating a group from a single custom label
   const oldGroup = selectedLabel.node()!.parentNode as SVGGElement;
+  style.addedLabels[group] = { ...(style.addedLabels[oldGroup.id] || style.addedLabels.addedLabels || {}) };
   if (oldGroup.id !== "states" && oldGroup.id !== "addedLabels" && oldGroup.childElementCount === 1) {
     ensureEl<HTMLSelectElement>("labelGroupSelect").selectedOptions[0].remove();
     ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-    copyAddedLabelGroupStyle(oldGroup.id, group);
-    const label = getLabel();
+    const label = getEditableLabel();
     if (label && "group" in label) label.group = group;
     renderSelectedLabel();
     toggleNewGroupInput();
@@ -428,9 +441,8 @@ function createNewGroup(this: HTMLInputElement): void {
     return;
   }
 
-  copyAddedLabelGroupStyle(oldGroup.id, group);
   ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label && "group" in label) label.group = group;
   renderSelectedLabel();
 
@@ -480,7 +492,7 @@ function hideTextSection(): void {
 
 function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label) label.text = input;
   renderSelectedLabel();
   if (isStateLabel()) tip("Use States Editor to change an actual state name, not just a label", false, "warn");
@@ -539,7 +551,7 @@ function hideLetterSpacingSection(): void {
 function changeStartOffset(this: HTMLInputElement): void {
   const value = this.value;
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label) label.startOffset = +value;
   renderSelectedLabel();
   tip(`Label offset: ${value}%`);
@@ -549,14 +561,14 @@ function changeStartOffsetFromValue(this: HTMLInputElement): void {
   const value = Math.min(80, Math.max(20, +this.value));
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
   this.value = String(value);
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label) label.startOffset = value;
   renderSelectedLabel();
   tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label) label.fontSize = +this.value;
   renderSelectedLabel();
   tip(`Label relative size: ${this.value}%`);
@@ -564,7 +576,7 @@ function changeRelativeSize(this: HTMLInputElement): void {
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
-  const label = getLabel();
+  const label = getEditableLabel();
   if (label) label.letterSpacing = +this.value;
   renderSelectedLabel();
   tip(`Label letter-spacing size: ${this.value}px`);
@@ -574,10 +586,13 @@ function changeLetterSpacingSize(this: HTMLInputElement): void {
 function editLabelAlign(): void {
   const bbox = (selectedLabel.node() as SVGGraphicsElement).getBBox();
   const c = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
-  const path = select<SVGElement, unknown>("#deftemp").select(`#textPath_${selectedLabel.attr("id")}`);
-  path.attr("d", `M${c[0] - bbox.width},${c[1]}h${bbox.width * 2}`);
-  const label = getLabel();
-  if (label) label.pathPoints = extractPathPoints(path.node() as SVGPathElement);
+  const label = getEditableLabel();
+  if (label) {
+    label.pathPoints = [
+      [c[0] - bbox.width, c[1]],
+      [c[0] + bbox.width, c[1]]
+    ];
+  }
   renderSelectedLabel();
   drawControlPointsAndLine();
 }
@@ -588,7 +603,7 @@ function editLabelLegend(): void {
   void Controllers.NotesEditor.open(id, name);
 }
 
-function removeLabel(): void {
+function removeSelectedLabel(): void {
   alertMessage.innerHTML = "Are you sure you want to remove the label?";
   $("#alert").dialog({
     resizable: false,
@@ -596,20 +611,14 @@ function removeLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        const label = getLabel();
+        const label = getEditableLabel();
         if (label && "i" in label) {
+          removeRenderedLabel("added", label.i);
           AddedLabels.remove(label.i);
-          ensureEl(`textPath_${selectedLabel.attr("id")}`).remove();
-          selectedLabel.remove();
         } else if (label) {
+          const stateId = +selectedLabel.attr("id").slice(10);
+          removeRenderedLabel("state", stateId);
           delete pack.states[+selectedLabel.attr("id").slice(10)].label;
-          ensureEl(`textPath_${selectedLabel.attr("id")}`).remove();
-          selectedLabel.remove();
-        } else {
-          select<SVGElement, unknown>("#deftemp")
-            .select(`#textPath_${selectedLabel.attr("id")}`)
-            .remove();
-          selectedLabel.remove();
         }
         $("#labelEditor").dialog("close");
       },
@@ -623,6 +632,7 @@ function removeLabel(): void {
 function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
   selectedLabel.on(".drag", null).classed("draggable", false);
+  stateLabelDraft = undefined;
   applyDefaultViewboxEvents();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();
