@@ -10,7 +10,9 @@ const burgLabelsRenderer = (): void => {
   createLabelGroups();
 
   for (const { name } of options.burgs.groups) {
-    const labelsInGroup = pack.labels.filter((label): label is BurgLabel => label.type === "burg" && label.group === name);
+    const labelsInGroup = pack.labels.filter(
+      (label): label is BurgLabel => label.type === "burg" && label.group === name
+    );
     if (!labelsInGroup.length) continue;
 
     const labelGroup = select("#burgLabels").select<SVGGElement>(`#${name}`);

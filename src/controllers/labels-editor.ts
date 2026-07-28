@@ -477,8 +477,7 @@ function changeText(): void {
   const label = getLabelData();
   if (label) Labels.update(label, { text: input });
 
-  if (label?.type === "state")
-    tip("Use States Editor to change an actual state name, not just a label", false, "warn");
+  if (label?.type === "state") tip("Use States Editor to change an actual state name, not just a label", false, "warn");
 }
 
 function generateRandomName(): void {
@@ -596,7 +595,9 @@ function removeLabel(): void {
           Labels.remove(label);
           removeLabelElements(label);
         } else {
-          select<SVGElement, unknown>("#deftemp").select(`#textPath_${selectedLabel.attr("id")}`).remove();
+          select<SVGElement, unknown>("#deftemp")
+            .select(`#textPath_${selectedLabel.attr("id")}`)
+            .remove();
           selectedLabel.remove();
         }
         $("#labelEditor").dialog("close");
