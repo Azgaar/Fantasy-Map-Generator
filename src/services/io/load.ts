@@ -9,12 +9,6 @@ import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
 
-function getAttributes(element: Element | null): Record<string, string> {
-  return element
-    ? Object.fromEntries(Array.from(element.attributes, attribute => [attribute.name, attribute.value]))
-    : {};
-}
-
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
@@ -397,9 +391,19 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       );
     const labelStyles = safeParseJSON(labels.attr("data-label-styles")) || {};
     labels.attr("data-label-styles", null);
-    style.stateLabels = labelStyles?.stateLabels || getAttributes(labels.select<SVGGElement>("#states").node());
-    style.burgLabels = labelStyles?.burgLabels || getGroupStyles("#burgLabels > g");
-    style.addedLabels = labelStyles?.addedLabels || getGroupStyles(":scope > g:not(#states):not(#burgLabels)");
+    style.stateLabels = labelStyles?.stateLabels
+      ? Object.fromEntries(
+          Object.entries(labelStyles.stateLabels as Record<string, string | number | null>).filter(
+            ([attribute]) => attribute !== "id"
+          )
+        )
+      : getAttributes(labels.select<SVGGElement>("#states").node());
+    style.burgLabels =
+      (labelStyles?.burgLabels as Record<string, Record<string, string>> | undefined) ||
+      getGroupStyles("#burgLabels > g");
+    style.addedLabels =
+      (labelStyles?.addedLabels as Record<string, Record<string, string | number | null>> | undefined) ||
+      getGroupStyles(":scope > g:not(#states):not(#burgLabels)");
 
     if (!texture.size()) {
       texture = viewbox
@@ -870,6 +874,16 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   } finally {
     if (loadGroupOpen) console.groupEnd();
   }
+}
+
+function getAttributes(element: Element | null): Record<string, string> {
+  return element
+    ? Object.fromEntries(
+        Array.from(element.attributes)
+          .filter(attribute => attribute.name !== "id")
+          .map(attribute => [attribute.name, attribute.value])
+      )
+    : {};
 }
 
 export const Load = {

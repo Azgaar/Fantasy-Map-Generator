@@ -75,16 +75,16 @@ function applyStyle(styleJSON) {
   for (const selector in styleJSON) {
     if (selector.startsWith("#burgLabels")) {
       const group = selector.split("#").pop();
-      style.burgLabels[group] = styleJSON[selector];
+      style.burgLabels[group] = getStyleAttributes(styleJSON[selector]);
     }
 
     if (selector === "#labels > #states") {
-      style.stateLabels = styleJSON[selector];
+      style.stateLabels = getStyleAttributes(styleJSON[selector]);
     }
 
     if (selector.startsWith("#labels > #") && !["#labels > #states", "#labels > #burgLabels"].includes(selector)) {
       const group = selector.split("#").pop();
-      style.addedLabels[group] = styleJSON[selector];
+      style.addedLabels[group] = getStyleAttributes(styleJSON[selector]);
     }
 
     if (selector.startsWith("#burgIcons")) {
@@ -101,6 +101,7 @@ function applyStyle(styleJSON) {
     if (!el) continue;
 
     for (const attribute in styleJSON[selector]) {
+      if (attribute === "id") continue;
       const value = styleJSON[selector][attribute];
 
       if (value === "null" || value === null) {
@@ -124,6 +125,10 @@ function applyStyle(styleJSON) {
         addCustomColorScheme(value);
       }
     }
+  }
+
+  function getStyleAttributes(attributes) {
+    return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
   }
 }
 
@@ -408,7 +413,9 @@ function addStylePreset() {
     function addStoredLabelStyle(selector, groupStyle) {
       if (!groupStyle) return;
       presetStyle[selector] = Object.fromEntries(
-        Object.entries(groupStyle).map(([key, value]) => [key, parseValue(value)])
+        Object.entries(groupStyle)
+          .filter(([key]) => key !== "id")
+          .map(([key, value]) => [key, parseValue(value)])
       );
     }
 

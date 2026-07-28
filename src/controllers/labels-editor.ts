@@ -5,6 +5,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { AddedLabel, Label } from "@/generators/labels";
 import { drawLabel, removeLabel as removeRenderedLabel } from "@/renderers/draw-labels";
+import { getLabelGroupAttributes } from "@/renderers/draw-path-label";
 import { speak } from "@/utils";
 import { extractPathPoints } from "@/utils/pathUtils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
@@ -181,7 +182,7 @@ function renderDialog(): void {
 
   ensureEl("labelGroupShow").on("click", showGroupSection);
   ensureEl("labelGroupHide").on("click", hideGroupSection);
-  ensureEl("labelGroupSelect").on("click", changeGroup);
+  ensureEl("labelGroupSelect").on("change", changeGroup);
   ensureEl("labelGroupInput").on("change", createNewGroup);
   ensureEl("labelGroupNew").on("click", toggleNewGroupInput);
   ensureEl("labelGroupRemove").on("click", removeLabelsGroup);
@@ -435,22 +436,22 @@ function createNewGroup(this: HTMLInputElement): void {
 
   // preserve the current group style when creating a group from a single custom label
   const oldGroup = selectedLabel.node()!.parentNode as SVGGElement;
-  style.addedLabels[group] = { ...(style.addedLabels[oldGroup.id] || style.addedLabels.addedLabels || {}) };
-  if (oldGroup.id !== "states" && oldGroup.id !== "addedLabels" && oldGroup.childElementCount === 1) {
+  const oldGroupId = oldGroup.id;
+  const oldGroupStyle = style.addedLabels[oldGroupId] || style.addedLabels.addedLabels || {};
+  style.addedLabels[group] = Object.fromEntries(getLabelGroupAttributes(oldGroupStyle));
+  const renameOldGroup = oldGroupId !== "states" && oldGroupId !== "addedLabels" && oldGroup.childElementCount === 1;
+  if (renameOldGroup) {
     ensureEl<HTMLSelectElement>("labelGroupSelect").selectedOptions[0].remove();
-    ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-    const label = getEditableLabel();
-    if (label && "group" in label) label.group = group;
-    renderSelectedLabel();
-    toggleNewGroupInput();
-    ensureEl<HTMLInputElement>("labelGroupInput").value = "";
-    return;
   }
 
   ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
   const label = getEditableLabel();
   if (label && "group" in label) label.group = group;
   renderSelectedLabel();
+  if (renameOldGroup) {
+    oldGroup.remove();
+    delete style.addedLabels[oldGroupId];
+  }
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("labelGroupInput").value = "";
@@ -466,17 +467,18 @@ function removeLabelsGroup(): void {
     removed: ${count}`;
   $("#alert").dialog({
     resizable: false,
-    title: "Remove route group",
+    title: "Remove label group",
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
         $("#labelEditor").dialog("close");
-        hideGroupSection();
         pack.labels
           .filter(label => label.group === group)
           .forEach(label => {
             AddedLabels.remove(label.i);
           });
+        if (!basic) delete style.addedLabels[group];
+        if (lastSelectedGroup === group) lastSelectedGroup = "addedLabels";
         drawLabel("added");
       },
       Cancel: function (this: HTMLElement) {

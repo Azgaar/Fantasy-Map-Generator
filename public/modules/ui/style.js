@@ -28,7 +28,11 @@ function storeLabelGroupStyle() {
   const group = getEl().node();
   if (!group) return;
 
-  const attributes = Object.fromEntries(Array.from(group.attributes, attribute => [attribute.name, attribute.value]));
+  const attributes = Object.fromEntries(
+    Array.from(group.attributes)
+      .filter(attribute => attribute.name !== "id")
+      .map(attribute => [attribute.name, attribute.value])
+  );
   if (group.id === "states") style.stateLabels = attributes;
   else if (group.parentNode?.id === "burgLabels") style.burgLabels[group.id] = attributes;
   else if (group.id !== "burgLabels") style.addedLabels[group.id] = attributes;

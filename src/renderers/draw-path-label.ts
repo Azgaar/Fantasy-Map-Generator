@@ -14,18 +14,24 @@ const DEFAULT_LABEL_STYLE: LabelGroupStyle = {
 
 export function ensureLabelGroup(group: string): SVGGElement {
   const labels = document.querySelector<SVGGElement>("g#labels")!;
-  const existing = labels.querySelector<SVGGElement>(`:scope > g#${group}`);
+  const existing = Array.from(labels.children).find(child => child.tagName === "g" && child.id === group) as
+    | SVGGElement
+    | undefined;
   if (existing) return existing;
 
   const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
   container.id = group;
   const groupStyle =
     group === "states" ? style.stateLabels : style.addedLabels[group] || style.addedLabels.addedLabels || {};
-  for (const [attribute, value] of Object.entries({ ...DEFAULT_LABEL_STYLE, ...groupStyle })) {
+  for (const [attribute, value] of getLabelGroupAttributes({ ...DEFAULT_LABEL_STYLE, ...groupStyle })) {
     if (value !== null) container.setAttribute(attribute, String(value));
   }
   labels.appendChild(container);
   return container;
+}
+
+export function getLabelGroupAttributes(groupStyle: LabelGroupStyle): [string, string | number | null][] {
+  return Object.entries(groupStyle).filter(([attribute]) => attribute !== "id");
 }
 
 const lineGen = line<[number, number]>().curve(curveNatural);
@@ -42,7 +48,8 @@ export function getLabelTextMarkup(label: Label & { text: string; id: string }):
   const lines = label.text.split("|");
   const tspans = lines
     .map(
-      (text, index) => /*html*/ `<tspan x="0" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${text}</tspan>`
+      (text, index) =>
+        /*html*/ `<tspan x="0" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${escapeMarkup(text)}</tspan>`
     )
     .join("");
   const transform = label.dx || label.dy ? ` transform="translate(${label.dx || 0}, ${label.dy || 0})"` : "";
@@ -53,4 +60,11 @@ export function getLabelTextMarkup(label: Label & { text: string; id: string }):
   return /*html*/ `<text text-rendering="optimizeSpeed" id="${label.id}"${transform}>
       <textPath href="#${`textPath_${label.id}`}" startOffset="${startOffset}" font-size="${fontSize}"${letterSpacing}>${tspans}</textPath>
     </text>`;
+}
+
+function escapeMarkup(text: string): string {
+  return text.replace(
+    /[&<>"']/g,
+    character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] || character
+  );
 }

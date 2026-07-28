@@ -135,7 +135,7 @@ declare global {
   var style: {
     stateLabels: { [key: string]: string | number | null };
     burgLabels: { [key: string]: { [key: string]: string } };
-    addedLabels: { [key: string]: { [key: string]: string } };
+    addedLabels: { [key: string]: { [key: string]: string | number | null } };
     burgIcons: { [key: string]: { [key: string]: string } };
     anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;
