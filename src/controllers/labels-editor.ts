@@ -310,11 +310,12 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 
 function redrawLabelPath(): void {
   const points: [number, number][] = [];
-  select("#debug")
-    .select("#controlPoints")
+  select("#debug > #controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
-      points.push([+this.getAttribute("cx")!, +this.getAttribute("cy")!]);
+      const x = rn(+this.getAttribute("cx")!, 2);
+      const y = rn(+this.getAttribute("cy")!, 2);
+      points.push([x, y]);
     });
   const lineGen = line<[number, number]>().curve(curveNatural);
   const d = round(lineGen(points) || "");

@@ -243,6 +243,8 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 }
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
+  let loadGroupOpen = false;
+
   try {
     // exit customization
     if (typeof window.closeDialogs === "function") closeDialogs();
@@ -254,8 +256,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (params[3]) {
         seed = params[3];
         ensureEl<HTMLInputElement>("optionsSeed").value = seed;
-        INFO && console.group(`Loaded Map ${seed}`);
-      } else INFO && console.group("Loaded Map");
+      }
+      if (INFO) {
+        console.group(params[3] ? `Loaded Map ${seed}` : "Loaded Map");
+        loadGroupOpen = true;
+      }
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
       mapId = params[6] ? +params[6] : Date.now();
@@ -834,7 +839,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {
     ERROR && console.error(error);
@@ -863,6 +867,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       },
       position: { my: "center", at: "center", of: "svg" }
     });
+  } finally {
+    if (loadGroupOpen) console.groupEnd();
   }
 }
 

@@ -30,8 +30,12 @@ export function ensureLabelGroup(group: string): SVGGElement {
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 
-export function getLabelPathMarkup(label: { id: string; pathPoints: [number, number][] }): string {
-  return /*html*/ `<path id="${`textPath_${label.id}`}" d="${lineGen(label.pathPoints)}"></path>`;
+export function getLabelPath(label: Label): string {
+  return lineGen(label.pathPoints || []) || "";
+}
+
+export function getLabelPathMarkup(label: Label & { id: string }): string {
+  return /*html*/ `<path id="${`textPath_${label.id}`}" d="${getLabelPath(label)}"></path>`;
 }
 
 export function getLabelTextMarkup(label: Label & { text: string; id: string }): string {
@@ -41,13 +45,12 @@ export function getLabelTextMarkup(label: Label & { text: string; id: string }):
       (text, index) => /*html*/ `<tspan x="0" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${text}</tspan>`
     )
     .join("");
-  const transform = label.dx || label.dy ? ` transform="${`translate(${label.dx || 0}, ${label.dy || 0})`}"` : "";
-  const letterSpacing = label.letterSpacing ? `${label.letterSpacing}px` : null;
-  const id = label.id;
+  const transform = label.dx || label.dy ? ` transform="translate(${label.dx || 0}, ${label.dy || 0})"` : "";
+  const letterSpacing = label.letterSpacing ? ` letter-spacing="${label.letterSpacing}px"` : "";
   const startOffset = `${label.startOffset ?? 50}%`;
   const fontSize = `${label.fontSize ?? 100}%`;
 
-  return /*html*/ `<text text-rendering="optimizeSpeed" id="${id}"${transform}>
-      <textPath href="#${`textPath_${label.id}`}" startOffset="${startOffset}" font-size="${fontSize}" letter-spacing="${letterSpacing}">${tspans}</textPath>
+  return /*html*/ `<text text-rendering="optimizeSpeed" id="${label.id}"${transform}>
+      <textPath href="#${`textPath_${label.id}`}" startOffset="${startOffset}" font-size="${fontSize}"${letterSpacing}>${tspans}</textPath>
     </text>`;
 }

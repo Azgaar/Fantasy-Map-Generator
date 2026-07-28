@@ -658,13 +658,18 @@ void (function addDragToUpload() {
 })();
 
 async function generate(options) {
+  let generationGroupOpen = false;
+
   try {
     const timeStart = performance.now();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
     invokeActiveZooming();
     setSeed(precreatedSeed);
-    INFO && console.group("Generated Map " + seed);
+    if (INFO) {
+      console.group("Generated Map " + seed);
+      generationGroupOpen = true;
+    }
 
     applyGraphSize();
     randomizeOptions();
@@ -730,7 +735,6 @@ async function generate(options) {
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error);
@@ -754,6 +758,8 @@ async function generate(options) {
       },
       position: { my: "center", at: "center", of: "svg" }
     });
+  } finally {
+    if (generationGroupOpen) console.groupEnd();
   }
 }
 
