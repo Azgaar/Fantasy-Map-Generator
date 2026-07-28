@@ -13,6 +13,7 @@ import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawLabel } from "@/renderers/draw-labels";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawStateLabels } from "@/renderers/draw-state-labels";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -523,11 +524,8 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
-      if (!s.label) s.label = {};
-      Object.assign(s.label, { text: s.name, pathPoints: undefined });
-      if (layerIsOn("toggleLabels")) drawLabel("state", s.i);
-    }
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked && layerIsOn("toggleLabels"))
+      drawStateLabels();
     refreshStatesEditor();
   }
 }
