@@ -299,22 +299,6 @@ function toggleBiomes(event) {
   }
 }
 
-function drawBiomes() {
-  TIME && console.time("drawBiomes");
-
-  const cells = pack.cells;
-  const bodyPaths = new Array(biomesData.i.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.biome[cellId], { fill: true, waterGap: true });
-  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
-    const color = biomesData.color[index];
-    bodyPaths.push(getGappedFillPaths("biome", fill, waterGap, color, index));
-  });
-
-  ensureEl("biomes").innerHTML = bodyPaths.join("");
-
-  TIME && console.timeEnd("drawBiomes");
-}
-
 function togglePrecipitation(event) {
   if (!prec.selectAll("circle").size()) {
     turnButtonOn("togglePrecipitation");

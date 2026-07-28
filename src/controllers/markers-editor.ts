@@ -1,6 +1,10 @@
 import { drag, select } from "d3";
+import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { stopMapPlacement } from "@/components/map-placement";
+import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import { getPin } from "@/renderers/draw-markers";
 import { destroyDialogIfExists, ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
@@ -14,10 +18,10 @@ function open(markerI?: number, target?: Element): void {
   if (!found) return;
   [selectedElement, selectedMarker] = found;
 
-  elSelected = select<SVGElement, unknown>(selectedElement)
+  select<SVGElement, unknown>(selectedElement)
     .raise()
     .call(drag<SVGElement, unknown>().on("start", dragMarker))
-    .classed("draggable", true) as unknown as typeof elSelected;
+    .classed("draggable", true);
 
   if (findEl("notesEditor")) {
     void Controllers.NotesEditor.open(selectedElement.id, selectedElement.id);
@@ -173,7 +177,7 @@ function changeMarkerType(this: HTMLInputElement): void {
 }
 
 function changeMarkerIcon(): void {
-  selectIcon(selectedMarker.icon, value => {
+  Controllers.IconSelector.open(selectedMarker.icon, value => {
     const isExternal = value.startsWith("http") || value.startsWith("data:image");
     ensureEl("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
 
@@ -289,8 +293,7 @@ function toggleMarkerLock(): void {
 }
 
 function toggleAddMarker(): void {
-  ensureEl("markerAdd").classList.toggle("pressed");
-  ensureEl("addMarker").click();
+  void Controllers.MarkerCreator.toggle(selectedMarker);
 }
 
 function confirmMarkerDeletion(): void {
@@ -306,13 +309,12 @@ function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
   $("#markerEditor").dialog("close");
-  findEl<HTMLButtonElement>("markersOverviewRefresh")?.click();
+  refreshEditors();
 }
 
 function closeMarkerEditor(): void {
-  unselect();
-  ensureEl("addMarker").classList.remove("pressed");
-  restoreDefaultEvents();
+  select(selectedElement).on(".drag", null).classed("draggable", false);
+  if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
   destroyDialogIfExists("markerEditor");
 }

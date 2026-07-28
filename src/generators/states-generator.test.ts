@@ -14,12 +14,12 @@ describe("StatesModule.collectTaxes", () => {
       states: [],
       burgs: [],
       markets: [],
-      deals: []
+      deals: [],
+      biomes: []
     } as any;
-    // Stub Names/COA/biomesData not needed for this test
+    // Stub Names/COA data not needed for this test
     globalThis.Names = { getCultureShort: () => "X", getState: () => "X" } as any;
     globalThis.COA = { generate: () => ({}), getShield: () => "" } as any;
-    globalThis.biomesData = { cost: [] } as any;
     globalThis.FlatQueue = class {
       length = 0;
       pop() {

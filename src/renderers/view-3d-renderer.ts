@@ -2,6 +2,7 @@ import { select } from "d3";
 import type * as THREE from "three";
 import { Labels } from "@/generators/labels";
 import { Services } from "@/services";
+import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
 import { minmax, rn, throttle } from "../utils";
 import {
@@ -313,7 +314,7 @@ const saveScreenshot = async () => {
   link.download = `${getFileName()}.jpeg`;
   link.href = URL;
   link.click();
-  tip(`Screenshot is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  window.tip(`Screenshot is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 };
 
@@ -327,7 +328,7 @@ const saveOBJ = async () => {
 // start 3d view and heightmap edit preview
 async function newMesh(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
-  if (!loaded) return tip("Cannot load 3d library", false, "error", 4000);
+  if (!loaded) return window.tip("Cannot load 3d library", false, "error", 4000);
   scene = new Three.Scene();
 
   // light
@@ -701,7 +702,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     });
     if (!bakeResult && options.threeD.erosion) {
       console.warn("3D erosion bake failed, falling back to standard mesh");
-      tip("Eroded terrain is not supported on this device", false, "warn", 4000);
+      window.tip("Eroded terrain is not supported on this device", false, "warn", 4000);
       options.threeD.erosion = false;
       syncErosionUI();
     }
@@ -856,7 +857,7 @@ async function update3dTexture() {
 async function newGlobe(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
   if (!loaded) {
-    tip("Cannot load 3d library", false, "error", 4000);
+    window.tip("Cannot load 3d library", false, "error", 4000);
     return false;
   }
 

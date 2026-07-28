@@ -2,7 +2,7 @@ import { curveCatmullRom, curveCatmullRomClosed, line, polygonArea, select } fro
 import polylabel from "polylabel";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { last, rn, round, si } from "@/utils";
+import { getArea, getAreaUnit, last, rn, round, si } from "@/utils";
 
 const openCurveGen = line<Point>().curve(curveCatmullRom.alpha(0.5));
 const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));

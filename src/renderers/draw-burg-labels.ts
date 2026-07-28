@@ -1,98 +1,69 @@
 import { select } from "d3";
-import { type BurgLabel, Labels } from "@/generators/labels";
+import type { BurgLabel } from "../generators/labels";
 
-// remove this section once layer.js is refactored--------------------------------
 declare global {
   var drawBurgLabels: () => void;
 }
 
-window.drawBurgLabels = drawBurgLabelsRenderer;
-// section end -------------------------------------------------------------------
-
-export function drawBurgLabelsRenderer(): void {
+const burgLabelsRenderer = (): void => {
   TIME && console.time("drawBurgLabels");
   createLabelGroups();
 
-  // Get all burg labels grouped by group name
-  const burgLabelsByGroup = new Map<string, BurgLabel[]>();
-  for (const label of Labels.getByType("burg")) {
-    if (!burgLabelsByGroup.has(label.group)) {
-      burgLabelsByGroup.set(label.group, []);
-    }
-    burgLabelsByGroup.get(label.group)!.push(label);
-  }
+  for (const { name } of options.burgs.groups) {
+    const labelsInGroup = pack.labels.filter((label): label is BurgLabel => label.type === "burg" && label.group === name);
+    if (!labelsInGroup.length) continue;
 
-  // Render each group and update label offsets from SVG attributes
-  for (const [groupName, labels] of burgLabelsByGroup) {
-    const labelGroup = select("#burgLabels").select<SVGGElement>(`#${groupName}`);
+    const labelGroup = select("#burgLabels").select<SVGGElement>(`#${name}`);
     if (labelGroup.empty()) continue;
 
-    const dxAttr = style.burgLabels?.[groupName]?.["data-dx"];
-    const dyAttr = style.burgLabels?.[groupName]?.["data-dy"];
-    const dx = dxAttr ? parseFloat(dxAttr) : 0;
-    const dy = dyAttr ? parseFloat(dyAttr) : 0;
+    const dx = labelGroup.attr("data-dx") || 0;
+    const dy = labelGroup.attr("data-dy") || 0;
 
-    const labelsHTML: SVGTextElement[] = [];
-    for (const labelData of labels) {
-      const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      textElement.setAttribute("text-rendering", "optimizeSpeed");
-      textElement.setAttribute("id", `burgLabel${labelData.i}`);
-      textElement.setAttribute("data-id", labelData.burgId.toString());
-      textElement.setAttribute("x", labelData.x.toString());
-      textElement.setAttribute("y", labelData.y.toString());
-      textElement.setAttribute("dx", `${dx}em`);
-      textElement.setAttribute("dy", `${dy}em`);
-      if (labelData.dx || labelData.dy) {
-        textElement.setAttribute("transform", `translate(${labelData.dx || 0},${labelData.dy || 0})`);
-      }
-      textElement.textContent = labelData.text;
-      labelsHTML.push(textElement);
-    }
-
-    // Set all labels at once
-    const groupNode = labelGroup.node();
-    if (groupNode) {
-      groupNode.replaceChildren(...labelsHTML);
-    }
+    labelGroup
+      .selectAll("text")
+      .data(labelsInGroup)
+      .enter()
+      .append("text")
+      .attr("text-rendering", "optimizeSpeed")
+      .attr("id", d => `burgLabel${d.burgId}`)
+      .attr("data-id", d => d.burgId)
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("dx", `${dx}em`)
+      .attr("dy", `${dy}em`)
+      .text(d => d.text);
   }
 
   TIME && console.timeEnd("drawBurgLabels");
-}
+};
 
-export function drawBurgLabel(burgLabel: BurgLabel): void {
-  // TODO: remove label group dependency - for now, if group is missing, redraw all labels to recreate the group
-  const labelGroup = select("#burgLabels").select<SVGGElement>(`#${burgLabel.group}`);
+const drawBurgLabelRenderer = (label: BurgLabel): void => {
+  const labelGroup = select("#burgLabels").select<SVGGElement>(`#${label.group}`);
   if (labelGroup.empty()) {
-    drawBurgLabelsRenderer();
+    drawBurgLabels();
     return; // redraw all labels if group is missing
   }
 
-  const dxAttr = labelGroup.attr("data-dx");
-  const dyAttr = labelGroup.attr("data-dy");
-  const dx = dxAttr ? parseFloat(dxAttr) : 0;
-  const dy = dyAttr ? parseFloat(dyAttr) : 0;
+  const dx = labelGroup.attr("data-dx") || 0;
+  const dy = labelGroup.attr("data-dy") || 0;
 
-  const existingLabel = document.getElementById(`burgLabel${burgLabel.i}`);
-  if (existingLabel) existingLabel.remove();
-
-  // Render to SVG
+  removeBurgLabelRenderer(label.burgId);
   labelGroup
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
-    .attr("id", `burgLabel${burgLabel.i}`)
-    .attr("data-id", burgLabel.burgId)
-    .attr("x", burgLabel.x)
-    .attr("y", burgLabel.y)
+    .attr("id", `burgLabel${label.burgId}`)
+    .attr("data-id", label.burgId)
+    .attr("x", label.x)
+    .attr("y", label.y)
     .attr("dx", `${dx}em`)
     .attr("dy", `${dy}em`)
-    .attr("transform", burgLabel.dx || burgLabel.dy ? `translate(${burgLabel.dx || 0},${burgLabel.dy || 0})` : null)
-    .text(burgLabel.text);
-}
+    .text(label.text);
+};
 
-export function removeBurgLabel(burgId: number): void {
-  const existingLabel = document.querySelector(`#burgLabels [data-id='${burgId}']`);
+const removeBurgLabelRenderer = (burgId: number): void => {
+  const existingLabel = document.getElementById(`burgLabel${burgId}`);
   if (existingLabel) existingLabel.remove();
-}
+};
 
 function createLabelGroups(): void {
   // save existing styles and remove all groups
@@ -116,3 +87,13 @@ function createLabelGroups(): void {
     group.attr("id", name);
   }
 }
+
+window.drawBurgLabels = burgLabelsRenderer;
+
+export { drawBurgLabelRenderer as drawBurgLabel, removeBurgLabelRenderer as removeBurgLabel };
+
+// burgs-generator still draws labels directly; it cannot import upwards, so the bridge stays
+window.drawBurgLabel = drawBurgLabelRenderer;
+window.removeBurgLabel = removeBurgLabelRenderer;
+
+export { burgLabelsRenderer as drawBurgLabels };

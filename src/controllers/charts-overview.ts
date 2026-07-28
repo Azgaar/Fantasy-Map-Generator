@@ -17,6 +17,9 @@ import {
   stackOrderNone,
   sum
 } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
 
 interface Dimension {
@@ -933,11 +936,11 @@ function colorsGetter(entity: CollectionKey) {
 }
 
 function biomeNameGetter(i: string | number): string {
-  return biomesData.name[+i] || EMPTY_NAME;
+  return pack.biomes[+i]?.name || EMPTY_NAME;
 }
 
 function biomeColorsGetter(): Record<string, string> {
-  return Object.fromEntries(biomesData.i.map(i => [biomesData.name[i], biomesData.color[i]]));
+  return Object.fromEntries(pack.biomes.map(({ name, color }) => [name, color]));
 }
 
 // markets have no default name, so fall back to the center burg's name

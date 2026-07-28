@@ -1,5 +1,10 @@
 import { interpolateString, select, sum } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { applySorting, applySortingByHeader, sortLines } from "@/components/dialog/sorting";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
 function open(): void {
@@ -16,7 +21,7 @@ function open(): void {
   $("#militaryOverview").dialog({
     title: "Military Overview",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     close: closeMilitaryOverview,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -97,6 +102,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("militaryHeader");
+  applyLineHighlighting("militaryOverview", ({ cellId }) => pack.cells.state[cellId]);
 
   const body = ensureEl("militaryBody");
 
@@ -346,7 +352,7 @@ function militaryCustomize(): void {
   $("#militaryOptions").dialog({
     title: "Edit Military Units",
     resizable: false,
-    width: fitContent(),
+    width: "fit-content",
     position: { my: "center", at: "center", of: "svg" },
     close: closeMilitaryOptions,
     buttons: {
@@ -387,7 +393,7 @@ function militaryCustomize(): void {
     const type = el.dataset.type;
 
     if (type === "icon") {
-      selectIcon(el.textContent || "", value => {
+      Controllers.IconSelector.open(el.textContent || "", value => {
         el.innerHTML =
           value.startsWith("http") || value.startsWith("data:image")
             ? `<img src="${value}" style="width:1.2em;height:1.2em;pointer-events:none;">`
@@ -397,10 +403,7 @@ function militaryCustomize(): void {
     }
 
     if (type === "biomes") {
-      const { i, name, color } = biomesData;
-      const biomes = Array(i.length)
-        .fill(null)
-        .map((_, idx) => ({ i: idx, name: name[idx], color: color[idx] }));
+      const biomes = pack.biomes.filter(biome => !biome.removed).map(({ i, name, color }) => ({ i, name, color }));
       selectLimitation(el, biomes);
       return;
     }
@@ -511,7 +514,7 @@ function militaryCustomize(): void {
         </table>`;
 
     $("#alert").dialog({
-      width: fitContent(),
+      width: "fit-content",
       title: "Limit unit",
       buttons: {
         Invert: () => {
@@ -653,6 +656,7 @@ function militaryRecalculate(): void {
       Recalculate: function () {
         $(this).dialog("close");
         Military.generate();
+        if (layerIsOn("toggleMilitary")) drawMilitary();
         refreshMilitaryOverview();
       },
       Cancel: function () {
@@ -681,4 +685,4 @@ function downloadMilitaryData(): void {
   downloadFile(data, name);
 }
 
-export const MilitaryOverview = { open, refresh: refreshMilitaryOverview };
+export const MilitaryOverview = { open };

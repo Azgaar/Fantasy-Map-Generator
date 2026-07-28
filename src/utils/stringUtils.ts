@@ -125,8 +125,6 @@ declare global {
   interface Window {
     round: typeof round;
     capitalize: typeof capitalize;
-    splitInTwo: typeof splitInTwo;
     parseTransform: typeof parseTransform;
-    sanitizeId: typeof sanitizeId;
   }
 }

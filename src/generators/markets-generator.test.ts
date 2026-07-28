@@ -171,7 +171,7 @@ describe("MarketsModule", () => {
       marketsModule["marketById"] = [market1];
       globalThis.pack.burgs = [{ i: 0 } as any, { i: 1, cell: 0 } as any];
       globalThis.pack.cells = { i: [0], market: Uint16Array.from([1]) } as any;
-      globalThis.tip = () => {};
+      window.tip = () => {};
 
       expect(marketsModule.addMarket(1)).toBeNull();
       expect(globalThis.pack.markets).toHaveLength(1);

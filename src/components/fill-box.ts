@@ -1,4 +1,6 @@
 // <fill-box> — a small clickable swatch previewing a fill style (color or hatch)
+import { tip } from "@/components/tooltips";
+
 const style = /* css */ `
   fill-box:not([disabled]) {
     cursor: pointer;
@@ -69,3 +71,5 @@ class FillBox extends HTMLElement {
 
 // cannot use Shadow DOM here as need an access to svg hatches
 customElements.define("fill-box", FillBox);
+
+export type FillBoxElement = InstanceType<typeof FillBox>;

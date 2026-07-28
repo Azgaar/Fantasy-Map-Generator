@@ -1,4 +1,6 @@
 import Alea from "alea";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { drawFeatures } from "@/renderers/draw-features";
 import {
   buildCoastlinePath,
   type CoastlineSettings,

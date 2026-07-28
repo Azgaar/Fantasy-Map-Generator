@@ -1,6 +1,17 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/generators/cultures-generator";
+import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
   abbreviate,
   capitalize,
@@ -90,6 +101,7 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("culturesHeader");
+  applyLineHighlighting("culturesEditor", ({ cellId }) => pack.cells.culture[cellId]);
 
   ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
   ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
@@ -303,7 +315,7 @@ function culturesEditorAddLines(): void {
     togglePercentageMode();
   }
   applySorting($culturesHeader);
-  $("#culturesEditor").dialog({ width: fitContent() });
+  $("#culturesEditor").dialog({ width: "fit-content" });
 }
 
 function getTypeOptions(type: string): string {
@@ -316,10 +328,10 @@ function getTypeOptions(type: string): string {
 
 function getBaseOptions(base: number): string {
   let options = "";
-  nameBases.forEach((n, i) => {
+  Names.nameBases.forEach((n, i) => {
     options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`;
   });
-  if (!nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
+  if (!Names.nameBases[base]) options += `<option selected value="${base}">removed</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -362,18 +374,18 @@ function cultureHighlightOff(event: any): void {
   select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
 }
 
-function cultureChangeColor(this: HTMLElement): void {
+function cultureChangeColor(this: FillBoxElement): void {
   const currentFill = this.getAttribute("fill") || "#ffffff";
   const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string) => {
-    (this as any).fill = newFill;
+    this.fill = newFill;
     pack.cultures[cultureId].color = newFill;
     select("#cults").select(`#culture${cultureId}`).attr("fill", newFill);
     select("#debug").select(`#cultureCenter${cultureId}`).attr("fill", newFill);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function cultureChangeName(this: HTMLInputElement): void {
@@ -390,7 +402,7 @@ function cultureChangeName(this: HTMLInputElement): void {
 function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
-  if (!nameBases[base]) {
+  if (!Names.nameBases[base]) {
     tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
     return;
   }
@@ -497,7 +509,7 @@ function changePopulation(this: HTMLElement): void {
   const update = () => {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
     if (Number.isNaN(totalNew)) return;
-    totalPop.innerHTML = l(totalNew);
+    totalPop.innerHTML = format(totalNew);
     totalPopPerc.innerHTML = String(rn((totalNew / total) * 100));
   };
 
@@ -568,7 +580,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
 
   const cultureId = +(this.parentNode as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
-  if (!nameBases[base]) {
+  if (!Names.nameBases[base]) {
     tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
     return;
   }
@@ -576,8 +588,8 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
   cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
-    select("#labels").select(`[data-id='${b.i}']`).text(b.name);
   });
+  if (layerIsOn("toggleLabels")) drawBurgLabels();
   tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 
@@ -895,12 +907,12 @@ function exitCulturesManualAssignment(close?: string): void {
   ensureEl("culturesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close) $("#culturesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   select("#debug").select("#cultureCenters").style("display", null);
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("culturesBody").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
@@ -940,12 +952,12 @@ function enterAddCulturesMode(this: HTMLElement): void {
 
 function exitAddCultureMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("culturesBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const culturesAdd = ensureEl("culturesAdd");
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");
@@ -979,7 +991,7 @@ function downloadCulturesCsv(): void {
   const lines = Array.from(ensureEl("culturesBody").querySelectorAll<HTMLElement>(":scope > div"));
   const data = lines.map($line => {
     const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
-    const namesbase = nameBases[+base!].name;
+    const namesbase = Names.nameBases[+base!].name;
     const { origins } = pack.cultures[+id!];
     const originList = (origins ?? [])
       .filter((origin: number | null): origin is number => Boolean(origin))
@@ -1061,7 +1073,7 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
 
     culture.origins = current.i ? restoreOrigins(culture.origins || "") : [null];
     current.shield = shapes.includes(culture.emblemsShape) ? culture.emblemsShape : "heater";
-    current.base = nameBases.findIndex(n => n.name === culture.namesbase); // can be -1 if namesbase is not found
+    current.base = Names.nameBases.findIndex(n => n.name === culture.namesbase); // can be -1 if namesbase is not found
 
     function restoreOrigins(originsString: string) {
       const originNames = originsString

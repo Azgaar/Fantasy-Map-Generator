@@ -25,6 +25,19 @@ interface EmblemNode {
   shift: number;
 }
 
+type EmblemType = "state" | "province" | "burg";
+
+export function clearEmblems(types: EmblemType[]): void {
+  for (const type of types) {
+    document.querySelectorAll(`[id^=${type}COA]`).forEach(element => {
+      element.remove();
+    });
+    document.querySelectorAll(`#${type}Emblems > use`).forEach(element => {
+      element.remove();
+    });
+  }
+}
+
 const emblemsRenderer = (): void => {
   TIME && console.time("drawEmblems");
   const { states, provinces, burgs } = pack;
@@ -172,6 +185,8 @@ const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
     use.setAttribute("href", `#${id}`);
   }
 };
+
+export { emblemsRenderer as drawEmblems, renderGroupCOAsRenderer as renderGroupCOAs };
 
 window.drawEmblems = emblemsRenderer;
 window.renderGroupCOAs = renderGroupCOAsRenderer;

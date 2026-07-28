@@ -1,6 +1,6 @@
 {
   "name": "fantasy-map-generator",
-  "version": "1.139.0",
+  "version": "1.139.3",
   "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
   "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme",
   "bugs": {
@@ -34,7 +34,7 @@
     "@types/node": "^25.0.10",
     "@types/polylabel": "^1.1.3",
     "@types/three": "^0.184.1",
-    "@vitest/browser": "^4.0.18",
+    "@vitest/browser": "^4.1.10",
     "@vitest/browser-playwright": "^4.0.18",
     "playwright": "^1.57.0",
     "simple-git-hooks": "^2.13.1",

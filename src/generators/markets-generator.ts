@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
+import { rn } from "@/utils";
 import { minmax } from "../utils";
 import { getColors, getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -34,6 +35,10 @@ export type Deal = {
 
 export class MarketsModule {
   private marketById: Market[] = [];
+
+  regenerate(): Market[] {
+    return this.generate(true);
+  }
 
   generate(regenerate: boolean = false): Market[] {
     TIME && console.time("generateMarkets");
@@ -256,7 +261,7 @@ export class MarketsModule {
     if (!burg || burg.removed) return null;
 
     if (pack.markets.some(m => m.centerBurgId === burgId)) {
-      tip("This burg is already a market center", false, "error");
+      window.tip("This burg is already a market center", false, "error");
       return null;
     }
 

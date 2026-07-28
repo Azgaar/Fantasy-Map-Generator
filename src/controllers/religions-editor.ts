@@ -1,5 +1,14 @@
 import { drag, easeSinIn, select, transition } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
   abbreviate,
   debounce,
@@ -102,8 +111,8 @@ function renderDialog(): void {
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-
   applySortingByHeader("religionsHeader");
+  applyLineHighlighting("religionsEditor", ({ cellId }) => pack.cells.religion[cellId]);
 
   ensureEl("religionsEditorRefresh").on("click", refreshReligionsEditor);
   ensureEl("religionsEditStyle").on("click", () => editStyle("relig"));
@@ -299,7 +308,7 @@ function religionsEditorAddLines(): void {
   }
 
   applySorting(ensureEl("religionsHeader"));
-  $("#religionsEditor").dialog({ width: fitContent() });
+  $("#religionsEditor").dialog({ width: "fit-content" });
 }
 
 function getTypeOptions(type: string): string {
@@ -391,7 +400,7 @@ function religionChangeColor(this: HTMLElement): void {
     select("#debug").select(`#religionsCenter${religionId}`).attr("fill", newFill);
   };
 
-  openPicker(currentFill, callback);
+  void Controllers.ColorPicker.open(currentFill, callback);
 }
 
 function religionChangeName(this: HTMLInputElement): void {
@@ -837,12 +846,12 @@ function exitReligionsManualAssignment(close?: string): void {
   ensureEl("religionsBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   if (!close) $("#religionsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
 
   select("#debug").select("#religionCenters").style("display", null);
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   const $selected = ensureEl("religionsBody").querySelector("div.selected");
   if ($selected) $selected.classList.remove("selected");
@@ -867,12 +876,12 @@ function enterAddReligionMode(this: HTMLElement): void {
 
 function exitAddReligionMode(): void {
   customization = 0;
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("religionsBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
-      e.style.pointerEvents = "all";
+      e.style.removeProperty("pointer-events");
     });
   const religionsAdd = ensureEl("religionsAdd");
   if (religionsAdd.classList.contains("pressed")) religionsAdd.classList.remove("pressed");

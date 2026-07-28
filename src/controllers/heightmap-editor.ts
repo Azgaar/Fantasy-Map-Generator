@@ -1,7 +1,15 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
+import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { Labels } from "@/generators/labels";
+import { drawFeatures } from "@/renderers/draw-features";
+import { drawGoods } from "@/renderers/draw-goods";
+import { drawMarkets } from "@/renderers/draw-markets";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { tradeAnimation } from "@/renderers/trade-animation";
+import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -448,7 +456,7 @@ function finalizeHeightmap(): void {
   ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
   ensureEl("exitCustomization").style.display = "none"; // hide finalize button
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   closeDialogs();
   resetZoom();
@@ -533,7 +541,6 @@ function regenerateErasedData(): void {
   Provinces.generate();
   Provinces.getPoles();
 
-  Labels.generate();
   Rivers.specify();
   Lakes.defineNames();
 
@@ -757,7 +764,11 @@ function restoreRiskedData(): void {
       const centerBurg = pack.burgs[market.centerBurgId];
       return Boolean(centerBurg && !centerBurg.removed);
     });
-    regenerateEconomy();
+    Production.regenerateEconomy();
+    if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+    if (layerIsOn("toggleGoods")) drawGoods();
+    if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+    refreshEditors();
   } else {
     Goods.generate();
     Markets.generate();
@@ -1066,7 +1077,9 @@ function exitBrushMode(): void {
   const pressed = document.querySelector("#brushesButtons > button.pressed");
   if (pressed) pressed.classList.remove("pressed");
 
-  select<SVGElement, unknown>("#viewbox").style("cursor", "default").on(".drag", null).on("click", clicked);
+  applyDefaultViewboxEvents();
+  select<SVGSVGElement, unknown>("#map").on("dblclick.zoom", null);
+  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
   select("#debug").selectAll(".lineCircle").remove();
   removeCircle();
 

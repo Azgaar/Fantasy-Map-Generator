@@ -58,6 +58,12 @@ export function drawStateLabels(list?: number[]): void {
   TIME && console.timeEnd("drawStateLabels");
 }
 
+export function redrawStateLabels(list?: number[]): void {
+  const labels = getStateLabels(list);
+  for (const label of labels) delete label.pathPoints;
+  drawStateLabels(list);
+}
+
 export function drawCustomLabels(): void {
   TIME && console.time("drawCustomLabels");
   const customLabels = Labels.getByType("custom");

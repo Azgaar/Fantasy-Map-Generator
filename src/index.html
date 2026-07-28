@@ -2204,7 +2204,7 @@
             <button
               id="addMarker"
               data-tip="Click on map to place a marker. Hold Shift to add multiple"
-              data-shortcut="Shift + 5"
+              data-shortcut="Shift + 3"
             >
               Marker
             </button>
@@ -2212,11 +2212,11 @@
             <button
               id="addRiver"
               data-tip="Click on map to place a river. Hold Shift to add multiple"
-              data-shortcut="Shift + 3"
+              data-shortcut="Shift + 4"
             >
               River
             </button>
-            <button id="addRoute" data-tip="Open route creation dialog" data-shortcut="Shift + 4">Route</button>
+            <button id="addRoute" data-tip="Open route creation dialog" data-shortcut="Shift + 5">Route</button>
           </div>
           <div class="separator">Show</div>
           <div class="grid">
@@ -2645,52 +2645,6 @@
               style="width: 22.6em; margin-top: 0.1em; display: none"
             />
           </div>
-        </div>
-      </div>
-      <div id="cellInfo" style="display: none" class="dialog stable">
-        <p>
-          <b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span>
-        </p>
-        <p><b>Latitude:</b> <span id="infoLat"></span></p>
-        <p><b>Longitude:</b> <span id="infoLon"></span></p>
-        <p><b>Geozone:</b> <span id="infoGeozone"></span></p>
-        <p><b>Area:</b> <span id="infoArea">0</span></p>
-        <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
-        <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
-        <p><b>River:</b> <span id="infoRiver">no</span></p>
-        <p><b>Population:</b> <span id="infoPopulation">0</span></p>
-        <p><b>Elevation:</b> <span id="infoElevation">0</span></p>
-        <p><b>Depth:</b> <span id="infoDepth">0</span></p>
-        <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
-        <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
-        <p><b>State:</b> <span id="infoState">n/a</span></p>
-        <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
-        <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
-        <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
-        <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
-        <p><b>Good:</b> <span id="infoGood">n/a</span></p>
-        <p><b>Market:</b> <span id="infoMarket">n/a</span></p>
-        <p><b>Cell Production:</b> <span id="infoCellProduction">n/a</span></p>
-        <p><b>Burg Production:</b> <span id="infoBurgProduction">n/a</span></p>
-      </div>
-      <div id="iconSelector" style="display: none" class="dialog">
-        <div>
-          <b>Unicode emojis</b>
-          <div style="font-style: italic">
-            <span>Select from the list or paste a Unicode character here: </span>
-            <input id="iconInput" style="width: 2.5em" />
-            <span>. See <a href="https://emojidb.org" target="_blank">EmojiDB</a> to search for emojis</span>
-          </div>
-          <table id="iconTable" class="table pointer" style="font-size: 2em; text-align: center; width: 100%"></table>
-        </div>
-        <div style="margin-top: 0.5em">
-          <b>External images</b>
-          <div style="font-style: italic">
-            <span>Paste link to the image here: </span>
-            <input id="imageInput" style="width: 20em" />
-            <button id="addImage" type="button">Add</button>
-          </div>
-          <div id="addedIcons" class="pointer" style="display: flex; flex-wrap: wrap; max-width: 420px"></div>
         </div>
       </div>
       <div id="exportMapData" style="display: none" class="dialog">
@@ -5509,13 +5463,9 @@
     <script defer src="libs/simplify.js?v1.105.6"></script>
     <script defer src="modules/ui/layers.js?v=1.139.0"></script>
     <script defer src="modules/ui/style-presets.js?v=1.138.0"></script>
-    <script defer src="modules/ui/general.js?v=1.138.0"></script>
-    <script defer src="modules/ui/options.js?v=1.137.6"></script>
+    <script defer src="modules/ui/options.js?v=1.139.0"></script>
     <script defer src="main.js?v=1.139.0"></script>
-    <script defer src="modules/ui/style.js?v=1.138.0"></script>
-    <script defer src="modules/ui/editors.js?v=1.138.0"></script>
-    <script defer src="modules/ui/tools.js?v=1.139.0"></script>
-    <script defer src="modules/ui/hotkeys.js?v=1.138.0"></script>
+    <script defer src="modules/ui/style.js?v=1.139.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

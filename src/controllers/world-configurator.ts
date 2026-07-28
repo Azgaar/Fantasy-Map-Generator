@@ -1,4 +1,8 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
+import { tip } from "@/components/tooltips";
+import { drawBiomes } from "@/renderers/draw-biomes";
+import { drawTemperature } from "@/renderers/draw-temperature";
+import { stored } from "@/utils/preferences";
 import { convertTemperature, destroyDialogIfExists, ensureEl, findEl, parseTransform, rn, round } from "../utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);

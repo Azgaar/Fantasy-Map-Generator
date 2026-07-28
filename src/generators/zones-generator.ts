@@ -40,6 +40,10 @@ class ZonesModule {
     };
   }
 
+  regenerate(globalModifier = 1): void {
+    this.generate(globalModifier);
+  }
+
   generate(globalModifier = 1) {
     TIME && console.time("generateZones");
 

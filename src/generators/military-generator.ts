@@ -44,6 +44,10 @@ interface Platoon {
 }
 
 class MilitaryModule {
+  regenerate(): void {
+    this.generate();
+  }
+
   generate() {
     TIME && console.time("generateMilitary");
     const { cells, states } = pack;

@@ -5,7 +5,7 @@ import "./names-generator";
 import "./lakes";
 import "./river-generator";
 import "./burgs-generator";
-import "./biomes";
+import "./biomes-generator";
 import "./cultures-generator";
 import "./routes-generator";
 import "./states-generator";

@@ -196,3 +196,5 @@ const heightmapRenderer = (): void => {
 };
 
 window.drawHeightmap = heightmapRenderer;
+
+export { heightmapRenderer as drawHeightmap };

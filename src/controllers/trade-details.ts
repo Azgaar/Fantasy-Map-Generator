@@ -1,3 +1,4 @@
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
@@ -118,7 +119,7 @@ function tradeDetailsAddLines(points: Point[]): void {
   ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 
   applySorting(ensureEl("tradeDetailsHeader"));
-  $("#tradeDetails").dialog({ width: fitContent() });
+  $("#tradeDetails").dialog({ width: "fit-content" });
 }
 
 function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string {

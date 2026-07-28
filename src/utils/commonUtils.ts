@@ -331,24 +331,32 @@ export const initializePrompt = (): void => {
   }
 };
 
+/**
+ * Read a text out loud using the voice selected in the options
+ * @param text - The text to speak
+ */
+export const speak = (text: string): void => {
+  const speaker = new SpeechSynthesisUtterance(text);
+
+  const voices = speechSynthesis.getVoices();
+  if (voices.length) {
+    const voiceId = Number((document.getElementById("speakerVoice") as HTMLSelectElement).value);
+    speaker.voice = voices[voiceId];
+  }
+
+  speechSynthesis.speak(speaker);
+};
+
 declare global {
   interface Window {
     ERROR: boolean;
 
-    clipPoly: (points: [number, number][], secure?: number) => [number, number][];
-    getSegmentId: typeof getSegmentId;
     debounce: typeof debounce;
-    throttle: typeof throttle;
     parseError: typeof parseError;
-    getBase64: typeof getBase64;
     openURL: typeof openURL;
     wiki: typeof wiki;
     link: typeof link;
     isCtrlClick: typeof isCtrlClick;
-    generateDate: typeof generateDate;
-    getLongitude: typeof getLongitude;
-    getLatitude: typeof getLatitude;
-    getCoordinates: typeof getCoordinates;
   }
 
   // Global variables defined in main.js

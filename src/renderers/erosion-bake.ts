@@ -1,6 +1,7 @@
 // GPU erosion-detail bake, a noise-based erosion appearance filter for the 3D view
 
 import type * as THREEType from "three";
+import { getFeaturePath } from "./draw-features";
 
 export type BakeParams = {
   strength: number;
@@ -138,12 +139,12 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   maskCtx.fillStyle = "#fff";
   for (const feature of pack.features) {
     if (!isLand(feature)) continue;
-    maskCtx.fill(new Path2D(window.getFeaturePath(feature)));
+    maskCtx.fill(new Path2D(getFeaturePath(feature)));
   }
   maskCtx.fillStyle = "#000";
   for (const feature of pack.features) {
     if (!feature || feature.type !== "lake") continue;
-    maskCtx.fill(new Path2D(window.getFeaturePath(feature)));
+    maskCtx.fill(new Path2D(getFeaturePath(feature)));
   }
   maskCtx.restore();
 
@@ -211,7 +212,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   mouthZoneCtx.fillStyle = "#000";
   for (const feature of pack.features) {
     if (!isLand(feature)) continue;
-    mouthZoneCtx.fill(new Path2D(window.getFeaturePath(feature)));
+    mouthZoneCtx.fill(new Path2D(getFeaturePath(feature)));
   }
   // white water plus a white stroke along every shoreline = water dilated
   // inland by mouthRadius
@@ -220,7 +221,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   mouthZoneCtx.lineWidth = (mouthRadius * 2) / scaleX;
   for (const feature of pack.features) {
     if (!feature || feature.type === "ocean") continue;
-    const path = new Path2D(window.getFeaturePath(feature));
+    const path = new Path2D(getFeaturePath(feature));
     if (feature.type === "lake") mouthZoneCtx.fill(path);
     mouthZoneCtx.stroke(path);
   }
@@ -264,7 +265,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   for (const feature of pack.features) {
     if (!feature || feature.type !== "lake") continue;
     const surface = Math.round(Math.max(feature.height || SEA_LEVEL, SEA_LEVEL));
-    const path = new Path2D(window.getFeaturePath(feature));
+    const path = new Path2D(getFeaturePath(feature));
     surfaceCtx.fillStyle = surfaceCtx.strokeStyle = `rgb(${surface},${surface},${surface})`;
     surfaceCtx.lineWidth = (taperPx * 6) / scaleX;
     surfaceCtx.fill(path);
@@ -297,7 +298,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
     if (!feature || feature.type !== "lake") continue;
     const code = LAKE_GROUP_CODES[feature.group as string] ?? 1;
     const gray = code * 40;
-    const path = new Path2D(window.getFeaturePath(feature));
+    const path = new Path2D(getFeaturePath(feature));
     groupCtx.fillStyle = groupCtx.strokeStyle = `rgb(${gray},${gray},${gray})`;
     groupCtx.fill(path);
     groupCtx.stroke(path);

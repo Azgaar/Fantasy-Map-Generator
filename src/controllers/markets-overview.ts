@@ -1,5 +1,15 @@
-import { color, drag, select } from "d3";
+import { drag, select } from "d3";
+import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { FillBoxElement } from "@/components/fill-box";
+import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawGoods } from "@/renderers/draw-goods";
+import { drawMarkets, toggleMarketsLayer } from "@/renderers/draw-markets";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { tradeAnimation } from "@/renderers/trade-animation";
+import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
@@ -97,7 +107,7 @@ function renderDialog(): void {
   ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
     const target = ev.target as HTMLElement;
 
-    const fillBox = target.closest<HTMLElement>("fill-box");
+    const fillBox = target.closest<FillBoxElement>("fill-box");
     if (fillBox) {
       const row = fillBox.closest<HTMLElement>(".states.market");
       const marketId = row ? +row.dataset.id! : 0;
@@ -197,7 +207,7 @@ function marketsOverviewAddLines(): void {
   );
   applySorting(ensureEl("marketsOverviewHeader"));
 
-  $("#marketsOverview").dialog({ width: fitContent() });
+  $("#marketsOverview").dialog({ width: "fit-content" });
 }
 
 function enterMarketsManualAssignment(): void {
@@ -397,12 +407,12 @@ function exitMarketsManualAssignment(apply: boolean): void {
   ensureEl("marketsManually").classList.remove("pressed");
   ensureEl("marketsOverviewBody").querySelector<HTMLElement>(".states.market.selected")?.classList.remove("selected");
 
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
   removeCircle();
 
   if (apply) {
-    drawMarketsLayer();
+    drawMarkets();
     marketsOverviewAddLines();
   }
 
@@ -419,7 +429,7 @@ function enterAddMarketMode(): void {
 function exitAddMarketMode(): void {
   customization = 0;
   ensureEl("marketsAdd").classList.remove("pressed");
-  restoreDefaultEvents();
+  applyDefaultViewboxEvents();
   clearMainTip();
 }
 
@@ -439,7 +449,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   if (!ev.shiftKey) exitAddMarketMode();
 
-  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
   marketsOverviewAddLines();
 }
 
@@ -454,41 +464,23 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
+      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
       marketsOverviewAddLines();
     }
   });
 }
 
-function marketChangeFill(fillBox: HTMLElement, marketId: number): void {
+function marketChangeFill(fillBox: FillBoxElement, marketId: number): void {
   const market = Markets.get(marketId);
   if (!market) return;
 
   const callback = (newFill: string) => {
-    (fillBox as unknown as { fill: string }).fill = newFill;
+    fillBox.fill = newFill;
     market.color = newFill;
-    applyMarketColor(marketId, newFill);
+    drawMarkets();
   };
 
-  openPicker(market.color, callback);
-}
-
-// Recolor a single market's rendered shapes in place, matching draw-markets output.
-function applyMarketColor(marketId: number, fill: string): void {
-  const strokeColor = color(fill)?.darker().hex() || "#000";
-
-  const group = document.getElementById(`market${marketId}`);
-  if (group) {
-    group.querySelector<SVGPathElement>("path.fill")?.setAttribute("fill", fill);
-    group.querySelector<SVGPathElement>("path.border")?.setAttribute("stroke", strokeColor);
-    const circle = group.querySelector<SVGCircleElement>("circle");
-    if (circle) {
-      circle.setAttribute("fill", fill);
-      circle.setAttribute("stroke", strokeColor);
-    }
-  }
-
-  document.querySelector<SVGPathElement>(`#marketsTemp path[data-market="${marketId}"]`)?.setAttribute("fill", fill);
+  void Controllers.ColorPicker.open(market.color, callback);
 }
 
 function getMarketTotalStock(market: Market): number {
@@ -594,8 +586,14 @@ function regenerateMarkets() {
     confirm: "Regenerate",
     onConfirm: () => {
       const regenProduction = ensureEl<HTMLInputElement>("marketsRegenerateProductionToggle").checked;
-      window.regenerateMarkets();
-      if (regenProduction) window.regenerateProduction();
+      Markets.regenerate();
+      if (regenProduction) {
+        Production.regenerate();
+      }
+      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+      if (layerIsOn("toggleGoods")) drawGoods();
+      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      refreshEditors();
     }
   });
 }
@@ -606,7 +604,12 @@ function regenerateProduction() {
     message:
       "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement",
     confirm: "Regenerate",
-    onConfirm: window.regenerateProduction
+    onConfirm: () => {
+      Production.regenerate();
+      if (layerIsOn("toggleGoods")) drawGoods();
+      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      refreshEditors();
+    }
   });
 }
 

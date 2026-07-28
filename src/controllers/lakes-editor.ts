@@ -1,8 +1,17 @@
-import { drag, mean, min, polygonArea, polygonLength, select } from "d3";
+import { drag, mean, min, polygonArea, polygonLength, type Selection, select } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
+import { drawBiomes } from "@/renderers/draw-biomes";
+import { drawBorders } from "@/renderers/draw-borders";
+import { getFeaturePath } from "@/renderers/draw-features";
+import { getArea, getAreaUnit, speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
+
+let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 function open(element: SVGElement): void {
   if (customization) return;
@@ -12,7 +21,7 @@ function open(element: SVGElement): void {
   renderDialog();
 
   select("#debug").append("g").attr("id", "vertices");
-  elSelected = select<SVGElement, unknown>(element) as unknown as typeof elSelected;
+  selectedLake = select<SVGElement, unknown>(element) as unknown as typeof selectedLake;
   updateLakeValues();
   selectLakeGroup();
   drawLakeVertices();
@@ -103,7 +112,7 @@ function renderDialog(): void {
 }
 
 function getLake(): Feature {
-  const lakeId = +elSelected.attr("data-f");
+  const lakeId = +selectedLake.attr("data-f");
   return pack.features.find(feature => feature.i === lakeId) as Feature;
 }
 
@@ -211,7 +220,7 @@ function generateNameCulture(): void {
 
 function generateNameRandom(): void {
   const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(rand(nameBases.length - 1));
+  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(rand(Names.nameBases.length - 1));
 }
 
 function selectLakeGroup(): void {
@@ -227,7 +236,7 @@ function selectLakeGroup(): void {
 }
 
 function changeLakeGroup(this: HTMLSelectElement): void {
-  ensureEl(this.value).appendChild(elSelected.node()!);
+  ensureEl(this.value).appendChild(selectedLake.node()!);
   getLake().group = this.value;
 }
 
@@ -265,7 +274,7 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   // just rename if only 1 element left
-  const oldGroup = elSelected.node()!.parentNode as SVGGElement;
+  const oldGroup = selectedLake.node()!.parentNode as SVGGElement;
   const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
   if (!basic && oldGroup.childElementCount === 1) {
     ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
@@ -277,24 +286,24 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   // create a new group
-  const newGroup = (elSelected.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
+  const newGroup = (selectedLake.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
   ensureEl("lakes").appendChild(newGroup);
   newGroup.id = group;
   ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
-  ensureEl(group).appendChild(elSelected.node()!);
+  ensureEl(group).appendChild(selectedLake.node()!);
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("lakeGroupName").value = "";
 }
 
 function removeLakeGroup(): void {
-  const group = (elSelected.node()!.parentNode as SVGGElement).id;
+  const group = (selectedLake.node()!.parentNode as SVGGElement).id;
   if (["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(group)) {
     tip("This is one of the default groups, it cannot be removed", false, "error");
     return;
   }
 
-  const count = (elSelected.node()!.parentNode as SVGGElement).childElementCount;
+  const count = (selectedLake.node()!.parentNode as SVGGElement).childElementCount;
   alertMessage.innerHTML = /* html */ `Are you sure you want to remove the group? All lakes of the group (${count}) will be turned into Freshwater`;
   $("#alert").dialog({
     resizable: false,
@@ -320,18 +329,18 @@ function removeLakeGroup(): void {
 }
 
 function editGroupStyle(): void {
-  const g = (elSelected.node()!.parentNode as SVGGElement).id;
+  const g = (selectedLake.node()!.parentNode as SVGGElement).id;
   editStyle("lakes", g);
 }
 
 function editLakeLegend(): void {
-  const id = elSelected.attr("id");
+  const id = selectedLake.attr("id");
   void Controllers.NotesEditor.open(id, `${getLake().name} ${ensureEl<HTMLSelectElement>("lakeGroup").value} lake`);
 }
 
 function closeLakesEditor(): void {
   select("#debug").select("#vertices").remove();
-  unselect();
+  applyDefaultViewboxEvents();
   destroyDialogIfExists("lakeEditor");
 }
 

@@ -1,3 +1,4 @@
+import { getHeight, rn } from "@/utils";
 import { convertTemperature, ensureEl, list } from "../utils";
 
 type ParamType = "none" | "number" | "biomes" | "shore" | "featureType";
@@ -211,22 +212,24 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       "display:grid; grid-template-columns:1fr 1fr; gap:3px 16px; padding:2px 0; max-height:260px; overflow-y:auto;";
 
     const entries: { id: number; cb: HTMLInputElement }[] = [];
-    (biomesData.i as number[]).forEach((id: number) => {
-      const label = document.createElement("label");
-      label.style.cssText = "display:flex; align-items:center; gap:5px; cursor:pointer;";
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.className = "native";
-      cb.checked = cond.biomeIds.includes(id);
-      entries.push({ id, cb });
-      const dot = document.createElement("span");
-      dot.style.cssText = `display:inline-block; width:.7em; height:.7em; border-radius:50%;
-        flex-shrink:0; border:1px solid rgba(0,0,0,.15); background:${biomesData.color[id] || "#ccc"};`;
-      label.appendChild(cb);
-      label.appendChild(dot);
-      label.appendChild(document.createTextNode(biomesData.name[id] || `Biome ${id}`));
-      grid.appendChild(label);
-    });
+    pack.biomes
+      .filter(biome => !biome.removed)
+      .forEach(({ i: id, name, color }) => {
+        const label = document.createElement("label");
+        label.style.cssText = "display:flex; align-items:center; gap:5px; cursor:pointer;";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "native";
+        cb.checked = cond.biomeIds.includes(id);
+        entries.push({ id, cb });
+        const dot = document.createElement("span");
+        dot.style.cssText = `display:inline-block; width:.7em; height:.7em; border-radius:50%;
+        flex-shrink:0; border:1px solid rgba(0,0,0,.15); background:${color || "#ccc"};`;
+        label.appendChild(cb);
+        label.appendChild(dot);
+        label.appendChild(document.createTextNode(name || `Biome ${id}`));
+        grid.appendChild(label);
+      });
     pickerEl.appendChild(grid);
 
     $(pickerEl).dialog({
@@ -369,7 +372,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       summary.className = "ded-picker-summary";
       const refreshBiomeSummary = () => {
         summary.textContent = cond.biomeIds.length
-          ? cond.biomeIds.map(id => biomesData.name[id] || `Biome ${id}`).join(", ")
+          ? cond.biomeIds.map(id => pack.biomes[id]?.name || `Biome ${id}`).join(", ")
           : "none";
       };
       refreshBiomeSummary();
@@ -773,7 +776,7 @@ function interpretDistribution(dist: string): string {
 
   return dist
     .replace(/biome\(([^)]+)\)/g, (_, args) => {
-      const names = args.split(",").map((a: string) => biomesData.name[parseInt(a.trim(), 10)]);
+      const names = args.split(",").map((a: string) => pack.biomes[parseInt(a.trim(), 10)]?.name);
       return names.length === 1 ? names[0] : `${list(names)}`;
     })
     .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => `min height ${getHeight(+h)}`)

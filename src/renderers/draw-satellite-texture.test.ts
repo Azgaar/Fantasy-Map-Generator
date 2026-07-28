@@ -2,16 +2,7 @@ import { describe, expect, test } from "vitest";
 import { getSatelliteBiomeData } from "./draw-satellite-texture";
 
 const setBiomeColors = (colors: string[]) => {
-  globalThis.biomesData = {
-    i: [],
-    name: [],
-    color: colors,
-    biomesMatrix: [],
-    habitability: [],
-    iconsDensity: [],
-    icons: [],
-    cost: []
-  };
+  globalThis.pack = { biomes: colors.map((color, i) => ({ i, color })) } as any;
 };
 
 describe("getSatelliteBiomeData", () => {

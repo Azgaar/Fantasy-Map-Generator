@@ -13,6 +13,9 @@ import {
   scaleLinear,
   select
 } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features";
 import type { Province } from "../generators/provinces-generator";
@@ -269,7 +272,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       const religionName = (pack.religions[pack.cells.religion[cell]] as { name: string }).name;
       const cultureName = (pack.cultures[pack.cells.culture[cell]] as { name: string }).name;
       const dataTip = [
-        biomesData.name[biome],
+        pack.biomes[biome].name,
         provinceName,
         stateName,
         religionName,
@@ -286,8 +289,8 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         .attr("y", yOffset + chartHeight)
         .attr("width", tileWidth)
         .attr("height", biomesHeight)
-        .attr("fill", biomesData.color[biome])
-        .attr("stroke", biomesData.color[biome])
+        .attr("fill", pack.biomes[biome].color)
+        .attr("stroke", pack.biomes[biome].color)
         .attr("data-tip", dataTip);
     }
 
@@ -454,7 +457,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
           [
             `${dist} ${distanceUnitInput.value} from start`,
             `Elevation: ${chartData.height[idx]} ${heightUnit.value}`,
-            biomesData.name[chartData.biome[idx]],
+            pack.biomes[chartData.biome[idx]].name,
             burgId ? ((pack.burgs[burgId] as Burg).name ?? null) : null
           ]
             .filter(Boolean)
@@ -493,16 +496,16 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         k + 1,
         x,
         y,
-        getLatitude(y, 2),
-        getLongitude(x, 2),
+        getLatitude(y, mapCoordinates, graphHeight, 2),
+        getLongitude(x, mapCoordinates, graphWidth, 2),
         cell,
         getHeight(h),
         h,
         rn(pop * populationRate),
         burg?.name ?? "",
         burgPop,
-        biomesData.name[pack.cells.biome[cell]],
-        biomesData.color[pack.cells.biome[cell]],
+        pack.biomes[pack.cells.biome[cell]].name,
+        pack.biomes[pack.cells.biome[cell]].color,
         culture.name,
         culture.color,
         religion.name,
