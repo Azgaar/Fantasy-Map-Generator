@@ -1,30 +1,44 @@
-import type { AddedLabel } from "../generators/labels";
-import { drawPathLabel, drawPathLabels, type PathLabel, removePathLabel } from "./draw-path-label";
+import { ensureLabelGroup, getLabelPathMarkup, getLabelTextMarkup } from "./draw-path-label";
 
-const toPathLabel = (label: AddedLabel): PathLabel => ({ ...label, id: `addedLabel${label.i}` });
+export function drawAddedLabels(): void {
+  clearAddedLabels();
 
-export function drawAddedLabels(id?: number): void {
-  if (id !== undefined) {
-    const label = pack.labels.find(label => label.i === id);
-    if (label) drawPathLabel(toPathLabel(label));
-    return;
+  let paths = "";
+  const texts = new Map<string, string>();
+  for (const addedLabel of pack.labels) {
+    const label = { ...addedLabel, id: `addedLabel${addedLabel.i}` };
+    paths += getLabelPathMarkup(label);
+    texts.set(label.group, (texts.get(label.group) || "") + getLabelTextMarkup(label));
   }
 
-  syncGroups();
-  document.querySelectorAll("#textPaths > path[id^='textPath_addedLabel']").forEach(path => {
-    path.remove();
-  });
-  drawPathLabels(pack.labels.map(toPathLabel));
+  document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
+  for (const [group, markup] of texts) {
+    ensureLabelGroup(group).insertAdjacentHTML("beforeend", markup);
+  }
 }
 
-export function removeAddedLabel(label: AddedLabel): void {
-  removePathLabel(toPathLabel(label));
+export function drawAddedLabel(labelId: number): void {
+  const addedLabel = pack.labels.find(label => label.i === labelId);
+  if (!addedLabel) return;
+
+  const label = { ...addedLabel, id: `addedLabel${addedLabel.i}` };
+  removeAddedLabel(labelId);
+  document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", getLabelPathMarkup(label));
+  ensureLabelGroup(label.group).insertAdjacentHTML("beforeend", getLabelTextMarkup(label));
 }
 
-function syncGroups(): void {
+export function removeAddedLabel(labelId: number): void {
+  document.getElementById(`addedLabel${labelId}`)?.remove();
+  document.getElementById(`textPath_addedLabel${labelId}`)?.remove();
+}
+
+function clearAddedLabels(): void {
   const groups = new Set(pack.labels.map(label => label.group));
   document.querySelectorAll<SVGGElement>("g#labels > g:not(#states):not(#burgLabels)").forEach(group => {
     if (group.id === "addedLabels" || groups.has(group.id)) group.replaceChildren();
     else group.remove();
+  });
+  document.querySelectorAll("#textPaths > path[id^='textPath_addedLabel']").forEach(path => {
+    path.remove();
   });
 }

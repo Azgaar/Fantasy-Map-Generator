@@ -1,4 +1,4 @@
-import { drawAddedLabels, removeAddedLabel } from "./draw-added-labels";
+import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "./draw-added-labels";
 import { drawBurgLabel, drawBurgLabels, removeBurgLabel } from "./draw-burg-labels";
 import { drawStateLabel, drawStateLabels } from "./draw-state-labels";
 
@@ -35,7 +35,8 @@ export function drawLabel(type: LabelType, id?: number): void {
       }
     }
   } else if (type === "added") {
-    drawAddedLabels(id);
+    if (id === undefined) drawAddedLabels();
+    else drawAddedLabel(id);
   }
 
   invokeActiveZooming();
@@ -43,10 +44,8 @@ export function drawLabel(type: LabelType, id?: number): void {
 
 export function removeLabel(type: LabelType, id: number): void {
   if (type === "burg") removeBurgLabel(id);
-  else if (type === "added") {
-    const label = pack.labels.find(label => label.i === id);
-    if (label) removeAddedLabel(label);
-  } else {
+  else if (type === "added") removeAddedLabel(id);
+  else {
     document.getElementById(`stateLabel${id}`)?.remove();
     document.getElementById(`textPath_stateLabel${id}`)?.remove();
   }

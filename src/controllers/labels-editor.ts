@@ -3,10 +3,10 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { type AddedLabel, AddedLabels, type Label } from "@/generators/labels";
+import type { AddedLabel, Label } from "@/generators/labels";
 import { drawLabel, removeLabel as removeRenderedLabel } from "@/renderers/draw-labels";
-import { fitStateLabel } from "@/renderers/draw-state-labels";
 import { speak } from "@/utils";
+import { extractPathPoints } from "@/utils/pathUtils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
 
 let lastSelectedGroup = ""; // group selected in the editor most recently; used as the default group for newly added labels
@@ -72,10 +72,15 @@ function getStateLabelDraft(): Label | undefined {
     return { ...state.label, pathPoints: state.label.pathPoints.map(point => [...point]) };
   }
 
-  const fittedLabel = fitStateLabel(state.i);
-  if (!fittedLabel) return;
-  const { id: _id, group: _group, ...label } = fittedLabel;
-  return { ...label, pathPoints: label.pathPoints.map(point => [...point]) };
+  const labelId = selectedLabel.attr("id");
+  const path = document.querySelector<SVGPathElement>(`#textPath_${labelId}`)!;
+  const textPath = selectedLabel.selectChild<SVGTextPathElement>("textPath").node()!;
+  return {
+    ...state.label,
+    pathPoints: extractPathPoints(path),
+    text: [...textPath.querySelectorAll("tspan")].map(tspan => tspan.textContent).join("|"),
+    fontSize: Number.parseFloat(textPath.getAttribute("font-size")!)
+  };
 }
 
 function renderDialog(): void {

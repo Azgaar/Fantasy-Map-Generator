@@ -1,15 +1,9 @@
 import { max } from "d3";
+import type { Label } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
-import {
-  buildLabelPath,
-  buildLabelText,
-  ensureLabelGroup,
-  getLabelPathMarkup,
-  getLabelTextMarkup,
-  type PathLabel
-} from "./draw-path-label";
+import { ensureLabelGroup, getLabelPathMarkup, getLabelTextMarkup } from "./draw-path-label";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 export function drawStateLabels(): void {
@@ -70,12 +64,11 @@ export function drawStateLabel(stateId: number): void {
   }
 }
 
-function createStateLabel(state: State): PathLabel {
+function createStateLabel(state: State) {
   return {
     ...state.label,
     id: `stateLabel${state.i}`,
     text: state.label?.text ?? state.name ?? "",
-    group: "states",
     pathPoints: state.label?.pathPoints || []
   };
 }
@@ -165,8 +158,10 @@ function fitLabel(state: State, sandbox: SVGGElement, mode: string, letterLength
 const MEASURE_PATH_ID = "measureLabelPath";
 
 // create or update the sandbox measurement path for the label's current pathPoints
-function measureLabelPath(label: PathLabel, sandbox: SVGGElement): SVGPathElement {
-  const path = buildLabelPath(label, MEASURE_PATH_ID);
+function measureLabelPath(label: Label, sandbox: SVGGElement): SVGPathElement {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.id = MEASURE_PATH_ID;
+  path.setAttribute("d", getLabelPath(label));
   sandbox.querySelector(`#${MEASURE_PATH_ID}`)?.remove();
   sandbox.appendChild(path);
   return path;
@@ -174,7 +169,23 @@ function measureLabelPath(label: PathLabel, sandbox: SVGGElement): SVGPathElemen
 
 // attach a measurement copy of the label's text to the sandbox; caller removes it after measuring
 function measureLabelText(label: PathLabel, sandbox: SVGGElement): SVGTextElement {
-  const text = buildLabelText(label, MEASURE_PATH_ID);
+  const lines = label.text.split("|");
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
+  textPath.setAttribute("href", `#${MEASURE_PATH_ID}`);
+  textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
+  textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
+  if (label.letterSpacing) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
+  textPath.append(
+    ...lines.map((lineText, index) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", "0");
+      tspan.setAttribute("dy", index ? "1em" : `${(lines.length - 1) / -2}em`);
+      tspan.textContent = lineText;
+      return tspan;
+    })
+  );
+  text.appendChild(textPath);
   sandbox.appendChild(text);
   return text;
 }

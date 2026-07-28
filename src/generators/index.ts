@@ -21,5 +21,5 @@ import "./measurers-generator";
 import "./goods-generator";
 import "./production-generator";
 import "./markets-generator";
-import "../renderers/draw-goods";
 import "./resample";
+import "./labels.ts";

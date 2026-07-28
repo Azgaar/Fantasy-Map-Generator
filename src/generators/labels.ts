@@ -10,6 +10,10 @@ export interface Label {
   letterSpacing?: number;
 }
 
+declare global {
+  var AddedLabels: AddedLabelsModule;
+}
+
 // Custom labels are the only labels stored independently from map entities
 export interface AddedLabel extends Label {
   i: number;
@@ -19,6 +23,10 @@ export interface AddedLabel extends Label {
 }
 
 export class AddedLabelsModule {
+  initiate(): void {
+    pack.labels = [];
+  }
+
   get(i: number): AddedLabel | undefined {
     return pack.labels.find(label => label.i === i);
   }
@@ -33,10 +41,6 @@ export class AddedLabelsModule {
   remove(i: number): void {
     pack.labels = pack.labels.filter(label => label.i !== i);
   }
-}
-
-declare global {
-  var AddedLabels: AddedLabelsModule;
 }
 
 window.AddedLabels = new AddedLabelsModule();
