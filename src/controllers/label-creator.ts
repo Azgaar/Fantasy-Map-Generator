@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
-import { Labels } from "@/generators/labels";
+import { AddedLabels } from "@/generators/labels";
 import { drawLabel } from "@/renderers/draw-labels";
 
 function toggle(): void {
@@ -21,20 +21,18 @@ async function addOnClick(event: MouseEvent): Promise<void> {
   const cell = findCell(point[0], point[1]);
   if (cell === undefined) return;
 
-  const name = Names.getCulture(pack.cells.culture[cell]);
+  const text = Names.getCulture(pack.cells.culture[cell]);
   const lastSelected = await Controllers.LabelsEditor.getLastSelectedGroup();
   const group = ["", "states", "burgLabels"].includes(lastSelected) ? "addedLabels" : lastSelected;
-  const label = Labels.addCustomLabel({
+  const label = AddedLabels.add({
     group,
-    text: name,
+    text,
     pathPoints: [
       [point[0] - 100, point[1]],
       [point[0] + 100, point[1]]
-    ],
-    startOffset: 50,
-    fontSize: 100
+    ]
   });
-  drawLabel(label);
+  drawLabel("added", label.i);
 
   if (!event.shiftKey) stopMapPlacement();
 }

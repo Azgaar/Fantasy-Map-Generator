@@ -20,6 +20,7 @@ declare global {
     removeBurgIcon: typeof import("../renderers/draw-burg-icons").removeBurgIcon;
     drawBurgLabel: typeof import("../renderers/draw-burg-labels").drawBurgLabel;
     removeBurgLabel: typeof import("../renderers/draw-burg-labels").removeBurgLabel;
+    ensureLabelGroup: (group: string) => SVGGElement;
     redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
     redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;
@@ -136,6 +137,7 @@ declare global {
   var notes: any[];
   var style: {
     burgLabels: { [key: string]: { [key: string]: string } };
+    addedLabels: { [key: string]: { [key: string]: string } };
     burgIcons: { [key: string]: { [key: string]: string } };
     anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;
@@ -241,22 +243,14 @@ declare global {
   var drawGoods: () => void;
   var legend: any;
 
-  // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
-  // (src/utils, src/modules) and globally-typed generators (Names, Cultures, Religions, States,
-  // Provinces, Burgs, COA, COArenderer) are used directly instead.
   var drawCultures: () => void;
   var drawReligions: () => void;
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;
-  var Labels: typeof import("@/generators/labels").Labels;
-  var drawStateLabels: (ids?: number[]) => void;
-  var fitStateLabels: (ids?: number[]) => void;
+  var drawLabels: () => void;
   var drawCustomLabels: () => void;
-  var drawCustomLabel: (label: import("@/generators/labels").CustomLabel) => void;
-  var ensureLabelGroup: (group: string) => SVGGElement;
   var drawPopulation: () => void;
-
   var toggleCultures: () => void;
   var toggleStates: () => void;
   var toggleBiomes: () => void;

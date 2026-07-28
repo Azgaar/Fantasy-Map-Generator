@@ -4,6 +4,8 @@ import "./draw-biomes";
 import "./draw-burg-icons";
 import "./draw-burg-labels";
 import "./draw-labels";
+import "./draw-state-labels";
+import "./draw-added-labels";
 import "./fit-state-labels";
 import "./draw-emblems";
 import "./draw-features";

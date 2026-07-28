@@ -1,14 +1,12 @@
 import { curveNatural, line } from "d3";
-import type { CustomLabel, StateLabel } from "../generators/labels";
+import type { Label } from "../generators/labels";
 
-// any label of the PathLabel family; rendered into g#labels > g#{label.group}
-type RenderablePathLabel = StateLabel | CustomLabel;
-
-const SVG_NS = "http://www.w3.org/2000/svg";
+export type PathLabel = Label & { id: string; text: string; group: string; pathPoints: [number, number][] };
 const lineGen = line<[number, number]>().curve(curveNatural);
 
-export const getPathLabelElementId = (label: { i: number }): string => `pathLabel${label.i}`;
-const getPathId = (label: { i: number }): string => `textPath_${getPathLabelElementId(label)}`;
+export const getPathLabelElementId = (label: PathLabel): string => label.id;
+
+const getPathId = (label: PathLabel): string => `textPath_${getPathLabelElementId(label)}`;
 
 // get a label group container, creating it with the default label style if missing,
 // so labels render even when their group is not part of the loaded SVG
@@ -17,7 +15,7 @@ export function ensureLabelGroup(group: string): SVGGElement {
   const existing = labels.querySelector<SVGGElement>(`:scope > g#${group}`);
   if (existing) return existing;
 
-  const container = document.createElementNS(SVG_NS, "g");
+  const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
   container.id = group;
   container.setAttribute("fill", "#3e3e4b");
   container.setAttribute("opacity", "1");
@@ -32,32 +30,32 @@ export function ensureLabelGroup(group: string): SVGGElement {
 
 // build a detached defs path element the label text follows;
 // pathId overrides the default id so measurement copies don't collide with rendered elements
-function buildLabelPath(label: RenderablePathLabel, pathId?: string): SVGPathElement {
-  const pathElement = document.createElementNS(SVG_NS, "path");
+function buildLabelPath(label: PathLabel, pathId?: string): SVGPathElement {
+  const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
   pathElement.setAttribute("id", pathId ?? getPathId(label));
   pathElement.setAttribute("d", lineGen(label.pathPoints || []) || "");
   return pathElement;
 }
 
 // build a detached text element referencing the label's path
-function buildLabelText(label: RenderablePathLabel, pathId?: string): SVGTextElement {
-  const lines = label.text.split("|");
+function buildLabelText(label: PathLabel, pathId?: string): SVGTextElement {
+  const lines = (label.text || "").split("|");
   const tspans = lines.map((lineText, index) => {
-    const tspan = document.createElementNS(SVG_NS, "tspan");
+    const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
     tspan.setAttribute("x", "0");
     tspan.setAttribute("dy", index ? "1em" : `${(lines.length - 1) / -2}em`);
     tspan.textContent = lineText;
     return tspan;
   });
 
-  const textPath = document.createElementNS(SVG_NS, "textPath");
+  const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
   textPath.setAttribute("href", `#${pathId ?? getPathId(label)}`);
   textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
   textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
   if (label.letterSpacing) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
   textPath.append(...tspans);
 
-  const textElement = document.createElementNS(SVG_NS, "text");
+  const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
   textElement.setAttribute("text-rendering", "optimizeSpeed");
   textElement.setAttribute("id", pathId ? `${pathId}_text` : getPathLabelElementId(label));
   if (label.dx || label.dy) {
@@ -71,14 +69,14 @@ function buildLabelText(label: RenderablePathLabel, pathId?: string): SVGTextEle
 // build both detached elements for batched insertion by bulk renderers;
 // pass pathId to get a measurement copy whose ids don't collide with rendered elements
 export function buildPathLabelElements(
-  label: RenderablePathLabel,
+  label: PathLabel,
   pathId?: string
 ): { text: SVGTextElement; path: SVGPathElement } {
   return { text: buildLabelText(label, pathId), path: buildLabelPath(label, pathId) };
 }
 
 // create or update the defs path in the DOM; returns the attached path element
-export function upsertLabelPath(label: RenderablePathLabel): SVGPathElement {
+export function upsertLabelPath(label: PathLabel): SVGPathElement {
   const pathGroup = document.querySelector<SVGGElement>("defs > g#deftemp > g#textPaths")!;
   const pathElement = buildLabelPath(label);
 
@@ -90,7 +88,7 @@ export function upsertLabelPath(label: RenderablePathLabel): SVGPathElement {
 }
 
 // render a single path-following label from its data; replaces an existing element with the same id
-export function drawPathLabel(label: RenderablePathLabel): SVGTextElement {
+export function drawPathLabel(label: PathLabel): SVGTextElement {
   const container = ensureLabelGroup(label.group);
 
   upsertLabelPath(label);
@@ -106,8 +104,25 @@ export function drawPathLabel(label: RenderablePathLabel): SVGTextElement {
   return textElement;
 }
 
+export function drawPathLabels(labels: PathLabel[]): void {
+  const paths = document.querySelector<SVGGElement>("defs > g#deftemp > g#textPaths")!;
+  const texts = new Map<string, SVGTextElement[]>();
+
+  for (const label of labels) {
+    const { text, path } = buildPathLabelElements(label);
+    document.getElementById(label.id)?.remove();
+    document.getElementById(path.id)?.remove();
+    paths.appendChild(path);
+    const groupTexts = texts.get(label.group) || [];
+    groupTexts.push(text);
+    texts.set(label.group, groupTexts);
+  }
+
+  for (const [group, groupTexts] of texts) ensureLabelGroup(group).append(...groupTexts);
+}
+
 // remove a path label's text element and its defs path
-export function removePathLabel(label: { i: number }): void {
+export function removePathLabel(label: PathLabel): void {
   document.getElementById(getPathLabelElementId(label))?.remove();
   document.getElementById(getPathId(label))?.remove();
 }

@@ -6,13 +6,12 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Labels } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
-import { drawLabel, drawStateLabels, removeLabel } from "@/renderers/draw-labels";
+import { drawLabel } from "@/renderers/draw-labels";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -525,9 +524,9 @@ function editStateName(state: number): void {
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
-      const label = Labels.ensureStateLabel(s.i);
-      Labels.update(label, { text: s.name, pathPoints: undefined });
-      if (layerIsOn("toggleLabels")) drawStateLabels([s.i]);
+      if (!s.label) s.label = {};
+      Object.assign(s.label, { text: s.name, pathPoints: undefined });
+      if (layerIsOn("toggleLabels")) drawLabel("state", s.i);
     }
     refreshStatesEditor();
   }
@@ -679,10 +678,11 @@ function stateChangeCapitalName(state: number, line: HTMLElement, value: string)
   const capital = pack.states[state].capital;
   if (!capital) return;
   pack.burgs[capital].name = value;
-  const label = Labels.getBurgLabel(capital);
-  if (label) {
-    Labels.update(label, { text: value });
-    if (layerIsOn("toggleLabels")) drawLabel(label);
+  const burg = pack.burgs[capital];
+  if (burg) {
+    if (!burg.label) burg.label = {};
+    Object.assign(burg.label, { text: value });
+    if (layerIsOn("toggleLabels")) drawLabel("burg", burg.i);
   }
 }
 
@@ -879,11 +879,9 @@ function stateRemove(stateId: number): void {
   select("#statesBody").select(`#state${stateId}`).remove();
   select("#statesBody").select(`#state-gap${stateId}`).remove();
   select("#statesHalo").select(`#state-border${stateId}`).remove();
-  const label = Labels.getStateLabel(stateId);
-  if (label) {
-    Labels.remove(label);
-    removeLabel(label);
-  }
+  delete pack.states[stateId].label;
+  select("#labels").select(`#stateLabel${stateId}`).remove();
+  select("#deftemp").select(`#textPath_stateLabel${stateId}`).remove();
 
   unfog(`focusState${stateId}`);
 
@@ -1156,8 +1154,8 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
-    for (const label of Labels.getByType("state")) delete label.pathPoints;
-    if (layerIsOn("toggleLabels")) drawStateLabels();
+    for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
+    if (layerIsOn("toggleLabels")) drawLabel("state");
   }
   if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleEmblems")) {
@@ -1323,10 +1321,10 @@ function applyStatesManualAssignent(): void {
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
-        const label = Labels.getStateLabel(stateId);
-        if (label) delete label.pathPoints;
+        const label = pack.states[stateId]?.label;
+        if (label) label.pathPoints = undefined;
       }
-      drawStateLabels(statesToRefit);
+      for (const stateId of statesToRefit) drawLabel("state", stateId);
     }
     adjustProvinces([...new Set(affectedProvinces)]);
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
@@ -1636,8 +1634,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  Labels.ensureStateLabel(newState);
-  drawStateLabels([newState]);
+  drawLabel("state", newState);
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
   layerIsOn("toggleProvinces") && toggleProvinces();
@@ -1782,11 +1779,9 @@ function openStateMergeDialog(): void {
       select("#statesBody").select(`#state${stateId}`).remove();
       select("#statesBody").select(`#state-gap${stateId}`).remove();
       select("#statesHalo").select(`#state-border${stateId}`).remove();
-      const label = Labels.getStateLabel(stateId);
-      if (label) {
-        Labels.remove(label);
-        removeLabel(label);
-      }
+      delete pack.states[stateId].label;
+      select("#labels").select(`#stateLabel${stateId}`).remove();
+      select("#deftemp").select(`#textPath_stateLabel${stateId}`).remove();
 
       ensureEl(`stateCOA${stateId}`).remove();
       select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
@@ -1841,9 +1836,10 @@ function openStateMergeDialog(): void {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
-    const label = Labels.ensureStateLabel(rulingStateId);
-    delete label.pathPoints;
-    drawStateLabels([rulingStateId]);
+    if (!pack.states[rulingStateId].label) pack.states[rulingStateId].label = {};
+    const label = pack.states[rulingStateId].label;
+    label.pathPoints = undefined;
+    drawLabel("state", rulingStateId);
 
     refreshStatesEditor();
   }

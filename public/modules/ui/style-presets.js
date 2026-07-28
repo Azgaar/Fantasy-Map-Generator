@@ -78,6 +78,11 @@ function applyStyle(styleJSON) {
       style.burgLabels[group] = styleJSON[selector];
     }
 
+    if (selector.startsWith("#labels > #") && selector !== "#labels > #states") {
+      const group = selector.split("#").pop();
+      style.addedLabels[group] = styleJSON[selector];
+    }
+
     if (selector.startsWith("#burgIcons")) {
       const group = selector.split("#").pop();
       style.burgIcons[group] = styleJSON[selector];
@@ -142,10 +147,7 @@ async function changeStyle(desiredPreset) {
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) {
-    drawBurgLabels();
-    drawStateLabels();
-  }
+  if (layerIsOn("toggleLabels")) drawLabels();
 }
 
 function applyStyleWithUiRefresh(style) {
@@ -224,7 +226,16 @@ function addStylePreset() {
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#markets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "data-size", "font-size", "data-icon", "filter"],
+      "#markets": [
+        "opacity",
+        "stroke-width",
+        "fill-opacity",
+        "stroke-opacity",
+        "data-size",
+        "font-size",
+        "data-icon",
+        "filter"
+      ],
       "#goodsCells": ["opacity", "filter"],
       "#goodsIcons": ["opacity", "stroke-width", "data-circle", "data-size", "filter"],
       "#goodsBurgs": ["opacity", "stroke", "stroke-width", "data-size", "filter"],

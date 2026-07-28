@@ -5,7 +5,6 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
-import { Labels } from "../generators/labels";
 import {
   convertTemperature,
   destroyDialogIfExists,
@@ -338,8 +337,11 @@ function dragBurgLabel(this: SVGTextElement, event: any): void {
   event.on("drag", function (this: SVGTextElement, dragEvent: any) {
     const [effectiveDx, effectiveDy] = [dx + dragEvent.x, dy + dragEvent.y];
     this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
-    const label = Labels.getBurgLabel(+this.dataset.id!);
-    if (label) Labels.update(label, { dx: effectiveDx, dy: effectiveDy });
+    const burg = pack.burgs[+this.dataset.id!];
+    if (burg) {
+      if (!burg.label) burg.label = {};
+      Object.assign(burg.label, { dx: effectiveDx, dy: effectiveDy });
+    }
     tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warn");
   });
 }
@@ -350,8 +352,8 @@ function changeName(): void {
   pack.burgs[id].name = value;
   selected!.text(value);
 
-  const label = Labels.getBurgLabel(id);
-  if (label) Labels.update(label, { text: value });
+  if (!pack.burgs[id].label) pack.burgs[id].label = {};
+  Object.assign(pack.burgs[id].label, { text: value });
 }
 
 function generateNameRandom(): void {
@@ -631,9 +633,9 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
 
-  const label = Labels.getBurgLabel(id);
+  const label = pack.burgs[id].label;
   select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
-  if (label) select("#burgLabels").select(`#burgLabel${label.i}`).attr("transform", null).attr("x", x).attr("y", y);
+  if (label) select("#burgLabels").select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
 
   const anchor = select("#anchors").select(`use[data-id='${id}']`);
   if (anchor.size()) {
@@ -652,7 +654,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
 
-  if (label) Labels.update(label, { x, y, dx: 0, dy: 0 });
+  if (label) Object.assign(label, { dx: 0, dy: 0 });
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }

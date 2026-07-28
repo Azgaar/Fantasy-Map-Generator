@@ -1,5 +1,5 @@
 import { select } from "d3";
-import type { BurgLabel } from "../generators/labels";
+import type { Burg } from "../generators/burgs-generator";
 
 declare global {
   var drawBurgLabels: () => void;
@@ -10,10 +10,8 @@ const burgLabelsRenderer = (): void => {
   createLabelGroups();
 
   for (const { name } of options.burgs.groups) {
-    const labelsInGroup = pack.labels.filter(
-      (label): label is BurgLabel => label.type === "burg" && label.group === name
-    );
-    if (!labelsInGroup.length) continue;
+    const burgsInGroup = pack.burgs.filter(burg => !burg.removed && burg.group === name);
+    if (!burgsInGroup.length) continue;
 
     const labelGroup = select("#burgLabels").select<SVGGElement>(`#${name}`);
     if (labelGroup.empty()) continue;
@@ -23,24 +21,25 @@ const burgLabelsRenderer = (): void => {
 
     labelGroup
       .selectAll("text")
-      .data(labelsInGroup)
+      .data(burgsInGroup)
       .enter()
       .append("text")
       .attr("text-rendering", "optimizeSpeed")
-      .attr("id", d => `burgLabel${d.burgId}`)
-      .attr("data-id", d => d.burgId)
+      .attr("id", d => `burgLabel${d.i}`)
+      .attr("data-id", d => d.i!)
       .attr("x", d => d.x)
       .attr("y", d => d.y)
       .attr("dx", `${dx}em`)
       .attr("dy", `${dy}em`)
-      .text(d => d.text);
+      .attr("transform", d => (d.label?.dx || d.label?.dy ? `translate(${d.label.dx || 0}, ${d.label.dy || 0})` : null))
+      .text(d => d.label?.text ?? d.name!);
   }
 
   TIME && console.timeEnd("drawBurgLabels");
 };
 
-const drawBurgLabelRenderer = (label: BurgLabel): void => {
-  const labelGroup = select("#burgLabels").select<SVGGElement>(`#${label.group}`);
+const drawBurgLabelRenderer = (burg: Burg): void => {
+  const labelGroup = select("#burgLabels").select<SVGGElement>(`#${burg.group}`);
   if (labelGroup.empty()) {
     drawBurgLabels();
     return; // redraw all labels if group is missing
@@ -49,17 +48,21 @@ const drawBurgLabelRenderer = (label: BurgLabel): void => {
   const dx = labelGroup.attr("data-dx") || 0;
   const dy = labelGroup.attr("data-dy") || 0;
 
-  removeBurgLabelRenderer(label.burgId);
+  removeBurgLabelRenderer(burg.i!);
   labelGroup
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
-    .attr("id", `burgLabel${label.burgId}`)
-    .attr("data-id", label.burgId)
-    .attr("x", label.x)
-    .attr("y", label.y)
+    .attr("id", `burgLabel${burg.i}`)
+    .attr("data-id", burg.i!)
+    .attr("x", burg.x)
+    .attr("y", burg.y)
     .attr("dx", `${dx}em`)
     .attr("dy", `${dy}em`)
-    .text(label.text);
+    .attr(
+      "transform",
+      burg.label?.dx || burg.label?.dy ? `translate(${burg.label.dx || 0}, ${burg.label.dy || 0})` : null
+    )
+    .text(burg.label?.text ?? burg.name!);
 };
 
 const removeBurgLabelRenderer = (burgId: number): void => {

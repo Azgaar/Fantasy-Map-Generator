@@ -355,7 +355,7 @@ export const findPath = (
   return null;
 };
 
-// Helper: extract control points from an SVG path element
+// extract control points from an SVG path element
 export const extractPathPoints = (pathElement: SVGPathElement) => {
   if (!pathElement) return [];
   const l = pathElement.getTotalLength();

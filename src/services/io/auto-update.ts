@@ -1,6 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
+import type { AddedLabel, Label } from "@/generators/labels";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -16,6 +17,7 @@ import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
+import { extractPathPoints } from "@/utils/pathUtils";
 
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
@@ -1287,6 +1289,69 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("curve", null)
         .attr("mask", null);
       if (layerIsOn("toggleHeight")) drawHeightmap();
+    }
+  }
+
+  if (isOlderThan("1.140.0")) migrateLabelsFromSvg();
+}
+
+function migrateLabelsFromSvg(): void {
+  const getLabelData = (text: SVGTextElement, path?: SVGPathElement): Label => {
+    const textPath = text.querySelector("textPath");
+    const [dx, dy] = parseTransform(text.getAttribute("transform") || "");
+    const data: Label = {
+      text:
+        Array.from(text.querySelectorAll("tspan"))
+          .map(tspan => tspan.textContent || "")
+          .join("|") ||
+        text.textContent ||
+        "",
+      ...(dx && { dx: +dx }),
+      ...(dy && { dy: +dy })
+    };
+
+    if (path) data.pathPoints = extractPathPoints(path);
+    if (!textPath) return data;
+
+    const startOffset = Number.parseFloat(textPath.getAttribute("startOffset") || "");
+    const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
+    const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
+    if (Number.isFinite(startOffset)) data.startOffset = startOffset;
+    if (Number.isFinite(fontSize)) data.fontSize = fontSize;
+    if (Number.isFinite(letterSpacing)) data.letterSpacing = letterSpacing;
+    return data;
+  };
+
+  for (const text of document.querySelectorAll<SVGTextElement>("#labels #states > text[id^='stateLabel']")) {
+    const stateId = +text.id.slice(10);
+    const state = pack.states[stateId];
+    const path = document.getElementById(`textPath_${text.id}`) as SVGPathElement | null;
+    if (state && path) state.label = getLabelData(text, path);
+  }
+
+  for (const text of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
+    const burgId = +text.id.slice(9);
+    const burg = pack.burgs[burgId];
+    if (!burg) continue;
+    const label = getLabelData(text);
+    if (label.text !== burg.name || label.dx || label.dy) burg.label = label;
+  }
+
+  let id = 0;
+  const groups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
+  for (const group of groups) {
+    for (const text of group.querySelectorAll<SVGTextElement>(":scope > text")) {
+      const path = document.getElementById(`textPath_${text.id}`) as SVGPathElement | null;
+      if (!path) continue;
+      const data = getLabelData(text, path);
+      if (!data.text || !data.pathPoints?.length) continue;
+
+      const label: AddedLabel = { i: id++, group: group.id, ...data, text: data.text, pathPoints: data.pathPoints };
+      pack.labels.push(label);
+
+      text.id = `addedLabel${label.i}`;
+      path.id = `textPath_${text.id}`;
+      text.querySelector("textPath")?.setAttribute("href", `#${path.id}`);
     }
   }
 }

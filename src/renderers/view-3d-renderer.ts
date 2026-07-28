@@ -1,6 +1,5 @@
 import { select } from "d3";
 import type * as THREE from "three";
-import { Labels } from "@/generators/labels";
 import { Services } from "@/services";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
@@ -557,7 +556,7 @@ async function createLabels() {
       if (state.removed) continue;
 
       const [x, y, z] = get3dCoords(state.pole![0], state.pole![1]);
-      const text = Labels.getStateLabel(state.i)?.text.replace(/\|/g, " ") || state.name;
+      const text = state.label?.text?.replace(/\|/g, " ") || state.name;
       const stateSprite = await createTextLabel({ text, ...stateOptions });
 
       stateSprite.position.set(x, y + stateOptions.elevation, z);

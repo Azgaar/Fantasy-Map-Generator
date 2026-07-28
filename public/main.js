@@ -175,7 +175,7 @@ let options = {
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = { burgLabels: {}, burgIcons: {}, anchors: {} };
+let style = { burgLabels: {}, addedLabels: {}, burgIcons: {}, anchors: {} };
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
@@ -712,8 +712,6 @@ async function generate(options) {
     Provinces.generate();
     Provinces.getPoles();
 
-    Labels.generate();
-
     Rivers.specify();
     Lakes.defineNames();
 
@@ -724,6 +722,8 @@ async function generate(options) {
     Military.generate();
     Markers.generate();
     Zones.generate();
+
+    AddedLabels.initiate();
 
     drawScaleBar(scaleBar, scale);
     Names.getMapName();
