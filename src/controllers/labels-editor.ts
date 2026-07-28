@@ -3,14 +3,23 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { type CustomLabel, isPathLabel, Labels, type StateLabel } from "@/generators/labels";
+import { removeLabel as removeLabelElements } from "@/renderers/draw-labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
+import { extractPathPoints } from "../utils/pathUtils";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 
 // group selected in the editor most recently; used as the default group for newly added labels
 let lastSelectedGroup = "";
 let selectedLabel: Selection<SVGElement, unknown, HTMLElement, unknown>;
+
+function getLabelData(): StateLabel | CustomLabel | undefined {
+  const match = (selectedLabel.attr("id") || "").match(/^pathLabel(\d+)$/);
+  const label = match ? Labels.get(+match[1]) : undefined;
+  return label && isPathLabel(label) ? label : undefined;
+}
 
 function open(tspan: SVGTSpanElement): void {
   if (customization) return;
@@ -276,6 +285,8 @@ function redrawLabelPath(): void {
   const d = round(lineGen(points) || "");
   path.setAttribute("d", d);
   select("#debug").select("#controlPoints > path").attr("d", d);
+  const label = getLabelData();
+  if (label) Labels.update(label, { pathPoints: extractPathPoints(path) });
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -327,6 +338,8 @@ function dragLabel(event: any): void {
     const transform = `translate(${dx + dragEvent.x},${dy + dragEvent.y})`;
     selectedLabel.attr("transform", transform);
     select("#debug").select("#controlPoints").attr("transform", transform);
+    const label = getLabelData();
+    if (label) Labels.update(label, { dx: dx + dragEvent.x, dy: dy + dragEvent.y });
   });
 }
 
@@ -346,6 +359,8 @@ function hideGroupSection(): void {
 function changeGroup(this: HTMLSelectElement): void {
   lastSelectedGroup = this.value;
   ensureEl(this.value).appendChild(selectedLabel.node()!);
+  const label = getLabelData();
+  if (label) Labels.update(label, { group: this.value });
 }
 
 function toggleNewGroupInput(): void {
@@ -399,6 +414,8 @@ function createNewGroup(this: HTMLInputElement): void {
   newGroup.id = group;
   ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
   ensureEl(group).appendChild(selectedLabel.node()!);
+  const label = getLabelData();
+  if (label) Labels.update(label, { group });
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("labelGroupInput").value = "";
@@ -428,6 +445,7 @@ function removeLabelsGroup(): void {
             this.remove();
           });
         if (!basic) select<SVGGElement, unknown>("#labels").select(`#${group}`).remove();
+        Labels.removeByGroup(group);
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -456,15 +474,17 @@ function changeText(): void {
     el.innerHTML = lines.map((line, index) => `<tspan x="0" dy="${index ? 1 : top}em">${line}</tspan>`).join("");
   } else el.innerHTML = `<tspan x="0">${lines}</tspan>`;
 
-  if (selectedLabel.attr("id").slice(0, 10) === "stateLabel")
-    tip("Use States Editor to change an actual state name, not just a label", false, "warn");
+  const label = getLabelData();
+  if (label) Labels.update(label, { text: input });
+
+  if (label?.type === "state") tip("Use States Editor to change an actual state name, not just a label", false, "warn");
 }
 
 function generateRandomName(): void {
   let name = "";
-  if (selectedLabel.attr("id").slice(0, 10) === "stateLabel") {
-    const id = +selectedLabel.attr("id").slice(10);
-    const culture = pack.states[id].culture;
+  const label = getLabelData();
+  if (label?.type === "state") {
+    const culture = pack.states[label.stateId].culture;
     name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
   } else {
     const box = (selectedLabel.node() as SVGGraphicsElement).getBBox();
@@ -515,6 +535,8 @@ function changeStartOffset(this: HTMLInputElement): void {
   const value = this.value;
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
   selectedLabel.select("textPath").attr("startOffset", `${value}%`);
+  const label = getLabelData();
+  if (label) Labels.update(label, { startOffset: +value });
   tip(`Label offset: ${value}%`);
 }
 
@@ -523,17 +545,23 @@ function changeStartOffsetFromValue(this: HTMLInputElement): void {
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
   this.value = String(value);
   selectedLabel.select("textPath").attr("startOffset", `${value}%`);
+  const label = getLabelData();
+  if (label) Labels.update(label, { startOffset: value });
   tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
   selectedLabel.select("textPath").attr("font-size", `${this.value}%`);
+  const label = getLabelData();
+  if (label) Labels.update(label, { fontSize: +this.value });
   tip(`Label relative size: ${this.value}%`);
   changeText();
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
   selectedLabel.select("textPath").attr("letter-spacing", `${this.value}px`);
+  const label = getLabelData();
+  if (label) Labels.update(label, { letterSpacing: +this.value });
   tip(`Label letter-spacing size: ${this.value}px`);
   changeText();
 }
@@ -543,6 +571,8 @@ function editLabelAlign(): void {
   const c = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
   const path = select<SVGElement, unknown>("#deftemp").select(`#textPath_${selectedLabel.attr("id")}`);
   path.attr("d", `M${c[0] - bbox.width},${c[1]}h${bbox.width * 2}`);
+  const label = getLabelData();
+  if (label) Labels.update(label, { pathPoints: extractPathPoints(path.node() as SVGPathElement) });
   drawControlPointsAndLine();
 }
 
@@ -560,10 +590,16 @@ function removeLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        select<SVGElement, unknown>("#deftemp")
-          .select(`#textPath_${selectedLabel.attr("id")}`)
-          .remove();
-        selectedLabel.remove();
+        const label = getLabelData();
+        if (label) {
+          Labels.remove(label);
+          removeLabelElements(label);
+        } else {
+          select<SVGElement, unknown>("#deftemp")
+            .select(`#textPath_${selectedLabel.attr("id")}`)
+            .remove();
+          selectedLabel.remove();
+        }
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {

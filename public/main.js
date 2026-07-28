@@ -712,6 +712,8 @@ async function generate(options) {
     Provinces.generate();
     Provinces.getPoles();
 
+    Labels.generate();
+
     Rivers.specify();
     Lakes.defineNames();
 

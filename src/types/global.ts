@@ -249,7 +249,12 @@ declare global {
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;
+  var Labels: typeof import("@/generators/labels").Labels;
   var drawStateLabels: (ids?: number[]) => void;
+  var fitStateLabels: (ids?: number[]) => void;
+  var drawCustomLabels: () => void;
+  var drawCustomLabel: (label: import("@/generators/labels").CustomLabel) => void;
+  var ensureLabelGroup: (group: string) => SVGGElement;
   var drawPopulation: () => void;
 
   var toggleCultures: () => void;

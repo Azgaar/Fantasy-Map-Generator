@@ -4,6 +4,7 @@ import type { Culture } from "@/generators/cultures-generator";
 import type { Feature } from "@/generators/features";
 import type { Good } from "@/generators/goods-generator";
 import type { Ice } from "@/generators/ice-generator";
+import type { LabelData } from "@/generators/labels";
 import type { Marker } from "@/generators/markers-generator";
 import type { Deal, Market } from "@/generators/markets-generator";
 import type { Measurer } from "@/generators/measurers-generator";
@@ -69,4 +70,5 @@ export interface PackedGraph {
   markets: Market[];
   deals: Deal[];
   measurers: Measurer[];
+  labels: LabelData[];
 }

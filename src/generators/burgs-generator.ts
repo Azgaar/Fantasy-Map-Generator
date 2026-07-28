@@ -3,6 +3,7 @@ import { quadtree } from "d3-quadtree";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import { Labels } from "./labels";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
@@ -744,7 +745,8 @@ class BurgModule {
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     window.drawBurgIcon(burg);
-    window.drawBurgLabel(burg);
+    const label = Labels.addBurgLabel({ burgId, group: burg.group!, text: burg.name!, x, y });
+    if (layerIsOn("toggleLabels")) window.drawBurgLabel(label);
 
     return burgId;
   }
@@ -855,6 +857,7 @@ class BurgModule {
       });
 
     this.specify();
+    Labels.generateBurgLabels();
     Routes.regenerate();
   }
 
@@ -867,9 +870,11 @@ class BurgModule {
       this.defineGroup(burg, populations);
     }
 
+    const label = Labels.getBurgLabel(burg.i!);
+    if (label) Labels.update(label, { group: burg.group, text: burg.name, x: burg.x, y: burg.y });
     if (render) {
       window.drawBurgIcon(burg);
-      window.drawBurgLabel(burg);
+      if (label && layerIsOn("toggleLabels")) window.drawBurgLabel(label);
     }
   }
 
@@ -890,6 +895,8 @@ class BurgModule {
     }
 
     window.removeBurgIcon(burg.i!);
+    const label = Labels.getBurgLabel(burgId);
+    if (label) Labels.remove(label);
     window.removeBurgLabel(burg.i!);
   }
 }
