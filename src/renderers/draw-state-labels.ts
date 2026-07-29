@@ -80,7 +80,7 @@ function clearStateLabels(): void {
   });
 }
 
-// hidden group at the svg root carrying the label group's computed font context, so
+// hidden group in the map viewbox carrying the label group's computed text context, so
 // measurements match the real render even while the labels layer itself is display:none
 function createMeasurementSandbox(group: string): SVGGElement {
   const sandbox = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -91,8 +91,10 @@ function createMeasurementSandbox(group: string): SVGGElement {
   sandbox.setAttribute("font-family", groupStyle.fontFamily);
   sandbox.setAttribute("font-size", groupStyle.fontSize);
   sandbox.setAttribute("letter-spacing", groupStyle.letterSpacing);
+  sandbox.setAttribute("text-anchor", groupStyle.textAnchor);
+  sandbox.setAttribute("dominant-baseline", groupStyle.dominantBaseline);
 
-  document.getElementById("map")!.appendChild(sandbox);
+  document.getElementById("viewbox")!.appendChild(sandbox);
   return sandbox;
 }
 
@@ -140,13 +142,14 @@ function fitLabel(state: State, sandbox: SVGGElement, mode: string, letterLength
   if (hasCustomText || mode === "full" || lines.length === 1) return result;
 
   // check if label fits state boundaries. If no, replace it with short name
-  const textElement = measureLabelText(fittedLabel, sandbox);
-  const { width, height } = textElement.getBBox();
+  const { text: measurementText, textPath } = measureLabelText(fittedLabel, sandbox);
+  const { width, height } = textPath.getBBox();
+  textPath.setAttribute("href", `#${MEASURE_PATH_ID}`);
   const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
   const angleRad = Math.atan2(y2 - y1, x2 - x1);
 
-  const isInsideState = checkIfInsideState(textElement, angleRad, width / 2, height / 2, state.i);
-  textElement.remove();
+  const isInsideState = checkIfInsideState(textPath, angleRad, width / 2, height / 2, state.i);
+  measurementText.remove();
   if (isInsideState) return result;
 
   // replace name to one-liner
@@ -168,11 +171,13 @@ function measureLabelPath(label: Label, sandbox: SVGGElement): SVGPathElement {
 }
 
 // attach a measurement copy of the label's text to the sandbox; caller removes it after measuring
-function measureLabelText(label: Label & { text: string }, sandbox: SVGGElement): SVGTextElement {
+function measureLabelText(
+  label: Label & { text: string },
+  sandbox: SVGGElement
+): { text: SVGTextElement; textPath: SVGTextPathElement } {
   const lines = label.text.split("|");
   const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
-  textPath.setAttribute("href", `#${MEASURE_PATH_ID}`);
   textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
   textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
   if (label.letterSpacing) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
@@ -187,7 +192,7 @@ function measureLabelText(label: Label & { text: string }, sandbox: SVGGElement)
   );
   text.appendChild(textPath);
   sandbox.appendChild(text);
-  return text;
+  return { text, textPath };
 }
 
 function getOffsetWidth(cellsNumber: number): number {
