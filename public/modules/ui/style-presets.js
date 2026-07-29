@@ -33,7 +33,7 @@ async function applyStyleOnLoad() {
   const styleData = await getStylePreset(desiredPreset);
   const [appliedPreset, style] = styleData;
 
-  applyStyle(style);
+  applyStylePreset(style);
   updateMapFilter();
   stylePreset.value = stylePreset.dataset.old = appliedPreset;
   setPresetRemoveButtonVisibiliy();
@@ -71,29 +71,29 @@ async function fetchSystemPreset(preset) {
   }
 }
 
-function applyStyle(styleJSON) {
-  for (const selector in styleJSON) {
+function applyStylePreset(presetJson) {
+  for (const selector in presetJson) {
     if (selector.startsWith("#labels > #")) {
       const group = selector.split("#").pop();
-      style.labels.groups[group] = getStyleAttributes(styleJSON[selector]);
+      style.labels.groups[group] = getStyleAttributes(presetJson[selector]);
     }
 
     if (selector.startsWith("#burgIcons")) {
       const group = selector.split("#").pop();
-      style.burgIcons[group] = styleJSON[selector];
+      style.burgIcons[group] = presetJson[selector];
     }
 
     if (selector.startsWith("#anchors")) {
       const group = selector.split("#").pop();
-      style.anchors[group] = styleJSON[selector];
+      style.anchors[group] = presetJson[selector];
     }
 
     const el = document.querySelector(selector);
     if (!el) continue;
 
-    for (const attribute in styleJSON[selector]) {
+    for (const attribute in presetJson[selector]) {
       if (attribute === "id") continue;
-      const value = styleJSON[selector][attribute];
+      const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {
         el.removeAttribute(attribute);
@@ -157,7 +157,7 @@ async function changeStyle(desiredPreset) {
 }
 
 function applyStyleWithUiRefresh(style) {
-  applyStyle(style);
+  applyStylePreset(style);
   updateElements();
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();

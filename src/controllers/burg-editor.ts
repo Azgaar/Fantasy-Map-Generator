@@ -214,10 +214,10 @@ function renderDialog(): void {
             class="icon-anchor"
           ></button>
         </div>
+        <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
         <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
         <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
-        <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
         <button
           id="burgProductionOverview"
           data-tip="Show production overview for this burg"

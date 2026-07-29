@@ -12,12 +12,14 @@ export function drawLabels(): void {
     return;
   }
 
+  TIME && console.time("drawLabels");
   removeLabels();
   renderLabelGroups();
   drawStateLabels();
   drawBurgLabels();
   drawAddedLabels();
   invokeActiveZooming();
+  TIME && console.timeEnd("drawLabels");
 }
 
 export function drawLabel(type: LabelType, id?: number): void {
