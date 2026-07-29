@@ -51,12 +51,12 @@ function renderDialog(): void {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("measurersBody").on("click", onListClick);
-  ensureEl("addLinearRuler").on("click", addRuler);
-  ensureEl("addOpisometer").on("click", toggleOpisometerMode);
-  ensureEl("addRouteOpisometer").on("click", toggleRouteOpisometerMode);
-  ensureEl("addPlanimeter").on("click", togglePlanimeterMode);
-  ensureEl("removeMeasurers").on("click", removeAllMeasurers);
+  ensureEl("measurersBody").addEventListener("click", onListClick);
+  ensureEl("addLinearRuler").addEventListener("click", addRuler);
+  ensureEl("addOpisometer").addEventListener("click", toggleOpisometerMode);
+  ensureEl("addRouteOpisometer").addEventListener("click", toggleRouteOpisometerMode);
+  ensureEl("addPlanimeter").addEventListener("click", togglePlanimeterMode);
+  ensureEl("removeMeasurers").addEventListener("click", removeAllMeasurers);
 }
 
 function onClose(): void {

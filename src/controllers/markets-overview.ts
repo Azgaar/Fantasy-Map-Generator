@@ -87,24 +87,24 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("marketsOverviewHeader");
 
-  ensureEl("marketsOverviewRefresh").on("click", marketsOverviewAddLines);
-  ensureEl("marketsOverviewExport").on("click", downloadMarketsCsv);
-  ensureEl("marketsOverviewCompare").on("click", () => Controllers.ComparePrices.open());
-  ensureEl("marketsOverviewPercentage").on("click", togglePercentageMode);
-  ensureEl("marketsManually").on("click", () => {
+  ensureEl("marketsOverviewRefresh").addEventListener("click", marketsOverviewAddLines);
+  ensureEl("marketsOverviewExport").addEventListener("click", downloadMarketsCsv);
+  ensureEl("marketsOverviewCompare").addEventListener("click", () => Controllers.ComparePrices.open());
+  ensureEl("marketsOverviewPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("marketsManually").addEventListener("click", () => {
     if (customization === 15) exitMarketsManualAssignment(false);
     else enterMarketsManualAssignment();
   });
-  ensureEl("marketsManuallyUndo").on("click", undoMarketsManualStep);
-  ensureEl("marketsManuallyApply").on("click", () => exitMarketsManualAssignment(true));
-  ensureEl("marketsManuallyCancel").on("click", () => exitMarketsManualAssignment(false));
-  ensureEl("marketsAdd").on("click", () => {
+  ensureEl("marketsManuallyUndo").addEventListener("click", undoMarketsManualStep);
+  ensureEl("marketsManuallyApply").addEventListener("click", () => exitMarketsManualAssignment(true));
+  ensureEl("marketsManuallyCancel").addEventListener("click", () => exitMarketsManualAssignment(false));
+  ensureEl("marketsAdd").addEventListener("click", () => {
     if (customization === 16) exitAddMarketMode();
     else enterAddMarketMode();
   });
-  ensureEl("marketsRegenerate").on("click", regenerateMarkets);
-  ensureEl("marketsRegenerateProduction").on("click", regenerateProduction);
-  ensureEl("marketsOverviewBody").on("click", (ev: Event) => {
+  ensureEl("marketsRegenerate").addEventListener("click", regenerateMarkets);
+  ensureEl("marketsRegenerateProduction").addEventListener("click", regenerateProduction);
+  ensureEl("marketsOverviewBody").addEventListener("click", (ev: Event) => {
     const target = ev.target as HTMLElement;
 
     const fillBox = target.closest<FillBoxElement>("fill-box");
@@ -194,8 +194,8 @@ function marketsOverviewAddLines(): void {
   body.querySelectorAll<HTMLElement>(".states.market").forEach(row => {
     const marketId = row.dataset.id!;
     if (marketId === "0") return; // "No market" row: not a real market, no hover highlight
-    row.on("mouseenter", () => highlightMarketOn(marketId));
-    row.on("mouseleave", () => highlightMarketOff(marketId));
+    row.addEventListener("mouseenter", () => highlightMarketOn(marketId));
+    row.addEventListener("mouseleave", () => highlightMarketOff(marketId));
   });
 
   const count = markets.length;

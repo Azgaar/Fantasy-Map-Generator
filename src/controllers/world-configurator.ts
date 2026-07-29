@@ -31,7 +31,7 @@ function open(): void {
       pane?.insertAdjacentHTML("afterbegin", checkbox);
 
       const button = this.parentElement?.querySelector(".ui-dialog-buttonset > button");
-      button?.on("mousemove", () => tip("Apply current settings to the map"));
+      button?.addEventListener("mousemove", () => tip("Apply current settings to the map"));
     },
     close: () => destroyDialogIfExists("worldConfigurator")
   });
@@ -205,26 +205,26 @@ function addListeners(): void {
     .select("#globeGraticule")
     .attr("d", round(path(geoGraticule()()) ?? "")); // globe graticule
 
-  ensureEl("temperatureEquatorInput").on("input", changeTemperatureEquator);
-  ensureEl("temperatureEquatorOutput").on("input", changeTemperatureEquator);
-  ensureEl("temperatureNorthPoleInput").on("input", changeTemperatureNorthPole);
-  ensureEl("temperatureNorthPoleOutput").on("input", changeTemperatureNorthPole);
-  ensureEl("temperatureSouthPoleInput").on("input", changeTemperatureSouthPole);
-  ensureEl("temperatureSouthPoleOutput").on("input", changeTemperatureSouthPole);
-  ensureEl("mapSizeInput").on("input", changeMapSize);
-  ensureEl("mapSizeOutput").on("input", changeMapSize);
-  ensureEl("latitudeInput").on("input", changeLatitude);
-  ensureEl("latitudeOutput").on("input", changeLatitude);
-  ensureEl("longitudeInput").on("input", changeLongitude);
-  ensureEl("longitudeOutput").on("input", changeLongitude);
-  ensureEl("precInput").on("input", changePrecipitation);
-  ensureEl("precOutput").on("input", changePrecipitation);
+  ensureEl("temperatureEquatorInput").addEventListener("input", changeTemperatureEquator);
+  ensureEl("temperatureEquatorOutput").addEventListener("input", changeTemperatureEquator);
+  ensureEl("temperatureNorthPoleInput").addEventListener("input", changeTemperatureNorthPole);
+  ensureEl("temperatureNorthPoleOutput").addEventListener("input", changeTemperatureNorthPole);
+  ensureEl("temperatureSouthPoleInput").addEventListener("input", changeTemperatureSouthPole);
+  ensureEl("temperatureSouthPoleOutput").addEventListener("input", changeTemperatureSouthPole);
+  ensureEl("mapSizeInput").addEventListener("input", changeMapSize);
+  ensureEl("mapSizeOutput").addEventListener("input", changeMapSize);
+  ensureEl("latitudeInput").addEventListener("input", changeLatitude);
+  ensureEl("latitudeOutput").addEventListener("input", changeLatitude);
+  ensureEl("longitudeInput").addEventListener("input", changeLongitude);
+  ensureEl("longitudeOutput").addEventListener("input", changeLongitude);
+  ensureEl("precInput").addEventListener("input", changePrecipitation);
+  ensureEl("precOutput").addEventListener("input", changePrecipitation);
 
-  ensureEl("restoreWinds").on("click", restoreDefaultWinds);
-  ensureEl("wcWholeWorld").on("click", () => applyWorldPreset(100, 50));
-  ensureEl("wcNorthern").on("click", () => applyWorldPreset(33, 25));
-  ensureEl("wcTropical").on("click", () => applyWorldPreset(33, 50));
-  ensureEl("wcSouthern").on("click", () => applyWorldPreset(33, 75));
+  ensureEl("restoreWinds").addEventListener("click", restoreDefaultWinds);
+  ensureEl("wcWholeWorld").addEventListener("click", () => applyWorldPreset(100, 50));
+  ensureEl("wcNorthern").addEventListener("click", () => applyWorldPreset(33, 25));
+  ensureEl("wcTropical").addEventListener("click", () => applyWorldPreset(33, 50));
+  ensureEl("wcSouthern").addEventListener("click", () => applyWorldPreset(33, 75));
 
   // lock icons: sync state from storage and toggle on click (stored == locked)
   ensureEl("worldConfigurator")
@@ -233,13 +233,13 @@ function addListeners(): void {
       const id = el.id.slice(5) as WorldOption; // drop "lock_" prefix
       setLockIcon(el, stored(id) !== null);
 
-      el.on("mouseover", (event: Event) => {
+      el.addEventListener("mouseover", (event: Event) => {
         event.stopPropagation();
         if (el.className === "icon-lock")
           tip("Click to unlock the option and allow it to be randomized on new map generation");
         else tip("Click to lock the option and always use the current value on new map generation");
       });
-      el.on("click", () => {
+      el.addEventListener("click", () => {
         if (el.className === "icon-lock") unlockOption(id);
         else lockOption(id);
       });

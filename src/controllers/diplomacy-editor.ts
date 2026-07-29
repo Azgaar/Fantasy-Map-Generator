@@ -127,13 +127,13 @@ function renderDialog(): void {
   applySortingByHeader("diplomacyHeader");
   applyLineHighlighting("diplomacyEditor", ({ cellId }) => pack.cells.state[cellId]);
 
-  ensureEl("diplomacyEditorRefresh").on("click", refreshDiplomacyEditor);
-  ensureEl("diplomacyEditStyle").on("click", () => editStyle("regions"));
-  ensureEl("diplomacyRegenerate").on("click", regenerateRelations);
-  ensureEl("diplomacyReset").on("click", resetRelations);
-  ensureEl("diplomacyShowMatrix").on("click", showRelationsMatrix);
-  ensureEl("diplomacyHistory").on("click", showRelationsHistory);
-  ensureEl("diplomacyExport").on("click", downloadDiplomacyData);
+  ensureEl("diplomacyEditorRefresh").addEventListener("click", refreshDiplomacyEditor);
+  ensureEl("diplomacyEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("diplomacyRegenerate").addEventListener("click", regenerateRelations);
+  ensureEl("diplomacyReset").addEventListener("click", resetRelations);
+  ensureEl("diplomacyShowMatrix").addEventListener("click", showRelationsMatrix);
+  ensureEl("diplomacyHistory").addEventListener("click", showRelationsHistory);
+  ensureEl("diplomacyExport").addEventListener("click", downloadDiplomacyData);
 
   ensureEl("diplomacyBodySection").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;

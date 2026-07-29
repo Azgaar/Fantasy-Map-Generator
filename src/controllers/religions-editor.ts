@@ -114,18 +114,18 @@ function renderDialog(): void {
   applySortingByHeader("religionsHeader");
   applyLineHighlighting("religionsEditor", ({ cellId }) => pack.cells.religion[cellId]);
 
-  ensureEl("religionsEditorRefresh").on("click", refreshReligionsEditor);
-  ensureEl("religionsEditStyle").on("click", () => editStyle("relig"));
-  ensureEl("religionsLegend").on("click", toggleLegend);
-  ensureEl("religionsPercentage").on("click", togglePercentageMode);
-  ensureEl("religionsHeirarchy").on("click", showHierarchy);
-  ensureEl("religionsExtinct").on("click", toggleExtinct);
-  ensureEl("religionsManually").on("click", enterReligionsManualAssignent);
-  ensureEl("religionsManuallyApply").on("click", applyReligionsManualAssignent);
-  ensureEl("religionsManuallyCancel").on("click", () => exitReligionsManualAssignment());
-  ensureEl("religionsAdd").on("click", enterAddReligionMode);
-  ensureEl("religionsExport").on("click", downloadReligionsCsv);
-  ensureEl("religionsRecalculate").on("click", () => recalculateReligions(true));
+  ensureEl("religionsEditorRefresh").addEventListener("click", refreshReligionsEditor);
+  ensureEl("religionsEditStyle").addEventListener("click", () => editStyle("relig"));
+  ensureEl("religionsLegend").addEventListener("click", toggleLegend);
+  ensureEl("religionsPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("religionsHeirarchy").addEventListener("click", showHierarchy);
+  ensureEl("religionsExtinct").addEventListener("click", toggleExtinct);
+  ensureEl("religionsManually").addEventListener("click", enterReligionsManualAssignent);
+  ensureEl("religionsManuallyApply").addEventListener("click", applyReligionsManualAssignent);
+  ensureEl("religionsManuallyCancel").addEventListener("click", () => exitReligionsManualAssignment());
+  ensureEl("religionsAdd").addEventListener("click", enterAddReligionMode);
+  ensureEl("religionsExport").addEventListener("click", downloadReligionsCsv);
+  ensureEl("religionsRecalculate").addEventListener("click", () => recalculateReligions(true));
 }
 
 function refreshReligionsEditor(): void {
@@ -258,49 +258,49 @@ function religionsEditorAddLines(): void {
   ensureEl("religionsBody")
     .querySelectorAll(":scope > div")
     .forEach($line => {
-      $line.on("mouseenter", religionHighlightOn);
-      $line.on("mouseleave", religionHighlightOff);
-      $line.on("click", selectReligionOnLineClick);
+      $line.addEventListener("mouseenter", religionHighlightOn);
+      $line.addEventListener("mouseleave", religionHighlightOff);
+      $line.addEventListener("click", selectReligionOnLineClick);
     });
   ensureEl("religionsBody")
     .querySelectorAll("fill-box")
-    .forEach(el => void el.on("click", religionChangeColor));
+    .forEach(el => void el.addEventListener("click", religionChangeColor));
   ensureEl("religionsBody")
     .querySelectorAll("div > input.religionName")
-    .forEach(el => void el.on("input", religionChangeName));
+    .forEach(el => void el.addEventListener("input", religionChangeName));
   ensureEl("religionsBody")
     .querySelectorAll("div > select.religionType")
-    .forEach(el => void el.on("change", religionChangeType));
+    .forEach(el => void el.addEventListener("change", religionChangeType));
   ensureEl("religionsBody")
     .querySelectorAll("div > input.religionForm")
-    .forEach(el => void el.on("input", religionChangeForm));
+    .forEach(el => void el.addEventListener("input", religionChangeForm));
   ensureEl("religionsBody")
     .querySelectorAll("div > input.religionDeity")
-    .forEach(el => void el.on("input", religionChangeDeity));
+    .forEach(el => void el.addEventListener("input", religionChangeDeity));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-arrows-cw")
-    .forEach(el => void el.on("click", regenerateDeity));
+    .forEach(el => void el.addEventListener("click", regenerateDeity));
   ensureEl("religionsBody")
     .querySelectorAll("div > div.religionPopulation")
-    .forEach(el => void el.on("click", changePopulation));
+    .forEach(el => void el.addEventListener("click", changePopulation));
   ensureEl("religionsBody")
     .querySelectorAll("div > select.religionExtent")
-    .forEach(el => void el.on("change", religionChangeExtent));
+    .forEach(el => void el.addEventListener("change", religionChangeExtent));
   ensureEl("religionsBody")
     .querySelectorAll("div > input.religionExpantion")
-    .forEach(el => void el.on("change", religionChangeExpansionism));
+    .forEach(el => void el.addEventListener("change", religionChangeExpansionism));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-trash-empty")
-    .forEach(el => void el.on("click", religionRemovePrompt));
+    .forEach(el => void el.addEventListener("click", religionRemovePrompt));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-target")
-    .forEach($el => void $el.on("click", highlightReligion));
+    .forEach($el => void $el.addEventListener("click", highlightReligion));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-lock")
-    .forEach($el => void $el.on("click", updateLockStatus));
+    .forEach($el => void $el.addEventListener("click", updateLockStatus));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-lock-open")
-    .forEach($el => void $el.on("click", updateLockStatus));
+    .forEach($el => void $el.addEventListener("click", updateLockStatus));
 
   if (ensureEl("religionsBody").dataset.type === "percentage") {
     ensureEl("religionsBody").dataset.type = "absolute";

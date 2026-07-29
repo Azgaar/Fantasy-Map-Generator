@@ -240,37 +240,37 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl("burgName").on("input", changeName);
-  ensureEl("burgNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
-  ensureEl("burgNameReRandom").on("click", generateNameRandom);
-  ensureEl("burgGroup").on("change", changeGroup);
-  ensureEl("burgGroupConfigure").on("click", editBurgGroups);
-  ensureEl("burgType").on("change", changeType);
-  ensureEl("burgCulture").on("change", changeCulture);
-  ensureEl("burgNameReCulture").on("click", generateNameCulture);
-  ensureEl("burgPopulation").on("change", changePopulation);
+  ensureEl("burgName").addEventListener("input", changeName);
+  ensureEl("burgNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
+  ensureEl("burgNameReRandom").addEventListener("click", generateNameRandom);
+  ensureEl("burgGroup").addEventListener("change", changeGroup);
+  ensureEl("burgGroupConfigure").addEventListener("click", editBurgGroups);
+  ensureEl("burgType").addEventListener("change", changeType);
+  ensureEl("burgCulture").addEventListener("change", changeCulture);
+  ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
+  ensureEl("burgPopulation").addEventListener("change", changePopulation);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
-    .forEach(el => void el.on("click", toggleFeature));
-  ensureEl("burgLinkOpen").on("click", openBurgLink);
+    .forEach(el => void el.addEventListener("click", toggleFeature));
+  ensureEl("burgLinkOpen").addEventListener("click", openBurgLink);
 
-  ensureEl("burgStyleShow").on("click", showStyleSection);
-  ensureEl("burgStyleHide").on("click", hideStyleSection);
-  ensureEl("burgEditLabelStyle").on("click", editGroupLabelStyle);
-  ensureEl("burgEditIconStyle").on("click", editGroupIconStyle);
-  ensureEl("burgEditAnchorStyle").on("click", editGroupAnchorStyle);
+  ensureEl("burgStyleShow").addEventListener("click", showStyleSection);
+  ensureEl("burgStyleHide").addEventListener("click", hideStyleSection);
+  ensureEl("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
+  ensureEl("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
+  ensureEl("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
-  ensureEl("burgEmblem").on("click", openEmblemEdit);
-  ensureEl("burgSetPreviewLink").on("click", setCustomPreview);
-  ensureEl("burgEditEmblem").on("click", openEmblemEdit);
-  ensureEl("burgLocate").on("click", zoomIntoBurg);
-  ensureEl("burgEditLabel").on("click", editBurgLabel);
-  ensureEl("burgRelocate").on("click", toggleRelocateBurg);
-  ensureEl("burglLegend").on("click", editBurgLegend);
-  ensureEl("burgLock").on("click", toggleBurgLockButton);
-  ensureEl("burgRemove").on("click", removeSelectedBurg);
-  ensureEl("burgTemperatureGraph").on("click", showTemperatureGraph);
-  ensureEl("burgProductionOverview").on("click", showProductionOverview);
+  ensureEl("burgEmblem").addEventListener("click", openEmblemEdit);
+  ensureEl("burgSetPreviewLink").addEventListener("click", setCustomPreview);
+  ensureEl("burgEditEmblem").addEventListener("click", openEmblemEdit);
+  ensureEl("burgLocate").addEventListener("click", zoomIntoBurg);
+  ensureEl("burgEditLabel").addEventListener("click", editBurgLabel);
+  ensureEl("burgRelocate").addEventListener("click", toggleRelocateBurg);
+  ensureEl("burglLegend").addEventListener("click", editBurgLegend);
+  ensureEl("burgLock").addEventListener("click", toggleBurgLockButton);
+  ensureEl("burgRemove").addEventListener("click", removeSelectedBurg);
+  ensureEl("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
+  ensureEl("burgProductionOverview").addEventListener("click", showProductionOverview);
 }
 
 function getSelectedId(): number {

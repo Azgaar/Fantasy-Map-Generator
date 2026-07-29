@@ -99,16 +99,16 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("lakeName").on("input", changeName);
-  ensureEl("lakeNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
-  ensureEl("lakeNameCulture").on("click", generateNameCulture);
-  ensureEl("lakeNameRandom").on("click", generateNameRandom);
-  ensureEl("lakeGroup").on("change", changeLakeGroup);
-  ensureEl("lakeGroupAdd").on("click", toggleNewGroupInput);
-  ensureEl("lakeGroupName").on("change", createNewGroup);
-  ensureEl("lakeGroupRemove").on("click", removeLakeGroup);
-  ensureEl("lakeEditStyle").on("click", editGroupStyle);
-  ensureEl("lakeLegend").on("click", editLakeLegend);
+  ensureEl("lakeName").addEventListener("input", changeName);
+  ensureEl("lakeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
+  ensureEl("lakeNameCulture").addEventListener("click", generateNameCulture);
+  ensureEl("lakeNameRandom").addEventListener("click", generateNameRandom);
+  ensureEl("lakeGroup").addEventListener("change", changeLakeGroup);
+  ensureEl("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
+  ensureEl("lakeGroupName").addEventListener("change", createNewGroup);
+  ensureEl("lakeGroupRemove").addEventListener("click", removeLakeGroup);
+  ensureEl("lakeEditStyle").addEventListener("click", editGroupStyle);
+  ensureEl("lakeLegend").addEventListener("click", editLakeLegend);
 }
 
 function getLake(): Feature {

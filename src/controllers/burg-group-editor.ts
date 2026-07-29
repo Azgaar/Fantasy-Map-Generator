@@ -65,10 +65,10 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("burgGroupsForm")
-    .on("change", validateForm)
-    .on("submit", submitForm as EventListener);
-  ensureEl("burgGroupsBody").on("click", (ev: Event) => {
+  const form = ensureEl("burgGroupsForm");
+  form.addEventListener("change", validateForm);
+  form.addEventListener("submit", submitForm as EventListener);
+  ensureEl("burgGroupsBody").addEventListener("click", (ev: Event) => {
     const el = ev.target as HTMLElement;
     const line = el.closest("tr");
     if (!line) return;

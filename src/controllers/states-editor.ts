@@ -134,25 +134,25 @@ function renderDialog(): void {
     pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]
   );
 
-  ensureEl("statesEditorRefresh").on("click", refreshStatesEditor);
-  ensureEl("statesEditStyle").on("click", () => editStyle("regions"));
-  ensureEl("statesLegend").on("click", toggleLegend);
-  ensureEl("statesPercentage").on("click", togglePercentageMode);
-  ensureEl("statesChart").on("click", showStatesChart);
-  ensureEl("statesRegenerate").on("click", openRegenerationMenu);
-  ensureEl("statesRegenerateBack").on("click", exitRegenerationMenu);
-  ensureEl("statesRecalculate").on("click", () => recalculateStates(true));
-  ensureEl("statesRandomize").on("click", randomizeStatesExpansion);
-  ensureEl("statesGrowthRate").on("input", () => recalculateStates(false));
-  ensureEl("statesManually").on("click", enterStatesManualAssignent);
-  ensureEl("statesManuallyUndo").on("click", undoStatesManualAssignment);
-  ensureEl("statesManuallyApply").on("click", applyStatesManualAssignent);
-  ensureEl("statesManuallyCancel").on("click", () => exitStatesManualAssignment(false));
-  ensureEl("statesAdd").on("click", enterAddStateMode);
-  ensureEl("statesMerge").on("click", openStateMergeDialog);
-  ensureEl("statesExport").on("click", downloadStatesCsv);
+  ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
+  ensureEl("statesEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("statesLegend").addEventListener("click", toggleLegend);
+  ensureEl("statesPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("statesChart").addEventListener("click", showStatesChart);
+  ensureEl("statesRegenerate").addEventListener("click", openRegenerationMenu);
+  ensureEl("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
+  ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
+  ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
+  ensureEl("statesGrowthRate").addEventListener("input", () => recalculateStates(false));
+  ensureEl("statesManually").addEventListener("click", enterStatesManualAssignent);
+  ensureEl("statesManuallyUndo").addEventListener("click", undoStatesManualAssignment);
+  ensureEl("statesManuallyApply").addEventListener("click", applyStatesManualAssignent);
+  ensureEl("statesManuallyCancel").addEventListener("click", () => exitStatesManualAssignment(false));
+  ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
+  ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
+  ensureEl("statesExport").addEventListener("click", downloadStatesCsv);
 
-  ensureEl("statesBodySection").on("click", event => {
+  ensureEl("statesBodySection").addEventListener("click", event => {
     const $element = (event as MouseEvent).target as HTMLElement;
     const classList = $element.classList;
     const stateId = Number(($element.parentNode as HTMLElement)?.dataset?.id);
@@ -172,7 +172,7 @@ function renderDialog(): void {
       updateLockStatus(stateId, classList);
   });
 
-  ensureEl("statesBodySection").on("input", ev => {
+  ensureEl("statesBodySection").addEventListener("input", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
     const line = $element.parentNode as HTMLElement;
@@ -180,7 +180,7 @@ function renderDialog(): void {
     if (classList.contains("stateCapital")) stateChangeCapitalName(state, line, $element.value);
   });
 
-  ensureEl("statesBodySection").on("change", ev => {
+  ensureEl("statesBodySection").addEventListener("change", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
     const line = $element.parentNode as HTMLElement;
@@ -339,9 +339,9 @@ function statesEditorAddLines(): void {
   ensureEl("statesBodySection")
     .querySelectorAll(":scope > div")
     .forEach($line => {
-      $line.on("mouseenter", stateHighlightOn);
-      $line.on("mouseleave", stateHighlightOff);
-      $line.on("click", selectStateOnLineClick);
+      $line.addEventListener("mouseenter", stateHighlightOn);
+      $line.addEventListener("mouseleave", stateHighlightOff);
+      $line.addEventListener("click", selectStateOnLineClick);
     });
 
   if (ensureEl("statesBodySection").dataset.type === "percentage") {
@@ -455,15 +455,15 @@ function editStateName(state: number): void {
     close: closeStateNameEditor
   });
 
-  ensureEl("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
-  ensureEl("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
-  ensureEl("stateNameEditorShortSpeak").on("click", () =>
+  ensureEl("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
+  ensureEl("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+  ensureEl("stateNameEditorShortSpeak").addEventListener("click", () =>
     speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value)
   );
-  ensureEl("stateNameEditorAddForm").on("click", addCustomForm);
-  ensureEl("stateNameEditorCustomForm").on("change", addCustomForm);
-  ensureEl("stateNameEditorFullRegenerate").on("click", regenerateFullName);
-  ensureEl("stateNameEditorFullSpeak").on("click", () =>
+  ensureEl("stateNameEditorAddForm").addEventListener("click", addCustomForm);
+  ensureEl("stateNameEditorCustomForm").addEventListener("change", addCustomForm);
+  ensureEl("stateNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
+  ensureEl("stateNameEditorFullSpeak").addEventListener("click", () =>
     speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value)
   );
 
@@ -1017,7 +1017,7 @@ function showStatesChart(): void {
     .attr("text-anchor", "middle")
     .attr("dominant-baseline", "central");
   const graph = svg.append("g").attr("transform", `translate(-50, 0)`);
-  ensureEl("statesTreeType").on("change", updateChart);
+  ensureEl("statesTreeType").addEventListener("change", updateChart);
 
   treeLayout(root);
 

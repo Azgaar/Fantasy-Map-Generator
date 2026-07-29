@@ -54,7 +54,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("tradeDetailsHeader");
 
-  ensureEl("tradeDetailsSummary").on("click", event => {
+  ensureEl("tradeDetailsSummary").addEventListener("click", event => {
     const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");
     if (!activeBatch || !zoomEl) return;
     const burgId = activeBatch[zoomEl.dataset.zoom === "start" ? "startBurgId" : "endBurgId"];

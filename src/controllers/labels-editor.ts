@@ -184,37 +184,37 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl("labelGroupShow").on("click", showGroupSection);
-  ensureEl("labelGroupHide").on("click", hideGroupSection);
-  ensureEl("labelGroupSelect").on("change", changeGroup);
-  ensureEl("labelGroupInput").on("change", createNewGroup);
-  ensureEl("labelGroupNew").on("click", toggleNewGroupInput);
-  ensureEl("labelGroupRemove").on("click", removeLabelsGroup);
+  ensureEl("labelGroupShow").addEventListener("click", showGroupSection);
+  ensureEl("labelGroupHide").addEventListener("click", hideGroupSection);
+  ensureEl("labelGroupSelect").addEventListener("change", changeGroup);
+  ensureEl("labelGroupInput").addEventListener("change", createNewGroup);
+  ensureEl("labelGroupNew").addEventListener("click", toggleNewGroupInput);
+  ensureEl("labelGroupRemove").addEventListener("click", removeLabelsGroup);
 
-  ensureEl("labelTextShow").on("click", showTextSection);
-  ensureEl("labelTextHide").on("click", hideTextSection);
-  ensureEl("labelText").on("input", changeText);
-  ensureEl("labelTextSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("labelText").value));
-  ensureEl("labelTextRandom").on("click", generateRandomName);
+  ensureEl("labelTextShow").addEventListener("click", showTextSection);
+  ensureEl("labelTextHide").addEventListener("click", hideTextSection);
+  ensureEl("labelText").addEventListener("input", changeText);
+  ensureEl("labelTextSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("labelText").value));
+  ensureEl("labelTextRandom").addEventListener("click", generateRandomName);
 
-  ensureEl("labelEditStyle").on("click", editGroupStyle);
+  ensureEl("labelEditStyle").addEventListener("click", editGroupStyle);
 
-  ensureEl("labelSizeShow").on("click", showSizeSection);
-  ensureEl("labelSizeHide").on("click", hideSizeSection);
-  ensureEl("labelOffsetShow").on("click", showOffsetSection);
-  ensureEl("labelOffsetHide").on("click", hideOffsetSection);
-  ensureEl("labelStartOffset").on("input", changeStartOffset);
-  ensureEl("labelStartOffsetValue").on("input", changeStartOffsetFromValue);
-  ensureEl("labelRelativeSize").on("input", changeRelativeSize);
+  ensureEl("labelSizeShow").addEventListener("click", showSizeSection);
+  ensureEl("labelSizeHide").addEventListener("click", hideSizeSection);
+  ensureEl("labelOffsetShow").addEventListener("click", showOffsetSection);
+  ensureEl("labelOffsetHide").addEventListener("click", hideOffsetSection);
+  ensureEl("labelStartOffset").addEventListener("input", changeStartOffset);
+  ensureEl("labelStartOffsetValue").addEventListener("input", changeStartOffsetFromValue);
+  ensureEl("labelRelativeSize").addEventListener("input", changeRelativeSize);
 
-  ensureEl("labelLetterSpacingShow").on("click", showLetterSpacingSection);
-  ensureEl("labelLetterSpacingHide").on("click", hideLetterSpacingSection);
-  ensureEl("labelLetterSpacingSize").on("input", changeLetterSpacingSize);
+  ensureEl("labelLetterSpacingShow").addEventListener("click", showLetterSpacingSection);
+  ensureEl("labelLetterSpacingHide").addEventListener("click", hideLetterSpacingSection);
+  ensureEl("labelLetterSpacingSize").addEventListener("input", changeLetterSpacingSize);
 
-  ensureEl("labelAlign").on("click", editLabelAlign);
-  ensureEl("labelLegend").on("click", editLabelLegend);
-  ensureEl("labelReset").on("click", resetSelectedLabel);
-  ensureEl("labelRemoveSingle").on("click", removeSelectedLabel);
+  ensureEl("labelAlign").addEventListener("click", editLabelAlign);
+  ensureEl("labelLegend").addEventListener("click", editLabelLegend);
+  ensureEl("labelReset").addEventListener("click", resetSelectedLabel);
+  ensureEl("labelRemoveSingle").addEventListener("click", removeSelectedLabel);
 }
 
 function getSelectedGroup() {

@@ -79,19 +79,19 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routeCreateSelectingCells").on("click", showCreationDialog);
-  ensureEl("routeSplit").on("click", togglePressed);
-  ensureEl("routeJoin").on("click", openJoinRoutesDialog);
-  ensureEl("routeElevationProfile").on("click", showRouteElevationProfile);
-  ensureEl("routeLegend").on("click", editRouteLegend);
-  ensureEl("routeLock").on("click", toggleLockButton);
-  ensureEl("routeRemove").on("click", removeRoute);
-  ensureEl("routeName").on("input", changeName);
-  ensureEl("routeNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("routeName").value));
-  ensureEl("routeGroup").on("input", changeGroup);
-  ensureEl("routeGroupEdit").on("click", openRouteGroupsEditor);
-  ensureEl("routeEditStyle").on("click", editRouteGroupStyle);
-  ensureEl("routeGenerateName").on("click", generateName);
+  ensureEl("routeCreateSelectingCells").addEventListener("click", showCreationDialog);
+  ensureEl("routeSplit").addEventListener("click", togglePressed);
+  ensureEl("routeJoin").addEventListener("click", openJoinRoutesDialog);
+  ensureEl("routeElevationProfile").addEventListener("click", showRouteElevationProfile);
+  ensureEl("routeLegend").addEventListener("click", editRouteLegend);
+  ensureEl("routeLock").addEventListener("click", toggleLockButton);
+  ensureEl("routeRemove").addEventListener("click", removeRoute);
+  ensureEl("routeName").addEventListener("input", changeName);
+  ensureEl("routeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("routeName").value));
+  ensureEl("routeGroup").addEventListener("input", changeGroup);
+  ensureEl("routeGroupEdit").addEventListener("click", openRouteGroupsEditor);
+  ensureEl("routeEditStyle").addEventListener("click", editRouteGroupStyle);
+  ensureEl("routeGenerateName").addEventListener("click", generateName);
 }
 
 function openRouteGroupsEditor(): void {

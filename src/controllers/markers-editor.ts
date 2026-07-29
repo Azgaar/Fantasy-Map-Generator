@@ -96,19 +96,19 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("markerType").on("change", changeMarkerType);
-  ensureEl("markerIconSelect").on("click", changeMarkerIcon);
-  ensureEl("markerIconSize").on("input", changeIconSize);
-  ensureEl("markerIconShiftX").on("input", changeIconShiftX);
-  ensureEl("markerIconShiftY").on("input", changeIconShiftY);
-  ensureEl("markerSize").on("input", changeMarkerSize);
-  ensureEl("markerPin").on("change", changeMarkerPin);
-  ensureEl("markerFill").on("input", changePinFill);
-  ensureEl("markerStroke").on("input", changePinStroke);
-  ensureEl("markerNotes").on("click", editMarkerLegend);
-  ensureEl("markerLock").on("click", toggleMarkerLock);
-  ensureEl("markerAdd").on("click", toggleAddMarker);
-  ensureEl("markerRemove").on("click", confirmMarkerDeletion);
+  ensureEl("markerType").addEventListener("change", changeMarkerType);
+  ensureEl("markerIconSelect").addEventListener("click", changeMarkerIcon);
+  ensureEl("markerIconSize").addEventListener("input", changeIconSize);
+  ensureEl("markerIconShiftX").addEventListener("input", changeIconShiftX);
+  ensureEl("markerIconShiftY").addEventListener("input", changeIconShiftY);
+  ensureEl("markerSize").addEventListener("input", changeMarkerSize);
+  ensureEl("markerPin").addEventListener("change", changeMarkerPin);
+  ensureEl("markerFill").addEventListener("input", changePinFill);
+  ensureEl("markerStroke").addEventListener("input", changePinStroke);
+  ensureEl("markerNotes").addEventListener("click", editMarkerLegend);
+  ensureEl("markerLock").addEventListener("click", toggleMarkerLock);
+  ensureEl("markerAdd").addEventListener("click", toggleAddMarker);
+  ensureEl("markerRemove").addEventListener("click", confirmMarkerDeletion);
 }
 
 function getElement(markerI?: number, target?: Element): [SVGSVGElement, Marker] | null {

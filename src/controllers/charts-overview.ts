@@ -459,9 +459,9 @@ function renderDialog() {
   ensureEl<HTMLSelectElement>("chartsOverview__plotBySelect").value = "total_population";
   ensureEl<HTMLSelectElement>("chartsOverview__groupBySelect").value = "cultures";
 
-  ensureEl("chartsOverview__form").on("submit", addChart as EventListener);
-  ensureEl("chartsOverview__viewColumns").on("change", changeViewColumns);
-  ensureEl("chartsOverview__plotBySelect").on("change", updateMetricInfo);
+  ensureEl("chartsOverview__form").addEventListener("submit", addChart as EventListener);
+  ensureEl("chartsOverview__viewColumns").addEventListener("change", changeViewColumns);
+  ensureEl("chartsOverview__plotBySelect").addEventListener("change", updateMetricInfo);
 
   document.getElementById("chartsOverviewStyle")?.remove();
   const style = document.createElement("style");
@@ -882,10 +882,10 @@ function insertChart(id: number, sortedData: ChartDatum[], $chart: SVGSVGElement
     updateDialogPosition();
   };
 
-  $figure.querySelector("button.icon-download")?.on("click", downloadChartData);
-  $figure.querySelector("button.icon-export")?.on("click", downloadChartPng);
-  $figure.querySelector("button.icon-chart-bar")?.on("click", downloadChartSvg);
-  $figure.querySelector("button.icon-trash")?.on("click", removeChart);
+  $figure.querySelector("button.icon-download")?.addEventListener("click", downloadChartData);
+  $figure.querySelector("button.icon-export")?.addEventListener("click", downloadChartPng);
+  $figure.querySelector("button.icon-chart-bar")?.addEventListener("click", downloadChartSvg);
+  $figure.querySelector("button.icon-trash")?.addEventListener("click", removeChart);
 }
 
 function changeViewColumns() {

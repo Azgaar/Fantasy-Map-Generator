@@ -171,7 +171,7 @@ function renderDialog(): void {
 
     const defaultVal = defaultCoastSettings[key] as number;
 
-    slider.on("input", e => {
+    slider.addEventListener("input", e => {
       // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
       if (e.target !== e.currentTarget) return;
       defaultCoastSettings[key] = slider.valueAsNumber;
@@ -179,7 +179,7 @@ function renderDialog(): void {
       drawFeatures();
     });
 
-    resetBtn.on("click", () => {
+    resetBtn.addEventListener("click", () => {
       (defaultCoastSettings[key] as number) = defaultVal;
       slider.value = String(defaultVal);
       updatePreviews();
@@ -205,7 +205,7 @@ function renderDialog(): void {
   };
 
   syncToggle();
-  enabledCb.on("change", () => {
+  enabledCb.addEventListener("change", () => {
     defaultCoastSettings.enabled = enabledCb.checked;
     syncToggle();
     updatePreviews();
@@ -215,7 +215,7 @@ function renderDialog(): void {
   // Preset buttons
   for (const name of Object.keys(COAST_PRESETS)) {
     const btn = ensureEl<HTMLButtonElement>(`coastPreset_${name}`);
-    btn.on("click", () => {
+    btn.addEventListener("click", () => {
       const preset = COAST_PRESETS[name];
       for (const { id, key } of SLIDER_DEFS) {
         if (!(key in preset)) continue;
