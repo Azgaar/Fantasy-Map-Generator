@@ -31,11 +31,17 @@ function storeLabelGroupStyle() {
   const attributes = Object.fromEntries(
     Array.from(group.attributes)
       .filter(attribute => attribute.name !== "id")
-      .map(attribute => [attribute.name, attribute.value])
+      .map(attribute => {
+        if (attribute.name !== "style") return [attribute.name, attribute.value];
+        const value = Array.from(group.style)
+          .filter(property => property !== "transform")
+          .map(property => `${property}: ${group.style.getPropertyValue(property)}`)
+          .join("; ");
+        return [attribute.name, value];
+      })
+      .filter(([, value]) => value !== "")
   );
-  if (group.id === "states") style.stateLabels = attributes;
-  else if (group.parentNode?.id === "burgLabels") style.burgLabels[group.id] = attributes;
-  else if (group.id !== "burgLabels") style.addedLabels[group.id] = attributes;
+  style.labels.groups[group.id] = attributes;
 }
 
 // select element to be edited
@@ -294,11 +300,9 @@ function selectStyleElement() {
     styleSelectFont.value = el.attr("font-family");
     styleFontSize.value = el.attr("data-size");
 
-    if (el.node().parentNode.id === "burgLabels") {
-      styleFontShift.style.display = "block";
-      styleFontShiftX.value = el.attr("data-dx") || 0;
-      styleFontShiftY.value = el.attr("data-dy") || 0;
-    }
+    styleFontShift.style.display = "block";
+    styleFontShiftX.value = el.attr("data-dx") || 0;
+    styleFontShiftY.value = el.attr("data-dy") || 0;
   }
 
   if (styleElement === "burgIcons") {
@@ -431,7 +435,6 @@ function selectStyleElement() {
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const groups = ensureEl(styleElement).querySelectorAll("g");
     groups.forEach(el => {
-      if (el.id === "burgLabels") return; // skip the container; its subgroups (capital, town, ...) are listed individually
       const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
       styleGroupSelect.options.add(option);
     });
@@ -966,17 +969,17 @@ function changeFontSize(el, size) {
 }
 
 styleFontShiftX.on("input", e => {
-  getEl()
-    .attr("data-dx", e.target.value)
-    .selectAll("text")
-    .attr("dx", e.target.value + "em");
+  const group = getEl().attr("data-dx", e.target.value);
+  const dx = e.target.value || 0;
+  const dy = group.attr("data-dy") || 0;
+  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
 });
 
 styleFontShiftY.on("input", e => {
-  getEl()
-    .attr("data-dy", e.target.value)
-    .selectAll("text")
-    .attr("dy", e.target.value + "em");
+  const group = getEl().attr("data-dy", e.target.value);
+  const dx = group.attr("data-dx") || 0;
+  const dy = e.target.value || 0;
+  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
 });
 
 styleStatesBodyOpacity.on("input", e => {

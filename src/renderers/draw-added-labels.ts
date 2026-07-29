@@ -1,4 +1,6 @@
-import { ensureLabelGroup, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
+import { DEFAULT_ADDED_LABEL_GROUP } from "@/generators/labels";
+import { getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
+import { getLabelGroup } from "./label-groups";
 
 export function drawAddedLabels(): void {
   clearAddedLabels();
@@ -8,12 +10,13 @@ export function drawAddedLabels(): void {
   for (const addedLabel of pack.labels) {
     const label = { ...addedLabel, id: `addedLabel${addedLabel.i}` };
     paths += getLabelPathMarkup(label);
-    texts.set(label.group, (texts.get(label.group) || "") + getLabelTextMarkup(label));
+    const group = label.group || DEFAULT_ADDED_LABEL_GROUP;
+    texts.set(group, (texts.get(group) || "") + getLabelTextMarkup(label));
   }
 
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
   for (const [group, markup] of texts) {
-    ensureLabelGroup(group, "added").insertAdjacentHTML("beforeend", markup);
+    getLabelGroup(group, "added").insertAdjacentHTML("beforeend", markup);
   }
 }
 
@@ -24,7 +27,7 @@ export function drawAddedLabel(labelId: number): void {
   const label = { ...addedLabel, id: `addedLabel${addedLabel.i}` };
   removeAddedLabel(labelId);
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", getLabelPathMarkup(label));
-  ensureLabelGroup(label.group, "added").insertAdjacentHTML("beforeend", getLabelTextMarkup(label));
+  getLabelGroup(label.group, "added").insertAdjacentHTML("beforeend", getLabelTextMarkup(label));
 }
 
 export function removeAddedLabel(labelId: number): void {
@@ -33,10 +36,8 @@ export function removeAddedLabel(labelId: number): void {
 }
 
 function clearAddedLabels(): void {
-  const groups = new Set(pack.labels.map(label => label.group));
-  document.querySelectorAll<SVGGElement>("g#labels > g:not(#states):not(#burgLabels)").forEach(group => {
-    if (group.id === "addedLabels" || groups.has(group.id)) group.replaceChildren();
-    else group.remove();
+  document.querySelectorAll("#labels > g > [data-label-type='added']").forEach(label => {
+    label.remove();
   });
   document.querySelectorAll("#textPaths > path[id^='textPath_addedLabel']").forEach(path => {
     path.remove();

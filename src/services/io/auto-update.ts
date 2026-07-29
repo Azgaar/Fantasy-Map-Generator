@@ -9,11 +9,11 @@ import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
-import { drawLabel } from "@/renderers/draw-labels";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { readLabelGroupStyle } from "@/renderers/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
@@ -1118,8 +1118,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     });
 
     layerIsOn("toggleBurgIcons") && drawBurgIcons();
-    layerIsOn("toggleLabels") && drawLabel("burg");
-
     const opts = options as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
@@ -1293,7 +1291,35 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
   }
 
   if (isOlderThan("1.140.0")) {
-    // v1.140.0 migrated labels data to pack
+    // v1.140.0 migrated label data and styles to the unified flat Label Group model
+    style = readStyleFromSvg();
+
+    function readStyleFromSvg(): typeof style {
+      const readGroups = (parent: Element | null) =>
+        Object.fromEntries(
+          Array.from(parent?.children || []).map(group => [
+            group.id,
+            Object.fromEntries(
+              Array.from(group.attributes)
+                .filter(attribute => attribute.name !== "id")
+                .map(attribute => [attribute.name, attribute.value])
+            )
+          ])
+        );
+
+      const groups = Object.fromEntries(
+        Array.from(labels.node()!.children)
+          .filter(group => group.tagName === "g" && group.id)
+          .map(group => [group.id, readLabelGroupStyle(group)])
+      );
+
+      return {
+        labels: { groups },
+        burgIcons: readGroups(burgIcons.node()),
+        anchors: readGroups(anchors.node())
+      };
+    }
+
     const getMultilineText = (textEl: SVGTextElement) => {
       return (
         Array.from(textEl.querySelectorAll("tspan"))
@@ -1323,9 +1349,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const pathPoints = pathEl ? parsePathPoints(pathEl.getAttribute("d") || "") : null;
       if (pathPoints?.length) label.pathPoints = pathPoints;
       const startOffset = textPath && Number.parseFloat(textPath.getAttribute("startOffset") || "");
-      if (startOffset !== null && startOffset !== 50) label.startOffset = startOffset;
+      if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset as number;
       const fontSize = textPath && Number.parseFloat(textPath.getAttribute("font-size") || "");
-      if (fontSize !== null && fontSize !== 100) label.fontSize = fontSize;
+      if (Number.isFinite(fontSize) && fontSize !== 100) label.fontSize = fontSize as number;
       const letterSpacing = textPath && Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
       if (letterSpacing) label.letterSpacing = letterSpacing;
 
@@ -1366,6 +1392,36 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     }
 
+    const burgStyles = Object.fromEntries(
+      Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g")).map(group => [
+        group.id,
+        readLabelGroupStyle(group)
+      ])
+    );
+    const addedStyles = Object.fromEntries(
+      Array.from(document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)")).map(group => [
+        group.id,
+        readLabelGroupStyle(group)
+      ])
+    );
+    const stateGroup = document.querySelector("#labels > #states");
+    const labelGroups: Record<string, Record<string, string | number | null>> = {
+      states: stateGroup ? readLabelGroupStyle(stateGroup) : {},
+      ...burgStyles
+    };
+    for (const [group, groupStyle] of Object.entries(addedStyles)) {
+      let migratedGroup = group;
+      while (labelGroups[migratedGroup]) migratedGroup += "_labels";
+      if (migratedGroup !== group) {
+        pack.labels
+          .filter(label => label.group === group)
+          .forEach(label => {
+            label.group = migratedGroup;
+          });
+      }
+      labelGroups[migratedGroup] = groupStyle;
+    }
+    style.labels = { groups: labelGroups };
     drawLabels(); // rerender all labels
   }
 }

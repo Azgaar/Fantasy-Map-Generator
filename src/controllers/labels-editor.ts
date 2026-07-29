@@ -3,48 +3,67 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { AddedLabel, Label } from "@/generators/labels";
+import {
+  type AddedLabel,
+  DEFAULT_ADDED_LABEL_GROUP,
+  type Label,
+  type LabelType,
+  resolveLabelGroup
+} from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
-import { getLabelGroupAttributes, getLabelPath } from "@/renderers/draw-label-utils";
-import { drawLabel, removeLabel } from "@/renderers/draw-labels";
+import { getLabelPath } from "@/renderers/draw-label-utils";
+import { drawLabel, drawLabels, removeLabel } from "@/renderers/draw-labels";
 import { parseStateLabelData } from "@/renderers/draw-state-labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, round } from "../utils";
 
 type StateLabel = { type: "state"; stateId: number; elId: string; label: Label };
+type BurgLabel = { type: "burg"; burgId: number; elId: string; label: Label };
 type CustomLabel = { type: "added"; labelId: number; elId: string; label: AddedLabel };
-let selectedLabel: StateLabel | CustomLabel;
+type LabelRef = { type: LabelType; id: number };
+let selectedLabel: StateLabel | BurgLabel | CustomLabel;
 
 let lastSelectedGroup = ""; // the default group for newly added labels
 
-function open(tspan: SVGTSpanElement): void {
+function open(target: SVGElement | LabelRef): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const textPath = tspan.parentElement;
-  const textEl = textPath?.parentElement as SVGTextElement | null;
+  const textEl =
+    target instanceof SVGElement
+      ? (target.closest("text[data-label-type]") as SVGTextElement | null)
+      : document.querySelector<SVGTextElement>(
+          `#labels text[data-label-type='${target.type}'][data-id='${target.id}']`
+        );
   if (!textEl) return;
 
-  const stateId = textEl.id.match(/^stateLabel(\d+)$/)?.[1];
-  const addedId = textEl.id.match(/^addedLabel(\d+)$/)?.[1];
+  const type = textEl.dataset.labelType as LabelType | undefined;
+  const id = Number(textEl.dataset.id);
+  if (!type || !Number.isFinite(id)) return;
 
-  if (stateId) {
-    const state = pack.states[+stateId];
+  if (type === "state") {
+    const state = pack.states[id];
     if (!state) return;
     selectedLabel = {
       type: "state",
-      stateId: +stateId,
-      elId: `stateLabel${stateId}`,
-      label: parseStateLabelData(textEl)
+      stateId: id,
+      elId: `stateLabel${id}`,
+      label: { ...parseStateLabelData(textEl), group: state.label?.group }
     };
-  } else if (addedId) {
-    const label = AddedLabels.get(+addedId);
-    if (!label) return;
-    selectedLabel = { type: "added", labelId: +addedId, elId: `addedLabel${addedId}`, label: { ...label } };
+  } else if (type === "burg") {
+    const burg = pack.burgs[id];
+    if (!burg || burg.removed) return;
+    selectedLabel = {
+      type: "burg",
+      burgId: id,
+      elId: `burgLabel${id}`,
+      label: { ...burg.label, text: burg.label?.text ?? burg.name }
+    };
   } else {
-    tip("Label data is incorrect", false, "error", 8000);
-    return;
+    const label = AddedLabels.get(id);
+    if (!label) return;
+    selectedLabel = { type: "added", labelId: id, elId: `addedLabel${id}`, label: { ...label } };
   }
 
   select<SVGElement, unknown>(`#${textEl.id}`)
@@ -65,6 +84,7 @@ function open(tspan: SVGTSpanElement): void {
   drawControlPointsAndLine();
   selectLabelGroup(getSelectedGroup());
   updateValues();
+  updateControls();
 }
 
 function renderDialog(): void {
@@ -154,6 +174,7 @@ function renderDialog(): void {
       </div>
       <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
+      <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
         id="labelRemoveSingle"
         data-tip="Remove the label"
@@ -192,29 +213,39 @@ function renderDialog(): void {
 
   ensureEl("labelAlign").on("click", editLabelAlign);
   ensureEl("labelLegend").on("click", editLabelLegend);
+  ensureEl("labelReset").on("click", resetSelectedLabel);
   ensureEl("labelRemoveSingle").on("click", removeSelectedLabel);
 }
 
 function getSelectedGroup() {
-  if (selectedLabel.type === "state") return "states";
-  return selectedLabel.label.group || "addedLabels";
+  if (selectedLabel.type === "state") return resolveLabelGroup("state", selectedLabel.label.group);
+  if (selectedLabel.type === "burg") {
+    const burg = pack.burgs[selectedLabel.burgId];
+    return resolveLabelGroup("burg", selectedLabel.label.group || burg.group);
+  }
+  return resolveLabelGroup("added", selectedLabel.label.group);
 }
 
 function selectLabelGroup(group: string): void {
-  if (group === "states" || group === "burgLabels") {
-    ensureEl("labelGroupShow").style.display = "none";
-    return;
-  }
-
   lastSelectedGroup = group;
 
   hideGroupSection();
   const groupSelect = ensureEl<HTMLSelectElement>("labelGroupSelect");
   groupSelect.options.length = 0; // remove all options
 
-  for (const groupId of Object.keys(style.addedLabels)) {
+  for (const groupId of Object.keys(style.labels.groups)) {
     groupSelect.options.add(new Option(groupId, groupId, false, groupId === group));
   }
+}
+
+function updateControls(): void {
+  const isBurg = selectedLabel.type === "burg";
+  const topButtonsVisible = !ensureEl("labelEditor").classList.contains("section-open");
+  ensureEl("labelOffsetShow").style.display = topButtonsVisible && !isBurg ? "inline-block" : "none";
+  ensureEl("labelAlign").style.display = topButtonsVisible && !isBurg ? "inline-block" : "none";
+  ensureEl("labelRemoveSingle").style.display =
+    topButtonsVisible && selectedLabel.type === "added" ? "inline-block" : "none";
+  ensureEl("labelReset").style.display = topButtonsVisible && hasOverrides() ? "inline-block" : "none";
 }
 
 function updateValues(): void {
@@ -229,23 +260,25 @@ function updateValues(): void {
 }
 
 function hideTopButtons(): void {
+  ensureEl("labelEditor").classList.add("section-open");
   document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
     el.style.display = "none";
   });
 }
 
 function showTopButtons(): void {
+  ensureEl("labelEditor").classList.remove("section-open");
   document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
     el.style.display = "inline-block";
   });
+  updateControls();
 }
 
 function showEditorTips(event: MouseEvent): void {
   showMainTip();
   const target = event.target as SVGElement;
   const parent = target.parentNode as Element | null;
-  const grandParent = parent?.parentNode as Element | null;
-  if (grandParent?.id === selectedLabel.elId) {
+  if (target.closest(`#${selectedLabel.elId}`)) {
     tip("Drag to move the label");
   } else if (parent?.id === "controlPoints") {
     if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
@@ -255,6 +288,7 @@ function showEditorTips(event: MouseEvent): void {
 
 function drawControlPointsAndLine(): void {
   select("#debug").select("#controlPoints").remove();
+  if (selectedLabel.type === "burg") return;
 
   const label = selectedLabel.label;
   const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
@@ -371,7 +405,7 @@ function hideGroupSection(): void {
 
 function changeGroup(this: HTMLSelectElement): void {
   lastSelectedGroup = this.value;
-  if ("group" in selectedLabel.label) selectedLabel.label.group = this.value;
+  selectedLabel.label.group = this.value;
   applyLabelChanges();
 }
 
@@ -398,7 +432,7 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/ /g, "_")
     .replace(/[^\w\s]/gi, "");
 
-  if (style.addedLabels[group] || findEl(group)) {
+  if (style.labels.groups[group] || findEl(group)) {
     tip("Element with this id already exists. Please provide a unique name", false, "error");
     return;
   }
@@ -412,22 +446,12 @@ function createNewGroup(this: HTMLInputElement): void {
 
   // preserve the current group style when creating a group from a single custom label
   const oldGroupId = getSelectedGroup();
-  const oldGroupStyle = style.addedLabels[oldGroupId] || style.addedLabels.addedLabels || {};
-  style.addedLabels[group] = Object.fromEntries(getLabelGroupAttributes(oldGroupStyle));
-  const renameOldGroup =
-    oldGroupId !== "states" &&
-    oldGroupId !== "addedLabels" &&
-    pack.labels.filter(label => label.group === oldGroupId).length === 1;
-  if (renameOldGroup) {
-    ensureEl<HTMLSelectElement>("labelGroupSelect").selectedOptions[0].remove();
-  }
+  const oldGroupStyle = style.labels.groups[oldGroupId] || style.labels.groups.addedLabels || {};
+  style.labels.groups[group] = { ...oldGroupStyle };
 
   ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
   const label = selectedLabel.label;
-  if (label && "group" in label) label.group = group;
-  if (renameOldGroup) {
-    delete style.addedLabels[oldGroupId];
-  }
+  if (label) label.group = group;
   applyLabelChanges();
 
   toggleNewGroupInput();
@@ -436,15 +460,19 @@ function createNewGroup(this: HTMLInputElement): void {
 
 function removeLabelsGroup(): void {
   const group = getSelectedGroup();
-  const basic = group === "states" || group === "addedLabels";
+  const protectedGroup =
+    ["states", "town", "addedLabels"].includes(group) ||
+    options.burgs.groups.some(burgGroup => burgGroup.name === group);
+  if (protectedGroup) {
+    tip("This Label Group is a required default and cannot be removed", false, "warn");
+    return;
+  }
+
   const count =
-    group === "states"
-      ? pack.states.filter(state => state.i && !state.removed).length
-      : pack.labels.filter(label => label.group === group).length;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
-    basic ? "all elements in the group" : "the entire label group"
-  }? <br /><br />Labels to be
-    removed: ${count}`;
+    pack.states.filter(state => state.label?.group === group).length +
+    pack.burgs.filter(burg => burg.label?.group === group).length +
+    pack.labels.filter(label => label.group === group).length;
+  alertMessage.innerHTML = /* html */ `Remove the Label Group and restore ${count} affected labels to their defaults?`;
   $("#alert").dialog({
     resizable: false,
     title: "Remove label group",
@@ -452,14 +480,24 @@ function removeLabelsGroup(): void {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
         $("#labelEditor").dialog("close");
+        pack.states
+          .filter(state => state.label?.group === group)
+          .forEach(state => {
+            delete state.label!.group;
+          });
+        pack.burgs
+          .filter(burg => burg.label?.group === group)
+          .forEach(burg => {
+            delete burg.label!.group;
+          });
         pack.labels
           .filter(label => label.group === group)
           .forEach(label => {
-            AddedLabels.remove(label.i);
+            label.group = DEFAULT_ADDED_LABEL_GROUP;
           });
-        if (!basic) delete style.addedLabels[group];
+        delete style.labels.groups[group];
         if (lastSelectedGroup === group) lastSelectedGroup = "addedLabels";
-        drawLabel("added");
+        drawLabels();
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -492,6 +530,8 @@ function generateRandomName(): void {
   if (selectedLabel?.type === "state") {
     const culture = pack.states[selectedLabel.stateId].culture;
     name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
+  } else if (selectedLabel?.type === "burg") {
+    name = Names.getCulture(pack.burgs[selectedLabel.burgId].culture ?? 0);
   } else {
     const label = selectedLabel.label;
     const points = label?.pathPoints || [];
@@ -590,7 +630,8 @@ function editLabelAlign(): void {
 }
 
 function editLabelLegend(): void {
-  void Controllers.NotesEditor.open(selectedLabel.elId, selectedLabel.label.text);
+  const noteId = selectedLabel.type === "burg" ? `burg${selectedLabel.burgId}` : selectedLabel.elId;
+  void Controllers.NotesEditor.open(noteId, selectedLabel.label.text);
 }
 
 function removeSelectedLabel(): void {
@@ -601,13 +642,9 @@ function removeSelectedLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        if (selectedLabel.type === "added") {
-          removeLabel("added", selectedLabel.label.i);
-          AddedLabels.remove(selectedLabel.label.i);
-        } else if (selectedLabel.type === "state") {
-          removeLabel("state", selectedLabel.stateId);
-          delete pack.states[selectedLabel.stateId].label;
-        }
+        if (selectedLabel.type !== "added") return;
+        removeLabel("added", selectedLabel.label.i);
+        AddedLabels.remove(selectedLabel.label.i);
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -622,6 +659,9 @@ function applyLabelChanges(): void {
   if (selectedLabel.type === "state") {
     pack.states[selectedLabel.stateId].label = label;
     drawLabel(selectedLabel.type, selectedLabel.stateId);
+  } else if (selectedLabel.type === "burg") {
+    pack.burgs[selectedLabel.burgId].label = label;
+    drawLabel(selectedLabel.type, selectedLabel.burgId);
   } else if (selectedLabel.type === "added") {
     const labelId = selectedLabel.labelId;
     const index = pack.labels.findIndex(({ i }) => i === labelId);
@@ -633,6 +673,44 @@ function applyLabelChanges(): void {
   select<SVGElement, unknown>(`#${selectedLabel.elId}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
+  updateControls();
+}
+
+function hasOverrides(): boolean {
+  if (selectedLabel.type === "state") return Boolean(pack.states[selectedLabel.stateId].label);
+  if (selectedLabel.type === "burg") return Boolean(pack.burgs[selectedLabel.burgId].label);
+  const { dx, dy, startOffset, fontSize, letterSpacing } = selectedLabel.label;
+  return [dx, dy, startOffset, fontSize, letterSpacing].some(value => value !== undefined);
+}
+
+function resetSelectedLabel(): void {
+  if (selectedLabel.type === "state") {
+    delete pack.states[selectedLabel.stateId].label;
+    drawLabel("state", selectedLabel.stateId);
+    const textEl = document.getElementById(selectedLabel.elId) as SVGTextElement | null;
+    if (textEl) selectedLabel.label = parseStateLabelData(textEl);
+  } else if (selectedLabel.type === "burg") {
+    const burg = pack.burgs[selectedLabel.burgId];
+    delete burg.label;
+    drawLabel("burg", selectedLabel.burgId);
+    selectedLabel.label = { text: burg.name };
+  } else {
+    const { i, text, pathPoints, group } = selectedLabel.label;
+    const resetLabel: AddedLabel = { i, text, pathPoints, group };
+    const index = pack.labels.findIndex(label => label.i === i);
+    if (index === -1) return;
+    pack.labels[index] = resetLabel;
+    selectedLabel.label = { ...resetLabel };
+    drawLabel("added", i);
+  }
+
+  select<SVGElement, unknown>(`#${selectedLabel.elId}`)
+    .call(drag<SVGElement, unknown>().on("start", dragLabel))
+    .classed("draggable", true);
+  selectLabelGroup(getSelectedGroup());
+  updateValues();
+  updateControls();
+  drawControlPointsAndLine();
 }
 
 function closeLabelEditor(): void {

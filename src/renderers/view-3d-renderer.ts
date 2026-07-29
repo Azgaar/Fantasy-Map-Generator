@@ -1,5 +1,6 @@
 import { select } from "d3";
 import type * as THREE from "three";
+import { resolveLabelGroup } from "@/generators/labels";
 import { Services } from "@/services";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
@@ -453,9 +454,8 @@ async function createLabels() {
 
   // Helper function to get burg label options from its group
   function getBurgLabelOptions(burg: any) {
-    if (!burg.group) return null;
-
-    const labelGroup = select("#burgLabels").select(`#${burg.group}`);
+    const group = resolveLabelGroup("burg", burg.label?.group || burg.group);
+    const labelGroup = select("#labels").select(`#${group}`);
     if (labelGroup.empty()) return null;
 
     const font = labelGroup.attr("font-family") || "Arial";
@@ -517,7 +517,7 @@ async function createLabels() {
     const [x, y, z] = get3dCoords(burg.x, burg.y);
 
     if (layerIsOn("toggleLabels")) {
-      const burgSprite = await createTextLabel({ text: burg.name || "", ...burgOptions });
+      const burgSprite = await createTextLabel({ text: burg.label?.text ?? burg.name ?? "", ...burgOptions });
 
       burgSprite.position.set(x, y + burgOptions.elevation, z);
       burgSprite.size = burgOptions.size;

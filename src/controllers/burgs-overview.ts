@@ -126,7 +126,7 @@ function renderDialog(): void {
   applyLineHighlighting("burgsOverview", ({ target, cellId }) => {
     const burgId = pack.cells.burg[cellId];
     if (burgId) return burgId;
-    const burg = target.closest<SVGElement>("#burgLabels [data-id], #burgIcons [data-id]");
+    const burg = target.closest<SVGElement>("#labels [data-label-type='burg'][data-id], #burgIcons [data-id]");
     return burg ? Number(burg.dataset.id) : undefined;
   });
 
@@ -301,19 +301,17 @@ function burgsOverviewAddLines(): void {
 
 function burgHighlightOn(event: Event): void {
   const burg = +(event.target as HTMLElement).dataset.id!;
-  const label = select("#burgLabels").select(`[data-id='${burg}']`);
+  const label = select("#labels").select(`[data-label-type='burg'][data-id='${burg}']`);
   if (label.size()) label.classed("drag", true);
 }
 
 function burgHighlightOff(): void {
-  select("#burgLabels").selectAll("text.drag").classed("drag", false);
+  select("#labels").selectAll("text[data-label-type='burg'].drag").classed("drag", false);
 }
 
 function zoomIntoBurg(this: HTMLElement): void {
   const burg = +(this.parentNode as HTMLElement).dataset.id!;
-  const label = document.querySelector(`#burgLabels [data-id='${burg}']`)!;
-  const x = +label.getAttribute("x")!;
-  const y = +label.getAttribute("y")!;
+  const { x, y } = pack.burgs[burg];
   zoomTo(x, y, 8, 2000);
 }
 
@@ -660,7 +658,7 @@ function importBurgNames(dataLoaded: string): void {
     for (let i = 0; i < change.length; i++) {
       const id = change[i].id;
       pack.burgs[id].name = change[i].name;
-      select("#burgLabels").select(`[data-id='${id}']`).text(change[i].name);
+      drawLabel("burg", id);
     }
     burgsOverviewAddLines();
   };

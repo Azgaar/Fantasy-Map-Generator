@@ -28,11 +28,11 @@ function open(id: number | string): void {
   if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  selected = select<any, unknown>("#burgLabels").select(`[data-id='${id}']`);
+  selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
 
-  select<SVGTextElement, unknown>("#burgLabels")
-    .selectAll<SVGTextElement, unknown>("text")
+  select<SVGTextElement, unknown>("#labels")
+    .selectAll<SVGTextElement, unknown>("text[data-label-type='burg']")
     .call(drag<SVGTextElement, unknown>().on("start", dragBurgLabel))
     .classed("draggable", true);
   renderDialog();
@@ -217,6 +217,7 @@ function renderDialog(): void {
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
         <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
         <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
+        <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
         <button
           id="burgProductionOverview"
           data-tip="Show production overview for this burg"
@@ -263,6 +264,7 @@ function renderDialog(): void {
   ensureEl("burgSetPreviewLink").on("click", setCustomPreview);
   ensureEl("burgEditEmblem").on("click", openEmblemEdit);
   ensureEl("burgLocate").on("click", zoomIntoBurg);
+  ensureEl("burgEditLabel").on("click", editBurgLabel);
   ensureEl("burgRelocate").on("click", toggleRelocateBurg);
   ensureEl("burglLegend").on("click", editBurgLegend);
   ensureEl("burgLock").on("click", toggleBurgLockButton);
@@ -523,6 +525,12 @@ function editGroupLabelStyle(): void {
   editStyle("labels", g.id);
 }
 
+function editBurgLabel(): void {
+  const id = getSelectedId();
+  $("#burgEditor").dialog("close");
+  Controllers.LabelsEditor.open({ type: "burg", id });
+}
+
 function editGroupIconStyle(): void {
   const g = (selected!.node() as Element).parentNode as HTMLElement;
   closeDialogs(".stable");
@@ -636,9 +644,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const x = rn(point[0], 2);
   const y = rn(point[1], 2);
 
-  const label = pack.burgs[id].label;
   select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
-  if (label) select("#burgLabels").select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
 
   const anchor = select("#anchors").select(`use[data-id='${id}']`);
   if (anchor.size()) {
@@ -657,7 +663,8 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
 
-  if (label) Object.assign(label, { dx: 0, dy: 0 });
+  if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0 });
+  drawLabel("burg", id);
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }
@@ -724,8 +731,8 @@ function editBurgGroups(): void {
 
 function closeBurgEditor(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
-  select<SVGTextElement, unknown>("#burgLabels")
-    .selectAll<SVGTextElement, unknown>("text")
+  select<SVGTextElement, unknown>("#labels")
+    .selectAll<SVGTextElement, unknown>("text[data-label-type='burg']")
     .on(".drag", null)
     .classed("draggable", false);
   selected = null;

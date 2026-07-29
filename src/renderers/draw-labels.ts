@@ -1,8 +1,10 @@
+import type { LabelType } from "@/generators/labels";
 import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "./draw-added-labels";
 import { drawBurgLabel, drawBurgLabels, removeBurgLabel } from "./draw-burg-labels";
 import { drawStateLabel, drawStateLabels } from "./draw-state-labels";
+import { renderLabelGroups } from "./label-groups";
 
-export type LabelType = "state" | "burg" | "added";
+export type { LabelType } from "@/generators/labels";
 
 export function drawLabels(): void {
   if (!layerIsOn("toggleLabels")) {
@@ -11,6 +13,7 @@ export function drawLabels(): void {
   }
 
   removeLabels();
+  renderLabelGroups();
   drawStateLabels();
   drawBurgLabels();
   drawAddedLabels();

@@ -96,6 +96,17 @@ Example stored entities:
 
 The intent is for generators and editors to mutate this state in controlled ways.
 
+### Labels
+
+Labels share one grouping and style model while retaining entity-specific rendering:
+
+- Label Group styles live in `style.labels.groups`.
+- All SVG groups are direct children of `#labels`.
+- State and added labels render on paths; Burg labels render as lightweight positioned text.
+- `burg.group` supplies the default Burg Label Group and `burg.label.group` is an optional label-only override.
+- Renderers resolve missing groups to the entity fallback (`states`, `town`, or `addedLabels`).
+- Group-level `data-dx` and `data-dy` are style data; rendering derives one parent-group transform from them.
+
 ---
 
 ## 2. Generators Layer (Model)

@@ -1,42 +1,43 @@
 import { max } from "d3";
-import type { Label } from "@/generators/labels";
+import { DEFAULT_STATE_LABEL_GROUP, type Label } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { parsePathPoints } from "@/utils/pathUtils";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
-import { ensureLabelGroup, getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
+import { getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
+import { getLabelGroup } from "./label-groups";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 export function drawStateLabels(): void {
   clearStateLabels();
 
   let paths = "";
-  let texts = "";
-
-  const sandbox = createMeasurementSandbox("states");
+  const texts = new Map<string, string>();
   const mode = options.stateLabelsMode || "auto";
-  const letterLength = checkExampleLetterLength(sandbox);
-
-  try {
-    for (const state of pack.states) {
-      if (!state.i || state.removed) continue;
+  for (const state of pack.states) {
+    if (!state.i || state.removed) continue;
+    const group = state.label?.group || DEFAULT_STATE_LABEL_GROUP;
+    const sandbox = createMeasurementSandbox(group);
+    try {
+      const letterLength = checkExampleLetterLength(sandbox);
       const label = resolveStateLabel(state, sandbox, mode, letterLength);
       paths += getLabelPathMarkup(label);
-      texts += getLabelTextMarkup(label);
+      texts.set(group, (texts.get(group) || "") + getLabelTextMarkup(label));
+    } finally {
+      sandbox.remove();
     }
-  } finally {
-    sandbox.remove();
   }
 
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
-  ensureLabelGroup("states", "state").insertAdjacentHTML("beforeend", texts);
+  for (const [group, markup] of texts) getLabelGroup(group, "state").insertAdjacentHTML("beforeend", markup);
 }
 
 export function drawStateLabel(stateId: number): void {
   const state = pack.states[stateId];
   if (!state?.i || state.removed) return;
 
-  const sandbox = createMeasurementSandbox("states");
+  const group = state.label?.group || DEFAULT_STATE_LABEL_GROUP;
+  const sandbox = createMeasurementSandbox(group);
   const mode = options.stateLabelsMode || "auto";
   const letterLength = checkExampleLetterLength(sandbox);
 
@@ -48,7 +49,7 @@ export function drawStateLabel(stateId: number): void {
     document.getElementById(`textPath_stateLabel${state.i}`)?.remove();
     document.getElementById(`stateLabel${state.i}`)?.remove();
     document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", path);
-    ensureLabelGroup("states", "state").insertAdjacentHTML("beforeend", text);
+    getLabelGroup(group, "state").insertAdjacentHTML("beforeend", text);
   } finally {
     sandbox.remove();
   }
@@ -72,7 +73,13 @@ export function parseStateLabelData(textEl: SVGTextElement): Label {
   const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
   const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
 
-  return { text, pathPoints, dx, dy, startOffset, fontSize, letterSpacing };
+  const label: Label = { text, pathPoints };
+  if (dx) label.dx = dx;
+  if (dy) label.dy = dy;
+  if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset;
+  if (Number.isFinite(fontSize) && fontSize !== 100) label.fontSize = fontSize;
+  if (Number.isFinite(letterSpacing) && letterSpacing !== 0) label.letterSpacing = letterSpacing;
+  return label;
 }
 
 function resolveStateLabel(state: State, sandbox: SVGGElement, mode: string, letterLength: number) {
@@ -90,7 +97,9 @@ function createStateLabel(state: State) {
 }
 
 function clearStateLabels(): void {
-  document.querySelector("#labels > #states")?.replaceChildren();
+  document.querySelectorAll("#labels > g > [data-label-type='state']").forEach(label => {
+    label.remove();
+  });
   document.querySelectorAll("#textPaths > path[id^='textPath_stateLabel']").forEach(path => {
     path.remove();
   });
@@ -103,7 +112,7 @@ function createMeasurementSandbox(group: string): SVGGElement {
   sandbox.id = "labelMeasurement";
   sandbox.style.visibility = "hidden";
 
-  const groupStyle = getComputedStyle(ensureLabelGroup(group, "state"));
+  const groupStyle = getComputedStyle(getLabelGroup(group, "state"));
   sandbox.setAttribute("font-family", groupStyle.fontFamily);
   sandbox.setAttribute("font-size", groupStyle.fontSize);
   sandbox.setAttribute("letter-spacing", groupStyle.letterSpacing);

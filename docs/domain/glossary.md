@@ -53,6 +53,8 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
 - **Note**: User-defined text attached to a specific map entity (cell, burg, state) containing custom lore or description.
 - **Icon**: A small graphic representing a good, biome, or feature.
+- **Label**: Display text owned by a State or Burg, or stored independently as a user-added label. State and added labels follow SVG paths; Burg labels are positioned text.
+- **Label Group**: A reusable typography and offset style in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.
 
 ## UI & User Interaction
 

@@ -336,7 +336,7 @@
     "data-columns": 8
   },
   "#legendBox": {},
-  "#burgLabels > g#capital": {
+  "#labels > #capital": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -370,7 +370,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#city": {
+  "#labels > #city": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -404,7 +404,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#fort": {
+  "#labels > #fort": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -438,7 +438,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#monastery": {
+  "#labels > #monastery": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -472,7 +472,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#caravanserai": {
+  "#labels > #caravanserai": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -506,7 +506,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#trading_post": {
+  "#labels > #trading_post": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -540,7 +540,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#village": {
+  "#labels > #village": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -574,7 +574,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#hamlet": {
+  "#labels > #hamlet": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,
@@ -608,7 +608,7 @@
     "stroke-width": 1.2,
     "filter": null
   },
-  "#burgLabels > g#town": {
+  "#labels > #town": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": null,

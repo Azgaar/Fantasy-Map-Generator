@@ -2,12 +2,30 @@ import type { Point } from "./voronoi";
 
 export interface Label {
   text?: string;
+  group?: string;
   dx?: number;
   dy?: number;
   pathPoints?: Point[];
   startOffset?: number;
   fontSize?: number;
   letterSpacing?: number;
+}
+
+export const DEFAULT_STATE_LABEL_GROUP = "states";
+export const DEFAULT_BURG_LABEL_GROUP = "town";
+export const DEFAULT_ADDED_LABEL_GROUP = "addedLabels";
+
+export type LabelType = "state" | "burg" | "added";
+
+export function resolveLabelGroup(type: LabelType, requestedGroup?: string): string {
+  const fallback =
+    type === "state"
+      ? DEFAULT_STATE_LABEL_GROUP
+      : type === "burg"
+        ? DEFAULT_BURG_LABEL_GROUP
+        : DEFAULT_ADDED_LABEL_GROUP;
+  const group = requestedGroup || fallback;
+  return style.labels.groups[group] ? group : fallback;
 }
 
 declare global {

@@ -402,9 +402,7 @@ function changeFill(fillBox: FillBoxElement): void {
 
 function capitalZoomIn(p: number): void {
   const capital = pack.provinces[p].burg;
-  const l = select<SVGGElement, unknown>("#burgLabels").select(`[data-id='${capital}']`);
-  const x = +l.attr("x");
-  const y = +l.attr("y");
+  const { x, y } = pack.burgs[capital];
   zoomTo(x, y, 8, 2000);
 }
 

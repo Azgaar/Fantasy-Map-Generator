@@ -383,6 +383,14 @@ function submitForm(event: Event): void {
     return input.value || null;
   }
 
+  for (const line of lines) {
+    const previousName = line.getAttribute("name");
+    const name = line.querySelector<HTMLInputElement>("input[name='name']")?.value;
+    if (!name || style.labels.groups[name]) continue;
+    const source = (previousName && style.labels.groups[previousName]) || style.labels.groups.town || {};
+    style.labels.groups[name] = { ...source };
+  }
+
   options.burgs.groups = lines.map(line => {
     const inputs = line.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select");
     const group = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {

@@ -96,12 +96,6 @@ function prepareMapData(): string {
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
-  cloneEl
-    .querySelector("#labels")
-    ?.setAttribute(
-      "data-label-styles",
-      JSON.stringify({ stateLabels: style.stateLabels, burgLabels: style.burgLabels, addedLabels: style.addedLabels })
-    );
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
@@ -124,6 +118,7 @@ function prepareMapData(): string {
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.labels || []);
+  const styleData = JSON.stringify(style);
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
@@ -193,7 +188,8 @@ function prepareMapData(): string {
     pack.cells.market,
     customGoodIcons,
     measurers,
-    labels
+    labels,
+    styleData
   ].join("\r\n");
   return mapData;
 }

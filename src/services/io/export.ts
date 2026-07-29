@@ -264,8 +264,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (noLabels) {
-    clone.select("#labels #states").remove();
-    clone.select("#labels #burgLabels").remove();
+    clone.selectAll("#labels [data-label-type='state'], #labels [data-label-type='burg']").remove();
+    clone.selectAll("#textPaths [id^='textPath_stateLabel']").remove();
     clone.select("#icons #burgIcons").remove();
   }
   if (noWater) {

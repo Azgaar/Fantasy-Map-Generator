@@ -22,7 +22,7 @@ async function addOnClick(event: MouseEvent): Promise<void> {
 
   const text = Names.getCulture(pack.cells.culture[cell]);
   const lastSelected = await Controllers.LabelsEditor.getLastSelectedGroup();
-  const group = ["", "states", "burgLabels"].includes(lastSelected) ? "addedLabels" : lastSelected;
+  const group = lastSelected || "addedLabels";
   const label = AddedLabels.add({
     group,
     text,

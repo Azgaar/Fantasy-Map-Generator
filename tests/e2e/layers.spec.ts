@@ -177,17 +177,25 @@ test.describe("map layers", () => {
     expect(html).toMatchSnapshot("anchors.html");
   });
 
-  // Labels layer (without text content due to font rendering)
-  test("labels layer", async () => {
+  test("labels use flat groups and entity-specific rendering", async () => {
     const labels = sharedPage.locator("#labels");
     await expect(labels).toBeAttached();
-    // Remove text content but keep structure (text rendering varies)
-    const html = await labels.evaluate(el => {
-      const clone = el.cloneNode(true) as Element;
-      clone.querySelectorAll("text, tspan").forEach(t => t.remove());
-      return clone.outerHTML;
+    const structure = await labels.evaluate(el => {
+      const groups = Array.from(el.querySelectorAll<SVGGElement>(":scope > g"));
+      return {
+        groupIds: groups.map(group => group.id),
+        nestedGroups: el.querySelectorAll(":scope > g > g").length,
+        stateTextPaths: el.querySelectorAll("text[data-label-type='state'] textPath").length,
+        burgLabels: el.querySelectorAll("text[data-label-type='burg']").length,
+        burgTextPaths: el.querySelectorAll("text[data-label-type='burg'] textPath").length
+      };
     });
-    expect(html).toMatchSnapshot("labels.html");
+
+    expect(structure.groupIds).toEqual(expect.arrayContaining(["states", "town", "addedLabels"]));
+    expect(structure.nestedGroups).toBe(0);
+    expect(structure.stateTextPaths).toBeGreaterThan(0);
+    expect(structure.burgLabels).toBeGreaterThan(0);
+    expect(structure.burgTextPaths).toBe(0);
   });
 
   test("labels group can be hidden with display:none", async () => {

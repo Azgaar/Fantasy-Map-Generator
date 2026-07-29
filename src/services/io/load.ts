@@ -7,7 +7,7 @@ import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn, safeParseJSON } from "@/utils";
+import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -381,30 +381,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ruler = viewbox.select<SVGGElement>("#ruler");
     fogging = viewbox.select<SVGGElement>("#fogging");
     debug = viewbox.select<SVGElement>("#debug");
-    burgLabels = labels.select<SVGGElement>("#burgLabels");
-    const getGroupStyles = (selector: string) =>
-      Object.fromEntries(
-        labels
-          .selectAll<SVGGElement, unknown>(selector)
-          .nodes()
-          .map(group => [group.id, getAttributes(group)])
-      );
-    const labelStyles = safeParseJSON(labels.attr("data-label-styles")) || {};
-    labels.attr("data-label-styles", null);
-    style.stateLabels = labelStyles?.stateLabels
-      ? Object.fromEntries(
-          Object.entries(labelStyles.stateLabels as Record<string, string | number | null>).filter(
-            ([attribute]) => attribute !== "id"
-          )
-        )
-      : getAttributes(labels.select<SVGGElement>("#states").node());
-    style.burgLabels =
-      (labelStyles?.burgLabels as Record<string, Record<string, string>> | undefined) ||
-      getGroupStyles("#burgLabels > g");
-    style.addedLabels =
-      (labelStyles?.addedLabels as Record<string, Record<string, string | number | null>> | undefined) ||
-      getGroupStyles(":scope > g:not(#states):not(#burgLabels)");
-
     if (!texture.size()) {
       texture = viewbox
         .insert("g", "#landmass")
@@ -503,6 +479,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
+    if (data[48]) style = JSON.parse(data[48]);
+
+    {
+      const { resolveVersionConflicts } = await import("./auto-update");
+      resolveVersionConflicts(mapVersion!, data);
+    }
+
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
         selection.node() && selection.style("display") !== "none";
@@ -565,12 +548,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     select("#legend")
       .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
       .on("click", () => clearLegend());
-
-    {
-      // dynamically import and run auto-update script
-      const { resolveVersionConflicts } = await import("./auto-update");
-      resolveVersionConflicts(mapVersion!, data);
-    }
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
@@ -873,16 +850,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   } finally {
     if (loadGroupOpen) console.groupEnd();
   }
-}
-
-function getAttributes(element: Element | null): Record<string, string> {
-  return element
-    ? Object.fromEntries(
-        Array.from(element.attributes)
-          .filter(attribute => attribute.name !== "id")
-          .map(attribute => [attribute.name, attribute.value])
-      )
-    : {};
 }
 
 export const Load = {

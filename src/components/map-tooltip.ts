@@ -40,8 +40,8 @@ export function showNotes(event: Event): void {
   const parent = target.parentNode as HTMLElement;
   const grand = parent?.parentNode as HTMLElement;
 
-  const isBurg = grand?.id === "burgLabels" || grand?.id === "burgIcons";
-  const id = isBurg ? `burg${target.dataset.id}` : target.id || parent?.id || grand?.id;
+  const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
+  const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
 
   const note = notes.find(note => note.id === id);
 
@@ -110,6 +110,16 @@ interface TipContext {
  */
 function getElementTip({ group, subgroup, target, event, path, cellId }: TipContext): string | undefined {
   const parent = target.parentNode as SVGElement;
+  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
+  if (burgElement) {
+    const burgId = Number(burgElement.dataset.id);
+    const burg = pack.burgs[burgId];
+    if (!burg) return "Click to edit the Burg";
+    const population = si((burg.population || 0) * populationRate * urbanization);
+    return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
+  }
+
+  if (target.closest("#labels [data-label-type]")) return "Click to edit the Label";
 
   if (group === "armies") return `${(parent as SVGElement & { dataset: DOMStringMap }).dataset.name}. Click to edit`;
 
@@ -129,18 +139,6 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
   }
 
   if (group === "terrain") return "Click to edit the Relief Icon";
-
-  if (subgroup === "burgLabels" || subgroup === "burgIcons") {
-    const burgId = Number(path[path.length - 10]?.dataset.id);
-    if (burgId) {
-      const burg = pack.burgs[burgId];
-      const population = si((burg.population || 0) * populationRate * urbanization);
-      return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
-    }
-    return "Click to edit the Burg";
-  }
-
-  if (group === "labels") return "Click to edit the Label";
 
   if (group === "markers") return "Click to edit the Marker. Hold Shift to not close the assosiated note";
 

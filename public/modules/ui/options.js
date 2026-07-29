@@ -403,8 +403,12 @@ function changeEmblemShape(emblemShape) {
 
 function changeStatesNumber(value) {
   ensureEl("statesNumber").style.color = +value ? null : "#b12117";
-  burgLabels.select("#capital").attr("data-size", Math.max(rn(6 - value / 20), 3));
-  labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
+  const capitalSize = Math.max(rn(6 - value / 20), 3);
+  const stateSize = Math.max(rn(18 - value / 6), 4);
+  if (style.labels.groups.capital) style.labels.groups.capital["data-size"] = capitalSize;
+  if (style.labels.groups.states) style.labels.groups.states["data-size"] = stateSize;
+  labels.select("#capital").attr("data-size", capitalSize);
+  labels.select("#states").attr("data-size", stateSize);
 }
 
 function changeUiSize(value) {

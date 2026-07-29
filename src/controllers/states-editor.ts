@@ -832,9 +832,7 @@ function openTreasuryDialog(stateId: number): void {
 
 function stateCapitalZoomIn(state: number): void {
   const capital = pack.states[state].capital;
-  const label = select("#burgLabels").select(`[data-id='${capital}']`);
-  const x = +label.attr("x");
-  const y = +label.attr("y");
+  const { x, y } = pack.burgs[capital];
   zoomTo(x, y, 8, 2000);
 }
 

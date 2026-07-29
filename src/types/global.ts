@@ -89,7 +89,6 @@ declare global {
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
   var ice: Selection<SVGGElement, unknown, null, undefined>;
   var labels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgLabels: Selection<SVGGElement, unknown, null, undefined>;
   var burgIcons: Selection<SVGGElement, unknown, null, undefined>;
   var anchors: Selection<SVGGElement, unknown, null, undefined>;
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
@@ -133,9 +132,9 @@ declare global {
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
-    stateLabels: { [key: string]: string | number | null };
-    burgLabels: { [key: string]: { [key: string]: string } };
-    addedLabels: { [key: string]: { [key: string]: string | number | null } };
+    labels: {
+      groups: { [key: string]: { [key: string]: string | number | null } };
+    };
     burgIcons: { [key: string]: { [key: string]: string } };
     anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;

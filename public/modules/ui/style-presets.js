@@ -73,18 +73,9 @@ async function fetchSystemPreset(preset) {
 
 function applyStyle(styleJSON) {
   for (const selector in styleJSON) {
-    if (selector.startsWith("#burgLabels")) {
+    if (selector.startsWith("#labels > #")) {
       const group = selector.split("#").pop();
-      style.burgLabels[group] = getStyleAttributes(styleJSON[selector]);
-    }
-
-    if (selector === "#labels > #states") {
-      style.stateLabels = getStyleAttributes(styleJSON[selector]);
-    }
-
-    if (selector.startsWith("#labels > #") && !["#labels > #states", "#labels > #burgLabels"].includes(selector)) {
-      const group = selector.split("#").pop();
-      style.addedLabels[group] = getStyleAttributes(styleJSON[selector]);
+      style.labels.groups[group] = getStyleAttributes(styleJSON[selector]);
     }
 
     if (selector.startsWith("#burgIcons")) {
@@ -124,6 +115,12 @@ function applyStyle(styleJSON) {
       if (selector === "#terrs" && attribute === "scheme" && !(value in heightmapColorSchemes)) {
         addCustomColorScheme(value);
       }
+    }
+
+    if (selector.startsWith("#labels > #")) {
+      const dx = el.dataset.dx || 0;
+      const dy = el.dataset.dy || 0;
+      el.style.transform = +dx || +dy ? `translate(${dx}em, ${dy}em)` : "";
     }
   }
 
@@ -383,7 +380,7 @@ function addStylePreset() {
     ];
     const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
     options.burgs.groups.forEach(({ name }) => {
-      attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
+      attributes[`#labels > #${name}`] = burgLabelsAttributes;
       attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#anchors > g#${name}`] = anchorsAttributes;
     });
@@ -402,19 +399,15 @@ function addStylePreset() {
       }
     }
 
-    addStoredLabelStyle("#labels > #states", style.stateLabels);
-    for (const [group, groupStyle] of Object.entries(style.addedLabels)) {
+    for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, groupStyle);
-    }
-    for (const [group, groupStyle] of Object.entries(style.burgLabels)) {
-      addStoredLabelStyle(`#burgLabels > g#${group}`, groupStyle);
     }
 
     function addStoredLabelStyle(selector, groupStyle) {
       if (!groupStyle) return;
       presetStyle[selector] = Object.fromEntries(
         Object.entries(groupStyle)
-          .filter(([key]) => key !== "id")
+          .filter(([key]) => key !== "id" && key !== "transform")
           .map(([key, value]) => [key, parseValue(value)])
       );
     }
