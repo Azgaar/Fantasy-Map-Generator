@@ -355,20 +355,21 @@ export const findPath = (
   return null;
 };
 
-// extract control points from an SVG path element
-export const extractPathPoints = (pathEl: SVGPathElement) => {
+export const extractPathPoints = (pathEl: SVGPathElement, step = 100) => {
   if (!pathEl) return [];
   const l = pathEl.getTotalLength();
   if (!l) return [];
 
   const points: Point[] = [];
-  const increment = l / Math.max(Math.ceil(l / 100), 2);
+  const increment = l / Math.ceil(l / step);
   for (let i = 0; i <= l; i += increment) {
     const point = pathEl.getPointAtLength(i);
     const x = rn(point.x, 2);
     const y = rn(point.y, 2);
     points.push([x, y]);
   }
+
+  // TODO: check if points path is stright, then leave only 1st and last points
   return points;
 };
 

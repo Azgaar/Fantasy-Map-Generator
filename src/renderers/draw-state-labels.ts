@@ -3,7 +3,7 @@ import type { Label } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
-import { ensureLabelGroup, getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-path-label";
+import { ensureLabelGroup, getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 export function drawStateLabels(): void {

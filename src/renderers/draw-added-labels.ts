@@ -1,4 +1,4 @@
-import { ensureLabelGroup, getLabelPathMarkup, getLabelTextMarkup } from "./draw-path-label";
+import { ensureLabelGroup, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
 
 export function drawAddedLabels(): void {
   clearAddedLabels();

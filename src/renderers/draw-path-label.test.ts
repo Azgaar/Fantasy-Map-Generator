@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { getLabelGroupAttributes, getLabelPath, getLabelTextMarkup } from "./draw-path-label";
+import { getLabelGroupAttributes, getLabelPath, getLabelTextMarkup } from "./draw-label-utils";
 
 const label = {
   id: "stateLabel1",

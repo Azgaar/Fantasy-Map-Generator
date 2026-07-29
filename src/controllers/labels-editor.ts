@@ -4,8 +4,8 @@ import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { AddedLabel, Label } from "@/generators/labels";
+import { getLabelGroupAttributes } from "@/renderers/draw-label-utils";
 import { drawLabel, removeLabel as removeRenderedLabel } from "@/renderers/draw-labels";
-import { getLabelGroupAttributes } from "@/renderers/draw-path-label";
 import { speak } from "@/utils";
 import { extractPathPoints } from "@/utils/pathUtils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
@@ -368,12 +368,15 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
 
 function dragLabel(event: any): void {
   const tr = parseTransform(selectedLabel.attr("transform"));
-  const dx = +tr[0] - event.x;
-  const dy = +tr[1] - event.y;
+  const dx0 = +tr[0] - event.x;
+  const dy0 = +tr[1] - event.y;
 
   event.on("drag", (dragEvent: any) => {
     const label = getEditableLabel();
-    if (label) Object.assign(label, { dx: dx + dragEvent.x, dy: dy + dragEvent.y });
+    if (label) {
+      label.dx = rn(dx0 + dragEvent.x, 2);
+      label.dy = rn(dy0 + dragEvent.y, 2);
+    }
     renderSelectedLabel();
     select("#debug").select("#controlPoints").attr("transform", selectedLabel.attr("transform"));
   });

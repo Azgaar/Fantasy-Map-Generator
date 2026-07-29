@@ -14,10 +14,8 @@ const DEFAULT_LABEL_STYLE: LabelGroupStyle = {
 
 export function ensureLabelGroup(group: string): SVGGElement {
   const labels = document.querySelector<SVGGElement>("g#labels")!;
-  const existing = Array.from(labels.children).find(child => child.tagName === "g" && child.id === group) as
-    | SVGGElement
-    | undefined;
-  if (existing) return existing;
+  const existing = Array.from(labels.children).find(child => child.tagName === "g" && child.id === group);
+  if (existing) return existing as SVGGElement;
 
   const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
   container.id = group;
