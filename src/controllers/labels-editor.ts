@@ -4,69 +4,57 @@ import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { AddedLabel, Label } from "@/generators/labels";
+import type { Point } from "@/generators/voronoi";
 import { getLabelGroupAttributes, getLabelPath } from "@/renderers/draw-label-utils";
-import { drawLabel, removeLabel as removeRenderedLabel } from "@/renderers/draw-labels";
-import { getStateLabelData } from "@/renderers/draw-state-labels";
+import { drawLabel, removeLabel } from "@/renderers/draw-labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, round } from "../utils";
 
-type SelectedLabel = { type: "state" | "added"; id: number };
+type StateLabel = { type: "state"; stateId: number; elId: string; label: Label };
+type CustomLabel = { type: "added"; labelId: number; elId: string; label: AddedLabel };
+let selectedLabel: StateLabel | CustomLabel;
 
-let selectedLabel: SelectedLabel | undefined;
-let lastSelectedGroup = ""; // group selected in the editor most recently; used as the default group for newly added labels
-
-function getEditableLabel(): Label | AddedLabel | undefined {
-  if (!selectedLabel) return;
-  return selectedLabel.type === "state" ? pack.states[selectedLabel.id]?.label : AddedLabels.get(selectedLabel.id);
-}
-
-const isStateLabel = (): boolean => selectedLabel?.type === "state";
-const getSelectedLabelId = (): string => {
-  if (!selectedLabel) throw new Error("No label is selected");
-  return selectedLabel.type === "state" ? `stateLabel${selectedLabel.id}` : `addedLabel${selectedLabel.id}`;
-};
-const getSelectedGroup = (): string => {
-  if (isStateLabel()) return "states";
-  const label = getEditableLabel();
-  return label && "group" in label ? label.group : "addedLabels";
-};
-
-function renderSelectedLabel(): void {
-  if (!selectedLabel) return;
-  drawLabel(selectedLabel.type, selectedLabel.id);
-
-  select<SVGElement, unknown>(`#${getSelectedLabelId()}`)
-    .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true);
-}
+let lastSelectedGroup = ""; // the default group for newly added labels
 
 function open(tspan: SVGTSpanElement): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const textPath = tspan.parentNode as SVGTextPathElement;
-  const text = textPath.parentElement;
-  if (!text) return;
+  const textPath = tspan.parentNode;
+  const textEl = textPath?.parentElement;
+  if (!textEl) return;
 
-  const stateId = text.id.match(/^stateLabel(\d+)$/)?.[1];
-  const addedId = text.id.match(/^addedLabel(\d+)$/)?.[1];
-  if (!stateId && !addedId) return;
-  selectedLabel = stateId ? { type: "state", id: +stateId } : { type: "added", id: +addedId! };
+  const stateId = textEl.id.match(/^stateLabel(\d+)$/)?.[1];
+  const addedId = textEl.id.match(/^addedLabel(\d+)$/)?.[1];
 
-  if (selectedLabel.type === "state") {
-    const label = getStateLabelData(selectedLabel.id);
-    if (!label) return;
-    pack.states[selectedLabel.id].label = label;
-  } else {
-    const label = AddedLabels.get(selectedLabel.id);
-    if (!label) return;
-    style.addedLabels[label.group] ||= {
-      ...(style.addedLabels.addedLabels || {})
+  if (stateId) {
+    const state = pack.states[+stateId];
+    if (!state) return;
+    const label = pack.states[+stateId].label;
+    selectedLabel = {
+      type: "state",
+      stateId: +stateId,
+      elId: `stateLabel${stateId}`,
+      label: {
+        ...label,
+        text:
+          label?.text ||
+          Array.from(textEl.querySelectorAll("tspan"))
+            .map(tspan => tspan.textContent || "")
+            .join("|")
+      }
     };
+  } else if (addedId) {
+    const label = AddedLabels.get(+addedId);
+    if (!label) return;
+    selectedLabel = { type: "added", labelId: +addedId, elId: `addedLabel${addedId}`, label: { ...label } };
+  } else {
+    tip("Label data is incorrect", false, "error", 8000);
+    return;
   }
 
-  select<SVGElement, unknown>(`#${text.id}`)
+  select<SVGElement, unknown>(`#${textEl.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
@@ -77,7 +65,7 @@ function open(tspan: SVGTSpanElement): void {
     title: "Edit Label",
     resizable: false,
     width: "fit-content",
-    position: { my: "center top+10", at: "bottom", of: text, collision: "fit" },
+    position: { my: "center top+10", at: "bottom", of: textEl, collision: "fit" },
     close: closeLabelEditor
   });
 
@@ -214,29 +202,9 @@ function renderDialog(): void {
   ensureEl("labelRemoveSingle").on("click", removeSelectedLabel);
 }
 
-function hideTopButtons(): void {
-  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
-    el.style.display = "none";
-  });
-}
-
-function showTopButtons(): void {
-  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
-    el.style.display = "inline-block";
-  });
-}
-
-function showEditorTips(event: MouseEvent): void {
-  showMainTip();
-  const target = event.target as SVGElement;
-  const parent = target.parentNode as Element | null;
-  const grandParent = parent?.parentNode as Element | null;
-  if (grandParent?.id === getSelectedLabelId()) {
-    tip("Drag to shift the label");
-  } else if (parent?.id === "controlPoints") {
-    if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
-    if (target.tagName === "path") tip("Click to add a control point");
-  }
+function getSelectedGroup() {
+  if (selectedLabel.type === "state") return "states";
+  return selectedLabel.label.group || "addedLabels";
 }
 
 function selectLabelGroup(group: string): void {
@@ -257,22 +225,45 @@ function selectLabelGroup(group: string): void {
 }
 
 function updateValues(): void {
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (!label) return;
 
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
-  const startOffset = label.startOffset ?? 50;
-  ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
-  ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(startOffset);
+  ensureEl<HTMLInputElement>("labelStartOffset").value = String(label.startOffset ?? 50);
+  ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(label.startOffset ?? 50);
   ensureEl<HTMLInputElement>("labelRelativeSize").value = String(label.fontSize ?? 100);
   ensureEl<HTMLInputElement>("labelLetterSpacingSize").value = String(label.letterSpacing ?? 0);
 }
 
-function drawControlPointsAndLine(): void {
-  const label = getEditableLabel();
-  if (!label) return;
+function hideTopButtons(): void {
+  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
+    el.style.display = "none";
+  });
+}
 
+function showTopButtons(): void {
+  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
+    el.style.display = "inline-block";
+  });
+}
+
+function showEditorTips(event: MouseEvent): void {
+  showMainTip();
+  const target = event.target as SVGElement;
+  const parent = target.parentNode as Element | null;
+  const grandParent = parent?.parentNode as Element | null;
+  if (grandParent?.id === selectedLabel.elId) {
+    tip("Drag to move the label");
+  } else if (parent?.id === "controlPoints") {
+    if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
+    if (target.tagName === "path") tip("Click to add a control point");
+  }
+}
+
+function drawControlPointsAndLine(): void {
   select("#debug").select("#controlPoints").remove();
+
+  const label = selectedLabel.label;
   const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
   const path = select<SVGGElement, unknown>("#debug")
     .append("g")
@@ -309,7 +300,7 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
-  const points: [number, number][] = [];
+  const points: Point[] = [];
   select("#debug > #controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
@@ -320,9 +311,8 @@ function redrawLabelPath(): void {
   const lineGen = line<[number, number]>().curve(curveNatural);
   const d = round(lineGen(points) || "");
   select("#debug").select("#controlPoints > path").attr("d", d);
-  const label = getEditableLabel();
-  if (label) label.pathPoints = points;
-  renderSelectedLabel();
+  selectedLabel.label.pathPoints = points;
+  applyLabelChanges();
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -334,8 +324,7 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   const point = getPointer(event, this);
 
   const dists: number[] = [];
-  select("#debug")
-    .select("#controlPoints")
+  select("#debug #controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
       const x = +this.getAttribute("cx")!;
@@ -366,18 +355,15 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
 }
 
 function dragLabel(event: any): void {
-  const label = getEditableLabel();
-  if (!label) return;
+  const label = selectedLabel.label;
   const dx0 = (label.dx || 0) - event.x;
   const dy0 = (label.dy || 0) - event.y;
 
   event.on("drag", (dragEvent: any) => {
     label.dx = rn(dx0 + dragEvent.x, 2);
     label.dy = rn(dy0 + dragEvent.y, 2);
-    renderSelectedLabel();
-    select("#debug")
-      .select("#controlPoints")
-      .attr("transform", `translate(${label.dx || 0}, ${label.dy || 0})`);
+    applyLabelChanges();
+    select("#debug #controlPoints").attr("transform", `translate(${label.dx}, ${label.dy})`);
   });
 }
 
@@ -396,9 +382,8 @@ function hideGroupSection(): void {
 
 function changeGroup(this: HTMLSelectElement): void {
   lastSelectedGroup = this.value;
-  const label = getEditableLabel();
-  if (label && "group" in label) label.group = this.value;
-  renderSelectedLabel();
+  if ("group" in selectedLabel.label) selectedLabel.label.group = this.value;
+  applyLabelChanges();
 }
 
 function toggleNewGroupInput(): void {
@@ -449,12 +434,12 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (label && "group" in label) label.group = group;
   if (renameOldGroup) {
     delete style.addedLabels[oldGroupId];
   }
-  renderSelectedLabel();
+  applyLabelChanges();
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("labelGroupInput").value = "";
@@ -506,19 +491,20 @@ function hideTextSection(): void {
 
 function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (label) label.text = input;
-  renderSelectedLabel();
-  if (isStateLabel()) tip("Use States Editor to change an actual state name, not just a label", false, "warn");
+  applyLabelChanges();
+  if (selectedLabel.type === "state")
+    tip("Use States Editor to change the actual state name, not just a label", false, "warn");
 }
 
 function generateRandomName(): void {
   let name = "";
   if (selectedLabel?.type === "state") {
-    const culture = pack.states[selectedLabel.id].culture;
+    const culture = pack.states[selectedLabel.stateId].culture;
     name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
   } else {
-    const label = getEditableLabel();
+    const label = selectedLabel.label;
     const points = label?.pathPoints || [];
     const center = points.length
       ? points.reduce(([x, y], point) => [x + point[0] / points.length, y + point[1] / points.length], [0, 0])
@@ -568,9 +554,9 @@ function hideLetterSpacingSection(): void {
 function changeStartOffset(this: HTMLInputElement): void {
   const value = this.value;
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (label) label.startOffset = +value;
-  renderSelectedLabel();
+  applyLabelChanges();
   tip(`Label offset: ${value}%`);
 }
 
@@ -578,30 +564,28 @@ function changeStartOffsetFromValue(this: HTMLInputElement): void {
   const value = Math.min(80, Math.max(20, +this.value));
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
   this.value = String(value);
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (label) label.startOffset = value;
-  renderSelectedLabel();
+  applyLabelChanges();
   tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (label) label.fontSize = +this.value;
-  renderSelectedLabel();
+  applyLabelChanges();
   tip(`Label relative size: ${this.value}%`);
-  changeText();
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (label) label.letterSpacing = +this.value;
-  renderSelectedLabel();
+  applyLabelChanges();
   tip(`Label letter-spacing size: ${this.value}px`);
-  changeText();
 }
 
 function editLabelAlign(): void {
-  const label = getEditableLabel();
+  const label = selectedLabel.label;
   if (!label?.pathPoints?.length) return;
 
   const xs = label.pathPoints.map(point => point[0]);
@@ -612,12 +596,12 @@ function editLabelAlign(): void {
     [center[0] - halfLength, center[1]],
     [center[0] + halfLength, center[1]]
   ];
-  renderSelectedLabel();
+  applyLabelChanges();
   drawControlPointsAndLine();
 }
 
 function editLabelLegend(): void {
-  void Controllers.NotesEditor.open(getSelectedLabelId(), getEditableLabel()?.text || "");
+  void Controllers.NotesEditor.open(selectedLabel.elId, selectedLabel.label.text);
 }
 
 function removeSelectedLabel(): void {
@@ -628,14 +612,12 @@ function removeSelectedLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        const label = getEditableLabel();
-        if (label && "i" in label) {
-          removeRenderedLabel("added", label.i);
-          AddedLabels.remove(label.i);
-        } else if (label) {
-          const stateId = selectedLabel!.id;
-          removeRenderedLabel("state", stateId);
-          delete pack.states[stateId].label;
+        if (selectedLabel.type === "added") {
+          removeLabel("added", selectedLabel.label.i);
+          AddedLabels.remove(selectedLabel.label.i);
+        } else if (selectedLabel.type === "state") {
+          removeLabel("state", selectedLabel.stateId);
+          delete pack.states[selectedLabel.stateId].label;
         }
         $("#labelEditor").dialog("close");
       },
@@ -646,10 +628,27 @@ function removeSelectedLabel(): void {
   });
 }
 
+function applyLabelChanges(): void {
+  const label = { ...selectedLabel.label };
+  if (selectedLabel.type === "state") {
+    pack.states[selectedLabel.stateId].label = label;
+    drawLabel(selectedLabel.type, selectedLabel.stateId);
+  } else if (selectedLabel.type === "added") {
+    const labelId = selectedLabel.labelId;
+    const index = pack.labels.findIndex(({ i }) => i === labelId);
+    if (index === -1) return;
+    pack.labels[index] = label as AddedLabel;
+    drawLabel(selectedLabel.type, labelId);
+  }
+
+  select<SVGElement, unknown>(`#${selectedLabel.elId}`)
+    .call(drag<SVGElement, unknown>().on("start", dragLabel))
+    .classed("draggable", true);
+}
+
 function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
-  select(`#${getSelectedLabelId()}`).on(".drag", null).classed("draggable", false);
-  selectedLabel = undefined;
+  select(`#${selectedLabel.elId}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();

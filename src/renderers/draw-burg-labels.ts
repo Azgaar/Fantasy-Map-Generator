@@ -1,5 +1,10 @@
 import type { Burg } from "../generators/burgs-generator";
-import { ensureBurgLabelsContainer, ensureLabelGroup } from "./draw-label-utils";
+import {
+  ensureBurgLabelsContainer,
+  ensureLabelGroup,
+  getLabelGroupAttributesFor,
+  getLabelGroupMarkup
+} from "./draw-label-utils";
 
 export function drawBurgLabels(): void {
   const container = ensureBurgLabelsContainer();
@@ -7,14 +12,19 @@ export function drawBurgLabels(): void {
 
   const burgs = pack.burgs.filter(burg => burg.i && !burg.removed);
   const configuredGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order).map(({ name }) => name);
-  const dataGroups = burgs.map(burg => burg.group || "town");
-  const groups = [...new Set([...configuredGroups, ...dataGroups])];
+  const labelsByGroup = new Map(configuredGroups.map(group => [group, ""]));
+  const attributesByGroup = new Map<string, Record<string, string | number | null>>();
 
-  for (const name of groups) {
-    const group = ensureLabelGroup(name, "burg");
-    const labels = burgs.filter(burg => (burg.group || "town") === name).map(burg => buildBurgLabel(burg, group));
-    group.append(...labels);
+  for (const burg of burgs) {
+    const group = burg.group || "town";
+    const groupAttributes =
+      attributesByGroup.get(group) || Object.fromEntries(getLabelGroupAttributesFor(group, "burg"));
+    attributesByGroup.set(group, groupAttributes);
+    labelsByGroup.set(group, (labelsByGroup.get(group) || "") + getBurgLabelMarkup(burg, groupAttributes));
   }
+
+  const markup = [...labelsByGroup].map(([group, labels]) => getLabelGroupMarkup(group, "burg", labels)).join("");
+  container.insertAdjacentHTML("beforeend", markup);
 }
 
 export function drawBurgLabel(burg: Burg): void {
@@ -22,25 +32,19 @@ export function drawBurgLabel(burg: Burg): void {
   const group = ensureLabelGroup(burg.group || "town", "burg");
 
   removeBurgLabel(burg.i);
-  group.appendChild(buildBurgLabel(burg, group));
+  const groupAttributes = Object.fromEntries(getLabelGroupAttributesFor(burg.group || "town", "burg"));
+  group.insertAdjacentHTML("beforeend", getBurgLabelMarkup(burg, groupAttributes));
 }
 
 export function removeBurgLabel(burgId: number): void {
   document.getElementById(`burgLabel${burgId}`)?.remove();
 }
 
-function buildBurgLabel(burg: Burg, group: SVGGElement): SVGTextElement {
-  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  text.setAttribute("text-rendering", "optimizeSpeed");
-  text.setAttribute("id", `burgLabel${burg.i}`);
-  text.setAttribute("data-id", String(burg.i));
-  text.setAttribute("x", String(burg.x));
-  text.setAttribute("y", String(burg.y));
-  text.setAttribute("dx", `${group?.getAttribute("data-dx") || 0}em`);
-  text.setAttribute("dy", `${group?.getAttribute("data-dy") || 0}em`);
-  if (burg.label?.dx || burg.label?.dy) {
-    text.setAttribute("transform", `translate(${burg.label.dx || 0}, ${burg.label.dy || 0})`);
-  }
-  text.textContent = burg.label?.text ?? burg.name ?? "";
-  return text;
+function getBurgLabelMarkup(burg: Burg, groupAttributes: Record<string, string | number | null>): string {
+  const transform =
+    burg.label?.dx || burg.label?.dy ? ` transform="translate(${burg.label.dx || 0}, ${burg.label.dy || 0})"` : "";
+  const text = burg.label?.text ?? burg.name ?? "";
+  return `<text text-rendering="optimizeSpeed" id="burgLabel${burg.i}" data-id="${burg.i}" x="${burg.x}" y="${
+    burg.y
+  }" dx="${groupAttributes["data-dx"] || 0}em" dy="${groupAttributes["data-dy"] || 0}em"${transform}>${text}</text>`;
 }

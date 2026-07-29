@@ -23,12 +23,23 @@ export function ensureLabelGroup(group: string, type: LabelGroupType): SVGGEleme
 
   const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
   container.id = group;
-  const groupStyle = getLabelGroupStyle(group, type);
-  for (const [attribute, value] of getLabelGroupAttributes({ ...DEFAULT_LABEL_STYLE, ...groupStyle })) {
+  for (const [attribute, value] of getLabelGroupAttributesFor(group, type)) {
     if (value !== null) container.setAttribute(attribute, String(value));
   }
   parent.appendChild(container);
   return container;
+}
+
+export function getLabelGroupMarkup(group: string, type: LabelGroupType, content: string): string {
+  const attributes = getLabelGroupAttributesFor(group, type)
+    .filter(([, value]) => value !== null)
+    .map(([attribute, value]) => `${attribute}="${String(value)}"`)
+    .join(" ");
+  return `<g id="${group}" ${attributes}>${content}</g>`;
+}
+
+export function getLabelGroupAttributesFor(group: string, type: LabelGroupType): [string, string | number | null][] {
+  return getLabelGroupAttributes({ ...DEFAULT_LABEL_STYLE, ...getLabelGroupStyle(group, type) });
 }
 
 export function ensureBurgLabelsContainer(): SVGGElement {
@@ -68,8 +79,7 @@ export function getLabelTextMarkup(label: Label & { text: string; id: string }):
   const lines = label.text.split("|");
   const tspans = lines
     .map(
-      (text, index) =>
-        /*html*/ `<tspan x="0" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${escapeMarkup(text)}</tspan>`
+      (text, index) => /*html*/ `<tspan x="0" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${text}</tspan>`
     )
     .join("");
   const transform = label.dx || label.dy ? ` transform="translate(${label.dx || 0}, ${label.dy || 0})"` : "";
@@ -80,11 +90,4 @@ export function getLabelTextMarkup(label: Label & { text: string; id: string }):
   return /*html*/ `<text text-rendering="optimizeSpeed" id="${label.id}"${transform}>
       <textPath href="#${`textPath_${label.id}`}" startOffset="${startOffset}" font-size="${fontSize}"${letterSpacing}>${tspans}</textPath>
     </text>`;
-}
-
-function escapeMarkup(text: string): string {
-  return text.replace(
-    /[&<>"']/g,
-    character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] || character
-  );
 }

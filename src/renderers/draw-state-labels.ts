@@ -53,21 +53,6 @@ export function drawStateLabel(stateId: number): void {
   }
 }
 
-export function getStateLabelData(stateId: number): Label | undefined {
-  const state = pack.states[stateId];
-  if (!state?.i || state.removed) return;
-
-  const sandbox = createMeasurementSandbox("states");
-  try {
-    const mode = options.stateLabelsMode || "auto";
-    const letterLength = checkExampleLetterLength(sandbox);
-    const { id: _id, ...label } = resolveStateLabel(state, sandbox, mode, letterLength);
-    return label;
-  } finally {
-    sandbox.remove();
-  }
-}
-
 function resolveStateLabel(state: State, sandbox: SVGGElement, mode: string, letterLength: number) {
   const label = createStateLabel(state);
   return label.pathPoints.length ? label : { ...label, ...fitLabel(state, sandbox, mode, letterLength) };
