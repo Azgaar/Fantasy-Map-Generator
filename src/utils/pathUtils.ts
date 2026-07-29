@@ -369,7 +369,10 @@ export const extractPathPoints = (pathEl: SVGPathElement, step = 100) => {
     points.push([x, y]);
   }
 
-  // TODO: check if points path is stright, then leave only 1st and last points
+  if (points.length > 2 && points.every(([, y]) => y === points[0][1])) {
+    return [points[0], points.at(-1)!];
+  }
+
   return points;
 };
 

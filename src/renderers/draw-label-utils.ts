@@ -2,6 +2,7 @@ import { curveNatural, line } from "d3";
 import type { Label } from "../generators/labels";
 
 type LabelGroupStyle = Record<string, string | number | null>;
+
 const DEFAULT_LABEL_STYLE: LabelGroupStyle = {
   fill: "#3e3e4b",
   opacity: 1,
@@ -12,20 +13,41 @@ const DEFAULT_LABEL_STYLE: LabelGroupStyle = {
   "data-size": 18
 };
 
-export function ensureLabelGroup(group: string): SVGGElement {
+export type LabelGroupType = "state" | "burg" | "added";
+
+export function ensureLabelGroup(group: string, type: LabelGroupType): SVGGElement {
   const labels = document.querySelector<SVGGElement>("g#labels")!;
-  const existing = Array.from(labels.children).find(child => child.tagName === "g" && child.id === group);
+  const parent = type === "burg" ? ensureBurgLabelsContainer() : labels;
+  const existing = Array.from(parent.children).find(child => child.tagName === "g" && child.id === group);
   if (existing) return existing as SVGGElement;
 
   const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
   container.id = group;
-  const groupStyle =
-    group === "states" ? style.stateLabels : style.addedLabels[group] || style.addedLabels.addedLabels || {};
+  const groupStyle = getLabelGroupStyle(group, type);
   for (const [attribute, value] of getLabelGroupAttributes({ ...DEFAULT_LABEL_STYLE, ...groupStyle })) {
     if (value !== null) container.setAttribute(attribute, String(value));
   }
+  parent.appendChild(container);
+  return container;
+}
+
+export function ensureBurgLabelsContainer(): SVGGElement {
+  const labels = document.querySelector<SVGGElement>("g#labels")!;
+  const existing = document.querySelector<SVGGElement>("#labels > #burgLabels");
+  if (existing) return existing;
+
+  const container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  container.id = "burgLabels";
   labels.appendChild(container);
   return container;
+}
+
+function getLabelGroupStyle(group: string, type: LabelGroupType): LabelGroupStyle {
+  if (type === "state") return style.stateLabels;
+  if (type === "burg") {
+    return style.burgLabels[group] || style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
+  }
+  return style.addedLabels[group] || style.addedLabels.addedLabels || {};
 }
 
 export function getLabelGroupAttributes(groupStyle: LabelGroupStyle): [string, string | number | null][] {

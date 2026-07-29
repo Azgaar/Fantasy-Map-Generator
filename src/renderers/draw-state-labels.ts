@@ -19,12 +19,7 @@ export function drawStateLabels(): void {
   try {
     for (const state of pack.states) {
       if (!state.i || state.removed) continue;
-
-      let label = createStateLabel(state);
-      if (!label.pathPoints.length) {
-        label = { ...label, ...fitLabel(state, sandbox, mode, letterLength) };
-      }
-
+      const label = resolveStateLabel(state, sandbox, mode, letterLength);
       paths += getLabelPathMarkup(label);
       texts += getLabelTextMarkup(label);
     }
@@ -33,7 +28,7 @@ export function drawStateLabels(): void {
   }
 
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
-  ensureLabelGroup("states").insertAdjacentHTML("beforeend", texts);
+  ensureLabelGroup("states", "state").insertAdjacentHTML("beforeend", texts);
 }
 
 export function drawStateLabel(stateId: number): void {
@@ -45,23 +40,37 @@ export function drawStateLabel(stateId: number): void {
   const letterLength = checkExampleLetterLength(sandbox);
 
   try {
-    if (!state.i || state.removed) return;
-
-    let label = createStateLabel(state);
-    if (!label.pathPoints.length) {
-      label = { ...label, ...fitLabel(state, sandbox, mode, letterLength) };
-    }
-
+    const label = resolveStateLabel(state, sandbox, mode, letterLength);
     const path = getLabelPathMarkup(label);
     const text = getLabelTextMarkup(label);
 
     document.getElementById(`textPath_stateLabel${state.i}`)?.remove();
     document.getElementById(`stateLabel${state.i}`)?.remove();
     document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", path);
-    ensureLabelGroup("states").insertAdjacentHTML("beforeend", text);
+    ensureLabelGroup("states", "state").insertAdjacentHTML("beforeend", text);
   } finally {
     sandbox.remove();
   }
+}
+
+export function getStateLabelData(stateId: number): Label | undefined {
+  const state = pack.states[stateId];
+  if (!state?.i || state.removed) return;
+
+  const sandbox = createMeasurementSandbox("states");
+  try {
+    const mode = options.stateLabelsMode || "auto";
+    const letterLength = checkExampleLetterLength(sandbox);
+    const { id: _id, ...label } = resolveStateLabel(state, sandbox, mode, letterLength);
+    return label;
+  } finally {
+    sandbox.remove();
+  }
+}
+
+function resolveStateLabel(state: State, sandbox: SVGGElement, mode: string, letterLength: number) {
+  const label = createStateLabel(state);
+  return label.pathPoints.length ? label : { ...label, ...fitLabel(state, sandbox, mode, letterLength) };
 }
 
 function createStateLabel(state: State) {
@@ -87,7 +96,7 @@ function createMeasurementSandbox(group: string): SVGGElement {
   sandbox.id = "labelMeasurement";
   sandbox.style.visibility = "hidden";
 
-  const groupStyle = getComputedStyle(ensureLabelGroup(group));
+  const groupStyle = getComputedStyle(ensureLabelGroup(group, "state"));
   sandbox.setAttribute("font-family", groupStyle.fontFamily);
   sandbox.setAttribute("font-size", groupStyle.fontSize);
   sandbox.setAttribute("letter-spacing", groupStyle.letterSpacing);

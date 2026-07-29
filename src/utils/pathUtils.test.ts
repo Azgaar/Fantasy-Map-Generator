@@ -1,6 +1,44 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../generators/voronoi";
-import { meander } from "./pathUtils";
+import { extractPathPoints, meander } from "./pathUtils";
+
+describe("extractPathPoints", () => {
+  const createPath = (points: Point[]) =>
+    ({
+      getTotalLength: () => (points.length - 1) * 100,
+      getPointAtLength: (length: number) => {
+        const [x, y] = points[Math.round(length / 100)];
+        return { x, y };
+      }
+    }) as SVGPathElement;
+
+  it("represents a straight horizontal path with only its endpoints", () => {
+    const path = createPath([
+      [0, 10],
+      [50, 10],
+      [100, 10]
+    ]);
+
+    expect(extractPathPoints(path, 100)).toEqual([
+      [0, 10],
+      [100, 10]
+    ]);
+  });
+
+  it("keeps sampled points when the path is not horizontal", () => {
+    const path = createPath([
+      [0, 10],
+      [50, 11],
+      [100, 10]
+    ]);
+
+    expect(extractPathPoints(path, 100)).toEqual([
+      [0, 10],
+      [50, 11],
+      [100, 10]
+    ]);
+  });
+});
 
 describe("addMeandering", () => {
   // Cells positions arranged along x-axis with enough spacing to trigger interior point insertion

@@ -13,7 +13,7 @@ export function drawAddedLabels(): void {
 
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
   for (const [group, markup] of texts) {
-    ensureLabelGroup(group).insertAdjacentHTML("beforeend", markup);
+    ensureLabelGroup(group, "added").insertAdjacentHTML("beforeend", markup);
   }
 }
 
@@ -24,7 +24,7 @@ export function drawAddedLabel(labelId: number): void {
   const label = { ...addedLabel, id: `addedLabel${addedLabel.i}` };
   removeAddedLabel(labelId);
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", getLabelPathMarkup(label));
-  ensureLabelGroup(label.group).insertAdjacentHTML("beforeend", getLabelTextMarkup(label));
+  ensureLabelGroup(label.group, "added").insertAdjacentHTML("beforeend", getLabelTextMarkup(label));
 }
 
 export function removeAddedLabel(labelId: number): void {
