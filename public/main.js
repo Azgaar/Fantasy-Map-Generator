@@ -1,5 +1,5 @@
 "use strict";
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2023. MIT License
+// Azgaar, 2017-2026. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 // set debug options

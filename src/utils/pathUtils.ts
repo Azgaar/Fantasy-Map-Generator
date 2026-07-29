@@ -356,15 +356,18 @@ export const findPath = (
 };
 
 // extract control points from an SVG path element
-export const extractPathPoints = (pathElement: SVGPathElement) => {
-  if (!pathElement) return [];
-  const l = pathElement.getTotalLength();
+export const extractPathPoints = (pathEl: SVGPathElement) => {
+  if (!pathEl) return [];
+  const l = pathEl.getTotalLength();
   if (!l) return [];
-  const points: [number, number][] = [];
-  const increment = l / Math.max(Math.ceil(l / 200), 2);
+
+  const points: Point[] = [];
+  const increment = l / Math.max(Math.ceil(l / 100), 2);
   for (let i = 0; i <= l; i += increment) {
-    const point = pathElement.getPointAtLength(i);
-    points.push([point.x, point.y]);
+    const point = pathEl.getPointAtLength(i);
+    const x = rn(point.x, 2);
+    const y = rn(point.y, 2);
+    points.push([x, y]);
   }
   return points;
 };

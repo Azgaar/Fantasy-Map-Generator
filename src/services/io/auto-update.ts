@@ -1,7 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
-import type { AddedLabel, Label } from "@/generators/labels";
+import type { Label } from "@/generators/labels";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -1292,66 +1292,80 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     }
   }
 
-  if (isOlderThan("1.140.0")) migrateLabelsFromSvg();
-}
-
-function migrateLabelsFromSvg(): void {
-  const getLabelData = (text: SVGTextElement, path?: SVGPathElement): Label => {
-    const textPath = text.querySelector("textPath");
-    const [dx, dy] = parseTransform(text.getAttribute("transform") || "");
-    const data: Label = {
-      text:
-        Array.from(text.querySelectorAll("tspan"))
+  if (isOlderThan("1.140.0")) {
+    // v1.140.0 migrated labels data to pack
+    const getMultilineText = (textEl: SVGTextElement) => {
+      return (
+        Array.from(textEl.querySelectorAll("tspan"))
           .map(tspan => tspan.textContent || "")
-          .join("|") ||
-        text.textContent ||
-        "",
-      ...(dx && { dx: +dx }),
-      ...(dy && { dy: +dy })
+          .join("|") || textEl.textContent
+      );
     };
 
-    if (path) data.pathPoints = extractPathPoints(path);
-    if (!textPath) return data;
+    const getLabelData = ({
+      textEl,
+      pathEl,
+      names
+    }: {
+      textEl: SVGTextElement;
+      pathEl?: SVGPathElement;
+      names?: (string | undefined)[];
+    }): Label | undefined => {
+      const label: Label = {};
+      const textPath = textEl.querySelector("textPath");
+      const text = textEl && getMultilineText(textEl);
+      if (text && !names?.includes(text)) label.text = text;
 
-    const startOffset = Number.parseFloat(textPath.getAttribute("startOffset") || "");
-    const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
-    const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
-    if (Number.isFinite(startOffset)) data.startOffset = startOffset;
-    if (Number.isFinite(fontSize)) data.fontSize = fontSize;
-    if (Number.isFinite(letterSpacing)) data.letterSpacing = letterSpacing;
-    return data;
-  };
+      const [dx, dy] = parseTransform(textEl.getAttribute("transform") || "");
+      if (dx) label.dx = rn(dx, 2);
+      if (dy) label.dy = rn(dy, 2);
 
-  for (const text of document.querySelectorAll<SVGTextElement>("#labels #states > text[id^='stateLabel']")) {
-    const stateId = +text.id.slice(10);
-    const state = pack.states[stateId];
-    const path = document.getElementById(`textPath_${text.id}`) as SVGPathElement | null;
-    if (state && path) state.label = getLabelData(text, path);
-  }
+      const pathPoints = pathEl ? extractPathPoints(pathEl) : null;
+      if (pathPoints) label.pathPoints = pathPoints;
+      const startOffset = textPath && Number.parseFloat(textPath.getAttribute("startOffset") || "");
+      if (startOffset !== null && startOffset !== 50) label.startOffset = startOffset;
+      const fontSize = textPath && Number.parseFloat(textPath.getAttribute("font-size") || "");
+      if (fontSize !== null && fontSize !== 100) label.fontSize = fontSize;
+      const letterSpacing = textPath && Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
+      if (letterSpacing) label.letterSpacing = letterSpacing;
 
-  for (const text of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
-    const burgId = +text.id.slice(9);
-    const burg = pack.burgs[burgId];
-    if (!burg) continue;
-    const label = getLabelData(text);
-    if (label.text !== burg.name || label.dx || label.dy) burg.label = label;
-  }
+      return Object.keys(label).length > 0 ? label : undefined;
+    };
 
-  let id = 0;
-  const groups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
-  for (const group of groups) {
-    for (const text of group.querySelectorAll<SVGTextElement>(":scope > text")) {
-      const path = document.getElementById(`textPath_${text.id}`) as SVGPathElement | null;
-      if (!path) continue;
-      const data = getLabelData(text, path);
-      if (!data.text || !data.pathPoints?.length) continue;
-
-      const label: AddedLabel = { i: id++, group: group.id, ...data, text: data.text, pathPoints: data.pathPoints };
-      pack.labels.push(label);
-
-      text.id = `addedLabel${label.i}`;
-      path.id = `textPath_${text.id}`;
-      text.querySelector("textPath")?.setAttribute("href", `#${path.id}`);
+    // migrate state labels data
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text[id^='stateLabel']")) {
+      const stateId = +textEl.id.slice(10);
+      const state = pack.states[stateId];
+      if (!state) continue;
+      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+      if (state && pathEl) state.label = getLabelData({ textEl, pathEl, names: [state.name, state.fullName] });
     }
+
+    // migrate burg labels data
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
+      const burgId = +textEl.id.slice(9);
+      const burg = pack.burgs[burgId];
+      if (!burg) continue;
+      burg.label = getLabelData({ textEl, names: [burg.name] });
+    }
+
+    // migrate added labels data
+    const groups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
+    for (const group of groups) {
+      for (const textEl of group.querySelectorAll<SVGTextElement>(":scope > text")) {
+        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+        if (!pathEl) continue;
+
+        const label = getLabelData({ textEl, pathEl });
+        const text = label?.text;
+        const pathPoints = label?.pathPoints;
+        if (!text || !pathPoints) continue;
+
+        const addedLabel = { i: pack.labels.length + 1, ...label, text, pathPoints, group: group.id };
+        pack.labels.push(addedLabel);
+      }
+    }
+
+    drawLabels(); // rerender all labels
   }
 }

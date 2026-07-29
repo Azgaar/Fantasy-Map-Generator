@@ -523,8 +523,9 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked && layerIsOn("toggleLabels")) {
-      drawLabel("state");
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
+      if (s.label?.text) delete s.label.text;
+      if (layerIsOn("toggleLabels")) drawLabel("state", s.i);
     }
     refreshStatesEditor();
   }

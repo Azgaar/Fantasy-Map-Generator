@@ -543,7 +543,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
       if (isVisible(select("#labels")) && select("#labels").selectAll("text").size()) turnOn("toggleLabels");
-      else removeLabels();
       if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
