@@ -10,8 +10,8 @@ import { speak } from "@/utils";
 import { extractPathPoints } from "@/utils/pathUtils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
 
-let lastSelectedGroup = ""; // group selected in the editor most recently; used as the default group for newly added labels
 let selectedLabel: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let lastSelectedGroup = ""; // group selected in the editor most recently; used as the default group for newly added labels
 let stateLabelDraft: Label | undefined;
 
 function getEditableLabel(): Label | AddedLabel | undefined {
@@ -32,9 +32,10 @@ function renderSelectedLabel(): void {
   const id = selectedLabel.attr("id");
   if (id.startsWith("stateLabel")) drawLabel("state", +id.slice(10));
   else drawLabel("added", +id.slice(10));
+
   selectedLabel = select<SVGElement, unknown>(`#${id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true) as typeof selectedLabel;
+    .classed("draggable", true);
 }
 
 function open(tspan: SVGTSpanElement): void {
@@ -43,10 +44,13 @@ function open(tspan: SVGTSpanElement): void {
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const textPath = tspan.parentNode as SVGTextPathElement;
-  const text = textPath.parentNode as SVGTextElement;
-  selectedLabel = select<SVGElement, unknown>(text)
+  const text = textPath.parentElement;
+  const group = text?.parentElement?.id;
+  if (!text || !group) return;
+
+  selectedLabel = select<SVGElement, unknown>(`#${text.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true) as unknown as typeof selectedLabel;
+    .classed("draggable", true);
   stateLabelDraft = getStateLabelDraft();
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
 
@@ -61,7 +65,7 @@ function open(tspan: SVGTSpanElement): void {
   });
 
   drawControlPointsAndLine();
-  selectLabelGroup(text);
+  selectLabelGroup(group);
   updateValues(textPath);
 }
 
@@ -237,9 +241,7 @@ function showEditorTips(event: MouseEvent): void {
   }
 }
 
-function selectLabelGroup(text: SVGTextElement): void {
-  const group = (text.parentNode as SVGGElement).id;
-
+function selectLabelGroup(group: string): void {
   if (group === "states" || group === "burgLabels") {
     ensureEl("labelGroupShow").style.display = "none";
     return;
