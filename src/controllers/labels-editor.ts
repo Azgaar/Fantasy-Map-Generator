@@ -9,7 +9,6 @@ import { getLabelGroupAttributes, getLabelPath } from "@/renderers/draw-label-ut
 import { drawLabel, removeLabel } from "@/renderers/draw-labels";
 import { parseStateLabelData } from "@/renderers/draw-state-labels";
 import { speak } from "@/utils";
-import { parsePathPoints } from "@/utils/pathUtils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, round } from "../utils";
 
 type StateLabel = { type: "state"; stateId: number; elId: string; label: Label };
@@ -24,7 +23,7 @@ function open(tspan: SVGTSpanElement): void {
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   const textPath = tspan.parentElement;
-  const textEl = textPath?.parentElement as SVGGElement | null;
+  const textEl = textPath?.parentElement as SVGTextElement | null;
   if (!textEl) return;
 
   const stateId = textEl.id.match(/^stateLabel(\d+)$/)?.[1];
@@ -33,12 +32,11 @@ function open(tspan: SVGTSpanElement): void {
   if (stateId) {
     const state = pack.states[+stateId];
     if (!state) return;
-    const label = pack.states[+stateId].label;
     selectedLabel = {
       type: "state",
       stateId: +stateId,
       elId: `stateLabel${stateId}`,
-      label: { ...parseStateLabelData(textEl), ...label }
+      label: parseStateLabelData(textEl)
     };
   } else if (addedId) {
     const label = AddedLabels.get(+addedId);

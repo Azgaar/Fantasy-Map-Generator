@@ -2,6 +2,7 @@ import { max } from "d3";
 import type { Label } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
+import { parsePathPoints } from "@/utils/pathUtils";
 import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
 import { ensureLabelGroup, getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
@@ -53,9 +54,25 @@ export function drawStateLabel(stateId: number): void {
   }
 }
 
-export function parseStateLabelData(textEl: SVGGElement): Label {
-  // TODO: parse Label data from textEl, using reverse of what fitLabel does;
-  return {};
+export function parseStateLabelData(textEl: SVGTextElement): Label {
+  const textPath = textEl.querySelector("textPath");
+  if (!textPath) return {};
+
+  const pathId = textPath.getAttribute("href")?.replace(/^#/, "") || `textPath_${textEl.id}`;
+  const pathEl = textEl.ownerDocument.getElementById(pathId);
+  const pathPoints = parsePathPoints(pathEl?.getAttribute("d") || "");
+  const tspans = Array.from(textPath.querySelectorAll("tspan"));
+  const text = tspans.length ? tspans.map(tspan => tspan.textContent || "").join("|") : textPath.textContent || "";
+  const [dx = 0, dy = 0] =
+    textEl
+      .getAttribute("transform")
+      ?.match(/[-+]?(?:\d*\.?\d+)(?:e[-+]?\d+)?/gi)
+      ?.map(Number) || [];
+  const startOffset = Number.parseFloat(textPath.getAttribute("startOffset") || "");
+  const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
+  const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
+
+  return { text, pathPoints, dx, dy, startOffset, fontSize, letterSpacing };
 }
 
 function resolveStateLabel(state: State, sandbox: SVGGElement, mode: string, letterLength: number) {
