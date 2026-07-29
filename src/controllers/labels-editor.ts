@@ -265,7 +265,7 @@ function drawControlPointsAndLine(): void {
 
   const label = selectedLabel.label;
   const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
-  const path = select<SVGGElement, unknown>("#debug")
+  select<SVGGElement, unknown>("#debug")
     .append("g")
     .attr("id", "controlPoints")
     .attr("transform", transform)
@@ -273,20 +273,16 @@ function drawControlPointsAndLine(): void {
     .attr("d", getLabelPath(label))
     .on("click", addInterimControlPoint)
     .node() as SVGPathElement;
-  const l = path.getTotalLength();
-  if (!l) return;
-  const increment = l / Math.max(Math.ceil(l / 200), 2);
-  for (let i = 0; i <= l; i += increment) {
-    addControlPoint(path.getPointAtLength(i));
-  }
+
+  label.pathPoints?.forEach(drawControlPoint);
 }
 
-function addControlPoint(point: DOMPoint): void {
+function drawControlPoint(point: Point): void {
   select<SVGGElement, unknown>("#debug")
     .select("#controlPoints")
     .append("circle")
-    .attr("cx", point.x)
-    .attr("cy", point.y)
+    .attr("cx", point[0])
+    .attr("cy", point[1])
     .attr("r", 2.5)
     .attr("stroke-width", 0.8)
     .call(drag<SVGCircleElement, unknown>().on("drag", dragControlPoint))

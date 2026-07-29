@@ -1320,7 +1320,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (dx) label.dx = rn(dx, 2);
       if (dy) label.dy = rn(dy, 2);
 
-      const pathPoints = pathEl ? extractPathPoints(pathEl, 50) : null;
+      const pathPoints = pathEl ? extractPathPoints(pathEl, 25) : null;
       if (pathPoints) label.pathPoints = pathPoints;
       const startOffset = textPath && Number.parseFloat(textPath.getAttribute("startOffset") || "");
       if (startOffset !== null && startOffset !== 50) label.startOffset = startOffset;
