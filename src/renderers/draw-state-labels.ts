@@ -53,6 +53,11 @@ export function drawStateLabel(stateId: number): void {
   }
 }
 
+export function parseStateLabelData(textEl: SVGGElement): Label {
+  // TODO: parse Label data from textEl, using reverse of what fitLabel does;
+  return {};
+}
+
 function resolveStateLabel(state: State, sandbox: SVGGElement, mode: string, letterLength: number) {
   const label = createStateLabel(state);
   return label.pathPoints.length ? label : { ...label, ...fitLabel(state, sandbox, mode, letterLength) };

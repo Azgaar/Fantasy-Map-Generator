@@ -17,7 +17,7 @@ import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
-import { extractPathPoints } from "@/utils/pathUtils";
+import { parsePathPoints } from "@/utils/pathUtils";
 
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
@@ -1320,8 +1320,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (dx) label.dx = rn(dx, 2);
       if (dy) label.dy = rn(dy, 2);
 
-      const pathPoints = pathEl ? extractPathPoints(pathEl, 25) : null;
-      if (pathPoints) label.pathPoints = pathPoints;
+      const pathPoints = pathEl ? parsePathPoints(pathEl.getAttribute("d") || "") : null;
+      if (pathPoints?.length) label.pathPoints = pathPoints;
       const startOffset = textPath && Number.parseFloat(textPath.getAttribute("startOffset") || "");
       if (startOffset !== null && startOffset !== 50) label.startOffset = startOffset;
       const fontSize = textPath && Number.parseFloat(textPath.getAttribute("font-size") || "");

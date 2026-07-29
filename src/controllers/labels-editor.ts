@@ -7,7 +7,9 @@ import type { AddedLabel, Label } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
 import { getLabelGroupAttributes, getLabelPath } from "@/renderers/draw-label-utils";
 import { drawLabel, removeLabel } from "@/renderers/draw-labels";
+import { parseStateLabelData } from "@/renderers/draw-state-labels";
 import { speak } from "@/utils";
+import { parsePathPoints } from "@/utils/pathUtils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, round } from "../utils";
 
 type StateLabel = { type: "state"; stateId: number; elId: string; label: Label };
@@ -21,8 +23,8 @@ function open(tspan: SVGTSpanElement): void {
   closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const textPath = tspan.parentNode;
-  const textEl = textPath?.parentElement;
+  const textPath = tspan.parentElement;
+  const textEl = textPath?.parentElement as SVGGElement | null;
   if (!textEl) return;
 
   const stateId = textEl.id.match(/^stateLabel(\d+)$/)?.[1];
@@ -36,14 +38,7 @@ function open(tspan: SVGTSpanElement): void {
       type: "state",
       stateId: +stateId,
       elId: `stateLabel${stateId}`,
-      label: {
-        ...label,
-        text:
-          label?.text ||
-          Array.from(textEl.querySelectorAll("tspan"))
-            .map(tspan => tspan.textContent || "")
-            .join("|")
-      }
+      label: { ...parseStateLabelData(textEl), ...label }
     };
   } else if (addedId) {
     const label = AddedLabels.get(+addedId);

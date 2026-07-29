@@ -355,22 +355,39 @@ export const findPath = (
   return null;
 };
 
-export const extractPathPoints = (pathEl: SVGPathElement, step = 100) => {
-  if (!pathEl) return [];
-  const l = pathEl.getTotalLength();
-  if (!l) return [];
-
+export const parsePathPoints = (path: string): Point[] => {
   const points: Point[] = [];
-  const increment = l / Math.ceil(l / step);
-  for (let i = 0; i <= l; i += increment) {
-    const point = pathEl.getPointAtLength(i);
-    const x = rn(point.x, 2);
-    const y = rn(point.y, 2);
-    points.push([x, y]);
-  }
+  let x = 0;
+  let y = 0;
 
-  if (points.length > 2 && points.every(([, y]) => y === points[0][1])) {
-    return [points[0], points.at(-1)!];
+  const addPoint = (nextX: number, nextY: number, relative: boolean) => {
+    x = relative ? x + nextX : nextX;
+    y = relative ? y + nextY : nextY;
+    points.push([x, y]);
+  };
+
+  for (const match of path.matchAll(/([AaCcHhLlMmQqSsTtVvZz])([^AaCcHhLlMmQqSsTtVvZz]*)/g)) {
+    const command = match[1];
+    const type = command.toUpperCase();
+    const relative = command !== type;
+    const values = match[2].match(/[-+]?(?:\d*\.?\d+)(?:e[-+]?\d+)?/gi)?.map(Number) || [];
+
+    if (type === "H") {
+      for (const nextX of values) addPoint(nextX, relative ? 0 : y, relative);
+      continue;
+    }
+
+    if (type === "V") {
+      for (const nextY of values) addPoint(relative ? 0 : x, nextY, relative);
+      continue;
+    }
+
+    const stride = { A: 7, C: 6, Q: 4, S: 4, M: 2, L: 2, T: 2 }[type];
+    if (!stride) continue;
+
+    for (let index = 0; index + stride <= values.length; index += stride) {
+      addPoint(values[index + stride - 2], values[index + stride - 1], relative);
+    }
   }
 
   return points;
@@ -540,6 +557,5 @@ declare global {
   interface Window {
     getIsolines: typeof getIsolines;
     getVertexPath: typeof getVertexPath;
-    extractPathPoints: typeof extractPathPoints;
   }
 }

@@ -1,41 +1,33 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../generators/voronoi";
-import { extractPathPoints, meander } from "./pathUtils";
+import { getLabelPath } from "../renderers/draw-label-utils";
+import { meander, parsePathPoints } from "./pathUtils";
 
-describe("extractPathPoints", () => {
-  const createPath = (points: Point[]) =>
-    ({
-      getTotalLength: () => (points.length - 1) * 100,
-      getPointAtLength: (length: number) => {
-        const [x, y] = points[Math.round(length / 100)];
-        return { x, y };
-      }
-    }) as SVGPathElement;
+describe("parsePathPoints", () => {
+  it("restores knots from a natural curve path", () => {
+    const path = "M0,0C2.5,9.583,5,19.167,10,20C15,20.833,22.5,12.917,30,5";
+    const pathPoints = parsePathPoints(path);
 
-  it("represents a straight horizontal path with only its endpoints", () => {
-    const path = createPath([
-      [0, 10],
-      [50, 10],
-      [100, 10]
+    expect(pathPoints).toEqual([
+      [0, 0],
+      [10, 20],
+      [30, 5]
     ]);
+    expect(getLabelPath({ pathPoints })).toBe(path);
+  });
 
-    expect(extractPathPoints(path, 100)).toEqual([
-      [0, 10],
-      [100, 10]
+  it("parses linear paths", () => {
+    expect(parsePathPoints("M0,0L10,20L30,5")).toEqual([
+      [0, 0],
+      [10, 20],
+      [30, 5]
     ]);
   });
 
-  it("keeps sampled points when the path is not horizontal", () => {
-    const path = createPath([
-      [0, 10],
-      [50, 11],
-      [100, 10]
-    ]);
-
-    expect(extractPathPoints(path, 100)).toEqual([
-      [0, 10],
-      [50, 11],
-      [100, 10]
+  it("parses relative horizontal paths used by label realignment", () => {
+    expect(parsePathPoints("M10,20h40")).toEqual([
+      [10, 20],
+      [50, 20]
     ]);
   });
 });
