@@ -1670,7 +1670,7 @@ class MarkersModule {
 
     const { cells } = pack;
     const cultureName = Names.getCulture(cells.culture[cell]);
-    const biomeName = (biomesData.name[cells.biome[cell]] || "wilderness").toLowerCase();
+    const biomeName = (pack.biomes[cells.biome[cell]]?.name || "wilderness").toLowerCase();
 
     const kinds = [
       { subject: "Bandits", verb: "have set an ambush" },
