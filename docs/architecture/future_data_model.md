@@ -1,6 +1,6 @@
 This document outlines the expected data structure. Current data model described in [data_model.md](data_model.md) is inconsistent and not well-documented, so it is not a reliable reference for the future model. The future model is designed to be more consistent, modular, and maintainable, with clear separation of concerns and better encapsulation.
 
-`.map` file is a valid JSON capturing all data required to render and operate the map, including UI and style settings.
+`.map` file is a valid JSON capturing all data required to render and operate the map, including UI and style settings. Once loaded, it a single gigantic object `map`, parsed from the json.
 
 ```json
 {
@@ -58,7 +58,7 @@ This document outlines the expected data structure. Current data model described
 
     "burgs": {
       "limit": null,
-      "showMfcgMap": true
+      "showMapPreview": true
     },
 
     "religions": {
@@ -88,44 +88,44 @@ This document outlines the expected data structure. Current data model described
       }
     },
 
-    "world": {
+    "lore": {
       "name": "Narnia",
 
       "calendar": {
-        "year": 2024,
-        "era": "Test Era",
+        "year": 2026,
+        "era": "Triffids Era",
         "eraShort": "TE"
       },
+    },
 
-      "climate": {
-        "temperature": {
-          "equator": 30,
-          "northPole": -30,
-          "southPole": -25
-        },
-        "winds": [225, 45, 225, 315, 135, 315],
-        "precipitation": 100
+    "climate": {
+      "temperature": {
+        "equator": 30,
+        "northPole": -30,
+        "southPole": -25
       },
+      "winds": [225, 45, 225, 315, 135, 315],
+      "precipitation": 100
+    },
 
-      "geography": {
-        "mapSize": 11,
-        "latitudeShift": 50,
-        "coordinates": {
-          "latN": 34
-        }
-      },
+    "geography": {
+      "mapSize": 11,
+      "latitudeShift": 50,
+      "coordinates": {
+        "latN": 34
+      }
+    },
 
-      "units": {
-        "distance": { "unit": "m", "scale": 3 },
-        "area": { "unit": "square", "scale": 1 },
-        "height": { "unit": "ft", "exponent": 2 },
-        "temperature": { "unit": "°C", "scale": 1 },
-        "population": {
-          "scale": 1000,
-          "urbanization": {
-            "rate": 1,
-            "density": 10
-          }
+    "units": {
+      "distance": { "unit": "m", "scale": 3 },
+      "area": { "unit": "square", "scale": 1 },
+      "height": { "unit": "ft", "exponent": 2 },
+      "temperature": { "unit": "°C", "scale": 1 },
+      "population": {
+        "scale": 1000,
+        "urbanization": {
+          "rate": 1,
+          "density": 10
         }
       }
     },
@@ -141,6 +141,16 @@ This document outlines the expected data structure. Current data model described
       "size": 2,
       "backOpacity": 0.2,
       "backColor": "#ffffff"
+    },
+    "labels": {
+      "groups": {
+        "states": {
+          "fontSize": 22
+        },
+        "capitals": {
+          "fontSize": 8
+        }
+      }
     }
   },
 
@@ -152,7 +162,7 @@ This document outlines the expected data structure. Current data model described
           "temp": []
         },
         "vertices": {
-          "c": [[]]
+          "c": [][]
         }
       },
 
@@ -164,7 +174,7 @@ This document outlines the expected data structure. Current data model described
           "culture": []
         },
         "vertices": {
-          "c": [[]]
+          "c": [][]
         }
       }
     },
@@ -180,16 +190,14 @@ This document outlines the expected data structure. Current data model described
       }
     },
 
-    "civilizations": {
-      "states": {
-        "0": {},
-        "1": {}
-      },
-
-      "cultures": {},
-
-      "religions": {}
+    "states": {
+      "0": {},
+      "1": {}
     },
+
+    "cultures": {},
+
+    "religions": {},
 
     "settlements": {
       "burgs": {},

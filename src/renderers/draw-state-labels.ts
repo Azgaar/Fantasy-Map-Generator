@@ -9,10 +9,10 @@ import { getLabelGroup } from "./label-groups";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 export function drawStateLabels(): void {
-  clearStateLabels();
+  removeStateLabels();
 
   let paths = "";
-  const texts = new Map<string, string>();
+  const texts: Record<string, string> = {};
   const mode = options.stateLabelsMode || "auto";
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
@@ -22,19 +22,21 @@ export function drawStateLabels(): void {
       const letterLength = checkExampleLetterLength(sandbox);
       const label = resolveStateLabel(state, sandbox, mode, letterLength);
       paths += getLabelPathMarkup(label);
-      texts.set(group, (texts.get(group) || "") + getLabelTextMarkup(label));
+      texts.group = (texts.group || "") + getLabelTextMarkup(label);
     } finally {
       sandbox.remove();
     }
   }
 
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
-  for (const [group, markup] of texts) getLabelGroup(group, "state").insertAdjacentHTML("beforeend", markup);
+  for (const [group, markup] of Object.entries(texts))
+    getLabelGroup(group, "state").insertAdjacentHTML("beforeend", markup);
 }
 
 export function drawStateLabel(stateId: number): void {
   const state = pack.states[stateId];
   if (!state?.i || state.removed) return;
+  removeStateLabel(stateId);
 
   const group = state.label?.group || DEFAULT_STATE_LABEL_GROUP;
   const sandbox = createMeasurementSandbox(group);
@@ -46,8 +48,6 @@ export function drawStateLabel(stateId: number): void {
     const path = getLabelPathMarkup(label);
     const text = getLabelTextMarkup(label);
 
-    document.getElementById(`textPath_stateLabel${state.i}`)?.remove();
-    document.getElementById(`stateLabel${state.i}`)?.remove();
     document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", path);
     getLabelGroup(group, "state").insertAdjacentHTML("beforeend", text);
   } finally {
@@ -96,13 +96,18 @@ function createStateLabel(state: State) {
   };
 }
 
-function clearStateLabels(): void {
+function removeStateLabels(): void {
   document.querySelectorAll("#labels > g > [data-label-type='state']").forEach(label => {
     label.remove();
   });
   document.querySelectorAll("#textPaths > path[id^='textPath_stateLabel']").forEach(path => {
     path.remove();
   });
+}
+
+export function removeStateLabel(stateId: number): void {
+  document.getElementById(`stateLabel${stateId}`)?.remove();
+  document.getElementById(`textPath_stateLabel${stateId}`)?.remove();
 }
 
 // hidden group in the map viewbox carrying the label group's computed text context, so

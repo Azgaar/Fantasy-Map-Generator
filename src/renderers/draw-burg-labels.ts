@@ -20,12 +20,12 @@ export function drawBurgLabels(): void {
   }
 }
 
-export function drawBurgLabel(burg: Burg): void {
-  removeBurgLabel(burg.i);
-  getLabelGroup(burg.label?.group || burg.group || DEFAULT_BURG_LABEL_GROUP, "burg").insertAdjacentHTML(
-    "beforeend",
-    getBurgLabelMarkup(burg)
-  );
+export function drawBurgLabel(burgId: number): void {
+  const burg = pack.burgs[burgId];
+  if (!burg) return;
+  removeBurgLabel(burgId);
+  const group = getLabelGroup(burg.label?.group || burg.group || DEFAULT_BURG_LABEL_GROUP, "burg");
+  group.insertAdjacentHTML("beforeend", getBurgLabelMarkup(burg));
 }
 
 export function removeBurgLabel(burgId: number): void {

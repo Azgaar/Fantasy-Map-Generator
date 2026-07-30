@@ -17,14 +17,14 @@ export const DEFAULT_ADDED_LABEL_GROUP = "addedLabels";
 
 export type LabelType = "state" | "burg" | "added";
 
-const fallbackMap: Record<LabelType, string> = {
+const fallbackGroups: Record<LabelType, string> = {
   state: DEFAULT_STATE_LABEL_GROUP,
   burg: DEFAULT_BURG_LABEL_GROUP,
   added: DEFAULT_ADDED_LABEL_GROUP
 };
 
 export function resolveLabelGroup(type: LabelType, requestedGroup?: string): string {
-  const fallback = fallbackMap[type];
+  const fallback = fallbackGroups[type];
   const group = requestedGroup || fallback;
   return style.labels.groups[group] ? group : fallback;
 }
