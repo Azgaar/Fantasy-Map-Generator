@@ -47,12 +47,10 @@ function renderDialog(): void {
         ></div>
       </div>
       <div id="markersBody" class="table"></div>
-      <div id="markersFilters" style="display:flex; gap:.4em; flex-wrap:wrap; align-items:center; padding:.2em 0">
+      <div id="markersFilters" style="display:flex; gap:.2em; padding:0.5em 0; flex-direction:column; font-size:smaller">
         <select id="markersFilterState" data-tip="Show only markers located in the selected state"></select>
         <select id="markersFilterCulture" data-tip="Show only markers located in the selected culture"></select>
         <select id="markersFilterType" data-tip="Show only markers of the selected type"></select>
-      </div>
-      <div>
         <label for="markersSearch" data-tip="Filter by type">Search: <input id="markersSearch" type="search" /></label>
       </div>
       <div id="markersFooter" class="totalLine">
@@ -99,13 +97,20 @@ function renderDialog(): void {
   populateFilters();
 }
 
-// fill a <select> with a leading placeholder option, preserving the current selection when still valid
-function fillSelect(select: HTMLSelectElement, placeholder: string, options: { value: string; label: string }[]): void {
-  const previous = select.value;
+// remembered filter selections, kept out of the DOM so they survive the dialog being rebuilt on each open
+const filterState = { search: "", state: "", culture: "", type: "" };
+
+// fill a <select> with a leading placeholder option, restoring `selected` when that option still exists
+function fillSelect(
+  select: HTMLSelectElement,
+  placeholder: string,
+  options: { value: string; label: string }[],
+  selected = ""
+): void {
   select.innerHTML = "";
   select.add(new Option(placeholder, ""));
   for (const { value, label } of options) select.add(new Option(label, value));
-  if (previous && options.some(option => option.value === previous)) select.value = previous;
+  if (selected && options.some(option => option.value === selected)) select.value = selected;
 }
 
 // populate the state / culture / type filter dropdowns from current pack data
@@ -113,17 +118,19 @@ function populateFilters(): void {
   const states = pack.states
     .filter(state => !state.removed)
     .map(state => ({ value: String(state.i), label: state.fullName || state.name }));
-  fillSelect(ensureEl<HTMLSelectElement>("markersFilterState"), "All states", states);
+  fillSelect(ensureEl<HTMLSelectElement>("markersFilterState"), "All states", states, filterState.state);
 
   const cultures = pack.cultures
     .filter(culture => !culture.removed)
     .map(culture => ({ value: String(culture.i), label: culture.name }));
-  fillSelect(ensureEl<HTMLSelectElement>("markersFilterCulture"), "All cultures", cultures);
+  fillSelect(ensureEl<HTMLSelectElement>("markersFilterCulture"), "All cultures", cultures, filterState.culture);
 
   const types = [...new Set(pack.markers.map(marker => marker.type))]
     .sort()
     .map(type => ({ value: type, label: type }));
-  fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types);
+  fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types, filterState.type);
+
+  ensureEl<HTMLInputElement>("markersSearch").value = filterState.search;
 }
 
 function closeMarkersOverview(): void {
@@ -131,11 +138,6 @@ function closeMarkersOverview(): void {
   document.getElementById("markerAdd")?.classList.remove("pressed");
   applyDefaultViewboxEvents();
   clearMainTip();
-
-  // drop the map filter so all markers are visible again once the overview is closed
-  lastFilterSignature = "";
-  setMarkersFilter(null);
-  if (layerIsOn("toggleMarkers")) drawMarkers();
 
   $("#markersOverview").dialog("destroy");
   ensureEl("markersOverview").remove();
@@ -181,7 +183,18 @@ function handleLineClick(ev: MouseEvent): void {
 function addLines(): void {
   let markers: Marker[] = pack.markers;
 
-  const searchText = ensureEl<HTMLInputElement>("markersSearch").value.toLowerCase().trim();
+  const searchRaw = ensureEl<HTMLInputElement>("markersSearch").value;
+  const stateFilter = ensureEl<HTMLSelectElement>("markersFilterState").value;
+  const cultureFilter = ensureEl<HTMLSelectElement>("markersFilterCulture").value;
+  const typeFilter = ensureEl<HTMLSelectElement>("markersFilterType").value;
+
+  // remember selections so they persist across dialog close/reopen until the user changes them
+  filterState.search = searchRaw;
+  filterState.state = stateFilter;
+  filterState.culture = cultureFilter;
+  filterState.type = typeFilter;
+
+  const searchText = searchRaw.toLowerCase().trim();
   if (searchText) {
     markers = markers.filter(marker => {
       const type = (marker.type || "").toLowerCase();
@@ -189,19 +202,16 @@ function addLines(): void {
     });
   }
 
-  const stateFilter = ensureEl<HTMLSelectElement>("markersFilterState").value;
   if (stateFilter !== "") {
     const stateId = +stateFilter;
     markers = markers.filter(marker => pack.cells.state[marker.cell] === stateId);
   }
 
-  const cultureFilter = ensureEl<HTMLSelectElement>("markersFilterCulture").value;
   if (cultureFilter !== "") {
     const cultureId = +cultureFilter;
     markers = markers.filter(marker => pack.cells.culture[marker.cell] === cultureId);
   }
 
-  const typeFilter = ensureEl<HTMLSelectElement>("markersFilterType").value;
   if (typeFilter !== "") {
     markers = markers.filter(marker => marker.type === typeFilter);
   }
