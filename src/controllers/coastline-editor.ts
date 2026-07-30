@@ -251,7 +251,7 @@ function buildDialogHTML(): string {
   }).join("");
 
   return /* html */ `
-    <div id="coastlineSettingsDialog" style="display:none">
+    <div id="coastlineSettingsDialog" style="display:none" class="dialog">
       <style>
         #coastlineSettingsDialog slider-input input[type=range] { width:100%; }
       </style>

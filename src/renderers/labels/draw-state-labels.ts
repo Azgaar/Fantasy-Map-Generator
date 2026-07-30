@@ -2,11 +2,11 @@ import { max } from "d3";
 import { DEFAULT_STATE_LABEL_GROUP, type PathLabel } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
-import { parsePathPoints } from "@/utils/pathUtils";
 import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
+import { parsePathPoints } from "@/utils/pathUtils";
+import { getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
 import { getLabelGroup } from "./label-groups";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
-import { getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
 
 export function drawStateLabels(): void {
   removeStateLabels();
