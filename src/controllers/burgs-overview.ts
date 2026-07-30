@@ -4,7 +4,7 @@ import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -126,7 +126,7 @@ function renderDialog(): void {
   applyLineHighlighting("burgsOverview", ({ target, cellId }) => {
     const burgId = pack.cells.burg[cellId];
     if (burgId) return burgId;
-    const burg = target.closest<SVGElement>("#burgLabels [data-id], #burgIcons [data-id]");
+    const burg = target.closest<SVGElement>("#labels [data-label-type='burg'][data-id], #burgIcons [data-id]");
     return burg ? Number(burg.dataset.id) : undefined;
   });
 
@@ -301,19 +301,17 @@ function burgsOverviewAddLines(): void {
 
 function burgHighlightOn(event: Event): void {
   const burg = +(event.target as HTMLElement).dataset.id!;
-  const label = select("#burgLabels").select(`[data-id='${burg}']`);
+  const label = select("#labels").select(`[data-label-type='burg'][data-id='${burg}']`);
   if (label.size()) label.classed("drag", true);
 }
 
 function burgHighlightOff(): void {
-  select("#burgLabels").selectAll("text.drag").classed("drag", false);
+  select("#labels").selectAll("text[data-label-type='burg'].drag").classed("drag", false);
 }
 
 function zoomIntoBurg(this: HTMLElement): void {
   const burg = +(this.parentNode as HTMLElement).dataset.id!;
-  const label = document.querySelector(`#burgLabels [data-id='${burg}']`)!;
-  const x = +label.getAttribute("x")!;
-  const y = +label.getAttribute("y")!;
+  const { x, y } = pack.burgs[burg];
   zoomTo(x, y, 8, 2000);
 }
 
@@ -351,6 +349,7 @@ function triggerBurgRemove(this: HTMLElement): void {
     message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
+      removeLabel("burg", burgId);
       Burgs.remove(burgId);
       burgsOverviewAddLines();
     }
@@ -371,7 +370,7 @@ function regenerateNames(): void {
       pack.burgs[burg].name = el.dataset.name = name;
     });
 
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("burg");
 }
 
 function showBurgsChart(): void {
@@ -659,7 +658,7 @@ function importBurgNames(dataLoaded: string): void {
     for (let i = 0; i < change.length; i++) {
       const id = change[i].id;
       pack.burgs[id].name = change[i].name;
-      select("#burgLabels").select(`[data-id='${id}']`).text(change[i].name);
+      drawLabel("burg", id);
     }
     burgsOverviewAddLines();
   };
@@ -681,7 +680,12 @@ function triggerAllBurgsRemove(): void {
         <br><i>To remove a capital you have to remove its state first</i>`,
     confirm: "Remove",
     onConfirm: () => {
-      pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => void Burgs.remove(b.i));
+      pack.burgs
+        .filter(b => b.i && !(b.capital || b.lock))
+        .forEach(b => {
+          removeLabel("burg", b.i);
+          Burgs.remove(b.i);
+        });
       burgsOverviewAddLines();
     }
   });

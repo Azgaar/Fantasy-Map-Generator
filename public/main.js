@@ -1,5 +1,5 @@
 "use strict";
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2023. MIT License
+// Azgaar, 2017-2026. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 // set debug options
@@ -104,7 +104,6 @@ terrs.append("g").attr("id", "landHeights");
 
 labels.append("g").attr("id", "states");
 labels.append("g").attr("id", "addedLabels");
-let burgLabels = labels.append("g").attr("id", "burgLabels");
 
 // population groups
 population.append("g").attr("id", "rural");
@@ -175,7 +174,7 @@ let options = {
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = { burgLabels: {}, burgIcons: {}, anchors: {} };
+let style = { labels: { groups: {} }, burgIcons: {}, anchors: {} };
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
@@ -434,7 +433,7 @@ function toggleAssistant() {
           const bubble = document.getElementById("chat-widget-minimized");
           if (bubble) {
             bubble.dataset.tip = "Click to open the Assistant";
-            bubble.on("mouseover", showDataTip);
+            bubble.addEventListener("mouseover", showDataTip);
           }
         }, 5000);
       });
@@ -511,7 +510,7 @@ function findBurgForMFCG(params) {
   }
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
-  const label = burgLabels.select("[data-id='" + burgId + "']");
+  const label = labels.select("[data-label-type='burg'][data-id='" + burgId + "']");
   if (label.size()) {
     label
       .text(b.name)
@@ -564,7 +563,6 @@ function invokeActiveZooming() {
   // rescale labels on zoom
   if (labels.style("display") !== "none") {
     labels.selectAll("g").each(function () {
-      if (this.id === "burgLabels") return;
       const desired = +this.dataset.size;
       const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
       if (rescaleLabels.checked) this.setAttribute("font-size", relative);
@@ -658,13 +656,18 @@ void (function addDragToUpload() {
 })();
 
 async function generate(options) {
+  let generationGroupOpen = false;
+
   try {
     const timeStart = performance.now();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
     invokeActiveZooming();
     setSeed(precreatedSeed);
-    INFO && console.group("Generated Map " + seed);
+    if (INFO) {
+      console.group("Generated Map " + seed);
+      generationGroupOpen = true;
+    }
 
     applyGraphSize();
     randomizeOptions();
@@ -723,12 +726,13 @@ async function generate(options) {
     Markers.generate();
     Zones.generate();
 
+    AddedLabels.initiate();
+
     drawScaleBar(scaleBar, scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error);
@@ -752,6 +756,8 @@ async function generate(options) {
       },
       position: { my: "center", at: "center", of: "svg" }
     });
+  } finally {
+    if (generationGroupOpen) console.groupEnd();
   }
 }
 

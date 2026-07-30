@@ -4,7 +4,6 @@ import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawIce } from "@/renderers/draw-ice";
@@ -12,7 +11,8 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawReliefIcons } from "@/renderers/draw-relief-icons";
-import { redrawStateLabels } from "@/renderers/draw-state-labels";
+import { drawBurgLabels } from "@/renderers/labels/draw-burg-labels";
+import { drawStateLabels } from "@/renderers/labels/draw-state-labels";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -118,7 +118,13 @@ function regenerate(event: MouseEvent, button: string): void {
 }
 
 function regenerateStateLabels(): void {
-  if (layerIsOn("toggleLabels")) redrawStateLabels();
+  for (const state of pack.states) {
+    if (!state.i || state.removed) continue;
+    // cleanup custom label data to force recalculation of pathPoints
+    if (state.label) delete state.label;
+  }
+
+  if (layerIsOn("toggleLabels")) drawStateLabels();
 }
 
 function regenerateReliefIcons(): void {
@@ -150,10 +156,7 @@ function regenerateStates(): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) {
-    redrawStateLabels();
-    drawBurgLabels();
-  }
+  if (layerIsOn("toggleLabels")) drawStateLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleGoods")) drawGoods();

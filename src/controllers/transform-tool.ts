@@ -85,7 +85,7 @@ function renderDialog(): void {
 }
 
 function addListeners(): void {
-  ensureEl("transformToolBody").on("input", handleInput);
+  ensureEl("transformToolBody").addEventListener("input", handleInput);
   ensureEl<HTMLInputElement>("transformPointsInput").oninput = handlePointsInput;
 
   const preview = ensureEl("transformPreview");

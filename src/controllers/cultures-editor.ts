@@ -7,8 +7,8 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/generators/cultures-generator";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
@@ -103,21 +103,21 @@ function renderDialog(): void {
   applySortingByHeader("culturesHeader");
   applyLineHighlighting("culturesEditor", ({ cellId }) => pack.cells.culture[cellId]);
 
-  ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
-  ensureEl("culturesEditStyle").on("click", () => editStyle("cults"));
-  ensureEl("culturesLegend").on("click", toggleLegend);
-  ensureEl("culturesPercentage").on("click", togglePercentageMode);
-  ensureEl("culturesHeirarchy").on("click", showHierarchy);
-  ensureEl("culturesRecalculate").on("click", () => recalculateCultures(true));
-  ensureEl("culturesManually").on("click", enterCultureManualAssignent);
-  ensureEl("culturesManuallyUndo").on("click", undoCulturesManualAssignment);
-  ensureEl("culturesManuallyApply").on("click", applyCultureManualAssignent);
-  ensureEl("culturesManuallyCancel").on("click", () => exitCulturesManualAssignment());
-  ensureEl("culturesEditNamesBase").on("click", () => Controllers.NamesbaseEditor.open());
-  ensureEl("culturesAdd").on("click", enterAddCulturesMode);
-  ensureEl("culturesExport").on("click", downloadCulturesCsv);
-  ensureEl("culturesImport").on("click", () => ensureEl("culturesCSVToLoad").click());
-  ensureEl("culturesCSVToLoad").on("change", uploadCulturesData);
+  ensureEl("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);
+  ensureEl("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
+  ensureEl("culturesLegend").addEventListener("click", toggleLegend);
+  ensureEl("culturesPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("culturesHeirarchy").addEventListener("click", showHierarchy);
+  ensureEl("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
+  ensureEl("culturesManually").addEventListener("click", enterCultureManualAssignent);
+  ensureEl("culturesManuallyUndo").addEventListener("click", undoCulturesManualAssignment);
+  ensureEl("culturesManuallyApply").addEventListener("click", applyCultureManualAssignent);
+  ensureEl("culturesManuallyCancel").addEventListener("click", () => exitCulturesManualAssignment());
+  ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
+  ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
+  ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
+  ensureEl("culturesImport").addEventListener("click", () => ensureEl("culturesCSVToLoad").click());
+  ensureEl("culturesCSVToLoad").addEventListener("change", uploadCulturesData);
 }
 
 function refreshCulturesEditor(): void {
@@ -261,49 +261,49 @@ function culturesEditorAddLines(): void {
   ensureEl("culturesBody")
     .querySelectorAll(":scope > div")
     .forEach($line => {
-      $line.on("mouseenter", cultureHighlightOn);
-      $line.on("mouseleave", cultureHighlightOff);
-      $line.on("click", selectCultureOnLineClick);
+      $line.addEventListener("mouseenter", cultureHighlightOn);
+      $line.addEventListener("mouseleave", cultureHighlightOff);
+      $line.addEventListener("click", selectCultureOnLineClick);
     });
   ensureEl("culturesBody")
     .querySelectorAll("fill-box")
-    .forEach($el => void $el.on("click", cultureChangeColor));
+    .forEach($el => void $el.addEventListener("click", cultureChangeColor));
   ensureEl("culturesBody")
     .querySelectorAll("div > input.cultureName")
-    .forEach($el => void $el.on("input", cultureChangeName));
+    .forEach($el => void $el.addEventListener("input", cultureChangeName));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-cw")
-    .forEach($el => void $el.on("click", cultureRegenerateName));
+    .forEach($el => void $el.addEventListener("click", cultureRegenerateName));
   ensureEl("culturesBody")
     .querySelectorAll("div > input.cultureExpan")
-    .forEach($el => void $el.on("change", cultureChangeExpansionism));
+    .forEach($el => void $el.addEventListener("change", cultureChangeExpansionism));
   ensureEl("culturesBody")
     .querySelectorAll("div > select.cultureType")
-    .forEach($el => void $el.on("change", cultureChangeType));
+    .forEach($el => void $el.addEventListener("change", cultureChangeType));
   ensureEl("culturesBody")
     .querySelectorAll("div > select.cultureBase")
-    .forEach($el => void $el.on("change", cultureChangeBase));
+    .forEach($el => void $el.addEventListener("change", cultureChangeBase));
   ensureEl("culturesBody")
     .querySelectorAll("div > select.cultureEmblems")
-    .forEach($el => void $el.on("change", cultureChangeEmblemsShape));
+    .forEach($el => void $el.addEventListener("change", cultureChangeEmblemsShape));
   ensureEl("culturesBody")
     .querySelectorAll("div > div.culturePopulation")
-    .forEach($el => void $el.on("click", changePopulation));
+    .forEach($el => void $el.addEventListener("click", changePopulation));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-arrows-cw")
-    .forEach($el => void $el.on("click", cultureRegenerateBurgs));
+    .forEach($el => void $el.addEventListener("click", cultureRegenerateBurgs));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-target")
-    .forEach($el => void $el.on("click", cultureHighlightElement));
+    .forEach($el => void $el.addEventListener("click", cultureHighlightElement));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-trash-empty")
-    .forEach($el => void $el.on("click", cultureRemovePrompt));
+    .forEach($el => void $el.addEventListener("click", cultureRemovePrompt));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-lock")
-    .forEach($el => void $el.on("click", updateLockStatus));
+    .forEach($el => void $el.addEventListener("click", updateLockStatus));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-lock-open")
-    .forEach($el => void $el.on("click", updateLockStatus));
+    .forEach($el => void $el.addEventListener("click", updateLockStatus));
 
   const $culturesHeader = ensureEl("culturesHeader");
   ($culturesHeader.querySelector("div[data-sortby='emblems']") as HTMLElement).style.display = selectShape
@@ -589,7 +589,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
   });
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("burg");
   tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 

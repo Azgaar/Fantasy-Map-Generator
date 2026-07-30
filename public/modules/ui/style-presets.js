@@ -33,7 +33,7 @@ async function applyStyleOnLoad() {
   const styleData = await getStylePreset(desiredPreset);
   const [appliedPreset, style] = styleData;
 
-  applyStyle(style);
+  applyStylePreset(style);
   updateMapFilter();
   stylePreset.value = stylePreset.dataset.old = appliedPreset;
   setPresetRemoveButtonVisibiliy();
@@ -71,28 +71,29 @@ async function fetchSystemPreset(preset) {
   }
 }
 
-function applyStyle(styleJSON) {
-  for (const selector in styleJSON) {
-    if (selector.startsWith("#burgLabels")) {
+function applyStylePreset(presetJson) {
+  for (const selector in presetJson) {
+    if (selector.startsWith("#labels > #")) {
       const group = selector.split("#").pop();
-      style.burgLabels[group] = styleJSON[selector];
+      style.labels.groups[group] = getStyleAttributes(presetJson[selector]);
     }
 
     if (selector.startsWith("#burgIcons")) {
       const group = selector.split("#").pop();
-      style.burgIcons[group] = styleJSON[selector];
+      style.burgIcons[group] = presetJson[selector];
     }
 
     if (selector.startsWith("#anchors")) {
       const group = selector.split("#").pop();
-      style.anchors[group] = styleJSON[selector];
+      style.anchors[group] = presetJson[selector];
     }
 
     const el = document.querySelector(selector);
     if (!el) continue;
 
-    for (const attribute in styleJSON[selector]) {
-      const value = styleJSON[selector][attribute];
+    for (const attribute in presetJson[selector]) {
+      if (attribute === "id") continue;
+      const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {
         el.removeAttribute(attribute);
@@ -115,6 +116,16 @@ function applyStyle(styleJSON) {
         addCustomColorScheme(value);
       }
     }
+
+    if (selector.startsWith("#labels > #")) {
+      const dx = el.dataset.dx || 0;
+      const dy = el.dataset.dy || 0;
+      el.style.transform = +dx || +dy ? `translate(${dx}em, ${dy}em)` : "";
+    }
+  }
+
+  function getStyleAttributes(attributes) {
+    return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
   }
 }
 
@@ -142,14 +153,11 @@ async function changeStyle(desiredPreset) {
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) {
-    drawBurgLabels();
-    drawStateLabels();
-  }
+  if (layerIsOn("toggleLabels")) drawLabels();
 }
 
 function applyStyleWithUiRefresh(style) {
-  applyStyle(style);
+  applyStylePreset(style);
   updateElements();
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
@@ -183,7 +191,7 @@ function addStylePreset() {
   document.getElementById("styleToLoad").addEventListener("change", loadStyleFile);
 
   function collectStyleData() {
-    const style = {};
+    const presetStyle = {};
     const attributes = {
       "#map": ["background-color", "filter", "data-filter"],
       "#armies": ["font-size", "box-size", "stroke", "stroke-width", "fill-opacity", "filter"],
@@ -224,7 +232,16 @@ function addStylePreset() {
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
-      "#markets": ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "data-size", "font-size", "data-icon", "filter"],
+      "#markets": [
+        "opacity",
+        "stroke-width",
+        "fill-opacity",
+        "stroke-opacity",
+        "data-size",
+        "font-size",
+        "data-icon",
+        "filter"
+      ],
       "#goodsCells": ["opacity", "filter"],
       "#goodsIcons": ["opacity", "stroke-width", "data-circle", "data-size", "filter"],
       "#goodsBurgs": ["opacity", "stroke", "stroke-width", "data-size", "filter"],
@@ -363,7 +380,7 @@ function addStylePreset() {
     ];
     const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
     options.burgs.groups.forEach(({ name }) => {
-      attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
+      attributes[`#labels > #${name}`] = burgLabelsAttributes;
       attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#anchors > g#${name}`] = anchorsAttributes;
     });
@@ -372,14 +389,27 @@ function addStylePreset() {
       const el = document.querySelector(selector);
       if (!el) continue;
 
-      style[selector] = {};
+      presetStyle[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
         // label-like layers store their base font size in data-size; markets use data-size for the marker circle, so keep its real font-size
         if (attr === "font-size" && selector !== "#markets" && el.hasAttribute("data-size"))
           value = el.getAttribute("data-size");
-        style[selector][attr] = parseValue(value);
+        presetStyle[selector][attr] = parseValue(value);
       }
+    }
+
+    for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
+      addStoredLabelStyle(`#labels > #${group}`, groupStyle);
+    }
+
+    function addStoredLabelStyle(selector, groupStyle) {
+      if (!groupStyle) return;
+      presetStyle[selector] = Object.fromEntries(
+        Object.entries(groupStyle)
+          .filter(([key]) => key !== "id" && key !== "transform")
+          .map(([key, value]) => [key, parseValue(value)])
+      );
     }
 
     function parseValue(value) {
@@ -389,7 +419,7 @@ function addStylePreset() {
       return value;
     }
 
-    return style;
+    return presetStyle;
   }
 
   function checkName() {

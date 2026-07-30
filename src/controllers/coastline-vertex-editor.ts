@@ -50,13 +50,13 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("coastlineGroupsShow").on("click", showGroupSection);
-  ensureEl("coastlineGroup").on("change", changeCoastlineGroup);
-  ensureEl("coastlineGroupAdd").on("click", toggleNewGroupInput);
-  ensureEl("coastlineGroupName").on("change", createNewGroup);
-  ensureEl("coastlineGroupRemove").on("click", removeCoastlineGroup);
-  ensureEl("coastlineGroupsHide").on("click", hideGroupSection);
-  ensureEl("coastlineEditStyle").on("click", editGroupStyle);
+  ensureEl("coastlineGroupsShow").addEventListener("click", showGroupSection);
+  ensureEl("coastlineGroup").addEventListener("change", changeCoastlineGroup);
+  ensureEl("coastlineGroupAdd").addEventListener("click", toggleNewGroupInput);
+  ensureEl("coastlineGroupName").addEventListener("change", createNewGroup);
+  ensureEl("coastlineGroupRemove").addEventListener("click", removeCoastlineGroup);
+  ensureEl("coastlineGroupsHide").addEventListener("click", hideGroupSection);
+  ensureEl("coastlineEditStyle").addEventListener("click", editGroupStyle);
 }
 
 function getFeature(): Feature {

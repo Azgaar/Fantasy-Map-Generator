@@ -3,6 +3,7 @@ import { quadtree } from "d3-quadtree";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import type { Label } from "./labels";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
@@ -35,6 +36,7 @@ export interface Burg {
   product?: number; // gross product from the last production run
   treasury?: number; // accumulated cash balance
   market?: number;
+  label?: Label;
 }
 
 // A burg that could become a port on a given water body.
@@ -744,7 +746,6 @@ class BurgModule {
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     window.drawBurgIcon(burg);
-    window.drawBurgLabel(burg);
 
     return burgId;
   }
@@ -869,7 +870,6 @@ class BurgModule {
 
     if (render) {
       window.drawBurgIcon(burg);
-      window.drawBurgLabel(burg);
     }
   }
 
@@ -890,7 +890,6 @@ class BurgModule {
     }
 
     window.removeBurgIcon(burg.i!);
-    window.removeBurgLabel(burg.i!);
   }
 }
 

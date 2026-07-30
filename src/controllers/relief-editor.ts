@@ -339,24 +339,24 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("reliefIndividual").on("click", enterIndividualMode);
-  ensureEl("reliefBulkAdd").on("click", enterBulkAddMode);
-  ensureEl("reliefBulkRemove").on("click", enterBulkRemoveMode);
+  ensureEl("reliefIndividual").addEventListener("click", enterIndividualMode);
+  ensureEl("reliefBulkAdd").addEventListener("click", enterBulkAddMode);
+  ensureEl("reliefBulkRemove").addEventListener("click", enterBulkRemoveMode);
 
-  ensureEl("reliefSize").on("input", changeIconSize);
-  ensureEl("reliefSizeNumber").on("input", changeIconSize);
-  ensureEl("reliefEditorSet").on("change", changeIconsSet);
+  ensureEl("reliefSize").addEventListener("input", changeIconSize);
+  ensureEl("reliefSizeNumber").addEventListener("input", changeIconSize);
+  ensureEl("reliefEditorSet").addEventListener("change", changeIconsSet);
   ensureEl("reliefIconsDiv")
     .querySelectorAll("svg")
     .forEach(el => {
       el.addEventListener("click", changeIcon);
     });
 
-  ensureEl("reliefEditStyle").on("click", () => editStyle("terrain"));
-  ensureEl("reliefCopy").on("click", copyIcon);
-  ensureEl("reliefMoveFront").on("click", () => selectedRelief.raise());
-  ensureEl("reliefMoveBack").on("click", () => selectedRelief.lower());
-  ensureEl("reliefRemove").on("click", removeIcon);
+  ensureEl("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
+  ensureEl("reliefCopy").addEventListener("click", copyIcon);
+  ensureEl("reliefMoveFront").addEventListener("click", () => selectedRelief.raise());
+  ensureEl("reliefMoveBack").addEventListener("click", () => selectedRelief.lower());
+  ensureEl("reliefRemove").addEventListener("click", removeIcon);
 }
 
 function dragReliefIcon(this: SVGUseElement, event: any): void {

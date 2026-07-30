@@ -148,6 +148,8 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `feature`: `number` - burg feature id (id of a landmass)
 - `population`: `number` - burg population in population points
 - `type`: `string` - burg type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture_types)
+- `group`: `string` - Burg classification and rendering group. It is also the default Label Group for the Burg label
+- `label`: `Label` - optional Burg-label overrides. Burg labels use the Burg name, coordinates, and `burg.group` by default; `label.group` can override only the label group
 - `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
 - `MFCG`: `number` - burg seed in [Medieval Fantasy City Generator](https://watabou.github.io/city-generator) (MFCG). If not provided, seed is combined from map seed and burg id
 - `link`: `string` - custom link to burg in MFCG. `MFCG` seed is not used if link is provided
@@ -191,6 +193,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `campaigns`: `object[]` - wars the state participated in. The was is defined as `start`: `number` (year), `end`: `number` (year), `name`: `string`
 - `alert`: `number` - state war alert, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
+- `label`: `Label` - optional state-label data. If absent, the renderer derives the text, path, and relative size from the State data and label mode
 - `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
 - `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
 - `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0), jittered per state. Always `0` for neutrals
@@ -294,6 +297,38 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `dy`: `number` - icon y shift percent. Optional, default s `50` (50%, center)
 - `px`: `number` - icon font-size in pixels. Optional, default is `12` (12px)
 - `lock`: `boolean` - `true` if marker is locked (not affected by regeneration). Optional
+
+## Labels
+
+The shared optional `Label` fields are:
+
+- `text`: `string` - displayed text override. The pipe character (`|`) separates lines
+- `group`: `string` - optional Label Group override
+- `dx`: `number` - horizontal translation in map coordinates
+- `dy`: `number` - vertical translation in map coordinates
+- `pathPoints`: `number[][]` - path control points as `[x, y]` pairs. Used by State and added labels
+- `startOffset`: `number` - text start position as a percentage along the path. Used by State and added labels; defaults to `50`
+- `fontSize`: `number` - font size % relative to the label-group size, in percent. Defaults to `100`
+- `letterSpacing`: `number` - per-label letter spacing in pixels. Defaults to `0` (attrubute is null)
+
+State and Burg label overrides are stored on their entities as `pack.states[i].label` and `pack.burgs[i].label`.
+
+User-added labels are stored independently in `pack.labels` as an unordered `AddedLabel[]`:
+
+- `i`: `number` - stable id
+- `text`: `string` - displayed text
+- `pathPoints`: `number[][]` - label path control points
+- `group`: `string` - id of a Label Group in `style.labels.groups`
+- optional shared `Label` fields listed above
+
+At runtime, Label Group styles are indexed in `style.labels.groups`, keyed by group id. Current `.map` files
+serialize the complete global `style` object at data index 48. Pre-1.140 migration reconstructs it from the
+legacy SVG group attributes. All label types can share a group without changing their rendering primitive:
+State and added labels use `<textPath>`, while Burg labels use positioned `<text>`. The fallback groups are
+`states`, `town`, and `addedLabels` respectively.
+
+Optional group-level `data-dx` and `data-dy` values are retained in style data. Rendering derives one CSS
+translation on the parent SVG group, so the offset applies uniformly to every label in that group.
 
 ## Routes
 

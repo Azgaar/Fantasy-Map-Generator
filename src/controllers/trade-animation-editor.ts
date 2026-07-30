@@ -96,7 +96,7 @@ function renderDialog(): void {
     const current = options.trade.animation[key] ?? def.default;
     input.value = String(current);
 
-    input.on("input", e => {
+    input.addEventListener("input", e => {
       // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
       if (e.target !== e.currentTarget) return;
       const value =
@@ -106,7 +106,7 @@ function renderDialog(): void {
       TradeAnimation.restart();
     });
 
-    resetBtn.on("click", () => {
+    resetBtn.addEventListener("click", () => {
       options.trade.animation = { ...options.trade.animation, [key]: def.default };
       input.value = String(def.default);
       localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));

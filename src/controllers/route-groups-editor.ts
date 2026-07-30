@@ -36,8 +36,8 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routeGroupsEditorAdd").on("click", addGroup);
-  ensureEl("routeGroupsEditorBody").on("click", onBodyClick);
+  ensureEl("routeGroupsEditorAdd").addEventListener("click", addGroup);
+  ensureEl("routeGroupsEditorBody").addEventListener("click", onBodyClick);
 }
 
 function closeRouteGroupsEditor(): void {

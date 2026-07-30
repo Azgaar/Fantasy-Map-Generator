@@ -237,6 +237,8 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 }
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
+  let loadGroupOpen = false;
+
   try {
     // exit customization
     if (typeof window.closeDialogs === "function") closeDialogs();
@@ -248,8 +250,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (params[3]) {
         seed = params[3];
         ensureEl<HTMLInputElement>("optionsSeed").value = seed;
-        INFO && console.group(`Loaded Map ${seed}`);
-      } else INFO && console.group("Loaded Map");
+      }
+      if (INFO) {
+        console.group(params[3] ? `Loaded Map ${seed}` : "Loaded Map");
+        loadGroupOpen = true;
+      }
       if (params[4]) graphWidth = +params[4];
       if (params[5]) graphHeight = +params[5];
       mapId = params[6] ? +params[6] : Date.now();
@@ -376,8 +381,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ruler = viewbox.select<SVGGElement>("#ruler");
     fogging = viewbox.select<SVGGElement>("#fogging");
     debug = viewbox.select<SVGElement>("#debug");
-    burgLabels = labels.select<SVGGElement>("#burgLabels");
-
     if (!texture.size()) {
       texture = viewbox
         .insert("g", "#landmass")
@@ -458,6 +461,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
+    pack.labels = data[47] ? JSON.parse(data[47]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -473,6 +477,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[45]) {
       const goodIconsDefs = document.getElementById("good-icons");
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
+    }
+
+    if (data[48]) style = JSON.parse(data[48]);
+
+    {
+      const { resolveVersionConflicts } = await import("./auto-update");
+      resolveVersionConflicts(mapVersion!, data);
     }
 
     {
@@ -514,7 +525,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (isVisible(select("#ice"))) turnOn("toggleIce");
       if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
-      if (isVisible(select("#labels"))) turnOn("toggleLabels");
+      if (isVisible(select("#labels")) && select("#labels").selectAll("text").size()) turnOn("toggleLabels");
       if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
@@ -537,12 +548,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     select("#legend")
       .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
       .on("click", () => clearLegend());
-
-    {
-      // dynamically import and run auto-update script
-      const { resolveVersionConflicts } = await import("./auto-update");
-      resolveVersionConflicts(mapVersion!, data);
-    }
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
@@ -814,7 +819,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd();
     tip("Map is successfully loaded", true, "success", 7000);
   } catch (error) {
     ERROR && console.error(error);
@@ -843,6 +847,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       },
       position: { my: "center", at: "center", of: "svg" }
     });
+  } finally {
+    if (loadGroupOpen) console.groupEnd();
   }
 }
 

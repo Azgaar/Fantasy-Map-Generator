@@ -27,17 +27,17 @@ function open(): void {
   if (initialized) return;
   initialized = true;
 
-  ensureEl("distanceUnitInput").on("change", changeDistanceUnit);
-  ensureEl("distanceScaleInput").on("change", changeDistanceScale);
-  ensureEl("heightUnit").on("change", changeHeightUnit);
-  ensureEl("heightExponentInput").on("input", changeHeightExponent);
-  ensureEl("temperatureScale").on("change", changeTemperatureScale);
+  ensureEl("distanceUnitInput").addEventListener("change", changeDistanceUnit);
+  ensureEl("distanceScaleInput").addEventListener("change", changeDistanceScale);
+  ensureEl("heightUnit").addEventListener("change", changeHeightUnit);
+  ensureEl("heightExponentInput").addEventListener("input", changeHeightExponent);
+  ensureEl("temperatureScale").addEventListener("change", changeTemperatureScale);
 
-  ensureEl("populationRateInput").on("change", changePopulationRate);
-  ensureEl("urbanizationInput").on("change", changeUrbanizationRate);
-  ensureEl("urbanDensityInput").on("change", changeUrbanDensity);
+  ensureEl("populationRateInput").addEventListener("change", changePopulationRate);
+  ensureEl("urbanizationInput").addEventListener("change", changeUrbanizationRate);
+  ensureEl("urbanDensityInput").addEventListener("change", changeUrbanDensity);
 
-  ensureEl("unitsRestore").on("click", restoreDefaultUnits);
+  ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
 function renderScaleBar(): void {

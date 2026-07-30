@@ -83,19 +83,19 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl<HTMLSelectElement>("notesSelect").on("change", changeElement);
-  ensureEl<HTMLInputElement>("notesName").on("input", changeName);
-  ensureEl("notesNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("notesName").value));
-  ensureEl("notesLegend").on("blur", updateLegend);
-  ensureEl("notesPin").on("click", toggleNotesPin);
-  ensureEl("notesFocus").on("click", validateHighlightElement);
-  ensureEl("notesGenerateWithAi").on("click", openAiGenerator);
-  ensureEl("notesDownload").on("click", downloadLegends);
-  ensureEl("notesUpload").on("click", () => ensureEl("legendsToLoad").click());
-  ensureEl<HTMLInputElement>("legendsToLoad").on("change", function (this: HTMLInputElement) {
+  ensureEl<HTMLSelectElement>("notesSelect").addEventListener("change", changeElement);
+  ensureEl<HTMLInputElement>("notesName").addEventListener("input", changeName);
+  ensureEl("notesNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("notesName").value));
+  ensureEl("notesLegend").addEventListener("blur", updateLegend);
+  ensureEl("notesPin").addEventListener("click", toggleNotesPin);
+  ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
+  ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
+  ensureEl("notesDownload").addEventListener("click", downloadLegends);
+  ensureEl("notesUpload").addEventListener("click", () => ensureEl("legendsToLoad").click());
+  ensureEl<HTMLInputElement>("legendsToLoad").addEventListener("change", function (this: HTMLInputElement) {
     uploadFile(this, uploadLegends);
   });
-  ensureEl("notesRemove").on("click", triggerNotesRemove);
+  ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
 }
 
 function closeNotesEditor(): void {

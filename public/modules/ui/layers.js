@@ -892,21 +892,13 @@ function toggleTrade(event) {
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    $("#labels").fadeIn();
-    // don't redraw labels as they are not stored in data yet
-    if (labels.selectAll("text").size() === 0) drawLabels();
+    drawLabels();
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
     if (event && isCtrlClick(event)) return editStyle("labels");
+    removeLabels();
     turnButtonOff("toggleLabels");
-    $("#labels").fadeOut();
   }
-}
-
-function drawLabels() {
-  drawStateLabels();
-  drawBurgLabels();
-  invokeActiveZooming();
 }
 
 function toggleBurgIcons(event) {

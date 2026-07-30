@@ -62,9 +62,9 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("marketDealsHeader");
 
-  ensureEl("marketDealsRefresh").on("click", marketDealsAddLines);
-  ensureEl("marketDealsExport").on("click", downloadDealsCsv);
-  ensureEl("marketDealsBody").on("click", ev => {
+  ensureEl("marketDealsRefresh").addEventListener("click", marketDealsAddLines);
+  ensureEl("marketDealsExport").addEventListener("click", downloadDealsCsv);
+  ensureEl("marketDealsBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
     const dealId = el.closest<HTMLElement>(".marketDealParty")?.parentElement?.dataset.id;
     const deal = pack.deals.find(d => d.i === Number(dealId));
@@ -73,7 +73,7 @@ function renderDialog(): void {
     const party = getParty(deal);
     if (party) zoomTo(party.x, party.y, 8, 2000);
   });
-  ensureEl("marketDealsFilter").on("change", ev => {
+  ensureEl("marketDealsFilter").addEventListener("change", ev => {
     activeFilter = (ev.target as HTMLSelectElement).value as typeof activeFilter;
     marketDealsAddLines();
   });

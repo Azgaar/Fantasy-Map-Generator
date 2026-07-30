@@ -18,8 +18,6 @@ declare global {
     // called by a generator that cannot import a renderer (the generator is the smell, not this)
     drawBurgIcon: typeof import("../renderers/draw-burg-icons").drawBurgIcon;
     removeBurgIcon: typeof import("../renderers/draw-burg-icons").removeBurgIcon;
-    drawBurgLabel: typeof import("../renderers/draw-burg-labels").drawBurgLabel;
-    removeBurgLabel: typeof import("../renderers/draw-burg-labels").removeBurgLabel;
     redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
     redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;
@@ -91,7 +89,6 @@ declare global {
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
   var ice: Selection<SVGGElement, unknown, null, undefined>;
   var labels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgLabels: Selection<SVGGElement, unknown, null, undefined>;
   var burgIcons: Selection<SVGGElement, unknown, null, undefined>;
   var anchors: Selection<SVGGElement, unknown, null, undefined>;
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
@@ -135,7 +132,9 @@ declare global {
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
-    burgLabels: { [key: string]: { [key: string]: string } };
+    labels: {
+      groups: { [key: string]: { [key: string]: string | number | null } };
+    };
     burgIcons: { [key: string]: { [key: string]: string } };
     anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;
@@ -241,17 +240,14 @@ declare global {
   var drawGoods: () => void;
   var legend: any;
 
-  // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
-  // (src/utils, src/modules) and globally-typed generators (Names, Cultures, Religions, States,
-  // Provinces, Burgs, COA, COArenderer) are used directly instead.
   var drawCultures: () => void;
   var drawReligions: () => void;
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;
-  var drawStateLabels: (ids?: number[]) => void;
+  var drawLabels: () => void;
+  var removeLabels: () => void;
   var drawPopulation: () => void;
-
   var toggleCultures: () => void;
   var toggleStates: () => void;
   var toggleBiomes: () => void;

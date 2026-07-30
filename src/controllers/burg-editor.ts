@@ -3,6 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import {
@@ -27,11 +28,11 @@ function open(id: number | string): void {
   if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  selected = select<any, unknown>("#burgLabels").select(`[data-id='${id}']`);
+  selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
 
-  select<SVGTextElement, unknown>("#burgLabels")
-    .selectAll<SVGTextElement, unknown>("text")
+  select<SVGTextElement, unknown>("#labels")
+    .selectAll<SVGTextElement, unknown>("text[data-label-type='burg']")
     .call(drag<SVGTextElement, unknown>().on("start", dragBurgLabel))
     .classed("draggable", true);
   renderDialog();
@@ -213,6 +214,7 @@ function renderDialog(): void {
             class="icon-anchor"
           ></button>
         </div>
+        <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
         <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
         <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
         <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
@@ -238,36 +240,37 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl("burgName").on("input", changeName);
-  ensureEl("burgNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
-  ensureEl("burgNameReRandom").on("click", generateNameRandom);
-  ensureEl("burgGroup").on("change", changeGroup);
-  ensureEl("burgGroupConfigure").on("click", editBurgGroups);
-  ensureEl("burgType").on("change", changeType);
-  ensureEl("burgCulture").on("change", changeCulture);
-  ensureEl("burgNameReCulture").on("click", generateNameCulture);
-  ensureEl("burgPopulation").on("change", changePopulation);
+  ensureEl("burgName").addEventListener("input", changeName);
+  ensureEl("burgNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
+  ensureEl("burgNameReRandom").addEventListener("click", generateNameRandom);
+  ensureEl("burgGroup").addEventListener("change", changeGroup);
+  ensureEl("burgGroupConfigure").addEventListener("click", editBurgGroups);
+  ensureEl("burgType").addEventListener("change", changeType);
+  ensureEl("burgCulture").addEventListener("change", changeCulture);
+  ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
+  ensureEl("burgPopulation").addEventListener("change", changePopulation);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
-    .forEach(el => void el.on("click", toggleFeature));
-  ensureEl("burgLinkOpen").on("click", openBurgLink);
+    .forEach(el => void el.addEventListener("click", toggleFeature));
+  ensureEl("burgLinkOpen").addEventListener("click", openBurgLink);
 
-  ensureEl("burgStyleShow").on("click", showStyleSection);
-  ensureEl("burgStyleHide").on("click", hideStyleSection);
-  ensureEl("burgEditLabelStyle").on("click", editGroupLabelStyle);
-  ensureEl("burgEditIconStyle").on("click", editGroupIconStyle);
-  ensureEl("burgEditAnchorStyle").on("click", editGroupAnchorStyle);
+  ensureEl("burgStyleShow").addEventListener("click", showStyleSection);
+  ensureEl("burgStyleHide").addEventListener("click", hideStyleSection);
+  ensureEl("burgEditLabelStyle").addEventListener("click", editGroupLabelStyle);
+  ensureEl("burgEditIconStyle").addEventListener("click", editGroupIconStyle);
+  ensureEl("burgEditAnchorStyle").addEventListener("click", editGroupAnchorStyle);
 
-  ensureEl("burgEmblem").on("click", openEmblemEdit);
-  ensureEl("burgSetPreviewLink").on("click", setCustomPreview);
-  ensureEl("burgEditEmblem").on("click", openEmblemEdit);
-  ensureEl("burgLocate").on("click", zoomIntoBurg);
-  ensureEl("burgRelocate").on("click", toggleRelocateBurg);
-  ensureEl("burglLegend").on("click", editBurgLegend);
-  ensureEl("burgLock").on("click", toggleBurgLockButton);
-  ensureEl("burgRemove").on("click", removeSelectedBurg);
-  ensureEl("burgTemperatureGraph").on("click", showTemperatureGraph);
-  ensureEl("burgProductionOverview").on("click", showProductionOverview);
+  ensureEl("burgEmblem").addEventListener("click", openEmblemEdit);
+  ensureEl("burgSetPreviewLink").addEventListener("click", setCustomPreview);
+  ensureEl("burgEditEmblem").addEventListener("click", openEmblemEdit);
+  ensureEl("burgLocate").addEventListener("click", zoomIntoBurg);
+  ensureEl("burgEditLabel").addEventListener("click", editBurgLabel);
+  ensureEl("burgRelocate").addEventListener("click", toggleRelocateBurg);
+  ensureEl("burglLegend").addEventListener("click", editBurgLegend);
+  ensureEl("burgLock").addEventListener("click", toggleBurgLockButton);
+  ensureEl("burgRemove").addEventListener("click", removeSelectedBurg);
+  ensureEl("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
+  ensureEl("burgProductionOverview").addEventListener("click", showProductionOverview);
 }
 
 function getSelectedId(): number {
@@ -335,8 +338,13 @@ function dragBurgLabel(this: SVGTextElement, event: any): void {
   const dy = +tr[1] - event.y;
 
   event.on("drag", function (this: SVGTextElement, dragEvent: any) {
-    const { x, y } = dragEvent;
-    this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
+    const [effectiveDx, effectiveDy] = [dx + dragEvent.x, dy + dragEvent.y];
+    this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
+    const burg = pack.burgs[+this.dataset.id!];
+    if (burg) {
+      if (!burg.label) burg.label = {};
+      Object.assign(burg.label, { dx: effectiveDx, dy: effectiveDy });
+    }
     tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warn");
   });
 }
@@ -345,7 +353,10 @@ function changeName(): void {
   const id = getSelectedId();
   const value = ensureEl<HTMLInputElement>("burgName").value;
   pack.burgs[id].name = value;
-  selected!.text(value);
+
+  if (!pack.burgs[id].label) pack.burgs[id].label = {};
+  Object.assign(pack.burgs[id].label, { text: value });
+  drawLabel("burg", id);
 }
 
 function generateNameRandom(): void {
@@ -358,6 +369,7 @@ function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
   Burgs.changeGroup(burg, this.value);
+  drawLabel("burg", id);
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -470,6 +482,7 @@ function toggleCapital(burgId: number): void {
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
   Burgs.changeGroup(oldCapital);
+  drawLabel("burg");
 }
 
 function toggleBurgLockButton(): void {
@@ -510,6 +523,12 @@ function editGroupLabelStyle(): void {
   const g = (selected!.node() as Element).parentNode as HTMLElement;
   closeDialogs(".stable");
   editStyle("labels", g.id);
+}
+
+function editBurgLabel(): void {
+  const id = getSelectedId();
+  $("#burgEditor").dialog("close");
+  Controllers.LabelsEditor.open({ type: "burg", id });
 }
 
 function editGroupIconStyle(): void {
@@ -626,7 +645,6 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const y = rn(point[1], 2);
 
   select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
-  select("#burgLabels").select(`#burgLabel${id}`).attr("transform", null).attr("x", x).attr("y", y);
 
   const anchor = select("#anchors").select(`use[data-id='${id}']`);
   if (anchor.size()) {
@@ -644,6 +662,9 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.x = x;
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
+
+  if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0 });
+  drawLabel("burg", id);
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }
@@ -696,6 +717,7 @@ function removeSelectedBurg(): void {
       message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
+        removeLabel("burg", burgId);
         Burgs.remove(burgId);
         $("#burgEditor").dialog("close");
       }
@@ -709,8 +731,8 @@ function editBurgGroups(): void {
 
 function closeBurgEditor(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
-  select<SVGTextElement, unknown>("#burgLabels")
-    .selectAll<SVGTextElement, unknown>("text")
+  select<SVGTextElement, unknown>("#labels")
+    .selectAll<SVGTextElement, unknown>("text[data-label-type='burg']")
     .on(".drag", null)
     .classed("draggable", false);
   selected = null;

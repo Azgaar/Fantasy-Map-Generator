@@ -54,11 +54,11 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("iceEditStyle").on("click", () => editStyle("ice"));
-  ensureEl("iceRandomize").on("click", randomizeShape);
-  ensureEl<HTMLInputElement>("iceSize").on("input", changeSize);
-  ensureEl("iceNew").on("click", toggleAdd);
-  ensureEl("iceRemove").on("click", removeIce);
+  ensureEl("iceEditStyle").addEventListener("click", () => editStyle("ice"));
+  ensureEl("iceRandomize").addEventListener("click", randomizeShape);
+  ensureEl<HTMLInputElement>("iceSize").addEventListener("input", changeSize);
+  ensureEl("iceNew").addEventListener("click", toggleAdd);
+  ensureEl("iceRemove").addEventListener("click", removeIce);
 }
 
 function randomizeShape(): void {

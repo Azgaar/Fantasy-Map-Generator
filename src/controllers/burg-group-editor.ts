@@ -1,7 +1,7 @@
 import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -65,10 +65,10 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("burgGroupsForm")
-    .on("change", validateForm)
-    .on("submit", submitForm as EventListener);
-  ensureEl("burgGroupsBody").on("click", (ev: Event) => {
+  const form = ensureEl("burgGroupsForm");
+  form.addEventListener("change", validateForm);
+  form.addEventListener("submit", submitForm as EventListener);
+  ensureEl("burgGroupsBody").addEventListener("click", (ev: Event) => {
     const el = ev.target as HTMLElement;
     const line = el.closest("tr");
     if (!line) return;
@@ -383,6 +383,14 @@ function submitForm(event: Event): void {
     return input.value || null;
   }
 
+  for (const line of lines) {
+    const previousName = line.getAttribute("name");
+    const name = line.querySelector<HTMLInputElement>("input[name='name']")?.value;
+    if (!name || style.labels.groups[name]) continue;
+    const source = (previousName && style.labels.groups[previousName]) || style.labels.groups.town || {};
+    style.labels.groups[name] = { ...source };
+  }
+
   options.burgs.groups = lines.map(line => {
     const inputs = line.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select");
     const group = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {
@@ -400,7 +408,7 @@ function submitForm(event: Event): void {
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("burg");
   refreshEditors();
 
   $("#burgGroupsEditor").dialog("close");

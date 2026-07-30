@@ -1,3 +1,4 @@
+import { resolveLabelGroup } from "@/generators/labels";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { destroyDialogIfExists, ensureEl, minmax, rn } from "../utils";
@@ -119,10 +120,18 @@ function rescaleBurgStyles(scale: number): void {
     group.setAttribute("stroke-width", String(newStroke));
   }
 
-  const burgLabels = [...ensureEl("burgLabels").querySelectorAll("g")];
-  for (const group of burgLabels) {
-    const size = +(group.dataset.size ?? 0);
-    group.dataset.size = String(Math.max(rn((size + size / scale) / 2, 2), 1) * scale);
+  const burgLabelGroups = new Set(
+    pack.burgs
+      .filter(burg => burg.i && !burg.removed)
+      .map(burg => resolveLabelGroup("burg", burg.label?.group || burg.group))
+  );
+  for (const groupId of burgLabelGroups) {
+    const groupStyle = style.labels.groups[groupId];
+    const size = +(groupStyle["data-size"] ?? 0);
+    const rescaledSize = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
+    groupStyle["data-size"] = rescaledSize;
+    const group = document.querySelector<SVGGElement>(`#labels > #${groupId}`);
+    if (group) group.dataset.size = String(rescaledSize);
   }
 }
 

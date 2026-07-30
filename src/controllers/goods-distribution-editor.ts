@@ -656,7 +656,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   renderGroupList();
   updateOutput();
 
-  ensureEl<HTMLButtonElement>("distAddGroup").on("click", () => {
+  ensureEl<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
     groups.push([createDefaultCondition()]);
     renderGroupList();
     updateOutput();

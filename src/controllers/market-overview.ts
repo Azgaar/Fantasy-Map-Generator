@@ -78,12 +78,14 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   applySortingByHeader("marketOverviewHeader");
 
-  ensureEl("marketOverviewRefresh").on("click", marketOverviewAddLines);
-  ensureEl("marketOverviewExport").on("click", downloadStockCsv);
-  ensureEl("marketOverviewOpenDeals").on("click", () => Controllers.MarketDealsOverview.open(activeMarketId));
-  ensureEl("marketOverviewRelocate").on("click", toggleRelocateMarket);
-  ensureEl("marketOverviewName").on("input", onRenameInput);
-  ensureEl("marketOverviewNameReset").on("click", resetMarketName);
+  ensureEl("marketOverviewRefresh").addEventListener("click", marketOverviewAddLines);
+  ensureEl("marketOverviewExport").addEventListener("click", downloadStockCsv);
+  ensureEl("marketOverviewOpenDeals").addEventListener("click", () =>
+    Controllers.MarketDealsOverview.open(activeMarketId)
+  );
+  ensureEl("marketOverviewRelocate").addEventListener("click", toggleRelocateMarket);
+  ensureEl("marketOverviewName").addEventListener("input", onRenameInput);
+  ensureEl("marketOverviewNameReset").addEventListener("click", resetMarketName);
 }
 
 // The input shows the custom name (empty when using the default); the placeholder shows the default.
