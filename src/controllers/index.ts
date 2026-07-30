@@ -27,6 +27,7 @@ export const Controllers = createRegistry({
   HierarchyTree: () => import("@/controllers/hierarchy-tree").then(m => m.HierarchyTree),
   IceEditor: () => import("@/controllers/ice-editor").then(m => m.IceEditor),
   LabelsEditor: () => import("@/controllers/labels-editor").then(m => m.LabelsEditor),
+  LabelsConfigurator: () => import("@/controllers/labels-configurator").then(m => m.LabelsConfigurator),
   LabelCreator: () => import("@/controllers/label-creator").then(m => m.LabelCreator),
   LakesEditor: () => import("@/controllers/lakes-editor").then(m => m.LakesEditor),
   MarkersEditor: () => import("@/controllers/markers-editor").then(m => m.MarkersEditor),

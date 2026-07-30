@@ -264,8 +264,12 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (noLabels) {
-    clone.selectAll("#labels [data-label-type='state'], #labels [data-label-type='burg']").remove();
-    clone.selectAll("#textPaths [id^='textPath_stateLabel']").remove();
+    clone.selectAll("#labels [data-label-type]").remove();
+    clone
+      .selectAll(
+        "#textPaths [id^='textPath_stateLabel'], #textPaths [id^='textPath_provinceLabel'], #textPaths [id^='textPath_addedLabel']"
+      )
+      .remove();
     clone.select("#icons #burgIcons").remove();
   }
   if (noWater) {

@@ -2,6 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
+import { DEFAULT_ADDED_LABEL_GROUP } from "@/generators/labels";
 import { drawLabel } from "@/renderers/labels/draw-labels";
 
 function toggle(): void {
@@ -22,7 +23,9 @@ async function addOnClick(event: MouseEvent): Promise<void> {
 
   const text = Names.getCulture(pack.cells.culture[cell]);
   const lastSelected = await Controllers.LabelsEditor.getLastSelectedGroup();
-  const group = lastSelected || "addedLabels";
+  const group = options.labels.groups.some(group => group.name === lastSelected)
+    ? lastSelected
+    : DEFAULT_ADDED_LABEL_GROUP;
   const label = AddedLabels.add({
     group,
     text,

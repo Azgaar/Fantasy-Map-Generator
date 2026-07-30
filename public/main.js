@@ -102,9 +102,6 @@ coastline.append("g").attr("id", "lake_island");
 terrs.append("g").attr("id", "oceanHeights");
 terrs.append("g").attr("id", "landHeights");
 
-labels.append("g").attr("id", "states");
-labels.append("g").attr("id", "addedLabels");
-
 // population groups
 population.append("g").attr("id", "rural");
 population.append("g").attr("id", "urban");
@@ -152,6 +149,14 @@ let notes = [];
 let customization = 0;
 
 // global options; in v2.0 to be used for all UI settings
+const storedBurgGroups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
+const storedLabelOptions = JSON.safeParse(localStorage.getItem("label-groups"));
+const initialLabelOptions = window.LabelGroups.migrate({
+  current: storedLabelOptions,
+  styles: { groups: {} },
+  world: { states: [], provinces: [], burgs: [], labels: [] },
+  burgGroups: storedBurgGroups
+});
 let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
@@ -162,11 +167,11 @@ let options = {
   latitude: 50, // North-South map shift in %, 50 is centered on equator
   longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
   prec: 100, // precipitation modifier in %
-  stateLabelsMode: "auto",
   showBurgPreview: true,
   burgs: {
-    groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
+    groups: storedBurgGroups
   },
+  labels: initialLabelOptions,
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
   },
@@ -560,18 +565,7 @@ function invokeActiveZooming() {
     coastline.select("#sea_island").attr("filter", filter);
   }
 
-  // rescale labels on zoom
-  if (labels.style("display") !== "none") {
-    labels.selectAll("g").each(function () {
-      const desired = +this.dataset.size;
-      const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
-
-      const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-    });
-  }
+  window.applyLabelZoom(scale);
 
   // rescale emblems on zoom
   if (emblems.style("display") !== "none") {

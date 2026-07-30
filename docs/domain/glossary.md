@@ -53,8 +53,12 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
 - **Note**: User-defined text attached to a specific map entity (cell, burg, state) containing custom lore or description.
 - **Icon**: A small graphic representing a good, biome, or feature.
-- **Label**: Display text owned by a State or Burg, or stored independently as a user-added label. State and added labels follow SVG paths; Burg labels are positioned text.
-- **Label Group**: A reusable typography and offset style in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.
+- **Label**: Display text owned by a State, Province, or Burg, or stored independently as a user-added label. State, Province, and added labels follow SVG paths; Burg labels are positioned text.
+- **Label Group**: An ordered, reusable label policy and visual style. Policy fields live in `options.labels.groups`; typography and offsets live in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.
+- **Label Group type**: The Label Group's organizational category (`states`, `burgs`, `provinces`, or `added`). It controls defaults and UI grouping, not rendering compatibility.
+- **Label Group layer dependency**: An optional layer-toggle id that makes a Label Group visible only while that layer is on.
+- **Label name mode**: A Label Group policy selecting automatic, short, or full names for generated State and Province labels.
+- **Label zoom bounds**: Optional inclusive minimum and maximum map scales at which a Label Group is visible.
 
 ## UI & User Interaction
 

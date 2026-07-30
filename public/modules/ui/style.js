@@ -94,7 +94,12 @@ function selectStyleElement() {
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
-    el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
+    if (styleElement === "labels") {
+      const selected = group && el.select(`[data-group="${CSS.escape(group)}"]`);
+      el = selected && selected.size() ? selected : el.select(defaultGroupSelector);
+    } else {
+      el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
+    }
   }
 
   // opacity
@@ -269,17 +274,15 @@ function selectStyleElement() {
 
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
-    styleVisibility.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
     styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
     styleShadowInput.value = el.style("text-shadow") || "";
-    styleLabelsHideGroup.checked = el.node().style.display === "none";
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
 
     styleFontShift.style.display = "block";
     styleFontShiftX.value = el.attr("data-dx") || 0;
@@ -414,12 +417,21 @@ function selectStyleElement() {
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
-    const groups = ensureEl(styleElement).querySelectorAll("g");
-    groups.forEach(el => {
-      const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
-      styleGroupSelect.options.add(option);
-    });
-    styleGroupSelect.value = el.attr("id");
+    if (styleElement === "labels") {
+      options.labels.groups.forEach(group => {
+        const groupElement = ensureEl("labels").querySelector(`[data-group="${CSS.escape(group.name)}"]`);
+        const count = groupElement?.childElementCount || 0;
+        styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
+      });
+      styleGroupSelect.value = el.attr("data-group");
+    } else {
+      const groups = ensureEl(styleElement).querySelectorAll("g");
+      groups.forEach(el => {
+        const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
+        styleGroupSelect.options.add(option);
+      });
+      styleGroupSelect.value = el.attr("id");
+    }
     styleGroup.style.display = "block";
   } else {
     styleGroupSelect.options.add(new Option(styleElement, styleElement, false, true));
@@ -479,6 +491,7 @@ function getEl() {
   const el = styleElementSelect.value;
   const g = styleGroupSelect.value;
   if (g === el || g === "") return svg.select("#" + el);
+  if (el === "labels") return svg.select("#labels").select(`[data-group="${CSS.escape(g)}"]`);
   else return svg.select("#" + el).select("#" + g);
 }
 
@@ -554,11 +567,6 @@ styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
   const groupStyle = getLabelGroupStyle();
   if (groupStyle) groupStyle.opacity = e.target.value;
-});
-
-styleLabelsHideGroup.addEventListener("change", function () {
-  const group = getEl().style("display", this.checked ? "none" : null);
-  updateLabelGroupInlineStyle(group);
 });
 
 styleFilterInput.addEventListener("change", function () {
@@ -971,9 +979,17 @@ styleFontMinus.addEventListener("click", function () {
 function changeFontSize(el, size) {
   styleFontSize.value = size;
 
+  const groupStyle = getLabelGroupStyle();
+  if (styleElementSelect.value === "labels") {
+    el.attr("font-size", `${size}%`).attr("data-size", null);
+    if (groupStyle) {
+      delete groupStyle["data-size"];
+      groupStyle["font-size"] = `${size}%`;
+    }
+    return;
+  }
+
   const getSizeOnScale = element => {
-    // some labels are rescaled on zoom
-    if (element === "labels") return Math.max(rn((size + size / scale) / 2, 2), 1);
     if (element === "coordinates") return rn(size / scale ** 0.8, 2);
 
     // other has the same size
@@ -982,11 +998,6 @@ function changeFontSize(el, size) {
 
   const scaleSize = getSizeOnScale(styleElementSelect.value);
   el.attr("data-size", size).attr("font-size", scaleSize);
-  const groupStyle = getLabelGroupStyle();
-  if (groupStyle) {
-    groupStyle["data-size"] = size;
-    groupStyle["font-size"] = scaleSize;
-  }
 
   if (styleElementSelect.value === "legend") redrawLegend();
   redrawMeasurersOnStyleChange();

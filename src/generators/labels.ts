@@ -1,5 +1,7 @@
 import type { Point } from "./voronoi";
 
+export type { LabelType } from "@/types/labels";
+
 export interface Label {
   text?: string;
   group?: string;
@@ -16,21 +18,8 @@ export interface PathLabel extends Label {
 
 export const DEFAULT_STATE_LABEL_GROUP = "states";
 export const DEFAULT_BURG_LABEL_GROUP = "town";
-export const DEFAULT_ADDED_LABEL_GROUP = "addedLabels";
-
-export type LabelType = "state" | "burg" | "added";
-
-const fallbackGroups: Record<LabelType, string> = {
-  state: DEFAULT_STATE_LABEL_GROUP,
-  burg: DEFAULT_BURG_LABEL_GROUP,
-  added: DEFAULT_ADDED_LABEL_GROUP
-};
-
-export function resolveLabelGroup(type: LabelType, requestedGroup?: string): string {
-  const fallback = fallbackGroups[type];
-  const group = requestedGroup || fallback;
-  return style.labels.groups[group] ? group : fallback;
-}
+export const DEFAULT_PROVINCE_LABEL_GROUP = "provinces";
+export const DEFAULT_ADDED_LABEL_GROUP = "added";
 
 declare global {
   var AddedLabels: AddedLabelsModule;

@@ -5,18 +5,18 @@ import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 import { getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
-import { getLabelGroup } from "./label-groups";
-import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
+import { getLabelGroup, getLabelGroupOptions } from "./label-groups";
+import { getRegionLabelPath } from "./region-label-layout";
 
 export function drawStateLabels(): void {
   removeStateLabels();
 
   let paths = "";
   const texts = new Map<string, string>();
-  const mode = options.stateLabelsMode || "auto";
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
     const group = state.label?.group || DEFAULT_STATE_LABEL_GROUP;
+    const mode = getLabelGroupOptions(group)?.mode || "auto";
     const sandbox = createMeasurementSandbox(group);
     try {
       const letterLength = checkExampleLetterLength(sandbox);
@@ -39,7 +39,7 @@ export function drawStateLabel(stateId: number): void {
 
   const group = state.label?.group || DEFAULT_STATE_LABEL_GROUP;
   const sandbox = createMeasurementSandbox(group);
-  const mode = options.stateLabelsMode || "auto";
+  const mode = getLabelGroupOptions(group)?.mode || "auto";
   const letterLength = checkExampleLetterLength(sandbox);
 
   try {
@@ -70,20 +70,26 @@ export function parseStateLabelData(textEl: SVGTextElement): PathLabel {
       ?.map(Number) || [];
   const startOffset = Number.parseFloat(textPath.getAttribute("startOffset") || "");
   const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
-  const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
+  const letterSpacingAttribute = textPath.getAttribute("letter-spacing");
+  const letterSpacing = Number.parseFloat(letterSpacingAttribute || "");
 
   const label: PathLabel = { text, pathPoints };
   if (dx) label.dx = dx;
   if (dy) label.dy = dy;
   if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset;
   if (Number.isFinite(fontSize) && fontSize !== 100) label.fontSize = fontSize;
-  if (Number.isFinite(letterSpacing) && letterSpacing !== 0) label.letterSpacing = letterSpacing;
+  if (letterSpacingAttribute !== null && Number.isFinite(letterSpacing)) label.letterSpacing = letterSpacing;
   return label;
 }
 
 function resolveStateLabel(state: State, sandbox: SVGGElement, mode: string, letterLength: number) {
   const label = createStateLabel(state);
-  return label.pathPoints.length ? label : { ...label, ...fitLabel(state, sandbox, mode, letterLength) };
+  if (!label.pathPoints.length) return { ...label, ...fitLabel(state, sandbox, mode, letterLength) };
+  if (state.label?.text !== undefined) return label;
+
+  const pathLength = measureLabelPath(label, sandbox).getTotalLength() / letterLength;
+  const [lines, fontSize] = getLinesAndRatio(mode, state.name!, state.fullName!, pathLength);
+  return { ...label, text: lines.join("|"), fontSize: state.label?.fontSize ?? fontSize };
 }
 
 function createStateLabel(state: State) {
@@ -131,18 +137,7 @@ function fitLabel(state: State, sandbox: SVGGElement, mode: string, letterLength
   const hasCustomText = state.label?.text !== undefined;
 
   // calculate pathPoints using raycast algorithm
-  const offset = getOffsetWidth(state.cells!);
-  const maxLakeSize = state.cells! / 20;
-  const [x0, y0] = state.pole!;
-
-  const rays = ANGLES.map(({ angle, dx, dy }) => {
-    const { length, x, y } = raycast({ stateId: state.i, x0, y0, dx, dy, maxLakeSize, offset });
-    return { angle, length, x, y };
-  });
-  const [ray1, ray2] = findBestRayPair(rays);
-
-  const pathPoints: [number, number][] = [[ray1.x, ray1.y], state.pole!, [ray2.x, ray2.y]];
-  if (ray1.x > ray2.x) pathPoints.reverse();
+  const pathPoints = getRegionLabelPath(state.i, pack.cells.state, state.pole!, state.cells!);
 
   const labelWithPath = { ...createStateLabel(state), pathPoints };
   const pathElement = measureLabelPath(labelWithPath, sandbox);
@@ -209,7 +204,7 @@ function measureLabelText(
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
   textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
   textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
-  if (label.letterSpacing) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
+  if (label.letterSpacing !== undefined) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
   textPath.append(
     ...lines.map((lineText, index) => {
       const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
@@ -222,12 +217,6 @@ function measureLabelText(
   text.appendChild(textPath);
   sandbox.appendChild(text);
   return { text, textPath };
-}
-
-function getOffsetWidth(cellsNumber: number): number {
-  if (cellsNumber < 40) return 0;
-  if (cellsNumber < 200) return 5;
-  return 10;
 }
 
 function checkExampleLetterLength(sandbox: SVGGElement): number {

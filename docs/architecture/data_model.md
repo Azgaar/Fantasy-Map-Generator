@@ -234,6 +234,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `rural`: `number` - rural (non-burg) population of province cells. In population points
 - `urban`: `number` - urban (burg) population of state province. In population points
 - `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `label`: `Label` - optional Province-label overrides. If absent, the renderer derives the text and path from Province data
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
 
@@ -306,12 +307,13 @@ The shared optional `Label` fields are:
 - `group`: `string` - optional Label Group override
 - `dx`: `number` - horizontal translation in map coordinates
 - `dy`: `number` - vertical translation in map coordinates
-- `pathPoints`: `number[][]` - path control points as `[x, y]` pairs. Used by State and added labels
-- `startOffset`: `number` - text start position as a percentage along the path. Used by State and added labels; defaults to `50`
+- `pathPoints`: `number[][]` - path control points as `[x, y]` pairs. Used by State, Province, and added labels
+- `startOffset`: `number` - text start position as a percentage along the path. Used by State, Province, and added labels; defaults to `50`
 - `fontSize`: `number` - font size % relative to the label-group size, in percent. Defaults to `100`
-- `letterSpacing`: `number` - per-label letter spacing in pixels. Defaults to `0` (attrubute is null)
+- `letterSpacing`: `number` - per-label letter spacing in pixels. Defaults to `0` (attribute is null)
 
-State and Burg label overrides are stored on their entities as `pack.states[i].label` and `pack.burgs[i].label`.
+State, Province, and Burg label overrides are stored on their entities as `pack.states[i].label`,
+`pack.provinces[i].label`, and `pack.burgs[i].label`.
 
 User-added labels are stored independently in `pack.labels` as an unordered `AddedLabel[]`:
 
@@ -324,8 +326,26 @@ User-added labels are stored independently in `pack.labels` as an unordered `Add
 At runtime, Label Group styles are indexed in `style.labels.groups`, keyed by group id. Current `.map` files
 serialize the complete global `style` object at data index 48. Pre-1.140 migration reconstructs it from the
 legacy SVG group attributes. All label types can share a group without changing their rendering primitive:
-State and added labels use `<textPath>`, while Burg labels use positioned `<text>`. The fallback groups are
-`states`, `town`, and `addedLabels` respectively.
+State, Province, and added labels use `<textPath>`, while Burg labels use positioned `<text>`. The fallback
+groups are `states`, `provinces`, the configured default Burg group, and `added` respectively.
+
+Ordered Label Group policy is stored in `options.labels`:
+
+- `resizeOnZoom`: `boolean` - whether the parent `#labels` font size scales with map zoom
+- `showAll`: `boolean` - temporary override for per-group active state, zoom bounds, and layer dependencies
+- `groups`: `LabelGroupOptions[]` - ordered group definitions
+
+Each `LabelGroupOptions` contains:
+
+- `name`: `string` - globally unique logical group id
+- `type`: `states | burgs | provinces | added` - organizational category and default source
+- `active`: `boolean` - manual visibility switch
+- `layerDependency`: `string | null` - optional layer-toggle id; unknown ids fail closed
+- `zoom.min` and `zoom.max`: `number | null` - inclusive map-scale bounds
+- `mode`: `auto | short | full` - generated State and Province name policy
+
+The canonical protected groups are `states`, `provinces`, `added`, and every active Burg group. SVG group ids
+are implementation-safe `labels-${name}` values; the logical id is always read from `data-group`.
 
 Optional group-level `data-dx` and `data-dy` values are retained in style data. Rendering derives one CSS
 translation on the parent SVG group, so the offset applies uniformly to every label in that group.

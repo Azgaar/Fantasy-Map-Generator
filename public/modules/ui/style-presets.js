@@ -73,9 +73,12 @@ async function fetchSystemPreset(preset) {
 
 function applyStylePreset(presetJson) {
   for (const selector in presetJson) {
+    let labelGroup = null;
     if (selector.startsWith("#labels > #")) {
-      const group = selector.split("#").pop();
-      style.labels.groups[group] = getStyleAttributes(presetJson[selector]);
+      labelGroup = selector.split("#").pop();
+      if (labelGroup === "addedLabels") labelGroup = "added";
+      style.labels.groups[labelGroup] = getLabelStyleAttributes(presetJson[selector]);
+      continue;
     }
 
     if (selector.startsWith("#burgIcons")) {
@@ -88,7 +91,9 @@ function applyStylePreset(presetJson) {
       style.anchors[group] = presetJson[selector];
     }
 
-    const el = document.querySelector(selector);
+    const el = labelGroup
+      ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
+      : document.querySelector(selector);
     if (!el) continue;
 
     for (const attribute in presetJson[selector]) {
@@ -124,8 +129,25 @@ function applyStylePreset(presetJson) {
     }
   }
 
+  for (const group of options.labels.groups) {
+    if (style.labels.groups[group.name]) continue;
+    const defaultName =
+      group.type === "states" ? "states" : group.type === "provinces" ? "provinces" : group.type === "burgs" ? "town" : "added";
+    const source = style.labels.groups[defaultName] || style.labels.groups.states || {};
+    style.labels.groups[group.name] =
+      group.type === "provinces" ? { ...source, "font-size": "10%" } : { ...source };
+  }
+
   function getStyleAttributes(attributes) {
     return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
+  }
+
+  function getLabelStyleAttributes(attributes) {
+    const result = getStyleAttributes(attributes);
+    const size = result["data-size"] ?? result["font-size"] ?? 18;
+    delete result["data-size"];
+    result["font-size"] = `${parseFloat(size) || 18}%`;
+    return result;
   }
 }
 
@@ -323,7 +345,19 @@ function addStylePreset() {
         "font-family",
         "filter"
       ],
-      "#labels > #addedLabels": [
+      "#labels > #provinces": [
+        "opacity",
+        "fill",
+        "stroke",
+        "stroke-width",
+        "style",
+        "letter-spacing",
+        "data-size",
+        "font-size",
+        "font-family",
+        "filter"
+      ],
+      "#labels > #added": [
         "opacity",
         "fill",
         "stroke",
@@ -392,7 +426,7 @@ function addStylePreset() {
       presetStyle[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
-        // label-like layers store their base font size in data-size; markets use data-size for the marker circle, so keep its real font-size
+        // Legacy label presets may still carry data-size; markets use it for the marker circle, so keep its real font-size
         if (attr === "font-size" && selector !== "#markets" && el.hasAttribute("data-size"))
           value = el.getAttribute("data-size");
         presetStyle[selector][attr] = parseValue(value);

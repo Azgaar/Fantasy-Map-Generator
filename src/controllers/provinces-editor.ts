@@ -31,7 +31,6 @@ import {
   getRandomColor,
   isLand,
   P,
-  parseTransform,
   rand,
   rn,
   si,
@@ -45,11 +44,6 @@ function open(): void {
   if (!layerIsOn("toggleBorders")) toggleBorders();
   if (layerIsOn("toggleStates")) toggleStates();
   if (layerIsOn("toggleCultures")) toggleCultures();
-
-  select<SVGGElement, unknown>("#provs")
-    .selectAll<SVGTextElement, unknown>("text")
-    .call(drag<SVGTextElement, unknown>().on("drag", dragLabel))
-    .classed("draggable", true);
 
   renderDialog();
   refreshProvincesEditor();
@@ -117,11 +111,6 @@ function renderDialog(): void {
         ></button>
         <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
         <button
-          id="provincesToggleLabels"
-          data-tip="Toggle province labels. Change size in Menu ⭢ Style ⭢ Provinces"
-          class="icon-font"
-        ></button>
-        <button
           id="provincesExport"
           data-tip="Save provinces-related data as a text file (.csv)"
           class="icon-download"
@@ -164,7 +153,6 @@ function renderDialog(): void {
   ensureEl("provincesFilterState").addEventListener("change", provincesEditorAddLines);
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
-  ensureEl("provincesToggleLabels").addEventListener("click", toggleLabels);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
   ensureEl("provincesRemoveAll").addEventListener("click", removeAllProvinces);
   ensureEl("provincesManually").addEventListener("click", enterProvincesManualAssignent);
@@ -523,6 +511,7 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.findNeighbors();
   States.collectStatistics();
   States.defineStateForms(newStates);
+  if (layerIsOn("toggleLabels")) drawLabel("province");
   for (const stateId of allStates) {
     drawLabel("state", stateId);
   }
@@ -653,6 +642,7 @@ function removeProvince(p: number): void {
         select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
 
         pack.provinces[p] = { i: p, removed: true } as Province;
+        if (layerIsOn("toggleLabels")) drawLabel("province", p);
 
         const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
         g.select(`#province${p}`).remove();
@@ -851,6 +841,7 @@ function applyNameChange(p: Province): void {
   p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
   p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleLabels")) drawLabel("province", p.i);
   refreshProvincesEditor();
 }
 
@@ -1055,18 +1046,6 @@ function showChart(): void {
   hideNonfittingLabels();
 }
 
-function toggleLabels(): void {
-  const hidden = select<SVGGElement, unknown>("#provs").select("#provinceLabels").style("display") === "none";
-  select<SVGGElement, unknown>("#provs")
-    .select("#provinceLabels")
-    .style("display", `${hidden ? "block" : "none"}`);
-  select<SVGGElement, unknown>("#provs").attr("data-labels", +hidden);
-  select<SVGGElement, unknown>("#provs")
-    .selectAll<SVGTextElement, unknown>("text")
-    .call(drag<SVGTextElement, unknown>().on("drag", dragLabel))
-    .classed("draggable", true);
-}
-
 function triggerProvincesRelease(): void {
   confirmationDialog({
     title: "Release provinces",
@@ -1256,6 +1235,7 @@ function applyProvincesManualAssignent(): void {
   Provinces.getPoles();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleLabels")) drawLabel("province");
 
   exitProvincesManualAssignment();
   refreshProvincesEditor();
@@ -1368,6 +1348,7 @@ function addProvince(this: SVGElement, event: any): void {
 
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleLabels")) drawLabel("province", province);
 
   collectStatistics();
   ensureEl<HTMLSelectElement>("provincesFilterState").value = String(state);
@@ -1455,6 +1436,7 @@ function removeAllProvinces(): void {
         if (layerIsOn("toggleBorders")) drawBorders();
         select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
         turnButtonOff("toggleProvinces");
+        if (layerIsOn("toggleLabels")) drawLabel("province");
 
         provincesEditorAddLines();
       },
@@ -1465,21 +1447,7 @@ function removeAllProvinces(): void {
   });
 }
 
-function dragLabel(this: SVGTextElement, event: any): void {
-  const tr = parseTransform(this.getAttribute("transform") ?? "");
-  const x = +tr[0] - event.x;
-  const y = +tr[1] - event.y;
-
-  event.on("drag", function (this: SVGTextElement, dragEvent: any) {
-    this.setAttribute("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
-  });
-}
-
 function closeProvincesEditor(): void {
-  select<SVGGElement, unknown>("#provs")
-    .selectAll<SVGTextElement, unknown>("text")
-    .call(drag<SVGTextElement, unknown>().on("drag", null))
-    .attr("class", null);
   if (customization === 11) exitProvincesManualAssignment("close");
   if (customization === 12) exitAddProvinceMode();
   $("#provincesEditor").dialog("destroy");
@@ -1675,6 +1643,7 @@ function mergeProvinces(ids: number[], primary: number): void {
   // redraw layers that may have changed
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleBorders")) drawBorders();
+  if (layerIsOn("toggleLabels")) drawLabel("province");
 
   // clear any fog or debug highlights
   unfog();

@@ -5,8 +5,8 @@ describe("AddedLabelsModule", () => {
   beforeEach(() => {
     globalThis.pack = {
       labels: [
-        { i: 1, text: "North", pathPoints: [], group: "addedLabels" },
-        { i: 2, text: "South", pathPoints: [], group: "addedLabels" }
+        { i: 1, text: "North", pathPoints: [], group: "added" },
+        { i: 2, text: "South", pathPoints: [], group: "added" }
       ]
     } as unknown as typeof pack;
     globalThis.notes = [
@@ -19,7 +19,7 @@ describe("AddedLabelsModule", () => {
     const labels = new AddedLabelsModule();
 
     labels.remove(2);
-    const replacement = labels.add({ text: "East", pathPoints: [], group: "addedLabels" });
+    const replacement = labels.add({ text: "East", pathPoints: [], group: "added" });
 
     expect(replacement.i).toBe(2);
     expect(notes).toEqual([{ id: "marker1", name: "Marker", legend: "Keep me" }]);

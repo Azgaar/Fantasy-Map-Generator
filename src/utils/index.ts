@@ -40,6 +40,8 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
+import { migrateLabelConfiguration } from "./label-migration";
+import { createDefaultLabelsOptions } from "./label-policy";
 import {
   applyOption,
   destroyDialogIfExists,
@@ -147,6 +149,10 @@ window.uploadFile = uploadFile;
 window.getPrecipitation = getPrecipitation;
 
 window.TYPED_ARRAY_MAX = TYPED_ARRAY_MAX;
+window.LabelGroups = {
+  createDefaultOptions: createDefaultLabelsOptions,
+  migrate: migrateLabelConfiguration
+};
 
 export {
   abbreviate,

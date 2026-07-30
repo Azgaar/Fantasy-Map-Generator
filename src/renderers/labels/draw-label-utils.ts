@@ -20,7 +20,7 @@ export function getLabelTextMarkup(label: PathLabel & { text: string; id: string
     )
     .join("");
   const transform = label.dx || label.dy ? ` transform="translate(${label.dx || 0}, ${label.dy || 0})"` : "";
-  const letterSpacing = label.letterSpacing ? ` letter-spacing="${label.letterSpacing}px"` : "";
+  const letterSpacing = label.letterSpacing !== undefined ? ` letter-spacing="${label.letterSpacing}px"` : "";
   const startOffset = `${label.startOffset ?? 50}%`;
   const fontSize = `${label.fontSize ?? 100}%`;
 
@@ -39,6 +39,7 @@ export function escapeMarkup(text: string): string {
 
 function getLabelIdentity(id: string): [LabelType, string] {
   if (id.startsWith("stateLabel")) return ["state", id.slice(10)];
+  if (id.startsWith("provinceLabel")) return ["province", id.slice(13)];
   if (id.startsWith("burgLabel")) return ["burg", id.slice(9)];
   return ["added", id.slice(10)];
 }

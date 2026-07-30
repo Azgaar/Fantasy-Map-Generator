@@ -324,7 +324,6 @@ i.icon-lock {
   }
 }
 
-#provinceLabels,
 #labels text[data-label-type="burg"] {
   dominant-baseline: alphabetic;
   text-anchor: middle;

@@ -3,6 +3,8 @@ import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
+import type { BurgGroup } from "./burg-groups";
+import type { LabelStyles, LabelsOptions } from "./labels";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
@@ -37,6 +39,11 @@ declare global {
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
+    applyLabelZoom: typeof import("../renderers/labels/label-groups").applyLabelZoom;
+    LabelGroups: {
+      createDefaultOptions: typeof import("../utils/label-policy").createDefaultLabelsOptions;
+      migrate: typeof import("../utils/label-migration").migrateLabelConfiguration;
+    };
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;
@@ -72,9 +79,7 @@ declare global {
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
   var areaUnit: HTMLInputElement;
-  var hideLabels: HTMLInputElement;
   var stylePreset: HTMLSelectElement;
-  var rescaleLabels: HTMLInputElement;
   var temperatureScale: HTMLSelectElement;
 
   // Global variables defined in main.js
@@ -132,9 +137,7 @@ declare global {
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
-    labels: {
-      groups: { [key: string]: { [key: string]: string | number | null } };
-    };
+    labels: LabelStyles;
     burgIcons: { [key: string]: { [key: string]: string } };
     anchors: { [key: string]: { [key: string]: string } };
     [key: string]: any;
@@ -313,7 +316,7 @@ type Options = {
   latitude: number; // North-South map shift in %, 50 is centered on equator
   longitude: number; // West-East map shift in %, 50 is centered on prime meridian
   prec: number; // precipitation modifier in %
-  stateLabelsMode: string;
+  labels: LabelsOptions;
   showBurgPreview: boolean;
   burgs: {
     groups: BurgGroup[];
@@ -323,18 +326,4 @@ type Options = {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };
   threeD: ThreeDOptions;
-};
-
-type BurgGroup = {
-  name: string;
-  order: number;
-  active?: boolean;
-  isDefault?: boolean;
-  removed?: boolean;
-  min?: number;
-  max?: number;
-  percentile?: number;
-  features?: Record<string, boolean>;
-  biomes?: number[];
-  preview?: string;
 };

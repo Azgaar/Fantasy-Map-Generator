@@ -72,9 +72,9 @@ function prepareMapData(): string {
     "", // previously used for precOutput.value, part of options now
     JSON.stringify(options),
     mapName.value,
-    +hideLabels.checked,
+    "", // previously used for hideLabels
     stylePreset.value,
-    +rescaleLabels.checked,
+    "", // previously used for rescaleLabels
     urbanDensity,
     "", // previously used for longitudeOutput.value, part of options now
     ensureEl<HTMLInputElement>("growthRate").value

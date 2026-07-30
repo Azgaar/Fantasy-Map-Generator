@@ -12,6 +12,7 @@ import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawReliefIcons } from "@/renderers/draw-relief-icons";
 import { drawBurgLabels } from "@/renderers/labels/draw-burg-labels";
+import { drawProvinceLabels } from "@/renderers/labels/draw-province-labels";
 import { drawStateLabels } from "@/renderers/labels/draw-state-labels";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
@@ -31,6 +32,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "editProvincesButton") void Controllers.ProvincesEditor.open();
   else if (buttonId === "editDiplomacyButton") void Controllers.DiplomacyEditor.open();
   else if (buttonId === "editCoastlineSettings") void Controllers.CoastlineEditor.open();
+  else if (buttonId === "editLabelsButton") void Controllers.LabelsConfigurator.open();
   else if (buttonId === "editTradeAnimationButton") void Controllers.TradeAnimationEditor.open();
   else if (buttonId === "editCulturesButton") void Controllers.CulturesEditor.open();
   else if (buttonId === "editReligions") void Controllers.ReligionsEditor.open();
@@ -156,7 +158,10 @@ function regenerateStates(): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) drawStateLabels();
+  if (layerIsOn("toggleLabels")) {
+    drawStateLabels();
+    drawProvinceLabels();
+  }
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleGoods")) drawGoods();
@@ -171,6 +176,7 @@ function regenerateProvinces(): void {
   unfog();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (layerIsOn("toggleLabels")) drawProvinceLabels();
   if (layerIsOn("toggleEmblems")) {
     clearEmblems(["province"]);
     drawEmblems();

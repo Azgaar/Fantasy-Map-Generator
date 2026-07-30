@@ -2,6 +2,7 @@ import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-h
 import { tip } from "@/components/tooltips";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawLabel } from "@/renderers/labels/draw-labels";
+import { reconcileBurgLabelGroups } from "@/utils/label-group-transactions";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -60,7 +61,11 @@ function renderDialog(): void {
         <tbody id="burgGroupsBody"></tbody>
       </table>
     </form>
-    <div style="padding: 0.5em 0; font-style: italic;">Locked burgs are not affected by changes in groups.</div>
+    <div style="padding: 0.5em 0; font-style: italic;">
+      Locked burgs are not affected by changes in groups.<br>
+      Applying Burg-group changes reclassifies Burgs and therefore their default Label Groups. Burg labels manually
+      assigned to another Label Group keep that label-only assignment.
+    </div>
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -383,15 +388,8 @@ function submitForm(event: Event): void {
     return input.value || null;
   }
 
-  for (const line of lines) {
-    const previousName = line.getAttribute("name");
-    const name = line.querySelector<HTMLInputElement>("input[name='name']")?.value;
-    if (!name || style.labels.groups[name]) continue;
-    const source = (previousName && style.labels.groups[previousName]) || style.labels.groups.town || {};
-    style.labels.groups[name] = { ...source };
-  }
-
-  options.burgs.groups = lines.map(line => {
+  const previousGroups = structuredClone(options.burgs.groups);
+  const nextGroups = lines.map(line => {
     const inputs = line.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select");
     const group = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {
       const value = parseInput(input);
@@ -400,7 +398,33 @@ function submitForm(event: Event): void {
     }, {});
     return group;
   }) as typeof options.burgs.groups;
+  const renames = Object.fromEntries(
+    lines
+      .map(line => [line.getAttribute("name"), line.querySelector<HTMLInputElement>("input[name='name']")?.value])
+      .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1] && entry[0] !== entry[1]))
+  );
+
+  try {
+    reconcileBurgLabelGroups({
+      labels: options.labels,
+      styles: style.labels,
+      world: {
+        states: pack.states,
+        provinces: pack.provinces,
+        burgs: pack.burgs,
+        labels: pack.labels
+      },
+      previousGroups,
+      nextGroups,
+      renames
+    });
+  } catch (error) {
+    tip((error as Error).message, false, "error");
+    return;
+  }
+  options.burgs.groups = nextGroups;
   localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
+  localStorage.setItem("label-groups", JSON.stringify(options.labels));
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);

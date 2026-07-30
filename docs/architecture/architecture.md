@@ -100,11 +100,13 @@ The intent is for generators and editors to mutate this state in controlled ways
 
 Labels share one grouping and style model while retaining entity-specific rendering:
 
-- Label Group styles live in `style.labels.groups`.
-- All SVG groups are direct children of `#labels`.
-- State and added labels render on paths; Burg labels render as lightweight positioned text.
+- Ordered Label Group policy lives in `options.labels.groups`; Label Group styles live in `style.labels.groups`.
+- Each configured group renders as a direct child of `#labels`, with a DOM id prefixed by `labels-` and the logical group id in `data-group`.
+- State, Province, and added labels render on paths; Burg labels render as lightweight positioned text.
 - `burg.group` supplies the default Burg Label Group and `burg.label.group` is an optional label-only override.
-- Renderers resolve missing groups to the entity fallback (`states`, `town`, or `addedLabels`).
+- Renderers resolve missing groups to the entity fallback (`states`, `provinces`, the default Burg group, or `added`).
+- Group policy controls active state, inclusive zoom bounds, optional layer dependency, and automatic/short/full name selection.
+- Parent `#labels` zoom scaling and per-group visibility are independent: group font-size is a percentage of the parent, while zoom bounds only decide visibility.
 - Group-level `data-dx` and `data-dy` are style data; rendering derives one parent-group transform from them.
 
 ---
@@ -273,7 +275,8 @@ const style = {
     groups: {
       states: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 22},
       town: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 4},
-      addedLabels: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 18}
+      provinces: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 10},
+      added: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 18}
     }
   },
 

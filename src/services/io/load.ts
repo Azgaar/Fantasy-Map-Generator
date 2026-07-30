@@ -4,10 +4,12 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
+import { readLabelGroupStyle } from "@/renderers/labels/label-groups";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { migrateLabelConfiguration } from "@/utils/label-migration";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -238,6 +240,8 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
   let loadGroupOpen = false;
+  let legacyResizeOnZoom = true;
+  let legacyStateMode: unknown = "auto";
 
   try {
     // exit customization
@@ -281,6 +285,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         urbanization = +settings[13];
       }
       if (settings[19]) options = JSON.parse(settings[19]);
+      else delete (options as Partial<typeof options>).labels;
+      legacyStateMode = (options as typeof options & { stateLabelsMode?: unknown }).stateLabelsMode;
       // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
       if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
       if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
@@ -292,9 +298,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
       if (settings[20]) mapName.value = settings[20];
-      if (settings[21]) hideLabels.checked = Boolean(+settings[21]);
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = Boolean(+settings[23]);
+      if (settings[23] !== undefined && settings[23] !== "") legacyResizeOnZoom = Boolean(+settings[23]);
       if (settings[24]) {
         ensureEl<HTMLInputElement>("urbanDensityInput").value = settings[24];
         urbanDensity = +settings[24];
@@ -303,7 +308,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       options.longitude ??= 50;
       if (settings[26]) ensureEl<HTMLInputElement>("growthRate").value = settings[26];
     }
-    ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode;
     ensureEl<HTMLInputElement>("yearInput").value = String(options.year);
     ensureEl<HTMLInputElement>("eraInput").value = options.era;
     ensureEl<HTMLInputElement>("shapeRendering").value =
@@ -481,10 +485,31 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     if (data[48]) style = JSON.parse(data[48]);
 
+    const legacyProvinceStyle = options.labels?.groups?.some(group => group.name === "provinces")
+      ? undefined
+      : readLabelGroupStyle(
+          document.querySelector("#provs") || document.createElementNS("http://www.w3.org/2000/svg", "g")
+        );
+
     {
       const { resolveVersionConflicts } = await import("./auto-update");
       resolveVersionConflicts(mapVersion!, data);
     }
+    options.labels = migrateLabelConfiguration({
+      current: options.labels,
+      styles: style.labels,
+      world: {
+        states: pack.states,
+        provinces: pack.provinces,
+        burgs: pack.burgs,
+        labels: pack.labels
+      },
+      burgGroups: options.burgs.groups,
+      resizeOnZoom: legacyResizeOnZoom,
+      stateMode: legacyStateMode,
+      provinceStyle: legacyProvinceStyle
+    });
+    delete (options as typeof options & { stateLabelsMode?: unknown }).stateLabelsMode;
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
@@ -812,6 +837,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     // draw data layers (not kept in svg)
     if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
+    if (layerIsOn("toggleLabels")) drawLabels();
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

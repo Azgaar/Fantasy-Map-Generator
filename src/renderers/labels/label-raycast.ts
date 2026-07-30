@@ -1,3 +1,4 @@
+import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell } from "@/utils/graphUtils";
 
 export interface Ray {
@@ -14,7 +15,8 @@ interface AngleData {
 }
 
 interface RaycastParams {
-  stateId: number;
+  regionId: number;
+  regionIds: TypedArray;
   x0: number;
   y0: number;
   dx: number;
@@ -36,13 +38,12 @@ const LENGTH_MAX = 300;
  * Cast a ray from a point in a given direction until it exits a state.
  * Checks both the ray point and offset points perpendicular to it.
  */
-export function raycast({ stateId, x0, y0, dx, dy, maxLakeSize, offset }: RaycastParams): {
+export function raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offset }: RaycastParams): {
   length: number;
   x: number;
   y: number;
 } {
   const { cells, features } = pack;
-  const stateIds = cells.state;
   let ray = { length: 0, x: x0, y: y0 };
 
   for (let length = LENGTH_START; length < LENGTH_MAX; length += LENGTH_STEP) {
@@ -52,25 +53,25 @@ export function raycast({ stateId, x0, y0, dx, dy, maxLakeSize, offset }: Raycas
     const offset2: [number, number] = [x + dy * offset, y + -dx * offset];
 
     const inState =
-      isInsideState(x, y, stateId) && isInsideState(...offset1, stateId) && isInsideState(...offset2, stateId);
+      isInsideRegion(x, y, regionId) && isInsideRegion(...offset1, regionId) && isInsideRegion(...offset2, regionId);
     if (!inState) break;
     ray = { length, x, y };
   }
 
   return ray;
 
-  function isInsideState(x: number, y: number, stateId: number): boolean {
+  function isInsideRegion(x: number, y: number, regionId: number): boolean {
     if (x < 0 || x > graphWidth || y < 0 || y > graphHeight) return false;
     const cellId = findClosestCell(x, y, undefined, pack) as number;
 
     const feature = features[cells.f[cellId]];
     if (feature.type === "lake") return isInnerLake(feature) || isSmallLake(feature);
 
-    return stateIds[cellId] === stateId;
+    return regionIds[cellId] === regionId;
   }
 
   function isInnerLake(feature: { shoreline: number[] }): boolean {
-    return feature.shoreline.every(cellId => stateIds[cellId] === stateId);
+    return feature.shoreline.every(cellId => regionIds[cellId] === regionId);
   }
 
   function isSmallLake(feature: { cells: number }): boolean {

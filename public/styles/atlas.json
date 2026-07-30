@@ -597,7 +597,19 @@
     "font-family": "Amarante",
     "filter": null
   },
-  "#labels > #addedLabels": {
+  "#labels > #provinces": {
+    "opacity": 0.5,
+    "fill": "#000000",
+    "stroke": "#000000",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 10,
+    "font-size": 10,
+    "font-family": "Amarante",
+    "filter": null
+  },
+  "#labels > #added": {
     "opacity": 1,
     "fill": "#000000",
     "stroke": "#000000",
@@ -650,7 +662,7 @@
   },
   "#markets": {
     "opacity": 1,
-    "stroke-width": 1.0,
+    "stroke-width": 1,
     "fill-opacity": 0,
     "stroke-opacity": 0.8,
     "data-size": 3,

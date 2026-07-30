@@ -191,7 +191,7 @@ test.describe("map layers", () => {
       };
     });
 
-    expect(structure.groupIds).toEqual(expect.arrayContaining(["states", "town", "addedLabels"]));
+    expect(structure.groupIds).toEqual(expect.arrayContaining(["labels-states", "labels-town", "labels-added"]));
     expect(structure.nestedGroups).toBe(0);
     expect(structure.stateTextPaths).toBeGreaterThan(0);
     expect(structure.burgLabels).toBeGreaterThan(0);

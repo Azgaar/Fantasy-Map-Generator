@@ -5,6 +5,7 @@ import "./draw-burg-icons";
 import "./labels/draw-burg-labels";
 import "./labels/draw-labels";
 import "./labels/draw-state-labels";
+import "./labels/draw-province-labels";
 import "./draw-added-labels";
 import "./draw-emblems";
 import "./draw-features";

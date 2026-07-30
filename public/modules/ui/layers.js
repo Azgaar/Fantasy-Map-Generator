@@ -571,6 +571,7 @@ function toggleProvinces(event) {
     provs.selectAll("*").remove();
     turnButtonOff("toggleProvinces");
   }
+  window.applyLabelZoom(scale);
 }
 
 function drawProvinces() {
@@ -584,18 +585,9 @@ function drawProvinces() {
     bodyPaths.push(getGappedFillPaths("province", fill, waterGap, color, index));
   });
 
-  const labels = provinces
-    .filter(p => p.i && !p.removed)
-    .map(p => {
-      const [x, y] = p.pole || cells.p[p.center];
-      return /* html */ `<text x="${x}" y="${y}" id="provinceLabel${p.i}">${p.name}</text>`;
-    });
-
   ensureEl("provs").innerHTML = /* html */ `
     <g id='provincesBody'>${bodyPaths.join("")}</g>
-    <g id='provinceLabels'>${labels.join("")}</g>
   `;
-  ensureEl("provinceLabels").style.display = ensureEl("provs").dataset.labels === "1" ? "block" : "none";
 
   TIME && console.timeEnd("drawProvinces");
 }
@@ -1006,11 +998,13 @@ function layerIsOn(el) {
 function turnButtonOff(el) {
   ensureEl(el).classList.add("buttonoff");
   getCurrentPreset();
+  window.applyLabelZoom(scale);
 }
 
 function turnButtonOn(el) {
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
+  window.applyLabelZoom(scale);
 }
 
 // move layers on mapLayers dragging (jquery sortable)

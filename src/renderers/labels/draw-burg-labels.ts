@@ -48,6 +48,6 @@ export function getBurgLabelMarkup(burg: Burg): string {
           )
           .join("");
   const fontSize = label?.fontSize === undefined ? "" : ` font-size="${label.fontSize}%"`;
-  const letterSpacing = label?.letterSpacing ? ` letter-spacing="${label.letterSpacing}px"` : "";
+  const letterSpacing = label?.letterSpacing !== undefined ? ` letter-spacing="${label.letterSpacing}px"` : "";
   return /*html*/ `<text text-rendering="optimizeSpeed" id="burgLabel${burg.i}" data-label-type="burg" data-id="${burg.i}" x="${burg.x}" y="${burg.y}"${fontSize}${letterSpacing}${transform}>${text}</text>`;
 }

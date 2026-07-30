@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Burg } from "@/generators/burgs-generator";
-import { resolveLabelGroup } from "@/generators/labels";
+import { resolveLabelGroup } from "@/utils/label-policy";
 import { getBurgLabelMarkup } from "./draw-burg-labels";
 import { getLabelPath, getLabelTextMarkup } from "./draw-label-utils";
 import { readLabelGroupStyle } from "./label-groups";
@@ -21,6 +21,10 @@ describe("path label markup", () => {
 
   test("omits letter spacing when it is not set", () => {
     expect(getLabelTextMarkup(label).includes("letter-spacing")).toBe(false);
+  });
+
+  test("preserves explicit zero letter spacing", () => {
+    expect(getLabelTextMarkup({ ...label, letterSpacing: 0 }).includes('letter-spacing="0px"')).toBe(true);
   });
 
   test("escapes label text before inserting markup", () => {
@@ -59,8 +63,7 @@ describe("Label Group styles", () => {
 
     expect(readLabelGroupStyle(group as unknown as Element)).toEqual({
       fill: "#123456",
-      "data-size": "6",
-      "font-size": "6",
+      "font-size": "6%",
       style: "text-shadow: white 0px 0px 4px"
     });
   });
@@ -97,15 +100,23 @@ describe("Burg label markup", () => {
 
 describe("Label Group resolution", () => {
   test("accepts cross-entity groups and falls back by label type", () => {
-    globalThis.style = {
-      labels: { groups: { states: {}, town: {}, addedLabels: {}, shared: {} } },
-      burgIcons: {},
-      anchors: {}
-    } as typeof style;
+    const burgGroups = [{ name: "town", order: 0, isDefault: true }];
+    const labels = {
+      resizeOnZoom: true,
+      showAll: false,
+      groups: ["states", "town", "added", "shared"].map(name => ({
+        name,
+        type: name === "town" ? ("burgs" as const) : ("added" as const),
+        active: true,
+        layerDependency: null,
+        zoom: { min: null, max: null },
+        mode: "auto" as const
+      }))
+    };
 
-    expect(resolveLabelGroup("burg", "shared")).toBe("shared");
-    expect(resolveLabelGroup("burg", "missing")).toBe("town");
-    expect(resolveLabelGroup("state", "missing")).toBe("states");
-    expect(resolveLabelGroup("added", "missing")).toBe("addedLabels");
+    expect(resolveLabelGroup("burg", "shared", labels, burgGroups)).toBe("shared");
+    expect(resolveLabelGroup("burg", "missing", labels, burgGroups)).toBe("town");
+    expect(resolveLabelGroup("state", "missing", labels, burgGroups)).toBe("states");
+    expect(resolveLabelGroup("added", "missing", labels, burgGroups)).toBe("added");
   });
 });

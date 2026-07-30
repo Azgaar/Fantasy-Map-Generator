@@ -10,7 +10,8 @@ export interface Label3dStyle {
 
 export function getLabel3dStyle(type: LabelType, requestedGroup?: string, label?: Label, sizeScale = 1): Label3dStyle {
   const groupStyle = getLabelGroupStyle(requestedGroup, type);
-  const baseSize = Number(groupStyle["data-size"]) || (type === "state" ? 20 : 10);
+  const baseSize =
+    Number.parseFloat(String(groupStyle["font-size"] ?? groupStyle["data-size"] ?? "")) || (type === "state" ? 20 : 10);
   const relativeSize = (label?.fontSize ?? 100) / 100;
 
   return {

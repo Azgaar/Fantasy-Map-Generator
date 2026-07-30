@@ -651,7 +651,19 @@
     "font-family": "IM Fell English",
     "filter": null
   },
-  "#labels > #addedLabels": {
+  "#labels > #provinces": {
+    "opacity": 1,
+    "fill": "#3e3e3e",
+    "stroke": "#000000",
+    "stroke-width": 0.3,
+    "style": "text-shadow: white 0px 0px 6px",
+    "letter-spacing": 0,
+    "data-size": 10,
+    "font-size": 10,
+    "font-family": "IM Fell English",
+    "filter": null
+  },
+  "#labels > #added": {
     "opacity": 1,
     "fill": "#f24706",
     "stroke": "#701b05",
@@ -704,7 +716,7 @@
   },
   "#markets": {
     "opacity": 1,
-    "stroke-width": 1.0,
+    "stroke-width": 1,
     "fill-opacity": 0,
     "stroke-opacity": 0.8,
     "data-size": 3,

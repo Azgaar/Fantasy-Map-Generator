@@ -1,6 +1,7 @@
 import type { LabelType } from "@/generators/labels";
 import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "../draw-added-labels";
 import { drawBurgLabel, drawBurgLabels, removeBurgLabel } from "./draw-burg-labels";
+import { drawProvinceLabel, drawProvinceLabels, removeProvinceLabel } from "./draw-province-labels";
 import { drawStateLabel, drawStateLabels, removeStateLabel } from "./draw-state-labels";
 import { renderLabelGroups } from "./label-groups";
 
@@ -14,6 +15,7 @@ export function drawLabels(): void {
   removeLabels();
   renderLabelGroups();
   drawStateLabels();
+  drawProvinceLabels();
   drawBurgLabels();
   drawAddedLabels();
   invokeActiveZooming();
@@ -22,6 +24,7 @@ export function drawLabels(): void {
 
 const renderers: Record<LabelType, (id?: number) => void> = {
   state: id => (id === undefined ? drawStateLabels() : drawStateLabel(id)),
+  province: id => (id === undefined ? drawProvinceLabels() : drawProvinceLabel(id)),
   burg: id => (id === undefined ? drawBurgLabels() : drawBurgLabel(id)),
   added: id => (id === undefined ? drawAddedLabels() : drawAddedLabel(id))
 };
@@ -39,7 +42,9 @@ export function drawLabel(type: LabelType, id?: number): void {
 export function removeLabels(): void {
   document.querySelector("#labels")?.replaceChildren();
   document
-    .querySelectorAll("#textPaths > path[id^='textPath_stateLabel'], #textPaths > path[id^='textPath_addedLabel']")
+    .querySelectorAll(
+      "#textPaths > path[id^='textPath_stateLabel'], #textPaths > path[id^='textPath_provinceLabel'], #textPaths > path[id^='textPath_addedLabel']"
+    )
     .forEach(path => {
       path.remove();
     });
@@ -47,6 +52,7 @@ export function removeLabels(): void {
 
 export function removeLabel(type: LabelType, id: number): void {
   if (type === "state") return void removeStateLabel(id);
+  if (type === "province") return void removeProvinceLabel(id);
   if (type === "burg") return void removeBurgLabel(id);
   if (type === "added") return void removeAddedLabel(id);
 }
