@@ -1,6 +1,6 @@
 import { DEFAULT_ADDED_LABEL_GROUP } from "@/generators/labels";
-import { getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
-import { getLabelGroup } from "./label-groups";
+import { getLabelPathMarkup, getLabelTextMarkup } from "./labels/draw-label-utils";
+import { getLabelGroup } from "./labels/label-groups";
 
 export function drawAddedLabels(): void {
   clearAddedLabels();

@@ -1,7 +1,7 @@
 import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawLabel } from "@/renderers/draw-labels";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;

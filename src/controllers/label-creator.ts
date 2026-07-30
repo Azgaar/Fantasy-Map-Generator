@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
-import { drawLabel } from "@/renderers/draw-labels";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {

@@ -8,16 +8,17 @@ import {
   DEFAULT_ADDED_LABEL_GROUP,
   type Label,
   type LabelType,
+  type PathLabel,
   resolveLabelGroup
 } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
-import { getLabelPath } from "@/renderers/draw-label-utils";
-import { drawLabel, drawLabels, removeLabel } from "@/renderers/draw-labels";
-import { parseStateLabelData } from "@/renderers/draw-state-labels";
+import { getLabelPath } from "@/renderers/labels/draw-label-utils";
+import { drawLabel, drawLabels, removeLabel } from "@/renderers/labels/draw-labels";
+import { parseStateLabelData } from "@/renderers/labels/draw-state-labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPointer, round } from "../utils";
 
-type StateLabel = { type: "state"; stateId: number; elId: string; label: Label };
+type StateLabel = { type: "state"; stateId: number; elId: string; label: PathLabel };
 type BurgLabel = { type: "burg"; burgId: number; elId: string; label: Label };
 type CustomLabel = { type: "added"; labelId: number; elId: string; label: AddedLabel };
 type LabelRef = { type: LabelType; id: number };
@@ -251,10 +252,11 @@ function updateControls(): void {
 function updateValues(): void {
   const label = selectedLabel.label;
   if (!label) return;
+  const startOffset = selectedLabel.type === "burg" ? 50 : (selectedLabel.label.startOffset ?? 50);
 
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
-  ensureEl<HTMLInputElement>("labelStartOffset").value = String(label.startOffset ?? 50);
-  ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(label.startOffset ?? 50);
+  ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
+  ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(startOffset);
   ensureEl<HTMLInputElement>("labelRelativeSize").value = String(label.fontSize ?? 100);
   ensureEl<HTMLInputElement>("labelLetterSpacingSize").value = String(label.letterSpacing ?? 0);
 }
@@ -323,6 +325,8 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
+  if (selectedLabel.type === "burg") return;
+
   const points: Point[] = [];
   select("#debug > #controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
@@ -581,6 +585,8 @@ function hideLetterSpacingSection(): void {
 }
 
 function changeStartOffset(this: HTMLInputElement): void {
+  if (selectedLabel.type === "burg") return;
+
   const value = this.value;
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
   const label = selectedLabel.label;
@@ -590,6 +596,8 @@ function changeStartOffset(this: HTMLInputElement): void {
 }
 
 function changeStartOffsetFromValue(this: HTMLInputElement): void {
+  if (selectedLabel.type === "burg") return;
+
   const value = Math.min(80, Math.max(20, +this.value));
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
   this.value = String(value);
@@ -614,6 +622,8 @@ function changeLetterSpacingSize(this: HTMLInputElement): void {
 }
 
 function editLabelAlign(): void {
+  if (selectedLabel.type === "burg") return;
+
   const label = selectedLabel.label;
   if (!label?.pathPoints?.length) return;
 

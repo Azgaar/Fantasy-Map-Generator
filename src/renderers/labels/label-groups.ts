@@ -40,6 +40,11 @@ export function getLabelGroup(requestedGroup: string | undefined, type: LabelTyp
   return findLabelGroup(labels, groupId) || createLabelGroup(labels, groupId, style.labels.groups[groupId]);
 }
 
+export function getLabelGroupStyle(requestedGroup: string | undefined, type: LabelType): LabelGroupStyle {
+  ensureFallbackStyles();
+  return style.labels.groups[resolveLabelGroup(type, requestedGroup)];
+}
+
 export function readLabelGroupStyle(group: Element): LabelGroupStyle {
   const groupStyle = Object.fromEntries(
     Array.from(group.attributes)

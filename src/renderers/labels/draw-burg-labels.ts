@@ -1,5 +1,6 @@
-import type { Burg } from "../generators/burgs-generator";
-import { DEFAULT_BURG_LABEL_GROUP } from "../generators/labels";
+import type { Burg } from "../../generators/burgs-generator";
+import { DEFAULT_BURG_LABEL_GROUP } from "../../generators/labels";
+import { escapeMarkup } from "./draw-label-utils";
 import { getLabelGroup } from "./label-groups";
 
 export function drawBurgLabels(): void {
@@ -39,11 +40,11 @@ export function getBurgLabelMarkup(burg: Burg): string {
   const lines = (label?.text ?? burg.name ?? "").split("|");
   const text =
     lines.length === 1
-      ? lines[0]
+      ? escapeMarkup(lines[0])
       : lines
           .map(
             (line, index) =>
-              `<tspan x="${burg.x}" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${line}</tspan>`
+              `<tspan x="${burg.x}" dy="${index ? "1em" : `${(lines.length - 1) / -2}em`}">${escapeMarkup(line)}</tspan>`
           )
           .join("");
   const fontSize = label?.fontSize === undefined ? "" : ` font-size="${label.fontSize}%"`;

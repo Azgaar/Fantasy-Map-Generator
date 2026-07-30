@@ -18,7 +18,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawLabel } from "@/renderers/draw-labels";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";

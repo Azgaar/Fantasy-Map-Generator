@@ -5,10 +5,13 @@ export interface Label {
   group?: string;
   dx?: number;
   dy?: number;
-  pathPoints?: Point[];
-  startOffset?: number;
   fontSize?: number;
   letterSpacing?: number;
+}
+
+export interface PathLabel extends Label {
+  pathPoints?: Point[];
+  startOffset?: number;
 }
 
 export const DEFAULT_STATE_LABEL_GROUP = "states";
@@ -34,7 +37,7 @@ declare global {
 }
 
 // Custom labels are the only labels stored independently from map entities
-export interface AddedLabel extends Label {
+export interface AddedLabel extends PathLabel {
   i: number;
   text: string;
   pathPoints: Point[];
@@ -59,6 +62,7 @@ export class AddedLabelsModule {
 
   remove(i: number): void {
     pack.labels = pack.labels.filter(label => label.i !== i);
+    notes = notes.filter(note => note.id !== `addedLabel${i}`);
   }
 }
 

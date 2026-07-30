@@ -17,3 +17,19 @@ test("auto-fitted state labels retain full names and readable sizes", async ({ p
   expect(labels.filter(label => label.lines > 1)).toHaveLength(13);
   expect(labels.filter(label => label.fontSize === 50)).toHaveLength(2);
 });
+
+test("bulk redraw preserves custom State Label Groups", async ({ page }) => {
+  await page.goto("/?seed=test-seed&width=1280&height=720");
+  await page.waitForFunction(() => (window as typeof window & { mapId?: number }).mapId !== undefined, {
+    timeout: 60000
+  });
+
+  const parentGroup = await page.evaluate(() => {
+    style.labels.groups.shared = { ...style.labels.groups.states };
+    pack.states[1].label = { ...pack.states[1].label, group: "shared" };
+    drawLabels();
+    return document.getElementById("stateLabel1")?.parentElement?.id;
+  });
+
+  expect(parentGroup).toBe("shared");
+});

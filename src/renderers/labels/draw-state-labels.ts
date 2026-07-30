@@ -1,18 +1,18 @@
 import { max } from "d3";
-import { DEFAULT_STATE_LABEL_GROUP, type Label } from "@/generators/labels";
+import { DEFAULT_STATE_LABEL_GROUP, type PathLabel } from "@/generators/labels";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 import { parsePathPoints } from "@/utils/pathUtils";
-import { findClosestCell, minmax, rn, splitInTwo } from "../utils";
-import { getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
+import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
 import { getLabelGroup } from "./label-groups";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
+import { getLabelPath, getLabelPathMarkup, getLabelTextMarkup } from "./draw-label-utils";
 
 export function drawStateLabels(): void {
   removeStateLabels();
 
   let paths = "";
-  const texts: Record<string, string> = {};
+  const texts = new Map<string, string>();
   const mode = options.stateLabelsMode || "auto";
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
@@ -22,15 +22,14 @@ export function drawStateLabels(): void {
       const letterLength = checkExampleLetterLength(sandbox);
       const label = resolveStateLabel(state, sandbox, mode, letterLength);
       paths += getLabelPathMarkup(label);
-      texts.group = (texts.group || "") + getLabelTextMarkup(label);
+      texts.set(group, (texts.get(group) || "") + getLabelTextMarkup(label));
     } finally {
       sandbox.remove();
     }
   }
 
   document.getElementById("textPaths")!.insertAdjacentHTML("beforeend", paths);
-  for (const [group, markup] of Object.entries(texts))
-    getLabelGroup(group, "state").insertAdjacentHTML("beforeend", markup);
+  for (const [group, markup] of texts) getLabelGroup(group, "state").insertAdjacentHTML("beforeend", markup);
 }
 
 export function drawStateLabel(stateId: number): void {
@@ -55,7 +54,7 @@ export function drawStateLabel(stateId: number): void {
   }
 }
 
-export function parseStateLabelData(textEl: SVGTextElement): Label {
+export function parseStateLabelData(textEl: SVGTextElement): PathLabel {
   const textPath = textEl.querySelector("textPath");
   if (!textPath) return {};
 
@@ -73,7 +72,7 @@ export function parseStateLabelData(textEl: SVGTextElement): Label {
   const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
   const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
 
-  const label: Label = { text, pathPoints };
+  const label: PathLabel = { text, pathPoints };
   if (dx) label.dx = dx;
   if (dy) label.dy = dy;
   if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset;
@@ -191,7 +190,7 @@ function fitLabel(state: State, sandbox: SVGGElement, mode: string, letterLength
 const MEASURE_PATH_ID = "measureLabelPath";
 
 // create or update the sandbox measurement path for the label's current pathPoints
-function measureLabelPath(label: Label, sandbox: SVGGElement): SVGPathElement {
+function measureLabelPath(label: PathLabel, sandbox: SVGGElement): SVGPathElement {
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.id = MEASURE_PATH_ID;
   path.setAttribute("d", getLabelPath(label));
@@ -202,7 +201,7 @@ function measureLabelPath(label: Label, sandbox: SVGGElement): SVGPathElement {
 
 // attach a measurement copy of the label's text to the sandbox; caller removes it after measuring
 function measureLabelText(
-  label: Label & { text: string },
+  label: PathLabel & { text: string },
   sandbox: SVGGElement
 ): { text: SVGTextElement; textPath: SVGTextPathElement } {
   const lines = label.text.split("|");

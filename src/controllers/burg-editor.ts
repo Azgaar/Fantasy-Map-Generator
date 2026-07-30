@@ -3,7 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawLabel, removeLabel } from "@/renderers/draw-labels";
+import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import {

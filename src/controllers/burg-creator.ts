@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
-import { drawLabel } from "@/renderers/draw-labels";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 
 function toggle(): void {
   if (isActive()) {

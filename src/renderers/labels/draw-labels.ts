@@ -1,5 +1,5 @@
 import type { LabelType } from "@/generators/labels";
-import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "./draw-added-labels";
+import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "../draw-added-labels";
 import { drawBurgLabel, drawBurgLabels, removeBurgLabel } from "./draw-burg-labels";
 import { drawStateLabel, drawStateLabels, removeStateLabel } from "./draw-state-labels";
 import { renderLabelGroups } from "./label-groups";
@@ -21,9 +21,9 @@ export function drawLabels(): void {
 }
 
 const renderers: Record<LabelType, (id?: number) => void> = {
-  state: id => (id ? drawStateLabel(id) : drawStateLabels()),
-  burg: id => (id ? drawBurgLabel(id) : drawBurgLabels()),
-  added: id => (id ? drawAddedLabel(id) : drawAddedLabels())
+  state: id => (id === undefined ? drawStateLabels() : drawStateLabel(id)),
+  burg: id => (id === undefined ? drawBurgLabels() : drawBurgLabel(id)),
+  added: id => (id === undefined ? drawAddedLabels() : drawAddedLabel(id))
 };
 
 export function drawLabel(type: LabelType, id?: number): void {

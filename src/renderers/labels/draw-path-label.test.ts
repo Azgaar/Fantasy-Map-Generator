@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { Burg } from "../generators/burgs-generator";
-import { resolveLabelGroup } from "../generators/labels";
+import type { Burg } from "@/generators/burgs-generator";
+import { resolveLabelGroup } from "@/generators/labels";
 import { getBurgLabelMarkup } from "./draw-burg-labels";
 import { getLabelPath, getLabelTextMarkup } from "./draw-label-utils";
 import { readLabelGroupStyle } from "./label-groups";
