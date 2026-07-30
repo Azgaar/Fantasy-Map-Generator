@@ -25,11 +25,8 @@ describe("MarkersModule.addEncounter", () => {
       cells: {
         culture: Uint8Array.from([0, 2, 0, 0]),
         biome: Uint8Array.from([0, 3, 0, 0])
-      }
-    } as any;
-
-    globalThis.biomesData = {
-      name: ["", "", "", "Forest"]
+      },
+      biomes: [{ name: "" }, { name: "" }, { name: "" }, { name: "Forest" }]
     } as any;
 
     globalThis.Names = {
