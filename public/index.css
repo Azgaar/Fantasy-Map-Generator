@@ -2022,6 +2022,22 @@ div.textual span,
   dominant-baseline: central;
 }
 
+/* the party marker is set apart from procedural markers: a soft glow + a gentle pulse */
+#markers .party-marker {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
+  animation: partyPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes partyPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .highlighted {
   outline-width: 2px;
   outline-style: dashed;

@@ -170,6 +170,9 @@ function updateInputs(): void {
   ensureEl<HTMLInputElement>("markerStroke").value = marker.stroke || "#000000";
 
   ensureEl("markerLock").className = marker.lock ? "icon-lock" : "icon-lock-open";
+
+  // the party marker cannot be deleted — hide the remove button
+  ensureEl("markerRemove").style.display = marker.protected ? "none" : "";
 }
 
 function changeMarkerType(this: HTMLInputElement): void {
@@ -306,6 +309,7 @@ function confirmMarkerDeletion(): void {
 }
 
 function deleteMarker(): void {
+  if (selectedMarker.protected) return;
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
   $("#markerEditor").dialog("close");

@@ -96,6 +96,8 @@ function prepareMapData(): string {
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
+  const clonePartyRange = cloneEl.querySelector("#partyRange");
+  if (clonePartyRange) clonePartyRange.innerHTML = ""; // always remove the transient party travel-range ring
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 

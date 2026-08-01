@@ -41,6 +41,7 @@ export const Controllers = createRegistry({
   Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
   NamesbaseEditor: () => import("@/controllers/namesbase-editor").then(m => m.NamesbaseEditor),
   NotesEditor: () => import("@/controllers/notes-editor").then(m => m.NotesEditor),
+  PartyLocation: () => import("@/controllers/party-location").then(m => m.PartyLocation),
   ProductionChains: () => import("@/controllers/production-chains").then(m => m.ProductionChains),
   ProductionOverview: () => import("@/controllers/production-overview").then(m => m.ProductionOverview),
   ProvincesEditor: () => import("@/controllers/provinces-editor").then(m => m.ProvincesEditor),

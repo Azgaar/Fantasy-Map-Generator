@@ -19,6 +19,10 @@ declare global {
   var Markers: MarkersModule;
 }
 
+// The party marker is a reserved singleton: exactly one per map, never bulk-generated, never deletable.
+export const PARTY_LOCATION_TYPE = "party-location";
+const PARTY_LOCATION_ICON = "🚩";
+
 export interface Marker {
   i: number;
   type: string;
@@ -36,6 +40,9 @@ export interface Marker {
   cell: number;
   lock?: boolean;
   pinned?: boolean;
+  protected?: boolean; // cannot be deleted or wiped by regenerate/removeAll (party marker)
+  singleton?: boolean; // ensurePartyLocation keeps exactly one
+  dailySpeed?: number; // party marker: distance travelled per day, drives the travel-range rings
 }
 
 type MarkerConfig = {
@@ -72,11 +79,13 @@ class MarkersModule {
     this.resetConfig();
     pack.markers = [];
     this.generateTypes();
+    this.ensurePartyLocation();
   }
 
   regenerate() {
-    pack.markers = pack.markers.filter(({ i, lock, cell }) => {
-      if (lock) {
+    pack.markers = pack.markers.filter(({ i, lock, cell, type }) => {
+      if (type === PARTY_LOCATION_TYPE || lock) {
+        // party marker survives regardless of lock; its position is preserved
         this.occupied[cell] = true;
         return true;
       }
@@ -87,6 +96,7 @@ class MarkersModule {
     });
 
     this.generateTypes();
+    this.ensurePartyLocation();
   }
 
   add(marker: Marker) {
@@ -105,9 +115,64 @@ class MarkersModule {
   }
 
   deleteMarker(markerId: number) {
+    if (pack.markers.find(m => m.i === markerId)?.protected) return;
     const noteId = `marker${markerId}`;
     notes = notes.filter(note => note.id !== noteId);
     pack.markers = pack.markers.filter(m => m.i !== markerId);
+  }
+
+  // Guarantee exactly one party marker; create it on first call, dedupe if a hand-edited file has several.
+  ensurePartyLocation(): Marker {
+    const party = pack.markers.filter(m => m.type === PARTY_LOCATION_TYPE);
+
+    if (party.length > 1) {
+      const [keep, ...extra] = party;
+      const extraIds = new Set(extra.map(m => m.i));
+      extra.forEach(m => {
+        notes = notes.filter(note => note.id !== `marker${m.i}`);
+      });
+      pack.markers = pack.markers.filter(m => !extraIds.has(m.i));
+      return keep;
+    }
+
+    if (party.length === 1) return party[0];
+
+    const cell = this.getStartCell();
+    const [x, y] = this.getMarkerCoordinates(cell);
+    const i = (last(pack.markers)?.i ?? -1) + 1 || 0;
+    const marker: Marker = {
+      i,
+      type: PARTY_LOCATION_TYPE,
+      icon: PARTY_LOCATION_ICON,
+      x,
+      y,
+      cell,
+      size: 46,
+      pin: "pin",
+      fill: "#d4351c",
+      stroke: "#000000",
+      protected: true,
+      singleton: true
+    };
+    pack.markers.push(marker);
+    this.occupied[cell] = true;
+    this.addPartyLocation(`marker${i}`);
+    return marker;
+  }
+
+  private addPartyLocation(id: string) {
+    if (notes.find(note => note.id === id)) return; // keep user-edited text
+    notes.push({ id, name: "The Party", legend: "Current location of the adventuring party." });
+  }
+
+  // Sensible starting cell for a fresh party marker: the capital, else any burg, else map center.
+  private getStartCell(): number {
+    const { burgs, cells } = pack;
+    const capital = burgs.find(burg => burg.i && (burg as any).capital && !burg.removed);
+    if (capital) return capital.cell;
+    const anyBurg = burgs.find(burg => burg.i && !burg.removed);
+    if (anyBurg) return anyBurg.cell;
+    return findCell(graphWidth / 2, graphHeight / 2) ?? cells.i[0];
   }
 
   private getDefaultConfig(): MarkerConfig[] {
@@ -464,6 +529,17 @@ class MarkersModule {
         multiplier: 1,
         list: this.listEncounters.bind(this),
         add: this.addEncounter.bind(this)
+      },
+      {
+        // reserved singleton — never bulk-generated (multiplier 0 → skipped by generateTypes),
+        // managed explicitly by ensurePartyLocation(). Registered so the icon/type is known to the UI.
+        type: PARTY_LOCATION_TYPE,
+        icon: PARTY_LOCATION_ICON,
+        min: 0,
+        each: 0,
+        multiplier: 0,
+        list: () => [],
+        add: this.addPartyLocation.bind(this)
       }
     ];
   }
