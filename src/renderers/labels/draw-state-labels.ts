@@ -105,7 +105,7 @@ function removeStateLabels(): void {
   document.querySelectorAll("#labels > g > [data-label-type='state']").forEach(label => {
     label.remove();
   });
-  document.querySelectorAll("#textPaths > path[id^='textPath_stateLabel']").forEach(path => {
+  document.querySelectorAll("#labelPaths > path[data-label-type='state']").forEach(path => {
     path.remove();
   });
 }

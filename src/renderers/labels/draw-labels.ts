@@ -1,9 +1,9 @@
 import type { LabelType } from "@/generators/labels";
+import { findEl } from "@/utils";
 import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "../draw-added-labels";
 import { drawBurgLabel, drawBurgLabels, removeBurgLabel } from "./draw-burg-labels";
 import { drawProvinceLabel, drawProvinceLabels, removeProvinceLabel } from "./draw-province-labels";
 import { drawStateLabel, drawStateLabels, removeStateLabel } from "./draw-state-labels";
-import { renderLabelGroups } from "./label-groups";
 
 export function drawLabels(): void {
   if (!layerIsOn("toggleLabels")) {
@@ -13,7 +13,7 @@ export function drawLabels(): void {
 
   TIME && console.time("drawLabels");
   removeLabels();
-  renderLabelGroups();
+  // renderLabelGroups(); // TODO: each renderer should render own groups
   drawStateLabels();
   drawProvinceLabels();
   drawBurgLabels();
@@ -40,14 +40,11 @@ export function drawLabel(type: LabelType, id?: number): void {
 }
 
 export function removeLabels(): void {
-  document.querySelector("#labels")?.replaceChildren();
-  document
-    .querySelectorAll(
-      "#textPaths > path[id^='textPath_stateLabel'], #textPaths > path[id^='textPath_provinceLabel'], #textPaths > path[id^='textPath_addedLabel']"
-    )
-    .forEach(path => {
-      path.remove();
-    });
+  const labels = document.querySelector<SVGGElement>("#labels");
+  if (!labels) throw new Error("Labels container not found");
+
+  labels.replaceChildren();
+  findEl("#labelPaths")?.replaceChildren(); // TODO: ensure label textPaths are only rendered to #labelPaths
 }
 
 export function removeLabel(type: LabelType, id: number): void {

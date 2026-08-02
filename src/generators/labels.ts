@@ -1,6 +1,4 @@
-import type { Point } from "./voronoi";
-
-export type { LabelType } from "@/types/labels";
+import type { Point } from "@/types/global";
 
 export interface Label {
   text?: string;
@@ -16,13 +14,37 @@ export interface PathLabel extends Label {
   startOffset?: number;
 }
 
-export const DEFAULT_STATE_LABEL_GROUP = "states";
-export const DEFAULT_BURG_LABEL_GROUP = "town";
-export const DEFAULT_PROVINCE_LABEL_GROUP = "provinces";
-export const DEFAULT_ADDED_LABEL_GROUP = "added";
-
 declare global {
   var AddedLabels: AddedLabelsModule;
+}
+
+export type LabelGroupType = "states" | "burgs" | "provinces" | "added";
+export type LabelNameMode = "auto" | "short" | "full";
+export type LabelType = "state" | "burg" | "province" | "added";
+
+export interface LabelStyles {
+  // TODO: use standard css type?
+  groups: Record<string, Record<string, string | number | null>>;
+}
+
+export interface LabelZoomBounds {
+  min: number | null;
+  max: number | null;
+}
+
+export interface LabelGroupOptions {
+  name: string;
+  type: LabelGroupType;
+  active: boolean;
+  layerDependency: string | null;
+  zoom: LabelZoomBounds;
+  mode: LabelNameMode;
+}
+
+export interface LabelsOptions {
+  resizeOnZoom: boolean;
+  showAll: boolean;
+  groups: LabelGroupOptions[];
 }
 
 // Custom labels are the only labels stored independently from map entities

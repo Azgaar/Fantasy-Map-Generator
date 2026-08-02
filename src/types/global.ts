@@ -137,10 +137,10 @@ declare global {
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
-    labels: LabelStyles;
     burgIcons: { [key: string]: { [key: string]: string } };
     anchors: { [key: string]: { [key: string]: string } };
-    [key: string]: any;
+    // TODO: style = {burgs: { icons, anchors }, labels } is more semantic
+    labels: LabelStyles;
   };
 
   var mapId: number;
@@ -327,3 +327,5 @@ type Options = {
   };
   threeD: ThreeDOptions;
 };
+
+export type Point = [number, number];

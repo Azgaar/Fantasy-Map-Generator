@@ -1,6 +1,6 @@
 import { select } from "d3";
-import type { Point } from "@/generators/voronoi";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
+import type { Point } from "@/types/global";
 import {
   convertTemperature,
   findClosestCell,

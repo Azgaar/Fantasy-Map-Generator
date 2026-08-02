@@ -1,5 +1,5 @@
 "use strict";
-// Azgaar, 2017-2026. MIT License
+// Azgaar and contributors, 2017-2026. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 // set debug options
@@ -74,7 +74,7 @@ let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
-let labels = viewbox.append("g").attr("id", "labels");
+let labels = viewbox.append("g").attr("id", "labels").attr("font-size", "100px");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
