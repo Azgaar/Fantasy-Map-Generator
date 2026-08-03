@@ -88,6 +88,7 @@ function renderDialog(): void {
     </div>
     <div id="markerBottom">
       <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
       <button id="markerRemove" data-tip="Remove the marker" data-shortcut="Delete" class="icon-trash fastDelete"></button>
@@ -106,6 +107,7 @@ function renderDialog(): void {
   ensureEl("markerFill").on("input", changePinFill);
   ensureEl("markerStroke").on("input", changePinStroke);
   ensureEl("markerNotes").on("click", editMarkerLegend);
+  ensureEl("markerRadius").on("click", openMarkersInRadius);
   ensureEl("markerLock").on("click", toggleMarkerLock);
   ensureEl("markerAdd").on("click", toggleAddMarker);
   ensureEl("markerRemove").on("click", confirmMarkerDeletion);
@@ -170,9 +172,6 @@ function updateInputs(): void {
   ensureEl<HTMLInputElement>("markerStroke").value = marker.stroke || "#000000";
 
   ensureEl("markerLock").className = marker.lock ? "icon-lock" : "icon-lock-open";
-
-  // the party marker cannot be deleted — hide the remove button
-  ensureEl("markerRemove").style.display = marker.protected ? "none" : "";
 }
 
 function changeMarkerType(this: HTMLInputElement): void {
@@ -288,6 +287,10 @@ function editMarkerLegend(): void {
   void Controllers.NotesEditor.open(id, id);
 }
 
+function openMarkersInRadius(): void {
+  void Controllers.MarkersInRadius.open(selectedMarker);
+}
+
 function toggleMarkerLock(): void {
   selectedMarker.lock = !selectedMarker.lock;
   const markerLock = ensureEl("markerLock");
@@ -309,7 +312,6 @@ function confirmMarkerDeletion(): void {
 }
 
 function deleteMarker(): void {
-  if (selectedMarker.protected) return;
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
   $("#markerEditor").dialog("close");

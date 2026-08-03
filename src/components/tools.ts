@@ -40,7 +40,6 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "editUnitsButton") void Controllers.UnitsEditor.open();
   else if (buttonId === "editMeasurersButton") void Controllers.MeasurersEditor.open();
   else if (buttonId === "editNotesButton") void Controllers.NotesEditor.open();
-  else if (buttonId === "openPartyLocationButton") void Controllers.PartyLocation.open();
   else if (buttonId === "editZonesButton") void Controllers.ZonesEditor.open();
   else if (buttonId === "overviewChartsButton") void Controllers.ChartsOverview.open();
   else if (buttonId === "overviewBurgsButton") void Controllers.BurgsOverview.open();

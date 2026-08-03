@@ -60,20 +60,16 @@ const getPinForShape = (shape = "bubble", fill = "#fff", stroke = "#000"): strin
 };
 
 function markerRenderer(marker: Marker, rescale = 1): string {
-  const { i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke, type } = marker;
+  const { i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke } = marker;
   const id = `marker${i}`;
-  const isParty = type === "party-location";
-  const baseSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
-  // the party marker keeps a larger on-screen floor so it stays visible when zoomed out to travel rings
-  const zoomSize = isParty && rescale ? Math.max(baseSize, 28) : baseSize;
+  const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
   const viewY = rn(y - zoomSize, 1);
 
   const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
-  const cls = isParty ? ` class="party-marker"` : "";
 
   return /* html */ `
-    <svg id="${id}"${cls} viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
+    <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
       <g>${getPinForShape(pin, fill, stroke)}</g>
       <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
       <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />

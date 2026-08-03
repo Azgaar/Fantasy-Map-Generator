@@ -220,7 +220,7 @@ function addLines(): void {
   syncMapToFilter(markers, anyFilterActive);
 
   const lines = markers
-    .map(({ i, type, icon, pinned, lock, protected: isProtected }) => {
+    .map(({ i, type, icon, pinned, lock }) => {
       return /* html */ `
         <div class="states" data-id=${i} data-type="${type}">
           ${
@@ -237,11 +237,7 @@ function addLines(): void {
           <span style="padding-right:.1em" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
-          ${
-            isProtected
-              ? `<span data-tip="The party marker cannot be removed" class="icon-flag" style="opacity:.6"></span>`
-              : `<span data-tip="Remove marker" class="icon-trash-empty"></span>`
-          }
+          <span data-tip="Remove marker" class="icon-trash-empty"></span>
         </div>`;
     })
     .join("");
@@ -356,7 +352,6 @@ function changeMarkerType(): void {
 }
 
 function removeMarker(i: number): void {
-  if (pack.markers.find(marker => marker.i === i)?.protected) return;
   notes = notes.filter(note => note.id !== `marker${i}`);
   pack.markers = pack.markers.filter(marker => marker.i !== i);
   document.getElementById(`marker${i}`)?.remove();
@@ -373,8 +368,8 @@ function triggerRemoveAll(): void {
 }
 
 function removeAllMarkers(): void {
-  pack.markers = pack.markers.filter(({ i, lock, protected: isProtected }) => {
-    if (lock || isProtected) return true;
+  pack.markers = pack.markers.filter(({ i, lock }) => {
+    if (lock) return true;
 
     const id = `marker${i}`;
     document.getElementById(id)?.remove();
