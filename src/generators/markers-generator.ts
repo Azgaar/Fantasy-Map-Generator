@@ -501,7 +501,7 @@ class MarkersModule {
   private generateTypes() {
     TIME && console.time("addMarkers");
 
-    this.config.forEach(({ type, icon, dx, dy, px, min, each, multiplier, list, add }) => {
+    this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
       if (multiplier === 0) return;
 
       const candidates = Array.from(list(pack));
@@ -511,7 +511,7 @@ class MarkersModule {
 
       while (quantity && candidates.length) {
         const [cell] = this.extractAnyElement(candidates);
-        const marker = this.addMarker({ icon, type, dx, dy, px }, { cell });
+        const marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, { cell });
         if (!marker) continue;
         add(`marker${marker.i}`, cell);
         quantity--;
