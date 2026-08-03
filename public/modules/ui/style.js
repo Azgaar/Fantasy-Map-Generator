@@ -256,16 +256,6 @@ function selectStyleElement() {
     styleStatesHaloBlur.value = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
   }
 
-  if (styleElement === "provs") {
-    styleFill.style.display = "block";
-    styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
-
-    styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("font-size");
-  }
-
   if (styleElement === "labels") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";

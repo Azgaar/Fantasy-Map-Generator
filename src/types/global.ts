@@ -1,5 +1,5 @@
 import type { Selection } from "d3";
-import type { LabelStyles, LabelsOptions } from "@/generators/labels";
+import type { LabelGroup, LabelStyles } from "@/generators/labels";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
@@ -312,10 +312,14 @@ type Options = {
   latitude: number; // North-South map shift in %, 50 is centered on equator
   longitude: number; // West-East map shift in %, 50 is centered on prime meridian
   prec: number; // precipitation modifier in %
-  labels: LabelsOptions;
   showBurgPreview: boolean;
   burgs: {
     groups: BurgGroup[];
+  };
+  labels: {
+    resizeOnZoom: boolean;
+    showAll: boolean;
+    groups: LabelGroup[];
   };
   military: MilitaryUnit[];
   trade: {

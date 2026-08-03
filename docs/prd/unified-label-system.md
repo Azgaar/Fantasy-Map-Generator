@@ -58,12 +58,11 @@ built-in default.
 ### Example: Burg using its classification group
 
 ```ts
-pack.burgs[12] = {i: 12, name: "Northpass", group: "capital", x: 410, y: 220};
+pack.burgs[12] = { i: 12, name: "Northpass", group: "capital", x: 410, y: 220 };
 
 style.labels.groups.capital = {
   "font-family": "Almendra SC",
   "font-size": 6,
-  "data-size": 6,
   "data-dx": 0,
   "data-dy": -0.5,
   fill: "#3e3e4b"
@@ -79,8 +78,8 @@ style.labels.groups.capital = {
 ### Example: cross-entity group sharing
 
 ```ts
-pack.states[3].label = {group: "capital"};
-pack.burgs[12].label = {group: "states"};
+pack.states[3].label = { group: "capital" };
+pack.burgs[12].label = { group: "states" };
 ```
 
 The State uses `capital` typography and remains path-rendered. The Burg uses `states` typography and remains

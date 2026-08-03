@@ -21,13 +21,7 @@ export interface LabelGroup {
   isDefault?: boolean; // if group is a default (fallback) group for its type
 }
 
-export interface LabelsOptions {
-  resizeOnZoom: boolean;
-  showAll: boolean;
-  groups: LabelGroup[];
-}
-
-interface LabelGroupStyle {
+export interface LabelGroupStyle {
   [key: string]: string | number | null;
 }
 

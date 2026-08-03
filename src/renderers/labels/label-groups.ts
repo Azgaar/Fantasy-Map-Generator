@@ -59,7 +59,7 @@ const FALLBACK_STYLES: Record<LabelType, Record<string, string | number>> = {
   added: { ...BASE_STYLE, "font-size": "18%" }
 };
 
-function getGroupStyle(group: LabelGroup) {
+export function getGroupStyle(group: { name: string; type: LabelType }) {
   const groupStyle = style.labels.groups[group.name];
   if (groupStyle) return groupStyle;
 
