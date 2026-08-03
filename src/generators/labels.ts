@@ -67,7 +67,7 @@ class LabelsModule {
       {
         name: "village",
         type: "burg",
-        zoom: { min: 3, max: 39 }
+        zoom: { min: 3, max: 40 }
       },
       {
         name: "trading_post",
@@ -92,18 +92,18 @@ class LabelsModule {
       {
         name: "town",
         type: "burg",
-        zoom: { min: 2, max: 29 },
+        zoom: { min: 2, max: 30 },
         isDefault: true
       },
       {
         name: "city",
         type: "burg",
-        zoom: { min: 1.4, max: 23 }
+        zoom: { min: 1.4, max: 25 }
       },
       {
         name: "capital",
         type: "burg",
-        zoom: { min: 1, max: 19 }
+        zoom: { min: 1, max: 25 }
       },
       // province, state and default group for custom labels
       {

@@ -30,7 +30,7 @@ function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGEl
   group.id = `labels-${groupOptions.name}`;
   group.dataset.group = groupOptions.name;
 
-  const groupStyle = style.labels.groups[groupOptions.name] || getFallbackStyle(groupOptions);
+  const groupStyle = getGroupStyle(groupOptions);
   for (const [attribute, value] of Object.entries(groupStyle)) {
     if (value !== null) group.setAttribute(attribute, String(value));
   }
@@ -52,17 +52,23 @@ const BASE_STYLE = {
   "font-size": "18%"
 } as const;
 
-const FALLBACK_GROUPS: Record<LabelType, Record<string, string | number>> = {
+const FALLBACK_STYLES: Record<LabelType, Record<string, string | number>> = {
   state: { ...BASE_STYLE, "font-size": "22%" },
   burg: { ...BASE_STYLE, "font-size": "4%" },
   province: { ...BASE_STYLE, "font-size": "10%" },
   added: { ...BASE_STYLE, "font-size": "18%" }
 };
 
-function getFallbackStyle(group: LabelGroup) {
-  const fallback = FALLBACK_GROUPS[group.type];
-  const fallbackStyle = style.labels.groups[group.type] || fallback || BASE_STYLE;
-  return { ...fallbackStyle };
+function getGroupStyle(group: LabelGroup) {
+  const groupStyle = style.labels.groups[group.name];
+  if (groupStyle) return groupStyle;
+
+  const fallbackGroup = Labels.getFallbackGroup(group.type);
+  const fallbackStyle = FALLBACK_STYLES[fallbackGroup.type];
+  if (fallbackStyle) return fallbackStyle;
+
+  ERROR && console.error(`No style or fallback style found for label group ${group.name} of type ${group.type}`);
+  return BASE_STYLE;
 }
 
 export function applyLabelZoom(): void {
@@ -73,9 +79,7 @@ export function applyLabelZoom(): void {
 
   for (const groupOptions of options.labels.groups) {
     const group = labels.querySelector<SVGGElement>(`#labels-${groupOptions.name}`);
-    if (!group) continue;
-    const visible = isGroupVisible(groupOptions);
-    group.classList.toggle("hidden", !visible);
+    if (group) group.classList.toggle("hidden", !isGroupVisible(groupOptions));
   }
 }
 
@@ -87,7 +91,7 @@ function getScaledFontSize(): number {
 function isGroupVisible(group: LabelGroup): boolean {
   if (!layerIsOn("toggleLabels")) return false;
   if (options.labels.showAll) return true;
-  if (!group.active) return false;
+  if (group.active === false) return false;
   if (group.zoom.min !== null && scale < group.zoom.min) return false;
   if (group.zoom.max !== null && scale > group.zoom.max) return false;
   if (group.layerDependency && !layerIsOn(group.layerDependency)) return false;
