@@ -76,7 +76,6 @@ function applyStylePreset(presetJson) {
     let labelGroup = null;
     if (selector.startsWith("#labels > #")) {
       labelGroup = selector.split("#").pop();
-      if (labelGroup === "addedLabels") labelGroup = "added";
       style.labels.groups[labelGroup] = getLabelStyleAttributes(presetJson[selector]);
       continue;
     }
@@ -131,11 +130,7 @@ function applyStylePreset(presetJson) {
 
   for (const group of options.labels.groups) {
     if (style.labels.groups[group.name]) continue;
-    const defaultName =
-      group.type === "states" ? "states" : group.type === "provinces" ? "provinces" : group.type === "burgs" ? "town" : "added";
-    const source = style.labels.groups[defaultName] || style.labels.groups.states || {};
-    style.labels.groups[group.name] =
-      group.type === "provinces" ? { ...source, "font-size": "10%" } : { ...source };
+    style.labels.groups[group.name] = { ...style.labels.groups[group.type] };
   }
 
   function getStyleAttributes(attributes) {
@@ -333,7 +328,7 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#labels > #states": [
+      "#labels > #state": [
         "opacity",
         "fill",
         "stroke",
@@ -345,7 +340,7 @@ function addStylePreset() {
         "font-family",
         "filter"
       ],
-      "#labels > #provinces": [
+      "#labels > #province": [
         "opacity",
         "fill",
         "stroke",

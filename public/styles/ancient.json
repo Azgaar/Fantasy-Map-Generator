@@ -581,6 +581,16 @@
     "font-family": "UnifrakturMaguntia",
     "data-dy": 0.85
   },
+  "#labels > #burg": {
+    "opacity": 0.9,
+    "fill": "#3e3e4b",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 3,
+    "font-size": 3,
+    "font-family": "UnifrakturMaguntia",
+    "data-dy": 0.85
+  },
   "#burgIcons > g#town": {
     "data-icon": "#icon-watabou-town",
     "opacity": 1,
@@ -601,7 +611,7 @@
     "stroke": "#4D3F36",
     "stroke-width": 1
   },
-  "#labels > #states": {
+  "#labels > #state": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": "#3a3a3a",
@@ -613,7 +623,7 @@
     "font-family": "Great Vibes",
     "filter": "url(#filter-sepia)"
   },
-  "#labels > #provinces": {
+  "#labels > #province": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "stroke": "#3a3a3a",

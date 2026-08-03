@@ -371,6 +371,16 @@
     "font-family": "Arima Madurai",
     "data-dy": -0.4
   },
+  "#labels > #burg": {
+    "opacity": 0.8,
+    "fill": "#3a3a3a",
+    "style": "text-shadow: white 0px 0px 4px",
+    "letter-spacing": 0,
+    "data-size": 4,
+    "font-size": 4,
+    "font-family": "Arima Madurai",
+    "data-dy": -0.4
+  },
   "#burgIcons > g#town": {
     "data-icon": "#icon-circle",
     "opacity": 1,
@@ -592,7 +602,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#labels > #states": {
+  "#labels > #state": {
     "opacity": 0.8,
     "fill": "#3a3a3a",
     "stroke": "#000000",
@@ -604,7 +614,7 @@
     "font-family": "Arima Madurai",
     "filter": null
   },
-  "#labels > #provinces": {
+  "#labels > #province": {
     "opacity": 0.8,
     "fill": "#3a3a3a",
     "stroke": "#000000",

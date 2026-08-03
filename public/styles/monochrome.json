@@ -365,6 +365,15 @@
     "font-family": "Courier New",
     "data-dy": -0.4
   },
+  "#labels > #burg": {
+    "opacity": 1,
+    "fill": "#000000",
+    "letter-spacing": 0,
+    "data-size": 4,
+    "font-size": 4,
+    "font-family": "Courier New",
+    "data-dy": -0.4
+  },
   "#burgIcons > g#town": {
     "data-icon": "#icon-circle",
     "opacity": 1,
@@ -586,7 +595,7 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#labels > #states": {
+  "#labels > #state": {
     "opacity": 1,
     "fill": "#000000",
     "stroke": "#3a3a3a",
@@ -598,7 +607,7 @@
     "font-family": "Courier New",
     "filter": null
   },
-  "#labels > #provinces": {
+  "#labels > #province": {
     "opacity": 1,
     "fill": "#000000",
     "stroke": "#3a3a3a",

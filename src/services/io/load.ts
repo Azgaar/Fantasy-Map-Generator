@@ -292,9 +292,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (settings[16]) options.temperatureEquator = +settings[16];
       if (settings[17]) options.temperatureNorthPole = options.temperatureSouthPole = +settings[17];
       if (settings[20]) mapName.value = settings[20];
-      if (settings[21]) hideLabels.checked = Boolean(+settings[21]);
+      // if (settings[21]) hideLabels.checked = Boolean(+settings[21]); // moved to options.labels.showAll
       if (settings[22]) stylePreset.value = settings[22];
-      if (settings[23]) rescaleLabels.checked = Boolean(+settings[23]);
+      // if (settings[23]) rescaleLabels.checked = Boolean(+settings[23]); // moved to options.labels.resizeOnZoom
       if (settings[24]) {
         ensureEl<HTMLInputElement>("urbanDensityInput").value = settings[24];
         urbanDensity = +settings[24];
@@ -303,7 +303,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       options.longitude ??= 50;
       if (settings[26]) ensureEl<HTMLInputElement>("growthRate").value = settings[26];
     }
-    ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode;
+    // ensureEl<HTMLInputElement>("stateLabelsModeInput").value = options.stateLabelsMode; // moved to options.labels.groups[group].mode
     ensureEl<HTMLInputElement>("yearInput").value = String(options.year);
     ensureEl<HTMLInputElement>("eraInput").value = options.era;
     ensureEl<HTMLInputElement>("shapeRendering").value =
