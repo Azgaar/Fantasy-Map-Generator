@@ -11,19 +11,20 @@ export interface LabelZoomBounds {
   max: number | null;
 }
 
-export interface LabelGroupOptions {
+export interface LabelGroup {
   name: string;
   type: LabelType;
-  active: boolean;
+  active?: boolean; // defaults to true
   layerDependency?: string;
   zoom: LabelZoomBounds;
-  mode: LabelNameMode;
+  mode?: LabelNameMode; // defaults to "auto"
+  isDefault?: boolean; // if group is a default (fallback) group for its type
 }
 
 export interface LabelsOptions {
   resizeOnZoom: boolean;
   showAll: boolean;
-  groups: LabelGroupOptions[];
+  groups: LabelGroup[];
 }
 
 interface LabelGroupStyle {
@@ -54,42 +55,82 @@ declare global {
 }
 
 class LabelsModule {
-  initiate(): void {
-    pack.labels = [];
-  }
-
-  getDefaultGroups(): LabelGroupOptions[] {
+  getDefaultGroups(): LabelGroup[] {
+    // order matters for z-indexing
     return [
+      // burg groups from Burgs.getDefaultGroups()
       {
-        name: "state",
-        type: "state",
-        active: true,
-        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
-        mode: "auto"
+        name: "hamlet",
+        type: "burg",
+        zoom: { min: 5, max: 60 }
       },
+      {
+        name: "village",
+        type: "burg",
+        zoom: { min: 3, max: 39 }
+      },
+      {
+        name: "trading_post",
+        type: "burg",
+        zoom: { min: 5, max: 60 }
+      },
+      {
+        name: "caravanserai",
+        type: "burg",
+        zoom: { min: 5, max: 60 }
+      },
+      {
+        name: "monastery",
+        type: "burg",
+        zoom: { min: 5, max: 60 }
+      },
+      {
+        name: "fort",
+        type: "burg",
+        zoom: { min: 5, max: 60 }
+      },
+      {
+        name: "town",
+        type: "burg",
+        zoom: { min: 2, max: 29 },
+        isDefault: true
+      },
+      {
+        name: "city",
+        type: "burg",
+        zoom: { min: 1.4, max: 23 }
+      },
+      {
+        name: "capital",
+        type: "burg",
+        zoom: { min: 1, max: 19 }
+      },
+      // province, state and default group for custom labels
       {
         name: "province",
         type: "province",
-        active: true,
         layerDependency: "toggleProvinces",
-        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
-        mode: "auto"
-      },
-      {
-        name: "burg",
-        type: "burg",
-        active: true,
-        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
-        mode: "auto"
+        zoom: { min: 0.2, max: 11 },
+        isDefault: true
       },
       {
         name: "added",
         type: "added",
-        active: true,
-        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
-        mode: "auto"
+        zoom: { min: 0.2, max: 5.5 },
+        isDefault: true
+      },
+      {
+        name: "state",
+        type: "state",
+        zoom: { min: null, max: 4.5 },
+        isDefault: true
       }
     ];
+  }
+
+  getFallbackGroup(type: LabelType): LabelGroup {
+    const fallbackGroup = this.getDefaultGroups().find(group => group.isDefault && group.type === type);
+    return fallbackGroup ?? { name: type, type, zoom: { min: null, max: null }, isDefault: true };
   }
 }
 

@@ -1,4 +1,4 @@
-import type { LabelGroupOptions, LabelType } from "@/generators/labels";
+import type { LabelGroup, LabelType } from "@/generators/labels";
 
 export function renderLabelGroups(): void {
   const labels = document.querySelector<SVGGElement>("#labels");
@@ -17,14 +17,15 @@ export function ensureLabelGroup(groupName: string, type: LabelType): SVGGElemen
   let group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
   if (!group) {
     ERROR && console.error(`Label group ${groupName} not found, applying fallback group for type ${type}`);
-    group = labels.querySelector<SVGGElement>(`#labels-${type}`);
+    const fallbackGroup = Labels.getFallbackGroup(type);
+    group = labels.querySelector<SVGGElement>(`#labels-${fallbackGroup.name}`);
     if (!group) throw new Error(`Fallback label group for type ${type} not rendered`);
   }
 
   return group;
 }
 
-function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroupOptions): SVGGElement {
+function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
   const group = labels.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "g");
   group.id = `labels-${groupOptions.name}`;
   group.dataset.group = groupOptions.name;
@@ -58,7 +59,7 @@ const FALLBACK_GROUPS: Record<LabelType, Record<string, string | number>> = {
   added: { ...BASE_STYLE, "font-size": "18%" }
 };
 
-function getFallbackStyle(group: LabelGroupOptions) {
+function getFallbackStyle(group: LabelGroup) {
   const fallback = FALLBACK_GROUPS[group.type];
   const fallbackStyle = style.labels.groups[group.type] || fallback || BASE_STYLE;
   return { ...fallbackStyle };
@@ -83,7 +84,7 @@ function getScaledFontSize(): number {
   return Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
 }
 
-function isGroupVisible(group: LabelGroupOptions): boolean {
+function isGroupVisible(group: LabelGroup): boolean {
   if (!layerIsOn("toggleLabels")) return false;
   if (options.labels.showAll) return true;
   if (!group.active) return false;

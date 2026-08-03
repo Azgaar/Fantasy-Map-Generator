@@ -371,16 +371,6 @@
     "font-family": "Arima Madurai",
     "data-dy": -0.4
   },
-  "#labels > #burg": {
-    "opacity": 0.8,
-    "fill": "#3a3a3a",
-    "style": "text-shadow: white 0px 0px 4px",
-    "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
-    "font-family": "Arima Madurai",
-    "data-dy": -0.4
-  },
   "#burgIcons > g#town": {
     "data-icon": "#icon-circle",
     "opacity": 1,
