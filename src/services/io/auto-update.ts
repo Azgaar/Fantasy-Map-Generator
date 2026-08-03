@@ -47,214 +47,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     });
   }
 
-  if (isOlderThan("1.140.0")) {
-    // v1.140.0 migrated label data and styles to the unified flat Label Group model
-    options.labels = {
-      resizeOnZoom: true,
-      showAll: false,
-      groups: Labels.getDefaultGroups() // TODO: parse groups instead
-    };
-
-    let labels = document.querySelector<SVGGElement>("#labels");
-    if (!labels) {
-      labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      labels.setAttribute("id", "labels");
-      document.querySelector("#viewbox")?.appendChild(labels);
-    }
-    if (!labels) throw new Error("Failed to create or find #labels element");
-    labels.setAttribute("font-size", "100px");
-
-    style = readStyleFromSvg(labels);
-    function readStyleFromSvg(labels: SVGGElement): typeof style {
-      const readGroups = (parent: Element | null) =>
-        Object.fromEntries(
-          Array.from(parent?.children || []).map(group => [
-            group.id,
-            Object.fromEntries(
-              Array.from(group.attributes)
-                .filter(attribute => attribute.name !== "id")
-                .map(attribute => [attribute.name, attribute.value])
-            )
-          ])
-        );
-
-      const groups = Object.fromEntries(
-        Array.from(labels.children)
-          .filter(group => group.tagName === "g" && group.id)
-          .map(group => [group.id, readLabelGroupStyle(group)])
-      );
-
-      return {
-        labels: { groups },
-        burgIcons: readGroups(burgIcons.node()),
-        anchors: readGroups(anchors.node())
-      };
-    }
-
-    const getMultilineText = (textEl: SVGTextElement) => {
-      return (
-        Array.from(textEl.querySelectorAll("tspan"))
-          .map(tspan => tspan.textContent || "")
-          .join("|") || textEl.textContent
-      );
-    };
-
-    const getLabelData = ({
-      textEl,
-      pathEl,
-      names
-    }: {
-      textEl: SVGTextElement;
-      pathEl?: SVGPathElement;
-      names?: (string | undefined)[];
-    }): PathLabel | undefined => {
-      const label: PathLabel = {};
-      const textPath = textEl.querySelector("textPath");
-      const text = textEl && getMultilineText(textEl);
-      if (text && !names?.includes(text)) label.text = text;
-
-      const [dx, dy] = parseTransform(textEl.getAttribute("transform") || "");
-      if (dx) label.dx = rn(dx, 2);
-      if (dy) label.dy = rn(dy, 2);
-
-      const pathPoints = pathEl ? parsePathPoints(pathEl.getAttribute("d") || "") : null;
-      if (pathPoints?.length) label.pathPoints = pathPoints;
-      const startOffset = textPath && Number.parseFloat(textPath.getAttribute("startOffset") || "");
-      if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset as number;
-      const fontSize = textPath && Number.parseFloat(textPath.getAttribute("font-size") || "");
-      if (Number.isFinite(fontSize) && fontSize !== 100) label.fontSize = fontSize as number;
-      const letterSpacingAttribute = textPath?.getAttribute("letter-spacing");
-      const letterSpacing = Number.parseFloat(letterSpacingAttribute || "");
-      if (letterSpacingAttribute !== null && Number.isFinite(letterSpacing)) label.letterSpacing = letterSpacing;
-
-      return Object.keys(label).length > 0 ? label : undefined;
-    };
-
-    // migrate state labels data
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text[id^='stateLabel']")) {
-      const stateId = +textEl.id.slice(10);
-      const state = pack.states[stateId];
-      if (!state) continue;
-      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
-      if (state && pathEl) state.label = getLabelData({ textEl, pathEl, names: [state.name, state.fullName] });
-    }
-    document.querySelectorAll("#textPaths > path[id^='textPath_stateLabel']").forEach(path => {
-      path.remove();
-    });
-
-    // migrate burg labels data
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
-      const burgId = +textEl.id.slice(9);
-      const burg = pack.burgs[burgId];
-      if (!burg) continue;
-      const label = getLabelData({ textEl, names: [burg.name] }) || {};
-      const renderedGroup = textEl.parentElement?.id;
-      if (renderedGroup && renderedGroup !== burg.group) label.group = renderedGroup;
-      burg.label = Object.keys(label).length ? label : undefined;
-    }
-
-    // migrate legacy Province label text
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#provs #provinceLabels > text")) {
-      const provinceId = +textEl.id.slice(13);
-      const province = pack.provinces[provinceId];
-      if (!province?.i || province.removed) continue;
-      const text = getMultilineText(textEl);
-      const [dx, dy] = parseTransform(textEl.getAttribute("transform") || "");
-      const label: PathLabel = {};
-      if (text && ![province.name, province.fullName].includes(text)) label.text = text;
-      if (dx) label.dx = rn(dx, 2);
-      if (dy) label.dy = rn(dy, 2);
-      if (Object.keys(label).length) province.label = label;
-    }
-    document.querySelector("#provs #provinceLabels")?.remove();
-
-    // migrate added labels data
-    const groups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
-    for (const group of groups) {
-      for (const textEl of group.querySelectorAll<SVGTextElement>(":scope > text")) {
-        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
-        if (!pathEl) continue;
-
-        const label = getLabelData({ textEl, pathEl });
-        const text = label?.text;
-        const pathPoints = label?.pathPoints;
-        if (!text || !pathPoints) continue;
-
-        const addedLabel = { i: pack.labels.length + 1, ...label, text, pathPoints, group: group.id };
-        pack.labels.push(addedLabel);
-      }
-    }
-    document.querySelectorAll("#textPaths > path[id^='textPath_addedLabel']").forEach(path => {
-      path.remove();
-    });
-
-    function getStoredStyle(group: SVGGElement): string {
-      return Array.from(group.style)
-        .filter(property => property !== "transform")
-        .map(property => `${property}: ${group.style.getPropertyValue(property)}`)
-        .join("; ");
-    }
-
-    function readLabelGroupStyle(group: Element) {
-      const groupStyle = Object.fromEntries(
-        Array.from(group.attributes)
-          .filter(attribute => !["id", "class", "data-group"].includes(attribute.name))
-          .map(attribute => [
-            attribute.name,
-            attribute.name === "style" ? getStoredStyle(group as SVGGElement) : attribute.value
-          ])
-          .filter(([, value]) => value !== "")
-      );
-
-      const legacySize = groupStyle["data-size"];
-      if (legacySize !== undefined) {
-        groupStyle["font-size"] = `${Number(legacySize) || 18}%`;
-        delete groupStyle["data-size"];
-      }
-      return groupStyle;
-    }
-
-    const burgStyles = Object.fromEntries(
-      Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g")).map(group => [
-        group.id,
-        readLabelGroupStyle(group)
-      ])
-    );
-    const addedStyles = Object.fromEntries(
-      Array.from(document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)")).map(group => [
-        group.id,
-        readLabelGroupStyle(group)
-      ])
-    );
-    const stateGroup = document.querySelector("#labels > #states");
-    const labelGroups: Record<string, Record<string, string | number | null>> = {
-      states: stateGroup ? readLabelGroupStyle(stateGroup) : {},
-      ...burgStyles
-    };
-    for (const [group, groupStyle] of Object.entries(addedStyles)) {
-      let migratedGroup = group;
-      if (labelGroups[migratedGroup]) {
-        migratedGroup = `${group}_migrated`;
-        let suffix = 2;
-        while (labelGroups[migratedGroup] || addedStyles[migratedGroup]) {
-          migratedGroup = `${group}_migrated_${suffix++}`;
-        }
-      }
-      if (migratedGroup !== group) {
-        pack.labels
-          .filter(label => label.group === group)
-          .forEach(label => {
-            label.group = migratedGroup;
-          });
-      }
-      labelGroups[migratedGroup] = groupStyle;
-    }
-    style.labels = { groups: labelGroups };
-
-    labels.replaceChildren();
-    if (layerIsOn("toggleLabels")) drawLabels();
-  }
-
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
     relig = viewbox.insert("g", "#terrain").attr("id", "relig");
@@ -1495,5 +1287,213 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("mask", null);
       if (layerIsOn("toggleHeight")) drawHeightmap();
     }
+  }
+
+  if (isOlderThan("1.140.0")) {
+    // v1.140.0 migrated label data and styles to the unified flat Label Group model
+    options.labels = {
+      resizeOnZoom: true,
+      showAll: false,
+      groups: Labels.getDefaultGroups() // TODO: parse groups from svg instead
+    };
+
+    let labels = document.querySelector<SVGGElement>("#labels");
+    if (!labels) {
+      labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      labels.setAttribute("id", "labels");
+      document.querySelector("#viewbox")?.appendChild(labels);
+    }
+    if (!labels) throw new Error("Failed to create or find #labels element");
+    labels.setAttribute("font-size", "100px");
+
+    style = readStyleFromSvg(labels);
+    function readStyleFromSvg(labels: SVGGElement): typeof style {
+      const readGroups = (parent: Element | null) =>
+        Object.fromEntries(
+          Array.from(parent?.children || []).map(group => [
+            group.id,
+            Object.fromEntries(
+              Array.from(group.attributes)
+                .filter(attribute => attribute.name !== "id")
+                .map(attribute => [attribute.name, attribute.value])
+            )
+          ])
+        );
+
+      const groups = Object.fromEntries(
+        Array.from(labels.children)
+          .filter(group => group.tagName === "g" && group.id)
+          .map(group => [group.id, readLabelGroupStyle(group)])
+      );
+
+      return {
+        labels: { groups },
+        burgIcons: readGroups(burgIcons.node()),
+        anchors: readGroups(anchors.node())
+      };
+    }
+
+    const getMultilineText = (textEl: SVGTextElement) => {
+      return (
+        Array.from(textEl.querySelectorAll("tspan"))
+          .map(tspan => tspan.textContent || "")
+          .join("|") || textEl.textContent
+      );
+    };
+
+    const getLabelData = ({
+      textEl,
+      pathEl,
+      names
+    }: {
+      textEl: SVGTextElement;
+      pathEl?: SVGPathElement;
+      names?: (string | undefined)[];
+    }): PathLabel | undefined => {
+      const label: PathLabel = {};
+      const textPath = textEl.querySelector("textPath");
+      const text = textEl && getMultilineText(textEl);
+      if (text && !names?.includes(text)) label.text = text;
+
+      const [dx, dy] = parseTransform(textEl.getAttribute("transform") || "");
+      if (dx) label.dx = rn(dx, 2);
+      if (dy) label.dy = rn(dy, 2);
+
+      const pathPoints = pathEl ? parsePathPoints(pathEl.getAttribute("d") || "") : null;
+      if (pathPoints?.length) label.pathPoints = pathPoints;
+      const startOffset = textPath && Number.parseFloat(textPath.getAttribute("startOffset") || "");
+      if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset as number;
+      const fontSize = textPath && Number.parseFloat(textPath.getAttribute("font-size") || "");
+      if (Number.isFinite(fontSize) && fontSize !== 100) label.fontSize = fontSize as number;
+      const letterSpacingAttribute = textPath?.getAttribute("letter-spacing");
+      const letterSpacing = Number.parseFloat(letterSpacingAttribute || "");
+      if (letterSpacingAttribute !== null && Number.isFinite(letterSpacing)) label.letterSpacing = letterSpacing;
+
+      return Object.keys(label).length > 0 ? label : undefined;
+    };
+
+    // migrate state labels data
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text[id^='stateLabel']")) {
+      const stateId = +textEl.id.slice(10);
+      const state = pack.states[stateId];
+      if (!state) continue;
+      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+      if (state && pathEl) state.label = getLabelData({ textEl, pathEl, names: [state.name, state.fullName] });
+    }
+    document.querySelectorAll("#textPaths > path[id^='textPath_stateLabel']").forEach(path => {
+      path.remove();
+    });
+
+    // migrate burg labels data
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
+      const burgId = +textEl.id.slice(9);
+      const burg = pack.burgs[burgId];
+      if (!burg) continue;
+      const label = getLabelData({ textEl, names: [burg.name] }) || {};
+      const renderedGroup = textEl.parentElement?.id;
+      if (renderedGroup && renderedGroup !== burg.group) label.group = renderedGroup;
+      burg.label = Object.keys(label).length ? label : undefined;
+    }
+
+    // migrate legacy Province label text
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#provs #provinceLabels > text")) {
+      const provinceId = +textEl.id.slice(13);
+      const province = pack.provinces[provinceId];
+      if (!province?.i || province.removed) continue;
+      const text = getMultilineText(textEl);
+      const [dx, dy] = parseTransform(textEl.getAttribute("transform") || "");
+      const label: PathLabel = {};
+      if (text && ![province.name, province.fullName].includes(text)) label.text = text;
+      if (dx) label.dx = rn(dx, 2);
+      if (dy) label.dy = rn(dy, 2);
+      if (Object.keys(label).length) province.label = label;
+    }
+    document.querySelector("#provs #provinceLabels")?.remove();
+
+    // migrate added labels data
+    const groups = document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)");
+    for (const group of groups) {
+      for (const textEl of group.querySelectorAll<SVGTextElement>(":scope > text")) {
+        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+        if (!pathEl) continue;
+
+        const label = getLabelData({ textEl, pathEl });
+        const text = label?.text;
+        const pathPoints = label?.pathPoints;
+        if (!text || !pathPoints) continue;
+
+        const addedLabel = { i: pack.labels.length + 1, ...label, text, pathPoints, group: group.id };
+        pack.labels.push(addedLabel);
+      }
+    }
+    document.querySelectorAll("#textPaths > path[id^='textPath_addedLabel']").forEach(path => {
+      path.remove();
+    });
+
+    function getStoredStyle(group: SVGGElement): string {
+      return Array.from(group.style)
+        .filter(property => property !== "transform")
+        .map(property => `${property}: ${group.style.getPropertyValue(property)}`)
+        .join("; ");
+    }
+
+    function readLabelGroupStyle(group: Element) {
+      const groupStyle = Object.fromEntries(
+        Array.from(group.attributes)
+          .filter(attribute => !["id", "class", "data-group"].includes(attribute.name))
+          .map(attribute => [
+            attribute.name,
+            attribute.name === "style" ? getStoredStyle(group as SVGGElement) : attribute.value
+          ])
+          .filter(([, value]) => value !== "")
+      );
+
+      const legacySize = groupStyle["data-size"];
+      if (legacySize !== undefined) {
+        groupStyle["font-size"] = `${Number(legacySize) || 18}%`;
+        delete groupStyle["data-size"];
+      }
+      return groupStyle;
+    }
+
+    const burgStyles = Object.fromEntries(
+      Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g")).map(group => [
+        group.id,
+        readLabelGroupStyle(group)
+      ])
+    );
+    const addedStyles = Object.fromEntries(
+      Array.from(document.querySelectorAll<SVGGElement>("#labels > g:not(#states):not(#burgLabels)")).map(group => [
+        group.id,
+        readLabelGroupStyle(group)
+      ])
+    );
+    const stateGroup = document.querySelector("#labels > #states");
+    const labelGroups: Record<string, Record<string, string | number | null>> = {
+      states: stateGroup ? readLabelGroupStyle(stateGroup) : {},
+      ...burgStyles
+    };
+    for (const [group, groupStyle] of Object.entries(addedStyles)) {
+      let migratedGroup = group;
+      if (labelGroups[migratedGroup]) {
+        migratedGroup = `${group}_migrated`;
+        let suffix = 2;
+        while (labelGroups[migratedGroup] || addedStyles[migratedGroup]) {
+          migratedGroup = `${group}_migrated_${suffix++}`;
+        }
+      }
+      if (migratedGroup !== group) {
+        pack.labels
+          .filter(label => label.group === group)
+          .forEach(label => {
+            label.group = migratedGroup;
+          });
+      }
+      labelGroups[migratedGroup] = groupStyle;
+    }
+    style.labels = { groups: labelGroups };
+
+    labels.replaceChildren();
+    if (layerIsOn("toggleLabels")) drawLabels();
   }
 }
