@@ -1,5 +1,5 @@
+import type { LabelType } from "@/generators/labels";
 import type { Point } from "@/types/global";
-import type { LabelType } from "@/types/labels";
 import { applyLabelZoom, ensureLabelGroup, renderLabelGroups } from "./label-groups";
 import { getLabelMarkup } from "./label-markup";
 import { createRegionLabel } from "./region-label-layout";
@@ -66,8 +66,11 @@ export function drawLabelsByType(type: LabelType, ids?: number[]): void {
   const labelsData = new LabelsData();
   dataAdapters[type](labelsData, ids);
 
-  for (const labelData of Object.values(labelsData.get()).flat(3)) {
-    removeLabel(labelData.id);
+  const data = labelsData.get();
+  for (const group in data) {
+    for (const labelData of data[group]) {
+      removeLabel(labelData.id);
+    }
   }
 
   renderLabelsData(labelsData);

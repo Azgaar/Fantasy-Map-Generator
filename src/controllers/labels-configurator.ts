@@ -9,24 +9,10 @@ import {
   type LabelWorld,
   renameLabelGroup
 } from "@/controllers/label-group-transactions";
-import {
-  getDefaultLabelGroupName,
-  isProtectedLabelGroup,
-  validateLabelGroupName,
-  validateLabelZoom
-} from "@/controllers/label-policy";
+import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels";
 import { drawLabel, drawLabels, drawLabelsByType } from "@/renderers/labels/draw-labels";
 import { renderLabelGroups } from "@/renderers/labels/label-groups";
-import type { LabelGroupType } from "@/types/labels";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
-
-const TYPES: LabelGroupType[] = ["states", "burgs", "provinces", "added"];
-const TYPE_LABELS: Record<LabelGroupType, string> = {
-  states: "States",
-  burgs: "Burgs",
-  provinces: "Provinces",
-  added: "Added"
-};
 
 function open(): void {
   if (customization) return;
@@ -59,7 +45,7 @@ function renderDialog(): void {
     </div>
     <div id="labelsGroupsBody" class="table" style="max-height:60vh; overflow-y:auto"></div>
     <div style="display:flex; gap:.4em; align-items:center; margin-top:.5em">
-      <select id="labelsNewType">${TYPES.map(type => `<option value="${type}">${TYPE_LABELS[type]}</option>`).join("")}</select>
+      <select id="labelsNewType">${DEFAULT_LABEL_TYPES.map(type => `<option value="${type}">${type}</option>`).join("")}</select>
       <input id="labelsNewName" placeholder="new group name" style="width:11em">
       <button id="labelsCreateGroup" class="icon-plus">Create group</button>
     </div>
@@ -172,7 +158,7 @@ function clickRow(event: Event): void {
 }
 
 function createGroup(): void {
-  const type = ensureEl<HTMLSelectElement>("labelsNewType").value as LabelGroupType;
+  const type = ensureEl<HTMLSelectElement>("labelsNewType").value as LabelType;
   const input = ensureEl<HTMLInputElement>("labelsNewName");
   const name = input.value.trim();
   const error = validateLabelGroupName(
@@ -269,7 +255,7 @@ function openAssignmentDialog(): void {
 }
 
 function renderAssignmentRows(): void {
-  const type = ensureEl<HTMLSelectElement>("labelsAssignmentType").value as LabelGroupType;
+  const type = ensureEl<HTMLSelectElement>("labelsAssignmentType").value as LabelType;
   const removeTemporaryProjection = projectRegionLabelsForAudit(type);
   let rows: ReturnType<typeof getAssignmentRows>;
   try {
@@ -287,7 +273,7 @@ function renderAssignmentRows(): void {
   ensureEl<HTMLInputElement>("labelsAssignmentAll").checked = false;
 }
 
-function projectRegionLabelsForAudit(type: LabelGroupType): () => void {
+function projectRegionLabelsForAudit(type: LabelType): () => void {
   if (layerIsOn("toggleLabels") || (type !== "states" && type !== "provinces")) return () => undefined;
   renderLabelGroups();
   drawLabelsByType(type === "states" ? "state" : "province");
@@ -309,7 +295,7 @@ function toggleAllAssignments(event: Event): void {
 }
 
 function applyBulkAssignment(this: HTMLElement): void {
-  const type = ensureEl<HTMLSelectElement>("labelsAssignmentType").value as LabelGroupType;
+  const type = ensureEl<HTMLSelectElement>("labelsAssignmentType").value as LabelType;
   const target = ensureEl<HTMLSelectElement>("labelsAssignmentTarget").value;
   const selectedIds = Array.from(
     document.querySelectorAll<HTMLInputElement>("#labelsAssignmentBody input:checked"),
@@ -344,7 +330,7 @@ function applyBulkAssignment(this: HTMLElement): void {
   });
 }
 
-function getAssignmentRows(type: LabelGroupType): { id: number; text: string; group: string }[] {
+function getAssignmentRows(type: LabelType): { id: number; text: string; group: string }[] {
   if (type === "states") {
     return pack.states
       .filter(entity => entity.i && !entity.removed)
@@ -405,13 +391,13 @@ function getResolvedCount(name: string): number {
   return TYPES.reduce((total, type) => total + getAssignmentRows(type).filter(row => row.group === name).length, 0);
 }
 
-function resolveGroup(type: LabelGroupType, requested?: string): string {
+function resolveGroup(type: LabelType, requested?: string): string {
   const fallback = getDefaultLabelGroupName(type, options.burgs.groups);
   const name = requested || fallback;
   return options.labels.groups.some(group => group.name === name) ? name : fallback;
 }
 
-function getLabelType(type: LabelGroupType): "state" | "province" | "burg" | "added" {
+function getLabelType(type: LabelType): "state" | "province" | "burg" | "added" {
   if (type === "states") return "state";
   if (type === "provinces") return "province";
   if (type === "burgs") return "burg";

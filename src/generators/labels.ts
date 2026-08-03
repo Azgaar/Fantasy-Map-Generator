@@ -1,6 +1,38 @@
 import type { Point } from "@/types/global";
 
-export type { LabelType } from "@/types/labels";
+export const DEFAULT_LABEL_TYPES = ["state", "province", "burg", "added"] as const;
+
+export type LabelType = (typeof DEFAULT_LABEL_TYPES)[number];
+
+export type LabelNameMode = "auto" | "short" | "full";
+
+export interface LabelZoomBounds {
+  min: number | null;
+  max: number | null;
+}
+
+export interface LabelGroupOptions {
+  name: string;
+  type: LabelType;
+  active: boolean;
+  layerDependency: string | null;
+  zoom: LabelZoomBounds;
+  mode: LabelNameMode;
+}
+
+export interface LabelsOptions {
+  resizeOnZoom: boolean;
+  showAll: boolean;
+  groups: LabelGroupOptions[];
+}
+
+interface LabelGroupStyle {
+  [key: string]: string | number | null;
+}
+
+export interface LabelStyles {
+  groups: Record<string, LabelGroupStyle>;
+}
 
 export interface Label {
   text?: string;
