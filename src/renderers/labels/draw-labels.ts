@@ -1,9 +1,8 @@
 import type { LabelType } from "@/generators/labels";
-import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { applyLabelZoom, ensureLabelGroup, renderLabelGroups } from "./label-groups";
 import { getLabelMarkup } from "./label-markup";
-import { createRegionLabel, type RegionDataAccessor } from "./region-label-layout";
+import { getRegionLabel } from "./region-label-layout";
 import type { LabelData, PathLabelData, PointLabelData } from "./types";
 
 const dataAdapters: Record<LabelType, (labelsData: LabelsData, ids?: number[]) => void> = {
@@ -115,7 +114,7 @@ function addProvinceLabelsData(labelsData: LabelsData, ids?: number[]): void {
     const label: PointLabelData = {
       ...province.label,
       id: `provinceLabel${province.i}`,
-      text: province.label?.text ?? province.name ?? "",
+      text: province.label?.text ?? province.name,
       type: "province",
       group: province.label?.group || "province",
       x,
@@ -126,16 +125,12 @@ function addProvinceLabelsData(labelsData: LabelsData, ids?: number[]): void {
 }
 
 function addStateLabelsData(labelsData: LabelsData, ids?: number[]): void {
-  const getRegionData = (state: State) => ({
-    regionIds: pack.cells.state,
-    pole: state.pole || pack.cells.p[state.center],
-    cellsNumber: state.cells || 0
-  });
-
   const selectedIds = ids && new Set(ids);
-  for (const states of pack.states) {
-    if (!states.i || states.removed || (selectedIds && !selectedIds.has(states.i))) continue;
-    const label = createRegionLabel(states, "state", getRegionData);
+  for (const state of pack.states) {
+    if (!state.i || state.removed || (selectedIds && !selectedIds.has(state.i))) continue;
+
+    const pole = state.pole || pack.cells.p[state.center];
+    const label: PathLabelData = getRegionLabel(state, "state", pack.cells.state, pole, state.cells || 0);
     labelsData.add(label);
   }
 }

@@ -1,7 +1,5 @@
 import { max } from "d3";
-import type { LabelNameMode } from "@/generators/labels";
-import type { Province } from "@/generators/provinces-generator";
-import type { State } from "@/generators/states-generator";
+import type { LabelNameMode, LabelType, PathLabel } from "@/generators/labels";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
 import { ensureLabelGroup } from "./label-groups";
@@ -9,43 +7,16 @@ import { getLabelPath } from "./label-markup";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 import type { PathLabelData } from "./types";
 
-type Region = State | Province;
-type RegionType = "state" | "province";
+type Region = { i: number; name: string; fullName?: string; label?: PathLabel };
 
-interface RegionData {
-  regionIds: TypedArray;
-  pole: [number, number];
-  cellsNumber: number;
-}
-
-type RegionDataAccessor<T extends Region> = (region: T) => RegionData;
-
-export function createRegionLabel<T extends Region>(
-  region: T,
-  type: RegionType,
-  getRegionData: RegionDataAccessor<T>
+export function getRegionLabel(
+  region: Region,
+  type: LabelType,
+  regionIds: TypedArray,
+  pole: [number, number],
+  cellsNumber: number
 ): PathLabelData {
-  const label = createLabel(region, type);
-  const group = ensureLabelGroup(label.group, type);
-  const mode = options.labels.groups.find(groupOptions => groupOptions.name === label.group)?.mode || "auto";
-  const sandbox = createMeasurementSandbox(group);
-
-  try {
-    const letterLength = getAverageLetterLength(sandbox);
-    if (!label.pathPoints.length)
-      return { ...label, ...fitLabel(region, label, mode, letterLength, sandbox, getRegionData) };
-    if (region.label?.text !== undefined) return label;
-
-    const pathLength = measureLabelPath(label, sandbox).getTotalLength() / letterLength;
-    const [lines, fontSize] = getLinesAndRatio(mode, region.name, region.fullName || region.name, pathLength);
-    return { ...label, text: lines.join("|"), fontSize: region.label?.fontSize ?? fontSize };
-  } finally {
-    sandbox.remove();
-  }
-}
-
-function createLabel(region: Region, type: RegionType): PathLabelData {
-  return {
+  const label: PathLabelData = {
     ...region.label,
     id: `${type}Label${region.i}`,
     type,
@@ -53,21 +24,32 @@ function createLabel(region: Region, type: RegionType): PathLabelData {
     group: region.label?.group || type,
     pathPoints: region.label?.pathPoints || []
   };
+  if (label.pathPoints.length) return label;
+
+  const group = ensureLabelGroup(label.group, type);
+  const sandbox = createMeasurementSandbox(group);
+  const mode = options.labels.groups.find(groupOptions => groupOptions.name === label.group)?.mode || "auto";
+  try {
+    return { ...label, ...fitLabel(region, label, mode, sandbox, regionIds, pole, cellsNumber) };
+  } finally {
+    sandbox.remove();
+  }
 }
 
-function fitLabel<T extends Region>(
-  region: T,
+function fitLabel(
+  region: Region,
   label: PathLabelData,
   mode: LabelNameMode,
-  letterLength: number,
   sandbox: SVGGElement,
-  getRegionData: RegionDataAccessor<T>
+  regionIds: TypedArray,
+  pole: [number, number],
+  cellsNumber: number
 ): Pick<PathLabelData, "pathPoints" | "text" | "fontSize"> {
-  const { regionIds, pole, cellsNumber } = getRegionData(region);
   const pathPoints = getRegionLabelPath(region.i, regionIds, pole, cellsNumber);
   if (!pathPoints.length) return { pathPoints, text: label.text, fontSize: label.fontSize };
 
   const labelWithPath = { ...label, pathPoints };
+  const letterLength = getAverageLetterLength(sandbox);
   const pathLength = measureLabelPath(labelWithPath, sandbox).getTotalLength() / letterLength;
   const fullName = region.fullName || region.name;
   const hasCustomText = region.label?.text !== undefined;

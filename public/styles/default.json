@@ -28,9 +28,9 @@
   "#provinceBorders": {
     "opacity": 0.8,
     "stroke": "#56566d",
-    "stroke-width": 0.5,
-    "stroke-dasharray": "0 2",
-    "stroke-linecap": "round",
+    "stroke-width": 0.12,
+    "stroke-dasharray": "0.75 0.75",
+    "stroke-linecap": "butt",
     "filter": null
   },
   "#cells": {
