@@ -171,7 +171,11 @@ let options = {
   burgs: {
     groups: storedBurgGroups
   },
-  labels: initialLabelOptions,
+  labels: {
+    resizeOnZoom: true,
+    showAll: false,
+    groups: storedLabelOptions
+  },
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
   },

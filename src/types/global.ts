@@ -1,10 +1,10 @@
 import type { Selection } from "d3";
+import type { LabelStyles, LabelsOptions } from "@/generators/labels";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { BurgGroup } from "./burg-groups";
-import type { LabelStyles, LabelsOptions } from "./labels";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {

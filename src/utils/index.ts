@@ -2,8 +2,6 @@ import { createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique } from "
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
-import { migrateLabelConfiguration } from "../controllers/label-migration";
-import { createDefaultLabelsOptions } from "../controllers/label-policy";
 import { C_12, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
 import {
   clipPoly,
@@ -149,10 +147,6 @@ window.uploadFile = uploadFile;
 window.getPrecipitation = getPrecipitation;
 
 window.TYPED_ARRAY_MAX = TYPED_ARRAY_MAX;
-window.LabelGroups = {
-  createDefaultOptions: createDefaultLabelsOptions,
-  migrate: migrateLabelConfiguration
-};
 
 export {
   abbreviate,
