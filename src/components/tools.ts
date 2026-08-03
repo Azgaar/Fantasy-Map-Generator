@@ -11,9 +11,7 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawReliefIcons } from "@/renderers/draw-relief-icons";
-import { drawBurgLabels } from "@/renderers/labels/draw-burg-labels";
-import { drawProvinceLabels } from "@/renderers/labels/draw-province-labels";
-import { drawStateLabels } from "@/renderers/labels/draw-state-labels";
+import { drawLabel } from "@/renderers/labels/draw-labels";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -126,7 +124,7 @@ function regenerateStateLabels(): void {
     if (state.label) delete state.label;
   }
 
-  if (layerIsOn("toggleLabels")) drawStateLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("state");
 }
 
 function regenerateReliefIcons(): void {
@@ -159,8 +157,8 @@ function regenerateStates(): void {
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleLabels")) {
-    drawStateLabels();
-    drawProvinceLabels();
+    drawLabel("state");
+    drawLabel("province");
   }
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
@@ -176,7 +174,7 @@ function regenerateProvinces(): void {
   unfog();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) drawProvinceLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("province");
   if (layerIsOn("toggleEmblems")) {
     clearEmblems(["province"]);
     drawEmblems();
@@ -186,7 +184,7 @@ function regenerateProvinces(): void {
 function regenerateBurgs(): void {
   Burgs.regenerate();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  if (layerIsOn("toggleLabels")) drawLabel("burg");
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleGoods")) drawGoods();

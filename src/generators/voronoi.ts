@@ -1,6 +1,8 @@
 import type Delaunator from "delaunator";
 import type { Point } from "@/types/global";
 
+export type { Point } from "@/types/global";
+
 export type Vertices = { p: Point[]; v: number[][]; c: number[][] };
 export type Cells = {
   v: number[][];

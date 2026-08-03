@@ -1425,6 +1425,32 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       path.remove();
     });
 
+    function getStoredStyle(group: SVGGElement): string {
+      return Array.from(group.style)
+        .filter(property => property !== "transform")
+        .map(property => `${property}: ${group.style.getPropertyValue(property)}`)
+        .join("; ");
+    }
+
+    function readLabelGroupStyle(group: Element) {
+      const groupStyle = Object.fromEntries(
+        Array.from(group.attributes)
+          .filter(attribute => !["id", "class", "data-group"].includes(attribute.name))
+          .map(attribute => [
+            attribute.name,
+            attribute.name === "style" ? getStoredStyle(group as SVGGElement) : attribute.value
+          ])
+          .filter(([, value]) => value !== "")
+      );
+
+      const legacySize = groupStyle["data-size"];
+      if (legacySize !== undefined) {
+        groupStyle["font-size"] = `${Number(legacySize) || 18}%`;
+        delete groupStyle["data-size"];
+      }
+      return groupStyle;
+    }
+
     const burgStyles = Object.fromEntries(
       Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g")).map(group => [
         group.id,

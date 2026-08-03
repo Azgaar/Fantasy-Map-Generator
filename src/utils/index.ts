@@ -2,6 +2,8 @@ import { createTypedArray, getTypedArray, last, TYPED_ARRAY_MAX, unique } from "
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
+import { migrateLabelConfiguration } from "../controllers/label-migration";
+import { createDefaultLabelsOptions } from "../controllers/label-policy";
 import { C_12, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
 import {
   clipPoly,
@@ -40,8 +42,6 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
-import { migrateLabelConfiguration } from "./label-migration";
-import { createDefaultLabelsOptions } from "./label-policy";
 import {
   applyOption,
   destroyDialogIfExists,

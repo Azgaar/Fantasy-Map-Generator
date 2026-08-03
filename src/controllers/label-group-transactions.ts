@@ -1,8 +1,8 @@
+import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/controllers/label-policy";
 import type { AddedLabel } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { LabelGroupOptions, LabelGroupType, LabelStyles, LabelsOptions } from "@/types/labels";
-import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/utils/label-policy";
 
 type LabelOverride = { group?: string };
 type LabelEntity = { i?: number; removed?: boolean; label?: LabelOverride };

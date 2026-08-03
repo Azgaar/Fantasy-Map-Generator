@@ -1,9 +1,38 @@
-import type { LabelType } from "@/generators/labels";
-import { findEl } from "@/utils";
-import { drawAddedLabel, drawAddedLabels, removeAddedLabel } from "../draw-added-labels";
-import { drawBurgLabel, drawBurgLabels, removeBurgLabel } from "./draw-burg-labels";
-import { drawProvinceLabel, drawProvinceLabels, removeProvinceLabel } from "./draw-province-labels";
-import { drawStateLabel, drawStateLabels, removeStateLabel } from "./draw-state-labels";
+import type { Point } from "@/types/global";
+import type { LabelType } from "@/types/labels";
+import { getLabelMarkup } from "./draw-label-utils";
+import { applyLabelZoom, ensureLabelGroup, renderLabelGroups } from "./label-groups";
+import { createRegionLabel } from "./region-label-layout";
+
+interface BaseLabelData {
+  id: string;
+  text: string;
+  type: LabelType;
+  group: string;
+  fontSize?: number;
+  letterSpacing?: number;
+  dx?: number;
+  dy?: number;
+}
+
+export interface PathLabelData extends BaseLabelData {
+  pathPoints: Point[];
+  startOffset?: number;
+}
+
+interface PointLabelData extends BaseLabelData {
+  x: number;
+  y: number;
+}
+
+type LabelData = PathLabelData | PointLabelData;
+
+const dataAdapters: Record<LabelType, (labelsData: LabelsData, ids?: number[]) => void> = {
+  state: addStateLabelsData,
+  province: addProvinceLabelsData,
+  added: addAddedLabelsData,
+  burg: addBurgLabelsData
+};
 
 export function drawLabels(): void {
   if (!layerIsOn("toggleLabels")) {
@@ -12,22 +41,16 @@ export function drawLabels(): void {
   }
 
   TIME && console.time("drawLabels");
+  renderLabelGroups();
+
+  const labelsData = new LabelsData();
+  Object.values(dataAdapters).forEach(adapter => void adapter(labelsData));
+
   removeLabels();
-  // renderLabelGroups(); // TODO: each renderer should render own groups
-  drawStateLabels();
-  drawProvinceLabels();
-  drawBurgLabels();
-  drawAddedLabels();
-  invokeActiveZooming();
+  renderLabelsData(labelsData);
+  applyLabelZoom();
   TIME && console.timeEnd("drawLabels");
 }
-
-const renderers: Record<LabelType, (id?: number) => void> = {
-  state: id => (id === undefined ? drawStateLabels() : drawStateLabel(id)),
-  province: id => (id === undefined ? drawProvinceLabels() : drawProvinceLabel(id)),
-  burg: id => (id === undefined ? drawBurgLabels() : drawBurgLabel(id)),
-  added: id => (id === undefined ? drawAddedLabels() : drawAddedLabel(id))
-};
 
 export function drawLabel(type: LabelType, id?: number): void {
   if (!layerIsOn("toggleLabels")) {
@@ -35,23 +58,116 @@ export function drawLabel(type: LabelType, id?: number): void {
     return;
   }
 
-  renderers[type](id);
-  invokeActiveZooming();
+  if (id === undefined) drawLabelsByType(type);
+  else drawLabelsByType(type, [id]);
+}
+
+export function drawLabelsByType(type: LabelType, ids?: number[]): void {
+  const labelsData = new LabelsData();
+  dataAdapters[type](labelsData, ids);
+
+  for (const labelData of Object.values(labelsData).flat(3)) {
+    removeLabel(labelData.id);
+  }
+
+  renderLabelsData(labelsData);
+  applyLabelZoom();
+}
+
+function renderLabelsData(labelsData: LabelsData): void {
+  const paths: string[] = [];
+
+  for (const [groupName, groupLabels] of Object.entries(labelsData)) {
+    const groupMarkup: string[] = [];
+    for (const labelData of groupLabels) {
+      const [path, markup] = getLabelMarkup(labelData);
+      if (path) paths.push(path);
+      groupMarkup.push(markup);
+    }
+
+    if (!groupMarkup.length) continue;
+    ensureLabelGroup(groupName, groupLabels[0].type).insertAdjacentHTML("beforeend", groupMarkup.join(""));
+  }
+
+  document.getElementById("textPaths")?.insertAdjacentHTML("beforeend", paths.join(""));
 }
 
 export function removeLabels(): void {
   const labels = document.querySelector<SVGGElement>("#labels");
   if (!labels) throw new Error("Labels container not found");
 
-  labels.replaceChildren();
-  findEl("#labelPaths")?.replaceChildren(); // TODO: ensure label textPaths are only rendered to #labelPaths
+  for (const group of Array.from(labels.children)) group.replaceChildren();
+  document.getElementById("textPaths")?.replaceChildren();
 }
 
-export function removeLabel(type: LabelType, id: number): void {
-  if (type === "state") return void removeStateLabel(id);
-  if (type === "province") return void removeProvinceLabel(id);
-  if (type === "burg") return void removeBurgLabel(id);
-  if (type === "added") return void removeAddedLabel(id);
+export function removeLabel(id: string): void {
+  document.getElementById(id)?.remove();
+  document.getElementById(`textPath_${id}`)?.remove();
+}
+
+// LABELS DATA ADAPTERS
+function addBurgLabelsData(labelsData: LabelsData, ids?: number[]): void {
+  const selectedIds = ids && new Set(ids);
+  for (const burg of pack.burgs) {
+    if (!burg.i || burg.removed || (selectedIds && !selectedIds.has(burg.i))) continue;
+
+    const label: PointLabelData = {
+      ...burg.label,
+      id: `burgLabel${burg.i}`,
+      text: burg.label?.text ?? burg.name ?? "",
+      type: "burg",
+      group: burg.label?.group || burg.group || "burg",
+      x: burg.x,
+      y: burg.y
+    };
+    labelsData.add(label);
+  }
+}
+
+function addProvinceLabelsData(labelsData: LabelsData, ids?: number[]): void {
+  const selectedIds = ids && new Set(ids);
+
+  for (const province of pack.provinces) {
+    if (!province.i || province.removed || (selectedIds && !selectedIds.has(province.i))) continue;
+
+    const label = createRegionLabel(province, "province");
+    labelsData.add(label);
+  }
+}
+
+function addStateLabelsData(labelsData: LabelsData, ids?: number[]): void {
+  const selectedIds = ids && new Set(ids);
+
+  for (const state of pack.states) {
+    if (!state.i || state.removed || (selectedIds && !selectedIds.has(state.i))) continue;
+
+    const label = createRegionLabel(state, "state");
+    labelsData.add(label);
+  }
+}
+
+function addAddedLabelsData(labelsData: LabelsData, ids?: number[]): void {
+  const selectedIds = ids && new Set(ids);
+
+  for (const addedLabel of pack.labels) {
+    if (selectedIds && !selectedIds.has(addedLabel.i)) continue;
+
+    const label: PathLabelData = { id: `addedLabel${addedLabel.i}`, type: "added", ...addedLabel };
+    labelsData.add(label);
+  }
+}
+
+class LabelsData {
+  private data: Record<string, LabelData[]> = {};
+
+  add(label: LabelData): void {
+    if (!this.data[label.group]) this.data[label.group] = [];
+    this.data[label.group].push(label);
+  }
+
+  get(): Record<string, LabelData[]> {
+    return this.data;
+  }
 }
 
 window.drawLabels = drawLabels;

@@ -1,12 +1,6 @@
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { drawLabel, drawLabels } from "@/renderers/labels/draw-labels";
-import { drawProvinceLabels } from "@/renderers/labels/draw-province-labels";
-import { drawStateLabels } from "@/renderers/labels/draw-state-labels";
-import { renderLabelGroups } from "@/renderers/labels/label-groups";
-import type { LabelGroupType } from "@/types/labels";
-import { destroyDialogIfExists, ensureEl } from "@/utils";
 import {
   assignLabelGroup,
   countLabelAssignments,
@@ -14,13 +8,17 @@ import {
   deleteLabelGroup,
   type LabelWorld,
   renameLabelGroup
-} from "@/utils/label-group-transactions";
+} from "@/controllers/label-group-transactions";
 import {
   getDefaultLabelGroupName,
   isProtectedLabelGroup,
   validateLabelGroupName,
   validateLabelZoom
-} from "@/utils/label-policy";
+} from "@/controllers/label-policy";
+import { drawLabel, drawLabels, drawLabelsByType } from "@/renderers/labels/draw-labels";
+import { renderLabelGroups } from "@/renderers/labels/label-groups";
+import type { LabelGroupType } from "@/types/labels";
+import { destroyDialogIfExists, ensureEl } from "@/utils";
 
 const TYPES: LabelGroupType[] = ["states", "burgs", "provinces", "added"];
 const TYPE_LABELS: Record<LabelGroupType, string> = {
@@ -292,8 +290,7 @@ function renderAssignmentRows(): void {
 function projectRegionLabelsForAudit(type: LabelGroupType): () => void {
   if (layerIsOn("toggleLabels") || (type !== "states" && type !== "provinces")) return () => undefined;
   renderLabelGroups();
-  if (type === "states") drawStateLabels();
-  else drawProvinceLabels();
+  drawLabelsByType(type === "states" ? "state" : "province");
 
   return () => {
     document.querySelector("#labels")?.replaceChildren();

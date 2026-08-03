@@ -40,10 +40,6 @@ declare global {
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
     applyLabelZoom: typeof import("../renderers/labels/label-groups").applyLabelZoom;
-    LabelGroups: {
-      createDefaultOptions: typeof import("../utils/label-policy").createDefaultLabelsOptions;
-      migrate: typeof import("../utils/label-migration").migrateLabelConfiguration;
-    };
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;

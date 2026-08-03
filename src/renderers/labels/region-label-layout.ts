@@ -1,44 +1,28 @@
 import type { PathLabel } from "@/generators/labels";
+import type { Province } from "@/generators/provinces-generator";
+import type { State } from "@/generators/states-generator";
 import type { LabelNameMode } from "@/types/labels";
 import type { TypedArray } from "@/types/PackedGraph";
+import type { PathLabelData } from "./draw-labels";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
-
-type RegionLabelInput = {
-  id: number;
-  prefix: "state" | "province";
-  name: string;
-  fullName: string;
-  pole: [number, number];
-  cellsNumber: number;
-  regionIds: TypedArray;
-  mode: LabelNameMode;
-  averageCharacterWidth?: number;
-  override?: PathLabel;
-};
 
 export interface LabelTypography {
   averageCharacterWidth: number;
   letterSpacing: number;
 }
 
-export function createRegionLabel(input: RegionLabelInput): PathLabel & { id: string; text: string } {
-  const pathPoints =
-    input.cellsNumber <= 0
-      ? []
-      : input.override?.pathPoints?.length
-        ? input.override.pathPoints
-        : getRegionLabelPath(input.id, input.regionIds, input.pole, input.cellsNumber);
+export function createRegionLabel(data: State | Province, type: "state" | "province"): PathLabelData {
+  // implement minimal logic to create a label for a region (state or province) based on its properties
+  const pathPoints = data.label?.pathPoints || [];
   return {
-    ...input.override,
-    id: `${input.prefix}Label${input.id}`,
-    text:
-      input.override?.text ??
-      selectRegionLabelName(
-        input.name,
-        input.fullName,
-        input.mode,
-        getPathCapacity(pathPoints, input.averageCharacterWidth)
-      ),
+    id: `${type}${data.i}`,
+    type,
+    text: data.label?.text || data.name,
+    group: data.label?.group || type,
+    dx: data.label?.dx,
+    dy: data.label?.dy,
+    fontSize: data.label?.fontSize,
+    letterSpacing: data.label?.letterSpacing,
     pathPoints
   };
 }
@@ -54,7 +38,7 @@ export function selectRegionLabelName(
   return fullName.length <= pathCapacity ? fullName : name;
 }
 
-export function getEffectiveCharacterWidth(
+function _getEffectiveCharacterWidth(
   groupTypography: LabelTypography,
   override: Pick<PathLabel, "fontSize" | "letterSpacing"> | undefined
 ): number {
@@ -64,7 +48,7 @@ export function getEffectiveCharacterWidth(
   return averageGlyphWidth * relativeSize + letterSpacing;
 }
 
-export function getRegionLabelPath(
+function _getRegionLabelPath(
   regionId: number,
   regionIds: TypedArray,
   pole: [number, number],
@@ -85,7 +69,7 @@ export function getRegionLabelPath(
   return path;
 }
 
-function getPathCapacity(points: readonly [number, number][], averageCharacterWidth = 4): number {
+function _getPathCapacity(points: readonly [number, number][], averageCharacterWidth = 4): number {
   if (!points.length) return 0;
   let length = 0;
   for (let index = 1; index < points.length; index++) {

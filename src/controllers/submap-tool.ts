@@ -1,6 +1,6 @@
+import { resolveLabelGroup } from "@/controllers/label-policy";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
-import { resolveLabelGroup } from "@/utils/label-policy";
 import { destroyDialogIfExists, ensureEl, minmax, rn } from "../utils";
 
 function open(): void {

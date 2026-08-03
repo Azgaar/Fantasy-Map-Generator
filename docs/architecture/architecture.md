@@ -246,46 +246,46 @@ The following is illustrative, not a complete property-by-property schema:
 
 ```ts
 const style = {
-  map: {backgroundColor: "#000000", filter: null},
+  map: { backgroundColor: "#000000", filter: null },
 
   borders: {
-    state: {opacity: 0.8, stroke: "#56566d", strokeWidth: 1, dash: [2], lineCap: "butt", filter: null},
-    province: {opacity: 0.8, stroke: "#56566d", strokeWidth: 0.5, dash: [0, 2], lineCap: "round", filter: null}
+    state: { opacity: 0.8, stroke: "#56566d", strokeWidth: 1, dash: [2], lineCap: "butt", filter: null },
+    province: { opacity: 0.8, stroke: "#56566d", strokeWidth: 0.5, dash: [0, 2], lineCap: "round", filter: null }
   },
 
   routes: {
     groups: {
-      roads: {opacity: 0.9, stroke: "#d06324", strokeWidth: 0.7, dash: [2], lineCap: "butt"},
-      trails: {opacity: 0.9, stroke: "#d06324", strokeWidth: 0.25, dash: [0.8, 1.6], lineCap: "butt"},
-      searoutes: {opacity: 0.9, stroke: "#ffffff", strokeWidth: 0.35, dash: [1, 2], lineCap: "round"}
+      roads: { opacity: 0.9, stroke: "#d06324", strokeWidth: 0.7, dash: [2], lineCap: "butt" },
+      trails: { opacity: 0.9, stroke: "#d06324", strokeWidth: 0.25, dash: [0.8, 1.6], lineCap: "butt" },
+      searoutes: { opacity: 0.9, stroke: "#ffffff", strokeWidth: 0.35, dash: [1, 2], lineCap: "round" }
     }
   },
 
   heightmap: {
-    land: {scheme: "bright", terracing: 0, skip: 5, relax: 0, curve: "basisClosed", opacity: 1, mask: "land"},
-    ocean: {render: false, scheme: "bright", terracing: 0, skip: 0, relax: 1, curve: "basisClosed", opacity: 1}
+    land: { scheme: "bright", terracing: 0, skip: 5, relax: 0, curve: "basisClosed", opacity: 1, mask: "land" },
+    ocean: { render: false, scheme: "bright", terracing: 0, skip: 0, relax: 1, curve: "basisClosed", opacity: 1 }
   },
 
   ocean: {
-    base: {fill: "#ffffff"},
-    pattern: {resource: "oceanic", opacity: 0.2}
+    base: { fill: "#ffffff" },
+    pattern: { resource: "oceanic", opacity: 0.2 }
   },
 
   labels: {
     groups: {
-      states: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 22},
-      town: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 4},
-      provinces: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 10},
-      added: {fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 18}
+      states: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 22 },
+      town: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 4 },
+      provinces: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 10 },
+      added: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 18 }
     }
   },
 
-  burgIcons: {groups: {town: {icon: "circle", fill: "#ffffff", size: 1, stroke: "#3e3e4b"}}},
-  anchors: {groups: {town: {fill: "#ffffff", size: 1, stroke: "#3e3e4b"}}},
+  burgIcons: { groups: { town: { icon: "circle", fill: "#ffffff", size: 1, stroke: "#3e3e4b" } } },
+  anchors: { groups: { town: { fill: "#ffffff", size: 1, stroke: "#3e3e4b" } } },
 
   scaleBar: {
-    text: {fill: "#353540", fontSize: 10},
-    background: {fill: "#ffffff", opacity: 0.2, padding: {top: 20, right: 15, bottom: 15, left: 10}}
+    text: { fill: "#353540", fontSize: 10 },
+    background: { fill: "#ffffff", opacity: 0.2, padding: { top: 20, right: 15, bottom: 15, left: 10 } }
   }
 };
 ```
@@ -505,54 +505,6 @@ few call sites keep the `window` bridge with a comment saying why; the real fix 
 message to the controller that owns the interaction, not to import across the layer boundary.
 `utils/registry.ts` is the standing example: it shows a loading tip through `window.tip`
 because utils must never depend on the UI.
-
-### The compiler enforces this
-
-The bridge at the bottom of a module (`window.tip = tip`) is for legacy callers only, and
-[`global.ts`](../../src/types/global.ts) declares those bridges as **`interface Window` members,
-never `var`**. That is deliberate: a `var` global is usable bare, an interface member is only
-reachable as `window.tip`. So a bundled module that forgets to import gets a compile error
-(`Cannot find name 'tip'`) instead of silently working through the global.
-
-Where a lower layer legitimately cannot import upward, it writes `window.tip(...)` explicitly.
-That is the entire list of exceptions, and it is greppable:
-
-```sh
-grep -rn 'window\.\w*(' src --include='*.ts' | grep -v 'window\.\w* ='
-```
-
-Everything it prints should be a generator, renderer, or util reaching UI — nothing else.
-
-**When the last classic caller of a function is gone, delete the bridge and its `global.ts`
-entry.** That is not cleanup for its own sake: every remaining entry is a to-do item naming a
-`public/**/*.js` file that still has to be migrated. Auditing the whole tree this way removed
-**84 bridges that nothing classic called** — `drawLegend`, `openPicker`, `highlightElement`,
-`moveCircle`, `getFileName`, `si`, `getHeight`, `isLand`, `convertTemperature`, the sorting
-helpers, and 74 more. Several of them (`getUsedFonts`, `drawRegiment`, `getPin`, `Resample`)
-existed _only_ as `window.X = …`, so the module had no real export at all; deleting the bridge
-is what forced them to become proper exports.
-
-Exactly two kinds of bridge legitimately survive without a classic caller, and both say so in a
-comment at the assignment:
-
-- **Upward calls.** Six generator→renderer bridges (`drawBurgIcon`, `drawBurgLabel`,
-  `redrawGlacier`, …). A generator that draws is the bug; the bridge just keeps it visible
-  instead of laundering it through an import that inverts the layers.
-- **Console debugging aids.** `drawPolygons`, `drawPoint`, `drawPath`, `drawCellsValue`,
-  `drawRouteConnections` — typed at the devtools prompt, so "no caller" is by design.
-
-Anything else without a classic caller is dead and should go.
-
-Two more tests worth applying literally, because both folders otherwise become junk drawers:
-
-- **`utils/`** — a helper qualifies only if it (a) reads **no ambient global** (`pack`, `grid`,
-  `options`, no `getElementById`) and (b) has **at least two consumers**. Take the state as an
-  argument (`getCellPopulation(cellId, pack)`) like `graphUtils` and `pathUtils` already do; the
-  `window.*` bridge binds the globals for classic callers. Domain knowledge is allowed, hidden
-  inputs are not. **A function used by exactly one module belongs in that module** — the cell
-  info formatters live in `cell-info.ts`, not in a shared `mapInfoUtils`.
-- **`services/`** — if it reads `pack` or `grid`, it is not a service. `grep -l 'pack\.' src/services`
-  should only ever match `io/`, which serializes state by definition.
 
 ---
 
@@ -778,10 +730,10 @@ editors and overviews).
 
 ## Two scopes of configuration
 
-| Scope              | Source of truth              | Persisted to                 | Examples                                                                |
-| ------------------ | ---------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
-| **Map config**     | the serialized map state     | the `.map` file              | generation parameters, units, resolved map style, biome data            |
-| **App preference** | an app/session config object | `localStorage` (per browser) | UI prefs, panel positions, theme, "don't ask again" flags               |
+| Scope              | Source of truth              | Persisted to                 | Examples                                                     |
+| ------------------ | ---------------------------- | ---------------------------- | ------------------------------------------------------------ |
+| **Map config**     | the serialized map state     | the `.map` file              | generation parameters, units, resolved map style, biome data |
+| **App preference** | an app/session config object | `localStorage` (per browser) | UI prefs, panel positions, theme, "don't ask again" flags    |
 
 - **Map config travels with the map** and must round-trip through [IO](#io-serialization); a
   map opened on another machine must look identical.

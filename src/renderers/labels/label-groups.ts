@@ -1,5 +1,5 @@
-import type { LabelGroupOptions, LabelType } from "@/generators/labels";
-import { getLabelParentFontSize, isLabelGroupVisible, resolveLabelGroup } from "@/utils/label-policy";
+import type { LabelType } from "@/generators/labels";
+import type { LabelGroupOptions } from "@/types/labels";
 
 export function renderLabelGroups(): void {
   const labels = document.querySelector<SVGGElement>("#labels");
@@ -9,8 +9,20 @@ export function renderLabelGroups(): void {
   for (const groupOptions of options.labels.groups) {
     renderLabelGroup(labels, groupOptions);
   }
+}
 
-  applyLabelZoom();
+export function ensureLabelGroup(groupName: string, type: LabelType): SVGGElement {
+  const labels = document.querySelector<SVGGElement>("#labels");
+  if (!labels) throw new Error("Labels container not found");
+
+  let group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
+  if (!group) {
+    ERROR && console.error(`Label group ${groupName} not found, applying fallback group for type ${type}`);
+    group = labels.querySelector<SVGGElement>(`#labels-${type}`);
+    if (!group) throw new Error(`Fallback label group for type ${type} not rendered`);
+  }
+
+  return group;
 }
 
 function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroupOptions): SVGGElement {
@@ -31,43 +43,6 @@ function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroupOptions):
   return group;
 }
 
-export function getLabelGroup(requestedGroup: string | undefined, type: LabelType): SVGGElement {
-  const labels = document.querySelector<SVGGElement>("#labels")!;
-  const groupName = resolveLabelGroup(type, requestedGroup, options.labels, options.burgs.groups);
-  const groupOptions = getLabelGroupOptions(groupName);
-  const group = findLabelGroup(labels, groupName) || renderLabelGroup(labels, groupName);
-  setGroupStyle(group, style.labels.groups[groupName] || getFallbackStyle(groupOptions), groupName);
-  return group;
-}
-
-export function getLabelGroupStyle(requestedGroup: string | undefined, type: LabelType) {
-  const groupName = resolveLabelGroup(type, requestedGroup, options.labels, options.burgs.groups);
-  return style.labels.groups[groupName] || getFallbackStyle(getLabelGroupOptions(groupName));
-}
-
-export function getLabelGroupOptions(name: string): LabelGroupOptions | undefined {
-  return typeof options === "undefined" ? undefined : options.labels?.groups.find(group => group.name === name);
-}
-
-export function readLabelGroupStyle(group: Element) {
-  const groupStyle = Object.fromEntries(
-    Array.from(group.attributes)
-      .filter(attribute => !["id", "class", "data-group"].includes(attribute.name))
-      .map(attribute => [
-        attribute.name,
-        attribute.name === "style" ? getStoredStyle(group as SVGGElement) : attribute.value
-      ])
-      .filter(([, value]) => value !== "")
-  );
-
-  const legacySize = groupStyle["data-size"];
-  if (legacySize !== undefined) {
-    groupStyle["font-size"] = `${Number(legacySize) || 18}%`;
-    delete groupStyle["data-size"];
-  }
-  return groupStyle;
-}
-
 const BASE_STYLE = {
   fill: "#3e3e4b",
   opacity: 1,
@@ -77,50 +52,46 @@ const BASE_STYLE = {
   "font-size": "18%"
 } as const;
 
-const FALLBACK_GROUPS = {
-  states: { id: "states", style: { ...BASE_STYLE, "font-size": "22%" } },
-  burgs: { id: "burgs", style: { ...BASE_STYLE, "font-size": "4%" } },
-  provinces: { id: "provinces", style: { ...BASE_STYLE, "font-size": "10%" } },
-  added: { id: "added", style: { ...BASE_STYLE, "font-size": "18%" } }
+const FALLBACK_GROUPS: Record<LabelType, Record<string, string | number>> = {
+  state: { ...BASE_STYLE, "font-size": "22%" },
+  burg: { ...BASE_STYLE, "font-size": "4%" },
+  province: { ...BASE_STYLE, "font-size": "10%" },
+  added: { ...BASE_STYLE, "font-size": "18%" }
 };
 
 function getFallbackStyle(group: LabelGroupOptions) {
   const fallback = FALLBACK_GROUPS[group.type];
-  const fallbackStyle = style.labels.groups[fallback.id] || fallback.style || BASE_STYLE;
+  const fallbackStyle = style.labels.groups[group.type] || fallback || BASE_STYLE;
   return { ...fallbackStyle };
 }
 
-function findLabelGroup(labels: SVGGElement, groupName: string): SVGGElement | undefined {
-  return Array.from(labels.children).find(
-    child => child.tagName === "g" && (child as SVGGElement).dataset.group === groupName
-  ) as SVGGElement | undefined;
-}
-
-function getStoredStyle(group: SVGGElement): string {
-  return Array.from(group.style)
-    .filter(property => property !== "transform")
-    .map(property => `${property}: ${group.style.getPropertyValue(property)}`)
-    .join("; ");
-}
-
-export function applyLabelZoom(currentScale = scale): void {
+export function applyLabelZoom(): void {
   const labels = document.querySelector<SVGGElement>("#labels");
-  if (!labels || typeof options === "undefined" || !options.labels) return;
-  labels.setAttribute("font-size", `${getLabelParentFontSize(currentScale, options.labels.resizeOnZoom)}px`);
-  const labelsLayerOn = layerIsOn("toggleLabels");
+  if (!labels) return;
+
+  labels.setAttribute("font-size", `${getScaledFontSize()}px`);
 
   for (const groupOptions of options.labels.groups) {
-    const group = findLabelGroup(labels, groupOptions.name);
+    const group = labels.querySelector<SVGGElement>(`#labels-${groupOptions.name}`);
     if (!group) continue;
-    const visible = isLabelGroupVisible({
-      labelsLayerOn,
-      labels: options.labels,
-      group: groupOptions,
-      scale: currentScale,
-      layerIsOn: dependency => Boolean(document.getElementById(dependency)) && layerIsOn(dependency)
-    });
+    const visible = isGroupVisible(groupOptions);
     group.classList.toggle("hidden", !visible);
   }
+}
+
+function getScaledFontSize(): number {
+  if (!options.labels.resizeOnZoom) return 100;
+  return Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
+}
+
+function isGroupVisible(group: LabelGroupOptions): boolean {
+  if (!layerIsOn("toggleLabels")) return false;
+  if (options.labels.showAll) return true;
+  if (!group.active) return false;
+  if (group.zoom.min !== null && scale < group.zoom.min) return false;
+  if (group.zoom.max !== null && scale > group.zoom.max) return false;
+  if (group.layerDependency && !layerIsOn(group.layerDependency)) return false;
+  return true;
 }
 
 window.applyLabelZoom = applyLabelZoom;
