@@ -151,12 +151,6 @@ let customization = 0;
 // global options; in v2.0 to be used for all UI settings
 const storedBurgGroups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
 const storedLabelOptions = JSON.safeParse(localStorage.getItem("label-groups"));
-const initialLabelOptions = window.LabelGroups.migrate({
-  current: storedLabelOptions,
-  styles: { groups: {} },
-  world: { states: [], provinces: [], burgs: [], labels: [] },
-  burgGroups: storedBurgGroups
-});
 let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
