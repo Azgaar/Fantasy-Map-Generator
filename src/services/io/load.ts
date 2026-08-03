@@ -802,7 +802,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
-
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);
     // draw data layers (not kept in svg)
