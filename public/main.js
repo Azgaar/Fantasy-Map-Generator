@@ -150,7 +150,7 @@ let customization = 0;
 
 // global options; in v2.0 to be used for all UI settings
 const storedBurgGroups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
-const storedLabelOptions = JSON.safeParse(localStorage.getItem("label-groups"));
+const storedLabelGroups = JSON.safeParse(localStorage.getItem("label-groups")) || Labels.getDefaultGroups();
 let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
@@ -168,7 +168,7 @@ let options = {
   labels: {
     resizeOnZoom: true,
     showAll: false,
-    groups: storedLabelOptions
+    groups: storedLabelGroups
   },
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()

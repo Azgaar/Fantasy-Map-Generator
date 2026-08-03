@@ -15,7 +15,7 @@ export interface LabelGroupOptions {
   name: string;
   type: LabelType;
   active: boolean;
-  layerDependency: string | null;
+  layerDependency?: string;
   zoom: LabelZoomBounds;
   mode: LabelNameMode;
 }
@@ -49,7 +49,48 @@ export interface PathLabel extends Label {
 }
 
 declare global {
+  var Labels: LabelsModule;
   var AddedLabels: AddedLabelsModule;
+}
+
+class LabelsModule {
+  initiate(): void {
+    pack.labels = [];
+  }
+
+  getDefaultGroups(): LabelGroupOptions[] {
+    return [
+      {
+        name: "state",
+        type: "state",
+        active: true,
+        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
+        mode: "auto"
+      },
+      {
+        name: "province",
+        type: "province",
+        active: true,
+        layerDependency: "toggleProvinces",
+        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
+        mode: "auto"
+      },
+      {
+        name: "burg",
+        type: "burg",
+        active: true,
+        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
+        mode: "auto"
+      },
+      {
+        name: "added",
+        type: "added",
+        active: true,
+        zoom: { min: null, max: null }, // TODO: precalculate zoom bounds based on state sizes
+        mode: "auto"
+      }
+    ];
+  }
 }
 
 // Custom labels are the only labels stored independently from map entities
@@ -82,4 +123,5 @@ export class AddedLabelsModule {
   }
 }
 
+window.Labels = new LabelsModule();
 window.AddedLabels = new AddedLabelsModule();

@@ -14,7 +14,7 @@ export function createRegionLabel(data: State | Province, type: "state" | "provi
   // implement minimal logic to create a label for a region (state or province) based on its properties
   const pathPoints = data.label?.pathPoints || [];
   return {
-    id: `${type}${data.i}`,
+    id: `${type}Label${data.i}`,
     type,
     text: data.label?.text || data.name,
     group: data.label?.group || type,
