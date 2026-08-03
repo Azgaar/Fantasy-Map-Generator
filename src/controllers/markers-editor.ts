@@ -88,6 +88,7 @@ function renderDialog(): void {
     </div>
     <div id="markerBottom">
       <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
       <button id="markerRemove" data-tip="Remove the marker" data-shortcut="Delete" class="icon-trash fastDelete"></button>
@@ -106,6 +107,7 @@ function renderDialog(): void {
   ensureEl("markerFill").on("input", changePinFill);
   ensureEl("markerStroke").on("input", changePinStroke);
   ensureEl("markerNotes").on("click", editMarkerLegend);
+  ensureEl("markerRadius").on("click", openMarkersInRadius);
   ensureEl("markerLock").on("click", toggleMarkerLock);
   ensureEl("markerAdd").on("click", toggleAddMarker);
   ensureEl("markerRemove").on("click", confirmMarkerDeletion);
@@ -283,6 +285,10 @@ function redrawPin({ i, hidden, pin = "bubble", fill = "#fff", stroke = "#000" }
 function editMarkerLegend(): void {
   const id = selectedElement.id;
   void Controllers.NotesEditor.open(id, id);
+}
+
+function openMarkersInRadius(): void {
+  void Controllers.MarkersInRadius.open(selectedMarker);
 }
 
 function toggleMarkerLock(): void {

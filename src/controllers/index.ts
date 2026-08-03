@@ -32,6 +32,7 @@ export const Controllers = createRegistry({
   MarkersEditor: () => import("@/controllers/markers-editor").then(m => m.MarkersEditor),
   MarkersSettings: () => import("@/controllers/markers-settings").then(m => m.MarkersSettings),
   MarkerCreator: () => import("@/controllers/marker-creator").then(m => m.MarkerCreator),
+  MarkersInRadius: () => import("@/controllers/markers-in-radius").then(m => m.MarkersInRadius),
   MarkersOverview: () => import("@/controllers/markers-overview").then(m => m.MarkersOverview),
   MarketDealsOverview: () => import("@/controllers/market-deals-overview").then(m => m.MarketDealsOverview),
   MarketOverview: () => import("@/controllers/market-overview").then(m => m.MarketOverview),
