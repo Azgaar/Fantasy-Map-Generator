@@ -44,7 +44,6 @@ type MarkerConfig = {
   dx?: number;
   dy?: number;
   px?: number;
-  // optional default styling applied to newly-added markers of this type (pin shape, colors, size)
   size?: number;
   pin?: string;
   fill?: string;
@@ -97,8 +96,6 @@ class MarkersModule {
   add(marker: Marker) {
     const base = this.config.find(c => c.type === marker.type);
     if (base) {
-      // carry the type's default styling (pin/colors/size) onto the new marker; anything already set on
-      // `marker` (e.g. cloned from an existing one) still wins via the spread in addMarker
       const { icon, type, dx, dy, px, size, pin, fill, stroke } = base;
       marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, marker);
       base.add(`marker${marker.i}`, marker.cell);
@@ -117,8 +114,12 @@ class MarkersModule {
     pack.markers = pack.markers.filter(m => m.i !== markerId);
   }
 
+  private listParty({ cells }: PackedGraph) {
+    return cells.i.filter(i => !this.occupied[i] && cells.burg[i]);
+  }
+
   private addParty(id: string) {
-    if (notes.find(note => note.id === id)) return; // keep user-edited text
+    if (notes.find(note => note.id === id)) return;
     notes.push({ id, name: "The Party", legend: "Current location of the adventuring party." });
   }
 
@@ -478,19 +479,16 @@ class MarkersModule {
         add: this.addEncounter.bind(this)
       },
       {
-        // the party marker is never bulk-generated (multiplier 0 → skipped by generateTypes); it is
-        // registered only so the type/icon is offered in the "add marker" type picker. Once placed it is
-        // an ordinary, deletable marker — the fields below are just its distinctive default styling.
         type: "party",
         icon: "🚩",
         size: 46,
         pin: "pin",
-        fill: "#ffffff", // classic white pin body...
-        stroke: "#d4351c", // ...with a red outline
-        min: 0,
-        each: 0,
-        multiplier: 0,
-        list: () => [],
+        fill: "#ffffff",
+        stroke: "#d4351c",
+        min: 1,
+        each: Number.MAX_SAFE_INTEGER,
+        multiplier: 1,
+        list: this.listParty.bind(this),
         add: this.addParty.bind(this)
       }
     ];

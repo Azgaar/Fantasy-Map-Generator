@@ -6,17 +6,11 @@ import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-rad
 import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
-import { radiusPxFor } from "@/utils/marker-radius";
-
-// Generic "markers in radius" tool: draws a ring around any marker, filters the map to the markers inside
-// it and lists them with the usual per-row actions. Opened from the Marker Editor for any marker.
 
 let center: Marker | null = null;
-let lastRadius = 0; // remembered across opens, in the map's distance unit; 0 = not chosen yet
-let inRangeMarkers: Marker[] = []; // non-center markers currently listed, for CSV export
+let lastRadius = 0;
+let inRangeMarkers: Marker[] = [];
 
-// A sensible default radius for a fresh open: ~a quarter of the smaller viewport, converted to the map's
-// distance unit and rounded to a friendly round number so the ring is visible on any map scale.
 function defaultRadius(): number {
   const distance = (Math.min(svgWidth, svgHeight) / 4) * distanceScale;
   const magnitude = 10 ** Math.floor(Math.log10(distance || 1));
@@ -55,7 +49,7 @@ function renderDialog(): void {
 
   const centerName = center ? markerName(center) : "";
   const html = /* html */ `
-    <div id="markersInRadius" class="dialog stable">
+    <div id="markersInRadius" class="dialog">
       <div style="padding:.2em 0 .4em; line-height:1.5">Around: <b>${centerName}</b></div>
 
       <div data-tip="Radius around the marker, in the map's distance unit — markers inside it are listed and shown on the map">
@@ -90,17 +84,15 @@ function onRadiusChange(this: HTMLInputElement): void {
 function applyRadius(distance: number): void {
   if (!center) return;
 
-  const radiusPx = radiusPxFor(distance, distanceScale);
+  const radiusPx = distance / distanceScale;
   drawMarkerRadius(center.x, center.y, radiusPx);
 
-  // show only markers inside the ring (the center marker is at distance 0, so it always passes)
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
   setMarkersFilter(inRange.map(marker => marker.i));
   if (layerIsOn("toggleMarkers")) drawMarkers();
   renderMarkersList(inRange);
 }
 
-// List the in-range markers (excluding the center marker itself) like a compact Markers Overview.
 function renderMarkersList(inRange: Marker[]): void {
   inRangeMarkers = inRange.filter(marker => marker.i !== center!.i);
   ensureEl("markersRadiusCount").textContent = String(inRangeMarkers.length);
@@ -143,7 +135,6 @@ function onMarkerListClick(event: MouseEvent): void {
   if (target.classList.contains("locks")) return void toggleLock(marker, target);
   if (target.classList.contains("icon-trash-empty")) return void confirmRemove(marker);
 
-  // default (locate): row body / target icon
   zoomTo(marker.x, marker.y, 8, 1600);
   const el = document.getElementById(`marker${i}`);
   if (el) highlightElement(el, 2);
@@ -180,13 +171,12 @@ function confirmRemove(marker: Marker): void {
     onConfirm: () => {
       Markers.deleteMarker(marker.i);
       document.getElementById(`marker${marker.i}`)?.remove();
-      refreshEditors(); // sync any open Markers Overview (and other editors) so the row disappears there too
-      applyRadius(getRadius()); // re-assert the ring/filter/list last (wins the map filter)
+      refreshEditors();
+      applyRadius(getRadius());
     }
   });
 }
 
-// Export the in-range markers to CSV — same columns as the Markers Overview export.
 function exportInRange(): void {
   if (!inRangeMarkers.length) return void tip("No markers in range to export", false, "error");
 
