@@ -1307,12 +1307,12 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;
-      const oldStyle = (style as any).burgLabels[name] || deriveLabelsStyle(burgGroup);
-      const fontSize = Number.parseFloat(String(oldStyle["font-size"] || 18));
+      const oldStyle = deriveLabelsStyle(burgGroup);
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
       const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
-      style.labels.groups[name] = { ...oldStyle, "font-size": `${oldStyle.fontSize}%` };
+      style.labels.groups[name] = oldStyle;
     }
 
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
@@ -1417,9 +1417,11 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         "stroke-width": Number(groupEl.getAttribute("stroke-width")) || 0,
         style: groupEl.getAttribute("style") || null,
         "letter-spacing": Number(groupEl.getAttribute("letter-spacing")) || 0,
-        "font-size": `${Number(groupEl.getAttribute("font-size")) || 18}%`,
+        "font-size": `${Number(groupEl.dataset.size) || Number(groupEl.getAttribute("font-size")) || 18}%`,
         "font-family": groupEl.getAttribute("font-family") || "Almendra SC",
-        filter: groupEl.getAttribute("filter") || null
+        filter: groupEl.getAttribute("filter") || null,
+        "data-dx": Number(groupEl.dataset.dx) || 0,
+        "data-dy": Number(groupEl.dataset.dy) || 0
       };
     }
 
@@ -1468,6 +1470,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       );
     }
 
+    provinceGroup?.remove();
     document.getElementById("textPaths")?.replaceChildren();
     labels.replaceChildren();
     if (layerIsOn("toggleLabels")) drawLabels();
