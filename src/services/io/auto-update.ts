@@ -1312,10 +1312,25 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
-      style.labels.groups[name] = { ...oldStyle, fontSize: `${oldStyle.fontSize}%` };
+      style.labels.groups[name] = { ...oldStyle, "font-size": `${oldStyle.fontSize}%` };
     }
+
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
       options.labels.groups[0].isDefault = true;
+
+    // migrate manually shifted burg labels to pack.burgs[burgId].label
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
+      const burgId = +textEl.id.slice(9);
+      const burg = pack.burgs[burgId];
+      if (!burg) continue;
+
+      const transform = textEl.getAttribute("transform");
+      if (!transform) continue;
+      const tr = parseTransform(transform);
+      const dx = rn(tr[0], 1);
+      const dy = rn(tr[1], 1);
+      if (dx || dy) burg.label = { dx, dy };
+    }
 
     const provs = document.querySelector<SVGGElement>("#provs");
     const provinceGroup = document.querySelector<SVGGElement>("#provs #provinceLabels");
@@ -1336,9 +1351,13 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       style.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
+    pack.labels = [];
     const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
     for (const addedGroup of addedGroups) {
-      const name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
+      let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
+      const isExisting = options.labels.groups.find(group => group.name === name);
+      if (isExisting) name += options.labels.groups.length;
+
       const oldStyle = deriveLabelsStyle(addedGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
@@ -1349,6 +1368,21 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         zoom: deriveZoomExtent(fontSize)
       });
       style.labels.groups[name] = oldStyle;
+
+      for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
+        const note = notes.find(note => note.id === textEl.id);
+
+        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+        if (!pathEl) continue;
+
+        const label = getPathLabel({ textEl, pathEl });
+        if (label?.text && label.pathPoints) {
+          const addedLabel = AddedLabels.add({ ...label, group: name } as AddedLabel);
+          if (note) note.id = `addedLabel${addedLabel.i}`;
+        } else {
+          if (note) notes = notes.filter(n => n.id !== note.id); // remove note
+        }
+      }
     }
 
     const stateGroup = labels.querySelector<SVGGElement>(":scope > #states");
@@ -1361,6 +1395,15 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     } else {
       options.labels.groups.push(Labels.getFallbackGroup("state"));
       style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
+    }
+
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
+      const stateId = +textEl.id.slice(10);
+      const state = pack.states[stateId];
+      if (!state) continue;
+
+      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+      if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
     delete (style as any).burgLabels; // migrated to style.labels.groups
@@ -1382,50 +1425,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     function deriveZoomExtent(fontSize: number) {
       return { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
-    }
-
-    // migrate manually shifted burg labels to pack.burgs[burgId].label
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
-      const burgId = +textEl.id.slice(9);
-      const burg = pack.burgs[burgId];
-      if (!burg) continue;
-
-      const transform = textEl.getAttribute("transform");
-      if (!transform) continue;
-      const tr = parseTransform(transform);
-      const dx = rn(tr[0], 1);
-      const dy = rn(tr[1], 1);
-      if (dx || dy) burg.label = { dx, dy };
-    }
-
-    pack.labels = []; // migrate addedLabels as pack.labels
-    for (const addedGroup of addedGroups) {
-      const group = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
-
-      for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
-        const note = notes.find(note => note.id === textEl.id);
-
-        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
-        if (!pathEl) continue;
-
-        const label = getPathLabel({ textEl, pathEl });
-        if (label?.text && label.pathPoints) {
-          const addedLabel = AddedLabels.add({ ...label, group } as AddedLabel);
-          if (note) note.id = `addedLabel${addedLabel.i}`;
-        } else {
-          if (note) notes = notes.filter(n => n.id !== note.id); // remove note
-        }
-      }
-    }
-
-    // migrate state labels as pack.states[stateId].label
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
-      const stateId = +textEl.id.slice(10);
-      const state = pack.states[stateId];
-      if (!state) continue;
-
-      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
-      if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
     function getPathLabel({
