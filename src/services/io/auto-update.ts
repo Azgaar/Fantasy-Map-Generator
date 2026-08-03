@@ -1,8 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
-import { i } from "node_modules/vite/dist/node/chunks/moduleRunnerTransport";
 import { defaultOptions } from "@/data/view-3d-options";
-import type { AddedLabel, LabelGroup, LabelGroupStyle, LabelType, PathLabel } from "@/generators/labels";
+import type { AddedLabel, LabelGroupStyle, PathLabel } from "@/generators/labels";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -1308,8 +1307,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;
-      const oldStyle = (style as any).burgLabels[name] || {};
-      const fontSize: number = oldStyle.fontSize || 18;
+      const oldStyle = (style as any).burgLabels[name] || deriveLabelsStyle(burgGroup);
+      const fontSize = Number.parseFloat(String(oldStyle["font-size"] || 18));
       const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
@@ -1322,10 +1321,15 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const provinceGroup = document.querySelector<SVGGElement>("#provs #provinceLabels");
     if (provs && provinceGroup) {
       const oldStyle = deriveLabelsStyle(provs);
-      const fontSize = Number(oldStyle.fontSize);
-      const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({ name: "province", type: "province", isDefault: true, zoom });
+      options.labels.groups.push({
+        name: "province",
+        type: "province",
+        isDefault: true,
+        zoom: deriveZoomExtent(fontSize),
+        layerDependency: "toggleProvinces"
+      });
       style.labels.groups.province = oldStyle;
     } else {
       options.labels.groups.push(Labels.getFallbackGroup("province"));
@@ -1336,24 +1340,27 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     for (const addedGroup of addedGroups) {
       const name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
       const oldStyle = deriveLabelsStyle(addedGroup);
-      const fontSize = Number(oldStyle.fontSize);
-      const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({ name, type: "added", isDefault: name === "added", zoom });
+      options.labels.groups.push({
+        name,
+        type: "added",
+        isDefault: name === "added",
+        zoom: deriveZoomExtent(fontSize)
+      });
       style.labels.groups[name] = oldStyle;
     }
 
     const stateGroup = labels.querySelector<SVGGElement>(":scope > #states");
     if (stateGroup) {
       const oldStyle = deriveLabelsStyle(stateGroup);
-      const fontSize = Number(oldStyle.fontSize);
-      const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({ name: "state", type: "state", isDefault: true, zoom });
-      style.labels.groups.province = oldStyle;
+      options.labels.groups.push({ name: "state", type: "state", isDefault: true, zoom: deriveZoomExtent(fontSize) });
+      style.labels.groups.state = oldStyle;
     } else {
       options.labels.groups.push(Labels.getFallbackGroup("state"));
-      style.labels.groups.province = getGroupStyle({ name: "state", type: "state" });
+      style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
     delete (style as any).burgLabels; // migrated to style.labels.groups
@@ -1373,6 +1380,10 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       };
     }
 
+    function deriveZoomExtent(fontSize: number) {
+      return { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+    }
+
     // migrate manually shifted burg labels to pack.burgs[burgId].label
     for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text[id^='burgLabel']")) {
       const burgId = +textEl.id.slice(9);
@@ -1380,7 +1391,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (!burg) continue;
 
       const transform = textEl.getAttribute("transform");
-      if (!transform) return;
+      if (!transform) continue;
       const tr = parseTransform(transform);
       const dx = rn(tr[0], 1);
       const dy = rn(tr[1], 1);
@@ -1388,8 +1399,10 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     }
 
     pack.labels = []; // migrate addedLabels as pack.labels
-    for (const group of addedGroups) {
-      for (const textEl of group.querySelectorAll<SVGTextElement>(":scope > text")) {
+    for (const addedGroup of addedGroups) {
+      const group = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
+
+      for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
         const note = notes.find(note => note.id === textEl.id);
 
         const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
@@ -1397,7 +1410,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
         const label = getPathLabel({ textEl, pathEl });
         if (label?.text && label.pathPoints) {
-          const addedLabel = AddedLabels.add(label as AddedLabel);
+          const addedLabel = AddedLabels.add({ ...label, group } as AddedLabel);
           if (note) note.id = `addedLabel${addedLabel.i}`;
         } else {
           if (note) notes = notes.filter(n => n.id !== note.id); // remove note
