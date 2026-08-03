@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../generators/voronoi";
-import { getLabelPath } from "../renderers/labels/draw-label-utils";
+import { getLabelPath } from "../renderers/labels/label-markup";
 import { meander, parsePathPoints } from "./pathUtils";
 
 describe("parsePathPoints", () => {

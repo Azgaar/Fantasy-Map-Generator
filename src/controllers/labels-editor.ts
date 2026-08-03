@@ -3,12 +3,10 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { resolveLabelGroup } from "@/controllers/label-policy";
 import type { AddedLabel, Label, LabelType, PathLabel } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
-import { getLabelPath } from "@/renderers/labels/draw-label-utils";
 import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
-import { parseStateLabelData } from "@/renderers/labels/draw-state-labels";
+import { getLabelPath } from "@/renderers/labels/label-markup";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 

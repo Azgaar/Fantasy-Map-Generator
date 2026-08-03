@@ -1,7 +1,7 @@
 import type { Point } from "@/types/global";
 import type { LabelType } from "@/types/labels";
-import { getLabelMarkup } from "./draw-label-utils";
 import { applyLabelZoom, ensureLabelGroup, renderLabelGroups } from "./label-groups";
+import { getLabelMarkup } from "./label-markup";
 import { createRegionLabel } from "./region-label-layout";
 
 interface BaseLabelData {
@@ -20,12 +20,12 @@ export interface PathLabelData extends BaseLabelData {
   startOffset?: number;
 }
 
-interface PointLabelData extends BaseLabelData {
+export interface PointLabelData extends BaseLabelData {
   x: number;
   y: number;
 }
 
-type LabelData = PathLabelData | PointLabelData;
+export type LabelData = PathLabelData | PointLabelData;
 
 const dataAdapters: Record<LabelType, (labelsData: LabelsData, ids?: number[]) => void> = {
   state: addStateLabelsData,
@@ -66,7 +66,7 @@ export function drawLabelsByType(type: LabelType, ids?: number[]): void {
   const labelsData = new LabelsData();
   dataAdapters[type](labelsData, ids);
 
-  for (const labelData of Object.values(labelsData).flat(3)) {
+  for (const labelData of Object.values(labelsData.get()).flat(3)) {
     removeLabel(labelData.id);
   }
 
@@ -77,12 +77,12 @@ export function drawLabelsByType(type: LabelType, ids?: number[]): void {
 function renderLabelsData(labelsData: LabelsData): void {
   const paths: string[] = [];
 
-  for (const [groupName, groupLabels] of Object.entries(labelsData)) {
+  for (const [groupName, groupLabels] of Object.entries(labelsData.get())) {
     const groupMarkup: string[] = [];
     for (const labelData of groupLabels) {
       const [path, markup] = getLabelMarkup(labelData);
       if (path) paths.push(path);
-      groupMarkup.push(markup);
+      if (markup) groupMarkup.push(markup);
     }
 
     if (!groupMarkup.length) continue;
