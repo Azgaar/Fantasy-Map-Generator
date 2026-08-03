@@ -327,8 +327,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -354,8 +353,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 5,
-    "font-size": 5,
+    "font-size": "5%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -381,8 +379,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -408,8 +405,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -435,8 +431,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -462,8 +457,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -489,8 +483,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -516,8 +509,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -543,8 +535,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Lugrasimo",
     "data-dy": -0.4
   },
@@ -572,8 +563,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 21,
-    "font-size": 21,
+    "font-size": "21%",
     "font-family": "Eagle Lake",
     "filter": null
   },
@@ -584,8 +574,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "Eagle Lake",
     "filter": null
   },
@@ -596,8 +585,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 18,
-    "font-size": 18,
+    "font-size": "18%",
     "font-family": "Eagle Lake",
     "filter": null
   },

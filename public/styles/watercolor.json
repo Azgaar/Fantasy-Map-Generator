@@ -338,8 +338,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 2px",
     "letter-spacing": 0,
-    "data-size": 5,
-    "font-size": 5,
+    "font-size": "5%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -366,8 +365,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -394,8 +392,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -423,8 +420,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -452,8 +448,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -481,8 +476,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -510,8 +504,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -539,8 +532,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -568,8 +560,7 @@
     "fill": "#043449",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Comfortaa",
     "data-dy": -0.4
   },
@@ -599,8 +590,7 @@
     "stroke-width": 0.15,
     "style": "text-shadow: black 1px 1px 3px",
     "letter-spacing": 0,
-    "data-size": 18,
-    "font-size": 18,
+    "font-size": "18%",
     "font-family": "Gloria Hallelujah",
     "filter": null
   },
@@ -611,8 +601,7 @@
     "stroke-width": 0.15,
     "style": "text-shadow: black 1px 1px 3px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "Gloria Hallelujah",
     "filter": null
   },
@@ -623,8 +612,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 16,
-    "font-size": 16,
+    "font-size": "16%",
     "font-family": "Comfortaa",
     "filter": null
   },

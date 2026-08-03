@@ -343,8 +343,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -0.4
@@ -377,8 +376,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 2px",
     "letter-spacing": null,
-    "data-size": 6,
-    "font-size": 6,
+    "font-size": "6%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -0.7
@@ -411,8 +409,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -2
@@ -445,8 +442,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -1.8
@@ -479,8 +475,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -1
@@ -513,8 +508,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -1.2
@@ -547,8 +541,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -0.6
@@ -581,8 +574,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": null,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Underdog",
     "data-dx": 0,
     "data-dy": -1
@@ -615,8 +607,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 2px",
     "letter-spacing": null,
-    "data-size": 4,
-    "font-size": 4,
+    "font-size": "4%",
     "font-family": "Underdog",
     "data-dx": null,
     "data-dy": -0.6
@@ -649,8 +640,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 2px",
     "letter-spacing": 0,
-    "data-size": 20,
-    "font-size": 20,
+    "font-size": "20%",
     "font-family": "Underdog",
     "filter": null
   },
@@ -661,8 +651,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 2px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "Underdog",
     "filter": null
   },
@@ -673,8 +662,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 4px",
     "letter-spacing": 0,
-    "data-size": 18,
-    "font-size": 18,
+    "font-size": "18%",
     "font-family": "Underdog",
     "filter": null
   },

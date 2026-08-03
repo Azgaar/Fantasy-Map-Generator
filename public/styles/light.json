@@ -340,8 +340,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.4
@@ -374,8 +373,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 6,
-    "font-size": 6,
+    "font-size": "6%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.4
@@ -408,8 +406,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.5
@@ -442,8 +439,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.5
@@ -476,8 +472,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.5
@@ -510,8 +505,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.5
@@ -544,8 +538,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.4
@@ -578,8 +571,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.4
@@ -612,8 +604,7 @@
     "stroke-width": null,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
+    "font-size": "4%",
     "font-family": "IM Fell English",
     "data-dx": null,
     "data-dy": -0.4
@@ -646,8 +637,7 @@
     "stroke-width": 0.3,
     "style": "text-shadow: white 0px 0px 6px",
     "letter-spacing": 0,
-    "data-size": 14,
-    "font-size": 14,
+    "font-size": "14%",
     "font-family": "IM Fell English",
     "filter": null
   },
@@ -658,8 +648,7 @@
     "stroke-width": 0.3,
     "style": "text-shadow: white 0px 0px 6px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "IM Fell English",
     "filter": null
   },
@@ -670,8 +659,7 @@
     "stroke-width": 0.1,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 6,
-    "font-size": 6,
+    "font-size": "6%",
     "font-family": "IM Fell English",
     "filter": null
   },

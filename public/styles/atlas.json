@@ -338,8 +338,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 6,
-    "font-size": 6,
+    "font-size": "6%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -366,8 +365,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
+    "font-size": "4%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -394,8 +392,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -422,8 +419,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -450,8 +446,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -478,8 +473,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -506,8 +500,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -534,8 +527,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -562,8 +554,7 @@
     "fill": "#000000",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Amarante",
     "data-dy": -0.4
   },
@@ -592,8 +583,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 21,
-    "font-size": 21,
+    "font-size": "21%",
     "font-family": "Amarante",
     "filter": null
   },
@@ -604,8 +594,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "Amarante",
     "filter": null
   },
@@ -616,8 +605,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 18,
-    "font-size": 18,
+    "font-size": "18%",
     "font-family": "Amarante",
     "filter": null
   },

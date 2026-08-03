@@ -338,8 +338,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 6,
-    "font-size": 6,
+    "font-size": "6%",
     "font-family": "Almendra SC",
     "data-dy": -0.5
   },
@@ -367,8 +366,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 5,
-    "font-size": 5,
+    "font-size": "5%",
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
@@ -396,8 +394,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Almendra SC",
     "data-dy": -0.5
   },
@@ -425,8 +422,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Almendra SC",
     "data-dy": -0.5
   },
@@ -454,8 +450,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Almendra SC",
     "data-dy": -0.5
   },
@@ -483,8 +478,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Almendra SC",
     "data-dy": -0.5
   },
@@ -512,8 +506,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
@@ -541,8 +534,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
@@ -570,8 +562,7 @@
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 4,
-    "font-size": 4,
+    "font-size": "4%",
     "font-family": "Almendra SC",
     "data-dy": -0.4
   },
@@ -601,8 +592,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 22,
-    "font-size": 22,
+    "font-size": "22%",
     "font-family": "Almendra SC",
     "filter": null
   },
@@ -613,8 +603,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "Almendra SC",
     "filter": null
   },
@@ -625,8 +614,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 18,
-    "font-size": 18,
+    "font-size": "18%",
     "font-family": "Almendra SC",
     "filter": null
   },
