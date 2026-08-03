@@ -104,7 +104,7 @@ class LabelsModule {
         name: "province",
         type: "province",
         layerDependency: "toggleProvinces",
-        zoom: { min: 0.2, max: 11 },
+        zoom: { min: 1, max: 15 },
         isDefault: true
       },
       {

@@ -1,53 +1,111 @@
-import type { LabelNameMode, PathLabel } from "@/generators/labels";
+import { max } from "d3";
+import type { LabelNameMode } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import type { TypedArray } from "@/types/PackedGraph";
+import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
+import { ensureLabelGroup } from "./label-groups";
+import { getLabelPath } from "./label-markup";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 import type { PathLabelData } from "./types";
 
-export interface LabelTypography {
-  averageCharacterWidth: number;
-  letterSpacing: number;
+type Region = State | Province;
+type RegionType = "state" | "province";
+
+interface RegionData {
+  regionIds: TypedArray;
+  pole: [number, number];
+  cellsNumber: number;
 }
 
-export function createRegionLabel(data: State | Province, type: "state" | "province"): PathLabelData {
-  // implement minimal logic to create a label for a region (state or province) based on its properties
-  const pathPoints = data.label?.pathPoints || [];
+type RegionDataAccessor<T extends Region> = (region: T) => RegionData;
+
+export function createRegionLabel<T extends Region>(
+  region: T,
+  type: RegionType,
+  getRegionData: RegionDataAccessor<T>
+): PathLabelData {
+  const label = createLabel(region, type);
+  const group = ensureLabelGroup(label.group, type);
+  const mode = options.labels.groups.find(groupOptions => groupOptions.name === label.group)?.mode || "auto";
+  const sandbox = createMeasurementSandbox(group);
+
+  try {
+    const letterLength = getAverageLetterLength(sandbox);
+    if (!label.pathPoints.length)
+      return { ...label, ...fitLabel(region, label, mode, letterLength, sandbox, getRegionData) };
+    if (region.label?.text !== undefined) return label;
+
+    const pathLength = measureLabelPath(label, sandbox).getTotalLength() / letterLength;
+    const [lines, fontSize] = getLinesAndRatio(mode, region.name, region.fullName || region.name, pathLength);
+    return { ...label, text: lines.join("|"), fontSize: region.label?.fontSize ?? fontSize };
+  } finally {
+    sandbox.remove();
+  }
+}
+
+function createLabel(region: Region, type: RegionType): PathLabelData {
   return {
-    id: `${type}Label${data.i}`,
+    ...region.label,
+    id: `${type}Label${region.i}`,
     type,
-    text: data.label?.text || data.name,
-    group: data.label?.group || type,
-    dx: data.label?.dx,
-    dy: data.label?.dy,
-    fontSize: data.label?.fontSize,
-    letterSpacing: data.label?.letterSpacing,
-    pathPoints
+    text: region.label?.text ?? region.name ?? "",
+    group: region.label?.group || type,
+    pathPoints: region.label?.pathPoints || []
   };
 }
 
-export function selectRegionLabelName(
-  name: string,
-  fullName: string,
+function fitLabel<T extends Region>(
+  region: T,
+  label: PathLabelData,
   mode: LabelNameMode,
-  pathCapacity = Number.POSITIVE_INFINITY
-): string {
-  if (mode === "short") return name;
-  if (mode === "full") return fullName;
-  return fullName.length <= pathCapacity ? fullName : name;
+  letterLength: number,
+  sandbox: SVGGElement,
+  getRegionData: RegionDataAccessor<T>
+): Pick<PathLabelData, "pathPoints" | "text" | "fontSize"> {
+  const { regionIds, pole, cellsNumber } = getRegionData(region);
+  const pathPoints = getRegionLabelPath(region.i, regionIds, pole, cellsNumber);
+  if (!pathPoints.length) return { pathPoints, text: label.text, fontSize: label.fontSize };
+
+  const labelWithPath = { ...label, pathPoints };
+  const pathLength = measureLabelPath(labelWithPath, sandbox).getTotalLength() / letterLength;
+  const fullName = region.fullName || region.name;
+  const hasCustomText = region.label?.text !== undefined;
+  const [lines, fontSize] = hasCustomText
+    ? [region.label!.text!.split("|"), region.label!.fontSize ?? 100]
+    : getLinesAndRatio(mode, region.name, fullName, pathLength);
+  const text = lines.join("|");
+
+  const longestLineLength = max(lines.map(line => line.length)) || 0;
+  if (pathLength && pathLength < longestLineLength) {
+    const [x1, y1] = pathPoints.at(0)!;
+    const [x2, y2] = pathPoints.at(-1)!;
+    const [dx, dy] = [(x2 - x1) / 2, (y2 - y1) / 2];
+    const modifier = longestLineLength / pathLength;
+
+    pathPoints[0] = [x1 + dx - dx * modifier, y1 + dy - dy * modifier];
+    pathPoints[pathPoints.length - 1] = [x2 - dx + dx * modifier, y2 - dy + dy * modifier];
+    measureLabelPath({ ...labelWithPath, text, fontSize }, sandbox);
+  }
+
+  const result = { pathPoints, text, fontSize };
+  if (hasCustomText || mode === "full" || lines.length === 1) return result;
+
+  const { textElement, textPath } = measureLabelText({ ...labelWithPath, text, fontSize }, sandbox);
+  const { width, height } = textPath.getBBox();
+  textPath.setAttribute("href", `#${MEASURE_PATH_ID}`);
+  const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const fitsRegion = isLabelInsideRegion(textPath, angle, width / 2, height / 2, region.i, regionIds);
+  textElement.remove();
+  if (fitsRegion) return result;
+
+  const oneLineText = pathLength > fullName.length * 1.8 ? fullName : region.name;
+  const correctedFontSize = minmax(rn((pathLength / oneLineText.length) * 50), 50, 130);
+  return { pathPoints, text: oneLineText, fontSize: correctedFontSize };
 }
 
-function _getEffectiveCharacterWidth(
-  groupTypography: LabelTypography,
-  override: Pick<PathLabel, "fontSize" | "letterSpacing"> | undefined
-): number {
-  const relativeSize = (override?.fontSize ?? 100) / 100;
-  const averageGlyphWidth = Math.max(groupTypography.averageCharacterWidth - groupTypography.letterSpacing, 0);
-  const letterSpacing = override?.letterSpacing ?? groupTypography.letterSpacing;
-  return averageGlyphWidth * relativeSize + letterSpacing;
-}
-
-function _getRegionLabelPath(
+function getRegionLabelPath(
   regionId: number,
   regionIds: TypedArray,
   pole: [number, number],
@@ -62,21 +120,119 @@ function _getRegionLabelPath(
     ...raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offset })
   }));
   const [ray1, ray2] = findBestRayPair(rays);
-  if (ray1.length <= 0 && ray2.length <= 0) return [];
-  const path: [number, number][] = [[ray1.x, ray1.y], pole, [ray2.x, ray2.y]];
-  if (ray1.x > ray2.x) path.reverse();
+  const pathPoints: [number, number][] = [[ray1.x, ray1.y], pole, [ray2.x, ray2.y]];
+  if (ray1.x > ray2.x) pathPoints.reverse();
+  return pathPoints;
+}
+
+function createMeasurementSandbox(group: SVGGElement): SVGGElement {
+  const sandbox = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  sandbox.style.visibility = "hidden";
+
+  const groupStyle = getComputedStyle(group);
+  sandbox.setAttribute("font-family", groupStyle.fontFamily);
+  sandbox.setAttribute("font-size", groupStyle.fontSize);
+  sandbox.setAttribute("letter-spacing", groupStyle.letterSpacing);
+  sandbox.setAttribute("text-anchor", groupStyle.textAnchor);
+  sandbox.setAttribute("dominant-baseline", groupStyle.dominantBaseline);
+
+  document.getElementById("viewbox")!.appendChild(sandbox);
+  return sandbox;
+}
+
+function getAverageLetterLength(sandbox: SVGGElement): number {
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  text.textContent = "Example";
+  sandbox.appendChild(text);
+  const letterLength = text.getComputedTextLength() / 7;
+  text.remove();
+  return letterLength;
+}
+
+const MEASURE_PATH_ID = "measureLabelPath";
+
+function measureLabelPath(label: PathLabelData, sandbox: SVGGElement): SVGPathElement {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.id = MEASURE_PATH_ID;
+  path.setAttribute("d", getLabelPath(label));
+  sandbox.querySelector(`#${MEASURE_PATH_ID}`)?.remove();
+  sandbox.appendChild(path);
   return path;
 }
 
-function _getPathCapacity(points: readonly [number, number][], averageCharacterWidth = 4): number {
-  if (!points.length) return 0;
-  let length = 0;
-  for (let index = 1; index < points.length; index++) {
-    const [x1, y1] = points[index - 1];
-    const [x2, y2] = points[index];
-    length += Math.hypot(x2 - x1, y2 - y1);
+function measureLabelText(
+  label: PathLabelData,
+  sandbox: SVGGElement
+): { textElement: SVGTextElement; textPath: SVGTextPathElement } {
+  const lines = label.text.split("|");
+  const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
+  textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
+  textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
+  if (label.letterSpacing !== undefined) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
+  textPath.append(
+    ...lines.map((line, index) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", "0");
+      tspan.setAttribute("dy", index ? "1em" : `${(lines.length - 1) / -2}em`);
+      tspan.textContent = line;
+      return tspan;
+    })
+  );
+  textElement.appendChild(textPath);
+  sandbox.appendChild(textElement);
+  return { textElement, textPath };
+}
+
+function getLinesAndRatio(mode: LabelNameMode, name: string, fullName: string, pathLength: number): [string[], number] {
+  if (mode === "short") return getShortOneLine();
+  if (pathLength > fullName.length * 2) return getFullOneLine();
+  return getFullTwoLines();
+
+  function getShortOneLine(): [string[], number] {
+    return [[name], minmax(rn((pathLength / name.length) * 60), 50, 150)];
   }
-  const safeCharacterWidth =
-    Number.isFinite(averageCharacterWidth) && averageCharacterWidth > 0 ? averageCharacterWidth : 4;
-  return Math.max(Math.floor(length / safeCharacterWidth), 1);
+
+  function getFullOneLine(): [string[], number] {
+    return [[fullName], minmax(rn((pathLength / fullName.length) * 70), 70, 170)];
+  }
+
+  function getFullTwoLines(): [string[], number] {
+    const lines = splitInTwo(fullName);
+    const longestLineLength = max(lines.map(line => line.length)) || 0;
+    return [lines, minmax(rn((pathLength / longestLineLength) * 60), 70, 150)];
+  }
+}
+
+function isLabelInsideRegion(
+  textElement: SVGGraphicsElement,
+  angle: number,
+  halfWidth: number,
+  halfHeight: number,
+  regionId: number,
+  regionIds: TypedArray
+): boolean {
+  const { x, y, width, height } = textElement.getBBox();
+  const [centerX, centerY] = [x + width / 2, y + height / 2];
+  const points: [number, number][] = [
+    [-halfWidth, -halfHeight],
+    [+halfWidth, -halfHeight],
+    [+halfWidth, halfHeight],
+    [-halfWidth, halfHeight],
+    [0, halfHeight],
+    [0, -halfHeight]
+  ];
+  const sin = Math.sin(angle);
+  const cos = Math.cos(angle);
+
+  let pointsInside = 0;
+  for (const [x, y] of points) {
+    const pointX = centerX + x * cos - y * sin;
+    const pointY = centerY + x * sin + y * cos;
+    const cellId = findClosestCell(pointX, pointY, undefined, pack) as number;
+    if (regionIds[cellId] === regionId) pointsInside++;
+    if (pointsInside > 4) return true;
+  }
+
+  return false;
 }
