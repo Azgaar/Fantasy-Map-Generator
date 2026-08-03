@@ -1,31 +1,8 @@
 import type { LabelType } from "@/generators/labels";
-import type { Point } from "@/types/global";
 import { applyLabelZoom, ensureLabelGroup, renderLabelGroups } from "./label-groups";
 import { getLabelMarkup } from "./label-markup";
 import { createRegionLabel } from "./region-label-layout";
-
-interface BaseLabelData {
-  id: string;
-  text: string;
-  type: LabelType;
-  group: string;
-  fontSize?: number;
-  letterSpacing?: number;
-  dx?: number;
-  dy?: number;
-}
-
-export interface PathLabelData extends BaseLabelData {
-  pathPoints: Point[];
-  startOffset?: number;
-}
-
-export interface PointLabelData extends BaseLabelData {
-  x: number;
-  y: number;
-}
-
-export type LabelData = PathLabelData | PointLabelData;
+import type { LabelData, PathLabelData, PointLabelData } from "./types";
 
 const dataAdapters: Record<LabelType, (labelsData: LabelsData, ids?: number[]) => void> = {
   state: addStateLabelsData,

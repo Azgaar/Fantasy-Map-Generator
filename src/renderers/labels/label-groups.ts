@@ -1,5 +1,4 @@
-import type { LabelType } from "@/generators/labels";
-import type { LabelGroupOptions } from "@/types/labels";
+import type { LabelGroupOptions, LabelType } from "@/generators/labels";
 
 export function renderLabelGroups(): void {
   const labels = document.querySelector<SVGGElement>("#labels");

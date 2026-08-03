@@ -1,6 +1,6 @@
 import { curveNatural, line } from "d3";
 import type { PathLabel } from "@/generators/labels";
-import type { LabelData, PathLabelData, PointLabelData } from "./draw-labels";
+import type { LabelData, PathLabelData, PointLabelData } from "./types";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
 

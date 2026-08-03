@@ -1,10 +1,9 @@
-import type { PathLabel } from "@/generators/labels";
+import type { LabelNameMode, PathLabel } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import type { LabelNameMode } from "@/types/labels";
 import type { TypedArray } from "@/types/PackedGraph";
-import type { PathLabelData } from "./draw-labels";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
+import type { PathLabelData } from "./types";
 
 export interface LabelTypography {
   averageCharacterWidth: number;
