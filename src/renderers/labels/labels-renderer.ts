@@ -1,5 +1,5 @@
-import { getLabelParentFontSize, isLabelGroupVisible, resolveLabelGroup } from "@/controllers/label-policy";
-import type { LabelType, PathLabel } from "@/generators/labels";
+import { getLabelParentFontSize, isLabelGroupVisible } from "@/controllers/label-policy";
+import type { LabelType } from "@/generators/labels";
 import { containsPoint, type ViewportRenderContext, viewportLayers } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
 import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
@@ -21,20 +21,20 @@ export function drawLabels(): void {
 
   TIME && console.time("drawLabels");
   renderLabelGroups();
-  labelScene.replaceAll(getLabelsData());
+  const labels = Object.values(dataAdapters).flatMap(adapter => adapter());
+  labelScene.replaceAll(labels);
   viewportLayers.renderNow();
   TIME && console.timeEnd("drawLabels");
 }
 
-export function drawLabel(type: LabelType, id?: number): void {
-  if (!layerIsOn("toggleLabels")) return void removeLabels();
-  drawLabelsByType(type, id === undefined ? undefined : [id]);
-}
-
 export function drawLabelsByType(type: LabelType, ids?: number[]): void {
+  if (!layerIsOn("toggleLabels")) return void removeLabels();
+
+  TIME && console.time("drawLabelsByType");
   if (!labelScene.valid) return void drawLabels();
-  labelScene.updateType(type, dataAdapters[type](ids).map(resolveGroup), ids);
+  labelScene.updateType(type, dataAdapters[type](ids), ids);
   viewportLayers.renderNow();
+  TIME && console.time("drawLabelsByType");
 }
 
 export function removeLabels(): void {
@@ -45,20 +45,9 @@ export function removeLabels(): void {
   labelScene.invalidate();
 }
 
-export function removeLabel(type: LabelType, id: number): void;
-export function removeLabel(id: string): void;
-export function removeLabel(typeOrId: LabelType | string, id?: number): void {
-  const labelId = id === undefined ? typeOrId : `${typeOrId}Label${id}`;
-  const type =
-    id === undefined ? (labelId.match(/^([a-z]+)Label/)?.[1] as LabelType | undefined) : (typeOrId as LabelType);
-  const entityId = id ?? Number(labelId.match(/\d+$/)?.[0]);
-  if (type && Number.isFinite(entityId)) labelScene.remove(type, entityId);
-  removeMaterialized(labelId, document);
-}
-
-export function getLabelsData(type?: LabelType, ids?: number[]): LabelData[] {
-  const labels = type ? dataAdapters[type](ids) : Object.values(dataAdapters).flatMap(adapter => adapter());
-  return labels.map(resolveGroup);
+export function removeLabel(type: LabelType, id: number): void {
+  labelScene.remove(type, id);
+  removeMaterialized(`${type}Label${id}`, document);
 }
 
 export function forceLabel(id: string): SVGTextElement | null {
@@ -129,13 +118,13 @@ function getRiverLabelsData(ids?: number[]): LabelData[] {
   const labels: LabelData[] = [];
   for (const river of pack.rivers) {
     if (!river.cells.length || !river.name || (selected && !selected.has(river.i))) continue;
-    const points = river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points).map;
+    const points = river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points);
     if (!points.length) continue;
     labels.push({
       ...river.label,
       id: `riverLabel${river.i}`,
       type: "river",
-      text: river.label?.text ?? river.name ?? "",
+      text: river.label?.text ?? `${river.name} ${river.type}`,
       group: river.label?.group || "river",
       pathPoints: formatPathPoints(points as Point[]),
       startOffset: river.label?.startOffset
@@ -167,13 +156,6 @@ function getAddedLabelsData(ids?: number[]): LabelData[] {
   return pack.labels
     .filter(label => !selected || selected.has(label.i))
     .map(label => ({ id: `addedLabel${label.i}`, type: "added", ...label }));
-}
-
-function resolveGroup(label: LabelData): LabelData {
-  return {
-    ...label,
-    group: resolveLabelGroup(label.type, label.group, options.labels, options.burgs.groups)
-  } as LabelData;
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
@@ -404,8 +386,9 @@ const labelScene = new LabelScene();
 viewportLayers.register({ id: "labels", render: reconcileLabels });
 
 function formatPathPoints(points: Point[]): Point[] {
-  if (points.length && points.at(0)![0] > points.at(-1)![0]) points.reverse();
-  return points;
+  const simple = simplify(points, 0.5);
+  if (simple.length && simple.at(0)![0] > simple.at(-1)![0]) simple.reverse();
+  return simple;
 }
 
 export function getLabelAnchor(label: LabelData): Point {

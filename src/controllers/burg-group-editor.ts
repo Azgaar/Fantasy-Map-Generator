@@ -2,7 +2,7 @@ import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-h
 import { tip } from "@/components/tooltips";
 import { reconcileBurgLabelGroups } from "@/controllers/label-group-transactions";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabelsByType } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -432,7 +432,7 @@ function submitForm(event: Event): void {
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
 
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawLabel("burg");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("burg");
   refreshEditors();
 
   $("#burgGroupsEditor").dialog("close");

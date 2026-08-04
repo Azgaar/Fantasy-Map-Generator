@@ -7,7 +7,13 @@ import { resolveLabelGroup } from "@/controllers/label-policy";
 import type { AddedLabel, Label, LabelType, PathLabel } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
-import { drawLabel, forceLabel, getCachedLabel, releaseLabel, removeLabel } from "@/renderers/labels/labels-renderer";
+import {
+  drawLabelsByType,
+  forceLabel,
+  getCachedLabel,
+  releaseLabel,
+  removeLabel
+} from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
@@ -620,25 +626,25 @@ function applyLabelChanges(): void {
   if (selected.type !== "added" && !hasExplicitTextOverride) delete label.text;
   if (selected.type === "state") {
     pack.states[selected.stateId].label = label;
-    drawLabel(selected.type, selected.stateId);
+    drawLabelsByType(selected.type, [selected.stateId]);
   } else if (selected.type === "province") {
     pack.provinces[selected.provinceId].label = label;
-    drawLabel(selected.type, selected.provinceId);
+    drawLabelsByType(selected.type, [selected.provinceId]);
   } else if (selected.type === "burg") {
     pack.burgs[selected.burgId].label = label;
-    drawLabel(selected.type, selected.burgId);
+    drawLabelsByType(selected.type, [selected.burgId]);
   } else if (selected.type === "river" || selected.type === "route") {
     const entities = selected.type === "river" ? pack.rivers : pack.routes;
     const entity = entities.find(entity => entity.i === selected.entityId);
     if (!entity) return;
     entity.label = label;
-    drawLabel(selected.type, selected.entityId);
+    drawLabelsByType(selected.type, [selected.entityId]);
   } else if (selected.type === "added") {
     const labelId = selected.labelId;
     const index = pack.labels.findIndex(({ i }) => i === labelId);
     if (index === -1) return;
     pack.labels[index] = label as AddedLabel;
-    drawLabel(selected.type, labelId);
+    drawLabelsByType(selected.type, [labelId]);
   }
 
   select<SVGElement, unknown>(`#${selectedLabel.elId}`)
@@ -663,27 +669,27 @@ function resetSelectedLabel(): void {
   if (selected.type === "state") {
     hasExplicitTextOverride = false;
     delete pack.states[selected.stateId].label;
-    drawLabel("state", selected.stateId);
+    drawLabelsByType("state", [selected.stateId]);
     const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
     if (textEl) selected.label = getCachedPathLabel(textEl.id);
   } else if (selected.type === "province") {
     hasExplicitTextOverride = false;
     delete pack.provinces[selected.provinceId].label;
-    drawLabel("province", selected.provinceId);
+    drawLabelsByType("province", [selected.provinceId]);
     const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
     if (textEl) selected.label = getCachedPathLabel(textEl.id);
   } else if (selected.type === "burg") {
     hasExplicitTextOverride = false;
     const burg = pack.burgs[selected.burgId];
     delete burg.label;
-    drawLabel("burg", selected.burgId);
+    drawLabelsByType("burg", [selected.burgId]);
     selected.label = { text: burg.name };
   } else if (selected.type === "river" || selected.type === "route") {
     const entities = selected.type === "river" ? pack.rivers : pack.routes;
     const entity = entities.find(entity => entity.i === selected.entityId);
     if (!entity) return;
     delete entity.label;
-    drawLabel(selected.type, selected.entityId);
+    drawLabelsByType(selected.type, [selected.entityId]);
     selected.label = getCachedPathLabel(selected.elId);
   } else {
     const { i, text, pathPoints, group } = selected.label;
@@ -692,7 +698,7 @@ function resetSelectedLabel(): void {
     if (index === -1) return;
     pack.labels[index] = resetLabel;
     selected.label = { ...resetLabel };
-    drawLabel("added", i);
+    drawLabelsByType("added", [i]);
   }
 
   select<SVGElement, unknown>(`#${selectedLabel.elId}`)

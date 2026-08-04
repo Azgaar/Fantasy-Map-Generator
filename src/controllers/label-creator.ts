@@ -3,7 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { DEFAULT_ADDED_LABEL_GROUP } from "@/generators/labels";
-import { drawLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabelsByType } from "@/renderers/labels/labels-renderer";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {
@@ -34,7 +34,7 @@ async function addOnClick(event: MouseEvent): Promise<void> {
       [point[0] + 100, point[1]]
     ]
   });
-  drawLabel("added", label.i);
+  drawLabelsByType("added", [label.i]);
 
   if (!event.shiftKey) stopMapPlacement();
 }

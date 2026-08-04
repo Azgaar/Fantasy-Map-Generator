@@ -18,7 +18,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabelsByType } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -429,7 +429,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const capital = burgs[burgId];
   capital.capital = 1;
   Burgs.changeGroup(capital);
-  drawLabel("burg", burgId);
+  drawLabelsByType("burg", burgId);
 
   // move all burgs to a new state
   province.burgs!.forEach(b => {
@@ -511,9 +511,9 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.findNeighbors();
   States.collectStatistics();
   States.defineStateForms(newStates);
-  if (layerIsOn("toggleLabels")) drawLabel("province");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("province");
   for (const stateId of allStates) {
-    drawLabel("state", stateId);
+    drawLabelsByType("state", [stateId]);
   }
 
   // redraw emblems
@@ -642,7 +642,7 @@ function removeProvince(p: number): void {
         select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
 
         pack.provinces[p] = { i: p, removed: true } as Province;
-        if (layerIsOn("toggleLabels")) drawLabel("province", p);
+        if (layerIsOn("toggleLabels")) drawLabelsByType("province", [p]);
 
         const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
         g.select(`#province${p}`).remove();
@@ -841,7 +841,7 @@ function applyNameChange(p: Province): void {
   p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
   p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) drawLabel("province", p.i);
+  if (layerIsOn("toggleLabels")) drawLabelsByType("province", [p.i]);
   refreshProvincesEditor();
 }
 
@@ -1235,7 +1235,7 @@ function applyProvincesManualAssignent(): void {
   Provinces.getPoles();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) drawLabel("province");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("province");
 
   exitProvincesManualAssignment();
   refreshProvincesEditor();
@@ -1348,7 +1348,7 @@ function addProvince(this: SVGElement, event: any): void {
 
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) drawLabel("province", province);
+  if (layerIsOn("toggleLabels")) drawLabelsByType("province", [province]);
 
   collectStatistics();
   ensureEl<HTMLSelectElement>("provincesFilterState").value = String(state);
@@ -1436,7 +1436,7 @@ function removeAllProvinces(): void {
         if (layerIsOn("toggleBorders")) drawBorders();
         select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
         turnButtonOff("toggleProvinces");
-        if (layerIsOn("toggleLabels")) drawLabel("province");
+        if (layerIsOn("toggleLabels")) drawLabelsByType("province");
 
         provincesEditorAddLines();
       },
@@ -1643,7 +1643,7 @@ function mergeProvinces(ids: number[], primary: number): void {
   // redraw layers that may have changed
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleLabels")) drawLabel("province");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("province");
 
   // clear any fog or debug highlights
   unfog();

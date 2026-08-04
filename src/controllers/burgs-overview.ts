@@ -4,7 +4,7 @@ import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { drawLabel, removeLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabelsByType, removeLabel } from "@/renderers/labels/labels-renderer";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -370,7 +370,7 @@ function regenerateNames(): void {
       pack.burgs[burg].name = el.dataset.name = name;
     });
 
-  if (layerIsOn("toggleLabels")) drawLabel("burg");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("burg");
 }
 
 function showBurgsChart(): void {
@@ -658,7 +658,7 @@ function importBurgNames(dataLoaded: string): void {
     for (let i = 0; i < change.length; i++) {
       const id = change[i].id;
       pack.burgs[id].name = change[i].name;
-      drawLabel("burg", id);
+      drawLabelsByType("burg", [id]);
     }
     burgsOverviewAddLines();
   };

@@ -17,7 +17,7 @@ import {
 } from "@/controllers/label-policy";
 import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels";
 import { renderLabelGroups } from "@/renderers/labels/label-groups";
-import { drawLabel, drawLabels, drawLabelsByType } from "@/renderers/labels/labels-renderer";
+import { drawLabels, drawLabelsByType } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
 
 const TYPES = DEFAULT_LABEL_TYPES;
@@ -330,7 +330,7 @@ function applyBulkAssignment(this: HTMLElement): void {
   const apply = () => {
     assignLabelGroup(getWorld(), type, selectedIds, target);
     localStorage.setItem("label-groups", JSON.stringify(options.labels));
-    if (layerIsOn("toggleLabels")) drawLabel(getLabelType(type));
+    if (layerIsOn("toggleLabels")) drawLabelsByType(getLabelType(type));
     $(this).dialog("close");
     renderRows();
   };

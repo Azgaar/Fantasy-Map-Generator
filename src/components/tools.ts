@@ -11,7 +11,7 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawReliefIcons } from "@/renderers/draw-relief-icons";
-import { drawLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabelsByType } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -124,7 +124,7 @@ function regenerateStateLabels(): void {
     if (state.label) delete state.label;
   }
 
-  if (layerIsOn("toggleLabels")) drawLabel("state");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("state");
 }
 
 function regenerateReliefIcons(): void {
@@ -157,8 +157,8 @@ function regenerateStates(): void {
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (layerIsOn("toggleLabels")) {
-    drawLabel("state");
-    drawLabel("province");
+    drawLabelsByType("state");
+    drawLabelsByType("province");
   }
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
@@ -174,7 +174,7 @@ function regenerateProvinces(): void {
   unfog();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) drawLabel("province");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("province");
   if (layerIsOn("toggleEmblems")) {
     clearEmblems(["province"]);
     drawEmblems();
@@ -184,7 +184,7 @@ function regenerateProvinces(): void {
 function regenerateBurgs(): void {
   Burgs.regenerate();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawLabel("burg");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("burg");
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleGoods")) drawGoods();

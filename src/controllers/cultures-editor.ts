@@ -589,7 +589,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   cultureBurgs.forEach(b => {
     b.name = Names.getCulture(cultureId);
   });
-  if (layerIsOn("toggleLabels")) drawLabel("burg");
+  if (layerIsOn("toggleLabels")) drawLabelsByType("burg");
   tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
 }
 
