@@ -148,8 +148,8 @@ export class Voronoi {
     const cd = cx * cx + cy * cy;
     const D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
     return [
-      Math.floor((1 / D) * (ad * (by - cy) + bd * (cy - ay) + cd * (ay - by))),
-      Math.floor((1 / D) * (ad * (cx - bx) + bd * (ax - cx) + cd * (bx - ax)))
+      (1 / D) * (ad * (by - cy) + bd * (cy - ay) + cd * (ay - by)),
+      (1 / D) * (ad * (cx - bx) + bd * (ax - cx) + cd * (bx - ax))
     ];
   }
 }
