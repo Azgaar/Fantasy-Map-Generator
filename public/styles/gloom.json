@@ -662,7 +662,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 2px",
     "letter-spacing": 0,
-    "font-size": "6%",
+    "font-size": "2%",
     "font-family": "Underdog",
     "filter": null
   },
@@ -673,7 +673,7 @@
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 2px",
     "letter-spacing": 0,
-    "font-size": "6%",
+    "font-size": "2%",
     "font-family": "Underdog",
     "filter": null
   },

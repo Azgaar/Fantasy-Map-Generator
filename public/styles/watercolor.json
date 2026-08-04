@@ -612,7 +612,7 @@
     "stroke-width": 0.15,
     "style": "text-shadow: black 1px 1px 3px",
     "letter-spacing": 0,
-    "font-size": "6%",
+    "font-size": "2%",
     "font-family": "Gloria Hallelujah",
     "filter": null
   },
@@ -623,7 +623,7 @@
     "stroke-width": 0.15,
     "style": "text-shadow: black 1px 1px 3px",
     "letter-spacing": 0,
-    "font-size": "6%",
+    "font-size": "2%",
     "font-family": "Gloria Hallelujah",
     "filter": null
   },
