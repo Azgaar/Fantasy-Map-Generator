@@ -12,7 +12,7 @@ export interface ViewportRenderContext {
   renderAll: boolean;
 }
 
-interface ViewportLayerEntry {
+export interface ViewportLayer {
   id: string;
   scaleMin?: number | null;
   scaleMax?: number | null;
@@ -20,57 +20,112 @@ interface ViewportLayerEntry {
   render: (context: ViewportRenderContext) => void;
 }
 
+interface ViewportState {
+  scale: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface ViewportRendererOptions {
+  getViewport: () => ViewportState;
+  getRoot?: () => ParentNode;
+  overscanPixels?: number;
+  guardPixels?: number;
+  requestFrame?: (callback: FrameRequestCallback) => number;
+  cancelFrame?: (id: number) => void;
+}
+
+const requestFrame = (callback: FrameRequestCallback) =>
+  typeof requestAnimationFrame === "function"
+    ? requestAnimationFrame(callback)
+    : (setTimeout(() => callback(performance.now()), 0) as unknown as number);
+const cancelFrame = (id: number) =>
+  typeof cancelAnimationFrame === "function" ? cancelAnimationFrame(id) : clearTimeout(id);
+
 export class ViewportRenderer {
-  private entries = new Map<string, ViewportLayerEntry>();
+  private layers = new Map<string, ViewportLayer>();
   private frameId: number | null = null;
   private pending: ViewportRenderContext | null = null;
+  private materializedBounds: ViewportBounds | null = null;
+  private getRoot: () => ParentNode;
+  private overscanPixels: number;
+  private guardPixels: number;
+  private requestFrame: (callback: FrameRequestCallback) => number;
+  private cancelFrame: (id: number) => void;
 
-  constructor(
-    private requestFrame = (callback: FrameRequestCallback) =>
-      typeof requestAnimationFrame === "function"
-        ? requestAnimationFrame(callback)
-        : (setTimeout(() => callback(performance.now()), 0) as unknown as number),
-    private cancelFrame = (id: number) =>
-      typeof cancelAnimationFrame === "function" ? cancelAnimationFrame(id) : clearTimeout(id)
-  ) {}
-
-  register(entry: ViewportLayerEntry): void {
-    this.entries.set(entry.id, entry);
+  constructor(private options: ViewportRendererOptions) {
+    this.getRoot = options.getRoot || (() => document);
+    this.overscanPixels = options.overscanPixels ?? 40;
+    this.guardPixels = options.guardPixels ?? 20;
+    this.requestFrame = options.requestFrame || requestFrame;
+    this.cancelFrame = options.cancelFrame || cancelFrame;
   }
 
-  unregister(id: string): void {
-    this.entries.delete(id);
+  register(layer: ViewportLayer): () => void {
+    this.layers.set(layer.id, layer);
+    return () => {
+      if (this.layers.get(layer.id) === layer) this.layers.delete(layer.id);
+    };
   }
 
-  clear(prefix?: string): void {
-    if (!prefix) return void this.entries.clear();
-    for (const id of this.entries.keys()) if (id.startsWith(prefix)) this.entries.delete(id);
+  schedule(): void {
+    const visible = this.getBounds(0);
+    if (!shouldReconcileViewport(this.materializedBounds, visible, this.guardPixels)) return;
+    const bounds = this.getBounds(this.overscanPixels);
+    this.materializedBounds = bounds;
+    this.scheduleContext({ root: this.getRoot(), bounds, renderAll: false });
   }
 
-  schedule(context: ViewportRenderContext): void {
+  renderNow(): void {
+    const bounds = this.getBounds(this.overscanPixels);
+    this.materializedBounds = bounds;
+    this.renderContext({ root: this.getRoot(), bounds, renderAll: false });
+  }
+
+  renderAll(root: ParentNode): void {
+    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+    this.renderContext({ root, bounds, renderAll: true });
+  }
+
+  private scheduleContext(context: ViewportRenderContext): void {
     this.pending = context;
     if (this.frameId !== null) return;
     this.frameId = this.requestFrame(() => {
       this.frameId = null;
       const pending = this.pending;
       this.pending = null;
-      if (pending) this.renderNow(pending);
+      if (pending) this.renderContext(pending);
     });
   }
 
-  renderNow(context: ViewportRenderContext): void {
+  private renderContext(context: ViewportRenderContext): void {
     if (this.frameId !== null) this.cancelFrame(this.frameId);
     this.frameId = null;
     this.pending = null;
-    for (const entry of this.entries.values()) {
-      if (!context.renderAll && !isEntryVisible(entry, context.bounds.scale)) continue;
-      entry.render(context);
+    for (const layer of this.layers.values()) {
+      if (!context.renderAll && !isLayerVisible(layer, context.bounds.scale)) continue;
+      layer.render(context);
     }
   }
 
-  renderAll(root: ParentNode, bounds: ViewportBounds): void {
-    this.renderNow({ root, bounds, renderAll: true });
+  private getBounds(paddingPixels: number): ViewportBounds {
+    const { scale, x, y, width, height } = this.options.getViewport();
+    return getViewportBounds({ scale, x, y }, { width, height }, paddingPixels);
   }
+}
+
+export const viewportLayers = new ViewportRenderer({
+  getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight })
+});
+
+export function updateViewportLayers(): void {
+  viewportLayers.schedule();
+}
+
+export function renderViewportLayersNow(): void {
+  viewportLayers.renderNow();
 }
 
 export function getViewportBounds(
@@ -108,9 +163,12 @@ export function shouldReconcileViewport(
   );
 }
 
-function isEntryVisible(entry: ViewportLayerEntry, scale: number): boolean {
-  if (entry.enabled && !entry.enabled()) return false;
-  if (entry.scaleMin != null && scale < entry.scaleMin) return false;
-  if (entry.scaleMax != null && scale > entry.scaleMax) return false;
+function isLayerVisible(layer: ViewportLayer, scale: number): boolean {
+  if (layer.enabled && !layer.enabled()) return false;
+  if (layer.scaleMin != null && scale < layer.scaleMin) return false;
+  if (layer.scaleMax != null && scale > layer.scaleMax) return false;
   return true;
 }
+
+window.updateViewportLayers = updateViewportLayers;
+window.renderViewportLayersNow = renderViewportLayersNow;

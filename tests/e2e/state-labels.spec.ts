@@ -57,7 +57,7 @@ test("Province labels use generic groups, preserve overrides, and follow the Pro
     const hasLegacyContainer = Boolean(document.getElementById("provinceLabels"));
 
     turnButtonOff("toggleProvinces");
-    window.renderLabelsNow();
+    window.renderViewportLayersNow();
 
     return {
       text: label?.textContent?.trim(),

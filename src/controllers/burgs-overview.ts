@@ -4,7 +4,7 @@ import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
+import { drawLabel, removeLabel } from "@/renderers/labels/labels-renderer";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 

@@ -571,7 +571,7 @@ function toggleProvinces(event) {
     provs.selectAll("*").remove();
     turnButtonOff("toggleProvinces");
   }
-  window.renderLabelsNow(scale);
+  window.renderViewportLayersNow();
 }
 
 function drawProvinces() {
@@ -998,13 +998,13 @@ function layerIsOn(el) {
 function turnButtonOff(el) {
   ensureEl(el).classList.add("buttonoff");
   getCurrentPreset();
-  window.renderLabelsNow();
+  window.renderViewportLayersNow();
 }
 
 function turnButtonOn(el) {
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
-  window.renderLabelsNow();
+  window.renderViewportLayersNow();
 }
 
 // move layers on mapLayers dragging (jquery sortable)

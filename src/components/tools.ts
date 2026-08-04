@@ -11,7 +11,7 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawReliefIcons } from "@/renderers/draw-relief-icons";
-import { drawLabel } from "@/renderers/labels/draw-labels";
+import { drawLabel } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";

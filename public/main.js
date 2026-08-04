@@ -220,7 +220,7 @@ function zoomRaf() {
 
     // Uses global values, so each frame always draws using the latest positioning values
     viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-    if (didPositionChange || didScaleChange) window.updateLabelsViewport?.();
+    if (didPositionChange || didScaleChange) window.updateViewportLayers?.();
 
     if (didPositionChange) {
       if (layerIsOn("toggleCoordinates")) drawCoordinates();
@@ -255,7 +255,7 @@ const zoom = d3
   .zoom()
   .scaleExtent([1, 20])
   .on("zoom", zoomRaf)
-  .on("end", () => window.renderLabelsNow?.());
+  .on("end", () => window.renderViewportLayersNow?.());
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +ensureEl("populationRateInput").value;

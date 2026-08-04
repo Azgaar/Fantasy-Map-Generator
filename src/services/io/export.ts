@@ -2,7 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { renderAllLabels } from "@/renderers/labels/label-materializer";
+import { viewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
   connectVertices,
@@ -257,7 +257,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
-  if (fullMap && !noLabels) renderAllLabels(cloneEl);
+  if (fullMap) viewportLayers.renderAll(cloneEl);
   if (!debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];

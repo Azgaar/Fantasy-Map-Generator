@@ -18,8 +18,8 @@ benchmark("compare full DOM, viewport labels, and diagnostic PathLabel hiding", 
         const full = new DOMParser().parseFromString(mapData.split("\r\n")[5], "image/svg+xml");
         document.getElementById("labels")!.replaceWith(full.querySelector("#labels")!);
         document.getElementById("textPaths")!.replaceWith(full.querySelector("#textPaths")!);
-        window.updateLabelsViewport = () => undefined;
-        window.renderLabelsNow = () => undefined;
+        window.updateViewportLayers = () => undefined;
+        window.renderViewportLayersNow = () => undefined;
       } else if (mode === "hide-paths") {
         const style = document.createElement("style");
         style.textContent = "#labels text:has(textPath){display:none}";

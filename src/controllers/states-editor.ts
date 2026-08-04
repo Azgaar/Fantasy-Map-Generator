@@ -12,7 +12,7 @@ import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
+import { drawLabel, removeLabel } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";

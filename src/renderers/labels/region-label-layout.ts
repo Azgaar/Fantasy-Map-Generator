@@ -1,11 +1,11 @@
 import { max } from "d3";
 import type { LabelNameMode, LabelType, PathLabel } from "@/generators/labels";
+import type { PathLabelData } from "@/types/labels";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
 import { ensureLabelGroup } from "./label-groups";
 import { getLabelPath } from "./label-markup";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
-import type { PathLabelData } from "./types";
 
 type Region = { i: number; name: string; fullName?: string; label?: PathLabel };
 

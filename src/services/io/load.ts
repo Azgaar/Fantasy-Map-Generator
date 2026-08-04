@@ -4,7 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
-import { drawLabels } from "@/renderers/labels/draw-labels";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";

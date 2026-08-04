@@ -8,7 +8,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/generators/cultures-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawLabel } from "@/renderers/labels/draw-labels";
+import { drawLabel } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
