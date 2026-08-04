@@ -56,6 +56,8 @@ const FALLBACK_STYLES: Record<LabelType, Record<string, string | number>> = {
   state: { ...BASE_STYLE, "font-size": "22%" },
   burg: { ...BASE_STYLE, "font-size": "4%" },
   province: { ...BASE_STYLE, "font-size": "10%" },
+  river: { ...BASE_STYLE, "font-size": "3%" },
+  route: { ...BASE_STYLE, "font-size": "3%" },
   added: { ...BASE_STYLE, "font-size": "18%" }
 };
 

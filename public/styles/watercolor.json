@@ -605,6 +605,28 @@
     "font-family": "Gloria Hallelujah",
     "filter": null
   },
+  "#labels > #river": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 0.15,
+    "style": "text-shadow: black 1px 1px 3px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Gloria Hallelujah",
+    "filter": null
+  },
+  "#labels > #route": {
+    "opacity": 1,
+    "fill": "#ffffff",
+    "stroke": "#000000",
+    "stroke-width": 0.15,
+    "style": "text-shadow: black 1px 1px 3px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Gloria Hallelujah",
+    "filter": null
+  },
   "#labels > #added": {
     "opacity": 1,
     "fill": "#3e3e4b",

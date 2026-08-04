@@ -3,6 +3,7 @@ import Delaunator from "delaunator";
 import { distanceSquared, findClosestCell, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
+import type { PathLabel } from "./labels";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -177,6 +178,7 @@ export interface Route {
   name?: string;
   length?: number;
   lock?: boolean;
+  label?: PathLabel;
 }
 
 type RiverEdge = { riverId: number; fromIndex: number };

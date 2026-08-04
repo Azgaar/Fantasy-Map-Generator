@@ -1,6 +1,6 @@
 import type { Point } from "@/types/global";
 
-export const DEFAULT_LABEL_TYPES = ["state", "province", "burg", "added"] as const;
+export const DEFAULT_LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
 
 export type LabelType = (typeof DEFAULT_LABEL_TYPES)[number];
 
@@ -52,6 +52,20 @@ class LabelsModule {
   getDefaultGroups(): LabelGroup[] {
     // order matters for z-indexing
     return [
+      {
+        name: "river",
+        type: "river",
+        layerDependency: "toggleRivers",
+        zoom: { min: 8, max: 14 },
+        isDefault: true
+      },
+      {
+        name: "route",
+        type: "route",
+        layerDependency: "toggleRoutes",
+        zoom: { min: 8, max: 14 },
+        isDefault: true
+      },
       // burg groups from Burgs.getDefaultGroups()
       {
         name: "hamlet",

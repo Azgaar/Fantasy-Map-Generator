@@ -150,6 +150,7 @@ function measureLabelText(
   const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
   textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
+  textPath.setAttribute("text-anchor", "middle");
   textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
   if (label.letterSpacing !== undefined) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
   textPath.append(

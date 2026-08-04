@@ -1,7 +1,8 @@
 import type { LabelType } from "@/generators/labels";
-import type { State } from "@/generators/states-generator";
+import type { Point } from "@/types/global";
 import { applyLabelZoom, ensureLabelGroup, renderLabelGroups } from "./label-groups";
 import { getLabelMarkup } from "./label-markup";
+import { getPathLabel } from "./path-label-layout";
 import { getRegionLabel } from "./region-label-layout";
 import type { LabelData, PathLabelData, PointLabelData } from "./types";
 
@@ -9,7 +10,9 @@ const dataAdapters: Record<LabelType, (labelsData: LabelsData, ids?: number[]) =
   state: addStateLabelsData,
   province: addProvinceLabelsData,
   added: addAddedLabelsData,
-  burg: addBurgLabelsData
+  burg: addBurgLabelsData,
+  river: addRiverLabelsData,
+  route: addRouteLabelsData
 };
 
 export function drawLabels(): void {
@@ -131,6 +134,31 @@ function addStateLabelsData(labelsData: LabelsData, ids?: number[]): void {
 
     const pole = state.pole || pack.cells.p[state.center];
     const label: PathLabelData = getRegionLabel(state, "state", pack.cells.state, pole, state.cells || 0);
+    labelsData.add(label);
+  }
+}
+
+function addRiverLabelsData(labelsData: LabelsData, ids?: number[]): void {
+  const selectedIds = ids && new Set(ids);
+  const rivers = pack.rivers.filter(river => river.cells.length > 1);
+  for (const river of rivers) {
+    if (selectedIds && !selectedIds.has(river.i)) continue;
+    if (!river.name) continue;
+
+    const getPoints = () => Rivers.addMeandering(river.cells, river.points ?? null).map(([x, y]) => [x, y] as Point);
+    const label = getPathLabel(river, "river", getPoints);
+    labelsData.add(label);
+  }
+}
+
+function addRouteLabelsData(labelsData: LabelsData, ids?: number[]): void {
+  const selectedIds = ids && new Set(ids);
+  const routes = pack.routes.filter(route => route.points.length > 1);
+  for (const route of routes) {
+    if (selectedIds && !selectedIds.has(route.i)) continue;
+    if (!route.name) continue;
+
+    const label = getPathLabel(route, "route", () => route.points as Point[]);
     labelsData.add(label);
   }
 }

@@ -607,6 +607,28 @@
     "font-family": "Arial",
     "filter": null
   },
+  "#labels > #river": {
+    "opacity": 1,
+    "fill": "#292929",
+    "stroke": "#303030",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Arial",
+    "filter": null
+  },
+  "#labels > #route": {
+    "opacity": 1,
+    "fill": "#292929",
+    "stroke": "#303030",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Arial",
+    "filter": null
+  },
   "#labels > #added": {
     "opacity": 1,
     "fill": "#414141",

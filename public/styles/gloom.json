@@ -655,6 +655,28 @@
     "font-family": "Underdog",
     "filter": null
   },
+  "#labels > #river": {
+    "opacity": 1,
+    "fill": "#4e4e4e",
+    "stroke": "#b5b5b5",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Underdog",
+    "filter": null
+  },
+  "#labels > #route": {
+    "opacity": 1,
+    "fill": "#4e4e4e",
+    "stroke": "#b5b5b5",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Underdog",
+    "filter": null
+  },
   "#labels > #added": {
     "opacity": 1,
     "fill": "#3e3e4b",
