@@ -24,7 +24,7 @@ describe("Voronoi", () => {
     ];
     const allPoints = points.concat(boundary);
 
-    const {vertices} = new Voronoi(Delaunator.from(allPoints), allPoints, points.length);
+    const { vertices } = new Voronoi(Delaunator.from(allPoints), allPoints, points.length);
 
     let checked = 0;
     vertices.p.forEach((vertex, t) => {
