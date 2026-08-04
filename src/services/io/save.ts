@@ -2,6 +2,7 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { renderAllLabels } from "@/renderers/labels/label-materializer";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
@@ -86,6 +87,7 @@ function prepareMapData(): string {
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  renderAllLabels(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(graphWidth));

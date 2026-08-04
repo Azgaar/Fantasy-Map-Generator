@@ -2,6 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { renderAllLabels } from "@/renderers/labels/label-materializer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
   connectVertices,
@@ -256,6 +257,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
+  if (fullMap && !noLabels) renderAllLabels(cloneEl);
   if (!debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
@@ -265,11 +267,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (noLabels) {
     clone.selectAll("#labels [data-label-type]").remove();
-    clone
-      .selectAll(
-        "#textPaths [id^='textPath_stateLabel'], #textPaths [id^='textPath_provinceLabel'], #textPaths [id^='textPath_addedLabel']"
-      )
-      .remove();
+    clone.selectAll("#textPaths [data-label-type]").remove();
     clone.select("#icons #burgIcons").remove();
   }
   if (noWater) {

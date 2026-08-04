@@ -9,10 +9,26 @@ import {
   type LabelWorld,
   renameLabelGroup
 } from "@/controllers/label-group-transactions";
+import {
+  getDefaultLabelGroupName,
+  isProtectedLabelGroup,
+  validateLabelGroupName,
+  validateLabelZoom
+} from "@/controllers/label-policy";
 import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels";
 import { drawLabel, drawLabels, drawLabelsByType } from "@/renderers/labels/draw-labels";
 import { renderLabelGroups } from "@/renderers/labels/label-groups";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
+
+const TYPES = DEFAULT_LABEL_TYPES;
+const TYPE_LABELS: Record<LabelType, string> = {
+  state: "States",
+  province: "Provinces",
+  burg: "Burgs",
+  river: "Rivers",
+  route: "Routes",
+  added: "Added"
+};
 
 function open(): void {
   if (customization) return;
@@ -67,10 +83,10 @@ function renderRows(): void {
     .map((group, index) => {
       const protectedGroup = isProtectedLabelGroup(group.name, options.burgs.groups);
       const dependencyMissing =
-        group.layerDependency !== null && !dependencies.some(dependency => dependency.id === group.layerDependency);
+        Boolean(group.layerDependency) && !dependencies.some(dependency => dependency.id === group.layerDependency);
       const count = getResolvedCount(group.name);
       return /* html */ `<div data-group="${group.name}" style="display:grid; grid-template-columns:4.5em 11em 6em 7em 5em 5em 12em 4em 5em 7em; align-items:center; min-height:2em">
-        <div><input name="active" class="checkbox" type="checkbox" ${group.active ? "checked" : ""}></div>
+        <div><input name="active" class="checkbox" type="checkbox" ${group.active !== false ? "checked" : ""}></div>
         <div title="${protectedGroup ? "Protected group identity" : "Custom group"}">${protectedGroup ? "🔒 " : ""}${group.name}</div>
         <div>${TYPE_LABELS[group.type]}</div>
         <div><select name="mode">
@@ -208,7 +224,7 @@ function deleteGroup(name: string): void {
   const counts = countLabelAssignments(getWorld(), name);
   confirmationDialog({
     title: "Delete Label Group",
-    message: `Delete "${name}" and restore affected labels to their entity defaults?<br><br>States: ${counts.states}; Provinces: ${counts.provinces}; Burgs: ${counts.burgs}; Added: ${counts.added}.`,
+    message: `Delete "${name}" and restore affected labels to their entity defaults?<br><br>States: ${counts.states}; Provinces: ${counts.provinces}; Burgs: ${counts.burgs}; Rivers: ${counts.rivers}; Routes: ${counts.routes}; Added: ${counts.added}.`,
     confirm: "Delete",
     onConfirm: () => {
       deleteLabelGroup({
@@ -274,13 +290,13 @@ function renderAssignmentRows(): void {
 }
 
 function projectRegionLabelsForAudit(type: LabelType): () => void {
-  if (layerIsOn("toggleLabels") || (type !== "states" && type !== "provinces")) return () => undefined;
+  if (layerIsOn("toggleLabels") || (type !== "state" && type !== "province")) return () => undefined;
   renderLabelGroups();
-  drawLabelsByType(type === "states" ? "state" : "province");
+  drawLabelsByType(type);
 
   return () => {
     document.querySelector("#labels")?.replaceChildren();
-    const prefix = type === "states" ? "stateLabel" : "provinceLabel";
+    const prefix = type === "state" ? "stateLabel" : "provinceLabel";
     document.querySelectorAll(`#textPaths > path[id^="textPath_${prefix}"]`).forEach(path => {
       path.remove();
     });
@@ -331,7 +347,7 @@ function applyBulkAssignment(this: HTMLElement): void {
 }
 
 function getAssignmentRows(type: LabelType): { id: number; text: string; group: string }[] {
-  if (type === "states") {
+  if (type === "state") {
     return pack.states
       .filter(entity => entity.i && !entity.removed)
       .map(entity => ({
@@ -340,7 +356,7 @@ function getAssignmentRows(type: LabelType): { id: number; text: string; group: 
         group: resolveGroup(type, entity.label?.group)
       }));
   }
-  if (type === "provinces") {
+  if (type === "province") {
     return pack.provinces
       .filter(entity => entity.i && !entity.removed)
       .map(entity => ({
@@ -349,13 +365,31 @@ function getAssignmentRows(type: LabelType): { id: number; text: string; group: 
         group: resolveGroup(type, entity.label?.group)
       }));
   }
-  if (type === "burgs") {
+  if (type === "burg") {
     return pack.burgs
       .filter(entity => entity.i && !entity.removed)
       .map(entity => ({
         id: entity.i!,
         text: entity.label?.text || entity.name || "",
         group: resolveGroup(type, entity.label?.group || entity.group)
+      }));
+  }
+  if (type === "river") {
+    return pack.rivers
+      .filter(entity => entity.name)
+      .map(entity => ({
+        id: entity.i,
+        text: entity.label?.text ?? `${entity.name} ${entity.type}`,
+        group: resolveGroup(type, entity.label?.group)
+      }));
+  }
+  if (type === "route") {
+    return pack.routes
+      .filter(entity => entity.name)
+      .map(entity => ({
+        id: entity.i,
+        text: entity.label?.text ?? entity.name!,
+        group: resolveGroup(type, entity.label?.group)
       }));
   }
   return pack.labels.map(entity => ({ id: entity.i, text: entity.text, group: resolveGroup(type, entity.group) }));
@@ -373,7 +407,7 @@ function getRegionAssignmentText(
     return lines.length ? lines.join("|") : rendered.textContent?.trim() || "";
   }
   if (entity.label?.text !== undefined) return entity.label.text;
-  const group = options.labels.groups.find(group => group.name === resolveGroup(`${type}s`, entity.label?.group));
+  const group = options.labels.groups.find(group => group.name === resolveGroup(type, entity.label?.group));
   return group?.mode === "full" ? entity.fullName || entity.name || "" : entity.name || entity.fullName || "";
 }
 
@@ -397,11 +431,8 @@ function resolveGroup(type: LabelType, requested?: string): string {
   return options.labels.groups.some(group => group.name === name) ? name : fallback;
 }
 
-function getLabelType(type: LabelType): "state" | "province" | "burg" | "added" {
-  if (type === "states") return "state";
-  if (type === "provinces") return "province";
-  if (type === "burgs") return "burg";
-  return "added";
+function getLabelType(type: LabelType): LabelType {
+  return type;
 }
 
 function getLayerDependencies(): { id: string; name: string }[] {
@@ -417,6 +448,8 @@ function getWorld(): LabelWorld {
     states: pack.states,
     provinces: pack.provinces,
     burgs: pack.burgs,
+    rivers: pack.rivers,
+    routes: pack.routes,
     labels: pack.labels
   };
 }
@@ -424,7 +457,7 @@ function getWorld(): LabelWorld {
 function persistAndRender(redraw: boolean): void {
   localStorage.setItem("label-groups", JSON.stringify(options.labels));
   if (redraw && layerIsOn("toggleLabels")) drawLabels();
-  else window.applyLabelZoom(scale);
+  else window.renderLabelsNow();
 }
 
 function escapeHtml(value: string): string {

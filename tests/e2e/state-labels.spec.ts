@@ -6,7 +6,7 @@ test("auto-fitted state labels retain full names and readable sizes", async ({ p
     timeout: 60000
   });
 
-  const labels = await page.locator("#labels > [data-group='states'] > text > textPath").evaluateAll(textPaths =>
+  const labels = await page.locator("#labels > [data-group='state'] > text > textPath").evaluateAll(textPaths =>
     textPaths.map(textPath => ({
       lines: textPath.querySelectorAll("tspan").length,
       fontSize: Number.parseFloat(textPath.getAttribute("font-size") || "")
@@ -27,13 +27,13 @@ test("bulk redraw preserves custom State Label Groups", async ({ page }) => {
   const parentGroup = await page.evaluate(() => {
     options.labels.groups.push({
       name: "shared",
-      type: "states",
+      type: "state",
       active: true,
       layerDependency: null,
       zoom: { min: null, max: null },
       mode: "auto"
     });
-    style.labels.groups.shared = { ...style.labels.groups.states };
+    style.labels.groups.shared = { ...style.labels.groups.state };
     pack.states[1].label = { ...pack.states[1].label, group: "shared" };
     drawLabels();
     return document.getElementById("stateLabel1")?.parentElement?.id;
@@ -57,14 +57,14 @@ test("Province labels use generic groups, preserve overrides, and follow the Pro
     const hasLegacyContainer = Boolean(document.getElementById("provinceLabels"));
 
     turnButtonOff("toggleProvinces");
-    window.applyLabelZoom(scale);
+    window.renderLabelsNow();
 
     return {
       text: label?.textContent?.trim(),
       type: label?.dataset.labelType,
       id: label?.dataset.id,
       group: group?.dataset.group,
-      hiddenWithoutProvinces: group?.classList.contains("hidden"),
+      materializedWithoutProvinces: Boolean(document.getElementById(`provinceLabel${province.i}`)),
       hasLegacyContainer
     };
   });
@@ -72,8 +72,8 @@ test("Province labels use generic groups, preserve overrides, and follow the Pro
   expect(result).toMatchObject({
     text: "The Reach",
     type: "province",
-    group: "provinces",
-    hiddenWithoutProvinces: true,
+    group: "province",
+    materializedWithoutProvinces: false,
     hasLegacyContainer: false
   });
   expect(Number(result.id)).toBeGreaterThan(0);

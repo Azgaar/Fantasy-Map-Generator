@@ -5,13 +5,14 @@ import type { PathLabelData } from "./types";
 export function getPathLabel(
   entity: { i: number; name?: string; type?: string; label?: PathLabel },
   type: LabelType,
-  getPoints: () => Point[]
+  points: (() => Point[]) | number[][]
 ): PathLabelData {
+  const getPoints = typeof points === "function" ? points : () => points.map(([x, y]) => [x, y] as Point);
   return {
     ...entity.label,
     id: `${type}Label${entity.i}`,
     type,
-    text: (entity.label?.text ?? entity.type) ? `${entity.name} ${entity.type}` : entity.name || "",
+    text: entity.label?.text ?? (entity.type ? `${entity.name} ${entity.type}` : entity.name || ""),
     group: entity.label?.group || type,
     pathPoints: entity.label?.pathPoints || formatPoints(getPoints()),
     startOffset: entity.label?.startOffset ?? 50

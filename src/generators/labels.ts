@@ -1,6 +1,7 @@
 import type { Point } from "@/types/global";
 
 export const DEFAULT_LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
+export const DEFAULT_ADDED_LABEL_GROUP = "added";
 
 export type LabelType = (typeof DEFAULT_LABEL_TYPES)[number];
 
@@ -15,7 +16,7 @@ export interface LabelGroup {
   name: string;
   type: LabelType;
   active?: boolean; // defaults to true
-  layerDependency?: string;
+  layerDependency?: string | null;
   zoom: LabelZoomBounds;
   mode?: LabelNameMode; // defaults to "auto"
   isDefault?: boolean; // if group is a default (fallback) group for its type
@@ -56,14 +57,14 @@ class LabelsModule {
         name: "river",
         type: "river",
         layerDependency: "toggleRivers",
-        zoom: { min: 8, max: 14 },
+        zoom: { min: 6, max: 40 },
         isDefault: true
       },
       {
         name: "route",
         type: "route",
         layerDependency: "toggleRoutes",
-        zoom: { min: 8, max: 14 },
+        zoom: { min: 6, max: 40 },
         isDefault: true
       },
       // burg groups from Burgs.getDefaultGroups()

@@ -1304,6 +1304,11 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     options.labels = { resizeOnZoom: true, showAll: false, groups: [] };
     style.labels.groups = {};
 
+    for (const type of ["river", "route"] as const) {
+      options.labels.groups.push(Labels.getFallbackGroup(type));
+      style.labels.groups[type] = getGroupStyle({ name: type, type });
+    }
+
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;

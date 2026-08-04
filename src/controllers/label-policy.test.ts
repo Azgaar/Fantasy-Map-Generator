@@ -5,6 +5,7 @@ import {
   deriveLegacyLabelZoom,
   getLabelParentFontSize,
   isLabelGroupVisible,
+  resolveLabelGroup,
   validateLabelGroupName,
   validateLabelZoom
 } from "./label-policy";
@@ -117,13 +118,22 @@ describe("Label Group policy", () => {
       { name: "city", order: 1 }
     ]);
 
-    expect(result.groups.map(group => group.name)).toEqual(["states", "capital", "city", "town", "provinces", "added"]);
-    expect(result.groups.find(group => group.name === "provinces")).toMatchObject({
+    expect(result.groups.map(group => group.name)).toEqual([
+      "river",
+      "route",
+      "capital",
+      "city",
+      "town",
+      "province",
+      "added",
+      "state"
+    ]);
+    expect(result.groups.find(group => group.name === "province")).toMatchObject({
       active: true,
       layerDependency: "toggleProvinces",
-      zoom: { min: 0.2, max: 11 }
+      zoom: { min: 1, max: 15 }
     });
-    expect(result.groups.find(group => group.name === "town")?.layerDependency).toBe("toggleBurgIcons");
+    expect(result.groups.find(group => group.name === "town")?.type).toBe("burg");
   });
 
   it("preserves the dampened resizing curve on the parent", () => {
@@ -132,5 +142,13 @@ describe("Label Group policy", () => {
     expect(getLabelParentFontSize(4, true)).toBe(62.5);
     expect(getLabelParentFontSize(20, true)).toBe(52.5);
     expect(getLabelParentFontSize(20, false)).toBe(100);
+  });
+
+  it("resolves missing groups to the entity fallback", () => {
+    const labels = createDefaultLabelsOptions([{ name: "town", order: 0, isDefault: true }]);
+    const burgGroups = [{ name: "town", order: 0, isDefault: true }];
+    expect(resolveLabelGroup("river", "missing", labels, burgGroups)).toBe("river");
+    expect(resolveLabelGroup("burg", undefined, labels, burgGroups)).toBe("town");
+    expect(resolveLabelGroup("state", "added", labels, burgGroups)).toBe("added");
   });
 });

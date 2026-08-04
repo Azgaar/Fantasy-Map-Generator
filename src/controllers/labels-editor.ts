@@ -3,19 +3,23 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { resolveLabelGroup } from "@/controllers/label-policy";
 import type { AddedLabel, Label, LabelType, PathLabel } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
 import { drawLabel, removeLabel } from "@/renderers/labels/draw-labels";
 import { getLabelPath } from "@/renderers/labels/label-markup";
+import { forceLabel, getCachedLabel, releaseLabel } from "@/renderers/labels/label-materializer";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
 type StateLabel = { type: "state"; stateId: number; elId: string; label: PathLabel };
 type ProvinceLabel = { type: "province"; provinceId: number; elId: string; label: PathLabel };
 type BurgLabel = { type: "burg"; burgId: number; elId: string; label: Label };
+type RiverLabel = { type: "river"; entityId: number; elId: string; label: PathLabel };
+type RouteLabel = { type: "route"; entityId: number; elId: string; label: PathLabel };
 type CustomLabel = { type: "added"; labelId: number; elId: string; label: AddedLabel };
 type LabelRef = { type: LabelType; id: number };
-let selectedLabel: StateLabel | ProvinceLabel | BurgLabel | CustomLabel;
+let selectedLabel: StateLabel | ProvinceLabel | BurgLabel | RiverLabel | RouteLabel | CustomLabel;
 let hasExplicitTextOverride = false;
 
 let lastSelectedGroup = ""; // the default group for newly added labels
@@ -25,41 +29,49 @@ function open(target: SVGElement | LabelRef): void {
   closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
+  const requestedId =
+    target instanceof SVGElement
+      ? target.closest<SVGTextElement>("text[data-label-type]")?.id
+      : `${target.type}Label${target.id}`;
+  if (requestedId) forceLabel(requestedId);
   const textEl =
     target instanceof SVGElement
       ? (target.closest("text[data-label-type]") as SVGTextElement | null)
       : document.querySelector<SVGTextElement>(
           `#labels text[data-label-type='${target.type}'][data-id='${target.id}']`
         );
-  if (!textEl) return;
+  if (!textEl) {
+    if (requestedId) releaseLabel(requestedId);
+    return;
+  }
 
   const type = textEl.dataset.labelType as LabelType | undefined;
   const id = Number(textEl.dataset.id);
-  if (!type || !Number.isFinite(id)) return;
+  if (!type || !Number.isFinite(id)) return void releaseLabel(textEl.id);
 
   if (type === "state") {
     const state = pack.states[id];
-    if (!state) return;
+    if (!state) return void releaseLabel(textEl.id);
     hasExplicitTextOverride = state.label?.text !== undefined;
     selectedLabel = {
       type: "state",
       stateId: id,
       elId: `stateLabel${id}`,
-      label: { ...parseStateLabelData(textEl), group: state.label?.group }
+      label: { ...getCachedPathLabel(textEl.id), group: state.label?.group }
     };
   } else if (type === "province") {
     const province = pack.provinces[id];
-    if (!province?.i || province.removed) return;
+    if (!province?.i || province.removed) return void releaseLabel(textEl.id);
     hasExplicitTextOverride = province.label?.text !== undefined;
     selectedLabel = {
       type: "province",
       provinceId: id,
       elId: `provinceLabel${id}`,
-      label: { ...parseStateLabelData(textEl), group: province.label?.group }
+      label: { ...getCachedPathLabel(textEl.id), group: province.label?.group }
     };
   } else if (type === "burg") {
     const burg = pack.burgs[id];
-    if (!burg || burg.removed) return;
+    if (!burg || burg.removed) return void releaseLabel(textEl.id);
     hasExplicitTextOverride = burg.label?.text !== undefined;
     selectedLabel = {
       type: "burg",
@@ -67,9 +79,20 @@ function open(target: SVGElement | LabelRef): void {
       elId: `burgLabel${id}`,
       label: { ...burg.label, text: burg.label?.text ?? burg.name }
     };
+  } else if (type === "river" || type === "route") {
+    const entity =
+      type === "river" ? pack.rivers.find(entity => entity.i === id) : pack.routes.find(entity => entity.i === id);
+    if (!entity) return void releaseLabel(textEl.id);
+    hasExplicitTextOverride = entity.label?.text !== undefined;
+    selectedLabel = {
+      type,
+      entityId: id,
+      elId: textEl.id,
+      label: { ...getCachedPathLabel(textEl.id), group: entity.label?.group }
+    };
   } else {
     const label = AddedLabels.get(id);
-    if (!label) return;
+    if (!label) return void releaseLabel(textEl.id);
     hasExplicitTextOverride = true;
     selectedLabel = { type: "added", labelId: id, elId: `addedLabel${id}`, label: { ...label } };
   }
@@ -219,7 +242,7 @@ function getSelectedGroup() {
     const burg = pack.burgs[selectedLabel.burgId];
     return resolveLabelGroup("burg", selectedLabel.label.group || burg.group, options.labels, options.burgs.groups);
   }
-  return resolveLabelGroup("added", selectedLabel.label.group, options.labels, options.burgs.groups);
+  return resolveLabelGroup(selectedLabel.type, selectedLabel.label.group, options.labels, options.burgs.groups);
 }
 
 function selectLabelGroup(group: string): void {
@@ -404,12 +427,12 @@ function changeGroup(this: HTMLSelectElement): void {
   const nextGroup = this.value;
   const sourceType =
     selectedLabel.type === "state"
-      ? "states"
+      ? "state"
       : selectedLabel.type === "province"
-        ? "provinces"
+        ? "province"
         : selectedLabel.type === "burg"
-          ? "burgs"
-          : "added";
+          ? "burg"
+          : selectedLabel.type;
   const targetType = options.labels.groups.find(group => group.name === nextGroup)?.type;
   const apply = () => {
     lastSelectedGroup = nextGroup;
@@ -593,23 +616,30 @@ function removeSelectedLabel(): void {
 }
 
 function applyLabelChanges(): void {
-  const label = { ...selectedLabel.label };
-  if (selectedLabel.type !== "added" && !hasExplicitTextOverride) delete label.text;
-  if (selectedLabel.type === "state") {
-    pack.states[selectedLabel.stateId].label = label;
-    drawLabel(selectedLabel.type, selectedLabel.stateId);
-  } else if (selectedLabel.type === "province") {
-    pack.provinces[selectedLabel.provinceId].label = label;
-    drawLabel(selectedLabel.type, selectedLabel.provinceId);
-  } else if (selectedLabel.type === "burg") {
-    pack.burgs[selectedLabel.burgId].label = label;
-    drawLabel(selectedLabel.type, selectedLabel.burgId);
-  } else if (selectedLabel.type === "added") {
-    const labelId = selectedLabel.labelId;
+  const selected = selectedLabel;
+  const label = { ...selected.label };
+  if (selected.type !== "added" && !hasExplicitTextOverride) delete label.text;
+  if (selected.type === "state") {
+    pack.states[selected.stateId].label = label;
+    drawLabel(selected.type, selected.stateId);
+  } else if (selected.type === "province") {
+    pack.provinces[selected.provinceId].label = label;
+    drawLabel(selected.type, selected.provinceId);
+  } else if (selected.type === "burg") {
+    pack.burgs[selected.burgId].label = label;
+    drawLabel(selected.type, selected.burgId);
+  } else if (selected.type === "river" || selected.type === "route") {
+    const entities = selected.type === "river" ? pack.rivers : pack.routes;
+    const entity = entities.find(entity => entity.i === selected.entityId);
+    if (!entity) return;
+    entity.label = label;
+    drawLabel(selected.type, selected.entityId);
+  } else if (selected.type === "added") {
+    const labelId = selected.labelId;
     const index = pack.labels.findIndex(({ i }) => i === labelId);
     if (index === -1) return;
     pack.labels[index] = label as AddedLabel;
-    drawLabel(selectedLabel.type, labelId);
+    drawLabel(selected.type, labelId);
   }
 
   select<SVGElement, unknown>(`#${selectedLabel.elId}`)
@@ -619,39 +649,50 @@ function applyLabelChanges(): void {
 }
 
 function hasOverrides(): boolean {
-  if (selectedLabel.type === "state") return Boolean(pack.states[selectedLabel.stateId].label);
-  if (selectedLabel.type === "province") return Boolean(pack.provinces[selectedLabel.provinceId].label);
-  if (selectedLabel.type === "burg") return Boolean(pack.burgs[selectedLabel.burgId].label);
-  const { dx, dy, startOffset, fontSize, letterSpacing } = selectedLabel.label;
+  const selected = selectedLabel;
+  if (selected.type === "state") return Boolean(pack.states[selected.stateId].label);
+  if (selected.type === "province") return Boolean(pack.provinces[selected.provinceId].label);
+  if (selected.type === "burg") return Boolean(pack.burgs[selected.burgId].label);
+  if (selected.type === "river") return Boolean(pack.rivers.find(entity => entity.i === selected.entityId)?.label);
+  if (selected.type === "route") return Boolean(pack.routes.find(entity => entity.i === selected.entityId)?.label);
+  const { dx, dy, startOffset, fontSize, letterSpacing } = selected.label;
   return [dx, dy, startOffset, fontSize, letterSpacing].some(value => value !== undefined);
 }
 
 function resetSelectedLabel(): void {
-  if (selectedLabel.type === "state") {
+  const selected = selectedLabel;
+  if (selected.type === "state") {
     hasExplicitTextOverride = false;
-    delete pack.states[selectedLabel.stateId].label;
-    drawLabel("state", selectedLabel.stateId);
-    const textEl = document.getElementById(selectedLabel.elId) as SVGTextElement | null;
-    if (textEl) selectedLabel.label = parseStateLabelData(textEl);
-  } else if (selectedLabel.type === "province") {
+    delete pack.states[selected.stateId].label;
+    drawLabel("state", selected.stateId);
+    const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
+    if (textEl) selected.label = getCachedPathLabel(textEl.id);
+  } else if (selected.type === "province") {
     hasExplicitTextOverride = false;
-    delete pack.provinces[selectedLabel.provinceId].label;
-    drawLabel("province", selectedLabel.provinceId);
-    const textEl = document.getElementById(selectedLabel.elId) as SVGTextElement | null;
-    if (textEl) selectedLabel.label = parseStateLabelData(textEl);
-  } else if (selectedLabel.type === "burg") {
+    delete pack.provinces[selected.provinceId].label;
+    drawLabel("province", selected.provinceId);
+    const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
+    if (textEl) selected.label = getCachedPathLabel(textEl.id);
+  } else if (selected.type === "burg") {
     hasExplicitTextOverride = false;
-    const burg = pack.burgs[selectedLabel.burgId];
+    const burg = pack.burgs[selected.burgId];
     delete burg.label;
-    drawLabel("burg", selectedLabel.burgId);
-    selectedLabel.label = { text: burg.name };
+    drawLabel("burg", selected.burgId);
+    selected.label = { text: burg.name };
+  } else if (selected.type === "river" || selected.type === "route") {
+    const entities = selected.type === "river" ? pack.rivers : pack.routes;
+    const entity = entities.find(entity => entity.i === selected.entityId);
+    if (!entity) return;
+    delete entity.label;
+    drawLabel(selected.type, selected.entityId);
+    selected.label = getCachedPathLabel(selected.elId);
   } else {
-    const { i, text, pathPoints, group } = selectedLabel.label;
+    const { i, text, pathPoints, group } = selected.label;
     const resetLabel: AddedLabel = { i, text, pathPoints, group };
     const index = pack.labels.findIndex(label => label.i === i);
     if (index === -1) return;
     pack.labels[index] = resetLabel;
-    selectedLabel.label = { ...resetLabel };
+    selected.label = { ...resetLabel };
     drawLabel("added", i);
   }
 
@@ -670,6 +711,31 @@ function closeLabelEditor(): void {
   applyDefaultViewboxEvents();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();
+  releaseLabel(selectedLabel.elId);
+}
+
+function getCachedPathLabel(id: string): PathLabel {
+  const label = getCachedLabel(id);
+  if (!label) return {};
+  return "pathPoints" in label
+    ? {
+        text: label.text,
+        group: label.group,
+        pathPoints: label.pathPoints,
+        startOffset: label.startOffset,
+        fontSize: label.fontSize,
+        letterSpacing: label.letterSpacing,
+        dx: label.dx,
+        dy: label.dy
+      }
+    : {
+        text: label.text,
+        group: label.group,
+        fontSize: label.fontSize,
+        letterSpacing: label.letterSpacing,
+        dx: label.dx,
+        dy: label.dy
+      };
 }
 
 const getLastSelectedGroup = (): string => lastSelectedGroup;

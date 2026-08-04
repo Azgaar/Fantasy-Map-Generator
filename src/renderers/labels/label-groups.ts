@@ -1,7 +1,7 @@
-import type { LabelGroup, LabelType } from "@/generators/labels";
+import type { LabelGroup, LabelGroupStyle, LabelType } from "@/generators/labels";
 
-export function renderLabelGroups(): void {
-  const labels = document.querySelector<SVGGElement>("#labels");
+export function renderLabelGroups(root: ParentNode = document): void {
+  const labels = findElement<SVGGElement>(root, "labels");
   if (!labels) throw new Error("Labels container not found");
 
   labels.replaceChildren();
@@ -10,8 +10,8 @@ export function renderLabelGroups(): void {
   }
 }
 
-export function ensureLabelGroup(groupName: string, type: LabelType): SVGGElement {
-  const labels = document.querySelector<SVGGElement>("#labels");
+export function ensureLabelGroup(groupName: string, type: LabelType, root: ParentNode = document): SVGGElement {
+  const labels = findElement<SVGGElement>(root, "labels");
   if (!labels) throw new Error("Labels container not found");
 
   let group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
@@ -25,7 +25,7 @@ export function ensureLabelGroup(groupName: string, type: LabelType): SVGGElemen
   return group;
 }
 
-function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
+export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
   const group = labels.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "g");
   group.id = `labels-${groupOptions.name}`;
   group.dataset.group = groupOptions.name;
@@ -61,7 +61,7 @@ const FALLBACK_STYLES: Record<LabelType, Record<string, string | number>> = {
   added: { ...BASE_STYLE, "font-size": "18%" }
 };
 
-export function getGroupStyle(group: { name: string; type: LabelType }) {
+export function getGroupStyle(group: { name: string; type: LabelType }): LabelGroupStyle {
   const groupStyle = style.labels.groups[group.name];
   if (groupStyle) return groupStyle;
 
@@ -73,31 +73,12 @@ export function getGroupStyle(group: { name: string; type: LabelType }) {
   return BASE_STYLE;
 }
 
-export function applyLabelZoom(): void {
-  const labels = document.querySelector<SVGGElement>("#labels");
-  if (!labels) return;
+export const getLabelGroupStyle = (requestedGroup: string | undefined, type: LabelType): LabelGroupStyle => {
+  const group = options.labels.groups.find(group => group.name === requestedGroup) || Labels.getFallbackGroup(type);
+  return getGroupStyle(group);
+};
 
-  labels.setAttribute("font-size", `${getScaledFontSize()}px`);
-
-  for (const groupOptions of options.labels.groups) {
-    const group = labels.querySelector<SVGGElement>(`#labels-${groupOptions.name}`);
-    if (group) group.classList.toggle("hidden", !isGroupVisible(groupOptions));
-  }
+function findElement<T extends Element>(root: ParentNode, id: string): T | null {
+  if (root instanceof Element && root.id === id) return root as T;
+  return root.querySelector<T>(`#${id}`);
 }
-
-function getScaledFontSize(): number {
-  if (!options.labels.resizeOnZoom) return 100;
-  return Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-}
-
-function isGroupVisible(group: LabelGroup): boolean {
-  if (!layerIsOn("toggleLabels")) return false;
-  if (options.labels.showAll) return true;
-  if (group.active === false) return false;
-  if (group.zoom.min !== null && scale < group.zoom.min) return false;
-  if (group.zoom.max !== null && scale > group.zoom.max) return false;
-  if (group.layerDependency && !layerIsOn(group.layerDependency)) return false;
-  return true;
-}
-
-window.applyLabelZoom = applyLabelZoom;

@@ -12,6 +12,8 @@ export interface LabelWorld {
   states: LabelEntity[];
   provinces: Province[];
   burgs: BurgEntity[];
+  rivers?: LabelEntity[];
+  routes?: LabelEntity[];
   labels: AddedLabel[];
 }
 
@@ -19,6 +21,8 @@ export interface LabelAssignmentCounts {
   states: number;
   provinces: number;
   burgs: number;
+  rivers: number;
+  routes: number;
   added: number;
 }
 
@@ -120,6 +124,8 @@ export function deleteLabelGroup({
   clearReferences(world.states, name);
   clearReferences(world.provinces, name);
   clearReferences(world.burgs, name);
+  clearReferences(world.rivers || [], name);
+  clearReferences(world.routes || [], name);
   world.labels
     .filter(label => label.group === name)
     .forEach(label => {
@@ -135,15 +141,19 @@ export function countLabelAssignments(world: LabelWorld, name: string): LabelAss
     states: world.states.filter(entity => entity.i && !entity.removed && entity.label?.group === name).length,
     provinces: world.provinces.filter(entity => entity.i && !entity.removed && entity.label?.group === name).length,
     burgs: world.burgs.filter(entity => entity.i && !entity.removed && entity.label?.group === name).length,
+    rivers: (world.rivers || []).filter(entity => entity.i !== undefined && entity.label?.group === name).length,
+    routes: (world.routes || []).filter(entity => entity.i !== undefined && entity.label?.group === name).length,
     added: world.labels.filter(label => label.group === name).length
   };
 }
 
 export function assignLabelGroup(world: LabelWorld, type: LabelGroupType, ids: Iterable<number>, target: string): void {
   const selected = new Set(ids);
-  if (type === "states") assignOverrides(world.states);
-  else if (type === "provinces") assignOverrides(world.provinces);
-  else if (type === "burgs") assignOverrides(world.burgs);
+  if (type === "state") assignOverrides(world.states);
+  else if (type === "province") assignOverrides(world.provinces);
+  else if (type === "burg") assignOverrides(world.burgs);
+  else if (type === "river") assignOverrides(world.rivers || []);
+  else if (type === "route") assignOverrides(world.routes || []);
   else {
     world.labels
       .filter(entity => selected.has(entity.i))
@@ -179,12 +189,12 @@ export function reconcileBurgLabelGroups({
 }): void {
   validateBurgLabelNamespace(labels, previousGroups, nextGroups, renames);
 
-  const defaultBurgName = getDefaultLabelGroupName("burgs", nextGroups);
-  const previousDefaultBurgName = getDefaultLabelGroupName("burgs", previousGroups);
+  const defaultBurgName = getDefaultLabelGroupName("burg", nextGroups);
+  const previousDefaultBurgName = getDefaultLabelGroupName("burg", previousGroups);
   const defaultTemplateSource =
     labels.groups.find(group => group.name === defaultBurgName) ||
     labels.groups.find(group => group.name === previousDefaultBurgName) ||
-    labels.groups.find(group => group.type === "burgs");
+    labels.groups.find(group => group.type === "burg");
   const defaultTemplate = defaultTemplateSource ? structuredClone(defaultTemplateSource) : undefined;
   const defaultStyle = defaultTemplate ? { ...(styles.groups[defaultTemplate.name] || {}) } : undefined;
   const currentNames = new Set(labels.groups.map(group => group.name));
@@ -242,7 +252,7 @@ export function reconcileBurgLabelGroups({
     const group: LabelGroupOptions = {
       ...structuredClone(defaultTemplate),
       name: burgGroup.name,
-      type: "burgs",
+      type: "burg",
       mode: "auto"
     };
     const nextBurgNames = nextGroups
@@ -255,7 +265,7 @@ export function reconcileBurgLabelGroups({
     const nextExistingIndex = nextExistingName
       ? labels.groups.findIndex(candidate => candidate.name === nextExistingName)
       : -1;
-    const lastBurgIndex = labels.groups.findLastIndex(candidate => candidate.type === "burgs");
+    const lastBurgIndex = labels.groups.findLastIndex(candidate => candidate.type === "burg");
     const insertAt = nextExistingIndex === -1 ? lastBurgIndex + 1 : nextExistingIndex;
     labels.groups.splice(insertAt, 0, group);
     styles.groups[burgGroup.name] = { ...(defaultStyle || {}) };
@@ -280,7 +290,7 @@ function validateBurgLabelNamespace(
   const previousManagedNames = new Set(
     previousGroups
       .filter(group => !group.removed)
-      .filter(group => labels.groups.some(labelGroup => labelGroup.name === group.name && labelGroup.type === "burgs"))
+      .filter(group => labels.groups.some(labelGroup => labelGroup.name === group.name && labelGroup.type === "burg"))
       .map(group => group.name)
   );
   const customNames = new Set(
@@ -298,7 +308,7 @@ function validateBurgLabelNamespace(
 }
 
 export function renameLabelReferences(world: LabelWorld, oldName: string, newName: string): void {
-  for (const entities of [world.states, world.provinces, world.burgs]) {
+  for (const entities of [world.states, world.provinces, world.burgs, world.rivers || [], world.routes || []]) {
     entities
       .filter(entity => entity.label?.group === oldName)
       .forEach(entity => {

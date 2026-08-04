@@ -220,6 +220,7 @@ function zoomRaf() {
 
     // Uses global values, so each frame always draws using the latest positioning values
     viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+    if (didPositionChange || didScaleChange) window.updateLabelsViewport?.();
 
     if (didPositionChange) {
       if (layerIsOn("toggleCoordinates")) drawCoordinates();
@@ -250,7 +251,11 @@ function zoomRaf() {
   });
 }
 
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
+const zoom = d3
+  .zoom()
+  .scaleExtent([1, 20])
+  .on("zoom", zoomRaf)
+  .on("end", () => window.renderLabelsNow?.());
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +ensureEl("populationRateInput").value;
@@ -563,8 +568,6 @@ function invokeActiveZooming() {
     const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
     coastline.select("#sea_island").attr("filter", filter);
   }
-
-  window.applyLabelZoom(scale);
 
   // rescale emblems on zoom
   if (emblems.style("display") !== "none") {

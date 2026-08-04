@@ -39,7 +39,8 @@ declare global {
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
-    applyLabelZoom: typeof import("../renderers/labels/label-groups").applyLabelZoom;
+    renderLabelsNow: typeof import("../renderers/labels/label-materializer").renderLabelsNow;
+    updateLabelsViewport: typeof import("../renderers/labels/label-materializer").updateLabelsViewport;
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;
