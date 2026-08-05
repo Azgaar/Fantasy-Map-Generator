@@ -9,9 +9,6 @@ import { getLabelPath } from "./label-markup";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 export function fitStateLabel(state: State, group: string): { pathPoints: Point[]; text: string; fontSize: number } {
-  const groupName = ensureLabelGroup(group, "state");
-  const sandbox = createMeasurementSandbox(groupName);
-
   const mode = options.labels.groups.find(opt => opt.name === group)?.mode || "auto";
   const name = mode === "short" ? state.name : state.fullName || state.name;
 
@@ -23,6 +20,15 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   );
   if (!pathPoints.length) return { pathPoints, text: name, fontSize: 100 };
 
+  const groupName = ensureLabelGroup(group, "state");
+  const sandbox = createMeasurementSandbox(groupName);
+  const labelData = getLabelData(sandbox, pathPoints, state, mode, name);
+
+  sandbox.remove();
+  return labelData;
+}
+
+function getLabelData(sandbox: SVGGElement, pathPoints: Point[], state: State, mode: LabelNameMode, name: string) {
   const letterLength = getAverageLetterLength(sandbox);
   const pathLength = measureLabelPath(pathPoints, sandbox) / letterLength;
   const hasCustomText = state.label?.text;
@@ -53,10 +59,9 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   textElement.remove();
   if (fitsRegion) return { pathPoints, text, fontSize };
 
-  const oneLineText = pathLength > name.length * 1.4 ? name : state.name;
+  const oneLineText = pathLength > name.length * 1.8 ? name : state.name;
   const correctedFontSize = minmax(rn((pathLength / oneLineText.length) * 50), 50, 130);
 
-  sandbox.remove();
   return { pathPoints, text: oneLineText, fontSize: correctedFontSize };
 }
 
@@ -97,7 +102,7 @@ function createMeasurementSandbox(group: SVGGElement): SVGGElement {
   sandbox.setAttribute("text-anchor", groupStyle.textAnchor);
   sandbox.setAttribute("dominant-baseline", groupStyle.dominantBaseline);
 
-  document.getElementById("viewbox")!.appendChild(sandbox);
+  document.getElementById("labels")!.appendChild(sandbox);
   return sandbox;
 }
 
