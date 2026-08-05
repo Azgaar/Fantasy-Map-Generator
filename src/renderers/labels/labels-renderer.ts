@@ -8,9 +8,9 @@ import {
 } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
 import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
+import { fitStateLabel } from "./fit-state-label";
 import { renderLabelGroups } from "./label-groups";
 import { getLabelPath } from "./label-markup";
-import { getRegionLabel } from "./region-label-layout";
 
 const labelScene = new Scene<LabelData>();
 const labelsByGroup = new Map<string, LabelData[]>();
@@ -75,76 +75,92 @@ export function getCachedLabel(type: LabelType, id: number): LabelData | undefin
   return labelScene.get(labelId);
 }
 
-function getBurgLabelsData(ids?: number[]): LabelData[] {
+function getBurgLabelsData(ids?: number[]): PointLabelData[] {
   const selected = ids && new Set(ids);
   const labels: PointLabelData[] = [];
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || (selected && !selected.has(burg.i))) continue;
-    labels.push(
-      withAnchor({
-        ...burg.label,
-        id: `burgLabel${burg.i}`,
-        text: burg.label?.text ?? burg.name ?? "",
-        type: "burg",
-        group: burg.label?.group || burg.group || "burg",
-        x: burg.x,
-        y: burg.y
-      })
-    );
+    labels.push({
+      ...burg.label,
+      id: `burgLabel${burg.i}`,
+      entityId: burg.i,
+      text: burg.label?.text ?? burg.name ?? "",
+      type: "burg",
+      group: burg.label?.group || burg.group || "burg",
+      x: burg.x,
+      y: burg.y,
+      anchor: getAchor(burg.x, burg.y, burg.label?.dx, burg.label?.dy)
+    });
   }
   return labels;
 }
 
-function getProvinceLabelsData(ids?: number[]): LabelData[] {
+function getProvinceLabelsData(ids?: number[]): PointLabelData[] {
   const selected = ids && new Set(ids);
   const labels: PointLabelData[] = [];
   for (const province of pack.provinces) {
     if (!province.i || province.removed || (selected && !selected.has(province.i))) continue;
     const [x, y] = province.pole || pack.cells.p[province.center];
-    labels.push(
-      withAnchor({
-        ...province.label,
-        id: `provinceLabel${province.i}`,
-        text: province.label?.text ?? province.name,
-        type: "province",
-        group: province.label?.group || "province",
-        x,
-        y
-      })
-    );
+    labels.push({
+      ...province.label,
+      id: `provinceLabel${province.i}`,
+      entityId: province.i,
+      text: province.label?.text ?? province.name,
+      type: "province",
+      group: province.label?.group || "province",
+      x,
+      y,
+      anchor: getAchor(x, y, province.label?.dx, province.label?.dy)
+    });
   }
   return labels;
 }
 
-function getStateLabelsData(ids?: number[]): LabelData[] {
+function getStateLabelsData(ids?: number[]): PathLabelData[] {
   const selected = ids && new Set(ids);
-  const result: PathLabelData[] = [];
+  const labels: PathLabelData[] = [];
   for (const state of pack.states) {
     if (!state.i || state.removed || (selected && !selected.has(state.i))) continue;
-    const pole = state.pole || pack.cells.p[state.center];
-    result.push(withAnchor(getRegionLabel(state, "state", pack.cells.state, pole, state.cells || 0)));
+    const group = state.label?.group || "state";
+    const labelData = state.label?.pathPoints?.length ? state.label : fitStateLabel(state, group);
+    const { pathPoints, text, fontSize } = labelData;
+    if (!pathPoints || !text) continue;
+    const anchor = getAchor(...getMiddlePoint(pathPoints), state.label?.dx, state.label?.dy);
+    const label: PathLabelData = {
+      id: `stateLabel${state.i}`,
+      entityId: state.i,
+      type: "state",
+      group,
+      pathPoints,
+      text,
+      fontSize,
+      anchor
+    };
+    labels.push(label);
   }
-  return result;
+  return labels;
 }
 
-function getRiverLabelsData(ids?: number[]): LabelData[] {
+function getRiverLabelsData(ids?: number[]): PathLabelData[] {
   const selected = ids && new Set(ids);
-  const labels: LabelData[] = [];
+  const labels: PathLabelData[] = [];
   for (const river of pack.rivers) {
     if (!river.cells.length || !river.name || (selected && !selected.has(river.i))) continue;
-    const points = river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points);
-    if (!points.length) continue;
-    labels.push(
-      withAnchor({
-        ...river.label,
-        id: `riverLabel${river.i}`,
-        type: "river",
-        text: river.label?.text ?? `${river.name} ${river.type}`,
-        group: river.label?.group || "river",
-        pathPoints: formatPathPoints(points as Point[]),
-        startOffset: river.label?.startOffset
-      })
+    const points = formatPathPoints(
+      (river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points)) as Point[]
     );
+    if (!points.length) continue;
+    labels.push({
+      ...river.label,
+      id: `riverLabel${river.i}`,
+      entityId: river.i,
+      type: "river",
+      text: river.label?.text ?? `${river.name} ${river.type}`,
+      group: river.label?.group || "river",
+      pathPoints: formatPathPoints(points as Point[]),
+      startOffset: river.label?.startOffset,
+      anchor: getAchor(...getMiddlePoint(points), river.label?.dx, river.label?.dy)
+    });
   }
   return labels;
 }
@@ -154,17 +170,18 @@ function getRouteLabelsData(ids?: number[]): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const route of pack.routes) {
     if (!route.label?.pathPoints || !route.name || (selected && !selected.has(route.i))) continue;
-    labels.push(
-      withAnchor({
-        ...route.label,
-        id: `routeLabel${route.i}`,
-        type: "route",
-        text: route.label?.text ?? route.name ?? "",
-        group: route.label?.group || "route",
-        pathPoints: formatPathPoints(route.label?.pathPoints),
-        startOffset: route.label?.startOffset
-      })
-    );
+    const points = formatPathPoints(route.label?.pathPoints);
+    labels.push({
+      ...route.label,
+      id: `routeLabel${route.i}`,
+      entityId: route.i,
+      type: "route",
+      text: route.label?.text ?? route.name ?? "",
+      group: route.label?.group || "route",
+      pathPoints: points,
+      startOffset: route.label?.startOffset,
+      anchor: getAchor(...getMiddlePoint(points), route.label?.dx, route.label?.dy)
+    });
   }
   return labels;
 }
@@ -173,8 +190,14 @@ function getAddedLabelsData(ids?: number[]): LabelData[] {
   const selected = ids && new Set(ids);
   const labels: PathLabelData[] = [];
   for (const label of pack.labels) {
-    if (!label.i || (selected && !selected.has(label.i))) continue;
-    labels.push(withAnchor({ id: `addedLabel${label.i}`, type: "added", ...label }));
+    if (!label.i || !label.pathPoints.length || (selected && !selected.has(label.i))) continue;
+    labels.push({
+      id: `addedLabel${label.i}`,
+      entityId: label.i,
+      type: "added",
+      anchor: getAchor(...getMiddlePoint(label.pathPoints), label?.dx, label?.dy),
+      ...label
+    });
   }
   return labels;
 }
@@ -319,42 +342,14 @@ function formatPathPoints(points: Point[]): Point[] {
   return simple;
 }
 
-type PathLabelInput = Omit<PathLabelData, "anchor">;
-type PointLabelInput = Omit<PointLabelData, "anchor">;
-type LabelInput = PathLabelInput | PointLabelInput;
-
-function withAnchor(label: PathLabelInput): PathLabelData;
-function withAnchor(label: PointLabelInput): PointLabelData;
-function withAnchor(label: LabelInput): LabelData {
-  const [x, y] = "pathPoints" in label ? interpolatePath(label) : [label.x, label.y];
-  const anchor = [x + (label.dx || 0), y + (label.dy || 0)];
-  return { ...label, anchor } as LabelData;
+function getAchor(x: number, y: number, dx = 0, dy = 0): Point {
+  return [x + dx, y + dy];
 }
 
-function interpolatePath(label: PathLabelInput): Point {
-  const points = label.pathPoints;
+function getMiddlePoint(points: Point[]): Point {
   if (!points.length) return [0, 0];
-  if (points.length === 1) return points[0];
-
-  const lengths = points
-    .slice(1)
-    .map((point, index) => Math.hypot(point[0] - points[index][0], point[1] - points[index][1]));
-  const total = lengths.reduce((sum, length) => sum + length, 0);
-  if (!total) return points[0];
-
-  let distance = total * ((label.startOffset ?? 50) / 100);
-  for (let i = 0; i < lengths.length; i++) {
-    if (distance > lengths[i]) {
-      distance -= lengths[i];
-      continue;
-    }
-    const ratio = distance / lengths[i];
-    return [
-      points[i][0] + (points[i + 1][0] - points[i][0]) * ratio,
-      points[i][1] + (points[i + 1][1] - points[i][1]) * ratio
-    ];
-  }
-  return points.at(-1)!;
+  const middleIndex = Math.floor(points.length / 2);
+  return points.at(middleIndex)!;
 }
 
 window.drawLabels = drawLabels;

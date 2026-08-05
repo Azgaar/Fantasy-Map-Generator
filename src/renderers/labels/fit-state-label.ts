@@ -1,62 +1,34 @@
 import { max } from "d3";
-import type { LabelNameMode, LabelType, PathLabel } from "@/generators/labels";
-import type { PathLabelData } from "@/types/labels";
+import type { LabelNameMode } from "@/generators/labels";
+import type { State } from "@/generators/states-generator";
+import type { Point } from "@/types/global";
 import type { TypedArray } from "@/types/PackedGraph";
 import { findClosestCell, minmax, rn, splitInTwo } from "@/utils";
 import { ensureLabelGroup } from "./label-groups";
 import { getLabelPath } from "./label-markup";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
-type Region = { i: number; name: string; fullName?: string; label?: PathLabel };
-export type RegionLabelLayout = Omit<PathLabelData, "anchor">;
+export function fitStateLabel(state: State, group: string): { pathPoints: Point[]; text: string; fontSize: number } {
+  const groupName = ensureLabelGroup(group, "state");
+  const sandbox = createMeasurementSandbox(groupName);
 
-export function getRegionLabel(
-  region: Region,
-  type: LabelType,
-  regionIds: TypedArray,
-  pole: [number, number],
-  cellsNumber: number
-): RegionLabelLayout {
-  const label: RegionLabelLayout = {
-    ...region.label,
-    id: `${type}Label${region.i}`,
-    type,
-    text: region.label?.text ?? region.name ?? "",
-    group: region.label?.group || type,
-    pathPoints: region.label?.pathPoints || []
-  };
-  if (label.pathPoints.length) return label;
+  const mode = options.labels.groups.find(opt => opt.name === group)?.mode || "auto";
+  const name = mode === "short" ? state.name : state.fullName || state.name;
 
-  const group = ensureLabelGroup(label.group, type);
-  const sandbox = createMeasurementSandbox(group);
-  const mode = options.labels.groups.find(groupOptions => groupOptions.name === label.group)?.mode || "auto";
-  try {
-    return { ...label, ...fitLabel(region, label, mode, sandbox, regionIds, pole, cellsNumber) };
-  } finally {
-    sandbox.remove();
-  }
-}
+  const pathPoints = getRegionLabelPath(
+    state.i,
+    pack.cells.state,
+    state.pole || pack.cells.p[state.center],
+    state.cells || 0
+  );
+  if (!pathPoints.length) return { pathPoints, text: name, fontSize: 100 };
 
-function fitLabel(
-  region: Region,
-  label: RegionLabelLayout,
-  mode: LabelNameMode,
-  sandbox: SVGGElement,
-  regionIds: TypedArray,
-  pole: [number, number],
-  cellsNumber: number
-): Pick<RegionLabelLayout, "pathPoints" | "text" | "fontSize"> {
-  const pathPoints = getRegionLabelPath(region.i, regionIds, pole, cellsNumber);
-  if (!pathPoints.length) return { pathPoints, text: label.text, fontSize: label.fontSize };
-
-  const labelWithPath = { ...label, pathPoints };
   const letterLength = getAverageLetterLength(sandbox);
-  const pathLength = measureLabelPath(labelWithPath, sandbox).getTotalLength() / letterLength;
-  const fullName = region.fullName || region.name;
-  const hasCustomText = region.label?.text !== undefined;
+  const pathLength = measureLabelPath(pathPoints, sandbox).getTotalLength() / letterLength;
+  const hasCustomText = state.label?.text !== undefined;
   const [lines, fontSize] = hasCustomText
-    ? [region.label!.text!.split("|"), region.label!.fontSize ?? 100]
-    : getLinesAndRatio(mode, region.name, fullName, pathLength);
+    ? [state.label!.text!.split("|"), state.label!.fontSize ?? 100]
+    : getLinesAndRatio(mode, state.name, name, pathLength);
   const text = lines.join("|");
 
   const longestLineLength = max(lines.map(line => line.length)) || 0;
@@ -68,23 +40,24 @@ function fitLabel(
 
     pathPoints[0] = [x1 + dx - dx * modifier, y1 + dy - dy * modifier];
     pathPoints[pathPoints.length - 1] = [x2 - dx + dx * modifier, y2 - dy + dy * modifier];
-    measureLabelPath({ ...labelWithPath, text, fontSize }, sandbox);
+    measureLabelPath(pathPoints, sandbox);
   }
 
-  const result = { pathPoints, text, fontSize };
-  if (hasCustomText || mode === "full" || lines.length === 1) return result;
+  if (hasCustomText || mode === "full" || lines.length === 1) return { pathPoints, text, fontSize };
 
-  const { textElement, textPath } = measureLabelText({ ...labelWithPath, text, fontSize }, sandbox);
+  const { textElement, textPath } = measureLabelText(text, fontSize, sandbox);
   const { width, height } = textPath.getBBox();
   textPath.setAttribute("href", `#${MEASURE_PATH_ID}`);
   const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
   const angle = Math.atan2(y2 - y1, x2 - x1);
-  const fitsRegion = isLabelInsideRegion(textPath, angle, width / 2, height / 2, region.i, regionIds);
+  const fitsRegion = isLabelInsideRegion(textPath, angle, width / 2, height / 2, state.i, pack.cells.state);
   textElement.remove();
-  if (fitsRegion) return result;
+  if (fitsRegion) return { pathPoints, text, fontSize };
 
-  const oneLineText = pathLength > fullName.length * 1.8 ? fullName : region.name;
+  const oneLineText = pathLength > name.length * 1.8 ? name : state.name;
   const correctedFontSize = minmax(rn((pathLength / oneLineText.length) * 50), 50, 130);
+
+  sandbox.remove();
   return { pathPoints, text: oneLineText, fontSize: correctedFontSize };
 }
 
@@ -134,26 +107,25 @@ function getAverageLetterLength(sandbox: SVGGElement): number {
 
 const MEASURE_PATH_ID = "measureLabelPath";
 
-function measureLabelPath(label: RegionLabelLayout, sandbox: SVGGElement): SVGPathElement {
+function measureLabelPath(pathPoints: Point[], sandbox: SVGGElement): SVGPathElement {
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.id = MEASURE_PATH_ID;
-  path.setAttribute("d", getLabelPath(label));
+  path.setAttribute("d", getLabelPath({ pathPoints }));
   sandbox.querySelector(`#${MEASURE_PATH_ID}`)?.remove();
   sandbox.appendChild(path);
   return path;
 }
 
 function measureLabelText(
-  label: RegionLabelLayout,
+  text: string,
+  fontSize: number,
   sandbox: SVGGElement
 ): { textElement: SVGTextElement; textPath: SVGTextPathElement } {
-  const lines = label.text.split("|");
+  const lines = text.split("|");
   const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
-  textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
   textPath.setAttribute("text-anchor", "middle");
-  textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
-  if (label.letterSpacing !== undefined) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
+  textPath.setAttribute("font-size", `${fontSize ?? 100}%`);
   textPath.append(
     ...lines.map((line, index) => {
       const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");

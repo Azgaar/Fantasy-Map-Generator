@@ -1,5 +1,5 @@
 import { curveNatural, line } from "d3";
-import type { PathLabel } from "@/generators/labels";
+import type { Point } from "@/types/global";
 import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
@@ -9,7 +9,7 @@ export function getLabelMarkup(label: LabelData) {
   return [null, getPointLabelMarkup(label)];
 }
 
-export function getLabelPath(label: PathLabel): string {
+export function getLabelPath(label: { pathPoints: Point[] }): string {
   return lineGen(label.pathPoints || []) || "";
 }
 
