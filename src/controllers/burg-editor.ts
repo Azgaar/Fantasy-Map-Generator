@@ -528,7 +528,7 @@ function editGroupLabelStyle(): void {
 function editBurgLabel(): void {
   const id = getSelectedId();
   $("#burgEditor").dialog("close");
-  Controllers.LabelsEditor.open({ type: "burg", id });
+  Controllers.LabelsEditor.open("burg", id);
 }
 
 function editGroupIconStyle(): void {

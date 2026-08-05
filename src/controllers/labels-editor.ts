@@ -3,7 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { AddedLabel, LabelType } from "@/generators/labels";
+import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import { drawLabelsByType, getCachedLabel, removeLabel } from "@/renderers/labels/labels-renderer";
@@ -27,6 +27,7 @@ function open(type: LabelType, id: number): void {
   const cachedLabel = getCachedLabel(type, id);
   if (!cachedLabel) return;
   label = cachedLabel;
+  hasExplicitTextOverride = type === "added" || getLabelEntity(type, id)?.label?.text !== undefined;
 
   select<SVGElement, unknown>(`#${textEl.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
@@ -495,7 +496,7 @@ function editLabelAlign(): void {
 }
 
 function editLabelLegend(): void {
-  const noteId = label.type === "burg" ? `burg${label.burgId}` : label.elId;
+  const noteId = label.type === "burg" ? `burg${label.entityId}` : label.id;
   void Controllers.NotesEditor.open(noteId, label.text);
 }
 
@@ -508,8 +509,8 @@ function removeSelectedLabel(): void {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
         if (label.type !== "added") return;
-        removeLabel("added", label.i);
-        AddedLabels.remove(label.i);
+        removeLabel("added", label.entityId);
+        AddedLabels.remove(label.entityId);
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -520,88 +521,62 @@ function removeSelectedLabel(): void {
 }
 
 function applyLabelChanges(): void {
-  if (selected.type !== "added" && !hasExplicitTextOverride) delete label.text;
-  if (selected.type === "state") {
-    pack.states[selected.stateId].label = label;
-    drawLabelsByType(selected.type, [selected.stateId]);
-  } else if (selected.type === "province") {
-    pack.provinces[selected.provinceId].label = label;
-    drawLabelsByType(selected.type, [selected.provinceId]);
-  } else if (selected.type === "burg") {
-    pack.burgs[selected.burgId].label = label;
-    drawLabelsByType(selected.type, [selected.burgId]);
-  } else if (selected.type === "river" || selected.type === "route") {
-    const entities = selected.type === "river" ? pack.rivers : pack.routes;
-    const entity = entities.find(entity => entity.i === selected.entityId);
-    if (!entity) return;
-    entity.label = label;
-    drawLabelsByType(selected.type, [selected.entityId]);
-  } else if (selected.type === "added") {
-    const labelId = selected.labelId;
-    const index = pack.labels.findIndex(({ i }) => i === labelId);
+  const { type, entityId, id } = label;
+  const override = getLabelOverride();
+
+  if (type === "added") {
+    if (!("pathPoints" in label)) return;
+    const index = pack.labels.findIndex(({ i }) => i === entityId);
     if (index === -1) return;
-    pack.labels[index] = label as AddedLabel;
-    drawLabelsByType(selected.type, [labelId]);
+    pack.labels[index] = {
+      ...override,
+      i: entityId,
+      text: label.text,
+      pathPoints: label.pathPoints,
+      group: label.group
+    };
+  } else {
+    const entity = getLabelEntity(type, entityId);
+    if (!entity) return;
+    entity.label = override;
   }
 
-  select<SVGElement, unknown>(`#${label.elId}`)
+  drawLabelsByType(type, [entityId]);
+  label = getCachedLabel(type, entityId) ?? label;
+  select<SVGElement, unknown>(`#${id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
   updateControls();
 }
 
 function hasOverrides(): boolean {
-  const selected = label;
-  if (selected.type === "state") return Boolean(pack.states[selected.stateId].label);
-  if (selected.type === "province") return Boolean(pack.provinces[selected.provinceId].label);
-  if (selected.type === "burg") return Boolean(pack.burgs[selected.burgId].label);
-  if (selected.type === "river") return Boolean(pack.rivers.find(entity => entity.i === selected.entityId)?.label);
-  if (selected.type === "route") return Boolean(pack.routes.find(entity => entity.i === selected.entityId)?.label);
-  const { dx, dy, startOffset, fontSize, letterSpacing } = selected.label;
+  if (label.type !== "added") return Boolean(getLabelEntity(label.type, label.entityId)?.label);
+  const { dx, dy, fontSize, letterSpacing } = label;
+  const startOffset = "startOffset" in label ? label.startOffset : undefined;
   return [dx, dy, startOffset, fontSize, letterSpacing].some(value => value !== undefined);
 }
 
 function resetSelectedLabel(): void {
-  const selected = label;
-  if (selected.type === "state") {
-    hasExplicitTextOverride = false;
-    delete pack.states[selected.stateId].label;
-    drawLabelsByType("state", [selected.stateId]);
-    const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
-    if (textEl) selected.label = getPathLabel(textEl.id);
-  } else if (selected.type === "province") {
-    hasExplicitTextOverride = false;
-    delete pack.provinces[selected.provinceId].label;
-    drawLabelsByType("province", [selected.provinceId]);
-    const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
-    if (textEl) selected.label = getPathLabel(textEl.id);
-  } else if (selected.type === "burg") {
-    hasExplicitTextOverride = false;
-    const burg = pack.burgs[selected.burgId];
-    delete burg.label;
-    drawLabelsByType("burg", [selected.burgId]);
-    selected.label = { text: burg.name };
-  } else if (selected.type === "river" || selected.type === "route") {
-    const entities = selected.type === "river" ? pack.rivers : pack.routes;
-    const entity = entities.find(entity => entity.i === selected.entityId);
+  const { type, entityId, text, group } = label;
+  if (type === "added") {
+    if (!("pathPoints" in label)) return;
+    const index = pack.labels.findIndex(({ i }) => i === entityId);
+    if (index === -1) return;
+    const resetLabel: AddedLabel = { i: entityId, text, pathPoints: label.pathPoints, group };
+    pack.labels[index] = resetLabel;
+  } else {
+    const entity = getLabelEntity(type, entityId);
     if (!entity) return;
     delete entity.label;
-    drawLabelsByType(selected.type, [selected.entityId]);
-    selected.label = getPathLabel(selected.elId);
-  } else {
-    const { i, text, pathPoints, group } = selected.label;
-    const resetLabel: AddedLabel = { i, text, pathPoints, group };
-    const index = pack.labels.findIndex(label => label.i === i);
-    if (index === -1) return;
-    pack.labels[index] = resetLabel;
-    selected.label = { ...resetLabel };
-    drawLabelsByType("added", [i]);
   }
 
-  select<SVGElement, unknown>(`#${label.elId}`)
+  hasExplicitTextOverride = type === "added";
+  drawLabelsByType(type, [entityId]);
+  label = getCachedLabel(type, entityId) ?? label;
+  select<SVGElement, unknown>(`#${label.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
-  selectLabelGroup(getSelectedGroup());
+  selectLabelGroup(label.group);
   updateValues();
   updateControls();
   drawControlPointsAndLine();
@@ -609,10 +584,41 @@ function resetSelectedLabel(): void {
 
 function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
-  select(`#${label.elId}`).on(".drag", null).classed("draggable", false);
+  select(`#${label.id}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();
+}
+
+type EntityLabelType = Exclude<LabelType, "added">;
+type LabelEntity = { i: number; label?: PathLabel };
+
+function getLabelEntity(type: LabelType, id: number): LabelEntity | undefined {
+  if (type === "added") return undefined;
+  const entities: Record<EntityLabelType, LabelEntity[]> = {
+    state: pack.states,
+    province: pack.provinces,
+    burg: pack.burgs,
+    river: pack.rivers,
+    route: pack.routes
+  };
+  return entities[type].find(entity => entity.i === id);
+}
+
+function getLabelOverride(): PathLabel {
+  const override: PathLabel = {
+    group: label.group,
+    dx: label.dx,
+    dy: label.dy,
+    fontSize: label.fontSize,
+    letterSpacing: label.letterSpacing
+  };
+  if (hasExplicitTextOverride) override.text = label.text;
+  if ("pathPoints" in label) {
+    override.pathPoints = label.pathPoints;
+    override.startOffset = label.startOffset;
+  }
+  return override;
 }
 
 const getLastSelectedGroup = (): string => lastSelectedGroup;
