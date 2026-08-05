@@ -44,7 +44,7 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
 
   if (hasCustomText || mode === "full" || lines.length === 1) return { pathPoints, text, fontSize };
 
-  const { textElement, textPath } = measureLabelText(text, fontSize, sandbox);
+  const { textElement, textPath } = measureLabelText(lines, fontSize, sandbox);
   const { width, height } = textPath.getBBox();
   textPath.setAttribute("href", `#${MEASURE_PATH_ID}`);
   const [[x1, y1], [x2, y2]] = [pathPoints.at(0)!, pathPoints.at(-1)!];
@@ -53,7 +53,7 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   textElement.remove();
   if (fitsRegion) return { pathPoints, text, fontSize };
 
-  const oneLineText = pathLength > name.length * 1.8 ? name : state.name;
+  const oneLineText = pathLength > name.length * 1.4 ? name : state.name;
   const correctedFontSize = minmax(rn((pathLength / oneLineText.length) * 50), 50, 130);
 
   sandbox.remove();
@@ -122,11 +122,10 @@ function measureLabelPath(pathPoints: Point[], sandbox: SVGGElement): number {
 }
 
 function measureLabelText(
-  text: string,
+  lines: string[],
   fontSize: number,
   sandbox: SVGGElement
 ): { textElement: SVGTextElement; textPath: SVGTextPathElement } {
-  const lines = text.split("|");
   const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
   textPath.setAttribute("startOffset", "50%");
