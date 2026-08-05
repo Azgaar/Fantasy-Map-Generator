@@ -124,6 +124,7 @@ function measureLabelText(
   const lines = text.split("|");
   const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
   const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
+  textPath.setAttribute("startOffset", "50%");
   textPath.setAttribute("text-anchor", "middle");
   textPath.setAttribute("font-size", `${fontSize ?? 100}%`);
   textPath.append(

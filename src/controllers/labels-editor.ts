@@ -11,8 +11,6 @@ import type { LabelData } from "@/types/labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
-let hasExplicitTextOverride = false;
-
 let lastSelectedGroup = ""; // the default group for newly added labels
 let label: LabelData;
 
@@ -27,7 +25,6 @@ function open(type: LabelType, id: number): void {
   const cachedLabel = getCachedLabel(type, id);
   if (!cachedLabel) return;
   label = cachedLabel;
-  hasExplicitTextOverride = type === "added" || getLabelEntity(type, id)?.label?.text !== undefined;
 
   select<SVGElement, unknown>(`#${textEl.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
@@ -369,9 +366,7 @@ function hideTextSection(): void {
 
 function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
-
   label.text = input;
-  hasExplicitTextOverride = true;
   applyLabelChanges();
   if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
   if (label.type === "province")
@@ -570,7 +565,6 @@ function resetSelectedLabel(): void {
     delete entity.label;
   }
 
-  hasExplicitTextOverride = type === "added";
   drawLabelsByType(type, [entityId]);
   label = getCachedLabel(type, entityId) ?? label;
   select<SVGElement, unknown>(`#${label.id}`)
@@ -607,13 +601,13 @@ function getLabelEntity(type: LabelType, id: number): LabelEntity | undefined {
 
 function getLabelOverride(): PathLabel {
   const override: PathLabel = {
+    text: label.text,
     group: label.group,
     dx: label.dx,
     dy: label.dy,
     fontSize: label.fontSize,
     letterSpacing: label.letterSpacing
   };
-  if (hasExplicitTextOverride) override.text = label.text;
   if ("pathPoints" in label) {
     override.pathPoints = label.pathPoints;
     override.startOffset = label.startOffset;

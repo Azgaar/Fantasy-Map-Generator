@@ -123,9 +123,9 @@ function getStateLabelsData(ids?: number[]): PathLabelData[] {
     const group = state.label?.group || "state";
     const labelData = state.label?.pathPoints?.length ? state.label : fitStateLabel(state, group);
     const { pathPoints, text, fontSize } = labelData;
-    if (!pathPoints || !text) continue;
-    const anchor = getAchor(...getMiddlePoint(pathPoints), state.label?.dx, state.label?.dy);
+    if (!pathPoints?.length || !text) continue;
     const label: PathLabelData = {
+      ...labelData,
       id: `stateLabel${state.i}`,
       entityId: state.i,
       type: "state",
@@ -133,7 +133,7 @@ function getStateLabelsData(ids?: number[]): PathLabelData[] {
       pathPoints,
       text,
       fontSize,
-      anchor
+      anchor: getAchor(...getMiddlePoint(pathPoints), state.label?.dx, state.label?.dy)
     };
     labels.push(label);
   }
