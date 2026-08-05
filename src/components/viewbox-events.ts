@@ -1,6 +1,7 @@
 // Default interaction on the map canvas: pan/zoom, click-to-edit and hover tooltips
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
+import type { LabelType } from "@/generators/labels";
 import { dragLegendBox } from "@/renderers/draw-legend";
 import { debounce } from "@/utils/commonUtils";
 import { handleMouseMove } from "./map-tooltip";
@@ -61,8 +62,13 @@ function onClick(event: MouseEvent): void {
   if (!target || !parent || !grand || !great || !ancestor) return;
 
   const label = target.closest<SVGTextElement>("#labels text[data-label-type]");
-  if (label?.dataset.labelType === "burg") return void Controllers.BurgEditor.open(Number(label.dataset.id));
-  if (label) return void Controllers.LabelsEditor.open(target);
+  if (label) {
+    const id = Number(label.dataset.id);
+    const type = label.dataset.labelType as LabelType;
+    if (type === "burg") Controllers.BurgEditor.open(id);
+    else Controllers.LabelsEditor.open(type, id);
+    return;
+  }
 
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);

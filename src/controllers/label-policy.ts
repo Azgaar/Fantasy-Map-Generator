@@ -76,17 +76,6 @@ export function getDefaultLabelGroupName(type: LabelType, burgGroups: BurgGroup[
   return burgGroups.find(group => group.isDefault && !group.removed)?.name || "town";
 }
 
-export function resolveLabelGroup(
-  type: LabelType,
-  requestedGroup: string | undefined,
-  labels: LabelsOptions,
-  burgGroups: BurgGroup[]
-): string {
-  const fallback = getDefaultLabelGroupName(type, burgGroups);
-  const requested = requestedGroup || fallback;
-  return labels.groups.some(group => group.name === requested) ? requested : fallback;
-}
-
 export function createDefaultLabelsOptions(burgGroups: BurgGroup[]): LabelsOptions {
   const burgs = burgGroups
     .filter(group => !group.removed)

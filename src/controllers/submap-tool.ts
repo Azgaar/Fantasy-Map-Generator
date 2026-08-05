@@ -1,4 +1,3 @@
-import { resolveLabelGroup } from "@/controllers/label-policy";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { destroyDialogIfExists, ensureEl, minmax, rn } from "../utils";
@@ -121,9 +120,7 @@ function rescaleBurgStyles(scale: number): void {
   }
 
   const burgLabelGroups = new Set(
-    pack.burgs
-      .filter(burg => burg.i && !burg.removed)
-      .map(burg => resolveLabelGroup("burg", burg.label?.group || burg.group, options.labels, options.burgs.groups))
+    pack.burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.label?.group || burg.group || "burg")
   );
   for (const groupId of burgLabelGroups) {
     const groupStyle = style.labels.groups[groupId];

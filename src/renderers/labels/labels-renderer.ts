@@ -12,6 +12,10 @@ import { renderLabelGroups } from "./label-groups";
 import { getLabelPath } from "./label-markup";
 import { getRegionLabel } from "./region-label-layout";
 
+const labelScene = new Scene<LabelData>();
+const labelsByGroup = new Map<string, LabelData[]>();
+viewportLayers.register({ id: "labels", render: reconcileLabels });
+
 const dataAdapters: Record<LabelType, (ids?: number[]) => LabelData[]> = {
   state: getStateLabelsData,
   province: getProvinceLabelsData,
@@ -66,19 +70,9 @@ export function removeLabel(type: LabelType, id: number): void {
   removeMaterialized(labelId, document);
 }
 
-export function forceLabel(id: string): SVGTextElement | null {
-  labelScene.pin(id);
-  viewportLayers.renderNow();
-  return document.getElementById(id) as SVGTextElement | null;
-}
-
-export function releaseLabel(id: string): void {
-  labelScene.unpin(id);
-  viewportLayers.renderNow();
-}
-
-export function getCachedLabel(id: string): LabelData | undefined {
-  return labelScene.get(id);
+export function getCachedLabel(type: LabelType, id: number): LabelData | undefined {
+  const labelId = `${type}Label${id}`;
+  return labelScene.get(labelId);
 }
 
 function getBurgLabelsData(ids?: number[]): LabelData[] {
@@ -309,10 +303,6 @@ function findElement(root: ParentNode, id: string): Element | null {
   if (root instanceof Element && root.id === id) return root;
   return root.querySelector(`#${id}`);
 }
-
-const labelScene = new Scene<LabelData>();
-const labelsByGroup = new Map<string, LabelData[]>();
-viewportLayers.register({ id: "labels", render: reconcileLabels });
 
 function indexLabelGroups(): void {
   labelsByGroup.clear();

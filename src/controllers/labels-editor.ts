@@ -3,104 +3,30 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { resolveLabelGroup } from "@/controllers/label-policy";
-import type { AddedLabel, Label, LabelType, PathLabel } from "@/generators/labels";
+import type { AddedLabel, LabelType } from "@/generators/labels";
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
-import {
-  drawLabelsByType,
-  forceLabel,
-  getCachedLabel,
-  releaseLabel,
-  removeLabel
-} from "@/renderers/labels/labels-renderer";
+import { drawLabelsByType, getCachedLabel, removeLabel } from "@/renderers/labels/labels-renderer";
+import type { LabelData } from "@/types/labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
-type StateLabel = { type: "state"; stateId: number; elId: string; label: PathLabel };
-type ProvinceLabel = { type: "province"; provinceId: number; elId: string; label: PathLabel };
-type BurgLabel = { type: "burg"; burgId: number; elId: string; label: Label };
-type RiverLabel = { type: "river"; entityId: number; elId: string; label: PathLabel };
-type RouteLabel = { type: "route"; entityId: number; elId: string; label: PathLabel };
-type CustomLabel = { type: "added"; labelId: number; elId: string; label: AddedLabel };
-type LabelRef = { type: LabelType; id: number };
-let selectedLabel: StateLabel | ProvinceLabel | BurgLabel | RiverLabel | RouteLabel | CustomLabel;
 let hasExplicitTextOverride = false;
 
 let lastSelectedGroup = ""; // the default group for newly added labels
+let label: LabelData;
 
-function open(target: SVGElement | LabelRef): void {
+function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const requestedId =
-    target instanceof SVGElement
-      ? target.closest<SVGTextElement>("text[data-label-type]")?.id
-      : `${target.type}Label${target.id}`;
-  if (requestedId) forceLabel(requestedId);
-  const textEl =
-    target instanceof SVGElement
-      ? (target.closest("text[data-label-type]") as SVGTextElement | null)
-      : document.querySelector<SVGTextElement>(
-          `#labels text[data-label-type='${target.type}'][data-id='${target.id}']`
-        );
-  if (!textEl) {
-    if (requestedId) releaseLabel(requestedId);
-    return;
-  }
+  const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
+  if (!textEl) return;
 
-  const type = textEl.dataset.labelType as LabelType | undefined;
-  const id = Number(textEl.dataset.id);
-  if (!type || !Number.isFinite(id)) return void releaseLabel(textEl.id);
-
-  if (type === "state") {
-    const state = pack.states[id];
-    if (!state) return void releaseLabel(textEl.id);
-    hasExplicitTextOverride = state.label?.text !== undefined;
-    selectedLabel = {
-      type: "state",
-      stateId: id,
-      elId: `stateLabel${id}`,
-      label: { ...getCachedPathLabel(textEl.id), group: state.label?.group }
-    };
-  } else if (type === "province") {
-    const province = pack.provinces[id];
-    if (!province?.i || province.removed) return void releaseLabel(textEl.id);
-    hasExplicitTextOverride = province.label?.text !== undefined;
-    selectedLabel = {
-      type: "province",
-      provinceId: id,
-      elId: `provinceLabel${id}`,
-      label: { ...getCachedPathLabel(textEl.id), group: province.label?.group }
-    };
-  } else if (type === "burg") {
-    const burg = pack.burgs[id];
-    if (!burg || burg.removed) return void releaseLabel(textEl.id);
-    hasExplicitTextOverride = burg.label?.text !== undefined;
-    selectedLabel = {
-      type: "burg",
-      burgId: id,
-      elId: `burgLabel${id}`,
-      label: { ...burg.label, text: burg.label?.text ?? burg.name }
-    };
-  } else if (type === "river" || type === "route") {
-    const entity =
-      type === "river" ? pack.rivers.find(entity => entity.i === id) : pack.routes.find(entity => entity.i === id);
-    if (!entity) return void releaseLabel(textEl.id);
-    hasExplicitTextOverride = entity.label?.text !== undefined;
-    selectedLabel = {
-      type,
-      entityId: id,
-      elId: textEl.id,
-      label: { ...getCachedPathLabel(textEl.id), group: entity.label?.group }
-    };
-  } else {
-    const label = AddedLabels.get(id);
-    if (!label) return void releaseLabel(textEl.id);
-    hasExplicitTextOverride = true;
-    selectedLabel = { type: "added", labelId: id, elId: `addedLabel${id}`, label: { ...label } };
-  }
+  const cachedLabel = getCachedLabel(type, id);
+  if (!cachedLabel) return;
+  label = cachedLabel;
 
   select<SVGElement, unknown>(`#${textEl.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
@@ -118,7 +44,7 @@ function open(target: SVGElement | LabelRef): void {
   });
 
   drawControlPointsAndLine();
-  selectLabelGroup(getSelectedGroup());
+  selectLabelGroup(label.group);
   updateValues();
   updateControls();
 }
@@ -238,18 +164,6 @@ function renderDialog(): void {
   ensureEl("labelRemoveSingle").addEventListener("click", removeSelectedLabel);
 }
 
-function getSelectedGroup() {
-  if (selectedLabel.type === "state")
-    return resolveLabelGroup("state", selectedLabel.label.group, options.labels, options.burgs.groups);
-  if (selectedLabel.type === "province")
-    return resolveLabelGroup("province", selectedLabel.label.group, options.labels, options.burgs.groups);
-  if (selectedLabel.type === "burg") {
-    const burg = pack.burgs[selectedLabel.burgId];
-    return resolveLabelGroup("burg", selectedLabel.label.group || burg.group, options.labels, options.burgs.groups);
-  }
-  return resolveLabelGroup(selectedLabel.type, selectedLabel.label.group, options.labels, options.burgs.groups);
-}
-
 function selectLabelGroup(group: string): void {
   lastSelectedGroup = group;
 
@@ -263,19 +177,16 @@ function selectLabelGroup(group: string): void {
 }
 
 function updateControls(): void {
-  const isBurg = selectedLabel.type === "burg";
+  const isBurg = label.type === "burg";
   const topButtonsVisible = !ensureEl("labelEditor").classList.contains("section-open");
   ensureEl("labelOffsetShow").style.display = topButtonsVisible && !isBurg ? "inline-block" : "none";
   ensureEl("labelAlign").style.display = topButtonsVisible && !isBurg ? "inline-block" : "none";
-  ensureEl("labelRemoveSingle").style.display =
-    topButtonsVisible && selectedLabel.type === "added" ? "inline-block" : "none";
+  ensureEl("labelRemoveSingle").style.display = topButtonsVisible && label.type === "added" ? "inline-block" : "none";
   ensureEl("labelReset").style.display = topButtonsVisible && hasOverrides() ? "inline-block" : "none";
 }
 
 function updateValues(): void {
-  const label = selectedLabel.label;
-  if (!label) return;
-  const startOffset = selectedLabel.type === "burg" ? 50 : (selectedLabel.label.startOffset ?? 50);
+  const startOffset = label.type === "burg" ? 50 : (label.startOffset ?? 50);
 
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
@@ -303,7 +214,7 @@ function showEditorTips(event: MouseEvent): void {
   showMainTip();
   const target = event.target as SVGElement;
   const parent = target.parentNode as Element | null;
-  if (target.closest(`#${selectedLabel.elId}`)) {
+  if (target.closest(`#${label.elId}`)) {
     tip("Drag to move the label");
   } else if (parent?.id === "controlPoints") {
     if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
@@ -313,20 +224,19 @@ function showEditorTips(event: MouseEvent): void {
 
 function drawControlPointsAndLine(): void {
   select("#debug").select("#controlPoints").remove();
-  if (selectedLabel.type === "burg") return;
+  if ("pathPoints" in label) {
+    const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
+    select<SVGGElement, unknown>("#debug")
+      .append("g")
+      .attr("id", "controlPoints")
+      .attr("transform", transform)
+      .append("path")
+      .attr("d", getLabelPath(label))
+      .on("click", addInterimControlPoint)
+      .node() as SVGPathElement;
 
-  const label = selectedLabel.label;
-  const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
-  select<SVGGElement, unknown>("#debug")
-    .append("g")
-    .attr("id", "controlPoints")
-    .attr("transform", transform)
-    .append("path")
-    .attr("d", getLabelPath(label))
-    .on("click", addInterimControlPoint)
-    .node() as SVGPathElement;
-
-  label.pathPoints?.forEach(drawControlPoint);
+    label.pathPoints?.forEach(drawControlPoint);
+  }
 }
 
 function drawControlPoint(point: Point): void {
@@ -348,7 +258,7 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
-  if (selectedLabel.type === "burg") return;
+  if (label.type === "burg") return;
 
   const points: Point[] = [];
   select("#debug > #controlPoints")
@@ -361,7 +271,7 @@ function redrawLabelPath(): void {
   const lineGen = line<[number, number]>().curve(curveNatural);
   const d = round(lineGen(points) || "");
   select("#debug").select("#controlPoints > path").attr("d", d);
-  selectedLabel.label.pathPoints = points;
+  label.pathPoints = points;
   applyLabelChanges();
 }
 
@@ -405,7 +315,7 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
 }
 
 function dragLabel(event: any): void {
-  const label = selectedLabel.label;
+  const label = label;
   const dx0 = (label.dx || 0) - event.x;
   const dy0 = (label.dy || 0) - event.y;
 
@@ -428,34 +338,22 @@ function hideGroupSection(): void {
 }
 
 function changeGroup(this: HTMLSelectElement): void {
-  const previousGroup = getSelectedGroup();
   const nextGroup = this.value;
-  const sourceType =
-    selectedLabel.type === "state"
-      ? "state"
-      : selectedLabel.type === "province"
-        ? "province"
-        : selectedLabel.type === "burg"
-          ? "burg"
-          : selectedLabel.type;
   const targetType = options.labels.groups.find(group => group.name === nextGroup)?.type;
   const apply = () => {
     lastSelectedGroup = nextGroup;
-    selectedLabel.label.group = nextGroup;
+    label.group = nextGroup;
     applyLabelChanges();
   };
-  if (!targetType || targetType === sourceType) {
-    apply();
-    return;
-  }
+  if (targetType === label.type) return apply();
 
   confirmationDialog({
     title: "Assign cross-type Label Group",
-    message: `Assign this ${sourceType} label to the ${targetType} group "${nextGroup}"? Its rendering geometry will not change.`,
+    message: `Assign this ${label.type} label to the ${targetType} group "${nextGroup}"? It's better to avoid such cross-type assignment.`,
     confirm: "Assign",
     onConfirm: apply,
     onCancel: () => {
-      this.value = previousGroup;
+      this.value = label.group;
     }
   });
 }
@@ -472,28 +370,27 @@ function hideTextSection(): void {
 
 function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
-  const label = selectedLabel.label;
+  const label = label;
   if (label) label.text = input;
   hasExplicitTextOverride = true;
   applyLabelChanges();
-  if (selectedLabel.type === "state")
-    tip("Use States Editor to change the actual state name, not just a label", false, "warn");
-  if (selectedLabel.type === "province")
+  if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
+  if (label.type === "province")
     tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
 }
 
 function generateRandomName(): void {
   let name = "";
-  if (selectedLabel?.type === "state") {
-    const culture = pack.states[selectedLabel.stateId].culture;
+  if (label?.type === "state") {
+    const culture = pack.states[label.stateId].culture;
     name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
-  } else if (selectedLabel?.type === "province") {
-    const province = pack.provinces[selectedLabel.provinceId];
+  } else if (label?.type === "province") {
+    const province = pack.provinces[label.provinceId];
     name = Names.getState(province.name, pack.cells.culture[province.center]);
-  } else if (selectedLabel?.type === "burg") {
-    name = Names.getCulture(pack.burgs[selectedLabel.burgId].culture ?? 0);
+  } else if (label?.type === "burg") {
+    name = Names.getCulture(pack.burgs[label.burgId].culture ?? 0);
   } else {
-    const label = selectedLabel.label;
+    const label = label;
     const points = label?.pathPoints || [];
     const center = points.length
       ? points.reduce(([x, y], point) => [x + point[0] / points.length, y + point[1] / points.length], [0, 0])
@@ -541,46 +438,46 @@ function hideLetterSpacingSection(): void {
 }
 
 function changeStartOffset(this: HTMLInputElement): void {
-  if (selectedLabel.type === "burg") return;
+  if (label.type === "burg") return;
 
   const value = this.value;
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
-  const label = selectedLabel.label;
+  const label = label;
   if (label) label.startOffset = +value;
   applyLabelChanges();
   tip(`Label offset: ${value}%`);
 }
 
 function changeStartOffsetFromValue(this: HTMLInputElement): void {
-  if (selectedLabel.type === "burg") return;
+  if (label.type === "burg") return;
 
   const value = Math.min(80, Math.max(20, +this.value));
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
   this.value = String(value);
-  const label = selectedLabel.label;
+  const label = label;
   if (label) label.startOffset = value;
   applyLabelChanges();
   tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
-  const label = selectedLabel.label;
+  const label = label;
   if (label) label.fontSize = +this.value;
   applyLabelChanges();
   tip(`Label relative size: ${this.value}%`);
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
-  const label = selectedLabel.label;
+  const label = label;
   if (label) label.letterSpacing = +this.value;
   applyLabelChanges();
   tip(`Label letter-spacing size: ${this.value}px`);
 }
 
 function editLabelAlign(): void {
-  if (selectedLabel.type === "burg") return;
+  if (label.type === "burg") return;
 
-  const label = selectedLabel.label;
+  const label = label;
   if (!label?.pathPoints?.length) return;
 
   const xs = label.pathPoints.map(point => point[0]);
@@ -596,8 +493,8 @@ function editLabelAlign(): void {
 }
 
 function editLabelLegend(): void {
-  const noteId = selectedLabel.type === "burg" ? `burg${selectedLabel.burgId}` : selectedLabel.elId;
-  void Controllers.NotesEditor.open(noteId, selectedLabel.label.text);
+  const noteId = label.type === "burg" ? `burg${label.burgId}` : label.elId;
+  void Controllers.NotesEditor.open(noteId, label.text);
 }
 
 function removeSelectedLabel(): void {
@@ -608,9 +505,9 @@ function removeSelectedLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        if (selectedLabel.type !== "added") return;
-        removeLabel("added", selectedLabel.label.i);
-        AddedLabels.remove(selectedLabel.label.i);
+        if (label.type !== "added") return;
+        removeLabel("added", label.i);
+        AddedLabels.remove(label.i);
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -621,7 +518,7 @@ function removeSelectedLabel(): void {
 }
 
 function applyLabelChanges(): void {
-  const selected = selectedLabel;
+  const selected = label;
   const label = { ...selected.label };
   if (selected.type !== "added" && !hasExplicitTextOverride) delete label.text;
   if (selected.type === "state") {
@@ -647,14 +544,14 @@ function applyLabelChanges(): void {
     drawLabelsByType(selected.type, [labelId]);
   }
 
-  select<SVGElement, unknown>(`#${selectedLabel.elId}`)
+  select<SVGElement, unknown>(`#${label.elId}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
   updateControls();
 }
 
 function hasOverrides(): boolean {
-  const selected = selectedLabel;
+  const selected = label;
   if (selected.type === "state") return Boolean(pack.states[selected.stateId].label);
   if (selected.type === "province") return Boolean(pack.provinces[selected.provinceId].label);
   if (selected.type === "burg") return Boolean(pack.burgs[selected.burgId].label);
@@ -665,19 +562,19 @@ function hasOverrides(): boolean {
 }
 
 function resetSelectedLabel(): void {
-  const selected = selectedLabel;
+  const selected = label;
   if (selected.type === "state") {
     hasExplicitTextOverride = false;
     delete pack.states[selected.stateId].label;
     drawLabelsByType("state", [selected.stateId]);
     const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
-    if (textEl) selected.label = getCachedPathLabel(textEl.id);
+    if (textEl) selected.label = getPathLabel(textEl.id);
   } else if (selected.type === "province") {
     hasExplicitTextOverride = false;
     delete pack.provinces[selected.provinceId].label;
     drawLabelsByType("province", [selected.provinceId]);
     const textEl = document.getElementById(selected.elId) as SVGTextElement | null;
-    if (textEl) selected.label = getCachedPathLabel(textEl.id);
+    if (textEl) selected.label = getPathLabel(textEl.id);
   } else if (selected.type === "burg") {
     hasExplicitTextOverride = false;
     const burg = pack.burgs[selected.burgId];
@@ -690,7 +587,7 @@ function resetSelectedLabel(): void {
     if (!entity) return;
     delete entity.label;
     drawLabelsByType(selected.type, [selected.entityId]);
-    selected.label = getCachedPathLabel(selected.elId);
+    selected.label = getPathLabel(selected.elId);
   } else {
     const { i, text, pathPoints, group } = selected.label;
     const resetLabel: AddedLabel = { i, text, pathPoints, group };
@@ -701,7 +598,7 @@ function resetSelectedLabel(): void {
     drawLabelsByType("added", [i]);
   }
 
-  select<SVGElement, unknown>(`#${selectedLabel.elId}`)
+  select<SVGElement, unknown>(`#${label.elId}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
   selectLabelGroup(getSelectedGroup());
@@ -712,35 +609,10 @@ function resetSelectedLabel(): void {
 
 function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
-  select(`#${selectedLabel.elId}`).on(".drag", null).classed("draggable", false);
+  select(`#${label.elId}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();
-  releaseLabel(selectedLabel.elId);
-}
-
-function getCachedPathLabel(id: string): PathLabel {
-  const label = getCachedLabel(id);
-  if (!label) return {};
-  return "pathPoints" in label
-    ? {
-        text: label.text,
-        group: label.group,
-        pathPoints: label.pathPoints,
-        startOffset: label.startOffset,
-        fontSize: label.fontSize,
-        letterSpacing: label.letterSpacing,
-        dx: label.dx,
-        dy: label.dy
-      }
-    : {
-        text: label.text,
-        group: label.group,
-        fontSize: label.fontSize,
-        letterSpacing: label.letterSpacing,
-        dx: label.dx,
-        dy: label.dy
-      };
 }
 
 const getLastSelectedGroup = (): string => lastSelectedGroup;
