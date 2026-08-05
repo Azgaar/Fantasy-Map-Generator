@@ -31,17 +31,17 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
       return ((pathLength * PATH_USAGE - spacingWidth) / textWidth) * 100;
     };
 
-    const initialFontSize = fixedFontSize ?? minmax(getFontSize(basePath.pathLength), MIN_FONT_SIZE, MAX_FONT_SIZE);
+    const initialFontSize = fixedFontSize ?? minmax(getFontSize(basePath.length), MIN_FONT_SIZE, MAX_FONT_SIZE);
     const offset = baseFontSize * (initialFontSize / 100) * lines.length * LINE_HALF_HEIGHT;
     let fittedPath = getRegionLabelPath(state.i, pack.cells.state, pole, cellsNumber, offset);
 
-    if (!fittedPath.pathLength && initialFontSize > MIN_FONT_SIZE) {
+    if (!fittedPath.length && initialFontSize > MIN_FONT_SIZE) {
       const minOffset = baseFontSize * (MIN_FONT_SIZE / 100) * lines.length * LINE_HALF_HEIGHT;
       fittedPath = getRegionLabelPath(state.i, pack.cells.state, pole, cellsNumber, minOffset);
     }
-    if (!fittedPath.pathLength) fittedPath = basePath;
+    if (!fittedPath.length) fittedPath = basePath;
 
-    const fitFontSize = fixedFontSize ?? getFontSize(fittedPath.pathLength);
+    const fitFontSize = fixedFontSize ?? getFontSize(fittedPath.length);
     return {
       pathPoints: fittedPath.pathPoints,
       text: lines.join("|"),
@@ -104,7 +104,7 @@ function getRegionLabelPath(
   pole: [number, number],
   cellsNumber: number,
   offset: number
-): { pathPoints: Point[]; pathLength: number } {
+): { pathPoints: Point[]; length: number } {
   const maxLakeSize = cellsNumber / 20;
   const [x0, y0] = pole;
   const rays = ANGLES.map(({ angle, dx, dy }) => ({
@@ -112,7 +112,9 @@ function getRegionLabelPath(
     ...raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offset })
   }));
   const [ray1, ray2] = findBestRayPair(rays);
-  return getPathPoints(ray1, ray2, pole);
+  const { points, length } = getPathPoints(ray1, ray2, pole);
+  if (points.at(0)![0] > points.at(-1)![0]) points.reverse();
+  return { pathPoints: points, length };
 }
 
 function getPathPoints(ray1: Ray, ray2: Ray, pole: Point) {
@@ -120,16 +122,18 @@ function getPathPoints(ray1: Ray, ray2: Ray, pole: Point) {
   if (isStraight) {
     const p1: Point = [ray1.x, ray1.y];
     const p2: Point = [ray2.x, ray2.y];
-    return {
-      pathPoints: [p1, p2],
-      pathLength: ray1.length + ray2.length
-    };
+    return { points: [p1, p2], length: ray1.length + ray2.length };
   }
 
-  const smaller = ray1.length < ray2.length ? ray1 : ray2;
-  // TODO: p1 = ray from pole with ray1.angle on smaller.length
-  const p1: Point = [];
-  // TODO: p2 = ray from pole with ray2.angle on smaller.length
-  const p2: Point = [];
-  return { pathPoints: [p1, pole, p2], pathLength: smaller.length * 2 };
+  const shoulderLength = Math.min(ray1.length, ray2.length);
+  const radians = Math.PI / 180;
+  const p1: Point = [
+    pole[0] + Math.cos(ray1.angle * radians) * shoulderLength,
+    pole[1] + Math.sin(ray1.angle * radians) * shoulderLength
+  ];
+  const p2: Point = [
+    pole[0] + Math.cos(ray2.angle * radians) * shoulderLength,
+    pole[1] + Math.sin(ray2.angle * radians) * shoulderLength
+  ];
+  return { points: [p1, pole, p2], length: shoulderLength * 2 };
 }
