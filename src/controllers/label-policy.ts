@@ -1,12 +1,6 @@
+import type { LabelGroup, LabelNameMode, LabelType, LabelZoomBounds } from "@/generators/labels";
 import type { BurgGroup } from "@/types/burg-groups";
-import type {
-  LabelGroupOptions,
-  LabelGroupType,
-  LabelNameMode,
-  LabelsOptions,
-  LabelType,
-  LabelZoomBounds
-} from "@/types/labels";
+import type { LabelsOptions } from "@/types/labels";
 
 export const LABEL_ZOOM_MIN = 0.01;
 export const LABEL_ZOOM_MAX = 200;
@@ -42,7 +36,7 @@ export function isLabelGroupVisible({
 }: {
   labelsLayerOn: boolean;
   labels: Pick<LabelsOptions, "showAll">;
-  group: LabelGroupOptions;
+  group: LabelGroup;
   scale: number;
   layerIsOn: (layerId: string) => boolean;
 }): boolean {
@@ -77,7 +71,7 @@ export function validateLabelGroupName(name: string, existingNames: Iterable<str
   return new Set(existingNames).has(name) ? "Label Group names must be unique" : null;
 }
 
-export function getDefaultLabelGroupName(type: LabelGroupType, burgGroups: BurgGroup[]): string {
+export function getDefaultLabelGroupName(type: LabelType, burgGroups: BurgGroup[]): string {
   if (type !== "burg") return DEFAULT_LABEL_GROUPS[type];
   return burgGroups.find(group => group.isDefault && !group.removed)?.name || "town";
 }
@@ -125,11 +119,11 @@ export function normalizeLabelNameMode(value: unknown): LabelNameMode {
 
 function createGroup(
   name: string,
-  type: LabelGroupType,
+  type: LabelType,
   layerDependency: string | null,
   zoom: LabelZoomBounds,
   isDefault = false
-): LabelGroupOptions {
+): LabelGroup {
   return { name, type, active: true, layerDependency, zoom, mode: "auto", isDefault };
 }
 

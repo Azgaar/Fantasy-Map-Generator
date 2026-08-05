@@ -36,13 +36,9 @@ export function drawLabels(): void {
 
 export function drawLabelsByType(type: LabelType, ids?: number[]): void {
   if (!layerIsOn("toggleLabels")) return void removeLabels();
+  if (!labelScene.valid) drawLabels();
 
   TIME && console.time("drawLabelsByType");
-  if (!labelScene.valid) {
-    drawLabels();
-    TIME && console.timeEnd("drawLabelsByType");
-    return;
-  }
   const selected = ids && new Set(ids);
   const changed = labelScene.replaceWhere(
     label => label.type === type && (!selected || selected.has(getEntityId(label))),
@@ -337,12 +333,9 @@ type LabelInput = PathLabelInput | PointLabelInput;
 function withAnchor(label: PathLabelInput): PathLabelData;
 function withAnchor(label: PointLabelInput): PointLabelData;
 function withAnchor(label: LabelInput): LabelData {
-  return { ...label, anchor: getLabelAnchor(label) } as LabelData;
-}
-
-export function getLabelAnchor(label: LabelInput): Point {
   const [x, y] = "pathPoints" in label ? interpolatePath(label) : [label.x, label.y];
-  return [x + (label.dx || 0), y + (label.dy || 0)];
+  const anchor = [x + (label.dx || 0), y + (label.dy || 0)];
+  return { ...label, anchor } as LabelData;
 }
 
 function interpolatePath(label: PathLabelInput): Point {

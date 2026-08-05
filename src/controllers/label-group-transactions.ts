@@ -1,8 +1,8 @@
 import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/controllers/label-policy";
-import type { AddedLabel } from "@/generators/labels";
+import type { AddedLabel, LabelGroup, LabelStyles, LabelType } from "@/generators/labels";
 import type { Province } from "@/generators/provinces-generator";
 import type { BurgGroup } from "@/types/burg-groups";
-import type { LabelGroupOptions, LabelGroupType, LabelStyles, LabelsOptions } from "@/types/labels";
+import type { LabelsOptions } from "@/types/labels";
 
 type LabelOverride = { group?: string };
 type LabelEntity = { i?: number; removed?: boolean; label?: LabelOverride };
@@ -37,8 +37,8 @@ export function createLabelGroup({
   styles: LabelStyles;
   burgGroups: BurgGroup[];
   name: string;
-  type: LabelGroupType;
-}): LabelGroupOptions {
+  type: LabelType;
+}): LabelGroup {
   const error = validateLabelGroupName(name, [
     ...labels.groups.map(group => group.name),
     ...burgGroups.filter(group => !group.removed).map(group => group.name)
@@ -49,12 +49,7 @@ export function createLabelGroup({
   const baseline = labels.groups.find(group => group.name === defaultName);
   if (!baseline) throw new Error(`Missing default Label Group "${defaultName}"`);
 
-  const group: LabelGroupOptions = {
-    ...structuredClone(baseline),
-    name,
-    type,
-    mode: "auto"
-  };
+  const group: LabelGroup = { ...structuredClone(baseline), name, type, mode: "auto" };
   const lastTypeIndex = labels.groups.findLastIndex(current => current.type === type);
   labels.groups.splice(lastTypeIndex + 1, 0, group);
   styles.groups[name] = { ...(styles.groups[defaultName] || {}) };
@@ -147,7 +142,7 @@ export function countLabelAssignments(world: LabelWorld, name: string): LabelAss
   };
 }
 
-export function assignLabelGroup(world: LabelWorld, type: LabelGroupType, ids: Iterable<number>, target: string): void {
+export function assignLabelGroup(world: LabelWorld, type: LabelType, ids: Iterable<number>, target: string): void {
   const selected = new Set(ids);
   if (type === "state") assignOverrides(world.states);
   else if (type === "province") assignOverrides(world.provinces);

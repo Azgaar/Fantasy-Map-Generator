@@ -297,15 +297,14 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
 - The decision-rich schema is:
 
   ```ts
-  type LabelGroupType = "states" | "burgs" | "provinces" | "added";
   type LabelNameMode = "auto" | "short" | "full";
 
   type LabelGroupOptions = {
     name: string;
-    type: LabelGroupType;
+    type: LabelType;
     active: boolean;
     layerDependency: string | null;
-    zoom: {min: number | null; max: number | null};
+    zoom: { min: number | null; max: number | null };
     mode: LabelNameMode;
   };
 
@@ -329,11 +328,11 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
 
 - Required non-Burg defaults are:
 
-  | Group | Type | Active | Default dependency | Default mode |
-  | --- | --- | --- | --- | --- |
-  | `states` | `states` | true | None | auto |
-  | `provinces` | `provinces` | true | `toggleProvinces` | auto |
-  | `added` | `added` | true | None | auto |
+  | Group       | Type        | Active | Default dependency | Default mode |
+  | ----------- | ----------- | ------ | ------------------ | ------------ |
+  | `states`    | `states`    | true   | None               | auto         |
+  | `provinces` | `provinces` | true   | `toggleProvinces`  | auto         |
+  | `added`     | `added`     | true   | None               | auto         |
 
 - The Burg fallback is the Burg group marked as default by Configure Burg Groups, normally `town`. Every current Burg
   group also owns a Burg-managed Label Group with the same name. These groups default to active and
@@ -352,14 +351,14 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
 - Names are unique across every Label Group type and every Burg-managed group.
 - Real validation examples:
 
-  | Proposed name | Result | Reason |
-  | --- | --- | --- |
-  | `royal_cities` | valid | starts with a letter; underscores allowed |
-  | `river-port` | valid | hyphens allowed after the first character |
-  | `_debug` | valid | underscore may start an identifier |
-  | `Royal Cities` | invalid | spaces are not allowed |
-  | `12towns` | invalid | starts with a digit |
-  | `states` | invalid for a new group | protected name already exists |
+  | Proposed name  | Result                  | Reason                                    |
+  | -------------- | ----------------------- | ----------------------------------------- |
+  | `royal_cities` | valid                   | starts with a letter; underscores allowed |
+  | `river-port`   | valid                   | hyphens allowed after the first character |
+  | `_debug`       | valid                   | underscore may start an identifier        |
+  | `Royal Cities` | invalid                 | spaces are not allowed                    |
+  | `12towns`      | invalid                 | starts with a digit                       |
+  | `states`       | invalid for a new group | protected name already exists             |
 
 - SVG Label Groups are direct children of `#labels`. Their DOM ID is prefixed (`labels-${name}`) and the logical name is
   also stored in `data-group`. Code and persisted state use the logical name, never the prefixed DOM ID. This prevents
@@ -418,14 +417,14 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
   sizes fall back to the selected type default.
 - Real migrations from the default style:
 
-  | Existing group | Old desired size | Initial explicit zoom |
-  | --- | ---: | --- |
-  | `states` | 22 | min null, max 4.45 |
-  | `addedLabels` → `added` | 18 | min null, max 5.67 |
-  | `capital` | 6 | min 1, max 19 |
-  | `city` | 5 | min 1.4, max 23 |
-  | `town` | 4 | min 2, max 29 |
-  | default Province style | 10 | min 0.2, max 11 |
+  | Existing group          | Old desired size | Initial explicit zoom |
+  | ----------------------- | ---------------: | --------------------- |
+  | `states`                |               22 | min null, max 4.45    |
+  | `addedLabels` → `added` |               18 | min null, max 5.67    |
+  | `capital`               |                6 | min 1, max 19         |
+  | `city`                  |                5 | min 1.4, max 23       |
+  | `town`                  |                4 | min 2, max 29         |
+  | default Province style  |               10 | min 0.2, max 11       |
 
 - The value is calculated once when a default or migrated group is defined. It is not recalculated when the font size,
   Style Preset, or global zoom extent later changes.
@@ -448,6 +447,7 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
   ```
 
   Real values are 100px at scale 1, 75px at scale 2, 62.5px at scale 4, and 52.5px at scale 20.
+
 - The global zoom handler delegates Label behavior to a dedicated label zoom/visibility module. It no longer loops over
   groups, reads `data-size`, reads `hideLabels`, or reads `rescaleLabels`.
 
@@ -475,18 +475,18 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
   assigning it a replacement shortcut is outside this feature.
 - The selected layout is the approved dense-table prototype:
 
-  | Column | Control |
-  | --- | --- |
-  | Active | FMG-native checkbox |
-  | Group | protected/managed indicator plus one-line name |
-  | Type | read-only type |
-  | Name mode | `auto` / `short` / `full` select |
-  | Zoom min | compact optional number input |
-  | Zoom max | compact optional number input |
-  | Layer dependency | existing-layer select |
-  | Labels | current resolved-label count |
-  | Order | compact up/down FMG icon buttons |
-  | Actions | Style, Rename, Delete FMG icon buttons |
+  | Column           | Control                                        |
+  | ---------------- | ---------------------------------------------- |
+  | Active           | FMG-native checkbox                            |
+  | Group            | protected/managed indicator plus one-line name |
+  | Type             | read-only type                                 |
+  | Name mode        | `auto` / `short` / `full` select               |
+  | Zoom min         | compact optional number input                  |
+  | Zoom max         | compact optional number input                  |
+  | Layer dependency | existing-layer select                          |
+  | Labels           | current resolved-label count                   |
+  | Order            | compact up/down FMG icon buttons               |
+  | Actions          | Style, Rename, Delete FMG icon buttons         |
 
 - Rows remain one text line high. The table scrolls for large group counts. It uses current FMG `.dialog`, `.table`,
   checkbox, input, select, tooltip, icon, and jQuery dialog approaches rather than prototype-specific styling.
@@ -654,14 +654,14 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
 The following combinations are normative:
 
 | Labels layer | Show all | Active | Zoom passes | Dependency passes | Group visible |
-| --- | --- | --- | --- | --- | --- |
-| off | false | true | true | true | no |
-| off | true | false | false | false | no |
-| on | true | false | false | false | yes |
-| on | false | false | true | true | no |
-| on | false | true | false | true | no |
-| on | false | true | true | false | no |
-| on | false | true | true | true | yes |
+| ------------ | -------- | ------ | ----------- | ----------------- | ------------- |
+| off          | false    | true   | true        | true              | no            |
+| off          | true     | false  | false       | false             | no            |
+| on           | true     | false  | false       | false             | yes           |
+| on           | false    | false  | true        | true              | no            |
+| on           | false    | true   | false       | true              | no            |
+| on           | false    | true   | true        | false             | no            |
+| on           | false    | true   | true        | true              | yes           |
 
 Real end-to-end examples:
 
