@@ -203,5 +203,5 @@ export function containsPoint(bounds: ViewportBounds, [x, y]: readonly [number, 
   return x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1;
 }
 
-window.updateViewportLayers = viewportLayers.schedule;
-window.renderViewportLayersNow = viewportLayers.renderNow;
+window.updateViewportLayers = () => viewportLayers.schedule();
+window.renderViewportLayersNow = () => viewportLayers.renderNow();

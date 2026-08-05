@@ -83,10 +83,10 @@ export function getCachedLabel(id: string): LabelData | undefined {
 
 function getBurgLabelsData(ids?: number[]): LabelData[] {
   const selected = ids && new Set(ids);
-  const result: PointLabelData[] = [];
+  const labels: PointLabelData[] = [];
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || (selected && !selected.has(burg.i))) continue;
-    result.push(
+    labels.push(
       withAnchor({
         ...burg.label,
         id: `burgLabel${burg.i}`,
@@ -98,16 +98,16 @@ function getBurgLabelsData(ids?: number[]): LabelData[] {
       })
     );
   }
-  return result;
+  return labels;
 }
 
 function getProvinceLabelsData(ids?: number[]): LabelData[] {
   const selected = ids && new Set(ids);
-  const result: PointLabelData[] = [];
+  const labels: PointLabelData[] = [];
   for (const province of pack.provinces) {
     if (!province.i || province.removed || (selected && !selected.has(province.i))) continue;
     const [x, y] = province.pole || pack.cells.p[province.center];
-    result.push(
+    labels.push(
       withAnchor({
         ...province.label,
         id: `provinceLabel${province.i}`,
@@ -119,7 +119,7 @@ function getProvinceLabelsData(ids?: number[]): LabelData[] {
       })
     );
   }
-  return result;
+  return labels;
 }
 
 function getStateLabelsData(ids?: number[]): LabelData[] {
@@ -177,9 +177,12 @@ function getRouteLabelsData(ids?: number[]): PathLabelData[] {
 
 function getAddedLabelsData(ids?: number[]): LabelData[] {
   const selected = ids && new Set(ids);
-  return pack.labels
-    .filter(label => !selected || selected.has(label.i))
-    .map(label => withAnchor({ id: `addedLabel${label.i}`, type: "added", ...label }));
+  const labels: PathLabelData[] = [];
+  for (const label of pack.labels) {
+    if (!label.i || (selected && !selected.has(label.i))) continue;
+    labels.push(withAnchor({ id: `addedLabel${label.i}`, type: "added", ...label }));
+  }
+  return labels;
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
