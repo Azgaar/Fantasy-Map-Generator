@@ -186,8 +186,7 @@ function updateControls(): void {
 }
 
 function updateValues(): void {
-  const startOffset = label.type === "burg" ? 50 : (label.startOffset ?? 50);
-
+  const startOffset = "startOffset" in label ? label.startOffset || 50 : 50;
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(startOffset);
@@ -214,7 +213,7 @@ function showEditorTips(event: MouseEvent): void {
   showMainTip();
   const target = event.target as SVGElement;
   const parent = target.parentNode as Element | null;
-  if (target.closest(`#${label.elId}`)) {
+  if (target.closest(`#${label.id}`)) {
     tip("Drag to move the label");
   } else if (parent?.id === "controlPoints") {
     if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
@@ -258,21 +257,21 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
-  if (label.type === "burg") return;
-
-  const points: Point[] = [];
-  select("#debug > #controlPoints")
-    .selectAll<SVGCircleElement, unknown>("circle")
-    .each(function () {
-      const x = rn(+this.getAttribute("cx")!, 2);
-      const y = rn(+this.getAttribute("cy")!, 2);
-      points.push([x, y]);
-    });
-  const lineGen = line<[number, number]>().curve(curveNatural);
-  const d = round(lineGen(points) || "");
-  select("#debug").select("#controlPoints > path").attr("d", d);
-  label.pathPoints = points;
-  applyLabelChanges();
+  if ("pathPoints" in label) {
+    const points: Point[] = [];
+    select("#debug > #controlPoints")
+      .selectAll<SVGCircleElement, unknown>("circle")
+      .each(function () {
+        const x = rn(+this.getAttribute("cx")!, 2);
+        const y = rn(+this.getAttribute("cy")!, 2);
+        points.push([x, y]);
+      });
+    const lineGen = line<[number, number]>().curve(curveNatural);
+    const d = round(lineGen(points) || "");
+    select("#debug").select("#controlPoints > path").attr("d", d);
+    label.pathPoints = points;
+    applyLabelChanges();
+  }
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -315,7 +314,6 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
 }
 
 function dragLabel(event: any): void {
-  const label = label;
   const dx0 = (label.dx || 0) - event.x;
   const dy0 = (label.dy || 0) - event.y;
 
@@ -345,7 +343,7 @@ function changeGroup(this: HTMLSelectElement): void {
     label.group = nextGroup;
     applyLabelChanges();
   };
-  if (targetType === label.type) return apply();
+  if (targetType === label.type) return void apply();
 
   confirmationDialog({
     title: "Assign cross-type Label Group",
@@ -370,8 +368,8 @@ function hideTextSection(): void {
 
 function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
-  const label = label;
-  if (label) label.text = input;
+
+  label.text = input;
   hasExplicitTextOverride = true;
   applyLabelChanges();
   if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
@@ -379,32 +377,39 @@ function changeText(): void {
     tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
 }
 
-function generateRandomName(): void {
-  let name = "";
-  if (label?.type === "state") {
-    const culture = pack.states[label.stateId].culture;
-    name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
-  } else if (label?.type === "province") {
-    const province = pack.provinces[label.provinceId];
-    name = Names.getState(province.name, pack.cells.culture[province.center]);
-  } else if (label?.type === "burg") {
-    name = Names.getCulture(pack.burgs[label.burgId].culture ?? 0);
-  } else {
-    const label = label;
-    const points = label?.pathPoints || [];
-    const center = points.length
-      ? points.reduce(([x, y], point) => [x + point[0] / points.length, y + point[1] / points.length], [0, 0])
-      : [0, 0];
-    const cell = findCell(center[0] + (label?.dx || 0), center[1] + (label?.dy || 0))!;
-    const culture = pack.cells.culture[cell];
-    name = Names.getCulture(culture);
+const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
+  burg: label => Names.getCulture(pack.burgs[label.entityId].culture ?? 0),
+  state: label => {
+    const culture = pack.states[label.entityId].culture;
+    return Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
+  },
+  province: label => {
+    const province = pack.provinces[label.entityId];
+    return Names.getState(province.name, pack.cells.culture[province.center]);
+  },
+  added: label => {
+    const cellId = findCell(...label.anchor);
+    if (!cellId) return "";
+    return Names.getCulture(pack.cells.culture[cellId]);
+  },
+  river: label => {
+    const cellId = findCell(...label.anchor);
+    if (!cellId) return "";
+    return Rivers.getName(cellId);
+  },
+  route: label => {
+    const points = "pathPoints" in label ? label.pathPoints : [];
+    return Routes.generateName({ group: label.group, points });
   }
-  ensureEl<HTMLInputElement>("labelText").value = name;
+};
+
+function generateRandomName(): void {
+  ensureEl<HTMLInputElement>("labelText").value = nameGenerators[label.type](label);
   changeText();
 }
 
 function editGroupStyle(): void {
-  editStyle("labels", getSelectedGroup());
+  editStyle("labels", label.group);
 }
 
 function showSizeSection(): void {
@@ -438,58 +443,55 @@ function hideLetterSpacingSection(): void {
 }
 
 function changeStartOffset(this: HTMLInputElement): void {
-  if (label.type === "burg") return;
+  if ("pathPoints" in label) {
+    const value = this.value;
+    ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
 
-  const value = this.value;
-  ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
-  const label = label;
-  if (label) label.startOffset = +value;
-  applyLabelChanges();
-  tip(`Label offset: ${value}%`);
+    label.startOffset = +value;
+    applyLabelChanges();
+    tip(`Label offset: ${value}%`);
+  }
 }
 
 function changeStartOffsetFromValue(this: HTMLInputElement): void {
-  if (label.type === "burg") return;
+  if ("pathPoints" in label) {
+    const value = Math.min(80, Math.max(20, +this.value));
+    ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
+    this.value = String(value);
 
-  const value = Math.min(80, Math.max(20, +this.value));
-  ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
-  this.value = String(value);
-  const label = label;
-  if (label) label.startOffset = value;
-  applyLabelChanges();
-  tip(`Label offset: ${value}%`);
+    label.startOffset = value;
+    applyLabelChanges();
+    tip(`Label offset: ${value}%`);
+  }
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
-  const label = label;
-  if (label) label.fontSize = +this.value;
+  label.fontSize = +this.value;
   applyLabelChanges();
   tip(`Label relative size: ${this.value}%`);
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
-  const label = label;
-  if (label) label.letterSpacing = +this.value;
+  label.letterSpacing = +this.value;
   applyLabelChanges();
   tip(`Label letter-spacing size: ${this.value}px`);
 }
 
 function editLabelAlign(): void {
-  if (label.type === "burg") return;
+  if ("pathPoints" in label) {
+    if (!label.pathPoints.length) return;
 
-  const label = label;
-  if (!label?.pathPoints?.length) return;
-
-  const xs = label.pathPoints.map(point => point[0]);
-  const ys = label.pathPoints.map(point => point[1]);
-  const center = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-  const halfLength = Math.max((Math.max(...xs) - Math.min(...xs)) / 2, 100);
-  label.pathPoints = [
-    [center[0] - halfLength, center[1]],
-    [center[0] + halfLength, center[1]]
-  ];
-  applyLabelChanges();
-  drawControlPointsAndLine();
+    const xs = label.pathPoints.map(point => point[0]);
+    const ys = label.pathPoints.map(point => point[1]);
+    const center = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+    const halfLength = Math.max((Math.max(...xs) - Math.min(...xs)) / 2, 100);
+    label.pathPoints = [
+      [center[0] - halfLength, center[1]],
+      [center[0] + halfLength, center[1]]
+    ];
+    applyLabelChanges();
+    drawControlPointsAndLine();
+  }
 }
 
 function editLabelLegend(): void {
@@ -518,8 +520,6 @@ function removeSelectedLabel(): void {
 }
 
 function applyLabelChanges(): void {
-  const selected = label;
-  const label = { ...selected.label };
   if (selected.type !== "added" && !hasExplicitTextOverride) delete label.text;
   if (selected.type === "state") {
     pack.states[selected.stateId].label = label;

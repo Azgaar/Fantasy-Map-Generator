@@ -571,7 +571,6 @@ function toggleProvinces(event) {
     provs.selectAll("*").remove();
     turnButtonOff("toggleProvinces");
   }
-  renderViewportLayersNow();
 }
 
 function drawProvinces() {

@@ -5,6 +5,7 @@ export type LabelsOptions = { resizeOnZoom: boolean; showAll: boolean; groups: L
 
 interface BaseLabelData {
   id: string;
+  entityId: number; // stateId, provinceId, burgId, labelId
   text: string;
   type: LabelType;
   group: string;

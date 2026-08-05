@@ -220,7 +220,16 @@ function zoomRaf() {
 
     // Uses global values, so each frame always draws using the latest positioning values
     viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-    if (didPositionChange || didScaleChange) updateViewportLayers();
+    if (didPositionChange || didScaleChange) {
+      updateViewportLayers();
+      window.updateMinimap && updateMinimap();
+    }
+
+    if (didScaleChange) {
+      invokeActiveZooming();
+      drawScaleBar(scaleBar, scale);
+      fitScaleBar(scaleBar, svgWidth, svgHeight);
+    }
 
     if (didPositionChange) {
       if (layerIsOn("toggleCoordinates")) drawCoordinates();
@@ -237,16 +246,6 @@ function zoomRaf() {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         }
       }
-    }
-
-    if (didScaleChange) {
-      invokeActiveZooming();
-      drawScaleBar(scaleBar, scale);
-      fitScaleBar(scaleBar, svgWidth, svgHeight);
-    }
-
-    if (didPositionChange || didScaleChange) {
-      window.updateMinimap && updateMinimap();
     }
   });
 }
