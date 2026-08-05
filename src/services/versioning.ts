@@ -15,7 +15,7 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-export const VERSION = "1.139.9";
+export const VERSION = "1.139.10";
 
 const latestPublicChanges = [
   "Economic simulation",
