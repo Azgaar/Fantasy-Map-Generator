@@ -229,9 +229,7 @@ function drawControlPointsAndLine(): void {
       .attr("transform", transform)
       .append("path")
       .attr("d", getLabelPath(label))
-      .on("click", addInterimControlPoint)
-      .node() as SVGPathElement;
-
+      .on("click", addInterimControlPoint);
     label.pathPoints?.forEach(drawControlPoint);
   }
 }

@@ -24,15 +24,15 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   if (!pathPoints.length) return { pathPoints, text: name, fontSize: 100 };
 
   const letterLength = getAverageLetterLength(sandbox);
-  const pathLength = measureLabelPath(pathPoints, sandbox).getTotalLength() / letterLength;
-  const hasCustomText = state.label?.text !== undefined;
+  const pathLength = measureLabelPath(pathPoints, sandbox) / letterLength;
+  const hasCustomText = state.label?.text;
   const [lines, fontSize] = hasCustomText
-    ? [state.label!.text!.split("|"), state.label!.fontSize ?? 100]
+    ? [state.label!.text!.split("|"), state.label?.fontSize ?? 100]
     : getLinesAndRatio(mode, state.name, name, pathLength);
   const text = lines.join("|");
 
   const longestLineLength = max(lines.map(line => line.length)) || 0;
-  if (pathLength && pathLength < longestLineLength) {
+  if (pathLength < longestLineLength) {
     const [x1, y1] = pathPoints.at(0)!;
     const [x2, y2] = pathPoints.at(-1)!;
     const [dx, dy] = [(x2 - x1) / 2, (y2 - y1) / 2];
@@ -40,7 +40,6 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
 
     pathPoints[0] = [x1 + dx - dx * modifier, y1 + dy - dy * modifier];
     pathPoints[pathPoints.length - 1] = [x2 - dx + dx * modifier, y2 - dy + dy * modifier];
-    measureLabelPath(pathPoints, sandbox);
   }
 
   if (hasCustomText || mode === "full" || lines.length === 1) return { pathPoints, text, fontSize };
@@ -76,7 +75,13 @@ function getRegionLabelPath(
     ...raycast({ regionId, regionIds, x0, y0, dx, dy, maxLakeSize, offset })
   }));
   const [ray1, ray2] = findBestRayPair(rays);
-  const pathPoints: [number, number][] = [[ray1.x, ray1.y], pole, [ray2.x, ray2.y]];
+  const isStraightLine = Math.abs(ray1.angle - ray2.angle) === 180;
+  const pathPoints: Point[] = isStraightLine
+    ? [
+        [ray1.x, ray1.y],
+        [ray2.x, ray2.y]
+      ]
+    : [[ray1.x, ray1.y], pole, [ray2.x, ray2.y]];
   if (ray1.x > ray2.x) pathPoints.reverse();
   return pathPoints;
 }
@@ -107,13 +112,13 @@ function getAverageLetterLength(sandbox: SVGGElement): number {
 
 const MEASURE_PATH_ID = "measureLabelPath";
 
-function measureLabelPath(pathPoints: Point[], sandbox: SVGGElement): SVGPathElement {
+function measureLabelPath(pathPoints: Point[], sandbox: SVGGElement): number {
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.id = MEASURE_PATH_ID;
   path.setAttribute("d", getLabelPath({ pathPoints }));
   sandbox.querySelector(`#${MEASURE_PATH_ID}`)?.remove();
   sandbox.appendChild(path);
-  return path;
+  return path.getTotalLength();
 }
 
 function measureLabelText(
@@ -171,7 +176,7 @@ function isLabelInsideRegion(
 ): boolean {
   const { x, y, width, height } = textElement.getBBox();
   const [centerX, centerY] = [x + width / 2, y + height / 2];
-  const points: [number, number][] = [
+  const points: Point[] = [
     [-halfWidth, -halfHeight],
     [+halfWidth, -halfHeight],
     [+halfWidth, halfHeight],
@@ -186,8 +191,8 @@ function isLabelInsideRegion(
   for (const [x, y] of points) {
     const pointX = centerX + x * cos - y * sin;
     const pointY = centerY + x * sin + y * cos;
-    const cellId = findClosestCell(pointX, pointY, undefined, pack) as number;
-    if (regionIds[cellId] === regionId) pointsInside++;
+    const cellId = findClosestCell(pointX, pointY, undefined, pack);
+    if (cellId && regionIds[cellId] === regionId) pointsInside++;
     if (pointsInside > 4) return true;
   }
 
