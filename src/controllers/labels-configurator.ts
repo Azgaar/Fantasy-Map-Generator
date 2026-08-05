@@ -17,8 +17,7 @@ import {
 } from "@/controllers/label-policy";
 import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels";
 import { renderLabelGroups } from "@/renderers/labels/label-groups";
-import { drawLabels, drawLabelsByType } from "@/renderers/labels/labels-renderer";
-import { viewportLayers } from "@/renderers/viewport/viewport-renderer";
+import { drawLabels, drawLabelsByType, renderLabelsNow } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
 
 const TYPES = DEFAULT_LABEL_TYPES;
@@ -458,7 +457,7 @@ function getWorld(): LabelWorld {
 function persistAndRender(redraw: boolean): void {
   localStorage.setItem("label-groups", JSON.stringify(options.labels));
   if (redraw && layerIsOn("toggleLabels")) drawLabels();
-  else viewportLayers.renderNow();
+  else renderLabelsNow();
 }
 
 function escapeHtml(value: string): string {

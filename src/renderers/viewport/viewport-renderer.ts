@@ -1,4 +1,4 @@
-interface ViewportBounds {
+export interface ViewportBounds {
   scale: number;
   x0: number;
   y0: number;
@@ -12,12 +12,14 @@ export interface ViewportRenderContext {
   renderAll: boolean;
 }
 
-interface ViewportLayer {
+export interface ViewportLayer {
   id: string;
-  scaleMin?: number | null;
-  scaleMax?: number | null;
-  enabled?: () => boolean;
   render: (context: ViewportRenderContext) => void;
+}
+
+export interface ViewportLayerHandle {
+  renderNow: () => void;
+  unregister: () => void;
 }
 
 export interface SceneItem {
@@ -26,12 +28,10 @@ export interface SceneItem {
 
 export class Scene<T extends SceneItem> {
   private items = new Map<string, T>();
-  private pinned = new Set<string>();
   valid = false;
 
   replace(items: T[]): void {
     this.items = new Map(items.map(item => [item.id, item]));
-    this.pinned = new Set([...this.pinned].filter(id => this.items.has(id)));
     this.valid = true;
   }
 
@@ -48,7 +48,6 @@ export class Scene<T extends SceneItem> {
         next.delete(id);
       } else {
         this.items.delete(id);
-        this.pinned.delete(id);
       }
     }
 
@@ -63,25 +62,11 @@ export class Scene<T extends SceneItem> {
 
   remove(id: string): void {
     this.items.delete(id);
-    this.pinned.delete(id);
   }
 
   invalidate(): void {
     this.items.clear();
-    this.pinned.clear();
     this.valid = false;
-  }
-
-  pin(id: string): void {
-    this.pinned.add(id);
-  }
-
-  unpin(id: string): void {
-    this.pinned.delete(id);
-  }
-
-  isPinned(id: string): boolean {
-    return this.pinned.has(id);
   }
 
   get(id: string): T | undefined {
@@ -113,23 +98,29 @@ export class ViewportRenderer {
     }
   ) {}
 
-  register(layer: ViewportLayer): () => void {
+  register(layer: ViewportLayer): ViewportLayerHandle {
     this.layers.set(layer.id, layer);
-    return () => {
-      if (this.layers.get(layer.id) === layer) this.layers.delete(layer.id);
+    return {
+      renderNow: () => {
+        if (this.layers.get(layer.id) === layer) layer.render(this.getLiveContext());
+      },
+      unregister: () => {
+        if (this.layers.get(layer.id) === layer) this.layers.delete(layer.id);
+      }
     };
   }
 
   schedule(): void {
-    const bounds = this.getBounds();
-    if (!this.shouldReconcileViewport(bounds)) return;
-    this.materializedBounds = bounds;
-    this.scheduleContext({ root: document, bounds, renderAll: false });
+    const visibleBounds = this.getBounds(0);
+    if (!this.shouldReconcileViewport(visibleBounds)) return;
+    const context = this.getLiveContext();
+    this.materializedBounds = context.bounds;
+    this.scheduleContext(context);
   }
 
-  private getBounds(): ViewportBounds {
+  private getBounds(paddingPixels: number): ViewportBounds {
     const { scale, x, y, width, height } = this.options.getViewport();
-    const padding = this.options.overscanPixels / scale;
+    const padding = paddingPixels / scale;
     return {
       scale,
       x0: -x / scale - padding,
@@ -157,51 +148,47 @@ export class ViewportRenderer {
       this.frameId = null;
       const pending = this.pending;
       this.pending = null;
-      if (pending) this.renderContext(pending);
+      if (pending) this.renderLayers(pending);
     });
   }
 
   renderNow(): void {
-    const bounds = this.getBounds();
-    this.materializedBounds = bounds;
-    this.renderContext({ root: document, bounds, renderAll: false });
+    const context = this.getLiveContext();
+    this.materializedBounds = context.bounds;
+    this.cancelScheduledRender();
+    this.renderLayers(context);
   }
 
   renderAll(root: ParentNode): void {
     const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderContext({ root, bounds, renderAll: true });
+    this.renderLayers({ root, bounds, renderAll: true });
   }
 
-  private renderContext(context: ViewportRenderContext): void {
+  private getLiveContext(): ViewportRenderContext {
+    return { root: document, bounds: this.getBounds(this.options.overscanPixels), renderAll: false };
+  }
+
+  private cancelScheduledRender(): void {
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.frameId = null;
     this.pending = null;
+  }
+
+  private renderLayers(context: ViewportRenderContext): void {
     for (const layer of this.layers.values()) {
-      if (!context.renderAll && !this.isLayerVisible(layer, context.bounds.scale)) continue;
       layer.render(context);
     }
   }
-
-  private isLayerVisible(layer: ViewportLayer, scale: number): boolean {
-    if (layer.enabled && !layer.enabled()) return false;
-    if (layer.scaleMin != null && scale < layer.scaleMin) return false;
-    if (layer.scaleMax != null && scale > layer.scaleMax) return false;
-    return true;
-  }
 }
 
-const OVERSCAN_PIXELS = 40;
-const GUARD_PIXELS = 20;
+const OVERSCAN_PIXELS = 80;
+const GUARD_PIXELS = 40;
 
 export const viewportLayers = new ViewportRenderer({
   getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),
   overscanPixels: OVERSCAN_PIXELS,
   guardPixels: GUARD_PIXELS
 });
-
-export function containsPoint(bounds: ViewportBounds, [x, y]: readonly [number, number]): boolean {
-  return x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1;
-}
 
 window.updateViewportLayers = () => viewportLayers.schedule();
 window.renderViewportLayersNow = () => viewportLayers.renderNow();
