@@ -1,6 +1,11 @@
 import { getLabelParentFontSize, isLabelGroupVisible } from "@/controllers/label-policy";
 import type { LabelType } from "@/generators/labels";
-import { containsPoint, type ViewportRenderContext, viewportLayers } from "@/renderers/viewport/viewport-renderer";
+import {
+  containsPoint,
+  Scene,
+  type ViewportRenderContext,
+  viewportLayers
+} from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
 import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
 import { renderLabelGroups } from "./label-groups";
@@ -21,8 +26,10 @@ export function drawLabels(): void {
 
   TIME && console.time("drawLabels");
   renderLabelGroups();
+  document.getElementById("textPaths")?.replaceChildren();
   const labels = Object.values(dataAdapters).flatMap(adapter => adapter());
-  labelScene.replaceAll(labels);
+  labelScene.replace(labels);
+  indexLabelGroups();
   viewportLayers.renderNow();
   TIME && console.timeEnd("drawLabels");
 }
@@ -31,10 +38,20 @@ export function drawLabelsByType(type: LabelType, ids?: number[]): void {
   if (!layerIsOn("toggleLabels")) return void removeLabels();
 
   TIME && console.time("drawLabelsByType");
-  if (!labelScene.valid) return void drawLabels();
-  labelScene.updateType(type, dataAdapters[type](ids), ids);
+  if (!labelScene.valid) {
+    drawLabels();
+    TIME && console.timeEnd("drawLabelsByType");
+    return;
+  }
+  const selected = ids && new Set(ids);
+  const changed = labelScene.replaceWhere(
+    label => label.type === type && (!selected || selected.has(getEntityId(label))),
+    dataAdapters[type](ids)
+  );
+  indexLabelGroups();
+  for (const id of changed) removeMaterialized(id, document);
   viewportLayers.renderNow();
-  TIME && console.time("drawLabelsByType");
+  TIME && console.timeEnd("drawLabelsByType");
 }
 
 export function removeLabels(): void {
@@ -43,26 +60,29 @@ export function removeLabels(): void {
   });
   document.getElementById("textPaths")?.replaceChildren();
   labelScene.invalidate();
+  labelsByGroup.clear();
 }
 
 export function removeLabel(type: LabelType, id: number): void {
-  labelScene.remove(type, id);
-  removeMaterialized(`${type}Label${id}`, document);
+  const labelId = `${type}Label${id}`;
+  labelScene.remove(labelId);
+  indexLabelGroups();
+  removeMaterialized(labelId, document);
 }
 
 export function forceLabel(id: string): SVGTextElement | null {
-  labelScene.force(id);
+  labelScene.pin(id);
   viewportLayers.renderNow();
   return document.getElementById(id) as SVGTextElement | null;
 }
 
 export function releaseLabel(id: string): void {
-  labelScene.release(id);
+  labelScene.unpin(id);
   viewportLayers.renderNow();
 }
 
 export function getCachedLabel(id: string): LabelData | undefined {
-  return labelScene.get(id)?.data;
+  return labelScene.get(id);
 }
 
 function getBurgLabelsData(ids?: number[]): LabelData[] {
@@ -70,15 +90,17 @@ function getBurgLabelsData(ids?: number[]): LabelData[] {
   const result: PointLabelData[] = [];
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || (selected && !selected.has(burg.i))) continue;
-    result.push({
-      ...burg.label,
-      id: `burgLabel${burg.i}`,
-      text: burg.label?.text ?? burg.name ?? "",
-      type: "burg",
-      group: burg.label?.group || burg.group || "burg",
-      x: burg.x,
-      y: burg.y
-    });
+    result.push(
+      withAnchor({
+        ...burg.label,
+        id: `burgLabel${burg.i}`,
+        text: burg.label?.text ?? burg.name ?? "",
+        type: "burg",
+        group: burg.label?.group || burg.group || "burg",
+        x: burg.x,
+        y: burg.y
+      })
+    );
   }
   return result;
 }
@@ -89,15 +111,17 @@ function getProvinceLabelsData(ids?: number[]): LabelData[] {
   for (const province of pack.provinces) {
     if (!province.i || province.removed || (selected && !selected.has(province.i))) continue;
     const [x, y] = province.pole || pack.cells.p[province.center];
-    result.push({
-      ...province.label,
-      id: `provinceLabel${province.i}`,
-      text: province.label?.text ?? province.name,
-      type: "province",
-      group: province.label?.group || "province",
-      x,
-      y
-    });
+    result.push(
+      withAnchor({
+        ...province.label,
+        id: `provinceLabel${province.i}`,
+        text: province.label?.text ?? province.name,
+        type: "province",
+        group: province.label?.group || "province",
+        x,
+        y
+      })
+    );
   }
   return result;
 }
@@ -108,7 +132,7 @@ function getStateLabelsData(ids?: number[]): LabelData[] {
   for (const state of pack.states) {
     if (!state.i || state.removed || (selected && !selected.has(state.i))) continue;
     const pole = state.pole || pack.cells.p[state.center];
-    result.push(getRegionLabel(state, "state", pack.cells.state, pole, state.cells || 0));
+    result.push(withAnchor(getRegionLabel(state, "state", pack.cells.state, pole, state.cells || 0)));
   }
   return result;
 }
@@ -120,15 +144,17 @@ function getRiverLabelsData(ids?: number[]): LabelData[] {
     if (!river.cells.length || !river.name || (selected && !selected.has(river.i))) continue;
     const points = river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points);
     if (!points.length) continue;
-    labels.push({
-      ...river.label,
-      id: `riverLabel${river.i}`,
-      type: "river",
-      text: river.label?.text ?? `${river.name} ${river.type}`,
-      group: river.label?.group || "river",
-      pathPoints: formatPathPoints(points as Point[]),
-      startOffset: river.label?.startOffset
-    });
+    labels.push(
+      withAnchor({
+        ...river.label,
+        id: `riverLabel${river.i}`,
+        type: "river",
+        text: river.label?.text ?? `${river.name} ${river.type}`,
+        group: river.label?.group || "river",
+        pathPoints: formatPathPoints(points as Point[]),
+        startOffset: river.label?.startOffset
+      })
+    );
   }
   return labels;
 }
@@ -138,15 +164,17 @@ function getRouteLabelsData(ids?: number[]): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const route of pack.routes) {
     if (!route.label?.pathPoints || !route.name || (selected && !selected.has(route.i))) continue;
-    labels.push({
-      ...route.label,
-      id: `routeLabel${route.i}`,
-      type: "route",
-      text: route.label?.text ?? route.name ?? "",
-      group: route.label?.group || "route",
-      pathPoints: formatPathPoints(route.label?.pathPoints),
-      startOffset: route.label?.startOffset
-    });
+    labels.push(
+      withAnchor({
+        ...route.label,
+        id: `routeLabel${route.i}`,
+        type: "route",
+        text: route.label?.text ?? route.name ?? "",
+        group: route.label?.group || "route",
+        pathPoints: formatPathPoints(route.label?.pathPoints),
+        startOffset: route.label?.startOffset
+      })
+    );
   }
   return labels;
 }
@@ -155,7 +183,7 @@ function getAddedLabelsData(ids?: number[]): LabelData[] {
   const selected = ids && new Set(ids);
   return pack.labels
     .filter(label => !selected || selected.has(label.i))
-    .map(label => ({ id: `addedLabel${label.i}`, type: "added", ...label }));
+    .map(label => withAnchor({ id: `addedLabel${label.i}`, type: "added", ...label }));
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
@@ -188,15 +216,11 @@ function reconcileGroup(groupName: string, context: ViewportRenderContext): void
       scale: context.bounds.scale,
       layerIsOn
     });
-  const desired = labelScene
-    .getGroup(groupName)
-    .filter(
-      label =>
-        context.renderAll ||
-        labelScene.isForced(label.data.id) ||
-        (visible && containsPoint(context.bounds, label.anchor))
-    );
-  const desiredIds = new Set(desired.map(label => label.data.id));
+  const desired = (labelsByGroup.get(groupName) || []).filter(
+    label =>
+      context.renderAll || labelScene.isPinned(label.id) || (visible && containsPoint(context.bounds, label.anchor))
+  );
+  const desiredIds = new Set(desired.map(label => label.id));
   let membershipChanged = false;
 
   for (const child of Array.from(group.children)) {
@@ -206,9 +230,8 @@ function reconcileGroup(groupName: string, context: ViewportRenderContext): void
   }
 
   for (const label of desired) {
-    const existing = group.querySelector<SVGTextElement>(`#${label.data.id}`);
-    if (existing?.dataset.labelRevision === String(label.revision)) continue;
-    if (existing) removeMaterialized(label.data.id, context.root);
+    const existing = group.querySelector<SVGTextElement>(`#${label.id}`);
+    if (existing) continue;
     const { text, path } = createLabelElements(label, group.ownerDocument);
     if (path) pathsRoot.appendChild(path);
     group.appendChild(text);
@@ -217,27 +240,18 @@ function reconcileGroup(groupName: string, context: ViewportRenderContext): void
 
   if (membershipChanged) {
     for (const label of desired) {
-      const text = group.querySelector<SVGTextElement>(`#${label.data.id}`);
+      const text = group.querySelector<SVGTextElement>(`#${label.id}`);
       if (text) group.appendChild(text);
     }
   }
   group.classList.remove("hidden");
 }
 
-interface SceneLabel {
-  data: LabelData;
-  anchor: Point;
-  order: number;
-  revision: number;
-}
-
-function createLabelElements(label: SceneLabel, document: Document): { text: SVGTextElement; path?: SVGPathElement } {
-  const data = label.data;
+function createLabelElements(data: LabelData, document: Document): { text: SVGTextElement; path?: SVGPathElement } {
   const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
   text.id = data.id;
   text.dataset.labelType = data.type;
   text.dataset.id = String(getEntityId(data));
-  text.dataset.labelRevision = String(label.revision);
   text.setAttribute("text-rendering", "optimizeSpeed");
   if (data.dx || data.dy) text.setAttribute("transform", `translate(${data.dx || 0}, ${data.dy || 0})`);
 
@@ -297,93 +311,18 @@ function findElement(root: ParentNode, id: string): Element | null {
   return root.querySelector(`#${id}`);
 }
 
-export class LabelScene {
-  private labels = new Map<string, SceneLabel>();
-  private forced = new Set<string>();
-  private groups = new Map<string, SceneLabel[]>();
-  private nextOrder = 0;
-  private nextRevision = 0;
-  valid = false;
+const labelScene = new Scene<LabelData>();
+const labelsByGroup = new Map<string, LabelData[]>();
+viewportLayers.register({ id: "labels", render: reconcileLabels });
 
-  replaceAll(labels: LabelData[]): void {
-    this.labels.clear();
-    this.groups.clear();
-    this.nextOrder = 0;
-    for (const data of labels) this.set(data);
-    this.valid = true;
-  }
-
-  updateType(type: LabelType, labels: LabelData[], ids?: number[]): void {
-    const selected = ids && new Set(ids.map(id => `${type}Label${id}`));
-    const orders = new Map<string, number>();
-    for (const [id, label] of this.labels) {
-      if (label.data.type !== type || (selected && !selected.has(id))) continue;
-      orders.set(id, label.order);
-      this.labels.delete(id);
-    }
-    for (const data of labels) this.set(data, orders.get(data.id));
-    this.groups.clear();
-    this.valid = true;
-  }
-
-  remove(type: LabelType, id: number): void {
-    const labelId = `${type}Label${id}`;
-    this.labels.delete(labelId);
-    this.groups.clear();
-    this.forced.delete(labelId);
-  }
-
-  invalidate(): void {
-    this.labels.clear();
-    this.groups.clear();
-    this.forced.clear();
-    this.valid = false;
-  }
-
-  force(id: string): void {
-    this.forced.add(id);
-  }
-
-  release(id: string): void {
-    this.forced.delete(id);
-  }
-
-  isForced(id: string): boolean {
-    return this.forced.has(id);
-  }
-
-  get(id: string): SceneLabel | undefined {
-    return this.labels.get(id);
-  }
-
-  getGroup(group: string): SceneLabel[] {
-    if (!this.groups.size) {
-      for (const label of this.getAll()) {
-        const labels = this.groups.get(label.data.group) || [];
-        labels.push(label);
-        this.groups.set(label.data.group, labels);
-      }
-    }
-    return this.groups.get(group) || [];
-  }
-
-  private getAll(): SceneLabel[] {
-    return Array.from(this.labels.values()).toSorted((a, b) => a.order - b.order);
-  }
-
-  private set(data: LabelData, order?: number): void {
-    const existing = this.labels.get(data.id);
-    this.labels.set(data.id, {
-      data,
-      anchor: getLabelAnchor(data),
-      order: order ?? existing?.order ?? this.nextOrder++,
-      revision: ++this.nextRevision
-    });
+function indexLabelGroups(): void {
+  labelsByGroup.clear();
+  for (const label of labelScene.values()) {
+    const labels = labelsByGroup.get(label.group) || [];
+    labels.push(label);
+    labelsByGroup.set(label.group, labels);
   }
 }
-
-const labelScene = new LabelScene();
-viewportLayers.register({ id: "labels", render: reconcileLabels });
 
 function formatPathPoints(points: Point[]): Point[] {
   const simple = simplify(points, 0.5);
@@ -391,12 +330,22 @@ function formatPathPoints(points: Point[]): Point[] {
   return simple;
 }
 
-export function getLabelAnchor(label: LabelData): Point {
+type PathLabelInput = Omit<PathLabelData, "anchor">;
+type PointLabelInput = Omit<PointLabelData, "anchor">;
+type LabelInput = PathLabelInput | PointLabelInput;
+
+function withAnchor(label: PathLabelInput): PathLabelData;
+function withAnchor(label: PointLabelInput): PointLabelData;
+function withAnchor(label: LabelInput): LabelData {
+  return { ...label, anchor: getLabelAnchor(label) } as LabelData;
+}
+
+export function getLabelAnchor(label: LabelInput): Point {
   const [x, y] = "pathPoints" in label ? interpolatePath(label) : [label.x, label.y];
   return [x + (label.dx || 0), y + (label.dy || 0)];
 }
 
-function interpolatePath(label: PathLabelData): Point {
+function interpolatePath(label: PathLabelInput): Point {
   const points = label.pathPoints;
   if (!points.length) return [0, 0];
   if (points.length === 1) return points[0];

@@ -17,6 +17,7 @@ interface BaseLabelData {
   text: string;
   type: LabelType;
   group: string;
+  anchor: Point;
   fontSize?: number;
   letterSpacing?: number;
   dx?: number;

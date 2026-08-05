@@ -20,6 +20,79 @@ export interface ViewportLayer {
   render: (context: ViewportRenderContext) => void;
 }
 
+export interface SceneItem {
+  id: string;
+}
+
+export class Scene<T extends SceneItem> {
+  private items = new Map<string, T>();
+  private pinned = new Set<string>();
+  valid = false;
+
+  replace(items: T[]): void {
+    this.items = new Map(items.map(item => [item.id, item]));
+    this.pinned = new Set([...this.pinned].filter(id => this.items.has(id)));
+    this.valid = true;
+  }
+
+  replaceWhere(match: (item: T) => boolean, replacements: T[]): string[] {
+    const next = new Map(replacements.map(item => [item.id, item]));
+    const changed = new Set<string>();
+
+    for (const [id, item] of this.items) {
+      if (!match(item)) continue;
+      changed.add(id);
+      const replacement = next.get(id);
+      if (replacement) {
+        this.items.set(id, replacement);
+        next.delete(id);
+      } else {
+        this.items.delete(id);
+        this.pinned.delete(id);
+      }
+    }
+
+    for (const [id, item] of next) {
+      changed.add(id);
+      this.items.set(id, item);
+    }
+
+    this.valid = true;
+    return [...changed];
+  }
+
+  remove(id: string): void {
+    this.items.delete(id);
+    this.pinned.delete(id);
+  }
+
+  invalidate(): void {
+    this.items.clear();
+    this.pinned.clear();
+    this.valid = false;
+  }
+
+  pin(id: string): void {
+    this.pinned.add(id);
+  }
+
+  unpin(id: string): void {
+    this.pinned.delete(id);
+  }
+
+  isPinned(id: string): boolean {
+    return this.pinned.has(id);
+  }
+
+  get(id: string): T | undefined {
+    return this.items.get(id);
+  }
+
+  values(): IterableIterator<T> {
+    return this.items.values();
+  }
+}
+
 interface ViewportState {
   scale: number;
   x: number;

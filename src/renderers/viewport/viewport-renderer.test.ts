@@ -1,5 +1,43 @@
 import { describe, expect, it, vi } from "vitest";
-import { getViewportBounds, shouldReconcileViewport, ViewportRenderer } from "./viewport-renderer";
+import { getViewportBounds, Scene, shouldReconcileViewport, ViewportRenderer } from "./viewport-renderer";
+
+interface TestItem {
+  id: string;
+  type: string;
+  value: string;
+}
+
+describe("Scene", () => {
+  it("stores final items directly and preserves order across replacements", () => {
+    const scene = new Scene<TestItem>();
+    scene.replace([item("state", "state", "Old state"), item("burg", "burg", "Old burg")]);
+
+    const changed = scene.replaceWhere(entry => entry.type === "burg", [item("burg", "burg", "New burg")]);
+
+    expect(changed).toEqual(["burg"]);
+    expect(scene.get("burg")?.value).toBe("New burg");
+    expect([...scene.values()].map(entry => entry.id)).toEqual(["state", "burg"]);
+  });
+
+  it("returns removed and inserted ids from a partial replacement", () => {
+    const scene = new Scene<TestItem>();
+    scene.replace([item("state", "state", "State"), item("burg", "burg", "Burg")]);
+
+    const changed = scene.replaceWhere(entry => entry.type === "burg", [item("city", "burg", "City")]);
+
+    expect(changed).toEqual(["burg", "city"]);
+    expect([...scene.values()].map(entry => entry.id)).toEqual(["state", "city"]);
+  });
+
+  it("tracks pinned items and clears them on removal", () => {
+    const scene = new Scene<TestItem>();
+    scene.replace([item("state", "state", "State")]);
+    scene.pin("state");
+    expect(scene.isPinned("state")).toBe(true);
+    scene.remove("state");
+    expect(scene.isPinned("state")).toBe(false);
+  });
+});
 
 describe("ViewportRenderer", () => {
   it("coalesces scheduled renders and uses the latest viewport", () => {
@@ -91,4 +129,8 @@ describe("viewport bounds", () => {
 
 function createRenderer(viewport = { scale: 1, x: 0, y: 0, width: 100, height: 100 }) {
   return new ViewportRenderer({ getViewport: () => viewport, requestFrame: vi.fn(), cancelFrame: vi.fn() });
+}
+
+function item(id: string, type: string, value: string): TestItem {
+  return { id, type, value };
 }

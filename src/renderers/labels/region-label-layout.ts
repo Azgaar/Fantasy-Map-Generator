@@ -8,6 +8,7 @@ import { getLabelPath } from "./label-markup";
 import { ANGLES, findBestRayPair, raycast } from "./label-raycast";
 
 type Region = { i: number; name: string; fullName?: string; label?: PathLabel };
+export type RegionLabelLayout = Omit<PathLabelData, "anchor">;
 
 export function getRegionLabel(
   region: Region,
@@ -15,8 +16,8 @@ export function getRegionLabel(
   regionIds: TypedArray,
   pole: [number, number],
   cellsNumber: number
-): PathLabelData {
-  const label: PathLabelData = {
+): RegionLabelLayout {
+  const label: RegionLabelLayout = {
     ...region.label,
     id: `${type}Label${region.i}`,
     type,
@@ -38,13 +39,13 @@ export function getRegionLabel(
 
 function fitLabel(
   region: Region,
-  label: PathLabelData,
+  label: RegionLabelLayout,
   mode: LabelNameMode,
   sandbox: SVGGElement,
   regionIds: TypedArray,
   pole: [number, number],
   cellsNumber: number
-): Pick<PathLabelData, "pathPoints" | "text" | "fontSize"> {
+): Pick<RegionLabelLayout, "pathPoints" | "text" | "fontSize"> {
   const pathPoints = getRegionLabelPath(region.i, regionIds, pole, cellsNumber);
   if (!pathPoints.length) return { pathPoints, text: label.text, fontSize: label.fontSize };
 
@@ -133,7 +134,7 @@ function getAverageLetterLength(sandbox: SVGGElement): number {
 
 const MEASURE_PATH_ID = "measureLabelPath";
 
-function measureLabelPath(label: PathLabelData, sandbox: SVGGElement): SVGPathElement {
+function measureLabelPath(label: RegionLabelLayout, sandbox: SVGGElement): SVGPathElement {
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.id = MEASURE_PATH_ID;
   path.setAttribute("d", getLabelPath(label));
@@ -143,7 +144,7 @@ function measureLabelPath(label: PathLabelData, sandbox: SVGGElement): SVGPathEl
 }
 
 function measureLabelText(
-  label: PathLabelData,
+  label: RegionLabelLayout,
   sandbox: SVGGElement
 ): { textElement: SVGTextElement; textPath: SVGTextPathElement } {
   const lines = label.text.split("|");

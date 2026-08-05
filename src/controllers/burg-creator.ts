@@ -39,7 +39,7 @@ function addOnClick(event: MouseEvent): void {
   }
 
   const burgId = Burgs.add(point);
-  drawLabelsByType("burg", burgId);
+  drawLabelsByType("burg", [burgId]);
   refreshEditors();
 
   if (!event.shiftKey) stop();
