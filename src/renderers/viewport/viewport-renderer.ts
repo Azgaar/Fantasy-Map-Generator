@@ -93,30 +93,25 @@ export class Scene<T extends SceneItem> {
   }
 }
 
-interface ViewportState {
-  scale: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface ViewportRendererOptions {
-  getViewport: () => ViewportState;
-  overscanPixels?: number;
-  guardPixels?: number;
-}
-
-const DEFAULT_OVERSCAN_PIXELS = 40;
-const DEFAULT_GUARD_PIXELS = 20;
-
 export class ViewportRenderer {
   private layers = new Map<string, ViewportLayer>();
   private frameId: number | null = null;
   private pending: ViewportRenderContext | null = null;
   private materializedBounds: ViewportBounds | null = null;
 
-  constructor(private readonly options: ViewportRendererOptions) {}
+  constructor(
+    private readonly options: {
+      getViewport: () => {
+        scale: number;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      };
+      overscanPixels: number;
+      guardPixels: number;
+    }
+  ) {}
 
   register(layer: ViewportLayer): () => void {
     this.layers.set(layer.id, layer);
@@ -126,23 +121,33 @@ export class ViewportRenderer {
   }
 
   schedule(): void {
-    const visible = this.getBounds(0);
-    if (!shouldReconcileViewport(this.materializedBounds, visible, this.options.guardPixels ?? DEFAULT_GUARD_PIXELS))
-      return;
-    const bounds = this.getBounds(this.options.overscanPixels ?? DEFAULT_OVERSCAN_PIXELS);
+    const bounds = this.getBounds();
+    if (!this.shouldReconcileViewport(bounds)) return;
     this.materializedBounds = bounds;
     this.scheduleContext({ root: document, bounds, renderAll: false });
   }
 
-  renderNow(): void {
-    const bounds = this.getBounds(this.options.overscanPixels ?? DEFAULT_OVERSCAN_PIXELS);
-    this.materializedBounds = bounds;
-    this.renderContext({ root: document, bounds, renderAll: false });
+  private getBounds(): ViewportBounds {
+    const { scale, x, y, width, height } = this.options.getViewport();
+    const padding = this.options.overscanPixels / scale;
+    return {
+      scale,
+      x0: -x / scale - padding,
+      y0: -y / scale - padding,
+      x1: (width - x) / scale + padding,
+      y1: (height - y) / scale + padding
+    };
   }
 
-  renderAll(root: ParentNode): void {
-    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderContext({ root, bounds, renderAll: true });
+  private shouldReconcileViewport(bounds: ViewportBounds): boolean {
+    if (!this.materializedBounds) return true;
+    const guard = this.options.guardPixels / bounds.scale;
+    return (
+      bounds.x0 < this.materializedBounds.x0 + guard ||
+      bounds.y0 < this.materializedBounds.y0 + guard ||
+      bounds.x1 > this.materializedBounds.x1 - guard ||
+      bounds.y1 > this.materializedBounds.y1 - guard
+    );
   }
 
   private scheduleContext(context: ViewportRenderContext): void {
@@ -156,66 +161,46 @@ export class ViewportRenderer {
     });
   }
 
+  renderNow(): void {
+    const bounds = this.getBounds();
+    this.materializedBounds = bounds;
+    this.renderContext({ root: document, bounds, renderAll: false });
+  }
+
+  renderAll(root: ParentNode): void {
+    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+    this.renderContext({ root, bounds, renderAll: true });
+  }
+
   private renderContext(context: ViewportRenderContext): void {
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.frameId = null;
     this.pending = null;
     for (const layer of this.layers.values()) {
-      if (!context.renderAll && !isLayerVisible(layer, context.bounds.scale)) continue;
+      if (!context.renderAll && !this.isLayerVisible(layer, context.bounds.scale)) continue;
       layer.render(context);
     }
   }
 
-  private getBounds(paddingPixels: number): ViewportBounds {
-    const { scale, x, y, width, height } = this.options.getViewport();
-    return getViewportBounds({ scale, x, y }, { width, height }, paddingPixels);
+  private isLayerVisible(layer: ViewportLayer, scale: number): boolean {
+    if (layer.enabled && !layer.enabled()) return false;
+    if (layer.scaleMin != null && scale < layer.scaleMin) return false;
+    if (layer.scaleMax != null && scale > layer.scaleMax) return false;
+    return true;
   }
 }
 
-export const viewportLayers = new ViewportRenderer({
-  getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight })
-});
+const OVERSCAN_PIXELS = 40;
+const GUARD_PIXELS = 20;
 
-export function getViewportBounds(
-  transform: { scale: number; x: number; y: number },
-  size: { width: number; height: number },
-  paddingPixels = 80
-): ViewportBounds {
-  const scale = Number.isFinite(transform.scale) && transform.scale > 0 ? transform.scale : 1;
-  const padding = paddingPixels / scale;
-  return {
-    scale,
-    x0: -transform.x / scale - padding,
-    y0: -transform.y / scale - padding,
-    x1: (size.width - transform.x) / scale + padding,
-    y1: (size.height - transform.y) / scale + padding
-  };
-}
+export const viewportLayers = new ViewportRenderer({
+  getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),
+  overscanPixels: OVERSCAN_PIXELS,
+  guardPixels: GUARD_PIXELS
+});
 
 export function containsPoint(bounds: ViewportBounds, [x, y]: readonly [number, number]): boolean {
   return x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1;
-}
-
-export function shouldReconcileViewport(
-  materialized: ViewportBounds | null,
-  visible: ViewportBounds,
-  guardPixels = 40
-): boolean {
-  if (!materialized) return true;
-  const guard = guardPixels / visible.scale;
-  return (
-    visible.x0 < materialized.x0 + guard ||
-    visible.y0 < materialized.y0 + guard ||
-    visible.x1 > materialized.x1 - guard ||
-    visible.y1 > materialized.y1 - guard
-  );
-}
-
-function isLayerVisible(layer: ViewportLayer, scale: number): boolean {
-  if (layer.enabled && !layer.enabled()) return false;
-  if (layer.scaleMin != null && scale < layer.scaleMin) return false;
-  if (layer.scaleMax != null && scale > layer.scaleMax) return false;
-  return true;
 }
 
 window.updateViewportLayers = viewportLayers.schedule;
