@@ -808,8 +808,9 @@ class RoutesModule {
 
       for (const [to, routeId] of Object.entries(routes[from])) {
         if (routeId === route.i) {
-          delete routes[from][parseInt(to, 10)];
-          delete routes[parseInt(to, 10)][from];
+          const toCell = parseInt(to, 10);
+          delete routes[from][toCell];
+          if (routes[toCell]) delete routes[toCell][from];
         }
       }
     }
