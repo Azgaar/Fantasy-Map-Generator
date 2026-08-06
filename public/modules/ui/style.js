@@ -485,13 +485,8 @@ function getEl() {
   else return svg.select("#" + el).select("#" + g);
 }
 
-function getLabelGroupStyle() {
-  if (styleElementSelect.value !== "labels") return null;
-  return style.labels.groups[styleGroupSelect.value];
-}
-
 function updateLabelGroupInlineStyle(group) {
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (!groupStyle) return;
 
   const inlineStyle = group.node().style;
@@ -507,14 +502,14 @@ function updateLabelGroupInlineStyle(group) {
 styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
   getEl().attr("fill", this.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = getGroupStyle(styleGroupSelect.value);
   if (groupStyle) groupStyle.fill = this.value;
 });
 
 styleStrokeInput.addEventListener("input", function () {
   styleStrokeOutput.value = this.value;
   getEl().attr("stroke", this.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
@@ -526,7 +521,7 @@ function redrawMeasurersOnStyleChange() {
 
 styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
@@ -534,7 +529,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
 
 styleLetterSpacingInput.addEventListener("input", e => {
   getEl().attr("letter-spacing", e.target.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["letter-spacing"] = e.target.value;
 });
 
@@ -555,14 +550,14 @@ styleDisplayInput.addEventListener("change", function () {
 
 styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.opacity = e.target.value;
 });
 
 styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
   getEl().attr("filter", this.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) {
     if (this.value) groupStyle.filter = this.value;
     else delete groupStyle.filter;
@@ -900,7 +895,7 @@ styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
   const family = styleSelectFont.value;
   getEl().attr("font-family", family);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["font-family"] = family;
 
   if (styleElementSelect.value === "legend") redrawLegend();
@@ -969,7 +964,7 @@ styleFontMinus.addEventListener("click", function () {
 function changeFontSize(el, size) {
   styleFontSize.value = size;
 
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (styleElementSelect.value === "labels") {
     el.attr("font-size", `${size}%`).attr("data-size", null);
     if (groupStyle) {
@@ -995,7 +990,7 @@ function changeFontSize(el, size) {
 
 styleFontShiftX.addEventListener("input", e => {
   const group = getEl().attr("data-dx", e.target.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["data-dx"] = e.target.value;
   const dx = e.target.value || 0;
   const dy = group.attr("data-dy") || 0;
@@ -1004,7 +999,7 @@ styleFontShiftX.addEventListener("input", e => {
 
 styleFontShiftY.addEventListener("input", e => {
   const group = getEl().attr("data-dy", e.target.value);
-  const groupStyle = getLabelGroupStyle();
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["data-dy"] = e.target.value;
   const dx = group.attr("data-dx") || 0;
   const dy = e.target.value || 0;

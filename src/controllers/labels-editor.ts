@@ -3,7 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels";
+import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels-generator";
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import { drawLabelsByType, getCachedLabel, removeLabel } from "@/renderers/labels/labels-renderer";

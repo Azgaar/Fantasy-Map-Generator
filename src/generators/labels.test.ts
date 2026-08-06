@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import { AddedLabelsModule } from "./labels";
+import { AddedLabelsModule } from "./labels-generator";
 
 describe("AddedLabelsModule", () => {
   beforeEach(() => {

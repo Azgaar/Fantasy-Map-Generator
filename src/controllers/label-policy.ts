@@ -1,4 +1,4 @@
-import type { LabelGroup, LabelNameMode, LabelType, LabelZoomBounds } from "@/generators/labels";
+import type { LabelGroup, LabelNameMode, LabelType, LabelZoomBounds } from "@/generators/labels-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { LabelsOptions } from "@/types/labels";
 

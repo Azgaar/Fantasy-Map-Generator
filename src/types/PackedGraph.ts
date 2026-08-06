@@ -4,7 +4,7 @@ import type { Culture } from "@/generators/cultures-generator";
 import type { Feature } from "@/generators/features";
 import type { Good } from "@/generators/goods-generator";
 import type { Ice } from "@/generators/ice-generator";
-import type { AddedLabel } from "@/generators/labels";
+import type { AddedLabel } from "@/generators/labels-generator";
 import type { Marker } from "@/generators/markers-generator";
 import type { Deal, Market } from "@/generators/markets-generator";
 import type { Measurer } from "@/generators/measurers-generator";

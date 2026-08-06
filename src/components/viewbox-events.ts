@@ -1,7 +1,7 @@
 // Default interaction on the map canvas: pan/zoom, click-to-edit and hover tooltips
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
-import type { LabelType } from "@/generators/labels";
+import type { LabelType } from "@/generators/labels-generator";
 import { dragLegendBox } from "@/renderers/draw-legend";
 import { debounce } from "@/utils/commonUtils";
 import { handleMouseMove } from "./map-tooltip";

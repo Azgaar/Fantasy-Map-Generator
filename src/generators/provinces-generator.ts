@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { max } from "d3";
 import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
-import type { PathLabel } from "./labels";
+import type { PathLabel } from "./labels-generator";
 
 declare global {
   var Provinces: ProvinceModule;

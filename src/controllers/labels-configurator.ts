@@ -15,7 +15,7 @@ import {
   validateLabelGroupName,
   validateLabelZoom
 } from "@/controllers/label-policy";
-import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels";
+import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels-generator";
 import { renderLabelGroups } from "@/renderers/labels/label-groups";
 import { drawLabels, drawLabelsByType, renderLabelsNow } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";

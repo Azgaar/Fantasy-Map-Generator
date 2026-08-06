@@ -1,5 +1,5 @@
 import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/controllers/label-policy";
-import type { AddedLabel, LabelGroup, LabelStyles, LabelType } from "@/generators/labels";
+import type { AddedLabel, LabelGroup, LabelStyles, LabelType } from "@/generators/labels-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { LabelsOptions } from "@/types/labels";

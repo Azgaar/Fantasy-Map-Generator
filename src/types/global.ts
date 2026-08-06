@@ -1,5 +1,5 @@
 import type { Selection } from "d3";
-import type { LabelGroup, LabelStyles } from "@/generators/labels";
+import type { LabelGroup, LabelStyles } from "@/generators/labels-generator";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";

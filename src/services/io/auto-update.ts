@@ -1,7 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
-import type { AddedLabel, LabelGroupStyle, PathLabel } from "@/generators/labels";
+import type { AddedLabel, LabelGroupStyle, PathLabel } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";

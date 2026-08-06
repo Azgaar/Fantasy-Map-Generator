@@ -1,4 +1,4 @@
-import type { LabelGroup, LabelType } from "@/generators/labels";
+import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import { Scene, type ViewportRenderContext, viewportLayers } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
 import type { LabelData, LabelsOptions, PathLabelData, PointLabelData } from "@/types/labels";

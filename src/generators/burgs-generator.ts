@@ -3,7 +3,7 @@ import { quadtree } from "d3-quadtree";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
-import type { Label } from "./labels";
+import type { Label } from "./labels-generator";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";

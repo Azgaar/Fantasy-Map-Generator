@@ -1,4 +1,6 @@
 import type * as THREE from "three";
+import type { Burg } from "@/generators/burgs-generator";
+import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
@@ -10,7 +12,7 @@ import {
   generateSatelliteTexture
 } from "./draw-satellite-texture";
 import * as ErosionBake from "./erosion-bake";
-import { getLabel3dStyle } from "./labels/label-3d-style";
+import { getGroupStyle } from "./labels/label-groups";
 
 export { heightAt, isCached } from "./erosion-bake";
 
@@ -452,22 +454,36 @@ async function createLabels() {
   const iconGeometries: Record<string, THREE.CylinderGeometry> = {};
   const lineMaterials: Record<string, THREE.LineBasicMaterial> = {};
 
-  // Helper function to get burg label options from its group
-  function getBurgLabelOptions(burg: any) {
-    const labelStyle = getLabel3dStyle("burg", burg.label?.group || burg.group, burg.label);
-
-    // Calculate elevation, icon size, and line height based on label size
-    // Larger labels get higher elevation and larger icons
-    const elevation = Math.max(5, labelStyle.size * 0.5);
-    const iconSize = Math.max(0.3, labelStyle.size * 0.08);
-    const iconColor = "#666";
+  function getBurgLabelOptions(burg: Burg) {
+    const groupStyle = getGroupStyle({ name: burg.label?.group || burg.group || "burg", type: "burg" });
+    const size = Number.parseFloat(String(groupStyle["font-size"]));
+    const letterSpacing = Number(burg?.label?.letterSpacing ?? groupStyle["letter-spacing"]) || 0;
 
     return {
-      ...labelStyle,
-      elevation,
-      quality: 40,
-      iconSize,
-      iconColor
+      font: String(groupStyle["font-family"]),
+      size,
+      color: String(groupStyle.fill || "#000"),
+      letterSpacing,
+      elevation: Math.max(5, size * 0.5),
+      iconSize: Math.max(0.3, size * 0.08),
+      iconColor: "#666",
+      quality: 40
+    };
+  }
+
+  function getStateLabelOptions(state: State) {
+    const groupStyle = getGroupStyle({ name: state.label?.group || "state", type: "state" });
+    const size = Number.parseFloat(String(groupStyle["font-size"]));
+    const letterSpacing = Number(state?.label?.letterSpacing ?? groupStyle["letter-spacing"]) || 0;
+
+    return {
+      text: state.label?.text || state.name,
+      font: String(groupStyle["font-family"]),
+      size,
+      color: String(groupStyle.fill || "#000"),
+      letterSpacing,
+      elevation: 20,
+      quality: 80
     };
   }
 
@@ -545,12 +561,9 @@ async function createLabels() {
       const state = pack.states[i];
       if (state.removed) continue;
 
-      const stateStyle = getLabel3dStyle("state", state.label?.group, state.label, 0.5);
-      const stateOptions = { ...stateStyle, elevation: 20, quality: 80 };
       const [x, y, z] = get3dCoords(state.pole![0], state.pole![1]);
-      const text = state.label?.text || state.name;
-      const stateSprite = await createTextLabel({ text, ...stateOptions });
-
+      const stateOptions = getStateLabelOptions(state);
+      const stateSprite = await createTextLabel(stateOptions);
       stateSprite.position.set(x, y + stateOptions.elevation, z);
       stateSprite.size = stateOptions.size;
 

@@ -16,7 +16,7 @@ import {
   rw,
   trimVowels
 } from "../utils";
-import type { PathLabel } from "./labels";
+import type { PathLabel } from "./labels-generator";
 import type { Regiment } from "./military-generator";
 
 declare global {

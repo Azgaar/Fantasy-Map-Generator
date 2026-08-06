@@ -2,7 +2,7 @@ import type { State } from "@/generators/states-generator";
 import type { Point } from "@/types/global";
 import type { TypedArray } from "@/types/PackedGraph";
 import { minmax, rn } from "@/utils";
-import { getLabelGroupStyle } from "./label-groups";
+import { getGroupStyle } from "./label-groups";
 import { ANGLES, findBestRayPair, type Ray, raycast } from "./label-raycast";
 
 const MIN_FONT_SIZE = 40;
@@ -21,7 +21,7 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   const cellsNumber = state.cells;
   if (!cellsNumber) return { pathPoints: [], text: mode === "short" ? state.name : fullName, fontSize: 100 };
 
-  const groupStyle = getLabelGroupStyle(group, "state");
+  const groupStyle = getGroupStyle({ name: group, type: "state" });
   const baseFontSize = Number.parseFloat(String(groupStyle["font-size"])) || 22;
   const letterSpacing = Number(groupStyle["letter-spacing"]) || 0;
   const basePath = getRegionLabelPath(state.i, pack.cells.state, pole, cellsNumber, 0);

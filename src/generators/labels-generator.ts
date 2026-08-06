@@ -22,14 +22,6 @@ export interface LabelGroup {
   isDefault?: boolean; // if group is a default (fallback) group for its type
 }
 
-export interface LabelGroupStyle {
-  [key: string]: string | number | null;
-}
-
-export interface LabelStyles {
-  groups: Record<string, LabelGroupStyle>;
-}
-
 export interface Label {
   text?: string;
   group?: string;
