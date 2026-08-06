@@ -35,7 +35,7 @@ function onChunkLoadError(): void {
     confirm: "Reload",
     cancel: "Not now",
     onConfirm: () => {
-      window.onbeforeunload = null; // the user just confirmed the reload, don't ask again
+      window.onbeforeunload = null; // the user just confirmed the reload, don't ask again.
       location.reload();
     }
   });
