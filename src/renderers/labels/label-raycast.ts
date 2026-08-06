@@ -124,10 +124,9 @@ function scoreCurvature(angle1: number, angle2: number): number {
 
   if (delta === 180) return 1; // straight line: best
   if (delta < 90) return 0; // acute: not allowed
-  if (delta < 120) return 0.6 * similarity;
-  if (delta < 140) return 0.7 * similarity;
+  if (delta < 120) return 0.5 * similarity;
+  if (delta < 140) return 0.6 * similarity;
   if (delta < 160) return 0.8 * similarity;
-
   return similarity;
 }
 

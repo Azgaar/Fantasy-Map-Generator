@@ -11,6 +11,7 @@ const MIN_FULL_NAME_SIZE = 70;
 const PATH_USAGE = 0.9;
 const PATH_EXTENSION = 1.1;
 const LINE_HALF_HEIGHT = 0.55;
+const ONE_LINE_GAIN = 1.25;
 const SHORT_NAME_GAIN = 1.15;
 
 export function fitStateLabel(state: State, group: string): { pathPoints: Point[]; text: string; fontSize: number } {
@@ -62,7 +63,10 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   } else if (mode === "short") {
     selected = fitLines([state.name]);
   } else {
-    const fullLabel = fitLines(splitName(fullName));
+    const oneLine = fitLines([fullName]);
+    const splitLines = splitName(fullName);
+    const twoLine = splitLines.length === 2 ? fitLines(splitLines) : oneLine;
+    const fullLabel = oneLine.fitFontSize >= twoLine.fitFontSize * ONE_LINE_GAIN ? oneLine : twoLine;
 
     if (mode === "full" || fullLabel.fitFontSize >= MIN_FULL_NAME_SIZE || state.name === fullName) {
       selected = fullLabel;
