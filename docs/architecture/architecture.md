@@ -91,23 +91,10 @@ Example stored entities:
 - Routes
 - Military
 - Zones
-- Labels
+- Labels (addedLabels)
 - Style configuration
 
 The intent is for generators and editors to mutate this state in controlled ways.
-
-### Labels
-
-Labels share one grouping and style model while retaining entity-specific rendering:
-
-- Ordered Label Group policy lives in `options.labels.groups`; Label Group styles live in `style.labels.groups`.
-- Each configured group renders as a direct child of `#labels`, with a DOM id prefixed by `labels-` and the logical group id in `data-group`.
-- State, Province, and added labels render on paths; Burg labels render as lightweight positioned text.
-- `burg.group` supplies the default Burg Label Group and `burg.label.group` is an optional label-only override.
-- Renderers resolve missing groups to the entity fallback (`states`, `provinces`, the default Burg group, or `added`).
-- Group policy controls active state, inclusive zoom bounds, optional layer dependency, and automatic/short/full name selection.
-- Parent `#labels` zoom scaling and per-group visibility are independent: group font-size is a percentage of the parent, while zoom bounds only decide visibility.
-- Group-level `data-dx` and `data-dy` are style data; rendering derives one parent-group transform from them.
 
 ---
 
@@ -240,62 +227,18 @@ SVG group can become a data-format change even when the visible feature did not 
 
 The `style` object is organized by map feature rather than by DOM selector. Related
 parts are nested, while repeated user-defined styles are stored in keyed `groups`
-objects. The existing `style.labels.groups` model is the first step in this direction.
-
-The following is illustrative, not a complete property-by-property schema:
+objects. The following is illustrative schema:
 
 ```ts
 const style = {
-  map: { backgroundColor: "#000000", filter: null },
-
   borders: {
-    state: { opacity: 0.8, stroke: "#56566d", strokeWidth: 1, dash: [2], lineCap: "butt", filter: null },
-    province: { opacity: 0.8, stroke: "#56566d", strokeWidth: 0.5, dash: [0, 2], lineCap: "round", filter: null }
-  },
-
-  routes: {
-    groups: {
-      roads: { opacity: 0.9, stroke: "#d06324", strokeWidth: 0.7, dash: [2], lineCap: "butt" },
-      trails: { opacity: 0.9, stroke: "#d06324", strokeWidth: 0.25, dash: [0.8, 1.6], lineCap: "butt" },
-      searoutes: { opacity: 0.9, stroke: "#ffffff", strokeWidth: 0.35, dash: [1, 2], lineCap: "round" }
-    }
-  },
-
-  heightmap: {
-    land: { scheme: "bright", terracing: 0, skip: 5, relax: 0, curve: "basisClosed", opacity: 1, mask: "land" },
-    ocean: { render: false, scheme: "bright", terracing: 0, skip: 0, relax: 1, curve: "basisClosed", opacity: 1 }
-  },
-
-  ocean: {
-    base: { fill: "#ffffff" },
-    pattern: { resource: "oceanic", opacity: 0.2 }
-  },
-
-  labels: {
-    groups: {
-      states: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 22 },
-      town: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 4 },
-      provinces: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 10 },
-      added: { fill: "#3e3e4b", fontFamily: "Almendra SC", fontSize: 18 }
-    }
-  },
-
-  burgIcons: { groups: { town: { icon: "circle", fill: "#ffffff", size: 1, stroke: "#3e3e4b" } } },
-  anchors: { groups: { town: { fill: "#ffffff", size: 1, stroke: "#3e3e4b" } } },
-
-  scaleBar: {
-    text: { fill: "#353540", fontSize: 10 },
-    background: { fill: "#ffffff", opacity: 0.2, padding: { top: 20, right: 15, bottom: 15, left: 10 } }
+    state: { opacity: 0.8, stroke: "#56566d", "stroke-width": 1, "line-cap": "butt", filter: null },
+    province: { opacity: 0.8, stroke: "#56566d", "stroke-width": 0.5, "line-cap": "round", filter: null }
   }
 };
 ```
 
-Every current preset category has a semantic destination. Top-level feature objects
-cover the map, military, biomes, cells, grid, coordinates, compass, cultures,
-religions, landmass, markers, precipitation, population, lakes, coastline, terrain,
-rivers, routes, states, provinces, temperature, ice, emblems, texture, zones, ocean,
-heightmap, legend, labels, Burg icons, anchors, fogging, vignette, scale bar,
-measurers, goods, markets, and trade animation. Existing selector fragments become
+Existing selector fragments become
 nested parts, for example:
 
 - `#statesBody` and `#statesHalo` become `style.states.body` and `style.states.halo`.
@@ -303,8 +246,7 @@ nested parts, for example:
 - `#rural` and `#urban` become `style.population.rural` and `style.population.urban`.
 - `#stateEmblems`, `#provinceEmblems`, and `#burgEmblems` become nested emblem styles.
 - `#goodsCells`, `#goodsIcons`, and `#goodsBurgs` become nested parts of `style.goods`.
-- `#legendBox`, `#scaleBarBack`, and the compass rose become nested parts of their
-  owning feature instead of independently addressed SVG elements.
+- `#legendBox`, `#scaleBarBack`, and the compass rose become nested parts of their owning feature.
 
 The grouping is organizational only. It does not introduce a generic style framework,
 CSS cascade, or inheritance system. Each renderer owns the small typed style shape for
@@ -312,15 +254,7 @@ its feature.
 
 ## Naming and values
 
-- Use camelCase application names such as `strokeWidth`, `fontSize`, and
-  `letterSpacing`, not SVG attribute spelling.
-- Keep one canonical field for one concept. For example, replace the current
-  `font-size` / `data-size` pair with the appropriate `fontSize` or `size` field.
-- Refer to filters, masks, patterns, icons, and other shared resources by logical IDs.
-  The SVG renderer may turn a filter ID into `url(#...)`; another renderer may resolve
-  the same ID differently.
-- Prefer semantic values such as `x`, `y`, `scale`, `offset`, and `padding` over raw
-  transform strings or presentation-specific `data-*` attributes.
+- Use html snake case attributes names such as `stroke-width`, `font-size`, `data-dx`.
 - Preserve every styling capability users have today, including colors, opacity,
   strokes, typography, filters, masks, textures, patterns, sizes, offsets, and
   feature-specific rendering options.

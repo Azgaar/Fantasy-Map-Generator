@@ -3,14 +3,6 @@ import type { Point } from "@/types/global";
 
 export type LabelsOptions = { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
 
-export interface LabelGroupStyle {
-  [key: string]: string | number | null;
-}
-
-export interface LabelStyles {
-  groups: Record<string, LabelGroupStyle>;
-}
-
 // Scene types
 
 interface BaseLabelData {

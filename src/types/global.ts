@@ -1,11 +1,12 @@
 import type { Selection } from "d3";
-import type { LabelGroup, LabelStyles } from "@/generators/labels-generator";
+import type { LabelGroup } from "@/generators/labels-generator";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { BurgGroup } from "./burg-groups";
 import type { PackedGraph } from "./PackedGraph";
+import type { Style } from "./style";
 
 declare global {
   var MOBILE: boolean;
@@ -132,13 +133,8 @@ declare global {
   var icons: Selection<SVGGElement, unknown, null, undefined>;
   var ruler: Selection<SVGGElement, unknown, null, undefined>;
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
-  var notes: any[];
-  var style: {
-    burgIcons: { [key: string]: { [key: string]: string } };
-    anchors: { [key: string]: { [key: string]: string } };
-    // TODO: style = {burgs: { icons, anchors }, labels } is more semantic
-    labels: LabelStyles;
-  };
+  var notes: any[]; // TODO: correct type
+  var style: Style;
 
   var mapId: number;
 

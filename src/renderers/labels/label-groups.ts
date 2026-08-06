@@ -1,5 +1,5 @@
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
-import type { LabelGroupStyle } from "@/types/labels";
+import type { LabelGroupStyle } from "@/types/style";
 
 export function renderLabelGroups(root: ParentNode = document): void {
   const labels = findElement<SVGGElement>(root, "labels");
@@ -44,16 +44,19 @@ export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup):
   return group;
 }
 
-const BASE_STYLE = {
+const BASE_STYLE: LabelGroupStyle = {
   fill: "#3e3e4b",
   opacity: 1,
   stroke: "#3a3a3a",
   "stroke-width": 0,
   "font-family": "Almendra SC",
-  "font-size": "18%"
-} as const;
+  "font-size": "18%",
+  "letter-spacing": 0,
+  style: null,
+  filter: null
+};
 
-const FALLBACK_STYLES: Record<LabelType, Record<string, string | number>> = {
+const FALLBACK_STYLES: Record<LabelType, LabelGroupStyle> = {
   state: { ...BASE_STYLE, "font-size": "22%" },
   burg: { ...BASE_STYLE, "font-size": "4%" },
   province: { ...BASE_STYLE, "font-size": "10%" },
