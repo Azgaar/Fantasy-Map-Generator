@@ -5,12 +5,13 @@ import { minmax, rn } from "@/utils";
 import { getLabelGroupStyle } from "./label-groups";
 import { ANGLES, findBestRayPair, type Ray, raycast } from "./label-raycast";
 
-const MIN_FONT_SIZE = 50;
+const MIN_FONT_SIZE = 40;
 const MAX_FONT_SIZE = 160;
 const MIN_FULL_NAME_SIZE = 70;
 const PATH_USAGE = 0.9;
+const PATH_EXTENSION = 1.1;
 const LINE_HALF_HEIGHT = 0.55;
-const WRAP_GAIN = 1.15;
+const SHORT_NAME_GAIN = 1.15;
 
 export function fitStateLabel(state: State, group: string): { pathPoints: Point[]; text: string; fontSize: number } {
   const mode = options.labels.groups.find(option => option.name === group)?.mode || "auto";
@@ -25,9 +26,9 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   const basePath = getRegionLabelPath(state.i, pack.cells.state, pole, cellsNumber, 0);
 
   const fitLines = (lines: string[], fixedFontSize?: number) => {
+    const textWidth = Math.max(...lines.map(estimateTextWidth), 1) * baseFontSize;
+    const spacingWidth = Math.max(...lines.map(line => Math.max([...line].length - 1, 0))) * letterSpacing;
     const getFontSize = (pathLength: number) => {
-      const textWidth = Math.max(...lines.map(estimateTextWidth), 1) * baseFontSize;
-      const spacingWidth = Math.max(...lines.map(line => Math.max([...line].length - 1, 0))) * letterSpacing;
       return ((pathLength * PATH_USAGE - spacingWidth) / textWidth) * 100;
     };
 
@@ -42,10 +43,15 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
     if (!fittedPath.length) fittedPath = basePath;
 
     const fitFontSize = fixedFontSize ?? getFontSize(fittedPath.length);
+    const fontSize = fixedFontSize ?? minmax(rn(fitFontSize), MIN_FONT_SIZE, MAX_FONT_SIZE);
+    const requiredPathLength = ((textWidth * (fontSize / 100) + spacingWidth) / PATH_USAGE) * PATH_EXTENSION;
+    const pathPoints =
+      fontSize < 100 ? extendPathShoulders(fittedPath.pathPoints, requiredPathLength) : fittedPath.pathPoints;
+
     return {
-      pathPoints: fittedPath.pathPoints,
+      pathPoints,
       text: lines.join("|"),
-      fontSize: fixedFontSize ?? minmax(rn(fitFontSize), MIN_FONT_SIZE, MAX_FONT_SIZE),
+      fontSize,
       fitFontSize
     };
   };
@@ -56,16 +62,13 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   } else if (mode === "short") {
     selected = fitLines([state.name]);
   } else {
-    const oneLine = fitLines([fullName]);
-    const twoLines = splitName(fullName);
-    const twoLine = twoLines.length === 2 ? fitLines(twoLines) : oneLine;
-    const fullLabel = twoLine.fontSize >= oneLine.fontSize * WRAP_GAIN ? twoLine : oneLine;
+    const fullLabel = fitLines(splitName(fullName));
 
     if (mode === "full" || fullLabel.fitFontSize >= MIN_FULL_NAME_SIZE || state.name === fullName) {
       selected = fullLabel;
     } else {
       const shortLabel = fitLines([state.name]);
-      selected = shortLabel.fitFontSize >= fullLabel.fitFontSize * WRAP_GAIN ? shortLabel : fullLabel;
+      selected = shortLabel.fitFontSize >= fullLabel.fitFontSize * SHORT_NAME_GAIN ? shortLabel : fullLabel;
     }
   }
 
@@ -98,6 +101,32 @@ function estimateTextWidth(text: string): number {
   return width;
 }
 
+function extendPathShoulders(pathPoints: Point[], requiredLength: number): Point[] {
+  if (pathPoints.length === 2) {
+    const [p1, p2] = pathPoints;
+    const length = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+    if (!length || length >= requiredLength) return pathPoints;
+
+    const extension = (requiredLength - length) / 2;
+    const [dx, dy] = [(p2[0] - p1[0]) / length, (p2[1] - p1[1]) / length];
+    return [
+      [p1[0] - dx * extension, p1[1] - dy * extension],
+      [p2[0] + dx * extension, p2[1] + dy * extension]
+    ];
+  }
+
+  const [p1, pole, p2] = pathPoints;
+  const shoulderLength = Math.hypot(p1[0] - pole[0], p1[1] - pole[1]);
+  if (!shoulderLength || shoulderLength * 2 >= requiredLength) return pathPoints;
+
+  const scale = requiredLength / 2 / shoulderLength;
+  return [
+    [pole[0] + (p1[0] - pole[0]) * scale, pole[1] + (p1[1] - pole[1]) * scale],
+    pole,
+    [pole[0] + (p2[0] - pole[0]) * scale, pole[1] + (p2[1] - pole[1]) * scale]
+  ];
+}
+
 function getRegionLabelPath(
   regionId: number,
   regionIds: TypedArray,
@@ -119,21 +148,24 @@ function getRegionLabelPath(
 
 function getPathPoints(ray1: Ray, ray2: Ray, pole: Point) {
   const isStraight = Math.abs(ray1.angle - ray2.angle) === 180;
-  if (isStraight) {
+  const minLength = Math.min(ray1.length, ray2.length);
+  const maxLength = Math.max(ray1.length, ray2.length);
+  const shouldersProportion = maxLength / minLength;
+
+  if (isStraight || shouldersProportion > 2) {
     const p1: Point = [ray1.x, ray1.y];
     const p2: Point = [ray2.x, ray2.y];
     return { points: [p1, p2], length: ray1.length + ray2.length };
   }
 
-  const shoulderLength = Math.min(ray1.length, ray2.length);
   const radians = Math.PI / 180;
   const p1: Point = [
-    pole[0] + Math.cos(ray1.angle * radians) * shoulderLength,
-    pole[1] + Math.sin(ray1.angle * radians) * shoulderLength
+    pole[0] + Math.cos(ray1.angle * radians) * minLength,
+    pole[1] + Math.sin(ray1.angle * radians) * minLength
   ];
   const p2: Point = [
-    pole[0] + Math.cos(ray2.angle * radians) * shoulderLength,
-    pole[1] + Math.sin(ray2.angle * radians) * shoulderLength
+    pole[0] + Math.cos(ray2.angle * radians) * minLength,
+    pole[1] + Math.sin(ray2.angle * radians) * minLength
   ];
-  return { points: [p1, pole, p2], length: shoulderLength * 2 };
+  return { points: [p1, pole, p2], length: minLength * 2 };
 }
