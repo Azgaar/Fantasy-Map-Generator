@@ -21,33 +21,6 @@ export function deriveLegacyLabelZoom(fontSize: number): LabelZoomBounds {
   return { min: min > 0 ? min : null, max: max > 0 ? max : null };
 }
 
-export function getLabelParentFontSize(scale: number, resizeOnZoom: boolean): number {
-  if (!resizeOnZoom) return 100;
-  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-  return Math.max(Math.round(((100 + 100 / safeScale) / 2) * 100) / 100, 1);
-}
-
-export function isLabelGroupVisible({
-  labelsLayerOn,
-  labels,
-  group,
-  scale,
-  layerIsOn
-}: {
-  labelsLayerOn: boolean;
-  labels: Pick<LabelsOptions, "showAll">;
-  group: LabelGroup;
-  scale: number;
-  layerIsOn: (layerId: string) => boolean;
-}): boolean {
-  if (!labelsLayerOn) return false;
-  if (labels.showAll) return true;
-  if (group.active === false) return false;
-  if (group.zoom.min !== null && scale < group.zoom.min) return false;
-  if (group.zoom.max !== null && scale > group.zoom.max) return false;
-  return !group.layerDependency || layerIsOn(group.layerDependency);
-}
-
 export function validateLabelZoom(zoom: unknown): string | null {
   if (!zoom || typeof zoom !== "object") return "Zoom bounds must include minimum and maximum values";
   const bounds = zoom as Partial<LabelZoomBounds>;

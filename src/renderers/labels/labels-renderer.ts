@@ -1,8 +1,7 @@
-import { getLabelParentFontSize, isLabelGroupVisible } from "@/controllers/label-policy";
-import type { LabelType } from "@/generators/labels";
+import type { LabelGroup, LabelType } from "@/generators/labels";
 import { Scene, type ViewportRenderContext, viewportLayers } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
-import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
+import type { LabelData, LabelsOptions, PathLabelData, PointLabelData } from "@/types/labels";
 import { fitStateLabel } from "./fit-state-label";
 import { renderLabelGroups } from "./label-groups";
 import { getLabelPath } from "./label-markup";
@@ -309,6 +308,33 @@ function appendText(parent: SVGTextElement | SVGTextPathElement, value: string, 
     tspan.textContent = line;
     parent.appendChild(tspan);
   });
+}
+
+function getLabelParentFontSize(scale: number, resizeOnZoom: boolean): number {
+  if (!resizeOnZoom) return 100;
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  return Math.max(Math.round(((100 + 100 / safeScale) / 2) * 100) / 100, 1);
+}
+
+function isLabelGroupVisible({
+  labelsLayerOn,
+  labels,
+  group,
+  scale,
+  layerIsOn
+}: {
+  labelsLayerOn: boolean;
+  labels: Pick<LabelsOptions, "showAll">;
+  group: LabelGroup;
+  scale: number;
+  layerIsOn: (layerId: string) => boolean;
+}): boolean {
+  if (!labelsLayerOn) return false;
+  if (labels.showAll) return true;
+  if (group.active === false) return false;
+  if (group.zoom.min !== null && scale < group.zoom.min) return false;
+  if (group.zoom.max !== null && scale > group.zoom.max) return false;
+  return !group.layerDependency || layerIsOn(group.layerDependency);
 }
 
 function removeMaterialized(id: string, root: ParentNode): void {
