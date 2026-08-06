@@ -1,7 +1,8 @@
 import { drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { applySortingByHeader, bindEditorSortReset, sortDataByActiveHeader } from "@/components/dialog/sorting";
+import { initEditorTable, renderEditorPagination, type TableView } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -37,6 +38,29 @@ import {
 
 let statesManualHistory: string[] = [];
 
+const STATES_SORT_ACCESSORS: Record<string, (s: State) => string | number> = {
+  name: s => s.name || "",
+  form: s => (s.i ? s.formName || "" : ""),
+  capital: s => (s.i ? pack.burgs[s.capital]?.name || "" : ""),
+  culture: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
+  burgs: s => s.burgs || 0,
+  cells: s => s.cells || 0,
+  area: s => getArea(s.area || 0),
+  population: s => rn((s.rural || 0) * populationRate + (s.urban || 0) * populationRate * urbanization),
+  treasury: s => s.treasury || 0,
+  type: s => (s.i ? s.type || "" : ""),
+  expansionism: s => (s.i ? s.expansionism || 0 : 0)
+};
+
+function getFilteredStatesData(): State[] {
+  return pack.states.filter(s => !s.removed);
+}
+
+const statesTable = initEditorTable<State>({
+  getData: () => sortDataByActiveHeader(ensureEl("statesHeader"), getFilteredStatesData(), STATES_SORT_ACCESSORS),
+  onUpdate: renderStatesPage
+});
+
 function open(): void {
   if (customization) return;
 
@@ -48,7 +72,8 @@ function open(): void {
   if (layerIsOn("toggleReligions")) toggleReligions();
 
   renderDialog();
-  refreshStatesEditor();
+  States.collectStatistics();
+  statesTable.reset();
 
   $("#statesEditor").dialog({
     title: "States Editor",
@@ -130,6 +155,7 @@ function renderDialog(): void {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("statesHeader");
+  bindEditorSortReset(ensureEl("statesHeader"), statesTable.reset);
   applyLineHighlighting("statesEditor", ({ cellId }) =>
     pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]
   );
@@ -201,20 +227,27 @@ function closeStatesEditor(): void {
 
 function refreshStatesEditor(): void {
   States.collectStatistics();
-  statesEditorAddLines();
+  statesTable.refresh();
 }
 
-// add line for each state
-function statesEditorAddLines(): void {
+// totals and footer span the full filtered set, not just the current page
+function renderStatesPage(view: TableView<State>): void {
   const unit = getAreaUnit();
   const hidden = ensureEl("statesRegenerateButtons").style.display === "block" ? "" : "hidden"; // toggle regenerate columns
-  let lines = "";
+
   let totalArea = 0;
   let totalPopulation = 0;
   let totalBurgs = 0;
+  for (const s of view.all) {
+    totalArea += getArea(s.area || 0);
+    const rural = (s.rural || 0) * populationRate;
+    const urban = (s.urban || 0) * populationRate * urbanization;
+    totalPopulation += rn(rural + urban);
+    totalBurgs += s.burgs || 0;
+  }
 
-  for (const s of pack.states) {
-    if (s.removed) continue;
+  let lines = "";
+  for (const s of view.rows) {
     const area = getArea(s.area || 0);
     const rural = (s.rural || 0) * populationRate;
     const urban = (s.urban || 0) * populationRate * urbanization;
@@ -222,9 +255,6 @@ function statesEditorAddLines(): void {
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
       urban
     )}. Click to change`;
-    totalArea += area;
-    totalPopulation += population;
-    totalBurgs += s.burgs || 0;
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
     const treasuryTip = `Current treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
 
@@ -335,6 +365,8 @@ function statesEditorAddLines(): void {
   ensureEl("statesFooterPopulation").innerHTML = si(totalPopulation);
   ensureEl("statesFooterPopulation").dataset.population = String(totalPopulation);
 
+  renderEditorPagination(ensureEl("statesFooter"), view, statesTable.goto);
+
   // add listeners
   ensureEl("statesBodySection")
     .querySelectorAll(":scope > div")
@@ -348,7 +380,6 @@ function statesEditorAddLines(): void {
     ensureEl("statesBodySection").dataset.type = "absolute";
     togglePercentageMode();
   }
-  applySorting(ensureEl("statesHeader"));
   $("#statesEditor").dialog({ width: "fit-content" });
 }
 
@@ -970,7 +1001,7 @@ function togglePercentageMode(): void {
       });
   } else {
     ensureEl("statesBodySection").dataset.type = "absolute";
-    statesEditorAddLines();
+    statesTable.refresh();
   }
 }
 
@@ -1623,7 +1654,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   layerIsOn("toggleStates") ? drawStates() : toggleStates();
   layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
 
-  statesEditorAddLines();
+  statesTable.refresh();
 }
 
 function exitAddStateMode(): void {
@@ -1826,29 +1857,26 @@ function openStateMergeDialog(): void {
 function downloadStatesCsv(): void {
   const unit = getAreaUnit("2");
   const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
-  const lines = Array.from(ensureEl("statesBodySection").querySelectorAll<HTMLElement>(":scope > div"));
-  const data = lines.map($line => {
-    const { id, name, form, color, capital, culture, type, expansionism, cells, burgs, area, population } =
-      $line.dataset;
-    const { fullName = "", rural, urban } = pack.states[+id!];
-    const ruralPopulation = Math.round((rural ?? 0) * populationRate);
-    const urbanPopulation = Math.round((urban ?? 0) * populationRate * urbanization);
+  const data = statesTable.view().all.map(s => {
+    const rural = s.rural || 0;
+    const urban = s.urban || 0;
+    const population = rn(rural * populationRate + urban * populationRate * urbanization);
     return [
-      id,
-      name,
-      fullName,
-      form,
-      color,
-      capital,
-      culture,
-      type,
-      expansionism,
-      cells,
-      burgs,
-      area,
+      s.i,
+      s.name,
+      s.fullName || "",
+      s.i ? s.formName : "",
+      s.i ? s.color : "",
+      s.i ? pack.burgs[s.capital].name : "",
+      s.i ? pack.cultures[s.culture].name : "",
+      s.i ? s.type : "",
+      s.i ? s.expansionism : "",
+      s.cells,
+      s.burgs,
+      getArea(s.area || 0),
       population,
-      ruralPopulation,
-      urbanPopulation
+      Math.round(rural * populationRate),
+      Math.round(urban * populationRate * urbanization)
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

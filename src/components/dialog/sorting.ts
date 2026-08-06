@@ -51,3 +51,42 @@ export function applySorting(headers: HTMLElement): void {
       list.appendChild(line);
     });
 }
+
+export type SortState = { sortby: string; alphabetically: boolean; direction: -1 | 1 };
+export type SortAccessors<T> = Record<string, (item: T) => string | number>;
+
+export function getActiveSort(headers: HTMLElement): SortState | null {
+  const header = headers.querySelector<HTMLElement>("div[class*='icon-sort']");
+  if (!header) return null;
+  return {
+    sortby: header.dataset.sortby as string,
+    alphabetically: header.classList.contains("alphabetically"),
+    direction: header.className.includes("-down") ? -1 : 1
+  };
+}
+
+export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors<T>): T[] {
+  const get = accessors[sort.sortby];
+  if (!get) return data;
+  return data.sort((a, b) => {
+    const aValue = get(a);
+    const bValue = get(b);
+    if (sort.alphabetically) {
+      const aString = String(aValue);
+      const bString = String(bValue);
+      return (aString > bString ? 1 : aString < bString ? -1 : 0) * sort.direction;
+    }
+    return (Number(aValue) - Number(bValue)) * sort.direction;
+  });
+}
+
+export function sortDataByActiveHeader<T>(headers: HTMLElement, data: T[], accessors: SortAccessors<T>): T[] {
+  const sort = getActiveSort(headers);
+  return sort ? sortData(data, sort, accessors) : data;
+}
+
+export function bindEditorSortReset(headers: HTMLElement, onSort: () => void): void {
+  for (const el of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
+    el.addEventListener("click", () => onSort());
+  }
+}

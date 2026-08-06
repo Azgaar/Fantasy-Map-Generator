@@ -1,12 +1,13 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { applySortingByHeader, bindEditorSortReset, sortDataByActiveHeader } from "@/components/dialog/sorting";
+import { initEditorTable, renderEditorPagination, type TableView } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { CULTURE_TYPES } from "@/generators/cultures-generator";
+import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -29,6 +30,28 @@ import {
 } from "../utils";
 
 let culturesManualHistory: string[] = [];
+// brush-selected culture during manual assignment; tracked off-DOM since the selected row may be on another page
+let selectedCultureId: number | null = null;
+
+const CULTURES_SORT_ACCESSORS: Record<string, (c: Culture) => string | number> = {
+  name: c => c.name || "",
+  type: c => c.type || "",
+  base: c => c.base,
+  cells: c => c.cells || 0,
+  expansionism: c => c.expansionism || 0,
+  area: c => c.area || 0,
+  population: c => (c.rural || 0) * populationRate + (c.urban || 0) * populationRate * urbanization,
+  emblems: c => c.shield
+};
+
+function getFilteredCultures(): Culture[] {
+  return pack.cultures.filter(c => !c.removed);
+}
+
+const culturesTable = initEditorTable<Culture>({
+  getData: () => sortDataByActiveHeader(ensureEl("culturesHeader"), getFilteredCultures(), CULTURES_SORT_ACCESSORS),
+  onUpdate: culturesEditorAddLines
+});
 
 function open(): void {
   if (customization) return;
@@ -40,7 +63,9 @@ function open(): void {
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   renderDialog();
-  refreshCulturesEditor();
+  culturesCollectStatistics();
+  drawCultureCenters();
+  culturesTable.reset();
 
   $("#culturesEditor").dialog({
     title: "Cultures Editor",
@@ -101,6 +126,8 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("culturesHeader");
+  // header is recreated on every open(), so re-register the sort-triggered page reset here too
+  bindEditorSortReset(ensureEl("culturesHeader"), culturesTable.reset);
   applyLineHighlighting("culturesEditor", ({ cellId }) => pack.cells.culture[cellId]);
 
   ensureEl("culturesEditorRefresh").on("click", refreshCulturesEditor);
@@ -122,7 +149,7 @@ function renderDialog(): void {
 
 function refreshCulturesEditor(): void {
   culturesCollectStatistics();
-  culturesEditorAddLines();
+  culturesTable.refresh();
   drawCultureCenters();
 }
 
@@ -143,7 +170,7 @@ function culturesCollectStatistics(): void {
   }
 }
 
-function culturesEditorAddLines(): void {
+function culturesEditorAddLines(view: TableView<Culture>): void {
   const unit = getAreaUnit();
   let lines = "";
   let totalArea = 0;
@@ -153,8 +180,13 @@ function culturesEditorAddLines(): void {
     ensureEl<HTMLSelectElement>("emblemShape").selectedOptions[0]?.parentElement?.getAttribute("label");
   const selectShape = emblemShapeGroup === "Diversiform";
 
-  for (const c of pack.cultures) {
-    if (c.removed) continue;
+  // totals span the full filtered set, not just the current page
+  for (const c of view.all) {
+    totalArea += getArea(c.area ?? 0);
+    totalPopulation += rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+  }
+
+  for (const c of view.rows) {
     const area = getArea(c.area ?? 0);
     const rural = (c.rural ?? 0) * populationRate;
     const urban = (c.urban ?? 0) * populationRate * urbanization;
@@ -162,8 +194,6 @@ function culturesEditorAddLines(): void {
     const populationTip = `Total population: ${si(population)}. Rural population: ${si(rural)}. Urban population: ${si(
       urban
     )}. Click to edit`;
-    totalArea += area;
-    totalPopulation += population;
 
     if (!c.i) {
       // Uncultured (neutral) line
@@ -248,6 +278,9 @@ function culturesEditorAddLines(): void {
       </div>`;
   }
   ensureEl("culturesBody").innerHTML = lines;
+  if (customization === 4 && selectedCultureId !== null) {
+    ensureEl("culturesBody").querySelector(`div[data-id='${selectedCultureId}']`)?.classList.add("selected");
+  }
 
   // update footer
   ensureEl("culturesFooterCultures").innerHTML = String(pack.cultures.filter(c => c.i && !c.removed).length);
@@ -256,6 +289,8 @@ function culturesEditorAddLines(): void {
   ensureEl("culturesFooterPopulation").innerHTML = si(totalPopulation);
   ensureEl("culturesFooterArea").dataset.area = String(totalArea);
   ensureEl("culturesFooterPopulation").dataset.population = String(totalPopulation);
+
+  renderEditorPagination(ensureEl("culturesFooter"), view, culturesTable.goto);
 
   // add listeners
   ensureEl("culturesBody")
@@ -314,7 +349,6 @@ function culturesEditorAddLines(): void {
     ensureEl("culturesBody").dataset.type = "absolute";
     togglePercentageMode();
   }
-  applySorting($culturesHeader);
   $("#culturesEditor").dialog({ width: "fit-content" });
 }
 
@@ -725,7 +759,7 @@ function togglePercentageMode(): void {
       });
   } else {
     ensureEl("culturesBody").dataset.type = "absolute";
-    culturesEditorAddLines();
+    culturesTable.refresh();
   }
 }
 
@@ -802,7 +836,11 @@ function enterCultureManualAssignent(): void {
     .call(drag<SVGElement, unknown>().on("start", dragCultureBrush))
     .on("touchmove mousemove", moveCultureBrush);
 
-  ensureEl("culturesBody").querySelector("div")?.classList.add("selected");
+  const firstLine = ensureEl("culturesBody").querySelector<HTMLElement>("div");
+  if (firstLine) {
+    firstLine.classList.add("selected");
+    selectedCultureId = +firstLine.dataset.id!;
+  }
   culturesManualHistory = [];
 }
 
@@ -811,6 +849,7 @@ function selectCultureOnLineClick(this: HTMLElement): void {
   const previous = ensureEl("culturesBody").querySelector("div.selected");
   if (previous) previous.classList.remove("selected");
   this.classList.add("selected");
+  selectedCultureId = +this.dataset.id!;
 }
 
 function selectCultureOnMapClick(this: any, event: any): void {
@@ -822,6 +861,8 @@ function selectCultureOnMapClick(this: any, event: any): void {
   const culture = assigned.size() ? +assigned.attr("data-culture") : pack.cells.culture[i!];
 
   ensureEl("culturesBody").querySelector("div.selected")?.classList.remove("selected");
+  selectedCultureId = culture;
+  // row may be on another page; the class re-applies on render if/when that page is shown
   ensureEl("culturesBody").querySelector(`div[data-id='${culture}']`)?.classList.add("selected");
 }
 
@@ -841,10 +882,10 @@ function dragCultureBrush(this: any, event: any): void {
 }
 
 function changeCultureForSelection(selection: number[]): void {
-  const temp = select("#cults").select("#temp");
-  const selected = ensureEl("culturesBody").querySelector<HTMLElement>("div.selected")!;
+  if (selectedCultureId === null) return;
 
-  const cultureNew = +selected.dataset.id!;
+  const temp = select("#cults").select("#temp");
+  const cultureNew = selectedCultureId;
   const color = pack.cultures[cultureNew].color || "#ffffff";
 
   selection.forEach(i => {
@@ -916,6 +957,7 @@ function exitCulturesManualAssignment(close?: string): void {
   clearMainTip();
   const selected = ensureEl("culturesBody").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
+  selectedCultureId = null;
 }
 
 function saveCulturesManualSnapshot(): void {
@@ -982,22 +1024,34 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
   Cultures.add(center);
 
   drawCultureCenters();
-  culturesEditorAddLines();
+  culturesTable.refresh();
 }
 
 function downloadCulturesCsv(): void {
   const unit = getAreaUnit("2");
   const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
-  const lines = Array.from(ensureEl("culturesBody").querySelectorAll<HTMLElement>(":scope > div"));
-  const data = lines.map($line => {
-    const { id, name, color, cells, expansionism, type, area, population, emblems, base } = $line.dataset;
-    const namesbase = Names.nameBases[+base!].name;
-    const { origins } = pack.cultures[+id!];
-    const originList = (origins ?? [])
-      .filter((origin: number | null): origin is number => Boolean(origin))
-      .map((origin: number) => pack.cultures[origin].name);
+  // export the full filtered set (all pages), not just the visible page
+  const data = culturesTable.view().all.map(c => {
+    const area = getArea(c.area ?? 0);
+    const population = rn((c.rural ?? 0) * populationRate + (c.urban ?? 0) * populationRate * urbanization);
+    const namesbase = Names.nameBases[c.base].name;
+    const originList = (c.origins ?? [])
+      .filter((origin): origin is number => Boolean(origin))
+      .map(origin => pack.cultures[origin].name);
     const originText = `"${originList.join(", ")}"`;
-    return [id, name, color, cells, expansionism, type, area, population, namesbase, emblems, originText].join(",");
+    return [
+      c.i,
+      c.name,
+      c.i ? c.color || "" : "",
+      c.cells || 0,
+      c.i ? c.expansionism || 0 : "",
+      c.i ? c.type : "",
+      area,
+      population,
+      namesbase,
+      c.shield,
+      originText
+    ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");
 

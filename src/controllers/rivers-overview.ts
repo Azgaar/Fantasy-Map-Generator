@@ -1,12 +1,46 @@
 import { mean, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { applySortingByHeader, bindEditorSortReset, sortDataByActiveHeader } from "@/components/dialog/sorting";
+import { initEditorTable, renderEditorPagination, type TableView } from "@/components/dialog/table";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
+
+function getRiversById(): Map<number, River> {
+  return new Map<number, River>(pack.rivers.map((river: River) => [river.i, river]));
+}
+
+function getFilteredRivers(riversById: Map<number, River>): River[] {
+  const searchText = ensureEl<HTMLInputElement>("riversSearch").value.toLowerCase().trim();
+  if (!searchText) return pack.rivers.slice();
+
+  return pack.rivers.filter((r: River) => {
+    const name = (r.name || "").toLowerCase();
+    const type = (r.type || "").toLowerCase();
+    const basin = riversById.get(r.basin);
+    const basinName = basin ? (basin.name || "").toLowerCase() : "";
+    return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
+  });
+}
+
+const riversTable = initEditorTable<River>({
+  getData: () => {
+    const riversById = getRiversById();
+    const filtered = getFilteredRivers(riversById);
+    return sortDataByActiveHeader(ensureEl("riversHeader"), filtered, {
+      name: (r: River) => r.name || "",
+      type: (r: River) => r.type || "",
+      discharge: (r: River) => r.discharge,
+      length: (r: River) => r.length,
+      width: (r: River) => r.width,
+      basin: (r: River) => riversById.get(r.basin)?.name || ""
+    });
+  },
+  onUpdate: renderRiversPage
+});
 
 function open(): void {
   if (customization) return;
@@ -14,7 +48,7 @@ function open(): void {
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
   renderDialog();
-  riversOverviewAddLines();
+  riversTable.reset();
 
   $("#riversOverview").dialog({
     title: "Rivers Overview",
@@ -56,6 +90,8 @@ function renderDialog(): void {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   applySortingByHeader("riversHeader");
+  // header is recreated on every open(), so re-register the sort-triggered page reset here too
+  bindEditorSortReset(ensureEl("riversHeader"), riversTable.reset);
   applyLineHighlighting("riversOverview", ({ target, cellId }) => {
     const riverId = pack.cells.r[cellId];
     if (riverId) return riverId;
@@ -64,13 +100,13 @@ function renderDialog(): void {
   });
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("riversOverviewRefresh").on("click", riversOverviewAddLines);
+  ensureEl("riversOverviewRefresh").on("click", riversTable.refresh);
   ensureEl("addNewRiver").on("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").on("click", createNewRiver);
   ensureEl("riversBasinHighlight").on("click", toggleBasinsHightlight);
   ensureEl("riversExport").on("click", downloadRiversData);
   ensureEl("riversRemoveAll").on("click", triggerAllRiversRemove);
-  ensureEl("riversSearch").on("input", riversOverviewAddLines);
+  ensureEl("riversSearch").on("input", riversTable.reset);
 }
 
 function closeRiversOverview(): void {
@@ -81,29 +117,15 @@ function createNewRiver(): void {
   void Controllers.RiverCreator.open();
 }
 
-// add line for each river
-function riversOverviewAddLines(): void {
+// totals span the full filtered set, not just the current page
+function renderRiversPage(view: TableView<River>): void {
   const body = ensureEl("riversBody");
   body.innerHTML = "";
   let lines = "";
   const unit = distanceUnitInput.value;
+  const riversById = getRiversById();
 
-  // Precompute a lookup map from river id to river for efficient basin lookup
-  const riversById = new Map<number, River>(pack.rivers.map((river: River) => [river.i, river]));
-
-  let filteredRivers: River[] = pack.rivers;
-  const searchText = ensureEl<HTMLInputElement>("riversSearch").value.toLowerCase().trim();
-  if (searchText) {
-    filteredRivers = filteredRivers.filter(r => {
-      const name = (r.name || "").toLowerCase();
-      const type = (r.type || "").toLowerCase();
-      const basin = riversById.get(r.basin);
-      const basinName = basin ? (basin.name || "").toLowerCase() : "";
-      return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
-    });
-  }
-
-  for (const r of filteredRivers) {
+  for (const r of view.rows) {
     const discharge = `${r.discharge} m³/s`;
     const length = `${rn(r.length * distanceScale)} ${unit}`;
     const width = `${rn(r.width * distanceScale, 3)} ${unit}`;
@@ -132,13 +154,12 @@ function riversOverviewAddLines(): void {
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  // update footer
-  ensureEl("riversFooterNumber").innerHTML = `${filteredRivers.length} of ${pack.rivers.length}`;
-  const averageDischarge = rn(mean(filteredRivers.map(r => r.discharge))!) || 0;
+  ensureEl("riversFooterNumber").innerHTML = `${view.all.length} of ${pack.rivers.length}`;
+  const averageDischarge = rn(mean(view.all.map(r => r.discharge))!) || 0;
   ensureEl("riversFooterDischarge").innerHTML = `${averageDischarge} m³/s`;
-  const averageLength = rn(mean(filteredRivers.map(r => r.length))!) || 0;
+  const averageLength = rn(mean(view.all.map(r => r.length))!) || 0;
   ensureEl("riversFooterLength").innerHTML = `${averageLength * distanceScale} ${unit}`;
-  const averageWidth = rn(mean(filteredRivers.map(r => r.width))!, 3) || 0;
+  const averageWidth = rn(mean(view.all.map(r => r.width))!, 3) || 0;
   ensureEl("riversFooterWidth").innerHTML = `${rn(averageWidth * distanceScale, 3)} ${unit}`;
 
   // add listeners
@@ -148,7 +169,7 @@ function riversOverviewAddLines(): void {
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.on("click", openRiverEditor));
   body.querySelectorAll("div > span.icon-trash-empty").forEach(el => void el.on("click", triggerRiverRemove));
 
-  applySorting(ensureEl("riversHeader"));
+  renderEditorPagination(ensureEl("riversFooter"), view, riversTable.goto);
 }
 
 function riverHighlightOn(event: Event): void {
@@ -202,15 +223,17 @@ function toggleBasinsHightlight(): void {
 function downloadRiversData(): void {
   let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
-  ensureEl("riversBody")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const d = el.dataset;
-      const discharge = `${d.discharge} m³/s`;
-      const length = `${rn(+d.length! * distanceScale)} ${distanceUnitInput.value}`;
-      const width = `${rn(+d.width! * distanceScale, 3)} ${distanceUnitInput.value}`;
-      data += `${[d.id, d.name, d.type, discharge, length, width, d.basin].join(",")}\n`;
-    });
+  // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
+  const riversById = getRiversById();
+  const exported = riversTable.view().all;
+
+  exported.forEach((r: River) => {
+    const discharge = `${r.discharge} m³/s`;
+    const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
+    const width = `${rn(r.width * distanceScale, 3)} ${distanceUnitInput.value}`;
+    const basin = riversById.get(r.basin)?.name || "";
+    data += `${[r.i, r.name, r.type, discharge, length, width, basin].join(",")}\n`;
+  });
 
   const name = `${getFileName("Rivers")}.csv`;
   downloadFile(data, name);
@@ -232,7 +255,7 @@ function triggerRiverRemove(this: HTMLElement): void {
     buttons: {
       Remove: function (this: any) {
         Rivers.remove(river);
-        riversOverviewAddLines();
+        riversTable.refresh();
         $(this).dialog("close");
       },
       Cancel: function (this: any) {
@@ -263,7 +286,7 @@ function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
   select("#rivers").selectAll("*").remove();
-  riversOverviewAddLines();
+  riversTable.refresh();
 }
 
 export const RiversOverview = { open };

@@ -1,6 +1,7 @@
 import { mean, select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { applySortingByHeader, bindEditorSortReset, sortDataByActiveHeader } from "@/components/dialog/sorting";
+import { initEditorTable, renderEditorPagination, type TableView } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
@@ -8,13 +9,42 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
+const ROUTES_SORT_ACCESSORS = {
+  name: (route: Route) => route.name || "",
+  group: (route: Route) => route.group || "",
+  length: (route: Route) => route.length || 0
+};
+
+function getFilteredRoutes(): Route[] {
+  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
+  const routes = pack.routes.filter((route: Route) => Boolean(route.points) && route.points.length >= 2);
+
+  for (const route of routes) {
+    route.name = route.name || Routes.generateName(route);
+    route.length = route.length || Routes.getLength(route.i);
+  }
+
+  if (!searchText) return routes;
+
+  return routes.filter((route: Route) => {
+    const name = (route.name || "").toLowerCase();
+    const group = (route.group || "").toLowerCase();
+    return name.includes(searchText) || group.includes(searchText);
+  });
+}
+
+const routesTable = initEditorTable<Route>({
+  getData: () => sortDataByActiveHeader(ensureEl("routesHeader"), getFilteredRoutes(), ROUTES_SORT_ACCESSORS),
+  onUpdate: renderRoutesPage
+});
+
 function open(): void {
   if (customization) return;
   closeDialogs("#routesOverview, .stable");
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
   renderDialog();
-  routesOverviewAddLines();
+  routesTable.reset();
 
   $("#routesOverview").dialog({
     title: "Routes Overview",
@@ -50,14 +80,16 @@ function renderDialog(): void {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   applySortingByHeader("routesHeader");
+  // header is recreated on every open(), so re-register the sort-triggered page reset here too
+  bindEditorSortReset(ensureEl("routesHeader"), routesTable.reset);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routesOverviewRefresh").on("click", routesOverviewAddLines);
+  ensureEl("routesOverviewRefresh").on("click", routesTable.refresh);
   ensureEl("routesCreateNew").on("click", createNewRoute);
   ensureEl("routesExport").on("click", downloadRoutesData);
   ensureEl("routesLockAll").on("click", toggleLockAll);
   ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").on("input", routesOverviewAddLines);
+  ensureEl("routesSearch").on("input", routesTable.reset);
 }
 
 function closeRoutesOverview(): void {
@@ -68,28 +100,14 @@ function createNewRoute(): void {
   Controllers.RouteCreator.open();
 }
 
-// add line for each route
-function routesOverviewAddLines(): void {
+// totals span the full filtered set, not just the current page
+function renderRoutesPage(view: TableView<Route>): void {
   const body = ensureEl("routesBody");
   body.innerHTML = "";
   let lines = "";
 
-  let filteredRoutes: Route[] = pack.routes;
-
-  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
-  if (searchText) {
-    filteredRoutes = filteredRoutes.filter(route => {
-      const name = (route.name || "").toLowerCase();
-      const group = (route.group || "").toLowerCase();
-      return name.includes(searchText) || group.includes(searchText);
-    });
-  }
-
-  for (const route of filteredRoutes) {
-    if (!route.points || route.points.length < 2) continue;
-    route.name = route.name || Routes.generateName(route);
-    route.length = route.length || Routes.getLength(route.i);
-    const length = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
+  for (const route of view.rows) {
+    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
 
     lines += /* html */ `<div
         class="states"
@@ -111,9 +129,8 @@ function routesOverviewAddLines(): void {
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  // update footer
-  ensureEl("routesFooterNumber").innerHTML = `${filteredRoutes.length} of ${pack.routes.length}`;
-  const averageLength = rn(mean(filteredRoutes.map(r => r.length)) || 0) || 0;
+  ensureEl("routesFooterNumber").innerHTML = `${view.all.length} of ${pack.routes.length}`;
+  const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
   ensureEl("routesFooterLength").innerHTML = `${averageLength * distanceScale} ${distanceUnitInput.value}`;
 
   // add listeners
@@ -124,7 +141,7 @@ function routesOverviewAddLines(): void {
   body.querySelectorAll("div > span.locks").forEach(el => void el.on("click", toggleLockStatus));
   body.querySelectorAll("div > span.icon-trash-empty").forEach(el => void el.on("click", triggerRouteRemove));
 
-  applySorting(ensureEl("routesHeader"));
+  renderEditorPagination(ensureEl("routesFooter"), view, routesTable.goto);
 }
 
 function routeHighlightOn(event: Event): void {
@@ -155,13 +172,12 @@ function zoomToRoute(this: HTMLElement): void {
 function downloadRoutesData(): void {
   let data = "Id,Route,Group,Length\n"; // headers
 
-  ensureEl("routesBody")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const d = el.dataset;
-      const length = `${rn(+d.length! * distanceScale)} ${distanceUnitInput.value}`;
-      data += `${[d.id, d.name, d.group, length].join(",")}\n`;
-    });
+  // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
+  const exported = routesTable.view().all;
+  exported.forEach((route: Route) => {
+    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
+    data += `${[route.i, route.name, route.group, length].join(",")}\n`;
+  });
 
   const name = `${getFileName("Routes")}.csv`;
   downloadFile(data, name);
@@ -196,7 +212,7 @@ function toggleLockAll(): void {
     route.lock = !allLocked;
   });
 
-  routesOverviewAddLines();
+  routesTable.refresh();
   ensureEl("routesLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
 }
 
@@ -209,7 +225,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route);
-      routesOverviewAddLines();
+      routesTable.refresh();
     }
   });
 }
@@ -250,7 +266,7 @@ function triggerAllRoutesRemove(): void {
           Routes.remove(route);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
-        routesOverviewAddLines();
+        routesTable.refresh();
         $(this).dialog("close");
       },
       Cancel: function (this: any) {
