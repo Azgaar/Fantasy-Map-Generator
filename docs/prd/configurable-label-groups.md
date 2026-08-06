@@ -294,27 +294,6 @@ FMG buttons, native FMG inputs, `Active` terminology, and order controls on the 
   later entries render above earlier entries. Up/down buttons mutate the array.
 - Burg icon groups retain their existing numeric `order`. When a Burg-managed Label Group is first created, Burg order
   determines its insertion point once. Subsequent Burg ordering does not synchronize Label Group order.
-- The decision-rich schema is:
-
-  ```ts
-  type LabelNameMode = "auto" | "short" | "full";
-
-  type LabelGroupOptions = {
-    name: string;
-    type: LabelType;
-    active: boolean;
-    layerDependency: string | null;
-    zoom: { min: number | null; max: number | null };
-    mode: LabelNameMode;
-  };
-
-  type LabelsOptions = {
-    resizeOnZoom: boolean;
-    showAll: boolean;
-    groups: LabelGroupOptions[];
-  };
-  ```
-
 - `applyLod` does not exist. LOD is enabled or disabled only by whether an individual group's `zoom.min` or `zoom.max` is
   non-null. `showAll` is the explicit temporary override for all restrictions.
 - The existing global State-label mode is retired. Its behavior moves to each group's `mode`.

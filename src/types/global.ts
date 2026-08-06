@@ -310,14 +310,8 @@ type Options = {
   longitude: number; // West-East map shift in %, 50 is centered on prime meridian
   prec: number; // precipitation modifier in %
   showBurgPreview: boolean;
-  burgs: {
-    groups: BurgGroup[];
-  };
-  labels: {
-    resizeOnZoom: boolean;
-    showAll: boolean;
-    groups: LabelGroup[];
-  };
+  burgs: { groups: BurgGroup[] };
+  labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
   military: MilitaryUnit[];
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;

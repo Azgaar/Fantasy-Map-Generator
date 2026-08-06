@@ -1,8 +1,6 @@
-import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/controllers/label-policy";
-import type { AddedLabel, LabelGroup, LabelStyles, LabelType } from "@/generators/labels-generator";
+import type { AddedLabel, LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { BurgGroup } from "@/types/burg-groups";
-import type { LabelsOptions } from "@/types/labels";
 
 type LabelOverride = { group?: string };
 type LabelEntity = { i?: number; removed?: boolean; label?: LabelOverride };
@@ -26,67 +24,51 @@ export interface LabelAssignmentCounts {
   added: number;
 }
 
-export function createLabelGroup({
-  labels,
-  styles,
-  burgGroups,
-  name,
-  type
-}: {
-  labels: LabelsOptions;
-  styles: LabelStyles;
-  burgGroups: BurgGroup[];
-  name: string;
-  type: LabelType;
-}): LabelGroup {
+export function createLabelGroup({ name, type }: { name: string; type: LabelType }): LabelGroup {
   const error = validateLabelGroupName(name, [
-    ...labels.groups.map(group => group.name),
-    ...burgGroups.filter(group => !group.removed).map(group => group.name)
+    ...options.labels.groups.map(group => group.name),
+    ...options.burgs.groups.filter(group => !group.removed).map(group => group.name)
   ]);
   if (error) throw new Error(error);
 
-  const defaultName = getDefaultLabelGroupName(type, burgGroups);
-  const baseline = labels.groups.find(group => group.name === defaultName);
+  const defaultName = getDefaultLabelGroupName(type, options.burgs.groups);
+  const baseline = options.labels.groups.find(group => group.name === defaultName);
   if (!baseline) throw new Error(`Missing default Label Group "${defaultName}"`);
 
   const group: LabelGroup = { ...structuredClone(baseline), name, type, mode: "auto" };
-  const lastTypeIndex = labels.groups.findLastIndex(current => current.type === type);
-  labels.groups.splice(lastTypeIndex + 1, 0, group);
-  styles.groups[name] = { ...(styles.groups[defaultName] || {}) };
+  const lastTypeIndex = options.labels.groups.findLastIndex(current => current.type === type);
+  options.labels.groups.splice(lastTypeIndex + 1, 0, group);
+  style.labels.groups[name] = { ...(style.labels.groups[defaultName] || {}) };
   return group;
 }
 
 export function renameLabelGroup({
-  labels,
-  styles,
   world,
   burgGroups,
   oldName,
   newName,
   allowProtected = false
 }: {
-  labels: LabelsOptions;
-  styles: LabelStyles;
   world: LabelWorld;
   burgGroups: BurgGroup[];
   oldName: string;
   newName: string;
   allowProtected?: boolean;
 }): void {
-  const group = labels.groups.find(group => group.name === oldName);
+  const group = options.labels.groups.find(group => group.name === oldName);
   if (!group) throw new Error(`Unknown Label Group "${oldName}"`);
   if (!allowProtected && isProtectedLabelGroup(oldName, burgGroups)) {
     throw new Error(`Label Group "${oldName}" is protected`);
   }
   const error = validateLabelGroupName(newName, [
-    ...labels.groups.filter(group => group.name !== oldName).map(group => group.name),
+    ...options.labels.groups.filter(group => group.name !== oldName).map(group => group.name),
     ...burgGroups.filter(group => !group.removed && group.name !== oldName).map(group => group.name)
   ]);
   if (error) throw new Error(error);
 
   group.name = newName;
-  styles.groups[newName] = styles.groups[oldName] || {};
-  delete styles.groups[oldName];
+  style.labels.groups[newName] = style.labels.groups[oldName] || {};
+  delete style.labels.groups[oldName];
   renameLabelReferences(world, oldName, newName);
   if (allowProtected) {
     world.burgs
@@ -98,21 +80,17 @@ export function renameLabelGroup({
 }
 
 export function deleteLabelGroup({
-  labels,
-  styles,
   world,
   burgGroups,
   name,
   allowProtected = false
 }: {
-  labels: LabelsOptions;
-  styles: LabelStyles;
   world: LabelWorld;
   burgGroups: BurgGroup[];
   name: string;
   allowProtected?: boolean;
 }): LabelAssignmentCounts {
-  if (!labels.groups.some(group => group.name === name)) throw new Error(`Unknown Label Group "${name}"`);
+  if (!options.labels.groups.some(group => group.name === name)) throw new Error(`Unknown Label Group "${name}"`);
   if (!allowProtected && isProtectedLabelGroup(name, burgGroups)) throw new Error(`Label Group "${name}" is protected`);
 
   const counts = countLabelAssignments(world, name);
@@ -126,8 +104,8 @@ export function deleteLabelGroup({
     .forEach(label => {
       label.group = "added";
     });
-  labels.groups = labels.groups.filter(group => group.name !== name);
-  delete styles.groups[name];
+  options.labels.groups = options.labels.groups.filter(group => group.name !== name);
+  delete style.labels.groups[name];
   return counts;
 }
 
@@ -168,21 +146,17 @@ export function assignLabelGroup(world: LabelWorld, type: LabelType, ids: Iterab
 }
 
 export function reconcileBurgLabelGroups({
-  labels,
-  styles,
   world,
   previousGroups,
   nextGroups,
   renames = {}
 }: {
-  labels: LabelsOptions;
-  styles: LabelStyles;
   world: LabelWorld;
   previousGroups: BurgGroup[];
   nextGroups: BurgGroup[];
   renames?: Record<string, string>;
 }): void {
-  validateBurgLabelNamespace(labels, previousGroups, nextGroups, renames);
+  validateBurgLabelNamespace(options.labels.groups, previousGroups, nextGroups, renames);
 
   const defaultBurgName = getDefaultLabelGroupName("burg", nextGroups);
   const previousDefaultBurgName = getDefaultLabelGroupName("burg", previousGroups);
@@ -269,7 +243,6 @@ export function reconcileBurgLabelGroups({
 }
 
 function validateBurgLabelNamespace(
-  labels: LabelsOptions,
   previousGroups: BurgGroup[],
   nextGroups: BurgGroup[],
   renames: Record<string, string>

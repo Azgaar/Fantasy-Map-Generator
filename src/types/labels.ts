@@ -1,7 +1,5 @@
-import type { LabelGroup, LabelType } from "@/generators/labels-generator";
+import type { LabelType } from "@/generators/labels-generator";
 import type { Point } from "@/types/global";
-
-export type LabelsOptions = { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
 
 // Scene types
 

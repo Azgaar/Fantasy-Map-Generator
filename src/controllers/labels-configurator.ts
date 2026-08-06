@@ -9,13 +9,8 @@ import {
   type LabelWorld,
   renameLabelGroup
 } from "@/controllers/label-group-transactions";
-import {
-  getDefaultLabelGroupName,
-  isProtectedLabelGroup,
-  validateLabelGroupName,
-  validateLabelZoom
-} from "@/controllers/label-policy";
-import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels-generator";
+import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/controllers/label-policy";
+import { DEFAULT_LABEL_TYPES, type LabelType, type LabelZoomBounds } from "@/generators/labels-generator";
 import { renderLabelGroups } from "@/renderers/labels/label-groups";
 import { drawLabels, drawLabelsByType, renderLabelsNow } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
@@ -185,13 +180,7 @@ function createGroup(): void {
   if (error) return void input.reportValidity();
 
   try {
-    createLabelGroup({
-      labels: options.labels,
-      styles: style.labels,
-      burgGroups: options.burgs.groups,
-      name,
-      type
-    });
+    createLabelGroup({ name, type });
     input.value = "";
     persistAndRender(true);
     renderRows();
@@ -469,6 +458,25 @@ function escapeHtml(value: string): string {
 function close(): void {
   $("#labelsConfigurator").dialog("destroy");
   document.getElementById("labelsConfigurator")?.remove();
+}
+
+const LABEL_ZOOM_MIN = 0.01;
+const LABEL_ZOOM_MAX = 200;
+
+function validateLabelZoom(zoom: unknown): string | null {
+  if (!zoom || typeof zoom !== "object") return "Zoom bounds must include minimum and maximum values";
+  const bounds = zoom as Partial<LabelZoomBounds>;
+  for (const bound of ["min", "max"] as const) {
+    if (!(bound in bounds)) return `Zoom ${bound} is required`;
+    const value = bounds[bound];
+    if (value === null) continue;
+    if (typeof value !== "number" || !Number.isFinite(value)) return `Zoom ${bound} must be a finite number`;
+    if (value < LABEL_ZOOM_MIN || value > LABEL_ZOOM_MAX) {
+      return `Zoom ${bound} must be between ${LABEL_ZOOM_MIN} and ${LABEL_ZOOM_MAX}`;
+    }
+  }
+  const { min, max } = bounds as LabelZoomBounds;
+  return min !== null && max !== null && min > max ? "Minimum zoom cannot be greater than maximum zoom" : null;
 }
 
 export const LabelsConfigurator = { open };

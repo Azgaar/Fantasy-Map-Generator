@@ -1,7 +1,7 @@
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import { Scene, type ViewportRenderContext, viewportLayers } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
-import type { LabelData, LabelsOptions, PathLabelData, PointLabelData } from "@/types/labels";
+import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
 import { fitStateLabel } from "./fit-state-label";
 import { renderLabelGroups } from "./label-groups";
 import { getLabelPath } from "./label-markup";
@@ -221,18 +221,10 @@ function reconcileGroup(groupName: string, context: ViewportRenderContext): void
   const groupOptions = options.labels.groups.find(group => group.name === groupName);
   if (!group || !pathsRoot || !groupOptions) return;
 
-  const visible =
-    context.renderAll ||
-    isLabelGroupVisible({
-      labelsLayerOn: layerIsOn("toggleLabels"),
-      labels: options.labels,
-      group: groupOptions,
-      scale: context.bounds.scale,
-      layerIsOn
-    });
-  const desired = (labelsByGroup.get(groupName) || []).filter(
-    label => context.renderAll || (visible && containsPoint(context.bounds, label.anchor))
-  );
+  const isVisible = isGroupVisible({ group: groupOptions, context });
+  const desired = isVisible
+    ? (labelsByGroup.get(groupName) || []).filter(label => isLabelVisible(context.bounds, label.anchor))
+    : [];
   const desiredIds = new Set(desired.map(label => label.id));
   let membershipChanged = false;
 
@@ -316,25 +308,16 @@ function getLabelParentFontSize(scale: number, resizeOnZoom: boolean): number {
   return Math.max(Math.round(((100 + 100 / safeScale) / 2) * 100) / 100, 1);
 }
 
-function isLabelGroupVisible({
-  labelsLayerOn,
-  labels,
-  group,
-  scale,
-  layerIsOn
-}: {
-  labelsLayerOn: boolean;
-  labels: Pick<LabelsOptions, "showAll">;
-  group: LabelGroup;
-  scale: number;
-  layerIsOn: (layerId: string) => boolean;
-}): boolean {
-  if (!labelsLayerOn) return false;
-  if (labels.showAll) return true;
+function isGroupVisible({ group, context }: { group: LabelGroup; context: ViewportRenderContext }): boolean {
+  if (context.renderAll || options.labels.showAll) return true;
   if (group.active === false) return false;
-  if (group.zoom.min !== null && scale < group.zoom.min) return false;
-  if (group.zoom.max !== null && scale > group.zoom.max) return false;
+  if (group.zoom.min !== null && context.bounds.scale < group.zoom.min) return false;
+  if (group.zoom.max !== null && context.bounds.scale > group.zoom.max) return false;
   return !group.layerDependency || layerIsOn(group.layerDependency);
+}
+
+function isLabelVisible(bounds: ViewportRenderContext["bounds"], [x, y]: Point): boolean {
+  return x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1;
 }
 
 function removeMaterialized(id: string, root: ParentNode): void {
@@ -374,10 +357,6 @@ function getMiddlePoint(points: Point[]): Point {
   if (!points.length) return [0, 0];
   const middleIndex = Math.floor(points.length / 2);
   return points.at(middleIndex)!;
-}
-
-function containsPoint(bounds: ViewportRenderContext["bounds"], [x, y]: Point): boolean {
-  return x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1;
 }
 
 window.drawLabels = drawLabels;
