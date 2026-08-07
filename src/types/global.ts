@@ -201,8 +201,6 @@ declare global {
   var customization: number;
   var zoom: ZoomBehavior<SVGSVGElement, unknown>;
   var zoomTo: (x: number, y: number, zoom?: number, duration?: number) => void;
-  var panMap: (x: number, y: number) => void;
-  var setMapZoom: (value: number) => void;
   var changeMapZoom: (factor: number) => void;
   var modules: Record<string, boolean>;
 

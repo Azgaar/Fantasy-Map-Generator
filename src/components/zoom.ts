@@ -138,15 +138,15 @@ function resetZoom(duration = 1000): void {
   svg.transition().duration(duration).call(zoom.transform, window.d3.zoomIdentity);
 }
 
-function panMap(x: number, y: number): void {
+export function panMap(x: number, y: number): void {
   zoom.translateBy(svg, x, y);
 }
 
-function setMapZoom(value: number): void {
+export function setMapZoom(value: number): void {
   zoom.scaleTo(svg, value);
 }
 
-function changeMapZoom(factor: number): void {
+export function changeMapZoom(factor: number): void {
   zoom.scaleBy(svg, factor);
 }
 
@@ -154,7 +154,4 @@ function changeMapZoom(factor: number): void {
 window.zoom = zoom;
 window.zoomTo = zoomTo;
 window.resetZoom = resetZoom;
-window.panMap = panMap;
-window.setMapZoom = setMapZoom;
-window.changeMapZoom = changeMapZoom;
 window.invokeActiveZooming = invokeActiveZooming;
