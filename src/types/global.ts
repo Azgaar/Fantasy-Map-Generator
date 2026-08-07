@@ -1,4 +1,4 @@
-import type { Selection } from "d3";
+import type { Selection, ZoomBehavior } from "d3";
 import type { LabelGroup } from "@/generators/labels-generator";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
@@ -108,7 +108,7 @@ declare global {
   var routes: Selection<SVGElement, unknown, null, undefined>;
   var debug: Selection<SVGElement, unknown, null, undefined>;
   // SVG layer selections reassigned on map load (main.js)
-  var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
+  var scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>;
   var ocean: Selection<SVGGElement, unknown, null, undefined>;
   var oceanPattern: Selection<SVGGElement, unknown, null, undefined>;
   var landmass: Selection<SVGGElement, unknown, null, undefined>;
@@ -199,7 +199,8 @@ declare global {
   var getCellsDensityColor: (cells: number) => string;
   var showExportPane: () => void;
   var customization: number;
-  var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
+  var zoom: ZoomBehavior<SVGSVGElement, unknown>;
+  var zoomTo: (x: number, y: number, zoom?: number, duration?: number) => void;
   var panMap: (x: number, y: number) => void;
   var setMapZoom: (value: number) => void;
   var changeMapZoom: (factor: number) => void;

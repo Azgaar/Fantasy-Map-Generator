@@ -142,6 +142,7 @@ export class ViewportRenderer {
     const bounds = this.getBounds(0);
     const guard = this.options.guardPixels / bounds.scale;
     return (
+      bounds.scale - this.materializedBounds.scale > 1 ||
       bounds.x0 < this.materializedBounds.x0 + guard ||
       bounds.y0 < this.materializedBounds.y0 + guard ||
       bounds.x1 > this.materializedBounds.x1 - guard ||
@@ -178,7 +179,7 @@ export class ViewportRenderer {
 }
 
 const OVERSCAN_PIXELS = 80;
-const GUARD_PIXELS = 40;
+const GUARD_PIXELS = 80;
 
 export const ViewportLayers = new ViewportRenderer({
   getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),

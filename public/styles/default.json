@@ -165,7 +165,7 @@
     "opacity": 0.5,
     "stroke": "#1f3846",
     "stroke-width": 0.5,
-    "filter": "url(#dropShadow)",
+    "filter": null,
     "auto-filter": 1
   },
   "#lake_island": {

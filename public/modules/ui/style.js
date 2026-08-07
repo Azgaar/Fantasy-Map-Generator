@@ -428,12 +428,6 @@ function selectStyleElement() {
     styleGroup.style.display = "none";
   }
 
-  if (styleElement === "coastline" && styleGroupSelect.value === "sea_island") {
-    styleCoastline.style.display = "block";
-    const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
-    if (auto) styleFilter.style.display = "none";
-  }
-
   if (styleElement === "scaleBar") {
     styleScaleBar.style.display = "block";
 
@@ -633,12 +627,6 @@ styleGridShiftY.addEventListener("input", function () {
 
 styleRescaleMarkers.addEventListener("change", function () {
   markers.attr("rescale", +this.checked);
-  invokeActiveZooming();
-});
-
-styleCoastlineAuto.addEventListener("change", function () {
-  coastline.select("#sea_island").attr("auto-filter", +this.checked);
-  styleFilter.style.display = this.checked ? "none" : "block";
   invokeActiveZooming();
 });
 

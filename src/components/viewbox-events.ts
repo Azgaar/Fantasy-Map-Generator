@@ -5,12 +5,12 @@ import type { LabelType } from "@/generators/labels-generator";
 import { dragLegendBox } from "@/renderers/draw-legend";
 import { debounce } from "@/utils/commonUtils";
 import { handleMouseMove } from "./map-tooltip";
+import { applyZoomBehavior } from "./zoom";
 
 const onMouseMove = debounce(handleMouseMove, 100);
 
-/** Restore the default viewbox events, dropping whatever an editor bound to the map */
 export function applyDefaultViewboxEvents(): void {
-  svg.call(zoom);
+  applyZoomBehavior();
 
   select<SVGGElement, unknown>("#viewbox")
     .style("cursor", "default")
@@ -72,10 +72,6 @@ function onClick(event: MouseEvent): void {
 
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
-}
-
-declare global {
-  var zoom: any; // d3 v5 zoom behaviour created in main.js
 }
 
 window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

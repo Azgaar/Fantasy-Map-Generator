@@ -229,7 +229,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("opacity", 0.5)
         .attr("stroke", "#1f3846")
         .attr("stroke-width", 0.7)
-        .attr("filter", "url(#dropShadow)");
+        .attr("filter", null);
       select("#coastline")
         .select("#lake_island")
         .attr("opacity", 1)
@@ -1480,5 +1480,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     document.getElementById("textPaths")?.replaceChildren();
     labels.replaceChildren();
     if (layerIsOn("toggleLabels")) drawLabels();
+
+    // other style changes
+    select("#coastline > #sea_island").attr("filter", null);
   }
 }

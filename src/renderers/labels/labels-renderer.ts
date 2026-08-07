@@ -168,16 +168,13 @@ function getAddedLabelsData(): LabelData[] {
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
+  console.log("reconcileLabels");
   if (!scene.valid || (!context.renderAll && !layerIsOn("toggleLabels"))) return;
   const labels = findElement(context.root, "labels");
   const textPaths = findElement(context.root, "textPaths");
   if (!labels || !textPaths) return;
 
   for (const group of options.labels.groups) reconcileGroup(labels, textPaths, group.name, context);
-  if (options.labels.resizeOnZoom) {
-    const fontSize = getGlobalLabelsFontSize(context.bounds.scale, options.labels.resizeOnZoom);
-    labels.setAttribute("font-size", `${fontSize}px`);
-  }
 }
 
 function reconcileGroup(labels: Element, textPaths: Element, groupName: string, context: ViewportRenderContext): void {
@@ -220,11 +217,6 @@ function isLabelVisible(bounds: ViewportRenderContext["bounds"], [x, y]: Point):
 function removeMaterialized(id: string, root: ParentNode): void {
   findElement(root, id)?.remove();
   findElement(root, `textPath_${id}`)?.remove();
-}
-
-function getGlobalLabelsFontSize(scale: number, resizeOnZoom: boolean): number {
-  if (!resizeOnZoom) return 100;
-  return Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
 }
 
 function createLabelElements(label: LabelData, document: Document): { text: SVGTextElement; path?: SVGPathElement } {

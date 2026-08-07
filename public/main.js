@@ -183,78 +183,10 @@ let style = { labels: { groups: {} }, burgIcons: {}, anchors: {} };
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
-// d3 zoom behavior
+// current map view transform, written by the zoom handlers in src/components/zoom.ts
 let scale = 1;
 let viewX = 0;
 let viewY = 0;
-
-let rafId = null;
-let pendingScaleChange = false;
-let pendingPositionChange = false;
-function zoomRaf() {
-  const { k, x, y } = d3.event.transform;
-
-  const isScaleChanged = Boolean(scale - k);
-  const isPositionChanged = Boolean(viewX - x || viewY - y);
-  if (!isScaleChanged && !isPositionChanged) return;
-
-  scale = k;
-  viewX = x;
-  viewY = y;
-
-  // Coalesce multiple zoom events into one paint.
-  // While a RAF is pending, keep updating latest transform state and OR-change flags.
-  // The scheduled RAF consumes these accumulated flags and then resets them.
-  pendingScaleChange = pendingScaleChange || isScaleChanged;
-  pendingPositionChange = pendingPositionChange || isPositionChanged;
-
-  if (rafId) return;
-  rafId = requestAnimationFrame(() => {
-    rafId = null;
-
-    // Safely clears these flags for future renders
-    const didScaleChange = pendingScaleChange;
-    const didPositionChange = pendingPositionChange;
-    pendingScaleChange = false;
-    pendingPositionChange = false;
-
-    // Uses global values, so each frame always draws using the latest positioning values
-    viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-    if (didPositionChange || didScaleChange) {
-      ViewportLayers.schedule();
-      window.updateMinimap && updateMinimap();
-    }
-
-    if (didScaleChange) {
-      invokeActiveZooming();
-      drawScaleBar(scaleBar, scale);
-      fitScaleBar(scaleBar, svgWidth, svgHeight);
-    }
-
-    if (didPositionChange) {
-      if (layerIsOn("toggleCoordinates")) drawCoordinates();
-    }
-
-    if (customization === 1) {
-      const canvas = findEl("canvas");
-      if (canvas && canvas.style.opacity !== "0") {
-        const img = findEl("imageToConvert");
-        if (img) {
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        }
-      }
-    }
-  });
-}
-
-const zoom = d3
-  .zoom()
-  .scaleExtent([1, 20])
-  .on("zoom", zoomRaf)
-  .on("end", () => ViewportLayers.renderNow());
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +ensureEl("populationRateInput").value;
@@ -289,6 +221,10 @@ oceanLayers
   .attr("height", graphHeight);
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // binds the zoom behaviour and its handlers (see src/components/viewbox-events.ts), so it has to
+  // run before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load
+  applyDefaultViewboxEvents();
+
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
     alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
@@ -308,7 +244,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  applyDefaultViewboxEvents();
   initiateAutosave();
   initTourPromptButton();
 });
@@ -531,74 +466,6 @@ function findBurgForMFCG(params) {
 
   zoomTo(b.x, b.y, 8, 1600);
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
-}
-
-// Zoom to a specific point
-function zoomTo(x, y, z = 8, d = 2000) {
-  const transform = d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(d).call(zoom.transform, transform);
-}
-
-// Reset zoom to initial
-function resetZoom(d = 1000) {
-  svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
-}
-
-// Bundled UI modules call these wrappers instead of using the legacy d3 selection directly
-function panMap(x, y) {
-  zoom.translateBy(svg, x, y);
-}
-
-function setMapZoom(value) {
-  zoom.scaleTo(svg, value);
-}
-
-function changeMapZoom(factor) {
-  zoom.scaleBy(svg, factor);
-}
-
-// active zooming feature
-function invokeActiveZooming() {
-  const isOptimized = shapeRendering.value === "optimizeSpeed";
-
-  if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
-    // toggle shade/blur filter for coatline on zoom
-    const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    coastline.select("#sea_island").attr("filter", filter);
-  }
-
-  // rescale emblems on zoom
-  if (emblems.style("display") !== "none") {
-    emblems.selectAll("g").each(function () {
-      const size = this.getAttribute("font-size") * scale;
-      const hidden = hideEmblems.checked && (size < 25 || size > 300);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href"))
-        renderGroupCOAs(this);
-    });
-  }
-
-  // change states halo width
-  if (!customization && !isOptimized) {
-    const desired = +statesHalo.attr("data-width");
-    const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
-  }
-
-  // rescale map markers
-  +markers.attr("rescale") &&
-    pack.markers?.forEach(marker => {
-      const { i, x, y, size = 30, hidden } = marker;
-      const el = !hidden && document.getElementById(`marker${i}`);
-      if (!el) return;
-
-      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
-      el.setAttribute("width", zoomedSize);
-      el.setAttribute("height", zoomedSize);
-      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
-      el.setAttribute("y", rn(y - zoomedSize, 1));
-    });
 }
 
 // add drag to upload logic, pull request from @evyatron
