@@ -175,7 +175,7 @@ export interface Route {
   name?: string;
   group: string;
   feature: number;
-  points: number[][];
+  points: number[][]; // [x, y, cellId]. TODO: type properly
   cells?: number[];
   merged?: boolean;
   length?: number;

@@ -2,28 +2,13 @@ import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelGroupStyle } from "@/types/style";
 
 export function renderLabelGroups(root: ParentNode = document): void {
-  const labels = findElement<SVGGElement>(root, "labels");
+  const labels = root.querySelector<SVGGElement>("#labels");
   if (!labels) throw new Error("Labels container not found");
 
   labels.replaceChildren();
   for (const groupOptions of options.labels.groups) {
     renderLabelGroup(labels, groupOptions);
   }
-}
-
-export function ensureLabelGroup(groupName: string, type: LabelType, root: ParentNode = document): SVGGElement {
-  const labels = findElement<SVGGElement>(root, "labels");
-  if (!labels) throw new Error("Labels container not found");
-
-  let group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
-  if (!group) {
-    ERROR && console.error(`Label group ${groupName} not found, applying fallback group for type ${type}`);
-    const fallbackGroup = Labels.getFallbackGroup(type);
-    group = labels.querySelector<SVGGElement>(`#labels-${fallbackGroup.name}`);
-    if (!group) throw new Error(`Fallback label group for type ${type} not rendered`);
-  }
-
-  return group;
 }
 
 export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
@@ -41,6 +26,21 @@ export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup):
   group.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
 
   labels.appendChild(group);
+  return group;
+}
+
+function _ensureLabelGroup(groupName: string, type: LabelType, root: ParentNode = document): SVGGElement {
+  const labels = root.querySelector<SVGGElement>("#labels");
+  if (!labels) throw new Error("Labels container not found");
+
+  let group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
+  if (!group) {
+    ERROR && console.error(`Label group ${groupName} not found, applying fallback group for type ${type}`);
+    const fallbackGroup = Labels.getFallbackGroup(type);
+    group = labels.querySelector<SVGGElement>(`#labels-${fallbackGroup.name}`);
+    if (!group) throw new Error(`Fallback label group for type ${type} not rendered`);
+  }
+
   return group;
 }
 
@@ -75,14 +75,4 @@ export function getGroupStyle(group: { name: string; type: LabelType }): LabelGr
 
   ERROR && console.error(`No style or fallback style found for label group ${group.name} of type ${group.type}`);
   return BASE_STYLE;
-}
-
-export const getLabelGroupStyle = (requestedGroup: string | undefined, type: LabelType): LabelGroupStyle => {
-  const group = options.labels.groups.find(group => group.name === requestedGroup) || Labels.getFallbackGroup(type);
-  return getGroupStyle(group);
-};
-
-function findElement<T extends Element>(root: ParentNode, id: string): T | null {
-  if (root instanceof Element && root.id === id) return root as T;
-  return root.querySelector<T>(`#${id}`);
 }

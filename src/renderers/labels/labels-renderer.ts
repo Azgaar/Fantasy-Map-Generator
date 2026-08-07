@@ -4,7 +4,7 @@ import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/v
 import type { Point } from "@/types/global";
 import { fitStateLabel } from "./fit-state-label";
 import { renderLabelGroups } from "./label-groups";
-import { createLabelElements, getLabelPath } from "./label-markup";
+import { createLabelElements } from "./label-markup";
 
 const scene = new Scene<LabelData>();
 const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels });
@@ -113,9 +113,7 @@ function getRiverLabelsData(): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const river of pack.rivers) {
     if (!river.cells.length || !river.name) continue;
-    const points = formatPathPoints(
-      (river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points)) as Point[]
-    );
+    const points = formatPathPoints(river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points));
     if (!points.length) continue;
     labels.push({
       ...river.label,
@@ -136,7 +134,7 @@ function getRouteLabelsData(): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const route of pack.routes) {
     if (!route.name) continue;
-    const points = formatPathPoints(route.label?.pathPoints || (route.points as Point[]));
+    const points = formatPathPoints(route.label?.pathPoints || route.points);
     if (!points.length) continue;
     labels.push({
       ...route.label,
@@ -233,7 +231,8 @@ function indexLabelsByGroup(): void {
   }
 }
 
-function formatPathPoints(points: Point[]): Point[] {
+function formatPathPoints(pointLike: number[][]): Point[] {
+  const points: Point[] = pointLike.map(([x, y]) => [x, y]);
   const simple = simplify(points, 0.5);
   if (simple.length && simple.at(0)![0] > simple.at(-1)![0]) simple.reverse();
   return simple;
