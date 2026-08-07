@@ -11,6 +11,10 @@ const DOMAIN_LABEL: Record<TransportDomain, string> = {
   air: "air (unrestricted; direct line, any endpoints)"
 };
 
+/** Errors explain a rule and need time to read; confirmations only acknowledge an action. */
+const ERROR_TIP_MS = 9000;
+const SUCCESS_TIP_MS = 4000;
+
 const TRANSPORT_TYPES_CHANGED = "journey-transport-types-changed";
 const emitChanged = () => document.dispatchEvent(new CustomEvent(TRANSPORT_TYPES_CHANGED));
 
@@ -113,12 +117,12 @@ function onNameChange(this: HTMLInputElement): void {
   const newName = this.value.trim();
   if (!newName) {
     this.value = oldName;
-    tip("Name cannot be empty", false, "error");
+    tip("Name cannot be empty", true, "error", ERROR_TIP_MS);
     return;
   }
   if (pack.transportTypes.some(t => t.name === newName && t.i !== type.i)) {
     this.value = oldName;
-    tip("A transport type with that name already exists", false, "error");
+    tip("A transport type with that name already exists", true, "error", ERROR_TIP_MS);
     return;
   }
   type.name = newName;
@@ -157,9 +161,9 @@ function onDelete(this: HTMLElement): void {
   if (inUse) {
     tip(
       `'${type.name}' is used by existing segments. Reassign them in the Journey Editor before deleting.`,
-      false,
+      true,
       "error",
-      6000
+      ERROR_TIP_MS
     );
     return;
   }
@@ -200,7 +204,7 @@ function addType(): void {
     input.focus();
     input.select();
   }
-  tip("Transport type added — rename it and set speed / path mode.", false, "success", 4000);
+  tip("Transport type added — rename it and set speed / path mode.", true, "success", SUCCESS_TIP_MS);
 }
 
 function resetDefaults(): void {

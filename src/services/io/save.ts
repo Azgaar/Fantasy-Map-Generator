@@ -98,6 +98,7 @@ function prepareMapData(): string {
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
+  cloneEl.querySelector("#journeyControlPoints")?.remove(); // transient journey path-editing handles
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 

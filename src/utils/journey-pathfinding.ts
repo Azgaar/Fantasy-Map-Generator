@@ -104,6 +104,20 @@ export function isValidEndpointForDomain(cellId: number, domain: TransportDomain
   return isCoastalLand(cellId);
 }
 
+/**
+ * Is the cell valid for an *intermediate* point on a path of this domain?
+ *
+ * Stricter than endpoint validation: a water route may legitimately start or end
+ * on a coastal land cell (you board the boat from shore), but it must not run
+ * overland mid-route. Land routes must stay on land throughout.
+ */
+export function isValidPathPointForDomain(cellId: number, domain: TransportDomain): boolean {
+  if (cellId === undefined || cellId === null) return false;
+  if (domain === "air") return true;
+  if (domain === "land") return isLand(cellId, pack);
+  return !isLand(cellId, pack);
+}
+
 export function describeCell(cellId: number): string {
   if (cellId === undefined || cellId === null) return "no cell";
   const land = isLand(cellId, pack);
@@ -121,7 +135,8 @@ const pointOf = (cellId: number): JourneyPoint => {
 
 const dist = (a: JourneyPoint, b: JourneyPoint): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
-const pathLength = (points: JourneyPoint[]): number => {
+/** Total length in px of a point chain. Exported so manual path edits can recalculate distance. */
+export const pathLength = (points: JourneyPoint[]): number => {
   let total = 0;
   for (let i = 1; i < points.length; i++) total += dist(points[i - 1], points[i]);
   return total;

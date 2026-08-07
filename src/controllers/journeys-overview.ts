@@ -193,7 +193,7 @@ function removeOne(this: HTMLElement): void {
 function removeAllJourneys(): void {
   const toRemove = pack.journeys.filter(j => !j.lock);
   if (!toRemove.length) {
-    tip("No unlocked journeys to remove", false, "error");
+    tip("No unlocked journeys to remove", true, "error", 9000);
     return;
   }
   confirmationDialog({
