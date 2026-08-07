@@ -45,6 +45,7 @@ import {
   destroyDialogIfExists,
   ensureEl,
   findEl,
+  fitDialogIfExists,
   getComposedPath,
   getNextId,
   getPointer
@@ -191,6 +192,7 @@ export {
   findGridAll,
   findGridCell,
   findPath,
+  fitDialogIfExists,
   formatPrice,
   gauss,
   generateDate,

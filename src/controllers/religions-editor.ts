@@ -17,6 +17,7 @@ import {
   destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
+  fitDialogIfExists,
   getPackPolygon,
   getPointer,
   isLand,
@@ -67,6 +68,7 @@ function open(): void {
   $("#religionsEditor").dialog({
     title: "Religions Editor",
     resizable: false,
+    width: "fit-content",
     close: closeReligionsEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
@@ -343,7 +345,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     togglePercentageMode();
   }
 
-  $("#religionsEditor").dialog({ width: "fit-content" });
+  fitDialogIfExists("religionsEditor");
 }
 
 function getTypeOptions(type: string): string {

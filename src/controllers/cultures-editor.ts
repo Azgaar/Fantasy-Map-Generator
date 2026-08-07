@@ -20,6 +20,7 @@ import {
   destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
+  fitDialogIfExists,
   getPackPolygon,
   getPointer,
   isLand,
@@ -70,6 +71,7 @@ function open(): void {
   $("#culturesEditor").dialog({
     title: "Cultures Editor",
     resizable: false,
+    width: "fit-content",
     close: closeCulturesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
@@ -349,7 +351,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     ensureEl("culturesBody").dataset.type = "absolute";
     togglePercentageMode();
   }
-  $("#culturesEditor").dialog({ width: "fit-content" });
+  fitDialogIfExists("culturesEditor");
 }
 
 function getTypeOptions(type: string): string {

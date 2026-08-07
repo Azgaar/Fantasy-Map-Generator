@@ -22,6 +22,7 @@ import {
   destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
+  fitDialogIfExists,
   formatPrice,
   getAdjective,
   getMixedColor,
@@ -78,6 +79,7 @@ function open(): void {
   $("#statesEditor").dialog({
     title: "States Editor",
     resizable: false,
+    width: "fit-content",
     close: closeStatesEditor,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
@@ -380,7 +382,7 @@ function renderStatesPage(view: TableView<State>): void {
     ensureEl("statesBodySection").dataset.type = "absolute";
     togglePercentageMode();
   }
-  $("#statesEditor").dialog({ width: "fit-content" });
+  fitDialogIfExists("statesEditor");
 }
 
 function getCultureOptions(culture: number): string {
