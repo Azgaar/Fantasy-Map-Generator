@@ -230,6 +230,7 @@ function drawControlPointsAndLine(): void {
       .attr("transform", transform)
       .append("path")
       .attr("d", getLabelPath(label))
+      .style("stroke-width", Math.max(2.2 / scale, 0.2))
       .on("click", addInterimControlPoint);
     label.pathPoints?.forEach(drawControlPoint);
   }
@@ -241,8 +242,8 @@ function drawControlPoint(point: Point): void {
     .append("circle")
     .attr("cx", point[0])
     .attr("cy", point[1])
-    .attr("r", 2.5)
-    .attr("stroke-width", 0.8)
+    .attr("r", Math.max(3 / scale, 0.35))
+    .style("stroke-width", Math.max(1 / scale, 0.15))
     .call(drag<SVGCircleElement, unknown>().on("drag", dragControlPoint))
     .on("click", clickControlPoint);
 }

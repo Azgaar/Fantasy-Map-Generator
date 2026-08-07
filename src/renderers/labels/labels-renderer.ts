@@ -233,8 +233,18 @@ function indexLabelsByGroup(): void {
 
 function formatPathPoints(pointLike: number[][]): Point[] {
   const points: Point[] = pointLike.map(([x, y]) => [x, y]);
-  if (points.length && points.at(0)![0] > points.at(-1)![0]) points.reverse();
-  return points;
+  const trimmed = trimAroundCenter(points);
+  if (trimmed.length && trimmed.at(0)![0] > trimmed.at(-1)![0]) trimmed.reverse();
+  return trimmed;
+}
+
+const LABEL_PATH_POINTS_RADIUS = 4;
+function trimAroundCenter(points: Point[], radius = LABEL_PATH_POINTS_RADIUS) {
+  if (points.length <= radius * 2 + 1) return points;
+  const middleIndex = Math.floor(points.length / 2);
+  const start = Math.max(0, middleIndex - radius);
+  const end = Math.min(points.length, middleIndex + radius + 1);
+  return points.slice(start, end);
 }
 
 function getAchor(x: number, y: number, dx = 0, dy = 0): Point {

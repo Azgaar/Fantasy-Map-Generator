@@ -3,6 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
@@ -187,6 +188,7 @@ function redrawRoute(route: Route): void {
   selectedRoute.attr("d", Routes.getPath(route));
   updateRouteLength(route);
   if (findEl("elevationProfile")) showRouteElevationProfile();
+  drawLabels();
 }
 
 function addControlPoint(this: any, event: any): void {
