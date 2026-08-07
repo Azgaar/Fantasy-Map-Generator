@@ -1436,6 +1436,90 @@ div.header > div:first-child {
   display: inline-block;
 }
 
+/* floor picked to fit a usable search input plus a couple of wrapped icon rows, shared by all six overview editors */
+.editorFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  padding-block: 0.1em;
+  /* width:0 + min-width:100% fills the table-driven dialog width without contributing to it, same trick as the pagination footer */
+  width: 0;
+  min-width: 100%;
+}
+/* fixed label column (a text node + control per label, both grid items) so controls line up across rows */
+.editorFilters label {
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  align-items: center;
+  column-gap: 0.3em;
+}
+.editorFilters input[type="search"],
+.editorFilters select {
+  width: 100%;
+  min-width: 3em;
+}
+.editorToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em;
+  width: 0;
+  min-width: 100%;
+  /* max-content of a wrapping flex row ignores the wrap, so cap it to force real wrapping instead of setting the dialog's fit-content width */
+  max-width: 20em;
+}
+.editorToolbar > .editorToolbarPanel {
+  flex-basis: 100%;
+}
+.editorDialog {
+  min-width: 20em;
+}
+
+.editorDialog .header,
+.editorDialog .states {
+  display: grid;
+  grid-template-columns: var(--table-columns, auto);
+  align-items: center;
+}
+
+.editorDialog .header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  width: auto;
+  background: inherit;
+  /* matches .states' border+padding box so header and row content boxes share a left edge */
+  border: 1px solid transparent;
+  padding: 0 0.2em;
+}
+
+.editorDialog .header > div:first-child {
+  margin-left: 0;
+}
+
+/* cells size to their grid track, not their own content, so long values shrink instead of widening the row */
+.editorDialog .states > * {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  width: auto;
+  min-width: 0;
+  /* resolves against the column track, so no cell can overflow into its neighbour */
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.editorDialog > .table {
+  width: auto;
+}
+
+/* flex items default to min-width:auto, so an <input>'s UA-default content width would otherwise ignore the cell's cap */
+.editorDialog .states [data-col] input:not([type="checkbox"]),
+.editorDialog .states [data-col] select {
+  min-width: 0;
+  flex: 1;
+}
+
 div.states {
   border: 1px solid #d4d4d4;
   background-image: linear-gradient(to right, #fafafa80 0%, #f0f0f080 50%, #c8c8c880 100%);
@@ -1462,9 +1546,13 @@ div.totalLine > div {
 }
 
 div.states > input:not([type="checkbox"]) {
-  width: 7em;
   background: none;
   border: 0;
+}
+
+/* the fixed 7em only applies outside the migrated grid editors, where .editorDialog .states > * already sets width from the column track */
+div.states > input:not([type="checkbox"]):not(.editorDialog *) {
+  width: 7em;
 }
 
 div.states div {
@@ -1474,10 +1562,6 @@ div.states div {
 div.states .biomeHabitability {
   width: 4em;
   -moz-appearance: textfield;
-}
-
-div.states > .statePopulation {
-  width: 3em;
 }
 
 div.states:hover > .hiddenIcon {
@@ -1537,14 +1621,6 @@ div.states span.inactive {
 
 div.states span.inactive:hover {
   color: #abaaaa;
-}
-
-div.states > .riverName {
-  width: 7em;
-}
-
-div.states > .riverType {
-  width: 5em;
 }
 
 .coaIcon {

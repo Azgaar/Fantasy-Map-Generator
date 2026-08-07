@@ -1,5 +1,7 @@
 // Sorting of editor lines by clicking a column header — shared by every table-shaped editor
 
+import type { EditorColumn } from "./table";
+
 /** Make every .sortable header in the container sort the lines below it */
 export function applySortingByHeader(headerContainerId: string): void {
   const container = document.getElementById(headerContainerId);
@@ -10,8 +12,7 @@ export function applySortingByHeader(headerContainerId: string): void {
   }
 }
 
-/** Toggle the sorting order of the clicked header and re-sort the lines */
-export function sortLines(header: HTMLElement): void {
+export function toggleSortIcon(header: HTMLElement): void {
   const type = header.classList.contains("alphabetically") ? "name" : "number";
   const isSorted = header.className.includes("icon-sort");
   let order = header.className.includes("-down") ? "-up" : "-down";
@@ -23,9 +24,13 @@ export function sortLines(header: HTMLElement): void {
       if (className.includes("icon-sort")) sortable.classList.remove(className);
     }
   }
-
   header.classList.add(`icon-sort-${type}${order}`);
-  applySorting(headers);
+}
+
+/** Toggle the sorting order of the clicked header and re-sort the lines */
+export function sortLines(header: HTMLElement): void {
+  toggleSortIcon(header);
+  applySorting(header.parentNode as HTMLElement);
 }
 
 /** Sort the lines below the headers by the currently sorted header */
@@ -80,13 +85,21 @@ export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors
   });
 }
 
-export function sortDataByActiveHeader<T>(headers: HTMLElement, data: T[], accessors: SortAccessors<T>): T[] {
-  const sort = getActiveSort(headers);
-  return sort ? sortData(data, sort, accessors) : data;
+export function bindColumnSorting(headers: HTMLElement, onSort: () => void): void {
+  for (const cell of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
+    cell.addEventListener("click", () => {
+      toggleSortIcon(cell);
+      onSort();
+    });
+  }
 }
 
-export function bindEditorSortReset(headers: HTMLElement, onSort: () => void): void {
-  for (const el of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
-    el.addEventListener("click", () => onSort());
+export function sortDataByColumns<T>(headers: HTMLElement, data: T[], columns: EditorColumn<T>[]): T[] {
+  const sort = getActiveSort(headers);
+  if (!sort) return data;
+  const accessors: SortAccessors<T> = {};
+  for (const column of columns) {
+    if (column.sortBy) accessors[column.key] = column.sortBy;
   }
+  return sortData(data, sort, accessors);
 }
