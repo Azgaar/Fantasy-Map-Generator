@@ -43,6 +43,7 @@ function getDefaultPresets() {
     provinces: [
       "toggleBorders",
       "toggleBurgIcons",
+      "toggleLabels",
       "toggleLakes",
       "toggleProvinces",
       "toggleRivers",
@@ -251,7 +252,7 @@ function drawLayers() {
   if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
   if (layerIsOn("toggleEmblems")) drawEmblems();
-  if (layerIsOn("toggleLabels")) drawLabels();
+  drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
@@ -883,13 +884,12 @@ function toggleTrade(event) {
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    drawLabels();
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
     if (event && isCtrlClick(event)) return editStyle("labels");
-    removeLabels();
     turnButtonOff("toggleLabels");
   }
+  drawLabels();
 }
 
 function toggleBurgIcons(event) {

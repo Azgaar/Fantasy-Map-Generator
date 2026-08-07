@@ -32,7 +32,7 @@ export function drawLabels(): void {
   TIME && console.timeEnd("drawLabels");
 }
 
-export function removeLabels(): void {
+function removeLabels(): void {
   scene.invalidate();
   labelsByGroup.clear();
   const labels = findElement(document, "labels");
@@ -46,11 +46,10 @@ export function getSceneLabel(type: LabelType, id: number): LabelData | undefine
   return scene.get(labelId);
 }
 
-function getBurgLabelsData(ids?: number[]): PointLabelData[] {
-  const selected = ids && new Set(ids);
+function getBurgLabelsData(): PointLabelData[] {
   const labels: PointLabelData[] = [];
   for (const burg of pack.burgs) {
-    if (!burg.i || burg.removed || (selected && !selected.has(burg.i))) continue;
+    if (!burg.i || burg.removed) continue;
     labels.push({
       ...burg.label,
       id: `burgLabel${burg.i}`,
@@ -66,11 +65,10 @@ function getBurgLabelsData(ids?: number[]): PointLabelData[] {
   return labels;
 }
 
-function getProvinceLabelsData(ids?: number[]): PointLabelData[] {
-  const selected = ids && new Set(ids);
+function getProvinceLabelsData(): PointLabelData[] {
   const labels: PointLabelData[] = [];
   for (const province of pack.provinces) {
-    if (!province.i || province.removed || (selected && !selected.has(province.i))) continue;
+    if (!province.i || province.removed) continue;
     const [x, y] = province.pole || pack.cells.p[province.center];
     labels.push({
       ...province.label,
@@ -87,11 +85,10 @@ function getProvinceLabelsData(ids?: number[]): PointLabelData[] {
   return labels;
 }
 
-function getStateLabelsData(ids?: number[]): PathLabelData[] {
-  const selected = ids && new Set(ids);
+function getStateLabelsData(): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const state of pack.states) {
-    if (!state.i || state.removed || (selected && !selected.has(state.i))) continue;
+    if (!state.i || state.removed) continue;
     const group = state.label?.group || "state";
     const labelData = state.label?.pathPoints?.length ? state.label : fitStateLabel(state, group);
     const { pathPoints, text, fontSize } = labelData;
@@ -112,11 +109,10 @@ function getStateLabelsData(ids?: number[]): PathLabelData[] {
   return labels;
 }
 
-function getRiverLabelsData(ids?: number[]): PathLabelData[] {
-  const selected = ids && new Set(ids);
+function getRiverLabelsData(): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const river of pack.rivers) {
-    if (!river.cells.length || !river.name || (selected && !selected.has(river.i))) continue;
+    if (!river.cells.length || !river.name) continue;
     const points = formatPathPoints(
       (river.label?.pathPoints || Rivers.addMeandering(river.cells, river.points)) as Point[]
     );
@@ -136,11 +132,10 @@ function getRiverLabelsData(ids?: number[]): PathLabelData[] {
   return labels;
 }
 
-function getRouteLabelsData(ids?: number[]): PathLabelData[] {
-  const selected = ids && new Set(ids);
+function getRouteLabelsData(): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const route of pack.routes) {
-    if (!route.label?.pathPoints || !route.name || (selected && !selected.has(route.i))) continue;
+    if (!route.label?.pathPoints || !route.name) continue;
     const points = formatPathPoints(route.label?.pathPoints);
     labels.push({
       ...route.label,
@@ -157,11 +152,10 @@ function getRouteLabelsData(ids?: number[]): PathLabelData[] {
   return labels;
 }
 
-function getAddedLabelsData(ids?: number[]): LabelData[] {
-  const selected = ids && new Set(ids);
+function getAddedLabelsData(): LabelData[] {
   const labels: PathLabelData[] = [];
   for (const label of pack.labels) {
-    if (!label.i || !label.pathPoints.length || (selected && !selected.has(label.i))) continue;
+    if (!label.i || !label.pathPoints.length) continue;
     labels.push({
       id: `addedLabel${label.i}`,
       entityId: label.i,
