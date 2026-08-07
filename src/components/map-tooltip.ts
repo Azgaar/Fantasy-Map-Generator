@@ -119,7 +119,8 @@ function getElementTip({ group, subgroup, target, event, path, cellId }: TipCont
     return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
   }
 
-  if (target.closest("#labels [data-label-type]")) return "Click to edit the Label";
+  const text = target.textContent.replaceAll("|", "");
+  if (target.closest("#labels [data-label-type]")) return `${text}. Click to edit the label`;
 
   if (group === "armies") return `${(parent as SVGElement & { dataset: DOMStringMap }).dataset.name}. Click to edit`;
 

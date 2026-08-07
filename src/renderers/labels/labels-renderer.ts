@@ -233,9 +233,8 @@ function indexLabelsByGroup(): void {
 
 function formatPathPoints(pointLike: number[][]): Point[] {
   const points: Point[] = pointLike.map(([x, y]) => [x, y]);
-  const simple = simplify(points, 0.5);
-  if (simple.length && simple.at(0)![0] > simple.at(-1)![0]) simple.reverse();
-  return simple;
+  if (points.length && points.at(0)![0] > points.at(-1)![0]) points.reverse();
+  return points;
 }
 
 function getAchor(x: number, y: number, dx = 0, dy = 0): Point {
