@@ -997,13 +997,13 @@ function layerIsOn(el) {
 function turnButtonOff(el) {
   ensureEl(el).classList.add("buttonoff");
   getCurrentPreset();
-  renderViewportLayersNow();
+  ViewportLayers.renderNow();
 }
 
 function turnButtonOn(el) {
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
-  renderViewportLayersNow();
+  ViewportLayers.renderNow();
 }
 
 // move layers on mapLayers dragging (jquery sortable)

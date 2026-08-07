@@ -1,14 +1,14 @@
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
-import { Scene, type ViewportRenderContext, viewportLayers } from "@/renderers/viewport/viewport-renderer";
+import type { LabelData, PathLabelData, PointLabelData } from "@/renderers/labels/labels";
+import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
-import type { LabelData, PathLabelData, PointLabelData } from "@/types/labels";
 import { fitStateLabel } from "./fit-state-label";
 import { renderLabelGroups } from "./label-groups";
 import { getLabelPath } from "./label-markup";
 
-const labelScene = new Scene<LabelData>();
+const scene = new Scene<LabelData>();
+const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels });
 const labelsByGroup = new Map<string, LabelData[]>();
-const labelViewport = viewportLayers.register({ id: "labels", render: reconcileLabels });
 
 const dataAdapters: Record<LabelType, (ids?: number[]) => LabelData[]> = {
   state: getStateLabelsData,
@@ -26,25 +26,25 @@ export function drawLabels(): void {
   renderLabelGroups();
   document.getElementById("textPaths")?.replaceChildren();
   const labels = Object.values(dataAdapters).flatMap(adapter => adapter());
-  labelScene.replace(labels);
+  scene.replace(labels);
   indexLabelGroups();
-  labelViewport.renderNow();
+  layer.render();
   TIME && console.timeEnd("drawLabels");
 }
 
 export function drawLabelsByType(type: LabelType, ids?: number[]): void {
   if (!layerIsOn("toggleLabels")) return void removeLabels();
-  if (!labelScene.valid) return void drawLabels();
+  if (!scene.valid) return void drawLabels();
 
   TIME && console.time("drawLabelsByType");
   const selected = ids && new Set(ids);
-  const changed = labelScene.replaceWhere(
+  const changed = scene.replaceWhere(
     label => label.type === type && (!selected || selected.has(getEntityId(label))),
     dataAdapters[type](ids)
   );
   indexLabelGroups();
   for (const id of changed) removeMaterialized(id, document);
-  labelViewport.renderNow();
+  layer.render();
   TIME && console.timeEnd("drawLabelsByType");
 }
 
@@ -53,24 +53,24 @@ export function removeLabels(): void {
     group.replaceChildren();
   });
   document.getElementById("textPaths")?.replaceChildren();
-  labelScene.invalidate();
+  scene.invalidate();
   labelsByGroup.clear();
 }
 
 export function removeLabel(type: LabelType, id: number): void {
   const labelId = `${type}Label${id}`;
-  labelScene.remove(labelId);
+  scene.remove(labelId);
   indexLabelGroups();
   removeMaterialized(labelId, document);
 }
 
 export function getCachedLabel(type: LabelType, id: number): LabelData | undefined {
   const labelId = `${type}Label${id}`;
-  return labelScene.get(labelId);
+  return scene.get(labelId);
 }
 
 export function renderLabelsNow(): void {
-  labelViewport.renderNow();
+  layer.render();
 }
 
 function getBurgLabelsData(ids?: number[]): PointLabelData[] {
@@ -201,7 +201,7 @@ function getAddedLabelsData(ids?: number[]): LabelData[] {
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
-  if (!labelScene.valid || (!context.renderAll && !layerIsOn("toggleLabels"))) return;
+  if (!scene.valid || (!context.renderAll && !layerIsOn("toggleLabels"))) return;
   if (!findElement(context.root, "labels") || !findElement(context.root, "textPaths")) return;
   if (context.renderAll) {
     renderLabelGroups(context.root);
@@ -336,7 +336,7 @@ function findElement(root: ParentNode, id: string): Element | null {
 
 function indexLabelGroups(): void {
   labelsByGroup.clear();
-  for (const label of labelScene.values()) {
+  for (const label of scene.values()) {
     const labels = labelsByGroup.get(label.group) || [];
     labels.push(label);
     labelsByGroup.set(label.group, labels);

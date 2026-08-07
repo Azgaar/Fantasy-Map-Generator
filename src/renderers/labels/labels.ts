@@ -1,8 +1,6 @@
 import type { LabelType } from "@/generators/labels-generator";
 import type { Point } from "@/types/global";
 
-// Scene types
-
 interface BaseLabelData {
   id: string;
   entityId: number; // stateId, provinceId, burgId, labelId

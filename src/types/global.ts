@@ -40,8 +40,6 @@ declare global {
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
-    renderViewportLayersNow: () => void;
-    updateViewportLayers: () => void;
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;

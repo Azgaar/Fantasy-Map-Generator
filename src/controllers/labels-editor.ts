@@ -6,8 +6,8 @@ import { Controllers } from "@/controllers";
 import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels-generator";
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
+import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabelsByType, getCachedLabel, removeLabel } from "@/renderers/labels/labels-renderer";
-import type { LabelData } from "@/types/labels";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 

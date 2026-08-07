@@ -1,9 +1,6 @@
-export interface ViewportBounds {
-  scale: number;
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
+interface ViewportLayerHandle {
+  render: () => void;
+  unregister: () => void;
 }
 
 export interface ViewportRenderContext {
@@ -12,21 +9,20 @@ export interface ViewportRenderContext {
   renderAll: boolean;
 }
 
-export interface ViewportLayer {
+interface ViewportLayer {
   id: string;
   render: (context: ViewportRenderContext) => void;
 }
 
-export interface ViewportLayerHandle {
-  renderNow: () => void;
-  unregister: () => void;
+interface ViewportBounds {
+  scale: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 }
 
-export interface SceneItem {
-  id: string;
-}
-
-export class Scene<T extends SceneItem> {
+export class Scene<T extends { id: string }> {
   private items = new Map<string, T>();
   valid = false;
 
@@ -101,7 +97,7 @@ export class ViewportRenderer {
   register(layer: ViewportLayer): ViewportLayerHandle {
     this.layers.set(layer.id, layer);
     return {
-      renderNow: () => {
+      render: () => {
         if (this.layers.get(layer.id) === layer) layer.render(this.getLiveContext());
       },
       unregister: () => {
@@ -111,11 +107,22 @@ export class ViewportRenderer {
   }
 
   schedule(): void {
-    const visibleBounds = this.getBounds(0);
-    if (!this.shouldReconcileViewport(visibleBounds)) return;
+    if (!this.shouldReconcile()) return;
     const context = this.getLiveContext();
     this.materializedBounds = context.bounds;
     this.scheduleContext(context);
+  }
+
+  renderNow(): void {
+    const context = this.getLiveContext();
+    this.materializedBounds = context.bounds;
+    this.cancelScheduledRender();
+    this.renderLayers(context);
+  }
+
+  renderAll(root: ParentNode): void {
+    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+    this.renderLayers({ root, bounds, renderAll: true });
   }
 
   private getBounds(paddingPixels: number): ViewportBounds {
@@ -130,8 +137,9 @@ export class ViewportRenderer {
     };
   }
 
-  private shouldReconcileViewport(bounds: ViewportBounds): boolean {
+  private shouldReconcile(): boolean {
     if (!this.materializedBounds) return true;
+    const bounds = this.getBounds(0);
     const guard = this.options.guardPixels / bounds.scale;
     return (
       bounds.x0 < this.materializedBounds.x0 + guard ||
@@ -150,18 +158,6 @@ export class ViewportRenderer {
       this.pending = null;
       if (pending) this.renderLayers(pending);
     });
-  }
-
-  renderNow(): void {
-    const context = this.getLiveContext();
-    this.materializedBounds = context.bounds;
-    this.cancelScheduledRender();
-    this.renderLayers(context);
-  }
-
-  renderAll(root: ParentNode): void {
-    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderLayers({ root, bounds, renderAll: true });
   }
 
   private getLiveContext(): ViewportRenderContext {
@@ -184,11 +180,15 @@ export class ViewportRenderer {
 const OVERSCAN_PIXELS = 80;
 const GUARD_PIXELS = 40;
 
-export const viewportLayers = new ViewportRenderer({
+export const ViewportLayers = new ViewportRenderer({
   getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),
   overscanPixels: OVERSCAN_PIXELS,
   guardPixels: GUARD_PIXELS
 });
 
-window.updateViewportLayers = () => viewportLayers.schedule();
-window.renderViewportLayersNow = () => viewportLayers.renderNow();
+declare global {
+  // biome-ignore lint/suspicious/noRedeclare: legacy seam
+  var ViewportLayers: ViewportRenderer;
+}
+
+window.ViewportLayers = ViewportLayers;
