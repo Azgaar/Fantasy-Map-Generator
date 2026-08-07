@@ -238,7 +238,6 @@ declare global {
   var drawBorders: () => void;
   var drawProvinces: () => void;
   var drawLabels: () => void;
-  var removeLabels: () => void;
   var drawPopulation: () => void;
   var toggleCultures: () => void;
   var toggleStates: () => void;

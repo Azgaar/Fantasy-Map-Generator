@@ -4,7 +4,7 @@ import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/v
 import type { Point } from "@/types/global";
 import { fitStateLabel } from "./fit-state-label";
 import { renderLabelGroups } from "./label-groups";
-import { getLabelPath } from "./label-markup";
+import { createLabelElements, getLabelPath } from "./label-markup";
 
 const scene = new Scene<LabelData>();
 const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels });
@@ -219,59 +219,6 @@ function removeMaterialized(id: string, root: ParentNode): void {
   findElement(root, `textPath_${id}`)?.remove();
 }
 
-function createLabelElements(label: LabelData, document: Document): { text: SVGTextElement; path?: SVGPathElement } {
-  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  text.id = label.id;
-  text.dataset.labelType = label.type;
-  text.dataset.id = String(label.entityId);
-  if (label.dx || label.dy) text.setAttribute("transform", `translate(${label.dx || 0}, ${label.dy || 0})`);
-
-  if ("pathPoints" in label) {
-    const path = createSupportPath(label, document);
-    const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
-    textPath.setAttribute("href", `#${path.id}`);
-    textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
-    textPath.setAttribute("text-anchor", "middle");
-    textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
-    if (label.letterSpacing !== undefined) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
-    appendText(textPath, label.text, "0");
-    text.appendChild(textPath);
-    return { text, path };
-  }
-
-  text.setAttribute("x", String(label.x));
-  text.setAttribute("y", String(label.y));
-  text.setAttribute("font-size", `${label.fontSize}%`);
-  if (label.letterSpacing) text.setAttribute("letter-spacing", `${label.letterSpacing}px`);
-  appendText(text, label.text, String(label.x));
-  return { text };
-}
-
-function createSupportPath(label: PathLabelData, document: Document): SVGPathElement {
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.id = `textPath_${label.id}`;
-  path.dataset.labelType = label.type;
-  path.dataset.id = String(getEntityId(label));
-  path.setAttribute("d", getLabelPath(label));
-  return path;
-}
-
-function appendText(parent: SVGTextElement | SVGTextPathElement, value: string, x: string): void {
-  const lines = value.split("|");
-  if (lines.length === 1) return void parent.append(lines[0]);
-  lines.forEach((line, index) => {
-    const tspan = parent.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "tspan");
-    tspan.setAttribute("x", x);
-    tspan.setAttribute("dy", index ? "1em" : `${(lines.length - 1) / -2}em`);
-    tspan.textContent = line;
-    parent.appendChild(tspan);
-  });
-}
-
-function getEntityId(data: LabelData): number {
-  return Number(data.id.match(/\d+$/)?.[0] ?? -1);
-}
-
 function findElement(root: ParentNode, id: string): Element | null {
   if (root instanceof Element && root.id === id) return root;
   return root.querySelector(`#${id}`);
@@ -299,8 +246,8 @@ function getAchor(x: number, y: number, dx = 0, dy = 0): Point {
 function getMiddlePoint(points: Point[]): Point {
   if (!points.length) return [0, 0];
   const middleIndex = Math.floor(points.length / 2);
-  return points.at(middleIndex)!;
+  const [x, y] = points.at(middleIndex)!;
+  return [x, y];
 }
 
 window.drawLabels = drawLabels;
-window.removeLabels = removeLabels;
