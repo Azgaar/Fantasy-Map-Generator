@@ -4,7 +4,7 @@ import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { drawLabelsByType, removeLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -349,9 +349,9 @@ function triggerBurgRemove(this: HTMLElement): void {
     message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      removeLabel("burg", burgId);
       Burgs.remove(burgId);
       burgsOverviewAddLines();
+      drawLabels();
     }
   });
 }
@@ -370,7 +370,7 @@ function regenerateNames(): void {
       pack.burgs[burg].name = el.dataset.name = name;
     });
 
-  if (layerIsOn("toggleLabels")) drawLabelsByType("burg");
+  drawLabels();
 }
 
 function showBurgsChart(): void {
@@ -658,7 +658,7 @@ function importBurgNames(dataLoaded: string): void {
     for (let i = 0; i < change.length; i++) {
       const id = change[i].id;
       pack.burgs[id].name = change[i].name;
-      drawLabelsByType("burg", [id]);
+      drawLabels();
     }
     burgsOverviewAddLines();
   };
@@ -683,9 +683,9 @@ function triggerAllBurgsRemove(): void {
       pack.burgs
         .filter(b => b.i && !(b.capital || b.lock))
         .forEach(b => {
-          removeLabel("burg", b.i);
           Burgs.remove(b.i);
         });
+      drawLabels();
       burgsOverviewAddLines();
     }
   });

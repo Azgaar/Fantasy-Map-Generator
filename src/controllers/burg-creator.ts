@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
-import { drawLabelsByType } from "@/renderers/labels/labels-renderer";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 
 function toggle(): void {
   if (isActive()) {
@@ -38,9 +38,9 @@ function addOnClick(event: MouseEvent): void {
     return;
   }
 
-  const burgId = Burgs.add(point);
-  drawLabelsByType("burg", [burgId]);
+  Burgs.add(point);
   refreshEditors();
+  drawLabels();
 
   if (!event.shiftKey) stop();
 }

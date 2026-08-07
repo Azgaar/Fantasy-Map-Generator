@@ -3,7 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawLabelsByType, removeLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import {
@@ -356,7 +356,7 @@ function changeName(): void {
 
   if (!pack.burgs[id].label) pack.burgs[id].label = {};
   Object.assign(pack.burgs[id].label, { text: value });
-  drawLabelsByType("burg", [id]);
+  drawLabels();
 }
 
 function generateNameRandom(): void {
@@ -369,7 +369,7 @@ function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
   Burgs.changeGroup(burg, this.value);
-  drawLabelsByType("burg", [id]);
+  drawLabels();
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -482,7 +482,7 @@ function toggleCapital(burgId: number): void {
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
   Burgs.changeGroup(oldCapital);
-  drawLabelsByType("burg");
+  drawLabels();
 }
 
 function toggleBurgLockButton(): void {
@@ -664,7 +664,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   if (burg.capital) pack.states[newState].center = burg.cell;
 
   if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0 });
-  drawLabelsByType("burg", [id]);
+  drawLabels();
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }
@@ -717,8 +717,8 @@ function removeSelectedBurg(): void {
       message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
-        removeLabel("burg", burgId);
         Burgs.remove(burgId);
+        drawLabels();
         $("#burgEditor").dialog("close");
       }
     });

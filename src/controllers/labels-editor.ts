@@ -7,7 +7,7 @@ import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels-gener
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
-import { drawLabelsByType, getCachedLabel, removeLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabels, getSceneLabel } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
@@ -22,7 +22,7 @@ function open(type: LabelType, id: number): void {
   const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
   if (!textEl) return;
 
-  const cachedLabel = getCachedLabel(type, id);
+  const cachedLabel = getSceneLabel(type, id);
   if (!cachedLabel) return;
   label = cachedLabel;
 
@@ -502,8 +502,8 @@ function removeSelectedLabel(): void {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
         if (label.type !== "added") return;
-        removeLabel("added", label.entityId);
         AddedLabels.remove(label.entityId);
+        drawLabels();
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -534,8 +534,8 @@ function applyLabelChanges(): void {
     entity.label = override;
   }
 
-  drawLabelsByType(type, [entityId]);
-  label = getCachedLabel(type, entityId) ?? label;
+  drawLabels();
+  label = getSceneLabel(type, entityId) ?? label;
   select<SVGElement, unknown>(`#${id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);
@@ -563,8 +563,8 @@ function resetSelectedLabel(): void {
     delete entity.label;
   }
 
-  drawLabelsByType(type, [entityId]);
-  label = getCachedLabel(type, entityId) ?? label;
+  drawLabels();
+  label = getSceneLabel(type, entityId) ?? label;
   select<SVGElement, unknown>(`#${label.id}`)
     .call(drag<SVGElement, unknown>().on("start", dragLabel))
     .classed("draggable", true);

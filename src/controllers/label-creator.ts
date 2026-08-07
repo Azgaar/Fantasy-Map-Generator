@@ -3,7 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { DEFAULT_ADDED_LABEL_GROUP } from "@/generators/labels-generator";
-import { drawLabelsByType } from "@/renderers/labels/labels-renderer";
+import type { Point } from "@/types/global";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {
@@ -23,18 +23,13 @@ async function addOnClick(event: MouseEvent): Promise<void> {
 
   const text = Names.getCulture(pack.cells.culture[cell]);
   const lastSelected = await Controllers.LabelsEditor.getLastSelectedGroup();
-  const group = options.labels.groups.some(group => group.name === lastSelected)
-    ? lastSelected
-    : DEFAULT_ADDED_LABEL_GROUP;
-  const label = AddedLabels.add({
-    group,
-    text,
-    pathPoints: [
-      [point[0] - 100, point[1]],
-      [point[0] + 100, point[1]]
-    ]
-  });
-  drawLabelsByType("added", [label.i]);
+  const group = Labels.findGroup(lastSelected, "added").name;
+  const pathPoints: Point[] = [
+    [point[0] - 100, point[1]],
+    [point[0] + 100, point[1]]
+  ];
+  AddedLabels.add({ group, text, pathPoints });
+  drawLabels();
 
   if (!event.shiftKey) stopMapPlacement();
 }

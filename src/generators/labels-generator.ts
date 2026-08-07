@@ -1,7 +1,6 @@
 import type { Point } from "@/types/global";
 
 export const DEFAULT_LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
-export const DEFAULT_ADDED_LABEL_GROUP = "added";
 
 export type LabelType = (typeof DEFAULT_LABEL_TYPES)[number];
 
@@ -132,6 +131,12 @@ class LabelsModule {
   getFallbackGroup(type: LabelType): LabelGroup {
     const fallbackGroup = this.getDefaultGroups().find(group => group.isDefault && group.type === type);
     return fallbackGroup ?? { name: type, type, zoom: { min: null, max: null }, isDefault: true };
+  }
+
+  findGroup(groupName: string, type: LabelType): LabelGroup {
+    const group = options.labels.groups.find(group => group.name === groupName);
+    if (group) return group;
+    return this.getFallbackGroup(type);
   }
 }
 

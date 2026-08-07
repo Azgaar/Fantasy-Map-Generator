@@ -530,7 +530,6 @@ function findBurgForMFCG(params) {
   }
 
   zoomTo(b.x, b.y, 8, 1600);
-  invokeActiveZooming();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
 }
 

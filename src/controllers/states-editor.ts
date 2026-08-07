@@ -12,7 +12,7 @@ import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawLabelsByType, removeLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -525,7 +525,7 @@ function editStateName(state: number): void {
     s.fullName = fullNameInput.value;
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
       if (s.label?.text) delete s.label.text;
-      if (layerIsOn("toggleLabels")) drawLabelsByType("state", [s.i]);
+      drawLabels();
     }
     refreshStatesEditor();
   }
@@ -681,7 +681,7 @@ function stateChangeCapitalName(state: number, line: HTMLElement, value: string)
   if (burg) {
     if (!burg.label) burg.label = {};
     Object.assign(burg.label, { text: value });
-    if (layerIsOn("toggleLabels")) drawLabelsByType("burg", [burg.i]);
+    drawLabels();
   }
 }
 
@@ -877,7 +877,6 @@ function stateRemove(stateId: number): void {
   select("#statesBody").select(`#state-gap${stateId}`).remove();
   select("#statesHalo").select(`#state-border${stateId}`).remove();
   delete pack.states[stateId].label;
-  removeLabel("state", stateId);
 
   unfog(`focusState${stateId}`);
 
@@ -890,7 +889,7 @@ function stateRemove(stateId: number): void {
       }
     }
   });
-  drawLabelsByType("burg");
+  drawLabels();
 
   pack.cells.state.forEach((s: number, i: number) => {
     if (s === stateId) pack.cells.state[i] = 0;
@@ -1152,7 +1151,7 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleProvinces")) drawProvinces();
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
     for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
-    if (layerIsOn("toggleLabels")) drawLabelsByType("state");
+    drawLabels();
   }
   if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleEmblems")) {
@@ -1318,12 +1317,9 @@ function applyStatesManualAssignent(): void {
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
-        const label = pack.states[stateId]?.label;
-        if (label) label.pathPoints = undefined;
+        if (pack.states[stateId].label) delete pack.states[stateId].label;
       }
-      for (const stateId of statesToRefit) {
-        drawLabelsByType("state", [stateId]);
-      }
+      drawLabels();
     }
     adjustProvinces([...new Set(affectedProvinces)]);
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
@@ -1568,7 +1564,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
-  drawLabelsByType("burg", [burgId]);
+  drawLabels();
 
   if (event.shiftKey === false) exitAddStateMode();
 
@@ -1634,7 +1630,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  drawLabelsByType("state", [newState]);
+  drawLabels();
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
   layerIsOn("toggleProvinces") && toggleProvinces();
@@ -1780,7 +1776,6 @@ function openStateMergeDialog(): void {
       select("#statesBody").select(`#state-gap${stateId}`).remove();
       select("#statesHalo").select(`#state-border${stateId}`).remove();
       delete pack.states[stateId].label;
-      removeLabel("state", stateId);
 
       ensureEl(`stateCOA${stateId}`).remove();
       select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
@@ -1817,7 +1812,6 @@ function openStateMergeDialog(): void {
         burg.state = rulingStateId;
       }
     });
-    drawLabelsByType("burg");
 
     // reassign provinces
     pack.provinces.forEach(province => {
@@ -1836,11 +1830,10 @@ function openStateMergeDialog(): void {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
-    if (!pack.states[rulingStateId].label) pack.states[rulingStateId].label = {};
-    const label = pack.states[rulingStateId].label;
-    label.pathPoints = undefined;
-    drawLabelsByType("state", [rulingStateId]);
 
+    if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
+
+    drawLabels();
     refreshStatesEditor();
   }
 }

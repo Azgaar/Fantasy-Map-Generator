@@ -11,11 +11,9 @@ import {
 } from "@/controllers/label-group-transactions";
 import { getDefaultLabelGroupName, isProtectedLabelGroup, validateLabelGroupName } from "@/controllers/label-policy";
 import { DEFAULT_LABEL_TYPES, type LabelType, type LabelZoomBounds } from "@/generators/labels-generator";
-import { renderLabelGroups } from "@/renderers/labels/label-groups";
-import { drawLabels, drawLabelsByType, renderLabelsNow } from "@/renderers/labels/labels-renderer";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
 
-const TYPES = DEFAULT_LABEL_TYPES;
 const TYPE_LABELS: Record<LabelType, string> = {
   state: "States",
   province: "Provinces",
@@ -233,7 +231,7 @@ function openAssignmentDialog(): void {
   destroyDialogIfExists("labelsAssignment");
   const html = /* html */ `<div id="labelsAssignment" class="dialog">
     <div style="display:flex; gap:.5em; align-items:center">
-      <select id="labelsAssignmentType">${TYPES.map(type => `<option value="${type}">${TYPE_LABELS[type]}</option>`).join("")}</select>
+      <select id="labelsAssignmentType">${DEFAULT_LABEL_TYPES.map(type => `<option value="${type}">${TYPE_LABELS[type]}</option>`).join("")}</select>
       <span>Target:</span><select id="labelsAssignmentTarget">${getGroupedOptions()}</select>
     </div>
     <div class="header" style="display:grid; grid-template-columns:3em 16em 12em"><div><input id="labelsAssignmentAll" class="checkbox" type="checkbox"></div><div>Label</div><div>Current group</div></div>
@@ -278,20 +276,6 @@ function renderAssignmentRows(): void {
   ensureEl<HTMLInputElement>("labelsAssignmentAll").checked = false;
 }
 
-function projectRegionLabelsForAudit(type: LabelType): () => void {
-  if (layerIsOn("toggleLabels") || (type !== "state" && type !== "province")) return () => undefined;
-  renderLabelGroups();
-  drawLabelsByType(type);
-
-  return () => {
-    document.querySelector("#labels")?.replaceChildren();
-    const prefix = type === "state" ? "stateLabel" : "provinceLabel";
-    document.querySelectorAll(`#textPaths > path[id^="textPath_${prefix}"]`).forEach(path => {
-      path.remove();
-    });
-  };
-}
-
 function toggleAllAssignments(event: Event): void {
   const checked = (event.currentTarget as HTMLInputElement).checked;
   document.querySelectorAll<HTMLInputElement>("#labelsAssignmentBody input[type='checkbox']").forEach(input => {
@@ -319,7 +303,7 @@ function applyBulkAssignment(this: HTMLElement): void {
   const apply = () => {
     assignLabelGroup(getWorld(), type, selectedIds, target);
     localStorage.setItem("label-groups", JSON.stringify(options.labels));
-    if (layerIsOn("toggleLabels")) drawLabelsByType(getLabelType(type));
+    drawLabels();
     $(this).dialog("close");
     renderRows();
   };
@@ -401,7 +385,7 @@ function getRegionAssignmentText(
 }
 
 function getGroupedOptions(): string {
-  return TYPES.map(type => {
+  return DEFAULT_LABEL_TYPES.map(type => {
     const optionsMarkup = options.labels.groups
       .filter(group => group.type === type)
       .map(group => `<option value="${group.name}">${group.name}</option>`)
@@ -411,7 +395,10 @@ function getGroupedOptions(): string {
 }
 
 function getResolvedCount(name: string): number {
-  return TYPES.reduce((total, type) => total + getAssignmentRows(type).filter(row => row.group === name).length, 0);
+  return DEFAULT_LABEL_TYPES.reduce(
+    (total, type) => total + getAssignmentRows(type).filter(row => row.group === name).length,
+    0
+  );
 }
 
 function resolveGroup(type: LabelType, requested?: string): string {
@@ -420,7 +407,7 @@ function resolveGroup(type: LabelType, requested?: string): string {
   return options.labels.groups.some(group => group.name === name) ? name : fallback;
 }
 
-function getLabelType(type: LabelType): LabelType {
+function _getLabelType(type: LabelType): LabelType {
   return type;
 }
 
