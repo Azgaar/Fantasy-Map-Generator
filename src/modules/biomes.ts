@@ -23,6 +23,15 @@ class BiomesModule {
       "Tundra",
       "Glacier",
       "Wetland"
+    ,
+      "Shallow Reef",
+      "Kelp Forest",
+      "Pelagic Zone",
+      "Abyssal Plain",
+      "Oceanic Trench"
+    ,
+      "Chaos Land",
+      "Chaos Water"
     ];
 
     const color: string[] = [
@@ -39,9 +48,18 @@ class BiomesModule {
       "#96784b",
       "#d5e7eb",
       "#0b9131"
+    ,
+      "#006994",
+      "#004B49",
+      "#000080",
+      "#000033",
+      "#000011"
+    ,
+      "#4B0082",
+      "#190033"
     ];
-    const habitability: number[] = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
-    const iconsDensity: number[] = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250];
+    const habitability: number[] = [50, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12, 80, 70, 30, 5, 0, 2, 2];
+    const iconsDensity: number[] = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250, 200, 150, 0, 0, 0, 10, 0];
     const icons: Array<{ [key: string]: number }> = [
       {},
       { dune: 3, cactus: 6, deadTree: 1 },
@@ -56,8 +74,17 @@ class BiomesModule {
       { grass: 1 },
       {},
       { swamp: 1 }
+    ,
+      {},
+      {},
+      {},
+      {},
+      {}
+    ,
+      { deadTree: 5 },
+      {}
     ];
-    const cost: number[] = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150]; // biome movement cost
+    const cost: number[] = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150, 30, 40, 200, 1000, 5000, 2000, 2000]; // biome movement cost
     const biomesMatrix: Uint8Array[] = [
       // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
       new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10]),
@@ -116,11 +143,70 @@ class BiomesModule {
       pack.cells.biome[cellId] = this.getId(moisture, temperature, height, Boolean(riverIds[cellId]));
     }
 
+    this.generateChaos();
     TIME && console.timeEnd("defineBiomes");
   }
 
+  generateChaos() {
+    TIME && console.time("generateChaos");
+    const { cells } = pack;
+    const W = graphWidth;
+    const H = graphHeight;
+    
+    // 13 origins
+    const origins: [number, number][] = [
+      [W/2, 0], // North pole
+      [W/2, H], // South pole
+      [W/2, H/2], // Center
+    ];
+    for (let i = 0; i < 5; i++) {
+      origins.push([(W/5) * i, H * 0.25]); // Northern row
+      origins.push([(W/5) * i + (W/10), H * 0.75]); // Southern offset row
+    }
+
+    const queue = new FlatQueue();
+    const chaosLimit = Math.floor(cells.i.length * 0.1); // Chaos takes 10% of the world
+    let chaosCount = 0;
+
+    const cost = new Float32Array(cells.i.length).fill(10000);
+    const isChaos = new Uint8Array(cells.i.length);
+    
+    for (const [x, y] of origins) {
+      const cellId = window.findCell(x, y, undefined, pack);
+      if (cellId !== undefined) {
+        cost[cellId] = 0;
+        isChaos[cellId] = 1;
+        queue.push(cellId, 0);
+      }
+    }
+
+    while (queue.length && chaosCount < chaosLimit) {
+      const next = queue.pop();
+      cells.c[next].forEach((e: number) => {
+        const h = cells.h[e];
+        const stepCost = h < 20 ? 10 : 20; // spreads easier in water
+        const totalCost = cost[next] + stepCost;
+        if (totalCost < cost[e]) {
+          cost[e] = totalCost;
+          isChaos[e] = 1;
+          chaosCount++;
+          cells.biome[e] = h < 20 ? 19 : 18; // 18 is Chaos Land, 19 is Chaos Water
+          queue.push(e, totalCost);
+        }
+      });
+    }
+    TIME && console.timeEnd("generateChaos");
+  }
+
+
   getId(moisture: number, temperature: number, height: number, hasRiver: boolean) {
-    if (height < 20) return 0; // all water cells: marine biome
+    if (height < 20) {
+      if (height >= 15) return 13; // Shallow Reef
+      if (height >= 10 && temperature > 10) return 14; // Kelp Forest
+      if (height >= 5) return 15; // Pelagic Zone
+      if (height >= 2) return 16; // Abyssal Plain
+      return 17; // Oceanic Trench
+    }
     if (temperature < -5) return 11; // too cold: permafrost biome
     if (temperature >= 25 && !hasRiver && moisture < 8) return 1; // too hot and dry: hot desert biome
     if (this.isWetland(moisture, temperature, height)) return 12; // too wet: wetland biome

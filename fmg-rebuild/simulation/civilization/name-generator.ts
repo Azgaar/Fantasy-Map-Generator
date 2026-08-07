@@ -1,8 +1,35 @@
-import { capitalize, isVowel, last, P, ra, rand } from "../utils";
+import { createPRNG } from "../../core/random";
 
-declare global {
-  var Names: NamesGenerator;
+let currentRNG = Math.random;
+
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
+export function isVowel(char: string): boolean {
+  if (!char) return false;
+  return ['a','e','i','o','u','y','а','e','и','о','у','ы','э','ю','я'].includes(char.toLowerCase());
+}
+export function last<T>(arr: T[]): T {
+  return arr[arr.length - 1];
+}
+export function P(prob: number): boolean {
+  return currentRNG() < prob;
+}
+export function ra<T>(arr: T[]): T {
+  return arr[Math.floor(currentRNG() * arr.length)];
+}
+export function rand(min: number, max: number): number {
+  return Math.floor(currentRNG() * (max - min + 1)) + min;
+}
+const ERROR = false;
+const WARN = false;
+const tip = (msg: string, err?: boolean, mode?: string) => {};
+export let nameBases: NameBase[];
+const pack = { cultures: [] as any[] };
+const mapName = { value: "" };
+const locked = (name: string) => false;
+const unlock = (name: string) => {};
+
 
 export interface NameBase {
   name: string; // name of the base
@@ -871,4 +898,23 @@ class NamesGenerator {
   }
 }
 
-window.Names = new NamesGenerator();
+export const Names = new NamesGenerator();
+nameBases = Names.getNameBases();
+
+export function generateName(language: string, seed: string): string {
+  if (seed) {
+    currentRNG = createPRNG(seed);
+  } else {
+    currentRNG = Math.random;
+  }
+  let base = 1;
+  const l = language.toLowerCase();
+  if (l.includes("norse") || l.includes("nordic")) base = 6;
+  else if (l.includes("roman")) base = 8;
+  else if (l.includes("elven")) base = 33;
+  else if (l.includes("german")) base = 0;
+  else if (l.includes("french")) base = 2;
+  else if (l.includes("english")) base = 1;
+  return Names.getBase(base);
+}
+
