@@ -53,7 +53,12 @@ class ZonesModule {
     TIME && console.timeEnd("generateZones");
   }
 
-  private spreadZone(startCell: number, usedCells: Uint8Array, maxCells: number, condition: (neib: number) => boolean): number[] {
+  private spreadZone(
+    startCell: number,
+    usedCells: Uint8Array,
+    maxCells: number,
+    condition: (neib: number) => boolean
+  ): number[] {
     const { cells } = pack;
     const cellsArray: number[] = [];
     const queue = [startCell];
@@ -76,35 +81,42 @@ class ZonesModule {
 
   private addFluxRot(usedCells: Uint8Array) {
     const { cells } = pack;
-    const validCells = cells.i.filter(i => !usedCells[i] && [5,6,7].includes(cells.biome[i]));
+    const validCells = cells.i.filter(i => !usedCells[i] && [5, 6, 7].includes(cells.biome[i]));
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
-    const cellsArray = this.spreadZone(startCell, usedCells, rand(10, 40), neib => [5,6,7].includes(cells.biome[neib]));
-    
+    const cellsArray = this.spreadZone(startCell, usedCells, rand(10, 40), neib =>
+      [5, 6, 7].includes(cells.biome[neib])
+    );
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Flux-Rot Transmutation",
       type: "Flux-Rot",
       cells: cellsArray,
-      color: "url(#hatch8)" 
+      color: "url(#hatch8)"
     });
   }
 
   private addSilentEcho(usedCells: Uint8Array) {
     const { cells } = pack;
-    const validCells = cells.i.filter(i => !usedCells[i] && [8,9].includes(cells.biome[i]));
+    const validCells = cells.i.filter(i => !usedCells[i] && [8, 9].includes(cells.biome[i]));
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
-    const cellsArray = this.spreadZone(startCell, usedCells, rand(15, 50), neib => [8,9].includes(cells.biome[neib]) || cells.h[neib] > 20);
-    
+    const cellsArray = this.spreadZone(
+      startCell,
+      usedCells,
+      rand(15, 50),
+      neib => [8, 9].includes(cells.biome[neib]) || cells.h[neib] > 20
+    );
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Silent Echo Vacuum",
       type: "Silent Echo",
       cells: cellsArray,
-      color: "url(#hatch12)" 
+      color: "url(#hatch12)"
     });
   }
 
@@ -112,16 +124,16 @@ class ZonesModule {
     const { cells } = pack;
     const validCells = cells.i.filter(i => !usedCells[i] && cells.h[i] > 70);
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
     const cellsArray = this.spreadZone(startCell, usedCells, rand(5, 25), neib => cells.h[neib] > 50);
-    
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Thermal Rage Firestorm",
       type: "Thermal Rage",
       cells: cellsArray,
-      color: "url(#hatch4)" 
+      color: "url(#hatch4)"
     });
   }
 
@@ -129,10 +141,10 @@ class ZonesModule {
     const { cells } = pack;
     const validCells = cells.i.filter(i => !usedCells[i] && cells.h[i] >= 20);
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
     const cellsArray = this.spreadZone(startCell, usedCells, rand(5, 15), neib => cells.h[neib] >= 20);
-    
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Temporal Bleed",
@@ -146,10 +158,15 @@ class ZonesModule {
     const { cells } = pack;
     const validCells = cells.i.filter(i => !usedCells[i] && cells.biome[i] === 12);
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
-    const cellsArray = this.spreadZone(startCell, usedCells, rand(10, 30), neib => cells.h[neib] >= 20 && cells.h[neib] < 40);
-    
+    const cellsArray = this.spreadZone(
+      startCell,
+      usedCells,
+      rand(10, 30),
+      neib => cells.h[neib] >= 20 && cells.h[neib] < 40
+    );
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Fecund Plague",
@@ -161,18 +178,20 @@ class ZonesModule {
 
   private addAbsoluteStillness(usedCells: Uint8Array) {
     const { cells } = pack;
-    const validCells = cells.i.filter(i => !usedCells[i] && [1,2,3,4].includes(cells.biome[i]));
+    const validCells = cells.i.filter(i => !usedCells[i] && [1, 2, 3, 4].includes(cells.biome[i]));
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
-    const cellsArray = this.spreadZone(startCell, usedCells, rand(15, 60), neib => [1,2,3,4,10,11].includes(cells.biome[neib]));
-    
+    const cellsArray = this.spreadZone(startCell, usedCells, rand(15, 60), neib =>
+      [1, 2, 3, 4, 10, 11].includes(cells.biome[neib])
+    );
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Absolute Stillness",
       type: "Deep Freeze",
       cells: cellsArray,
-      color: "url(#hatch9)" 
+      color: "url(#hatch9)"
     });
   }
 
@@ -180,10 +199,10 @@ class ZonesModule {
     const { cells } = pack;
     const validCells = cells.i.filter(i => !usedCells[i] && cells.pop[i] > 10);
     if (!validCells.length) return;
-    
+
     const startCell = ra(validCells);
     const cellsArray = this.spreadZone(startCell, usedCells, rand(5, 20), neib => cells.pop[neib] > 0);
-    
+
     pack.zones.push({
       i: pack.zones.length,
       name: "Psychic Static Paranoia",
@@ -195,7 +214,7 @@ class ZonesModule {
 
   private addWormCultUprising(usedCells: Uint8Array) {
     const { cells, states } = pack;
-    
+
     const state = ra(states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean)));
     if (!state) return;
 
@@ -218,7 +237,6 @@ class ZonesModule {
       color: "url(#hatch3)"
     });
   }
-
 }
 
 window.Zones = new ZonesModule();

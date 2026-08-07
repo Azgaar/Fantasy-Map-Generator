@@ -22,14 +22,12 @@ class BiomesModule {
       "Taiga",
       "Tundra",
       "Glacier",
-      "Wetland"
-    ,
+      "Wetland",
       "Shallow Reef",
       "Kelp Forest",
       "Pelagic Zone",
       "Abyssal Plain",
-      "Oceanic Trench"
-    ,
+      "Oceanic Trench",
       "Chaos Land",
       "Chaos Water"
     ];
@@ -47,14 +45,12 @@ class BiomesModule {
       "#4b6b32",
       "#96784b",
       "#d5e7eb",
-      "#0b9131"
-    ,
+      "#0b9131",
       "#006994",
       "#004B49",
       "#000080",
       "#000033",
-      "#000011"
-    ,
+      "#000011",
       "#4B0082",
       "#190033"
     ];
@@ -73,18 +69,18 @@ class BiomesModule {
       { conifer: 1 },
       { grass: 1 },
       {},
-      { swamp: 1 }
-    ,
+      { swamp: 1 },
       {},
       {},
       {},
       {},
-      {}
-    ,
+      {},
       { deadTree: 5 },
       {}
     ];
-    const cost: number[] = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150, 30, 40, 200, 1000, 5000, 2000, 2000]; // biome movement cost
+    const cost: number[] = [
+      10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150, 30, 40, 200, 1000, 5000, 2000, 2000
+    ]; // biome movement cost
     const biomesMatrix: Uint8Array[] = [
       // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
       new Uint8Array([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10]),
@@ -152,16 +148,16 @@ class BiomesModule {
     const { cells } = pack;
     const W = graphWidth;
     const H = graphHeight;
-    
+
     // 13 origins
     const origins: [number, number][] = [
-      [W/2, 0], // North pole
-      [W/2, H], // South pole
-      [W/2, H/2], // Center
+      [W / 2, 0], // North pole
+      [W / 2, H], // South pole
+      [W / 2, H / 2] // Center
     ];
     for (let i = 0; i < 5; i++) {
-      origins.push([(W/5) * i, H * 0.25]); // Northern row
-      origins.push([(W/5) * i + (W/10), H * 0.75]); // Southern offset row
+      origins.push([(W / 5) * i, H * 0.25]); // Northern row
+      origins.push([(W / 5) * i + W / 10, H * 0.75]); // Southern offset row
     }
 
     const queue = new FlatQueue();
@@ -170,7 +166,7 @@ class BiomesModule {
 
     const cost = new Float32Array(cells.i.length).fill(10000);
     const isChaos = new Uint8Array(cells.i.length);
-    
+
     for (const [x, y] of origins) {
       const cellId = window.findCell(x, y, undefined, pack);
       if (cellId !== undefined) {
@@ -197,7 +193,6 @@ class BiomesModule {
     }
     TIME && console.timeEnd("generateChaos");
   }
-
 
   getId(moisture: number, temperature: number, height: number, hasRiver: boolean) {
     if (height < 20) {

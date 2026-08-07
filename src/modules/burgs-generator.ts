@@ -53,7 +53,9 @@ class BurgModule {
     let burgs: Burg[] = [0 as any]; // burgs array
     cells.burg = new Uint16Array(cells.i.length);
 
-    const populatedCells = cells.i.filter(i => cells.s[i] > 0 && cells.culture[i] && cells.biome[i] !== 18 && cells.biome[i] !== 19);
+    const populatedCells = cells.i.filter(
+      i => cells.s[i] > 0 && cells.culture[i] && cells.biome[i] !== 18 && cells.biome[i] !== 19
+    );
     if (!populatedCells.length) {
       ERROR && console.error("There is no populated cells with culture assigned. Cannot generate states");
       return burgs;
@@ -140,30 +142,40 @@ class BurgModule {
       }
     };
 
-
     const generatePrisons = () => {
       const W = graphWidth;
       const H = graphHeight;
       const origins: [number, number][] = [
-        [W/2, 0], [W/2, H], [W/2, H/2],
+        [W / 2, 0],
+        [W / 2, H],
+        [W / 2, H / 2]
       ];
       for (let i = 0; i < 5; i++) {
-        origins.push([(W/5) * i, H * 0.25]);
-        origins.push([(W/5) * i + (W/10), H * 0.75]);
+        origins.push([(W / 5) * i, H * 0.25]);
+        origins.push([(W / 5) * i + W / 10, H * 0.75]);
       }
 
       const prisonNames = [
-        "The Abyssal Prison", "Cult of the World-Ender", "The Convergence",
-        "Oblivion Gate", "The Shattered Seal", "Doom's Cradle",
-        "The Void Bastion", "Tether of the Beast", "The Nightmare Spire",
-        "Chaos Sanctum", "The Final Lock", "Ender's Watch", "The Deep Warden"
+        "The Abyssal Prison",
+        "Cult of the World-Ender",
+        "The Convergence",
+        "Oblivion Gate",
+        "The Shattered Seal",
+        "Doom's Cradle",
+        "The Void Bastion",
+        "Tether of the Beast",
+        "The Nightmare Spire",
+        "Chaos Sanctum",
+        "The Final Lock",
+        "Ender's Watch",
+        "The Deep Warden"
       ];
 
       for (let i = 0; i < origins.length; i++) {
         const [x, y] = origins[i];
         const cell = window.findCell(x, y, undefined, pack);
         if (cell === undefined || cells.burg[cell]) continue;
-        
+
         const burgId = burgs.length;
         burgs.push({
           cell,
@@ -172,7 +184,7 @@ class BurgModule {
           i: burgId,
           state: 0,
           culture: cells.culture[cell] || 0,
-          name: i !== 2 ? prisonNames[i] + " (Dragon Cult)" : "The Convergence",
+          name: i !== 2 ? `${prisonNames[i]} (Dragon Cult)` : "The Convergence",
           feature: cells.f[cell],
           capital: 0,
           citadel: 1,

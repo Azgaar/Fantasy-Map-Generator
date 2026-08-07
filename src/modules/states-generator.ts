@@ -204,7 +204,12 @@ class StatesModule {
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
         const isHabitableWater = cells.h[e] < 20 && biomesData.habitability[cells.biome[e]] > 0;
-        const populationCost = cells.h[e] < 20 && type !== "Aquatic" && !isHabitableWater ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
+        const populationCost =
+          cells.h[e] < 20 && type !== "Aquatic" && !isHabitableWater
+            ? 0
+            : cells.s[e]
+              ? Math.max(20 - cells.s[e], 0)
+              : 5000;
         const biomeCost = this.getBiomeCost(b, cells.biome[e], type);
         const heightCost = this.getHeightCost(cells.h[e], e, type);
         const riverCost = this.getRiverCost(cells.r[e], e, type);
@@ -237,7 +242,8 @@ class StatesModule {
 
     for (const i of cells.i) {
       const isHabitableWater = cells.h[i] < 20 && biomesData.habitability[cells.biome[i]] > 0;
-      if ((cells.h[i] < 20 && pack.states[cells.state[i]]?.type !== "Aquatic" && !isHabitableWater) || cells.burg[i]) continue; // do not overwrite burgs
+      if ((cells.h[i] < 20 && pack.states[cells.state[i]]?.type !== "Aquatic" && !isHabitableWater) || cells.burg[i])
+        continue; // do not overwrite burgs
       if (pack.states[cells.state[i]]?.lock) continue; // do not overwrite cells of locks states
       if (cells.c[i].some(c => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
       const neibs = cells.c[i].filter(c => cells.h[c] >= 20);

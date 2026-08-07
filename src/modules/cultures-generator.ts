@@ -1,5 +1,5 @@
 import { max, quadtree, range } from "d3";
-import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw, ra } from "../utils";
+import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, ra, rand, rn, rw } from "../utils";
 
 declare global {
   var Cultures: CulturesModule;
@@ -27,7 +27,16 @@ export interface Culture {
   isAquatic?: boolean;
 }
 
-export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake", "Naval", "Nomadic", "Aquatic"] as const;
+export const CULTURE_TYPES = [
+  "Generic",
+  "Hunting",
+  "Highland",
+  "River",
+  "Lake",
+  "Naval",
+  "Nomadic",
+  "Aquatic"
+] as const;
 export type CultureType = (typeof CULTURE_TYPES)[number];
 export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
