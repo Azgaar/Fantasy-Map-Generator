@@ -669,6 +669,13 @@
               Mar<u>k</u>ers
             </li>
             <li
+              id="toggleJourneys"
+              data-tip="Journeys: multi-segment travel routes with distance and time. Click to toggle the layer"
+              onclick="toggleJourneys(event)"
+            >
+              Journeys
+            </li>
+            <li
               id="toggleRulers"
               data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style"
               data-shortcut="= (equal sign)"
@@ -2100,6 +2107,9 @@
             </button>
             <button id="overviewRoutesButton" data-tip="Click to open Routes Overview" data-shortcut="Shift + U">
               Routes
+            </button>
+            <button id="overviewJourneysButton" data-tip="Click to open Journeys Overview (travel map calculator)">
+              Journeys
             </button>
             <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
               States

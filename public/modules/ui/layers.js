@@ -921,6 +921,18 @@ function toggleBurgIcons(event) {
   }
 }
 
+function toggleJourneys(event) {
+  if (!layerIsOn("toggleJourneys")) {
+    turnButtonOn("toggleJourneys");
+    if (typeof drawJourneys === "function") drawJourneys();
+    journeys.style("display", null);
+  } else {
+    turnButtonOff("toggleJourneys");
+    journeys.selectAll("*").remove();
+    journeys.style("display", "none");
+  }
+}
+
 function toggleRulers(event) {
   if (!layerIsOn("toggleRulers")) {
     turnButtonOn("toggleRulers");
@@ -1062,4 +1074,5 @@ function getLayer(id) {
   if (id === "toggleMarkers") return $("#markers");
   if (id === "toggleTrade") return $("#tradeAnimation");
   if (id === "toggleRulers") return $("#ruler");
+  if (id === "toggleJourneys") return $("#journeys");
 }

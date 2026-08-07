@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { getDefaultTransportTypes } from "@/data/transport-types";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { Services } from "@/services";
@@ -458,6 +459,17 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
+    pack.journeys = data[47] ? JSON.parse(data[47]) : [];
+    pack.transportTypes = data[48] ? JSON.parse(data[48]) : getDefaultTransportTypes();
+    if (!pack.transportTypes.length) pack.transportTypes = getDefaultTransportTypes();
+    // Migrate pre-branch transport types that used pathMode (direct/route/sea) to domain (air/land/water).
+    for (const t of pack.transportTypes as unknown as Array<Record<string, unknown>>) {
+      if (!("domain" in t) && "pathMode" in t) {
+        const legacy = t.pathMode as string;
+        t.domain = legacy === "sea" ? "water" : legacy === "route" ? "land" : "air";
+        delete t.pathMode;
+      }
+    }
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -522,6 +534,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
       if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
       if (isVisible(select("#ruler"))) turnOn("toggleRulers");
+      if (pack.journeys?.length && isVisible(select("#journeys"))) turnOn("toggleJourneys");
       if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
 

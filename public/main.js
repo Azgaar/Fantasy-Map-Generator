@@ -86,6 +86,7 @@ let fogging = viewbox
   .append("g")
   .attr("id", "fogging")
   .style("display", "none");
+let journeys = viewbox.append("g").attr("id", "journeys").attr("fill", "none");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 var debug = viewbox.append("g").attr("id", "debug");
 
@@ -687,6 +688,10 @@ async function generate(options) {
     reGraph();
     Features.markupPack();
     Measurers.createDefaultRuler();
+    if (!pack.journeys) pack.journeys = [];
+    if (!pack.transportTypes || !pack.transportTypes.length) {
+      pack.transportTypes = window.getDefaultTransportTypes ? window.getDefaultTransportTypes() : [];
+    }
 
     Rivers.generate();
     Biomes.generate();

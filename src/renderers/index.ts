@@ -12,6 +12,7 @@ import "./draw-markers";
 import "./draw-military";
 import "./draw-relief-icons";
 import "./draw-measurers";
+import "./draw-journeys";
 import "./draw-scalebar";
 import "./draw-state-labels";
 import "./draw-temperature";
