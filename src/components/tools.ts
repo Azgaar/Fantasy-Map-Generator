@@ -30,7 +30,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "editProvincesButton") void Controllers.ProvincesEditor.open();
   else if (buttonId === "editDiplomacyButton") void Controllers.DiplomacyEditor.open();
   else if (buttonId === "editCoastlineSettings") void Controllers.CoastlineEditor.open();
-  else if (buttonId === "editLabelsButton") void Controllers.LabelsConfigurator.open();
+  else if (buttonId === "editLabelsButton") void Controllers.LabelGroupsConfigurator.open();
   else if (buttonId === "editTradeAnimationButton") void Controllers.TradeAnimationEditor.open();
   else if (buttonId === "editCulturesButton") void Controllers.CulturesEditor.open();
   else if (buttonId === "editReligions") void Controllers.ReligionsEditor.open();

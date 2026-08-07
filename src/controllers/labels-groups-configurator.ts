@@ -6,16 +6,16 @@ function open(): void {
   closeDialogs("#labelsConfigurator, .stable");
   renderDialog();
 
-  $("#labelsConfigurator").dialog({
-    title: "Configure Labels",
+  $("#labelGroupsConfigurator").dialog({
+    title: "Configure Label Groups",
     position: { my: "center top+10", at: "center top", of: "svg", collision: "fit" },
     close
   });
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("labelsConfigurator");
-  const html = /* html */ `<div id="labelsConfigurator" class="dialog stable">
+  destroyDialogIfExists("labelGroupsConfigurator");
+  const html = /* html */ `<div id="labelGroupsConfigurator" class="dialog stable">
     <div style="display:flex; gap:1.2em; align-items:center; margin:.3em">
       <label><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${
         options.labels.resizeOnZoom ? "checked" : ""
@@ -39,4 +39,4 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 }
 
-export const LabelsConfigurator = { open };
+export const LabelGroupsConfigurator = { open };
