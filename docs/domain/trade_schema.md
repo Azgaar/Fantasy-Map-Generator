@@ -164,7 +164,7 @@ A read-only visualization layer that turns the deal log into moving markers on t
 - **Lifecycle**: `start / stop / restart / sync` follow the `toggleTrade` layer flag. Batches are computed once per `start()` and cached. A `concurrent`-sized pool of active animations is maintained via `topUp()`; each animation calls back on completion to immediately spawn a replacement. `trigger(batches)` is a one-shot variant that draws a specific set of batches without the pool lifecycle. `clear()` removes every animation SVG, and the cloned `tradeAnimation` group is wiped before `.map` save.
 - **Interaction**: clicking a marker opens `TradeDetails.open(batch)` — a dialog that groups the batch's deals by good, shows units / unit price / total value, and highlights the route in red. Endpoint zoom buttons recenter on the seller or buyer burg.
 - **Style controls**: `TradeAnimationEditor` exposes display type, concurrency, timing and size — `displayType` (`"both"` / `"local"` / `"global"`), `concurrent`, `duration`, `landDurationModifier`, `segmentChangePause`, `markerSize`. Path stroke color / dash live in the layer style editor.
-- **Sources**: [src/modules/trade-animation.ts](../../src/modules/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/trade-details.ts](../../src/controllers/trade-details.ts), [src/controllers/trade-animation-editor.ts](../../src/controllers/trade-animation-editor.ts).
+- **Sources**: [src/renderers/trade-animation.ts](../../src/renderers/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/trade-details.ts](../../src/controllers/trade-details.ts), [src/controllers/trade-animation-editor.ts](../../src/controllers/trade-animation-editor.ts).
 
 ## Architectural intent
 
@@ -177,4 +177,4 @@ A read-only visualization layer that turns the deal log into moving markers on t
 
 - No `Map` / `Set` / `Record` lookups in the hot path; market state is keyed by integer good id.
 - A single midpoint `price` is stored per market good; `buyPrice` and `sellPrice` are derived via `MARKET_MARGIN`.
-- Sources: [src/modules/markets-generator.ts](../../src/modules/markets-generator.ts), [src/modules/goods-generator.ts](../../src/modules/goods-generator.ts).
+- Sources: [src/generators/markets-generator.ts](../../src/generators/markets-generator.ts), [src/generators/goods-generator.ts](../../src/generators/goods-generator.ts).

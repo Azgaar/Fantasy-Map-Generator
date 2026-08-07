@@ -6,24 +6,24 @@ The canonical "build a world from scratch" routine lives in [`public/main.js`](.
 
 `generate()` is the single source of truth. Conceptually it is split into phases; downstream replications differ in **which phases they re-run** and **which artefacts they restore from the previous map**.
 
-| #   | Phase                                | Calls                                                                                                       | Outputs (selection)                                                 |
-| --- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 1   | **Seed & sizing**                    | `setSeed`, `applyGraphSize`, `randomizeOptions`                                                             | `seed`, graph dimensions, randomized inputs                         |
-| 2   | **Grid + heightmap**                 | `shouldRegenerateGrid`, `generateGrid`, `HeightmapGenerator.generate`                                       | `grid.cells.h`                                                      |
-| 3   | **Hydrology base**                   | `Features.markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes`                                      | grid features, lake/ocean topology                                  |
-| 4   | **World position & climate**         | `OceanLayers`, `defineMapSize`, `calculateMapCoordinates`, `calculateTemperatures`, `generatePrecipitation` | `mapCoordinates`, `cells.temp`, `cells.prec`                        |
-| 5   | **Repack**                           | `reGraph`, `Features.markupPack`, `createDefaultRuler`                                                      | `pack.cells.*`, default ruler                                       |
-| 6   | **Rivers + biomes**                  | `Rivers.generate`, `Biomes.define`, `Features.defineGroups`                                                 | `pack.rivers`, `cells.biome`, feature groups                        |
-| 7   | **Climate art**                      | `Ice.generate`                                                                                              | ice layer                                                           |
-| 8   | **Goods catalogue**                  | `Goods.generate`                                                                                            | `pack.goods` (raw + manufactured definitions)                       |
-| 9   | **Cells ranking & cultures**         | `rankCells`, `Cultures.generate`, `Cultures.expand`                                                         | `cells.s`, `cells.pop`, `pack.cultures`                             |
-| 10  | **Settlement & political layer**     | `Burgs.generate`, `States.generate`, `Routes.generate`, `Religions.generate`                                | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`        |
-| 11  | **Settlement / state specification** | `Burgs.specify`, `States.collectStatistics`, `States.defineStateForms`                                      | burg types, state stats, state forms                                |
-| 12  | **Provinces**                        | `Provinces.generate`, `Provinces.getPoles`                                                                  | `pack.provinces`                                                    |
-| 13  | **Naming polish**                    | `Rivers.specify`, `Lakes.defineNames`                                                                       | river/lake names                                                    |
+| #   | Phase                                | Calls                                                                                                       | Outputs (selection)                                                                                |
+| --- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1   | **Seed & sizing**                    | `setSeed`, `applyGraphSize`, `randomizeOptions`                                                             | `seed`, graph dimensions, randomized inputs                                                        |
+| 2   | **Grid + heightmap**                 | `shouldRegenerateGrid`, `generateGrid`, `HeightmapGenerator.generate`                                       | `grid.cells.h`                                                                                     |
+| 3   | **Hydrology base**                   | `Features.markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes`                                      | grid features, lake/ocean topology                                                                 |
+| 4   | **World position & climate**         | `OceanLayers`, `defineMapSize`, `calculateMapCoordinates`, `calculateTemperatures`, `generatePrecipitation` | `mapCoordinates`, `cells.temp`, `cells.prec`                                                       |
+| 5   | **Repack**                           | `reGraph`, `Features.markupPack`, `Measurers.createDefaultRuler`                                            | `pack.cells.*`, default ruler                                                                      |
+| 6   | **Rivers + biomes**                  | `Rivers.generate`, `Biomes.generate`, `Features.defineGroups`                                               | `pack.rivers`, `pack.biomes`, `cells.biome`, feature groups                                        |
+| 7   | **Climate art**                      | `Ice.generate`                                                                                              | ice layer                                                                                          |
+| 8   | **Goods catalogue**                  | `Goods.generate`                                                                                            | `pack.goods` (raw + manufactured definitions)                                                      |
+| 9   | **Cells ranking & cultures**         | `rankCells`, `Cultures.generate`, `Cultures.expand`                                                         | `cells.s`, `cells.pop`, `pack.cultures`                                                            |
+| 10  | **Settlement & political layer**     | `Burgs.generate`, `States.generate`, `Routes.generate`, `Religions.generate`                                | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                                       |
+| 11  | **Settlement / state specification** | `Burgs.specify`, `States.collectStatistics`, `States.defineStateForms`                                      | burg types, state stats, state forms                                                               |
+| 12  | **Provinces**                        | `Provinces.generate`, `Provinces.getPoles`                                                                  | `pack.provinces`                                                                                   |
+| 13  | **Naming polish**                    | `Rivers.specify`, `Lakes.defineNames`                                                                       | river/lake names                                                                                   |
 | 14  | **Economy**                          | `Markets.generate`, `Production.produce`, `States.collectTaxes`                                             | `pack.markets`, `cells.market`, `pack.deals`, `burg.production`, `burg.treasury`, `state.treasury` |
-| 15  | **Military & overlays**              | `Military.generate`, `Markers.generate`, `Zones.generate`                                                   | regiments, markers, zones                                           |
-| 16  | **Finalise**                         | `drawScaleBar`, `Names.getMapName`, `showStatistics`                                                        | scale bar, map name, stats                                          |
+| 15  | **Military & overlays**              | `Military.generate`, `Markers.generate`, `Zones.generate`                                                   | regiments, markers, zones                                                                          |
+| 16  | **Finalise**                         | `drawScaleBar`, `Names.getMapName`, `showStatistics`                                                        | scale bar, map name, stats                                                                         |
 
 Two ordering constraints matter for replication:
 
@@ -60,7 +60,7 @@ Because the entity arrays themselves are preserved (not their derived economic s
 
 ### 3. Map resample / submap
 
-**File:** [`src/modules/resample.ts`](../../src/modules/resample.ts) → `Resampler.process()`
+**File:** [`src/generators/resample.ts`](../../src/generators/resample.ts) → `Resampler.process()`
 
 Used by `transform-tool` (in-place transform) and `submap-tool` (extract sub-region at scale). The flow:
 
@@ -73,7 +73,7 @@ The economy (phase 14) is **regenerated**, not preserved. `Resampler.restoreEcon
 
 - `pack.goods` — catalogue is map-independent, copied directly from the parent; `Goods.sync()` rebuilds the id index.
 - `cells.good` — copied via the same parent-land quadtree used for `biome`/`culture`/`state` in `restoreCellData`, so bonus-resource placement survives.
-- `pack.markets` — the market *list* is carried over but **filtered** to markets whose `centerBurgId` is still on the map (out-of-map center burgs in a submap drop their market). Each surviving market's `goods` (stock + prices) is then reset to `{}`.
+- `pack.markets` — the market _list_ is carried over but **filtered** to markets whose `centerBurgId` is still on the map (out-of-map center burgs in a submap drop their market). Each surviving market's `goods` (stock + prices) is then reset to `{}`.
 - `Markets.expandTerritories(pack.markets)` re-floods every surviving market's territory against the new cell graph, rewriting `cells.market` and `burg.market` — the cell ids, areas, and neighbour relations have all changed, so the saved BFS result is useless.
 - `pack.deals` is reset to `[]` and `Production.produce()` is re-run, regenerating market stock/prices, `burg.production`, `burg.treasury`, `burg.product`, and the deal log against the resampled population.
 
@@ -86,8 +86,8 @@ Two consequences worth noting:
 
 These are partial regenerations triggered from the UI and do **not** replicate the full pipeline. They still belong to the same dependency graph and may need their own economy refresh when they touch upstream data:
 
-- [`public/modules/ui/tools.js`](../../public/modules/ui/tools.js): `regenerateRoutes`, `regenerateRivers`, `recalculatePopulation`, `regenerateStates`, `regenerateProvinces`, `regenerateBurgs`, `regenerateGoods`, `regenerateEconomy`, `regenerateCultures`, `regenerateMilitary`, `regenerateMarkers`, `regenerateZones`.
-- [`public/modules/dynamic/auto-update.js`](../../public/modules/dynamic/auto-update.js): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
+- Generator modules own their corresponding `regenerate` interfaces. [`src/components/tools.ts`](../../src/components/tools.ts) contains only Tools-tab event handlers that compose generator, renderer, and controller interfaces.
+- [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
 - [`public/modules/ui/world-configurator.js`](../../public/modules/ui/world-configurator.js) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
 
 When extending the pipeline, audit each of these for whether their scope reaches the new phase.
@@ -97,6 +97,6 @@ When extending the pipeline, audit each of these for whether their scope reaches
 1. Add the call in `public/main.js` `generate()` at the correct phase boundary.
 2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.js` `regenerateErasedData()` at the matching boundary.
 3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.js` `restoreRiskedData()`.
-4. For `src/modules/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
+4. For `src/generators/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
 5. Add or update the version-bump migration block in `public/modules/dynamic/auto-update.js` so older saves gain the new fields on load.
 6. Update the canonical sequence table at the top of this file.

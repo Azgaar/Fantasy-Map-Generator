@@ -1,10 +1,16 @@
-import { CULTURE_TYPES } from "../modules/cultures-generator";
-import type { DemandCategory, Good } from "../modules/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../modules/goods-generator";
-import { ensureEl, getRandomColor, unique } from "../utils";
-import { DistributionEditor } from "./goods-distribution-editor";
+import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { Controllers } from "@/controllers";
+import { drawGoods } from "@/renderers/draw-goods";
+import { drawMarkets } from "@/renderers/draw-markets";
+import { tradeAnimation } from "@/renderers/trade-animation";
+import { capitalize, rn } from "@/utils";
+import { CULTURE_TYPES } from "../generators/cultures-generator";
+import type { DemandCategory, Good } from "../generators/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
+import { destroyDialogIfExists, ensureEl, getRandomColor, unique } from "../utils";
 
-export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
+function open(editedGood?: Good, onUpdate?: () => void) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
@@ -18,7 +24,7 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
   const biomeOutputSummary = (): string => {
     const entries = Object.entries(biomeOutputState).filter(([, v]) => (v ?? 0) > 0);
     if (!entries.length) return "none";
-    return entries.map(([id, v]) => `${biomesData.name[Number(id)]}: ${v}`).join(", ");
+    return entries.map(([id, v]) => `${pack.biomes[Number(id)].name}: ${v}`).join(", ");
   };
 
   const multipliers: { [K in MultiplierDimKey]?: Partial<Record<string, number>> } = {
@@ -44,8 +50,152 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
         <button class="mEdit icon-pencil ge-edit" data-dim="${dim}" data-tip="Edit ${label} multipliers"></button>
       </div>`;
 
-  const dialog = ensureEl("goodEditor");
-  dialog.innerHTML = /*html*/ `
+  const recipes: Record<number, number>[] = editedGood?.recipes || [];
+
+  let dialog: HTMLElement;
+  renderDialog();
+
+  $(dialog!).dialog({
+    width: "30em",
+    resizable: false,
+    title: editedGood ? "Edit good" : "Add new good",
+    open: function (this: HTMLElement) {
+      if (!editedGood) return; // only edits can recompute the economy
+      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
+      pane?.insertAdjacentHTML(
+        "afterbegin",
+        /*html*/ `<div class="dontAsk" data-tip="Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.">
+          <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
+          <label for="goodRegenerateEconomy" class="checkbox-label"><i>regenerate economy on apply</i></label>
+        </div>`
+      );
+    },
+    close: () => {
+      destroyDialogIfExists("goodEditor");
+    },
+    buttons: {
+      Cancel: function () {
+        $(this).dialog("close");
+      },
+      [editedGood ? "Apply" : "Add"]: () => {
+        const errors: string[] = [];
+
+        const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
+        const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
+        const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
+        const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
+        const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
+        const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
+        const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
+        const color = ensureEl<HTMLInputElement>("newGoodColor").value;
+        const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
+
+        if (!name) errors.push("Name is required");
+        if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
+        if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
+
+        if (distribution) {
+          try {
+            const methods = Goods.getMethods();
+            const allMethods = `{${Object.keys(methods).join(", ")}}`;
+            new Function(allMethods, `return ${distribution}`)(methods);
+          } catch (err) {
+            errors.push(`Distribution function is invalid: ${(err as Error).message || err}`);
+          }
+        }
+
+        for (const recipe of recipes) {
+          for (const [ingredientId, ingredientAmount] of Object.entries(recipe)) {
+            const id = Number(ingredientId);
+            const good = Goods.get(id);
+            if (!good) errors.push(`Recipe references unknown good id: ${id}`);
+            const amount = Number(ingredientAmount);
+            if (Number.isNaN(amount) || !Number.isFinite(amount) || amount <= 0)
+              errors.push(`Invalid recipe amount for good ${good?.name}`);
+          }
+
+          if (!Object.keys(recipe).length) errors.push("Each recipe must have at least one ingredient");
+        }
+
+        ensureEl("newGoodError").textContent = errors.join(". ");
+        if (errors.length) return;
+
+        function buildFinalMultipliers(): Good["multipliers"] {
+          const result: Good["multipliers"] = {};
+          for (const [dimKey, vals] of Object.entries(multipliers) as [
+            MultiplierDimKey,
+            Partial<Record<string, number>>
+          ][]) {
+            const nonDefault = Object.fromEntries(
+              Object.entries(vals ?? {}).filter(([, v]) => v !== undefined && v !== 1)
+            );
+            if (Object.keys(nonDefault).length) (result as any)[dimKey] = nonDefault;
+          }
+          return Object.keys(result).length ? result : undefined;
+        }
+
+        if (editedGood) {
+          editedGood.name = name;
+          editedGood.tags = tags;
+          editedGood.icon = icon;
+          editedGood.color = color;
+          editedGood.value = value;
+          editedGood.chance = chance;
+          editedGood.unit = unit;
+          editedGood.demandCoverage = demandCoverageState;
+          editedGood.multipliers = buildFinalMultipliers();
+          editedGood.distribution = distribution || undefined;
+          editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
+          editedGood.recipes = recipes.length ? recipes : undefined;
+
+          // opt-out: by default re-place the good and recompute the economy to reflect the change
+          if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
+            Goods.regeneratePlacement(editedGood.i);
+            Production.regenerateEconomy();
+            if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+            if (layerIsOn("toggleGoods")) drawGoods();
+            if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+            refreshEditors();
+          } else {
+            Goods.sync();
+          }
+        } else {
+          const getNextId = () => {
+            let nextId = pack.goods?.at(-1)?.i ?? 1;
+            while (Goods.get(nextId)) nextId++;
+            return nextId;
+          };
+
+          pack.goods.push({
+            i: getNextId(),
+            name,
+            tags,
+            icon,
+            color,
+            value,
+            chance,
+            unit,
+            demandCoverage: demandCoverageState,
+            multipliers: buildFinalMultipliers(),
+            distribution: distribution || undefined,
+            biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
+            recipes: recipes.length ? recipes : undefined
+          });
+          Goods.sync();
+        }
+
+        tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
+        onUpdate?.();
+        $(dialog).dialog("close");
+      }
+    }
+  });
+
+  function renderDialog(): void {
+    destroyDialogIfExists("goodEditor");
+    ensureEl("dialogs").insertAdjacentHTML(
+      "beforeend",
+      /*html*/ `<div id="goodEditor" class="dialog">
     <style>
       .ge                 { display:flex; width: auto !important; flex-direction:column; gap:9px; max-height:72vh; overflow-y:auto; padding-right:2px; }
       .ge-section-title   { display:flex; align-items:center; justify-content:space-between; font-weight:bold; text-transform:uppercase; font-size:.8em; letter-spacing:.06em; margin-bottom:7px; padding-bottom:4px; border-bottom:1px solid #666; }
@@ -155,36 +305,37 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
 
       <div id="newGoodError" class="ge-error"></div>
     </div>
-  `;
+  </div>`
+    );
+    dialog = ensureEl("goodEditor");
 
-  const recipes: Record<number, number>[] = editedGood?.recipes || [];
-  const recipeList = ensureEl("newGoodRecipeList");
+    const recipeList = ensureEl("newGoodRecipeList");
 
-  const defaultGoodId = pack.goods[0]?.i ?? 0;
-  const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
+    const defaultGoodId = pack.goods[0]?.i ?? 0;
+    const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
 
-  const isRawProductionEmpty = () =>
-    !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) &&
-    !document.getElementById("newGoodDistribution")?.textContent?.trim();
+    const isRawProductionEmpty = () =>
+      !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) &&
+      !document.getElementById("newGoodDistribution")?.textContent?.trim();
 
-  // a good is either gathered (raw) or made from recipes (manufactured)
-  const updateTypeNotes = () => {
-    const rawEmpty = isRawProductionEmpty();
-    const recipesEmpty = recipes.length === 0;
+    // a good is either gathered (raw) or made from recipes (manufactured)
+    const updateTypeNotes = () => {
+      const rawEmpty = isRawProductionEmpty();
+      const recipesEmpty = recipes.length === 0;
 
-    const recipeNote = ensureEl("newGoodRecipeNote");
-    recipeNote.textContent = "This good is raw-only: gathered from the environment.";
-    recipeNote.style.display = recipesEmpty && !rawEmpty ? "" : "none";
+      const recipeNote = ensureEl("newGoodRecipeNote");
+      recipeNote.textContent = "This good is raw-only: gathered from the environment.";
+      recipeNote.style.display = recipesEmpty && !rawEmpty ? "" : "none";
 
-    const rawNote = ensureEl("newGoodRawNote");
-    rawNote.textContent = "This good is manufactured-only: made from recipes in burgs.";
-    rawNote.style.display = rawEmpty && !recipesEmpty ? "" : "none";
-  };
+      const rawNote = ensureEl("newGoodRawNote");
+      rawNote.textContent = "This good is manufactured-only: made from recipes in burgs.";
+      rawNote.style.display = rawEmpty && !recipesEmpty ? "" : "none";
+    };
 
-  const renderRecipes = () => {
-    recipeList.innerHTML = recipes
-      .map(
-        (recipe, recipeIndex) => /*html*/ `
+    const renderRecipes = () => {
+      recipeList.innerHTML = recipes
+        .map(
+          (recipe, recipeIndex) => /*html*/ `
           <div class="recipeOption ge-recipe" data-recipe-index="${recipeIndex}" >
             <div class="ge-recipe-head">
               <span>Recipe ${recipeIndex + 1}</span>
@@ -207,269 +358,137 @@ export function goodEditor(editedGood?: Good, onUpdate?: () => void) {
             </div>
           </div>
         `
-      )
-      .join("");
+        )
+        .join("");
 
-    recipeList.querySelectorAll<HTMLSelectElement>(".recipeGoodSelect").forEach(select => {
-      select.onchange = () => {
-        const selectedGoodId = +select.value;
-        const recipeIndex = +select.dataset.recipeIndex!;
-        const ingredientIndex = +select.dataset.ingredientIndex!;
-        const recipe = recipes[recipeIndex];
+      recipeList.querySelectorAll<HTMLSelectElement>(".recipeGoodSelect").forEach(select => {
+        select.onchange = () => {
+          const selectedGoodId = +select.value;
+          const recipeIndex = +select.dataset.recipeIndex!;
+          const ingredientIndex = +select.dataset.ingredientIndex!;
+          const recipe = recipes[recipeIndex];
 
-        const oldAmount = recipe[ingredientIndex] || 0;
-        delete recipe[ingredientIndex];
-        recipe[selectedGoodId] = oldAmount;
-        renderRecipes();
-      };
-    });
-
-    recipeList.querySelectorAll<HTMLInputElement>(".recipeAmountInput").forEach(input => {
-      input.onchange = () => {
-        const recipeIndex = +input.dataset.recipeIndex!;
-        const ingredientIndex = +input.dataset.ingredientIndex!;
-        const recipe = recipes[recipeIndex];
-        const ingredientId = Number(Object.keys(recipe)[ingredientIndex]);
-        recipe[ingredientId] = +input.value;
-      };
-    });
-
-    recipeList.querySelectorAll<HTMLButtonElement>(".recipeAddIngredient").forEach(button => {
-      button.onclick = event => {
-        event.preventDefault();
-        const recipeIndex = +button.dataset.recipeIndex!;
-        const recipe = recipes[recipeIndex];
-        const newIngredientId = Object.keys(recipe).length
-          ? Math.max(...Object.keys(recipe).map(id => +id)) + 1
-          : defaultGoodId;
-        recipe[newIngredientId] = 1;
-        renderRecipes();
-      };
-    });
-
-    recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveIngredient").forEach(button => {
-      button.onclick = event => {
-        event.preventDefault();
-        const recipeIndex = +button.dataset.recipeIndex!;
-        const ingredientIndex = +button.dataset.ingredientIndex!;
-        const recipe = recipes[recipeIndex];
-        if (Object.keys(recipe).length > 1) {
-          const ingredientId = Number(Object.keys(recipe)[ingredientIndex]);
-          delete recipe[ingredientId];
+          const oldAmount = recipe[ingredientIndex] || 0;
+          delete recipe[ingredientIndex];
+          recipe[selectedGoodId] = oldAmount;
           renderRecipes();
-        }
-      };
-    });
+        };
+      });
 
-    recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveOption").forEach(button => {
-      button.onclick = event => {
-        event.preventDefault();
-        const recipeIndex = +button.dataset.recipeIndex!;
-        recipes.splice(recipeIndex, 1);
-        renderRecipes();
-      };
-    });
+      recipeList.querySelectorAll<HTMLInputElement>(".recipeAmountInput").forEach(input => {
+        input.onchange = () => {
+          const recipeIndex = +input.dataset.recipeIndex!;
+          const ingredientIndex = +input.dataset.ingredientIndex!;
+          const recipe = recipes[recipeIndex];
+          const ingredientId = Number(Object.keys(recipe)[ingredientIndex]);
+          recipe[ingredientId] = +input.value;
+        };
+      });
 
-    updateTypeNotes();
-  };
-  renderRecipes();
+      recipeList.querySelectorAll<HTMLButtonElement>(".recipeAddIngredient").forEach(button => {
+        button.onclick = event => {
+          event.preventDefault();
+          const recipeIndex = +button.dataset.recipeIndex!;
+          const recipe = recipes[recipeIndex];
+          const newIngredientId = Object.keys(recipe).length
+            ? Math.max(...Object.keys(recipe).map(id => +id)) + 1
+            : defaultGoodId;
+          recipe[newIngredientId] = 1;
+          renderRecipes();
+        };
+      });
 
-  dialog.querySelectorAll<HTMLButtonElement>(".mEdit").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const dim = btn.dataset.dim as MultiplierDimKey;
-      openMultiplierPopup(dim, multipliers[dim] ?? {}, values => {
-        multipliers[dim] = values;
-        const summaryEl = document.getElementById(`mSummary_${dim}`);
-        if (summaryEl) summaryEl.textContent = multiplierSummary(dim);
+      recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveIngredient").forEach(button => {
+        button.onclick = event => {
+          event.preventDefault();
+          const recipeIndex = +button.dataset.recipeIndex!;
+          const ingredientIndex = +button.dataset.ingredientIndex!;
+          const recipe = recipes[recipeIndex];
+          if (Object.keys(recipe).length > 1) {
+            const ingredientId = Number(Object.keys(recipe)[ingredientIndex]);
+            delete recipe[ingredientId];
+            renderRecipes();
+          }
+        };
+      });
+
+      recipeList.querySelectorAll<HTMLButtonElement>(".recipeRemoveOption").forEach(button => {
+        button.onclick = event => {
+          event.preventDefault();
+          const recipeIndex = +button.dataset.recipeIndex!;
+          recipes.splice(recipeIndex, 1);
+          renderRecipes();
+        };
+      });
+
+      updateTypeNotes();
+    };
+    renderRecipes();
+
+    dialog.querySelectorAll<HTMLButtonElement>(".mEdit").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const dim = btn.dataset.dim as MultiplierDimKey;
+        openMultiplierPopup(dim, multipliers[dim] ?? {}, values => {
+          multipliers[dim] = values;
+          const summaryEl = document.getElementById(`mSummary_${dim}`);
+          if (summaryEl) summaryEl.textContent = multiplierSummary(dim);
+        });
       });
     });
-  });
 
-  dialog.querySelector<HTMLButtonElement>(".dcEdit")!.addEventListener("click", () => {
-    openDemandCoveragePopup({ ...demandCoverageState }, values => {
-      (Object.keys(demandCoverageState) as DemandCategory[]).forEach(k => void delete demandCoverageState[k]);
-      Object.assign(demandCoverageState, values);
-      const summaryEl = document.getElementById("demandCoverageSummary");
-      if (summaryEl) summaryEl.textContent = demandCoverageSummary();
+    dialog.querySelector<HTMLButtonElement>(".dcEdit")!.addEventListener("click", () => {
+      openDemandCoveragePopup({ ...demandCoverageState }, values => {
+        (Object.keys(demandCoverageState) as DemandCategory[]).forEach(k => void delete demandCoverageState[k]);
+        Object.assign(demandCoverageState, values);
+        const summaryEl = document.getElementById("demandCoverageSummary");
+        if (summaryEl) summaryEl.textContent = demandCoverageSummary();
+      });
     });
-  });
 
-  dialog.querySelector<HTMLButtonElement>(".bpEdit")!.addEventListener("click", () => {
-    openBiomeProductionPopup({ ...biomeOutputState }, values => {
-      Object.keys(biomeOutputState).forEach(k => void delete biomeOutputState[+k]);
-      Object.assign(biomeOutputState, values);
-      const summaryEl = document.getElementById("biomeProductionSummary");
-      if (summaryEl) summaryEl.textContent = biomeOutputSummary();
-      updateTypeNotes();
+    dialog.querySelector<HTMLButtonElement>(".bpEdit")!.addEventListener("click", () => {
+      openBiomeProductionPopup({ ...biomeOutputState }, values => {
+        Object.keys(biomeOutputState).forEach(k => void delete biomeOutputState[+k]);
+        Object.assign(biomeOutputState, values);
+        const summaryEl = document.getElementById("biomeProductionSummary");
+        if (summaryEl) summaryEl.textContent = biomeOutputSummary();
+        updateTypeNotes();
+      });
     });
-  });
 
-  ensureEl("newGoodAddRecipe").on("click", event => {
-    event.preventDefault();
-    recipes.push({ [defaultGoodId]: 1 });
-    renderRecipes();
-  });
+    ensureEl("newGoodAddRecipe").on("click", event => {
+      event.preventDefault();
+      recipes.push({ [defaultGoodId]: 1 });
+      renderRecipes();
+    });
 
-  ensureEl("newGoodDistributionEditor").on("click", () => {
-    const distEl = ensureEl("newGoodDistribution");
-    DistributionEditor.open(dist => {
-      distEl.textContent = dist;
-      updateTypeNotes();
-    }, distEl.textContent?.trim() ?? "");
-  });
+    ensureEl("newGoodDistributionEditor").on("click", () => {
+      const distEl = ensureEl("newGoodDistribution");
+      Controllers.DistributionEditor.open((dist: string) => {
+        distEl.textContent = dist;
+        updateTypeNotes();
+      }, distEl.textContent?.trim() ?? "");
+    });
 
-  const iconSelect = ensureEl<HTMLSelectElement>("newGoodIcon");
-  iconSelect.onchange = () => ensureEl("newGoodIconPreview").setAttribute("href", `#${iconSelect.value}`);
+    const iconSelect = ensureEl<HTMLSelectElement>("newGoodIcon");
+    iconSelect.onchange = () => ensureEl("newGoodIconPreview").setAttribute("href", `#${iconSelect.value}`);
 
-  const colorInput = ensureEl<HTMLInputElement>("newGoodColor");
-  colorInput.oninput = () => {
-    const circle = ensureEl("newGoodIconCircle");
-    circle.setAttribute("fill", colorInput.value);
-    circle.setAttribute("stroke", Goods.getStroke(colorInput.value));
-  };
+    const colorInput = ensureEl<HTMLInputElement>("newGoodColor");
+    colorInput.oninput = () => {
+      const circle = ensureEl("newGoodIconCircle");
+      circle.setAttribute("fill", colorInput.value);
+      circle.setAttribute("stroke", Goods.getStroke(colorInput.value));
+    };
 
-  const onIconUpload = (_type: string, id: string) => {
-    ensureEl("newGoodIconPreview").setAttribute("href", `#${id}`);
-    iconSelect.innerHTML += `<option value="${id}">${id}</option>`;
-    iconSelect.value = id;
-  };
-  ensureEl("newGoodUploadIconRaster").onclick = () => (ensureEl("imageToLoad") as HTMLInputElement).click();
-  ensureEl("newGoodUploadIconVector").onclick = () => (ensureEl("svgToLoad") as HTMLInputElement).click();
-  ensureEl("imageToLoad").onchange = () => uploadImage("image", onIconUpload);
-  ensureEl("svgToLoad").onchange = () => uploadImage("svg", onIconUpload);
-
-  $(dialog).dialog({
-    width: "30em",
-    resizable: false,
-    title: editedGood ? "Edit good" : "Add new good",
-    open: function (this: HTMLElement) {
-      if (!editedGood) return; // only edits can recompute the economy
-      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
-      pane?.insertAdjacentHTML(
-        "afterbegin",
-        /*html*/ `<div class="dontAsk" data-tip="Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.">
-          <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
-          <label for="goodRegenerateEconomy" class="checkbox-label"><i>regenerate economy on apply</i></label>
-        </div>`
-      );
-    },
-    close: () => {
-      $(dialog).dialog("destroy");
-      dialog.innerHTML = "";
-    },
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      [editedGood ? "Apply" : "Add"]: () => {
-        const errors: string[] = [];
-
-        const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
-        const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
-        const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
-        const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
-        const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
-        const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
-        const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
-        const color = ensureEl<HTMLInputElement>("newGoodColor").value;
-        const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
-
-        if (!name) errors.push("Name is required");
-        if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
-        if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
-
-        if (distribution) {
-          try {
-            const methods = Goods.getMethods();
-            const allMethods = `{${Object.keys(methods).join(", ")}}`;
-            new Function(allMethods, `return ${distribution}`)(methods);
-          } catch (err) {
-            errors.push(`Distribution function is invalid: ${(err as Error).message || err}`);
-          }
-        }
-
-        for (const recipe of recipes) {
-          for (const [ingredientId, ingredientAmount] of Object.entries(recipe)) {
-            const id = Number(ingredientId);
-            const good = Goods.get(id);
-            if (!good) errors.push(`Recipe references unknown good id: ${id}`);
-            const amount = Number(ingredientAmount);
-            if (Number.isNaN(amount) || !Number.isFinite(amount) || amount <= 0)
-              errors.push(`Invalid recipe amount for good ${good?.name}`);
-          }
-
-          if (!Object.keys(recipe).length) errors.push("Each recipe must have at least one ingredient");
-        }
-
-        ensureEl("newGoodError").textContent = errors.join(". ");
-        if (errors.length) return;
-
-        function buildFinalMultipliers(): Good["multipliers"] {
-          const result: Good["multipliers"] = {};
-          for (const [dimKey, vals] of Object.entries(multipliers) as [
-            MultiplierDimKey,
-            Partial<Record<string, number>>
-          ][]) {
-            const nonDefault = Object.fromEntries(
-              Object.entries(vals ?? {}).filter(([, v]) => v !== undefined && v !== 1)
-            );
-            if (Object.keys(nonDefault).length) (result as any)[dimKey] = nonDefault;
-          }
-          return Object.keys(result).length ? result : undefined;
-        }
-
-        if (editedGood) {
-          editedGood.name = name;
-          editedGood.tags = tags;
-          editedGood.icon = icon;
-          editedGood.color = color;
-          editedGood.value = value;
-          editedGood.chance = chance;
-          editedGood.unit = unit;
-          editedGood.demandCoverage = demandCoverageState;
-          editedGood.multipliers = buildFinalMultipliers();
-          editedGood.distribution = distribution || undefined;
-          editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
-          editedGood.recipes = recipes.length ? recipes : undefined;
-
-          // opt-out: by default re-place the good and recompute the economy to reflect the change
-          if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
-            Goods.regeneratePlacement(editedGood.i);
-            regenerateEconomy();
-          } else {
-            Goods.sync();
-          }
-        } else {
-          const getNextId = () => {
-            let nextId = pack.goods?.at(-1)?.i ?? 1;
-            while (Goods.get(nextId)) nextId++;
-            return nextId;
-          };
-
-          pack.goods.push({
-            i: getNextId(),
-            name,
-            tags,
-            icon,
-            color,
-            value,
-            chance,
-            unit,
-            demandCoverage: demandCoverageState,
-            multipliers: buildFinalMultipliers(),
-            distribution: distribution || undefined,
-            biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
-            recipes: recipes.length ? recipes : undefined
-          });
-          Goods.sync();
-        }
-
-        tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
-        onUpdate?.();
-        $(dialog).dialog("close");
-      }
-    }
-  });
+    const onIconUpload = (_type: string, id: string) => {
+      ensureEl("newGoodIconPreview").setAttribute("href", `#${id}`);
+      iconSelect.innerHTML += `<option value="${id}">${id}</option>`;
+      iconSelect.value = id;
+    };
+    ensureEl("newGoodUploadIconRaster").onclick = () => (ensureEl("imageToLoad") as HTMLInputElement).click();
+    ensureEl("newGoodUploadIconVector").onclick = () => (ensureEl("svgToLoad") as HTMLInputElement).click();
+    ensureEl("imageToLoad").onchange = () => uploadImage("image", onIconUpload);
+    ensureEl("svgToLoad").onchange = () => uploadImage("svg", onIconUpload);
+  }
 }
 
 type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome" | "zone";
@@ -480,7 +499,7 @@ function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
   if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
   if (dim === "zone") return pack.zones.find(z => z.i === +id)?.name ?? `Zone ${id}`;
-  return biomesData.name[+id] ?? `Biome ${id}`;
+  return pack.biomes[+id]?.name ?? `Biome ${id}`;
 }
 
 function uploadImage(type: "image" | "svg", callback: (type: string, id: string) => void) {
@@ -578,7 +597,9 @@ function openMultiplierPopup(
       label = "Religion";
       break;
     case "biome":
-      entities = biomesData.i.map(id => ({ id: String(id), name: biomesData.name[id], color: biomesData.color[id] }));
+      entities = pack.biomes
+        .filter(biome => !biome.removed)
+        .map(({ i, name, color }) => ({ id: String(i), name, color }));
       label = "Biome";
       break;
     case "zone":
@@ -671,10 +692,11 @@ function openBiomeProductionPopup(
   currentValues: Partial<Record<number, number>>,
   onApply: (values: Partial<Record<number, number>>) => void
 ) {
-  const rows = (biomesData.i as number[])
-    .map(id => {
-      const val = currentValues[id] ?? 0;
-      return `<span>${biomesData.name[id] ?? `Biome ${id}`}</span><input type="number" class="bpPopupInput" data-id="${id}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
+  const rows = pack.biomes
+    .filter(biome => !biome.removed)
+    .map(({ i, name }) => {
+      const val = currentValues[i] ?? 0;
+      return `<span>${name}</span><input type="number" class="bpPopupInput" data-id="${i}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
     })
     .join("");
 
@@ -707,3 +729,5 @@ function openBiomeProductionPopup(
     }
   });
 }
+
+export const GoodEditor = { open };

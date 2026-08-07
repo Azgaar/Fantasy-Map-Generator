@@ -355,6 +355,19 @@ function selectStyleElement() {
     styleFontSize.value = el.attr("data-size");
   }
 
+  if (styleElement === "ruler") {
+    styleStrokeWidth.style.display = "block";
+    styleStrokeWidthInput.value = el.attr("stroke-width") || 2;
+
+    // show the effective dash, so maps predating the attribute don't display a misleading blank
+    styleStrokeDash.style.display = "block";
+    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") ?? "10";
+    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+
+    styleSize.style.display = "block";
+    styleFontSize.value = el.attr("data-size") || 20;
+  }
+
   if (styleElement === "armies") {
     styleArmies.style.display = "block";
     styleArmiesFillOpacity.value = el.attr("fill-opacity");
@@ -375,6 +388,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "";
     styleGoods.style.display = "block";
     styleGoodsCircle.checked = +el.attr("data-circle");
+    styleGoodsSize.value = el.attr("data-size") || 6;
   }
 
   if (styleElement === "goodsBurgs") {
@@ -382,6 +396,8 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.2";
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
+    styleGoodsBurgs.style.display = "block";
+    styleGoodsBurgsSize.value = el.attr("data-size") || 3;
   }
 
   if (styleElement === "markets") {
@@ -389,6 +405,9 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
     styleMarketsLayer.style.display = "block";
     styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
+    styleMarketsSize.value = el.attr("data-size") || 3;
+    styleMarketsIconSize.value = el.attr("font-size") || 5;
+    styleMarketsIcon.innerHTML = el.attr("data-icon") || "⚖️";
   }
 
   // update group options
@@ -474,9 +493,15 @@ styleStrokeInput.on("input", function () {
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
+// measurers are rendered with baked-in sizes, so a style change requires a redraw
+function redrawMeasurersOnStyleChange() {
+  if (styleElementSelect.value === "ruler" && layerIsOn("toggleRulers")) drawMeasurers();
+}
+
 styleStrokeWidthInput.on("input", e => {
   getEl().attr("stroke-width", e.target.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  redrawMeasurersOnStyleChange();
 });
 
 styleLetterSpacingInput.on("input", e => {
@@ -486,6 +511,7 @@ styleLetterSpacingInput.on("input", e => {
 styleStrokeDasharrayInput.on("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  redrawMeasurersOnStyleChange();
 });
 
 styleStrokeLinecapInput.on("change", function () {
@@ -920,6 +946,7 @@ function changeFontSize(el, size) {
   el.attr("data-size", size).attr("font-size", scaleSize);
 
   if (styleElementSelect.value === "legend") redrawLegend();
+  redrawMeasurersOnStyleChange();
 }
 
 styleFontShiftX.on("input", e => {
@@ -991,11 +1018,39 @@ emblemsBurgSizeInput.on("change", e => {
 
 styleGoodsCircle.addEventListener("change", function () {
   goods.select("#goodsIcons").attr("data-circle", +this.checked);
-  drawGoods(GoodsEditor?.getDisplayedGoods?.());
+  drawGoods();
+});
+
+styleGoodsSize.on("change", function () {
+  goods.select("#goodsIcons").attr("data-size", this.value);
+  drawGoods();
+});
+
+styleGoodsBurgsSize.on("change", function () {
+  goods.select("#goodsBurgs").attr("data-size", this.value);
+  drawGoods();
 });
 
 styleMarketsLayerFillOpacity.on("input", e => {
   markets.attr("fill-opacity", e.target.value);
+});
+
+styleMarketsSize.on("change", function () {
+  markets.attr("data-size", this.value);
+  drawMarketsLayer();
+});
+
+styleMarketsIconSize.on("change", function () {
+  markets.attr("font-size", this.value);
+  drawMarketsLayer();
+});
+
+styleMarketsIcon.on("click", function () {
+  window.Controllers.IconSelector.open(markets.attr("data-icon") || "⚖️", value => {
+    markets.attr("data-icon", value);
+    this.innerHTML = value;
+    drawMarketsLayer();
+  });
 });
 
 // request a URL to image to be used as a texture

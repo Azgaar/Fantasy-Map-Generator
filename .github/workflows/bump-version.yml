@@ -52,7 +52,9 @@ jobs:
       - name: Extract base version (master before this PR merged)
         id: base
         run: |
-          BASE=$(git show HEAD~1:public/versioning.js \
+          # Fall back to the legacy path for merges predating the src move
+          BASE=$( (git show HEAD~1:src/services/versioning.ts 2>/dev/null \
+            || git show HEAD~1:public/versioning.js) \
             | grep -oP 'const VERSION = "\K[\d.]+')
           echo "version=$BASE" >> "$GITHUB_OUTPUT"
           echo "Base version: $BASE"
@@ -66,7 +68,7 @@ jobs:
         run: |
           NEW_VERSION=$(node -e "
             const m = require('fs')
-              .readFileSync('public/versioning.js', 'utf8')
+              .readFileSync('src/services/versioning.ts', 'utf8')
               .match(/const VERSION = \"([\d.]+)\"/);
             console.log(m[1]);
           ")
@@ -75,7 +77,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Stage versioning files + any public/**/*.js whose dynamic import
           # hashes may have been refreshed by updatePublicJsDynamicImportHashes
-          git add public/versioning.js package.json package-lock.json src/index.html
+          git add src/services/versioning.ts package.json package-lock.json src/index.html
           git add public/ 2>/dev/null || true
 
           if ! git diff --cached --quiet; then

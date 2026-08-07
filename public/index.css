@@ -439,8 +439,6 @@ button.options {
 
 button.active {
   background-color: var(--header);
-  border-color: var(--dark-solid);
-  border-radius: 3px;
   color: white;
 }
 
@@ -1866,13 +1864,21 @@ div.editorLine {
 }
 
 #ruler {
-  cursor: move;
+  cursor: pointer;
   fill: none;
+}
+
+#ruler.editable {
+  cursor: move;
 }
 
 #ruler .rulerPoints {
   stroke: #4e5a69;
   fill: yellow;
+  cursor: pointer;
+}
+
+#ruler.editable .rulerPoints {
   cursor: grab;
 }
 
@@ -2205,7 +2211,7 @@ svg.button {
 }
 
 #globeLatLabels {
-  font-size: 12px;
+  font-size: 9px;
   font-family: var(--monospace);
   stroke: none;
   fill: #001754;
@@ -2405,6 +2411,7 @@ svg.button {
 
 #chat-widget-container {
   user-select: none;
+  z-index: 99 !important;
 }
 
 #chat-widget-minimized {
@@ -2430,13 +2437,13 @@ svg.button {
   height: 36px;
   border-radius: 50%;
   background-color: var(--bg-main);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   user-select: none;
-  animation: fadeIn 1s ease-in;
+  opacity: 0;
+  animation: fadeIn 1s ease-in 1s forwards;
   z-index: 9999;
 }
 
@@ -2450,18 +2457,16 @@ svg.button {
 
 #tourPromptButton svg path {
   fill: #000000;
-  stroke: none;
-}
-
-#tourPromptButton:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  stroke: #000000;
+  fill-opacity: 1;
+  stroke-width: 0;
+  transition: all 0.3s ease-out;
+  stroke-linejoin: round;
 }
 
 #tourPromptButton:hover svg path {
-  fill: none;
-  stroke: #000000;
+  fill-opacity: 0;
   stroke-width: 5;
-  stroke-linejoin: round;
 }
 
 @media print {
@@ -2498,6 +2503,10 @@ div.states > .goodIcon {
 }
 div.states > .goodName {
   width: 7em;
+}
+
+div.states > .goodUnit {
+  width: 4em;
 }
 
 div.states > .goodProduced,

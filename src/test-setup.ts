@@ -22,3 +22,12 @@ if (typeof document === "undefined") {
     querySelector: () => null
   };
 }
+
+// Stub the tooltip globals (registered by services/tooltips) so the registry's
+// lazy-load loading tip doesn't throw outside the browser
+if (typeof window.tip === "undefined") {
+  window.tip = () => {};
+}
+if (typeof window.clearMainTip === "undefined") {
+  window.clearMainTip = () => {};
+}

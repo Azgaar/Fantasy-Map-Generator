@@ -24,9 +24,9 @@ test.describe("3D view with eroded terrain", () => {
     test.skip(!hasWebGL, "WebGL is not available in this environment");
 
     // enter the 3D mesh view through the same entry point the UI menu uses
-    await page.evaluate(() => (window as any).enter3dView("viewMesh"));
+    await page.evaluate(() => (window as any).Controllers.View3d.open("viewMesh"));
     await page.waitForSelector("#canvas3d", { state: "attached", timeout: 60000 });
-    await page.waitForFunction(() => (window as any).ThreeD?.options?.isOn === true, {
+    await page.waitForFunction(async () => (await (window as any).Controllers.View3d.isOn()) === true, {
       timeout: 60000,
     });
 
@@ -35,7 +35,7 @@ test.describe("3D view with eroded terrain", () => {
     await page.evaluate(() => (document.getElementById("options3dErosion") as HTMLInputElement).click());
 
     // the bake must complete and cache the dense height field
-    await page.waitForFunction(() => (window as any).ThreeDErosion?.isCached?.(), {
+    await page.waitForFunction(async () => await (window as any).Controllers.View3d.isCached(), {
       timeout: 60000,
     });
 
@@ -43,7 +43,7 @@ test.describe("3D view with eroded terrain", () => {
     const centerHeight = await page.evaluate(() => {
       const w = (window as any).graphWidth;
       const h = (window as any).graphHeight;
-      return (window as any).ThreeDErosion.heightAt(w / 2, h / 2, 50);
+      return (window as any).Controllers.View3d.heightAt(w / 2, h / 2, 50);
     });
     expect(Number.isFinite(centerHeight)).toBe(true);
 

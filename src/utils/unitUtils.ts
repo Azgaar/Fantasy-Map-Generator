@@ -1,3 +1,5 @@
+import type { PackedGraph } from "../types/PackedGraph";
+import { findClosestCell, findGridCell } from "./graphUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 
@@ -8,7 +10,8 @@ type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" |
  * @param {string} targetScale - Target temperature scale
  * @returns {string} - Converted temperature with unit
  */
-export const convertTemperature = (temperatureInCelsius: number, targetScale: TemperatureScale = "°C") => {
+export const convertTemperature = (temperatureInCelsius: number, targetScale?: TemperatureScale) => {
+  const scale = targetScale || (ensureEl<HTMLSelectElement>("temperatureScale").value as TemperatureScale) || "°C";
   const temperatureConversionMap: { [key: string]: (temp: number) => string } = {
     "°C": (temp: number) => `${rn(temp)}°C`,
     "°F": (temp: number) => `${rn((temp * 9) / 5 + 32)}°F`,
@@ -19,7 +22,7 @@ export const convertTemperature = (temperatureInCelsius: number, targetScale: Te
     "°Ré": (temp: number) => `${rn((temp * 4) / 5)}°Ré`,
     "°Rø": (temp: number) => `${rn((temp * 21) / 40 + 7.5)}°Rø`
   };
-  return temperatureConversionMap[targetScale](temperatureInCelsius);
+  return temperatureConversionMap[scale](temperatureInCelsius);
 };
 
 /**
@@ -70,6 +73,31 @@ export function getHeight(h: number, abs = false): string {
   return `${rn(height * unitRatio)}${unit}`;
 }
 
+/** Format precipitation in millimeters */
+export function getPrecipitation(prec: number): string {
+  return `${prec * 100} mm`;
+}
+
+/** Get user-friendly precipitation value in a cell */
+export function getFriendlyPrecipitation(cellId: number, pack: PackedGraph, grid: any): string {
+  return getPrecipitation(grid.cells.prec[pack.cells.g[cellId]]);
+}
+
+/** Get user-friendly height value at a point */
+export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, grid: any): string {
+  const packH = pack.cells.h[findClosestCell(x, y, undefined, pack) as number];
+  const gridH = grid.cells.h[findGridCell(x, y, grid)];
+  return getHeight(packH < 20 ? gridH : packH);
+}
+
+/** Get [rural, urban] real-world population of a cell */
+export function getCellPopulation(cellId: number, pack: PackedGraph): [number, number] {
+  const rural = pack.cells.pop[cellId] * populationRate;
+  const burgId = pack.cells.burg[cellId];
+  const urban = burgId ? (pack.burgs[burgId].population || 0) * populationRate * urbanization : 0;
+  return [rural, urban];
+}
+
 /**
  * Format price value with currency symbol
  * @param value - The price value to format
@@ -79,12 +107,73 @@ export function formatPrice(value: number): string {
   return `🟡 ${rn(value, 2)}`;
 }
 
-declare global {
-  interface Window {
-    convertTemperature: typeof convertTemperature;
-    si: typeof si;
-    getInteger: typeof getIntegerFromSI;
-    getHeight: typeof getHeight;
-    formatPrice: typeof formatPrice;
-  }
+// in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_city_by_average_temperature
+const meanTempCityMap: Record<number, string> = {
+  [-5]: "Snag (Yukon)",
+  [-4]: "Yellowknife (Canada)",
+  [-3]: "Okhotsk (Russia)",
+  [-2]: "Fairbanks (Alaska)",
+  [-1]: "Nuuk (Greenland)",
+  0: "Murmansk (Russia)",
+  1: "Arkhangelsk (Russia)",
+  2: "Anchorage (Alaska)",
+  3: "Tromsø (Norway)",
+  4: "Reykjavik (Iceland)",
+  5: "Harbin (China)",
+  6: "Stockholm (Sweden)",
+  7: "Montreal (Canada)",
+  8: "Prague (Czechia)",
+  9: "Copenhagen (Denmark)",
+  10: "London (England)",
+  11: "Antwerp (Belgium)",
+  12: "Paris (France)",
+  13: "Milan (Italy)",
+  14: "Washington (D.C.)",
+  15: "Rome (Italy)",
+  16: "Dubrovnik (Croatia)",
+  17: "Lisbon (Portugal)",
+  18: "Barcelona (Spain)",
+  19: "Marrakesh (Morocco)",
+  20: "Alexandria (Egypt)",
+  21: "Tegucigalpa (Honduras)",
+  22: "Guangzhou (China)",
+  23: "Rio de Janeiro (Brazil)",
+  24: "Dakar (Senegal)",
+  25: "Miami (USA)",
+  26: "Jakarta (Indonesia)",
+  27: "Mogadishu (Somalia)",
+  28: "Bangkok (Thailand)",
+  29: "Niamey (Niger)",
+  30: "Khartoum (Sudan)"
+};
+
+/**
+ * Get a real-world city with a similar average yearly temperature
+ * @param temperature - Average yearly temperature in °C
+ * @returns {string | null} - Name of a city with a similar temperature
+ */
+export function getTemperatureLikeness(temperature: number): string | null {
+  if (temperature < -5) return "Yakutsk (Russia)";
+  if (temperature > 30) return "Mecca (Saudi Arabia)";
+  return meanTempCityMap[temperature] || null;
+}
+
+/**
+ * Get the area unit as configured by the user
+ * @param squareMark - The mark appended to a linear unit to make it square
+ * @returns {string} - The area unit, e.g. "mi²"
+ */
+export function getAreaUnit(squareMark = "²"): string {
+  const areaUnit = ensureEl<HTMLSelectElement>("areaUnit").value;
+  if (areaUnit !== "square") return areaUnit;
+  return ensureEl<HTMLInputElement>("distanceUnitInput").value + squareMark;
+}
+
+/**
+ * Convert area from map units to real-world units
+ * @param rawArea - The area in map units
+ * @returns {number} - The area in real-world units
+ */
+export function getArea(rawArea: number): number {
+  return rawArea * distanceScale ** 2;
 }

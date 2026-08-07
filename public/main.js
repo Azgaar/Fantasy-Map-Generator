@@ -24,8 +24,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     "beforeinstallprompt",
     async event => {
       event.preventDefault();
-      const Installation = await import("./modules/dynamic/installation.js?v=1.89.19");
-      Installation.init(event);
+      window.Services.Installation.init(event);
     },
     { once: true }
   );
@@ -136,7 +135,9 @@ fogging
   .attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => editUnits());
+scaleBar
+  .on("mousemove", () => tip("Click to open Units Editor"))
+  .on("click", () => window.Controllers.UnitsEditor.open());
 legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
@@ -147,10 +148,8 @@ var pack = {}; // packed graph and data
 var seed;
 let mapId;
 let mapHistory = [];
-let elSelected;
 let modules = {};
 let notes = [];
-let rulers = new Rulers();
 let customization = 0;
 
 // global options; in v2.0 to be used for all UI settings
@@ -160,6 +159,10 @@ let options = {
   temperatureEquator: 27,
   temperatureNorthPole: -30,
   temperatureSouthPole: -15,
+  mapSize: 100, // map size in % of the world
+  latitude: 50, // North-South map shift in %, 50 is centered on equator
+  longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
+  prec: 100, // precipitation modifier in %
   stateLabelsMode: "auto",
   showBurgPreview: true,
   burgs: {
@@ -167,14 +170,13 @@ let options = {
   },
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
-  }
+  },
+  threeD: { ...window.ThreeDOptions }
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
 let style = { burgLabels: {}, burgIcons: {}, anchors: {} };
 
-let biomesData = Biomes.getDefault();
-let nameBases = Names.getNameBases(); // cultures-related data
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
@@ -221,9 +223,9 @@ function zoomRaf() {
     }
 
     if (customization === 1) {
-      const canvas = ensureEl("canvas");
+      const canvas = findEl("canvas");
       if (canvas && canvas.style.opacity !== "0") {
-        const img = ensureEl("imageToConvert");
+        const img = findEl("imageToConvert");
         if (img) {
           const ctx = canvas.getContext("2d");
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -299,7 +301,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  restoreDefaultEvents(); // apply default viewbox events
+  applyDefaultViewboxEvents();
   initiateAutosave();
   initTourPromptButton();
 });
@@ -329,10 +331,10 @@ async function checkLoadParameters() {
     const valid = pattern.test(maplink);
     if (valid) {
       setTimeout(() => {
-        loadMapFromURL(maplink, 1);
+        window.Services.Load.loadMapFromURL(maplink, 1);
       }, 1000);
       return;
-    } else showUploadErrorMessage("Map link is not a valid URL", maplink);
+    } else window.Services.Load.showUploadErrorMessage("Map link is not a valid URL", maplink);
   }
 
   // if there is a seed (user of MFCG provided), generate map for it
@@ -348,7 +350,7 @@ async function checkLoadParameters() {
       const blob = await ldb.get("lastMap");
       if (blob) {
         WARN && console.warn("Loading last stored map");
-        uploadMap(blob);
+        window.Services.Load.uploadMap(blob);
         return;
       }
     } catch (error) {
@@ -446,17 +448,19 @@ function toggleAssistant() {
 function initTourPromptButton() {
   const MAX_SHOWS = 3;
   const STORAGE_KEY = "fmg-tour-prompt-count";
-  const btn = document.getElementById("tourPromptButton");
-  if (!btn) return;
 
   const count = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   if (count >= MAX_SHOWS) return;
 
-  localStorage.setItem(STORAGE_KEY, count + 1);
+  const btn = document.getElementById("tourPromptButton");
+  if (!btn) return;
+
   btn.style.display = "flex";
-  btn.addEventListener("click", () => {
-    UITour.start();
+  btn.addEventListener("click", async () => {
+    window.Services.UiTour.start();
+    localStorage.setItem(STORAGE_KEY, MAX_SHOWS);
   });
+  localStorage.setItem(STORAGE_KEY, count + 1);
 }
 
 // find burg for MFCG and focus on it
@@ -534,6 +538,19 @@ function resetZoom(d = 1000) {
   svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
 }
 
+// Bundled UI modules call these wrappers instead of using the legacy d3 selection directly
+function panMap(x, y) {
+  zoom.translateBy(svg, x, y);
+}
+
+function setMapZoom(value) {
+  zoom.scaleTo(svg, value);
+}
+
+function changeMapZoom(factor) {
+  zoom.scaleBy(svg, factor);
+}
+
 // active zooming feature
 function invokeActiveZooming() {
   const isOptimized = shapeRendering.value === "optimizeSpeed";
@@ -590,12 +607,6 @@ function invokeActiveZooming() {
       el.setAttribute("x", rn(x - zoomedSize / 2, 1));
       el.setAttribute("y", rn(y - zoomedSize, 1));
     });
-
-  // rescale rulers to have always the same size
-  if (ruler.style("display") !== "none") {
-    const size = rn((10 / scale ** 0.3) * 2, 2);
-    ruler.selectAll("text").attr("font-size", size);
-  }
 }
 
 // add drag to upload logic, pull request from @evyatron
@@ -639,7 +650,7 @@ void (function addDragToUpload() {
     overlay.style.display = null;
     overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
     if (closeDialogs) closeDialogs();
-    uploadMap(file, () => {
+    window.Services.Load.uploadMap(file, () => {
       overlay.style.display = "none";
       overlay.innerHTML = "Drop a map file to open";
     });
@@ -675,10 +686,10 @@ async function generate(options) {
 
     reGraph();
     Features.markupPack();
-    createDefaultRuler();
+    Measurers.createDefaultRuler();
 
     Rivers.generate();
-    Biomes.define();
+    Biomes.generate();
     Features.defineGroups();
 
     Ice.generate();
@@ -868,9 +879,9 @@ function openNearSeaLakes() {
 function defineMapSize() {
   const [size, latitude, longitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
-  if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
-  if (randomize || !locked("longitude")) longitudeOutput.value = longitudeInput.value = longitude;
+  if (randomize || !stored("mapSize")) options.mapSize = size;
+  if (randomize || !stored("latitude")) options.latitude = latitude;
+  if (randomize || !stored("longitude")) options.longitude = longitude;
 
   function getSizeAndLatitude() {
     const template = ensureEl("templateInput").value; // heightmap template
@@ -886,7 +897,7 @@ function defineMapSize() {
     if (template === "europe-accented") return [14, 22, 44.8];
     if (template === "europe-and-central-asia") return [25, 10, 39.5];
     if (template === "europe-central") return [11, 22, 46.4];
-    if (template === "north-sea-region") return [7, 18, 48.9];
+    if (template === "europe-north") return [7, 18, 48.9];
     if (template === "greenland") return [22, 7, 55.8];
     if (template === "hellenica") return [8, 27, 43.5];
     if (template === "iceland") return [2, 15, 55.3];
@@ -925,9 +936,9 @@ function defineMapSize() {
 
 // calculate map position on globe
 function calculateMapCoordinates() {
-  const sizeFraction = +ensureEl("mapSizeOutput").value / 100;
-  const latShift = +ensureEl("latitudeOutput").value / 100;
-  const lonShift = +ensureEl("longitudeOutput").value / 100;
+  const sizeFraction = options.mapSize / 100;
+  const latShift = options.latitude / 100;
+  const lonShift = options.longitude / 100;
 
   const latT = rn(sizeFraction * 180, 1);
   const latN = rn(90 - (180 - latT) * latShift, 1);
@@ -997,7 +1008,7 @@ function generatePrecipitation() {
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
   const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
-  const precInputModifier = precInput.value / 100;
+  const precInputModifier = options.prec / 100;
   const modifier = cellsNumberModifier * precInputModifier;
 
   const westerly = [];
@@ -1239,7 +1250,7 @@ function rankCells() {
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
-    let score = biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
+    let score = pack.biomes[cells.biome[i]].habitability; // base suitability derived from biome habitability
     if (!score) continue; // uninhabitable biomes has 0 suitability
 
     if (meanFlux) score += normalize(cells.fl[i] + cells.conf[i], meanFlux, maxFlux) * 250; // big rivers and confluences are valued
@@ -1276,7 +1287,7 @@ function showStatistics() {
   const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
-  const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";
+  const isRandomTemplate = isTemplate && !stored("template") ? "random " : "";
 
   const stats = `  Seed: ${seed}
     Canvas size: ${graphWidth}x${graphHeight} px
@@ -1284,7 +1295,7 @@ function showStatistics() {
     Template: ${isRandomTemplate}${heightmapType}
     Points: ${grid.points.length}
     Cells: ${pack.cells.i.length}
-    Map size: ${mapSizeOutput.value}%
+    Map size: ${options.mapSize}%
     States: ${pack.states.length - 1}
     Provinces: ${pack.provinces.length - 1}
     Burgs: ${pack.burgs.length - 1}
@@ -1301,7 +1312,7 @@ function showStatistics() {
   window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
 }
 
-const regenerateMap = debounce(async function (options) {
+const regenerateMap = debounce(async function (config) {
   WARN && console.warn("Generate new random map");
 
   const cellsDesired = +ensureEl("pointsInput").dataset.cells;
@@ -1312,10 +1323,10 @@ const regenerateMap = debounce(async function (options) {
   customization = 0;
   resetZoom(1000);
   undraw();
-  await generate(options);
+  await generate(config);
   drawLayers();
-  if (ThreeD.options.isOn) ThreeD.redraw();
-  if ($("#worldConfigurator").is(":visible")) editWorld();
+  if (options.threeD.isOn) window.Controllers.View3d.redraw();
+  if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 
   fitMapToScreen();
   shouldShowLoading && hideLoading();

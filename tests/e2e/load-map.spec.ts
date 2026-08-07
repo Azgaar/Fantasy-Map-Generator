@@ -173,6 +173,23 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
+  // demo.map is v1.112.1 and stores its ruler in the legacy data[33] string
+  // ("Ruler: 417,206 1097,158"), which the v1.138.0 migration moves to pack.measurers
+  test("legacy rulers should migrate to pack.measurers", async ({page}) => {
+    const fileInput = page.locator("#mapToLoad");
+    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    await fileInput.setInputFiles(mapFilePath);
+
+    await page.waitForFunction(() => (window as any).mapId !== undefined, {
+      timeout: 120000
+    });
+    await page.waitForTimeout(500);
+
+    const measurers = await page.evaluate(() => (window as any).pack.measurers);
+
+    expect(measurers).toEqual([{type: "Ruler", points: [[417, 206], [1097, 158]]}]);
+  });
+
   test("loaded map should preserve burg data", async ({page}) => {
     const errors: string[] = [];
     page.on("pageerror", error => {

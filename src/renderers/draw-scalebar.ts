@@ -120,3 +120,5 @@ const scaleBarResize = (scaleBar: ScaleBarSelection, fullWidth: number, fullHeig
 
 window.drawScaleBar = scaleBarRenderer;
 window.fitScaleBar = scaleBarResize;
+
+export { scaleBarRenderer as drawScaleBar, scaleBarResize as fitScaleBar };

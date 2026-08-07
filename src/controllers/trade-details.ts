@@ -1,14 +1,14 @@
-import type { Burg } from "../modules/burgs-generator";
-import type { Deal } from "../modules/markets-generator";
-import type { TradeBatch } from "../modules/trade-animation";
-import type { Point } from "../modules/voronoi";
+import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import type { Burg } from "../generators/burgs-generator";
+import type { Deal } from "../generators/markets-generator";
+import type { Point } from "../generators/voronoi";
 import { clearHighlight, highlight } from "../renderers/draw-trade-animation";
+import type { TradeBatch } from "../renderers/trade-animation";
 import { ensureEl, formatPrice, rn } from "../utils";
 
-let isInitialized = false;
 let activeBatch: TradeBatch;
 
-export function open(batch: TradeBatch): void {
+function open(batch: TradeBatch): void {
   if (!batch?.deals.length) return;
 
   activeBatch = batch;
@@ -19,6 +19,7 @@ export function open(batch: TradeBatch): void {
   const path = TradeAnimation.findRoutePath(startBurg.cell, endBurg.cell);
   if (!path) return;
 
+  renderDialog();
   tradeDetailsAddLines(path.points);
   highlight(path.points);
 
@@ -28,18 +29,39 @@ export function open(batch: TradeBatch): void {
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: closeTradeDetails
   });
+}
 
-  if (!isInitialized) {
-    ensureEl("tradeDetailsSummary").on("click", event => {
-      const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");
-      if (!activeBatch || !zoomEl) return;
-      const burgId = activeBatch[zoomEl.dataset.zoom === "start" ? "startBurgId" : "endBurgId"];
-      const burg = pack.burgs[burgId];
-      if (!burg) return;
-      zoomTo(burg.x, burg.y, 8, 1500);
-    });
-    isInitialized = true;
-  }
+function renderDialog(): void {
+  document.getElementById("tradeDetails")?.remove();
+  const editorHtml = /* html */ `<div id="tradeDetails" class="dialog stable">
+      <div>
+        <div id="tradeDetailsSummary" class="totalLine"></div>
+        <div id="tradeDetailsHeader" class="header" style="grid-template-columns: 2.5em 10em 5em 5.5em 3.6em;">
+          <div></div>
+          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
+          <div data-tip="Click to sort by units" class="sortable icon-sort-number-down" data-sortby="units">Units&nbsp;</div>
+          <div data-tip="Click to sort by unit price" class="sortable" data-sortby="price">Price&nbsp;</div>
+          <div data-tip="Click to sort by value" class="sortable" data-sortby="value">Value&nbsp;</div>
+        </div>
+        <div id="tradeDetailsBody" class="table" style="max-height:30em"></div>
+        <div id="tradeDetailsFooter" class="totalLine">
+          <div style="margin-left: 5px">Distance: <span id="tradeDetailsFooterDistance">0</span></div>
+          <div style="margin-left: 12px" data-tip="Total traded units">Units: <span id="tradeDetailsFooterUnits">0</span></div>
+          <div style="margin-left: 12px" data-tip="Total deal value">Value: <span id="tradeDetailsFooterValue">0</span></div>
+        </div>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  applySortingByHeader("tradeDetailsHeader");
+
+  ensureEl("tradeDetailsSummary").on("click", event => {
+    const zoomEl = (event.target as HTMLElement).closest<HTMLElement>("[data-zoom]");
+    if (!activeBatch || !zoomEl) return;
+    const burgId = activeBatch[zoomEl.dataset.zoom === "start" ? "startBurgId" : "endBurgId"];
+    const burg = pack.burgs[burgId];
+    if (!burg) return;
+    zoomTo(burg.x, burg.y, 8, 1500);
+  });
 }
 
 function tradeDetailsAddLines(points: Point[]): void {
@@ -97,7 +119,7 @@ function tradeDetailsAddLines(points: Point[]): void {
   ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 
   applySorting(ensureEl("tradeDetailsHeader"));
-  $("#tradeDetails").dialog({ width: fitContent() });
+  $("#tradeDetails").dialog({ width: "fit-content" });
 }
 
 function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string {
@@ -107,15 +129,9 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 }
 
 function closeTradeDetails(): void {
-  ensureEl("tradeDetailsBody").innerHTML = "";
-  ensureEl("tradeDetailsSummary").innerHTML = "";
   clearHighlight();
+  $("#tradeDetails").dialog("destroy");
+  ensureEl("tradeDetails").remove();
 }
 
-declare global {
-  interface Window {
-    TradeDetails: { open: typeof open };
-  }
-}
-
-window.TradeDetails = { open };
+export const TradeDetails = { open };

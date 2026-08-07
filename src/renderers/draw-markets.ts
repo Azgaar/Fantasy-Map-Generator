@@ -1,31 +1,41 @@
 import { color, curveBasisClosed, line, select } from "d3";
+import { isCtrlClick } from "@/utils";
 import { rn } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
 
 export function toggleMarketsLayer(event?: MouseEvent) {
   if (!layerIsOn("toggleMarketsLayer")) {
     turnButtonOn("toggleMarketsLayer");
-    drawMarketsLayer();
+    drawMarkets();
     if (event && isCtrlClick(event)) editStyle("markets");
   } else {
     if (event && isCtrlClick(event)) return editStyle("markets");
-    markets.html("");
+    select("#markets").html("");
     turnButtonOff("toggleMarketsLayer");
   }
 }
 
-export function drawMarketsLayer() {
-  TIME && console.time("drawMarketsLayer");
-  markets.html(buildMarketsContent());
+export function drawMarkets() {
+  TIME && console.time("drawMarkets");
+  select("#markets").html(buildMarketsContent());
   highlightMarketsOnHover();
-  markets.style("display", null);
-  TIME && console.timeEnd("drawMarketsLayer");
+  select("#markets").style("display", null);
+  TIME && console.timeEnd("drawMarkets");
 }
+
+const MARKET_RADIUS = 3;
+const MARKET_FONT = 5;
+const MARKET_ICON = "⚖️";
 
 function buildMarketsContent(): string {
   const linegen = line().curve(curveBasisClosed);
   const getType = (cellId: number) => pack.cells.market[cellId];
   const isolines = getIsolines(pack, getType, { polygons: true });
+
+  // marker circle size, emoji size and emoji icon are independently user-configurable
+  const baseRadius = +select("#markets").attr("data-size") || MARKET_RADIUS;
+  const baseFont = +select("#markets").attr("font-size") || MARKET_FONT;
+  const icon = select("#markets").attr("data-icon") || MARKET_ICON;
 
   return pack.markets
     .map(market => {
@@ -45,12 +55,12 @@ function buildMarketsContent(): string {
       const centerBurg = pack.burgs[market.centerBurgId];
       if (centerBurg) {
         const { x, y } = centerBurg;
-        const radius = Math.max(rn(3 + 1 / scale, 2), 2);
-        const fontSize = Math.max(rn(5 + 1 / scale, 2), 2);
+        const radius = Math.max(rn(baseRadius + 1 / scale, 2), 2);
+        const fontSize = Math.max(rn(baseFont + 1 / scale, 2), 2);
         const strokeWidth = rn(radius / 8, 2);
 
         content += `<circle cx="${x}" cy="${y}" r="${radius}" fill="${fillColor}" fill-opacity="1" stroke="${strokeColor}" stroke-width="${strokeWidth}" />`;
-        content += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">⚖️</text>`;
+        content += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">${icon}</text>`;
       }
 
       return `<g id="market${market.i}" data-id="${market.i}">${content}</g>`;
@@ -98,13 +108,9 @@ export function highlightMarketOff(marketId: number | string): void {
 declare global {
   interface Window {
     toggleMarketsLayer: typeof toggleMarketsLayer;
-    drawMarketsLayer: typeof drawMarketsLayer;
-    highlightMarketOn: typeof highlightMarketOn;
-    highlightMarketOff: typeof highlightMarketOff;
+    drawMarketsLayer: typeof drawMarkets;
   }
 }
 
 window.toggleMarketsLayer = toggleMarketsLayer;
-window.drawMarketsLayer = drawMarketsLayer;
-window.highlightMarketOn = highlightMarketOn;
-window.highlightMarketOff = highlightMarketOff;
+window.drawMarketsLayer = drawMarkets;

@@ -1,5 +1,5 @@
 import polylabel from "polylabel";
-import type { Point, Vertices } from "../modules/voronoi";
+import type { Point, Vertices } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
 
@@ -518,9 +518,6 @@ export function projectToNearestEdge(point: Point, width: number, height: number
 declare global {
   interface Window {
     getIsolines: typeof getIsolines;
-    getPolesOfInaccessibility: typeof getPolesOfInaccessibility;
-    connectVertices: typeof connectVertices;
-    findPath: typeof findPath;
     getVertexPath: typeof getVertexPath;
   }
 }

@@ -172,7 +172,7 @@ function handleLayersPresetChange(preset) {
     if (isOn && !shouldBeOn) el.click();
   });
 
-  if (ensureEl("canvas3d")) setTimeout(() => ThreeD.update(), 400);
+  if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 400);
 }
 
 function savePreset() {
@@ -248,14 +248,14 @@ function drawLayers() {
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleIce")) drawIce();
   if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("toggleGoods")) drawGoods(GoodsEditor?.getDisplayedGoods?.());
+  if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
   if (layerIsOn("toggleEmblems")) drawEmblems();
   if (layerIsOn("toggleLabels")) drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
-  if (layerIsOn("toggleRulers")) rulers.draw();
+  if (layerIsOn("toggleRulers")) drawMeasurers();
   // scale bar
   // vignette
 }
@@ -297,22 +297,6 @@ function toggleBiomes(event) {
     biomes.selectAll("path").remove();
     turnButtonOff("toggleBiomes");
   }
-}
-
-function drawBiomes() {
-  TIME && console.time("drawBiomes");
-
-  const cells = pack.cells;
-  const bodyPaths = new Array(biomesData.i.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.biome[cellId], { fill: true, waterGap: true });
-  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
-    const color = biomesData.color[index];
-    bodyPaths.push(getGappedFillPaths("biome", fill, waterGap, color, index));
-  });
-
-  ensureEl("biomes").innerHTML = bodyPaths.join("");
-
-  TIME && console.timeEnd("drawBiomes");
 }
 
 function togglePrecipitation(event) {
@@ -941,7 +925,7 @@ function toggleRulers(event) {
   if (!layerIsOn("toggleRulers")) {
     turnButtonOn("toggleRulers");
     if (event && isCtrlClick(event)) editStyle("ruler");
-    rulers.draw();
+    drawMeasurers();
     ruler.style("display", null);
   } else {
     if (event && isCtrlClick(event)) return editStyle("ruler");
@@ -976,7 +960,7 @@ function toggleZones(event) {
 }
 
 function drawZones() {
-  const filterBy = ensureEl("zonesFilterType").value;
+  const filterBy = document.getElementById("zonesFilterType")?.value;
   const isFiltered = filterBy && filterBy !== "all";
   const visibleZones = pack.zones.filter(
     ({ hidden, cells, type }) => !hidden && cells.length && (!isFiltered || type === filterBy)

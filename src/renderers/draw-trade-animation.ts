@@ -1,7 +1,7 @@
-import { curveCatmullRom, easeLinear, line } from "d3";
-import type { TradeBatch } from "../modules/trade-animation";
-import type { Point } from "../modules/voronoi";
+import { curveCatmullRom, easeLinear, line, select } from "d3";
+import type { Point } from "../generators/voronoi";
 import { ensureEl, minmax } from "../utils";
+import type { TradeBatch } from "./trade-animation";
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
@@ -55,7 +55,7 @@ export async function draw(
     const duration = options.trade.animation.duration;
     const segDuration = segment.type === "land" ? duration * options.trade.animation.landDurationModifier : duration;
 
-    const group = tradeAnimation.append("g");
+    const group = select("#tradeAnimation").append("g");
     group
       .append("use")
       .attr("href", `#trade-marker-${segment.type}`)
@@ -73,7 +73,7 @@ export async function draw(
       .attr("stroke", "none")
       .attr("pointer-events", "all")
       .style("cursor", "pointer")
-      .on("click", () => TradeDetails.open(batch));
+      .on("click", () => Controllers.TradeDetails.open(batch));
 
     // Animate along the path; samples computed lazily and cached at ~1px spacing
     const tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -127,7 +127,7 @@ export async function draw(
 }
 
 export function clear(): void {
-  tradeAnimation.selectAll("g").interrupt().remove();
+  select("#tradeAnimation").selectAll("g").interrupt().remove();
 }
 
 export function getPath(points: Point[]): string {
@@ -135,8 +135,8 @@ export function getPath(points: Point[]): string {
 }
 
 export function highlight(points: Point[]): void {
-  tradeAnimation.selectAll("path.highlight").remove();
-  tradeAnimation
+  select("#tradeAnimation").selectAll("path.highlight").remove();
+  select("#tradeAnimation")
     .append("path")
     .attr("class", "highlight")
     .attr("d", lineGen(points))
@@ -148,5 +148,5 @@ export function highlight(points: Point[]): void {
 }
 
 export function clearHighlight(): void {
-  tradeAnimation.selectAll("path.highlight").remove();
+  select("#tradeAnimation").selectAll("path.highlight").remove();
 }

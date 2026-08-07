@@ -165,10 +165,10 @@ This rebalances pre-existing saves to the new model; users keep their world but 
 
 ### Modified
 
-- `src/modules/states-generator.ts` — replace `DEFAULT_SALES_TAX` with form-based generation for both `salesTax` and `pollTax`; add `treasury` init to 0; add `collectTaxes()` method to `StatesModule`; update `State` interface.
-- `src/modules/markets-generator.ts` — `runGlobalTrade` adds exporter tax to landed cost; populates `deal.tax` for market deals.
-- `src/modules/production-generator.ts` — populates `deal.tax` for burg sells (already computes the value, just persist it).
-- `src/modules/markets-generator.ts` (Deal type) — add optional `tax` field.
+- `src/generators/states-generator.ts` — replace `DEFAULT_SALES_TAX` with form-based generation for both `salesTax` and `pollTax`; add `treasury` init to 0; add `collectTaxes()` method to `StatesModule`; update `State` interface.
+- `src/generators/markets-generator.ts` — `runGlobalTrade` adds exporter tax to landed cost; populates `deal.tax` for market deals.
+- `src/generators/production-generator.ts` — populates `deal.tax` for burg sells (already computes the value, just persist it).
+- `src/generators/markets-generator.ts` (Deal type) — add optional `tax` field.
 - `public/main.js` — call `States.collectTaxes()` after `Production.produce()`.
 - `public/modules/dynamic/auto-update.js` — migrate `salesTax`, `pollTax`, `treasury`.
 - States Editor (location TBD — likely `public/modules/dynamic/editors/states-editor.js`) — add Treasury column + dialog.
@@ -185,7 +185,7 @@ This rebalances pre-existing saves to the new model; users keep their world but 
 
 ### Tests
 
-- `src/modules/markets-generator.test.ts` — global trade tax affects landed cost; deal records `tax`.
+- `src/generators/markets-generator.test.ts` — global trade tax affects landed cost; deal records `tax`.
 - New test for `States.collectTaxes()` — single state, mixed local/global deals, poll tax credit.
 
 ## Acceptance criteria

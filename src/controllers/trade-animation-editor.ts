@@ -1,4 +1,5 @@
-import { ensureEl } from "../utils";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
 const INPUTS = [
@@ -68,25 +69,39 @@ const INPUTS = [
   }
 ];
 
-export function open(): void {
+function open(): void {
+  if (customization) return;
   closeDialogs("#tradeAnimationEditor, .stable");
+  renderDialog();
+
+  $("#tradeAnimationEditor").dialog({
+    title: "Trade Animation Editor",
+    resizable: false,
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    close: () => {
+      destroyDialogIfExists("tradeAnimationEditor");
+    }
+  });
+}
+
+function renderDialog(): void {
+  destroyDialogIfExists("tradeAnimationEditor");
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const def of INPUTS) {
     const key = def.key as keyof typeof options.trade.animation;
     const input = ensureEl<HTMLInputElement | HTMLSelectElement>(def.id);
-    const output = document.getElementById(`${def.id}Out`);
     const resetBtn = ensureEl(`${def.id}Reset`);
 
     const current = options.trade.animation[key] ?? def.default;
     input.value = String(current);
-    if (output) output.textContent = String(current);
 
-    input.on("input", () => {
+    input.on("input", e => {
+      // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
+      if (e.target !== e.currentTarget) return;
       const value =
         def.type === "slider" ? (input as HTMLInputElement).valueAsNumber : (input as HTMLSelectElement).value;
       options.trade.animation = { ...options.trade.animation, [key]: value };
-      if (output) output.textContent = String(value);
       localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
       TradeAnimation.restart();
     });
@@ -94,20 +109,10 @@ export function open(): void {
     resetBtn.on("click", () => {
       options.trade.animation = { ...options.trade.animation, [key]: def.default };
       input.value = String(def.default);
-      if (output) output.textContent = String(def.default);
       localStorage.setItem("trade-animation", JSON.stringify(options.trade.animation));
       TradeAnimation.restart();
     });
   }
-
-  $("#tradeAnimationEditor").dialog({
-    title: "Trade Animation Editor",
-    resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: () => {
-      $("#tradeAnimationEditor").dialog("destroy").remove();
-    }
-  });
 }
 
 function buildDialogHTML(): string {
@@ -116,14 +121,11 @@ function buildDialogHTML(): string {
     const input =
       type === "select" && selectOptions
         ? `<select id="${id}" style="width: 100%; font-size: smaller;">${selectOptions.map((opt: string) => `<option value="${opt}" ${opt === current ? "selected" : ""}>${opt}</option>`).join("")}</select>`
-        : `<input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${current}" style="width: 100%; vertical-align:middle"/>`;
+        : `<slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${current}"></slider-input>`;
     return /* html */ `
       <tr data-tip="${tip}">
         <td style="padding: 0">${label}</td>
         <td style="padding: 0">${input}</td>
-        <td style="padding: 0; width:3em; text-align:right">
-          ${type === "slider" ? `<span id="${id}Out" style="font-family:monospace; font-size:.85em">${current}</span>` : ""}
-        </td>
         <td style="padding: 0">
           <button id="${id}Reset" data-tip="Reset to default"
             style="font-size:.85em; padding:1px 5px; margin-left: 0.3em">↺</button>
@@ -132,17 +134,15 @@ function buildDialogHTML(): string {
   }).join("");
 
   return /* html */ `
-    <div id="tradeAnimationEditor" style="display:none">
+    <div id="tradeAnimationEditor" class="dialog" style="display:none">
+      <style>
+        #tradeAnimationEditor slider-input { width: 100%; }
+        #tradeAnimationEditor slider-input input[type=range] { flex: 1; min-width: 0; }
+      </style>
       <table style="border-collapse: collapse;width:100%">
         <tbody>${rows}</tbody>
       </table>
     </div>`;
 }
 
-declare global {
-  interface Window {
-    TradeAnimationEditor: { open: () => void };
-  }
-}
-
-window.TradeAnimationEditor = { open };
+export const TradeAnimationEditor = { open };

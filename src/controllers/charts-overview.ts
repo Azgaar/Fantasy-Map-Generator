@@ -17,6 +17,9 @@ import {
   stackOrderNone,
   sum
 } from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
 
 interface Dimension {
@@ -54,6 +57,7 @@ interface ChartOptions {
   groupBy: string;
   sorting: string;
   type: string;
+  excludeNeutral: boolean;
 }
 
 interface ChartDatum {
@@ -353,17 +357,10 @@ const plotTypeMap: Record<
 
 let charts: ChartOptions[] = [];
 let prevMapId: number | undefined;
-let isInitialized = false;
-
-export function open() {
-  if (!isInitialized) {
-    appendStyleSheet();
-    insertHtml();
-    addListeners();
-    changeViewColumns();
-    updateMetricInfo();
-    isInitialized = true;
-  }
+function open() {
+  renderDialog();
+  changeViewColumns();
+  updateMetricInfo();
 
   closeDialogs("#chartsOverview, .stable");
 
@@ -377,13 +374,98 @@ export function open() {
 
   $("#chartsOverview").dialog({
     title: "Data Charts",
+    width: "60vw",
+    height: "auto",
     position: { my: "center", at: "center", of: "svg" },
     close: handleClose
   });
 }
 
-function appendStyleSheet() {
+function renderDialog() {
+  document.getElementById("chartsOverview")?.remove();
+  const entities = Object.entries(entitiesMap).map(([entity, { label }]): [string, string] => [entity, label]);
+  const plotBy = Object.entries(quantizationMap).map(([plotBy, { label }]): [string, string] => [plotBy, label]);
+
+  const createOption = ([value, label]: [string, string]) => `<option value="${value}">${label}</option>`;
+  const createOptions = (values: [string, string][]) => values.map(createOption).join("");
+
+  const html = /* html */ `<div id="chartsOverview" class="dialog stable">
+    <form id="chartsOverview__form">
+      <div>
+        <button data-tip="Add a chart" type="submit">Plot</button>
+
+        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
+          ${createOptions(entities)}
+        </select>
+
+        <label for="chartsOverview__plotBySelect" data-tip="Select metric to plot (x axis)">
+          <span>by</span>
+          <select id="chartsOverview__plotBySelect">
+            ${createOptions(plotBy)}
+          </select>
+          <i id="chartsOverview__plotByInfo" class="icon-info-circled" style="display: none"></i>
+        </label>
+
+        <label for="chartsOverview__groupBySelect" data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity">
+          <span>grouped by</span>
+          <select id="chartsOverview__groupBySelect">
+            ${createOptions(entities)}
+          </select>
+        </label>
+
+        <label data-tip="Sorting type" for="chartsOverview__sortingSelect">
+          <span>sorted</span>
+          <select id="chartsOverview__sortingSelect">
+            <option value="value">by value</option>
+            <option value="name">by name</option>
+            <option value="natural">naturally</option>
+          </select>
+        </label>
+      </div>
+
+      <div>
+        <label data-tip="Select chart type" for="chartsOverview__chartType">
+          <span>Type</span>
+          <select id="chartsOverview__chartType">
+            <option value="stackedBar" selected>Stacked Bar</option>
+            <option value="normalizedStackedBar">Normalized Bar</option>
+          </select>
+        </label>
+
+        <label data-tip="Show the charts in 1, 2, 3 or 4 columns" for="chartsOverview__viewColumns">
+          <span>Columns</span>
+          <select id="chartsOverview__viewColumns">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </label>
+
+        <label data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
+          <input id="chartsOverview__excludeNeutral" type="checkbox" class="native" />
+          <span>Exclude neutral</span>
+        </label>
+      </div>
+    </form>
+
+    <section id="chartsOverview__charts"></section>
+  </div>`;
+
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  // set defaults
+  ensureEl<HTMLSelectElement>("chartsOverview__entitiesSelect").value = "states";
+  ensureEl<HTMLSelectElement>("chartsOverview__plotBySelect").value = "total_population";
+  ensureEl<HTMLSelectElement>("chartsOverview__groupBySelect").value = "cultures";
+
+  ensureEl("chartsOverview__form").on("submit", addChart as EventListener);
+  ensureEl("chartsOverview__viewColumns").on("change", changeViewColumns);
+  ensureEl("chartsOverview__plotBySelect").on("change", updateMetricInfo);
+
+  document.getElementById("chartsOverviewStyle")?.remove();
   const style = document.createElement("style");
+  style.id = "chartsOverviewStyle";
   style.textContent = /* css */ `
     #chartsOverview {
       max-width: 90vw !important;
@@ -394,21 +476,26 @@ function appendStyleSheet() {
     }
 
     #chartsOverview__form {
+      display: grid;
       font-size: 1.1em;
       margin: 0.3em 0;
-      display: grid;
-      grid-template-columns: auto auto;
-      grid-gap: 0.3em;
-      align-items: start;
-     justify-items: end;
     }
 
-    @media (max-width: 600px) {
-      #chartsOverview__form {
-        font-size: 1em;
-        grid-template-columns: 1fr;
-        justify-items: normal;
-      }
+    #chartsOverview__form > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 0.2em;
+    }
+
+    #chartsOverview__form > div:nth-child(2) {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+    }
+
+    #chartsOverview__form label {
+      display: inline-flex;
+      align-items: center;
     }
 
     #chartsOverview__charts {
@@ -437,79 +524,7 @@ function appendStyleSheet() {
       opacity: 0.6;
     }
   `;
-
   document.head.appendChild(style);
-}
-
-function insertHtml() {
-  const entities = Object.entries(entitiesMap).map(([entity, { label }]): [string, string] => [entity, label]);
-  const plotBy = Object.entries(quantizationMap).map(([plotBy, { label }]): [string, string] => [plotBy, label]);
-
-  const createOption = ([value, label]: [string, string]) => `<option value="${value}">${label}</option>`;
-  const createOptions = (values: [string, string][]) => values.map(createOption).join("");
-
-  const html = /* html */ `<div id="chartsOverview" class="dialog stable">
-    <form id="chartsOverview__form">
-      <div>
-        <button data-tip="Add a chart" type="submit">Plot</button>
-
-        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
-          ${createOptions(entities)}
-        </select>
-
-        <label>by
-          <select data-tip="Select value to plot by (x axis)" id="chartsOverview__plotBySelect">
-            ${createOptions(plotBy)}
-          </select>
-          <i id="chartsOverview__plotByInfo" class="icon-info-circled" style="display: none"></i>
-        </label>
-
-        <label>grouped by
-          <select data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity" id="chartsOverview__groupBySelect">
-            ${createOptions(entities)}
-          </select>
-        </label>
-
-        <label data-tip="Sorting type">sorted
-          <select id="chartsOverview__sortingSelect">
-            <option value="value">by value</option>
-            <option value="name">by name</option>
-            <option value="natural">naturally</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <span data-tip="Chart type">Type</span>
-        <select id="chartsOverview__chartType">
-          <option value="stackedBar" selected>Stacked Bar</option>
-          <option value="normalizedStackedBar">Normalized Bar</option>
-        </select>
-
-        <span data-tip="Columns to display">Columns</span>
-        <select id="chartsOverview__viewColumns">
-          <option value="1" selected>1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-        </select>
-      </div>
-    </form>
-
-    <section id="chartsOverview__charts"></section>
-  </div>`;
-
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-
-  // set defaults
-  ensureEl<HTMLSelectElement>("chartsOverview__entitiesSelect").value = "states";
-  ensureEl<HTMLSelectElement>("chartsOverview__plotBySelect").value = "total_population";
-  ensureEl<HTMLSelectElement>("chartsOverview__groupBySelect").value = "cultures";
-}
-
-function addListeners() {
-  ensureEl("chartsOverview__form").on("submit", addChart as EventListener);
-  ensureEl("chartsOverview__viewColumns").on("change", changeViewColumns);
-  ensureEl("chartsOverview__plotBySelect").on("change", updateMetricInfo);
 }
 
 // Show the selected metric's hint via an info icon tooltip (keeps the dropdown labels compact).
@@ -533,6 +548,7 @@ function addChart(event?: Event) {
   let groupBy = ensureEl<HTMLSelectElement>("chartsOverview__groupBySelect").value;
   const sorting = ensureEl<HTMLSelectElement>("chartsOverview__sortingSelect").value;
   const type = ensureEl<HTMLSelectElement>("chartsOverview__chartType").value;
+  const excludeNeutral = ensureEl<HTMLInputElement>("chartsOverview__excludeNeutral").checked;
 
   const { label: plotByLabel, stackable, provides = [] } = quantizationMap[plotBy];
 
@@ -558,13 +574,13 @@ function addChart(event?: Event) {
     groupBy = entity;
   }
 
-  const chartOptions: ChartOptions = { id: Date.now(), entity, plotBy, groupBy, sorting, type };
+  const chartOptions: ChartOptions = { id: Date.now(), entity, plotBy, groupBy, sorting, type, excludeNeutral };
   charts.push(chartOptions);
   renderChart(chartOptions);
   updateDialogPosition();
 }
 
-function renderChart({ id, entity, plotBy, groupBy, sorting, type }: ChartOptions) {
+function renderChart({ id, entity, plotBy, groupBy, sorting, type, excludeNeutral }: ChartOptions) {
   const {
     label: plotByLabel,
     stringify,
@@ -612,6 +628,10 @@ function renderChart({ id, entity, plotBy, groupBy, sorting, type }: ChartOption
     for (const contribution of contributionsOf(cellId)) {
       const entityId = getEntityId(cellId, contribution);
       const groupId = getGroupId(cellId, contribution);
+
+      // id 0 is the neutral placeholder; skip it when requested
+      if (excludeNeutral && (entityId === 0 || groupId === 0)) continue;
+
       const { value } = contribution;
 
       if (!dataCollection[entityId]) dataCollection[entityId] = { [groupId]: [value] };
@@ -880,9 +900,9 @@ function updateDialogPosition() {
 }
 
 function handleClose() {
-  const $chartContainer = ensureEl("chartsOverview__charts");
-  $chartContainer.innerHTML = "";
   $("#chartsOverview").dialog("destroy");
+  ensureEl("chartsOverview").remove();
+  document.getElementById("chartsOverviewStyle")?.remove();
 }
 
 // config
@@ -916,11 +936,11 @@ function colorsGetter(entity: CollectionKey) {
 }
 
 function biomeNameGetter(i: string | number): string {
-  return biomesData.name[+i] || EMPTY_NAME;
+  return pack.biomes[+i]?.name || EMPTY_NAME;
 }
 
 function biomeColorsGetter(): Record<string, string> {
-  return Object.fromEntries(biomesData.i.map(i => [biomesData.name[i], biomesData.color[i]]));
+  return Object.fromEntries(pack.biomes.map(({ name, color }) => [name, color]));
 }
 
 // markets have no default name, so fall back to the center burg's name
@@ -990,10 +1010,4 @@ function sortData(data: ChartDatum[], sorting: string): ChartDatum[] {
   return data;
 }
 
-declare global {
-  interface Window {
-    ChartsOverview: { open: typeof open };
-  }
-}
-
-window.ChartsOverview = { open };
+export const ChartsOverview = { open };

@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { color, quadtree } from "d3";
 import Delaunator from "delaunator";
-import { type Cells, type Point, type Vertices, Voronoi } from "../modules/voronoi";
+import { type Cells, type Point, type Vertices, Voronoi } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
 import { ensureEl } from "./nodeUtils";
@@ -539,16 +539,9 @@ declare global {
     shouldRegenerateGrid: typeof shouldRegenerateGrid;
     generateGrid: typeof generateGrid;
     findCell: typeof findClosestCell;
-    findGridCell: typeof findGridCell;
-    findGridAll: typeof findGridAll;
     calculateVoronoi: typeof calculateVoronoi;
-    findAll: typeof findAllCellsInRadius;
     getPackPolygon: typeof getPackPolygon;
     getGridPolygon: typeof getGridPolygon;
-    poissonDiscSampler: typeof poissonDiscSampler;
-    isLand: typeof isLand;
-    isWater: typeof isWater;
-    findAllInQuadtree: typeof findAllInQuadtree;
     drawHeights: typeof drawHeights;
   }
 }

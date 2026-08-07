@@ -124,4 +124,4 @@ There is no separate `burg.produced` or `burg.inventory` field; the worker loop'
 - No `Map` / `Set` / `Record` lookups in the hot path; planning state is dense / sparse number arrays.
 - There is no legacy split between raw and manufactured logic; one recursive planner handles both.
 - All flows (goods, money) are mediated by the market layer through `Markets.buy` / `Markets.sell`.
-- Sources: [src/modules/production-generator.ts](../../src/modules/production-generator.ts), [src/modules/markets-generator.ts](../../src/modules/markets-generator.ts), [src/modules/goods-generator.ts](../../src/modules/goods-generator.ts).
+- Sources: [src/generators/production-generator.ts](../../src/generators/production-generator.ts), [src/generators/markets-generator.ts](../../src/generators/markets-generator.ts), [src/generators/goods-generator.ts](../../src/generators/goods-generator.ts).

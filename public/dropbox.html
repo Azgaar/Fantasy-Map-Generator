@@ -28,7 +28,10 @@
             window.sessionStorage.setItem("codeVerifier", auth.codeVerifier);
             window.location.href = authUrl;
           })
-          .catch(error => console.error(error));
+          .catch(error => {
+            console.error(error);
+            returnError("Cannot start Dropbox authentication: " + error.message);
+          });
       }
 
       function returnError(description) {
@@ -44,13 +47,16 @@
           .getAccessTokenFromCode(REDIRECT_URI, code)
           .then(resp => {
             const token = resp.result.access_token;
+            const refreshToken = resp.result.refresh_token;
+            const expiresAt = resp.result.expires_in ? Date.now() + resp.result.expires_in * 1000 : undefined;
             const channel = new BroadcastChannel("dropbox-auth");
-            channel.postMessage({type: "token", token});
+            channel.postMessage({type: "token", token, refreshToken, expiresAt});
             channel.close();
             window.close();
           })
           .catch(error => {
             console.error(error);
+            returnError("Cannot get Dropbox access token: " + error.message);
           });
       }
     </script>

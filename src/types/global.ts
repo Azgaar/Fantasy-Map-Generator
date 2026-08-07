@@ -1,23 +1,61 @@
 import type { Selection } from "d3";
-import type { GoodsModule } from "../modules/goods-generator";
-import type { MarketsModule } from "../modules/markets-generator";
-import type { NameBase } from "../modules/names-generator";
-import type { ProductionModule } from "../modules/production-generator";
+import type { ThreeDOptions } from "../data/view-3d-options";
+import type { GoodsModule } from "../generators/goods-generator";
+import type { MarketsModule } from "../generators/markets-generator";
+import type { ProductionModule } from "../generators/production-generator";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
+  var MOBILE: boolean;
+
+  /**
+   * Migrated helpers, reachable ONLY as `window.X` — deliberately not `var`, so that bare `X`
+   * in a bundled module is a compile error. src/ imports what it calls; these entries exist so
+   * the owning module can register the bridge and classic public/ code can keep calling it.
+   * When the last classic caller of one is gone, delete the entry and its `window.X =` line.
+   */
+  interface Window {
+    // called by a generator that cannot import a renderer (the generator is the smell, not this)
+    drawBurgIcon: typeof import("../renderers/draw-burg-icons").drawBurgIcon;
+    removeBurgIcon: typeof import("../renderers/draw-burg-icons").removeBurgIcon;
+    drawBurgLabel: typeof import("../renderers/draw-burg-labels").drawBurgLabel;
+    removeBurgLabel: typeof import("../renderers/draw-burg-labels").removeBurgLabel;
+    redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
+    redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
+    tip: typeof import("../components/tooltips").tip;
+    clearMainTip: typeof import("../components/tooltips").clearMainTip;
+    showDataTip: typeof import("../components/tooltips").showDataTip;
+    showElementLockTip: typeof import("../components/tooltips").showElementLockTip;
+    lock: typeof import("../utils/preferences").lock;
+    unlock: typeof import("../utils/preferences").unlock;
+    stored: typeof import("../utils/preferences").stored;
+    applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
+    redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
+    fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
+    clearLegend: typeof import("../renderers/draw-legend").clearLegend;
+    fog: typeof import("../renderers/overlays/fogging").fog;
+    unfog: typeof import("../renderers/overlays/fogging").unfog;
+    showInfo: typeof import("../components/app-info").showInfo;
+    applyOption: typeof import("../utils").applyOption;
+    closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
+    confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
+    downloadFile: typeof import("../utils").downloadFile;
+    uploadFile: typeof import("../utils").uploadFile;
+    getPrecipitation: typeof import("../utils").getPrecipitation;
+  }
+
   var seed: string;
   var pack: PackedGraph;
   var grid: any;
   var graphHeight: number;
   var graphWidth: number;
   var TIME: boolean;
+  var INFO: boolean;
   var WARN: boolean;
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
   var options: Options;
 
-  var heightmapTemplates: any;
   var Goods: GoodsModule;
   var Production: ProductionModule;
   var Markets: MarketsModule;
@@ -25,7 +63,6 @@ declare global {
   var urbanDensity: number;
   var urbanization: number;
   var distanceScale: number;
-  var nameBases: NameBase[];
 
   var pointsInput: HTMLInputElement;
   var culturesInput: HTMLInputElement;
@@ -36,6 +73,15 @@ declare global {
   var religionsNumber: HTMLInputElement;
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
+  var areaUnit: HTMLInputElement;
+  var hideLabels: HTMLInputElement;
+  var stylePreset: HTMLSelectElement;
+  var rescaleLabels: HTMLInputElement;
+  var temperatureScale: HTMLSelectElement;
+
+  // Global variables defined in main.js
+  var viewX: number;
+  var viewY: number;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
@@ -63,16 +109,30 @@ declare global {
   var viewbox: Selection<SVGElement, unknown, null, undefined>;
   var routes: Selection<SVGElement, unknown, null, undefined>;
   var debug: Selection<SVGElement, unknown, null, undefined>;
-  var biomesData: {
-    i: number[];
-    name: string[];
-    color: string[];
-    biomesMatrix: Uint8Array[];
-    habitability: number[];
-    iconsDensity: number[];
-    icons: string[][];
-    cost: number[];
-  };
+  // SVG layer selections reassigned on map load (main.js)
+  var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
+  var ocean: Selection<SVGGElement, unknown, null, undefined>;
+  var oceanPattern: Selection<SVGGElement, unknown, null, undefined>;
+  var landmass: Selection<SVGGElement, unknown, null, undefined>;
+  var texture: Selection<SVGGElement, unknown, null, undefined>;
+  var biomes: Selection<SVGGElement, unknown, null, undefined>;
+  var cells: Selection<SVGGElement, unknown, null, undefined>;
+  var gridOverlay: Selection<SVGGElement, unknown, null, undefined>;
+  var coordinates: Selection<SVGGElement, unknown, null, undefined>;
+  var compass: Selection<SVGGElement, unknown, null, undefined>;
+  var terrain: Selection<SVGGElement, unknown, null, undefined>;
+  var zones: Selection<SVGGElement, unknown, null, undefined>;
+  var borders: Selection<SVGGElement, unknown, null, undefined>;
+  var stateBorders: Selection<SVGGElement, unknown, null, undefined>;
+  var provinceBorders: Selection<SVGGElement, unknown, null, undefined>;
+  var roads: Selection<SVGGElement, unknown, null, undefined>;
+  var trails: Selection<SVGGElement, unknown, null, undefined>;
+  var searoutes: Selection<SVGGElement, unknown, null, undefined>;
+  var prec: Selection<SVGGElement, unknown, null, undefined>;
+  var population: Selection<SVGGElement, unknown, null, undefined>;
+  var icons: Selection<SVGGElement, unknown, null, undefined>;
+  var ruler: Selection<SVGGElement, unknown, null, undefined>;
+  var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
     burgLabels: { [key: string]: { [key: string]: string } };
@@ -82,9 +142,43 @@ declare global {
   };
 
   var mapId: number;
-  var getArea: (rawArea: number) => number;
-  var getAreaUnit: (squareMark?: string) => string;
-  var getPrecipitation: (prec: number) => string;
+
+  // IO / loading helpers defined in classic public/ scripts
+  var ldb: {
+    get: (key: string) => Promise<Blob | undefined>;
+    set: (key: string, value: Blob) => Promise<void>;
+  };
+  var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
+  var mapHistory: { created: number; [key: string]: unknown }[];
+  var customPresetPrefix: string;
+
+  var getCurrentPreset: () => void;
+  var focusOn: () => void;
+  var fitMapToScreen: () => void;
+  var regenerateMap: (reason?: string) => void;
+  var generateMapOnLoad: () => void;
+  var addCustomColorScheme: (scheme: string) => void;
+  var updateTextureSelectValue: (href: string) => void;
+  var toggleRulers: () => void;
+  var toggleRelief: () => void;
+  var toggleZones: () => void;
+  var calculateFriendlyGridSize: () => void;
+  // heightmap editor globals
+  var color: (value: number) => string;
+  var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
+  var undraw: () => void;
+  var rankCells: () => void;
+  var generatePrecipitation: () => void;
+  var changeViewMode: (event?: Event) => void;
+  var resetZoom: (duration?: number) => void;
+  var RgbQuant: any; // external RgbQuant image-quantization lib
+
+  var drawTexture: () => void;
+  var drawRoutes: () => void;
+  var drawZones: () => void;
+  var drawGrid: () => void;
+  var toggleEmblems: (event?: MouseEvent) => void;
+  var shiftCompass: () => void;
 
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
@@ -92,44 +186,45 @@ declare global {
   var FlatQueue: any;
 
   var THREE: any; // lazy-loaded
-  var getMapURL: (type: string, options?: Record<string, unknown>) => Promise<string>;
 
-  var tip: (
-    message: string,
-    autoHide?: boolean,
-    type?: "info" | "warn" | "error" | "success",
-    timeout?: number
-  ) => void;
-  var locked: (settingId: string) => boolean;
-  var unlock: (settingId: string) => void;
   var $: (selector: any) => any;
   var scale: number;
   var changeFont: () => void;
-  var getFriendlyHeight: (coords: [number, number]) => string;
   var addLakesInDeepDepressions: () => void;
   var openNearSeaLakes: () => void;
   var calculateMapCoordinates: () => void;
   var calculateTemperatures: () => void;
   var reGraph: () => void;
-  var createDefaultRuler: () => void;
   var showStatistics: () => void;
-  var closeDialogs: (except?: string) => void;
-  var editWorld: () => void;
+  var drawLayers: () => void;
+  var drawPrecipitation: () => void;
+  var drawCoordinates: () => void;
+  var drawRivers: () => void;
+  var applyGraphSize: () => void;
+  var cellsDensityMap: Record<number, number>;
+  var changeCellsDensity: (value: string) => void;
+  var getCellsDensityColor: (cells: number) => string;
   var showExportPane: () => void;
-  var UITour: { start: () => void };
-  var TradeDetails: { open: (batch: any) => void };
-  var getHeight: (h: number) => string;
-  var getLatitude: (y: number, precision?: number) => number;
-  var getLongitude: (x: number, precision?: number) => number;
-  var getFileName: (name?: string) => string;
   var customization: number;
-  var speak: (text: string) => void;
-  var uploadFile: (el: HTMLInputElement, callback: (data: string) => void) => void;
-  var downloadFile: (content: string | Blob, name: string, type?: string) => void;
   var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
+  var panMap: (x: number, y: number) => void;
+  var setMapZoom: (value: number) => void;
+  var changeMapZoom: (factor: number) => void;
   var modules: Record<string, boolean>;
 
   // Legacy UI globals
+  var toggleOptions: (event?: Event) => void;
+  var hideOptions: (event?: Event) => void;
+  var toggleTexture: (event?: Event) => void;
+  var toggleHeight: (event?: Event) => void;
+  var toggleLakes: (event?: Event) => void;
+  var toggleGrid: (event?: Event) => void;
+  var toggleCoordinates: (event?: Event) => void;
+  var toggleCompass: (event?: Event) => void;
+  var toggleTemperature: (event?: Event) => void;
+  var togglePrecipitation: (event?: Event) => void;
+  var toggleScaleBar: (event?: Event) => void;
+  var toggleVignette: (event?: Event) => void;
   var turnButtonOn: (buttonId: string) => void;
   var turnButtonOff: (buttonId: string) => void;
   var toggleGoods: (event?: MouseEvent) => void;
@@ -137,31 +232,102 @@ declare global {
   var drawMarketsLayer: () => void;
   var toggleTrade: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
-  var editStyle: (layer: string) => void;
-  var fitContent: () => number;
-  var applySorting: (header: HTMLElement) => void;
+  var editStyle: (layer: string, group?: string) => void;
   var capitalize: (str: string) => string;
   var rn: (value: number, decimals?: number) => number;
-  var confirmationDialog: (options: { title: string; message: string; confirm: string; onConfirm: () => void }) => void;
   var openURL: (url: string) => void;
-  var openPicker: (color: string, callback: (color: string) => void, options?: any) => void;
-  var clearLegend: () => void;
-  var drawLegend: (title: string, data: any[]) => void;
-  var clearMainTip: () => void;
-  var showMainTip: () => void;
-  var moveCircle: (x: number, y: number, r?: number) => void;
-  var removeCircle: () => void;
-  var restoreDefaultEvents: () => void;
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
-  var refreshAllEditors: () => void;
   var toggleCells: () => void;
-  var drawGoods: (displayedGoods: Set<number>) => void;
-  var regenerateGoods: () => void;
-  var regenerateMarkets: () => void;
-  var regenerateEconomy: () => void;
-  var regenerateProduction: () => void;
+  var drawGoods: () => void;
   var legend: any;
+
+  // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
+  // (src/utils, src/modules) and globally-typed generators (Names, Cultures, Religions, States,
+  // Provinces, Burgs, COA, COArenderer) are used directly instead.
+  var drawCultures: () => void;
+  var drawReligions: () => void;
+  var drawStates: () => void;
+  var drawBorders: () => void;
+  var drawProvinces: () => void;
+  var drawStateLabels: (ids?: number[]) => void;
+  var drawPopulation: () => void;
+
+  var toggleCultures: () => void;
+  var toggleStates: () => void;
+  var toggleBiomes: () => void;
+  var toggleReligions: () => void;
+  var toggleProvinces: () => void;
+  var toggleBorders: () => void;
+  var togglePopulation: () => void;
+  var toggleMilitary: (event?: MouseEvent) => void;
+  var toggleLabels: (event?: MouseEvent) => void;
+  var toggleBurgIcons: (event?: MouseEvent) => void;
+  var toggleRoutes: (event?: MouseEvent) => void;
+  var toggleRivers: (event?: MouseEvent) => void;
+  var toggleIce: (event?: MouseEvent) => void;
+  var toggleMarkers: (event?: MouseEvent) => void;
+  var drawMarkers: () => void;
+
+  var tinymce:
+    | {
+        _setBaseUrl: (url: string) => void;
+        init: (config: Record<string, unknown>) => void;
+        remove: () => void;
+        activeEditor?: { getContent: () => string; setContent: (content: string) => void };
+      }
+    | undefined;
+
+  var aleaPRNG: (seed: string | number) => () => number;
+  var heightmapColorSchemes: Record<string, unknown>;
+  var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
+
+  var cults: Selection<SVGGElement, unknown, null, undefined>;
+  var relig: Selection<SVGGElement, unknown, null, undefined>;
+  var regions: Selection<SVGGElement, unknown, null, undefined>;
+  var statesBody: Selection<SVGGElement, unknown, null, undefined>;
+  var statesHalo: Selection<SVGGElement, unknown, null, undefined>;
+  var armies: Selection<SVGGElement, unknown, null, undefined>;
+
+  type MilitaryUnit = {
+    icon: string;
+    name: string;
+    rural: number;
+    urban: number;
+    crew: number;
+    power: number;
+    type: string;
+    separate: number;
+    biomes?: number[];
+    states?: number[];
+    cultures?: number[];
+    religions?: number[];
+  };
 }
+
+type Options = {
+  year: number;
+  era: string;
+  eraShort: string;
+  pinNotes: boolean;
+  winds: number[];
+  temperatureEquator: number;
+  temperatureNorthPole: number;
+  temperatureSouthPole: number;
+  mapSize: number; // map size in % of the world
+  latitude: number; // North-South map shift in %, 50 is centered on equator
+  longitude: number; // West-East map shift in %, 50 is centered on prime meridian
+  prec: number; // precipitation modifier in %
+  stateLabelsMode: string;
+  showBurgPreview: boolean;
+  burgs: {
+    groups: BurgGroup[];
+  };
+  military: MilitaryUnit[];
+  trade: {
+    animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
+  };
+  threeD: ThreeDOptions;
+};
 
 type BurgGroup = {
   name: string;
@@ -175,39 +341,4 @@ type BurgGroup = {
   features?: Record<string, boolean>;
   biomes?: number[];
   preview?: string;
-};
-
-type MilitaryUnit = {
-  icon: string;
-  name: string;
-  rural: number;
-  urban: number;
-  crew: number;
-  power: number;
-  type: string;
-  separate: number;
-  biomes?: number[];
-  states?: number[];
-  cultures?: number[];
-  religions?: number[];
-};
-
-type Options = {
-  year: number;
-  era: string;
-  eraShort: string;
-  pinNotes: boolean;
-  winds: number[];
-  temperatureEquator: number;
-  temperatureNorthPole: number;
-  temperatureSouthPole: number;
-  stateLabelsMode: string;
-  showBurgPreview: boolean;
-  burgs: {
-    groups: BurgGroup[];
-  };
-  military: MilitaryUnit[];
-  trade: {
-    animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
-  };
 };

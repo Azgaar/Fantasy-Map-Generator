@@ -9,19 +9,22 @@ import {
   curveMonotoneX,
   curveNatural,
   line,
-  pointer,
   type Selection,
   scaleLinear,
   select
 } from "d3";
-import type { Burg } from "../modules/burgs-generator";
-import type { PackedGraphFeature } from "../modules/features";
-import type { Province } from "../modules/provinces-generator";
-import type { State } from "../modules/states-generator";
-import { ensureEl, rn } from "../utils";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { tip } from "@/components/tooltips";
+import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
+import type { Burg } from "../generators/burgs-generator";
+import type { Feature } from "../generators/features";
+import type { Province } from "../generators/provinces-generator";
+import type { State } from "../generators/states-generator";
+import { ensureEl, getPointer, rn } from "../utils";
 
-export function open(cells: number[], routeLen: number, isRiver: boolean): void {
+function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");
+  renderDialog();
   ensureEl("epCurve").on("change", draw);
   ensureEl("epSave").on("click", downloadCSV);
   ensureEl("epSaveSVG").on("click", downloadSVG);
@@ -84,7 +87,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
     let h = pack.cells.h[cell];
 
     if (h < 20) {
-      const f = pack.features[pack.cells.f[cell]] as PackedGraphFeature;
+      const f = pack.features[pack.cells.f[cell]] as Feature;
       h = f.type === "lake" ? f.height : 20;
     }
 
@@ -269,7 +272,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
       const religionName = (pack.religions[pack.cells.religion[cell]] as { name: string }).name;
       const cultureName = (pack.cultures[pack.cells.culture[cell]] as { name: string }).name;
       const dataTip = [
-        biomesData.name[biome],
+        pack.biomes[biome].name,
         provinceName,
         stateName,
         religionName,
@@ -286,8 +289,8 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
         .attr("y", yOffset + chartHeight)
         .attr("width", tileWidth)
         .attr("height", biomesHeight)
-        .attr("fill", biomesData.color[biome])
-        .attr("stroke", biomesData.color[biome])
+        .attr("fill", pack.biomes[biome].color)
+        .attr("stroke", pack.biomes[biome].color)
         .attr("data-tip", dataTip);
     }
 
@@ -439,7 +442,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
       .attr("fill", "transparent")
       .style("cursor", "crosshair")
       .on("mousemove", (event: MouseEvent) => {
-        const [mx] = pointer(event);
+        const [mx] = getPointer(event);
         const idx = Math.max(
           0,
           Math.min(cells.length - 1, Math.round(((mx - xOffset) / chartWidth) * (cells.length - 1)))
@@ -454,7 +457,7 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
           [
             `${dist} ${distanceUnitInput.value} from start`,
             `Elevation: ${chartData.height[idx]} ${heightUnit.value}`,
-            biomesData.name[chartData.biome[idx]],
+            pack.biomes[chartData.biome[idx]].name,
             burgId ? ((pack.burgs[burgId] as Burg).name ?? null) : null
           ]
             .filter(Boolean)
@@ -493,16 +496,16 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
         k + 1,
         x,
         y,
-        getLatitude(y, 2),
-        getLongitude(x, 2),
+        getLatitude(y, mapCoordinates, graphHeight, 2),
+        getLongitude(x, mapCoordinates, graphWidth, 2),
         cell,
         getHeight(h),
         h,
         rn(pop * populationRate),
         burg?.name ?? "",
         burgPop,
-        biomesData.name[pack.cells.biome[cell]],
-        biomesData.color[pack.cells.biome[cell]],
+        pack.biomes[pack.cells.biome[cell]].name,
+        pack.biomes[pack.cells.biome[cell]].color,
         culture.name,
         culture.color,
         religion.name,
@@ -555,21 +558,38 @@ export function open(cells: number[], routeLen: number, isRiver: boolean): void 
   }
 
   function closeElevationProfile(): void {
-    ensureEl("epCurve").off("change", draw);
-    ensureEl("epSave").off("click", downloadCSV);
-    ensureEl("epSaveSVG").off("click", downloadSVG);
-    ensureEl("epSavePNG").off("click", downloadPNG);
-    ensureEl("elevationGraph").innerHTML = "";
     modules.elevation = false;
+    $("#elevationProfile").dialog("destroy");
+    ensureEl("elevationProfile").remove();
   }
 }
 
-declare global {
-  interface Window {
-    ElevationProfile: {
-      open: (cells: number[], routeLen: number, isRiver: boolean) => void;
-    };
-  }
+function renderDialog(): void {
+  document.getElementById("elevationProfile")?.remove();
+  const editorHtml = /* html */ `<div id="elevationProfile" class="dialog" width="100%">
+      <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div style="text-align: center">
+        <div id="epControls">
+          <span data-tip="Set curve profile"
+            >Curve:
+            <select id="epCurve">
+              <option>Linear</option>
+              <option>Bundle</option>
+              <option>Cubic Catmull-Rom</option>
+              <option selected>Monotone X</option>
+              <option>Natural</option>
+            </select>
+          </span>
+          <span
+            ><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button
+          ></span>
+          <span><button id="epSaveSVG" data-tip="Download the chart as an SVG image">SVG</button></span>
+          <span><button id="epSavePNG" data-tip="Download the chart as a PNG image">PNG</button></span>
+          <span id="epstats" style="margin-left: 1em; color: #555; font-size: 0.85em"></span>
+        </div>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 }
 
-window.ElevationProfile = { open };
+export const ElevationProfile = { open };

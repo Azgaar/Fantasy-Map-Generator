@@ -1,6 +1,6 @@
 import { color as parseColor } from "d3";
 import type * as THREEType from "three";
-import { type ErosionBakeResult, heightAt } from "../modules/erosion-bake";
+import { type ErosionBakeResult, heightAt } from "./erosion-bake";
 
 let renderTarget: THREEType.WebGLRenderTarget | null = null;
 
@@ -26,7 +26,7 @@ export function getSatelliteBiomeData(biomeId: number, fallbackBiomeId: number) 
   const builtIn = BIOME_SATELLITE[biomeId];
   if (builtIn) return builtIn;
 
-  const customColor = parseColor(biomesData.color[biomeId])?.rgb();
+  const customColor = parseColor(pack.biomes[biomeId].color)?.rgb();
   if (!customColor) return fallback;
 
   return {

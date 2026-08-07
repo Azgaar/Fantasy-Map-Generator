@@ -1,3 +1,4 @@
+import { select } from "d3";
 import { rn } from "../utils";
 
 interface Marker {
@@ -21,7 +22,6 @@ interface Marker {
 declare global {
   var drawMarkers: () => void;
   var drawMarker: (marker: Marker, rescale?: number) => string;
-  var getPin: (shape?: string, fill?: string, stroke?: string) => string;
 }
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
@@ -70,27 +70,37 @@ function markerRenderer(marker: Marker, rescale = 1): string {
 
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
-      <g>${getPin(pin, fill, stroke)}</g>
+      <g>${getPinForShape(pin, fill, stroke)}</g>
       <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
       <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />
     </svg>`;
 }
 
+// transient set of marker ids the map should render, driven by the Markers Overview filter.
+// null = no filter (render everything). Not persisted — never touches pack data or the .map file.
+let visibleMarkerIds: Set<number> | null = null;
+
+const setMarkersFilter = (ids: number[] | null): void => {
+  visibleMarkerIds = ids ? new Set(ids) : null;
+};
+
 const markersRenderer = (): void => {
   TIME && console.time("drawMarkers");
 
-  const rescale = +markers.attr("rescale");
-  const pinned = +markers.attr("pinned");
+  const rescale = +select("#markers").attr("rescale");
+  const pinned = +select("#markers").attr("pinned");
 
-  const markersData: Marker[] = pinned
+  let markersData: Marker[] = pinned
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
+  if (visibleMarkerIds) markersData = markersData.filter((marker: Marker) => visibleMarkerIds!.has(marker.i));
   const html = markersData.map(marker => markerRenderer(marker, rescale));
-  markers.html(html.join(""));
+  select("#markers").html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");
 };
 
 window.drawMarkers = markersRenderer;
 window.drawMarker = markerRenderer;
-window.getPin = getPinForShape;
+
+export { getPinForShape as getPin, markerRenderer as drawMarker, markersRenderer as drawMarkers, setMarkersFilter };
