@@ -3,7 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import type { Route } from "@/generators/routes-generator";
+import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
@@ -87,7 +87,7 @@ function routesOverviewAddLines(): void {
 
   for (const route of filteredRoutes) {
     if (!route.points || route.points.length < 2) continue;
-    route.name = route.name || Routes.generateName(route);
+    route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
     route.length = route.length || Routes.getLength(route.i);
     const length = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
 

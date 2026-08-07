@@ -124,7 +124,7 @@ function getRiverLabelsData(): PathLabelData[] {
       type: "river",
       text: river.label?.text ?? `${river.name} ${river.type}`,
       group: river.label?.group || "river",
-      pathPoints: formatPathPoints(points as Point[]),
+      pathPoints: points,
       startOffset: river.label?.startOffset,
       anchor: getAchor(...getMiddlePoint(points), river.label?.dx, river.label?.dy)
     });
@@ -135,14 +135,15 @@ function getRiverLabelsData(): PathLabelData[] {
 function getRouteLabelsData(): PathLabelData[] {
   const labels: PathLabelData[] = [];
   for (const route of pack.routes) {
-    if (!route.label?.pathPoints || !route.name) continue;
-    const points = formatPathPoints(route.label?.pathPoints);
+    if (!route.name) continue;
+    const points = formatPathPoints(route.label?.pathPoints || (route.points as Point[]));
+    if (!points.length) continue;
     labels.push({
       ...route.label,
       id: `routeLabel${route.i}`,
       entityId: route.i,
       type: "route",
-      text: route.label?.text ?? route.name ?? "",
+      text: route.label?.text ?? route.name,
       group: route.label?.group || "route",
       pathPoints: points,
       startOffset: route.label?.startOffset,
@@ -168,7 +169,6 @@ function getAddedLabelsData(): LabelData[] {
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
-  console.log("reconcileLabels");
   if (!scene.valid || (!context.renderAll && !layerIsOn("toggleLabels"))) return;
   const labels = findElement(context.root, "labels");
   const textPaths = findElement(context.root, "textPaths");

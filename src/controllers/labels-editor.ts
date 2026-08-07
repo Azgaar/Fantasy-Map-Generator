@@ -4,6 +4,7 @@ import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels-generator";
+import { UNNAMED_ROUTE } from "@/generators/routes-generator";
 import type { Point } from "@/generators/voronoi";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
@@ -393,7 +394,7 @@ const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
   },
   route: label => {
     const points = "pathPoints" in label ? label.pathPoints : [];
-    return Routes.generateName({ group: label.group, points });
+    return Routes.generateName({ group: label.group, points }) || UNNAMED_ROUTE;
   }
 };
 

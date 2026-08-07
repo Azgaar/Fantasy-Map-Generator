@@ -2,7 +2,7 @@ import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import type { Route } from "@/generators/routes-generator";
+import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
@@ -104,7 +104,7 @@ function getRoute(): Route {
 }
 
 function updateRouteData(route: Route): void {
-  route.name = route.name || Routes.generateName(route);
+  route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
   ensureEl<HTMLInputElement>("routeName").value = route.name;
 
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
@@ -302,7 +302,7 @@ function openJoinRoutesDialog(): void {
 
   if (candidateRoutes.length) {
     const options = candidateRoutes.map((r: Route) => {
-      r.name = r.name || Routes.generateName(r);
+      r.name = r.name || Routes.generateName(r) || UNNAMED_ROUTE;
       r.length = r.length || Routes.getLength(r.i);
       const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;

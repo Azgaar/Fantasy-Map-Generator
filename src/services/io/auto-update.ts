@@ -1481,7 +1481,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     labels.replaceChildren();
     if (layerIsOn("toggleLabels")) drawLabels();
 
-    // other style changes
+    // other changes
     select("#coastline > #sea_island").attr("filter", null);
   }
 }
