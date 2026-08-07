@@ -12,3 +12,4 @@
 /memory
 .github/agents/bmad-*
 .github/prompts/bmad-*
+.serena/project.yml

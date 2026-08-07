@@ -5,7 +5,7 @@ import { toggleSaveReminder } from "@/services/autosave";
 import { findEl, minmax } from "@/utils";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
-import { panMap, setMapZoom } from "./zoom";
+import { changeMapZoom, panMap, setMapZoom } from "./zoom";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.addEventListener("keydown", handleKeydown);

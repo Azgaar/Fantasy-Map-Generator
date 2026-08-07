@@ -70,10 +70,12 @@ function handleZoomPerFrame(): void {
 
 /** Rewrite map content once the gesture settles */
 function handleZoomEnd(): void {
-  if (frameId !== null) cancelAnimationFrame(frameId);
-  frameId = null;
+  if (frameId !== null) {
+    cancelAnimationFrame(frameId);
+    frameId = null;
+    handleZoomPerFrame();
+  }
 
-  ViewportLayers.renderNow();
   invokeActiveZooming();
 }
 

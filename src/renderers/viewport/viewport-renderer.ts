@@ -179,7 +179,7 @@ export class ViewportRenderer {
 }
 
 const OVERSCAN_PIXELS = 80;
-const GUARD_PIXELS = 80;
+const GUARD_PIXELS = OVERSCAN_PIXELS / 2;
 
 export const ViewportLayers = new ViewportRenderer({
   getViewport: () => ({ scale, x: viewX, y: viewY, width: svgWidth, height: svgHeight }),

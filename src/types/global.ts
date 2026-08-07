@@ -201,7 +201,6 @@ declare global {
   var customization: number;
   var zoom: ZoomBehavior<SVGSVGElement, unknown>;
   var zoomTo: (x: number, y: number, zoom?: number, duration?: number) => void;
-  var changeMapZoom: (factor: number) => void;
   var modules: Record<string, boolean>;
 
   // Legacy UI globals
