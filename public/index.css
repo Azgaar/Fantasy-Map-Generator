@@ -1740,6 +1740,156 @@ div.editorLine {
   font-size: 0.9em;
 }
 
+/* Journey editor: header row + top toolbar layout */
+#journeyEditor #journeyHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto auto auto;
+  gap: 0.4em;
+  align-items: center;
+  margin-bottom: 0.5em;
+}
+#journeyEditor #journeyColor {
+  width: 2em;
+  height: 1.4em;
+  padding: 0;
+  border: 1px solid #9c9186;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#journeyEditor #journeyColor.inherited {
+  opacity: 0.55;
+}
+#journeyEditor #journeyFooter {
+  margin-bottom: 0.4em;
+}
+/* Journey editor: segment rows share the header's grid template */
+#journeyEditor #segmentsTable > .header,
+#journeyEditor #segmentsBody > div {
+  display: grid;
+  grid-template-columns: 2em 7em 8em 4.5em 7em 7em 5em 4em 4em 6em 3.6em 2em 1.6em 1.6em 1.6em 1.6em 1.6em;
+  gap: 0.3em;
+  padding: 0.15em 0.2em;
+  align-items: center;
+}
+#journeyEditor #segmentsBody > div > * {
+  min-width: 0;
+}
+#journeyEditor #segmentsBody input:not([type="color"]),
+#journeyEditor #segmentsBody select {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.9em;
+}
+#journeyEditor .cellPick {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 3px;
+  border: 1px solid transparent;
+}
+#journeyEditor .cellPick:hover {
+  border-color: var(--dark-solid, #5f554c);
+}
+#journeyEditor .cellPick.unset {
+  color: #8a8078;
+  font-style: italic;
+}
+#journeyEditor .segColor {
+  width: 1.7em;
+  height: 1.3em;
+  padding: 0;
+  border: 1px solid #9c9186;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#journeyEditor .segColor.inherited {
+  opacity: 0.55;
+}
+/* Swatch and its reset share one grid cell, so the track stays put either way */
+#journeyEditor .segColorCell {
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+}
+#journeyEditor .segColorReset,
+#journeyEditor #journeyColorReset {
+  font-size: 0.85em;
+  line-height: 1;
+  color: #8b1a1a;
+  padding: 0 2px;
+}
+#journeyEditor .segColorReset:hover,
+#journeyEditor #journeyColorReset:hover {
+  color: #d02020;
+}
+/* Overview swatch — the colour the journey is actually drawn in on the map */
+#journeysOverview .journeySwatch {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.4em;
+  border: 1px solid #9c9186;
+  border-radius: 2px;
+  vertical-align: baseline;
+}
+#journeyEditor .roadsChip {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.85em;
+  border: 1px solid;
+}
+#journeyEditor .roadsChip.on {
+  color: #2a6e2a;
+  border-color: #2a6e2a;
+}
+#journeyEditor .roadsChip.off {
+  color: #8b1a1a;
+  border-color: #8b1a1a;
+}
+#journeyEditor .roadsChip.inactive {
+  opacity: 0.35;
+  cursor: default;
+  border-style: dashed;
+  color: #999;
+}
+#journeyEditor .segActive {
+  color: #2a6e2a;
+  font-weight: bold;
+}
+#journeyDrawToolbar {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.4em 0.7em;
+  background: #fbf7ee;
+  border: 1px solid #9c9186;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-size: 0.9em;
+}
+#journeyDrawToolbar #journeyDrawStatus {
+  font-weight: bold;
+  color: #4a4038;
+  padding-right: 0.4em;
+  border-right: 1px solid #d4c9b8;
+  margin-right: 0.2em;
+}
+#journeyDrawToolbar button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+#journeyDrawToolbar .journeyDrawHint {
+  color: #6b6058;
+  font-style: italic;
+  font-size: 0.85em;
+  margin-left: 0.4em;
+}
+
 #emblemDownloadControl > input {
   width: 4.1em;
 }

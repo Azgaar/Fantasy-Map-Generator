@@ -86,6 +86,14 @@ let fogging = viewbox
   .append("g")
   .attr("id", "fogging")
   .style("display", "none");
+let journeys = viewbox
+  .append("g")
+  .attr("id", "journeys")
+  .attr("fill", "none")
+  .attr("stroke", "#8b1a1a")
+  .attr("stroke-width", 1.8)
+  .attr("stroke-linecap", "round")
+  .attr("marker-end", "url(#journey-arrow)");
 let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
 var debug = viewbox.append("g").attr("id", "debug");
 
@@ -687,6 +695,7 @@ async function generate(options) {
     reGraph();
     Features.markupPack();
     Measurers.createDefaultRuler();
+    Journeys.sync();
 
     Rivers.generate();
     Biomes.generate();
@@ -722,6 +731,7 @@ async function generate(options) {
     Military.generate();
     Markers.generate();
     Zones.generate();
+    Journeys.generateDemo();
 
     drawScaleBar(scaleBar, scale);
     Names.getMapName();

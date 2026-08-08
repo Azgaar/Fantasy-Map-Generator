@@ -82,6 +82,8 @@ function prepareMapData(): string {
   const coords = JSON.stringify(mapCoordinates);
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
+  const journeys = JSON.stringify(pack.journeys ?? []);
+  const transportTypes = JSON.stringify(pack.transportTypes ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
   // save svg
@@ -96,6 +98,7 @@ function prepareMapData(): string {
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
   if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
+  cloneEl.querySelector("#journeyControlPoints")?.remove(); // transient journey path-editing handles
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
@@ -185,7 +188,9 @@ function prepareMapData(): string {
     deals,
     pack.cells.market,
     customGoodIcons,
-    measurers
+    measurers,
+    journeys,
+    transportTypes
   ].join("\r\n");
   return mapData;
 }

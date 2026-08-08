@@ -20,5 +20,6 @@ import "./measurers-generator";
 import "./goods-generator";
 import "./production-generator";
 import "./markets-generator";
+import "./journeys-generator";
 import "../renderers/draw-goods";
 import "./resample";

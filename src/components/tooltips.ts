@@ -11,6 +11,8 @@ const TIP_BACKGROUND: Record<TipType, string> = {
 
 const getTooltip = () => ensureEl("tooltip");
 
+let autoClearTimeout: number | undefined;
+
 /**
  * Show a message in the tooltip line
  * @param message - text to show, may contain html
@@ -28,7 +30,12 @@ export function tip(message: string, main = false, type: TipType = "info", time 
     tooltip.dataset.color = tooltip.style.background;
   }
 
-  if (time) setTimeout(clearMainTip, time);
+  // Only a pinned or timed tip supersedes a pending auto-clear. Transient hover tips
+  // must leave it alone, or moving the mouse would keep a timed message alive forever.
+  if (main || time) {
+    if (autoClearTimeout) clearTimeout(autoClearTimeout);
+    autoClearTimeout = time ? window.setTimeout(clearMainTip, time) : undefined;
+  }
 }
 
 export function showMainTip(): void {
@@ -38,6 +45,10 @@ export function showMainTip(): void {
 }
 
 export function clearMainTip(): void {
+  if (autoClearTimeout) {
+    clearTimeout(autoClearTimeout);
+    autoClearTimeout = undefined;
+  }
   const tooltip = getTooltip();
   tooltip.dataset.color = "";
   tooltip.dataset.main = "";

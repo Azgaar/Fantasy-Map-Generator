@@ -132,6 +132,9 @@ declare global {
   var population: Selection<SVGGElement, unknown, null, undefined>;
   var icons: Selection<SVGGElement, unknown, null, undefined>;
   var ruler: Selection<SVGGElement, unknown, null, undefined>;
+  var journeys: Selection<SVGGElement, unknown, null, undefined>;
+  var toggleJourneys: (event?: MouseEvent) => void;
+  var drawJourneys: () => void;
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[];
   var style: {
