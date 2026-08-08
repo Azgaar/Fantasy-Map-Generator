@@ -49,7 +49,7 @@ function renderDialog(): void {
             <th data-tip="Rendering order: higher values are rendered on top">Order</th>
             <th data-tip="Type group name">Name</th>
             <th data-tip="Burg preview generator">Preview generator</th>
-            <th data-tip="Set min population constraint" colspan="3">Population</th>
+            <th data-tip="Set min and max population constraint in population points (see the multiplier in Units Editor)" colspan="3">Population</th>
             <th data-tip="Select allowed biomes">Biomes</th>
             <th data-tip="Select allowed states">States</th>
             <th data-tip="Select allowed cultures">Cultures</th>
@@ -66,7 +66,8 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      Applying changes reclassifies Burgs. Locked burgs are not affected. Group changes also affect Label Groups.
+      Burg population is calculated as value * population_point * urbanization_rate, see the Units Editor.
+      <br>Applying changes reclassifies Burgs. Locked burgs are not affected. Group changes also affect Label Groups.
       <br>Burg labels manually assigned to another Label Group keep their manual assignment.
     </div>
   </div>`;

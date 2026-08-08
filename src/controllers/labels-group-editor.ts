@@ -85,6 +85,7 @@ function renderDialog(): void {
           <col style="width:3.5em">
           <col style="width:3.5em">
           <col style="width:8.5em">
+          <col style="width:3.5em">
           <col style="width:3.2em">
           <col style="width:3.2em">
         </colgroup>
@@ -97,6 +98,7 @@ function renderDialog(): void {
             <th data-tip="Minimum zoom level to show the group">Zoom min</th>
             <th data-tip="Maximum zoom level to show the group">Zoom max</th>
             <th data-tip="Layer that must be toggled on for this group to be shown">Layer dependency</th>
+            <th data-tip="Number of labels currently assigned to this group">Labels</th>
             <th data-tip="Rendering order: lower groups are rendered on top">Order</th>
             <th data-tip="Edit style or remove group">Actions</th>
           </tr>
@@ -119,17 +121,51 @@ function renderDialog(): void {
 }
 
 function addLines(): void {
-  ensureEl("labelGroupsBody").innerHTML = options.labels.groups.map(group => createLine(group)).join("");
+  const counts = countLabelsByGroup();
+  ensureEl("labelGroupsBody").innerHTML = options.labels.groups
+    .map(group => createLine(group, false, counts.get(group.name) ?? 0))
+    .join("");
 }
 
 function addLine(): void {
   ensureEl("labelGroupsBody").insertAdjacentHTML(
     "beforeend",
-    createLine({ name: "", type: "state", zoom: { min: null, max: null } }, true)
+    createLine({ name: "", type: "state", zoom: { min: null, max: null } }, true, 0)
   );
 }
 
-function createLine(group: LabelGroup, isNew = false): string {
+function countLabelsByGroup(): Map<string, number> {
+  const counts = new Map<string, number>();
+  const increment = (name: string) => counts.set(name, (counts.get(name) ?? 0) + 1);
+
+  for (const burg of pack.burgs) {
+    if (!burg.i || burg.removed) continue;
+    increment(burg.label?.group || burg.group || "burg");
+  }
+  for (const province of pack.provinces) {
+    if (!province.i || province.removed) continue;
+    increment(province.label?.group || "province");
+  }
+  for (const state of pack.states) {
+    if (!state.i || state.removed) continue;
+    increment(state.label?.group || "state");
+  }
+  for (const river of pack.rivers) {
+    if (!river.cells.length || !river.name) continue;
+    increment(river.label?.group || "river");
+  }
+  for (const route of pack.routes) {
+    if (!route.name) continue;
+    increment(route.label?.group || "route");
+  }
+  for (const label of pack.labels) {
+    increment(label.group);
+  }
+
+  return counts;
+}
+
+function createLine(group: LabelGroup, isNew = false, labelCount = 0): string {
   const modes: LabelNameMode[] = ["auto", "short", "full"];
   const isDefault = Boolean(group.isDefault);
   const nameTip = isDefault
@@ -155,6 +191,7 @@ function createLine(group: LabelGroup, isNew = false): string {
         <option value="">None</option>
         ${LAYER_TOGGLES.map(({ id, label }) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label}</option>`).join("")}
       </select></td>
+      <td data-tip="Number of labels currently assigned to this group" style="text-align:center">${labelCount}</td>
       <td data-tip="Assignment order: move group up or down"><button type="button" name="up" class="icon-up-open" data-tip="Move up"></button><button type="button" name="down" class="icon-down-open" data-tip="Move down"></button></td>
       <td><button type="button" name="style" class="icon-brush" data-tip="Edit visual style"></button><span data-tip="${isDefault ? "Default groups can't be removed" : "Remove group"}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
     </tr>`;
