@@ -762,6 +762,10 @@ function restoreRiskedData(): void {
     c.center = findCell(c.x!, c.y!)!;
   }
 
+  States.getPoles();
+  States.findNeighbors();
+  States.collectStatistics();
+
   if (erosionAllowed) {
     Rivers.specify();
     Lakes.defineNames();
