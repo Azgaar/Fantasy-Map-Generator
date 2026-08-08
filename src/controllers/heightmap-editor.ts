@@ -1,4 +1,4 @@
-import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
+import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, range, select } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -10,6 +10,7 @@ import { drawMarkets } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
+import { createAvailableLandCellFinder } from "../utils/graphUtils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -690,20 +691,16 @@ function restoreRiskedData(): void {
     pack.cells.religion[i] = religion[g];
   }
 
-  // find closest land cell to burg
-  const findBurgCell = (x: number, y: number): number => {
-    const i = findCell(x, y)!;
-    if (pack.cells.h[i] >= 20) return i;
-    const dist = pack.cells.c[i].map(c =>
-      pack.cells.h[c] < 20 ? Infinity : (pack.cells.p[c][0] - x) ** 2 + (pack.cells.p[c][1] - y) ** 2
-    );
-    return pack.cells.c[i][leastIndex(dist)!];
-  };
+  // find closest available land cell to burg
+  const findBurgCell = createAvailableLandCellFinder(pack.cells);
 
   // find best cell for burgs
   for (const b of pack.burgs) {
     if (!b.i || b.removed) continue;
-    b.cell = findBurgCell(b.x, b.y);
+    const cell = findBurgCell(b.x, b.y);
+    if (cell === undefined) throw new Error(`Risk restoration failed: no available land cell for burg ${b.i}`);
+
+    b.cell = cell;
     b.feature = pack.cells.f[b.cell];
 
     pack.cells.burg[b.cell] = b.i;

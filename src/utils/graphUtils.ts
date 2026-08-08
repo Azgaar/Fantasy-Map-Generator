@@ -250,6 +250,30 @@ export const findClosestCell = (
 };
 
 /**
+ * Creates a finder that assigns each request the nearest currently available land cell.
+ * Assigned cells are removed from the spatial index, so a later request cannot overwrite
+ * the reverse burg reference of an earlier request.
+ */
+export const createAvailableLandCellFinder = (cells: {
+  h: ArrayLike<number>;
+  p: readonly (readonly [number, number])[];
+}) => {
+  const landPoints: [number, number, number][] = [];
+  for (let i = 0; i < cells.p.length; i++) {
+    if (cells.h[i] >= 20) landPoints.push([cells.p[i][0], cells.p[i][1], i]);
+  }
+
+  const availableLand = quadtree<[number, number, number]>(landPoints);
+  return (x: number, y: number): number | undefined => {
+    const point = availableLand.find(x, y);
+    if (!point) return;
+
+    availableLand.remove(point);
+    return point[2];
+  };
+};
+
+/**
  * Searches a quadtree for all points within a given radius
  * Based on https://bl.ocks.org/lwthatcher/b41479725e0ff2277c7ac90df2de2b5e
  * @param {number} x - The x coordinate of the search center
