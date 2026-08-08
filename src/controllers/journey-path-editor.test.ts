@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { JourneyPoint } from "@/types/Journey";
-import { MAX_PATH_POINTS, medianSpacing, RESAMPLE_THRESHOLD, resampleAround } from "./journey-path-edit";
+import { MAX_PATH_POINTS, medianSpacing, RESAMPLE_THRESHOLD, resampleAround } from "./journey-path-editor";
 
 /** Points spaced `gap` apart along the x axis, cell id mirroring the index. */
 const line = (count: number, gap = 10): JourneyPoint[] =>

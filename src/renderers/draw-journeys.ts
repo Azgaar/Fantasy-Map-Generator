@@ -1,8 +1,7 @@
-import { curveCatmullRom, line, select } from "d3";
-import "@/data/transport-types"; // register getDefaultTransportTypes on window for legacy main.js
-import type { Journey, JourneyPoint, Segment } from "@/types/Journey";
+import { curveCatmullRom, hsl, line, select } from "d3";
+import { DEFAULT_JOURNEY_COLOR } from "@/generators/journeys-generator";
+import type { Journey, JourneyPoint } from "@/types/Journey";
 import { round } from "@/utils";
-import { DEFAULT_JOURNEY_COLOR } from "@/utils/journey-metrics";
 
 const curveGen = line<JourneyPoint>()
   .x(d => d[0])
@@ -10,89 +9,95 @@ const curveGen = line<JourneyPoint>()
   .curve(curveCatmullRom.alpha(0.5));
 
 const DEFAULT_STROKE_WIDTH = 1.8;
+const ENDPOINT_RADIUS_RATIO = 1.2;
 
-function getStyle(): { strokeWidth: number } {
-  const el = document.getElementById("journeys");
-  const strokeWidth = Number(el?.getAttribute("stroke-width")) || DEFAULT_STROKE_WIDTH;
-  return { strokeWidth };
+/** Hue step between journeys that set no colour of their own — the golden angle spreads them evenly. */
+const HUE_STEP = 137.508;
+
+/** A grey layer stroke has no hue to rotate, so give derived colours some saturation to work with. */
+const MIN_AUTO_SATURATION = 0.55;
+
+/**
+ * Which colour a journey's segments are drawn in.
+ *   journey — one colour per journey, so journeys read apart on the map (the default)
+ *   segment — per-segment overrides are honoured; set while the journey editor is open
+ */
+export type JourneyColorMode = "journey" | "segment";
+
+let colorMode: JourneyColorMode = "journey";
+
+export function setJourneyColorMode(mode: JourneyColorMode): void {
+  if (colorMode === mode) return;
+  colorMode = mode;
+  drawJourneys();
 }
 
+/** The layer's effective stroke — the base every derived journey colour comes from. */
+export function getJourneyLayerColor(): string {
+  return select("#journeys").attr("stroke") || DEFAULT_JOURNEY_COLOR;
+}
+
+/**
+ * The colour a journey is drawn in: its own if set, otherwise one derived from the
+ * layer stroke by rotating the hue. The first journey keeps the layer colour exactly,
+ * so the Style panel's stroke still seeds the whole set rather than being shadowed.
+ */
+export function getJourneyColor(journey: Journey, layerColor = getJourneyLayerColor()): string {
+  if (journey.color) return journey.color;
+  if (!journey.i) return layerColor;
+
+  const derived = hsl(layerColor);
+  if (Number.isNaN(derived.h)) derived.h = 0;
+  if (derived.s < MIN_AUTO_SATURATION) derived.s = MIN_AUTO_SATURATION;
+  derived.h = (derived.h + journey.i * HUE_STEP) % 360;
+  return derived.formatHex();
+}
+
+/**
+ * Paths carry geometry only — width, linecap and the arrow marker are inherited
+ * from the `#journeys` group so the Style panel drives them. A path gets an explicit
+ * `stroke` only where its colour differs from the layer's.
+ *
+ * Endpoint dots are filled, so they cannot inherit the layer stroke; their colour and
+ * radius are baked from it and style.js redraws the layer when either changes.
+ */
 export function drawJourneys(): void {
   const root = select("#journeys");
   if (root.empty()) return;
   root.selectAll("*").remove();
   if (!pack.journeys?.length) return;
 
-  const { strokeWidth } = getStyle();
+  const layerColor = getJourneyLayerColor();
+  const strokeWidth = Number(root.attr("stroke-width")) || DEFAULT_STROKE_WIDTH;
 
   for (const journey of pack.journeys) {
     if (!journey.visible) continue;
-    const jColor = journey.color || DEFAULT_JOURNEY_COLOR;
-    const g = root.append<SVGGElement>("g").attr("id", `journey${journey.i}`).attr("fill", "none");
+    const journeyColor = getJourneyColor(journey, layerColor);
+    const g = root.append<SVGGElement>("g").attr("id", `journey${journey.i}`);
 
     for (const seg of journey.segments) {
-      if (!seg.visible) continue;
-      if (!seg.points || seg.points.length < 2) continue;
-      const d = round(curveGen(seg.points) || "", 1);
-      g.append("path")
-        .attr("id", `segment${journey.i}_${seg.id}`)
-        .attr("d", d)
-        .attr("stroke", seg.color || jColor)
-        .attr("stroke-width", strokeWidth)
-        .attr("stroke-linecap", "round")
-        .attr("marker-end", "url(#journey-arrow)");
+      if (!seg.visible || seg.points.length < 2) continue;
+      const color = colorMode === "segment" && seg.color ? seg.color : journeyColor;
 
-      const [x1, y1] = seg.points[0];
-      const [x2, y2] = seg.points[seg.points.length - 1];
+      const path = g
+        .append("path")
+        .attr("id", `segment${journey.i}_${seg.id}`)
+        .attr("d", round(curveGen(seg.points) || "", 1));
+      if (color !== layerColor) path.attr("stroke", color);
+
       const endpoints = g.append("g").attr("class", "journeyEndpoints");
-      endpoints
-        .append("circle")
-        .attr("cx", x1)
-        .attr("cy", y1)
-        .attr("r", strokeWidth * 1.2)
-        .attr("fill", seg.color || jColor)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 0.4);
-      endpoints
-        .append("circle")
-        .attr("cx", x2)
-        .attr("cy", y2)
-        .attr("r", strokeWidth * 1.2)
-        .attr("fill", seg.color || jColor)
-        .attr("stroke", "#fff")
-        .attr("stroke-width", 0.4);
+      for (const [x, y] of [seg.points[0], seg.points[seg.points.length - 1]]) {
+        endpoints
+          .append("circle")
+          .attr("cx", x)
+          .attr("cy", y)
+          .attr("r", strokeWidth * ENDPOINT_RADIUS_RATIO)
+          .attr("fill", color)
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 0.4);
+      }
     }
   }
-
-  ensureArrowMarker();
-}
-
-function ensureArrowMarker(): void {
-  const defs = document.querySelector<SVGDefsElement>("svg defs");
-  if (!defs || defs.querySelector("#journey-arrow")) return;
-  const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-  marker.setAttribute("id", "journey-arrow");
-  marker.setAttribute("viewBox", "0 0 10 10");
-  marker.setAttribute("refX", "8");
-  marker.setAttribute("refY", "5");
-  marker.setAttribute("markerWidth", "5");
-  marker.setAttribute("markerHeight", "5");
-  marker.setAttribute("orient", "auto-start-reverse");
-  marker.setAttribute("markerUnits", "strokeWidth");
-  marker.innerHTML = '<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/>';
-  defs.appendChild(marker);
-}
-
-export function undrawJourneys(): void {
-  select("#journeys").selectAll("*").remove();
-}
-
-export function redrawJourney(_journey: Journey): void {
-  drawJourneys();
-}
-
-export function redrawSegment(_journey: Journey, _segment: Segment): void {
-  drawJourneys();
 }
 
 declare global {

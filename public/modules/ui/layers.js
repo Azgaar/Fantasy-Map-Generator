@@ -926,7 +926,9 @@ function toggleJourneys(event) {
     turnButtonOn("toggleJourneys");
     if (typeof drawJourneys === "function") drawJourneys();
     journeys.style("display", null);
+    if (event && isCtrlClick(event)) editStyle("journeys");
   } else {
+    if (event && isCtrlClick(event)) return editStyle("journeys");
     turnButtonOff("toggleJourneys");
     journeys.selectAll("*").remove();
     journeys.style("display", "none");

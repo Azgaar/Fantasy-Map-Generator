@@ -7,7 +7,7 @@ import {
   OFF_ROAD_SPEED_FACTOR,
   segmentLengthKm,
   segmentTimeHours
-} from "./journey-metrics";
+} from "./journeys-generator";
 
 beforeEach(() => {
   (globalThis as any).distanceScale = 1;
@@ -26,7 +26,7 @@ const makeSeg = (distance: number, speed: number, avoidRoads = false): Segment =
   avoidRoads
 });
 
-describe("journey-metrics", () => {
+describe("journey metrics", () => {
   it("segmentLengthKm multiplies by distanceScale", () => {
     (globalThis as any).distanceScale = 2;
     expect(segmentLengthKm(makeSeg(10, 5))).toBe(20);

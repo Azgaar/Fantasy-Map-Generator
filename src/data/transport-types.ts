@@ -13,9 +13,3 @@ export const DEFAULT_TRANSPORT_TYPES: TransportType[] = [
 ];
 
 export const getDefaultTransportTypes = (): TransportType[] => DEFAULT_TRANSPORT_TYPES.map(t => ({ ...t }));
-
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy main.js
-  var getDefaultTransportTypes: () => TransportType[];
-}
-window.getDefaultTransportTypes = getDefaultTransportTypes;

@@ -2,7 +2,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { tip } from "@/components/tooltips";
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { TransportDomain, TransportType } from "@/types/Journey";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { destroyDialogIfExists, ensureEl } from "@/utils";
 
 const DOMAINS: TransportDomain[] = ["land", "water", "air", "stay"];
 const DOMAIN_LABEL: Record<TransportDomain, string> = {
@@ -25,7 +25,7 @@ const GRID_COLUMNS = "10em 6em 8em 3em";
 function open(): void {
   if (customization) return;
   closeDialogs("#transportTypesEditor, .stable");
-  ensureTypes();
+  Journeys.sync();
   renderDialog();
   refresh();
 
@@ -36,10 +36,6 @@ function open(): void {
     position: { my: "center", at: "center", of: "svg" },
     close: onClose
   });
-}
-
-function ensureTypes(): void {
-  if (!pack.transportTypes?.length) pack.transportTypes = getDefaultTransportTypes();
 }
 
 function renderDialog(): void {

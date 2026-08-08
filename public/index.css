@@ -1743,10 +1743,21 @@ div.editorLine {
 /* Journey editor: header row + top toolbar layout */
 #journeyEditor #journeyHeader {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto auto;
   gap: 0.4em;
   align-items: center;
   margin-bottom: 0.5em;
+}
+#journeyEditor #journeyColor {
+  width: 2em;
+  height: 1.4em;
+  padding: 0;
+  border: 1px solid #9c9186;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#journeyEditor #journeyColor.inherited {
+  opacity: 0.55;
 }
 #journeyEditor #journeyFooter {
   margin-bottom: 0.4em;
@@ -1755,7 +1766,7 @@ div.editorLine {
 #journeyEditor #segmentsTable > .header,
 #journeyEditor #segmentsBody > div {
   display: grid;
-  grid-template-columns: 2em 7em 8em 4.5em 7em 7em 5em 4em 4em 6em 2em 2em 1.6em 1.6em 1.6em 1.6em 1.6em;
+  grid-template-columns: 2em 7em 8em 4.5em 7em 7em 5em 4em 4em 6em 3.6em 2em 1.6em 1.6em 1.6em 1.6em 1.6em;
   gap: 0.3em;
   padding: 0.15em 0.2em;
   align-items: center;
@@ -1792,6 +1803,33 @@ div.editorLine {
 }
 #journeyEditor .segColor.inherited {
   opacity: 0.55;
+}
+/* Swatch and its reset share one grid cell, so the track stays put either way */
+#journeyEditor .segColorCell {
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+}
+#journeyEditor .segColorReset,
+#journeyEditor #journeyColorReset {
+  font-size: 0.85em;
+  line-height: 1;
+  color: #8b1a1a;
+  padding: 0 2px;
+}
+#journeyEditor .segColorReset:hover,
+#journeyEditor #journeyColorReset:hover {
+  color: #d02020;
+}
+/* Overview swatch — the colour the journey is actually drawn in on the map */
+#journeysOverview .journeySwatch {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.4em;
+  border: 1px solid #9c9186;
+  border-radius: 2px;
+  vertical-align: baseline;
 }
 #journeyEditor .roadsChip {
   cursor: pointer;

@@ -2,20 +2,17 @@ import { select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { getDefaultTransportTypes } from "@/data/transport-types";
-import { drawJourneys } from "@/renderers/draw-journeys";
+import { formatTravelTime, journeyTotals } from "@/generators/journeys-generator";
+import { drawJourneys, getJourneyColor } from "@/renderers/draw-journeys";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import type { Journey } from "@/types/Journey";
-import { downloadFile, getFileName, getHoursPerDay, rn } from "@/utils";
-import { DEFAULT_JOURNEY_COLOR, formatTravelTime, journeyTotals } from "@/utils/journey-metrics";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { destroyDialogIfExists, downloadFile, ensureEl, getFileName, getHoursPerDay, rn } from "@/utils";
 
 function open(): void {
   if (customization) return;
   closeDialogs("#journeysOverview, .stable");
   if (!layerIsOn("toggleJourneys")) toggleJourneys();
 
-  ensureJourneysArray();
+  Journeys.sync();
   renderDialog();
   addLines();
 
@@ -26,11 +23,6 @@ function open(): void {
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close: onClose
   });
-}
-
-function ensureJourneysArray(): void {
-  if (!pack.journeys) pack.journeys = [];
-  if (!pack.transportTypes?.length) pack.transportTypes = getDefaultTransportTypes();
 }
 
 function renderDialog(): void {
@@ -98,7 +90,10 @@ function addLines(): void {
       data-time="${totals.totalHours}"
     >
       <span data-tip="Locate the journey" class="icon-target"></span>
-      <div style="width: 13em; margin-left: 0.4em;">${journey.name}</div>
+      <div style="width: 13em; margin-left: 0.4em;">
+        <span class="journeySwatch" style="background: ${getJourneyColor(journey)}"
+          data-tip="${journey.color ? "Journey color" : "Derived from the Journeys layer style"}"></span>${journey.name}
+      </div>
       <div style="width: 4em;">${journey.segments.length}</div>
       <div style="width: 6em;">${distance}</div>
       <div style="width: 6em;">${speed}</div>
@@ -123,19 +118,10 @@ function addLines(): void {
 }
 
 function createNewJourney(): void {
-  ensureJourneysArray();
-  const id = pack.journeys.length ? Math.max(...pack.journeys.map(j => j.i)) + 1 : 0;
-  const newJourney: Journey = {
-    i: id,
-    name: `Journey ${id + 1}`,
-    visible: true,
-    color: DEFAULT_JOURNEY_COLOR,
-    segments: []
-  };
-  pack.journeys.push(newJourney);
+  const journey = Journeys.create();
   drawJourneys();
   addLines();
-  void Controllers.JourneyEditor.open(id);
+  void Controllers.JourneyEditor.open(journey.i);
 }
 
 function journeyHighlightOn(event: Event): void {
@@ -183,7 +169,7 @@ function removeOne(this: HTMLElement): void {
     message: "Are you sure you want to remove this journey? <br>This action cannot be reverted.",
     confirm: "Remove",
     onConfirm: () => {
-      pack.journeys = pack.journeys.filter(j => j.i !== id);
+      Journeys.remove(id);
       drawJourneys();
       addLines();
     }

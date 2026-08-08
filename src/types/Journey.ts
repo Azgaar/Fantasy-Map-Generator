@@ -52,7 +52,12 @@ export interface Journey {
   i: number;
   name: string;
   visible: boolean;
-  color: string;
+  /**
+   * Optional override of the `#journeys` layer stroke (set in the Style panel).
+   * Left undefined the journey follows the layer style; a segment's own `color`
+   * overrides this in turn.
+   */
+  color?: string;
   segments: Segment[];
   note?: string;
   lock?: boolean;

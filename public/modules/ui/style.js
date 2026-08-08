@@ -125,6 +125,7 @@ function selectStyleElement() {
       "gridOverlay",
       "ice",
       "icons",
+      "journeys",
       "lakes",
       "prec",
       "relig",
@@ -145,6 +146,7 @@ function selectStyleElement() {
       "cells",
       "coordinates",
       "gridOverlay",
+      "journeys",
       "legend",
       "population",
       "routes",
@@ -165,6 +167,7 @@ function selectStyleElement() {
       "compass",
       "coordinates",
       "gridOverlay",
+      "journeys",
       "population",
       "prec",
       "routes",
@@ -491,6 +494,7 @@ styleStrokeInput.on("input", function () {
   styleStrokeOutput.value = this.value;
   getEl().attr("stroke", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  redrawJourneysOnStyleChange();
 });
 
 // measurers are rendered with baked-in sizes, so a style change requires a redraw
@@ -498,10 +502,16 @@ function redrawMeasurersOnStyleChange() {
   if (styleElementSelect.value === "ruler" && layerIsOn("toggleRulers")) drawMeasurers();
 }
 
+// journey endpoint dots are filled, so they bake the layer stroke and width instead of inheriting them
+function redrawJourneysOnStyleChange() {
+  if (styleElementSelect.value === "journeys" && layerIsOn("toggleJourneys")) drawJourneys();
+}
+
 styleStrokeWidthInput.on("input", e => {
   getEl().attr("stroke-width", e.target.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
+  redrawJourneysOnStyleChange();
 });
 
 styleLetterSpacingInput.on("input", e => {
