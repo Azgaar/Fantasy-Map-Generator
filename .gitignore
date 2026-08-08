@@ -11,4 +11,5 @@
 /_bmad-output
 /memory
 .github/agents/bmad-*
-.github/prompts/bmad-*
+.github/prompts/bmad-*node_modules
+fmg-rebuild/node_modules

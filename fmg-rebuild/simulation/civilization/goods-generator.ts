@@ -1189,7 +1189,11 @@ export function generateGoods(
   grid.cells.temp = grid.cells.temp || new Float32Array(heights.length).fill(15);
   pack.features = grid.features || [];
 
+  if (!pack.goods || !pack.goods.length) {
+      Goods.restoreDefaults();
+  }
+
   Goods.generate({ randomSeed: "map-seed" });
 
-  return pack.cells.good;
+  return pack.cells.good as unknown as Uint8Array;
 }

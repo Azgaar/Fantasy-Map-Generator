@@ -1,4 +1,5 @@
 import { Grid } from "../../core/types";
+import { Point, meander } from "../../renderer/meander";
 
 // Calculate the distance field 't' for grid cells:
 // Positive values for distance inland, negative values for distance into water bodies.
@@ -97,6 +98,7 @@ export interface HydrologyResult {
   flowDirections: Int32Array; // downhill neighbor index for each cell (-1 if none or water)
   flux: Float32Array; // flow accumulation flux
   rivers: Uint16Array; // river IDs (0 if none)
+  riverPoints: Map<number, Point[]>; // mapped points for meandering paths by riverId
 }
 
 export function generateHydrology(
@@ -148,6 +150,7 @@ export function generateHydrology(
 
   // Step 3: Route rivers based on flux threshold (e.g., flux > 100)
   const rivers = new Uint16Array(pointsN);
+  const riverPoints = new Map<number, Point[]>();
   let nextRiverId = 1;
 
   // We trace rivers starting from highest flux down to the ocean
@@ -158,13 +161,33 @@ export function generateHydrology(
     // Proclaim a new river
     const riverId = nextRiverId++;
     let curr = i;
+    const riverCells: number[] = [];
+
+    // We strictly trace down avoiding overwriting an existing, larger river
+    // If it hits an existing river, it should act as a tributary and merge/stop tracing
     while (curr !== -1 && filledHeights[curr] >= 20) {
+      if (rivers[curr] !== 0 && rivers[curr] !== riverId) {
+          riverCells.push(curr); // Connect to the existing river, then stop
+          break;
+      }
       rivers[curr] = riverId;
+      riverCells.push(curr);
       curr = flowDirections[curr];
     }
-    // Set river in water mouth cell too
-    if (curr !== -1) {
+
+    // Set river in water mouth cell too, if it reached the ocean directly
+    if (curr !== -1 && filledHeights[curr] < 20) {
       rivers[curr] = riverId;
+      riverCells.push(curr);
+    }
+
+    // Add meandering
+    if (riverCells.length > 1) {
+        // the grid.points array is of type [number, number][], meaning grid.points[c] is indeed a pair.
+        // There is no interleaved flat array in the current fmg-rebuild grid layout format.
+        const points = riverCells.map(c => grid.points[c] as Point);
+        const meanderedPoints = meander(points, { meandering: 0.5 });
+        riverPoints.set(riverId, meanderedPoints);
     }
   }
 
@@ -173,6 +196,7 @@ export function generateHydrology(
     t,
     flowDirections,
     flux,
-    rivers
+    rivers,
+    riverPoints
   };
 }

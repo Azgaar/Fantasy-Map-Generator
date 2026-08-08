@@ -1,4 +1,5 @@
 import { Grid } from "../../core/types";
+import { generateName } from "./name-generator";
 
 export interface Burg {
   id: number;
@@ -10,9 +11,6 @@ export interface Burg {
   isCapital: boolean;
   port: number; // 0 if none, or the feature ID of the ocean/lake it ports to
 }
-
-const BURG_NAMES_PREFIX = ["Odin", "Gron", "New", "Old", "Al", "Roth", "Stone", "Black", "Oak", "River"];
-const BURG_NAMES_SUFFIX = ["burg", "grad", "ville", "ton", "ford", "port", "shire", "field", "wood", "crag"];
 
 export function calculateSuitability(
   grid: Grid,
@@ -67,7 +65,8 @@ export function generateBurgs(
   biomes: Uint8Array,
   rivers: Uint16Array,
   flux: Float32Array,
-  count = 20
+  count = 20,
+  seed = "fantasy-default"
 ): Burg[] {
   const pointsN = heights.length;
   const score = calculateSuitability(grid, heights, biomes, rivers, flux);
@@ -116,15 +115,14 @@ export function generateBurgs(
       }
     }
 
-    const pref = BURG_NAMES_PREFIX[Math.floor(Math.random() * BURG_NAMES_PREFIX.length)];
-    const suff = BURG_NAMES_SUFFIX[Math.floor(Math.random() * BURG_NAMES_SUFFIX.length)];
+    const name = generateName("English", seed + nextBurgId);
 
     burgs.push({
       id: nextBurgId++,
       cell: cellId,
       x,
       y,
-      name: `${pref}${suff}`,
+      name,
       population: Math.round(1000 + candidate.score * 500 + Math.random() * 2000),
       isCapital: false,
       port
