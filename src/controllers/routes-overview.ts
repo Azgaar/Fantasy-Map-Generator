@@ -1,6 +1,14 @@
 import { mean, select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
@@ -8,13 +16,67 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
 
+const ROUTE_COLUMNS: EditorColumn<Route>[] = [
+  { key: "locate", width: "1.4em", hideable: false },
+  {
+    key: "name",
+    label: "Route",
+    width: "8em",
+    fill: true,
+    hideable: false,
+    tip: "Click to sort by route name",
+    sortBy: route => route.name || "",
+    sortType: "alpha"
+  },
+  {
+    key: "group",
+    label: "Group",
+    width: "8em",
+    tip: "Click to sort by route group",
+    sortBy: route => route.group || "",
+    sortType: "alpha"
+  },
+  {
+    key: "length",
+    label: "Length",
+    width: "6em",
+    tip: "Click to sort by route length",
+    sortBy: route => route.length || 0,
+    defaultSort: "desc"
+  },
+  { key: "actions", width: "4.5em", hideable: false }
+];
+
+function getFilteredRoutes(): Route[] {
+  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
+  const routes = pack.routes.filter((route: Route) => Boolean(route.points) && route.points.length >= 2);
+
+  for (const route of routes) {
+    route.name = route.name || Routes.generateName(route);
+    route.length = route.length || Routes.getLength(route.i);
+  }
+
+  if (!searchText) return routes;
+
+  return routes.filter((route: Route) => {
+    const name = (route.name || "").toLowerCase();
+    const group = (route.group || "").toLowerCase();
+    return name.includes(searchText) || group.includes(searchText);
+  });
+}
+
+const routesTable = initEditorTable<Route>({
+  getData: () => sortDataByColumns(ensureEl("routesHeader"), getFilteredRoutes(), ROUTE_COLUMNS),
+  onUpdate: renderRoutesPage
+});
+
 function open(): void {
   if (customization) return;
   closeDialogs("#routesOverview, .stable");
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
   renderDialog();
-  routesOverviewAddLines();
+  routesTable.reset();
 
   $("#routesOverview").dialog({
     title: "Routes Overview",
@@ -28,36 +90,43 @@ function open(): void {
 function renderDialog(): void {
   destroyDialogIfExists("routesOverview");
 
-  const html = /* html */ `<div id="routesOverview" class="dialog stable">
-    <div id="routesHeader" class="header" style="grid-template-columns: 17em 8em 8em">
-      <div data-tip="Click to sort by route name" class="sortable alphabetically" data-sortby="name">Route&nbsp;</div>
-      <div data-tip="Click to sort by route group" class="sortable alphabetically" data-sortby="group">Group&nbsp;</div>
-      <div data-tip="Click to sort by route length" class="sortable icon-sort-number-down" data-sortby="length">Length&nbsp;</div>
+  const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
+    <div id="routesBody" class="table">${renderEditorHeader({
+      id: "routesHeader",
+      columns: ROUTE_COLUMNS,
+      columnsButtonId: "routesToggleColumns"
+    })}</div>
+    <div id="routesFilters" class="editorFilters">
+      <label for="routesSearch" data-tip="Filter by name or group">Search: <input id="routesSearch" type="search" /></label>
     </div>
-    <div id="routesBody" class="table"></div>
     <div id="routesFooter" class="totalLine">
       <div data-tip="Routes number" style="margin-left: 4px">Routes:&nbsp;<span id="routesFooterNumber">0</span></div>
-      <div data-tip="Average length" style="margin-left: 12px">Average length:&nbsp;<span id="routesFooterLength">0</span></div>
+      <div data-tip="Average length" style="margin-left: 12px" data-col="length">Average length:&nbsp;<span id="routesFooterLength">0</span></div>
     </div>
-    <div id="routesBottom">
+    <div id="routesBottom" class="editorToolbar">
       <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="routesCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
       <button id="routesExport" data-tip="Save routes-related data as a text file (.csv)" class="icon-download"></button>
       <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
       <button id="routesRemoveAll" data-tip="Remove all unlocked routes (locked routes are kept)" class="icon-trash"></button>
-      <label for="routesSearch" data-tip="Filter by name or group" style="margin-left: 0.2em">Search: <input id="routesSearch" type="search" /></label>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  applySortingByHeader("routesHeader");
+  bindColumnSorting(ensureEl("routesHeader"), routesTable.reset);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routesOverviewRefresh").on("click", routesOverviewAddLines);
+  ensureEl("routesOverviewRefresh").on("click", routesTable.refresh);
+  initColumnVisibility({
+    button: ensureEl("routesToggleColumns"),
+    dialogId: "routesOverview",
+    storageKey: "routes",
+    columns: ROUTE_COLUMNS
+  });
   ensureEl("routesCreateNew").on("click", createNewRoute);
   ensureEl("routesExport").on("click", downloadRoutesData);
   ensureEl("routesLockAll").on("click", toggleLockAll);
   ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").on("input", routesOverviewAddLines);
+  ensureEl("routesSearch").on("input", routesTable.reset);
 }
 
 function closeRoutesOverview(): void {
@@ -68,28 +137,16 @@ function createNewRoute(): void {
   Controllers.RouteCreator.open();
 }
 
-// add line for each route
-function routesOverviewAddLines(): void {
+// totals span the full filtered set, not just the current page
+function renderRoutesPage(view: TableView<Route>): void {
   const body = ensureEl("routesBody");
-  body.innerHTML = "";
+  body.querySelectorAll(".states").forEach(row => {
+    row.remove();
+  });
   let lines = "";
 
-  let filteredRoutes: Route[] = pack.routes;
-
-  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
-  if (searchText) {
-    filteredRoutes = filteredRoutes.filter(route => {
-      const name = (route.name || "").toLowerCase();
-      const group = (route.group || "").toLowerCase();
-      return name.includes(searchText) || group.includes(searchText);
-    });
-  }
-
-  for (const route of filteredRoutes) {
-    if (!route.points || route.points.length < 2) continue;
-    route.name = route.name || Routes.generateName(route);
-    route.length = route.length || Routes.getLength(route.i);
-    const length = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
+  for (const route of view.rows) {
+    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
 
     lines += /* html */ `<div
         class="states"
@@ -98,22 +155,23 @@ function routesOverviewAddLines(): void {
         data-group="${route.group}"
         data-length="${route.length}"
       >
-        <span data-tip="Locate the route" class="icon-target"></span>
-        <div data-tip="Route name" style="width: 15em; margin-left: 0.4em;">${route.name}</div>
-        <div data-tip="Route group" style="width: 8em;">${route.group}</div>
-        <div data-tip="Route length" style="width: 6em;">${length}</div>
-        <span data-tip="Edit route" class="icon-pencil"></span>
-        <span class="locks pointer ${
-          route.lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
-        <span data-tip="Remove route" class="icon-trash-empty"></span>
+        <span data-tip="Locate the route" class="icon-target" data-col="locate"></span>
+        <div data-tip="Route name" data-col="name">${route.name}</div>
+        <div data-tip="Route group" data-col="group">${route.group}</div>
+        <div data-tip="Route length" data-col="length">${length}</div>
+        <div data-col="actions">
+          <span data-tip="Edit route" class="icon-pencil"></span>
+          <span class="locks pointer ${
+            route.lock ? "icon-lock" : "icon-lock-open inactive"
+          }" onmouseover="showElementLockTip(event)"></span>
+          <span data-tip="Remove route" class="icon-trash-empty"></span>
+        </div>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  // update footer
-  ensureEl("routesFooterNumber").innerHTML = `${filteredRoutes.length} of ${pack.routes.length}`;
-  const averageLength = rn(mean(filteredRoutes.map(r => r.length)) || 0) || 0;
+  ensureEl("routesFooterNumber").innerHTML = `${view.all.length} of ${pack.routes.length}`;
+  const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
   ensureEl("routesFooterLength").innerHTML = `${averageLength * distanceScale} ${distanceUnitInput.value}`;
 
   // add listeners
@@ -124,7 +182,7 @@ function routesOverviewAddLines(): void {
   body.querySelectorAll("div > span.locks").forEach(el => void el.on("click", toggleLockStatus));
   body.querySelectorAll("div > span.icon-trash-empty").forEach(el => void el.on("click", triggerRouteRemove));
 
-  applySorting(ensureEl("routesHeader"));
+  renderEditorPagination(ensureEl("routesFooter"), view, routesTable.goto);
 }
 
 function routeHighlightOn(event: Event): void {
@@ -147,7 +205,7 @@ function routeHighlightOff(e: Event): void {
 }
 
 function zoomToRoute(this: HTMLElement): void {
-  const routeId = +(this.parentNode as HTMLElement).dataset.id!;
+  const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const route = select("#routes").select(`#route${routeId}`).node() as Element;
   highlightElement(route, 3);
 }
@@ -155,25 +213,24 @@ function zoomToRoute(this: HTMLElement): void {
 function downloadRoutesData(): void {
   let data = "Id,Route,Group,Length\n"; // headers
 
-  ensureEl("routesBody")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const d = el.dataset;
-      const length = `${rn(+d.length! * distanceScale)} ${distanceUnitInput.value}`;
-      data += `${[d.id, d.name, d.group, length].join(",")}\n`;
-    });
+  // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
+  const exported = routesTable.view().all;
+  exported.forEach((route: Route) => {
+    const length = `${rn((route.length || 0) * distanceScale)} ${distanceUnitInput.value}`;
+    data += `${[route.i, route.name, route.group, length].join(",")}\n`;
+  });
 
   const name = `${getFileName("Routes")}.csv`;
   downloadFile(data, name);
 }
 
 function openRouteEditor(this: HTMLElement): void {
-  const routeId = `route${(this.parentNode as HTMLElement).dataset.id}`;
+  const routeId = `route${(this.closest(".states") as HTMLElement).dataset.id}`;
   void Controllers.RouteEditor.open(routeId);
 }
 
 function toggleLockStatus(this: HTMLElement): void {
-  const routeId = +(this.parentNode as HTMLElement).dataset.id!;
+  const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const route = pack.routes.find((route: Route) => route.i === routeId);
   if (!route) return;
 
@@ -196,12 +253,12 @@ function toggleLockAll(): void {
     route.lock = !allLocked;
   });
 
-  routesOverviewAddLines();
+  routesTable.refresh();
   ensureEl("routesLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
 }
 
 function triggerRouteRemove(this: HTMLElement): void {
-  const routeId = +(this.parentNode as HTMLElement).dataset.id!;
+  const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
     title: "Remove route",
     message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
@@ -209,7 +266,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route);
-      routesOverviewAddLines();
+      routesTable.refresh();
     }
   });
 }
@@ -250,7 +307,7 @@ function triggerAllRoutesRemove(): void {
           Routes.remove(route);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
-        routesOverviewAddLines();
+        routesTable.refresh();
         $(this).dialog("close");
       },
       Cancel: function (this: any) {
