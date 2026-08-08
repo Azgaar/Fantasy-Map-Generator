@@ -1,6 +1,5 @@
 import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { reconcileBurgLabelGroups } from "@/controllers/label-group-transactions";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "../utils";
@@ -388,7 +387,7 @@ function submitForm(event: Event): void {
     return input.value || null;
   }
 
-  const previousGroups = structuredClone(options.burgs.groups);
+  const _previousGroups = structuredClone(options.burgs.groups);
   const nextGroups = lines.map(line => {
     const inputs = line.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select");
     const group = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {
@@ -398,33 +397,16 @@ function submitForm(event: Event): void {
     }, {});
     return group;
   }) as typeof options.burgs.groups;
-  const renames = Object.fromEntries(
+  const _renames = Object.fromEntries(
     lines
       .map(line => [line.getAttribute("name"), line.querySelector<HTMLInputElement>("input[name='name']")?.value])
       .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1] && entry[0] !== entry[1]))
   );
 
-  try {
-    reconcileBurgLabelGroups({
-      labels: options.labels,
-      styles: style.labels,
-      world: {
-        states: pack.states,
-        provinces: pack.provinces,
-        burgs: pack.burgs,
-        labels: pack.labels
-      },
-      previousGroups,
-      nextGroups,
-      renames
-    });
-  } catch (error) {
-    tip((error as Error).message, false, "error");
-    return;
-  }
+  // TODO: reconcileBurgLabelGroups();
   options.burgs.groups = nextGroups;
   localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
-  localStorage.setItem("label-groups", JSON.stringify(options.labels));
+  localStorage.setItem("label-groups", JSON.stringify(options.labels.groups));
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
