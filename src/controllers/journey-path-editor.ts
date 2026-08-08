@@ -582,6 +582,20 @@ function finishCustomPath(): void {
     return;
   }
 
+  // Points are checked as they are added, but the transport type can be changed
+  // mid-draw — so the finished path has to be re-checked as a whole. Drawing stays
+  // active on failure so the work can be undone rather than lost.
+  const domain = Journeys.getDomain(seg.transportType);
+  if (!Journeys.isValidPath(customPathPoints, domain)) {
+    alertDialog({
+      title: `Path doesn't suit ${seg.transportType}`,
+      message:
+        `Some points on this path aren't valid for a <b>${domain}</b> transport type — the transport type was probably changed while you were drawing.<br/><br/>` +
+        "Right-click to undo those points, or switch to an <b>air</b> transport type, which accepts any path."
+    });
+    return;
+  }
+
   seg.points = customPathPoints.slice();
   seg.from = seg.points[0][2];
   seg.to = seg.points[seg.points.length - 1][2];

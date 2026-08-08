@@ -1,6 +1,7 @@
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { Journey, JourneyPoint, Segment, TransportDomain, TransportType } from "@/types/Journey";
 import { isLand } from "../utils";
+import type { Burg } from "./burgs-generator";
 import type { Route } from "./routes-generator";
 
 /** Last-resort stroke when neither the segment, the journey, nor the layer sets one. */
@@ -22,6 +23,9 @@ const ON_ROAD_DISCOUNT = 0.5;
 
 // Off-road: road cells are more expensive — the pathfinder routes around them.
 const OFF_ROAD_PENALTY = 5;
+
+// How many top-ranked burgs the demo journey considers when looking for a pair.
+const DEMO_POOL_SIZE = 6;
 
 // ---- metrics ----------------------------------------------------------
 
@@ -144,7 +148,7 @@ const findPathAStar = (
   const from: number[] = [];
   const gScore: number[] = [];
   const closed = new Set<number>();
-  const queue = new window.FlatQueue();
+  const queue = new FlatQueue();
 
   gScore[start] = 0;
   queue.push(start, heuristic(start));
@@ -194,7 +198,11 @@ const buildDirect = (from: number, to: number): PathfindingResult => {
 
 // BFS over pack.cells.routes to find a road path between two cells.
 // Returns cell-id chain or null if disconnected.
-const bfsRouteCells = (start: number, end: number): number[] | null => {
+//
+// `canTraverse` gates intermediate cells by terrain, because pack.cells.routes merges
+// every route group into one graph — roads, trails and searoutes alike. Without it a
+// land journey happily walks a sea route across the ocean.
+const bfsRouteCells = (start: number, end: number, canTraverse: (cellId: number) => boolean): number[] | null => {
   const links = pack.cells.routes;
   if (!links[start] || !links[end]) return null;
   if (start === end) return [start];
@@ -211,6 +219,7 @@ const bfsRouteCells = (start: number, end: number): number[] | null => {
       const next = +nextStr;
       if (visited.has(next)) continue;
       visited.add(next);
+      if (next !== end && !canTraverse(next)) continue;
       from[next] = current;
       if (next === end) {
         const chain: number[] = [end];
@@ -277,10 +286,12 @@ const buildLand = (from: number, to: number, avoidRoads = false): PathfindingRes
   if (!avoidRoads) {
     // Try exact road-network path first (BFS). This produces the best result
     // because it walks the underlying Route.points slices for road geometry.
-    const chain = bfsRouteCells(from, to);
+    const chain = bfsRouteCells(from, to, cellId => isLand(cellId, pack));
     if (chain && chain.length >= 2) {
       const points = collectRoutePoints(chain);
-      return { points, distance: pathLength(points) };
+      // The chain is land-only, but a route's own geometry between two land cells
+      // can still dip into water — fall through to A* when it does.
+      if (journeys.isValidPath(points, "land")) return { points, distance: pathLength(points) };
     }
   }
 
@@ -369,6 +380,22 @@ class JourneysModule {
     return !isLand(cellId, pack);
   }
 
+  /**
+   * Whole-path form of {@link isValidPathPoint} — every intermediate point must suit the domain.
+   *
+   * Endpoints are skipped deliberately: a water route may start or end on a coastal
+   * land cell (you board from the shore), and a land route's endpoints are gated as
+   * land before pathfinding begins.
+   */
+  isValidPath(points: JourneyPoint[], domain: TransportDomain): boolean {
+    if (domain === "air" || domain === "stay") return true;
+    const wantsLand = domain === "land";
+    for (let i = 1; i < points.length - 1; i++) {
+      if (isLand(points[i][2], pack) !== wantsLand) return false;
+    }
+    return true;
+  }
+
   describeCell(cellId: number): string {
     if (cellId === undefined || cellId === null) return "no cell";
     if (!isLand(cellId, pack)) return `water cell ${cellId}`;
@@ -433,8 +460,10 @@ class JourneysModule {
 
   /**
    * On a fresh random map, seed one demo journey so the Journeys layer is not
-   * empty when a user first opens it. Picks two capitals (or largest burgs)
-   * on the same landmass and routes overland between them.
+   * empty when a user first opens it. Prefers an overland leg between two capitals
+   * (or the largest burgs); if no pair is connected by land it falls back to a sea
+   * crossing between ports. The demo is always single-domain — never a land leg
+   * that secretly crosses water, nor a mix of the two.
    *
    * Skipped when journeys already exist (loaded save, template map) or when
    * the map has fewer than 2 usable burgs.
@@ -447,39 +476,60 @@ class JourneysModule {
     if (burgs.length < 2) return;
 
     const capitals = burgs.filter(b => b.capital);
-    const pool = capitals.length >= 2 ? capitals : [...burgs].sort((a, b) => (b.population ?? 0) - (a.population ?? 0));
+    const ranked =
+      capitals.length >= 2 ? capitals : [...burgs].sort((a, b) => (b.population ?? 0) - (a.population ?? 0));
+    const pool = ranked.slice(0, DEMO_POOL_SIZE);
 
-    const overland = pack.transportTypes.find(t => t.domain === "land");
-    if (!overland) return;
+    const segment =
+      this.findDemoLeg(pool, "land") ??
+      this.findDemoLeg(
+        pool.filter(b => b.port),
+        "water"
+      );
+    if (!segment) return;
 
-    for (let i = 0; i < Math.min(pool.length, 6); i++) {
-      for (let j = i + 1; j < Math.min(pool.length, 6); j++) {
+    pack.journeys.push({ i: 0, name: "Sample Journey", visible: true, segments: [segment] });
+  }
+
+  /** First burg pair in `pool` joined by a path that is genuinely valid for `domain`. */
+  private findDemoLeg(pool: Burg[], domain: TransportDomain): Segment | null {
+    const transport = pack.transportTypes.find(t => t.domain === domain);
+    if (!transport) return null;
+
+    for (let i = 0; i < pool.length; i++) {
+      for (let j = i + 1; j < pool.length; j++) {
         const from = pool[i].cell;
         const to = pool[j].cell;
-        const result = this.findPath(from, to, "land");
-        if (result.errorCode || result.points.length < 2) continue;
+        if (!this.isValidEndpoint(from, domain) || !this.isValidEndpoint(to, domain)) continue;
 
-        const seg: Segment = {
+        const result = this.findPath(from, to, domain);
+        if (result.errorCode || result.points.length < 2) continue;
+        if (!this.isValidPath(result.points, domain)) continue;
+
+        return {
           id: 0,
           name: `${pool[i].name ?? "Start"} → ${pool[j].name ?? "End"}`,
           visible: true,
           from,
           to,
-          transportType: overland.name,
-          speed: overland.speed,
+          transportType: transport.name,
+          speed: transport.speed,
           distance: result.distance,
           points: result.points
         };
-        pack.journeys.push({ i: 0, name: "Sample Journey", visible: true, segments: [seg] });
-        return;
       }
     }
+    return null;
   }
 }
+
+// Module-level helpers reach the domain API through this rather than the global,
+// so the module stays self-contained. Only referenced at call time, never during eval.
+const journeys = new JourneysModule();
 
 type JourneysModuleType = JourneysModule;
 declare global {
   var Journeys: JourneysModuleType;
 }
 
-window.Journeys = new JourneysModule();
+window.Journeys = journeys;

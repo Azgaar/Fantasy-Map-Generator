@@ -117,3 +117,109 @@ describe("journey metrics", () => {
     expect(t.avgSpeed).toBe(10 / 2);
   });
 });
+
+describe("land pathfinding stays on land", () => {
+  let Journeys: any;
+
+  /**
+   * Cells 0-1-2-3 in a row. Cell 2 is open water, and pack.cells.routes links
+   * 1-2-3 as a "sea route". pack.cells.routes merges every route group into one
+   * graph, so a land path must not be allowed to follow it across the water.
+   *
+   *   0 (land) — 1 (land) — 2 (WATER) — 3 (land)
+   *                  └────── sea route ─────┘
+   */
+  beforeEach(async () => {
+    // Minimal stand-in for the legacy FlatQueue global used by A*
+    (globalThis as any).FlatQueue = class {
+      items: { id: number; priority: number }[] = [];
+      get length() {
+        return this.items.length;
+      }
+      push(id: number, priority: number) {
+        this.items.push({ id, priority });
+        this.items.sort((a, b) => a.priority - b.priority);
+      }
+      pop() {
+        return this.items.shift()?.id;
+      }
+    };
+
+    (globalThis as any).pack = {
+      cells: {
+        h: [30, 30, 5, 30], // cell 2 is water
+        p: [
+          [0, 0],
+          [10, 0],
+          [20, 0],
+          [30, 0]
+        ],
+        c: [[1], [0, 2], [1, 3], [2]], // neighbours: a straight chain
+        g: [0, 1, 2, 3],
+        routes: {
+          1: { 2: 0 },
+          2: { 1: 0, 3: 0 },
+          3: { 2: 0 }
+        }
+      },
+      routes: [{ i: 0, group: "searoutes", points: [] }]
+    };
+    (globalThis as any).grid = { cells: { temp: [20, 20, 20, 20] } };
+
+    await import("./journeys-generator");
+    Journeys = (globalThis as any).Journeys;
+  });
+
+  it("does not follow a sea route across water", () => {
+    const { points } = Journeys.findPath(1, 3, "land");
+    const crossesWater = points.slice(1, -1).some((p: number[]) => (globalThis as any).pack.cells.h[p[2]] < 20);
+    expect(crossesWater).toBe(false);
+  });
+
+  it("reports no land route when the only connection is by sea", () => {
+    // 1 and 3 are separated by water and have no land neighbours in common,
+    // so once the sea route is rejected there is genuinely no way across.
+    expect(Journeys.findPath(1, 3, "land").errorCode).toBe("no-land-path");
+  });
+
+  it("still finds a path between cells that are connected by land", () => {
+    const { points } = Journeys.findPath(0, 1, "land");
+    expect(points.map((p: number[]) => p[2])).toEqual([0, 1]);
+  });
+});
+
+describe("Journeys.isValidPath", () => {
+  let Journeys: any;
+  const at = (cellId: number): [number, number, number] => [cellId * 10, 0, cellId];
+
+  beforeEach(async () => {
+    (globalThis as any).pack = { cells: { h: [30, 30, 5, 30] } }; // cell 2 is water
+    await import("./journeys-generator");
+    Journeys = (globalThis as any).Journeys;
+  });
+
+  it("rejects a land path whose middle crosses water", () => {
+    expect(Journeys.isValidPath([at(0), at(2), at(3)], "land")).toBe(false);
+  });
+
+  it("accepts a land path that stays on land", () => {
+    expect(Journeys.isValidPath([at(0), at(1), at(3)], "land")).toBe(true);
+  });
+
+  it("ignores the endpoints, so a water path may start and end on the coast", () => {
+    expect(Journeys.isValidPath([at(0), at(2), at(3)], "water")).toBe(true);
+  });
+
+  it("rejects a water path that runs overland mid-route", () => {
+    expect(Journeys.isValidPath([at(2), at(1), at(2)], "water")).toBe(false);
+  });
+
+  it("accepts any path for unrestricted domains", () => {
+    expect(Journeys.isValidPath([at(0), at(2), at(3)], "air")).toBe(true);
+    expect(Journeys.isValidPath([at(0), at(2), at(3)], "stay")).toBe(true);
+  });
+
+  it("accepts paths too short to have a middle", () => {
+    expect(Journeys.isValidPath([at(0), at(3)], "land")).toBe(true);
+  });
+});
