@@ -66,6 +66,7 @@ export const getPointer = (event: any, node?: Element | null): [number, number] 
 
 /**
  * Generate a unique ID for a given core string
+ * @deprecated Unwanted DOM dependency
  * @param {string} core - The core string for the ID
  * @param {number} [i=1] - The starting index
  * @returns {string} - The unique ID

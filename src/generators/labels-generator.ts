@@ -166,7 +166,7 @@ export class AddedLabelsModule {
   }
 
   add(data: Omit<AddedLabel, "i">): AddedLabel {
-    const i = pack.addedLabels.reduce((max, label) => Math.max(max, label.i), -1) + 1;
+    const i = pack.addedLabels.reduce((max, label) => Math.max(max, label.i), 0) + 1;
     const label = { ...data, i };
     pack.addedLabels.push(label);
     return label;

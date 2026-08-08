@@ -63,6 +63,12 @@ function open(): void {
         ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
       },
       Add: addLine,
+      Restore: () => {
+        options.labels = Labels.getDefaultOptions();
+        ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = options.labels.resizeOnZoom;
+        ensureEl<HTMLInputElement>("labelsShowAll").checked = options.labels.showAll;
+        addLines();
+      },
       "Burg Groups": () => {
         void Controllers.BurgGroupEditor.open();
       },
@@ -298,7 +304,7 @@ function submitForm(event: Event): void {
     if (newGroup.name !== oldName) {
       if (oldName) {
         // group is renamed
-        replaceGroupInEntities(newGroup.name, newGroup.type);
+        replaceGroupInEntities(oldName, newGroup.name);
         style.labels.groups[newGroup.name] = style.labels.groups[oldName];
         delete style.labels.groups[oldName];
       } else {
