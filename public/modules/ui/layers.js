@@ -1063,3 +1063,59 @@ function getLayer(id) {
   if (id === "toggleTrade") return $("#tradeAnimation");
   if (id === "toggleRulers") return $("#ruler");
 }
+
+function applyURLLayers() {
+  const params = new URL(window.location.href).searchParams;
+  const presetParam = params.get("layerPreset") || params.get("layersPreset");
+  const visibleParam = params.get("layersVisible");
+
+  if (!presetParam && !visibleParam) return;
+
+  const normalize = str => str.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (presetParam) {
+    let matchedPreset = null;
+    const lowerParam = presetParam.toLowerCase().trim();
+    for (const key in presets) {
+      if (key.toLowerCase() === lowerParam) {
+        matchedPreset = key;
+        break;
+      }
+    }
+    if (!matchedPreset) {
+      const selectEl = document.getElementById("layersPreset");
+      if (selectEl) {
+        for (const option of selectEl.options) {
+          const optionText = option.text.toLowerCase();
+          if (optionText.includes(lowerParam) || lowerParam.includes(optionText)) {
+            matchedPreset = option.value;
+            break;
+          }
+        }
+      }
+    }
+    if (matchedPreset) {
+      handleLayersPresetChange(matchedPreset);
+    }
+  }
+
+  if (visibleParam) {
+    const visibleNames = visibleParam.split(",").map(s => normalize(s));
+    document.querySelectorAll("#mapLayers > li").forEach(el => {
+      const idNormalized = normalize(el.id);
+      const idWithoutToggleNormalized = normalize(el.id.replace(/^toggle/, ""));
+      const textNormalized = normalize(el.innerText || el.textContent || "");
+
+      const shouldBeOn = visibleNames.some(name =>
+        name === idNormalized ||
+        name === idWithoutToggleNormalized ||
+        name === textNormalized
+      );
+
+      const isOn = layerIsOn(el.id);
+      if (shouldBeOn && !isOn) el.click();
+      if (isOn && !shouldBeOn) el.click();
+    });
+  }
+}
+

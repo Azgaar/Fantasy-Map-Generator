@@ -375,6 +375,8 @@ async function generateMapOnLoad() {
 
 // focus on coordinates, cell or burg provided in searchParams
 function focusOn() {
+  if (typeof applyURLLayers === "function") applyURLLayers();
+
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
