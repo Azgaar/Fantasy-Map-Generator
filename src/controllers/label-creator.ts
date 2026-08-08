@@ -2,7 +2,6 @@ import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
-import { DEFAULT_ADDED_LABEL_GROUP } from "@/generators/labels-generator";
 import type { Point } from "@/types/global";
 
 function toggle(): void {

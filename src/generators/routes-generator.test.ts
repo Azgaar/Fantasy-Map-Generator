@@ -470,3 +470,36 @@ describe("RoutesModule.addMeandering", () => {
     }
   });
 });
+
+describe("RoutesModule.remove", () => {
+  let Routes: any;
+
+  beforeEach(async () => {
+    globalThis.TIME = false;
+    globalThis.window = globalThis.window || ({} as any);
+    // d3 select() needs a document in the node env
+    globalThis.document = { querySelector: () => null, documentElement: {} } as any;
+    globalThis.pack = { cells: {}, routes: [] } as any;
+    await import("./routes-generator");
+    Routes = (globalThis as any).Routes;
+  });
+
+  it("removes a route when the link index is asymmetric (reverse cell absent)", () => {
+    globalThis.pack.routes = [
+      {
+        i: 1,
+        group: "roads",
+        points: [
+          [0, 0, 10],
+          [0, 0, 20]
+        ]
+      }
+    ] as any;
+    // asymmetric index: forward link 10->20 exists but cell 20 has no reverse entry
+    globalThis.pack.cells.routes = { 10: { 20: 1 } } as any;
+
+    expect(() => Routes.remove(globalThis.pack.routes[0])).not.toThrow();
+    expect(globalThis.pack.routes).toHaveLength(0);
+    expect(globalThis.pack.cells.routes[10][20]).toBeUndefined();
+  });
+});

@@ -88,6 +88,7 @@ function renderDialog(): void {
     </div>
     <div id="markerBottom">
       <button id="markerNotes" data-tip="Edit place legend (notes)" class="icon-edit"></button>
+      <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
       <button id="markerRemove" data-tip="Remove the marker" data-shortcut="Delete" class="icon-trash fastDelete"></button>
@@ -96,19 +97,20 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("markerType").addEventListener("change", changeMarkerType);
-  ensureEl("markerIconSelect").addEventListener("click", changeMarkerIcon);
-  ensureEl("markerIconSize").addEventListener("input", changeIconSize);
-  ensureEl("markerIconShiftX").addEventListener("input", changeIconShiftX);
-  ensureEl("markerIconShiftY").addEventListener("input", changeIconShiftY);
-  ensureEl("markerSize").addEventListener("input", changeMarkerSize);
-  ensureEl("markerPin").addEventListener("change", changeMarkerPin);
-  ensureEl("markerFill").addEventListener("input", changePinFill);
-  ensureEl("markerStroke").addEventListener("input", changePinStroke);
-  ensureEl("markerNotes").addEventListener("click", editMarkerLegend);
-  ensureEl("markerLock").addEventListener("click", toggleMarkerLock);
-  ensureEl("markerAdd").addEventListener("click", toggleAddMarker);
-  ensureEl("markerRemove").addEventListener("click", confirmMarkerDeletion);
+  ensureEl("markerType").on("change", changeMarkerType);
+  ensureEl("markerIconSelect").on("click", changeMarkerIcon);
+  ensureEl("markerIconSize").on("input", changeIconSize);
+  ensureEl("markerIconShiftX").on("input", changeIconShiftX);
+  ensureEl("markerIconShiftY").on("input", changeIconShiftY);
+  ensureEl("markerSize").on("input", changeMarkerSize);
+  ensureEl("markerPin").on("change", changeMarkerPin);
+  ensureEl("markerFill").on("input", changePinFill);
+  ensureEl("markerStroke").on("input", changePinStroke);
+  ensureEl("markerNotes").on("click", editMarkerLegend);
+  ensureEl("markerRadius").on("click", openMarkersInRadius);
+  ensureEl("markerLock").on("click", toggleMarkerLock);
+  ensureEl("markerAdd").on("click", toggleAddMarker);
+  ensureEl("markerRemove").on("click", confirmMarkerDeletion);
 }
 
 function getElement(markerI?: number, target?: Element): [SVGSVGElement, Marker] | null {
@@ -283,6 +285,10 @@ function redrawPin({ i, hidden, pin = "bubble", fill = "#fff", stroke = "#000" }
 function editMarkerLegend(): void {
   const id = selectedElement.id;
   void Controllers.NotesEditor.open(id, id);
+}
+
+function openMarkersInRadius(): void {
+  void Controllers.MarkersInRadius.open(selectedMarker);
 }
 
 function toggleMarkerLock(): void {

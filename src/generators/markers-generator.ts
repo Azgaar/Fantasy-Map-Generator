@@ -44,6 +44,10 @@ type MarkerConfig = {
   dx?: number;
   dy?: number;
   px?: number;
+  size?: number;
+  pin?: string;
+  fill?: string;
+  stroke?: string;
   min: number;
   each: number;
   multiplier: number;
@@ -92,8 +96,8 @@ class MarkersModule {
   add(marker: Marker) {
     const base = this.config.find(c => c.type === marker.type);
     if (base) {
-      const { icon, type, dx, dy, px } = base;
-      marker = this.addMarker({ icon, type, dx, dy, px }, marker);
+      const { icon, type, dx, dy, px, size, pin, fill, stroke } = base;
+      marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, marker);
       base.add(`marker${marker.i}`, marker.cell);
       return marker;
     }
@@ -108,6 +112,15 @@ class MarkersModule {
     const noteId = `marker${markerId}`;
     notes = notes.filter(note => note.id !== noteId);
     pack.markers = pack.markers.filter(m => m.i !== markerId);
+  }
+
+  private listParty({ cells }: PackedGraph) {
+    return cells.i.filter(i => !this.occupied[i] && cells.burg[i]);
+  }
+
+  private addParty(id: string) {
+    if (notes.find(note => note.id === id)) return;
+    notes.push({ id, name: "The Party", legend: "Current location of the adventuring party." });
   }
 
   private getDefaultConfig(): MarkerConfig[] {
@@ -464,6 +477,19 @@ class MarkersModule {
         multiplier: 1,
         list: this.listEncounters.bind(this),
         add: this.addEncounter.bind(this)
+      },
+      {
+        type: "party",
+        icon: "🚩",
+        size: 46,
+        pin: "pin",
+        fill: "#ffffff",
+        stroke: "#d4351c",
+        min: 1,
+        each: Number.MAX_SAFE_INTEGER,
+        multiplier: 1,
+        list: this.listParty.bind(this),
+        add: this.addParty.bind(this)
       }
     ];
   }
@@ -475,7 +501,7 @@ class MarkersModule {
   private generateTypes() {
     TIME && console.time("addMarkers");
 
-    this.config.forEach(({ type, icon, dx, dy, px, min, each, multiplier, list, add }) => {
+    this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
       if (multiplier === 0) return;
 
       const candidates = Array.from(list(pack));
@@ -485,7 +511,7 @@ class MarkersModule {
 
       while (quantity && candidates.length) {
         const [cell] = this.extractAnyElement(candidates);
-        const marker = this.addMarker({ icon, type, dx, dy, px }, { cell });
+        const marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, { cell });
         if (!marker) continue;
         add(`marker${marker.i}`, cell);
         quantity--;
@@ -1660,9 +1686,35 @@ class MarkersModule {
   }
 
   private addEncounter(id: string, cell: number) {
-    const name = "Random encounter";
-    const encounterSeed = cell; // use just cell Id to not overwhelm the Vercel KV database
-    const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
+    if (typeof navigator === "undefined" || navigator.onLine !== false) {
+      const name = "Random encounter";
+      const encounterSeed = cell;
+      const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
+      notes.push({ id, name, legend });
+      return;
+    }
+
+    const { cells } = pack;
+    const cultureName = Names.getCulture(cells.culture[cell]);
+    const biomeName = (pack.biomes[cells.biome[cell]]?.name || "wilderness").toLowerCase();
+
+    const kinds = [
+      { subject: "Bandits", verb: "have set an ambush" },
+      { subject: "Wild beasts", verb: "have been sighted" },
+      { subject: "A lone traveler", verb: "was seen wandering" },
+      { subject: "Cultists", verb: "gather in secret" },
+      { subject: "A pilgrim", verb: "walks the road" },
+      { subject: "Refugees", verb: "have made camp" },
+      { subject: "Smugglers", verb: "move under cover of night" },
+      { subject: "A hermit", verb: "dwells alone" },
+      { subject: "Mercenaries", verb: "ride through" },
+      { subject: "Poachers", verb: "have been active" }
+    ];
+    const { subject, verb } = ra(kinds);
+
+    const name = `${subject} of ${cultureName}`;
+    const legend = `${subject} ${verb} in the ${biomeName} of ${cultureName} lands.`;
+
     notes.push({ id, name, legend });
   }
 }

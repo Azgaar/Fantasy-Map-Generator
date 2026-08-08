@@ -76,15 +76,24 @@ function markerRenderer(marker: Marker, rescale = 1): string {
     </svg>`;
 }
 
+// transient set of marker ids the map should render, driven by the Markers Overview filter.
+// null = no filter (render everything). Not persisted — never touches pack data or the .map file.
+let visibleMarkerIds: Set<number> | null = null;
+
+const setMarkersFilter = (ids: number[] | null): void => {
+  visibleMarkerIds = ids ? new Set(ids) : null;
+};
+
 const markersRenderer = (): void => {
   TIME && console.time("drawMarkers");
 
   const rescale = +select("#markers").attr("rescale");
   const pinned = +select("#markers").attr("pinned");
 
-  const markersData: Marker[] = pinned
+  let markersData: Marker[] = pinned
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
+  if (visibleMarkerIds) markersData = markersData.filter((marker: Marker) => visibleMarkerIds!.has(marker.i));
   const html = markersData.map(marker => markerRenderer(marker, rescale));
   select("#markers").html(html.join(""));
 
@@ -94,4 +103,4 @@ const markersRenderer = (): void => {
 window.drawMarkers = markersRenderer;
 window.drawMarker = markerRenderer;
 
-export { getPinForShape as getPin, markerRenderer as drawMarker, markersRenderer as drawMarkers };
+export { getPinForShape as getPin, markerRenderer as drawMarker, markersRenderer as drawMarkers, setMarkersFilter };
