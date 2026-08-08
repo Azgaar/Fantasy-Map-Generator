@@ -8,6 +8,7 @@ import {
   type LabelNameMode,
   type LabelType
 } from "@/generators/labels-generator";
+import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
 
@@ -158,7 +159,7 @@ function countLabelsByGroup(): Map<string, number> {
     if (!route.name) continue;
     increment(route.label?.group || "route");
   }
-  for (const label of pack.labels) {
+  for (const label of pack.addedLabels) {
     increment(label.group);
   }
 
@@ -252,7 +253,9 @@ function removeLine(row: HTMLTableRowElement): void {
   });
 }
 
-const isModeApplicable = (type: LabelType) => ["state", "province"].includes(type);
+function isModeApplicable(type: LabelType) {
+  return ["state", "province"].includes(type);
+}
 
 function validateForm(): boolean {
   const form = ensureEl<HTMLFormElement>("labelGroupsForm");
@@ -268,9 +271,7 @@ function validateForm(): boolean {
     const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
     const isValidName = GROUP_NAME_REGEXP.test(value);
     const isUnique = names.filter(name => name === value).length === 1;
-    if (!isValidName)
-      message =
-        "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes";
+    if (!isValidName) message = "Group name must start with a letter or underscore and not contain special characters";
     if (!isUnique) message = "Group name should be unique";
     input.setCustomValidity(message);
   });
@@ -287,39 +288,39 @@ function submitForm(event: Event): void {
   const rows = Array.from(ensureEl("labelGroupsBody").children) as HTMLTableRowElement[];
   if (!rows.length) return void tip("At least one group should be defined", false, "error");
 
-  const newGroups = rows.map(rowToGroup);
-  const renames: [string, string][] = [];
-  const survivingNames = new Set<string>();
+  const newGroupNames = new Set<string>();
   rows.forEach(row => {
-    const originalName = row.dataset.group;
-    if (!originalName) return;
-    survivingNames.add(originalName);
-    const currentName = row.querySelector<HTMLInputElement>('[name="name"]')!.value.trim();
-    if (currentName !== originalName) renames.push([originalName, currentName]);
-  });
-  const removedNames = options.labels.groups.map(group => group.name).filter(name => !survivingNames.has(name));
+    const oldName = row.dataset.group;
 
-  for (const [oldName, newName] of renames) {
-    renameGroupInEntities(oldName, newName);
-    const groupStyle = style.labels.groups[oldName];
-    if (groupStyle) {
-      style.labels.groups[newName] = groupStyle;
-      delete style.labels.groups[oldName];
+    const newGroup = rowToGroup(row);
+    newGroupNames.add(newGroup.name);
+
+    if (newGroup.name !== oldName) {
+      if (oldName) {
+        // group is renamed
+        replaceGroupInEntities(newGroup.name, newGroup.type);
+        style.labels.groups[newGroup.name] = style.labels.groups[oldName];
+        delete style.labels.groups[oldName];
+      } else {
+        // group is new
+        style.labels.groups[newGroup.name] = getGroupStyle(newGroup);
+      }
     }
-    void Controllers.LabelsEditor.renameLastSelectedGroup(oldName, newName);
-  }
-  for (const name of removedNames) {
-    delete style.labels.groups[name];
-    resetGroupInEntities(name);
-  }
+  });
 
-  options.labels.groups = newGroups;
+  options.labels.groups.forEach(group => {
+    if (newGroupNames.has(group.name)) return;
+    // group is removed
+    const fallback = Labels.getFallbackGroup(group.type);
+    replaceGroupInEntities(group.name, fallback.name);
+    delete style.labels.groups[group.name];
+  });
+
+  options.labels.groups = rows.map(rowToGroup);
   options.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   options.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
-  const exportShowAll = document.querySelector<HTMLInputElement>("#showLabels");
-  if (exportShowAll) exportShowAll.checked = options.labels.showAll;
+  localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
-  localStorage.setItem("label-groups", JSON.stringify(options.labels.groups));
   drawLabels();
   $("#labelGroupsConfigurator").dialog("close");
 }
@@ -344,31 +345,20 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
   return group;
 }
 
-function forEachLabelledEntity(callback: (entity: { label?: Label }) => void): void {
-  pack.states.forEach(callback);
-  pack.provinces.forEach(callback);
-  pack.burgs.forEach(callback);
-  pack.rivers.forEach(callback);
-  pack.routes.forEach(callback);
-}
+function replaceGroupInEntities(oldName: string, newName: string): void {
+  const regroupLabel = (entity: { label?: Label }) => {
+    if (entity.label?.group === oldName) entity.label.group = newName;
+  };
+  const regroupEntity = (entity: { group: string }) => {
+    if (entity.group === oldName) entity.group = newName;
+  };
 
-function renameGroupInEntities(oldName: string, newName: string): void {
-  forEachLabelledEntity(entity => {
-    if (entity.label && entity.label.group === oldName) entity.label.group = newName;
-  });
-  pack.labels.forEach(label => {
-    if (label.group === oldName) label.group = newName;
-  });
-}
-
-function resetGroupInEntities(name: string): void {
-  forEachLabelledEntity(entity => {
-    if (entity.label && entity.label.group === name) delete entity.label.group;
-  });
-  const fallback = Labels.getFallbackGroup("added").name;
-  pack.labels.forEach(label => {
-    if (label.group === name) label.group = fallback;
-  });
+  pack.states.forEach(regroupLabel);
+  pack.provinces.forEach(regroupLabel);
+  pack.burgs.forEach(regroupLabel);
+  pack.rivers.forEach(regroupLabel);
+  pack.routes.forEach(regroupLabel);
+  pack.addedLabels.forEach(regroupEntity);
 }
 
 function close(): void {

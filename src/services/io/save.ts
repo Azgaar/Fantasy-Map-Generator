@@ -119,7 +119,7 @@ function prepareMapData(): string {
   const goods = JSON.stringify(pack.goods);
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
-  const labels = JSON.stringify(pack.labels || []);
+  const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(style);
 
   // store custom good icons

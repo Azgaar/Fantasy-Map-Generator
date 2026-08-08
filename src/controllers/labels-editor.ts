@@ -521,9 +521,9 @@ function applyLabelChanges(): void {
 
   if (type === "added") {
     if (!("pathPoints" in label)) return;
-    const index = pack.labels.findIndex(({ i }) => i === entityId);
+    const index = pack.addedLabels.findIndex(({ i }) => i === entityId);
     if (index === -1) return;
-    pack.labels[index] = {
+    pack.addedLabels[index] = {
       ...override,
       i: entityId,
       text: label.text,
@@ -555,10 +555,10 @@ function resetSelectedLabel(): void {
   const { type, entityId, text, group } = label;
   if (type === "added") {
     if (!("pathPoints" in label)) return;
-    const index = pack.labels.findIndex(({ i }) => i === entityId);
+    const index = pack.addedLabels.findIndex(({ i }) => i === entityId);
     if (index === -1) return;
     const resetLabel: AddedLabel = { i: entityId, text, pathPoints: label.pathPoints, group };
-    pack.labels[index] = resetLabel;
+    pack.addedLabels[index] = resetLabel;
   } else {
     const entity = getLabelEntity(type, entityId);
     if (!entity) return;
@@ -616,8 +616,4 @@ function getLabelOverride(): PathLabel {
 }
 
 const getLastSelectedGroup = (): string => lastSelectedGroup;
-const renameLastSelectedGroup = (oldName: string, newName: string): void => {
-  if (lastSelectedGroup === oldName) lastSelectedGroup = newName;
-};
-
-export const LabelsEditor = { open, getLastSelectedGroup, renameLastSelectedGroup };
+export const LabelsEditor = { open, getLastSelectedGroup };

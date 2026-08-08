@@ -465,7 +465,7 @@ class Resampler {
     for (const state of pack.states) {
       if (state.label) state.label.pathPoints = undefined;
     }
-    pack.labels = (parentMap.pack.labels || []).map(label => ({
+    pack.addedLabels = (parentMap.pack.addedLabels || []).map(label => ({
       ...label,
       pathPoints: label.pathPoints.map(([x, y]) => projection(x, y))
     }));

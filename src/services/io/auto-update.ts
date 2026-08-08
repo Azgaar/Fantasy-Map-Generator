@@ -1357,7 +1357,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       style.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
-    pack.labels = [];
+    pack.addedLabels = [];
     const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
     for (const addedGroup of addedGroups) {
       let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;

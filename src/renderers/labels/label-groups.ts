@@ -29,21 +29,6 @@ export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup):
   return group;
 }
 
-function _ensureLabelGroup(groupName: string, type: LabelType, root: ParentNode = document): SVGGElement {
-  const labels = root.querySelector<SVGGElement>("#labels");
-  if (!labels) throw new Error("Labels container not found");
-
-  let group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
-  if (!group) {
-    ERROR && console.error(`Label group ${groupName} not found, applying fallback group for type ${type}`);
-    const fallbackGroup = Labels.getFallbackGroup(type);
-    group = labels.querySelector<SVGGElement>(`#labels-${fallbackGroup.name}`);
-    if (!group) throw new Error(`Fallback label group for type ${type} not rendered`);
-  }
-
-  return group;
-}
-
 const BASE_STYLE: LabelGroupStyle = {
   fill: "#3e3e4b",
   opacity: 1,

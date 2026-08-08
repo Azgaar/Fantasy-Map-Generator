@@ -128,6 +128,14 @@ class LabelsModule {
     ];
   }
 
+  getDefaultOptions() {
+    return {
+      resizeOnZoom: true,
+      showAll: false,
+      groups: this.getDefaultGroups()
+    };
+  }
+
   getFallbackGroup(type: LabelType): LabelGroup {
     const fallbackGroup = this.getDefaultGroups().find(group => group.isDefault && group.type === type);
     return fallbackGroup ?? { name: type, type, zoom: { min: null, max: null }, isDefault: true };
@@ -150,22 +158,22 @@ export interface AddedLabel extends PathLabel {
 
 export class AddedLabelsModule {
   initiate(): void {
-    pack.labels = [];
+    pack.addedLabels = [];
   }
 
   get(i: number): AddedLabel | undefined {
-    return pack.labels.find(label => label.i === i);
+    return pack.addedLabels.find(label => label.i === i);
   }
 
   add(data: Omit<AddedLabel, "i">): AddedLabel {
-    const i = pack.labels.reduce((max, label) => Math.max(max, label.i), -1) + 1;
+    const i = pack.addedLabels.reduce((max, label) => Math.max(max, label.i), -1) + 1;
     const label = { ...data, i };
-    pack.labels.push(label);
+    pack.addedLabels.push(label);
     return label;
   }
 
   remove(i: number): void {
-    pack.labels = pack.labels.filter(label => label.i !== i);
+    pack.addedLabels = pack.addedLabels.filter(label => label.i !== i);
     notes = notes.filter(note => note.id !== `addedLabel${i}`);
   }
 }

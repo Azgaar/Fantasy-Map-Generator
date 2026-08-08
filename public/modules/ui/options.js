@@ -777,6 +777,10 @@ function copyLinkToClickboard() {
   navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
 }
 
+ensureEl("showLabels").addEventListener("change", function () {
+  options.labels.showAll = Boolean(this.checked);
+});
+
 function showExportPane() {
   ensureEl("showLabels").checked = options.labels.showAll;
 

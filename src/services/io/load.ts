@@ -462,7 +462,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
-    pack.labels = data[47] ? JSON.parse(data[47]) : [];
+    pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");

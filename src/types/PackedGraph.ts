@@ -70,5 +70,5 @@ export interface PackedGraph {
   markets: Market[];
   deals: Deal[];
   measurers: Measurer[];
-  labels: AddedLabel[];
+  addedLabels: AddedLabel[];
 }

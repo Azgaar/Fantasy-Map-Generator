@@ -153,7 +153,7 @@ function getRouteLabelsData(): PathLabelData[] {
 
 function getAddedLabelsData(): LabelData[] {
   const labels: PathLabelData[] = [];
-  for (const label of pack.labels) {
+  for (const label of pack.addedLabels) {
     if (!label.i || !label.pathPoints.length) continue;
     labels.push({
       id: `addedLabel${label.i}`,

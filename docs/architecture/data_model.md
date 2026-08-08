@@ -315,7 +315,7 @@ The shared optional `Label` fields are:
 State, Province, and Burg label overrides are stored on their entities as `pack.states[i].label`,
 `pack.provinces[i].label`, and `pack.burgs[i].label`.
 
-User-added labels are stored independently in `pack.labels` as an unordered `AddedLabel[]`:
+User-added labels are stored independently in `pack.addedLabels` as an unordered `AddedLabel[]`:
 
 - `i`: `number` - stable id
 - `text`: `string` - displayed text

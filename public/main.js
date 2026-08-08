@@ -149,9 +149,6 @@ let notes = [];
 let customization = 0;
 
 // global options; in v2.0 to be used for all UI settings
-const burgGroups = JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups();
-const labelGroups = JSON.safeParse(localStorage.getItem("label-groups")) || Labels.getDefaultGroups();
-const animationSettings = JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions();
 let options = {
   pinNotes: false,
   winds: [225, 45, 225, 315, 135, 315],
@@ -164,15 +161,11 @@ let options = {
   prec: 100, // precipitation modifier in %
   showBurgPreview: true,
   burgs: {
-    groups: burgGroups
+    groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
   },
-  labels: {
-    resizeOnZoom: true,
-    showAll: false,
-    groups: labelGroups
-  },
+  labels: JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions(),
   trade: {
-    animation: animationSettings
+    animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
   },
   threeD: { ...window.ThreeDOptions }
 };
