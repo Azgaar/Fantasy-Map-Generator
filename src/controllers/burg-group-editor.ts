@@ -1,5 +1,6 @@
-import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { Controllers } from "@/controllers";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "../utils";
@@ -8,6 +9,7 @@ const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
 function editBurgGroups(): void {
   if (customization) return;
+  closeDialogs(".stable");
   renderDialog();
   addLines();
 
@@ -27,6 +29,9 @@ function editBurgGroups(): void {
         options.burgs.groups = Burgs.getDefaultGroups() as typeof options.burgs.groups;
         addLines();
       },
+      "Label Groups": () => {
+        void Controllers.LabelGroupsConfigurator.open();
+      },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
@@ -36,7 +41,7 @@ function editBurgGroups(): void {
 
 function renderDialog(): void {
   destroyDialogIfExists("burgGroupsEditor");
-  const html = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
+  const html = /* html */ `<div id="burgGroupsEditor" class="dialog">
     <form id="burgGroupsForm">
       <table class="table">
         <thead>
@@ -61,9 +66,8 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      Locked burgs are not affected by changes in groups.<br>
-      Applying Burg-group changes reclassifies Burgs and therefore their default Label Groups. Burg labels manually
-      assigned to another Label Group keep that label-only assignment.
+      Applying changes reclassifies Burgs. Locked burgs are not affected. Group changes also affect Label Groups.
+      <br>Burg labels manually assigned to another Label Group keep their manual assignment.
     </div>
   </div>`;
 

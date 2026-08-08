@@ -1,4 +1,4 @@
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import {
@@ -13,49 +13,47 @@ import { destroyDialogIfExists, ensureEl } from "@/utils";
 
 // TODO: replace with Layers registry data
 const LAYER_TOGGLES: { id: string; label: string }[] = [
-  { id: "toggleTexture", label: "Texture" },
-  { id: "toggleHeight", label: "Heightmap" },
-  { id: "toggleLakes", label: "Lakes" },
+  { id: "toggleBorders", label: "Borders" },
   { id: "toggleBiomes", label: "Biomes" },
+  { id: "toggleBurgIcons", label: "Burg Icons" },
   { id: "toggleCells", label: "Cells" },
-  { id: "toggleGrid", label: "Grid" },
-  { id: "toggleCoordinates", label: "Coordinates" },
   { id: "toggleCompass", label: "Wind Rose" },
-  { id: "toggleRivers", label: "Rivers" },
+  { id: "toggleCoordinates", label: "Coordinates" },
+  { id: "toggleCultures", label: "Cultures" },
+  { id: "toggleEmblems", label: "Emblems" },
+  { id: "toggleGoods", label: "Goods" },
+  { id: "toggleGrid", label: "Grid" },
+  { id: "toggleHeight", label: "Heightmap" },
+  { id: "toggleIce", label: "Ice" },
+  { id: "toggleLabels", label: "Labels" },
+  { id: "toggleLakes", label: "Lakes" },
+  { id: "toggleMarketsLayer", label: "Markets" },
+  { id: "toggleMarkers", label: "Markers" },
+  { id: "toggleMilitary", label: "Military" },
+  { id: "togglePopulation", label: "Population" },
+  { id: "togglePrecipitation", label: "Precipitation" },
+  { id: "toggleProvinces", label: "Provinces" },
   { id: "toggleRelief", label: "Relief" },
   { id: "toggleReligions", label: "Religions" },
-  { id: "toggleCultures", label: "Cultures" },
-  { id: "toggleStates", label: "States" },
-  { id: "toggleProvinces", label: "Provinces" },
-  { id: "toggleZones", label: "Zones" },
-  { id: "toggleBorders", label: "Borders" },
   { id: "toggleRoutes", label: "Routes" },
-  { id: "toggleTemperature", label: "Temperature" },
-  { id: "toggleIce", label: "Ice" },
-  { id: "toggleGoods", label: "Goods" },
-  { id: "toggleMarketsLayer", label: "Markets" },
-  { id: "toggleTrade", label: "Trade" },
-  { id: "togglePrecipitation", label: "Precipitation" },
-  { id: "togglePopulation", label: "Population" },
-  { id: "toggleEmblems", label: "Emblems" },
-  { id: "toggleBurgIcons", label: "Burg Icons" },
-  { id: "toggleLabels", label: "Labels" },
-  { id: "toggleMilitary", label: "Military" },
-  { id: "toggleMarkers", label: "Markers" },
   { id: "toggleRulers", label: "Rulers" },
   { id: "toggleScaleBar", label: "Scale Bar" },
-  { id: "toggleVignette", label: "Vignette" }
+  { id: "toggleTexture", label: "Texture" },
+  { id: "toggleTemperature", label: "Temperature" },
+  { id: "toggleTrade", label: "Trade" },
+  { id: "toggleVignette", label: "Vignette" },
+  { id: "toggleZones", label: "Zones" }
 ];
 
 function open(): void {
   if (customization) return;
+  closeDialogs(".stable");
   renderDialog();
   addLines();
 
   $("#labelGroupsConfigurator").dialog({
     title: "Configure Label Groups",
     resizable: false,
-    width: "40em",
     maxHeight: Math.max(window.innerHeight - 40, 300),
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close,
@@ -64,6 +62,9 @@ function open(): void {
         ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
       },
       Add: addLine,
+      "Burg Groups": () => {
+        void Controllers.BurgGroupEditor.open();
+      },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
@@ -75,28 +76,28 @@ function renderDialog(): void {
   destroyDialogIfExists("labelGroupsConfigurator");
   const html = /* html */ `<div id="labelGroupsConfigurator" class="dialog">
     <form id="labelGroupsForm">
-      <table class="table">
+      <table class="table" style="white-space:nowrap; overflow-x:auto; max-width:100%">
         <colgroup>
-          <col style="width:3.5em">
-          <col style="width:3em">
-          <col style="width:10em">
-          <col style="width:6.5em">
-          <col style="width:4.5em">
-          <col style="width:4.3em">
-          <col style="width:4.3em">
-          <col style="width:10em">
+          <col style="width:2.5em">
+          <col style="width:8em">
+          <col style="width:5.5em">
           <col style="width:4em">
+          <col style="width:3.5em">
+          <col style="width:3.5em">
+          <col style="width:8.5em">
+          <col style="width:3.2em">
+          <col style="width:3.2em">
         </colgroup>
         <thead>
           <tr>
-            <th data-tip="Rendering order: lower groups are rendered on top">Order</th>
-            <th data-tip="Activate/deactivate group">Active</th>
+            <th data-tip="Activate/deactivate group. Deactivated group labels are not visible">Active</th>
             <th data-tip="Group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes">Group</th>
-            <th data-tip="Label type, fixed after creation">Type</th>
+            <th data-tip="Label type, cannot be changed after creation">Type</th>
             <th data-tip="Name display mode. Only applicable to States and Provinces">Mode</th>
-            <th data-tip="Minimum zoom to show the group">Zoom min</th>
-            <th data-tip="Maximum zoom to show the group">Zoom max</th>
+            <th data-tip="Minimum zoom level to show the group">Zoom min</th>
+            <th data-tip="Maximum zoom level to show the group">Zoom max</th>
             <th data-tip="Layer that must be toggled on for this group to be shown">Layer dependency</th>
+            <th data-tip="Rendering order: lower groups are rendered on top">Order</th>
             <th data-tip="Edit style or remove group">Actions</th>
           </tr>
         </thead>
@@ -117,10 +118,6 @@ function renderDialog(): void {
   ensureEl("labelGroupsBody").addEventListener("change", onBodyChange);
 }
 
-function close(): void {
-  destroyDialogIfExists("labelGroupsConfigurator");
-}
-
 function addLines(): void {
   ensureEl("labelGroupsBody").innerHTML = options.labels.groups.map(group => createLine(group)).join("");
 }
@@ -134,8 +131,8 @@ function addLine(): void {
 
 function createLine(group: LabelGroup, isNew = false): string {
   const modes: LabelNameMode[] = ["auto", "short", "full"];
-  const protectedGroup = Boolean(group.isDefault);
-  const nameTip = protectedGroup
+  const isDefault = Boolean(group.isDefault);
+  const nameTip = isDefault
     ? "Default group for this type, can't be renamed"
     : "Group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes";
   const modeApplicable = isModeApplicable(group.type);
@@ -143,10 +140,9 @@ function createLine(group: LabelGroup, isNew = false): string {
     ? "Name display mode: auto picks the best fit, short/full force a specific name form"
     : "Name display mode is only applicable to States and Provinces";
 
-  return /* html */ `<tr data-group="${isNew ? "" : group.name}" data-is-default="${protectedGroup ? "1" : ""}">
-      <td data-tip="Assignment order: move group up or down"><button type="button" name="up" class="icon-up-open" data-tip="Move up"></button><button type="button" name="down" class="icon-down-open" data-tip="Move down"></button></td>
+  return /* html */ `<tr data-group="${isNew ? "" : group.name}" data-is-default="${isDefault ? "1" : ""}">
       <td data-tip="Activate/deactivate group"><input type="checkbox" name="active" class="native" ${group.active !== false ? "checked" : ""}></td>
-      <td data-tip="${nameTip}"><input type="text" name="name" value="${group.name}" ${protectedGroup ? "disabled" : "required"}></td>
+      <td data-tip="${nameTip}"><input type="text" name="name" value="${group.name}" ${isDefault ? "disabled" : "required"}></td>
       <td data-tip="Label type, fixed after creation"><select name="type" ${isNew ? "" : "disabled"}>
         ${DEFAULT_LABEL_TYPES.map(type => `<option value="${type}" ${group.type === type ? "selected" : ""}>${type}</option>`).join("")}
       </select></td>
@@ -154,16 +150,13 @@ function createLine(group: LabelGroup, isNew = false): string {
         ${modes.map(mode => `<option value="${mode}" ${(group.mode || "auto") === mode ? "selected" : ""}>${mode}</option>`).join("")}
       </select></td>
       <td data-tip="Minimum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-min" min="0.01" max="200" step=".01" value="${group.zoom.min ?? ""}"></td>
-      <td data-tip="Maximum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-max" min="0.01" max="@00" step=".01" value="${group.zoom.max ?? ""}"></td>
+      <td data-tip="Maximum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>
       <td data-tip="Layer that must be toggled on for this group to be shown"><select name="dependency">
         <option value="">None</option>
         ${LAYER_TOGGLES.map(({ id, label }) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label}</option>`).join("")}
       </select></td>
-      <td><button type="button" name="style" class="icon-brush" data-tip="Edit visual style"></button><span data-tip="${
-        protectedGroup ? "Default groups can't be removed" : "Remove group"
-      }"><button type="button" name="remove" class="icon-trash-empty" ${
-        protectedGroup ? "disabled" : ""
-      }></button></span></td>
+      <td data-tip="Assignment order: move group up or down"><button type="button" name="up" class="icon-up-open" data-tip="Move up"></button><button type="button" name="down" class="icon-down-open" data-tip="Move down"></button></td>
+      <td><button type="button" name="style" class="icon-brush" data-tip="Edit visual style"></button><span data-tip="${isDefault ? "Default groups can't be removed" : "Remove group"}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
     </tr>`;
 }
 
@@ -339,6 +332,10 @@ function resetGroupInEntities(name: string): void {
   pack.labels.forEach(label => {
     if (label.group === name) label.group = fallback;
   });
+}
+
+function close(): void {
+  destroyDialogIfExists("labelGroupsConfigurator");
 }
 
 export const LabelGroupsConfigurator = { open };
