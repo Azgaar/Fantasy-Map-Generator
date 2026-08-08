@@ -1,0 +1,19 @@
+{
+  "name": "fmg-rebuild-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  },
+  "dependencies": {
+    "d3": "^7.9.0",
+    "delaunator": "^5.0.1"
+  }
+}

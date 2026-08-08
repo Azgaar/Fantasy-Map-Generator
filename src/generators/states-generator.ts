@@ -53,6 +53,7 @@ export interface State {
   salesTax: number;
   pollTax: number;
   treasury: number;
+  isAquatic?: boolean;
 }
 
 interface Campaign {
@@ -239,12 +240,19 @@ class StatesModule {
     return pack.biomes[biome].cost; // general non-native biome penalty
   }
 
-  private getHeightCost(f: any, h: number, type: string) {
-    if (type === "Lake" && f.type === "lake") return 10; // low lake crossing penalty for Lake cultures
-    if (type === "Naval" && h < 20) return 300; // low sea crossing penalty for Navals
-    if (type === "Nomadic" && h < 20) return 10000; // giant sea crossing penalty for Nomads
-    if (h < 20) return 1000; // general sea crossing penalty
-    if (type === "Highland" && h < 62) return 1100; // penalty for highlanders on lowlands
+  private getHeightCost(h: number, i: number, type: string) {
+    const isHabitableWater = h < 20 && biomesData.habitability[pack.cells.biome[i]] > 0;
+    if (isHabitableWater) {
+      if (type !== "Aquatic") return 3000; // massive penalty for non-aquatics entering the sea
+      return 0; // aquatics thrive
+    }
+    if (type === "Aquatic" && h >= 20) return 3000; // massive penalty for aquatics going on land!
+    if (!isHabitableWater) {
+      if (type === "Naval" && h < 20) return 300; // low sea crossing penalty for Navals
+      if (type === "Nomadic" && h < 20) return 10000; // giant sea crossing penalty for Nomads
+      if (h < 20) return 1000; // general sea crossing penalty
+    }
+    if (type === "Highland" && h < 44) return 3000; // giant penalty for highlanders on lowlands
     if (type === "Highland") return 0; // no penalty for highlanders on highlands
     if (h >= 67) return 2200; // general mountains crossing penalty
     if (h >= 44) return 300; // general hills crossing penalty
@@ -322,9 +330,15 @@ class StatesModule {
         if (cells.state[e] && e === state.center) return; // do not overwrite capital cells
 
         const cultureCost = culture === cells.culture[e] ? -9 : 100;
-        const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
+        const isHabitableWater = cells.h[e] < 20 && biomesData.habitability[cells.biome[e]] > 0;
+        const populationCost =
+          cells.h[e] < 20 && type !== "Aquatic" && !isHabitableWater
+            ? 0
+            : cells.s[e]
+              ? Math.max(20 - cells.s[e], 0)
+              : 5000;
         const biomeCost = this.getBiomeCost(b, cells.biome[e], type);
-        const heightCost = this.getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
+        const heightCost = this.getHeightCost(cells.h[e], e, type);
         const riverCost = this.getRiverCost(cells.r[e], e, type);
         const typeCost = this.getTypeCost(cells.t[e], type);
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
@@ -333,7 +347,8 @@ class StatesModule {
         if (totalCost > growthRate) return;
 
         if (!cost[e] || totalCost < cost[e]) {
-          if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
+          const isHabitableWater = cells.h[e] < 20 && biomesData.habitability[cells.biome[e]] > 0;
+          if (cells.h[e] >= 20 || type === "Aquatic" || isHabitableWater) cells.state[e] = s; // assign state to cell
           cost[e] = totalCost;
           queue.push({ e, p: totalCost, s, b }, totalCost);
         }
@@ -353,7 +368,9 @@ class StatesModule {
     const { cells, burgs } = pack;
 
     for (const i of cells.i) {
-      if (cells.h[i] < 20 || cells.burg[i]) continue; // do not overwrite burgs
+      const isHabitableWater = cells.h[i] < 20 && biomesData.habitability[cells.biome[i]] > 0;
+      if ((cells.h[i] < 20 && pack.states[cells.state[i]]?.type !== "Aquatic" && !isHabitableWater) || cells.burg[i])
+        continue; // do not overwrite burgs
       if (pack.states[cells.state[i]]?.lock) continue; // do not overwrite cells of locks states
       if (cells.c[i].some(c => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
       const neibs = cells.c[i].filter(c => cells.h[c] >= 20);

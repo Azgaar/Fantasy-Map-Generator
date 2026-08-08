@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAGA & FMG Full-Stack Rebuild Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0B0F19;
+            --bg-surface: rgba(22, 29, 49, 0.7);
+            --border-glow: rgba(99, 102, 241, 0.15);
+            --border-glow-active: rgba(99, 102, 241, 0.4);
+            --text-primary: #F3F4F6;
+            --text-secondary: #9CA3AF;
+            --accent: #6366F1;
+            --accent-hover: #4F46E5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Premium Glassmorphic Header */
+        header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 70px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 10;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: border-color 0.3s;
+        }
+
+        header:hover {
+            border-color: var(--border-glow-active);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFF 30%, #818CF8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #EF4444;
+            box-shadow: 0 0 8px #EF4444;
+        }
+
+        .dot.connected {
+            background-color: #10B981;
+            box-shadow: 0 0 8px #10B981;
+        }
+
+        /* Sidebar Control Panel */
+        .controls {
+            position: absolute;
+            top: 110px;
+            left: 20px;
+            width: 320px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 24px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        select, input, button {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid var(--border-glow);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        button {
+            cursor: pointer;
+            background: var(--accent);
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Canvas workspace */
+        #viewport-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background-color: #05070B;
+            cursor: grab;
+        }
+
+        #viewport-container:active {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        /* Legend overlay */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            gap: 16px;
+            z-index: 10;
+            font-size: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* Floating tooltips */
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid var(--border-glow);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 20;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SAGA & FMG World Engine Rebuild</h1>
+        <div class="status-badge">
+            <span class="dot" id="ws-dot"></span>
+            <span id="ws-text">Disconnected</span>
+        </div>
+    </header>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="view-mode">View Layer</label>
+            <select id="view-mode">
+                <option value="biomes">Biomes / Geography</option>
+                <option value="height">Heightmap</option>
+                <option value="temp">Temperature</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="edit-brush">Edit Brush Mode</label>
+            <select id="edit-brush">
+                <option value="raise">Raise Land</option>
+                <option value="lower">Lower Land</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <button id="btn-reconnect">Connect Server</button>
+        </div>
+
+        <div id="inspector" style="margin-top: 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+            <strong>Map Coordinates</strong><br>
+            Hover or click over grid cells to inspect and edit land values in real-time.
+        </div>
+    </div>
+
+    <div id="viewport-container">
+        <canvas id="map-canvas"></canvas>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="color-box" style="background: #1D4ED8;"></div> Marine</div>
+        <div class="legend-item"><div class="color-box" style="background: #059669;"></div> Wetland</div>
+        <div class="legend-item"><div class="color-box" style="background: #EAB308;"></div> Desert</div>
+        <div class="legend-item"><div class="color-box" style="background: #D1FAE5;"></div> Tundra</div>
+        <div class="legend-item"><div class="color-box" style="background: #10B981;"></div> Grassland</div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        const canvas = document.getElementById("map-canvas");
+        const ctx = canvas.getContext("2d");
+        const container = document.getElementById("viewport-container");
+        const wsDot = document.getElementById("ws-dot");
+        const wsText = document.getElementById("ws-text");
+        const viewMode = document.getElementById("view-mode");
+        const editBrush = document.getElementById("edit-brush");
+        const reconnectBtn = document.getElementById("btn-reconnect");
+        const inspector = document.getElementById("inspector");
+        const tooltip = document.getElementById("tooltip");
+
+        const MAP_ID = "lobby-map-1";
+        const BACKEND_URL = `http://localhost:8000/api/map/${MAP_ID}`;
+        const WS_URL = `ws://localhost:8000/ws/map/${MAP_ID}`;
+
+        let mapState = null;
+        let ws = null;
+        
+        // Viewport transformations for Pan/Zoom
+        let scale = 1.0;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let startDragX = 0;
+        let startDragY = 0;
+
+        // Initialize Canvas Size
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            draw();
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        // Color maps
+        const biomesColors = {
+            "Marine": "#1D4ED8",
+            "Wetland": "#059669",
+            "Sandy Desert": "#EAB308",
+            "Tundra": "#D1FAE5",
+            "Rainforest": "#047857",
+            "Badlands": "#B45309",
+            "Grassland": "#10B981"
+        };
+
+        function getCellColor(cell) {
+            const mode = viewMode.value;
+            if (mode === "biomes") {
+                return biomesColors[cell.biome] || "#374151";
+            } else if (mode === "height") {
+                const gray = Math.floor(cell.height * 255);
+                return `rgb(${gray}, ${gray}, ${gray})`;
+            } else if (mode === "temp") {
+                const normalizedTemp = Math.max(0, Math.min(1, (cell.temperature + 10) / 40));
+                const red = Math.floor(normalizedTemp * 255);
+                const blue = Math.floor((1 - normalizedTemp) * 255);
+                return `rgb(${red}, 50, ${blue})`;
+            }
+        }
+
+        // High-Performance Drawing Loop
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!mapState) return;
+
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
+
+            // Draw cells as circles (sites)
+            const numCells = mapState.cells.length;
+            for (let i = 0; i < numCells; i++) {
+                const cell = mapState.cells[i];
+                ctx.fillStyle = getCellColor(cell);
+                ctx.beginPath();
+                ctx.arc(cell.x, cell.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Fetch Initial Map Data
+        async function fetchMap() {
+            try {
+                const res = await fetch(BACKEND_URL);
+                mapState = await res.json();
+                draw();
+            } catch (err) {
+                console.error("Error fetching map:", err);
+                inspector.innerHTML = `<span style="color: #EF4444;">Failed to load map data from backend. Make sure the FastAPI backend is running!</span>`;
+            }
+        }
+
+        // Setup WebSocket Sync
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+            }
+
+            wsText.innerText = "Connecting...";
+            wsDot.className = "dot";
+            
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                wsDot.className = "dot connected";
+                wsText.innerText = "Connected";
+                fetchMap();
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.op === "CELL_MUTATED" && mapState) {
+                    const cell = mapState.cells[msg.cellId];
+                    if (cell) {
+                        Object.assign(cell, msg.changes);
+                        draw();
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                wsDot.className = "dot";
+                wsText.innerText = "Disconnected";
+            };
+
+            ws.onerror = (err) => {
+                console.error("WS error:", err);
+            };
+        }
+
+        reconnectBtn.onclick = connectWebSocket;
+
+        // Viewport interaction (Panning & Zooming)
+        container.onmousedown = (e) => {
+            if (e.button === 0) { // Left click
+                isDragging = true;
+                startDragX = e.clientX - offsetX;
+                startDragY = e.clientY - offsetY;
+            }
+        };
+
+        container.onmousemove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Transform viewport mouse to map coordinate
+            const mapX = (mouseX - offsetX) / scale;
+            const mapY = (mouseY - offsetY) / scale;
+
+            if (isDragging) {
+                offsetX = e.clientX - startDragX;
+                offsetY = e.clientY - startDragY;
+                draw();
+            } else {
+                // Find closest cell under mouse (fast linear scan for the prototype)
+                if (mapState) {
+                    let closestCell = null;
+                    let minDist = 20; // Hover sensitivity
+                    for (const cell of mapState.cells) {
+                        const dist = Math.hypot(cell.x - mapX, cell.y - mapY);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestCell = cell;
+                        }
+                    }
+
+                    if (closestCell) {
+                        tooltip.style.left = `${e.clientX + 15}px`;
+                        tooltip.style.top = `${e.clientY + 15}px`;
+                        tooltip.style.display = "block";
+                        tooltip.innerHTML = `
+                            <strong>Cell ID:</strong> ${closestCell.id}<br>
+                            <strong>Height:</strong> ${(closestCell.height * 100).toFixed(1)}%<br>
+                            <strong>Biome:</strong> ${closestCell.biome}<br>
+                            <strong>Temp:</strong> ${closestCell.temperature.toFixed(1)}°C
+                        `;
+
+                        inspector.innerHTML = `
+                            <strong>Selected Cell:</strong> #${closestCell.id}<br>
+                            <strong>Location:</strong> (${closestCell.x.toFixed(1)}, ${closestCell.y.toFixed(1)})<br>
+                            <strong>Height:</strong> ${(closestCell.height * 100).toFixed(1)}%<br>
+                            <strong>Biome:</strong> ${closestCell.biome}
+                        `;
+                    } else {
+                        tooltip.style.display = "none";
+                    }
+                }
+            }
+        };
+
+        container.onmouseup = () => {
+            isDragging = false;
+        };
+
+        container.onwheel = (e) => {
+            e.preventDefault();
+            const zoomIntensity = 0.1;
+            const mouseX = e.clientX - canvas.offsetLeft;
+            const mouseY = e.clientY - canvas.offsetTop;
+            const wheel = e.deltaY < 0 ? 1 : -1;
+            
+            const zoomFactor = Math.exp(wheel * zoomIntensity);
+
+            // Zoom centered on mouse pointer
+            offsetX = mouseX - (mouseX - offsetX) * zoomFactor;
+            offsetY = mouseY - (mouseY - offsetY) * zoomFactor;
+            scale *= zoomFactor;
+
+            draw();
+        };
+
+        // Brush Edit Operation
+        container.onclick = (e) => {
+            if (isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const mapX = (e.clientX - rect.left - offsetX) / scale;
+            const mapY = (e.clientY - rect.top - offsetY) / scale;
+
+            if (mapState) {
+                let closestCell = null;
+                let minDist = 25;
+                for (const cell of mapState.cells) {
+                    const dist = Math.hypot(cell.x - mapX, cell.y - mapY);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestCell = cell;
+                    }
+                }
+
+                if (closestCell) {
+                    const valChange = editBrush.value === "raise" ? 0.15 : -0.15;
+                    const newHeight = Math.max(0.0, Math.min(1.0, closestCell.height + valChange));
+                    
+                    // Client-side quick predict
+                    closestCell.height = newHeight;
+                    if (newHeight < 0.25) closestCell.biome = "Marine";
+                    else if (newHeight > 0.6) closestCell.biome = "Tundra";
+                    else closestCell.biome = "Grassland";
+                    
+                    draw();
+
+                    // Send operation over WS to sync other players & persist in db
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            op: "MUTATE_CELL",
+                            cellId: closestCell.id,
+                            changes: {
+                                height: closestCell.height,
+                                biome: closestCell.biome
+                            }
+                        }));
+                    }
+                }
+            }
+        };
+
+        // Trigger connection setup
+        connectWebSocket();
+        viewMode.onchange = draw;
+    </script>
+</body>
+</html>
