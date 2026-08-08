@@ -1,4 +1,4 @@
-import { drag, easeSinInOut, hsl, interpolateRound, lab, leastIndex, max, mean, range, select } from "d3";
+import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -564,6 +564,30 @@ function restoreKeptData(): void {
   }
 }
 
+/**
+ * Creates a finder that assigns each request the nearest currently available land cell.
+ * Assigned cells are removed from the spatial index, so a later request cannot overwrite
+ * the reverse burg reference of an earlier request.
+ */
+export const createAvailableLandCellFinder = (cells: {
+  h: ArrayLike<number>;
+  p: readonly (readonly [number, number])[];
+}) => {
+  const landPoints: [number, number, number][] = [];
+  for (let i = 0; i < cells.p.length; i++) {
+    if (cells.h[i] >= 20) landPoints.push([cells.p[i][0], cells.p[i][1], i]);
+  }
+
+  const availableLand = quadtree<[number, number, number]>(landPoints);
+  return (x: number, y: number): number | undefined => {
+    const point = availableLand.find(x, y);
+    if (!point) return;
+
+    availableLand.remove(point);
+    return point[2];
+  };
+};
+
 function restoreRiskedData(): void {
   INFO && console.group("Edit Heightmap");
   TIME && console.time("restoreRiskedData");
@@ -690,20 +714,23 @@ function restoreRiskedData(): void {
     pack.cells.religion[i] = religion[g];
   }
 
-  // find closest land cell to burg
-  const findBurgCell = (x: number, y: number): number => {
-    const i = findCell(x, y)!;
-    if (pack.cells.h[i] >= 20) return i;
-    const dist = pack.cells.c[i].map(c =>
-      pack.cells.h[c] < 20 ? Infinity : (pack.cells.p[c][0] - x) ** 2 + (pack.cells.p[c][1] - y) ** 2
-    );
-    return pack.cells.c[i][leastIndex(dist)!];
-  };
+  // find closest available land cell to burg
+  const findBurgCell = createAvailableLandCellFinder(pack.cells);
 
   // find best cell for burgs
   for (const b of pack.burgs) {
     if (!b.i || b.removed) continue;
-    b.cell = findBurgCell(b.x, b.y);
+    const cell = findBurgCell(b.x, b.y);
+    if (cell === undefined) {
+      ERROR &&
+        console.error(
+          `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
+        );
+      Burgs.remove(b.i);
+      continue;
+    }
+
+    b.cell = cell;
     b.feature = pack.cells.f[b.cell];
 
     pack.cells.burg[b.cell] = b.i;
