@@ -1,4 +1,4 @@
-import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, range, select } from "d3";
+import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -10,7 +10,6 @@ import { drawMarkets } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
-import { createAvailableLandCellFinder } from "../utils/graphUtils";
 import {
   destroyDialogIfExists,
   ensureEl,
@@ -565,6 +564,30 @@ function restoreKeptData(): void {
   }
 }
 
+/**
+ * Creates a finder that assigns each request the nearest currently available land cell.
+ * Assigned cells are removed from the spatial index, so a later request cannot overwrite
+ * the reverse burg reference of an earlier request.
+ */
+export const createAvailableLandCellFinder = (cells: {
+  h: ArrayLike<number>;
+  p: readonly (readonly [number, number])[];
+}) => {
+  const landPoints: [number, number, number][] = [];
+  for (let i = 0; i < cells.p.length; i++) {
+    if (cells.h[i] >= 20) landPoints.push([cells.p[i][0], cells.p[i][1], i]);
+  }
+
+  const availableLand = quadtree<[number, number, number]>(landPoints);
+  return (x: number, y: number): number | undefined => {
+    const point = availableLand.find(x, y);
+    if (!point) return;
+
+    availableLand.remove(point);
+    return point[2];
+  };
+};
+
 function restoreRiskedData(): void {
   INFO && console.group("Edit Heightmap");
   TIME && console.time("restoreRiskedData");
@@ -698,7 +721,14 @@ function restoreRiskedData(): void {
   for (const b of pack.burgs) {
     if (!b.i || b.removed) continue;
     const cell = findBurgCell(b.x, b.y);
-    if (cell === undefined) throw new Error(`Risk restoration failed: no available land cell for burg ${b.i}`);
+    if (cell === undefined) {
+      ERROR &&
+        console.error(
+          `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
+        );
+      Burgs.remove(b.i);
+      continue;
+    }
 
     b.cell = cell;
     b.feature = pack.cells.f[b.cell];

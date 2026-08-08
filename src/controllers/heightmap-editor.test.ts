@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { createAvailableLandCellFinder } from "./graphUtils";
+
+(globalThis as Record<string, unknown>).ERROR = false;
+(globalThis as Record<string, unknown>).changeViewMode = () => {};
+const originalGetElementById = document.getElementById;
+document.getElementById = (() =>
+  ({
+    on: () => {},
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    appendChild: () => {},
+    remove: () => {},
+    classList: { add: () => {}, remove: () => {}, contains: () => false },
+    style: {}
+  }) as unknown as HTMLElement) as typeof document.getElementById;
+const { createAvailableLandCellFinder } = await import("./heightmap-editor");
+document.getElementById = originalGetElementById;
 
 describe("createAvailableLandCellFinder", () => {
   const cells: Parameters<typeof createAvailableLandCellFinder>[0] = {
