@@ -2,6 +2,7 @@ import { curveCatmullRom, line, select } from "d3";
 import "@/data/transport-types"; // register getDefaultTransportTypes on window for legacy main.js
 import type { Journey, JourneyPoint, Segment } from "@/types/Journey";
 import { round } from "@/utils";
+import { DEFAULT_JOURNEY_COLOR } from "@/utils/journey-metrics";
 
 const curveGen = line<JourneyPoint>()
   .x(d => d[0])
@@ -9,7 +10,6 @@ const curveGen = line<JourneyPoint>()
   .curve(curveCatmullRom.alpha(0.5));
 
 const DEFAULT_STROKE_WIDTH = 1.8;
-const DEFAULT_JOURNEY_COLOR = "#8b1a1a";
 
 function getStyle(): { strokeWidth: number } {
   const el = document.getElementById("journeys");

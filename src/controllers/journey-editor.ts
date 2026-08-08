@@ -7,10 +7,13 @@ import { TRANSPORT_TYPES_CHANGED } from "@/controllers/transport-types-editor";
 import { getDefaultTransportTypes } from "@/data/transport-types";
 import { drawJourneys } from "@/renderers/draw-journeys";
 import type { Journey, JourneyPoint, Segment, TransportDomain, TransportType } from "@/types/Journey";
-import { downloadFile, getFileName, getPointer, rn } from "@/utils";
+import { downloadFile, getFileName, getHoursPerDay, getPointer, rn } from "@/utils";
+import { cellEndpointLabel, cellEndpointTooltip } from "@/utils/cellLabels";
 import {
+  DEFAULT_JOURNEY_COLOR,
   effectiveSpeed,
   formatTravelTime,
+  isStaySegment,
   journeyTotals,
   OFF_ROAD_SPEED_FACTOR,
   segmentLengthKm,
@@ -26,14 +29,12 @@ import {
 } from "@/utils/journey-pathfinding";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
-const SEGMENT_GRID_COLUMNS = "2em 7em 9em 4.5em 5.5em 5.5em 5em 3.5em 4em 7em 2em 1.8em 1.8em 1.8em 1.8em 1.8em";
-const DEFAULT_JOURNEY_COLOR = "#8b1a1a";
-/** Errors explain a rule and need time to read; confirmations only acknowledge an action. */
 const ERROR_TIP_MS = 9000;
 const WARN_TIP_MS = 7000;
 const SUCCESS_TIP_MS = 2500;
-const POINT_EDIT_HINT =
-  "Drag the circles to reshape the path. Click the path to add a point, right-click a point to remove it.";
+const POINT_EDIT_HINT = "Drag points to move, click the path to add, right-click a point to remove.";
+const CUSTOM_PATH_HINT =
+  "Click cells to add points. Click the brush icon (or press Enter) to finish, Esc to cancel, right-click to undo.";
 
 let editingJourneyId: number | null = null;
 let pickState: {
@@ -41,14 +42,10 @@ let pickState: {
   endpoint: "from" | "to";
   chainNextTo?: boolean;
 } | null = null;
-/** Segment whose path points are currently being drag-edited on the map, if any. */
 let editingPointsSegId: number | null = null;
-/**
- * Point spacing captured when editing started, used to refill edges that dragging
- * stretches. Taken once so it reflects the pathfinder's natural density rather than
- * drifting upward as the user's own edits lengthen the path.
- */
 let pointEditSpacing = 0;
+let customPathSegId: number | null = null;
+let customPathPoints: JourneyPoint[] = [];
 
 function open(journeyId: number): void {
   if (customization) return;
@@ -76,12 +73,9 @@ function open(journeyId: number): void {
   });
 }
 
-// When transport types are added/renamed/deleted from the Transport Types editor,
-// rebuild every dropdown in this editor so the user sees the new types immediately.
 function onTransportTypesChanged(): void {
   const journey = getJourney();
   if (!journey) return;
-  // Repopulate every segment-row's transport dropdown, preserving the current selection.
   document.querySelectorAll<HTMLSelectElement>("#segmentsBody .segTransport").forEach(sel => {
     const currentValue = sel.value;
     sel.innerHTML = pack.transportTypes.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
@@ -101,126 +95,37 @@ function getJourney(): Journey | undefined {
 function renderDialog(journey: Journey): void {
   destroyDialogIfExists("journeyEditor");
 
-  const unit = distanceUnitInput.value;
-  const transportOptions = pack.transportTypes
-    .map(t => `<option value="${t.name}">${t.name} (${t.domain}, ${t.speed} ${unit}/h)</option>`)
-    .join("");
-
   const html = /* html */ `<div id="journeyEditor" class="dialog stable">
-    <style>
-      /* From/To cells are clickable map-pickers — style them as chips so that reads visually */
-      #journeyEditor .cellPick {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        padding: 1px 4px;
-        border-radius: 3px;
-        border: 1px solid #9c9186;
-        background: #efe9df;
-        color: #4a4038;
-        font-size: 0.85em;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.12s ease, border-color 0.12s ease;
-      }
-      #journeyEditor .cellPick:hover {
-        background: #ddd0bb;
-        border-color: #5f554c;
-      }
-      #journeyEditor .cellPick.unset {
-        border-style: dashed;
-        border-color: #b3aca3;
-        background: transparent;
-        color: #8a8078;
-        font-style: italic;
-      }
-      #journeyEditor .cellPick.unset:hover {
-        background: #efe9df;
-        border-color: #5f554c;
-        color: #4a4038;
-      }
-
-      /* Grid children default to min-width:auto and refuse to shrink below their
-         intrinsic size, which lets wide controls spill into the next column. */
-      #journeyEditor #segmentsBody > div > * {
-        min-width: 0;
-      }
-      #journeyEditor #segmentsBody input:not([type="color"]),
-      #journeyEditor #segmentsBody select {
-        width: 100%;
-        box-sizing: border-box;
-      }
-
-      /* Native colour inputs have a fixed intrinsic width — pin it to a compact swatch */
-      #journeyEditor .segColor {
-        width: 1.7em;
-        height: 1.3em;
-        padding: 0;
-        border: 1px solid #9c9186;
-        border-radius: 3px;
-        background: none;
-        cursor: pointer;
-      }
-      #journeyEditor .segColor::-webkit-color-swatch-wrapper {
-        padding: 1px;
-      }
-      #journeyEditor .segColor::-webkit-color-swatch {
-        border: none;
-        border-radius: 2px;
-      }
-
-      #journeyEditor .segVisible,
-      #journeyEditor .segPoints {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-    </style>
-    <div id="journeyHeader" style="display: grid; grid-template-columns: auto 1fr auto auto auto auto; gap: 0.4em; align-items: center; margin-bottom: 0.5em;">
-      <label>Name:</label>
+    <div id="journeyHeader">
+      <div class="label">Name:</div>
       <input id="journeyName" value="${journey.name}" />
-      <label style="margin-left: 0.6em;">Color:</label>
-      <input id="journeyColor" type="color" value="${journey.color}" />
+      <input id="journeyColor" type="color" value="${journey.color}" data-tip="Journey color" />
       <span id="journeyVisible" data-tip="Toggle visibility" class="pointer icon-eye"></span>
-      <span id="journeyLock" data-tip="Lock/unlock journey" class="pointer ${journey.lock ? "icon-lock" : "icon-lock-open"}"></span>
+      <span id="journeyLock" data-tip="Lock/unlock" class="pointer ${journey.lock ? "icon-lock" : "icon-lock-open"}"></span>
     </div>
 
-    <div id="journeyStartEnd" style="display: flex; gap: 1.2em; align-items: center; margin-bottom: 0.6em; padding: 0.3em 0.5em; background: #f5f2ea; border-radius: 4px;">
-      <div>
-        <b>Start:</b>
-        <span id="journeyStartLabel">—</span>
-        <button id="journeyPickStart" data-tip="Click on the map to set the journey's start cell (first segment's From)" class="icon-map-pin" style="margin-left: 0.3em;">Set start</button>
-      </div>
-      <div>
-        <b>End:</b>
-        <span id="journeyEndLabel">—</span>
-        <button id="journeyPickEnd" data-tip="Click on the map to set the journey's end cell (last segment's To)" class="icon-map-pin" style="margin-left: 0.3em;">Set end</button>
-      </div>
-    </div>
-
-    <div id="segmentsTable" class="table" style="min-width: 72em; margin-bottom: 0.5em;">
-      <div class="header" style="display: grid; grid-template-columns: ${SEGMENT_GRID_COLUMNS}; gap: 0.3em; padding: 0.2em; font-weight: bold;">
-        <div>#</div><div>Name</div><div>Transport</div><div>Speed</div><div>From</div><div>To</div><div>Dist</div><div>Time</div><div title="Roads / Off-road (land only)">Roads</div><div>Note</div><div title="Segment color">Col</div><div title="Segment visibility">Vis</div><div title="Edit path points">Pts</div><div></div><div></div><div></div>
+    <div id="segmentsTable" class="table">
+      <div class="header">
+        <div>#</div><div>Name</div><div>Transport</div><div>Speed</div><div>From</div><div>To</div>
+        <div>Dist</div><div>Time</div><div>Roads</div><div>Note</div><div>Col</div><div>Vis</div>
+        <div>Pts</div><div>Draw</div><div></div><div></div><div></div>
       </div>
       <div id="segmentsBody"></div>
     </div>
 
-    <div id="journeyFooter" class="totalLine" style="margin-bottom: 0.4em;">
-      <div><b>Total distance:</b> <span id="jTotalDistance">0</span></div>
-      <div style="margin-left: 1em;"><b>Average speed:</b> <span id="jAvgSpeed">0</span></div>
-      <div style="margin-left: 1em;"><b>Travel time:</b> <span id="jTravelTime">0</span></div>
+    <div id="journeyFooter" class="totalLine">
+      <div>Distance:&nbsp;<span id="jTotalDistance">0</span></div>
+      <div>Avg speed:&nbsp;<span id="jAvgSpeed">0</span></div>
+      <div>Travel time:&nbsp;<span id="jTravelTime">0</span> (<span id="jHoursPerDay">8</span>h/day)</div>
     </div>
 
     <div id="journeyBottom">
-      <button id="journeyAddSegment" data-tip="Add a new segment; you'll click the map to pick 'from' and 'to' cells" class="icon-plus">Add segment</button>
-      <button id="journeyRecompute" data-tip="Re-run pathfinding on all segments" class="icon-cw">Recompute</button>
-      <button id="journeyExport" data-tip="Download this journey's segments as CSV" class="icon-download">CSV</button>
-      <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog">Transport…</button>
-      <button id="journeyRemove" data-tip="Remove journey" class="icon-trash">Remove</button>
+      <button id="journeyAddSegment" data-tip="Add a segment" class="icon-plus"></button>
+      <button id="journeyRecompute" data-tip="Recompute all segment paths" class="icon-cw"></button>
+      <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog"></button>
+      <button id="journeyExport" data-tip="Download segments as CSV" class="icon-download"></button>
+      <button id="journeyRemove" data-tip="Remove journey" class="icon-trash"></button>
     </div>
-
-    <template id="transportOptionsTmpl">${transportOptions}</template>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -228,8 +133,6 @@ function renderDialog(journey: Journey): void {
   ensureEl("journeyColor").on("input", onColorInput);
   ensureEl("journeyVisible").on("click", onToggleVisible);
   ensureEl("journeyLock").on("click", onToggleLock);
-  ensureEl("journeyPickStart").on("click", pickJourneyStart);
-  ensureEl("journeyPickEnd").on("click", pickJourneyEnd);
   ensureEl("journeyAddSegment").on("click", addSegment);
   ensureEl("journeyRecompute").on("click", recomputeAll);
   ensureEl("journeyExport").on("click", downloadSegments);
@@ -245,105 +148,100 @@ function refresh(): void {
   body.innerHTML = "";
 
   const transportOptions = pack.transportTypes.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
+  const unit = distanceUnitInput.value;
+  const hoursPerDay = getHoursPerDay();
 
   journey.segments.forEach((seg, index) => {
     const row = document.createElement("div");
     row.className = "editorLine";
-    row.style.cssText = `display: grid; grid-template-columns: ${SEGMENT_GRID_COLUMNS}; gap: 0.3em; padding: 0.2em; align-items: center;`;
     row.dataset.segId = String(seg.id);
-    const isLandSeg = getDomain(seg.transportType) === "land";
+    const domain = getDomain(seg.transportType);
+    const isLandSeg = domain === "land";
+    const isStay = domain === "stay" || isStaySegment(seg);
+
     const roadsIcon = seg.avoidRoads ? "icon-tree" : "icon-map-signs";
-    const roadsLabel = seg.avoidRoads ? "Off" : "On";
-    const penaltyPct = Math.round((1 - OFF_ROAD_SPEED_FACTOR) * 100);
+    const roadsClass = isLandSeg ? (seg.avoidRoads ? "roadsChip off" : "roadsChip on") : "roadsChip inactive";
+    const roadsLabel = isLandSeg ? (seg.avoidRoads ? "off" : "on") : "n/a";
     const roadsTip = isLandSeg
       ? seg.avoidRoads
-        ? `Off-road — pathfinder avoids the road network (${penaltyPct}% speed penalty). Click to switch to on-road.`
-        : "On-road — pathfinder follows the road network. Click to go off-road (avoids roads)."
-      : "Roads only apply to land transport";
-    const bgColor = seg.avoidRoads ? "#f4dede" : "#dcecdc";
-    const fgColor = seg.avoidRoads ? "#8b1a1a" : "#2a6e2a";
-    const roadsCell = isLandSeg
-      ? `<button class="segRoads ${roadsIcon}" data-tip="${roadsTip}" style="cursor: pointer; padding: 2px 6px; border-radius: 3px; border: 1px solid ${fgColor}; background: ${bgColor}; color: ${fgColor}; font-size: 0.85em; display: inline-flex; align-items: center; gap: 3px;"> ${roadsLabel}</button>`
-      : `<span class="segRoads inactive ${roadsIcon}" data-tip="${roadsTip}" style="opacity: 0.35; padding: 2px 6px; border-radius: 3px; border: 1px dashed #999; color: #999; font-size: 0.85em; display: inline-flex; align-items: center; gap: 3px;"> n/a</span>`;
+        ? `Off-road (${Math.round((1 - OFF_ROAD_SPEED_FACTOR) * 100)}% speed penalty). Click to switch.`
+        : "On-road. Click to switch to off-road."
+      : "Land transport only";
+
     const isEditingPoints = editingPointsSegId === seg.id;
+    const isDrawing = customPathSegId === seg.id;
     const hasPath = seg.points.length >= 2;
-    const pointsTip = hasPath
-      ? isEditingPoints
-        ? "Editing path points — drag the circles on the map to reshape, click the path to add a point, right-click a point to remove it. Click to finish."
-        : "Edit this segment's path points on the map"
-      : "Set both endpoints first to get a path";
+
+    const distanceCell = isStay ? "—" : `${rn(segmentLengthKm(seg))} ${unit}`;
+    const timeCell = isStay
+      ? `<input class="segDuration" type="number" min="0" step="0.5" value="${seg.duration ?? 0}" data-tip="Stay duration in hours" /> h`
+      : formatTravelTime(segmentTimeHours(seg), hoursPerDay);
+
+    const speedCell = isStay
+      ? `<input class="segSpeed" type="number" value="0" disabled />`
+      : `<input class="segSpeed" type="number" step="0.5" min="0" value="${seg.speed}" title="${seg.avoidRoads ? `Effective: ${rn(effectiveSpeed(seg), 1)} ${unit}/h` : ""}" />`;
+
+    const swatchColor = seg.color || journey.color || DEFAULT_JOURNEY_COLOR;
+    const colorCell = seg.color
+      ? `<span>
+           <input class="segColor" type="color" value="${swatchColor}" data-tip="Segment color — click ✕ to reset" />
+           <span class="segColorReset pointer" data-tip="Reset to journey color">✕</span>
+         </span>`
+      : `<input class="segColor inherited" type="color" value="${swatchColor}" data-tip="Uses journey color — pick a color to override" />`;
+
     row.innerHTML = /* html */ `
       <div>${index + 1}</div>
       <input class="segName" value="${seg.name}" />
       <select class="segTransport">${transportOptions.replace(`value="${seg.transportType}"`, `value="${seg.transportType}" selected`)}</select>
-      <input class="segSpeed" type="number" step="0.5" min="0" value="${seg.speed}" title="${seg.avoidRoads ? `Effective: ${rn(effectiveSpeed(seg), 1)} ${distanceUnitInput.value}/h (off-road penalty)` : ""}" />
-      <span class="segFrom cellPick icon-map-pin ${seg.from === undefined ? "unset" : ""}" data-tip="${seg.from === undefined ? "Not set — click, then click a cell on the map to set the start of this segment" : `Starts at cell ${seg.from} — click to pick a different cell on the map`}"> ${seg.from ?? "pick"}</span>
-      <span class="segTo cellPick icon-map-pin ${seg.to === undefined ? "unset" : ""}" data-tip="${seg.to === undefined ? "Not set — click, then click a cell on the map to set the end of this segment" : `Ends at cell ${seg.to} — click to pick a different cell on the map`}"> ${seg.to ?? "pick"}</span>
-      <div>${rn(segmentLengthKm(seg))} ${distanceUnitInput.value}</div>
-      <div>${formatTravelTime(segmentTimeHours(seg))}</div>
-      ${roadsCell}
-      <input class="segNote" value="${(seg.note ?? "").replace(/"/g, "&quot;")}" placeholder="note…" data-tip="Free-text note for this segment" />
-      <input class="segColor" type="color" value="${seg.color || journey.color || DEFAULT_JOURNEY_COLOR}" data-tip="Segment color (overrides the journey color)" />
-      <span class="segVisible pointer ${seg.visible ? "icon-eye" : "icon-eye-off"}" data-tip="${seg.visible ? "Segment is visible — click to hide" : "Segment is hidden — click to show"}" style="${seg.visible ? "" : "opacity: 0.4;"}"></span>
-      <span class="segPoints pointer icon-pencil ${hasPath ? "" : "inactive"}" data-tip="${pointsTip}" style="${isEditingPoints ? "color: #2a6e2a; font-weight: bold;" : hasPath ? "" : "opacity: 0.35;"}"></span>
-      <span class="segRecompute pointer icon-cw" data-tip="Recompute this segment's path (discards manual point edits)"></span>
+      ${speedCell}
+      <span class="segFrom cellPick ${seg.from === undefined ? "unset" : ""}" data-tip="${cellEndpointTooltip(seg.from)}">${cellEndpointLabel(seg.from)}</span>
+      <span class="segTo cellPick ${seg.to === undefined ? "unset" : ""}" data-tip="${cellEndpointTooltip(seg.to)}">${cellEndpointLabel(seg.to)}</span>
+      <div>${distanceCell}</div>
+      <div>${timeCell}</div>
+      <span class="segRoads ${roadsClass} ${roadsIcon}" data-tip="${roadsTip}">&nbsp;${roadsLabel}</span>
+      <input class="segNote" value="${(seg.note ?? "").replace(/"/g, "&quot;")}" placeholder="note…" />
+      ${colorCell}
+      <span class="segVisible pointer ${seg.visible ? "icon-eye" : "icon-eye-off"}" data-tip="Toggle visibility"></span>
+      <span class="segPoints pointer icon-pencil ${hasPath && !isStay ? "" : "inactive"} ${isEditingPoints ? "segActive" : ""}" data-tip="${hasPath && !isStay ? (isEditingPoints ? "Finish editing points" : "Edit path points") : "Set endpoints first"}"></span>
+      <span class="segDraw pointer icon-brush ${isStay ? "inactive" : ""} ${isDrawing ? "segActive" : ""}" data-tip="${isDrawing ? "Click to finish drawing (Esc to cancel)" : "Draw a custom path"}"></span>
+      <span class="segRecompute pointer icon-cw" data-tip="Recompute path"></span>
       <span class="segUp pointer icon-up-open" data-tip="Move up"></span>
       <span class="segDelete pointer icon-trash-empty" data-tip="Delete segment"></span>`;
     body.appendChild(row);
   });
 
-  body.querySelectorAll<HTMLInputElement>(".segName").forEach(el => {
-    el.on("input", onSegNameInput);
-  });
-  body.querySelectorAll<HTMLSelectElement>(".segTransport").forEach(el => {
-    el.on("change", onSegTransportChange);
-  });
-  body.querySelectorAll<HTMLInputElement>(".segSpeed").forEach(el => {
-    el.on("input", onSegSpeedInput);
-  });
-  body.querySelectorAll<HTMLElement>(".segFrom").forEach(el => {
-    el.on("click", onPickFrom);
-  });
-  body.querySelectorAll<HTMLElement>(".segTo").forEach(el => {
-    el.on("click", onPickTo);
-  });
-  body.querySelectorAll<HTMLElement>(".segRoads:not(.inactive)").forEach(el => {
-    el.on("click", onToggleAvoidRoads);
-  });
-  body.querySelectorAll<HTMLInputElement>(".segNote").forEach(el => {
-    el.on("input", onSegNoteInput);
-  });
-  body.querySelectorAll<HTMLInputElement>(".segColor").forEach(el => {
-    el.on("input", onSegColorInput);
-  });
-  body.querySelectorAll<HTMLElement>(".segVisible").forEach(el => {
-    el.on("click", onToggleSegVisible);
-  });
-  body.querySelectorAll<HTMLElement>(".segPoints:not(.inactive)").forEach(el => {
-    el.on("click", onToggleEditPoints);
-  });
-  body.querySelectorAll<HTMLElement>(".segRecompute").forEach(el => {
-    el.on("click", onSegRecompute);
-  });
-  body.querySelectorAll<HTMLElement>(".segUp").forEach(el => {
-    el.on("click", onSegMoveUp);
-  });
-  body.querySelectorAll<HTMLElement>(".segDelete").forEach(el => {
-    el.on("click", onSegDelete);
-  });
+  const on = <T extends Element>(selector: string, event: string, handler: EventListener) => {
+    body.querySelectorAll<T & HTMLElement>(selector).forEach(el => {
+      el.on(event, handler);
+    });
+  };
+
+  on(".segName", "input", onSegNameInput);
+  on(".segTransport", "change", onSegTransportChange);
+  on(".segSpeed:not([disabled])", "input", onSegSpeedInput);
+  on(".segDuration", "input", onSegDurationInput);
+  on(".segFrom", "click", onPickFrom);
+  on(".segTo", "click", onPickTo);
+  on(".segRoads:not(.inactive)", "click", onToggleAvoidRoads);
+  on(".segNote", "input", onSegNoteInput);
+  on(".segColor", "input", onSegColorInput);
+  on(".segColorReset", "click", onSegColorReset);
+  on(".segVisible", "click", onToggleSegVisible);
+  on(".segPoints:not(.inactive)", "click", onToggleEditPoints);
+  on(".segDraw:not(.inactive)", "click", onToggleCustomPath);
+  on(".segRecompute", "click", onSegRecompute);
+  on(".segUp", "click", onSegMoveUp);
+  on(".segDelete", "click", onSegDelete);
 
   const totals = journeyTotals(journey);
-  ensureEl("jTotalDistance").innerHTML = `${rn(totals.totalKm)} ${distanceUnitInput.value}`;
-  ensureEl("jAvgSpeed").innerHTML = totals.avgSpeed ? `${rn(totals.avgSpeed, 1)} ${distanceUnitInput.value}/h` : "-";
-  ensureEl("jTravelTime").innerHTML = formatTravelTime(totals.totalHours);
-
-  const firstSeg = journey.segments[0];
-  const lastSeg = journey.segments[journey.segments.length - 1];
-  ensureEl("journeyStartLabel").innerHTML = firstSeg?.from !== undefined ? `cell ${firstSeg.from}` : "—";
-  ensureEl("journeyEndLabel").innerHTML = lastSeg?.to !== undefined ? `cell ${lastSeg.to}` : "—";
+  ensureEl("jTotalDistance").innerHTML = `${rn(totals.totalKm)} ${unit}`;
+  ensureEl("jAvgSpeed").innerHTML = totals.avgSpeed ? `${rn(totals.avgSpeed, 1)} ${unit}/h` : "-";
+  ensureEl("jTravelTime").innerHTML = formatTravelTime(totals.totalHours, hoursPerDay);
+  ensureEl("jHoursPerDay").innerHTML = String(hoursPerDay);
 
   drawJourneys();
   drawSegmentControlPoints();
+  drawCustomPathPreview();
 }
 
 function getRowSegId(el: HTMLElement): number {
@@ -358,15 +256,14 @@ function getSegment(id: number): Segment | undefined {
 
 function onNameInput(this: HTMLInputElement): void {
   const journey = getJourney();
-  if (!journey) return;
-  journey.name = this.value;
+  if (journey) journey.name = this.value;
 }
 
 function onColorInput(this: HTMLInputElement): void {
   const journey = getJourney();
   if (!journey) return;
   journey.color = this.value;
-  drawJourneys();
+  refresh();
 }
 
 function onToggleVisible(): void {
@@ -397,11 +294,23 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   const newType = getTransportType(newTypeName);
   if (!newType) return;
 
-  // If the new transport domain doesn't accept the segment's current endpoints,
-  // block the change, revert the dropdown, and explain via an alert dialog.
+  const newDomain = newType.domain;
+
+  // Stay-domain switch: clear pathfinding-derived state, keep endpoints as anchors.
+  if (newDomain === "stay") {
+    seg.transportType = newTypeName;
+    seg.speed = 0;
+    seg.duration = seg.duration ?? 1;
+    seg.avoidRoads = false;
+    seg.custom = false;
+    if (seg.from !== undefined && seg.to !== undefined) recomputeSegment(seg);
+    refresh();
+    return;
+  }
+
   if (seg.from !== undefined && seg.to !== undefined) {
     const trialSeg = { ...seg, transportType: newTypeName };
-    const msg = domainMismatchMessage(trialSeg, newType.domain);
+    const msg = domainMismatchMessage(trialSeg, newDomain);
     if (msg) {
       this.value = previousType;
       showAlert(
@@ -414,6 +323,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
 
   seg.transportType = newTypeName;
   seg.speed = newType.speed;
+  if (previousType && getDomain(previousType) === "stay") seg.duration = undefined;
   recomputeSegment(seg);
   refresh();
 }
@@ -426,11 +336,35 @@ function onSegSpeedInput(this: HTMLInputElement): void {
   }
 }
 
+function onSegDurationInput(this: HTMLInputElement): void {
+  const seg = getSegment(getRowSegId(this));
+  if (!seg) return;
+  seg.duration = Math.max(0, +this.value || 0);
+  const journey = getJourney();
+  if (!journey) return;
+  const totals = journeyTotals(journey);
+  const hoursPerDay = getHoursPerDay();
+  ensureEl("jTravelTime").innerHTML = formatTravelTime(totals.totalHours, hoursPerDay);
+}
+
 function onSegRecompute(this: HTMLElement): void {
   const seg = getSegment(getRowSegId(this));
   if (!seg) return;
-  recomputeSegment(seg);
-  refresh();
+  const doIt = () => {
+    seg.custom = false;
+    recomputeSegment(seg);
+    refresh();
+  };
+  if (seg.custom) {
+    confirmationDialog({
+      title: "Overwrite custom path?",
+      message: `Segment "<b>${seg.name}</b>" has a custom-drawn path. Recomputing will replace it with the pathfinder's route. Continue?`,
+      confirm: "Overwrite",
+      onConfirm: doIt
+    });
+    return;
+  }
+  doIt();
 }
 
 function onToggleAvoidRoads(this: HTMLElement): void {
@@ -459,15 +393,24 @@ function onSegColorInput(this: HTMLInputElement): void {
   const seg = getSegment(getRowSegId(this));
   if (!seg) return;
   seg.color = this.value;
-  drawJourneys();
-  drawSegmentControlPoints();
+  refresh();
+}
+
+function onSegColorReset(this: HTMLElement): void {
+  const seg = getSegment(getRowSegId(this));
+  if (!seg) return;
+  seg.color = undefined;
+  refresh();
 }
 
 function onToggleSegVisible(this: HTMLElement): void {
   const seg = getSegment(getRowSegId(this));
   if (!seg) return;
   seg.visible = !seg.visible;
-  if (!seg.visible && editingPointsSegId === seg.id) stopPointEditing();
+  if (!seg.visible) {
+    if (editingPointsSegId === seg.id) stopPointEditing();
+    if (customPathSegId === seg.id) cancelCustomPath();
+  }
   refresh();
 }
 
@@ -488,16 +431,13 @@ function onToggleEditPoints(this: HTMLElement): void {
     return;
   }
 
+  if (customPathSegId !== null) cancelCustomPath();
   editingPointsSegId = segId;
   pointEditSpacing = medianSpacing(seg.points);
   refresh();
   tip(POINT_EDIT_HINT, true);
 }
 
-/**
- * Show an error that survives hover (pinned) and lasts long enough to read, then hand the
- * tooltip line back to the point-editing hint if that mode is still active.
- */
 function tipPointError(message: string): void {
   tip(message, true, "error", ERROR_TIP_MS);
   const segId = editingPointsSegId;
@@ -525,7 +465,6 @@ function drawSegmentControlPoints(): void {
     select("#journeyControlPoints").remove();
     return;
   }
-
   const journey = getJourney();
   const seg = getSegment(editingPointsSegId);
   if (!journey || !seg || seg.points.length < 2) {
@@ -548,11 +487,9 @@ function drawSegmentControlPoints(): void {
     .call(drag<SVGCircleElement, JourneyPoint>().on("start", onDragControlPoint))
     .on("contextmenu", onRemoveControlPoint);
 
-  // The path is re-created by drawJourneys on every refresh, so rebind each time.
   select<SVGPathElement, unknown>(`#segment${journey.i}_${seg.id}`).on("click", onAddControlPoint);
 }
 
-/** A point is judged by endpoint rules at the ends of a path and by the stricter mid-path rules elsewhere. */
 function isPointAllowed(cellId: number, domain: TransportDomain, isEndpoint: boolean): boolean {
   return isEndpoint ? isValidEndpointForDomain(cellId, domain) : isValidPathPointForDomain(cellId, domain);
 }
@@ -587,7 +524,6 @@ function onDragControlPoint(event: any): void {
     const cellId = findCell(x, y) ?? original[2];
     droppedCellId = cellId;
 
-    // Flag impassable terrain while dragging so the problem is visible before release.
     const allowed = isPointAllowed(cellId, domain, isEndpoint);
     this.setAttribute("fill", allowed ? "#fff" : "#e04040");
     this.setAttribute("stroke", allowed ? seg.color || getJourney()?.color || DEFAULT_JOURNEY_COLOR : "#8b1a1a");
@@ -596,7 +532,6 @@ function onDragControlPoint(event: any): void {
     (this as unknown as { __data__: JourneyPoint }).__data__ = moved;
     seg.points[pointIndex] = moved;
 
-    // Endpoints stay in sync with the cells the journey is anchored to.
     if (pointIndex === 0) seg.from = cellId;
     else if (pointIndex === seg.points.length - 1) seg.to = cellId;
 
@@ -606,7 +541,6 @@ function onDragControlPoint(event: any): void {
 
   event.on("end", () => {
     if (isPointAllowed(droppedCellId, domain, isEndpoint)) {
-      // The drag stretched this point's edges; refill them so the path stays editable.
       seg.points = resampleAround(seg.points, pointIndex, pointEditSpacing, (x, y) => findCell(x, y));
       seg.distance = pathLength(seg.points);
     } else {
@@ -631,7 +565,6 @@ function onAddControlPoint(this: SVGPathElement, event: MouseEvent): void {
   const cellId = findCell(px, py);
   if (cellId === undefined) return;
 
-  // An inserted point is always mid-path, so it never gets endpoint leniency.
   const domain = getDomain(seg.transportType);
   if (!isValidPathPointForDomain(cellId, domain)) {
     tipPointError(`Can't add a point there — ${terrainRejectionMessage(cellId, domain, seg.transportType)}`);
@@ -662,11 +595,9 @@ function onRemoveControlPoint(event: MouseEvent, point: JourneyPoint): void {
   refresh();
 }
 
-/** Index at which to insert a new point so it lands on the nearest existing leg of the path. */
 function closestSegmentIndex(points: JourneyPoint[], x: number, y: number): number {
   let bestIndex = 1;
   let bestDistance = Infinity;
-
   for (let i = 1; i < points.length; i++) {
     const [ax, ay] = points[i - 1];
     const [bx, by] = points[i];
@@ -680,9 +611,245 @@ function closestSegmentIndex(points: JourneyPoint[], x: number, y: number): numb
       bestIndex = i;
     }
   }
-
   return bestIndex;
 }
+
+// ---- custom path drawing (click-to-build) -----------------------------
+
+function onToggleCustomPath(this: HTMLElement): void {
+  const segId = getRowSegId(this);
+  // Clicking the same brush button again ends drawing — finish if the path is
+  // usable (≥2 points), otherwise cancel. Esc is always a hard cancel.
+  if (customPathSegId === segId) {
+    if (customPathPoints.length >= 2) finishCustomPath();
+    else {
+      cancelCustomPath();
+      refresh();
+      tip("Custom path cancelled — you need at least two points.", true, "warn", WARN_TIP_MS);
+    }
+    return;
+  }
+  const seg = getSegment(segId);
+  if (!seg) return;
+
+  if (editingPointsSegId !== null) stopPointEditing();
+  endCellPick();
+
+  customPathSegId = segId;
+  customPathPoints = [];
+  select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click.journeyDraw", onCustomPathClick);
+  document.addEventListener("contextmenu", onCustomPathRightClick);
+  document.addEventListener("keydown", onCustomPathKey, true);
+  showDrawToolbar();
+  refresh();
+  tip(CUSTOM_PATH_HINT, true);
+}
+
+function showDrawToolbar(): void {
+  destroyDrawToolbar();
+  const html = /* html */ `<div id="journeyDrawToolbar">
+    <span id="journeyDrawStatus">0 points</span>
+    <button id="journeyDrawFinish" data-tip="Save this path (need ≥2 points)" class="icon-check" disabled>Finish</button>
+    <button id="journeyDrawUndo" data-tip="Remove the last point (right-click)" class="icon-left" disabled>Undo</button>
+    <button id="journeyDrawCancel" data-tip="Discard drawing (Esc)" class="icon-cancel">Cancel</button>
+    <span class="journeyDrawHint">Click cells to add points. Right-click undoes.</span>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl("journeyDrawFinish").on("click", finishCustomPath);
+  ensureEl("journeyDrawUndo").on("click", undoLastCustomPoint);
+  ensureEl("journeyDrawCancel").on("click", () => {
+    cancelCustomPath();
+    refresh();
+  });
+}
+
+function updateDrawToolbar(): void {
+  const status = document.getElementById("journeyDrawStatus");
+  const finish = document.getElementById("journeyDrawFinish") as HTMLButtonElement | null;
+  const undo = document.getElementById("journeyDrawUndo") as HTMLButtonElement | null;
+  if (status) status.textContent = `${customPathPoints.length} point${customPathPoints.length === 1 ? "" : "s"}`;
+  if (finish) finish.disabled = customPathPoints.length < 2;
+  if (undo) undo.disabled = customPathPoints.length === 0;
+}
+
+function destroyDrawToolbar(): void {
+  document.getElementById("journeyDrawToolbar")?.remove();
+}
+
+function undoLastCustomPoint(): void {
+  if (customPathSegId === null) return;
+  customPathPoints.pop();
+  drawCustomPathPreview();
+}
+
+function onCustomPathClick(this: SVGElement, event: MouseEvent): void {
+  if (customPathSegId === null) return;
+  const seg = getSegment(customPathSegId);
+  if (!seg) return;
+
+  const [x, y] = getPointer(event, this);
+  const px = rn(x, 2);
+  const py = rn(y, 2);
+  const cellId = findCell(px, py);
+  if (cellId === undefined) return;
+
+  const domain = getDomain(seg.transportType);
+  const isEndpoint = customPathPoints.length === 0;
+  if (!isPointAllowed(cellId, domain, isEndpoint)) {
+    tip(
+      `Can't add a point there — ${terrainRejectionMessage(cellId, domain, seg.transportType)}`,
+      true,
+      "error",
+      ERROR_TIP_MS
+    );
+    return;
+  }
+  customPathPoints.push([px, py, cellId]);
+  drawCustomPathPreview();
+  updateDrawToolbar();
+}
+
+function onCustomPathRightClick(event: MouseEvent): void {
+  if (customPathSegId === null) return;
+  event.preventDefault();
+  customPathPoints.pop();
+  drawCustomPathPreview();
+  updateDrawToolbar();
+}
+
+function onCustomPathKey(event: KeyboardEvent): void {
+  if (customPathSegId === null) return;
+  if (event.key === "Escape") {
+    cancelCustomPath();
+    refresh();
+    return;
+  }
+  if (event.key === "Enter") {
+    finishCustomPath();
+  }
+}
+
+function finishCustomPath(): void {
+  if (customPathSegId === null) return;
+  const seg = getSegment(customPathSegId);
+  if (!seg) {
+    cancelCustomPath();
+    return;
+  }
+
+  if (customPathPoints.length < 2) {
+    tip("A custom path needs at least two points.", true, "error", ERROR_TIP_MS);
+    return;
+  }
+
+  seg.points = customPathPoints.slice();
+  seg.from = seg.points[0][2];
+  seg.to = seg.points[seg.points.length - 1][2];
+  seg.distance = pathLength(seg.points);
+  seg.custom = true;
+
+  const domain = getDomain(seg.transportType);
+  const domainMsg = domainMismatchMessage(seg, domain);
+  if (domainMsg) tip(domainMsg.replace(/<\/?b>/g, ""), true, "warn", WARN_TIP_MS);
+
+  cancelCustomPath();
+  refresh();
+  tip("Custom path saved.", true, "success", SUCCESS_TIP_MS);
+}
+
+function cancelCustomPath(): void {
+  customPathSegId = null;
+  customPathPoints = [];
+  select<SVGElement, unknown>("#viewbox").style("cursor", null).on("click.journeyDraw", null);
+  document.removeEventListener("contextmenu", onCustomPathRightClick);
+  document.removeEventListener("keydown", onCustomPathKey, true);
+  select("#journeyCustomPreview").remove();
+  destroyDrawToolbar();
+  clearMainTip();
+}
+
+function drawCustomPathPreview(): void {
+  if (customPathSegId === null) {
+    select("#journeyCustomPreview").remove();
+    return;
+  }
+  const journey = getJourney();
+  const seg = getSegment(customPathSegId);
+  if (!journey || !seg) return;
+  const color = seg.color || journey.color || DEFAULT_JOURNEY_COLOR;
+  select("#journeyCustomPreview").remove();
+  const g = select("#viewbox").append("g").attr("id", "journeyCustomPreview").style("pointer-events", "none");
+
+  // Ghost markers for the segment's existing from/to cells — visible anchors so
+  // the user knows what will be replaced when they finish.
+  const ghostAnchor = (cellId: number | undefined, label: string) => {
+    if (cellId === undefined || !pack.cells.p[cellId]) return;
+    const [x, y] = pack.cells.p[cellId];
+    const anchor = g.append("g").attr("class", "journeyGhostAnchor");
+    anchor
+      .append("circle")
+      .attr("cx", x)
+      .attr("cy", y)
+      .attr("r", 1.8)
+      .attr("fill", "none")
+      .attr("stroke", "#666")
+      .attr("stroke-dasharray", "0.8 0.6")
+      .attr("stroke-width", 0.4);
+    anchor
+      .append("text")
+      .attr("x", x)
+      .attr("y", y - 2.6)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 2)
+      .attr("fill", "#666")
+      .text(label);
+  };
+  if (!customPathPoints.length) {
+    ghostAnchor(seg.from, "from");
+    ghostAnchor(seg.to, "to");
+    return;
+  }
+
+  const d = customPathPoints.map((p, i) => `${(i === 0 ? "M" : "L") + p[0]} ${p[1]}`).join(" ");
+  g.append("path")
+    .attr("d", d)
+    .attr("fill", "none")
+    .attr("stroke", color)
+    .attr("stroke-width", 1.5)
+    .attr("stroke-dasharray", "2 1");
+
+  customPathPoints.forEach((p, i) => {
+    const isStart = i === 0;
+    const isLast = i === customPathPoints.length - 1;
+    g.append("circle")
+      .attr("cx", p[0])
+      .attr("cy", p[1])
+      .attr("r", isStart ? 1.5 : 0.9)
+      .attr("fill", isStart ? "#2a6e2a" : "#fff")
+      .attr("stroke", isStart ? "#fff" : color)
+      .attr("stroke-width", isStart ? 0.4 : 0.3);
+    if (isStart) {
+      g.append("text")
+        .attr("x", p[0])
+        .attr("y", p[1] - 2.4)
+        .attr("text-anchor", "middle")
+        .attr("font-size", 2)
+        .attr("fill", "#2a6e2a")
+        .text("start");
+    }
+    if (isLast && !isStart) {
+      g.append("text")
+        .attr("x", p[0])
+        .attr("y", p[1] - 2)
+        .attr("text-anchor", "middle")
+        .attr("font-size", 2)
+        .attr("fill", color)
+        .text(String(i + 1));
+    }
+  });
+}
+
+// -----------------------------------------------------------------------
 
 function onSegMoveUp(this: HTMLElement): void {
   const journey = getJourney();
@@ -701,21 +868,21 @@ function onSegDelete(this: HTMLElement): void {
   if (!journey) return;
   const id = getRowSegId(this);
   if (editingPointsSegId === id) stopPointEditing();
+  if (customPathSegId === id) cancelCustomPath();
   journey.segments = journey.segments.filter(s => s.id !== id);
   refresh();
 }
 
 function onPickFrom(this: HTMLElement): void {
-  const id = getRowSegId(this);
-  beginCellPick(id, "from");
+  beginCellPick(getRowSegId(this), "from");
 }
 
 function onPickTo(this: HTMLElement): void {
-  const id = getRowSegId(this);
-  beginCellPick(id, "to");
+  beginCellPick(getRowSegId(this), "to");
 }
 
 function beginCellPick(segmentId: number, endpoint: "from" | "to", chainNextTo = false): void {
+  if (customPathSegId !== null) cancelCustomPath();
   pickState = { segmentId, endpoint, chainNextTo };
   tip(`Click on the map to pick the '${endpoint}' cell. Press Esc to cancel.`, true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click.journeyPick", onMapClick);
@@ -743,7 +910,6 @@ function onMapClick(this: SVGElement, event: MouseEvent): void {
 
   const domain = getDomain(seg.transportType);
   if (!isValidEndpointForDomain(cellId, domain)) {
-    // Don't apply the click; keep the picker active so the user can try again.
     showAlert(
       `Invalid cell for ${seg.transportType}`,
       `You clicked a ${describeCell(cellId)}, but <b>${seg.transportType}</b> is a <b>${domain}</b> transport type.<br/><br/>` +
@@ -765,7 +931,6 @@ function onMapClick(this: SVGElement, event: MouseEvent): void {
   if (seg.from !== undefined && seg.to !== undefined) recomputeSegment(seg);
   refresh();
 
-  // if we just set 'from' on a fresh segment, chain into picking 'to'
   if (chainNext) {
     tip("Now click the destination cell.", true);
     beginCellPick(seg.id, "to");
@@ -787,7 +952,6 @@ function getDomain(name: string): TransportDomain {
   return getTransportType(name)?.domain ?? "air";
 }
 
-// Shows a blocking alert dialog with a clear title + message. Used for domain-mismatch errors.
 function showAlert(title: string, message: string): void {
   ensureEl("alertMessage").innerHTML = message;
   $("#alert").dialog({
@@ -804,6 +968,7 @@ function showAlert(title: string, message: string): void {
 }
 
 function domainMismatchMessage(seg: Segment, domain: TransportDomain): string | null {
+  if (domain === "air" || domain === "stay") return null;
   const badFrom = seg.from !== undefined && !isValidEndpointForDomain(seg.from, domain);
   const badTo = seg.to !== undefined && !isValidEndpointForDomain(seg.to, domain);
   if (!badFrom && !badTo) return null;
@@ -813,15 +978,23 @@ function domainMismatchMessage(seg: Segment, domain: TransportDomain): string | 
   const need =
     domain === "land"
       ? "This transport type is <b>land</b> — endpoints must be on land (coastal is fine)."
-      : domain === "water"
-        ? "This transport type is <b>water</b> — endpoints must be in water, or on a coast touching water."
-        : "This transport type is <b>air</b> and should accept anything — this shouldn't happen.";
+      : "This transport type is <b>water</b> — endpoints must be in water, or on a coast touching water.";
   return `${parts.join(" and ")}.<br/><br/>${need}`;
 }
 
 function recomputeSegment(seg: Segment): void {
+  if (seg.custom) return; // Never overwrite a custom-drawn path silently.
   if (seg.from === undefined || seg.to === undefined) return;
   const domain = getDomain(seg.transportType);
+
+  if (domain === "stay") {
+    // Stay: draw a direct line so it renders as an anchored dot/short segment.
+    const result = findJourneyPath(seg.from, seg.to, "air");
+    seg.points = result.points;
+    seg.distance = result.distance;
+    return;
+  }
+
   const result = findJourneyPath(seg.from, seg.to, domain, {
     avoidRoads: domain === "land" && !!seg.avoidRoads
   });
@@ -849,14 +1022,30 @@ function recomputeSegment(seg: Segment): void {
 function recomputeAll(): void {
   const journey = getJourney();
   if (!journey) return;
-  for (const seg of journey.segments) recomputeSegment(seg);
-  refresh();
-  tip("All segments recomputed", true, "success", SUCCESS_TIP_MS);
+  const customCount = journey.segments.filter(s => s.custom).length;
+  const doIt = () => {
+    for (const seg of journey.segments) {
+      seg.custom = false;
+      recomputeSegment(seg);
+    }
+    refresh();
+    tip("All segments recomputed", true, "success", SUCCESS_TIP_MS);
+  };
+  if (customCount) {
+    confirmationDialog({
+      title: "Overwrite custom paths?",
+      message: `${customCount} segment${customCount > 1 ? "s have" : " has"} a custom-drawn path. Recomputing will replace them. Continue?`,
+      confirm: "Overwrite",
+      onConfirm: doIt
+    });
+    return;
+  }
+  doIt();
 }
 
 function createEmptySegment(journey: Journey): Segment {
   const nextId = journey.segments.length ? Math.max(...journey.segments.map(s => s.id)) + 1 : 0;
-  const defaultTransport = pack.transportTypes[0];
+  const defaultTransport = pack.transportTypes.find(t => t.domain !== "stay") ?? pack.transportTypes[0];
   const prev = journey.segments[journey.segments.length - 1];
   const seg: Segment = {
     id: nextId,
@@ -889,40 +1078,16 @@ function addSegment(): void {
   }
 }
 
-function pickJourneyStart(): void {
-  const journey = getJourney();
-  if (!journey) return;
-  if (!journey.segments.length) {
-    createEmptySegment(journey);
-    refresh();
-  }
-  const firstSeg = journey.segments[0];
-  tip("Click on the map to set the journey's start cell.", true);
-  beginCellPick(firstSeg.id, "from");
-}
-
-function pickJourneyEnd(): void {
-  const journey = getJourney();
-  if (!journey) return;
-  if (!journey.segments.length) {
-    createEmptySegment(journey);
-    refresh();
-  }
-  const lastSeg = journey.segments[journey.segments.length - 1];
-  tip("Click on the map to set the journey's end cell.", true);
-  beginCellPick(lastSeg.id, "to");
-}
-
 function downloadSegments(): void {
   const journey = getJourney();
   if (!journey) return;
   const unit = distanceUnitInput.value;
-  let data = `Idx,Name,TransportType,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Visible,Color,Note\n`;
+  let data = `Idx,Name,TransportType,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color,Note\n`;
   journey.segments.forEach((s, i) => {
     const km = segmentLengthKm(s);
     const hours = segmentTimeHours(s);
     const note = (s.note ?? "").replace(/"/g, '""');
-    data += `${i + 1},"${s.name}","${s.transportType}",${s.speed},${rn(effectiveSpeed(s), 2)},${rn(s.distance, 2)},${rn(km, 2)},${rn(hours, 2)},${s.from ?? ""},${s.to ?? ""},${s.avoidRoads ? "yes" : "no"},${s.visible ? "yes" : "no"},${s.color ?? ""},"${note}"\n`;
+    data += `${i + 1},"${s.name}","${s.transportType}",${s.speed},${rn(effectiveSpeed(s), 2)},${rn(s.distance, 2)},${rn(km, 2)},${rn(hours, 2)},${s.from ?? ""},${s.to ?? ""},${s.avoidRoads ? "yes" : "no"},${s.custom ? "yes" : "no"},${s.visible ? "yes" : "no"},${s.color ?? ""},"${note}"\n`;
   });
   downloadFile(data, `${getFileName(journey.name || "Journey")}.csv`);
 }
@@ -949,6 +1114,7 @@ function removeJourney(): void {
 function onClose(): void {
   endCellPick();
   stopPointEditing();
+  cancelCustomPath();
   applyDefaultViewboxEvents();
   document.removeEventListener(TRANSPORT_TYPES_CHANGED, onTransportTypesChanged);
   editingJourneyId = null;

@@ -463,12 +463,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.transportTypes = data[48] ? JSON.parse(data[48]) : getDefaultTransportTypes();
     if (!pack.transportTypes.length) pack.transportTypes = getDefaultTransportTypes();
     // Migrate pre-branch transport types that used pathMode (direct/route/sea) to domain (air/land/water).
+    // Also drop the legacy `color` field (transport-type color no longer has any effect).
     for (const t of pack.transportTypes as unknown as Array<Record<string, unknown>>) {
       if (!("domain" in t) && "pathMode" in t) {
         const legacy = t.pathMode as string;
         t.domain = legacy === "sea" ? "water" : legacy === "route" ? "land" : "air";
         delete t.pathMode;
       }
+      if ("color" in t) delete t.color;
     }
 
     if (data[31]) {

@@ -85,10 +85,35 @@ describe("journey-metrics", () => {
     expect(t.totalHours).toBe(onRoadHours + offRoadHours);
   });
 
-  it("formatTravelTime handles days/hours/minutes", () => {
+  it("formatTravelTime handles days/hours/minutes with default 8h/day", () => {
     expect(formatTravelTime(0)).toBe("0m");
     expect(formatTravelTime(0.5)).toBe("30m");
     expect(formatTravelTime(1.5)).toBe("1h 30m");
-    expect(formatTravelTime(25)).toBe("1d 1h");
+    // 25h at 8h/day = 3d 1h
+    expect(formatTravelTime(25)).toBe("3d 1h");
+  });
+
+  it("formatTravelTime respects a custom hoursPerDay", () => {
+    // 25h at 24h/day = 1d 1h (legacy behaviour)
+    expect(formatTravelTime(25, 24)).toBe("1d 1h");
+    // 20h at 10h/day = 2d
+    expect(formatTravelTime(20, 10)).toBe("2d");
+  });
+
+  it("stay-domain segment contributes duration to totalHours, not distance/speed", () => {
+    const stay = { ...makeSeg(0, 0), duration: 4 };
+    const walk = makeSeg(10, 5);
+    const j: Journey = {
+      i: 0,
+      name: "j",
+      visible: true,
+      color: "#000",
+      segments: [walk, stay]
+    };
+    const t = journeyTotals(j);
+    expect(t.totalKm).toBe(10);
+    expect(t.totalHours).toBe(2 + 4);
+    // avgSpeed based on moving hours only
+    expect(t.avgSpeed).toBe(10 / 2);
   });
 });

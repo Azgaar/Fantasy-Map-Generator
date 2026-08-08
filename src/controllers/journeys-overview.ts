@@ -6,8 +6,8 @@ import { getDefaultTransportTypes } from "@/data/transport-types";
 import { drawJourneys } from "@/renderers/draw-journeys";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Journey } from "@/types/Journey";
-import { downloadFile, getFileName, rn } from "@/utils";
-import { formatTravelTime, journeyTotals } from "@/utils/journey-metrics";
+import { downloadFile, getFileName, getHoursPerDay, rn } from "@/utils";
+import { DEFAULT_JOURNEY_COLOR, formatTravelTime, journeyTotals } from "@/utils/journey-metrics";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 function open(): void {
@@ -87,7 +87,7 @@ function addLines(): void {
     grandKm += totals.totalKm;
     const distance = `${rn(totals.totalKm)} ${distanceUnitInput.value}`;
     const speed = totals.avgSpeed ? `${rn(totals.avgSpeed, 1)} ${distanceUnitInput.value}/h` : "-";
-    const time = formatTravelTime(totals.totalHours);
+    const time = formatTravelTime(totals.totalHours, getHoursPerDay());
     rows.push(/* html */ `<div
       class="states"
       data-id="${journey.i}"
@@ -129,7 +129,7 @@ function createNewJourney(): void {
     i: id,
     name: `Journey ${id + 1}`,
     visible: true,
-    color: "#8b1a1a",
+    color: DEFAULT_JOURNEY_COLOR,
     segments: []
   };
   pack.journeys.push(newJourney);

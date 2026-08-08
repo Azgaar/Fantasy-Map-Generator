@@ -727,6 +727,7 @@ async function generate(options) {
     Military.generate();
     Markers.generate();
     Zones.generate();
+    Journeys.generateDemo();
 
     drawScaleBar(scaleBar, scale);
     Names.getMapName();

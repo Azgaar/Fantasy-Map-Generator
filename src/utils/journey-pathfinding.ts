@@ -97,7 +97,7 @@ const isCoastalLand = (cellId: number): boolean => {
  */
 export function isValidEndpointForDomain(cellId: number, domain: TransportDomain): boolean {
   if (cellId === undefined || cellId === null) return false;
-  if (domain === "air") return true;
+  if (domain === "air" || domain === "stay") return true;
   if (domain === "land") return isLand(cellId, pack);
   // water
   if (!isLand(cellId, pack)) return true;
@@ -113,7 +113,7 @@ export function isValidEndpointForDomain(cellId: number, domain: TransportDomain
  */
 export function isValidPathPointForDomain(cellId: number, domain: TransportDomain): boolean {
   if (cellId === undefined || cellId === null) return false;
-  if (domain === "air") return true;
+  if (domain === "air" || domain === "stay") return true;
   if (domain === "land") return isLand(cellId, pack);
   return !isLand(cellId, pack);
 }
@@ -329,7 +329,7 @@ export function findJourneyPath(
     }
   }
 
-  if (domain === "air") return buildDirect(from, to);
+  if (domain === "air" || domain === "stay") return buildDirect(from, to);
   if (domain === "water") return buildWater(from, to);
   return buildLand(from, to, options.avoidRoads);
 }

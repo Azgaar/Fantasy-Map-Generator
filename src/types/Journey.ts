@@ -5,15 +5,15 @@ export type JourneyPoint = [number, number, number]; // [x, y, cellId]
  *   land  → walks, wheels, hooves: land-only (endpoints must be on land or coastal). Uses road network if possible.
  *   water → boats, ships: water-only (endpoints must be in water or coastal). Uses sea findPath.
  *   air   → flight, magic: unrestricted; goes in a direct line, ignores terrain.
+ *   stay  → no movement: for story-telling delays (tavern rest, waiting). Uses seg.duration for travel time.
  */
-export type TransportDomain = "land" | "water" | "air";
+export type TransportDomain = "land" | "water" | "air" | "stay";
 
 export interface TransportType {
   i: number;
   name: string;
-  speed: number; // in the app's current distance unit per hour (e.g. mph if distanceUnit is "mi")
+  speed: number; // in the app's current distance unit per hour (e.g. mph if distanceUnit is "mi"). 0 for "stay" types.
   domain: TransportDomain;
-  color?: string;
   icon?: string;
 }
 
@@ -35,6 +35,17 @@ export interface Segment {
    * pathfinder prefers roads (the default behaviour).
    */
   avoidRoads?: boolean;
+  /**
+   * Stay-domain only: elapsed time in hours (e.g. a tavern rest, waiting for a caravan).
+   * The segment contributes this duration to totals; distance is ignored.
+   */
+  duration?: number;
+  /**
+   * True when the segment's path was drawn by the user cell-by-cell rather than
+   * produced by the pathfinder. Recompute will overwrite it, so the editor asks
+   * before recomputing a custom path.
+   */
+  custom?: boolean;
 }
 
 export interface Journey {

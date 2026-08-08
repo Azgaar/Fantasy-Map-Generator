@@ -4,14 +4,14 @@ import { getDefaultTransportTypes } from "@/data/transport-types";
 import type { TransportDomain, TransportType } from "@/types/Journey";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
-const DOMAINS: TransportDomain[] = ["land", "water", "air"];
+const DOMAINS: TransportDomain[] = ["land", "water", "air", "stay"];
 const DOMAIN_LABEL: Record<TransportDomain, string> = {
   land: "land (roads / overland; land or coastal endpoints)",
   water: "water (rivers / seas; water or coastal endpoints)",
-  air: "air (unrestricted; direct line, any endpoints)"
+  air: "air (unrestricted; direct line, any endpoints)",
+  stay: "stay (no movement; use segment duration for time — for tavern rests, waits, delays)"
 };
 
-/** Errors explain a rule and need time to read; confirmations only acknowledge an action. */
 const ERROR_TIP_MS = 9000;
 const SUCCESS_TIP_MS = 4000;
 
@@ -19,6 +19,8 @@ const TRANSPORT_TYPES_CHANGED = "journey-transport-types-changed";
 const emitChanged = () => document.dispatchEvent(new CustomEvent(TRANSPORT_TYPES_CHANGED));
 
 export { TRANSPORT_TYPES_CHANGED };
+
+const GRID_COLUMNS = "10em 6em 8em 3em";
 
 function open(): void {
   if (customization) return;
@@ -44,19 +46,20 @@ function renderDialog(): void {
   destroyDialogIfExists("transportTypesEditor");
   const unit = distanceUnitInput.value;
   const html = /* html */ `<div id="transportTypesEditor" class="dialog stable">
-    <div style="margin-bottom: 0.5em; font-size: 0.9em; color: #555;">
-      Add any transport type — give it a name, speed in <b>${unit}/h</b>, a <b>domain</b>, and a color.
+    <div style="margin-bottom: 0.5em; font-size: 0.9em; color: #555; max-width: 30em;">
+      Add any transport type — give it a name, speed in <b>${unit}/h</b>, and a <b>domain</b>.
       Domain rules:
       <br/>&nbsp;• <b>land</b>: on-foot / wheels / hooves — endpoints must be on land (coastal is fine).
       <br/>&nbsp;• <b>water</b>: boats / ships — endpoints must be in water or on the coast.
       <br/>&nbsp;• <b>air</b>: flight / magic — no restrictions; travels in a straight line.
+      <br/>&nbsp;• <b>stay</b>: no movement — time comes from the segment's <i>duration</i> (h). Useful for tavern rests or delays.
     </div>
-    <div id="ttHeader" class="header" style="display: grid; grid-template-columns: 10em 6em 8em 4em 3em; gap: 0.4em; padding: 0.2em; font-weight: bold;">
-      <div>Name</div><div>Speed (${unit}/h)</div><div>Domain</div><div>Color</div><div></div>
+    <div id="ttHeader" class="header" style="display: grid; grid-template-columns: ${GRID_COLUMNS}; gap: 0.4em; padding: 0.2em; font-weight: bold;">
+      <div>Name</div><div>Speed (${unit}/h)</div><div>Domain</div><div></div>
     </div>
     <div id="ttBody" class="table"></div>
     <div id="ttBottom" style="margin-top: 0.4em;">
-      <button id="ttAdd" data-tip="Add a new transport type — you name it, set the speed and path mode" class="icon-plus">Add transport type</button>
+      <button id="ttAdd" data-tip="Add a new transport type" class="icon-plus">Add transport type</button>
       <button id="ttResetDefaults" data-tip="Reset to default transport types (custom ones will be removed)" class="icon-cw">Reset defaults</button>
     </div>
   </div>`;
@@ -71,35 +74,28 @@ function refresh(): void {
   pack.transportTypes.forEach(t => {
     const row = document.createElement("div");
     row.className = "editorLine";
-    row.style.cssText =
-      "display: grid; grid-template-columns: 10em 6em 8em 4em 3em; gap: 0.4em; padding: 0.2em; align-items: center;";
+    row.style.cssText = `display: grid; grid-template-columns: ${GRID_COLUMNS}; gap: 0.4em; padding: 0.2em; align-items: center;`;
     row.dataset.ttId = String(t.i);
+    const isStay = t.domain === "stay";
     row.innerHTML = /* html */ `
       <input class="ttName" value="${t.name}" />
-      <input class="ttSpeed" type="number" min="0" step="0.5" value="${t.speed}" />
+      <input class="ttSpeed" type="number" min="0" step="0.5" value="${t.speed}" ${isStay ? "disabled title='Stay-domain types have no speed'" : ""} />
       <select class="ttDomain" data-tip="${DOMAIN_LABEL[t.domain]}">
         ${DOMAINS.map(d => `<option value="${d}" ${d === t.domain ? "selected" : ""}>${d}</option>`).join("")}
       </select>
-      <input class="ttColor" type="color" value="${t.color ?? "#666666"}" />
       <span class="ttDelete pointer icon-trash-empty" data-tip="Delete this transport type"></span>`;
     body.appendChild(row);
   });
 
-  body.querySelectorAll<HTMLInputElement>(".ttName").forEach(el => {
-    el.on("change", onNameChange);
-  });
-  body.querySelectorAll<HTMLInputElement>(".ttSpeed").forEach(el => {
-    el.on("input", onSpeedInput);
-  });
-  body.querySelectorAll<HTMLSelectElement>(".ttDomain").forEach(el => {
-    el.on("change", onDomainChange);
-  });
-  body.querySelectorAll<HTMLInputElement>(".ttColor").forEach(el => {
-    el.on("input", onColorInput);
-  });
-  body.querySelectorAll<HTMLElement>(".ttDelete").forEach(el => {
-    el.on("click", onDelete);
-  });
+  const on = (selector: string, event: string, handler: EventListener) => {
+    body.querySelectorAll<HTMLElement>(selector).forEach(el => {
+      el.on(event, handler);
+    });
+  };
+  on(".ttName", "change", onNameChange);
+  on(".ttSpeed", "input", onSpeedInput);
+  on(".ttDomain", "change", onDomainChange);
+  on(".ttDelete", "click", onDelete);
 }
 
 function getRowId(el: HTMLElement): number {
@@ -144,14 +140,10 @@ function onDomainChange(this: HTMLSelectElement): void {
   if (!type) return;
   type.domain = this.value as TransportDomain;
   this.dataset.tip = DOMAIN_LABEL[type.domain];
+  // Stay-domain types have no speed; force it to 0 for consistency.
+  if (type.domain === "stay") type.speed = 0;
   emitChanged();
-}
-
-function onColorInput(this: HTMLInputElement): void {
-  const type = getType(getRowId(this));
-  if (!type) return;
-  type.color = this.value;
-  emitChanged();
+  refresh();
 }
 
 function onDelete(this: HTMLElement): void {
@@ -195,16 +187,15 @@ function uniqueName(base: string): string {
 function addType(): void {
   const id = nextId();
   const name = uniqueName("New Type");
-  pack.transportTypes.push({ i: id, name, speed: 5, domain: "land", color: "#8a2be2" });
+  pack.transportTypes.push({ i: id, name, speed: 5, domain: "land" });
   refresh();
   emitChanged();
-  // auto-focus the new row's name field so the user can rename immediately
   const input = document.querySelector<HTMLInputElement>(`#ttBody [data-tt-id="${id}"] .ttName`);
   if (input) {
     input.focus();
     input.select();
   }
-  tip("Transport type added — rename it and set speed / path mode.", true, "success", SUCCESS_TIP_MS);
+  tip("Transport type added — rename it and set speed / domain.", true, "success", SUCCESS_TIP_MS);
 }
 
 function resetDefaults(): void {
