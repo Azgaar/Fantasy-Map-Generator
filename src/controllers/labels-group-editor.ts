@@ -192,7 +192,10 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
         <option value="">None</option>
         ${LAYER_TOGGLES.map(({ id, label }) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label}</option>`).join("")}
       </select></td>
-      <td data-tip="Number of labels currently assigned to this group" style="text-align:center">${labelCount}<button type="button" name="list" class="icon-list-bullet" data-tip="Show labels of this group in Labels Overview"></button></td>
+      <td data-tip="Number of labels currently assigned to this group" style="text-align:center">
+        <div style="min-width:2em; display:inline-block">${labelCount}</div>
+        <button type="button" name="list" class="icon-list-bullet" data-tip="Show labels of this group in Labels Overview"></button>
+      </td>
       <td data-tip="Assignment order: move group up or down"><button type="button" name="up" class="icon-up-open" data-tip="Move up"></button><button type="button" name="down" class="icon-down-open" data-tip="Move down"></button></td>
       <td><button type="button" name="style" class="icon-brush" data-tip="Edit visual style"></button><span data-tip="${isDefault ? "Default groups can't be removed" : "Remove group"}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
     </tr>`;
