@@ -3,6 +3,7 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import type { BurgGroup } from "@/types/burg-groups";
 import { destroyDialogIfExists, ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -29,9 +30,6 @@ function editBurgGroups(): void {
         options.burgs.groups = Burgs.getDefaultGroups() as typeof options.burgs.groups;
         addLines();
       },
-      "Label Groups": () => {
-        void Controllers.LabelGroupsConfigurator.open();
-      },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
@@ -41,7 +39,8 @@ function editBurgGroups(): void {
 
 function renderDialog(): void {
   destroyDialogIfExists("burgGroupsEditor");
-  const html = /* html */ `<div id="burgGroupsEditor" class="dialog">
+
+  const html = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
     <form id="burgGroupsForm">
       <table class="table">
         <thead>
@@ -66,9 +65,8 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      Burg population is calculated as value * population_point * urbanization_rate, see the Units Editor.
-      <br>Applying changes reclassifies Burgs. Locked burgs are not affected. Group changes also affect Label Groups.
-      <br>Burg labels manually assigned to another Label Group keep their manual assignment.
+      Burg population is calculated as <code style="font-size: smaller;">value * population_point * urbanization_rate</code>, see the <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">Units Editor</a>.
+      <br>Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">Label Group Configurator</a>.
     </div>
   </div>`;
 
@@ -102,6 +100,8 @@ function renderDialog(): void {
     }
     if (el.getAttribute("name") === "remove") return removeLine(line);
   });
+  ensureEl("burgGroupsUnitsEditorLink").addEventListener("click", () => Controllers.UnitsEditor.open());
+  ensureEl("burgGroupsLabelGroupsLink").addEventListener("click", () => Controllers.LabelGroupsConfigurator.open());
 }
 
 function closeBurgGroupsEditor(): void {
@@ -373,7 +373,7 @@ function submitForm(event: Event): void {
     return;
   }
 
-  function parseInput(input: HTMLInputElement | HTMLSelectElement): unknown {
+  function parseInput(input: HTMLInputElement | HTMLSelectElement) {
     if (input.name === "name") return input.value;
     if (input.name === "features") {
       const isValid = JSON.isValid(input.value);
@@ -392,26 +392,18 @@ function submitForm(event: Event): void {
     return input.value || null;
   }
 
-  const _previousGroups = structuredClone(options.burgs.groups);
-  const nextGroups = lines.map(line => {
+  const newGroups = lines.map(line => {
     const inputs = line.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select");
-    const group = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {
+    const group: BurgGroup = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {
       const value = parseInput(input);
       if (value !== null) obj[input.name] = value;
       return obj;
     }, {});
     return group;
-  }) as typeof options.burgs.groups;
-  const _renames = Object.fromEntries(
-    lines
-      .map(line => [line.getAttribute("name"), line.querySelector<HTMLInputElement>("input[name='name']")?.value])
-      .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1] && entry[0] !== entry[1]))
-  );
+  });
 
-  // TODO: reconcileBurgLabelGroups();
-  options.burgs.groups = nextGroups;
+  options.burgs.groups = newGroups;
   localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
-  localStorage.setItem("label-groups", JSON.stringify(options.labels.groups));
 
   // put burgs to new groups
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);

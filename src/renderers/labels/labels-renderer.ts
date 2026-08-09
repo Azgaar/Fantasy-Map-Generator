@@ -10,7 +10,7 @@ const scene = new Scene<LabelData>();
 const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels });
 const labelsByGroup = new Map<string, LabelData[]>();
 
-const dataAdapters: Record<LabelType, (ids?: number[]) => LabelData[]> = {
+export const labelDataAdapters: Record<LabelType, () => LabelData[]> = {
   state: getStateLabelsData,
   province: getProvinceLabelsData,
   added: getAddedLabelsData,
@@ -25,7 +25,7 @@ export function drawLabels(): void {
   TIME && console.time("drawLabels");
   renderLabelGroups();
   document.getElementById("textPaths")?.replaceChildren();
-  const labels = Object.values(dataAdapters).flatMap(adapter => adapter());
+  const labels = Object.values(labelDataAdapters).flatMap(adapter => adapter());
   scene.replace(labels);
   indexLabelsByGroup();
   layer.render();

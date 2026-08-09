@@ -9,7 +9,7 @@ import {
   type LabelType
 } from "@/generators/labels-generator";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { drawLabels, labelDataAdapters } from "@/renderers/labels/labels-renderer";
 import { destroyDialogIfExists, ensureEl } from "@/utils";
 
 // TODO: replace with Layers registry data
@@ -69,9 +69,6 @@ function open(): void {
         ensureEl<HTMLInputElement>("labelsShowAll").checked = options.labels.showAll;
         addLines();
       },
-      "Burg Groups": () => {
-        void Controllers.BurgGroupEditor.open();
-      },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
       }
@@ -81,7 +78,7 @@ function open(): void {
 
 function renderDialog(): void {
   destroyDialogIfExists("labelGroupsConfigurator");
-  const html = /* html */ `<div id="labelGroupsConfigurator" class="dialog">
+  const html = /* html */ `<div id="labelGroupsConfigurator" class="dialog stable">
     <form id="labelGroupsForm">
       <table class="table" style="white-space:nowrap; overflow-x:auto; max-width:100%">
         <colgroup>
@@ -105,7 +102,7 @@ function renderDialog(): void {
             <th data-tip="Minimum zoom level to show the group">Zoom min</th>
             <th data-tip="Maximum zoom level to show the group">Zoom max</th>
             <th data-tip="Layer that must be toggled on for this group to be shown">Layer dependency</th>
-            <th data-tip="Number of labels currently assigned to this group">Labels</th>
+            <th data-tip="Number of labels currently assigned to this group">Labels [TODO: open list]</th>
             <th data-tip="Rendering order: lower groups are rendered on top">Order</th>
             <th data-tip="Edit style or remove group">Actions</th>
           </tr>
@@ -113,8 +110,12 @@ function renderDialog(): void {
         <tbody id="labelGroupsBody"></tbody>
       </table>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
+        <label><strong>Missing groups:</strong> <span id="labelGroupsMissing">TODO: groupName1 (X [open list]), groupName1 (C [open list])</span></label>
+      </div>
+      <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
         <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${options.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
         <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
+        <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
       </div>
     </form>
   </div>`;
@@ -125,6 +126,7 @@ function renderDialog(): void {
   form.addEventListener("submit", submitForm);
   ensureEl("labelGroupsBody").addEventListener("click", onBodyClick);
   ensureEl("labelGroupsBody").addEventListener("change", onBodyChange);
+  ensureEl("labelGroupsBurgGroupsLink").addEventListener("click", () => Controllers.BurgGroupEditor.open());
 }
 
 function addLines(): void {
@@ -145,29 +147,8 @@ function countLabelsByGroup(): Map<string, number> {
   const counts = new Map<string, number>();
   const increment = (name: string) => counts.set(name, (counts.get(name) ?? 0) + 1);
 
-  for (const burg of pack.burgs) {
-    if (!burg.i || burg.removed) continue;
-    increment(burg.label?.group || burg.group || "burg");
-  }
-  for (const province of pack.provinces) {
-    if (!province.i || province.removed) continue;
-    increment(province.label?.group || "province");
-  }
-  for (const state of pack.states) {
-    if (!state.i || state.removed) continue;
-    increment(state.label?.group || "state");
-  }
-  for (const river of pack.rivers) {
-    if (!river.cells.length || !river.name) continue;
-    increment(river.label?.group || "river");
-  }
-  for (const route of pack.routes) {
-    if (!route.name) continue;
-    increment(route.label?.group || "route");
-  }
-  for (const label of pack.addedLabels) {
-    increment(label.group);
-  }
+  const labels = Object.values(labelDataAdapters).flatMap(adapter => adapter());
+  labels.forEach(label => void increment(label.group));
 
   return counts;
 }

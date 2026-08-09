@@ -477,12 +477,13 @@ class BurgModule {
       if (group) return;
     }
 
-    const defaultGroup = options.burgs.groups.find((g: any) => g.isDefault);
+    const defaultGroup = options.burgs.groups.find(g => g.isDefault);
     if (!defaultGroup) {
       ERROR && console.error("No default group defined");
       return;
     }
     burg.group = defaultGroup.name;
+    if (burg.label?.group) delete burg.label.group;
 
     for (const group of options.burgs.groups) {
       if (!group.active) continue;
