@@ -33,22 +33,22 @@ function renderDialog(): void {
   destroyDialogIfExists("labelsOverview");
 
   const html = /* html */ `<div id="labelsOverview" class="dialog stable">
-    <div id="labelsHeader" class="header" style="grid-template-columns: 1.6em 16em 5em 11em">
+    <div id="labelsHeader" class="header" style="grid-template-columns: 0.5em 12em 5em 8em 2em">
       <div></div>
       <div data-tip="Click to sort by label text" class="sortable alphabetically" data-sortby="text">Label&nbsp;</div>
       <div data-tip="Click to sort by label type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
       <div data-tip="Click to sort by label group" class="sortable alphabetically" data-sortby="group">Group&nbsp;</div>
     </div>
     <div id="labelsBody" class="table"></div>
-    <div id="labelsFilters" style="display:flex; gap:.4em; align-items:center; padding:.4em 0; font-size:smaller">
+    <div id="labelsFilters" style="display:flex; gap:.4em; align-items:center; padding-top:.4em; font-size:smaller">
       <label for="labelsFilterGroup" data-tip="Show only labels of the selected group">Group:</label>
       <select id="labelsFilterGroup" data-tip="Show only labels of the selected group"></select>
     </div>
-    <div id="labelsBulkBar" style="display:none; gap:.4em; align-items:center; padding:.4em 0; font-size:smaller">
-      <button id="labelsSelectAll" data-tip="Select or deselect all listed labels" class="icon-check"></button>
-      <span data-tip="Number of selected labels">Selected: <b id="labelsSelectedCount">0</b></span>
+    <div id="labelsBulkBar" style="display:none; gap:.4em; align-items:center; padding-top:.4em;">
+      <button id="labelsSelectAll" data-tip="Select or deselect all listed labels" class="icon-check-empty"></button>
+      <span data-tip="Number of selected labels">Selected: <span id="labelsSelectedCount">0</span></span>
       <select id="labelsBulkGroup" data-tip="Group to assign the selected labels to"></select>
-      <button id="labelsBulkApply" data-tip="Assign all selected labels to the selected group">Assign</button>
+      <button id="labelsBulkApply" data-tip="Assign all selected labels to the selected group" class="icon-check">Assign</button>
     </div>
     <div id="labelsFooter" class="totalLine">
       <div data-tip="Number of listed labels" style="margin-left: 4px">
@@ -142,13 +142,12 @@ function addLines(): void {
 
 function createLine(label: LabelData): string {
   const { id, text, type, group } = label;
-  const checkboxStyle = isBulkMode ? "" : "display:none";
 
-  return /* html */ `<div class="states" data-id="${id}" data-text="${escapeAttribute(text)}" data-type="${type}" data-group="${escapeAttribute(group)}">
-      <input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="${checkboxStyle}">
-      <div data-tip="Label text" style="width:15em; overflow:hidden; text-overflow:ellipsis">${escapeText(text)}</div>
+  return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}">
+      <input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}">
+      <div data-tip="Label text" style="width:12em">${text}</div>
       <div data-tip="Label type" style="width:5em">${type}</div>
-      <select class="labelsGroup" data-tip="Label group, select to reassign the label" style="width:10em">
+      <select class="labelsGroup" data-tip="Label group, select to reassign the label" style="width:7em">
         ${createGroupOptions(group)}
       </select>
       <span data-tip="Locate the label" class="icon-target pointer"></span>
@@ -163,7 +162,7 @@ function createGroupOptions(selected: string): string {
     .map(name => {
       const label = defined.includes(name) ? name : `${name} (missing)`;
       const isSelected = name === selected ? "selected" : "";
-      return /* html */ `<option value="${escapeAttribute(name)}" ${isSelected}>${escapeText(label)}</option>`;
+      return /* html */ `<option value="${name}" ${isSelected}>${label}</option>`;
     })
     .join("");
 }
@@ -171,7 +170,7 @@ function createGroupOptions(selected: string): string {
 function onBodyClick(event: Event): void {
   const element = event.target as HTMLElement;
   const id = element.parentElement?.dataset.id;
-  if (element.classList.contains("icon-target")) highlightLabel(id);
+  if (element.classList.contains("icon-target")) highlightLabel(element, id);
 }
 
 function onBodyChange(event: Event): void {
@@ -188,9 +187,13 @@ function getLineLabel(element: HTMLElement): LabelData | undefined {
   return id ? listedLabels.get(id) : undefined;
 }
 
-function highlightLabel(id?: string): void {
+function highlightLabel(element: HTMLElement, id?: string): void {
   const labelEl = id && findEl(id);
   if (labelEl) highlightElement(labelEl, 2);
+  else {
+    const label = getLineLabel(element);
+    if (label) zoomTo(...label.anchor, 6, 2000);
+  }
 }
 
 /** Assign the labels to the group, asking for confirmation if the group is of another type */
@@ -269,8 +272,5 @@ function applyBulkAssignment(): void {
 
   assignGroup(labels, group);
 }
-
-const escapeText = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-const escapeAttribute = (text: string) => escapeText(text).replaceAll('"', "&quot;");
 
 export const LabelsOverview = { open };
