@@ -10,9 +10,10 @@ import { destroyDialogIfExists, ensureEl, findEl } from "@/utils";
 
 const ALL = ""; // filter value meaning "all"
 const filters = { group: ALL, type: ALL, search: "" };
+const listedLabels = new Map<string, LabelData>(); // currently listed labels, keyed by line id
 let isBulkMode = false;
 
-function open(group: string): void {
+function open(group: string = ALL): void {
   if (customization) return;
   closeDialogs("#labelsOverview, .stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
@@ -82,9 +83,9 @@ function renderDialog(): void {
 
   ensureEl("labelsBody").addEventListener("click", onBodyClick);
   ensureEl("labelsBody").addEventListener("change", onBodyChange);
-  ensureEl("labelsFilterGroup").addEventListener("change", addLines);
-  ensureEl("labelsFilterType").addEventListener("change", addLines);
-  ensureEl("labelsSearch").addEventListener("input", addLines);
+  ensureEl("labelsFilterGroup").addEventListener("change", onFilterChange);
+  ensureEl("labelsFilterType").addEventListener("change", onFilterChange);
+  ensureEl("labelsSearch").addEventListener("input", onFilterChange);
   ensureEl("labelsOverviewRefresh").addEventListener("click", refresh);
   ensureEl("labelsBulkToggle").addEventListener("click", toggleBulkMode);
   ensureEl("labelsGroupsConfig").addEventListener("click", () => void Controllers.LabelGroupsConfigurator.open());
@@ -99,6 +100,13 @@ function close(): void {
 function refresh(): void {
   populateGroupFilter();
   populateTypeFilter();
+  addLines();
+}
+
+function onFilterChange(): void {
+  filters.type = ensureEl<HTMLSelectElement>("labelsFilterType").value;
+  filters.group = ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
+  filters.search = ensureEl<HTMLInputElement>("labelsSearch").value;
   addLines();
 }
 
@@ -118,10 +126,14 @@ function populateGroupFilter(): void {
   select.add(new Option("all", ALL));
   for (const name of groups) select.add(new Option(name, name));
   select.value = filters.group;
+  filters.group = select.value; // the remembered group may no longer exist, then it falls back to all
 
+  // keep the bulk target selected across refreshes, it resets to the first group if that one is gone
   const bulkSelect = ensureEl<HTMLSelectElement>("labelsBulkGroup");
+  const bulkSelected = bulkSelect.value;
   bulkSelect.options.length = 0;
   for (const name of groups) bulkSelect.add(new Option(name, name));
+  if (groups.includes(bulkSelected)) bulkSelect.value = bulkSelected;
 }
 
 function addLines(): void {
@@ -131,6 +143,9 @@ function addLines(): void {
   if (filters.type !== ALL) labels = labels.filter(({ type }) => type === filters.type);
   const search = filters.search.trim().toLowerCase();
   if (search) labels = labels.filter(({ text }) => text.toLowerCase().includes(search));
+
+  listedLabels.clear();
+  for (const label of labels) listedLabels.set(label.id, label);
 
   ensureEl("labelsBody").innerHTML = labels.map(createLine).join("");
   ensureEl("labelsFooterNumber").innerHTML = String(labels.length);
@@ -155,12 +170,12 @@ function createLine(label: LabelData): string {
 }
 
 function createGroupOptions(selected: string): string {
-  const defined = getDefinedGroups();
-  const names = defined.includes(selected) ? defined : [selected, ...defined];
+  const groups = options.labels.groups.map(({ name }) => name);
+  const names = groups.includes(selected) ? groups : [selected, ...groups];
 
   return names
     .map(name => {
-      const label = defined.includes(name) ? name : `${name} (missing)`;
+      const label = groups.includes(name) ? name : `${name} (missing)`;
       const isSelected = name === selected ? "selected" : "";
       return /* html */ `<option value="${name}" ${isSelected}>${label}</option>`;
     })
@@ -267,7 +282,7 @@ function applyBulkAssignment(): void {
   if (!labels.length) return void tip("Select at least one label", false, "error");
 
   const group = ensureEl<HTMLSelectElement>("labelsBulkGroup").value;
-  if (group === ALL) return void tip("Select the group to assign the labels to", false, "error");
+  if (group === ALL) return void tip("Define a label group to assign the labels to", false, "error");
 
   assignGroup(labels, group);
 }
