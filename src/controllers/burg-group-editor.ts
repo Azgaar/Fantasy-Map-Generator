@@ -12,7 +12,7 @@ function editBurgGroups(): void {
   if (customization) return;
   closeDialogs(".stable");
   renderDialog();
-  addLines();
+  addRows();
 
   $("#burgGroupsEditor").dialog({
     title: "Configure Burg groups",
@@ -24,11 +24,13 @@ function editBurgGroups(): void {
         ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
       },
       Add: () => {
-        ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createLine({ name: "", active: true }));
+        const maxOrder = Math.max(0, ...options.burgs.groups.map(({ order }) => order));
+        const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
+        ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
       },
       Restore: () => {
-        options.burgs.groups = Burgs.getDefaultGroups() as typeof options.burgs.groups;
-        addLines();
+        options.burgs.groups = Burgs.getDefaultGroups();
+        addRows();
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -77,8 +79,8 @@ function renderDialog(): void {
   form.addEventListener("submit", submitForm as EventListener);
   ensureEl("burgGroupsBody").addEventListener("click", (ev: Event) => {
     const el = ev.target as HTMLElement;
-    const line = el.closest("tr");
-    if (!line) return;
+    const row = el.closest("tr");
+    if (!row) return;
 
     if (el.getAttribute("name") === "biomes") {
       const biomes = pack.biomes.filter(biome => !biome.removed).map(({ i, name, color }) => ({ i, name, color }));
@@ -89,16 +91,16 @@ function renderDialog(): void {
     if (el.getAttribute("name") === "religions") return selectLimitation(el, pack.religions);
     if (el.getAttribute("name") === "features") return selectFeaturesLimitation(el);
     if (el.getAttribute("name") === "up") {
-      const prev = line.previousElementSibling;
-      if (prev) line.parentNode!.insertBefore(line, prev);
+      const prev = row.previousElementSibling;
+      if (prev) row.parentNode!.insertBefore(row, prev);
       return;
     }
     if (el.getAttribute("name") === "down") {
-      const next = line.nextElementSibling;
-      if (next) line.parentNode!.insertBefore(next, line);
+      const next = row.nextElementSibling;
+      if (next) row.parentNode!.insertBefore(next, row);
       return;
     }
-    if (el.getAttribute("name") === "remove") return removeLine(line);
+    if (el.getAttribute("name") === "remove") return removeRow(row);
   });
   ensureEl("burgGroupsUnitsEditorLink").addEventListener("click", () => Controllers.UnitsEditor.open());
   ensureEl("burgGroupsLabelGroupsLink").addEventListener("click", () => Controllers.LabelGroupsConfigurator.open());
@@ -109,12 +111,12 @@ function closeBurgGroupsEditor(): void {
   ensureEl("burgGroupsEditor").remove();
 }
 
-function addLines(): void {
-  const lines = options.burgs.groups.map(createLine);
-  ensureEl("burgGroupsBody").innerHTML = lines.join("");
+function addRows(): void {
+  const rows = options.burgs.groups.map(createRow);
+  ensureEl("burgGroupsBody").innerHTML = rows.join("");
 }
 
-function createLine(group: any): string {
+function createRow(group: BurgGroup): string {
   const count = pack.burgs.filter(burg => !burg.removed && burg.group === group.name).length;
   // prettier-ignore
   return /* html */ `<tr name="${group.name}">
@@ -168,7 +170,7 @@ function selectLimitation(
   const initial = value ? value.split(",").map(v => +v) : [];
 
   const filtered = data.filter(datum => datum.i && !datum.removed);
-  const lines = filtered.map(
+  const rows = filtered.map(
     ({ i, name, fullName, color }) => /* html */ `
         <tr data-tip="${name}">
           <td>
@@ -186,7 +188,7 @@ function selectLimitation(
   alertMessage.innerHTML = /* html */ `<b>Limit group by ${el.getAttribute("name")}:</b>
       <table style="margin-top:.3em">
         <tbody>
-          ${lines.join("")}
+          ${rows.join("")}
         </tbody>
       </table>`;
 
@@ -234,7 +236,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
     { name: "shanty", icon: "icon-campground" }
   ];
 
-  const lines = features.map(
+  const rows = features.map(
     // prettier-ignore
     ({ name, icon }) => /* html */ `
         <tr data-tip="Select limitation for burg feature: ${name}">
@@ -264,7 +266,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
             <td style="width:3em">Any</td>
           </thead>
           <tbody>
-            ${lines.join("")}
+            ${rows.join("")}
           </tbody>
         </table>
       </form>`;
@@ -293,9 +295,9 @@ function selectFeaturesLimitation(el: HTMLElement): void {
   });
 }
 
-function removeLine(line: HTMLElement): void {
-  const lines = ensureEl("burgGroupsBody").children;
-  if (lines.length < 2) {
+function removeRow(row: HTMLElement): void {
+  const rows = ensureEl("burgGroupsBody").children;
+  if (rows.length < 2) {
     tip("At least one group should be defined", false, "error");
     return;
   }
@@ -306,7 +308,7 @@ function removeLine(line: HTMLElement): void {
       "Are you sure you want to remove the group? <br>This WON'T change the burgs unless the changes are applied",
     confirm: "Remove",
     onConfirm: () => {
-      line.remove();
+      row.remove();
       validateForm();
     }
   });
@@ -363,46 +365,55 @@ function validateForm(): boolean {
   return isValid;
 }
 
+function rowToGroup(row: Element): BurgGroup {
+  const input = (name: string) => row.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
+
+  // empty and zero numeric constraints mean "no constraint"
+  const getConstraint = (name: string) => {
+    const value = input(name).valueAsNumber;
+    return Number.isNaN(value) || value === 0 ? undefined : value;
+  };
+
+  // limitation inputs keep the allowed ids as a comma-separated list, empty value means "all allowed"
+  const getLimitation = (name: string) => {
+    const value = input(name).value;
+    return value ? value.split(",").map(Number) : undefined;
+  };
+
+  return {
+    name: input("name").value,
+    order: input("order").valueAsNumber,
+    active: input("active").checked,
+    isDefault: input("isDefault").checked,
+    preview: row.querySelector<HTMLSelectElement>('select[name="preview"]')!.value || undefined,
+    min: getConstraint("min"),
+    max: getConstraint("max"),
+    percentile: getConstraint("percentile"),
+    features: getFeatures(input("features").value),
+    biomes: getLimitation("biomes"),
+    states: getLimitation("states"),
+    cultures: getLimitation("cultures"),
+    religions: getLimitation("religions")
+  };
+}
+
+function getFeatures(value: string): Record<string, boolean> | undefined {
+  if (!JSON.isValid(value)) return undefined;
+  const features: Record<string, boolean> = JSON.parse(value);
+  return Object.keys(features).length ? features : undefined;
+}
+
 function submitForm(event: Event): void {
   event.preventDefault();
   if (!validateForm()) return;
 
-  const lines = Array.from(ensureEl("burgGroupsBody").children);
-  if (!lines.length) {
+  const rows = Array.from(ensureEl("burgGroupsBody").children);
+  if (!rows.length) {
     tip("At least one group should be defined", false, "error");
     return;
   }
 
-  function parseInput(input: HTMLInputElement | HTMLSelectElement) {
-    if (input.name === "name") return input.value;
-    if (input.name === "features") {
-      const isValid = JSON.isValid(input.value);
-      const parsed = isValid ? JSON.parse(input.value) : {};
-      if (Object.keys(parsed).length) return parsed;
-      return null;
-    }
-    if ((input as HTMLInputElement).type === "hidden") return input.value || null;
-    if ((input as HTMLInputElement).type === "radio") return (input as HTMLInputElement).checked;
-    if ((input as HTMLInputElement).type === "checkbox") return (input as HTMLInputElement).checked;
-    if ((input as HTMLInputElement).type === "number") {
-      const value = (input as HTMLInputElement).valueAsNumber;
-      if (value === 0 || Number.isNaN(value)) return null;
-      return value;
-    }
-    return input.value || null;
-  }
-
-  const newGroups = lines.map(line => {
-    const inputs = line.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input, select");
-    const group: BurgGroup = Array.from(inputs).reduce<Record<string, unknown>>((obj, input) => {
-      const value = parseInput(input);
-      if (value !== null) obj[input.name] = value;
-      return obj;
-    }, {});
-    return group;
-  });
-
-  options.burgs.groups = newGroups;
+  options.burgs.groups = rows.map(rowToGroup);
   localStorage.setItem("burg-groups", JSON.stringify(options.burgs.groups));
 
   // put burgs to new groups

@@ -50,7 +50,7 @@ function open(): void {
   if (customization) return;
   closeDialogs(".stable");
   renderDialog();
-  addLines();
+  addRows();
 
   $("#labelGroupsConfigurator").dialog({
     title: "Configure Label Groups",
@@ -62,12 +62,15 @@ function open(): void {
       Apply: () => {
         ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
       },
-      Add: addLine,
+      Add: () => {
+        const group: LabelGroup = { name: "", type: "state", zoom: { min: null, max: null } };
+        ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
+      },
       Restore: () => {
         options.labels = Labels.getDefaultOptions();
         ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = options.labels.resizeOnZoom;
         ensureEl<HTMLInputElement>("labelsShowAll").checked = options.labels.showAll;
-        addLines();
+        addRows();
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -102,15 +105,15 @@ function renderDialog(): void {
             <th data-tip="Minimum zoom level to show the group">Zoom min</th>
             <th data-tip="Maximum zoom level to show the group">Zoom max</th>
             <th data-tip="Layer that must be toggled on for this group to be shown">Layer dependency</th>
-            <th data-tip="Number of labels currently assigned to this group">Labels [TODO: open list]</th>
+            <th data-tip="Number of labels currently assigned to this group. Click the list icon to see them">Labels</th>
             <th data-tip="Rendering order: lower groups are rendered on top">Order</th>
             <th data-tip="Edit style or remove group">Actions</th>
           </tr>
         </thead>
         <tbody id="labelGroupsBody"></tbody>
       </table>
-      <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
-        <label><strong>Missing groups:</strong> <span id="labelGroupsMissing">TODO: groupName1 (X [open list]), groupName1 (C [open list])</span></label>
+      <div id="labelGroupsMissingWrapper" style="display:none; gap:.4em; align-items:center; margin:.6em 0 0">
+        <label data-tip="Groups referenced by labels but not defined here. Such labels are not rendered until they are reassigned to an existing group"><strong>Missing groups:</strong> <span id="labelGroupsMissing"></span></label>
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
         <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${options.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
@@ -127,20 +130,30 @@ function renderDialog(): void {
   ensureEl("labelGroupsBody").addEventListener("click", onBodyClick);
   ensureEl("labelGroupsBody").addEventListener("change", onBodyChange);
   ensureEl("labelGroupsBurgGroupsLink").addEventListener("click", () => Controllers.BurgGroupEditor.open());
+  ensureEl("labelGroupsMissing").addEventListener("click", onMissingGroupsClick);
 }
 
-function addLines(): void {
+function addRows(): void {
   const counts = countLabelsByGroup();
   ensureEl("labelGroupsBody").innerHTML = options.labels.groups
-    .map(group => createLine(group, false, counts.get(group.name) ?? 0))
+    .map(group => createRow(group, false, counts.get(group.name) ?? 0))
     .join("");
+  addMissingGroups(counts);
 }
 
-function addLine(): void {
-  ensureEl("labelGroupsBody").insertAdjacentHTML(
-    "beforeend",
-    createLine({ name: "", type: "state", zoom: { min: null, max: null } }, true, 0)
-  );
+/** List groups labels are assigned to, but which are not defined anymore, so their labels are not rendered */
+function addMissingGroups(counts: Map<string, number>): void {
+  const definedGroups = new Set(options.labels.groups.map(({ name }) => name));
+  const missingGroups = [...counts.entries()].filter(([name]) => !definedGroups.has(name)).sort();
+
+  ensureEl("labelGroupsMissingWrapper").style.display = missingGroups.length ? "flex" : "none";
+  ensureEl("labelGroupsMissing").innerHTML = missingGroups
+    .map(
+      ([name, count]) => /* html */ `${name} (${count})
+        <button type="button" name="missing" data-group="${name}" class="icon-list-bullet"
+          data-tip="Show labels of the ${name} group in Labels Overview to reassign them"></button>`
+    )
+    .join(", ");
 }
 
 function countLabelsByGroup(): Map<string, number> {
@@ -153,7 +166,7 @@ function countLabelsByGroup(): Map<string, number> {
   return counts;
 }
 
-function createLine(group: LabelGroup, isNew = false, labelCount = 0): string {
+function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
   const modes: LabelNameMode[] = ["auto", "short", "full"];
   const isDefault = Boolean(group.isDefault);
   const nameTip = isDefault
@@ -179,7 +192,7 @@ function createLine(group: LabelGroup, isNew = false, labelCount = 0): string {
         <option value="">None</option>
         ${LAYER_TOGGLES.map(({ id, label }) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label}</option>`).join("")}
       </select></td>
-      <td data-tip="Number of labels currently assigned to this group" style="text-align:center">${labelCount}</td>
+      <td data-tip="Number of labels currently assigned to this group" style="text-align:center">${labelCount}<button type="button" name="list" class="icon-list-bullet" data-tip="Show labels of this group in Labels Overview"></button></td>
       <td data-tip="Assignment order: move group up or down"><button type="button" name="up" class="icon-up-open" data-tip="Move up"></button><button type="button" name="down" class="icon-down-open" data-tip="Move down"></button></td>
       <td><button type="button" name="style" class="icon-brush" data-tip="Edit visual style"></button><span data-tip="${isDefault ? "Default groups can't be removed" : "Remove group"}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
     </tr>`;
@@ -196,6 +209,11 @@ function onBodyChange(event: Event): void {
   const applicable = isModeApplicable(target.value as LabelType);
   modeSelect.disabled = !applicable;
   if (!applicable) modeSelect.value = "auto";
+}
+
+function onMissingGroupsClick(event: Event): void {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[name='missing']");
+  if (button?.dataset.group) void Controllers.LabelsOverview.open(button.dataset.group);
 }
 
 function onBodyClick(event: Event): void {
@@ -219,10 +237,15 @@ function onBodyClick(event: Event): void {
     if (name) editStyle("labels", name);
     return;
   }
-  if (button.name === "remove") removeLine(row);
+  if (button.name === "list") {
+    const name = row.dataset.group;
+    if (name) void Controllers.LabelsOverview.open(name);
+    return;
+  }
+  if (button.name === "remove") removeRow(row);
 }
 
-function removeLine(row: HTMLTableRowElement): void {
+function removeRow(row: HTMLTableRowElement): void {
   const rows = ensureEl("labelGroupsBody").children;
   if (rows.length < 2) {
     tip("At least one group should be defined", false, "error");

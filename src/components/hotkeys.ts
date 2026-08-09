@@ -50,7 +50,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyS") Controllers.StatesEditor.open();
   else if ((shift || altShift) && code === "KeyP") Controllers.ProvincesEditor.open();
   else if ((shift || altShift) && code === "KeyD") Controllers.DiplomacyEditor.open();
-  else if ((shift || altShift) && code === "KeyL") Controllers.LabelGroupsConfigurator.open();
+  else if ((shift || altShift) && code === "KeyL") Controllers.LabelsOverview.open();
   else if ((shift || altShift) && code === "KeyC") Controllers.CulturesEditor.open();
   else if ((shift || altShift) && code === "KeyN") Controllers.NamesbaseEditor.open();
   else if ((shift || altShift) && code === "KeyZ") Controllers.ZonesEditor.open();

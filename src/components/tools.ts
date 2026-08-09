@@ -30,7 +30,6 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "editProvincesButton") void Controllers.ProvincesEditor.open();
   else if (buttonId === "editDiplomacyButton") void Controllers.DiplomacyEditor.open();
   else if (buttonId === "editCoastlineSettings") void Controllers.CoastlineEditor.open();
-  else if (buttonId === "editLabelsButton") void Controllers.LabelGroupsConfigurator.open();
   else if (buttonId === "editTradeAnimationButton") void Controllers.TradeAnimationEditor.open();
   else if (buttonId === "editCulturesButton") void Controllers.CulturesEditor.open();
   else if (buttonId === "editReligions") void Controllers.ReligionsEditor.open();
@@ -46,6 +45,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "overviewRoutesButton") void Controllers.RoutesOverview.open();
   else if (buttonId === "overviewRiversButton") void Controllers.RiversOverview.open();
   else if (buttonId === "overviewMilitaryButton") void Controllers.MilitaryOverview.open();
+  else if (buttonId === "overviewLabelsButton") void Controllers.LabelsOverview.open();
   else if (buttonId === "overviewMarkersButton") void Controllers.MarkersOverview.open();
   else if (buttonId === "overviewMarketsButton") void Controllers.MarketsOverview.open();
   else if (buttonId === "overviewCellsButton") void Controllers.CellInfo.open();

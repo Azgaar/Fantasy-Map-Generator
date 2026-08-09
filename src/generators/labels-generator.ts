@@ -146,6 +146,22 @@ class LabelsModule {
     if (group) return group;
     return this.getFallbackGroup(type);
   }
+
+  setGroup(label: { type: LabelType; entityId: number; group: string }): void {
+    const labelEntities: Record<LabelType, { i: number; group?: string; label?: Label }[]> = {
+      state: pack.states,
+      province: pack.provinces,
+      burg: pack.burgs,
+      river: pack.rivers,
+      route: pack.routes,
+      added: pack.addedLabels
+    };
+
+    const entity = labelEntities[label.type].find(entity => entity.i === label.entityId);
+    if (!entity) return;
+    if (entity.label) entity.label = { ...entity.label, group: label.group };
+    else entity.group = label.group;
+  }
 }
 
 // Custom labels are the only labels stored independently from map entities

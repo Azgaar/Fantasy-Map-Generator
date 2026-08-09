@@ -9,5 +9,8 @@ export type BurgGroup = {
   percentile?: number;
   features?: Record<string, boolean>;
   biomes?: number[];
+  states?: number[];
+  cultures?: number[];
+  religions?: number[];
   preview?: string;
 };

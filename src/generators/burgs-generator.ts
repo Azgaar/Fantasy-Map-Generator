@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
+import type { BurgGroup } from "@/types/burg-groups";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
@@ -397,7 +398,7 @@ class BurgModule {
     );
   }
 
-  getDefaultGroups() {
+  getDefaultGroups(): BurgGroup[] {
     return [
       {
         name: "capital",

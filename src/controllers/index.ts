@@ -29,6 +29,7 @@ export const Controllers = createRegistry({
   LabelsEditor: () => import("@/controllers/labels-editor").then(m => m.LabelsEditor),
   LabelGroupsConfigurator: () => import("@/controllers/labels-group-editor").then(m => m.LabelGroupsConfigurator),
   LabelCreator: () => import("@/controllers/label-creator").then(m => m.LabelCreator),
+  LabelsOverview: () => import("@/controllers/labels-overview").then(m => m.LabelsOverview),
   LakesEditor: () => import("@/controllers/lakes-editor").then(m => m.LakesEditor),
   MarkersEditor: () => import("@/controllers/markers-editor").then(m => m.MarkersEditor),
   MarkersSettings: () => import("@/controllers/markers-settings").then(m => m.MarkersSettings),
