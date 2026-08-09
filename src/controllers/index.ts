@@ -1,6 +1,7 @@
 import { createRegistry } from "@/utils/registry";
 
 export const Controllers = createRegistry({
+  AiChat: () => import("@/controllers/ai-chat").then(m => m.AiChat),
   AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),
   BattleScreen: () => import("@/controllers/battle-screen").then(m => m.BattleScreen),
   BiomesEditor: () => import("@/controllers/biomes-editor").then(m => m.BiomesEditor),

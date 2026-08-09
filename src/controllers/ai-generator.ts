@@ -233,7 +233,7 @@ function renderDialog(): void {
             id="aiGeneratorKey"
             placeholder="Enter API key"
             class="icon-key"
-            data-tip="Enter API key. Note: the Generator doesn't store the key or any generated data"
+            data-tip="Enter API key. It's stored on your machine only (browser storage) and sent directly to the provider"
           />
           <button
             id="aiGeneratorKeyHelp"

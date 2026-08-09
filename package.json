@@ -20,7 +20,8 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "generate:agent-context": "node scripts/generate-agent-context.mjs"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint"
