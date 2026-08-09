@@ -2,25 +2,26 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { DEFAULT_LABEL_TYPES, type LabelType } from "@/generators/labels-generator";
+import { DEFAULT_LABEL_TYPES } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels, labelDataAdapters } from "@/renderers/labels/labels-renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { destroyDialogIfExists, ensureEl, findEl } from "@/utils";
 
 const ALL = ""; // filter value meaning "all"
-const filters = { type: ALL, search: "" };
-const listedLabels = new Map<string, LabelData>();
+const filters = { group: ALL, type: ALL, search: "" };
 let isBulkMode = false;
 
-function open(group: string = ALL): void {
+function open(group: string): void {
   if (customization) return;
   closeDialogs("#labelsOverview, .stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   isBulkMode = false;
+  if (group) filters.group = group;
+
   renderDialog();
-  populateGroupFilter(group);
+  populateGroupFilter();
   populateTypeFilter();
   ensureEl<HTMLInputElement>("labelsSearch").value = filters.search;
   addLines();
@@ -96,21 +97,9 @@ function close(): void {
 }
 
 function refresh(): void {
-  populateGroupFilter(getGroupFilter());
+  populateGroupFilter();
   populateTypeFilter();
   addLines();
-}
-
-function getAllLabels(): LabelData[] {
-  return Object.values(labelDataAdapters).flatMap(adapter => adapter());
-}
-
-function getDefinedGroups(): string[] {
-  return options.labels.groups.map(({ name }) => name);
-}
-
-function getGroupFilter(): string {
-  return ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
 }
 
 function populateTypeFilter(): void {
@@ -118,53 +107,30 @@ function populateTypeFilter(): void {
   select.options.length = 0;
   select.add(new Option("all", ALL));
   for (const type of DEFAULT_LABEL_TYPES) select.add(new Option(type, type));
-
-  select.value = DEFAULT_LABEL_TYPES.includes(filters.type as LabelType) ? filters.type : ALL;
+  select.value = filters.type;
 }
 
-function populateGroupFilter(selected: string): void {
-  const counts = new Map<string, number>();
-  for (const { group } of getAllLabels()) counts.set(group, (counts.get(group) ?? 0) + 1);
-
-  const defined = getDefinedGroups();
-  const missing = [...counts.keys()].filter(name => !defined.includes(name)).sort();
+function populateGroupFilter(): void {
+  const groups = options.labels.groups.map(({ name }) => name);
 
   const select = ensureEl<HTMLSelectElement>("labelsFilterGroup");
   select.options.length = 0;
   select.add(new Option("all", ALL));
-  for (const name of defined) select.add(new Option(`${name} (${counts.get(name) ?? 0})`, name));
-  for (const name of missing) select.add(new Option(`${name} (${counts.get(name)}) — missing`, name));
+  for (const name of groups) select.add(new Option(name, name));
+  select.value = filters.group;
 
-  const isSelectable = selected === ALL || defined.includes(selected) || missing.includes(selected);
-  select.value = isSelectable ? selected : ALL;
-
-  // the bulk target can only be a defined group and has to be picked explicitly
   const bulkSelect = ensureEl<HTMLSelectElement>("labelsBulkGroup");
-  const bulkSelected = bulkSelect.value;
   bulkSelect.options.length = 0;
-  for (const name of defined) bulkSelect.add(new Option(name, name));
-  if (defined.includes(bulkSelected)) bulkSelect.value = bulkSelected;
+  for (const name of groups) bulkSelect.add(new Option(name, name));
 }
 
 function addLines(): void {
-  const allLabels = getAllLabels();
-
-  const groupFilter = getGroupFilter();
-  const typeFilter = ensureEl<HTMLSelectElement>("labelsFilterType").value;
-  const searchRaw = ensureEl<HTMLInputElement>("labelsSearch").value;
-
-  // remember selections so they persist across dialog close/reopen until the user changes them
-  filters.type = typeFilter;
-  filters.search = searchRaw;
-
-  const search = searchRaw.trim().toLowerCase();
+  const allLabels = Object.values(labelDataAdapters).flatMap(adapter => adapter());
   let labels = allLabels;
-  if (groupFilter !== ALL) labels = labels.filter(({ group }) => group === groupFilter);
-  if (typeFilter !== ALL) labels = labels.filter(({ type }) => type === typeFilter);
+  if (filters.group !== ALL) labels = labels.filter(({ group }) => group === filters.group);
+  if (filters.type !== ALL) labels = labels.filter(({ type }) => type === filters.type);
+  const search = filters.search.trim().toLowerCase();
   if (search) labels = labels.filter(({ text }) => text.toLowerCase().includes(search));
-
-  listedLabels.clear();
-  for (const label of labels) listedLabels.set(label.id, label);
 
   ensureEl("labelsBody").innerHTML = labels.map(createLine).join("");
   ensureEl("labelsFooterNumber").innerHTML = String(labels.length);
@@ -230,7 +196,6 @@ function highlightLabel(element: HTMLElement, id?: string): void {
   }
 }
 
-/** Assign the labels to the group, asking for confirmation if the group is of another type */
 function assignGroup(labels: LabelData[], groupName: string): void {
   const group = options.labels.groups.find(({ name }) => name === groupName);
   if (!group) return;
