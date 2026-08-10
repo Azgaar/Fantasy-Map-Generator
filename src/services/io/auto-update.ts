@@ -1302,6 +1302,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     if (!labels) throw new Error("Failed to create or find #labels element");
     labels.setAttribute("font-size", "100px");
 
+    const hadVisibleLabels = getComputedStyle(labels).display !== "none";
+    labels.style.removeProperty("display");
+
     options.labels = { resizeOnZoom: true, showAll: false, groups: [] };
     style.labels.groups = {};
 
@@ -1489,7 +1492,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     provinceGroup?.remove();
     document.getElementById("textPaths")?.replaceChildren();
     labels.replaceChildren();
-    if (layerIsOn("toggleLabels")) drawLabels();
+    ensureEl("toggleLabels").classList.toggle("buttonoff", !hadVisibleLabels);
+    if (hadVisibleLabels) drawLabels();
 
     // other changes
     select("#coastline > #sea_island").attr("filter", null);
