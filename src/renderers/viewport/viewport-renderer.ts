@@ -6,7 +6,6 @@ interface ViewportLayerHandle {
 export interface ViewportRenderContext {
   bounds: ViewportBounds;
   root: ParentNode;
-  renderAll: boolean;
 }
 
 interface ViewportLayer {
@@ -120,11 +119,6 @@ export class ViewportRenderer {
     this.renderLayers(context);
   }
 
-  renderAll(root: ParentNode): void {
-    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderLayers({ root, bounds, renderAll: true });
-  }
-
   private getBounds(paddingPixels: number): ViewportBounds {
     const { scale, x, y, width, height } = this.options.getViewport();
     const padding = paddingPixels / scale;
@@ -162,7 +156,7 @@ export class ViewportRenderer {
   }
 
   private getLiveContext(): ViewportRenderContext {
-    return { root: document, bounds: this.getBounds(this.options.overscanPixels), renderAll: false };
+    return { root: document, bounds: this.getBounds(this.options.overscanPixels) };
   }
 
   private cancelScheduledRender(): void {

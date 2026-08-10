@@ -87,7 +87,6 @@ function prepareMapData(): string {
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
-  ViewportLayers.renderAll(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(graphWidth));

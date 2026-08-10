@@ -66,7 +66,6 @@ function open(): void {
         ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
       },
       Restore: () => {
-        // restore the form only, the changes are applied on Apply, so Cancel still discards them
         const defaults = Labels.getDefaultOptions();
         ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = defaults.resizeOnZoom;
         ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
@@ -332,7 +331,7 @@ function submitForm(event: Event): void {
   options.labels.groups = rows.map(rowToGroup);
   options.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   options.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
-  // a group can come without a style, e.g. when defaults are restored after the group style was removed
+
   for (const group of options.labels.groups) style.labels.groups[group.name] ??= getGroupStyle(group);
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 

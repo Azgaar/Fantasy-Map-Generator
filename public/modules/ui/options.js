@@ -779,6 +779,7 @@ function copyLinkToClickboard() {
 
 ensureEl("showLabels").addEventListener("change", function () {
   options.labels.showAll = Boolean(this.checked);
+  drawLabels();
 });
 
 function showExportPane() {

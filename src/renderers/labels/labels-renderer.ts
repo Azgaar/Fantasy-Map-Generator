@@ -167,7 +167,7 @@ function getAddedLabelsData(): LabelData[] {
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
-  if (!scene.valid || (!context.renderAll && !layerIsOn("toggleLabels"))) return;
+  if (!scene.valid || !layerIsOn("toggleLabels")) return;
   const labels = findElement(context.root, "labels");
   const textPaths = findElement(context.root, "textPaths");
   if (!labels || !textPaths) return;
@@ -201,10 +201,11 @@ function reconcileGroup(labels: Element, textPaths: Element, groupName: string, 
 }
 
 function isGroupVisible({ group, context }: { group: LabelGroup; context: ViewportRenderContext }): boolean {
-  if (context.renderAll || options.labels.showAll) return true;
   if (group.active === false) return false;
-  if (group.zoom.min !== null && context.bounds.scale < group.zoom.min) return false;
-  if (group.zoom.max !== null && context.bounds.scale > group.zoom.max) return false;
+  if (!options.labels.showAll) {
+    if (group.zoom.min !== null && context.bounds.scale < group.zoom.min) return false;
+    if (group.zoom.max !== null && context.bounds.scale > group.zoom.max) return false;
+  }
   return !group.layerDependency || layerIsOn(group.layerDependency);
 }
 
