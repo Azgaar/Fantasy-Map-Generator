@@ -1,4 +1,4 @@
-import { drag, type Selection, select } from "d3";
+import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -12,7 +12,6 @@ import {
   ensureEl,
   getPointer,
   getTemperatureLikeness,
-  parseTransform,
   rand,
   rn
 } from "../utils";
@@ -31,10 +30,6 @@ function open(id: number | string): void {
   selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
 
-  select<SVGTextElement, unknown>("#labels")
-    .selectAll<SVGTextElement, unknown>("text[data-label-type='burg']")
-    .call(drag<SVGTextElement, unknown>().on("start", dragBurgLabel))
-    .classed("draggable", true);
   renderDialog();
   updateGroupsList();
   updateBurgValues();
@@ -330,23 +325,6 @@ function updateBurgValues(): void {
   ensureEl("burgEmblem").setAttribute("href", `#${coaID}`);
 
   updateBurgPreview(b);
-}
-
-function dragBurgLabel(this: SVGTextElement, event: any): void {
-  const tr = parseTransform(this.getAttribute("transform")!);
-  const dx = +tr[0] - event.x;
-  const dy = +tr[1] - event.y;
-
-  event.on("drag", function (this: SVGTextElement, dragEvent: any) {
-    const [effectiveDx, effectiveDy] = [dx + dragEvent.x, dy + dragEvent.y];
-    this.setAttribute("transform", `translate(${effectiveDx},${effectiveDy})`);
-    const burg = pack.burgs[+this.dataset.id!];
-    if (burg) {
-      if (!burg.label) burg.label = {};
-      Object.assign(burg.label, { dx: effectiveDx, dy: effectiveDy });
-    }
-    tip('Use dragging for fine-tuning only, to actually move burg use "Relocate" button', false, "warn");
-  });
 }
 
 function changeName(): void {
@@ -731,10 +709,6 @@ function editBurgGroups(): void {
 
 function closeBurgEditor(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
-  select<SVGTextElement, unknown>("#labels")
-    .selectAll<SVGTextElement, unknown>("text[data-label-type='burg']")
-    .on(".drag", null)
-    .classed("draggable", false);
   selected = null;
   $("#burgEditor").dialog("destroy");
   ensureEl("burgEditor").remove();

@@ -1,4 +1,4 @@
-import { curveNatural, drag, line, select } from "d3";
+import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -311,16 +311,19 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   redrawLabelPath();
 }
 
-function dragLabel(event: any): void {
+function dragLabel(this: SVGElement, event: D3DragEvent<SVGGElement, unknown, unknown>) {
   const dx0 = (label.dx || 0) - event.x;
   const dy0 = (label.dy || 0) - event.y;
 
-  event.on("drag", (dragEvent: any) => {
+  event.on("drag", (dragEvent: D3DragEvent<SVGGElement, unknown, unknown>) => {
     label.dx = rn(dx0 + dragEvent.x, 2);
     label.dy = rn(dy0 + dragEvent.y, 2);
-    applyLabelChanges();
-    select("#debug #controlPoints").attr("transform", `translate(${label.dx}, ${label.dy})`);
+    const transform = `translate(${label.dx}, ${label.dy})`;
+    this.setAttribute("transform", transform);
+    select("#debug #controlPoints").attr("transform", transform);
   });
+
+  event.on("end", () => applyLabelChanges());
 }
 
 function showGroupSection(): void {
