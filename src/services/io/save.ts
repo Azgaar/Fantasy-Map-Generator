@@ -2,7 +2,6 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";

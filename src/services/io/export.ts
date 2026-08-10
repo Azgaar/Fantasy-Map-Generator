@@ -8,6 +8,7 @@ import {
   connectVertices,
   downloadFile,
   ensureEl,
+  findEl,
   getBase64,
   getCellPopulation,
   getCoordinates,
@@ -252,15 +253,26 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     noVignette = false,
     fullMap = false
   } = options;
-
-  const cloneEl = (document.getElementById("map") as unknown as SVGSVGElement).cloneNode(true) as SVGSVGElement; // clone svg
+  const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
   if (!debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = document.getElementById("defElements") as unknown as SVGSVGElement;
+  const svgDefs = ensureEl("defElements");
+
+  if (fullMap) {
+    // reset transform to show the whole map
+    clone.attr("width", graphWidth).attr("height", graphHeight);
+    clone.select("#viewbox").attr("transform", null);
+    ViewportLayers.renderNow(); // TODO: bug, it renders to main svg, not cloned one
+
+    if (!noScaleBar) {
+      drawScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], 1);
+      fitScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], graphWidth, graphHeight);
+    }
+  }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
@@ -275,16 +287,6 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
   if (noIce) clone.select("#ice").remove();
   if (noVignette) clone.select("#vignette").remove();
-  if (fullMap) {
-    // reset transform to show the whole map
-    clone.attr("width", graphWidth).attr("height", graphHeight);
-    clone.select("#viewbox").attr("transform", null);
-
-    if (!noScaleBar) {
-      drawScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], 1);
-      fitScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], graphWidth, graphHeight);
-    }
-  }
   if (noScaleBar) clone.select("#scaleBar").remove();
 
   if (type === "svg") removeUnusedElements(clone);
@@ -324,7 +326,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
       .forEach(el => {
         const href = el.getAttribute("href") || el.getAttribute("xlink:href");
         if (!href) return;
-        const emblem = document.getElementById(href.slice(1));
+        const emblem = findEl(href.slice(1));
         if (emblem) cloneDefs.append(emblem.cloneNode(true));
       });
   } else {
