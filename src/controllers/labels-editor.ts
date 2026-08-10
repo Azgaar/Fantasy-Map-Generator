@@ -72,6 +72,7 @@ function renderDialog(): void {
         <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
       </div>
       <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
+      <button id="labelPathToggle"></button>
       <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
       <div id="labelSizeSection" style="display: none">
         <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
@@ -125,7 +126,6 @@ function renderDialog(): void {
           value="0"
         ></slider-input>
       </div>
-      <button id="labelPathToggle"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
       <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
