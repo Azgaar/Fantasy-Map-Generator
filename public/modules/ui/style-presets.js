@@ -76,8 +76,7 @@ function applyStylePreset(presetJson) {
     let labelGroup = null;
     if (selector.startsWith("#labels > #")) {
       labelGroup = selector.split("#").pop();
-      style.labels.groups[labelGroup] = getLabelStyleAttributes(presetJson[selector]);
-      continue;
+      style.labels.groups[labelGroup] = getStyleAttributes(presetJson[selector]);
     }
 
     if (selector.startsWith("#burgIcons")) {
@@ -135,14 +134,6 @@ function applyStylePreset(presetJson) {
 
   function getStyleAttributes(attributes) {
     return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
-  }
-
-  function getLabelStyleAttributes(attributes) {
-    const result = getStyleAttributes(attributes);
-    const size = result["data-size"] ?? result["font-size"] ?? 18;
-    delete result["data-size"];
-    result["font-size"] = `${parseFloat(size) || 18}%`;
-    return result;
   }
 }
 
