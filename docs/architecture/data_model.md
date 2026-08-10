@@ -301,33 +301,38 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 
 ## Labels
 
-The shared optional `Label` fields are:
+Every label of every type is described by the same `Label` record. All fields are optional:
 
 - `text`: `string` - displayed text override. The pipe character (`|`) separates lines
 - `group`: `string` - optional Label Group override
 - `dx`: `number` - horizontal translation in map coordinates
 - `dy`: `number` - vertical translation in map coordinates
-- `pathPoints`: `number[][]` - path control points as `[x, y]` pairs. Used by State, Province, and added labels
-- `startOffset`: `number` - text start position as a percentage along the path. Used by State, Province, and added labels; defaults to `50`
+- `pathPoints`: `number[][]` - path control points as `[x, y]` pairs the text is curved along. Three states:
+  `undefined` means the default geometry for the label type is used (an auto-fitted path for States, the
+  river or route line for those, none for Burgs and Provinces), an empty array means the label is explicitly
+  rendered as plain text, and a non-empty array is the label's own path
+- `startOffset`: `number` - text start position as a percentage along the path; defaults to `50`. Ignored without a path
 - `fontSize`: `number` - font size % relative to the label-group size, in percent. Defaults to `100`
 - `letterSpacing`: `number` - per-label letter spacing in pixels. Defaults to `0` (attribute is null)
 
-State, Province, and Burg label overrides are stored on their entities as `pack.states[i].label`,
-`pack.provinces[i].label`, and `pack.burgs[i].label`.
+Every label belongs to a map entity, which supplies its identity and its position. The label record itself is
+stored on that entity as `pack.states[i].label`, `pack.provinces[i].label`, `pack.burgs[i].label`,
+`pack.rivers[i].label`, and `pack.routes[i].label`.
 
-User-added labels are stored independently in `pack.addedLabels` as an unordered `AddedLabel[]`:
+User-added labels have no such entity, so they get one of their own, stored in `pack.addedLabels` as an
+unordered `AddedLabel[]`:
 
 - `i`: `number` - stable id
-- `text`: `string` - displayed text
-- `pathPoints`: `number[][]` - label path control points
-- `group`: `string` - id of a Label Group in `style.labels.groups`
-- optional shared `Label` fields listed above
+- `x`, `y`: `number` - label position in map coordinates, before the `dx`/`dy` shift
+- `label`: `Label` - the label record, as on any other entity. Always present, since carrying a label is the
+  entity's only purpose; unlike other entities it has no name to fall back on, so its text lives in `label.text`
 
 At runtime, Label Group styles are indexed in `style.labels.groups`, keyed by group id. Current `.map` files
 serialize the complete global `style` object at data index 48. Pre-1.140 migration reconstructs it from the
 legacy SVG group attributes. All label types can share a group without changing their rendering primitive:
-State, Province, and added labels use `<textPath>`, while Burg labels use positioned `<text>`. The fallback
-groups are `states`, `provinces`, the configured default Burg group, and `added` respectively.
+a label with `pathPoints` is rendered as a `<textPath>`, and any other label as a positioned `<text>`, which
+the Label Editor lets the user switch for any label regardless of its type. The fallback groups are `states`,
+`provinces`, the configured default Burg group, and `added` respectively.
 
 Ordered Label Group policy is stored in `options.labels`:
 

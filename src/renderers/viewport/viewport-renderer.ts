@@ -55,6 +55,10 @@ export class Scene<T extends { id: string }> {
     return [...changed];
   }
 
+  set(item: T): void {
+    this.items.set(item.id, item);
+  }
+
   remove(id: string): void {
     this.items.delete(id);
   }
@@ -122,6 +126,11 @@ export class ViewportRenderer {
   renderTo(root: ParentNode): void {
     const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
     this.renderLayers({ root, bounds });
+  }
+
+  /** Context of the current viewport, for layers materializing a single item outside a full render */
+  getContext(): ViewportRenderContext {
+    return this.getLiveContext();
   }
 
   private getBounds(paddingPixels: number): ViewportBounds {

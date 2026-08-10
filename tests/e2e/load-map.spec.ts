@@ -1,6 +1,8 @@
 import {test, expect} from "@playwright/test";
 import path from "path";
 
+declare const notes: {id: string}[]; // page global, resolved inside page.evaluate
+
 test.describe("Map loading", () => {
   test.beforeEach(async ({context, page}) => {
     await context.clearCookies();
@@ -188,6 +190,60 @@ test.describe("Map loading", () => {
     const measurers = await page.evaluate(() => (window as any).pack.measurers);
 
     expect(measurers).toEqual([{type: "Ruler", points: [[417, 206], [1097, 158]]}]);
+  });
+
+  // 1.139.4.map keeps its 4 user-added labels as <text> in the legacy #addedLabels SVG group,
+  // which the v1.140.0 migration turns into pack.addedLabels entities
+  test("legacy added labels should migrate to pack.addedLabels", async ({page}) => {
+    const fileInput = page.locator("#mapToLoad");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
+    await fileInput.setInputFiles(mapFilePath);
+
+    await page.waitForFunction(() => (window as any).mapId !== undefined, {
+      timeout: 120000
+    });
+    await page.waitForTimeout(500);
+
+    const migrated = await page.evaluate(() => {
+      const addedLabels = (window as any).pack.addedLabels;
+      return {
+        count: addedLabels.length,
+        entities: addedLabels.map((added: any) => ({
+          hasId: added.i > 0,
+          hasPosition: Number.isFinite(added.x) && Number.isFinite(added.y),
+          hasText: Boolean(added.label?.text),
+          hasGroup: Boolean(added.label?.group),
+          hasPath: (added.label?.pathPoints?.length ?? 0) > 0,
+          // the anchor must sit on the migrated path, not at the origin
+          anchorOnPath: added.label.pathPoints.some(([x, y]: number[]) => x === added.x && y === added.y)
+        })),
+        // every migrated label is rendered, and along its path
+        rendered: addedLabels.map(
+          (added: any) => document.getElementById(`addedLabel${added.i}`)?.dataset.labelShape ?? "missing"
+        ),
+        // legacy notes are re-pointed at the new entity ids. `notes` is script-scoped,
+        // so it has to be read off the lexical global rather than off window
+        orphanNotes: notes.filter(
+          (note: any) =>
+            note.id.startsWith("addedLabel") &&
+            !addedLabels.some((added: any) => `addedLabel${added.i}` === note.id)
+        ).length
+      };
+    });
+
+    expect(migrated.count).toBe(4);
+    for (const entity of migrated.entities) {
+      expect(entity).toEqual({
+        hasId: true,
+        hasPosition: true,
+        hasText: true,
+        hasGroup: true,
+        hasPath: true,
+        anchorOnPath: true
+      });
+    }
+    expect(migrated.rendered).toEqual(["path", "path", "path", "path"]);
+    expect(migrated.orphanNotes).toBe(0);
   });
 
   test("loaded map should preserve burg data", async ({page}) => {

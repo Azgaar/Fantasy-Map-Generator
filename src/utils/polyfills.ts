@@ -12,7 +12,7 @@ if (String.prototype.replaceAll === undefined) {
 
 // flat
 if (Array.prototype.flat === undefined) {
-  Array.prototype.flat = function <T>(this: T[], depth?: number): any[] {
+  (Array.prototype as any).flat = function <T>(this: T[], depth?: number): any[] {
     return (this as Array<unknown>).reduce(
       (acc: any[], val: unknown) => (Array.isArray(val) ? acc.concat((val as any).flat(depth)) : acc.concat(val)),
       []
@@ -55,10 +55,8 @@ declare global {
     ): string;
   }
 
-  interface Array<T> {
-    flat(depth?: number): T[];
-    at(index: number): T | undefined;
-  }
+  // Array.flat and Array.at are polyfilled above for old browsers, but not declared here:
+  // lib ES2023 already types them, and a `flat(): T[]` declaration would shadow it and mistype nested arrays
 
   interface ReadableStream<R> {
     [Symbol.asyncIterator](): AsyncIterableIterator<R>;

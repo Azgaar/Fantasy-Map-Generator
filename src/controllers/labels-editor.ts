@@ -3,12 +3,13 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { AddedLabel, LabelType, PathLabel } from "@/generators/labels-generator";
+import type { Label, LabelType } from "@/generators/labels-generator";
 import { UNNAMED_ROUTE } from "@/generators/routes-generator";
 import type { Point } from "@/generators/voronoi";
+import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
-import { drawLabels, getSceneLabel } from "@/renderers/labels/labels-renderer";
+import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
@@ -25,11 +26,9 @@ function open(type: LabelType, id: number): void {
 
   const cachedLabel = getSceneLabel(type, id);
   if (!cachedLabel) return;
-  label = cachedLabel;
+  label = { ...cachedLabel }; // the editor owns its copy and hands it back to the renderer on every change
 
-  select<SVGElement, unknown>(`#${textEl.id}`)
-    .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true);
+  makeLabelDraggable(textEl.id);
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
 
   renderDialog();
@@ -55,6 +54,11 @@ function renderDialog(): void {
       <div id="labelGroupSection" style="display: none">
         <button id="labelGroupHide" data-tip="Hide the group selection" class="icon-tags"></button>
         <select id="labelGroupSelect" data-tip="Select a group for this label" style="width: 10em"></select>
+        <button
+          id="labelGroupsConfigure"
+          data-tip="Open the Label Groups Configurator to create, edit and reorder groups"
+          class="icon-cog"
+        ></button>
       </div>
       <button id="labelTextShow" data-tip="Show the edit label text section" class="icon-pencil"></button>
       <div id="labelTextSection" style="display: none">
@@ -121,7 +125,7 @@ function renderDialog(): void {
           value="0"
         ></slider-input>
       </div>
-      <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
+      <button id="labelPathToggle"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
       <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
@@ -136,6 +140,7 @@ function renderDialog(): void {
   ensureEl("labelGroupShow").addEventListener("click", showGroupSection);
   ensureEl("labelGroupHide").addEventListener("click", hideGroupSection);
   ensureEl("labelGroupSelect").addEventListener("change", changeGroup);
+  ensureEl("labelGroupsConfigure").addEventListener("click", () => void Controllers.LabelGroupsConfigurator.open());
 
   ensureEl("labelTextShow").addEventListener("click", showTextSection);
   ensureEl("labelTextHide").addEventListener("click", hideTextSection);
@@ -157,7 +162,7 @@ function renderDialog(): void {
   ensureEl("labelLetterSpacingHide").addEventListener("click", hideLetterSpacingSection);
   ensureEl("labelLetterSpacingSize").addEventListener("input", changeLetterSpacingSize);
 
-  ensureEl("labelAlign").addEventListener("click", editLabelAlign);
+  ensureEl("labelPathToggle").addEventListener("click", toggleLabelPath);
   ensureEl("labelLegend").addEventListener("click", editLabelLegend);
   ensureEl("labelReset").addEventListener("click", resetSelectedLabel);
   ensureEl("labelRemoveSingle").addEventListener("click", removeSelectedLabel);
@@ -176,16 +181,25 @@ function selectLabelGroup(group: string): void {
 }
 
 function updateControls(): void {
-  const isBurg = label.type === "burg";
+  const hasPath = hasLabelPath();
   const topButtonsVisible = !ensureEl("labelEditor").classList.contains("section-open");
-  ensureEl("labelOffsetShow").style.display = topButtonsVisible && !isBurg ? "inline-block" : "none";
-  ensureEl("labelAlign").style.display = topButtonsVisible && !isBurg ? "inline-block" : "none";
+  ensureEl("labelOffsetShow").style.display = topButtonsVisible && hasPath ? "inline-block" : "none";
   ensureEl("labelRemoveSingle").style.display = topButtonsVisible && label.type === "added" ? "inline-block" : "none";
   ensureEl("labelReset").style.display = topButtonsVisible && hasOverrides() ? "inline-block" : "none";
+
+  const pathToggle = ensureEl("labelPathToggle");
+  pathToggle.className = hasPath ? "icon-resize-horizontal" : "icon-bezier-curve";
+  pathToggle.dataset.tip = hasPath
+    ? "Remove the label path, render the label as a straight text"
+    : "Curve the label along a path";
+}
+
+function hasLabelPath(): boolean {
+  return Boolean(label.pathPoints?.length);
 }
 
 function updateValues(): void {
-  const startOffset = "startOffset" in label ? label.startOffset || 50 : 50;
+  const startOffset = label.startOffset || 50;
   ensureEl<HTMLInputElement>("labelText").value = label.text || "";
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(startOffset);
@@ -222,18 +236,18 @@ function showEditorTips(event: MouseEvent): void {
 
 function drawControlPointsAndLine(): void {
   select("#debug").select("#controlPoints").remove();
-  if ("pathPoints" in label) {
-    const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
-    select<SVGGElement, unknown>("#debug")
-      .append("g")
-      .attr("id", "controlPoints")
-      .attr("transform", transform)
-      .append("path")
-      .attr("d", getLabelPath(label))
-      .style("stroke-width", Math.max(2.2 / scale, 0.2))
-      .on("click", addInterimControlPoint);
-    label.pathPoints?.forEach(drawControlPoint);
-  }
+  if (!hasLabelPath()) return;
+
+  const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
+  select<SVGGElement, unknown>("#debug")
+    .append("g")
+    .attr("id", "controlPoints")
+    .attr("transform", transform)
+    .append("path")
+    .attr("d", getLabelPath(label))
+    .style("stroke-width", Math.max(2.2 / scale, 0.2))
+    .on("click", addInterimControlPoint);
+  label.pathPoints?.forEach(drawControlPoint);
 }
 
 function drawControlPoint(point: Point): void {
@@ -255,21 +269,20 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
-  if ("pathPoints" in label) {
-    const points: Point[] = [];
-    select("#debug > #controlPoints")
-      .selectAll<SVGCircleElement, unknown>("circle")
-      .each(function () {
-        const x = rn(+this.getAttribute("cx")!, 2);
-        const y = rn(+this.getAttribute("cy")!, 2);
-        points.push([x, y]);
-      });
-    const lineGen = line<[number, number]>().curve(curveNatural);
-    const d = round(lineGen(points) || "");
-    select("#debug").select("#controlPoints > path").attr("d", d);
-    label.pathPoints = points;
-    applyLabelChanges();
-  }
+  const points: Point[] = [];
+  select("#debug > #controlPoints")
+    .selectAll<SVGCircleElement, unknown>("circle")
+    .each(function () {
+      const x = rn(+this.getAttribute("cx")!, 2);
+      const y = rn(+this.getAttribute("cy")!, 2);
+      points.push([x, y]);
+    });
+  const lineGen = line<[number, number]>().curve(curveNatural);
+  const d = round(lineGen(points) || "");
+  select("#debug").select("#controlPoints > path").attr("d", d);
+  label.pathPoints = points;
+  applyLabelChanges();
+  if (!points.length) drawControlPointsAndLine(); // last control point removed, the label became a plain text
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -397,7 +410,7 @@ const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
     return Rivers.getName(cellId);
   },
   route: label => {
-    const points = "pathPoints" in label ? label.pathPoints : [];
+    const points = pack.routes.find(route => route.i === label.entityId)?.points ?? [];
     return Routes.generateName({ group: label.group, points }) || UNNAMED_ROUTE;
   }
 };
@@ -442,26 +455,24 @@ function hideLetterSpacingSection(): void {
 }
 
 function changeStartOffset(this: HTMLInputElement): void {
-  if ("pathPoints" in label) {
-    const value = this.value;
-    ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
+  if (!hasLabelPath()) return;
+  const value = this.value;
+  ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
 
-    label.startOffset = +value;
-    applyLabelChanges();
-    tip(`Label offset: ${value}%`);
-  }
+  label.startOffset = +value;
+  applyLabelChanges();
+  tip(`Label offset: ${value}%`);
 }
 
 function changeStartOffsetFromValue(this: HTMLInputElement): void {
-  if ("pathPoints" in label) {
-    const value = Math.min(80, Math.max(20, +this.value));
-    ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
-    this.value = String(value);
+  if (!hasLabelPath()) return;
+  const value = Math.min(80, Math.max(20, +this.value));
+  ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
+  this.value = String(value);
 
-    label.startOffset = value;
-    applyLabelChanges();
-    tip(`Label offset: ${value}%`);
-  }
+  label.startOffset = value;
+  applyLabelChanges();
+  tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
@@ -476,21 +487,11 @@ function changeLetterSpacingSize(this: HTMLInputElement): void {
   tip(`Label letter-spacing size: ${this.value}px`);
 }
 
-function editLabelAlign(): void {
-  if ("pathPoints" in label) {
-    if (!label.pathPoints.length) return;
-
-    const xs = label.pathPoints.map(point => point[0]);
-    const ys = label.pathPoints.map(point => point[1]);
-    const center = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-    const halfLength = Math.max((Math.max(...xs) - Math.min(...xs)) / 2, 100);
-    label.pathPoints = [
-      [center[0] - halfLength, center[1]],
-      [center[0] + halfLength, center[1]]
-    ];
-    applyLabelChanges();
-    drawControlPointsAndLine();
-  }
+// An empty path means the label is explicitly rendered as a plain text, so it won't fall back to the default geometry
+function toggleLabelPath(): void {
+  label.pathPoints = hasLabelPath() ? [] : createLabelArc(label);
+  applyLabelChanges();
+  drawControlPointsAndLine();
 }
 
 function editLabelLegend(): void {
@@ -519,60 +520,42 @@ function removeSelectedLabel(): void {
 }
 
 function applyLabelChanges(): void {
-  const { type, entityId, id } = label;
-  const override = getLabelOverride();
+  const entity = Labels.getEntity(label.type, label.entityId);
+  if (!entity) return;
 
-  if (type === "added") {
-    if (!("pathPoints" in label)) return;
-    const index = pack.addedLabels.findIndex(({ i }) => i === entityId);
-    if (index === -1) return;
-    pack.addedLabels[index] = {
-      ...override,
-      i: entityId,
-      text: label.text,
-      pathPoints: label.pathPoints,
-      group: label.group
-    };
-  } else {
-    const entity = getLabelEntity(type, entityId);
-    if (!entity) return;
-    entity.label = override;
-  }
-
-  drawLabels();
-  label = getSceneLabel(type, entityId) ?? label;
-  select<SVGElement, unknown>(`#${id}`)
-    .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true);
+  entity.label = getLabelOverride();
+  redrawLabel(label);
+  makeLabelDraggable(label.id);
   updateControls();
 }
 
+function makeLabelDraggable(id: string): void {
+  select<SVGElement, unknown>(`#${id}`)
+    .call(drag<SVGElement, unknown>().on("start", dragLabel))
+    .classed("draggable", true);
+}
+
 function hasOverrides(): boolean {
-  if (label.type !== "added") return Boolean(getLabelEntity(label.type, label.entityId)?.label);
-  const { dx, dy, fontSize, letterSpacing } = label;
-  const startOffset = "startOffset" in label ? label.startOffset : undefined;
-  return [dx, dy, startOffset, fontSize, letterSpacing].some(value => value !== undefined);
+  const storedLabel = Labels.getEntity(label.type, label.entityId)?.label;
+  if (!storedLabel) return false;
+  // an added label always stores its text, so only the presentation fields count as overrides
+  if (label.type !== "added") return true;
+  const { dx, dy, startOffset, fontSize, letterSpacing, pathPoints } = storedLabel;
+  return [dx, dy, startOffset, fontSize, letterSpacing, pathPoints].some(value => value !== undefined);
 }
 
 function resetSelectedLabel(): void {
   const { type, entityId, text, group } = label;
-  if (type === "added") {
-    if (!("pathPoints" in label)) return;
-    const index = pack.addedLabels.findIndex(({ i }) => i === entityId);
-    if (index === -1) return;
-    const resetLabel: AddedLabel = { i: entityId, text, pathPoints: label.pathPoints, group };
-    pack.addedLabels[index] = resetLabel;
-  } else {
-    const entity = getLabelEntity(type, entityId);
-    if (!entity) return;
-    delete entity.label;
-  }
+  const entity = Labels.getEntity(type, entityId);
+  if (!entity) return;
 
+  if (type === "added") entity.label = { text, group };
+  else delete entity.label;
+
+  // unlike an edit, a reset drops data the label is derived from, so it has to be rebuilt from the entity
   drawLabels();
-  label = getSceneLabel(type, entityId) ?? label;
-  select<SVGElement, unknown>(`#${label.id}`)
-    .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true);
+  label = { ...(getSceneLabel(type, entityId) ?? label) };
+  makeLabelDraggable(label.id);
   selectLabelGroup(label.group);
   updateValues();
   updateControls();
@@ -587,35 +570,18 @@ function closeLabelEditor(): void {
   ensureEl("labelEditor").remove();
 }
 
-type EntityLabelType = Exclude<LabelType, "added">;
-type LabelEntity = { i: number; label?: PathLabel };
-
-function getLabelEntity(type: LabelType, id: number): LabelEntity | undefined {
-  if (type === "added") return undefined;
-  const entities: Record<EntityLabelType, LabelEntity[]> = {
-    state: pack.states,
-    province: pack.provinces,
-    burg: pack.burgs,
-    river: pack.rivers,
-    route: pack.routes
-  };
-  return entities[type].find(entity => entity.i === id);
-}
-
-function getLabelOverride(): PathLabel {
-  const override: PathLabel = {
+// An edited label always stores its geometry explicitly, so an empty path is kept as an empty array
+function getLabelOverride(): Label {
+  return {
     text: label.text,
     group: label.group,
     dx: label.dx,
     dy: label.dy,
     fontSize: label.fontSize,
-    letterSpacing: label.letterSpacing
+    letterSpacing: label.letterSpacing,
+    pathPoints: label.pathPoints ?? [],
+    startOffset: label.startOffset
   };
-  if ("pathPoints" in label) {
-    override.pathPoints = label.pathPoints;
-    override.startOffset = label.startOffset;
-  }
-  return override;
 }
 
 const getLastSelectedGroup = (): string => lastSelectedGroup;

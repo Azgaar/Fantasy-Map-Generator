@@ -2,7 +2,7 @@ import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, select, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
 import { meander, projectToNearestEdge } from "../utils/pathUtils";
-import type { PathLabel } from "./labels-generator";
+import type { Label } from "./labels-generator";
 import type { Point } from "./voronoi";
 
 export const MIN_NAVIGABLE_FLUX = 100;
@@ -22,7 +22,7 @@ export interface River {
   type: string; // river type
   cells: number[]; // cells forming the river path
   points?: Point[]; // river points (for meandering)
-  label?: PathLabel;
+  label?: Label;
 }
 
 class RiverModule {

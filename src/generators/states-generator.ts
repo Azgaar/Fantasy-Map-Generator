@@ -16,7 +16,7 @@ import {
   rw,
   trimVowels
 } from "../utils";
-import type { PathLabel } from "./labels-generator";
+import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
 
 declare global {
@@ -54,7 +54,7 @@ export interface State {
   salesTax: number;
   pollTax: number;
   treasury: number;
-  label?: PathLabel;
+  label?: Label;
 }
 
 interface Campaign {

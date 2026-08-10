@@ -1,7 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
-import type { AddedLabel, PathLabel } from "@/generators/labels-generator";
+import type { Label } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -1395,8 +1395,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         if (!pathEl) continue;
 
         const label = getPathLabel({ textEl, pathEl });
-        if (label?.text && label.pathPoints) {
-          const addedLabel = AddedLabels.add({ ...label, group: name } as AddedLabel);
+        if (label?.text && label.pathPoints?.length) {
+          const [x, y] = label.pathPoints[Math.floor(label.pathPoints.length / 2)];
+          const addedLabel = AddedLabels.add({ x, y, label: { ...label, group: name } });
           if (note) note.id = `addedLabel${addedLabel.i}`;
         } else {
           if (note) notes = notes.filter(n => n.id !== note.id); // remove note
@@ -1457,7 +1458,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       pathEl?: SVGPathElement;
       names?: (string | undefined)[];
     }) {
-      const label: PathLabel = {};
+      const label: Label = {};
       const textPath = textEl.querySelector("textPath");
       const text = getMultilineText(textEl);
       if (text && !names?.includes(text)) label.text = text;

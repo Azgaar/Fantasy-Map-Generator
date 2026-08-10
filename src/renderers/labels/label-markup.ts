@@ -1,5 +1,5 @@
 import { curveNatural, line } from "d3";
-import type { LabelData, PathLabelData } from "@/renderers/labels/labels";
+import type { LabelData } from "@/renderers/labels/labels";
 import type { Point } from "@/types/global";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
@@ -11,28 +11,33 @@ export function createLabelElements(label: LabelData, document: Document) {
   text.dataset.id = String(label.entityId);
   if (label.dx || label.dy) text.setAttribute("transform", `translate(${label.dx || 0}, ${label.dy || 0})`);
 
-  if ("pathPoints" in label) {
+  const fontSize = `${label.fontSize ?? 100}%`;
+
+  if (label.pathPoints?.length) {
+    text.dataset.labelShape = "path";
     const path = createTextPath(label, document);
     const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
     textPath.setAttribute("href", `#${path.id}`);
     textPath.setAttribute("startOffset", `${label.startOffset ?? 50}%`);
     textPath.setAttribute("text-anchor", "middle");
-    textPath.setAttribute("font-size", `${label.fontSize ?? 100}%`);
+    textPath.setAttribute("font-size", fontSize);
     if (label.letterSpacing !== undefined) textPath.setAttribute("letter-spacing", `${label.letterSpacing}px`);
     appendText(textPath, label.text, "0");
     text.appendChild(textPath);
     return { text, path };
   }
 
-  text.setAttribute("x", String(label.x));
-  text.setAttribute("y", String(label.y));
-  text.setAttribute("font-size", `${label.fontSize}%`);
+  const [x, y] = label.anchor;
+  text.dataset.labelShape = "point";
+  text.setAttribute("x", String(x));
+  text.setAttribute("y", String(y));
+  text.setAttribute("font-size", fontSize);
   if (label.letterSpacing) text.setAttribute("letter-spacing", `${label.letterSpacing}px`);
-  appendText(text, label.text, String(label.x));
+  appendText(text, label.text, String(x));
   return { text };
 }
 
-function createTextPath(label: PathLabelData, document: Document): SVGPathElement {
+function createTextPath(label: LabelData, document: Document): SVGPathElement {
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.id = `textPath_${label.id}`;
   path.dataset.labelType = label.type;
@@ -53,6 +58,6 @@ function appendText(parent: SVGTextElement | SVGTextPathElement, value: string, 
   });
 }
 
-export function getLabelPath(label: { pathPoints: Point[] }): string {
+export function getLabelPath(label: { pathPoints?: Point[] }): string {
   return lineGen(label.pathPoints || []) || "";
 }

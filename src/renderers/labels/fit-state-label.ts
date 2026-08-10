@@ -93,7 +93,7 @@ function splitName(name: string): string[] {
   return bestLines;
 }
 
-function estimateTextWidth(text: string): number {
+export function estimateTextWidth(text: string): number {
   let width = 0;
   for (const character of text) {
     if (character === " ") width += 0.32;

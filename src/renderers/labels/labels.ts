@@ -1,27 +1,19 @@
 import type { LabelType } from "@/generators/labels-generator";
 import type { Point } from "@/types/global";
 
-interface BaseLabelData {
+// A label ready to be rendered. It is drawn as plain text placed at the anchor,
+// unless pathPoints are set: then the text is curved along them
+export interface LabelData {
   id: string;
-  entityId: number; // stateId, provinceId, burgId, labelId
+  entityId: number; // stateId, provinceId, burgId, labelId, etc.
   text: string;
   type: LabelType;
   group: string;
-  anchor: Point;
+  anchor: Point; // position before the dx/dy shift is applied
+  pathPoints?: Point[]; // set only when non-empty
+  startOffset?: number;
   fontSize?: number;
   letterSpacing?: number;
   dx?: number;
   dy?: number;
 }
-
-export interface PathLabelData extends BaseLabelData {
-  pathPoints: Point[];
-  startOffset?: number;
-}
-
-export interface PointLabelData extends BaseLabelData {
-  x: number;
-  y: number;
-}
-
-export type LabelData = PathLabelData | PointLabelData;

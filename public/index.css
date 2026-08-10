@@ -324,7 +324,7 @@ i.icon-lock {
   }
 }
 
-#labels text[data-label-type="burg"] {
+#labels text[data-label-type="burg"][data-label-shape="point"] {
   dominant-baseline: alphabetic;
   text-anchor: middle;
 }

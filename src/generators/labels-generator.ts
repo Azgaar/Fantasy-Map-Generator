@@ -1,8 +1,8 @@
 import type { Point } from "@/types/global";
 
-export const DEFAULT_LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
+export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
 
-export type LabelType = (typeof DEFAULT_LABEL_TYPES)[number];
+export type LabelType = (typeof LABEL_TYPES)[number];
 
 export type LabelNameMode = "auto" | "short" | "full";
 
@@ -28,16 +28,12 @@ export interface Label {
   dy?: number;
   fontSize?: number;
   letterSpacing?: number;
-}
-
-export interface PathLabel extends Label {
-  pathPoints?: Point[];
+  pathPoints?: Point[]; // curve text along
   startOffset?: number;
 }
 
 declare global {
   var Labels: LabelsModule;
-  var AddedLabels: AddedLabelsModule;
 }
 
 class LabelsModule {
@@ -141,62 +137,28 @@ class LabelsModule {
     return fallbackGroup ?? { name: type, type, zoom: { min: null, max: null }, isDefault: true };
   }
 
-  /** Group of the requested type, or the type fallback group if there is no such group */
   findGroup(groupName: string, type: LabelType): LabelGroup {
     const group = options.labels.groups.find(group => group.name === groupName && group.type === type);
     return group ?? this.getFallbackGroup(type);
   }
 
-  setGroup(label: { type: LabelType; entityId: number; group: string }): void {
-    if (label.type === "added") {
-      const addedLabel = AddedLabels.get(label.entityId);
-      if (addedLabel) addedLabel.group = label.group;
-      return;
-    }
-
-    const labelEntities: Record<Exclude<LabelType, "added">, { i: number; label?: Label }[]> = {
+  getEntity(type: LabelType, id: number) {
+    const entities: Record<LabelType, { i: number; label?: Label }[]> = {
       state: pack.states,
       province: pack.provinces,
       burg: pack.burgs,
       river: pack.rivers,
-      route: pack.routes
+      route: pack.routes,
+      added: pack.addedLabels
     };
+    return entities[type].find(entity => entity.i === id);
+  }
 
-    const entity = labelEntities[label.type].find(entity => entity.i === label.entityId);
+  setGroup(label: { type: LabelType; entityId: number; group: string }): void {
+    const entity = this.getEntity(label.type, label.entityId);
     if (!entity) return;
     entity.label = { ...entity.label, group: label.group };
   }
 }
 
-// Custom labels are the only labels stored independently from map entities
-export interface AddedLabel extends PathLabel {
-  i: number;
-  text: string;
-  pathPoints: Point[];
-  group: string;
-}
-
-export class AddedLabelsModule {
-  initiate(): void {
-    pack.addedLabels = [];
-  }
-
-  get(i: number): AddedLabel | undefined {
-    return pack.addedLabels.find(label => label.i === i);
-  }
-
-  add(data: Omit<AddedLabel, "i">): AddedLabel {
-    const i = pack.addedLabels.reduce((max, label) => Math.max(max, label.i), 0) + 1;
-    const label = { ...data, i };
-    pack.addedLabels.push(label);
-    return label;
-  }
-
-  remove(i: number): void {
-    pack.addedLabels = pack.addedLabels.filter(label => label.i !== i);
-    notes = notes.filter(note => note.id !== `addedLabel${i}`);
-  }
-}
-
 window.Labels = new LabelsModule();
-window.AddedLabels = new AddedLabelsModule();

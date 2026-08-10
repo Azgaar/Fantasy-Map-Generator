@@ -641,7 +641,8 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
 
-  if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0 });
+  // the label snaps back to the relocated burg, so its custom path is no longer valid
+  if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
   drawLabels();
 
   if (event.shiftKey === false) toggleRelocateBurg();

@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
-import type { Point } from "@/types/global";
+import { createLabelArc } from "@/renderers/labels/label-arc";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {
@@ -23,11 +23,9 @@ async function addOnClick(event: MouseEvent): Promise<void> {
   const text = Names.getCulture(pack.cells.culture[cell]);
   const lastSelected = await Controllers.LabelsEditor.getLastSelectedGroup();
   const group = Labels.findGroup(lastSelected, "added").name;
-  const pathPoints: Point[] = [
-    [point[0] - 100, point[1]],
-    [point[0] + 100, point[1]]
-  ];
-  AddedLabels.add({ group, text, pathPoints });
+  const [x, y] = point;
+  const pathPoints = createLabelArc({ text, type: "added", group, anchor: [x, y] });
+  AddedLabels.add({ x, y, label: { text, group, pathPoints } });
   drawLabels();
 
   if (!event.shiftKey) stopMapPlacement();

@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { max } from "d3";
 import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
-import type { PathLabel } from "./labels-generator";
+import type { Label } from "./labels-generator";
 
 declare global {
   var Provinces: ProvinceModule;
@@ -20,7 +20,7 @@ export interface Province {
   color: string;
   coa: any;
   pole?: [number, number];
-  label?: PathLabel;
+  label?: Label;
   // statistics computed by the provinces editor
   area?: number;
   rural?: number;

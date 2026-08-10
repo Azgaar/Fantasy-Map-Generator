@@ -2,9 +2,10 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { DEFAULT_LABEL_TYPES } from "@/generators/labels-generator";
+import { LABEL_TYPES } from "@/generators/labels-generator";
+import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
-import { drawLabels, labelDataAdapters } from "@/renderers/labels/labels-renderer";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { destroyDialogIfExists, ensureEl, findEl } from "@/utils";
 
@@ -124,7 +125,7 @@ function populateTypeFilter(): void {
   const select = ensureEl<HTMLSelectElement>("labelsFilterType");
   select.options.length = 0;
   select.add(new Option("all", ALL));
-  for (const type of DEFAULT_LABEL_TYPES) select.add(new Option(type, type));
+  for (const type of LABEL_TYPES) select.add(new Option(type, type));
   select.value = filters.type;
 }
 
@@ -150,7 +151,7 @@ function populateGroupFilter(): void {
 }
 
 function addLines(): void {
-  const allLabels = Object.values(labelDataAdapters).flatMap(adapter => adapter());
+  const allLabels = getLabelsData();
   let labels = allLabels;
   if (filters.group !== ALL) labels = labels.filter(({ group }) => group === filters.group);
   if (filters.type !== ALL) labels = labels.filter(({ type }) => type === filters.type);
