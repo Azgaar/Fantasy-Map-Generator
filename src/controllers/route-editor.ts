@@ -404,7 +404,7 @@ function changeGroup(this: HTMLInputElement): void {
 
 function generateName(): void {
   const route = getRoute();
-  route.name = ensureEl<HTMLInputElement>("routeName").value = Routes.generateName(route);
+  route.name = ensureEl<HTMLInputElement>("routeName").value = Routes.generateName(route) || UNNAMED_ROUTE;
 }
 
 function showRouteElevationProfile(): void {

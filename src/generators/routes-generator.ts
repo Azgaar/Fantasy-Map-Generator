@@ -1,3 +1,4 @@
+import Alea from "alea";
 import { curveCatmullRom, line, select } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findClosestCell, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
@@ -201,10 +202,11 @@ class RoutesModule {
 
   regenerate(): void {
     const lockedRoutes = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));
-    this.generate(lockedRoutes);
+    this.generate(lockedRoutes, Math.random());
   }
 
-  generate(lockedRoutes: Route[] = []) {
+  generate(lockedRoutes: Route[] = [], randomSeed?: number) {
+    Math.random = Alea(randomSeed ?? seed);
     this.connections = new Map();
     this.buildRiverEdges();
     lockedRoutes.forEach((route: Route) => {
@@ -863,11 +865,12 @@ class RoutesModule {
     const suffix = rw(suffixes[group] || suffixes.roads);
 
     const burgName = getBurgName();
-    if (model === "burg_suffix" && burgName) return `${burgName} ${suffix}`;
-    if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
+    if (burgName) {
+      if (model === "burg_suffix") return `${burgName} ${suffix}`;
+      if (model === "the_descriptor_burg_suffix") return `The ${ra(descriptors)} ${burgName} ${suffix}`;
+    }
     if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
-    if (model === "the_descriptor_burg_suffix" && burgName) return `The ${ra(descriptors)} ${burgName} ${suffix}`;
-    return undefined;
+    return `${ra(prefixes)} ${suffix}`; // no burg on the route, fall back to the burg-free model
   }
 
   private ROUTE_CURVES: Record<string, any> = {

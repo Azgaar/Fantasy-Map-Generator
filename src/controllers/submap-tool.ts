@@ -116,7 +116,6 @@ function rescaleBurgStyles(scale: number): void {
 
     const size = Number(iconStyle["font-size"]) || 1;
     iconStyle["font-size"] = String(rn(minmax(size * scale, 0.2, 10), 2));
-    iconStyle["stroke-width"] = String(rn(Number(iconStyle["stroke-width"]) * scale, 2));
 
     style.burgIcons[group.id] = iconStyle;
     group.remove();

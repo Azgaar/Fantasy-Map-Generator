@@ -51,13 +51,10 @@ const FALLBACK_STYLES: Record<LabelType, LabelGroupStyle> = {
 };
 
 export function getGroupStyle(group: { name: string; type: LabelType }): LabelGroupStyle {
-  const groupStyle = style.labels.groups[group.name];
-  if (groupStyle) return groupStyle;
+  const typeStyle = FALLBACK_STYLES[group.type];
+  if (!typeStyle) ERROR && console.error(`No fallback style for label group ${group.name} of type ${group.type}`);
 
-  const fallbackGroup = Labels.getFallbackGroup(group.type);
-  const fallbackStyle = FALLBACK_STYLES[fallbackGroup.type];
-  if (fallbackStyle) return fallbackStyle;
-
-  ERROR && console.error(`No style or fallback style found for label group ${group.name} of type ${group.type}`);
-  return BASE_STYLE;
+  const baseStyle = typeStyle ?? BASE_STYLE;
+  const groupStyle = style.labels.groups[group.name] || {};
+  return { ...baseStyle, ...groupStyle };
 }
