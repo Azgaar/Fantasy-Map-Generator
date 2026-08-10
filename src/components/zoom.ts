@@ -1,3 +1,4 @@
+import type { ZoomBehavior } from "d3";
 import { renderGroupCOAs } from "@/renderers/draw-emblems";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -5,10 +6,15 @@ import { rn } from "@/utils/numberUtils";
 
 // Legacy behaviour from the global d3 v5. TODO: completely migrate to d3v7
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
-const zoom = window.d3.zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
+let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
+
+function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
+  zoomBehavior ??= window.d3.zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
+  return zoomBehavior;
+}
 
 export function applyZoomBehavior(): void {
-  svg.call(zoom.on("zoom", onZoom).on("end", handleZoomEnd));
+  svg.call(zoom().on("zoom", onZoom).on("end", handleZoomEnd));
 }
 
 let frameId: number | null = null;
@@ -132,28 +138,28 @@ function invokeActiveZooming(): void {
 /** Zoom to a specific point */
 function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
   const transform = window.d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(duration).call(zoom.transform, transform);
+  svg.transition().duration(duration).call(zoom().transform, transform);
 }
 
 /** Reset zoom to initial */
 function resetZoom(duration = 1000): void {
-  svg.transition().duration(duration).call(zoom.transform, window.d3.zoomIdentity);
+  svg.transition().duration(duration).call(zoom().transform, window.d3.zoomIdentity);
 }
 
 export function panMap(x: number, y: number): void {
-  zoom.translateBy(svg, x, y);
+  zoom().translateBy(svg, x, y);
 }
 
 export function setMapZoom(value: number): void {
-  zoom.scaleTo(svg, value);
+  zoom().scaleTo(svg, value);
 }
 
 export function changeMapZoom(factor: number): void {
-  zoom.scaleBy(svg, factor);
+  zoom().scaleBy(svg, factor);
 }
 
-// consumed by legacy code
-window.zoom = zoom;
+// consumed by legacy code; a getter so the lazy behavior is created on the first read
+Object.defineProperty(window, "zoom", { get: zoom, configurable: true });
 window.zoomTo = zoomTo;
 window.resetZoom = resetZoom;
 window.invokeActiveZooming = invokeActiveZooming;

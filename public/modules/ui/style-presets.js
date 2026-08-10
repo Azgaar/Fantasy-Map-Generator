@@ -127,9 +127,12 @@ function applyStylePreset(presetJson) {
     }
   }
 
+  // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
+  // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
   for (const group of options.labels.groups) {
     if (style.labels.groups[group.name]) continue;
-    style.labels.groups[group.name] = { ...style.labels.groups[group.type] };
+    const defaultGroupStyle = style.labels.groups[Labels.getFallbackGroup(group.type).name];
+    if (defaultGroupStyle) style.labels.groups[group.name] = { ...defaultGroupStyle };
   }
 
   function getStyleAttributes(attributes) {
@@ -412,7 +415,6 @@ function addStylePreset() {
       presetStyle[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
-        // Legacy label presets may still carry data-size; markets use it for the marker circle, so keep its real font-size
         if (attr === "font-size" && selector !== "#markets" && el.hasAttribute("data-size"))
           value = el.getAttribute("data-size");
         presetStyle[selector][attr] = parseValue(value);

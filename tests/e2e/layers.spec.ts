@@ -1,5 +1,9 @@
 import { Browser, BrowserContext, expect, Page, test } from "@playwright/test";
 
+// map globals used inside page.evaluate
+declare const options: { labels: { groups: { name: string; active?: boolean }[] } };
+declare const drawLabels: () => void;
+
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
 let sharedContext: BrowserContext;
@@ -191,40 +195,35 @@ test.describe("map layers", () => {
       };
     });
 
-    expect(structure.groupIds).toEqual(expect.arrayContaining(["labels-states", "labels-town", "labels-added"]));
+    expect(structure.groupIds).toEqual(expect.arrayContaining(["labels-state", "labels-town", "labels-added"]));
     expect(structure.nestedGroups).toBe(0);
     expect(structure.stateTextPaths).toBeGreaterThan(0);
     expect(structure.burgLabels).toBeGreaterThan(0);
     expect(structure.burgTextPaths).toBe(0);
   });
 
-  test("labels group can be hidden with display:none", async () => {
-    await sharedPage.evaluate(() => {
-      const styleElementSelect = document.getElementById("styleElementSelect") as HTMLSelectElement;
-      const styleGroupSelect = document.getElementById("styleGroupSelect") as HTMLSelectElement;
-      const styleLabelsHideGroup = document.getElementById("styleLabelsHideGroup") as HTMLInputElement;
+  // a label group is hidden by deactivating it (the pre-1.140.0 style display:none control is gone).
+  // The only test here that changes state, it restores the group before it ends
+  test("deactivated labels group is not rendered", async () => {
+    const counts = await sharedPage.evaluate(async () => {
+      const stateGroup = options.labels.groups.find(group => group.name === "state")!;
+      const count = () => document.querySelectorAll("#labels-state > *").length;
+      const before = count();
 
-      styleElementSelect.value = "labels";
-      styleElementSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      stateGroup.active = false;
+      drawLabels();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const deactivated = count();
 
-      styleGroupSelect.value = "states";
-      styleGroupSelect.dispatchEvent(new Event("change", { bubbles: true }));
-
-      styleLabelsHideGroup.checked = true;
-      styleLabelsHideGroup.dispatchEvent(new Event("change", { bubbles: true }));
+      delete stateGroup.active;
+      drawLabels();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return { before, deactivated, reactivated: count() };
     });
 
-    const statesGroup = sharedPage.locator("#labels #states");
-    await expect(statesGroup).toHaveCSS("display", "none");
-
-    await sharedPage.evaluate(() => {
-      const styleLabelsHideGroup = document.getElementById("styleLabelsHideGroup") as HTMLInputElement;
-      styleLabelsHideGroup.checked = false;
-      styleLabelsHideGroup.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-
-    const inlineDisplay = await statesGroup.evaluate(el => (el as SVGGElement).style.display);
-    expect(inlineDisplay).toBe("");
+    expect(counts.before).toBeGreaterThan(0);
+    expect(counts.deactivated).toBe(0);
+    expect(counts.reactivated).toBe(counts.before);
   });
 
   // Military and markers

@@ -1321,6 +1321,16 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       style.labels.groups[name] = oldStyle;
     }
 
+    const migratedBurgStyle = burgGroups.length ? style.labels.groups[burgGroups[0].id] : undefined;
+    for (const { name } of options.burgs.groups) {
+      if (options.labels.groups.some(group => group.name === name)) continue;
+
+      const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
+      const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
+      options.labels.groups.push({ name, type: "burg", zoom });
+      style.labels.groups[name] = migratedBurgStyle ? { ...migratedBurgStyle } : getGroupStyle({ name, type: "burg" });
+    }
+
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
       options.labels.groups[0].isDefault = true;
 

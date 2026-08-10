@@ -490,7 +490,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
         selection.node() && selection.style("display") !== "none";
-      const isVisibleNode = (node: HTMLElement | null) => node && node.style.display !== "none";
+      const isVisibleNode = (node: SVGElement | HTMLElement | null) => node && node.style.display !== "none";
       const hasChildren = (selection: { node(): Element | null }) => selection.node()?.hasChildNodes();
       const hasChild = (selection: { node(): Element | null }, selector: string) =>
         selection.node()?.querySelector(selector);
@@ -535,7 +535,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
       if (isVisible(select("#ruler"))) turnOn("toggleRulers");
       if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
-      if (isVisibleNode(ensureEl("vignette"))) turnOn("toggleVignette");
+      if (isVisibleNode(ensureEl<SVGGElement>("vignette"))) turnOn("toggleVignette");
 
       getCurrentPreset();
       Goods.sync();

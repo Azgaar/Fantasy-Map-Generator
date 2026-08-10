@@ -119,6 +119,11 @@ export class ViewportRenderer {
     this.renderLayers(context);
   }
 
+  renderTo(root: ParentNode): void {
+    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+    this.renderLayers({ root, bounds });
+  }
+
   private getBounds(paddingPixels: number): ViewportBounds {
     const { scale, x, y, width, height } = this.options.getViewport();
     const padding = paddingPixels / scale;

@@ -108,7 +108,7 @@ declare global {
   var routes: Selection<SVGElement, unknown, null, undefined>;
   var debug: Selection<SVGElement, unknown, null, undefined>;
   // SVG layer selections reassigned on map load (main.js)
-  var scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>;
+  var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
   var ocean: Selection<SVGGElement, unknown, null, undefined>;
   var oceanPattern: Selection<SVGGElement, unknown, null, undefined>;
   var landmass: Selection<SVGGElement, unknown, null, undefined>;

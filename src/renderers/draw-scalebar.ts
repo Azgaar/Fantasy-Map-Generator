@@ -3,15 +3,11 @@ import { range } from "d3";
 import { rn } from "../utils";
 
 declare global {
-  var drawScaleBar: (scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>, scaleLevel: number) => void;
-  var fitScaleBar: (
-    scaleBar: Selection<SVGGElement, unknown, HTMLElement, unknown>,
-    fullWidth: number,
-    fullHeight: number
-  ) => void;
+  var drawScaleBar: (scaleBar: ScaleBarSelection, scaleLevel: number) => void;
+  var fitScaleBar: (scaleBar: ScaleBarSelection, fullWidth: number, fullHeight: number) => void;
 }
 
-type ScaleBarSelection = d3.Selection<SVGGElement, unknown, HTMLElement, unknown>;
+type ScaleBarSelection = Selection<SVGGElement, unknown, any, any>;
 
 const scaleBarRenderer = (scaleBar: ScaleBarSelection, scaleLevel: number): void => {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;

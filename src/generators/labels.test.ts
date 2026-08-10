@@ -4,7 +4,7 @@ import { AddedLabelsModule } from "./labels-generator";
 describe("AddedLabelsModule", () => {
   beforeEach(() => {
     globalThis.pack = {
-      labels: [
+      addedLabels: [
         { i: 1, text: "North", pathPoints: [], group: "added" },
         { i: 2, text: "South", pathPoints: [], group: "added" }
       ]

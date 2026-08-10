@@ -260,13 +260,13 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (!debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];
-  const svgDefs = ensureEl("defElements");
+  const svgDefs = ensureEl<SVGSVGElement>("defElements");
 
   if (fullMap) {
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
     clone.select("#viewbox").attr("transform", null);
-    ViewportLayers.renderNow(); // TODO: bug, it renders to main svg, not cloned one
+    ViewportLayers.renderTo(cloneEl);
 
     if (!noScaleBar) {
       drawScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], 1);
