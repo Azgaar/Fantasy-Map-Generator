@@ -141,26 +141,30 @@ class LabelsModule {
     return fallbackGroup ?? { name: type, type, zoom: { min: null, max: null }, isDefault: true };
   }
 
+  /** Group of the requested type, or the type fallback group if there is no such group */
   findGroup(groupName: string, type: LabelType): LabelGroup {
-    const group = options.labels.groups.find(group => group.name === groupName);
-    if (group) return group;
-    return this.getFallbackGroup(type);
+    const group = options.labels.groups.find(group => group.name === groupName && group.type === type);
+    return group ?? this.getFallbackGroup(type);
   }
 
   setGroup(label: { type: LabelType; entityId: number; group: string }): void {
-    const labelEntities: Record<LabelType, { i: number; group?: string; label?: Label }[]> = {
+    if (label.type === "added") {
+      const addedLabel = AddedLabels.get(label.entityId);
+      if (addedLabel) addedLabel.group = label.group;
+      return;
+    }
+
+    const labelEntities: Record<Exclude<LabelType, "added">, { i: number; label?: Label }[]> = {
       state: pack.states,
       province: pack.provinces,
       burg: pack.burgs,
       river: pack.rivers,
-      route: pack.routes,
-      added: pack.addedLabels
+      route: pack.routes
     };
 
     const entity = labelEntities[label.type].find(entity => entity.i === label.entityId);
     if (!entity) return;
-    if (entity.label) entity.label = { ...entity.label, group: label.group };
-    else entity.group = label.group;
+    entity.label = { ...entity.label, group: label.group };
   }
 }
 

@@ -29,8 +29,8 @@ function editBurgGroups(): void {
         ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
       },
       Restore: () => {
-        options.burgs.groups = Burgs.getDefaultGroups();
-        addRows();
+        // restore the form only, the changes are applied on Apply, so Cancel still discards them
+        addRows(Burgs.getDefaultGroups());
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -111,8 +111,8 @@ function closeBurgGroupsEditor(): void {
   ensureEl("burgGroupsEditor").remove();
 }
 
-function addRows(): void {
-  const rows = options.burgs.groups.map(createRow);
+function addRows(groups: BurgGroup[] = options.burgs.groups): void {
+  const rows = groups.map(createRow);
   ensureEl("burgGroupsBody").innerHTML = rows.join("");
 }
 

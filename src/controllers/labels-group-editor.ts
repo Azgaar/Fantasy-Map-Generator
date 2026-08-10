@@ -3,7 +3,6 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import {
   DEFAULT_LABEL_TYPES,
-  type Label,
   type LabelGroup,
   type LabelNameMode,
   type LabelType
@@ -67,10 +66,11 @@ function open(): void {
         ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
       },
       Restore: () => {
-        options.labels = Labels.getDefaultOptions();
-        ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = options.labels.resizeOnZoom;
-        ensureEl<HTMLInputElement>("labelsShowAll").checked = options.labels.showAll;
-        addRows();
+        // restore the form only, the changes are applied on Apply, so Cancel still discards them
+        const defaults = Labels.getDefaultOptions();
+        ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = defaults.resizeOnZoom;
+        ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
+        addRows(defaults.groups);
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -133,17 +133,17 @@ function renderDialog(): void {
   ensureEl("labelGroupsMissing").addEventListener("click", onMissingGroupsClick);
 }
 
-function addRows(): void {
+function addRows(groups: LabelGroup[] = options.labels.groups): void {
   const counts = countLabelsByGroup();
-  ensureEl("labelGroupsBody").innerHTML = options.labels.groups
+  ensureEl("labelGroupsBody").innerHTML = groups
     .map(group => createRow(group, false, counts.get(group.name) ?? 0))
     .join("");
-  addMissingGroups(counts);
+  addMissingGroups(counts, groups);
 }
 
 /** List groups labels are assigned to, but which are not defined anymore, so their labels are not rendered */
-function addMissingGroups(counts: Map<string, number>): void {
-  const definedGroups = new Set(options.labels.groups.map(({ name }) => name));
+function addMissingGroups(counts: Map<string, number>, groups: LabelGroup[]): void {
+  const definedGroups = new Set(groups.map(({ name }) => name));
   const missingGroups = [...counts.entries()].filter(([name]) => !definedGroups.has(name)).sort();
 
   ensureEl("labelGroupsMissingWrapper").style.display = missingGroups.length ? "flex" : "none";
@@ -332,6 +332,8 @@ function submitForm(event: Event): void {
   options.labels.groups = rows.map(rowToGroup);
   options.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   options.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
+  // a group can come without a style, e.g. when defaults are restored after the group style was removed
+  for (const group of options.labels.groups) style.labels.groups[group.name] ??= getGroupStyle(group);
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
   drawLabels();
@@ -359,19 +361,10 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
 }
 
 function replaceGroupInEntities(oldName: string, newName: string): void {
-  const regroupLabel = (entity: { label?: Label }) => {
-    if (entity.label?.group === oldName) entity.label.group = newName;
-  };
-  const regroupEntity = (entity: { group: string }) => {
-    if (entity.group === oldName) entity.group = newName;
-  };
-
-  pack.states.forEach(regroupLabel);
-  pack.provinces.forEach(regroupLabel);
-  pack.burgs.forEach(regroupLabel);
-  pack.rivers.forEach(regroupLabel);
-  pack.routes.forEach(regroupLabel);
-  pack.addedLabels.forEach(regroupEntity);
+  const labels = Object.values(labelDataAdapters).flatMap(adapter => adapter());
+  for (const { type, entityId, group } of labels) {
+    if (group === oldName) Labels.setGroup({ type, entityId, group: newName });
+  }
 }
 
 function close(): void {

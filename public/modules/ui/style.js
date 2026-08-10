@@ -496,7 +496,7 @@ function updateLabelGroupInlineStyle(group) {
 styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
   getEl().attr("fill", this.value);
-  const groupStyle = getGroupStyle(styleGroupSelect.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.fill = this.value;
 });
 

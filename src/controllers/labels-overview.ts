@@ -85,7 +85,7 @@ function renderDialog(): void {
   ensureEl("labelsBody").addEventListener("change", onBodyChange);
   ensureEl("labelsFilterGroup").addEventListener("change", onFilterChange);
   ensureEl("labelsFilterType").addEventListener("change", onFilterChange);
-  ensureEl("labelsSearch").addEventListener("input", onFilterChange);
+  ensureEl("labelsSearch").addEventListener("input", onSearchInput);
   ensureEl("labelsOverviewRefresh").addEventListener("click", refresh);
   ensureEl("labelsBulkToggle").addEventListener("click", toggleBulkMode);
   ensureEl("labelsGroupsConfig").addEventListener("click", () => void Controllers.LabelGroupsConfigurator.open());
@@ -94,6 +94,7 @@ function renderDialog(): void {
 }
 
 function close(): void {
+  clearTimeout(searchTimeout);
   destroyDialogIfExists("labelsOverview");
 }
 
@@ -101,6 +102,15 @@ function refresh(): void {
   populateGroupFilter();
   populateTypeFilter();
   addLines();
+}
+
+// re-listing thousands of labels on every keystroke is slow, so the search is applied once typing settles
+const SEARCH_DELAY = 250;
+let searchTimeout = 0;
+
+function onSearchInput(): void {
+  clearTimeout(searchTimeout);
+  searchTimeout = window.setTimeout(onFilterChange, SEARCH_DELAY);
 }
 
 function onFilterChange(): void {
@@ -125,13 +135,16 @@ function populateGroupFilter(): void {
   select.options.length = 0;
   select.add(new Option("all", ALL));
   for (const name of groups) select.add(new Option(name, name));
-  select.value = filters.group;
-  filters.group = select.value; // the remembered group may no longer exist, then it falls back to all
+  if (filters.group !== ALL && !groups.includes(filters.group))
+    select.add(new Option(`${filters.group} (missing)`, filters.group));
 
-  // keep the bulk target selected across refreshes, it resets to the first group if that one is gone
+  select.value = filters.group;
+
+  // keep the bulk target selected across refreshes, it resets to none if that group is gone
   const bulkSelect = ensureEl<HTMLSelectElement>("labelsBulkGroup");
   const bulkSelected = bulkSelect.value;
   bulkSelect.options.length = 0;
+  bulkSelect.add(new Option("select group", ALL));
   for (const name of groups) bulkSelect.add(new Option(name, name));
   if (groups.includes(bulkSelected)) bulkSelect.value = bulkSelected;
 }
@@ -142,7 +155,7 @@ function addLines(): void {
   if (filters.group !== ALL) labels = labels.filter(({ group }) => group === filters.group);
   if (filters.type !== ALL) labels = labels.filter(({ type }) => type === filters.type);
   const search = filters.search.trim().toLowerCase();
-  if (search) labels = labels.filter(({ text }) => text.toLowerCase().includes(search));
+  if (search) labels = labels.filter(({ text }) => text.replaceAll("|", "").toLowerCase().includes(search));
 
   listedLabels.clear();
   for (const label of labels) listedLabels.set(label.id, label);
@@ -156,7 +169,8 @@ function addLines(): void {
 }
 
 function createLine(label: LabelData): string {
-  const { id, text, type, group } = label;
+  const { id, type, group } = label;
+  const text = label.text.replaceAll("|", "");
 
   return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}">
       <input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}">
