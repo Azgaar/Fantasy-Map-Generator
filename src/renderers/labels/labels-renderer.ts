@@ -48,9 +48,18 @@ export function getSceneLabel(type: LabelType, id: number): LabelData | undefine
   return scene.get(`${type}Label${id}`);
 }
 
+export function getVisibleLabels(): LabelData[] {
+  if (!scene.valid || !layerIsOn("toggleLabels")) return [];
+  const bounds = ViewportLayers.getVisibleBounds();
+  const visibleGroups = new Set(
+    options.labels.groups.filter(group => isGroupVisible({ group, bounds })).map(({ name }) => name)
+  );
+  return [...scene.values()].filter(label => visibleGroups.has(label.group) && isLabelVisible(bounds, label));
+}
+
 function materializeLabel(label: LabelData, context: ViewportRenderContext): void {
   const groupOptions = options.labels.groups.find(({ name }) => name === label.group);
-  if (!groupOptions || !isGroupVisible({ group: groupOptions, context })) return;
+  if (!groupOptions || !isGroupVisible({ group: groupOptions, bounds: context.bounds })) return;
   if (!isLabelVisible(context.bounds, label)) return;
 
   const group = findElement(context.root, `labels-${label.group}`);
@@ -80,7 +89,7 @@ function reconcileGroup(labels: Element, textPaths: Element, groupName: string, 
   const groupOptions = options.labels.groups.find(group => group.name === groupName);
   if (!group || !groupOptions) return;
 
-  const isVisible = isGroupVisible({ group: groupOptions, context });
+  const isVisible = isGroupVisible({ group: groupOptions, bounds: context.bounds });
   const visibleLabels = isVisible
     ? (labelsByGroup.get(groupName) || []).filter(label => isLabelVisible(context.bounds, label))
     : [];
@@ -97,11 +106,11 @@ function reconcileGroup(labels: Element, textPaths: Element, groupName: string, 
   }
 }
 
-function isGroupVisible({ group, context }: { group: LabelGroup; context: ViewportRenderContext }): boolean {
+function isGroupVisible({ group, bounds }: { group: LabelGroup; bounds: ViewportRenderContext["bounds"] }): boolean {
   if (group.active === false) return false;
   if (!options.labels.showAll) {
-    if (group.zoom.min !== null && context.bounds.scale < group.zoom.min) return false;
-    if (group.zoom.max !== null && context.bounds.scale > group.zoom.max) return false;
+    if (group.zoom.min !== null && bounds.scale < group.zoom.min) return false;
+    if (group.zoom.max !== null && bounds.scale > group.zoom.max) return false;
   }
   return !group.layerDependency || layerIsOn(group.layerDependency);
 }

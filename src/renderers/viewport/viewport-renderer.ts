@@ -128,9 +128,12 @@ export class ViewportRenderer {
     this.renderLayers({ root, bounds });
   }
 
-  /** Context of the current viewport, for layers materializing a single item outside a full render */
   getContext(): ViewportRenderContext {
     return this.getLiveContext();
+  }
+
+  getVisibleBounds(): ViewportBounds {
+    return this.getBounds(0);
   }
 
   private getBounds(paddingPixels: number): ViewportBounds {

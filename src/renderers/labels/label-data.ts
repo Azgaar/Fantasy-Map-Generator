@@ -153,8 +153,8 @@ function formatPathPoints(pointLike: number[][]): Point[] {
   return trimmed;
 }
 
-const LABEL_PATH_POINTS_RADIUS = 4;
-function trimAroundCenter(points: Point[], radius = LABEL_PATH_POINTS_RADIUS) {
+const LABEL_PATH_POINTS_RADIUS = 12;
+function trimAroundCenter(points: Point[], radius = LABEL_PATH_POINTS_RADIUS): Point[] {
   if (points.length <= radius * 2 + 1) return points;
   const middleIndex = Math.floor(points.length / 2);
   const start = Math.max(0, middleIndex - radius);

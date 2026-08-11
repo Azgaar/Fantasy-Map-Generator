@@ -2,7 +2,8 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { LABEL_TYPES } from "@/generators/labels-generator";
+import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
+import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
@@ -13,6 +14,7 @@ const ALL = ""; // filter value meaning "all"
 const filters = { group: ALL, type: ALL, search: "" };
 const listedLabels = new Map<string, LabelData>(); // currently listed labels, keyed by line id
 let isBulkMode = false;
+const spreadPreview: SpreadPreviewState = { phase: "idle", run: 0, snapshot: null };
 
 function open(group: string = ALL): void {
   if (customization) return;
@@ -20,6 +22,7 @@ function open(group: string = ALL): void {
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   isBulkMode = false;
+  resetSpreadPreview();
   if (group) filters.group = group;
 
   renderDialog();
@@ -76,6 +79,14 @@ function renderDialog(): void {
         data-tip="Bulk assignment: select multiple labels and assign them all to one group"
         class="icon-tags"
       ></button>
+      <button
+        id="labelsSpread"
+        data-tip="Spread currently displayed labels to not collide"
+        class="icon-resize-full"></button>
+      <span id="labelsSpreadReview" style="display:none">
+        <button id="labelsSpreadApply" data-tip="Keep the proposed label placement" class="icon-check"> Apply</button>
+        <button id="labelsSpreadCancel" data-tip="Restore label placement from before the spread" class="icon-cancel"> Cancel</button>
+      </span>
       <button id="labelsGroupsConfig" data-tip="Configure Label Groups" class="icon-cog"></button>
     </div>
   </div>`;
@@ -89,6 +100,9 @@ function renderDialog(): void {
   ensureEl("labelsSearch").addEventListener("input", onSearchInput);
   ensureEl("labelsOverviewRefresh").addEventListener("click", refresh);
   ensureEl("labelsBulkToggle").addEventListener("click", toggleBulkMode);
+  ensureEl("labelsSpread").addEventListener("click", () => void spreadLabels());
+  ensureEl("labelsSpreadApply").addEventListener("click", applySpread);
+  ensureEl("labelsSpreadCancel").addEventListener("click", cancelSpread);
   ensureEl("labelsGroupsConfig").addEventListener("click", () => void Controllers.LabelGroupsConfigurator.open());
   ensureEl("labelsSelectAll").addEventListener("click", toggleSelectAll);
   ensureEl("labelsBulkApply").addEventListener("click", applyBulkAssignment);
@@ -96,6 +110,7 @@ function renderDialog(): void {
 
 function close(): void {
   clearTimeout(searchTimeout);
+  cancelSpread();
   destroyDialogIfExists("labelsOverview");
 }
 
@@ -300,6 +315,126 @@ function applyBulkAssignment(): void {
   if (group === ALL) return void tip("Define a label group to assign the labels to", false, "error");
 
   assignGroup(labels, group);
+}
+
+async function spreadLabels(): Promise<void> {
+  if (spreadPreview.phase !== "idle") return;
+  spreadPreview.snapshot = takeLabelSnapshot();
+  spreadPreview.phase = "running";
+  const run = ++spreadPreview.run;
+  syncSpreadControls();
+
+  try {
+    const result = await calculateLabelSpread();
+    if (run !== spreadPreview.run) return;
+
+    if (!result.patches.length) {
+      finishSpreadPreview();
+      syncSpreadControls();
+      return;
+    }
+
+    applySpreadPatches(result.patches);
+    drawLabels();
+    addLines();
+    spreadPreview.phase = "review";
+    syncSpreadControls();
+  } catch (error) {
+    if (run !== spreadPreview.run) return;
+    restoreLabelSnapshot();
+    finishSpreadPreview();
+    drawLabels();
+    syncSpreadControls();
+    ERROR && console.error(error);
+  }
+}
+
+function applySpread(): void {
+  if (spreadPreview.phase !== "review" || !spreadPreview.snapshot) return;
+  finishSpreadPreview();
+  syncSpreadControls();
+}
+
+function cancelSpread(): void {
+  if (!spreadPreview.snapshot) return;
+  spreadPreview.run++;
+  restoreLabelSnapshot();
+  finishSpreadPreview();
+  drawLabels();
+  if (document.getElementById("labelsOverview")) {
+    addLines();
+    syncSpreadControls();
+  }
+}
+
+function takeLabelSnapshot(): LabelSnapshot[] {
+  return getLabelsData().map(({ type, entityId }) => {
+    const label = Labels.getEntity(type, entityId)?.label;
+    return { type, entityId, label: label === undefined ? undefined : structuredClone(label) };
+  });
+}
+
+function restoreLabelSnapshot(): void {
+  if (!spreadPreview.snapshot) return;
+  for (const snapshot of spreadPreview.snapshot) {
+    const entity = Labels.getEntity(snapshot.type, snapshot.entityId);
+    if (!entity) continue;
+    if (snapshot.label === undefined) delete entity.label;
+    else entity.label = structuredClone(snapshot.label);
+  }
+}
+
+function applySpreadPatches(patches: LabelSpreadPatch[]): void {
+  for (const patch of patches) {
+    const entity = Labels.getEntity(patch.type, patch.entityId);
+    if (!entity) continue;
+    const label = { ...entity.label };
+    if ("startOffset" in patch) label.startOffset = patch.startOffset;
+    else {
+      if (patch.dx !== undefined) label.dx = patch.dx;
+      if (patch.dy !== undefined) label.dy = patch.dy;
+    }
+    entity.label = label;
+  }
+}
+
+function resetSpreadPreview(): void {
+  spreadPreview.run++;
+  finishSpreadPreview();
+}
+
+function finishSpreadPreview(): void {
+  spreadPreview.phase = "idle";
+  spreadPreview.snapshot = null;
+}
+
+function syncSpreadControls(): void {
+  const dialog = document.getElementById("labelsOverview");
+  if (!dialog) return;
+  const isRunning = spreadPreview.phase === "running";
+  const isReview = spreadPreview.phase === "review";
+  ensureEl("labelsSpreadReview").style.display = isReview ? "inline" : "none";
+  ensureEl<HTMLButtonElement>("labelsSpread").style.display = isReview ? "none" : "";
+
+  const locked = spreadPreview.phase !== "idle";
+  for (const control of dialog.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>(
+    "button, input, select"
+  )) {
+    if (control.id === "labelsSpreadApply" || control.id === "labelsSpreadCancel") control.disabled = isRunning;
+    else control.disabled = locked;
+  }
+}
+
+interface LabelSnapshot {
+  type: LabelType;
+  entityId: number;
+  label?: Label;
+}
+
+interface SpreadPreviewState {
+  phase: "idle" | "running" | "review";
+  run: number;
+  snapshot: LabelSnapshot[] | null;
 }
 
 export const LabelsOverview = { open };
