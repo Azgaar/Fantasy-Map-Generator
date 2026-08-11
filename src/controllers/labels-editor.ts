@@ -126,6 +126,7 @@ function renderDialog(): void {
           value="0"
         ></slider-input>
       </div>
+      <button id="labelVisibility"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
       <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
@@ -163,6 +164,7 @@ function renderDialog(): void {
   ensureEl("labelLetterSpacingSize").addEventListener("input", changeLetterSpacingSize);
 
   ensureEl("labelPathToggle").addEventListener("click", toggleLabelPath);
+  ensureEl("labelVisibility").addEventListener("click", toggleLabelVisibility);
   ensureEl("labelLegend").addEventListener("click", editLabelLegend);
   ensureEl("labelReset").addEventListener("click", resetSelectedLabel);
   ensureEl("labelRemoveSingle").addEventListener("click", removeSelectedLabel);
@@ -192,6 +194,10 @@ function updateControls(): void {
   pathToggle.dataset.tip = hasPath
     ? "Remove the label path, render the label as a straight text"
     : "Curve the label along a path";
+
+  const visibility = ensureEl("labelVisibility");
+  visibility.className = label.hidden ? "icon-eye-off" : "icon-eye";
+  visibility.dataset.tip = label.hidden ? "Show the label" : "Hide the label";
 }
 
 function hasLabelPath(): boolean {
@@ -494,6 +500,12 @@ function toggleLabelPath(): void {
   drawControlPointsAndLine();
 }
 
+function toggleLabelVisibility(): void {
+  if (label.hidden) delete label.hidden;
+  else label.hidden = true;
+  applyLabelChanges();
+}
+
 function editLabelLegend(): void {
   const noteId = label.type === "burg" ? `burg${label.entityId}` : label.id;
   void Controllers.NotesEditor.open(noteId, label.text);
@@ -540,8 +552,8 @@ function hasOverrides(): boolean {
   if (!storedLabel) return false;
   // an added label always stores its text, so only the presentation fields count as overrides
   if (label.type !== "added") return true;
-  const { dx, dy, startOffset, fontSize, letterSpacing, pathPoints } = storedLabel;
-  return [dx, dy, startOffset, fontSize, letterSpacing, pathPoints].some(value => value !== undefined);
+  const { dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden } = storedLabel;
+  return [dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden].some(value => value !== undefined);
 }
 
 function resetSelectedLabel(): void {
@@ -580,7 +592,8 @@ function getLabelOverride(): Label {
     fontSize: label.fontSize,
     letterSpacing: label.letterSpacing,
     pathPoints: label.pathPoints ?? [],
-    startOffset: label.startOffset
+    startOffset: label.startOffset,
+    hidden: label.hidden
   };
 }
 

@@ -522,7 +522,7 @@ async function createLabels() {
     const burgOptions = getBurgLabelOptions(burg);
     const [x, y, z] = get3dCoords(burg.x, burg.y);
 
-    if (layerIsOn("toggleLabels")) {
+    if (layerIsOn("toggleLabels") && !burg.label?.hidden) {
       const burgSprite = await createTextLabel({ text: burg.label?.text ?? burg.name ?? "", ...burgOptions });
 
       burgSprite.position.set(x, y + burgOptions.elevation, z);
@@ -559,7 +559,7 @@ async function createLabels() {
   if (layerIsOn("toggleLabels")) {
     for (let i = 1; i < pack.states.length; i++) {
       const state = pack.states[i];
-      if (state.removed) continue;
+      if (state.removed || state.label?.hidden) continue;
 
       const [x, y, z] = get3dCoords(state.pole![0], state.pole![1]);
       const stateOptions = getStateLabelOptions(state);

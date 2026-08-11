@@ -43,7 +43,7 @@ function renderDialog(): void {
   destroyDialogIfExists("labelsOverview");
 
   const html = /* html */ `<div id="labelsOverview" class="dialog stable">
-    <div id="labelsHeader" class="header" style="grid-template-columns: 0.5em 12em 5em 8em 2em">
+    <div id="labelsHeader" class="header" style="grid-template-columns: 0.5em 12em 5em 8em 4em">
       <div></div>
       <div data-tip="Click to sort by label text" class="sortable alphabetically" data-sortby="text">Label&nbsp;</div>
       <div data-tip="Click to sort by label type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
@@ -185,16 +185,17 @@ function addLines(): void {
 }
 
 function createLine(label: LabelData): string {
-  const { id, type, group } = label;
+  const { id, type, group, hidden } = label;
   const text = label.text.replaceAll("|", "");
 
-  return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}">
+  return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}" style="${hidden ? "opacity: 0.5" : ""}">
       <input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}">
       <div data-tip="Label text" style="width:12em">${text}</div>
       <div data-tip="Label type" style="width:5em">${type}</div>
       <select class="labelsGroup" data-tip="Label group, select to reassign the label" style="width:7em">
         ${createGroupOptions(group)}
       </select>
+      <button type="button" data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility" style="border:0; background:none"></button>
       <span data-tip="Locate the label" class="icon-target pointer"></span>
     </div>`;
 }
@@ -215,7 +216,8 @@ function createGroupOptions(selected: string): string {
 function onBodyClick(event: Event): void {
   const element = event.target as HTMLElement;
   const id = element.parentElement?.dataset.id;
-  if (element.classList.contains("icon-target")) highlightLabel(element, id);
+  if (element.classList.contains("labelsVisibility")) toggleLabelVisibility(element);
+  else if (element.classList.contains("icon-target")) highlightLabel(element, id);
 }
 
 function onBodyChange(event: Event): void {
@@ -239,6 +241,20 @@ function highlightLabel(element: HTMLElement, id?: string): void {
     const label = getLineLabel(element);
     if (label) zoomTo(...label.anchor, 6, 2000);
   }
+}
+
+function toggleLabelVisibility(element: HTMLElement): void {
+  const label = getLineLabel(element);
+  if (!label) return;
+
+  const entity = Labels.getEntity(label.type, label.entityId);
+  if (!entity) return;
+
+  if (entity.label?.hidden) delete entity.label.hidden;
+  else entity.label = { ...entity.label, hidden: true };
+
+  drawLabels();
+  addLines();
 }
 
 function assignGroup(labels: LabelData[], groupName: string): void {

@@ -116,6 +116,7 @@ function isGroupVisible({ group, bounds }: { group: LabelGroup; bounds: Viewport
 }
 
 function isLabelVisible(bounds: ViewportRenderContext["bounds"], label: LabelData): boolean {
+  if (label.hidden) return false;
   const x = label.anchor[0] + (label.dx || 0);
   const y = label.anchor[1] + (label.dy || 0);
   return x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1;

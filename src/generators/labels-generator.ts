@@ -24,6 +24,7 @@ export interface LabelGroup {
 export interface Label {
   text?: string;
   group?: string;
+  hidden?: boolean;
   dx?: number;
   dy?: number;
   fontSize?: number;

@@ -9,6 +9,7 @@ export interface LabelData {
   text: string;
   type: LabelType;
   group: string;
+  hidden?: boolean;
   anchor: Point; // position before the dx/dy shift is applied
   pathPoints?: Point[]; // set only when non-empty
   startOffset?: number;
