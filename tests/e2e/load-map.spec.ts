@@ -201,10 +201,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
-    await page.waitForTimeout(500);
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
 
     const migrated = await page.evaluate(() => {
       const addedLabels = (window as any).pack.addedLabels;
@@ -264,7 +261,7 @@ test.describe("Map loading", () => {
       mimeType: "text/plain",
       buffer: Buffer.from(mapData.join("\r\n"))
     });
-    await page.waitForFunction(() => options.labels.resizeOnZoom === false, {timeout: 120000});
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
 
     const migrated = await page.evaluate(() => {
       const labels = options.labels;
