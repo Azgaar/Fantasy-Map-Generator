@@ -1064,12 +1064,11 @@ function getLayer(id) {
   if (id === "toggleRulers") return $("#ruler");
 }
 
-function applyURLLayers() {
-  const params = new URL(window.location.href).searchParams;
-  const presetParam = params.get("layerPreset") || params.get("layersPreset");
-  const visibleParam = params.get("layersVisible");
+function applyURLLayers(params) {
+  const presetParam = params.get("preset");
+  const layersParam = params.get("layers");
 
-  if (!presetParam && !visibleParam) return;
+  if (!presetParam && !layersParam) return;
 
   const normalize = str => str.toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -1099,17 +1098,15 @@ function applyURLLayers() {
     }
   }
 
-  if (visibleParam) {
-    const visibleNames = visibleParam.split(",").map(s => normalize(s));
+  if (layersParam) {
+    const visibleNames = layersParam.split(",").map(s => normalize(s));
     document.querySelectorAll("#mapLayers > li").forEach(el => {
       const idNormalized = normalize(el.id);
       const idWithoutToggleNormalized = normalize(el.id.replace(/^toggle/, ""));
       const textNormalized = normalize(el.innerText || el.textContent || "");
 
-      const shouldBeOn = visibleNames.some(name =>
-        name === idNormalized ||
-        name === idWithoutToggleNormalized ||
-        name === textNormalized
+      const shouldBeOn = visibleNames.some(
+        name => name === idNormalized || name === idWithoutToggleNormalized || name === textNormalized
       );
 
       const isOn = layerIsOn(el.id);
