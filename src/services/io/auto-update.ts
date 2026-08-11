@@ -1,7 +1,7 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
-import type { Label } from "@/generators/labels-generator";
+import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -1305,7 +1305,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const hadVisibleLabels = getComputedStyle(labels).display !== "none";
     labels.style.removeProperty("display");
 
-    const stateMode = "stateLabelsMode" in options ? options.stateLabelsMode : "auto";
+    const legacyStateMode = "stateLabelsMode" in options ? options.stateLabelsMode : undefined;
+    const stateMode: LabelNameMode =
+      legacyStateMode === "short" || legacyStateMode === "full" ? legacyStateMode : "auto";
     const settings = (data[1] || "").split("|");
     const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
     const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;

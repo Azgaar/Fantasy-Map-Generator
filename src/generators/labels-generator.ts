@@ -163,12 +163,21 @@ export class LabelsModule {
 
   hasOverride(type: LabelType, id: number): boolean {
     const label = this.getEntity(type, id)?.label;
-    return type !== "added" && Boolean(label);
+    if (!label) return false;
+    if (type !== "added") return true;
+
+    const { dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden } = label;
+    return [dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden].some(value => value !== undefined);
   }
 
   resetOverride(type: LabelType, id: number): void {
     const entity = this.getEntity(type, id);
-    if (entity) delete entity.label;
+    if (!entity) return;
+
+    if (type === "added") {
+      const { text, group } = entity.label ?? {};
+      entity.label = { text, group };
+    } else delete entity.label;
   }
 }
 
