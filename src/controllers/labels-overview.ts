@@ -196,9 +196,9 @@ function createLine(label: LabelData): string {
       <select class="labelsGroup" data-tip="Label group, select to reassign the label" style="width:7em">
         ${createGroupOptions(group)}
       </select>
-      <button type="button" data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility" style="border:0; background:none"></button>
-      <button type="button" data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset" disabled="${hasOverride}" style="border:0; background:none"></button>
-      <button type="button" data-tip="Locate the label" class="icon-target" style="border:0; background:none"></button>
+      <span data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
+      <span data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
+      <span data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
     </div>`;
 }
 
@@ -263,6 +263,9 @@ function toggleLabelVisibility(element: HTMLElement): void {
 function resetLabel(element: HTMLElement): void {
   const label = getLineLabel(element);
   if (!label) return;
+
+  const hasOverride = Labels.hasOverride(label.type, label.entityId);
+  if (!hasOverride) return;
 
   Labels.resetOverride(label.type, label.entityId);
   drawLabels();
