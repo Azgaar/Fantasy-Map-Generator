@@ -184,10 +184,7 @@ test.describe("Map loading", () => {
     const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
     await fileInput.setInputFiles(mapFilePath);
 
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {
-      timeout: 120000
-    });
-    await page.waitForTimeout(500);
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
 
     const measurers = await page.evaluate(() => (window as any).pack.measurers);
 
