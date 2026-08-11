@@ -43,6 +43,13 @@ declare global {
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;
+    panMap: typeof import("../components/zoom").panMap;
+    setMapZoom: typeof import("../components/zoom").setMapZoom;
+    changeMapZoom: typeof import("../components/zoom").changeMapZoom;
+    drawStateLabels: (ids?: number[]) => void;
+    drawBurgLabels: () => void;
+    drawBurgLabel: (burg: import("../generators/burgs-generator").Burg) => void;
+    removeBurgLabel: (burgId: number) => void;
   }
 
   var seed: string;

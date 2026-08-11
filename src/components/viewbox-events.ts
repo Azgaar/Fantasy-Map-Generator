@@ -65,8 +65,12 @@ function onClick(event: MouseEvent): void {
   if (label) {
     const id = Number(label.dataset.id);
     const type = label.dataset.labelType as LabelType;
-    if (type === "burg") Controllers.BurgEditor.open(id);
-    else Controllers.LabelsEditor.open(type, id);
+    if (type === "burg") {
+      const burgEditor = document.getElementById("burgEditor");
+      const isBurgEditorOpen = burgEditor?.dataset.burgId === String(id);
+      if (isBurgEditorOpen) Controllers.LabelsEditor.open(type, id);
+      else Controllers.BurgEditor.open(id);
+    } else Controllers.LabelsEditor.open(type, id);
     return;
   }
 

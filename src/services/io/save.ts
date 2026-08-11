@@ -91,6 +91,7 @@ function prepareMapData(): string {
   cloneEl.setAttribute("width", String(graphWidth));
   cloneEl.setAttribute("height", String(graphHeight));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
+  cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
 
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers

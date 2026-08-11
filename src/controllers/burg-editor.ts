@@ -44,7 +44,7 @@ function open(id: number | string): void {
 
 function renderDialog(): void {
   destroyDialogIfExists("burgEditor");
-  const editorHtml = /* html */ `<div id="burgEditor" class="dialog">
+  const editorHtml = /* html */ `<div id="burgEditor" class="dialog" data-burg-id="${getSelectedId()}">
       <div id="burgBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">
           <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">

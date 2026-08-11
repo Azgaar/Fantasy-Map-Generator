@@ -1,7 +1,9 @@
 import {test, expect} from "@playwright/test";
+import fs from "fs";
 import path from "path";
 
 declare const notes: {id: string}[]; // page global, resolved inside page.evaluate
+declare const options: {labels: {resizeOnZoom: boolean; showAll: boolean; groups: {type: string; mode?: string}[]}};
 
 test.describe("Map loading", () => {
   test.beforeEach(async ({context, page}) => {
@@ -244,6 +246,77 @@ test.describe("Map loading", () => {
     }
     expect(migrated.rendered).toEqual(["path", "path", "path", "path"]);
     expect(migrated.orphanNotes).toBe(0);
+  });
+
+  test("legacy label settings should migrate without changing behavior", async ({page}) => {
+    const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
+    const mapData = fs.readFileSync(mapFilePath, "utf8").split(/\r?\n/);
+    const settings = mapData[1].split("|");
+    const legacyOptions = JSON.parse(settings[19]);
+    legacyOptions.stateLabelsMode = "full";
+    settings[19] = JSON.stringify(legacyOptions);
+    settings[21] = "0"; // automatic label visibility disabled => show all
+    settings[23] = "0"; // resize on zoom disabled
+    mapData[1] = settings.join("|");
+
+    await page.locator("#mapToLoad").setInputFiles({
+      name: "legacy-label-settings.map",
+      mimeType: "text/plain",
+      buffer: Buffer.from(mapData.join("\r\n"))
+    });
+    await page.waitForFunction(() => options.labels.resizeOnZoom === false, {timeout: 120000});
+
+    const migrated = await page.evaluate(() => {
+      const labels = options.labels;
+      return {
+        resizeOnZoom: labels.resizeOnZoom,
+        showAll: labels.showAll,
+        stateMode: labels.groups.find((group: any) => group.type === "state")?.mode
+      };
+    });
+
+    expect(migrated).toEqual({resizeOnZoom: false, showAll: true, stateMode: "full"});
+  });
+
+  test("save data should preserve an active but empty label layer", async ({page}) => {
+    await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+
+    const serializedLabels = await page.evaluate(async () => {
+      (window as any).turnButtonOn("toggleLabels");
+      document.getElementById("labels")?.replaceChildren();
+      const mapData = await (window as any).Services.Save.prepareMapData();
+      return mapData.split("\r\n")[5].match(/<g id="labels"[^>]*>/)?.[0];
+    });
+
+    expect(serializedLabels).toContain('data-layer-active="true"');
+  });
+
+  test("legacy label and zoom APIs should remain available", async ({page}) => {
+    await page.waitForFunction(() => Boolean((window as any).pack?.burgs?.length > 1), {timeout: 120000});
+
+    const compatibility = await page.evaluate(() => {
+      const missing = [
+        "drawStateLabels",
+        "drawBurgLabels",
+        "drawBurgLabel",
+        "removeBurgLabel",
+        "panMap",
+        "setMapZoom",
+        "changeMapZoom"
+      ].filter(name => typeof (window as any)[name] !== "function");
+
+      (window as any).turnButtonOn("toggleLabels");
+      options.labels.showAll = true;
+      (window as any).drawLabels();
+      const burgLabel = document.querySelector<SVGTextElement>('#labels [id^="burgLabel"]');
+      if (!burgLabel) return {missing, removedBurgLabel: false};
+
+      const burgId = Number(burgLabel.id.slice("burgLabel".length));
+      (window as any).removeBurgLabel(burgId);
+      return {missing, removedBurgLabel: !document.getElementById(burgLabel.id)};
+    });
+
+    expect(compatibility).toEqual({missing: [], removedBurgLabel: true});
   });
 
   test("loaded map should preserve burg data", async ({page}) => {

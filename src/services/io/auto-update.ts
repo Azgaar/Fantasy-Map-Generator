@@ -1293,19 +1293,23 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.140.0")) {
     // v1.140.0 migrated label data and styles to the unified flat Label Group model
+
     let labels = document.querySelector<SVGGElement>("#labels");
     if (!labels) {
       labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
       labels.setAttribute("id", "labels");
       document.querySelector("#viewbox")?.appendChild(labels);
     }
-    if (!labels) throw new Error("Failed to create or find #labels element");
     labels.setAttribute("font-size", "100px");
 
     const hadVisibleLabels = getComputedStyle(labels).display !== "none";
     labels.style.removeProperty("display");
 
-    options.labels = { resizeOnZoom: true, showAll: false, groups: [] };
+    const stateMode = "stateLabelsMode" in options ? options.stateLabelsMode : "auto";
+    const settings = (data[1] || "").split("|");
+    const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
+    const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;
+    options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
     style.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
@@ -1410,10 +1414,16 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const oldStyle = deriveLabelsStyle(stateGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
 
-      options.labels.groups.push({ name: "state", type: "state", isDefault: true, zoom: deriveZoomExtent(fontSize) });
+      options.labels.groups.push({
+        name: "state",
+        type: "state",
+        isDefault: true,
+        zoom: deriveZoomExtent(fontSize),
+        mode: stateMode
+      });
       style.labels.groups.state = oldStyle;
     } else {
-      options.labels.groups.push(Labels.getFallbackGroup("state"));
+      options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
       style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
@@ -1431,7 +1441,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     function deriveLabelsStyle(groupEl: SVGGElement): LabelGroupStyle {
       return {
-        opacity: Number(groupEl.getAttribute("opacity")) || 1,
+        opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
         fill: groupEl.getAttribute("fill") || "#000000",
         stroke: groupEl.getAttribute("stroke") || "#000000",
         "stroke-width": Number(groupEl.getAttribute("stroke-width")) || 0,

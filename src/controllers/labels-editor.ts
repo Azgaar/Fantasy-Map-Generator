@@ -197,7 +197,9 @@ function updateControls(): void {
 
   const visibility = ensureEl("labelVisibility");
   visibility.className = label.hidden ? "icon-eye-off" : "icon-eye";
-  visibility.dataset.tip = label.hidden ? "Show the label" : "Hide the label";
+  visibility.dataset.tip = label.hidden
+    ? "Show the label"
+    : "Hide the label. You can toggle it on later in Labels Overview";
 }
 
 function hasLabelPath(): boolean {

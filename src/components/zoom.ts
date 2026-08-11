@@ -163,3 +163,6 @@ Object.defineProperty(window, "zoom", { get: zoom, configurable: true });
 window.zoomTo = zoomTo;
 window.resetZoom = resetZoom;
 window.invokeActiveZooming = invokeActiveZooming;
+window.panMap = panMap;
+window.setMapZoom = setMapZoom;
+window.changeMapZoom = changeMapZoom;

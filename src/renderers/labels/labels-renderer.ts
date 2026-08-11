@@ -1,3 +1,4 @@
+import type { Burg } from "@/generators/burgs-generator";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
@@ -85,7 +86,7 @@ function reconcileLabels(context: ViewportRenderContext): void {
 }
 
 function reconcileGroup(labels: Element, textPaths: Element, groupName: string, context: ViewportRenderContext): void {
-  const group = labels.querySelector<SVGGElement>(`#labels-${groupName}`);
+  const group = labels.querySelector<SVGGElement>(`#${CSS.escape(`labels-${groupName}`)}`);
   const groupOptions = options.labels.groups.find(group => group.name === groupName);
   if (!group || !groupOptions) return;
 
@@ -129,7 +130,7 @@ function removeMaterialized(id: string, root: ParentNode): void {
 
 function findElement(root: ParentNode, id: string): Element | null {
   if (root instanceof Element && root.id === id) return root;
-  return root.querySelector(`#${id}`);
+  return root.querySelector(`#${CSS.escape(id)}`);
 }
 
 function indexLabelsByGroup(): void {
@@ -150,4 +151,20 @@ function unindexLabel(label: LabelData): void {
   if (index !== -1) groupLabels.splice(index, 1);
 }
 
+function drawBurgLabel(burg: Burg): void {
+  if (!burg.removed) drawLabels();
+}
+
+function removeBurgLabel(burgId: number): void {
+  const id = `burgLabel${burgId}`;
+  const label = scene.get(id);
+  if (label) unindexLabel(label);
+  scene.remove(id);
+  removeMaterialized(id, document);
+}
+
 window.drawLabels = drawLabels;
+window.drawStateLabels = drawLabels;
+window.drawBurgLabels = drawLabels;
+window.drawBurgLabel = drawBurgLabel;
+window.removeBurgLabel = removeBurgLabel;
