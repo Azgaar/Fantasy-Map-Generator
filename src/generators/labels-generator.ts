@@ -37,7 +37,7 @@ declare global {
   var Labels: LabelsModule;
 }
 
-class LabelsModule {
+export class LabelsModule {
   getDefaultGroups(): LabelGroup[] {
     // order matters for z-indexing
     return [
@@ -159,6 +159,16 @@ class LabelsModule {
     const entity = this.getEntity(label.type, label.entityId);
     if (!entity) return;
     entity.label = { ...entity.label, group: label.group };
+  }
+
+  hasOverride(type: LabelType, id: number): boolean {
+    const label = type !== "added" && this.getEntity(type, id)?.label;
+    return Boolean(label);
+  }
+
+  resetOverride(type: LabelType, id: number): void {
+    const entity = this.getEntity(type, id);
+    if (entity) delete entity.label;
   }
 }
 

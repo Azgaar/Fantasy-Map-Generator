@@ -187,6 +187,7 @@ function addLines(): void {
 function createLine(label: LabelData): string {
   const { id, type, group, hidden } = label;
   const text = label.text.replaceAll("|", "");
+  const hasOverride = Labels.hasOverride(type, label.entityId);
 
   return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}" style="${hidden ? "opacity: 0.5" : ""}">
       <input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}">
@@ -196,7 +197,8 @@ function createLine(label: LabelData): string {
         ${createGroupOptions(group)}
       </select>
       <button type="button" data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility" style="border:0; background:none"></button>
-      <span data-tip="Locate the label" class="icon-target pointer"></span>
+      <button type="button" data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset" disabled="${hasOverride}" style="border:0; background:none"></button>
+      <button type="button" data-tip="Locate the label" class="icon-target" style="border:0; background:none"></button>
     </div>`;
 }
 
@@ -217,6 +219,7 @@ function onBodyClick(event: Event): void {
   const element = event.target as HTMLElement;
   const id = element.parentElement?.dataset.id;
   if (element.classList.contains("labelsVisibility")) toggleLabelVisibility(element);
+  else if (element.classList.contains("labelsReset")) resetLabel(element);
   else if (element.classList.contains("icon-target")) highlightLabel(element, id);
 }
 
@@ -253,6 +256,15 @@ function toggleLabelVisibility(element: HTMLElement): void {
   if (entity.label?.hidden) delete entity.label.hidden;
   else entity.label = { ...entity.label, hidden: true };
 
+  drawLabels();
+  addLines();
+}
+
+function resetLabel(element: HTMLElement): void {
+  const label = getLineLabel(element);
+  if (!label) return;
+
+  Labels.resetOverride(label.type, label.entityId);
   drawLabels();
   addLines();
 }

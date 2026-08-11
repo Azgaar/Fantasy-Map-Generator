@@ -187,7 +187,8 @@ function updateControls(): void {
   const topButtonsVisible = !ensureEl("labelEditor").classList.contains("section-open");
   ensureEl("labelOffsetShow").style.display = topButtonsVisible && hasPath ? "inline-block" : "none";
   ensureEl("labelRemoveSingle").style.display = topButtonsVisible && label.type === "added" ? "inline-block" : "none";
-  ensureEl("labelReset").style.display = topButtonsVisible && hasOverrides() ? "inline-block" : "none";
+  ensureEl("labelReset").style.display =
+    topButtonsVisible && Labels.hasOverride(label.type, label.entityId) ? "inline-block" : "none";
 
   const pathToggle = ensureEl("labelPathToggle");
   pathToggle.className = hasPath ? "icon-resize-horizontal" : "icon-bezier-curve";
@@ -549,24 +550,10 @@ function makeLabelDraggable(id: string): void {
     .classed("draggable", true);
 }
 
-function hasOverrides(): boolean {
-  const storedLabel = Labels.getEntity(label.type, label.entityId)?.label;
-  if (!storedLabel) return false;
-  // an added label always stores its text, so only the presentation fields count as overrides
-  if (label.type !== "added") return true;
-  const { dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden } = storedLabel;
-  return [dx, dy, startOffset, fontSize, letterSpacing, pathPoints, hidden].some(value => value !== undefined);
-}
-
 function resetSelectedLabel(): void {
-  const { type, entityId, text, group } = label;
-  const entity = Labels.getEntity(type, entityId);
-  if (!entity) return;
+  const { type, entityId } = label;
+  Labels.resetOverride(type, entityId);
 
-  if (type === "added") entity.label = { text, group };
-  else delete entity.label;
-
-  // unlike an edit, a reset drops data the label is derived from, so it has to be rebuilt from the entity
   drawLabels();
   label = { ...(getSceneLabel(type, entityId) ?? label) };
   makeLabelDraggable(label.id);
