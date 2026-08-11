@@ -18,8 +18,6 @@ export interface LabelSpreadResult {
   displayedLabels: number;
   initialOverlaps: number;
   remainingOverlaps: number;
-  initialPathBurgOverlaps: number;
-  remainingPathBurgOverlaps: number;
 }
 
 interface Measurement {
@@ -64,14 +62,14 @@ interface LabelPlacementSolution {
   selected: Map<string, LabelPlacementCandidate>;
   initialOverlaps: number;
   remainingOverlaps: number;
-  initialPathBurgOverlaps: number;
-  remainingPathBurgOverlaps: number;
 }
 
-interface Cost {
-  overlap: number;
-  outside: number;
-  preference: number;
+/** Everything the solver mutates or reads while searching for a placement */
+interface SolverState {
+  items: LabelPlacementItem[];
+  selected: Uint16Array; // candidate index picked per item
+  staticCosts: Float64Array[]; // per candidate cost that never depends on the other items
+  interactions: number[][]; // items that can collide with this one under some candidate
 }
 
 interface PathGeometry {
@@ -88,27 +86,46 @@ interface BurgLabelCandidateOptions {
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+// candidate generation
 const DIRECTIONS = Array.from({ length: 12 }, (_, index) => (index * Math.PI * 2) / 12);
-const DEFAULT_PLACEMENT_CHANGE_PENALTY = 1_000;
+const POINT_STEP_MULTIPLIERS = [0.4, 0.8, 1.2, 1.8, 2.5, 3.5]; // in label heights
+const POINT_PLACEMENT_CHANGE_PENALTY = 60;
+const POINT_DISPLACEMENT_WEIGHT = 140;
 const BASE_BURG_SCREEN_HEIGHT = 12.5;
 const BASE_BURG_PLACEMENT_CHANGE_PENALTY = 120;
+const BURG_ICON_GAP_SCREEN = 2;
 const MINIMUM_START_OFFSET = 20;
 const MAXIMUM_START_OFFSET = 80;
 const PREFERRED_MINIMUM_START_OFFSET = 30;
 const PREFERRED_MAXIMUM_START_OFFSET = 70;
 const START_OFFSET_STEP = 5;
+const PATH_PLACEMENT_CHANGE_PENALTY = 40;
 const DIRECTION_SAMPLES = 16;
+const MINIMUM_POINT_STEP_SCREEN = 3;
+
+// collision model. Overlap is measured as the covered fraction of the smaller glyph run,
+// ramped in so that grazing contact stays free while a real clash always has a gradient to follow
 const LABEL_PADDING_SCREEN = 2;
 const BURG_LABEL_PADDING_SCREEN = 4;
-const MINIMUM_PENETRATION_RATIO = 0.15;
-const MINIMUM_OVERLAP_RATIO = 0.4;
-const MINIMUM_BURG_LABEL_OVERLAP_RATIO = 0.15;
-const MINIMUM_BURG_PATH_OVERLAP_RATIO = 0.5;
-const MINIMUM_OBSTACLE_OVERLAP_RATIO = 0.1;
-const OVERLAP_WEIGHT = 1_000;
+const IGNORED_OVERLAP_RATIO = 0.04;
+const FULL_OVERLAP_RATIO = 0.2;
+const OVERLAP_WEIGHT = 1_000; // cost of one fully covered glyph run
 const OUTSIDE_WEIGHT = 1e9;
-const PATH_LABEL_OVERLAP_FACTOR = 0.05;
-const BURG_CONFLICT_FACTOR = 10;
+const INVALID_PLACEMENT_PENALTY = 5 * OVERLAP_WEIGHT;
+const BURG_CONFLICT_WEIGHT = 2;
+const OBSTACLE_CONFLICT_WEIGHT = 6; // hiding an icon costs the reader the settlement itself, not just its name
+const PATH_CONFLICT_WEIGHT = 0.4;
+
+// solver
+const MINIMUM_SCALE = 0.25;
+const REFINE_PASSES = 8;
+const ANNEAL_ITERATIONS_PER_ITEM = 400;
+const MINIMUM_ANNEAL_ITERATIONS = 2_000;
+const MAXIMUM_ANNEAL_ITERATIONS = 20_000;
+const START_TEMPERATURE = OVERLAP_WEIGHT * 0.4;
+const END_TEMPERATURE = OVERLAP_WEIGHT * 0.01;
+const CONFLICTED_ITEM_BIAS = 0.75;
 
 export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
   const visibleLabels = getVisibleLabels();
@@ -125,14 +142,11 @@ export async function calculateLabelSpread(): Promise<LabelSpreadResult> {
     await nextFrame();
     const ids = items.map(item => item.id).sort();
     const solution = optimizeLabelPlacements(items, mapBounds(), `${seed}|${ids.join("|")}`);
-    const patches = getPatches(visibleLabels, solution.selected);
     return {
-      patches,
+      patches: getPatches(visibleLabels, solution.selected),
       displayedLabels: visibleLabels.length,
       initialOverlaps: solution.initialOverlaps,
-      remainingOverlaps: solution.remainingOverlaps,
-      initialPathBurgOverlaps: solution.initialPathBurgOverlaps,
-      remainingPathBurgOverlaps: solution.remainingPathBurgOverlaps
+      remainingOverlaps: solution.remainingOverlaps
     };
   } finally {
     sandbox.destroy();
@@ -167,12 +181,18 @@ function buildBurgCandidates(
   return getBurgLabelCandidates({
     current,
     iconBounds: iconBounds ?? pointBounds(label.anchor),
-    gap: 2 / Math.max(scale, 1),
+    gap: toMapUnits(BURG_ICON_GAP_SCREEN),
     changePenalty: getBurgChangePenalty(current.bounds),
     displacementScale: scale
   });
 }
 
+/**
+ * The six placements a Burg name can hold without hiding its icon: centred above or below with a
+ * fixed gap, or tucked into one of the four diagonals, which clear the icon sideways instead.
+ * Distances are measured from the text ink rather than its box, so the gap reads the same whatever
+ * ascenders and descenders the name happens to have.
+ */
 function getBurgLabelCandidates({
   current,
   iconBounds,
@@ -182,26 +202,25 @@ function getBurgLabelCandidates({
 }: BurgLabelCandidateOptions): LabelPlacementCandidate[] {
   const currentDx = current.placement.dx || 0;
   const currentDy = current.placement.dy || 0;
-  const labelCenterX = (current.bounds.x1 + current.bounds.x2) / 2;
-  const iconCenterX = (iconBounds.x1 + iconBounds.x2) / 2;
-  const top = iconBounds.y1 - gap - current.bounds.y2;
-  const bottom = iconBounds.y2 + gap - current.bounds.y1;
+  const ink = getInkEnvelope(current);
+  const centered = (iconBounds.x1 + iconBounds.x2) / 2 - (ink.x1 + ink.x2) / 2;
+  const iconCenterY = (iconBounds.y1 + iconBounds.y2) / 2;
+  const above = iconBounds.y1 - gap - ink.y2;
+  const below = iconBounds.y2 + gap - ink.y1;
+  const left = iconBounds.x1 - gap - ink.x2;
+  const right = iconBounds.x2 + gap - ink.x1;
   const shifts = [
-    [iconCenterX - current.bounds.x2, top],
-    [iconCenterX - labelCenterX, top],
-    [iconCenterX - current.bounds.x1, top],
-    [iconCenterX - current.bounds.x2, bottom],
-    [iconCenterX - labelCenterX, bottom],
-    [iconCenterX - current.bounds.x1, bottom]
+    [centered, above], // top
+    [centered, below], // bottom
+    [left, iconCenterY - ink.y2], // top-left
+    [right, iconCenterY - ink.y2], // top-right
+    [left, iconCenterY - ink.y1], // bottom-left
+    [right, iconCenterY - ink.y1] // bottom-right
   ];
   const candidates = shifts
     .map(([deltaX, deltaY]) => ({
+      ...translateCandidate(current, deltaX, deltaY),
       placement: { dx: round(currentDx + deltaX), dy: round(currentDy + deltaY) },
-      bounds: translateBounds(current.bounds, deltaX, deltaY),
-      collisionBounds: translateBounds(current.collisionBounds, deltaX, deltaY),
-      collisionShapes: translateBoundsList(current.collisionShapes, deltaX, deltaY),
-      burgCollisionShapes: translateBoundsList(current.burgCollisionShapes, deltaX, deltaY),
-      inkBounds: translateBoundsList(current.inkBounds, deltaX, deltaY),
       preference: changePenalty + Math.hypot(deltaX, deltaY) * displacementScale
     }))
     .sort((first, second) => first.preference - second.preference)
@@ -216,67 +235,62 @@ function getBurgChangePenalty(bounds: LabelBounds): number {
   return BASE_BURG_PLACEMENT_CHANGE_PENALTY * (screenHeight / BASE_BURG_SCREEN_HEIGHT) ** 2;
 }
 
+// Point labels move in rings around the current spot. Both the ring radius and its cost are
+// expressed in label heights, so a tiny Burg name and a huge State name behave the same way
 function buildPointCandidates(label: LabelData, current: LabelPlacementCandidate): LabelPlacementCandidate[] {
   const currentDx = label.dx || 0;
   const currentDy = label.dy || 0;
-  const width = current.bounds.x2 - current.bounds.x1;
-  const height = current.bounds.y2 - current.bounds.y1;
-  const step = Math.max(Math.min(Math.max(width, height) * 0.55, 24), 3 / Math.max(scale, 1));
+  const step = Math.max(current.bounds.y2 - current.bounds.y1, toMapUnits(MINIMUM_POINT_STEP_SCREEN));
+  const map = mapBounds();
   const candidates = [current];
 
-  for (const multiplier of [0.5, 1, 1.5, 2, 3, 4]) {
+  for (const multiplier of POINT_STEP_MULTIPLIERS) {
     const radius = step * multiplier;
+    const preference = POINT_PLACEMENT_CHANGE_PENALTY + multiplier ** 2 * POINT_DISPLACEMENT_WEIGHT;
     for (const angle of DIRECTIONS) {
-      const dx = currentDx + Math.cos(angle) * radius;
-      const dy = currentDy + Math.sin(angle) * radius;
-      const deltaX = dx - currentDx;
-      const deltaY = dy - currentDy;
-      const bounds = translateBounds(current.bounds, deltaX, deltaY);
-      if (getOutsideArea(bounds) > 0) continue;
+      const deltaX = Math.cos(angle) * radius;
+      const deltaY = Math.sin(angle) * radius;
+      const translated = translateCandidate(current, deltaX, deltaY);
+      if (getOutsideArea(translated.bounds, map) > 0) continue;
       candidates.push({
-        placement: { dx: round(dx), dy: round(dy) },
-        bounds,
-        collisionBounds: translateBounds(current.collisionBounds, deltaX, deltaY),
-        collisionShapes: translateBoundsList(current.collisionShapes, deltaX, deltaY),
-        burgCollisionShapes: translateBoundsList(current.burgCollisionShapes, deltaX, deltaY),
-        inkBounds: translateBoundsList(current.inkBounds, deltaX, deltaY),
-        preference: DEFAULT_PLACEMENT_CHANGE_PENALTY + deltaX ** 2 + deltaY ** 2
+        ...translated,
+        placement: { dx: round(currentDx + deltaX), dy: round(currentDy + deltaY) },
+        preference
       });
     }
   }
   return candidates;
 }
 
+// Path labels can only slide along their own path, so every offset has to be measured separately
 function buildPathCandidates(
   label: LabelData,
   currentMeasurement: Measurement,
   current: LabelPlacementCandidate,
   sandbox: LabelMeasurementSandbox
 ): LabelPlacementCandidate[] {
-  const pathPoints = label.pathPoints!;
   const currentOffset = round(label.startOffset ?? 50);
-  const offsets = getPathStartOffsetCandidates(currentOffset);
-  const candidates: LabelPlacementCandidate[] = [];
-
-  for (const startOffset of offsets) {
-    const isCurrent = startOffset === currentOffset;
-    const measurement = isCurrent ? currentMeasurement : sandbox.measure({ ...label, pathPoints, startOffset });
-    if (!measurement.upright || !fitsPath(measurement, startOffset) || getOutsideArea(measurement.bounds) > 0) continue;
-    const preference = getPathStartOffsetPreference(startOffset);
-    if (isCurrent) {
-      candidates.push({ ...current, preference });
-      continue;
+  const isCurrentValid = currentMeasurement.upright && fitsPath(currentMeasurement, currentOffset);
+  const candidates: LabelPlacementCandidate[] = [
+    {
+      ...current,
+      preference: getPathStartOffsetPreference(currentOffset) + (isCurrentValid ? 0 : INVALID_PLACEMENT_PENALTY)
     }
+  ];
+
+  const offsets = getPathStartOffsetCandidates(currentOffset).filter(offset => offset !== currentOffset);
+  for (const [startOffset, measurement] of sandbox.measurePathOffsets(label, offsets)) {
+    if (getOutsideArea(measurement.bounds) > 0) continue;
     candidates.push({
       placement: { startOffset: round(startOffset) },
       bounds: measurement.bounds,
       collisionBounds: getCollisionEnvelope(measurement.inkBounds),
-      collisionShapes: measurement.inkBounds.map(padBounds),
+      collisionShapes: measurement.inkBounds.map(bounds => padBounds(bounds)),
       inkBounds: measurement.inkBounds,
-      preference
+      preference: PATH_PLACEMENT_CHANGE_PENALTY + getPathStartOffsetPreference(startOffset)
     });
   }
-  return candidates.length ? candidates : [current];
+  return candidates;
 }
 
 function getPathStartOffsetCandidates(currentOffset: number): number[] {
@@ -347,11 +361,29 @@ function getDisplayedBurgIconBounds(): Map<number, LabelBounds> {
     const id = Number(icon.dataset.id);
     const rect = icon.getBoundingClientRect();
     if (!Number.isInteger(id) || !intersectsScreenRect(rect, mapRect)) continue;
+
+    const burg = pack.burgs[id];
+    if (burg?.i !== id || burg.removed) continue;
     const bounds = screenRectToMapBounds(rect, inverse);
+    if (!isDrawnOn(bounds, burg.x, burg.y)) continue;
+
     const existing = boundsByBurg.get(id);
     boundsByBurg.set(id, existing ? unionBounds(existing, bounds) : bounds);
   }
   return boundsByBurg;
+}
+
+/**
+ * The icons layer can lag behind the world state, and then a `data-id` still resolves to an icon
+ * left over from an earlier map. Anchoring a name to one of those throws it clear across the map,
+ * so an icon only counts as a Burg's own when it is actually drawn on that Burg. The tolerance
+ * leaves room for symbols whose artwork hangs off the point they are placed at.
+ */
+function isDrawnOn(bounds: LabelBounds, x: number, y: number): boolean {
+  const tolerance = Math.max(bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
+  return (
+    x >= bounds.x1 - tolerance && x <= bounds.x2 + tolerance && y >= bounds.y1 - tolerance && y <= bounds.y2 + tolerance
+  );
 }
 
 function getBurgIconObstacles(boundsByBurg: Map<number, LabelBounds>): LabelPlacementItem[] {
@@ -424,6 +456,7 @@ function toCandidate(label: LabelData, measurement: Measurement, preference: num
 
 class LabelMeasurementSandbox {
   private readonly root: SVGSVGElement;
+  private readonly rootRect: DOMRect;
   private readonly groups = new Map<string, SVGGElement>();
   private counter = 0;
 
@@ -442,49 +475,67 @@ class LabelMeasurementSandbox {
 
     for (const groupName of new Set(labels.map(label => label.group)))
       this.groups.set(groupName, this.createGroup(groupName));
+    this.rootRect = this.root.getBoundingClientRect(); // fixed position and size, so it never moves
   }
 
   measure(label: LabelData): Measurement {
-    const group = this.groups.get(label.group);
-    if (!group) throw new Error(`Cannot measure missing Label Group: ${label.group}`);
-    const measuredLabel = { ...label, id: `labelSpreadMeasurement${this.counter++}` };
-    const { text, path } = createLabelElements(measuredLabel, document);
-    if (path) group.appendChild(path);
-    group.appendChild(text);
-    const rootRect = this.root.getBoundingClientRect();
-    const textRect = text.getBoundingClientRect();
+    const { text, path } = this.attach(label);
     const textPath = text.querySelector<SVGTextPathElement>("textPath");
-    const inkBounds = getTextInkBounds(text, rootRect);
     const textLength = textPath?.getComputedTextLength() ?? text.getComputedTextLength();
     const pathLength = path?.getTotalLength() ?? 0;
-    const measurement = {
-      bounds: {
-        x1: textRect.left - rootRect.left,
-        y1: textRect.top - rootRect.top,
-        x2: textRect.right - rootRect.left,
-        y2: textRect.bottom - rootRect.top
-      },
-      inkBounds: inkBounds.length
-        ? inkBounds
-        : [
-            {
-              x1: textRect.left - rootRect.left,
-              y1: textRect.top - rootRect.top,
-              x2: textRect.right - rootRect.left,
-              y2: textRect.bottom - rootRect.top
-            }
-          ],
-      textLength,
-      pathLength,
-      upright: path ? isPathTextUpright(path, textLength, label.startOffset ?? 50) : true
-    };
+    const upright = path ? isPathTextUpright(path, textLength, label.startOffset ?? 50) : true;
+    const measurement = this.read(text, textLength, pathLength, upright);
     text.remove();
     path?.remove();
     return measurement;
   }
 
+  /** Measures one path label at several offsets, reusing the same elements to avoid re-laying out the path */
+  measurePathOffsets(label: LabelData, startOffsets: number[]): Map<number, Measurement> {
+    const measurements = new Map<number, Measurement>();
+    if (!label.pathPoints?.length || !startOffsets.length) return measurements;
+
+    const { text, path } = this.attach(label);
+    const textPath = text.querySelector<SVGTextPathElement>("textPath");
+    if (path && textPath) {
+      const pathLength = path.getTotalLength();
+      const textLength = textPath.getComputedTextLength();
+      for (const startOffset of startOffsets) {
+        // reject cheaply before paying for the per-character ink measurement
+        if (!fitsLength(pathLength, textLength, startOffset)) continue;
+        if (!isPathTextUpright(path, textLength, startOffset)) continue;
+        textPath.setAttribute("startOffset", `${startOffset}%`);
+        measurements.set(startOffset, this.read(text, textLength, pathLength, true));
+      }
+    }
+    text.remove();
+    path?.remove();
+    return measurements;
+  }
+
   destroy(): void {
     this.root.remove();
+  }
+
+  private attach(label: LabelData) {
+    const group = this.groups.get(label.group);
+    if (!group) throw new Error(`Cannot measure missing Label Group: ${label.group}`);
+    const elements = createLabelElements({ ...label, id: `labelSpreadMeasurement${this.counter++}` }, document);
+    if (elements.path) group.appendChild(elements.path);
+    group.appendChild(elements.text);
+    return elements;
+  }
+
+  private read(text: SVGTextElement, textLength: number, pathLength: number, upright: boolean): Measurement {
+    const textRect = text.getBoundingClientRect();
+    const bounds = {
+      x1: textRect.left - this.rootRect.left,
+      y1: textRect.top - this.rootRect.top,
+      x2: textRect.right - this.rootRect.left,
+      y2: textRect.bottom - this.rootRect.top
+    };
+    const inkBounds = getTextInkBounds(text, this.rootRect);
+    return { bounds, inkBounds: inkBounds.length ? inkBounds : [bounds], textLength, pathLength, upright };
   }
 
   private createGroup(groupName: string): SVGGElement {
@@ -502,6 +553,11 @@ class LabelMeasurementSandbox {
     return group;
   }
 }
+
+// Glyph runs approximate the text ink far better than one box, so the solver can slot a label
+// into the gap between two words instead of treating the whole line as solid
+const INK_RUN_LENGTH = 3;
+const INK_VERTICAL_TRIM = 0.12;
 
 function getTextInkBounds(text: SVGTextElement, rootRect: DOMRect): LabelBounds[] {
   const matrix = text.getScreenCTM();
@@ -523,7 +579,7 @@ function getTextInkBounds(text: SVGTextElement, rootRect: DOMRect): LabelBounds[
 
     try {
       const extent = text.getExtentOfChar(index);
-      const verticalTrim = extent.height * 0.12;
+      const verticalTrim = extent.height * INK_VERTICAL_TRIM;
       const bounds = transformRectToRootBounds(
         extent.x,
         extent.y + verticalTrim,
@@ -534,7 +590,7 @@ function getTextInkBounds(text: SVGTextElement, rootRect: DOMRect): LabelBounds[
       );
       run = run ? unionBounds(run, bounds) : bounds;
       runLength++;
-      if (runLength < 3) continue;
+      if (runLength < INK_RUN_LENGTH) continue;
       shapes.push(run);
       run = undefined;
       runLength = 0;
@@ -554,22 +610,33 @@ function transformRectToRootBounds(
   matrix: DOMMatrix,
   rootRect: DOMRect
 ): LabelBounds {
-  const points = [
-    new DOMPoint(x, y),
-    new DOMPoint(x + width, y),
-    new DOMPoint(x, y + height),
-    new DOMPoint(x + width, y + height)
-  ].map(point => point.matrixTransform(matrix));
-  return {
-    x1: Math.min(...points.map(point => point.x)) - rootRect.left,
-    y1: Math.min(...points.map(point => point.y)) - rootRect.top,
-    x2: Math.max(...points.map(point => point.x)) - rootRect.left,
-    y2: Math.max(...points.map(point => point.y)) - rootRect.top
-  };
+  let x1 = Number.POSITIVE_INFINITY;
+  let y1 = Number.POSITIVE_INFINITY;
+  let x2 = Number.NEGATIVE_INFINITY;
+  let y2 = Number.NEGATIVE_INFINITY;
+  for (const [cornerX, cornerY] of [
+    [x, y],
+    [x + width, y],
+    [x, y + height],
+    [x + width, y + height]
+  ]) {
+    const pointX = matrix.a * cornerX + matrix.c * cornerY + matrix.e;
+    const pointY = matrix.b * cornerX + matrix.d * cornerY + matrix.f;
+    if (pointX < x1) x1 = pointX;
+    if (pointX > x2) x2 = pointX;
+    if (pointY < y1) y1 = pointY;
+    if (pointY > y2) y2 = pointY;
+  }
+  return { x1: x1 - rootRect.left, y1: y1 - rootRect.top, x2: x2 - rootRect.left, y2: y2 - rootRect.top };
+}
+
+/** Screen-space distances stay constant on screen, so convert them with the current zoom */
+function toMapUnits(screenValue: number): number {
+  return screenValue / Math.max(scale, MINIMUM_SCALE);
 }
 
 function padBounds(bounds: LabelBounds, screenPadding = LABEL_PADDING_SCREEN): LabelBounds {
-  const padding = screenPadding / Math.max(scale, 1);
+  const padding = toMapUnits(screenPadding);
   return { x1: bounds.x1 - padding, y1: bounds.y1 - padding, x2: bounds.x2 + padding, y2: bounds.y2 + padding };
 }
 
@@ -581,8 +648,23 @@ function translateBoundsList(bounds: LabelBounds[] | undefined, dx: number, dy: 
   return bounds?.map(bound => translateBounds(bound, dx, dy));
 }
 
+function translateCandidate(candidate: LabelPlacementCandidate, dx: number, dy: number) {
+  return {
+    bounds: translateBounds(candidate.bounds, dx, dy),
+    collisionBounds: translateBounds(candidate.collisionBounds, dx, dy),
+    collisionShapes: translateBoundsList(candidate.collisionShapes, dx, dy),
+    burgCollisionShapes: translateBoundsList(candidate.burgCollisionShapes, dx, dy),
+    inkBounds: translateBoundsList(candidate.inkBounds, dx, dy)
+  };
+}
+
 function getCollisionEnvelope(inkBounds: LabelBounds[]): LabelBounds {
-  return inkBounds.map(padBounds).reduce(unionBounds);
+  return inkBounds.map(bounds => padBounds(bounds)).reduce(unionBounds);
+}
+
+/** What the reader actually sees, falling back to the text box when the ink was not measured */
+function getInkEnvelope(candidate: LabelPlacementCandidate): LabelBounds {
+  return candidate.inkBounds?.length ? candidate.inkBounds.reduce(unionBounds) : candidate.bounds;
 }
 
 function getOutsideArea(bounds: LabelBounds, map = mapBounds()): number {
@@ -598,9 +680,13 @@ function mapBounds(): LabelBounds {
 }
 
 function fitsPath(measurement: Measurement, startOffset: number): boolean {
-  if (!measurement.pathLength || !measurement.textLength) return false;
-  const center = (measurement.pathLength * startOffset) / 100;
-  return measurement.textLength / 2 <= Math.min(center, measurement.pathLength - center);
+  return fitsLength(measurement.pathLength, measurement.textLength, startOffset);
+}
+
+function fitsLength(pathLength: number, textLength: number, startOffset: number): boolean {
+  if (!pathLength || !textLength) return false;
+  const center = (pathLength * startOffset) / 100;
+  return textLength / 2 <= Math.min(center, pathLength - center);
 }
 
 function optimizeLabelPlacements(
@@ -609,154 +695,200 @@ function optimizeLabelPlacements(
   randomSeed: string
 ): LabelPlacementSolution {
   const validItems = items.filter(item => item.candidates.length);
-  const selectedIndexes = new Uint16Array(validItems.length);
-  const initialPairs = getOverlapPairs(validItems, selectedIndexes);
-  const components = getCollisionComponents(validItems.length, initialPairs);
-  const interactions = getPotentialInteractions(validItems);
-  const random = Alea(randomSeed);
+  const state: SolverState = {
+    items: validItems,
+    selected: new Uint16Array(validItems.length),
+    staticCosts: validItems.map(item =>
+      Float64Array.from(
+        item.candidates,
+        candidate => getOutsideArea(candidate.bounds, bounds) * OUTSIDE_WEIGHT + candidate.preference
+      )
+    ),
+    interactions: getPotentialInteractions(validItems)
+  };
 
-  for (const component of components) {
-    greedyPlace(component, validItems, selectedIndexes, bounds, interactions);
-    anneal(component, validItems, selectedIndexes, bounds, interactions, random);
+  const initialPairs = getOverlapPairs(state);
+  const random = Alea(randomSeed);
+  for (const component of getConflictComponents(state, initialPairs)) {
+    refine(state, component);
+    anneal(state, component, random);
+    refine(state, component); // the annealer leaves the best state it saw, not a locally optimal one
   }
 
   const selected = new Map<string, LabelPlacementCandidate>();
-  validItems.forEach((item, index) => {
-    selected.set(item.id, item.candidates[selectedIndexes[index]]);
-  });
-  const remainingPairs = getOverlapPairs(validItems, selectedIndexes);
+  validItems.forEach((item, index) => void selected.set(item.id, item.candidates[state.selected[index]]));
   return {
     selected,
     initialOverlaps: initialPairs.length,
-    remainingOverlaps: remainingPairs.length,
-    initialPathBurgOverlaps: countPathBurgOverlaps(validItems, initialPairs),
-    remainingPathBurgOverlaps: countPathBurgOverlaps(validItems, remainingPairs)
+    remainingOverlaps: getOverlapPairs(state).length
   };
 }
 
-function countPathBurgOverlaps(items: LabelPlacementItem[], pairs: [number, number][]): number {
-  return pairs.filter(([firstIndex, secondIndex]) => {
-    const first = items[firstIndex];
-    const second = items[secondIndex];
-    return (
-      (first.kind === "path" && (second.kind === "burg" || second.obstacle)) ||
-      (second.kind === "path" && (first.kind === "burg" || first.obstacle))
-    );
-  }).length;
+/**
+ * Labels that already collide seed a component, which then grows through every label they could
+ * possibly reach. Direct neighbours join too, so a label with no collision of its own can still
+ * step aside and let a chain of crowded labels unwind.
+ */
+function getConflictComponents(state: SolverState, pairs: [number, number][]): number[][] {
+  const itemCount = state.items.length;
+  const seeds = new Uint8Array(itemCount);
+  for (const [first, second] of pairs) {
+    seeds[first] = 1;
+    seeds[second] = 1;
+  }
+
+  const visited = new Uint8Array(itemCount);
+  const components: number[][] = [];
+  for (let index = 0; index < itemCount; index++) {
+    if (!seeds[index] || visited[index]) continue;
+    const component: number[] = [];
+    const queue = [index];
+    visited[index] = 1;
+    while (queue.length) {
+      const current = queue.pop()!;
+      component.push(current);
+      if (!seeds[current]) continue; // neighbours join the component but do not drag in their own neighbours
+      for (const linked of state.interactions[current]) {
+        if (visited[linked]) continue;
+        visited[linked] = 1;
+        queue.push(linked);
+      }
+    }
+    components.push(sortByMobility(component, state.items));
+  }
+  return components;
 }
 
-function greedyPlace(
-  component: number[],
-  items: LabelPlacementItem[],
-  selectedIndexes: Uint16Array,
-  bounds: LabelBounds,
-  interactions: number[][]
-): void {
-  const ordered = [...component].sort((first, second) => {
-    const preferenceDifference =
-      getMinimumMovementPreference(items[first]) - getMinimumMovementPreference(items[second]);
-    return preferenceDifference || items[first].id.localeCompare(items[second].id);
+/** Labels with the cheapest alternatives move first, so the crowded ones still find a free slot */
+function sortByMobility(component: number[], items: LabelPlacementItem[]): number[] {
+  return component.sort((first, second) => {
+    const difference = getMinimumMovementPreference(items[first]) - getMinimumMovementPreference(items[second]);
+    return difference || items[first].id.localeCompare(items[second].id);
   });
-  for (const itemIndex of ordered) {
-    const item = items[itemIndex];
-    let bestIndex = selectedIndexes[itemIndex];
-    let bestCost = getCandidateCost(itemIndex, bestIndex, items, selectedIndexes, bounds, interactions);
+}
 
-    for (let candidateIndex = 0; candidateIndex < item.candidates.length; candidateIndex++) {
-      const cost = getCandidateCost(itemIndex, candidateIndex, items, selectedIndexes, bounds, interactions);
-      if (!isBetter(cost, bestCost)) continue;
-      bestIndex = candidateIndex;
-      bestCost = cost;
+function getMinimumMovementPreference(item: LabelPlacementItem): number {
+  if (item.candidates.length < 2) return Number.POSITIVE_INFINITY;
+  return Math.min(...item.candidates.slice(1).map(candidate => candidate.preference));
+}
+
+/** Repeatedly gives every label its cheapest candidate until nobody wants to move any more */
+function refine(state: SolverState, component: number[]): void {
+  for (let pass = 0; pass < REFINE_PASSES; pass++) {
+    let changed = false;
+    for (const itemIndex of component) {
+      const candidates = state.items[itemIndex].candidates;
+      if (candidates.length < 2) continue;
+
+      let bestIndex = state.selected[itemIndex];
+      let bestCost = getCandidateCost(state, itemIndex, bestIndex);
+      for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+        if (candidateIndex === bestIndex) continue;
+        const cost = getCandidateCost(state, itemIndex, candidateIndex);
+        if (cost >= bestCost) continue;
+        bestIndex = candidateIndex;
+        bestCost = cost;
+      }
+      if (bestIndex === state.selected[itemIndex]) continue;
+      state.selected[itemIndex] = bestIndex;
+      changed = true;
     }
-    selectedIndexes[itemIndex] = bestIndex;
+    if (!changed) return;
   }
 }
 
-function anneal(
-  component: number[],
-  items: LabelPlacementItem[],
-  selectedIndexes: Uint16Array,
-  bounds: LabelBounds,
-  interactions: number[][],
-  random: () => number
-): void {
-  if (!component.some(index => items[index].candidates.length > 1)) return;
+function anneal(state: SolverState, component: number[], random: () => number): void {
+  const movable = component.filter(index => state.items[index].candidates.length > 1);
+  if (!movable.length) return;
 
-  const bestIndexes = selectedIndexes.slice();
-  let currentValue = toScalar(getStateCost(component, items, selectedIndexes, bounds, interactions));
-  let bestValue = currentValue;
-  const iterations = Math.min(Math.max(component.length * 500, 1500), 12000);
-  let temperature = Math.max(currentValue * 0.02, 10);
+  let conflicted = getConflictedItems(state, movable);
+  if (!conflicted.length) return; // refine already cleared this component
 
-  for (let iteration = 0; iteration < iterations; iteration++) {
-    const itemIndex = component[Math.floor(random() * component.length)];
-    const candidates = items[itemIndex].candidates;
-    if (candidates.length < 2) continue;
+  const iterations = clamp(
+    movable.length * ANNEAL_ITERATIONS_PER_ITEM,
+    MINIMUM_ANNEAL_ITERATIONS,
+    MAXIMUM_ANNEAL_ITERATIONS
+  );
+  const cooling = (END_TEMPERATURE / START_TEMPERATURE) ** (1 / iterations);
+  const bestSelection = Uint16Array.from(component, index => state.selected[index]);
+  let currentCost = getComponentCost(state, component);
+  let bestCost = currentCost;
+  let temperature = START_TEMPERATURE;
 
-    const previousIndex = selectedIndexes[itemIndex];
-    const nextIndex = Math.floor(random() * candidates.length);
+  for (let iteration = 0; iteration < iterations; iteration++, temperature *= cooling) {
+    if (iteration % movable.length === 0) conflicted = getConflictedItems(state, movable);
+    const pool = conflicted.length && random() < CONFLICTED_ITEM_BIAS ? conflicted : movable;
+    const itemIndex = pool[Math.floor(random() * pool.length)];
+    const previousIndex = state.selected[itemIndex];
+    const nextIndex = Math.floor(random() * state.items[itemIndex].candidates.length);
     if (nextIndex === previousIndex) continue;
 
-    const previousCost = getCandidateCost(itemIndex, previousIndex, items, selectedIndexes, bounds, interactions);
-    selectedIndexes[itemIndex] = nextIndex;
-    const nextCost = getCandidateCost(itemIndex, nextIndex, items, selectedIndexes, bounds, interactions);
-    const delta = toScalar(nextCost) - toScalar(previousCost);
-    if (delta <= 0 || random() < Math.exp(-delta / temperature)) {
-      currentValue += delta;
-      if (currentValue < bestValue) {
-        bestValue = currentValue;
-        bestIndexes.set(selectedIndexes);
-      }
-    } else selectedIndexes[itemIndex] = previousIndex;
+    const previousCost = getCandidateCost(state, itemIndex, previousIndex);
+    state.selected[itemIndex] = nextIndex;
+    const delta = getCandidateCost(state, itemIndex, nextIndex) - previousCost;
+    if (delta > 0 && random() >= Math.exp(-delta / temperature)) {
+      state.selected[itemIndex] = previousIndex;
+      continue;
+    }
 
-    temperature *= 0.996;
+    currentCost += delta;
+    if (currentCost >= bestCost) continue;
+    bestCost = currentCost;
+    component.forEach((index, position) => {
+      bestSelection[position] = state.selected[index];
+    });
   }
-
-  selectedIndexes.set(bestIndexes);
+  component.forEach((index, position) => {
+    state.selected[index] = bestSelection[position];
+  });
 }
 
-function getCandidateCost(
-  itemIndex: number,
-  candidateIndex: number,
-  items: LabelPlacementItem[],
-  selectedIndexes: Uint16Array,
-  bounds: LabelBounds,
-  interactions: number[][]
-): Cost {
-  const candidate = items[itemIndex].candidates[candidateIndex];
-  let overlap = 0;
-  for (const otherIndex of interactions[itemIndex]) {
-    const other = items[otherIndex].candidates[selectedIndexes[otherIndex]];
-    overlap += getPairOverlap(items[itemIndex], candidate, items[otherIndex], other);
-  }
-  return { overlap, outside: getOutsideArea(candidate.bounds, bounds), preference: candidate.preference };
+/** Proposals are worth far more when aimed at a label that is actually covered by something */
+function getConflictedItems(state: SolverState, movable: number[]): number[] {
+  return movable.filter(itemIndex => {
+    for (const otherIndex of state.interactions[itemIndex])
+      if (getSelectedPairOverlap(state, itemIndex, otherIndex) > 0) return true;
+    return false;
+  });
 }
 
-function getStateCost(
-  component: number[],
-  items: LabelPlacementItem[],
-  selectedIndexes: Uint16Array,
-  bounds: LabelBounds,
-  interactions: number[][]
-): Cost {
-  const componentSet = new Set(component);
-  let overlap = 0;
-  let outside = 0;
-  let preference = 0;
+function getCandidateCost(state: SolverState, itemIndex: number, candidateIndex: number): number {
+  const item = state.items[itemIndex];
+  const candidate = item.candidates[candidateIndex];
+  let cost = state.staticCosts[itemIndex][candidateIndex];
+  for (const otherIndex of state.interactions[itemIndex]) {
+    const other = state.items[otherIndex];
+    cost += getPairOverlap(item, candidate, other, other.candidates[state.selected[otherIndex]]) * OVERLAP_WEIGHT;
+  }
+  return cost;
+}
 
+/** Total cost of the component, counting every interacting pair exactly once */
+function getComponentCost(state: SolverState, component: number[]): number {
+  const inside = new Set(component);
+  let cost = 0;
   for (const itemIndex of component) {
-    const candidate = items[itemIndex].candidates[selectedIndexes[itemIndex]];
-    outside += getOutsideArea(candidate.bounds, bounds);
-    preference += candidate.preference;
-    for (const otherIndex of interactions[itemIndex]) {
-      if (componentSet.has(otherIndex) && otherIndex < itemIndex) continue;
-      const other = items[otherIndex].candidates[selectedIndexes[otherIndex]];
-      overlap += getPairOverlap(items[itemIndex], candidate, items[otherIndex], other);
+    cost += state.staticCosts[itemIndex][state.selected[itemIndex]];
+    for (const otherIndex of state.interactions[itemIndex]) {
+      if (inside.has(otherIndex) && otherIndex < itemIndex) continue;
+      cost += getSelectedPairOverlap(state, itemIndex, otherIndex) * OVERLAP_WEIGHT;
     }
   }
-  return { overlap, outside, preference };
+  return cost;
 }
 
+function getSelectedPairOverlap(state: SolverState, firstIndex: number, secondIndex: number): number {
+  const first = state.items[firstIndex];
+  const second = state.items[secondIndex];
+  return getPairOverlap(
+    first,
+    first.candidates[state.selected[firstIndex]],
+    second,
+    second.candidates[state.selected[secondIndex]]
+  );
+}
+
+/** Items that can never touch, whatever candidate they pick, are dropped from the cost loop for good */
 function getPotentialInteractions(items: LabelPlacementItem[]): number[][] {
   const interactions = Array.from({ length: items.length }, () => [] as number[]);
   const ordered = items
@@ -779,9 +911,9 @@ function getPotentialInteractions(items: LabelPlacementItem[]): number[][] {
   return interactions;
 }
 
-function getOverlapPairs(items: LabelPlacementItem[], selectedIndexes: Uint16Array): [number, number][] {
-  const ordered = items
-    .map((item, index) => ({ index, bounds: item.candidates[selectedIndexes[index]].collisionBounds }))
+function getOverlapPairs(state: SolverState): [number, number][] {
+  const ordered = state.items
+    .map((item, index) => ({ index, bounds: item.candidates[state.selected[index]].collisionBounds }))
     .sort((first, second) => first.bounds.x1 - second.bounds.x1);
   const pairs: [number, number][] = [];
 
@@ -790,20 +922,10 @@ function getOverlapPairs(items: LabelPlacementItem[], selectedIndexes: Uint16Arr
     for (let right = left + 1; right < ordered.length; right++) {
       const second = ordered[right];
       if (second.bounds.x1 >= first.bounds.x2) break;
-      const firstItem = items[first.index];
-      const secondItem = items[second.index];
-      const firstCandidate = firstItem.candidates[selectedIndexes[first.index]];
-      const secondCandidate = secondItem.candidates[selectedIndexes[second.index]];
-      if (getPairOverlap(firstItem, firstCandidate, secondItem, secondCandidate) > 0)
-        pairs.push([first.index, second.index]);
+      if (getSelectedPairOverlap(state, first.index, second.index) > 0) pairs.push([first.index, second.index]);
     }
   }
   return pairs;
-}
-
-function getMinimumMovementPreference(item: LabelPlacementItem): number {
-  if (item.candidates.length < 2) return Number.POSITIVE_INFINITY;
-  return Math.min(...item.candidates.slice(1).map(candidate => candidate.preference));
 }
 
 function getPairOverlap(
@@ -813,98 +935,61 @@ function getPairOverlap(
   second: LabelPlacementCandidate
 ): number {
   if (firstItem.obstacle && secondItem.obstacle) return 0;
-  if (firstItem.obstacle)
-    return (
-      getShapesOverlap([first.bounds], second.inkBounds ?? [second.bounds], MINIMUM_OBSTACLE_OVERLAP_RATIO) *
-      BURG_CONFLICT_FACTOR
-    );
-  if (secondItem.obstacle)
-    return (
-      getShapesOverlap(first.inkBounds ?? [first.bounds], [second.bounds], MINIMUM_OBSTACLE_OVERLAP_RATIO) *
-      BURG_CONFLICT_FACTOR
-    );
-  const isPathToBurg =
-    (firstItem.kind === "path" && secondItem.kind === "burg") ||
-    (firstItem.kind === "burg" && secondItem.kind === "path");
+  if (!boundsIntersect(first.collisionBounds, second.collisionBounds)) return 0;
+
+  if (firstItem.obstacle || secondItem.obstacle) {
+    const [obstacle, label] = firstItem.obstacle ? [first, second] : [second, first];
+    return getShapesOverlap([obstacle.bounds], label.inkBounds ?? [label.bounds]) * OBSTACLE_CONFLICT_WEIGHT;
+  }
+
+  // Burg names sit in the densest part of the map, so they get both a wider gap and a heavier cost
   const isBurgToBurg = firstItem.kind === "burg" && secondItem.kind === "burg";
-  const firstShapes = isBurgToBurg
-    ? (first.burgCollisionShapes ?? first.collisionShapes ?? [first.collisionBounds])
-    : (first.collisionShapes ?? [first.collisionBounds]);
-  const secondShapes = isBurgToBurg
-    ? (second.burgCollisionShapes ?? second.collisionShapes ?? [second.collisionBounds])
-    : (second.collisionShapes ?? [second.collisionBounds]);
-  const overlap = getShapesOverlap(
-    firstShapes,
-    secondShapes,
-    isPathToBurg
-      ? MINIMUM_BURG_PATH_OVERLAP_RATIO
-      : isBurgToBurg
-        ? MINIMUM_BURG_LABEL_OVERLAP_RATIO
-        : MINIMUM_OVERLAP_RATIO
-  );
-  if (isPathToBurg || isBurgToBurg) return overlap * BURG_CONFLICT_FACTOR;
-  return firstItem.kind === "path" || secondItem.kind === "path" ? overlap * PATH_LABEL_OVERLAP_FACTOR : overlap;
+  const overlap = getShapesOverlap(getCollisionShapes(first, isBurgToBurg), getCollisionShapes(second, isBurgToBurg));
+  return overlap * getConflictWeight(firstItem, secondItem);
 }
 
-function getShapesOverlap(first: LabelBounds[], second: LabelBounds[], minimumOverlapRatio: number): number {
+function getCollisionShapes(candidate: LabelPlacementCandidate, useBurgPadding: boolean): LabelBounds[] {
+  const padded = useBurgPadding ? candidate.burgCollisionShapes : undefined;
+  return padded ?? candidate.collisionShapes ?? [candidate.collisionBounds];
+}
+
+function getConflictWeight(first: LabelPlacementItem, second: LabelPlacementItem): number {
+  if (first.kind === "burg" || second.kind === "burg") return BURG_CONFLICT_WEIGHT;
+  if (first.kind === "path" || second.kind === "path") return PATH_CONFLICT_WEIGHT;
+  return 1;
+}
+
+function getShapesOverlap(first: LabelBounds[], second: LabelBounds[]): number {
   let overlap = 0;
   for (const firstBounds of first) {
-    for (const secondBounds of second)
-      overlap += getMeaningfulOverlapArea(firstBounds, secondBounds, minimumOverlapRatio);
+    for (const secondBounds of second) overlap += getOverlapScore(firstBounds, secondBounds);
   }
   return overlap;
 }
 
-function getMeaningfulOverlapArea(first: LabelBounds, second: LabelBounds, minimumOverlapRatio: number): number {
+/**
+ * Covered fraction of the smaller shape, faded in between IGNORED and FULL overlap ratios.
+ * The ramp keeps hairline contact free while leaving a continuous gradient for the solver to
+ * follow — a hard threshold made every partial collision look perfectly clean.
+ */
+function getOverlapScore(first: LabelBounds, second: LabelBounds): number {
   const width = Math.min(first.x2, second.x2) - Math.max(first.x1, second.x1);
+  if (width <= 0) return 0;
   const height = Math.min(first.y2, second.y2) - Math.max(first.y1, second.y1);
-  if (width <= 0 || height <= 0) return 0;
+  if (height <= 0) return 0;
 
-  const minimumWidth = Math.min(first.x2 - first.x1, second.x2 - second.x1);
-  const minimumHeight = Math.min(first.y2 - first.y1, second.y2 - second.y1);
-  if (width < minimumWidth * MINIMUM_PENETRATION_RATIO || height < minimumHeight * MINIMUM_PENETRATION_RATIO) return 0;
-  const firstArea = Math.max(first.x2 - first.x1, 0) * Math.max(first.y2 - first.y1, 0);
-  const secondArea = Math.max(second.x2 - second.x1, 0) * Math.max(second.y2 - second.y1, 0);
-  const smallerArea = Math.min(firstArea, secondArea);
+  const smallerArea = Math.min(getArea(first), getArea(second));
   if (!smallerArea) return 0;
-  const overlapRatio = (width * height) / smallerArea;
-  return overlapRatio >= minimumOverlapRatio ? overlapRatio : 0;
+  const ratio = (width * height) / smallerArea;
+  return ratio * clamp((ratio - IGNORED_OVERLAP_RATIO) / (FULL_OVERLAP_RATIO - IGNORED_OVERLAP_RATIO), 0, 1);
 }
 
-function getCollisionComponents(itemCount: number, pairs: [number, number][]): number[][] {
-  const links = Array.from({ length: itemCount }, () => [] as number[]);
-  for (const [first, second] of pairs) {
-    links[first].push(second);
-    links[second].push(first);
-  }
-
-  const visited = new Uint8Array(itemCount);
-  const components: number[][] = [];
-  for (let index = 0; index < itemCount; index++) {
-    if (visited[index] || !links[index].length) continue;
-    const component: number[] = [];
-    const stack = [index];
-    visited[index] = 1;
-    while (stack.length) {
-      const current = stack.pop()!;
-      component.push(current);
-      for (const linked of links[current]) {
-        if (visited[linked]) continue;
-        visited[linked] = 1;
-        stack.push(linked);
-      }
-    }
-    components.push(component);
-  }
-  return components;
+function getArea(bounds: LabelBounds): number {
+  return Math.max(bounds.x2 - bounds.x1, 0) * Math.max(bounds.y2 - bounds.y1, 0);
 }
 
-function isBetter(first: Cost, second: Cost): boolean {
-  return toScalar(first) < toScalar(second);
-}
-
-function toScalar(cost: Cost): number {
-  return cost.overlap * OVERLAP_WEIGHT + cost.outside * OUTSIDE_WEIGHT + cost.preference;
+function boundsIntersect(first: LabelBounds, second: LabelBounds): boolean {
+  return first.x1 < second.x2 && first.x2 > second.x1 && first.y1 < second.y2 && first.y2 > second.y1;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -916,23 +1001,26 @@ function round(value: number): number {
 }
 
 function emptyResult(): LabelSpreadResult {
-  return {
-    patches: [],
-    displayedLabels: 0,
-    initialOverlaps: 0,
-    remainingOverlaps: 0,
-    initialPathBurgOverlaps: 0,
-    remainingPathBurgOverlaps: 0
-  };
+  return { patches: [], displayedLabels: 0, initialOverlaps: 0, remainingOverlaps: 0 };
 }
 
+// Yields once so the browser can paint the disabled controls. A hidden tab never runs an animation
+// frame, so fall back to a timer instead of leaving the spread stuck forever
+const NEXT_FRAME_TIMEOUT = 100;
 function nextFrame(): Promise<void> {
-  return new Promise(resolve => requestAnimationFrame(() => resolve()));
+  return new Promise(resolve => {
+    const timer = setTimeout(resolve, NEXT_FRAME_TIMEOUT);
+    requestAnimationFrame(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
 }
 
 /** Internal seam for focused geometry tests. Production callers use calculateLabelSpread. */
 export const labelSpreadInternals = {
   getBurgLabelCandidates,
+  isDrawnOn,
   getPathStartOffsetCandidates,
   getPathStartOffsetPreference,
   isPathTextUpright,
