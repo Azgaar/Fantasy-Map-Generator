@@ -1,5 +1,6 @@
 // Sorting of editor lines by clicking a column header — shared by every table-shaped editor
 
+import { ensureEl } from "@/utils";
 import type { EditorColumn } from "./table";
 
 /** Make every .sortable header in the container sort the lines below it */
@@ -12,7 +13,7 @@ export function applySortingByHeader(headerContainerId: string): void {
   }
 }
 
-export function toggleSortIcon(header: HTMLElement): void {
+function toggleSortIcon(header: HTMLElement): void {
   const type = header.classList.contains("alphabetically") ? "name" : "number";
   const isSorted = header.className.includes("icon-sort");
   let order = header.className.includes("-down") ? "-up" : "-down";
@@ -57,10 +58,10 @@ export function applySorting(headers: HTMLElement): void {
     });
 }
 
-export type SortState = { sortby: string; alphabetically: boolean; direction: -1 | 1 };
-export type SortAccessors<T> = Record<string, (item: T) => string | number>;
+type SortState = { sortby: string; alphabetically: boolean; direction: -1 | 1 };
+type SortAccessors<T> = Record<string, (item: T) => string | number>;
 
-export function getActiveSort(headers: HTMLElement): SortState | null {
+function getActiveSort(headers: HTMLElement): SortState | null {
   const header = headers.querySelector<HTMLElement>("div[class*='icon-sort']");
   if (!header) return null;
   return {
@@ -85,7 +86,8 @@ export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors
   });
 }
 
-export function bindColumnSorting(headers: HTMLElement, onSort: () => void): void {
+export function bindColumnSorting(dialogId: string, onSort: () => void): void {
+  const headers = ensureEl(`${dialogId}Header`);
   for (const cell of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
     cell.addEventListener("click", () => {
       toggleSortIcon(cell);
@@ -94,7 +96,8 @@ export function bindColumnSorting(headers: HTMLElement, onSort: () => void): voi
   }
 }
 
-export function sortDataByColumns<T>(headers: HTMLElement, data: T[], columns: EditorColumn<T>[]): T[] {
+export function sortDataByColumns<T>(dialogId: string, data: T[], columns: EditorColumn<T>[]): T[] {
+  const headers = ensureEl(`${dialogId}Header`);
   const sort = getActiveSort(headers);
   if (!sort) return data;
   const accessors: SortAccessors<T> = {};

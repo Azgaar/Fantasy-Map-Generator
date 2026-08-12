@@ -8,7 +8,6 @@ import {
   initEditorTable,
   renderEditorHeader,
   renderEditorPagination,
-  setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
@@ -45,7 +44,9 @@ import {
 
 let statesManualHistory: string[] = [];
 
-const STATE_COLUMNS: EditorColumn<State>[] = [
+const dialogId = "statesEditor" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", hideable: false },
   {
     key: "name",
@@ -128,7 +129,8 @@ const STATE_COLUMNS: EditorColumn<State>[] = [
     key: "type",
     label: "Type",
     width: "6em",
-    hideable: false,
+    hideable: true,
+    hidden: true,
     tip: "Click to sort by state type",
     sortBy: s => (s.i ? s.type || "" : ""),
     sortType: "alpha"
@@ -137,21 +139,20 @@ const STATE_COLUMNS: EditorColumn<State>[] = [
     key: "expansionism",
     label: "Expansion",
     width: "7em",
-    hideable: false,
+    hideable: true,
+    hidden: true,
     tip: "Click to sort by state expansion value",
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
   },
-  { key: "actions", width: "6em", hideable: false }
+  { key: "actions", width: "4.2em", hideable: false, align: "right" }
 ];
-
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 const statesTable = initEditorTable<State>({
   getData: () =>
     sortDataByColumns(
-      ensureEl("statesHeader"),
+      dialogId,
       pack.states.filter(s => !s.removed),
-      STATE_COLUMNS
+      columns
     ),
   onUpdate: renderStatesPage
 });
@@ -159,7 +160,7 @@ const statesTable = initEditorTable<State>({
 function open(): void {
   if (customization) return;
 
-  closeDialogs("#statesEditor, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleStates")) toggleStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
   if (layerIsOn("toggleCultures")) toggleCultures();
@@ -170,7 +171,7 @@ function open(): void {
   States.collectStatistics();
   statesTable.reset();
 
-  $("#statesEditor").dialog({
+  $(`#${dialogId}`).dialog({
     title: "States Editor",
     resizable: false,
     width: "fit-content",
@@ -180,13 +181,11 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialog("statesEditor");
-  const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable editorDialog">
-    <div id="statesBodySection" class="table" data-type="absolute">${renderEditorHeader({
-      id: "statesHeader",
-      columns: STATE_COLUMNS,
-      columnsButtonId: "statesToggleColumns"
-    })}</div>
+  destroyDialog(dialogId);
+  const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+    <div id="statesBodySection" class="table" data-type="absolute">
+      ${renderEditorHeader({ dialogId, columns })}
+    </div>
 
     <div id="statesFooter" class="totalLine">
       <div data-tip="States number" style="margin-left: 5px">States:&nbsp;<span id="statesFooterStates">0</span></div>
@@ -240,20 +239,17 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  bindColumnSorting(ensureEl("statesHeader"), statesTable.reset);
-  applyLineHighlighting("statesEditor", ({ cellId }) =>
-    pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]
-  );
+
+  bindColumnSorting(dialogId, statesTable.reset);
+  applyLineHighlighting(dialogId, ({ cellId }) => (pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]));
+  initColumnVisibility({
+    dialogId,
+    storageKey: "states",
+    columns: columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
   ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
-  initColumnVisibility({
-    button: ensureEl("statesToggleColumns"),
-    dialogId: "statesEditor",
-    storageKey: "states",
-    columns: STATE_COLUMNS
-  });
-  // type/expansionism are owned by the regenerate-mode toggle, not the user's column picker
-  setModeHiddenColumns("statesEditor", ["type", "expansionism"]);
   ensureEl("statesEditStyle").addEventListener("click", () => editStyle("regions"));
   ensureEl("statesLegend").addEventListener("click", toggleLegend);
   ensureEl("statesPercentage").addEventListener("click", togglePercentageMode);
@@ -318,8 +314,7 @@ function closeStatesEditor(): void {
   if (customization === 2) exitStatesManualAssignment(true);
   if (customization === 3) exitAddStateMode();
   select("#debug").selectAll(".highlight").remove();
-  $("#statesEditor").dialog("destroy");
-  ensureEl("statesEditor").remove();
+  destroyDialog(dialogId);
 }
 
 function refreshStatesEditor(): void {
@@ -506,7 +501,7 @@ function renderStatesPage(view: TableView<State>): void {
     ensureEl("statesBodySection").dataset.type = "absolute";
     togglePercentageMode();
   }
-  updateDialog("statesEditor", { width: "fit-content", position });
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 function getCultureOptions(culture: number): string {
@@ -1286,7 +1281,6 @@ function openRegenerationMenu(): void {
       el.style.display = "none";
     });
   ensureEl("statesRegenerateButtons").style.display = "block";
-  setModeHiddenColumns("statesEditor", []);
   $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
@@ -1333,7 +1327,6 @@ function exitRegenerationMenu(): void {
       el.style.display = "inline-block";
     });
   ensureEl("statesRegenerateButtons").style.display = "none";
-  setModeHiddenColumns("statesEditor", ["type", "expansionism"]);
   $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
@@ -1347,7 +1340,7 @@ function enterStatesManualAssignent(): void {
   ensureEl("statesManuallyButtons").style.display = "inline-block";
   ensureEl("statesHalo").style.display = "none";
 
-  ensureEl("statesEditor")
+  ensureEl(dialogId)
     .querySelectorAll(".hide:not([data-col])")
     .forEach(el => {
       el.classList.add("hidden");
@@ -1637,7 +1630,7 @@ function exitStatesManualAssignment(close: boolean): void {
   ensureEl("statesManuallyButtons").style.display = "none";
   ensureEl("statesHalo").style.display = "block";
 
-  ensureEl("statesEditor")
+  ensureEl(dialogId)
     .querySelectorAll(".hide:not([data-col])")
     .forEach(el => {
       el.classList.remove("hidden");
