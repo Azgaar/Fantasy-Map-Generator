@@ -288,15 +288,6 @@ function renderDialog(): void {
       updateLockStatus(stateId, classList);
   });
 
-  ensureEl("statesBodySection").addEventListener("input", ev => {
-    const $element = (ev as Event).target as HTMLInputElement;
-    const classList = $element.classList;
-    const line = $element.closest(".states") as HTMLElement | null;
-    if (!line) return;
-    const state = +line.dataset.id!;
-    if (classList.contains("stateCapital")) stateChangeCapitalName(state, line, $element.value);
-  });
-
   ensureEl("statesBodySection").addEventListener("change", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
@@ -373,7 +364,7 @@ function renderStatesPage(view: TableView<State>): void {
         <input class="stateForm placeholder" value="none" data-col="form" />
         <div data-col="capital">
           <span class="icon-star-empty placeholder"></span>
-          <input class="stateCapital placeholder" />
+          <div class="stateCapital placeholder"></div>
         </div>
         <select class="stateCulture placeholder hide" data-col="culture">${getCultureOptions(0)}</select>
         <div data-col="burgs">
@@ -429,7 +420,7 @@ function renderStatesPage(view: TableView<State>): void {
       }" readonly data-col="form" />
       <div data-col="capital">
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
-        <input data-tip="Capital name. Click and type to rename" class="stateCapital" value="${capital}" autocorrect="off" spellcheck="false" />
+        <div data-tip="Capital name" class="stateCapital">${capital}</div>
       </div>
       <select data-tip="Dominant culture. Click to change" class="stateCulture hide" data-col="culture">${getCultureOptions(
         s.culture
@@ -819,19 +810,6 @@ function renderNameEditor(): void {
 function closeStateNameEditor(): void {
   $("#stateNameEditor").dialog("destroy");
   ensureEl("stateNameEditor").remove();
-}
-
-function stateChangeCapitalName(state: number, line: HTMLElement, value: string): void {
-  line.dataset.capital = value;
-  const capital = pack.states[state].capital;
-  if (!capital) return;
-  pack.burgs[capital].name = value;
-  const burg = pack.burgs[capital];
-  if (burg) {
-    if (!burg.label) burg.label = {};
-    Object.assign(burg.label, { text: value });
-    drawLabels();
-  }
 }
 
 function changePopulation(stateId: number): void {

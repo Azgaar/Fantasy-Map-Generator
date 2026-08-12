@@ -135,7 +135,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       .filter(Boolean)
       .join(" ");
 
-    const style = ["white-space:nowrap", column.align ? `text-align:${column.align}` : ""].filter(Boolean).join(" ");
+    const style = ["white-space:nowrap", column.align ? `text-align:${column.align}` : ""].filter(Boolean).join("; ");
 
     const button =
       index === buttonIndex
