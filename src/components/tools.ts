@@ -4,7 +4,6 @@ import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawIce } from "@/renderers/draw-ice";
@@ -12,7 +11,7 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawReliefIcons } from "@/renderers/draw-relief-icons";
-import { redrawStateLabels } from "@/renderers/draw-state-labels";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -46,6 +45,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "overviewRoutesButton") void Controllers.RoutesOverview.open();
   else if (buttonId === "overviewRiversButton") void Controllers.RiversOverview.open();
   else if (buttonId === "overviewMilitaryButton") void Controllers.MilitaryOverview.open();
+  else if (buttonId === "overviewLabelsButton") void Controllers.LabelsOverview.open();
   else if (buttonId === "overviewMarkersButton") void Controllers.MarkersOverview.open();
   else if (buttonId === "overviewMarketsButton") void Controllers.MarketsOverview.open();
   else if (buttonId === "overviewCellsButton") void Controllers.CellInfo.open();
@@ -118,7 +118,12 @@ function regenerate(event: MouseEvent, button: string): void {
 }
 
 function regenerateStateLabels(): void {
-  if (layerIsOn("toggleLabels")) redrawStateLabels();
+  for (const state of pack.states) {
+    if (!state.i || state.removed) continue;
+    // cleanup custom label data to force recalculation of pathPoints
+    if (state.label) delete state.label;
+  }
+  drawLabels();
 }
 
 function regenerateReliefIcons(): void {
@@ -150,10 +155,7 @@ function regenerateStates(): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleLabels")) {
-    redrawStateLabels();
-    drawBurgLabels();
-  }
+  drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleGoods")) drawGoods();
@@ -168,6 +170,7 @@ function regenerateProvinces(): void {
   unfog();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
+  drawLabels();
   if (layerIsOn("toggleEmblems")) {
     clearEmblems(["province"]);
     drawEmblems();
@@ -177,7 +180,7 @@ function regenerateProvinces(): void {
 function regenerateBurgs(): void {
   Burgs.regenerate();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawBurgLabels();
+  drawLabels();
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("togglePopulation")) drawPopulation();
   if (layerIsOn("toggleGoods")) drawGoods();

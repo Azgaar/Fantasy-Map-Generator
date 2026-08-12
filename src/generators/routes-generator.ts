@@ -1,8 +1,10 @@
+import Alea from "alea";
 import { curveCatmullRom, line, select } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findClosestCell, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
+import type { Label } from "./labels-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -18,6 +20,8 @@ const ROUTE_TYPE_MODIFIERS: Record<string, number> = {
   "-4": 6, // ocean
   default: 8 // far ocean
 };
+
+export const UNNAMED_ROUTE = "Unnamed route segment";
 
 // name generator data
 const models: Record<string, Record<string, number>> = {
@@ -169,14 +173,15 @@ const suffixes: Record<string, Record<string, number>> = {
 
 export interface Route {
   i: number;
+  name?: string;
   group: string;
   feature: number;
-  points: number[][];
+  points: number[][]; // [x, y, cellId]. TODO: type properly
   cells?: number[];
   merged?: boolean;
-  name?: string;
   length?: number;
   lock?: boolean;
+  label?: Label;
 }
 
 type RiverEdge = { riverId: number; fromIndex: number };
@@ -197,10 +202,11 @@ class RoutesModule {
 
   regenerate(): void {
     const lockedRoutes = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));
-    this.generate(lockedRoutes);
+    this.generate(lockedRoutes, Math.random());
   }
 
-  generate(lockedRoutes: Route[] = []) {
+  generate(lockedRoutes: Route[] = [], randomSeed?: number) {
+    Math.random = Alea(randomSeed ?? seed);
     this.connections = new Map();
     this.buildRiverEdges();
     lockedRoutes.forEach((route: Route) => {
@@ -658,19 +664,22 @@ class RoutesModule {
     for (const { feature, cells, merged } of this.mergeRoutes(mainRoads)) {
       if (merged) continue;
       const points = this.getPoints("roads", cells!, pointsArray);
-      routes.push({ i: routes.length, group: "roads", feature, points });
+      const name = this.generateName({ group: "roads", points });
+      routes.push({ i: routes.length, group: "roads", name, feature, points });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(trails)) {
       if (merged) continue;
       const points = this.getPoints("trails", cells!, pointsArray);
-      routes.push({ i: routes.length, group: "trails", feature, points });
+      const name = this.generateName({ group: "trails", points });
+      routes.push({ i: routes.length, group: "trails", name, feature, points });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(seaRoutes)) {
       if (merged) continue;
       const points = this.getPoints("searoutes", cells!, pointsArray);
-      routes.push({ i: routes.length, group: "searoutes", feature, points });
+      const name = this.generateName({ group: "searoutes", points });
+      routes.push({ i: routes.length, group: "searoutes", name, feature, points });
     }
 
     return routes;
@@ -808,8 +817,9 @@ class RoutesModule {
 
       for (const [to, routeId] of Object.entries(routes[from])) {
         if (routeId === route.i) {
-          delete routes[from][parseInt(to, 10)];
-          delete routes[parseInt(to, 10)][from];
+          const toCell = parseInt(to, 10);
+          delete routes[from][toCell];
+          if (routes[toCell]) delete routes[toCell][from];
         }
       }
     }
@@ -839,8 +849,8 @@ class RoutesModule {
     return connectivity;
   }
 
-  generateName({ group, points }: { group: string; points: number[][] }): string {
-    if (points.length < 4) return "Unnamed route segment";
+  generateName({ group, points }: { group: string; points: number[][] }): string | undefined {
+    if (points.length < 4) return undefined;
 
     function getBurgName() {
       const priority = [points.at(-1), points.at(0), points.slice(1, -1).reverse()];
@@ -855,11 +865,12 @@ class RoutesModule {
     const suffix = rw(suffixes[group] || suffixes.roads);
 
     const burgName = getBurgName();
-    if (model === "burg_suffix" && burgName) return `${burgName} ${suffix}`;
-    if (model === "prefix_suffix") return `${ra(prefixes)} ${suffix}`;
+    if (burgName) {
+      if (model === "burg_suffix") return `${burgName} ${suffix}`;
+      if (model === "the_descriptor_burg_suffix") return `The ${ra(descriptors)} ${burgName} ${suffix}`;
+    }
     if (model === "the_descriptor_prefix_suffix") return `The ${ra(descriptors)} ${ra(prefixes)} ${suffix}`;
-    if (model === "the_descriptor_burg_suffix" && burgName) return `The ${ra(descriptors)} ${burgName} ${suffix}`;
-    return "Unnamed route";
+    return `${ra(prefixes)} ${suffix}`; // no burg on the route, fall back to the burg-free model
   }
 
   private ROUTE_CURVES: Record<string, any> = {

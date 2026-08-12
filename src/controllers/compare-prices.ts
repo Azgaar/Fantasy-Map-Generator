@@ -45,13 +45,13 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("marketsGoodCompareHeader");
 
-  ensureEl("marketsGoodCompareSelect").on("change", () => {
+  ensureEl("marketsGoodCompareSelect").addEventListener("change", () => {
     activeGoodId = +ensureEl<HTMLSelectElement>("marketsGoodCompareSelect").value;
     addLines();
   });
-  ensureEl("marketsGoodCompareRefresh").on("click", addLines);
-  ensureEl("marketsGoodComparePercentage").on("click", togglePercentageMode);
-  ensureEl("marketsGoodCompareExport").on("click", downloadCsv);
+  ensureEl("marketsGoodCompareRefresh").addEventListener("click", addLines);
+  ensureEl("marketsGoodComparePercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("marketsGoodCompareExport").addEventListener("click", downloadCsv);
 }
 
 function closeComparePrices(): void {

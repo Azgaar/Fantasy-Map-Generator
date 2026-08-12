@@ -5,6 +5,7 @@ import { toggleSaveReminder } from "@/services/autosave";
 import { findEl, minmax } from "@/utils";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
+import { changeMapZoom, panMap, setMapZoom } from "./zoom";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.addEventListener("keydown", handleKeydown);
@@ -49,7 +50,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyS") Controllers.StatesEditor.open();
   else if ((shift || altShift) && code === "KeyP") Controllers.ProvincesEditor.open();
   else if ((shift || altShift) && code === "KeyD") Controllers.DiplomacyEditor.open();
-  else if ((shift || altShift) && code === "KeyL") Controllers.CoastlineEditor.open();
+  else if ((shift || altShift) && code === "KeyL") Controllers.LabelsOverview.open();
   else if ((shift || altShift) && code === "KeyC") Controllers.CulturesEditor.open();
   else if ((shift || altShift) && code === "KeyN") Controllers.NamesbaseEditor.open();
   else if ((shift || altShift) && code === "KeyZ") Controllers.ZonesEditor.open();

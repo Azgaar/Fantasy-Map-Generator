@@ -1,6 +1,36 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "../generators/voronoi";
-import { meander } from "./pathUtils";
+import { getLabelPath } from "../renderers/labels/label-markup";
+import { meander, parsePathPoints } from "./pathUtils";
+
+describe("parsePathPoints", () => {
+  it("restores knots from a natural curve path", () => {
+    const path = "M0,0C2.5,9.583,5,19.167,10,20C15,20.833,22.5,12.917,30,5";
+    const pathPoints = parsePathPoints(path);
+
+    expect(pathPoints).toEqual([
+      [0, 0],
+      [10, 20],
+      [30, 5]
+    ]);
+    expect(getLabelPath({ pathPoints })).toBe(path);
+  });
+
+  it("parses linear paths", () => {
+    expect(parsePathPoints("M0,0L10,20L30,5")).toEqual([
+      [0, 0],
+      [10, 20],
+      [30, 5]
+    ]);
+  });
+
+  it("parses relative horizontal paths used by label realignment", () => {
+    expect(parsePathPoints("M10,20h40")).toEqual([
+      [10, 20],
+      [50, 20]
+    ]);
+  });
+});
 
 describe("addMeandering", () => {
   // Cells positions arranged along x-axis with enough spacing to trigger interior point insertion

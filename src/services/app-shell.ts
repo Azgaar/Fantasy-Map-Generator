@@ -1,4 +1,5 @@
 // Browser-level behaviours of the app window: resizing, navigating away and mobile input quirks
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { stored } from "@/utils/preferences";
 
 const isLocalhost = () => location.hostname === "localhost" || location.hostname === "127.0.0.1";
@@ -21,8 +22,28 @@ function onTitlebarButtonTouch(event: TouchEvent): void {
   if (target?.closest?.(".ui-dialog-titlebar-close, .ui-dialog-titlebar-collapse")) event.stopPropagation();
 }
 
+/**
+ * Each release replaces the content-hashed chunk files on the server, so a page opened before
+ * the release 404s when it lazy-loads a chunk it has not requested yet ("Failed to fetch
+ * dynamically imported module"). Offer a reload to pick up the new build
+ */
+function onChunkLoadError(): void {
+  confirmationDialog({
+    title: "New version released",
+    message:
+      "This part of the app failed to load because a new version was released while the page was open.<br />Reload the page to get the new version. If you have unsaved changes, save the map first",
+    confirm: "Reload",
+    cancel: "Not now",
+    onConfirm: () => {
+      window.onbeforeunload = null; // the user just confirmed the reload, don't ask again.
+      location.reload();
+    }
+  });
+}
+
 function initialize(): void {
   window.addEventListener("resize", onResize);
+  window.addEventListener("vite:preloadError", onChunkLoadError);
   document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
 
   if (!isLocalhost()) window.onbeforeunload = () => "Are you sure you want to navigate away?";

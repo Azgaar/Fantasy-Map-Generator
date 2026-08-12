@@ -105,23 +105,10 @@ window.parseTransform = parseTransform;
 JSON.isValid = isValidJSON;
 JSON.safeParse = safeParseJSON;
 
-Node.prototype.on = function (name, fn, options) {
-  this.addEventListener(name, fn, options);
-  return this;
-};
-Node.prototype.off = function (name, fn) {
-  this.removeEventListener(name, fn);
-  return this;
-};
-
 declare global {
   interface JSON {
     isValid: (str: string) => boolean;
     safeParse: (str: string) => any;
-  }
-  interface Node {
-    on: (name: string, fn: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => Node;
-    off: (name: string, fn: EventListenerOrEventListenerObject) => Node;
   }
 }
 

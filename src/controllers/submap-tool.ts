@@ -110,19 +110,28 @@ function recalculateMapSize(x0: number, y0: number): void {
 }
 
 function rescaleBurgStyles(scale: number): void {
-  const burgIcons = [...ensureEl("burgIcons").querySelectorAll("g")];
-  for (const group of burgIcons) {
-    const newSize = rn(minmax(Number(group.getAttribute("size")) * scale, 0.2, 10), 2);
-    group.setAttribute("font-size", String(newSize));
+  for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
+    const iconStyle: Record<string, string> = { ...style.burgIcons[group.id] };
+    for (const { name, value } of group.attributes) iconStyle[name] = value;
 
-    const newStroke = rn(Number(group.getAttribute("stroke-width")) * scale, 2);
-    group.setAttribute("stroke-width", String(newStroke));
+    const size = Number(iconStyle["font-size"]) || 1;
+    iconStyle["font-size"] = String(rn(minmax(size * scale, 0.2, 10), 2));
+
+    style.burgIcons[group.id] = iconStyle;
+    group.remove();
   }
 
-  const burgLabels = [...ensureEl("burgLabels").querySelectorAll("g")];
-  for (const group of burgLabels) {
-    const size = +(group.dataset.size ?? 0);
-    group.dataset.size = String(Math.max(rn((size + size / scale) / 2, 2), 1) * scale);
+  const burgLabelGroups = new Set(
+    pack.burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.label?.group || burg.group || "burg")
+  );
+
+  for (const groupName of burgLabelGroups) {
+    const groupStyle = style.labels.groups[groupName];
+    if (!groupStyle) continue;
+
+    const size = Number.parseFloat(groupStyle["font-size"]) || 0;
+    const rescaledSize = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
+    groupStyle["font-size"] = `${rn(rescaledSize, 2)}%`;
   }
 }
 

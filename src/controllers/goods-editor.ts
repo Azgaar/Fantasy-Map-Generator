@@ -100,19 +100,19 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("goodsHeader");
 
-  ensureEl("goodsEditorRefresh").on("click", goodsEditorAddLines);
-  ensureEl("goodsPercentage").on("click", togglePercentageMode);
-  ensureEl("goodsTagsFilter").on("click", openTagsVisibilityDialog);
-  ensureEl("goodsAssign").on("click", enterResourceAssignMode);
-  ensureEl("goodsAdd").on("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
-  ensureEl("goodsRestore").on("click", goodsRestoreDefaults);
-  ensureEl("goodsExport").on("click", downloadGoodsData);
-  ensureEl("goodsDisplayAll").on("change", toggleAllDisplayed);
-  ensureEl("goodsChains").on("click", () => Controllers.ProductionChains.open());
-  ensureEl("goodsRegenerateGoods").on("click", requestGoodsRegeneration);
-  ensureEl("goodsRegenerateProduction").on("click", requestProductionRegeneration);
+  ensureEl("goodsEditorRefresh").addEventListener("click", goodsEditorAddLines);
+  ensureEl("goodsPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("goodsTagsFilter").addEventListener("click", openTagsVisibilityDialog);
+  ensureEl("goodsAssign").addEventListener("click", enterResourceAssignMode);
+  ensureEl("goodsAdd").addEventListener("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
+  ensureEl("goodsRestore").addEventListener("click", goodsRestoreDefaults);
+  ensureEl("goodsExport").addEventListener("click", downloadGoodsData);
+  ensureEl("goodsDisplayAll").addEventListener("change", toggleAllDisplayed);
+  ensureEl("goodsChains").addEventListener("click", () => Controllers.ProductionChains.open());
+  ensureEl("goodsRegenerateGoods").addEventListener("click", requestGoodsRegeneration);
+  ensureEl("goodsRegenerateProduction").addEventListener("click", requestProductionRegeneration);
 
-  ensureEl("goodsBody").on("click", ev => {
+  ensureEl("goodsBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
     const cl = el.classList;
     const line = el.parentNode as HTMLElement;
@@ -179,7 +179,7 @@ function goodsEditorAddLines() {
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
   ensureEl("goodsStock").innerHTML = String(rn(totalStock));
 
-  body.querySelectorAll("div.states").forEach(el => void el.on("click", selectResourceOnLineClick));
+  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("click", selectResourceOnLineClick));
   body.querySelectorAll<HTMLButtonElement>(".goodProduced").forEach(el => {
     el.addEventListener("click", ev => {
       ev.stopPropagation();
@@ -244,7 +244,7 @@ function openProducersDialog(goodId: number) {
       .join("");
     alertMessage.innerHTML = header + rows;
     alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
-      row.on("click", () => {
+      row.addEventListener("click", () => {
         zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
       });
     });
@@ -357,7 +357,7 @@ function openStockDialog(goodId: number) {
       .join("");
     alertMessage.innerHTML = header + rows;
     alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
-      row.on("click", () => {
+      row.addEventListener("click", () => {
         zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
       });
     });

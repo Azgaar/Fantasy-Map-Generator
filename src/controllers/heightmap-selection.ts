@@ -233,7 +233,7 @@ function insertHtml(): void {
 }
 
 function addListeners(): void {
-  ensureEl("heightmapSelection").on("click", event => {
+  ensureEl("heightmapSelection").addEventListener("click", event => {
     const target = (event as MouseEvent).target as HTMLElement;
     const article = target.closest<HTMLElement>("#heightmapSelection article");
     if (!article) return;
@@ -244,13 +244,13 @@ function addListeners(): void {
     setSelected(id);
   });
 
-  ensureEl("heightmapSelectionRenderOcean").on("change", redrawAll);
-  ensureEl("heightmapSelectionColorScheme").on("change", redrawAll);
-  ensureEl("heightmapSelectionRedrawPreview").on("click", redrawAll);
-  ensureEl("heightmapSelectionEditTemplates").on("click", event =>
+  ensureEl("heightmapSelectionRenderOcean").addEventListener("change", redrawAll);
+  ensureEl("heightmapSelectionColorScheme").addEventListener("change", redrawAll);
+  ensureEl("heightmapSelectionRedrawPreview").addEventListener("click", redrawAll);
+  ensureEl("heightmapSelectionEditTemplates").addEventListener("click", event =>
     confirmHeightmapEdit(event.currentTarget as HTMLElement)
   );
-  ensureEl("heightmapSelectionImportHeightmap").on("click", event =>
+  ensureEl("heightmapSelectionImportHeightmap").addEventListener("click", event =>
     confirmHeightmapEdit(event.currentTarget as HTMLElement)
   );
 }

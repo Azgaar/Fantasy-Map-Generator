@@ -1,15 +1,16 @@
 // Default interaction on the map canvas: pan/zoom, click-to-edit and hover tooltips
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
+import type { LabelType } from "@/generators/labels-generator";
 import { dragLegendBox } from "@/renderers/draw-legend";
 import { debounce } from "@/utils/commonUtils";
 import { handleMouseMove } from "./map-tooltip";
+import { applyZoomBehavior } from "./zoom";
 
 const onMouseMove = debounce(handleMouseMove, 100);
 
-/** Restore the default viewbox events, dropping whatever an editor bound to the map */
 export function applyDefaultViewboxEvents(): void {
-  svg.call(zoom);
+  applyZoomBehavior();
 
   select<SVGGElement, unknown>("#viewbox")
     .style("cursor", "default")
@@ -33,7 +34,6 @@ const PARENT_EDITORS: Record<string, Opener> = {
 const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(target.id),
-  burgLabels: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
   burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
@@ -61,15 +61,21 @@ function onClick(event: MouseEvent): void {
   const ancestor = great?.parentElement as SVGElement | null;
   if (!target || !parent || !grand || !great || !ancestor) return;
 
-  if (ancestor.id === "labels" && target.tagName === "tspan")
-    return void Controllers.LabelsEditor.open(target as SVGTSpanElement);
+  const label = target.closest<SVGTextElement>("#labels text[data-label-type]");
+  if (label) {
+    const id = Number(label.dataset.id);
+    const type = label.dataset.labelType as LabelType;
+    if (type === "burg") {
+      const burgEditor = document.getElementById("burgEditor");
+      const isBurgEditorOpen = burgEditor?.dataset.burgId === String(id);
+      if (isBurgEditorOpen) Controllers.LabelsEditor.open(type, id);
+      else Controllers.BurgEditor.open(id);
+    } else Controllers.LabelsEditor.open(type, id);
+    return;
+  }
 
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
-}
-
-declare global {
-  var zoom: any; // d3 v5 zoom behaviour created in main.js
 }
 
 window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

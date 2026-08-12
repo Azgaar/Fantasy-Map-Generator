@@ -1,4 +1,8 @@
 import type Delaunator from "delaunator";
+import type { Point } from "@/types/global";
+
+export type { Point } from "@/types/global";
+
 export type Vertices = { p: Point[]; v: number[][]; c: number[][] };
 export type Cells = {
   v: number[][];
@@ -6,13 +10,12 @@ export type Cells = {
   b: number[];
   i: Uint32Array<ArrayBufferLike>;
 };
-export type Point = [number, number];
 
 /**
  * Creates a Voronoi diagram from the given Delaunator, a list of points, and the number of points. The Voronoi diagram is constructed using (I think) the {@link https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm |Bowyer-Watson Algorithm}
  * The {@link https://github.com/mapbox/delaunator/ |Delaunator} library uses {@link https://en.wikipedia.org/wiki/Doubly_connected_edge_list |half-edges} to represent the relationship between points and triangles.
  * @param {{triangles: Uint32Array, halfedges: Int32Array}} delaunay A {@link https://github.com/mapbox/delaunator/blob/master/index.js |Delaunator} instance.
- * @param {[number, number][]} points A list of coordinates.
+ * @param {Point[]} points A list of coordinates.
  * @param {number} pointsN The number of points.
  */
 export class Voronoi {
@@ -91,7 +94,7 @@ export class Voronoi {
   /**
    * Returns the center of the triangle located at the given index.
    * @param {number} triangleIndex The index of the triangle
-   * @returns {[number, number]} The coordinates of the triangle's circumcenter.
+   * @returns {Point} The coordinates of the triangle's circumcenter.
    */
   private triangleCenter(triangleIndex: number): Point {
     const vertices = this.pointsOfTriangle(triangleIndex).map(p => this.points[p]);

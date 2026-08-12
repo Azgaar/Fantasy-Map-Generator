@@ -133,7 +133,7 @@
     </style>
     <link
       rel="preload"
-      href="index.css?v=1.137.7"
+      href="index.css?v=1.140.0"
       as="style"
       onload="
         this.onload = null;
@@ -1271,14 +1271,6 @@
                 </td>
               </tr>
             </tbody>
-            <tbody id="styleCoastline">
-              <tr data-tip="Allow system to apply filter automatically based on zoom level">
-                <td colspan="2">
-                  <input id="styleCoastlineAuto" class="checkbox" type="checkbox" />
-                  <label for="styleCoastlineAuto" class="checkbox-label">Automatically change filter on zoom</label>
-                </td>
-              </tr>
-            </tbody>
             <tbody id="styleTemperature">
               <tr data-tip="Define transparency of temperature leyer. Set to 0 to make it fully transparent">
                 <td>Fill opacity</td>
@@ -1446,27 +1438,6 @@
                 <td colspan="2">
                   <input id="styleRescaleMarkers" class="checkbox" type="checkbox" />
                   <label for="styleRescaleMarkers" class="checkbox-label">Keep initial size on zoom change</label>
-                </td>
-              </tr>
-            </tbody>
-            <tbody id="styleVisibility">
-              <tr data-tip="Completely hide the selected labels group using display:none">
-                <td colspan="2">
-                  <input id="styleLabelsHideGroup" class="checkbox" type="checkbox" />
-                  <label for="styleLabelsHideGroup" class="checkbox-label">Hide selected group</label>
-                </td>
-              </tr>
-
-              <tr data-tip="Allow system to hide labels if their size in too small or too big on that scale">
-                <td colspan="2">
-                  <input id="hideLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
-                  <label for="hideLabels" class="checkbox-label">Toggle visibility automatically</label>
-                </td>
-              </tr>
-              <tr data-tip="Allow system to rescale labels on zoom">
-                <td colspan="2">
-                  <input id="rescaleLabels" class="checkbox" type="checkbox" onchange="invokeActiveZooming()" checked />
-                  <label for="rescaleLabels" class="checkbox-label">Rescale on zoom</label>
                 </td>
               </tr>
             </tbody>
@@ -1766,20 +1737,6 @@
                 ></slider-input>
               </td>
             </tr>
-            <tr data-tip="Select state labels mode: display short or full names">
-              <td>
-                <i data-locked="0" id="lock_stateLabelsMode" class="icon-lock-open"></i>
-              </td>
-              <td>State labels</td>
-              <td>
-                <select id="stateLabelsModeInput" data-stored="stateLabelsMode">
-                  <option value="auto">Auto</option>
-                  <option value="short">Short names</option>
-                  <option value="full">Full names</option>
-                </select>
-              </td>
-              <td></td>
-            </tr>
           </table>
           <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">
             Generator settings:
@@ -2044,7 +2001,6 @@
             <button
               id="editCoastlineSettings"
               data-tip="Click to open Coastline Settings Editor"
-              data-shortcut="Shift + L"
             >
               Coastlines
             </button>
@@ -2077,6 +2033,9 @@
             </button>
             <button id="editMeasurersButton" data-tip="Click to open Measurers Editor" data-shortcut="Shift + =">
               Measurers
+            </button>
+            <button id="overviewLabelsButton" data-tip="Click to open Labels Overview" data-shortcut="Shift + L">
+              Labels
             </button>
             <button
               id="overviewMilitaryButton"
@@ -2677,10 +2636,10 @@
               class="checkbox"
               type="checkbox"
               onchange="
-                hideLabels.checked = !this.checked;
+                options.labels.showAll = this.checked;
+                localStorage.setItem('label-groups', JSON.stringify(options.labels));
                 invokeActiveZooming();
               "
-              checked=""
             />
             <label for="showLabels" class="checkbox-label">Show all labels</label>
           </span>
@@ -5461,11 +5420,11 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.139.0"></script>
-    <script defer src="modules/ui/style-presets.js?v=1.138.0"></script>
-    <script defer src="modules/ui/options.js?v=1.139.0"></script>
-    <script defer src="main.js?v=1.139.0"></script>
-    <script defer src="modules/ui/style.js?v=1.139.0"></script>
+    <script defer src="modules/ui/layers.js?v=1.140.0"></script>
+    <script defer src="modules/ui/style-presets.js?v=1.140.0"></script>
+    <script defer src="modules/ui/options.js?v=1.140.0"></script>
+    <script defer src="main.js?v=1.140.0"></script>
+    <script defer src="modules/ui/style.js?v=1.140.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

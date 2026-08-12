@@ -418,29 +418,33 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("regimentSelectorHeader");
 
-  ensureEl("battleType").on("click", event => toggleChange(event));
-  ensureEl("battleType").nextElementSibling!.on("click", event => changeType(event));
-  ensureEl("battleNameShow").on("click", () => showNameSection());
-  ensureEl<HTMLInputElement>("battleNamePlace").on("change", event => {
+  ensureEl("battleType").addEventListener("click", event => toggleChange(event));
+  ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
+  ensureEl("battleNameShow").addEventListener("click", () => showNameSection());
+  ensureEl<HTMLInputElement>("battleNamePlace").addEventListener("change", event => {
     if (battle) battle.place = (event.target as HTMLInputElement).value;
   });
-  ensureEl<HTMLInputElement>("battleNameFull").on("change", event => changeName(event));
-  ensureEl("battleNameCulture").on("click", () => generateBattleName("culture"));
-  ensureEl("battleNameRandom").on("click", () => generateBattleName("random"));
-  ensureEl("battleNameHide").on("click", () => hideNameSection());
-  ensureEl("battleAddRegiment").on("click", () => addSide());
-  ensureEl("battleRoll").on("click", () => randomizeBattle());
-  ensureEl("battleRun").on("click", () => runBattle());
-  ensureEl("battleApply").on("click", () => applyResults());
-  ensureEl("battleCancel").on("click", () => cancelResults());
-  ensureEl("battleWiki").on("click", () => wiki("Battle-Simulator"));
+  ensureEl<HTMLInputElement>("battleNameFull").addEventListener("change", event => changeName(event));
+  ensureEl("battleNameCulture").addEventListener("click", () => generateBattleName("culture"));
+  ensureEl("battleNameRandom").addEventListener("click", () => generateBattleName("random"));
+  ensureEl("battleNameHide").addEventListener("click", () => hideNameSection());
+  ensureEl("battleAddRegiment").addEventListener("click", () => addSide());
+  ensureEl("battleRoll").addEventListener("click", () => randomizeBattle());
+  ensureEl("battleRun").addEventListener("click", () => runBattle());
+  ensureEl("battleApply").addEventListener("click", () => applyResults());
+  ensureEl("battleCancel").addEventListener("click", () => cancelResults());
+  ensureEl("battleWiki").addEventListener("click", () => wiki("Battle-Simulator"));
 
-  ensureEl("battlePhase_attackers").on("click", event => toggleChange(event));
-  ensureEl("battlePhase_attackers").nextElementSibling!.on("click", event => changePhase(event, "attackers"));
-  ensureEl("battlePhase_defenders").on("click", event => toggleChange(event));
-  ensureEl("battlePhase_defenders").nextElementSibling!.on("click", event => changePhase(event, "defenders"));
-  ensureEl("battleDie_attackers").on("click", () => rollDie("attackers"));
-  ensureEl("battleDie_defenders").on("click", () => rollDie("defenders"));
+  ensureEl("battlePhase_attackers").addEventListener("click", event => toggleChange(event));
+  ensureEl("battlePhase_attackers").nextElementSibling!.addEventListener("click", event =>
+    changePhase(event, "attackers")
+  );
+  ensureEl("battlePhase_defenders").addEventListener("click", event => toggleChange(event));
+  ensureEl("battlePhase_defenders").nextElementSibling!.addEventListener("click", event =>
+    changePhase(event, "defenders")
+  );
+  ensureEl("battleDie_attackers").addEventListener("click", () => rollDie("attackers"));
+  ensureEl("battleDie_defenders").addEventListener("click", () => rollDie("defenders"));
 }
 
 function defineType(): void {
@@ -627,7 +631,7 @@ function addSide(): void {
   });
 
   applySorting(ensureEl("regimentSelectorHeader"));
-  body.on("click", selectLine);
+  body.addEventListener("click", selectLine);
 
   function selectLine(event: Event): void {
     const target = event.target as HTMLElement;
@@ -665,7 +669,7 @@ function addSide(): void {
 
   function addSideClosed(): void {
     body.innerHTML = "";
-    body.off("click", selectLine);
+    body.removeEventListener("click", selectLine);
   }
 }
 
@@ -1203,7 +1207,7 @@ function toggleChange(event: Event): void {
   button.style.opacity = "0.5";
   div.style.display = "block";
 
-  document.getElementsByTagName("body")[0].on("click", hideSection, { once: true });
+  document.getElementsByTagName("body")[0].addEventListener("click", hideSection, { once: true });
 }
 
 function changeType(event: Event): void {

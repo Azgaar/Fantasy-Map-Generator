@@ -335,13 +335,12 @@
     "data-y": 93,
     "data-columns": 8
   },
-  "#burgLabels > g#city": {
+  "#labels > #city": {
     "opacity": 1,
     "fill": "#414141",
     "style": "text-shadow: white 0 0 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -363,13 +362,12 @@
     "stroke": "#303030",
     "stroke-width": 1.7
   },
-  "#burgLabels > g#town": {
+  "#labels > #town": {
     "opacity": 1,
     "fill": "#414141",
     "style": "text-shadow: none",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -391,13 +389,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1
   },
-  "#burgLabels > g#capital": {
+  "#labels > #capital": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 7,
-    "font-size": 7,
+    "font-size": "7%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -420,13 +417,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > g#fort": {
+  "#labels > #fort": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -449,13 +445,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > g#monastery": {
+  "#labels > #monastery": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -478,13 +473,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > g#caravanserai": {
+  "#labels > #caravanserai": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -507,13 +501,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > g#trading_post": {
+  "#labels > #trading_post": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -536,13 +529,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > g#village": {
+  "#labels > #village": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 3,
-    "font-size": 3,
+    "font-size": "3%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -565,13 +557,12 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#burgLabels > g#hamlet": {
+  "#labels > #hamlet": {
     "opacity": 1,
     "fill": "#3e3e4b",
     "style": "text-shadow: white 0px 0px 4px",
     "letter-spacing": 0,
-    "data-size": 2,
-    "font-size": 2,
+    "font-size": "2%",
     "font-family": "Arial",
     "data-dy": -0.4
   },
@@ -594,27 +585,58 @@
     "stroke": "#3e3e4b",
     "stroke-width": 1.2
   },
-  "#labels > #states": {
+  "#labels > #state": {
     "opacity": 1,
     "fill": "#292929",
     "stroke": "#303030",
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 2px",
     "letter-spacing": 0,
-    "data-size": 10,
-    "font-size": 10,
+    "font-size": "10%",
     "font-family": "Arial",
     "filter": null
   },
-  "#labels > #addedLabels": {
+  "#labels > #province": {
+    "opacity": 1,
+    "fill": "#292929",
+    "stroke": "#303030",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "6%",
+    "font-family": "Arial",
+    "filter": null
+  },
+  "#labels > #river": {
+    "opacity": 1,
+    "fill": "#292929",
+    "stroke": "#303030",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "2%",
+    "font-family": "Arial",
+    "filter": null
+  },
+  "#labels > #route": {
+    "opacity": 1,
+    "fill": "#292929",
+    "stroke": "#303030",
+    "stroke-width": 0,
+    "style": "text-shadow: white 0 0 2px",
+    "letter-spacing": 0,
+    "font-size": "2%",
+    "font-family": "Arial",
+    "filter": null
+  },
+  "#labels > #added": {
     "opacity": 1,
     "fill": "#414141",
     "stroke": "#3a3a3a",
     "stroke-width": 0,
     "style": "text-shadow: white 0 0 4px",
     "letter-spacing": 0,
-    "data-size": 18,
-    "font-size": 18,
+    "font-size": "18%",
     "font-family": "Arial",
     "filter": null
   },
@@ -659,7 +681,7 @@
   },
   "#markets": {
     "opacity": 1,
-    "stroke-width": 1.0,
+    "stroke-width": 1,
     "fill-opacity": 0,
     "stroke-opacity": 0.8,
     "data-size": 3,

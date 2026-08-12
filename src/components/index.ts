@@ -3,6 +3,7 @@
 import "./app-info";
 import "./tooltips";
 import "./map-tooltip";
+import "./zoom";
 import "./viewbox-events";
 import "./tools";
 import "./hotkeys";

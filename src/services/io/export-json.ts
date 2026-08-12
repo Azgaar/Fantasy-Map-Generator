@@ -116,9 +116,7 @@ function getSettings() {
     urbanization,
     options,
     mapName: mapName.value,
-    hideLabels: hideLabels.checked,
     stylePreset: stylePreset.value,
-    rescaleLabels: rescaleLabels.checked,
     urbanDensity
   };
 }

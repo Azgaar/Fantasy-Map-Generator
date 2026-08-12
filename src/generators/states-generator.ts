@@ -16,6 +16,7 @@ import {
   rw,
   trimVowels
 } from "../utils";
+import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
 
 declare global {
@@ -53,6 +54,7 @@ export interface State {
   salesTax: number;
   pollTax: number;
   treasury: number;
+  label?: Label;
 }
 
 interface Campaign {

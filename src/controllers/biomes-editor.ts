@@ -110,16 +110,16 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("biomesEditorRefresh").on("click", refreshBiomesEditor);
-  ensureEl("biomesEditStyle").on("click", () => editStyle("biomes"));
-  ensureEl("biomesLegend").on("click", toggleLegend);
-  ensureEl("biomesPercentage").on("click", togglePercentageMode);
-  ensureEl("biomesManually").on("click", enterBiomesCustomizationMode);
-  ensureEl("biomesManuallyApply").on("click", applyBiomesChange);
-  ensureEl("biomesManuallyCancel").on("click", () => exitBiomesCustomizationMode());
-  ensureEl("biomesRestore").on("click", restoreInitialBiomes);
-  ensureEl("biomesAdd").on("click", addCustomBiome);
-  ensureEl("biomesExport").on("click", downloadBiomesData);
+  ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
+  ensureEl("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
+  ensureEl("biomesLegend").addEventListener("click", toggleLegend);
+  ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("biomesManually").addEventListener("click", enterBiomesCustomizationMode);
+  ensureEl("biomesManuallyApply").addEventListener("click", applyBiomesChange);
+  ensureEl("biomesManuallyCancel").addEventListener("click", () => exitBiomesCustomizationMode());
+  ensureEl("biomesRestore").addEventListener("click", restoreInitialBiomes);
+  ensureEl("biomesAdd").addEventListener("click", addCustomBiome);
+  ensureEl("biomesExport").addEventListener("click", downloadBiomesData);
 
   applySortingByHeader("biomesHeader");
   applyLineHighlighting("biomesEditor", ({ cellId }) => cellId && pack.cells.biome[cellId]);

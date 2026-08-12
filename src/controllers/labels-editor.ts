@@ -1,27 +1,34 @@
-import { curveNatural, drag, line, type Selection, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import type { Label, LabelType } from "@/generators/labels-generator";
+import { UNNAMED_ROUTE } from "@/generators/routes-generator";
+import type { Point } from "@/generators/voronoi";
+import { createLabelArc } from "@/renderers/labels/label-arc";
+import { getLabelPath } from "@/renderers/labels/label-markup";
+import type { LabelData } from "@/renderers/labels/labels";
+import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
-import { destroyDialogIfExists, ensureEl, findEl, getPointer, parseTransform, round } from "../utils";
+import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
 
-const lineGen = line<[number, number]>().curve(curveNatural);
+let lastSelectedGroup = ""; // the default group for newly added labels
+let label: LabelData;
 
-// group selected in the editor most recently; used as the default group for newly added labels
-let lastSelectedGroup = "";
-let selectedLabel: Selection<SVGElement, unknown, HTMLElement, unknown>;
-
-function open(tspan: SVGTSpanElement): void {
+function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
-  const textPath = tspan.parentNode as SVGTextPathElement;
-  const text = textPath.parentNode as SVGTextElement;
-  selectedLabel = select<SVGElement, unknown>(text)
-    .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true) as unknown as typeof selectedLabel;
+  const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
+  if (!textEl) return;
+
+  const cachedLabel = getSceneLabel(type, id);
+  if (!cachedLabel) return;
+  label = { ...cachedLabel }; // the editor owns its copy and hands it back to the renderer on every change
+
+  makeLabelDraggable(textEl.id);
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
 
   renderDialog();
@@ -30,13 +37,14 @@ function open(tspan: SVGTSpanElement): void {
     title: "Edit Label",
     resizable: false,
     width: "fit-content",
-    position: { my: "center top+10", at: "bottom", of: text, collision: "fit" },
+    position: { my: "center top+10", at: "bottom", of: textEl, collision: "fit" },
     close: closeLabelEditor
   });
 
   drawControlPointsAndLine();
-  selectLabelGroup(text);
-  updateValues(textPath);
+  selectLabelGroup(label.group);
+  updateValues();
+  updateControls();
 }
 
 function renderDialog(): void {
@@ -46,18 +54,11 @@ function renderDialog(): void {
       <div id="labelGroupSection" style="display: none">
         <button id="labelGroupHide" data-tip="Hide the group selection" class="icon-tags"></button>
         <select id="labelGroupSelect" data-tip="Select a group for this label" style="width: 10em"></select>
-        <input
-          id="labelGroupInput"
-          placeholder="new group name"
-          data-tip="Provide a name for the new group"
-          style="display: none; width: 10em"
-        />
-        <span id="labelGroupNew" data-tip="Create a new group for this label" class="icon-plus pointer"></span>
-        <span
-          id="labelGroupRemove"
-          data-tip="Remove the Group with all labels"
-          class="icon-trash-empty pointer"
-        ></span>
+        <button
+          id="labelGroupsConfigure"
+          data-tip="Open the Label Groups Configurator to create, edit and reorder groups"
+          class="icon-cog"
+        ></button>
       </div>
       <button id="labelTextShow" data-tip="Show the edit label text section" class="icon-pencil"></button>
       <div id="labelTextSection" style="display: none">
@@ -71,6 +72,7 @@ function renderDialog(): void {
         <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
       </div>
       <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
+      <button id="labelPathToggle"></button>
       <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
       <div id="labelSizeSection" style="display: none">
         <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
@@ -124,8 +126,9 @@ function renderDialog(): void {
           value="0"
         ></slider-input>
       </div>
-      <button id="labelAlign" data-tip="Turn text path into a straight line" class="icon-resize-horizontal"></button>
+      <button id="labelVisibility"></button>
       <button id="labelLegend" data-tip="Edit free text notes (legend) for this label" class="icon-edit"></button>
+      <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
       <button
         id="labelRemoveSingle"
         data-tip="Remove the label"
@@ -135,125 +138,135 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl("labelGroupShow").on("click", showGroupSection);
-  ensureEl("labelGroupHide").on("click", hideGroupSection);
-  ensureEl("labelGroupSelect").on("click", changeGroup);
-  ensureEl("labelGroupInput").on("change", createNewGroup);
-  ensureEl("labelGroupNew").on("click", toggleNewGroupInput);
-  ensureEl("labelGroupRemove").on("click", removeLabelsGroup);
+  ensureEl("labelGroupShow").addEventListener("click", showGroupSection);
+  ensureEl("labelGroupHide").addEventListener("click", hideGroupSection);
+  ensureEl("labelGroupSelect").addEventListener("change", changeGroup);
+  ensureEl("labelGroupsConfigure").addEventListener("click", () => void Controllers.LabelGroupsConfigurator.open());
 
-  ensureEl("labelTextShow").on("click", showTextSection);
-  ensureEl("labelTextHide").on("click", hideTextSection);
-  ensureEl("labelText").on("input", changeText);
-  ensureEl("labelTextSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("labelText").value));
-  ensureEl("labelTextRandom").on("click", generateRandomName);
+  ensureEl("labelTextShow").addEventListener("click", showTextSection);
+  ensureEl("labelTextHide").addEventListener("click", hideTextSection);
+  ensureEl("labelText").addEventListener("input", changeText);
+  ensureEl("labelTextSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("labelText").value));
+  ensureEl("labelTextRandom").addEventListener("click", generateRandomName);
 
-  ensureEl("labelEditStyle").on("click", editGroupStyle);
+  ensureEl("labelEditStyle").addEventListener("click", editGroupStyle);
 
-  ensureEl("labelSizeShow").on("click", showSizeSection);
-  ensureEl("labelSizeHide").on("click", hideSizeSection);
-  ensureEl("labelOffsetShow").on("click", showOffsetSection);
-  ensureEl("labelOffsetHide").on("click", hideOffsetSection);
-  ensureEl("labelStartOffset").on("input", changeStartOffset);
-  ensureEl("labelStartOffsetValue").on("input", changeStartOffsetFromValue);
-  ensureEl("labelRelativeSize").on("input", changeRelativeSize);
+  ensureEl("labelSizeShow").addEventListener("click", showSizeSection);
+  ensureEl("labelSizeHide").addEventListener("click", hideSizeSection);
+  ensureEl("labelOffsetShow").addEventListener("click", showOffsetSection);
+  ensureEl("labelOffsetHide").addEventListener("click", hideOffsetSection);
+  ensureEl("labelStartOffset").addEventListener("input", changeStartOffset);
+  ensureEl("labelStartOffsetValue").addEventListener("input", changeStartOffsetFromValue);
+  ensureEl("labelRelativeSize").addEventListener("input", changeRelativeSize);
 
-  ensureEl("labelLetterSpacingShow").on("click", showLetterSpacingSection);
-  ensureEl("labelLetterSpacingHide").on("click", hideLetterSpacingSection);
-  ensureEl("labelLetterSpacingSize").on("input", changeLetterSpacingSize);
+  ensureEl("labelLetterSpacingShow").addEventListener("click", showLetterSpacingSection);
+  ensureEl("labelLetterSpacingHide").addEventListener("click", hideLetterSpacingSection);
+  ensureEl("labelLetterSpacingSize").addEventListener("input", changeLetterSpacingSize);
 
-  ensureEl("labelAlign").on("click", editLabelAlign);
-  ensureEl("labelLegend").on("click", editLabelLegend);
-  ensureEl("labelRemoveSingle").on("click", removeLabel);
+  ensureEl("labelPathToggle").addEventListener("click", toggleLabelPath);
+  ensureEl("labelVisibility").addEventListener("click", toggleLabelVisibility);
+  ensureEl("labelLegend").addEventListener("click", editLabelLegend);
+  ensureEl("labelReset").addEventListener("click", resetSelectedLabel);
+  ensureEl("labelRemoveSingle").addEventListener("click", removeSelectedLabel);
 }
 
-function hideTopButtons(): void {
-  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
-    el.style.display = "none";
-  });
-}
-
-function showTopButtons(): void {
-  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
-    el.style.display = "inline-block";
-  });
-}
-
-function showEditorTips(event: MouseEvent): void {
-  showMainTip();
-  const target = event.target as SVGElement;
-  const parent = target.parentNode as Element | null;
-  const grandParent = parent?.parentNode as Element | null;
-  if (grandParent?.id === selectedLabel.attr("id")) {
-    tip("Drag to shift the label");
-  } else if (parent?.id === "controlPoints") {
-    if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
-    if (target.tagName === "path") tip("Click to add a control point");
-  }
-}
-
-function selectLabelGroup(text: SVGTextElement): void {
-  const group = (text.parentNode as SVGGElement).id;
-
-  if (group === "states" || group === "burgLabels") {
-    ensureEl("labelGroupShow").style.display = "none";
-    return;
-  }
-
+function selectLabelGroup(group: string): void {
   lastSelectedGroup = group;
 
   hideGroupSection();
   const groupSelect = ensureEl<HTMLSelectElement>("labelGroupSelect");
   groupSelect.options.length = 0; // remove all options
 
-  select<SVGGElement, unknown>("#labels")
-    .selectAll<SVGGElement, unknown>(":scope > g")
-    .each(function () {
-      if (this.id === "states") return;
-      if (this.id === "burgLabels") return;
-      groupSelect.options.add(new Option(this.id, this.id, false, this.id === group));
-    });
+  for (const groupOptions of options.labels.groups) {
+    groupSelect.options.add(new Option(groupOptions.name, groupOptions.name, false, groupOptions.name === group));
+  }
 }
 
-function updateValues(textPath: SVGTextPathElement): void {
-  ensureEl<HTMLInputElement>("labelText").value = [...textPath.querySelectorAll("tspan")]
-    .map(tspan => tspan.textContent)
-    .join("|");
-  const startOffset = Number.parseFloat(textPath.getAttribute("startOffset")!);
+function updateControls(): void {
+  const hasPath = hasLabelPath();
+  const topButtonsVisible = !ensureEl("labelEditor").classList.contains("section-open");
+  ensureEl("labelOffsetShow").style.display = topButtonsVisible && hasPath ? "inline-block" : "none";
+  ensureEl("labelRemoveSingle").style.display = topButtonsVisible && label.type === "added" ? "inline-block" : "none";
+  ensureEl("labelReset").style.display =
+    topButtonsVisible && Labels.hasOverride(label.type, label.entityId) ? "inline-block" : "none";
+
+  const pathToggle = ensureEl("labelPathToggle");
+  pathToggle.className = hasPath ? "icon-resize-horizontal" : "icon-bezier-curve";
+  pathToggle.dataset.tip = hasPath
+    ? "Remove the label path, render the label as a straight text"
+    : "Curve the label along a path";
+
+  const visibility = ensureEl("labelVisibility");
+  visibility.className = label.hidden ? "icon-eye-off" : "icon-eye";
+  visibility.dataset.tip = label.hidden
+    ? "Show the label"
+    : "Hide the label. You can toggle it on later in Labels Overview";
+}
+
+function hasLabelPath(): boolean {
+  return Boolean(label.pathPoints?.length);
+}
+
+function updateValues(): void {
+  const startOffset = label.startOffset || 50;
+  ensureEl<HTMLInputElement>("labelText").value = label.text || "";
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(startOffset);
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = String(startOffset);
-  ensureEl<HTMLInputElement>("labelRelativeSize").value = String(
-    Number.parseFloat(textPath.getAttribute("font-size")!)
-  );
-  const letterSpacingSize = textPath.getAttribute("letter-spacing") || "0";
-  ensureEl<HTMLInputElement>("labelLetterSpacingSize").value = String(Number.parseFloat(letterSpacingSize));
+  ensureEl<HTMLInputElement>("labelRelativeSize").value = String(label.fontSize ?? 100);
+  ensureEl<HTMLInputElement>("labelLetterSpacingSize").value = String(label.letterSpacing ?? 0);
+}
+
+function hideTopButtons(): void {
+  ensureEl("labelEditor").classList.add("section-open");
+  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
+    el.style.display = "none";
+  });
+}
+
+function showTopButtons(): void {
+  ensureEl("labelEditor").classList.remove("section-open");
+  document.querySelectorAll<HTMLElement>("#labelEditor > button").forEach(el => {
+    el.style.display = "inline-block";
+  });
+  updateControls();
+}
+
+function showEditorTips(event: MouseEvent): void {
+  showMainTip();
+  const target = event.target as SVGElement;
+  const parent = target.parentNode as Element | null;
+  if (target.closest(`#${label.id}`)) {
+    tip("Drag to move the label");
+  } else if (parent?.id === "controlPoints") {
+    if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
+    if (target.tagName === "path") tip("Click to add a control point");
+  }
 }
 
 function drawControlPointsAndLine(): void {
   select("#debug").select("#controlPoints").remove();
-  select("#debug").append("g").attr("id", "controlPoints").attr("transform", selectedLabel.attr("transform"));
-  const path = ensureEl(`textPath_${selectedLabel.attr("id")}`) as unknown as SVGPathElement;
+  if (!hasLabelPath()) return;
+
+  const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
   select<SVGGElement, unknown>("#debug")
-    .select("#controlPoints")
+    .append("g")
+    .attr("id", "controlPoints")
+    .attr("transform", transform)
     .append("path")
-    .attr("d", path.getAttribute("d"))
+    .attr("d", getLabelPath(label))
+    .style("stroke-width", Math.max(2.2 / scale, 0.2))
     .on("click", addInterimControlPoint);
-  const l = path.getTotalLength();
-  if (!l) return;
-  const increment = l / Math.max(Math.ceil(l / 200), 2);
-  for (let i = 0; i <= l; i += increment) {
-    addControlPoint(path.getPointAtLength(i));
-  }
+  label.pathPoints?.forEach(drawControlPoint);
 }
 
-function addControlPoint(point: DOMPoint): void {
+function drawControlPoint(point: Point): void {
   select<SVGGElement, unknown>("#debug")
     .select("#controlPoints")
     .append("circle")
-    .attr("cx", point.x)
-    .attr("cy", point.y)
-    .attr("r", 2.5)
-    .attr("stroke-width", 0.8)
+    .attr("cx", point[0])
+    .attr("cy", point[1])
+    .attr("r", Math.max(3 / scale, 0.35))
+    .style("stroke-width", Math.max(1 / scale, 0.15))
     .call(drag<SVGCircleElement, unknown>().on("drag", dragControlPoint))
     .on("click", clickControlPoint);
 }
@@ -265,17 +278,20 @@ function dragControlPoint(this: SVGCircleElement, event: any): void {
 }
 
 function redrawLabelPath(): void {
-  const path = ensureEl(`textPath_${selectedLabel.attr("id")}`) as unknown as SVGPathElement;
-  const points: [number, number][] = [];
-  select("#debug")
-    .select("#controlPoints")
+  const points: Point[] = [];
+  select("#debug > #controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
-      points.push([+this.getAttribute("cx")!, +this.getAttribute("cy")!]);
+      const x = rn(+this.getAttribute("cx")!, 2);
+      const y = rn(+this.getAttribute("cy")!, 2);
+      points.push([x, y]);
     });
+  const lineGen = line<[number, number]>().curve(curveNatural);
   const d = round(lineGen(points) || "");
-  path.setAttribute("d", d);
   select("#debug").select("#controlPoints > path").attr("d", d);
+  label.pathPoints = points;
+  applyLabelChanges();
+  if (!points.length) drawControlPointsAndLine(); // last control point removed, the label became a plain text
 }
 
 function clickControlPoint(this: SVGCircleElement): void {
@@ -287,8 +303,7 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   const point = getPointer(event, this);
 
   const dists: number[] = [];
-  select("#debug")
-    .select("#controlPoints")
+  select("#debug #controlPoints")
     .selectAll<SVGCircleElement, unknown>("circle")
     .each(function () {
       const x = +this.getAttribute("cx")!;
@@ -318,16 +333,19 @@ function addInterimControlPoint(this: SVGPathElement, event: any): void {
   redrawLabelPath();
 }
 
-function dragLabel(event: any): void {
-  const tr = parseTransform(selectedLabel.attr("transform"));
-  const dx = +tr[0] - event.x;
-  const dy = +tr[1] - event.y;
+function dragLabel(this: SVGElement, event: D3DragEvent<SVGGElement, unknown, unknown>) {
+  const dx0 = (label.dx || 0) - event.x;
+  const dy0 = (label.dy || 0) - event.y;
 
-  event.on("drag", (dragEvent: any) => {
-    const transform = `translate(${dx + dragEvent.x},${dy + dragEvent.y})`;
-    selectedLabel.attr("transform", transform);
-    select("#debug").select("#controlPoints").attr("transform", transform);
+  event.on("drag", (dragEvent: D3DragEvent<SVGGElement, unknown, unknown>) => {
+    label.dx = rn(dx0 + dragEvent.x, 2);
+    label.dy = rn(dy0 + dragEvent.y, 2);
+    const transform = `translate(${label.dx}, ${label.dy})`;
+    this.setAttribute("transform", transform);
+    select("#debug #controlPoints").attr("transform", transform);
   });
+
+  event.on("end", () => applyLabelChanges());
 }
 
 function showGroupSection(): void {
@@ -338,100 +356,25 @@ function showGroupSection(): void {
 function hideGroupSection(): void {
   showTopButtons();
   ensureEl("labelGroupSection").style.display = "none";
-  ensureEl("labelGroupInput").style.display = "none";
-  ensureEl<HTMLInputElement>("labelGroupInput").value = "";
-  ensureEl("labelGroupSelect").style.display = "inline-block";
 }
 
 function changeGroup(this: HTMLSelectElement): void {
-  lastSelectedGroup = this.value;
-  ensureEl(this.value).appendChild(selectedLabel.node()!);
-}
+  const nextGroup = this.value;
+  const targetType = options.labels.groups.find(group => group.name === nextGroup)?.type;
+  const apply = () => {
+    lastSelectedGroup = nextGroup;
+    label.group = nextGroup;
+    applyLabelChanges();
+  };
+  if (targetType === label.type) return void apply();
 
-function toggleNewGroupInput(): void {
-  const labelGroupInput = ensureEl("labelGroupInput");
-  const labelGroupSelect = ensureEl("labelGroupSelect");
-  if (labelGroupInput.style.display === "none") {
-    labelGroupInput.style.display = "inline-block";
-    labelGroupInput.focus();
-    labelGroupSelect.style.display = "none";
-  } else {
-    labelGroupInput.style.display = "none";
-    labelGroupSelect.style.display = "inline-block";
-  }
-}
-
-function createNewGroup(this: HTMLInputElement): void {
-  if (!this.value) {
-    tip("Please provide a valid group name");
-    return;
-  }
-  const group = this.value
-    .toLowerCase()
-    .replace(/ /g, "_")
-    .replace(/[^\w\s]/gi, "");
-
-  if (findEl(group)) {
-    tip("Element with this id already exists. Please provide a unique name", false, "error");
-    return;
-  }
-
-  if (Number.isFinite(+group.charAt(0))) {
-    tip("Group name should start with a letter", false, "error");
-    return;
-  }
-
-  lastSelectedGroup = group;
-
-  // just rename if only 1 element left
-  const oldGroup = selectedLabel.node()!.parentNode as SVGGElement;
-  if (oldGroup.id !== "states" && oldGroup.id !== "addedLabels" && oldGroup.childElementCount === 1) {
-    ensureEl<HTMLSelectElement>("labelGroupSelect").selectedOptions[0].remove();
-    ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-    oldGroup.id = group;
-    toggleNewGroupInput();
-    ensureEl<HTMLInputElement>("labelGroupInput").value = "";
-    return;
-  }
-
-  const newGroup = (selectedLabel.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
-  ensureEl("labels").appendChild(newGroup);
-  newGroup.id = group;
-  ensureEl<HTMLSelectElement>("labelGroupSelect").options.add(new Option(group, group, false, true));
-  ensureEl(group).appendChild(selectedLabel.node()!);
-
-  toggleNewGroupInput();
-  ensureEl<HTMLInputElement>("labelGroupInput").value = "";
-}
-
-function removeLabelsGroup(): void {
-  const group = (selectedLabel.node()!.parentNode as SVGGElement).id;
-  const basic = group === "states" || group === "addedLabels";
-  const count = (selectedLabel.node()!.parentNode as SVGGElement).childElementCount;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove ${
-    basic ? "all elements in the group" : "the entire label group"
-  }? <br /><br />Labels to be
-    removed: ${count}`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove route group",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
-        $("#labelEditor").dialog("close");
-        hideGroupSection();
-        select<SVGGElement, unknown>("#labels")
-          .select(`#${group}`)
-          .selectAll<SVGTextElement, unknown>("text")
-          .each(function () {
-            ensureEl(`textPath_${this.id}`).remove();
-            this.remove();
-          });
-        if (!basic) select<SVGGElement, unknown>("#labels").select(`#${group}`).remove();
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+  confirmationDialog({
+    title: "Assign cross-type Label Group",
+    message: `Assign this ${label.type} label to the ${targetType} group "${nextGroup}"? It's better to avoid such cross-type assignment.`,
+    confirm: "Assign",
+    onConfirm: apply,
+    onCancel: () => {
+      this.value = label.group;
     }
   });
 }
@@ -448,37 +391,46 @@ function hideTextSection(): void {
 
 function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
-  const el = selectedLabel.select("textPath").node() as SVGElement;
-
-  const lines = input.split("|");
-  if (lines.length > 1) {
-    const top = (lines.length - 1) / -2; // y offset
-    el.innerHTML = lines.map((line, index) => `<tspan x="0" dy="${index ? 1 : top}em">${line}</tspan>`).join("");
-  } else el.innerHTML = `<tspan x="0">${lines}</tspan>`;
-
-  if (selectedLabel.attr("id").slice(0, 10) === "stateLabel")
-    tip("Use States Editor to change an actual state name, not just a label", false, "warn");
+  label.text = input;
+  applyLabelChanges();
+  if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
+  if (label.type === "province")
+    tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
 }
 
-function generateRandomName(): void {
-  let name = "";
-  if (selectedLabel.attr("id").slice(0, 10) === "stateLabel") {
-    const id = +selectedLabel.attr("id").slice(10);
-    const culture = pack.states[id].culture;
-    name = Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
-  } else {
-    const box = (selectedLabel.node() as SVGGraphicsElement).getBBox();
-    const cell = findCell((box.x + box.width) / 2, (box.y + box.height) / 2)!;
-    const culture = pack.cells.culture[cell];
-    name = Names.getCulture(culture);
+const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
+  burg: label => Names.getCulture(pack.burgs[label.entityId].culture ?? 0),
+  state: label => {
+    const culture = pack.states[label.entityId].culture;
+    return Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
+  },
+  province: label => {
+    const province = pack.provinces[label.entityId];
+    return Names.getState(province.name, pack.cells.culture[province.center]);
+  },
+  added: label => {
+    const cellId = findCell(...label.anchor);
+    if (!cellId) return "";
+    return Names.getCulture(pack.cells.culture[cellId]);
+  },
+  river: label => {
+    const cellId = findCell(...label.anchor);
+    if (!cellId) return "";
+    return Rivers.getName(cellId);
+  },
+  route: label => {
+    const points = pack.routes.find(route => route.i === label.entityId)?.points ?? [];
+    return Routes.generateName({ group: label.group, points }) || UNNAMED_ROUTE;
   }
-  ensureEl<HTMLInputElement>("labelText").value = name;
+};
+
+function generateRandomName(): void {
+  ensureEl<HTMLInputElement>("labelText").value = nameGenerators[label.type](label);
   changeText();
 }
 
 function editGroupStyle(): void {
-  const g = (selectedLabel.node()!.parentNode as SVGGElement).id;
-  editStyle("labels", g);
+  editStyle("labels", label.group);
 }
 
 function showSizeSection(): void {
@@ -512,47 +464,57 @@ function hideLetterSpacingSection(): void {
 }
 
 function changeStartOffset(this: HTMLInputElement): void {
+  if (!hasLabelPath()) return;
   const value = this.value;
   ensureEl<HTMLInputElement>("labelStartOffsetValue").value = value;
-  selectedLabel.select("textPath").attr("startOffset", `${value}%`);
+
+  label.startOffset = +value;
+  applyLabelChanges();
   tip(`Label offset: ${value}%`);
 }
 
 function changeStartOffsetFromValue(this: HTMLInputElement): void {
+  if (!hasLabelPath()) return;
   const value = Math.min(80, Math.max(20, +this.value));
   ensureEl<HTMLInputElement>("labelStartOffset").value = String(value);
   this.value = String(value);
-  selectedLabel.select("textPath").attr("startOffset", `${value}%`);
+
+  label.startOffset = value;
+  applyLabelChanges();
   tip(`Label offset: ${value}%`);
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
-  selectedLabel.select("textPath").attr("font-size", `${this.value}%`);
+  label.fontSize = +this.value;
+  applyLabelChanges();
   tip(`Label relative size: ${this.value}%`);
-  changeText();
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
-  selectedLabel.select("textPath").attr("letter-spacing", `${this.value}px`);
+  label.letterSpacing = +this.value;
+  applyLabelChanges();
   tip(`Label letter-spacing size: ${this.value}px`);
-  changeText();
 }
 
-function editLabelAlign(): void {
-  const bbox = (selectedLabel.node() as SVGGraphicsElement).getBBox();
-  const c = [bbox.x + bbox.width / 2, bbox.y + bbox.height / 2];
-  const path = select<SVGElement, unknown>("#deftemp").select(`#textPath_${selectedLabel.attr("id")}`);
-  path.attr("d", `M${c[0] - bbox.width},${c[1]}h${bbox.width * 2}`);
+// An empty path means the label is explicitly rendered as a plain text, so it won't fall back to the default geometry
+function toggleLabelPath(): void {
+  label.pathPoints = hasLabelPath() ? [] : createLabelArc(label);
+  applyLabelChanges();
   drawControlPointsAndLine();
 }
 
-function editLabelLegend(): void {
-  const id = selectedLabel.attr("id");
-  const name = selectedLabel.text();
-  void Controllers.NotesEditor.open(id, name);
+function toggleLabelVisibility(): void {
+  if (label.hidden) delete label.hidden;
+  else label.hidden = true;
+  applyLabelChanges();
 }
 
-function removeLabel(): void {
+function editLabelLegend(): void {
+  const noteId = label.type === "burg" ? `burg${label.entityId}` : label.id;
+  void Controllers.NotesEditor.open(noteId, label.text);
+}
+
+function removeSelectedLabel(): void {
   alertMessage.innerHTML = "Are you sure you want to remove the label?";
   $("#alert").dialog({
     resizable: false,
@@ -560,10 +522,9 @@ function removeLabel(): void {
     buttons: {
       Remove: function (this: HTMLElement) {
         $(this).dialog("close");
-        select<SVGElement, unknown>("#deftemp")
-          .select(`#textPath_${selectedLabel.attr("id")}`)
-          .remove();
-        selectedLabel.remove();
+        if (label.type !== "added") return;
+        AddedLabels.remove(label.entityId);
+        drawLabels();
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -573,14 +534,57 @@ function removeLabel(): void {
   });
 }
 
+function applyLabelChanges(): void {
+  const entity = Labels.getEntity(label.type, label.entityId);
+  if (!entity) return;
+
+  entity.label = getLabelOverride();
+  redrawLabel(label);
+  makeLabelDraggable(label.id);
+  updateControls();
+}
+
+function makeLabelDraggable(id: string): void {
+  select<SVGElement, unknown>(`#${id}`)
+    .call(drag<SVGElement, unknown>().on("start", dragLabel))
+    .classed("draggable", true);
+}
+
+function resetSelectedLabel(): void {
+  const { type, entityId } = label;
+  Labels.resetOverride(type, entityId);
+
+  drawLabels();
+  label = { ...(getSceneLabel(type, entityId) ?? label) };
+  makeLabelDraggable(label.id);
+  selectLabelGroup(label.group);
+  updateValues();
+  updateControls();
+  drawControlPointsAndLine();
+}
+
 function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
-  selectedLabel.on(".drag", null).classed("draggable", false);
+  select(`#${label.id}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
   $("#labelEditor").dialog("destroy");
   ensureEl("labelEditor").remove();
 }
 
-const getLastSelectedGroup = (): string => lastSelectedGroup;
+// An edited label always stores its geometry explicitly, so an empty path is kept as an empty array
+function getLabelOverride(): Label {
+  return {
+    text: label.text,
+    group: label.group,
+    dx: label.dx,
+    dy: label.dy,
+    fontSize: label.fontSize,
+    letterSpacing: label.letterSpacing,
+    pathPoints: label.pathPoints ?? [],
+    startOffset: label.startOffset,
+    hidden: label.hidden
+  };
+}
 
+const getLastSelectedGroup = (): string => lastSelectedGroup;
 export const LabelsEditor = { open, getLastSelectedGroup };
