@@ -93,6 +93,13 @@ function prepareMapData(): string {
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
   cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
 
+  // relief icons are stored in pack.relief, the layer holds only the currently visible ones
+  const cloneTerrain = cloneEl.querySelector("#terrain");
+  if (cloneTerrain) {
+    cloneTerrain.innerHTML = "";
+    cloneTerrain.setAttribute("data-layer-active", String(layerIsOn("toggleRelief")));
+  }
+
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
@@ -110,6 +117,7 @@ function prepareMapData(): string {
   const religions = JSON.stringify(pack.religions);
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);
+  const relief = JSON.stringify(pack.relief || []);
   const markers = JSON.stringify(pack.markers);
   const cellRoutes = JSON.stringify(pack.cells.routes);
   const routes = JSON.stringify(pack.routes);
@@ -190,7 +198,8 @@ function prepareMapData(): string {
     customGoodIcons,
     measurers,
     labels,
-    styleData
+    styleData,
+    relief
   ].join("\r\n");
   return mapData;
 }

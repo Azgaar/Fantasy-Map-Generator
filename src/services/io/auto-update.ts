@@ -1511,4 +1511,34 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     // other changes
     select("#coastline > #sea_island").attr("filter", null);
   }
+
+  if (isOlderThan("1.142.0")) {
+    // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
+    const terrainEl = document.getElementById("terrain");
+    const iconElements = Array.from(terrainEl?.querySelectorAll("use") || []);
+
+    if (terrainEl) {
+      // v1.142.0 moved the relief style from the #terrain attributes to style.relief
+      style.relief = {
+        set: terrainEl.getAttribute("set") || "simple",
+        size: Number(terrainEl.getAttribute("size")) || 1,
+        density: Number(terrainEl.getAttribute("density")) || 0.4
+      };
+      for (const attribute of ["set", "size", "density"]) terrainEl.removeAttribute(attribute);
+    }
+
+    if (terrainEl && iconElements.length) {
+      pack.relief = iconElements.map(useEl => ({
+        icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
+        x: rn(Number(useEl.getAttribute("x")), 2),
+        y: rn(Number(useEl.getAttribute("y")), 2),
+        s: rn(Number(useEl.getAttribute("width")), 2)
+      }));
+
+      // the layer used to be hidden by display, now it is materialized only when active
+      terrainEl.setAttribute("data-layer-active", String(getComputedStyle(terrainEl).display !== "none"));
+      terrainEl.style.removeProperty("display");
+      terrainEl.replaceChildren();
+    }
+  }
 }

@@ -16,6 +16,7 @@ const systemPresets = [
   "monochrome"
 ];
 const customPresetPrefix = "fmgStyle_";
+const RELIEF_STYLE_ATTRIBUTES = ["set", "size", "density"];
 
 // add style presets to list
 {
@@ -89,6 +90,14 @@ function applyStylePreset(presetJson) {
       style.anchors[group] = presetJson[selector];
     }
 
+    if (selector === "#terrain") {
+      // set and size are applied to the existing icons, density would require a regeneration
+      const {set, size, density} = presetJson[selector];
+      if (size !== undefined && size !== null) Relief.changeSize(size);
+      if (set !== undefined && set !== null) Relief.changeSet(set);
+      if (density !== undefined && density !== null) style.relief.density = density;
+    }
+
     const el = labelGroup
       ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
       : document.querySelector(selector);
@@ -96,6 +105,7 @@ function applyStylePreset(presetJson) {
 
     for (const attribute in presetJson[selector]) {
       if (attribute === "id") continue;
+      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in style.relief
       const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {
@@ -267,7 +277,7 @@ function addStylePreset() {
       "#dry": ["opacity", "fill", "stroke", "stroke-width", "filter"],
       "#sea_island": ["opacity", "stroke", "stroke-width", "filter", "auto-filter"],
       "#lake_island": ["opacity", "stroke", "stroke-width", "filter"],
-      "#terrain": ["opacity", "set", "size", "density", "filter", "mask"],
+      "#terrain": ["opacity", "filter", "mask"],
       "#rivers": ["opacity", "filter", "fill"],
       "#ruler": ["opacity", "data-size", "font-size", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
@@ -420,6 +430,8 @@ function addStylePreset() {
         presetStyle[selector][attr] = parseValue(value);
       }
     }
+
+    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
 
     for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, groupStyle);

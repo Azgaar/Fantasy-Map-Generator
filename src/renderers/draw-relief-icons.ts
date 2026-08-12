@@ -1,153 +1,52 @@
-import { extent, polygonContains } from "d3";
-import { poissonDiscSampler } from "@/utils";
-import { minmax, rand, rn } from "../utils";
+import type { ReliefIcon } from "@/generators/relief-generator";
+import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 
-interface ReliefIcon {
-  i: string;
-  x: number;
-  y: number;
-  s: number;
+interface ReliefSceneIcon extends ReliefIcon {
+  id: string;
 }
 
-declare global {
-  var drawReliefIcons: () => void;
-  var terrain: import("d3").Selection<SVGGElement, unknown, null, undefined>;
-  var getPackPolygon: (i: number) => [number, number][];
-}
+const scene = new Scene<ReliefSceneIcon>();
+const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
+let frameId: number | null = null;
 
-const reliefIconsRenderer = (): void => {
+export const drawRelief = (): void => {
+  if (!layerIsOn("toggleRelief")) return void removeRelief();
+
   TIME && console.time("drawRelief");
-  terrain.selectAll("*").remove();
-
-  const cells = pack.cells;
-  const density = Number(terrain.attr("density")) || 0.4;
-  const size = 2 * (Number(terrain.attr("size")) || 1);
-  const mod = 0.2 * size; // size modifier
-  const relief: ReliefIcon[] = [];
-
-  for (const i of cells.i) {
-    const height = cells.h[i];
-    if (height < 20) continue; // no icons on water
-    if (cells.r[i]) continue; // no icons on rivers
-    const biome = cells.biome[i];
-    if (height < 50 && pack.biomes[biome].iconsDensity === 0) continue; // no icons for this biome
-
-    const polygon = getPackPolygon(i);
-    const [minX, maxX] = extent(polygon, p => p[0]) as [number, number];
-    const [minY, maxY] = extent(polygon, p => p[1]) as [number, number];
-
-    if (height < 50) placeBiomeIcons();
-    else placeReliefIcons();
-
-    function placeBiomeIcons(): void {
-      const iconsDensity = pack.biomes[biome].iconsDensity / 100;
-      const radius = 2 / iconsDensity / density;
-      if (Math.random() > iconsDensity * 10) return;
-
-      for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
-        if (!polygonContains(polygon, [cx, cy])) continue;
-        let h = (4 + Math.random()) * size;
-        const icon = getBiomeIcon(i, pack.biomes[biome].icons);
-        if (icon === "#relief-grass-1") h *= 1.2;
-        relief.push({
-          i: icon,
-          x: rn(cx - h, 2),
-          y: rn(cy - h, 2),
-          s: rn(h * 2, 2)
-        });
-      }
-    }
-
-    function placeReliefIcons(): void {
-      const radius = 2 / density;
-      const [icon, h] = getReliefIcon(i, height);
-
-      for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
-        if (!polygonContains(polygon, [cx, cy])) continue;
-        relief.push({
-          i: icon,
-          x: rn(cx - h, 2),
-          y: rn(cy - h, 2),
-          s: rn(h * 2, 2)
-        });
-      }
-    }
-
-    function getReliefIcon(cellIndex: number, h: number): [string, number] {
-      const temp = grid.cells.temp[pack.cells.g[cellIndex]];
-      const type = h > 70 && temp < 0 ? "mountSnow" : h > 70 ? "mount" : "hill";
-      const iconSize = h > 70 ? (h - 45) * mod : minmax((h - 40) * mod, 3, 6);
-      return [getIcon(type), iconSize];
-    }
-  }
-
-  // sort relief icons by y+size
-  relief.sort((a, b) => a.y + a.s - (b.y + b.s));
-
-  const reliefHTML: string[] = [];
-  for (const r of relief) {
-    reliefHTML.push(`<use href="${r.i}" x="${r.x}" y="${r.y}" width="${r.s}" height="${r.s}"/>`);
-  }
-  terrain.html(reliefHTML.join(""));
-
+  if (!pack.relief?.length) Relief.generate();
+  scene.replace(pack.relief.map((icon, i) => ({ ...icon, id: String(i) })));
+  layer.render();
   TIME && console.timeEnd("drawRelief");
-
-  function getBiomeIcon(cellIndex: number, b: string[]): string {
-    let type = b[Math.floor(Math.random() * b.length)];
-    const temp = grid.cells.temp[pack.cells.g[cellIndex]];
-    if (type === "conifer" && temp < 0) type = "coniferSnow";
-    return getIcon(type);
-  }
-
-  function getVariant(type: string): number {
-    switch (type) {
-      case "mount":
-        return rand(2, 7);
-      case "mountSnow":
-        return rand(1, 6);
-      case "hill":
-        return rand(2, 5);
-      case "conifer":
-        return 2;
-      case "coniferSnow":
-        return 1;
-      case "swamp":
-        return rand(2, 3);
-      case "cactus":
-        return rand(1, 3);
-      case "deadTree":
-        return rand(1, 2);
-      default:
-        return 2;
-    }
-  }
-
-  function getOldIcon(type: string): string {
-    switch (type) {
-      case "mountSnow":
-        return "mount";
-      case "vulcan":
-        return "mount";
-      case "coniferSnow":
-        return "conifer";
-      case "cactus":
-        return "dune";
-      case "deadTree":
-        return "dune";
-      default:
-        return type;
-    }
-  }
-
-  function getIcon(type: string): string {
-    const set = terrain.attr("set") || "simple";
-    if (set === "simple") return `#relief-${getOldIcon(type)}-1`;
-    if (set === "colored") return `#relief-${type}-${getVariant(type)}`;
-    if (set === "gray") return `#relief-${type}-${getVariant(type)}-bw`;
-    return `#relief-${getOldIcon(type)}-1`; // simple
-  }
 };
 
-export { reliefIconsRenderer as drawReliefIcons };
+export const redrawRelief = (): void => {
+  if (frameId !== null) return;
+  frameId = requestAnimationFrame(() => {
+    frameId = null;
+    drawRelief();
+  });
+};
 
-window.drawReliefIcons = reliefIconsRenderer;
+function removeRelief(): void {
+  scene.invalidate();
+  document.querySelector("#terrain")?.replaceChildren();
+}
+
+function reconcileRelief(context: ViewportRenderContext): void {
+  const terrain = context.root.querySelector("#terrain");
+  if (!terrain) return;
+  if (!scene.valid || !layerIsOn("toggleRelief")) return void terrain.replaceChildren();
+
+  const { x0, y0, x1, y1 } = context.bounds;
+  const markup: string[] = [];
+
+  for (const { id, icon, x, y, s } of scene.values()) {
+    if (x > x1 || y > y1 || x + s < x0 || y + s < y0) continue;
+    markup.push(`<use href="#${icon}" data-i="${id}" x="${x}" y="${y}" width="${s}" height="${s}"/>`);
+  }
+
+  terrain.innerHTML = markup.join("");
+}
+
+window.drawRelief = drawRelief;
+window.redrawRelief = redrawRelief;

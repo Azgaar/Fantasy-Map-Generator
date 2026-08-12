@@ -3,6 +3,13 @@ export interface Style {
   burgIcons: { [key: string]: { [key: string]: string } };
   anchors: { [key: string]: { [key: string]: string } };
   labels: { groups: Record<string, LabelGroupStyle> };
+  relief: ReliefStyle;
+}
+
+export interface ReliefStyle {
+  set: string; // icons set: simple, colored or gray
+  size: number;
+  density: number;
 }
 
 export interface LabelGroupStyle {

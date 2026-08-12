@@ -1,22 +1,25 @@
-import { drag, quadtree, range, type Selection, select } from "d3";
+import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import type { ReliefIcon } from "@/generators/relief-generator";
+import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 
-let selectedRelief: Selection<SVGElement, unknown, HTMLElement, unknown>;
+// icons are edited in pack.relief, the layer is re-materialized from it. Elements are
+// matched to the data by the data-i attribute set by the renderer
+let selectedIcon: ReliefIcon | null = null;
 
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRelief")) toggleRelief();
 
+  selectedIcon = getIconData(element);
   select<SVGGElement, unknown>("#terrain")
-    .selectAll<SVGUseElement, unknown>("use")
-    .call(drag<SVGUseElement, unknown>().on("drag", dragReliefIcon))
+    .call(drag<SVGGElement, unknown>().on("start", dragReliefIcon))
     .classed("draggable", true);
-  selectedRelief = select<SVGElement, unknown>(element) as unknown as typeof selectedRelief;
 
   renderDialog();
   restoreEditMode();
@@ -354,18 +357,22 @@ function renderDialog(): void {
 
   ensureEl("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
   ensureEl("reliefCopy").addEventListener("click", copyIcon);
-  ensureEl("reliefMoveFront").addEventListener("click", () => selectedRelief.raise());
-  ensureEl("reliefMoveBack").addEventListener("click", () => selectedRelief.lower());
+  ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
+  ensureEl("reliefMoveBack").addEventListener("click", () => moveIcon("back"));
   ensureEl("reliefRemove").addEventListener("click", removeIcon);
 }
 
-function dragReliefIcon(this: SVGUseElement, event: any): void {
-  const dx = +this.getAttribute("x")! - event.x;
-  const dy = +this.getAttribute("y")! - event.y;
+function dragReliefIcon(event: any): void {
+  const icon = getIconData(event.sourceEvent?.target);
+  if (!icon) return;
 
-  event.on("drag", function (this: SVGUseElement, dragEvent: any) {
-    this.setAttribute("x", String(dx + dragEvent.x));
-    this.setAttribute("y", String(dy + dragEvent.y));
+  const dx = icon.x - event.x;
+  const dy = icon.y - event.y;
+
+  event.on("drag", (dragEvent: any) => {
+    icon.x = rn(dx + dragEvent.x, 2);
+    icon.y = rn(dy + dragEvent.y, 2);
+    redrawRelief();
   });
 }
 
@@ -376,7 +383,8 @@ function restoreEditMode(): void {
 }
 
 function updateReliefIconSelected(): void {
-  const type = selectedRelief.attr("href") || selectedRelief.attr("data-type");
+  if (!selectedIcon) return;
+  const type = `#${selectedIcon.icon}`;
   const reliefIconsDiv = ensureEl("reliefIconsDiv");
   const button = reliefIconsDiv.querySelector(`svg[data-type='${type}']`);
   if (!button) return;
@@ -394,9 +402,9 @@ function updateReliefIconSelected(): void {
 }
 
 function updateReliefSizeInput(): void {
-  const size = +selectedRelief.attr("width");
+  if (!selectedIcon) return;
   ensureEl<HTMLInputElement>("reliefSize").value = ensureEl<HTMLInputElement>("reliefSizeNumber").value = String(
-    rn(size)
+    rn(selectedIcon.s)
   );
 }
 
@@ -461,23 +469,12 @@ function dragToAdd(this: SVGElement, event: any): void {
     return;
   }
 
-  const type = pressed.dataset.type!;
+  const icon = pressed.dataset.type!.replace("#", "");
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
   const spacing = +ensureEl<HTMLInputElement>("reliefSpacingNumber").value;
   const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
 
-  // build a quadtree
-  const tree = quadtree<[number, number, number?]>();
-  const positions: number[] = [];
-  select<SVGGElement, unknown>("#terrain")
-    .selectAll<SVGUseElement, unknown>("use")
-    .each(function () {
-      const x = +this.getAttribute("x")! + +this.getAttribute("width")! / 2;
-      const y = +this.getAttribute("y")! + +this.getAttribute("height")! / 2;
-      tree.add([x, y, x]);
-      const box = this.getBBox();
-      positions.push(box.y + box.height);
-    });
+  const tree = quadtree(pack.relief.map(({ x, y, s }) => [x + s / 2, y + s / 2] as [number, number]));
 
   event.on("drag", function (this: SVGElement, dragEvent: any) {
     const p = getPointer(dragEvent, this);
@@ -493,27 +490,25 @@ function dragToAdd(this: SVGElement, event: any): void {
       if (pack.cells.h[findCell(cx, cy)!] < 20) return; // on water cell
 
       const h = rn((size / 2) * (Math.random() * 0.4 + 0.8), 2);
-      const x = rn(cx - h, 2);
-      const y = rn(cy - h, 2);
-      const z = y + h * 2;
-      const s = rn(h * 2, 2);
-
-      let nth = 1;
-      while (positions[nth] && z > positions[nth]) {
-        nth++;
-      }
-
       tree.add([cx, cy]);
-      positions.push(z);
-      select<SVGGElement, unknown>("#terrain")
-        .insert("use", `:nth-child(${nth})`)
-        .attr("href", type)
-        .attr("x", x)
-        .attr("y", y)
-        .attr("width", s)
-        .attr("height", s);
+      insertIcon({ icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
     });
+
+    redrawRelief();
   });
+}
+
+// icons are kept sorted by their bottom edge, so the closer ones are drawn on top
+function insertIcon(icon: ReliefIcon): void {
+  const bottom = icon.y + icon.s;
+  let low = 0;
+  let high = pack.relief.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (pack.relief[mid].y + pack.relief[mid].s <= bottom) low = mid + 1;
+    else high = mid;
+  }
+  pack.relief.splice(low, 0, icon);
 }
 
 function enterBulkRemoveMode(): void {
@@ -544,36 +539,37 @@ function dragToRemove(this: SVGElement, event: any): void {
   }
 
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
-  const type = pressed.dataset.type;
-  const terrainLayer = select<SVGGElement, unknown>("#terrain");
-  const icons = type
-    ? terrainLayer.selectAll<SVGUseElement, unknown>(`use[href='${type}']`)
-    : terrainLayer.selectAll<SVGUseElement, unknown>("use");
-  const tree = quadtree<[number, number, SVGUseElement]>();
-  icons.each(function () {
-    const x = +this.getAttribute("x")! + +this.getAttribute("width")! / 2;
-    const y = +this.getAttribute("y")! + +this.getAttribute("height")! / 2;
-    tree.add([x, y, this]);
-  });
+  const icon = pressed.dataset.type?.replace("#", "");
+  const tree = quadtree<[number, number, ReliefIcon]>();
+  for (const reliefIcon of pack.relief) {
+    if (icon && reliefIcon.icon !== icon) continue;
+    tree.add([reliefIcon.x + reliefIcon.s / 2, reliefIcon.y + reliefIcon.s / 2, reliefIcon]);
+  }
 
   event.on("drag", function (this: SVGElement, dragEvent: any) {
     const p = getPointer(dragEvent, this);
     moveCircle(p[0], p[1], r);
-    findAllInQuadtree(p[0], p[1], r, tree).forEach((f: any) => {
-      f[2].remove();
-    });
+
+    const found: [number, number, ReliefIcon][] = findAllInQuadtree(p[0], p[1], r, tree);
+    if (!found.length) return;
+
+    const removed = new Set(found.map(entry => entry[2]));
+    for (const entry of found) tree.remove(entry);
+    pack.relief = pack.relief.filter(reliefIcon => !removed.has(reliefIcon));
+    if (selectedIcon && removed.has(selectedIcon)) selectedIcon = null;
+    redrawRelief();
   });
 }
 
 function changeIconSize(): void {
-  const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
-  if (!ensureEl("reliefIndividual").classList.contains("pressed")) return;
+  if (!selectedIcon || !ensureEl("reliefIndividual").classList.contains("pressed")) return;
 
-  const shift = (size - +selectedRelief.attr("width")) / 2;
-  selectedRelief.attr("width", size).attr("height", size);
-  const x = +selectedRelief.attr("x");
-  const y = +selectedRelief.attr("y");
-  selectedRelief.attr("x", x - shift).attr("y", y - shift);
+  const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
+  const shift = (size - selectedIcon.s) / 2;
+  selectedIcon.s = size;
+  selectedIcon.x = rn(selectedIcon.x - shift, 2);
+  selectedIcon.y = rn(selectedIcon.y - shift, 2);
+  redrawRelief();
 }
 
 function changeIconsSet(): void {
@@ -595,53 +591,63 @@ function changeIcon(this: SVGElement): void {
     });
   this.classList.add("pressed");
 
-  if (ensureEl("reliefIndividual").classList.contains("pressed")) {
-    const type = this.dataset.type!;
-    selectedRelief.attr("href", type);
+  if (ensureEl("reliefIndividual").classList.contains("pressed") && selectedIcon) {
+    selectedIcon.icon = this.dataset.type!.replace("#", "");
+    redrawRelief();
   }
 }
 
 function copyIcon(): void {
-  const node = selectedRelief.node()!;
-  const parent = node.parentNode as SVGGElement;
-  const copy = node.cloneNode(true) as SVGElement;
+  if (!selectedIcon) return;
 
-  let x = +selectedRelief.attr("x") - 3;
-  let y = +selectedRelief.attr("y") - 3;
-  while (parent.querySelector(`[x='${x}']`)) {
+  let { x, y } = selectedIcon;
+  do {
     x -= 3;
     y -= 3;
-  }
+  } while (pack.relief.some(icon => icon.x === x && icon.y === y));
 
-  copy.setAttribute("x", String(x));
-  copy.setAttribute("y", String(y));
-  parent.insertBefore(copy, null);
+  const copy = { ...selectedIcon, x, y };
+  pack.relief.push(copy); // the copy is placed on top of the other icons
+  selectedIcon = copy;
+  redrawRelief();
+}
+
+// move the icon to the top (front) or to the bottom (back) of the drawing order
+function moveIcon(direction: "front" | "back"): void {
+  if (!selectedIcon) return;
+
+  const index = pack.relief.indexOf(selectedIcon);
+  if (index < 0) return;
+
+  pack.relief.splice(index, 1);
+  if (direction === "front") pack.relief.push(selectedIcon);
+  else pack.relief.unshift(selectedIcon);
+  redrawRelief();
 }
 
 function removeIcon(): void {
-  let selection: typeof selectedRelief | null = null;
-  const pressed = ensureEl("reliefTools").querySelector("button.pressed");
-  if (pressed?.id === "reliefIndividual") {
-    alertMessage.innerHTML = "Are you sure you want to remove the icon?";
-    selection = selectedRelief;
-  } else {
-    const type = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.type;
-    const terrainLayer = select<SVGGElement, unknown>("#terrain");
-    selection = (type
-      ? terrainLayer.selectAll(`use[href='${type}']`)
-      : terrainLayer.selectAll("use")) as unknown as typeof selectedRelief;
-    const size = selection.size();
-    alertMessage.innerHTML = type
-      ? `Are you sure you want to remove all ${type} icons (${size})?`
-      : `Are you sure you want to remove all icons (${size})?`;
-  }
+  const isIndividual = ensureEl("reliefTools").querySelector("button.pressed")?.id === "reliefIndividual";
+  const type = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.type;
+  const icon = type?.replace("#", "");
+
+  const doomed = isIndividual
+    ? new Set(selectedIcon ? [selectedIcon] : [])
+    : new Set(pack.relief.filter(reliefIcon => !icon || reliefIcon.icon === icon));
+
+  if (isIndividual) alertMessage.innerHTML = "Are you sure you want to remove the icon?";
+  else
+    alertMessage.innerHTML = icon
+      ? `Are you sure you want to remove all ${icon} icons (${doomed.size})?`
+      : `Are you sure you want to remove all icons (${doomed.size})?`;
 
   $("#alert").dialog({
     resizable: false,
     title: "Remove relief icons",
     buttons: {
       Remove: function (this: HTMLElement) {
-        if (selection) selection.remove();
+        pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
+        selectedIcon = null;
+        redrawRelief();
         $(this).dialog("close");
         $("#reliefEditor").dialog("close");
       },
@@ -652,12 +658,15 @@ function removeIcon(): void {
   });
 }
 
+function getIconData(element?: Element): ReliefIcon | null {
+  if (element?.tagName !== "use") return null;
+  return pack.relief[Number((element as SVGUseElement).dataset.i)] || null;
+}
+
 function closeReliefEditor(): void {
   const wasUsingBrush = !ensureEl("reliefIndividual").classList.contains("pressed");
-  select<SVGGElement, unknown>("#terrain")
-    .selectAll<SVGUseElement, unknown>("use")
-    .on(".drag", null)
-    .classed("draggable", false);
+  select<SVGGElement, unknown>("#terrain").on(".drag", null).classed("draggable", false);
+  selectedIcon = null;
   removeCircle();
   if (wasUsingBrush) applyDefaultViewboxEvents();
   clearMainTip();

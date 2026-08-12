@@ -230,9 +230,9 @@ function selectStyleElement() {
 
   if (styleElement === "terrain") {
     styleRelief.style.display = "block";
-    styleReliefSize.value = terrain.attr("size") || 1;
-    styleReliefDensity.value = terrain.attr("density") || 0.4;
-    styleReliefSet.value = terrain.attr("set");
+    styleReliefSize.value = style.relief.size;
+    styleReliefDensity.value = style.relief.density;
+    styleReliefSet.value = style.relief.set;
   }
 
   if (styleElement === "population") {
@@ -800,21 +800,20 @@ styleHeightmapCurve.addEventListener("change", e => {
 });
 
 styleReliefSet.addEventListener("change", e => {
-  terrain.attr("set", e.target.value);
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  Relief.changeSet(e.target.value);
+  drawRelief();
 });
 
 styleReliefSize.addEventListener("change", e => {
-  terrain.attr("size", e.target.value);
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  Relief.changeSize(+e.target.value);
+  drawRelief();
 });
 
+// density defines the placement, so it cannot be applied without regenerating the icons
 styleReliefDensity.addEventListener("change", e => {
-  terrain.attr("density", e.target.value);
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  style.relief.density = +e.target.value;
+  Relief.generate();
+  drawRelief();
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
