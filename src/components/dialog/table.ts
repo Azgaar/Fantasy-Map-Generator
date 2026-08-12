@@ -59,7 +59,6 @@ export function renderEditorPagination(
 ): void {
   let nav = footer.querySelector<HTMLElement>(":scope > .editorPagination");
   if (!nav) {
-    // width:0 + min-width:100% fills fit-content dialog footers without widening them
     footer.style.display = "flex";
     footer.style.flexWrap = "wrap";
     footer.style.alignItems = "center";
@@ -92,7 +91,6 @@ export type EditorColumn<T = any> = {
   key: string;
   label?: string;
   width?: string;
-  fill?: boolean;
   tip?: string;
   sortBy?: (item: T) => string | number;
   sortType?: "alpha" | "number";
@@ -106,10 +104,7 @@ export type EditorColumn<T = any> = {
 export function buildTracks(columns: EditorColumn[], hidden: Set<string>): string {
   return columns
     .filter(column => !hidden.has(column.key))
-    .map(column => {
-      const width = column.width ?? "auto";
-      return column.fill ? `minmax(${width}, 1fr)` : width;
-    })
+    .map(column => column.width ?? "auto")
     .join(" ");
 }
 

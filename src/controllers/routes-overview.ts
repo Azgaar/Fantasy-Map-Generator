@@ -18,14 +18,12 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-
-const ROUTE_COLUMNS: EditorColumn<Route>[] = [
+const columns: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
     label: "Route",
-    width: "8em",
-    fill: true,
+    width: "15em",
     permanent: true,
     tip: "Click to sort by route name",
     sortBy: route => route.name || "",
@@ -34,7 +32,7 @@ const ROUTE_COLUMNS: EditorColumn<Route>[] = [
   {
     key: "group",
     label: "Group",
-    width: "8em",
+    width: "7em",
     tip: "Click to sort by route group",
     sortBy: route => route.group || "",
     sortType: "alpha"
@@ -47,7 +45,7 @@ const ROUTE_COLUMNS: EditorColumn<Route>[] = [
     sortBy: route => route.length || 0,
     defaultSort: "desc"
   },
-  { key: "actions", width: "4.5em", permanent: true }
+  { key: "actions", width: "3.2em", permanent: true, align: "right" }
 ];
 
 function getFilteredRoutes(): Route[] {
@@ -69,7 +67,7 @@ function getFilteredRoutes(): Route[] {
 }
 
 const routesTable = initEditorTable<Route>({
-  getData: () => sortDataByColumns(dialogId, getFilteredRoutes(), ROUTE_COLUMNS),
+  getData: () => sortDataByColumns(dialogId, getFilteredRoutes(), columns),
   onUpdate: renderRoutesPage
 });
 
@@ -94,7 +92,7 @@ function renderDialog(): void {
   destroyDialog("routesOverview");
 
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
-    <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns: ROUTE_COLUMNS })}</div>
+    <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="routesFilters" class="editorFilters">
       <label for="routesSearch" data-tip="Filter by name or group">Search: <input id="routesSearch" type="search" /></label>
     </div>
@@ -117,7 +115,7 @@ function renderDialog(): void {
   ensureEl("routesOverviewRefresh").addEventListener("click", routesTable.refresh);
   initColumnVisibility({
     dialogId,
-    columns: ROUTE_COLUMNS,
+    columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
   ensureEl("routesCreateNew").addEventListener("click", createNewRoute);

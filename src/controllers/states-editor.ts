@@ -243,7 +243,7 @@ function renderDialog(): void {
   applyLineHighlighting(dialogId, ({ cellId }) => (pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]));
   initColumnVisibility({
     dialogId,
-    columns: columns,
+    columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
 

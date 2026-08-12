@@ -1522,6 +1522,10 @@ div.header > div:first-child {
   background: none;
 }
 
+.editorDialog .states [data-col] select {
+  appearance: none;
+}
+
 div.states {
   border: 1px solid #d4d4d4;
   background-image: linear-gradient(to right, #fafafa80 0%, #f0f0f080 50%, #c8c8c880 100%);

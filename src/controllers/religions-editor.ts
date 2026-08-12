@@ -32,19 +32,16 @@ import {
   si
 } from "../utils";
 
-// brush-selected religion during manual assignment; tracked off-DOM since the selected row may be on another page
 let selectedReligionId: number | null = null;
 
 const dialogId = "religionsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-
-const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
+const columns: EditorColumn<Religion>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
     label: "Religion",
-    width: "8em",
-    fill: true,
+    width: "14em",
     permanent: true,
     tip: "Click to sort by religion name",
     sortBy: religion => religion.name || "",
@@ -71,7 +68,7 @@ const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
   {
     key: "deity",
     label: "Deity",
-    width: "12em",
+    width: "14em",
     mobileHidden: true,
     tip: "Click to sort by supreme deity",
     sortBy: religion => religion.deity || "",
@@ -80,7 +77,7 @@ const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
   {
     key: "area",
     label: "Area",
-    width: "6em",
+    width: "7em",
     mobileHidden: true,
     tip: "Click to sort by religion area",
     sortBy: religion => religion.area || 0
@@ -88,14 +85,15 @@ const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
   {
     key: "population",
     label: "Population",
-    width: "7em",
+    width: "6em",
     tip: "Click to sort by believers number",
     sortBy: religion => (religion.rural || 0) * populationRate + (religion.urban || 0) * populationRate * urbanization
   },
   {
     key: "expansion",
     label: "Expansion",
-    width: "6em",
+    width: "5em",
+    hidden: true,
     mobileHidden: true,
     tip: "Click to sort by expansion type",
     sortBy: religion => religion.expansion || "",
@@ -104,12 +102,13 @@ const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
   {
     key: "expansionism",
     label: "Expansionism",
-    width: "7em",
+    width: "5em",
+    hidden: true,
     mobileHidden: true,
     tip: "Click to sort by expansionism",
     sortBy: religion => religion.expansionism || 0
   },
-  { key: "actions", width: "4em", permanent: true }
+  { key: "actions", width: "3.2em", permanent: true, align: "right" }
 ];
 
 function getFilteredReligions(): Religion[] {
@@ -119,7 +118,7 @@ function getFilteredReligions(): Religion[] {
 }
 
 const religionsTable = initEditorTable<Religion>({
-  getData: () => sortDataByColumns(dialogId, getFilteredReligions(), RELIGION_COLUMNS),
+  getData: () => sortDataByColumns(dialogId, getFilteredReligions(), columns),
   onUpdate: religionsEditorAddLines
 });
 
@@ -149,7 +148,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("religionsEditor");
   const editorHtml = /* html */ `<div id="religionsEditor" class="dialog stable editorDialog">
-    <div id="religionsBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns: RELIGION_COLUMNS })}</div>
+    <div id="religionsBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="religionsFooter" class="totalLine">
       <div data-tip="Total number of organized religions" style="margin-left: 12px">
@@ -212,7 +211,7 @@ function renderDialog(): void {
   ensureEl("religionsEditorRefresh").addEventListener("click", refreshReligionsEditor);
   initColumnVisibility({
     dialogId,
-    columns: RELIGION_COLUMNS,
+    columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
   ensureEl("religionsEditStyle").addEventListener("click", () => editStyle("relig"));
@@ -865,7 +864,7 @@ function enterReligionsManualAssignent(): void {
 
   setModeHiddenColumns(
     dialogId,
-    RELIGION_COLUMNS.filter(column => !column.permanent).map(column => column.key)
+    columns.filter(column => !column.permanent).map(column => column.key)
   );
   ensureEl("religionsFooter").style.display = "none";
   ensureEl("religionsBody")

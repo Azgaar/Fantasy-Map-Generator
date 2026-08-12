@@ -37,28 +37,16 @@ import {
 } from "../utils";
 
 let culturesManualHistory: string[] = [];
-// brush-selected culture during manual assignment; tracked off-DOM since the selected row may be on another page
 let selectedCultureId: number | null = null;
 
 const dialogId = "culturesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-
-function getFilteredCultures(): Culture[] {
-  return pack.cultures.filter(c => !c.removed);
-}
-
-function canSelectCultureEmblemShape(): boolean {
-  const group = ensureEl<HTMLSelectElement>("emblemShape").selectedOptions[0]?.parentElement?.getAttribute("label");
-  return group === "Diversiform";
-}
-
-const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
+const columns: EditorColumn<Culture>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
     label: "Culture",
-    width: "8em",
-    fill: true,
+    width: "10em",
     permanent: true,
     tip: "Click to sort by culture name",
     sortBy: culture => culture.name || "",
@@ -67,7 +55,7 @@ const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
   {
     key: "type",
     label: "Type",
-    width: "7em",
+    width: "6em",
     mobileHidden: true,
     tip: "Click to sort by type",
     sortBy: culture => culture.type || "",
@@ -84,14 +72,16 @@ const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
   {
     key: "cells",
     label: "Cells",
-    width: "4em",
+    width: "5em",
+    hidden: true,
     tip: "Click to sort by culture cells count",
     sortBy: culture => culture.cells || 0
   },
   {
     key: "expansionism",
     label: "Expansion",
-    width: "8em",
+    width: "5em",
+    hidden: true,
     mobileHidden: true,
     tip: "Click to sort by expansionism",
     sortBy: culture => culture.expansionism || 0
@@ -99,7 +89,7 @@ const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
   {
     key: "area",
     label: "Area",
-    width: "5em",
+    width: "7em",
     mobileHidden: true,
     tip: "Click to sort by culture area",
     sortBy: culture => culture.area || 0
@@ -107,7 +97,7 @@ const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
   {
     key: "population",
     label: "Population",
-    width: "7em",
+    width: "6em",
     defaultSort: "desc",
     tip: "Click to sort by culture population",
     sortBy: culture => (culture.rural || 0) * populationRate + (culture.urban || 0) * populationRate * urbanization
@@ -115,17 +105,23 @@ const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
   {
     key: "emblems",
     label: "Emblems",
-    width: "8em",
+    width: "7em",
+    hidden: true,
     mobileHidden: true,
     tip: "Click to sort by culture emblems shape",
     sortBy: culture => culture.shield || "",
     sortType: "alpha"
   },
-  { key: "actions", width: "4em", permanent: true }
+  { key: "actions", width: "3.2em", permanent: true, align: "right" }
 ];
 
 const culturesTable = initEditorTable<Culture>({
-  getData: () => sortDataByColumns(dialogId, getFilteredCultures(), CULTURE_COLUMNS),
+  getData: () =>
+    sortDataByColumns(
+      dialogId,
+      pack.cultures.filter(c => !c.removed),
+      columns
+    ),
   onUpdate: culturesEditorAddLines
 });
 
@@ -155,7 +151,7 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable editorDialog">
-    <div id="culturesBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns: CULTURE_COLUMNS })}</div>
+    <div id="culturesBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="culturesFooter" class="totalLine">
       <div data-tip="Cultures number" style="margin-left: 12px">Cultures:&nbsp;<span id="culturesFooterCultures">0</span></div>
@@ -202,7 +198,7 @@ function renderDialog(): void {
   ensureEl("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);
   initColumnVisibility({
     dialogId,
-    columns: CULTURE_COLUMNS,
+    columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
   ensureEl("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
@@ -444,7 +440,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   setModeHiddenColumns(
     dialogId,
     customization === 4
-      ? CULTURE_COLUMNS.filter(column => !column.permanent).map(column => column.key)
+      ? columns.filter(column => !column.permanent).map(column => column.key)
       : selectShape
         ? []
         : ["emblems"]
@@ -927,7 +923,7 @@ function enterCultureManualAssignent(): void {
 
   setModeHiddenColumns(
     dialogId,
-    CULTURE_COLUMNS.filter(column => !column.permanent).map(column => column.key)
+    columns.filter(column => !column.permanent).map(column => column.key)
   );
   ensureEl("culturesFooter").style.display = "none";
   ensureEl("culturesBody")
@@ -1062,6 +1058,11 @@ function exitCulturesManualAssignment(close?: string): void {
   const selected = ensureEl("culturesBody").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
   selectedCultureId = null;
+}
+
+function canSelectCultureEmblemShape(): boolean {
+  const group = ensureEl<HTMLSelectElement>("emblemShape").selectedOptions[0]?.parentElement?.getAttribute("label");
+  return group === "Diversiform";
 }
 
 function saveCulturesManualSnapshot(): void {

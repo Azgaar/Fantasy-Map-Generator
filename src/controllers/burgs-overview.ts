@@ -21,14 +21,12 @@ type Filters = { stateId?: number | null; cultureId?: number | null };
 
 const dialogId = "burgsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-
-const BURG_COLUMNS: EditorColumn<Burg>[] = [
-  { key: "locate", width: "1.4em", permanent: true },
+const columns: EditorColumn<Burg>[] = [
+  { key: "locate", width: "0.8em", permanent: true },
   {
     key: "name",
     label: "Burg",
     width: "8em",
-    fill: true,
     permanent: true,
     tip: "Click to sort by burg name",
     sortBy: b => b.name || "",
@@ -37,7 +35,8 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
   {
     key: "province",
     label: "Province",
-    width: "7em",
+    width: "8em",
+    hidden: true,
     mobileHidden: true,
     tip: "Click to sort by province name",
     sortType: "alpha",
@@ -49,7 +48,7 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
   {
     key: "state",
     label: "State",
-    width: "7.5em",
+    width: "8em",
     tip: "Click to sort by state name",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
@@ -57,7 +56,7 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
   {
     key: "culture",
     label: "Culture",
-    width: "7.2em",
+    width: "10em",
     mobileHidden: true,
     tip: "Click to sort by culture name",
     sortBy: b => pack.cultures[b.culture!]?.name || "",
@@ -66,7 +65,7 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
   {
     key: "group",
     label: "Group",
-    width: "6.5em",
+    width: "6em",
     mobileHidden: true,
     tip: "Click to sort by culture group",
     sortBy: b => b.group || "",
@@ -75,22 +74,23 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
   {
     key: "population",
     label: "Population",
-    width: "8em",
+    width: "7em",
     defaultSort: "desc",
     tip: "Click to sort by population",
     sortBy: b => b.population! * populationRate * urbanization
   },
   {
     key: "grossproduct",
-    label: "Gross product",
+    label: "Product",
     width: "6.5em",
+    hidden: true,
     mobileHidden: true,
     tip: "Click to sort by burg product",
     sortBy: b => rn(b.product || 0, 2)
   },
   {
     key: "productpercapita",
-    label: "Product per capita",
+    label: "Wealth",
     width: "6.5em",
     mobileHidden: true,
     tip: "Click to sort by burg wealth (gross product per capita)",
@@ -99,7 +99,7 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
   {
     key: "treasury",
     label: "Treasury",
-    width: "5.5em",
+    width: "6.5em",
     mobileHidden: true,
     tip: "Click to sort by burg treasury",
     sortBy: b => rn(b.treasury || 0, 2)
@@ -113,11 +113,11 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
-  { key: "actions", width: "4.5em", permanent: true }
+  { key: "actions", width: "3.2em", permanent: true, align: "right" }
 ];
 
 const burgsTable = initEditorTable<Burg>({
-  getData: () => sortDataByColumns(dialogId, getFilteredBurgs(), BURG_COLUMNS),
+  getData: () => sortDataByColumns(dialogId, getFilteredBurgs(), columns),
   onUpdate: renderBurgsPage
 });
 
@@ -144,7 +144,7 @@ function open(filters: Filters = { stateId: null, cultureId: null }): void {
 function renderDialog(): void {
   document.getElementById("burgsOverview")?.remove();
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
-      <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns: BURG_COLUMNS })}</div>
+      <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns: columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
         <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
           >Search: <input id="burgsSearch" type="search"
@@ -210,7 +210,7 @@ function renderDialog(): void {
 
   initColumnVisibility({
     dialogId,
-    columns: BURG_COLUMNS,
+    columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
 

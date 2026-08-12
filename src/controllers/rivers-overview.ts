@@ -18,14 +18,12 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "riversOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-
-const RIVER_COLUMNS: EditorColumn<River>[] = [
+const columns: EditorColumn<River>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
     label: "River",
     width: "8em",
-    fill: true,
     permanent: true,
     tip: "Click to sort by river name",
     sortBy: river => river.name || "",
@@ -34,7 +32,7 @@ const RIVER_COLUMNS: EditorColumn<River>[] = [
   {
     key: "type",
     label: "Type",
-    width: "4em",
+    width: "5em",
     mobileHidden: true,
     tip: "Click to sort by river type name",
     sortBy: river => river.type || "",
@@ -72,7 +70,7 @@ const RIVER_COLUMNS: EditorColumn<River>[] = [
     sortBy: river => river.basin,
     sortType: "alpha"
   },
-  { key: "actions", width: "3em", permanent: true }
+  { key: "actions", width: "2.2em", permanent: true, align: "right" }
 ];
 
 function getRiversById(): Map<number, River> {
@@ -96,9 +94,6 @@ const riversTable = initEditorTable<River>({
   getData: () => {
     const riversById = getRiversById();
     const filtered = getFilteredRivers(riversById);
-    const columns = RIVER_COLUMNS.map(column =>
-      column.key === "basin" ? { ...column, sortBy: (river: River) => riversById.get(river.basin)?.name || "" } : column
-    );
     return sortDataByColumns(dialogId, filtered, columns);
   },
   onUpdate: renderRiversPage
@@ -125,7 +120,7 @@ function renderDialog(): void {
   destroyDialog("riversOverview");
 
   const html = /* html */ `<div id="riversOverview" class="dialog stable editorDialog">
-    <div id="riversBody" class="table">${renderEditorHeader({ dialogId, columns: RIVER_COLUMNS })}</div>
+    <div id="riversBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="riversFilters" class="editorFilters">
       <label for="riversSearch" data-tip="Filter by name, type or basin">Search: <input id="riversSearch" type="search" /></label>
     </div>
@@ -152,11 +147,11 @@ function renderDialog(): void {
     const river = target.closest<SVGElement>("#rivers [id^='river']");
     return river && /^river\d+$/.test(river.id) ? Number(river.id.slice(5)) : undefined;
   });
-  // add listeners — dropped together with the dialog HTML on close
+
   ensureEl("riversOverviewRefresh").addEventListener("click", riversTable.refresh);
   initColumnVisibility({
     dialogId,
-    columns: RIVER_COLUMNS,
+    columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());
@@ -175,7 +170,6 @@ function createNewRiver(): void {
   void Controllers.RiverCreator.open();
 }
 
-// totals span the full filtered set, not just the current page
 function renderRiversPage(view: TableView<River>): void {
   const body = ensureEl("riversBody");
   body.querySelectorAll(":scope > .states").forEach(row => {
@@ -291,7 +285,6 @@ function toggleBasinsHightlight(): void {
 function downloadRiversData(): void {
   let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
 
-  // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
   const riversById = getRiversById();
   const exported = riversTable.view().all;
 
