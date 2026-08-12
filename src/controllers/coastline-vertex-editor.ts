@@ -1,5 +1,5 @@
 import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
@@ -7,7 +7,7 @@ import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { getFeaturePath } from "@/renderers/draw-features";
 import { getArea, getAreaUnit } from "@/utils";
-import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
+import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
 let selectedCoastline: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -33,7 +33,7 @@ function open(element: SVGElement): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("coastlineEditor");
+  destroyDialog("coastlineEditor");
 
   const html = /* html */ `<div id="coastlineEditor" class="dialog">
     <button id="coastlineGroupsShow" data-tip="Show the group selection" class="icon-tags"></button>
@@ -270,7 +270,7 @@ function editGroupStyle(): void {
 function closeCoastlineEditor(): void {
   select("#debug").select("#vertices").remove();
   applyDefaultViewboxEvents();
-  destroyDialogIfExists("coastlineEditor");
+  destroyDialog("coastlineEditor");
 }
 
 export const CoastlineVertexEditor = { open };

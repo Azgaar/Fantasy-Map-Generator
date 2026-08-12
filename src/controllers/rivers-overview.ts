@@ -1,5 +1,5 @@
 import { mean, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -14,7 +14,7 @@ import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
-import { destroyDialogIfExists, ensureEl, rn } from "../utils";
+import { ensureEl, rn } from "../utils";
 
 const RIVER_COLUMNS: EditorColumn<River>[] = [
   { key: "locate", width: "1.4em", hideable: false },
@@ -119,7 +119,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("riversOverview");
+  destroyDialog("riversOverview");
 
   const html = /* html */ `<div id="riversOverview" class="dialog stable editorDialog">
     <div id="riversBody" class="table">${renderEditorHeader({
@@ -170,7 +170,7 @@ function renderDialog(): void {
 }
 
 function closeRiversOverview(): void {
-  destroyDialogIfExists("riversOverview");
+  destroyDialog("riversOverview");
 }
 
 function createNewRiver(): void {

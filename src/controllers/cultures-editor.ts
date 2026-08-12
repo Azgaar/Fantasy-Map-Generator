@@ -1,5 +1,5 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -25,10 +25,8 @@ import {
   abbreviate,
   capitalize,
   debounce,
-  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
-  fitDialogIfExists,
   getPackPolygon,
   getPointer,
   isLand,
@@ -147,7 +145,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("culturesEditor");
+  destroyDialog("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable editorDialog">
     <div id="culturesBody" class="table" data-type="absolute">${renderEditorHeader({
       id: "culturesHeader",
@@ -448,7 +446,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     ensureEl("culturesBody").dataset.type = "absolute";
     togglePercentageMode();
   }
-  fitDialogIfExists("culturesEditor");
+  updateDialog("culturesEditor");
 }
 
 function getTypeOptions(type: string): string {

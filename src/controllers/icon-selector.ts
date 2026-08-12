@@ -1,7 +1,8 @@
 // The Icon Selector: pick an emoji or add an external image to use as an icon
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
-import { destroyDialogIfExists, ensureEl } from "@/utils";
+import { ensureEl } from "@/utils";
 
 function open(initial: string, callback: (value: string) => void): void {
   const dialog = renderDialog();
@@ -47,7 +48,7 @@ function open(initial: string, callback: (value: string) => void): void {
   $(dialog).dialog({
     width: "fit-content",
     title: "Select Icon",
-    close: () => destroyDialogIfExists("iconSelector"),
+    close: () => destroyDialog("iconSelector"),
     buttons: {
       Apply: function (this: HTMLElement) {
         $(this).dialog("close");
@@ -61,7 +62,7 @@ function open(initial: string, callback: (value: string) => void): void {
 }
 
 function renderDialog(): HTMLElement {
-  destroyDialogIfExists("iconSelector");
+  destroyDialog("iconSelector");
 
   const dialog = document.createElement("div");
   dialog.id = "iconSelector";

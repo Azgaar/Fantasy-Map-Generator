@@ -1,8 +1,8 @@
 import { select } from "d3";
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { ensureEl } from "../utils";
 
 // custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)
 declare const prompt: (text: string, options: { default: string }, callback: (value: string) => void) => void;
@@ -25,7 +25,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("routeGroupsEditor");
+  destroyDialog("routeGroupsEditor");
 
   const html = /* html */ `<div id="routeGroupsEditor" class="dialog">
     <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
@@ -41,7 +41,7 @@ function renderDialog(): void {
 }
 
 function closeRouteGroupsEditor(): void {
-  destroyDialogIfExists("routeGroupsEditor");
+  destroyDialog("routeGroupsEditor");
 }
 
 function onBodyClick(ev: Event): void {

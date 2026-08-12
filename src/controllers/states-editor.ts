@@ -1,10 +1,5 @@
 import { drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
-import {
-  closeDialogs,
-  confirmationDialog,
-  destroyDialogIfExists,
-  fitDialogIfExists
-} from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -149,7 +144,7 @@ const STATE_COLUMNS: EditorColumn<State>[] = [
   { key: "actions", width: "6em", hideable: false }
 ];
 
-const POSITION = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 const statesTable = initEditorTable<State>({
   getData: () =>
@@ -158,7 +153,7 @@ const statesTable = initEditorTable<State>({
       pack.states.filter(s => !s.removed),
       STATE_COLUMNS
     ),
-  onUpdate: () => renderStatesPage
+  onUpdate: renderStatesPage
 });
 
 function open(): void {
@@ -179,13 +174,13 @@ function open(): void {
     title: "States Editor",
     resizable: false,
     width: "fit-content",
-    close: closeStatesEditor,
-    position: POSITION
+    position,
+    close: closeStatesEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("statesEditor");
+  destroyDialog("statesEditor");
   const editorHtml = /* html */ `<div id="statesEditor" class="dialog stable editorDialog">
     <div id="statesBodySection" class="table" data-type="absolute">${renderEditorHeader({
       id: "statesHeader",
@@ -511,7 +506,7 @@ function renderStatesPage(view: TableView<State>): void {
     ensureEl("statesBodySection").dataset.type = "absolute";
     togglePercentageMode();
   }
-  fitDialogIfExists("statesEditor");
+  updateDialog("statesEditor", { width: "fit-content", position });
 }
 
 function getCultureOptions(culture: number): string {
@@ -694,8 +689,8 @@ function editStateName(state: number): void {
 }
 
 function renderNameEditor(): void {
-  destroyDialogIfExists("stateNameEditor");
-  const nameEditorHtml = /* html */ `    <div id="stateNameEditor" class="dialog" data-state="0">
+  destroyDialog("stateNameEditor");
+  const nameEditorHtml = /* html */ `<div id="stateNameEditor" class="dialog" data-state="0">
       <div>
         <div data-tip="State short name" class="label">Short name:</div>
         <input

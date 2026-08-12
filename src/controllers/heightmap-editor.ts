@@ -1,5 +1,5 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
-import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -11,7 +11,6 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
-  destroyDialogIfExists,
   ensureEl,
   findEl,
   findGridAll,
@@ -45,7 +44,7 @@ function open(options?: { mode?: string; tool?: string }): void {
 addToolbarListeners();
 
 function renderTemplateEditor(): void {
-  destroyDialogIfExists("templateEditor");
+  destroyDialog("templateEditor");
   const html = /* html */ `<div id="templateEditor" class="dialog stable">
       <div id="templateTop">
         <i>Select template: </i>
@@ -189,7 +188,7 @@ function renderTemplateEditor(): void {
 }
 
 function renderImageConverter(): void {
-  destroyDialogIfExists("imageConverter");
+  destroyDialog("imageConverter");
   const editorHtml = /* html */ `<div id="imageConverter" class="dialog stable">
       <div id="convertImageButtons">
         <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
@@ -949,7 +948,7 @@ function openBrushesPanel(): void {
 }
 
 function renderBrushesPanel(): void {
-  destroyDialogIfExists("brushesPanel");
+  destroyDialog("brushesPanel");
 
   const html = /* html */ `<div id="brushesPanel" class="dialog stable">
     <div id="brushesButtons" style="display: inline-block">
@@ -1073,7 +1072,7 @@ function renderBrushesPanel(): void {
 
 function closeBrushesPanel(): void {
   exitBrushMode();
-  destroyDialogIfExists("brushesPanel");
+  destroyDialog("brushesPanel");
 }
 
 function addBrushesListeners(): void {

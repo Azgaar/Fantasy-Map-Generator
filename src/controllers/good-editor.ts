@@ -1,4 +1,4 @@
-import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { drawGoods } from "@/renderers/draw-goods";
@@ -8,7 +8,7 @@ import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
-import { destroyDialogIfExists, ensureEl, getRandomColor, unique } from "../utils";
+import { ensureEl, getRandomColor, unique } from "../utils";
 
 function open(editedGood?: Good, onUpdate?: () => void) {
   const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
@@ -71,7 +71,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       );
     },
     close: () => {
-      destroyDialogIfExists("goodEditor");
+      destroyDialog("goodEditor");
     },
     buttons: {
       Cancel: function () {
@@ -192,7 +192,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
   });
 
   function renderDialog(): void {
-    destroyDialogIfExists("goodEditor");
+    destroyDialog("goodEditor");
     ensureEl("dialogs").insertAdjacentHTML(
       "beforeend",
       /*html*/ `<div id="goodEditor" class="dialog">

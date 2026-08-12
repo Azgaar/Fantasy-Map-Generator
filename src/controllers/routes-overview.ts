@@ -1,5 +1,5 @@
 import { mean, select } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -14,7 +14,7 @@ import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
-import { destroyDialogIfExists, ensureEl, rn } from "../utils";
+import { ensureEl, rn } from "../utils";
 
 const ROUTE_COLUMNS: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", hideable: false },
@@ -88,7 +88,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("routesOverview");
+  destroyDialog("routesOverview");
 
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
     <div id="routesBody" class="table">${renderEditorHeader({
@@ -130,7 +130,7 @@ function renderDialog(): void {
 }
 
 function closeRoutesOverview(): void {
-  destroyDialogIfExists("routesOverview");
+  destroyDialog("routesOverview");
 }
 
 function createNewRoute(): void {

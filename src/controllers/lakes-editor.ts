@@ -1,5 +1,5 @@
 import { drag, mean, min, polygonArea, polygonLength, type Selection, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -8,7 +8,7 @@ import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { getFeaturePath } from "@/renderers/draw-features";
 import { getArea, getAreaUnit, speak } from "@/utils";
-import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
+import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -36,7 +36,7 @@ function open(element: SVGElement): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("lakeEditor");
+  destroyDialog("lakeEditor");
 
   const html = /* html */ `<div id="lakeEditor" class="dialog">
     <div id="lakeBody" style="padding-bottom: 0.3em">
@@ -341,7 +341,7 @@ function editLakeLegend(): void {
 function closeLakesEditor(): void {
   select("#debug").select("#vertices").remove();
   applyDefaultViewboxEvents();
-  destroyDialogIfExists("lakeEditor");
+  destroyDialog("lakeEditor");
 }
 
 export const LakesEditor = { open };

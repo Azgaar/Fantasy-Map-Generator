@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -10,7 +10,7 @@ import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
-import { destroyDialogIfExists, ensureEl, getPointer, unique } from "../utils";
+import { ensureEl, getPointer, unique } from "../utils";
 
 const visibleTags = new Set<string>();
 
@@ -41,7 +41,7 @@ function refreshEditor() {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("goodsEditor");
+  destroyDialog("goodsEditor");
   const editorHtml = /* html */ `<div id="goodsEditor" class="dialog stable">
       <div id="goodsHeader" class="header" style="grid-template-columns: 4em 7.4em 6em 5em 6.8em 6em 4.6em 1.6em;">
         <input

@@ -1,10 +1,10 @@
 import { select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
+import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
 
@@ -32,7 +32,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("riverCreator");
+  destroyDialog("riverCreator");
 
   const html = /* html */ `<div id="riverCreator" class="dialog">
     <div id="riverCreatorBody" class="table"></div>
@@ -169,7 +169,7 @@ function closeRiverCreator(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  destroyDialogIfExists("riverCreator");
+  destroyDialog("riverCreator");
 }
 
 export const RiverCreator = { open };

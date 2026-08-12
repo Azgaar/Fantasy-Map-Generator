@@ -1,5 +1,5 @@
 import { drag, select, sum } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
@@ -10,7 +10,7 @@ import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
+import { ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
 
 interface ZoneCellDatum {
   cell: number;
@@ -35,7 +35,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("zonesEditor");
+  destroyDialog("zonesEditor");
   const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable">
       <div id="customHeader" class="header" style="grid-template-columns: 13em 7em 6em 5em 9em">
         <div data-tip="Zone description">Description&nbsp;</div>

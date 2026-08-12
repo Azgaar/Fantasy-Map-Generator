@@ -1,5 +1,5 @@
 import { drag, easeSinIn, select, transition } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -21,10 +21,8 @@ import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
   abbreviate,
   debounce,
-  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
-  fitDialogIfExists,
   getPackPolygon,
   getPointer,
   isLand,
@@ -145,7 +143,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("religionsEditor");
+  destroyDialog("religionsEditor");
   const editorHtml = /* html */ `<div id="religionsEditor" class="dialog stable editorDialog">
     <div id="religionsBody" class="table" data-type="absolute">${renderEditorHeader({
       id: "religionsHeader",
@@ -439,7 +437,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     togglePercentageMode();
   }
 
-  fitDialogIfExists("religionsEditor");
+  updateDialog("religionsEditor");
 }
 
 function getTypeOptions(type: string): string {

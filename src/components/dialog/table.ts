@@ -251,19 +251,9 @@ function bindColumnsPicker(
       if (checkbox.checked) updated.delete(key);
       else updated.add(key);
       saveHiddenColumns(storageKey, updated);
-
-      const frame = document.getElementById(dialogId)?.closest<HTMLElement>(".ui-dialog");
-      const rightBefore = frame?.getBoundingClientRect().right;
       onChange(updated);
-      requestAnimationFrame(() => {
-        if (frame && rightBefore !== undefined) {
-          const _shift = rightBefore - frame.getBoundingClientRect().right;
-          const _left = Number.parseFloat(getComputedStyle(frame).left) || 0;
-          // if (shift) frame.style.left = `${Math.max(0, left + shift)}px`;
-        }
-        positionPopup();
-      });
     });
+
     button.insertAdjacentElement("afterend", popup);
     const positionPopup = () => {
       const rect = button.getBoundingClientRect();

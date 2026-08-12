@@ -1,11 +1,11 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
-import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
+import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
 let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -46,7 +46,7 @@ function open(id: string): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("routeEditor");
+  destroyDialog("routeEditor");
 
   const html = /* html */ `<div id="routeEditor" class="dialog">
     <div id="routeBody" style="padding-bottom: 0.3em">
@@ -468,7 +468,7 @@ function closeRouteEditor(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  destroyDialogIfExists("routeEditor");
+  destroyDialog("routeEditor");
 }
 
 export const RouteEditor = { open };
