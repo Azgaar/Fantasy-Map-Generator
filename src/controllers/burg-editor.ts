@@ -5,6 +5,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { getHeight, openURL, speak } from "@/utils";
+import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
 import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
@@ -12,6 +13,11 @@ import type { PromptOptions } from "../utils/commonUtils";
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 let selected: Selection<any, any, any, any> | null = null;
+let previewTransform: PanZoom = { ...PAN_ZOOM_IDENTITY };
+let previewMaxZoom = MAX_ZOOM;
+let previewCommittedK = 1;
+let previewSettleTimer = 0;
+let previewLayoutLocked = false;
 
 function open(id: number | string): void {
   if (customization) return;
@@ -171,14 +177,18 @@ function renderDialog(): void {
             </div>
           </div>
         </div>
-        <div id="burgPreviewSection" data-tip="Burg map preview" style="display: flex; flex-direction: column">
+        <div id="burgPreviewSection" data-tip="Burg map preview: scroll to zoom, drag to pan" style="display: flex; flex-direction: column">
           <div style="display: flex; justify-content: space-between">
             <span>Burg preview:</span>
             <div style="display: flex; gap: 0.5em">
+              <i id="burgPreviewReset" data-tip="Reset preview zoom" class="icon-ccw pointer"></i>
               <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
             </div>
           </div>
-          <div id="burgPreviewObject" style="pointer-events: none"></div>
+          <div
+            id="burgPreviewObject"
+            style="overflow: hidden; position: relative; touch-action: none; height: 320px; max-width: 60vw; max-height: 60vh"
+          ></div>
         </div>
       </div>
       <div id="burgBottom">
@@ -240,6 +250,10 @@ function renderDialog(): void {
     .querySelectorAll<HTMLElement>(".burgFeature")
     .forEach(el => void el.addEventListener("click", toggleFeature));
   ensureEl("burgLinkOpen").addEventListener("click", openBurgLink);
+  ensureEl("burgPreviewReset").addEventListener("click", resetPreviewZoom);
+  ensureEl("burgPreviewObject").addEventListener("wheel", onPreviewWheel as EventListener, { passive: false });
+  ensureEl("burgPreviewObject").addEventListener("dblclick", onPreviewDoubleClick as EventListener);
+  ensureEl("burgPreviewObject").addEventListener("pointerdown", onPreviewPointerDown as EventListener);
 
   ensureEl("burgStyleShow").addEventListener("click", showStyleSection);
   ensureEl("burgStyleHide").addEventListener("click", hideStyleSection);
@@ -513,6 +527,115 @@ function editGroupAnchorStyle(): void {
   editStyle("anchors", g.id);
 }
 
+function getPreviewViewport(): { width: number; height: number } {
+  const container = ensureEl("burgPreviewObject");
+  return { width: container.clientWidth, height: container.clientHeight };
+}
+
+// mid-gesture the frame is scaled with a cheap transform; the layout size is committed
+// only once the gesture settles, as generators re-render asynchronously on resize.
+// canvas-backed generators (watabou) never commit at all: resizing clears their canvas
+// to transparent until the next redraw, so their layout is locked at a supersampled
+// size on load and zoom stays a pure transform of it
+function applyPreviewTransform(): void {
+  const container = ensureEl("burgPreviewObject");
+  const frame = container.querySelector<HTMLIFrameElement>("iframe");
+  if (!frame) return;
+  const { k, x, y } = previewTransform;
+  frame.style.transformOrigin = "0 0";
+  frame.style.transform = `translate(${x}px, ${y}px) scale(${k / previewCommittedK})`;
+  frame.style.left = "0";
+  frame.style.top = "0";
+  container.style.cursor = k > 1 ? "grab" : "default";
+  clearTimeout(previewSettleTimer);
+  if (!previewLayoutLocked) previewSettleTimer = window.setTimeout(commitPreviewTransform, 200);
+}
+
+function commitPreviewTransform(): void {
+  if (previewLayoutLocked) return;
+  const frame = ensureEl("burgPreviewObject").querySelector<HTMLIFrameElement>("iframe");
+  if (!frame) return;
+  const { k, x, y } = previewTransform;
+  previewCommittedK = k;
+  frame.style.width = `${k * 100}%`;
+  frame.style.height = `${k * 100}%`;
+  frame.style.transform = "none";
+  frame.style.left = `${x}px`;
+  frame.style.top = `${y}px`;
+}
+
+function resetPreviewZoom(): void {
+  previewTransform = { ...PAN_ZOOM_IDENTITY };
+  clearTimeout(previewSettleTimer);
+  if (previewLayoutLocked) applyPreviewTransform();
+  else commitPreviewTransform();
+  ensureEl("burgPreviewObject").style.cursor = "default";
+}
+
+function previewPointFromEvent(event: MouseEvent): { x: number; y: number } {
+  const rect = ensureEl("burgPreviewObject").getBoundingClientRect();
+  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+
+function onPreviewWheel(event: WheelEvent): void {
+  event.preventDefault();
+  const factor = Math.exp(-event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002));
+  previewTransform = zoomAt(
+    previewTransform,
+    previewPointFromEvent(event),
+    factor,
+    getPreviewViewport(),
+    previewMaxZoom
+  );
+  applyPreviewTransform();
+}
+
+function onPreviewDoubleClick(event: MouseEvent): void {
+  previewTransform = zoomAt(previewTransform, previewPointFromEvent(event), 2, getPreviewViewport(), previewMaxZoom);
+  applyPreviewTransform();
+}
+
+function onPreviewPointerDown(event: PointerEvent): void {
+  if (previewTransform.k <= 1) return;
+  event.preventDefault();
+  const container = ensureEl("burgPreviewObject");
+  container.setPointerCapture(event.pointerId);
+  container.style.cursor = "grabbing";
+  let last = { x: event.clientX, y: event.clientY };
+
+  const move = (e: Event) => {
+    const p = e as PointerEvent;
+    previewTransform = panBy(previewTransform, p.clientX - last.x, p.clientY - last.y, getPreviewViewport());
+    last = { x: p.clientX, y: p.clientY };
+    applyPreviewTransform();
+  };
+  const up = () => {
+    container.removeEventListener("pointermove", move);
+    container.removeEventListener("pointerup", up);
+    container.removeEventListener("pointercancel", up);
+    container.style.cursor = "grab";
+  };
+  container.addEventListener("pointermove", move);
+  container.addEventListener("pointerup", up);
+  container.addEventListener("pointercancel", up);
+}
+
+let glMaxTextureSize = 0;
+function getGlMaxTextureSize(): number {
+  if (!glMaxTextureSize) {
+    const gl = document.createElement("canvas").getContext("webgl");
+    glMaxTextureSize = gl ? (gl.getParameter(gl.MAX_TEXTURE_SIZE) as number) : 4096;
+  }
+  return glMaxTextureSize;
+}
+
+// half the reported limit: the generator's internal render textures pad past the raw canvas size
+function getPreviewTextureBudgetK(): number {
+  const { width, height } = getPreviewViewport();
+  const paneMax = Math.max(width, height, 1);
+  return getGlMaxTextureSize() / 2 / (devicePixelRatio * paneMax);
+}
+
 function updateBurgPreview(burg: Burg): void {
   const preview = Burgs.getPreview(burg).preview;
   if (!preview) {
@@ -522,15 +645,29 @@ function updateBurgPreview(burg: Burg): void {
 
   ensureEl("burgPreviewSection").style.display = "block";
 
-  // recreate object to force reload (Chrome bug)
+  // recreate the element to force reload (Chrome bug)
   const container = ensureEl("burgPreviewObject");
   container.innerHTML = "";
-  const object = document.createElement("object");
-  object.style.width = "100%";
-  object.style.maxWidth = "60vw";
-  object.style.maxHeight = "60vh";
-  object.data = preview;
-  container.insertBefore(object, null);
+  const frame = document.createElement("iframe");
+  frame.style.position = "absolute";
+  frame.style.border = "none";
+  frame.style.pointerEvents = "none";
+  frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
+  frame.src = preview;
+  container.insertBefore(frame, null);
+
+  previewLayoutLocked = preview.includes("watabou.github.io");
+  if (previewLayoutLocked) {
+    const supersample = Math.max(1, Math.min(4, getPreviewTextureBudgetK()));
+    previewCommittedK = supersample;
+    frame.style.width = `${supersample * 100}%`;
+    frame.style.height = `${supersample * 100}%`;
+    previewMaxZoom = Math.min(MAX_ZOOM, supersample * 2.5);
+  } else {
+    previewCommittedK = 1;
+    previewMaxZoom = MAX_ZOOM;
+  }
+  resetPreviewZoom();
 }
 
 function openBurgLink(): void {
