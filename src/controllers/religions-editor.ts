@@ -35,13 +35,13 @@ import {
 let selectedReligionId: number | null = null;
 
 const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
-  { key: "color", width: "1.2em", hideable: false },
+  { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
     label: "Religion",
     width: "8em",
     fill: true,
-    hideable: false,
+    permanent: true,
     tip: "Click to sort by religion name",
     sortBy: religion => religion.name || "",
     sortType: "alpha"
@@ -105,7 +105,7 @@ const RELIGION_COLUMNS: EditorColumn<Religion>[] = [
     tip: "Click to sort by expansionism",
     sortBy: religion => religion.expansionism || 0
   },
-  { key: "actions", width: "4em", hideable: false }
+  { key: "actions", width: "4em", permanent: true }
 ];
 
 function getFilteredReligions(): Religion[] {
@@ -213,7 +213,6 @@ function renderDialog(): void {
   initColumnVisibility({
     button: ensureEl("religionsToggleColumns"),
     dialogId: "religionsEditor",
-    storageKey: "religions",
     columns: RELIGION_COLUMNS
   });
   ensureEl("religionsEditStyle").addEventListener("click", () => editStyle("relig"));

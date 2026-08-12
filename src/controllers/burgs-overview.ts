@@ -20,13 +20,13 @@ import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "..
 type Filters = { stateId?: number | null; cultureId?: number | null };
 
 const BURG_COLUMNS: EditorColumn<Burg>[] = [
-  { key: "locate", width: "1.4em", hideable: false },
+  { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
     label: "Burg",
     width: "8em",
     fill: true,
-    hideable: false,
+    permanent: true,
     tip: "Click to sort by burg name",
     sortBy: b => b.name || "",
     sortType: "alpha"
@@ -110,7 +110,7 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
-  { key: "actions", width: "4.5em", hideable: false }
+  { key: "actions", width: "4.5em", permanent: true }
 ];
 
 const burgsTable = initEditorTable<Burg>({
@@ -211,7 +211,6 @@ function renderDialog(): void {
   initColumnVisibility({
     button: ensureEl("burgsToggleColumns"),
     dialogId: "burgsOverview",
-    storageKey: "burgs",
     columns: BURG_COLUMNS
   });
 

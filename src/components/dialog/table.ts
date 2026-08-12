@@ -1,4 +1,4 @@
-import { findEl } from "@/utils";
+import { capitalize, findEl } from "@/utils";
 
 const EDITOR_PAGE_SIZE = 100;
 const EDITOR_PAGE_SIZE_MOBILE = 20;
@@ -97,7 +97,7 @@ export type EditorColumn<T = any> = {
   sortBy?: (item: T) => string | number;
   sortType?: "alpha" | "number";
   defaultSort?: "asc" | "desc";
-  hideable?: boolean;
+  permanent?: boolean;
   hidden?: boolean;
   mobileHidden?: boolean;
   align?: "left" | "right";
@@ -113,8 +113,13 @@ export function buildTracks(columns: EditorColumn[], hidden: Set<string>): strin
     .join(" ");
 }
 
+export function getLastVisibleIndex(columns: EditorColumn[], hidden: Set<string>): number {
+  return columns.findLastIndex(column => !hidden.has(column.key));
+}
+
 export function renderEditorHeader({ dialogId, columns }: { dialogId: string; columns: EditorColumn[] }) {
-  const buttonIndex = columns.map(column => column.hideable === false).lastIndexOf(true);
+  const defaultHidden = new Set(columns.filter(column => column.hidden).map(column => column.key));
+  const lastVisibleIndex = getLastVisibleIndex(columns, defaultHidden);
   const cells = columns.map((column, index) => {
     const classes: string[] = [];
     if (column.sortBy) {
@@ -138,7 +143,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
     const style = ["white-space:nowrap", column.align ? `text-align:${column.align}` : ""].filter(Boolean).join("; ");
 
     const button =
-      index === buttonIndex
+      index === lastVisibleIndex
         ? `<button id="${dialogId}ColumnsButton" data-tip="Show or hide columns" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
         : "";
     return `<div ${attributes} style="${style}">${column.label ?? ""}${button}</div>`;
@@ -146,12 +151,12 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
   return `<div id="${dialogId}Header" class="header">${cells.join("")}</div>`;
 }
 
-const columnsStorageKey = (storageKey: string) => `columnsHidden:${storageKey}`;
+const columnsStorageKey = (dialogId: string) => `columnsHidden:${dialogId}`;
 
-export function loadHiddenColumns(storageKey: string, columns: EditorColumn[]): Set<string> {
-  const hideable = new Set(columns.filter(column => column.hideable !== false).map(column => column.key));
+export function loadHiddenColumns(dialogId: string, columns: EditorColumn[]): Set<string> {
+  const configurable = new Set(columns.filter(column => !column.permanent).map(column => column.key));
   const defaults = columns.filter(column => column.hidden).map(column => column.key);
-  const stored = localStorage.getItem(columnsStorageKey(storageKey));
+  const stored = localStorage.getItem(columnsStorageKey(dialogId));
   if (stored === null) {
     const mobile = typeof MOBILE !== "undefined" && MOBILE;
     if (mobile) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
@@ -164,37 +169,48 @@ export function loadHiddenColumns(storageKey: string, columns: EditorColumn[]): 
     saved = [];
   }
 
-  const hidden = new Set(defaults.filter(key => hideable.has(key)));
+  const hidden = new Set(defaults.filter(key => configurable.has(key)));
   if (Array.isArray(saved)) {
-    for (const key of saved) if (hideable.has(key)) hidden.add(key);
+    for (const key of saved) if (configurable.has(key)) hidden.add(key);
     return hidden;
   }
 
   if (!saved || typeof saved !== "object") return hidden;
   const { hidden: savedHidden, shown: savedShown } = saved as { hidden?: unknown; shown?: unknown };
-  if (Array.isArray(savedHidden)) for (const key of savedHidden) if (hideable.has(key)) hidden.add(key);
+  if (Array.isArray(savedHidden)) for (const key of savedHidden) if (configurable.has(key)) hidden.add(key);
   if (Array.isArray(savedShown)) for (const key of savedShown) hidden.delete(key);
   return hidden;
 }
 
-export function saveHiddenColumns(storageKey: string, hidden: Set<string>, columns: EditorColumn[]): void {
-  const hideable = columns.filter(column => column.hideable !== false).map(column => column.key);
+export function saveHiddenColumns(dialogId: string, hidden: Set<string>, columns: EditorColumn[]): void {
+  const configurable = columns.filter(column => !column.permanent).map(column => column.key);
   const saved = {
-    hidden: hideable.filter(key => hidden.has(key)),
-    shown: hideable.filter(key => !hidden.has(key))
+    hidden: configurable.filter(key => hidden.has(key)),
+    shown: configurable.filter(key => !hidden.has(key))
   };
-  localStorage.setItem(columnsStorageKey(storageKey), JSON.stringify(saved));
+  localStorage.setItem(columnsStorageKey(dialogId), JSON.stringify(saved));
 }
 
-const dialogColumnsRegistry = new Map<
-  string,
-  { storageKey: string; columns: EditorColumn[]; modeHidden: Set<string> }
->();
+export function restoreDefaultColumnVisibility(dialogId: string, columns: EditorColumn[]): Set<string> {
+  localStorage.removeItem(columnsStorageKey(dialogId));
+  return loadHiddenColumns(dialogId, columns);
+}
+
+export function invertColumnVisibility(dialogId: string, columns: EditorColumn[]): Set<string> {
+  const hidden = loadHiddenColumns(dialogId, columns);
+  const inverted = new Set(
+    columns.filter(column => !column.permanent && !hidden.has(column.key)).map(column => column.key)
+  );
+  saveHiddenColumns(dialogId, inverted, columns);
+  return inverted;
+}
+
+const dialogColumnsRegistry = new Map<string, { columns: EditorColumn[]; modeHidden: Set<string> }>();
 
 function effectiveHidden(dialogId: string): Set<string> {
   const entry = dialogColumnsRegistry.get(dialogId);
   if (!entry) return new Set();
-  const hidden = loadHiddenColumns(entry.storageKey, entry.columns);
+  const hidden = loadHiddenColumns(dialogId, entry.columns);
   for (const key of entry.modeHidden) hidden.add(key);
   return hidden;
 }
@@ -214,7 +230,19 @@ function applyColumnVisibility(dialogId: string, hidden: Set<string>): void {
   if (!dialog) return;
 
   const entry = dialogColumnsRegistry.get(dialogId);
-  if (entry) dialog.style.setProperty("--table-columns", buildTracks(entry.columns, hidden));
+  if (!entry) return;
+
+  dialog.style.setProperty("--table-columns", buildTracks(entry.columns, hidden));
+
+  const lastVisibleIndex = getLastVisibleIndex(entry.columns, hidden);
+  const header = document.getElementById(`${dialogId}Header`);
+  const lastVisibleCell = header?.querySelectorAll<HTMLElement>(":scope > [data-col]")[lastVisibleIndex];
+  const button = document.getElementById(`${dialogId}ColumnsButton`);
+  if (!lastVisibleCell || !button) return;
+
+  lastVisibleCell.appendChild(button);
+  const popup = document.getElementById(`${dialogId}ColumnsPicker`);
+  if (popup) button.insertAdjacentElement("afterend", popup);
 }
 
 export function setModeHiddenColumns(dialogId: string, keys: string[]): void {
@@ -226,12 +254,10 @@ export function setModeHiddenColumns(dialogId: string, keys: string[]): void {
 
 function bindColumnsPicker({
   dialogId,
-  storageKey,
   columns,
   onChange
 }: {
   dialogId: string;
-  storageKey: string;
   columns: EditorColumn[];
   onChange: (hidden: Set<string>) => void;
 }): void {
@@ -246,7 +272,7 @@ function bindColumnsPicker({
       closePopup?.();
       return;
     }
-    const hidden = loadHiddenColumns(storageKey, columns);
+    const hidden = loadHiddenColumns(dialogId, columns);
     const popup = document.createElement("div");
     popup.id = popupId;
     popup.style.cssText = /*css*/ `
@@ -260,28 +286,50 @@ function bindColumnsPicker({
       padding: 0.6em 0.4em;
       background: #eee;
       border: 1px solid #bbb;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     `;
 
     const getOption = (
       column: EditorColumn
     ) => /* html */ `<label style="display: flex; align-items: center; cursor: pointer;">
       <input class="native" type="checkbox" data-key="${column.key}" ${hidden.has(column.key) ? "" : "checked"} />
-      ${column.label}
+      ${column.label || capitalize(column.key)}
     </label>`;
-    popup.innerHTML = columns
-      .filter(column => column.hideable !== false)
+    const options = columns
+      .filter(column => !column.permanent)
       .map(getOption)
       .join("");
+    popup.innerHTML = `${options}
+      <div style="display: flex; justify-content: flex-end; gap: 0.2em; margin-top: 0.5em;">
+        <button id="${popupId}Invert" type="button" class="icon-exchange" data-tip="Invert columns visibility" aria-label="Invert columns visibility"></button>
+        <button id="${popupId}RestoreDefaults" type="button" class="icon-ccw" data-tip="Restore default columns visibility" aria-label="Restore default columns visibility"></button>
+      </div>`;
+
+    const updateCheckboxes = (updated: Set<string>) => {
+      popup.querySelectorAll<HTMLInputElement>("input[data-key]").forEach(checkbox => {
+        checkbox.checked = !updated.has(checkbox.dataset.key as string);
+      });
+    };
 
     popup.addEventListener("change", event => {
       const checkbox = event.target as HTMLInputElement;
-      const updated = loadHiddenColumns(storageKey, columns);
+      const updated = loadHiddenColumns(dialogId, columns);
       const key = checkbox.dataset.key as string;
       if (checkbox.checked) updated.delete(key);
       else updated.add(key);
-      saveHiddenColumns(storageKey, updated, columns);
+      saveHiddenColumns(dialogId, updated, columns);
       onChange(updated);
+    });
+
+    popup.querySelector(`#${popupId}Invert`)?.addEventListener("click", () => {
+      const inverted = invertColumnVisibility(dialogId, columns);
+      updateCheckboxes(inverted);
+      onChange(inverted);
+    });
+
+    popup.querySelector(`#${popupId}RestoreDefaults`)?.addEventListener("click", () => {
+      const restored = restoreDefaultColumnVisibility(dialogId, columns);
+      updateCheckboxes(restored);
+      onChange(restored);
     });
 
     button.insertAdjacentElement("afterend", popup);
@@ -313,21 +361,18 @@ function bindColumnsPicker({
 
 export function initColumnVisibility({
   dialogId,
-  storageKey,
   columns,
   onUpdate
 }: {
   dialogId: string;
-  storageKey: string;
   columns: EditorColumn[];
   onUpdate: VoidFunction;
 }): void {
-  dialogColumnsRegistry.set(dialogId, { storageKey, columns, modeHidden: new Set() });
+  dialogColumnsRegistry.set(dialogId, { columns, modeHidden: new Set() });
   applyColumnVisibility(dialogId, effectiveHidden(dialogId));
 
   bindColumnsPicker({
     dialogId,
-    storageKey,
     columns,
     onChange: () => {
       applyColumnVisibility(dialogId, effectiveHidden(dialogId));

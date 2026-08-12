@@ -17,13 +17,13 @@ import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
 const RIVER_COLUMNS: EditorColumn<River>[] = [
-  { key: "locate", width: "1.4em", hideable: false },
+  { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
     label: "River",
     width: "8em",
     fill: true,
-    hideable: false,
+    permanent: true,
     tip: "Click to sort by river name",
     sortBy: river => river.name || "",
     sortType: "alpha"
@@ -69,7 +69,7 @@ const RIVER_COLUMNS: EditorColumn<River>[] = [
     sortBy: river => river.basin,
     sortType: "alpha"
   },
-  { key: "actions", width: "3em", hideable: false }
+  { key: "actions", width: "3em", permanent: true }
 ];
 
 function getRiversById(): Map<number, River> {
@@ -158,7 +158,6 @@ function renderDialog(): void {
   initColumnVisibility({
     button: ensureEl("riversToggleColumns"),
     dialogId: "riversOverview",
-    storageKey: "rivers",
     columns: RIVER_COLUMNS
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());

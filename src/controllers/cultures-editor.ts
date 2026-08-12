@@ -45,13 +45,13 @@ function getFilteredCultures(): Culture[] {
 }
 
 const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
-  { key: "color", width: "1.2em", hideable: false },
+  { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
     label: "Culture",
     width: "8em",
     fill: true,
-    hideable: false,
+    permanent: true,
     tip: "Click to sort by culture name",
     sortBy: culture => culture.name || "",
     sortType: "alpha"
@@ -113,7 +113,7 @@ const CULTURE_COLUMNS: EditorColumn<Culture>[] = [
     sortBy: culture => culture.shield || "",
     sortType: "alpha"
   },
-  { key: "actions", width: "4em", hideable: false }
+  { key: "actions", width: "4em", permanent: true }
 ];
 
 const culturesTable = initEditorTable<Culture>({
@@ -199,7 +199,6 @@ function renderDialog(): void {
   initColumnVisibility({
     button: ensureEl("culturesToggleColumns"),
     dialogId: "culturesEditor",
-    storageKey: "cultures",
     columns: CULTURE_COLUMNS
   });
   ensureEl("culturesEditStyle").addEventListener("click", () => editStyle("cults"));

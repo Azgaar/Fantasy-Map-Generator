@@ -17,13 +17,13 @@ import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
 const ROUTE_COLUMNS: EditorColumn<Route>[] = [
-  { key: "locate", width: "1.4em", hideable: false },
+  { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
     label: "Route",
     width: "8em",
     fill: true,
-    hideable: false,
+    permanent: true,
     tip: "Click to sort by route name",
     sortBy: route => route.name || "",
     sortType: "alpha"
@@ -44,7 +44,7 @@ const ROUTE_COLUMNS: EditorColumn<Route>[] = [
     sortBy: route => route.length || 0,
     defaultSort: "desc"
   },
-  { key: "actions", width: "4.5em", hideable: false }
+  { key: "actions", width: "4.5em", permanent: true }
 ];
 
 function getFilteredRoutes(): Route[] {
@@ -119,7 +119,6 @@ function renderDialog(): void {
   initColumnVisibility({
     button: ensureEl("routesToggleColumns"),
     dialogId: "routesOverview",
-    storageKey: "routes",
     columns: ROUTE_COLUMNS
   });
   ensureEl("routesCreateNew").addEventListener("click", createNewRoute);
