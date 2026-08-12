@@ -18,9 +18,12 @@
 }
 
 // store some style inputs as options
-styleElements.on("change", function (ev) {
+styleElements.addEventListener("input", storeStyleOption);
+styleElements.addEventListener("change", storeStyleOption);
+
+function storeStyleOption(ev) {
   if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
-});
+}
 
 // select element to be edited
 function editStyle(element, group) {
@@ -75,7 +78,7 @@ function getColor(value, scheme = getColorScheme("bright")) {
 }
 
 // Toggle style sections on element select
-styleElementSelect.on("change", selectStyleElement);
+styleElementSelect.addEventListener("change", selectStyleElement);
 
 function selectStyleElement() {
   const styleElement = styleElementSelect.value;
@@ -91,7 +94,12 @@ function selectStyleElement() {
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
-    el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
+    if (styleElement === "labels") {
+      const selected = group && el.select(`[data-group="${CSS.escape(group)}"]`);
+      el = selected && selected.size() ? selected : el.select(defaultGroupSelector);
+    } else {
+      el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
+    }
   }
 
   // opacity
@@ -248,16 +256,6 @@ function selectStyleElement() {
     styleStatesHaloBlur.value = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
   }
 
-  if (styleElement === "provs") {
-    styleFill.style.display = "block";
-    styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#111111";
-
-    styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("font-size");
-  }
-
   if (styleElement === "labels") {
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
@@ -266,23 +264,19 @@ function selectStyleElement() {
 
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
-    styleVisibility.style.display = "block";
     styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
     styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
     styleShadowInput.value = el.style("text-shadow") || "";
-    styleLabelsHideGroup.checked = el.node().style.display === "none";
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
 
-    if (el.node().parentNode.id === "burgLabels") {
-      styleFontShift.style.display = "block";
-      styleFontShiftX.value = el.attr("data-dx") || 0;
-      styleFontShiftY.value = el.attr("data-dy") || 0;
-    }
+    styleFontShift.style.display = "block";
+    styleFontShiftX.value = el.attr("data-dx") || 0;
+    styleFontShiftY.value = el.attr("data-dy") || 0;
   }
 
   if (styleElement === "burgIcons") {
@@ -413,23 +407,25 @@ function selectStyleElement() {
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
-    const groups = ensureEl(styleElement).querySelectorAll("g");
-    groups.forEach(el => {
-      if (el.id === "burgLabels") return; // skip the container; its subgroups (capital, town, ...) are listed individually
-      const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
-      styleGroupSelect.options.add(option);
-    });
-    styleGroupSelect.value = el.attr("id");
+    if (styleElement === "labels") {
+      options.labels.groups.forEach(group => {
+        const groupElement = ensureEl("labels").querySelector(`[data-group="${CSS.escape(group.name)}"]`);
+        const count = groupElement?.childElementCount || 0;
+        styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
+      });
+      styleGroupSelect.value = el.attr("data-group");
+    } else {
+      const groups = ensureEl(styleElement).querySelectorAll("g");
+      groups.forEach(el => {
+        const option = new Option(`${el.id} (${el.childElementCount})`, el.id, false, false);
+        styleGroupSelect.options.add(option);
+      });
+      styleGroupSelect.value = el.attr("id");
+    }
     styleGroup.style.display = "block";
   } else {
     styleGroupSelect.options.add(new Option(styleElement, styleElement, false, true));
     styleGroup.style.display = "none";
-  }
-
-  if (styleElement === "coastline" && styleGroupSelect.value === "sea_island") {
-    styleCoastline.style.display = "block";
-    const auto = (styleCoastlineAuto.checked = coastline.select("#sea_island").attr("auto-filter"));
-    if (auto) styleFilter.style.display = "none";
   }
 
   if (styleElement === "scaleBar") {
@@ -473,23 +469,42 @@ function selectStyleElement() {
 }
 
 // Handle style inputs change
-styleGroupSelect.on("change", selectStyleElement);
+styleGroupSelect.addEventListener("change", selectStyleElement);
 
 function getEl() {
   const el = styleElementSelect.value;
   const g = styleGroupSelect.value;
   if (g === el || g === "") return svg.select("#" + el);
+  if (el === "labels") return svg.select("#labels").select(`[data-group="${CSS.escape(g)}"]`);
   else return svg.select("#" + el).select("#" + g);
 }
 
-styleFillInput.on("input", function () {
+function updateLabelGroupInlineStyle(group) {
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (!groupStyle) return;
+
+  const inlineStyle = group.node().style;
+  const value = Array.from(inlineStyle)
+    .filter(property => property !== "transform")
+    .map(property => `${property}: ${inlineStyle.getPropertyValue(property)}`)
+    .join("; ");
+
+  if (value) groupStyle.style = value;
+  else delete groupStyle.style;
+}
+
+styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
   getEl().attr("fill", this.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.fill = this.value;
 });
 
-styleStrokeInput.on("input", function () {
+styleStrokeInput.addEventListener("input", function () {
   styleStrokeOutput.value = this.value;
   getEl().attr("stroke", this.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
@@ -498,45 +513,52 @@ function redrawMeasurersOnStyleChange() {
   if (styleElementSelect.value === "ruler" && layerIsOn("toggleRulers")) drawMeasurers();
 }
 
-styleStrokeWidthInput.on("input", e => {
+styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
 });
 
-styleLetterSpacingInput.on("input", e => {
+styleLetterSpacingInput.addEventListener("input", e => {
   getEl().attr("letter-spacing", e.target.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle["letter-spacing"] = e.target.value;
 });
 
-styleStrokeDasharrayInput.on("input", function () {
+styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
 });
 
-styleStrokeLinecapInput.on("change", function () {
+styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
-styleDisplayInput.on("change", function () {
+styleDisplayInput.addEventListener("change", function () {
   getEl().attr("display", this.value || null);
 });
 
-styleOpacityInput.on("input", e => {
+styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.opacity = e.target.value;
 });
 
-styleLabelsHideGroup.on("change", function () {
-  getEl().style("display", this.checked ? "none" : null);
-});
-
-styleFilterInput.on("change", function () {
+styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
   getEl().attr("filter", this.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) {
+    if (this.value) groupStyle.filter = this.value;
+    else delete groupStyle.filter;
+  }
 });
 
-styleTextureInput.on("change", function () {
+styleTextureInput.addEventListener("change", function () {
   changeTexture(this.value);
 });
 
@@ -555,7 +577,7 @@ function updateTextureSelectValue(href) {
   }
 }
 
-styleTextureShiftX.on("input", function () {
+styleTextureShiftX.addEventListener("input", function () {
   texture.attr("data-x", this.value);
   texture
     .select("image")
@@ -563,7 +585,7 @@ styleTextureShiftX.on("input", function () {
     .attr("width", graphWidth - this.valueAsNumber);
 });
 
-styleTextureShiftY.on("input", function () {
+styleTextureShiftY.addEventListener("input", function () {
   texture.attr("data-y", this.value);
   texture
     .select("image")
@@ -571,17 +593,17 @@ styleTextureShiftY.on("input", function () {
     .attr("height", graphHeight - this.valueAsNumber);
 });
 
-styleClippingInput.on("change", function () {
+styleClippingInput.addEventListener("change", function () {
   getEl().attr("mask", this.value);
 });
 
-styleGridType.on("change", function () {
+styleGridType.addEventListener("change", function () {
   getEl().attr("type", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
   calculateFriendlyGridSize();
 });
 
-styleGridScale.on("input", function () {
+styleGridScale.addEventListener("input", function () {
   getEl().attr("scale", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
   calculateFriendlyGridSize();
@@ -593,52 +615,46 @@ function calculateFriendlyGridSize() {
   styleGridSizeFriendly.value = friendly;
 }
 
-styleGridShiftX.on("input", function () {
+styleGridShiftX.addEventListener("input", function () {
   getEl().attr("dx", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
 });
 
-styleGridShiftY.on("input", function () {
+styleGridShiftY.addEventListener("input", function () {
   getEl().attr("dy", this.value);
   if (layerIsOn("toggleGrid")) drawGrid();
 });
 
-styleRescaleMarkers.on("change", function () {
+styleRescaleMarkers.addEventListener("change", function () {
   markers.attr("rescale", +this.checked);
   invokeActiveZooming();
 });
 
-styleCoastlineAuto.on("change", function () {
-  coastline.select("#sea_island").attr("auto-filter", +this.checked);
-  styleFilter.style.display = this.checked ? "none" : "block";
-  invokeActiveZooming();
-});
-
-styleOceanFill.on("input", function () {
+styleOceanFill.addEventListener("input", function () {
   oceanLayers.select("rect").attr("fill", this.value);
   styleOceanFillOutput.value = this.value;
 });
 
-styleOceanPattern.on("change", function () {
+styleOceanPattern.addEventListener("change", function () {
   ensureEl("oceanicPattern").setAttribute("href", this.value);
 });
 
-styleOceanPatternOpacity.on("input", e => {
+styleOceanPatternOpacity.addEventListener("input", e => {
   ensureEl("oceanicPattern").setAttribute("opacity", e.target.value);
 });
 
-outlineLayers.on("change", function () {
+outlineLayers.addEventListener("change", function () {
   oceanLayers.selectAll("path").remove();
   oceanLayers.attr("layers", this.value);
   OceanLayers();
 });
 
-styleHeightmapScheme.on("change", function () {
+styleHeightmapScheme.addEventListener("change", function () {
   getEl().attr("scheme", this.value);
   drawHeightmap();
 });
 
-openCreateHeightmapSchemeButton.on("click", function () {
+openCreateHeightmapSchemeButton.addEventListener("click", function () {
   // start with current scheme
   const scheme = getEl().attr("scheme");
   this.dataset.stops = scheme.startsWith("#")
@@ -757,125 +773,128 @@ openCreateHeightmapSchemeButton.on("click", function () {
   });
 });
 
-styleHeightmapRenderOcean.on("change", e => {
+styleHeightmapRenderOcean.addEventListener("change", e => {
   const checked = +e.target.checked;
   getEl().attr("data-render", checked);
   drawHeightmap();
 });
 
-styleHeightmapTerracing.on("input", e => {
+styleHeightmapTerracing.addEventListener("input", e => {
   getEl().attr("terracing", e.target.value);
   drawHeightmap();
 });
 
-styleHeightmapSkip.on("input", e => {
+styleHeightmapSkip.addEventListener("input", e => {
   getEl().attr("skip", e.target.value);
   drawHeightmap();
 });
 
-styleHeightmapSimplification.on("input", e => {
+styleHeightmapSimplification.addEventListener("input", e => {
   getEl().attr("relax", e.target.value);
   drawHeightmap();
 });
 
-styleHeightmapCurve.on("change", e => {
+styleHeightmapCurve.addEventListener("change", e => {
   getEl().attr("curve", e.target.value);
   drawHeightmap();
 });
 
-styleReliefSet.on("change", e => {
+styleReliefSet.addEventListener("change", e => {
   terrain.attr("set", e.target.value);
   drawReliefIcons();
   if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 
-styleReliefSize.on("change", e => {
+styleReliefSize.addEventListener("change", e => {
   terrain.attr("size", e.target.value);
   drawReliefIcons();
   if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 
-styleReliefDensity.on("change", e => {
+styleReliefDensity.addEventListener("change", e => {
   terrain.attr("density", e.target.value);
   drawReliefIcons();
   if (!layerIsOn("toggleRelief")) toggleRelief();
 });
 
-styleTemperatureFillOpacityInput.on("input", e => {
+styleTemperatureFillOpacityInput.addEventListener("input", e => {
   temperature.attr("fill-opacity", e.target.value);
 });
 
-styleTemperatureFontSizeInput.on("input", e => {
+styleTemperatureFontSizeInput.addEventListener("input", e => {
   temperature.attr("font-size", e.target.value + "px");
 });
 
-styleTemperatureFillInput.on("input", e => {
+styleTemperatureFillInput.addEventListener("input", e => {
   temperature.attr("fill", e.target.value);
   styleTemperatureFillOutput.value = e.target.value;
 });
 
-stylePopulationRuralStrokeInput.on("input", e => {
+stylePopulationRuralStrokeInput.addEventListener("input", e => {
   population.select("#rural").attr("stroke", e.target.value);
   stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
-stylePopulationUrbanStrokeInput.on("input", e => {
+stylePopulationUrbanStrokeInput.addEventListener("input", e => {
   population.select("#urban").attr("stroke", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
-styleBurgIconsIcon.on("change", e => {
+styleBurgIconsIcon.addEventListener("change", e => {
   getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
 });
 
-styleBurgIconsIconSize.on("input", e => {
+styleBurgIconsIconSize.addEventListener("input", e => {
   getEl().attr("font-size", e.target.value);
 });
 
-styleBurgIconsStrokeLinejoin.on("change", e => {
+styleBurgIconsStrokeLinejoin.addEventListener("change", e => {
   getEl().attr("stroke-linejoin", e.target.value);
 });
 
-styleBurgIconsFillOpacity.on("input", e => {
+styleBurgIconsFillOpacity.addEventListener("input", e => {
   getEl().attr("fill-opacity", e.target.value);
 });
 
-styleCompassSizeInput.on("input", shiftCompass);
-styleCompassShiftX.on("input", shiftCompass);
-styleCompassShiftY.on("input", shiftCompass);
+styleCompassSizeInput.addEventListener("input", shiftCompass);
+styleCompassShiftX.addEventListener("input", shiftCompass);
+styleCompassShiftY.addEventListener("input", shiftCompass);
 
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
   compass.select("use").attr("transform", tr);
 }
 
-styleLegendColItems.on("input", e => {
+styleLegendColItems.addEventListener("input", e => {
   legend.select("#legendBox").attr("data-columns", e.target.value);
   redrawLegend();
 });
 
-styleLegendBack.on("input", e => {
+styleLegendBack.addEventListener("input", e => {
   styleLegendBackOutput.value = e.target.value;
   legend.select("#legendBox").attr("fill", e.target.value);
 });
 
-styleLegendOpacity.on("input", e => {
+styleLegendOpacity.addEventListener("input", e => {
   legend.select("#legendBox").attr("fill-opacity", e.target.value);
 });
 
-styleSelectFont.on("change", changeFont);
+styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
   const family = styleSelectFont.value;
   getEl().attr("font-family", family);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle["font-family"] = family;
 
   if (styleElementSelect.value === "legend") redrawLegend();
 }
 
-styleShadowInput.on("input", function () {
-  getEl().style("text-shadow", this.value);
+styleShadowInput.addEventListener("input", function () {
+  const group = getEl().style("text-shadow", this.value);
+  updateLabelGroupInlineStyle(group);
 });
 
-styleFontAdd.on("click", function () {
+styleFontAdd.addEventListener("click", function () {
   addFontNameInput.value = "";
   addFontURLInput.value = "";
 
@@ -912,20 +931,20 @@ styleFontAdd.on("click", function () {
   });
 });
 
-addFontMethod.on("change", function () {
+addFontMethod.addEventListener("change", function () {
   addFontURLInput.style.display = this.value === "fontURL" ? "inline" : "none";
 });
 
-styleFontSize.on("change", function () {
+styleFontSize.addEventListener("change", function () {
   changeFontSize(getEl(), +this.value);
 });
 
-styleFontPlus.on("click", function () {
+styleFontPlus.addEventListener("click", function () {
   const current = +styleFontSize.value || 12;
   changeFontSize(getEl(), Math.min(rn(current + 0.1, 1), 999));
 });
 
-styleFontMinus.on("click", function () {
+styleFontMinus.addEventListener("click", function () {
   const current = +styleFontSize.value || 12;
   changeFontSize(getEl(), Math.max(rn(current - 0.1, 1), 0.1));
 });
@@ -933,9 +952,17 @@ styleFontMinus.on("click", function () {
 function changeFontSize(el, size) {
   styleFontSize.value = size;
 
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (styleElementSelect.value === "labels") {
+    el.attr("font-size", `${size}%`).attr("data-size", null);
+    if (groupStyle) {
+      delete groupStyle["data-size"];
+      groupStyle["font-size"] = `${size}%`;
+    }
+    return;
+  }
+
   const getSizeOnScale = element => {
-    // some labels are rescaled on zoom
-    if (element === "labels") return Math.max(rn((size + size / scale) / 2, 2), 1);
     if (element === "coordinates") return rn(size / scale ** 0.8, 2);
 
     // other has the same size
@@ -949,48 +976,52 @@ function changeFontSize(el, size) {
   redrawMeasurersOnStyleChange();
 }
 
-styleFontShiftX.on("input", e => {
-  getEl()
-    .attr("data-dx", e.target.value)
-    .selectAll("text")
-    .attr("dx", e.target.value + "em");
+styleFontShiftX.addEventListener("input", e => {
+  const group = getEl().attr("data-dx", e.target.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle["data-dx"] = e.target.value;
+  const dx = e.target.value || 0;
+  const dy = group.attr("data-dy") || 0;
+  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
 });
 
-styleFontShiftY.on("input", e => {
-  getEl()
-    .attr("data-dy", e.target.value)
-    .selectAll("text")
-    .attr("dy", e.target.value + "em");
+styleFontShiftY.addEventListener("input", e => {
+  const group = getEl().attr("data-dy", e.target.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle["data-dy"] = e.target.value;
+  const dx = group.attr("data-dx") || 0;
+  const dy = e.target.value || 0;
+  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
 });
 
-styleStatesBodyOpacity.on("input", e => {
+styleStatesBodyOpacity.addEventListener("input", e => {
   statesBody.attr("opacity", e.target.value);
 });
 
-styleStatesBodyFilter.on("change", function () {
+styleStatesBodyFilter.addEventListener("change", function () {
   statesBody.attr("filter", this.value);
 });
 
-styleStatesHaloWidth.on("input", e => {
+styleStatesHaloWidth.addEventListener("input", e => {
   const value = e.target.value;
   statesHalo.attr("data-width", value).attr("stroke-width", value);
 });
 
-styleStatesHaloOpacity.on("input", e => {
+styleStatesHaloOpacity.addEventListener("input", e => {
   statesHalo.attr("opacity", e.target.value);
 });
 
-styleStatesHaloBlur.on("input", e => {
+styleStatesHaloBlur.addEventListener("input", e => {
   const value = Number(e.target.value);
   const blur = value > 0 ? `blur(${value}px)` : null;
   statesHalo.attr("filter", blur);
 });
 
-styleArmiesFillOpacity.on("input", e => {
+styleArmiesFillOpacity.addEventListener("input", e => {
   armies.attr("fill-opacity", e.target.value);
 });
 
-styleArmiesSize.on("input", e => {
+styleArmiesSize.addEventListener("input", e => {
   const value = Number(e.target.value);
   armies.attr("box-size", value).attr("font-size", value * 2);
 
@@ -1001,17 +1032,17 @@ styleArmiesSize.on("input", e => {
   });
 });
 
-emblemsStateSizeInput.on("change", e => {
+emblemsStateSizeInput.addEventListener("change", e => {
   emblems.select("#stateEmblems").attr("data-size", e.target.value);
   drawEmblems();
 });
 
-emblemsProvinceSizeInput.on("change", e => {
+emblemsProvinceSizeInput.addEventListener("change", e => {
   emblems.select("#provinceEmblems").attr("data-size", e.target.value);
   drawEmblems();
 });
 
-emblemsBurgSizeInput.on("change", e => {
+emblemsBurgSizeInput.addEventListener("change", e => {
   emblems.select("#burgEmblems").attr("data-size", e.target.value);
   drawEmblems();
 });
@@ -1021,31 +1052,31 @@ styleGoodsCircle.addEventListener("change", function () {
   drawGoods();
 });
 
-styleGoodsSize.on("change", function () {
+styleGoodsSize.addEventListener("change", function () {
   goods.select("#goodsIcons").attr("data-size", this.value);
   drawGoods();
 });
 
-styleGoodsBurgsSize.on("change", function () {
+styleGoodsBurgsSize.addEventListener("change", function () {
   goods.select("#goodsBurgs").attr("data-size", this.value);
   drawGoods();
 });
 
-styleMarketsLayerFillOpacity.on("input", e => {
+styleMarketsLayerFillOpacity.addEventListener("input", e => {
   markets.attr("fill-opacity", e.target.value);
 });
 
-styleMarketsSize.on("change", function () {
+styleMarketsSize.addEventListener("change", function () {
   markets.attr("data-size", this.value);
   drawMarketsLayer();
 });
 
-styleMarketsIconSize.on("change", function () {
+styleMarketsIconSize.addEventListener("change", function () {
   markets.attr("font-size", this.value);
   drawMarketsLayer();
 });
 
-styleMarketsIcon.on("click", function () {
+styleMarketsIcon.addEventListener("click", function () {
   window.Controllers.IconSelector.open(markets.attr("data-icon") || "⚖️", value => {
     markets.attr("data-icon", value);
     this.innerHTML = value;
@@ -1103,7 +1134,7 @@ Object.keys(vignettePresets).forEach(preset => {
   styleVignettePreset.options.add(new Option(preset, preset, false, false));
 });
 
-styleVignettePreset.on("change", function () {
+styleVignettePreset.addEventListener("change", function () {
   const attributes = JSON.parse(vignettePresets[this.value]);
 
   for (const selector in attributes) {
@@ -1135,35 +1166,35 @@ styleVignettePreset.on("change", function () {
   }
 });
 
-styleVignetteX.on("input", e => {
+styleVignetteX.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("x", `${e.target.value}%`);
 });
 
-styleVignetteWidth.on("input", e => {
+styleVignetteWidth.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("width", `${e.target.value}%`);
 });
 
-styleVignetteY.on("input", e => {
+styleVignetteY.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("y", `${e.target.value}%`);
 });
 
-styleVignetteHeight.on("input", e => {
+styleVignetteHeight.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("height", `${e.target.value}%`);
 });
 
-styleVignetteRx.on("input", e => {
+styleVignetteRx.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("rx", `${e.target.value}%`);
 });
 
-styleVignetteRy.on("input", e => {
+styleVignetteRy.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("ry", `${e.target.value}%`);
 });
 
-styleVignetteBlur.on("input", e => {
+styleVignetteBlur.addEventListener("input", e => {
   ensureEl("vignette-rect").setAttribute("filter", `blur(${e.target.value}px)`);
 });
 
-styleScaleBar.on("input", function (event) {
+styleScaleBar.addEventListener("input", function (event) {
   const scaleBarBack = scaleBar.select("#scaleBarBack");
   if (!scaleBarBack.size()) return;
 
@@ -1210,7 +1241,7 @@ function updateElements() {
 }
 
 // GLOBAL FILTERS
-mapFilters.on("click", applyMapFilter);
+mapFilters.addEventListener("click", applyMapFilter);
 function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;

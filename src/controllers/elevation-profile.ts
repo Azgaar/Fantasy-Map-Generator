@@ -25,10 +25,10 @@ import { ensureEl, getPointer, rn } from "../utils";
 function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");
   renderDialog();
-  ensureEl("epCurve").on("change", draw);
-  ensureEl("epSave").on("click", downloadCSV);
-  ensureEl("epSaveSVG").on("click", downloadSVG);
-  ensureEl("epSavePNG").on("click", downloadPNG);
+  ensureEl("epCurve").addEventListener("change", draw);
+  ensureEl("epSave").addEventListener("click", downloadCSV);
+  ensureEl("epSaveSVG").addEventListener("click", downloadSVG);
+  ensureEl("epSavePNG").addEventListener("click", downloadPNG);
 
   const firstCell = cells[0];
   const lastCell = cells.at(-1);

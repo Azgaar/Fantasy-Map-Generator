@@ -1,8 +1,10 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
+import type { BurgGroup } from "@/types/burg-groups";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
+import type { Label } from "./labels-generator";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
@@ -35,6 +37,7 @@ export interface Burg {
   product?: number; // gross product from the last production run
   treasury?: number; // accumulated cash balance
   market?: number;
+  label?: Label;
 }
 
 // A burg that could become a port on a given water body.
@@ -395,7 +398,7 @@ class BurgModule {
     );
   }
 
-  getDefaultGroups() {
+  getDefaultGroups(): BurgGroup[] {
     return [
       {
         name: "capital",
@@ -475,12 +478,13 @@ class BurgModule {
       if (group) return;
     }
 
-    const defaultGroup = options.burgs.groups.find((g: any) => g.isDefault);
+    const defaultGroup = options.burgs.groups.find(g => g.isDefault);
     if (!defaultGroup) {
       ERROR && console.error("No default group defined");
       return;
     }
     burg.group = defaultGroup.name;
+    if (burg.label?.group) delete burg.label.group;
 
     for (const group of options.burgs.groups) {
       if (!group.active) continue;
@@ -744,7 +748,6 @@ class BurgModule {
     if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
 
     window.drawBurgIcon(burg);
-    window.drawBurgLabel(burg);
 
     return burgId;
   }
@@ -869,7 +872,6 @@ class BurgModule {
 
     if (render) {
       window.drawBurgIcon(burg);
-      window.drawBurgLabel(burg);
     }
   }
 
@@ -890,7 +892,6 @@ class BurgModule {
     }
 
     window.removeBurgIcon(burg.i!);
-    window.removeBurgLabel(burg.i!);
   }
 }
 

@@ -15,6 +15,7 @@ function open(): void {
   $(`#${DIALOG_ID}`).dialog({
     resizable: false,
     title: "Markers generation settings",
+    maxHeight: 600,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
     buttons: {
       Regenerate: () => {

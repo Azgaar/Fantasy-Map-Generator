@@ -1,5 +1,6 @@
-import { select } from "d3";
 import type * as THREE from "three";
+import type { Burg } from "@/generators/burgs-generator";
+import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
@@ -11,6 +12,7 @@ import {
   generateSatelliteTexture
 } from "./draw-satellite-texture";
 import * as ErosionBake from "./erosion-bake";
+import { getGroupStyle } from "./labels/label-groups";
 
 export { heightAt, isCached } from "./erosion-bake";
 
@@ -46,6 +48,7 @@ type LabelOptions = {
   size: number;
   color: string;
   quality: number;
+  letterSpacing: number;
 };
 
 type LabeledSprite = THREE.Sprite & { size: number };
@@ -396,15 +399,25 @@ function textureToSprite(texture: string, width: number, height: number) {
   return sprite as LabeledSprite;
 }
 
-async function createTextLabel({ text, font, size, color, quality }: LabelOptions) {
-  context2d.font = `${size * quality}px ${font}`;
-  context2d.canvas.width = context2d.measureText(text).width;
-  context2d.canvas.height = size * quality * 1.25; // 25% margin as text can overflow the font size
+async function createTextLabel({ text, font, size, color, quality, letterSpacing }: LabelOptions) {
+  const lines = text.split("|");
+  const fontSize = size * quality;
+  const lineHeight = fontSize * 1.25;
+  const setFont = () => {
+    context2d.font = `${fontSize}px ${font}`;
+    context2d.letterSpacing = `${letterSpacing * quality}px`;
+  };
+
+  setFont();
+  context2d.canvas.width = Math.max(1, ...lines.map(line => Math.ceil(context2d.measureText(line).width)));
+  context2d.canvas.height = Math.max(1, Math.ceil(lineHeight * lines.length));
   context2d.clearRect(0, 0, context2d.canvas.width, context2d.canvas.height);
 
-  context2d.font = `${size * quality}px ${font}`;
+  setFont();
   context2d.fillStyle = color;
-  context2d.fillText(text, 0, size * quality);
+  lines.forEach((line, index) => {
+    context2d.fillText(line, 0, fontSize + lineHeight * index);
+  });
 
   return textureToSprite(
     context2d.canvas.toDataURL(),
@@ -436,46 +449,41 @@ async function createLabels() {
   raycaster = new Three.Raycaster();
   raycaster.set(new Three.Vector3(0, 1000, 0), new Three.Vector3(0, -1, 0));
 
-  const states = select("#viewbox").select("#labels #states");
-
-  const stateOptions = {
-    font: states.attr("font-family"),
-    size: +states.attr("data-size") / 2,
-    color: states.attr("fill"),
-    elevation: 20,
-    quality: 80
-  };
-
   // Cache icon materials and geometries by group to avoid recreating them
   const iconMaterials: Record<string, THREE.MeshPhongMaterial> = {};
   const iconGeometries: Record<string, THREE.CylinderGeometry> = {};
   const lineMaterials: Record<string, THREE.LineBasicMaterial> = {};
 
-  // Helper function to get burg label options from its group
-  function getBurgLabelOptions(burg: any) {
-    if (!burg.group) return null;
-
-    const labelGroup = select("#burgLabels").select(`#${burg.group}`);
-    if (labelGroup.empty()) return null;
-
-    const font = labelGroup.attr("font-family") || "Arial";
-    const size = +labelGroup.attr("data-size") || 10;
-    const color = labelGroup.attr("fill") || "#000";
-
-    // Calculate elevation, icon size, and line height based on label size
-    // Larger labels get higher elevation and larger icons
-    const elevation = Math.max(5, size * 0.5);
-    const iconSize = Math.max(0.3, size * 0.08);
-    const iconColor = "#666";
+  function getBurgLabelOptions(burg: Burg) {
+    const groupStyle = getGroupStyle({ name: burg.label?.group || burg.group || "burg", type: "burg" });
+    const size = Number.parseFloat(String(groupStyle["font-size"]));
+    const letterSpacing = Number(burg?.label?.letterSpacing ?? groupStyle["letter-spacing"]) || 0;
 
     return {
-      font,
+      font: String(groupStyle["font-family"]),
       size,
-      color,
-      elevation,
-      quality: 40,
-      iconSize,
-      iconColor
+      color: String(groupStyle.fill || "#000"),
+      letterSpacing,
+      elevation: Math.max(5, size * 0.5),
+      iconSize: Math.max(0.3, size * 0.08),
+      iconColor: "#666",
+      quality: 40
+    };
+  }
+
+  function getStateLabelOptions(state: State) {
+    const groupStyle = getGroupStyle({ name: state.label?.group || "state", type: "state" });
+    const size = Number.parseFloat(String(groupStyle["font-size"]));
+    const letterSpacing = Number(state?.label?.letterSpacing ?? groupStyle["letter-spacing"]) || 0;
+
+    return {
+      text: state.label?.text || state.name,
+      font: String(groupStyle["font-family"]),
+      size,
+      color: String(groupStyle.fill || "#000"),
+      letterSpacing,
+      elevation: 20,
+      quality: 80
     };
   }
 
@@ -512,12 +520,10 @@ async function createLabels() {
     if (burg.removed) continue;
 
     const burgOptions = getBurgLabelOptions(burg);
-    if (!burgOptions) continue;
-
     const [x, y, z] = get3dCoords(burg.x, burg.y);
 
-    if (layerIsOn("toggleLabels")) {
-      const burgSprite = await createTextLabel({ text: burg.name || "", ...burgOptions });
+    if (layerIsOn("toggleLabels") && !burg.label?.hidden) {
+      const burgSprite = await createTextLabel({ text: burg.label?.text ?? burg.name ?? "", ...burgOptions });
 
       burgSprite.position.set(x, y + burgOptions.elevation, z);
       burgSprite.size = burgOptions.size;
@@ -553,12 +559,11 @@ async function createLabels() {
   if (layerIsOn("toggleLabels")) {
     for (let i = 1; i < pack.states.length; i++) {
       const state = pack.states[i];
-      if (state.removed) continue;
+      if (state.removed || state.label?.hidden) continue;
 
       const [x, y, z] = get3dCoords(state.pole![0], state.pole![1]);
-      const text = states.select(`#stateLabel${state.i}`)?.text() || state.name;
-      const stateSprite = await createTextLabel({ text, ...stateOptions });
-
+      const stateOptions = getStateLabelOptions(state);
+      const stateSprite = await createTextLabel(stateOptions);
       stateSprite.position.set(x, y + stateOptions.elevation, z);
       stateSprite.size = stateOptions.size;
 

@@ -1,5 +1,6 @@
 import polylabel from "polylabel";
-import type { Point, Vertices } from "../generators/voronoi";
+import type { Point } from "@/types/global";
+import type { Vertices } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
 
@@ -353,6 +354,44 @@ export const findPath = (
   }
 
   return null;
+};
+
+export const parsePathPoints = (path: string): Point[] => {
+  const points: Point[] = [];
+  let x = 0;
+  let y = 0;
+
+  const addPoint = (nextX: number, nextY: number, relative: boolean) => {
+    x = relative ? x + nextX : nextX;
+    y = relative ? y + nextY : nextY;
+    points.push([x, y]);
+  };
+
+  for (const match of path.matchAll(/([AaCcHhLlMmQqSsTtVvZz])([^AaCcHhLlMmQqSsTtVvZz]*)/g)) {
+    const command = match[1];
+    const type = command.toUpperCase();
+    const relative = command !== type;
+    const values = match[2].match(/[-+]?(?:\d*\.?\d+)(?:e[-+]?\d+)?/gi)?.map(Number) || [];
+
+    if (type === "H") {
+      for (const nextX of values) addPoint(nextX, relative ? 0 : y, relative);
+      continue;
+    }
+
+    if (type === "V") {
+      for (const nextY of values) addPoint(relative ? 0 : x, nextY, relative);
+      continue;
+    }
+
+    const stride = { A: 7, C: 6, Q: 4, S: 4, M: 2, L: 2, T: 2 }[type];
+    if (!stride) continue;
+
+    for (let index = 0; index + stride <= values.length; index += stride) {
+      addPoint(values[index + stride - 2], values[index + stride - 1], relative);
+    }
+  }
+
+  return points;
 };
 
 type MeanderOptions = {

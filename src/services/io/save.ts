@@ -72,9 +72,9 @@ function prepareMapData(): string {
     "", // previously used for precOutput.value, part of options now
     JSON.stringify(options),
     mapName.value,
-    +hideLabels.checked,
+    "", // previously used for hideLabels
     stylePreset.value,
-    +rescaleLabels.checked,
+    "", // previously used for rescaleLabels
     urbanDensity,
     "", // previously used for longitudeOutput.value, part of options now
     ensureEl<HTMLInputElement>("growthRate").value
@@ -91,6 +91,7 @@ function prepareMapData(): string {
   cloneEl.setAttribute("width", String(graphWidth));
   cloneEl.setAttribute("height", String(graphHeight));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
+  cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
 
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
@@ -117,6 +118,8 @@ function prepareMapData(): string {
   const goods = JSON.stringify(pack.goods);
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
+  const labels = JSON.stringify(pack.addedLabels || []);
+  const styleData = JSON.stringify(style);
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
@@ -185,7 +188,9 @@ function prepareMapData(): string {
     deals,
     pack.cells.market,
     customGoodIcons,
-    measurers
+    measurers,
+    labels,
+    styleData
   ].join("\r\n");
   return mapData;
 }

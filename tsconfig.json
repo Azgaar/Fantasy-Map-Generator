@@ -26,6 +26,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
+    // "noUncheckedIndexedAccess": true, // TODO: turn on in the next version
   },
   "include": ["src"],
   "exclude": ["src/e2e"]

@@ -76,13 +76,13 @@ function renderDialog(): void {
 
   const body = ensureEl("regimentsBody");
 
-  ensureEl("regimentsOverviewRefresh").on("click", refreshRegimentsOverview);
-  ensureEl("regimentsPercentage").on("click", togglePercentageMode);
-  ensureEl("regimentsAddNew").on("click", toggleAdd);
-  ensureEl("regimentsExport").on("click", downloadRegimentsData);
-  ensureEl("regimentsFilter").on("change", refreshRegimentsOverview);
+  ensureEl("regimentsOverviewRefresh").addEventListener("click", refreshRegimentsOverview);
+  ensureEl("regimentsPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("regimentsAddNew").addEventListener("click", toggleAdd);
+  ensureEl("regimentsExport").addEventListener("click", downloadRegimentsData);
+  ensureEl("regimentsFilter").addEventListener("change", refreshRegimentsOverview);
 
-  body.on("click", async event => {
+  body.addEventListener("click", async event => {
     const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
     if (!target) return;
     Controllers.RegimentEditor.open(`#${target.dataset.editRegiment}`);
@@ -112,7 +112,7 @@ function updateHeaders(): void {
     );
   }
   header.querySelectorAll<HTMLElement>(".removable").forEach(el => {
-    el.on("click", () => sortLines(el));
+    el.addEventListener("click", () => sortLines(el));
   });
 }
 
@@ -173,10 +173,10 @@ function refreshRegimentsOverview(): void {
 
   // add listeners
   body.querySelectorAll<HTMLElement>("div.states").forEach(el => {
-    el.on("mouseenter", event => regimentHighlightOn(event));
+    el.addEventListener("mouseenter", event => regimentHighlightOn(event));
   });
   body.querySelectorAll<HTMLElement>("div.states").forEach(el => {
-    el.on("mouseleave", event => regimentHighlightOff(event));
+    el.addEventListener("mouseleave", event => regimentHighlightOff(event));
   });
 }
 

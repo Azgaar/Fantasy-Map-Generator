@@ -44,9 +44,9 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("riverCreatorComplete").on("click", addRiver);
-  ensureEl("riverCreatorCancel").on("click", cancelCreation);
-  ensureEl("riverCreatorBody").on("click", onBodyClick);
+  ensureEl("riverCreatorComplete").addEventListener("click", addRiver);
+  ensureEl("riverCreatorCancel").addEventListener("click", cancelCreation);
+  ensureEl("riverCreatorBody").addEventListener("click", onBodyClick);
 }
 
 function cancelCreation(): void {

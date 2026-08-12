@@ -1,5 +1,5 @@
 "use strict";
-// Azgaar (azgaar.fmg@yandex.com). Minsk, 2017-2023. MIT License
+// Azgaar and contributors, 2017-2026. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
 // set debug options
@@ -74,7 +74,7 @@ let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
-let labels = viewbox.append("g").attr("id", "labels");
+let labels = viewbox.append("g").attr("id", "labels").attr("font-size", "100px");
 let burgIcons = icons.append("g").attr("id", "burgIcons");
 let anchors = icons.append("g").attr("id", "anchors");
 let armies = viewbox.append("g").attr("id", "armies");
@@ -101,10 +101,6 @@ coastline.append("g").attr("id", "lake_island");
 
 terrs.append("g").attr("id", "oceanHeights");
 terrs.append("g").attr("id", "landHeights");
-
-labels.append("g").attr("id", "states");
-labels.append("g").attr("id", "addedLabels");
-let burgLabels = labels.append("g").attr("id", "burgLabels");
 
 // population groups
 population.append("g").attr("id", "rural");
@@ -163,11 +159,11 @@ let options = {
   latitude: 50, // North-South map shift in %, 50 is centered on equator
   longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
   prec: 100, // precipitation modifier in %
-  stateLabelsMode: "auto",
   showBurgPreview: true,
   burgs: {
     groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
   },
+  labels: JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions(),
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
   },
@@ -175,79 +171,15 @@ let options = {
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = { burgLabels: {}, burgIcons: {}, anchors: {} };
+let style = { labels: { groups: {} }, burgIcons: {}, anchors: {} };
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
 
-// d3 zoom behavior
+// current map view transform, written by the zoom handlers in src/components/zoom.ts
 let scale = 1;
 let viewX = 0;
 let viewY = 0;
-
-let rafId = null;
-let pendingScaleChange = false;
-let pendingPositionChange = false;
-function zoomRaf() {
-  const { k, x, y } = d3.event.transform;
-
-  const isScaleChanged = Boolean(scale - k);
-  const isPositionChanged = Boolean(viewX - x || viewY - y);
-  if (!isScaleChanged && !isPositionChanged) return;
-
-  scale = k;
-  viewX = x;
-  viewY = y;
-
-  // Coalesce multiple zoom events into one paint.
-  // While a RAF is pending, keep updating latest transform state and OR-change flags.
-  // The scheduled RAF consumes these accumulated flags and then resets them.
-  pendingScaleChange = pendingScaleChange || isScaleChanged;
-  pendingPositionChange = pendingPositionChange || isPositionChanged;
-
-  if (rafId) return;
-  rafId = requestAnimationFrame(() => {
-    rafId = null;
-
-    // Safely clears these flags for future renders
-    const didScaleChange = pendingScaleChange;
-    const didPositionChange = pendingPositionChange;
-    pendingScaleChange = false;
-    pendingPositionChange = false;
-
-    // Uses global values, so each frame always draws using the latest positioning values
-    viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-
-    if (didPositionChange) {
-      if (layerIsOn("toggleCoordinates")) drawCoordinates();
-    }
-
-    if (customization === 1) {
-      const canvas = findEl("canvas");
-      if (canvas && canvas.style.opacity !== "0") {
-        const img = findEl("imageToConvert");
-        if (img) {
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.setTransform(scale, 0, 0, scale, viewX, viewY);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        }
-      }
-    }
-
-    if (didScaleChange) {
-      invokeActiveZooming();
-      drawScaleBar(scaleBar, scale);
-      fitScaleBar(scaleBar, svgWidth, svgHeight);
-    }
-
-    if (didPositionChange || didScaleChange) {
-      window.updateMinimap && updateMinimap();
-    }
-  });
-}
-
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +ensureEl("populationRateInput").value;
@@ -282,6 +214,10 @@ oceanLayers
   .attr("height", graphHeight);
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // binds the zoom behaviour and its handlers (see src/components/viewbox-events.ts), so it has to
+  // run before checkLoadParameters - deep links (MFCG, a stored view position) zoom the map on load
+  applyDefaultViewboxEvents();
+
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
     alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
@@ -301,7 +237,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     hideLoading();
     await checkLoadParameters();
   }
-  applyDefaultViewboxEvents();
   initiateAutosave();
   initTourPromptButton();
 });
@@ -434,7 +369,7 @@ function toggleAssistant() {
           const bubble = document.getElementById("chat-widget-minimized");
           if (bubble) {
             bubble.dataset.tip = "Click to open the Assistant";
-            bubble.on("mouseover", showDataTip);
+            bubble.addEventListener("mouseover", showDataTip);
           }
         }, 5000);
       });
@@ -511,7 +446,7 @@ function findBurgForMFCG(params) {
   }
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
-  const label = burgLabels.select("[data-id='" + burgId + "']");
+  const label = labels.select("[data-label-type='burg'][data-id='" + burgId + "']");
   if (label.size()) {
     label
       .text(b.name)
@@ -523,90 +458,7 @@ function findBurgForMFCG(params) {
   }
 
   zoomTo(b.x, b.y, 8, 1600);
-  invokeActiveZooming();
   tip("Here stands the glorious city of " + b.name, true, "success", 15000);
-}
-
-// Zoom to a specific point
-function zoomTo(x, y, z = 8, d = 2000) {
-  const transform = d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(d).call(zoom.transform, transform);
-}
-
-// Reset zoom to initial
-function resetZoom(d = 1000) {
-  svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
-}
-
-// Bundled UI modules call these wrappers instead of using the legacy d3 selection directly
-function panMap(x, y) {
-  zoom.translateBy(svg, x, y);
-}
-
-function setMapZoom(value) {
-  zoom.scaleTo(svg, value);
-}
-
-function changeMapZoom(factor) {
-  zoom.scaleBy(svg, factor);
-}
-
-// active zooming feature
-function invokeActiveZooming() {
-  const isOptimized = shapeRendering.value === "optimizeSpeed";
-
-  if (coastline.select("#sea_island").size() && +coastline.select("#sea_island").attr("auto-filter")) {
-    // toggle shade/blur filter for coatline on zoom
-    const filter = scale > 1.5 && scale <= 2.6 ? null : scale > 2.6 ? "url(#blurFilter)" : "url(#dropShadow)";
-    coastline.select("#sea_island").attr("filter", filter);
-  }
-
-  // rescale labels on zoom
-  if (labels.style("display") !== "none") {
-    labels.selectAll("g").each(function () {
-      if (this.id === "burgLabels") return;
-      const desired = +this.dataset.size;
-      const relative = Math.max(rn((desired + desired / scale) / 2, 2), 1);
-      if (rescaleLabels.checked) this.setAttribute("font-size", relative);
-
-      const hidden = hideLabels.checked && (relative * scale < 6 || relative * scale > 60);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-    });
-  }
-
-  // rescale emblems on zoom
-  if (emblems.style("display") !== "none") {
-    emblems.selectAll("g").each(function () {
-      const size = this.getAttribute("font-size") * scale;
-      const hidden = hideEmblems.checked && (size < 25 || size > 300);
-      if (hidden) this.classList.add("hidden");
-      else this.classList.remove("hidden");
-      if (!hidden && window.COArenderer && this.children.length && !this.children[0].getAttribute("href"))
-        renderGroupCOAs(this);
-    });
-  }
-
-  // change states halo width
-  if (!customization && !isOptimized) {
-    const desired = +statesHalo.attr("data-width");
-    const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
-  }
-
-  // rescale map markers
-  +markers.attr("rescale") &&
-    pack.markers?.forEach(marker => {
-      const { i, x, y, size = 30, hidden } = marker;
-      const el = !hidden && document.getElementById(`marker${i}`);
-      if (!el) return;
-
-      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
-      el.setAttribute("width", zoomedSize);
-      el.setAttribute("height", zoomedSize);
-      el.setAttribute("x", rn(x - zoomedSize / 2, 1));
-      el.setAttribute("y", rn(y - zoomedSize, 1));
-    });
 }
 
 // add drag to upload logic, pull request from @evyatron
@@ -658,13 +510,18 @@ void (function addDragToUpload() {
 })();
 
 async function generate(options) {
+  let generationGroupOpen = false;
+
   try {
     const timeStart = performance.now();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
     invokeActiveZooming();
     setSeed(precreatedSeed);
-    INFO && console.group("Generated Map " + seed);
+    if (INFO) {
+      console.group("Generated Map " + seed);
+      generationGroupOpen = true;
+    }
 
     applyGraphSize();
     randomizeOptions();
@@ -723,12 +580,13 @@ async function generate(options) {
     Markers.generate();
     Zones.generate();
 
+    AddedLabels.initiate();
+
     drawScaleBar(scaleBar, scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
-    INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error);
@@ -752,6 +610,8 @@ async function generate(options) {
       },
       position: { my: "center", at: "center", of: "svg" }
     });
+  } finally {
+    if (generationGroupOpen) console.groupEnd();
   }
 }
 

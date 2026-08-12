@@ -148,7 +148,7 @@ function renderTemplateEditor(): void {
     axis: "y"
   });
 
-  $body.on("click", (ev: Event) => {
+  $body.addEventListener("click", (ev: Event) => {
     const el = ev.target as HTMLElement;
     if (el.classList.contains("icon-check")) {
       el.classList.remove("icon-check");
@@ -168,20 +168,20 @@ function renderTemplateEditor(): void {
     }
   });
 
-  ensureEl("templateEditor").on("keypress", (event: Event) => {
+  ensureEl("templateEditor").addEventListener("keypress", (event: Event) => {
     if ((event as KeyboardEvent).key === "Enter") {
       event.preventDefault();
       executeTemplate();
     }
   });
 
-  ensureEl("templateTools").on("click", addStepOnClick);
-  ensureEl("templateSelect").on("change", selectTemplate);
-  ensureEl("templateRun").on("click", executeTemplate);
-  ensureEl("templateUndo").on("click", () => restoreHistory(edits.n - 1));
-  ensureEl("templateRedo").on("click", () => restoreHistory(edits.n + 1));
-  ensureEl("templateSave").on("click", downloadTemplate);
-  ensureEl("templateLoad").on("click", () => ensureEl("templateToLoad").click());
+  ensureEl("templateTools").addEventListener("click", addStepOnClick);
+  ensureEl("templateSelect").addEventListener("change", selectTemplate);
+  ensureEl("templateRun").addEventListener("click", executeTemplate);
+  ensureEl("templateUndo").addEventListener("click", () => restoreHistory(edits.n - 1));
+  ensureEl("templateRedo").addEventListener("click", () => restoreHistory(edits.n + 1));
+  ensureEl("templateSave").addEventListener("click", downloadTemplate);
+  ensureEl("templateLoad").addEventListener("click", () => ensureEl("templateToLoad").click());
 
   ensureEl<HTMLInputElement>("templateToLoad").onchange = () => {
     uploadFile(ensureEl<HTMLInputElement>("templateToLoad"), uploadTemplate);
@@ -258,20 +258,20 @@ function renderImageConverter(): void {
     .on("touchmove mousemove", showPalleteHeight)
     .on("click", assignHeight);
 
-  ensureEl("convertImageLoad").on("click", () => ensureEl("imageToLoad").click());
+  ensureEl("convertImageLoad").addEventListener("click", () => ensureEl("imageToLoad").click());
   // imageToLoad is a static file input outside the dialog; use property assignment
   // (idempotent, replaces rather than accumulates) so re-rendering doesn't stack listeners.
   ensureEl<HTMLInputElement>("imageToLoad").onchange = () => loadImage.call(ensureEl<HTMLInputElement>("imageToLoad"));
-  ensureEl("convertAutoLum").on("click", () => autoAssing("lum"));
-  ensureEl("convertAutoHue").on("click", () => autoAssing("hue"));
-  ensureEl("convertAutoFMG").on("click", () => autoAssing("scheme"));
-  ensureEl("convertColorsButton").on("click", setConvertColorsNumber);
-  ensureEl("convertComplete").on("click", applyConversion);
-  ensureEl("convertCancel").on("click", cancelConversion);
-  ensureEl<HTMLInputElement>("convertOverlay").on("input", function (this: HTMLInputElement) {
+  ensureEl("convertAutoLum").addEventListener("click", () => autoAssing("lum"));
+  ensureEl("convertAutoHue").addEventListener("click", () => autoAssing("hue"));
+  ensureEl("convertAutoFMG").addEventListener("click", () => autoAssing("scheme"));
+  ensureEl("convertColorsButton").addEventListener("click", setConvertColorsNumber);
+  ensureEl("convertComplete").addEventListener("click", applyConversion);
+  ensureEl("convertCancel").addEventListener("click", cancelConversion);
+  ensureEl<HTMLInputElement>("convertOverlay").addEventListener("input", function (this: HTMLInputElement) {
     setOverlayOpacity(+this.value);
   });
-  ensureEl<HTMLInputElement>("convertOverlayNumber").on("input", function (this: HTMLInputElement) {
+  ensureEl<HTMLInputElement>("convertOverlayNumber").addEventListener("input", function (this: HTMLInputElement) {
     setOverlayOpacity(+this.value);
   });
 }
@@ -281,13 +281,13 @@ function renderImageConverter(): void {
 let storedLayers: string[] = [];
 
 function addToolbarListeners(): void {
-  ensureEl("paintBrushes").on("click", openBrushesPanel);
-  ensureEl("applyTemplate").on("click", openTemplateEditor);
-  ensureEl("convertImage").on("click", openImageConverter);
-  ensureEl("heightmapPreview").on("click", toggleHeightmapPreview);
-  ensureEl("heightmap3DView").on("click", changeViewMode);
-  ensureEl("finalizeHeightmap").on("click", finalizeHeightmap);
-  ensureEl("renderOcean").on("click", mockHeightmap);
+  ensureEl("paintBrushes").addEventListener("click", openBrushesPanel);
+  ensureEl("applyTemplate").addEventListener("click", openTemplateEditor);
+  ensureEl("convertImage").addEventListener("click", openImageConverter);
+  ensureEl("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
+  ensureEl("heightmap3DView").addEventListener("click", changeViewMode);
+  ensureEl("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
+  ensureEl("renderOcean").addEventListener("click", mockHeightmap);
 }
 
 function showModeDialog(tool?: string): void {
@@ -762,6 +762,10 @@ function restoreRiskedData(): void {
     c.center = findCell(c.x!, c.y!)!;
   }
 
+  States.getPoles();
+  States.findNeighbors();
+  States.collectStatistics();
+
   if (erosionAllowed) {
     Rivers.specify();
     Lakes.defineNames();
@@ -1073,31 +1077,31 @@ function closeBrushesPanel(): void {
 }
 
 function addBrushesListeners(): void {
-  ensureEl("brushesButtons").on("click", toggleBrushMode);
-  ensureEl("cellTypeFilter").on("change", cellTypeFilterChange);
-  ensureEl("undo").on("click", () => restoreHistory(edits.n - 1));
-  ensureEl("redo").on("click", () => restoreHistory(edits.n + 1));
-  ensureEl("rescaleShow").on("click", () => {
+  ensureEl("brushesButtons").addEventListener("click", toggleBrushMode);
+  ensureEl("cellTypeFilter").addEventListener("change", cellTypeFilterChange);
+  ensureEl("undo").addEventListener("click", () => restoreHistory(edits.n - 1));
+  ensureEl("redo").addEventListener("click", () => restoreHistory(edits.n + 1));
+  ensureEl("rescaleShow").addEventListener("click", () => {
     ensureEl("modifyButtons").style.display = "none";
     ensureEl("rescaleSection").style.display = "block";
   });
-  ensureEl("rescaleHide").on("click", () => {
+  ensureEl("rescaleHide").addEventListener("click", () => {
     ensureEl("modifyButtons").style.display = "block";
     ensureEl("rescaleSection").style.display = "none";
   });
-  ensureEl("rescaler").on("change", (e: Event) => rescale((e.target as HTMLInputElement).valueAsNumber));
-  ensureEl("rescaleCondShow").on("click", () => {
+  ensureEl("rescaler").addEventListener("change", (e: Event) => rescale((e.target as HTMLInputElement).valueAsNumber));
+  ensureEl("rescaleCondShow").addEventListener("click", () => {
     ensureEl("modifyButtons").style.display = "none";
     ensureEl("rescaleCondSection").style.display = "block";
   });
-  ensureEl("rescaleCondHide").on("click", () => {
+  ensureEl("rescaleCondHide").addEventListener("click", () => {
     ensureEl("modifyButtons").style.display = "block";
     ensureEl("rescaleCondSection").style.display = "none";
   });
-  ensureEl("rescaleExecute").on("click", rescaleWithCondition);
-  ensureEl("smoothHeights").on("click", smoothAllHeights);
-  ensureEl("disruptHeights").on("click", disruptAllHeights);
-  ensureEl("brushClear").on("click", startFromScratch);
+  ensureEl("rescaleExecute").addEventListener("click", rescaleWithCondition);
+  ensureEl("smoothHeights").addEventListener("click", smoothAllHeights);
+  ensureEl("disruptHeights").addEventListener("click", disruptAllHeights);
+  ensureEl("brushClear").addEventListener("click", startFromScratch);
 }
 
 function exitBrushMode(): void {
@@ -1496,7 +1500,7 @@ function addStep(type: string, count?: string, dist?: string, arg4?: string, arg
   $body.insertAdjacentHTML("beforeend", getStepHTML(type, count, dist, arg4, arg5));
 
   const $elDist = $body.querySelector<HTMLSelectElement>("div:last-child > span > .templateDist");
-  if ($elDist) $elDist.on("change", setRange);
+  if ($elDist) $elDist.addEventListener("change", setRange);
 
   if (dist && $elDist && $elDist.tagName === "SELECT") {
     for (const option of Array.from($elDist.options)) {
@@ -2093,8 +2097,8 @@ function toggleHeightmapPreview(): void {
   preview.width = grid.cellsX;
   preview.height = grid.cellsY;
   document.body.insertBefore(preview, ensureEl("optionsContainer"));
-  preview.on("mouseover", () => tip("Heightmap preview. Click to download a screen-sized image"));
-  preview.on("click", downloadPreview);
+  preview.addEventListener("mouseover", () => tip("Heightmap preview. Click to download a screen-sized image"));
+  preview.addEventListener("click", downloadPreview);
   drawHeightmapPreview();
 }
 

@@ -63,11 +63,11 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routeCreatorGroupSelect").on("change", redrawCreatorRoute);
-  ensureEl("routeCreatorGroupEdit").on("click", openRouteGroupsEditor);
-  ensureEl("routeCreatorComplete").on("click", completeCreation);
-  ensureEl("routeCreatorCancel").on("click", cancelCreation);
-  ensureEl("routeCreatorBody").on("click", onBodyClick);
+  ensureEl("routeCreatorGroupSelect").addEventListener("change", redrawCreatorRoute);
+  ensureEl("routeCreatorGroupEdit").addEventListener("click", openRouteGroupsEditor);
+  ensureEl("routeCreatorComplete").addEventListener("click", completeCreation);
+  ensureEl("routeCreatorCancel").addEventListener("click", cancelCreation);
+  ensureEl("routeCreatorBody").addEventListener("click", onBodyClick);
 }
 
 function redrawCreatorRoute(): void {

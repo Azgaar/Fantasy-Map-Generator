@@ -1,10 +1,10 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
 import { defaultOptions } from "@/data/view-3d-options";
+import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
-import { drawBurgLabels } from "@/renderers/draw-burg-labels";
 import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
@@ -13,9 +13,12 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
+import type { LabelGroupStyle } from "@/types/style";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
+import { parsePathPoints } from "@/utils/pathUtils";
 
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
@@ -226,7 +229,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("opacity", 0.5)
         .attr("stroke", "#1f3846")
         .attr("stroke-width", 0.7)
-        .attr("filter", "url(#dropShadow)");
+        .attr("filter", null);
       select("#coastline")
         .select("#lake_island")
         .attr("opacity", 1)
@@ -1116,8 +1119,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     });
 
     layerIsOn("toggleBurgIcons") && drawBurgIcons();
-    layerIsOn("toggleLabels") && drawBurgLabels();
-
     const opts = options as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
@@ -1288,5 +1289,226 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("mask", null);
       if (layerIsOn("toggleHeight")) drawHeightmap();
     }
+  }
+
+  if (isOlderThan("1.140.0")) {
+    // v1.140.0 migrated label data and styles to the unified flat Label Group model
+
+    let labels = document.querySelector<SVGGElement>("#labels");
+    if (!labels) {
+      labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      labels.setAttribute("id", "labels");
+      document.querySelector("#viewbox")?.appendChild(labels);
+    }
+    labels.setAttribute("font-size", "100px");
+
+    const hadVisibleLabels = getComputedStyle(labels).display !== "none";
+    labels.style.removeProperty("display");
+
+    const legacyStateMode = "stateLabelsMode" in options ? options.stateLabelsMode : undefined;
+    const stateMode: LabelNameMode =
+      legacyStateMode === "short" || legacyStateMode === "full" ? legacyStateMode : "auto";
+    const settings = (data[1] || "").split("|");
+    const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
+    const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;
+    options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
+    style.labels.groups = {};
+
+    for (const type of ["river", "route"] as const) {
+      options.labels.groups.push(Labels.getFallbackGroup(type));
+      style.labels.groups[type] = getGroupStyle({ name: type, type });
+    }
+
+    const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
+    for (const burgGroup of burgGroups) {
+      const name = burgGroup.id;
+      const oldStyle = deriveLabelsStyle(burgGroup);
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+      const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+
+      options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
+      style.labels.groups[name] = oldStyle;
+    }
+
+    const migratedBurgStyle = burgGroups.length ? style.labels.groups[burgGroups[0].id] : undefined;
+    for (const { name } of options.burgs.groups) {
+      if (options.labels.groups.some(group => group.name === name)) continue;
+
+      const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
+      const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
+      options.labels.groups.push({ name, type: "burg", zoom });
+      style.labels.groups[name] = migratedBurgStyle ? { ...migratedBurgStyle } : getGroupStyle({ name, type: "burg" });
+    }
+
+    if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
+      options.labels.groups[0].isDefault = true;
+
+    // migrate manually shifted burg labels to pack.burgs[burgId].label
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
+      const burgId = +textEl.id.slice(9);
+      const burg = pack.burgs[burgId];
+      if (!burg) continue;
+
+      const transform = textEl.getAttribute("transform");
+      if (!transform) continue;
+      const tr = parseTransform(transform);
+      const dx = rn(tr[0], 1);
+      const dy = rn(tr[1], 1);
+      if (dx || dy) burg.label = { dx, dy };
+    }
+
+    const provs = document.querySelector<SVGGElement>("#provs");
+    const provinceGroup = document.querySelector<SVGGElement>("#provs #provinceLabels");
+    if (provs && provinceGroup) {
+      const oldStyle = deriveLabelsStyle(provs);
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+
+      options.labels.groups.push({
+        name: "province",
+        type: "province",
+        isDefault: true,
+        zoom: deriveZoomExtent(fontSize),
+        layerDependency: "toggleProvinces"
+      });
+      style.labels.groups.province = oldStyle;
+    } else {
+      options.labels.groups.push(Labels.getFallbackGroup("province"));
+      style.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
+    }
+
+    pack.addedLabels = [];
+    const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
+    for (const addedGroup of addedGroups) {
+      let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
+      const isExisting = options.labels.groups.find(group => group.name === name);
+      if (isExisting) name += options.labels.groups.length;
+
+      const oldStyle = deriveLabelsStyle(addedGroup);
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+
+      options.labels.groups.push({
+        name,
+        type: "added",
+        isDefault: name === "added",
+        zoom: deriveZoomExtent(fontSize)
+      });
+      style.labels.groups[name] = oldStyle;
+
+      for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
+        const note = notes.find(note => note.id === textEl.id);
+
+        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+        if (!pathEl) continue;
+
+        const label = getPathLabel({ textEl, pathEl });
+        if (label?.text && label.pathPoints?.length) {
+          const [x, y] = label.pathPoints[Math.floor(label.pathPoints.length / 2)];
+          const addedLabel = AddedLabels.add({ x, y, label: { ...label, group: name } });
+          if (note) note.id = `addedLabel${addedLabel.i}`;
+        } else {
+          if (note) notes = notes.filter(n => n.id !== note.id); // remove note
+        }
+      }
+    }
+
+    const stateGroup = labels.querySelector<SVGGElement>(":scope > #states");
+    if (stateGroup) {
+      const oldStyle = deriveLabelsStyle(stateGroup);
+      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+
+      options.labels.groups.push({
+        name: "state",
+        type: "state",
+        isDefault: true,
+        zoom: deriveZoomExtent(fontSize),
+        mode: stateMode
+      });
+      style.labels.groups.state = oldStyle;
+    } else {
+      options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
+      style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
+    }
+
+    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
+      const stateId = +textEl.id.slice(10);
+      const state = pack.states[stateId];
+      if (!state) continue;
+
+      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+      if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
+    }
+
+    delete (style as any).burgLabels; // migrated to style.labels.groups
+    delete (options as any).stateLabelsMode; // migrated to group settings
+
+    function deriveLabelsStyle(groupEl: SVGGElement): LabelGroupStyle {
+      return {
+        opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
+        fill: groupEl.getAttribute("fill") || "#000000",
+        stroke: groupEl.getAttribute("stroke") || "#000000",
+        "stroke-width": Number(groupEl.getAttribute("stroke-width")) || 0,
+        style: groupEl.getAttribute("style") || null,
+        "letter-spacing": Number(groupEl.getAttribute("letter-spacing")) || 0,
+        "font-size": `${Number(groupEl.dataset.size) || Number(groupEl.getAttribute("font-size")) || 18}%`,
+        "font-family": groupEl.getAttribute("font-family") || "Almendra SC",
+        filter: groupEl.getAttribute("filter") || null,
+        "data-dx": Number(groupEl.dataset.dx) || 0,
+        "data-dy": Number(groupEl.dataset.dy) || 0
+      };
+    }
+
+    function deriveZoomExtent(fontSize: number) {
+      return { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+    }
+
+    function getPathLabel({
+      textEl,
+      pathEl,
+      names
+    }: {
+      textEl: SVGTextElement;
+      pathEl?: SVGPathElement;
+      names?: (string | undefined)[];
+    }) {
+      const label: Label = {};
+      const textPath = textEl.querySelector("textPath");
+      const text = getMultilineText(textEl);
+      if (text && !names?.includes(text)) label.text = text;
+
+      const pathPoints = pathEl ? parsePathPoints(pathEl.getAttribute("d") || "") : null;
+      if (pathPoints?.length) label.pathPoints = pathPoints;
+
+      if (textPath) {
+        const startOffset = Number.parseFloat(textPath.getAttribute("startOffset") || "");
+        if (Number.isFinite(startOffset) && startOffset !== 50) label.startOffset = startOffset;
+        const fontSize = Number.parseFloat(textPath.getAttribute("font-size") || "");
+        if (Number.isFinite(fontSize) && fontSize !== 100) label.fontSize = fontSize;
+        const letterSpacing = Number.parseFloat(textPath.getAttribute("letter-spacing") || "");
+        if (letterSpacing && Number.isFinite(letterSpacing)) label.letterSpacing = letterSpacing;
+      }
+
+      const [dx, dy] = parseTransform(textEl.getAttribute("transform") || "");
+      if (dx) label.dx = rn(dx, 1);
+      if (dy) label.dy = rn(dy, 1);
+
+      return Object.keys(label).length > 0 ? label : undefined;
+    }
+
+    function getMultilineText(textEl: SVGTextElement) {
+      return (
+        Array.from(textEl.querySelectorAll("tspan"))
+          .map(tspan => tspan.textContent || "")
+          .join("|") || textEl.textContent
+      );
+    }
+
+    provinceGroup?.remove();
+    document.getElementById("textPaths")?.replaceChildren();
+    labels.replaceChildren();
+    ensureEl("toggleLabels").classList.toggle("buttonoff", !hadVisibleLabels);
+    if (hadVisibleLabels) drawLabels();
+
+    // other changes
+    select("#coastline > #sea_island").attr("filter", null);
   }
 }

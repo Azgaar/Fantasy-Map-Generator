@@ -106,4 +106,26 @@ test.describe("Burgs.add", () => {
     const portButton = page.locator("#burgPort");
     await expect(portButton).toHaveClass(/inactive/);
   });
+
+  test("repeated burg label click opens the label editor for the same burg", async ({ page }) => {
+    const burgLabels = page.locator("#labels text[data-label-type='burg']");
+    const firstLabel = burgLabels.first();
+    const secondLabel = burgLabels.nth(1);
+    const firstId = await firstLabel.getAttribute("data-id");
+    const secondId = await secondLabel.getAttribute("data-id");
+
+    expect(firstId).not.toBeNull();
+    expect(secondId).not.toBeNull();
+
+    await firstLabel.dispatchEvent("click");
+    await expect(page.locator("#burgEditor")).toHaveAttribute("data-burg-id", firstId!);
+
+    await secondLabel.dispatchEvent("click");
+    await expect(page.locator("#burgEditor")).toHaveAttribute("data-burg-id", secondId!);
+    await expect(page.locator("#labelEditor")).toHaveCount(0);
+
+    await secondLabel.dispatchEvent("click");
+    await expect(page.locator("#labelEditor")).toBeVisible();
+    await expect(page.locator("#burgEditor")).toHaveCount(0);
+  });
 });

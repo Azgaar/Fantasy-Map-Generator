@@ -455,13 +455,13 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       });
     });
 
-    ensureEl("newGoodAddRecipe").on("click", event => {
+    ensureEl("newGoodAddRecipe").addEventListener("click", event => {
       event.preventDefault();
       recipes.push({ [defaultGoodId]: 1 });
       renderRecipes();
     });
 
-    ensureEl("newGoodDistributionEditor").on("click", () => {
+    ensureEl("newGoodDistributionEditor").addEventListener("click", () => {
       const distEl = ensureEl("newGoodDistribution");
       Controllers.DistributionEditor.open((dist: string) => {
         distEl.textContent = dist;

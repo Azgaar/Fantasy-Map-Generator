@@ -4,6 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
 import { destroyDialogIfExists, ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rand, rn } from "../utils";
 
@@ -100,19 +101,19 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("riverCreateSelectingCells").on("click", openRiverCreator);
-  ensureEl("riverEditStyle").on("click", openRiverStyle);
-  ensureEl("riverElevationProfile").on("click", showRiverElevationProfile);
-  ensureEl("riverLegend").on("click", editRiverLegend);
-  ensureEl("riverRemove").on("click", removeRiver);
-  ensureEl("riverName").on("input", changeName);
-  ensureEl("riverNameSpeak").on("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
-  ensureEl("riverType").on("input", changeType);
-  ensureEl("riverNameCulture").on("click", generateNameCulture);
-  ensureEl("riverNameRandom").on("click", generateNameRandom);
-  ensureEl("riverMainstem").on("change", changeParent);
-  ensureEl("riverSourceWidth").on("input", changeSourceWidth);
-  ensureEl("riverWidthFactor").on("input", changeWidthFactor);
+  ensureEl("riverCreateSelectingCells").addEventListener("click", openRiverCreator);
+  ensureEl("riverEditStyle").addEventListener("click", openRiverStyle);
+  ensureEl("riverElevationProfile").addEventListener("click", showRiverElevationProfile);
+  ensureEl("riverLegend").addEventListener("click", editRiverLegend);
+  ensureEl("riverRemove").addEventListener("click", removeRiver);
+  ensureEl("riverName").addEventListener("input", changeName);
+  ensureEl("riverNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
+  ensureEl("riverType").addEventListener("input", changeType);
+  ensureEl("riverNameCulture").addEventListener("click", generateNameCulture);
+  ensureEl("riverNameRandom").addEventListener("click", generateNameRandom);
+  ensureEl("riverMainstem").addEventListener("change", changeParent);
+  ensureEl("riverSourceWidth").addEventListener("input", changeSourceWidth);
+  ensureEl("riverWidthFactor").addEventListener("input", changeWidthFactor);
 }
 
 function openRiverCreator(): void {
@@ -240,6 +241,7 @@ function redrawRiver(): void {
   selectedRiver.attr("d", path);
 
   updateRiverLength(river);
+  drawLabels();
   if (findEl("elevationProfile")) showRiverElevationProfile();
 }
 

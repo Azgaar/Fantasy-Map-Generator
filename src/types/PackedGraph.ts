@@ -1,3 +1,4 @@
+import type { AddedLabel } from "@/generators/added-labels";
 import type { Biome } from "@/generators/biomes-generator";
 import type { Burg } from "@/generators/burgs-generator";
 import type { Culture } from "@/generators/cultures-generator";
@@ -69,4 +70,5 @@ export interface PackedGraph {
   markets: Market[];
   deals: Deal[];
   measurers: Measurer[];
+  addedLabels: AddedLabel[];
 }

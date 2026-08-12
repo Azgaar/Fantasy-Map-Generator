@@ -43,6 +43,7 @@ function getDefaultPresets() {
     provinces: [
       "toggleBorders",
       "toggleBurgIcons",
+      "toggleLabels",
       "toggleLakes",
       "toggleProvinces",
       "toggleRivers",
@@ -251,7 +252,7 @@ function drawLayers() {
   if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
   if (layerIsOn("toggleEmblems")) drawEmblems();
-  if (layerIsOn("toggleLabels")) drawLabels();
+  drawLabels();
   if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleMarkers")) drawMarkers();
@@ -584,18 +585,9 @@ function drawProvinces() {
     bodyPaths.push(getGappedFillPaths("province", fill, waterGap, color, index));
   });
 
-  const labels = provinces
-    .filter(p => p.i && !p.removed)
-    .map(p => {
-      const [x, y] = p.pole || cells.p[p.center];
-      return /* html */ `<text x="${x}" y="${y}" id="provinceLabel${p.i}">${p.name}</text>`;
-    });
-
   ensureEl("provs").innerHTML = /* html */ `
     <g id='provincesBody'>${bodyPaths.join("")}</g>
-    <g id='provinceLabels'>${labels.join("")}</g>
   `;
-  ensureEl("provinceLabels").style.display = ensureEl("provs").dataset.labels === "1" ? "block" : "none";
 
   TIME && console.timeEnd("drawProvinces");
 }
@@ -892,21 +884,12 @@ function toggleTrade(event) {
 function toggleLabels(event) {
   if (!layerIsOn("toggleLabels")) {
     turnButtonOn("toggleLabels");
-    $("#labels").fadeIn();
-    // don't redraw labels as they are not stored in data yet
-    if (labels.selectAll("text").size() === 0) drawLabels();
     if (event && isCtrlClick(event)) editStyle("labels");
   } else {
     if (event && isCtrlClick(event)) return editStyle("labels");
     turnButtonOff("toggleLabels");
-    $("#labels").fadeOut();
   }
-}
-
-function drawLabels() {
-  drawStateLabels();
-  drawBurgLabels();
-  invokeActiveZooming();
+  drawLabels();
 }
 
 function toggleBurgIcons(event) {
@@ -1014,11 +997,13 @@ function layerIsOn(el) {
 function turnButtonOff(el) {
   ensureEl(el).classList.add("buttonoff");
   getCurrentPreset();
+  ViewportLayers.renderNow();
 }
 
 function turnButtonOn(el) {
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
+  ViewportLayers.renderNow();
 }
 
 // move layers on mapLayers dragging (jquery sortable)

@@ -462,6 +462,18 @@ class Resampler {
     this.restoreMarkers(parentMap, projection);
     this.restoreZones(parentMap, projection, scale);
     this.restoreEconomy(parentMap);
+    for (const state of pack.states) {
+      if (state.label) state.label.pathPoints = undefined;
+    }
+    pack.addedLabels = (parentMap.pack.addedLabels || []).map(addedLabel => {
+      const [x, y] = projection(addedLabel.x, addedLabel.y);
+      return {
+        ...addedLabel,
+        x,
+        y,
+        label: { ...addedLabel.label, pathPoints: addedLabel.label.pathPoints?.map(([x, y]) => projection(x, y)) }
+      };
+    });
 
     showStatistics();
   }

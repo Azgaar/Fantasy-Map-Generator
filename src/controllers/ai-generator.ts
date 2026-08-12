@@ -246,7 +246,7 @@ function renderDialog(): void {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  ensureEl("aiGeneratorKeyHelp").on("click", () => {
+  ensureEl("aiGeneratorKeyHelp").addEventListener("click", () => {
     const model = ensureEl<HTMLSelectElement>("aiGeneratorModel").value;
     const provider = MODELS[model];
     openURL(PROVIDERS[provider].keyLink);

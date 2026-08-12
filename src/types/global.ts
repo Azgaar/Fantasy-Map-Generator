@@ -1,9 +1,12 @@
-import type { Selection } from "d3";
+import type { Selection, ZoomBehavior } from "d3";
+import type { LabelGroup } from "@/generators/labels-generator";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
 import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
+import type { BurgGroup } from "./burg-groups";
 import type { PackedGraph } from "./PackedGraph";
+import type { Style } from "./style";
 
 declare global {
   var MOBILE: boolean;
@@ -18,8 +21,6 @@ declare global {
     // called by a generator that cannot import a renderer (the generator is the smell, not this)
     drawBurgIcon: typeof import("../renderers/draw-burg-icons").drawBurgIcon;
     removeBurgIcon: typeof import("../renderers/draw-burg-icons").removeBurgIcon;
-    drawBurgLabel: typeof import("../renderers/draw-burg-labels").drawBurgLabel;
-    removeBurgLabel: typeof import("../renderers/draw-burg-labels").removeBurgLabel;
     redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
     redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;
@@ -42,6 +43,13 @@ declare global {
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;
+    panMap: typeof import("../components/zoom").panMap;
+    setMapZoom: typeof import("../components/zoom").setMapZoom;
+    changeMapZoom: typeof import("../components/zoom").changeMapZoom;
+    drawStateLabels: (ids?: number[]) => void;
+    drawBurgLabels: () => void;
+    drawBurgLabel: (burg: import("../generators/burgs-generator").Burg) => void;
+    removeBurgLabel: (burgId: number) => void;
   }
 
   var seed: string;
@@ -74,9 +82,7 @@ declare global {
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
   var areaUnit: HTMLInputElement;
-  var hideLabels: HTMLInputElement;
   var stylePreset: HTMLSelectElement;
-  var rescaleLabels: HTMLInputElement;
   var temperatureScale: HTMLSelectElement;
 
   // Global variables defined in main.js
@@ -91,7 +97,6 @@ declare global {
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
   var ice: Selection<SVGGElement, unknown, null, undefined>;
   var labels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgLabels: Selection<SVGGElement, unknown, null, undefined>;
   var burgIcons: Selection<SVGGElement, unknown, null, undefined>;
   var anchors: Selection<SVGGElement, unknown, null, undefined>;
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
@@ -133,13 +138,8 @@ declare global {
   var icons: Selection<SVGGElement, unknown, null, undefined>;
   var ruler: Selection<SVGGElement, unknown, null, undefined>;
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
-  var notes: any[];
-  var style: {
-    burgLabels: { [key: string]: { [key: string]: string } };
-    burgIcons: { [key: string]: { [key: string]: string } };
-    anchors: { [key: string]: { [key: string]: string } };
-    [key: string]: any;
-  };
+  var notes: any[]; // TODO: correct type
+  var style: Style;
 
   var mapId: number;
 
@@ -206,10 +206,8 @@ declare global {
   var getCellsDensityColor: (cells: number) => string;
   var showExportPane: () => void;
   var customization: number;
-  var zoomTo: (x: number, y: number, zoom: number, duration: number) => void;
-  var panMap: (x: number, y: number) => void;
-  var setMapZoom: (value: number) => void;
-  var changeMapZoom: (factor: number) => void;
+  var zoom: ZoomBehavior<SVGSVGElement, unknown>;
+  var zoomTo: (x: number, y: number, zoom?: number, duration?: number) => void;
   var modules: Record<string, boolean>;
 
   // Legacy UI globals
@@ -241,17 +239,13 @@ declare global {
   var drawGoods: () => void;
   var legend: any;
 
-  // Helpers defined in classic public/ scripts (not yet migrated to src/). Migrated counterparts
-  // (src/utils, src/modules) and globally-typed generators (Names, Cultures, Religions, States,
-  // Provinces, Burgs, COA, COArenderer) are used directly instead.
   var drawCultures: () => void;
   var drawReligions: () => void;
   var drawStates: () => void;
   var drawBorders: () => void;
   var drawProvinces: () => void;
-  var drawStateLabels: (ids?: number[]) => void;
+  var drawLabels: () => void;
   var drawPopulation: () => void;
-
   var toggleCultures: () => void;
   var toggleStates: () => void;
   var toggleBiomes: () => void;
@@ -317,11 +311,9 @@ type Options = {
   latitude: number; // North-South map shift in %, 50 is centered on equator
   longitude: number; // West-East map shift in %, 50 is centered on prime meridian
   prec: number; // precipitation modifier in %
-  stateLabelsMode: string;
   showBurgPreview: boolean;
-  burgs: {
-    groups: BurgGroup[];
-  };
+  burgs: { groups: BurgGroup[] };
+  labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
   military: MilitaryUnit[];
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
@@ -329,16 +321,4 @@ type Options = {
   threeD: ThreeDOptions;
 };
 
-type BurgGroup = {
-  name: string;
-  order: number;
-  active?: boolean;
-  isDefault?: boolean;
-  removed?: boolean;
-  min?: number;
-  max?: number;
-  percentile?: number;
-  features?: Record<string, boolean>;
-  biomes?: number[];
-  preview?: string;
-};
+export type Point = [number, number];

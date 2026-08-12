@@ -91,7 +91,7 @@ Example stored entities:
 - Routes
 - Military
 - Zones
-- Labels
+- Labels (addedLabels)
 - Style configuration
 
 The intent is for generators and editors to mutate this state in controlled ways.
@@ -178,7 +178,7 @@ Responsibilities:
 - Convert world data into SVG / WebGL / canvas output
 - Handle layer ordering
 - Draw labels and geometry
-- Visual styling
+- Apply visual styling from serialized style state
 - Visual optimizations
 
 Important restrictions:
@@ -194,6 +194,122 @@ The same world state could theoretically support:
 - 3D renderer
 - External engine export
 - Server-side rendering
+
+---
+
+# Map Styling
+
+Map styling is map state. The desired model is one plain, JSON-compatible `style`
+object that contains everything needed to reproduce the map appearance. SVG attributes
+and other rendered output are projections of that object, never the source of truth.
+
+Layer visibility, layer presets, and stacking order are separate concerns and are not
+part of the style model described here.
+
+## Problems with the current approach
+
+The current style preset files are close to the desired serializable form, but their
+structure mirrors the rendered SVG:
+
+- Most style values live as attributes on SVG elements and are read back from the DOM.
+- Presets are keyed by selectors such as `#stateBorders` and `#labels > #states`.
+- SVG attributes, custom `data-*` attributes, and application options are mixed together.
+- The global `style` object covers only selected subsystems: Label Groups, Burg icon
+  groups, and anchor groups. Other styles remain attached to SVG nodes.
+- The Style UI changes the rendered SVG directly and calls drawing functions when an
+  attribute affects geometry.
+
+This makes the DOM part state container and part renderer output. It also couples preset
+files, saving, loading, and migration to the current SVG structure. Renaming or nesting an
+SVG group can become a data-format change even when the visible feature did not change.
+
+## Desired style object
+
+The `style` object is organized by map feature rather than by DOM selector. Related
+parts are nested, while repeated user-defined styles are stored in keyed `groups`
+objects. The following is illustrative schema:
+
+```ts
+const style = {
+  borders: {
+    state: { opacity: 0.8, stroke: "#56566d", "stroke-width": 1, "line-cap": "butt", filter: null },
+    province: { opacity: 0.8, stroke: "#56566d", "stroke-width": 0.5, "line-cap": "round", filter: null }
+  }
+};
+```
+
+Existing selector fragments become
+nested parts, for example:
+
+- `#statesBody` and `#statesHalo` become `style.states.body` and `style.states.halo`.
+- `#freshwater`, `#salt`, and the other lake types become entries in `style.lakes.groups`.
+- `#rural` and `#urban` become `style.population.rural` and `style.population.urban`.
+- `#stateEmblems`, `#provinceEmblems`, and `#burgEmblems` become nested emblem styles.
+- `#goodsCells`, `#goodsIcons`, and `#goodsBurgs` become nested parts of `style.goods`.
+- `#legendBox`, `#scaleBarBack`, and the compass rose become nested parts of their owning feature.
+
+The grouping is organizational only. It does not introduce a generic style framework,
+CSS cascade, or inheritance system. Each renderer owns the small typed style shape for
+its feature.
+
+## Naming and values
+
+- Use html snake case attributes names such as `stroke-width`, `font-size`, `data-dx`.
+- Preserve every styling capability users have today, including colors, opacity,
+  strokes, typography, filters, masks, textures, patterns, sizes, offsets, and
+  feature-specific rendering options.
+
+## Ownership and data flow
+
+The Style controller edits the serialized object and then asks the affected renderer to
+redraw:
+
+```text
+User changes a style
+        ↓
+Style controller mutates style.<feature>
+        ↓
+Feature renderer reads world data + style.<feature>
+        ↓
+SVG / WebGL / canvas output
+```
+
+The renderer translates the feature style into its output format. It may write SVG
+attributes, but it must not read those attributes back as current style. Re-rendering
+from the same world data and style must produce the same result.
+
+Reusable styles belong in the global `style` object. Existing entity-specific visual
+overrides, such as one label's size or offset, may remain with that entity's data. They
+are exceptions to a reusable group style, not another global styling system.
+
+## Presets and persistence
+
+Built-in presets, custom presets, and the style stored in a `.map` file use the same
+complete object schema.
+
+- Applying a preset replaces the current `style` object and redraws affected features.
+- Saving stores the resolved object, not only a preset name, so the map looks the same
+  when opened without access to the original preset.
+- Custom preset storage may remain an app preference, but its contents use the same
+  schema as map style state.
+- Selector-based preset files are migrated by mapping each selector and attribute to a
+  semantic object path and field.
+
+## Incremental migration
+
+Move one feature at a time:
+
+1. Define its typed style subtree and defaults.
+2. Map the corresponding bundled preset values into that subtree.
+3. Make its Style controller edit the object rather than SVG attributes.
+4. Make its renderer accept the subtree and write the resulting output.
+5. Read legacy SVG attributes only in map compatibility code, then store the converted
+   values in the style object.
+
+During migration the object can contain both modern feature subtrees and the existing
+group-style entries. Once a feature is migrated, its normal editor, renderer, save, and
+load paths must not reconstruct its style from the DOM. Existing maps and presets should
+retain their appearance throughout the conversion.
 
 ---
 
@@ -323,54 +439,6 @@ few call sites keep the `window` bridge with a comment saying why; the real fix 
 message to the controller that owns the interaction, not to import across the layer boundary.
 `utils/registry.ts` is the standing example: it shows a loading tip through `window.tip`
 because utils must never depend on the UI.
-
-### The compiler enforces this
-
-The bridge at the bottom of a module (`window.tip = tip`) is for legacy callers only, and
-[`global.ts`](../../src/types/global.ts) declares those bridges as **`interface Window` members,
-never `var`**. That is deliberate: a `var` global is usable bare, an interface member is only
-reachable as `window.tip`. So a bundled module that forgets to import gets a compile error
-(`Cannot find name 'tip'`) instead of silently working through the global.
-
-Where a lower layer legitimately cannot import upward, it writes `window.tip(...)` explicitly.
-That is the entire list of exceptions, and it is greppable:
-
-```sh
-grep -rn 'window\.\w*(' src --include='*.ts' | grep -v 'window\.\w* ='
-```
-
-Everything it prints should be a generator, renderer, or util reaching UI — nothing else.
-
-**When the last classic caller of a function is gone, delete the bridge and its `global.ts`
-entry.** That is not cleanup for its own sake: every remaining entry is a to-do item naming a
-`public/**/*.js` file that still has to be migrated. Auditing the whole tree this way removed
-**84 bridges that nothing classic called** — `drawLegend`, `openPicker`, `highlightElement`,
-`moveCircle`, `getFileName`, `si`, `getHeight`, `isLand`, `convertTemperature`, the sorting
-helpers, and 74 more. Several of them (`getUsedFonts`, `drawRegiment`, `getPin`, `Resample`)
-existed _only_ as `window.X = …`, so the module had no real export at all; deleting the bridge
-is what forced them to become proper exports.
-
-Exactly two kinds of bridge legitimately survive without a classic caller, and both say so in a
-comment at the assignment:
-
-- **Upward calls.** Six generator→renderer bridges (`drawBurgIcon`, `drawBurgLabel`,
-  `redrawGlacier`, …). A generator that draws is the bug; the bridge just keeps it visible
-  instead of laundering it through an import that inverts the layers.
-- **Console debugging aids.** `drawPolygons`, `drawPoint`, `drawPath`, `drawCellsValue`,
-  `drawRouteConnections` — typed at the devtools prompt, so "no caller" is by design.
-
-Anything else without a classic caller is dead and should go.
-
-Two more tests worth applying literally, because both folders otherwise become junk drawers:
-
-- **`utils/`** — a helper qualifies only if it (a) reads **no ambient global** (`pack`, `grid`,
-  `options`, no `getElementById`) and (b) has **at least two consumers**. Take the state as an
-  argument (`getCellPopulation(cellId, pack)`) like `graphUtils` and `pathUtils` already do; the
-  `window.*` bridge binds the globals for classic callers. Domain knowledge is allowed, hidden
-  inputs are not. **A function used by exactly one module belongs in that module** — the cell
-  info formatters live in `cell-info.ts`, not in a shared `mapInfoUtils`.
-- **`services/`** — if it reads `pack` or `grid`, it is not a service. `grep -l 'pack\.' src/services`
-  should only ever match `io/`, which serializes state by definition.
 
 ---
 
@@ -596,10 +664,10 @@ editors and overviews).
 
 ## Two scopes of configuration
 
-| Scope              | Source of truth              | Persisted to                 | Examples                                                                |
-| ------------------ | ---------------------------- | ---------------------------- | ----------------------------------------------------------------------- |
-| **Map config**     | the serialized map state     | the `.map` file              | generation parameters, units, style preset, per-layer style, biome data |
-| **App preference** | an app/session config object | `localStorage` (per browser) | UI prefs, panel positions, theme, "don't ask again" flags               |
+| Scope              | Source of truth              | Persisted to                 | Examples                                                     |
+| ------------------ | ---------------------------- | ---------------------------- | ------------------------------------------------------------ |
+| **Map config**     | the serialized map state     | the `.map` file              | generation parameters, units, resolved map style, biome data |
+| **App preference** | an app/session config object | `localStorage` (per browser) | UI prefs, panel positions, theme, "don't ask again" flags    |
 
 - **Map config travels with the map** and must round-trip through [IO](#io-serialization); a
   map opened on another machine must look identical.
@@ -633,7 +701,7 @@ feature in its own right, not just a developer convenience.
 
 Options, Style, Units, and the per-entity editors are all **controllers**. A style/options
 panel follows the same data flow as any editor: **mutate config state, then ask the affected
-renderer to re-render** — a style change redraws that one layer; a generator-parameter change
+renderer to re-render** — a style change redraws the affected visual feature; a generator-parameter change
 re-runs that generator. The panel never paints the map itself.
 
 ## Transient UI: build on open, destroy on close

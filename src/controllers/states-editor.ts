@@ -12,7 +12,7 @@ import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawStateLabels, redrawStateLabels } from "@/renderers/draw-state-labels";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -134,25 +134,25 @@ function renderDialog(): void {
     pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]
   );
 
-  ensureEl("statesEditorRefresh").on("click", refreshStatesEditor);
-  ensureEl("statesEditStyle").on("click", () => editStyle("regions"));
-  ensureEl("statesLegend").on("click", toggleLegend);
-  ensureEl("statesPercentage").on("click", togglePercentageMode);
-  ensureEl("statesChart").on("click", showStatesChart);
-  ensureEl("statesRegenerate").on("click", openRegenerationMenu);
-  ensureEl("statesRegenerateBack").on("click", exitRegenerationMenu);
-  ensureEl("statesRecalculate").on("click", () => recalculateStates(true));
-  ensureEl("statesRandomize").on("click", randomizeStatesExpansion);
-  ensureEl("statesGrowthRate").on("input", () => recalculateStates(false));
-  ensureEl("statesManually").on("click", enterStatesManualAssignent);
-  ensureEl("statesManuallyUndo").on("click", undoStatesManualAssignment);
-  ensureEl("statesManuallyApply").on("click", applyStatesManualAssignent);
-  ensureEl("statesManuallyCancel").on("click", () => exitStatesManualAssignment(false));
-  ensureEl("statesAdd").on("click", enterAddStateMode);
-  ensureEl("statesMerge").on("click", openStateMergeDialog);
-  ensureEl("statesExport").on("click", downloadStatesCsv);
+  ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
+  ensureEl("statesEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("statesLegend").addEventListener("click", toggleLegend);
+  ensureEl("statesPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("statesChart").addEventListener("click", showStatesChart);
+  ensureEl("statesRegenerate").addEventListener("click", openRegenerationMenu);
+  ensureEl("statesRegenerateBack").addEventListener("click", exitRegenerationMenu);
+  ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
+  ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
+  ensureEl("statesGrowthRate").addEventListener("input", () => recalculateStates(false));
+  ensureEl("statesManually").addEventListener("click", enterStatesManualAssignent);
+  ensureEl("statesManuallyUndo").addEventListener("click", undoStatesManualAssignment);
+  ensureEl("statesManuallyApply").addEventListener("click", applyStatesManualAssignent);
+  ensureEl("statesManuallyCancel").addEventListener("click", () => exitStatesManualAssignment(false));
+  ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
+  ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
+  ensureEl("statesExport").addEventListener("click", downloadStatesCsv);
 
-  ensureEl("statesBodySection").on("click", event => {
+  ensureEl("statesBodySection").addEventListener("click", event => {
     const $element = (event as MouseEvent).target as HTMLElement;
     const classList = $element.classList;
     const stateId = Number(($element.parentNode as HTMLElement)?.dataset?.id);
@@ -172,7 +172,7 @@ function renderDialog(): void {
       updateLockStatus(stateId, classList);
   });
 
-  ensureEl("statesBodySection").on("input", ev => {
+  ensureEl("statesBodySection").addEventListener("input", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
     const line = $element.parentNode as HTMLElement;
@@ -180,7 +180,7 @@ function renderDialog(): void {
     if (classList.contains("stateCapital")) stateChangeCapitalName(state, line, $element.value);
   });
 
-  ensureEl("statesBodySection").on("change", ev => {
+  ensureEl("statesBodySection").addEventListener("change", ev => {
     const $element = (ev as Event).target as HTMLInputElement;
     const classList = $element.classList;
     const line = $element.parentNode as HTMLElement;
@@ -339,9 +339,9 @@ function statesEditorAddLines(): void {
   ensureEl("statesBodySection")
     .querySelectorAll(":scope > div")
     .forEach($line => {
-      $line.on("mouseenter", stateHighlightOn);
-      $line.on("mouseleave", stateHighlightOff);
-      $line.on("click", selectStateOnLineClick);
+      $line.addEventListener("mouseenter", stateHighlightOn);
+      $line.addEventListener("mouseleave", stateHighlightOff);
+      $line.addEventListener("click", selectStateOnLineClick);
     });
 
   if (ensureEl("statesBodySection").dataset.type === "percentage") {
@@ -455,15 +455,15 @@ function editStateName(state: number): void {
     close: closeStateNameEditor
   });
 
-  ensureEl("stateNameEditorShortCulture").on("click", regenerateShortNameCulture);
-  ensureEl("stateNameEditorShortRandom").on("click", regenerateShortNameRandom);
-  ensureEl("stateNameEditorShortSpeak").on("click", () =>
+  ensureEl("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
+  ensureEl("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+  ensureEl("stateNameEditorShortSpeak").addEventListener("click", () =>
     speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value)
   );
-  ensureEl("stateNameEditorAddForm").on("click", addCustomForm);
-  ensureEl("stateNameEditorCustomForm").on("change", addCustomForm);
-  ensureEl("stateNameEditorFullRegenerate").on("click", regenerateFullName);
-  ensureEl("stateNameEditorFullSpeak").on("click", () =>
+  ensureEl("stateNameEditorAddForm").addEventListener("click", addCustomForm);
+  ensureEl("stateNameEditorCustomForm").addEventListener("change", addCustomForm);
+  ensureEl("stateNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
+  ensureEl("stateNameEditorFullSpeak").addEventListener("click", () =>
     speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value)
   );
 
@@ -523,8 +523,9 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked && layerIsOn("toggleLabels")) {
-      drawStateLabels([s.i]);
+    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
+      if (s.label?.text) delete s.label.text;
+      drawLabels();
     }
     refreshStatesEditor();
   }
@@ -676,7 +677,12 @@ function stateChangeCapitalName(state: number, line: HTMLElement, value: string)
   const capital = pack.states[state].capital;
   if (!capital) return;
   pack.burgs[capital].name = value;
-  (document.querySelector(`#burgLabel${capital}`) as HTMLElement).textContent = value;
+  const burg = pack.burgs[capital];
+  if (burg) {
+    if (!burg.label) burg.label = {};
+    Object.assign(burg.label, { text: value });
+    drawLabels();
+  }
 }
 
 function changePopulation(stateId: number): void {
@@ -826,9 +832,7 @@ function openTreasuryDialog(stateId: number): void {
 
 function stateCapitalZoomIn(state: number): void {
   const capital = pack.states[state].capital;
-  const label = select("#burgLabels").select(`[data-id='${capital}']`);
-  const x = +label.attr("x");
-  const y = +label.attr("y");
+  const { x, y } = pack.burgs[capital];
   zoomTo(x, y, 8, 2000);
 }
 
@@ -872,8 +876,7 @@ function stateRemove(stateId: number): void {
   select("#statesBody").select(`#state${stateId}`).remove();
   select("#statesBody").select(`#state-gap${stateId}`).remove();
   select("#statesHalo").select(`#state-border${stateId}`).remove();
-  select("#labels").select(`#stateLabel${stateId}`).remove();
-  select("#deftemp").select(`#textPath_stateLabel${stateId}`).remove();
+  delete pack.states[stateId].label;
 
   unfog(`focusState${stateId}`);
 
@@ -886,6 +889,7 @@ function stateRemove(stateId: number): void {
       }
     }
   });
+  drawLabels();
 
   pack.cells.state.forEach((s: number, i: number) => {
     if (s === stateId) pack.cells.state[i] = 0;
@@ -1012,7 +1016,7 @@ function showStatesChart(): void {
     .attr("text-anchor", "middle")
     .attr("dominant-baseline", "central");
   const graph = svg.append("g").attr("transform", `translate(-50, 0)`);
-  ensureEl("statesTreeType").on("change", updateChart);
+  ensureEl("statesTreeType").addEventListener("change", updateChart);
 
   treeLayout(root);
 
@@ -1145,7 +1149,10 @@ function recalculateStates(must?: boolean): void {
   if (layerIsOn("toggleStates")) drawStates();
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (ensureEl<HTMLInputElement>("adjustLabels").checked && layerIsOn("toggleLabels")) redrawStateLabels();
+  if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
+    for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
+    drawLabels();
+  }
   if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleEmblems")) {
     clearEmblems(["state", "province"]);
@@ -1307,7 +1314,13 @@ function applyStatesManualAssignent(): void {
     refreshStatesEditor();
     States.getPoles();
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
-    if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawStateLabels([...new Set(affectedStates)]);
+    if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
+      const statesToRefit = [...new Set(affectedStates)];
+      for (const stateId of statesToRefit) {
+        if (pack.states[stateId].label) delete pack.states[stateId].label;
+      }
+      drawLabels();
+    }
     adjustProvinces([...new Set(affectedProvinces)]);
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     if (layerIsOn("toggleProvinces")) drawProvinces();
@@ -1551,6 +1564,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
+  drawLabels();
 
   if (event.shiftKey === false) exitAddStateMode();
 
@@ -1616,7 +1630,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  drawStateLabels([newState]);
+  drawLabels();
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
   layerIsOn("toggleProvinces") && toggleProvinces();
@@ -1761,8 +1775,7 @@ function openStateMergeDialog(): void {
       select("#statesBody").select(`#state${stateId}`).remove();
       select("#statesBody").select(`#state-gap${stateId}`).remove();
       select("#statesHalo").select(`#state-border${stateId}`).remove();
-      select("#labels").select(`#stateLabel${stateId}`).remove();
-      select("#deftemp").select(`#textPath_stateLabel${stateId}`).remove();
+      delete pack.states[stateId].label;
 
       ensureEl(`stateCOA${stateId}`).remove();
       select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
@@ -1817,8 +1830,10 @@ function openStateMergeDialog(): void {
     layerIsOn("toggleStates") ? drawStates() : toggleStates();
     layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
     layerIsOn("toggleProvinces") && drawProvinces();
-    drawStateLabels([rulingStateId]);
 
+    if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
+
+    drawLabels();
     refreshStatesEditor();
   }
 }

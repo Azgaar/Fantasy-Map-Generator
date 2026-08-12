@@ -146,7 +146,6 @@ optionsContent.addEventListener("change", event => {
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
-  else if (id === "stateLabelsModeInput") options.stateLabelsMode = value;
   else if (id === "azgaarAssistant") toggleAssistant();
 });
 
@@ -403,8 +402,12 @@ function changeEmblemShape(emblemShape) {
 
 function changeStatesNumber(value) {
   ensureEl("statesNumber").style.color = +value ? null : "#b12117";
-  burgLabels.select("#capital").attr("data-size", Math.max(rn(6 - value / 20), 3));
-  labels.select("#countries").attr("data-size", Math.max(rn(18 - value / 6), 4));
+  const capitalSize = Math.max(rn(6 - value / 20), 3);
+  const stateSize = Math.max(rn(18 - value / 6), 4);
+  if (style.labels.groups.capital) style.labels.groups.capital["font-size"] = `${capitalSize}%`;
+  if (style.labels.groups.states) style.labels.groups.states["font-size"] = `${stateSize}%`;
+  labels.select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
+  labels.select("[data-group='states']").attr("font-size", `${stateSize}%`);
 }
 
 function changeUiSize(value) {
@@ -600,7 +603,6 @@ function applyStoredOptions() {
   changeDialogsTheme(themeColor, transparency);
 
   setRendering(shapeRendering.value);
-  options.stateLabelsMode = stateLabelsModeInput.value;
 }
 
 // randomize options if randomization is allowed (not locked or queryParam options='default')
@@ -671,11 +673,9 @@ function setRendering(value) {
 
   if (value === "optimizeSpeed") {
     // block some styles
-    coastline.select("#sea_island").style("filter", "none");
     statesHalo.style("display", "none");
   } else {
     // remove style block
-    coastline.select("#sea_island").style("filter", null);
     statesHalo.style("display", null);
     if (pack.cells && statesHalo.selectAll("*").size() === 0) drawStates();
   }
@@ -777,8 +777,13 @@ function copyLinkToClickboard() {
   navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
 }
 
+ensureEl("showLabels").addEventListener("change", function () {
+  options.labels.showAll = Boolean(this.checked);
+  drawLabels();
+});
+
 function showExportPane() {
-  ensureEl("showLabels").checked = !hideLabels.checked;
+  ensureEl("showLabels").checked = options.labels.showAll;
 
   $("#exportMapData").dialog({
     title: "Export map data",

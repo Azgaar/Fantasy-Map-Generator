@@ -3,7 +3,7 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import type { Route } from "@/generators/routes-generator";
+import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { destroyDialogIfExists, ensureEl, rn } from "../utils";
@@ -52,12 +52,12 @@ function renderDialog(): void {
   applySortingByHeader("routesHeader");
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routesOverviewRefresh").on("click", routesOverviewAddLines);
-  ensureEl("routesCreateNew").on("click", createNewRoute);
-  ensureEl("routesExport").on("click", downloadRoutesData);
-  ensureEl("routesLockAll").on("click", toggleLockAll);
-  ensureEl("routesRemoveAll").on("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").on("input", routesOverviewAddLines);
+  ensureEl("routesOverviewRefresh").addEventListener("click", routesOverviewAddLines);
+  ensureEl("routesCreateNew").addEventListener("click", createNewRoute);
+  ensureEl("routesExport").addEventListener("click", downloadRoutesData);
+  ensureEl("routesLockAll").addEventListener("click", toggleLockAll);
+  ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
+  ensureEl("routesSearch").addEventListener("input", routesOverviewAddLines);
 }
 
 function closeRoutesOverview(): void {
@@ -87,7 +87,7 @@ function routesOverviewAddLines(): void {
 
   for (const route of filteredRoutes) {
     if (!route.points || route.points.length < 2) continue;
-    route.name = route.name || Routes.generateName(route);
+    route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
     route.length = route.length || Routes.getLength(route.i);
     const length = `${rn(route.length * distanceScale)} ${distanceUnitInput.value}`;
 
@@ -117,12 +117,14 @@ function routesOverviewAddLines(): void {
   ensureEl("routesFooterLength").innerHTML = `${averageLength * distanceScale} ${distanceUnitInput.value}`;
 
   // add listeners
-  body.querySelectorAll("div.states").forEach(el => void el.on("mouseenter", routeHighlightOn));
-  body.querySelectorAll("div.states").forEach(el => void el.on("mouseleave", routeHighlightOff));
-  body.querySelectorAll("div > span.icon-target").forEach(el => void el.on("click", zoomToRoute));
-  body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.on("click", openRouteEditor));
-  body.querySelectorAll("div > span.locks").forEach(el => void el.on("click", toggleLockStatus));
-  body.querySelectorAll("div > span.icon-trash-empty").forEach(el => void el.on("click", triggerRouteRemove));
+  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", routeHighlightOn));
+  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", routeHighlightOff));
+  body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRoute));
+  body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRouteEditor));
+  body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
+  body
+    .querySelectorAll("div > span.icon-trash-empty")
+    .forEach(el => void el.addEventListener("click", triggerRouteRemove));
 
   applySorting(ensureEl("routesHeader"));
 }

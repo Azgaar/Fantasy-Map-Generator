@@ -44,11 +44,6 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
 - **Path alias**: `@/*` resolves to `src/*` (configured in `vite.config.ts` and
   `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils`,
   `@/generators/markets-generator`. Sibling imports stay relative (`./box`).
-- Import shared helpers from [`@/utils`](../../src/utils/index.ts)
-  (`ensureEl`, `rn`, `si`, `capitalize`, `convertTemperature`, …). Note
-  `isWater(cellId, pack)` is the 2-arg util — distinct from the 1-arg
-  `window.isWater`. `element.on("click", fn)` is typed via the
-  `Node.prototype.on` augmentation in utils — keep using `.on`.
 
 ## Globals: import what's migrated, declare the rest in `global.ts`
 
