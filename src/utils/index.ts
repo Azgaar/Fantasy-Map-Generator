@@ -40,16 +40,7 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
-import {
-  applyOption,
-  destroyDialogIfExists,
-  ensureEl,
-  findEl,
-  fitDialogIfExists,
-  getComposedPath,
-  getNextId,
-  getPointer
-} from "./nodeUtils";
+import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
@@ -161,7 +152,6 @@ export {
   convertTemperature,
   createTypedArray,
   debounce,
-  destroyDialogIfExists,
   distanceSquared,
   downloadFile,
   drawCellsValue,
@@ -179,7 +169,6 @@ export {
   findGridAll,
   findGridCell,
   findPath,
-  fitDialogIfExists,
   formatPrice,
   gauss,
   generateDate,

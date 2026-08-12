@@ -1,5 +1,10 @@
 import { drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialogIfExists,
+  fitDialogIfExists
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -27,10 +32,8 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
-  destroyDialogIfExists,
   ensureEl,
   findAllCellsInRadius,
-  fitDialogIfExists,
   formatPrice,
   getAdjective,
   getMixedColor,
@@ -146,13 +149,16 @@ const STATE_COLUMNS: EditorColumn<State>[] = [
   { key: "actions", width: "6em", hideable: false }
 ];
 
-function getFilteredStatesData(): State[] {
-  return pack.states.filter(s => !s.removed);
-}
+const POSITION = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 const statesTable = initEditorTable<State>({
-  getData: () => sortDataByColumns(ensureEl("statesHeader"), getFilteredStatesData(), STATE_COLUMNS),
-  onUpdate: renderStatesPage
+  getData: () =>
+    sortDataByColumns(
+      ensureEl("statesHeader"),
+      pack.states.filter(s => !s.removed),
+      STATE_COLUMNS
+    ),
+  onUpdate: () => renderStatesPage
 });
 
 function open(): void {
@@ -174,7 +180,7 @@ function open(): void {
     resizable: false,
     width: "fit-content",
     close: closeStatesEditor,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position: POSITION
   });
 }
 
@@ -326,7 +332,6 @@ function refreshStatesEditor(): void {
   statesTable.refresh();
 }
 
-// totals and footer span the full filtered set, not just the current page
 function renderStatesPage(view: TableView<State>): void {
   const unit = getAreaUnit();
 

@@ -79,5 +79,25 @@ export function refreshEditors(): void {
   for (const buttonId of REFRESHABLE_EDITORS) findEl(buttonId)?.click();
 }
 
+/**
+ * Refit an initialized dialog to its content
+ * @param {string} id - The ID of the dialog content element
+ */
+export const fitDialogIfExists = (id: string): void => {
+  const el = findEl(id);
+  if (el?.classList.contains("ui-dialog-content")) window.$(el).dialog({ width: "fit-content" });
+};
+
+/**
+ * Remove an element, destroying its jQuery UI dialog widget first
+ * @param {string} id - The ID of the element to remove
+ */
+export const destroyDialogIfExists = (id: string): void => {
+  const el = findEl(id);
+  if (!el) return;
+  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
+  el.remove();
+};
+
 window.closeDialogs = closeDialogs;
 window.confirmationDialog = confirmationDialog;

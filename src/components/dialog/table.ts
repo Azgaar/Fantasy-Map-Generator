@@ -219,19 +219,31 @@ function bindColumnsPicker(
     const hidden = loadHiddenColumns(storageKey, columns);
     const popup = document.createElement("div");
     popup.id = popupId;
-    popup.style.cssText =
-      "position: fixed; z-index: 100; background: var(--bg-main, #fff); border: 1px solid #999; " +
-      "border-radius: 4px; padding: 0.4em 0.8em; box-shadow: 0 1px 4px rgba(0,0,0,0.3); max-height: 50vh; overflow-y: auto; " +
-      // sizes to its longest label instead of to the gap left before the screen edge, which wrapped labels off their checkbox
-      "width: max-content; white-space: nowrap;";
+    popup.style.cssText = `
+      position: fixed;
+      z-index: 100;
+      width: max-content;
+      min-width: 100px;
+      max-height: 50vh;
+      overflow-y: auto;
+      white-space: nowrap; 
+      padding: 0.6em 0.4em;
+      background: #eee;
+      border: 1px solid #bbb;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    `;
+
+    const getOption = (
+      column: EditorColumn
+    ) => /* html */ `<label style="display: flex; align-items: center; cursor: pointer;">
+          <input class="native" type="checkbox" data-key="${column.key}" ${hidden.has(column.key) ? "" : "checked"} />
+          ${column.label}
+        </label>`;
     popup.innerHTML = columns
       .filter(column => column.hideable !== false)
-      .map(
-        column => /* html */ `<div><label>
-          <input class="native" type="checkbox" data-key="${column.key}" ${hidden.has(column.key) ? "" : "checked"} />
-          ${column.label}</label></div>`
-      )
+      .map(getOption)
       .join("");
+
     popup.addEventListener("change", event => {
       const checkbox = event.target as HTMLInputElement;
       const updated = loadHiddenColumns(storageKey, columns);
@@ -240,16 +252,14 @@ function bindColumnsPicker(
       else updated.add(key);
       saveHiddenColumns(storageKey, updated);
 
-      // the dialog is positioned by its left edge, so resizing it would slide the button — and the popup
-      // anchored to it — out from under the pointer; hold the right edge still instead
       const frame = document.getElementById(dialogId)?.closest<HTMLElement>(".ui-dialog");
       const rightBefore = frame?.getBoundingClientRect().right;
       onChange(updated);
       requestAnimationFrame(() => {
         if (frame && rightBefore !== undefined) {
-          const shift = rightBefore - frame.getBoundingClientRect().right;
-          const left = Number.parseFloat(getComputedStyle(frame).left) || 0;
-          if (shift) frame.style.left = `${Math.max(0, left + shift)}px`;
+          const _shift = rightBefore - frame.getBoundingClientRect().right;
+          const _left = Number.parseFloat(getComputedStyle(frame).left) || 0;
+          // if (shift) frame.style.left = `${Math.max(0, left + shift)}px`;
         }
         positionPopup();
       });
