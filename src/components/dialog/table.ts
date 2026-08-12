@@ -134,13 +134,14 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
     ]
       .filter(Boolean)
       .join(" ");
-    const style = column.align ? `style="text-align:${column.align}"` : "";
+
+    const style = ["white-space:nowrap", column.align ? `text-align:${column.align}` : ""].filter(Boolean).join(" ");
 
     const button =
       index === buttonIndex
         ? `<button id="${dialogId}ColumnsButton" data-tip="Show or hide columns" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
         : "";
-    return `<div ${attributes}${style}>${column.label ?? ""}${button}</div>`;
+    return `<div ${attributes} style="${style}">${column.label ?? ""}${button}</div>`;
   });
   return `<div id="${dialogId}Header" class="header">${cells.join("")}</div>`;
 }
@@ -149,24 +150,40 @@ const columnsStorageKey = (storageKey: string) => `columnsHidden:${storageKey}`;
 
 export function loadHiddenColumns(storageKey: string, columns: EditorColumn[]): Set<string> {
   const hideable = new Set(columns.filter(column => column.hideable !== false).map(column => column.key));
+  const defaults = columns.filter(column => column.hidden).map(column => column.key);
   const stored = localStorage.getItem(columnsStorageKey(storageKey));
-  if (stored === null && MOBILE) {
-    const mobileDefaults = columns.filter(column => column.mobileHidden).map(column => column.key);
-    return new Set(mobileDefaults.filter(key => hideable.has(key)));
+  if (stored === null) {
+    const mobile = typeof MOBILE !== "undefined" && MOBILE;
+    if (mobile) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
   }
 
-  let keys: unknown;
+  let saved: unknown;
   try {
-    keys = JSON.parse(stored ?? "[]");
+    saved = JSON.parse(stored ?? "[]");
   } catch {
-    keys = [];
+    saved = [];
   }
-  if (!Array.isArray(keys)) keys = [];
-  return new Set((keys as string[]).filter(key => hideable.has(key)));
+
+  const hidden = new Set(defaults.filter(key => hideable.has(key)));
+  if (Array.isArray(saved)) {
+    for (const key of saved) if (hideable.has(key)) hidden.add(key);
+    return hidden;
+  }
+
+  if (!saved || typeof saved !== "object") return hidden;
+  const { hidden: savedHidden, shown: savedShown } = saved as { hidden?: unknown; shown?: unknown };
+  if (Array.isArray(savedHidden)) for (const key of savedHidden) if (hideable.has(key)) hidden.add(key);
+  if (Array.isArray(savedShown)) for (const key of savedShown) hidden.delete(key);
+  return hidden;
 }
 
-export function saveHiddenColumns(storageKey: string, hidden: Set<string>): void {
-  localStorage.setItem(columnsStorageKey(storageKey), JSON.stringify(Array.from(hidden)));
+export function saveHiddenColumns(storageKey: string, hidden: Set<string>, columns: EditorColumn[]): void {
+  const hideable = columns.filter(column => column.hideable !== false).map(column => column.key);
+  const saved = {
+    hidden: hideable.filter(key => hidden.has(key)),
+    shown: hideable.filter(key => !hidden.has(key))
+  };
+  localStorage.setItem(columnsStorageKey(storageKey), JSON.stringify(saved));
 }
 
 const dialogColumnsRegistry = new Map<
@@ -263,7 +280,7 @@ function bindColumnsPicker({
       const key = checkbox.dataset.key as string;
       if (checkbox.checked) updated.delete(key);
       else updated.add(key);
-      saveHiddenColumns(storageKey, updated);
+      saveHiddenColumns(storageKey, updated, columns);
       onChange(updated);
     });
 

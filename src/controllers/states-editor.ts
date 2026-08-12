@@ -51,8 +51,7 @@ const columns: EditorColumn<State>[] = [
   {
     key: "name",
     label: "State",
-    width: "11em",
-    fill: true,
+    width: "7em",
     hideable: false,
     tip: "Click to sort by state name",
     sortBy: s => s.name || "",
@@ -79,7 +78,7 @@ const columns: EditorColumn<State>[] = [
   {
     key: "culture",
     label: "Culture",
-    width: "7em",
+    width: "10em",
     mobileHidden: true,
     tip: "Click to sort by state dominant culture",
     sortBy: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
@@ -104,7 +103,7 @@ const columns: EditorColumn<State>[] = [
   {
     key: "area",
     label: "Area",
-    width: "6em",
+    width: "7em",
     mobileHidden: true,
     defaultSort: "desc",
     tip: "Click to sort by state area",
@@ -113,14 +112,14 @@ const columns: EditorColumn<State>[] = [
   {
     key: "population",
     label: "Population",
-    width: "7em",
+    width: "6em",
     tip: "Click to sort by state population",
     sortBy: s => rn((s.rural || 0) * populationRate + (s.urban || 0) * populationRate * urbanization)
   },
   {
     key: "treasury",
     label: "Treasury",
-    width: "7em",
+    width: "6em",
     mobileHidden: true,
     tip: "Click to sort by state treasury. Click on a value to view and edit taxes",
     sortBy: s => s.treasury || 0
@@ -424,9 +423,7 @@ function renderStatesPage(view: TableView<State>): void {
     >
       <fill-box fill="${s.color}" data-col="color"></fill-box>
       <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${
-        s.i
-      }"></use></svg>
+      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
       <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
         s.formName
       }" readonly data-col="form" />

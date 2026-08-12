@@ -90,7 +90,7 @@ describe("hidden columns persistence", () => {
   });
 
   it("round-trips the hidden set", () => {
-    saveHiddenColumns("burgs", new Set(["treasury"]));
+    saveHiddenColumns("burgs", new Set(["treasury"]), COLUMNS);
     expect(loadHiddenColumns("burgs", COLUMNS)).toEqual(new Set(["treasury"]));
   });
 
@@ -98,8 +98,19 @@ describe("hidden columns persistence", () => {
     expect(loadHiddenColumns("burgs", COLUMNS).size).toBe(0);
   });
 
+  it("defaults hidden columns to not visible", () => {
+    const columns = [...COLUMNS, { key: "type", label: "Type", hidden: true }];
+    expect(loadHiddenColumns("burgs", columns)).toEqual(new Set(["type"]));
+  });
+
+  it("applies newly hidden defaults over legacy stored visibility", () => {
+    localStorage.setItem("columnsHidden:states", "[]");
+    const columns = [...COLUMNS, { key: "type", label: "Type", hidden: true }];
+    expect(loadHiddenColumns("states", columns)).toEqual(new Set(["type"]));
+  });
+
   it("drops unknown and non-hideable keys on load", () => {
-    saveHiddenColumns("burgs", new Set(["name", "ghost", "population"]));
+    saveHiddenColumns("burgs", new Set(["name", "ghost", "population"]), COLUMNS);
     expect(loadHiddenColumns("burgs", COLUMNS)).toEqual(new Set(["population"]));
   });
 
@@ -126,14 +137,26 @@ describe("hidden columns persistence", () => {
 
   it("honours an explicitly stored empty array over mobile defaults", () => {
     (globalThis as Record<string, unknown>).MOBILE = true;
-    saveHiddenColumns("burgs", new Set());
+    saveHiddenColumns("burgs", new Set(), MOBILE_COLUMNS);
     expect(loadHiddenColumns("burgs", MOBILE_COLUMNS).size).toBe(0);
   });
 
   it("honours an explicitly stored set over mobile defaults", () => {
     (globalThis as Record<string, unknown>).MOBILE = true;
-    saveHiddenColumns("burgs", new Set(["treasury"]));
+    saveHiddenColumns("burgs", new Set(["treasury"]), MOBILE_COLUMNS);
     expect(loadHiddenColumns("burgs", MOBILE_COLUMNS)).toEqual(new Set(["treasury"]));
+  });
+
+  it("combines hidden and mobileHidden defaults on mobile", () => {
+    (globalThis as Record<string, unknown>).MOBILE = true;
+    const columns = [...MOBILE_COLUMNS, { key: "type", label: "Type", hidden: true }];
+    expect(loadHiddenColumns("burgs", columns)).toEqual(new Set(["population", "type"]));
+  });
+
+  it("remembers when a default-hidden column is explicitly shown", () => {
+    const columns = [...COLUMNS, { key: "type", label: "Type", hidden: true }];
+    saveHiddenColumns("states", new Set(), columns);
+    expect(loadHiddenColumns("states", columns).size).toBe(0);
   });
 });
 
