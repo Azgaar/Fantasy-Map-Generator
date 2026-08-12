@@ -1486,8 +1486,7 @@ div.header > div:first-child {
   top: 0;
   z-index: 1;
   width: auto;
-  background: inherit;
-  /* matches .states' border+padding box so header and row content boxes share a left edge */
+  background: #f3f4f7;
   border: 1px solid transparent;
   padding: 0 0.2em;
 }
