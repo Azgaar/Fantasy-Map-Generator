@@ -1,5 +1,5 @@
 import { pack as packLayout, select, stratify } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -18,6 +18,9 @@ import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, upload
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
+
+const dialogId = "burgsOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 const BURG_COLUMNS: EditorColumn<Burg>[] = [
   { key: "locate", width: "1.4em", permanent: true },
@@ -114,13 +117,13 @@ const BURG_COLUMNS: EditorColumn<Burg>[] = [
 ];
 
 const burgsTable = initEditorTable<Burg>({
-  getData: () => sortDataByColumns(ensureEl("burgsHeader"), getFilteredBurgs(), BURG_COLUMNS),
+  getData: () => sortDataByColumns(dialogId, getFilteredBurgs(), BURG_COLUMNS),
   onUpdate: renderBurgsPage
 });
 
 function open(filters: Filters = { stateId: null, cultureId: null }): void {
   if (customization) return;
-  closeDialogs("#burgsOverview, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
@@ -129,22 +132,19 @@ function open(filters: Filters = { stateId: null, cultureId: null }): void {
   updateLockAllIcon();
   burgsTable.reset();
 
-  $("#burgsOverview").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Burgs Overview",
     resizable: false,
     close: closeBurgsOverview,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    width: "fit-content",
+    position
   });
 }
 
 function renderDialog(): void {
   document.getElementById("burgsOverview")?.remove();
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
-      <div id="burgsBody" class="table">${renderEditorHeader({
-        id: "burgsHeader",
-        columns: BURG_COLUMNS,
-        columnsButtonId: "burgsToggleColumns"
-      })}</div>
+      <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns: BURG_COLUMNS })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
         <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
           >Search: <input id="burgsSearch" type="search"
@@ -200,8 +200,8 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
-  bindColumnSorting(ensureEl("burgsHeader"), burgsTable.reset);
-  applyLineHighlighting("burgsOverview", ({ target, cellId }) => {
+  bindColumnSorting(dialogId, burgsTable.reset);
+  applyLineHighlighting(dialogId, ({ target, cellId }) => {
     const burgId = pack.cells.burg[cellId];
     if (burgId) return burgId;
     const burg = target.closest<SVGElement>("#labels [data-label-type='burg'][data-id], #burgIcons [data-id]");
@@ -209,9 +209,9 @@ function renderDialog(): void {
   });
 
   initColumnVisibility({
-    button: ensureEl("burgsToggleColumns"),
-    dialogId: "burgsOverview",
-    columns: BURG_COLUMNS
+    dialogId,
+    columns: BURG_COLUMNS,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);

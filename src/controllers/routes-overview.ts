@@ -1,5 +1,5 @@
 import { mean, select } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -15,6 +15,9 @@ import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
+
+const dialogId = "routesOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 const ROUTE_COLUMNS: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
@@ -66,23 +69,23 @@ function getFilteredRoutes(): Route[] {
 }
 
 const routesTable = initEditorTable<Route>({
-  getData: () => sortDataByColumns(ensureEl("routesHeader"), getFilteredRoutes(), ROUTE_COLUMNS),
+  getData: () => sortDataByColumns(dialogId, getFilteredRoutes(), ROUTE_COLUMNS),
   onUpdate: renderRoutesPage
 });
 
 function open(): void {
   if (customization) return;
-  closeDialogs("#routesOverview, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
 
   renderDialog();
   routesTable.reset();
 
-  $("#routesOverview").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Routes Overview",
     resizable: false,
     width: "fit-content",
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position,
     close: closeRoutesOverview
   });
 }
@@ -91,11 +94,7 @@ function renderDialog(): void {
   destroyDialog("routesOverview");
 
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
-    <div id="routesBody" class="table">${renderEditorHeader({
-      id: "routesHeader",
-      columns: ROUTE_COLUMNS,
-      columnsButtonId: "routesToggleColumns"
-    })}</div>
+    <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns: ROUTE_COLUMNS })}</div>
     <div id="routesFilters" class="editorFilters">
       <label for="routesSearch" data-tip="Filter by name or group">Search: <input id="routesSearch" type="search" /></label>
     </div>
@@ -112,14 +111,14 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  bindColumnSorting(ensureEl("routesHeader"), routesTable.reset);
+  bindColumnSorting(dialogId, routesTable.reset);
 
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("routesOverviewRefresh").addEventListener("click", routesTable.refresh);
   initColumnVisibility({
-    button: ensureEl("routesToggleColumns"),
-    dialogId: "routesOverview",
-    columns: ROUTE_COLUMNS
+    dialogId,
+    columns: ROUTE_COLUMNS,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
   ensureEl("routesCreateNew").addEventListener("click", createNewRoute);
   ensureEl("routesExport").addEventListener("click", downloadRoutesData);

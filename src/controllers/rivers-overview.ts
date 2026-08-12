@@ -1,5 +1,5 @@
 import { mean, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -15,6 +15,9 @@ import type { River } from "@/generators/river-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
+
+const dialogId = "riversOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
 const RIVER_COLUMNS: EditorColumn<River>[] = [
   { key: "locate", width: "1.4em", permanent: true },
@@ -96,24 +99,24 @@ const riversTable = initEditorTable<River>({
     const columns = RIVER_COLUMNS.map(column =>
       column.key === "basin" ? { ...column, sortBy: (river: River) => riversById.get(river.basin)?.name || "" } : column
     );
-    return sortDataByColumns(ensureEl("riversHeader"), filtered, columns);
+    return sortDataByColumns(dialogId, filtered, columns);
   },
   onUpdate: renderRiversPage
 });
 
 function open(): void {
   if (customization) return;
-  closeDialogs("#riversOverview, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
   renderDialog();
   riversTable.reset();
 
-  $("#riversOverview").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Rivers Overview",
     resizable: false,
     width: "fit-content",
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position,
     close: closeRiversOverview
   });
 }
@@ -122,11 +125,7 @@ function renderDialog(): void {
   destroyDialog("riversOverview");
 
   const html = /* html */ `<div id="riversOverview" class="dialog stable editorDialog">
-    <div id="riversBody" class="table">${renderEditorHeader({
-      id: "riversHeader",
-      columns: RIVER_COLUMNS,
-      columnsButtonId: "riversToggleColumns"
-    })}</div>
+    <div id="riversBody" class="table">${renderEditorHeader({ dialogId, columns: RIVER_COLUMNS })}</div>
     <div id="riversFilters" class="editorFilters">
       <label for="riversSearch" data-tip="Filter by name, type or basin">Search: <input id="riversSearch" type="search" /></label>
     </div>
@@ -146,8 +145,8 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  bindColumnSorting(ensureEl("riversHeader"), riversTable.reset);
-  applyLineHighlighting("riversOverview", ({ target, cellId }) => {
+  bindColumnSorting(dialogId, riversTable.reset);
+  applyLineHighlighting(dialogId, ({ target, cellId }) => {
     const riverId = pack.cells.r[cellId];
     if (riverId) return riverId;
     const river = target.closest<SVGElement>("#rivers [id^='river']");
@@ -156,9 +155,9 @@ function renderDialog(): void {
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("riversOverviewRefresh").addEventListener("click", riversTable.refresh);
   initColumnVisibility({
-    button: ensureEl("riversToggleColumns"),
-    dialogId: "riversOverview",
-    columns: RIVER_COLUMNS
+    dialogId,
+    columns: RIVER_COLUMNS,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").addEventListener("click", createNewRiver);
