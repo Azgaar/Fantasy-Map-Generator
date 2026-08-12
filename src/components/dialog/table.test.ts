@@ -186,7 +186,6 @@ const COLUMNS = [
     key: "name",
     label: "Route",
     width: "8em",
-    fill: true,
     sortBy: (r: { name: string }) => r.name,
     sortType: "alpha" as const
   },
@@ -203,11 +202,11 @@ const COLUMNS = [
 
 describe("buildTracks", () => {
   it("emits one track per visible column, in order", () => {
-    expect(buildTracks(COLUMNS, new Set())).toBe("1.4em minmax(8em, 1fr) 8em 6em 4em");
+    expect(buildTracks(COLUMNS, new Set())).toBe("1.4em 8em 8em 6em 4em");
   });
 
   it("drops the tracks of hidden columns", () => {
-    expect(buildTracks(COLUMNS, new Set(["group", "length"]))).toBe("1.4em minmax(8em, 1fr) 4em");
+    expect(buildTracks(COLUMNS, new Set(["group", "length"]))).toBe("1.4em 8em 4em");
   });
 
   it("falls back to auto for a column with no declared width", () => {

@@ -144,7 +144,7 @@ function open(filters: Filters = { stateId: null, cultureId: null }): void {
 function renderDialog(): void {
   document.getElementById("burgsOverview")?.remove();
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
-      <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns: columns })}</div>
+      <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
         <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
           >Search: <input id="burgsSearch" type="search"

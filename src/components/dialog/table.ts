@@ -277,7 +277,7 @@ function bindColumnsPicker({
       min-width: 100px;
       max-height: 50vh;
       overflow-y: auto;
-      white-space: nowrap; 
+      white-space: nowrap;
       padding: 0.6em 0.4em;
       background: #eee;
       border: 1px solid #bbb;

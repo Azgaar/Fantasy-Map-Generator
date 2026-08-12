@@ -67,7 +67,7 @@ const columns: EditorColumn<River>[] = [
     label: "Basin",
     width: "9em",
     tip: "Click to sort by river basin",
-    sortBy: river => river.basin,
+    sortBy: river => pack.rivers.find(({ i }) => i === river.basin)?.name || "",
     sortType: "alpha"
   },
   { key: "actions", width: "2.2em", permanent: true, align: "right" }
