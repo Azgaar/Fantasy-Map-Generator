@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
-  <g id="crossLatin" stroke-width=".5">
-    <path d="m 95,60 h 10 v 20 h 25 v 10 h -25 v 50 H 95 V 90 H 70 V 80 h 25 z"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="crossLatin" stroke-width=".5"><path d="m 95,60 h 10 v 20 h 25 v 10 h -25 v 50 H 95 V 90 H 70 V 80 h 25 z"/></g></svg>

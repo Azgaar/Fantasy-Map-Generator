@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
-  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
-  <g id="crossBurgundy" stroke-width=".4">
-    <path d="M73 65v3l-5-5h-5v5l2 2v3l5 5v-3l4 4v3l5 5v-3l7 7v3l5 5v-3l2.53 2.55L89 103h3l-7 7h-3l-6 6h3l-5 5h-3l-5 5h3l-6 6v5h5l2-2h3l5-5h-3l5-5h3l5-5h-3l6-6h3l5-5h-3l2-2.6 5.54 5.53.46-2.93 6 6v3l6 6v-3l4 4v3l6 6v-3l6 6h5v-6l-2.07-1.5.07-2.5-2-2-4-4v3l-5-5v-3l-6-6v3l-4-4v-3l-6-6 .13 3.08-1.85-1.87L112 96h-3l6-6h3l5-5h-3l5-5h3l6-6h-3l6-6v-5h-5l-2 2h-3l-5 5h3l-5 5h-3l-6 6h3l-5 5h-3l-6 6h3l-1.52 1.49L95 87v3l-6-6v-3l-5-5v3l-6-6v-3z"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200"><metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/><g id="crossBurgundy" stroke-width=".4"><path d="M73 65v3l-5-5h-5v5l2 2v3l5 5v-3l4 4v3l5 5v-3l7 7v3l5 5v-3l2.53 2.55L89 103h3l-7 7h-3l-6 6h3l-5 5h-3l-5 5h3l-6 6v5h5l2-2h3l5-5h-3l5-5h3l5-5h-3l6-6h3l5-5h-3l2-2.6 5.54 5.53.46-2.93 6 6v3l6 6v-3l4 4v3l6 6v-3l6 6h5v-6l-2.07-1.5.07-2.5-2-2-4-4v3l-5-5v-3l-6-6v3l-4-4v-3l-6-6 .13 3.08-1.85-1.87L112 96h-3l6-6h3l5-5h-3l5-5h3l6-6h-3l6-6v-5h-5l-2 2h-3l-5 5h3l-5 5h-3l-6 6h3l-5 5h-3l-6 6h3l-1.52 1.49L95 87v3l-6-6v-3l-5-5v3l-6-6v-3z"/></g></svg>
