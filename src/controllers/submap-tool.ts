@@ -1,6 +1,7 @@
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
-import { destroyDialogIfExists, ensureEl, minmax, rn } from "../utils";
+import { ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
   renderDialog();
@@ -25,7 +26,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("submapTool");
+  destroyDialog("submapTool");
 
   const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
   const cells = cellsDensityMap[+pointsValue];
@@ -57,7 +58,7 @@ function addListeners(): void {
 }
 
 function cleanup(): void {
-  destroyDialogIfExists("submapTool");
+  destroyDialog("submapTool");
 }
 
 function handlePointsInput(e: Event): void {

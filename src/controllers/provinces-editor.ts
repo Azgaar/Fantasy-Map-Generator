@@ -9,7 +9,7 @@ import {
   transition,
   treemap
 } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import type { FillBoxElement } from "@/components/fill-box";
@@ -23,19 +23,7 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
-import {
-  destroyDialogIfExists,
-  ensureEl,
-  getPackPolygon,
-  getPointer,
-  getRandomColor,
-  isLand,
-  P,
-  rand,
-  rn,
-  si,
-  unique
-} from "../utils";
+import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
 function open(): void {
   if (customization) return;
@@ -58,7 +46,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("provincesEditor");
+  destroyDialog("provincesEditor");
   const editorHtml = /* html */ `<div id="provincesEditor" class="dialog stable">
       <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
         <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
@@ -683,7 +671,7 @@ function editProvinceName(province: number): void {
 }
 
 function renderNameEditor(): void {
-  destroyDialogIfExists("provinceNameEditor");
+  destroyDialog("provinceNameEditor");
   const nameEditorHtml = /* html */ `<div id="provinceNameEditor" class="dialog" data-province="0">
       <div>
         <div data-tip="Province short name" class="label">Short name:</div>

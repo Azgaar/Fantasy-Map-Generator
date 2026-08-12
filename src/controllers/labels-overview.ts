@@ -1,4 +1,4 @@
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -8,7 +8,7 @@ import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { destroyDialogIfExists, ensureEl, findEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 
 const ALL = ""; // filter value meaning "all"
 const filters = { group: ALL, type: ALL, search: "" };
@@ -40,7 +40,7 @@ function open(group: string = ALL): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("labelsOverview");
+  destroyDialog("labelsOverview");
 
   const html = /* html */ `<div id="labelsOverview" class="dialog stable">
     <div id="labelsHeader" class="header" style="grid-template-columns: 0.5em 12em 5em 8em 4em">
@@ -111,7 +111,7 @@ function renderDialog(): void {
 function close(): void {
   clearTimeout(searchTimeout);
   cancelSpread();
-  destroyDialogIfExists("labelsOverview");
+  destroyDialog("labelsOverview");
 }
 
 function refresh(): void {

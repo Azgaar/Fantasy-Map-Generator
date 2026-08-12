@@ -1,11 +1,11 @@
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { destroyDialogIfExists, ensureEl } from "@/utils";
+import { ensureEl } from "@/utils";
 
 // TODO: replace with Layers registry data
 const LAYER_TOGGLES: { id: string; label: string }[] = [
@@ -75,7 +75,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("labelGroupsConfigurator");
+  destroyDialog("labelGroupsConfigurator");
   const html = /* html */ `<div id="labelGroupsConfigurator" class="dialog stable">
     <form id="labelGroupsForm">
       <table class="table" style="white-space:nowrap; overflow-x:auto; max-width:100%">
@@ -363,7 +363,7 @@ function replaceGroupInEntities(oldName: string, newName: string): void {
 }
 
 function close(): void {
-  destroyDialogIfExists("labelGroupsConfigurator");
+  destroyDialog("labelGroupsConfigurator");
 }
 
 export const LabelGroupsConfigurator = { open };

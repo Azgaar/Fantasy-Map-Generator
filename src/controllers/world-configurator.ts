@@ -1,9 +1,10 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawTemperature } from "@/renderers/draw-temperature";
 import { stored } from "@/utils/preferences";
-import { convertTemperature, destroyDialogIfExists, ensureEl, findEl, parseTransform, rn, round } from "../utils";
+import { convertTemperature, ensureEl, findEl, parseTransform, rn, round } from "../utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
 const path = geoPath(projection);
@@ -33,12 +34,12 @@ function open(): void {
       const button = this.parentElement?.querySelector(".ui-dialog-buttonset > button");
       button?.addEventListener("mousemove", () => tip("Apply current settings to the map"));
     },
-    close: () => destroyDialogIfExists("worldConfigurator")
+    close: () => destroyDialog("worldConfigurator")
   });
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("worldConfigurator");
+  destroyDialog("worldConfigurator");
   ensureEl("dialogs").insertAdjacentHTML("beforeend", createDialogHtml());
   addListeners();
 }

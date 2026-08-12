@@ -79,5 +79,26 @@ export function refreshEditors(): void {
   for (const buttonId of REFRESHABLE_EDITORS) findEl(buttonId)?.click();
 }
 
+type DialogParams = {
+  title?: string;
+  resizable?: boolean;
+  width?: string;
+  position?: { my: string; at: string; of: string; collision: string };
+};
+
+export const updateDialog = (id: string, params: DialogParams) => {
+  const el = findEl(id);
+  if (!el) return;
+  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog(params);
+};
+
+// Remove an element, destroying its jQuery UI dialog widget first
+export const destroyDialog = (id: string): void => {
+  const el = findEl(id);
+  if (!el) return;
+  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
+  el.remove();
+};
+
 window.closeDialogs = closeDialogs;
 window.confirmationDialog = confirmationDialog;

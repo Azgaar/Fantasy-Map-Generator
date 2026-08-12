@@ -1,12 +1,12 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawMeasurers, undrawMeasurers } from "@/renderers/draw-measurers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { destroyDialogIfExists, ensureEl, getSegmentId, last, rn } from "../utils";
+import { ensureEl, getSegmentId, last, rn } from "../utils";
 
 type MeasurerEl = Selection<SVGGElement, unknown, null, undefined>;
 type MeasurerDragEvent<E extends Element = SVGGElement> = D3DragEvent<E, unknown, unknown>;
@@ -35,7 +35,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("measurersEditor");
+  destroyDialog("measurersEditor");
 
   const html = /* html */ `<div id="measurersEditor" class="dialog">
     <div id="measurersBody" class="table" style="margin-bottom: 0.3em"></div>
@@ -64,7 +64,7 @@ function onClose(): void {
   select("#ruler").classed("editable", false);
   if (layerIsOn("toggleRulers")) drawMeasurers();
   else undrawMeasurers();
-  destroyDialogIfExists("measurersEditor");
+  destroyDialog("measurersEditor");
 }
 
 // every data change goes through a full redraw

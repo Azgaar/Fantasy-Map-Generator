@@ -1,10 +1,10 @@
-import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import type { BurgGroup } from "@/types/burg-groups";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
@@ -40,7 +40,7 @@ function editBurgGroups(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("burgGroupsEditor");
+  destroyDialog("burgGroupsEditor");
 
   const html = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
     <form id="burgGroupsForm">

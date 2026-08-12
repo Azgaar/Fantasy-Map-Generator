@@ -1,6 +1,7 @@
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { openURL } from "@/utils";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { ensureEl } from "../utils";
 
 type Provider = "openai" | "anthropic" | "ollama";
 
@@ -190,7 +191,7 @@ function open(defaultPrompt: string, onApply: (result: string) => void): void {
     title: "AI Text Generator",
     position: { my: "center", at: "center", of: "svg" },
     resizable: false,
-    close: () => destroyDialogIfExists("aiGenerator"),
+    close: () => destroyDialog("aiGenerator"),
     buttons: {
       Generate: (e: Event) => {
         void generate(e.target as HTMLButtonElement);
@@ -209,7 +210,7 @@ function open(defaultPrompt: string, onApply: (result: string) => void): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("aiGenerator");
+  destroyDialog("aiGenerator");
 
   const html = /* html */ `<div id="aiGenerator" class="dialog stable">
     <div style="display: flex; flex-direction: column; gap: 0.3em; width: 100%">

@@ -1,8 +1,8 @@
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { ensureEl } from "../utils";
 
 interface Note {
   id: string;
@@ -62,7 +62,7 @@ function open(id?: string, name?: string): void {
 
 function renderDialog(): void {
   window.tinymce?.remove();
-  destroyDialogIfExists("notesEditor");
+  destroyDialog("notesEditor");
   const editorHtml = /* html */ `<div id="notesEditor" class="dialog stable">
     <div style="margin-bottom: 0.3em">
       <strong>Element: </strong>

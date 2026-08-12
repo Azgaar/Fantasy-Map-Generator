@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { drawFeatures } from "@/renderers/draw-features";
 import {
   buildCoastlinePath,
@@ -9,7 +9,7 @@ import {
   makeRoughnessProfile,
   PROFILE_SIZE
 } from "../renderers/coastline-fractal";
-import { destroyDialogIfExists, ensureEl } from "../utils";
+import { ensureEl } from "../utils";
 
 interface SliderDef {
   id: string;
@@ -156,13 +156,13 @@ function open(): void {
     width: "auto",
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: () => {
-      destroyDialogIfExists("coastlineSettingsDialog");
+      destroyDialog("coastlineSettingsDialog");
     }
   });
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("coastlineSettingsDialog");
+  destroyDialog("coastlineSettingsDialog");
   document.body.insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const { id, key } of SLIDER_DEFS) {

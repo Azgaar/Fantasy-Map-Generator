@@ -1,5 +1,5 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -11,7 +11,7 @@ import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
-import { destroyDialogIfExists, ensureEl, getPointer, round } from "../utils";
+import { ensureEl, getPointer, round } from "../utils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels
 let label: LabelData;
@@ -48,7 +48,7 @@ function open(type: LabelType, id: number): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("labelEditor");
+  destroyDialog("labelEditor");
   const editorHtml = /* html */ `<div id="labelEditor" class="dialog">
       <button id="labelGroupShow" data-tip="Show the group selection" class="icon-tags"></button>
       <div id="labelGroupSection" style="display: none">

@@ -1,20 +1,12 @@
 import { type Selection, select } from "d3";
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
-import {
-  convertTemperature,
-  destroyDialogIfExists,
-  ensureEl,
-  getPointer,
-  getTemperatureLikeness,
-  rand,
-  rn
-} from "../utils";
+import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -43,7 +35,7 @@ function open(id: number | string): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("burgEditor");
+  destroyDialog("burgEditor");
   const editorHtml = /* html */ `<div id="burgEditor" class="dialog" data-burg-id="${getSelectedId()}">
       <div id="burgBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">

@@ -1,9 +1,9 @@
 import { drag, quadtree, range, type Selection, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { destroyDialogIfExists, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
+import { ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 
 let selectedRelief: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -33,7 +33,7 @@ function open(element: SVGElement): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("reliefEditor");
+  destroyDialog("reliefEditor");
   const html = /* html */ `<div id="reliefEditor" class="dialog">
     <div id="reliefTools" data-tip="Select mode of operation">
       <div class="reliefEditorLabel">Mode:</div>

@@ -1,8 +1,8 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
-import { destroyDialogIfExists, ensureEl, openURL, rn, unique } from "../utils";
+import { ensureEl, openURL, rn, unique } from "../utils";
 
 function open(): void {
   if (customization) return;
@@ -21,7 +21,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("namesbaseEditor");
+  destroyDialog("namesbaseEditor");
   const editorHtml = /* html */ `<div id="namesbaseEditor" class="dialog stable textual">
       <div id="namesbaseBasesTop">
         <span>Select base: </span>

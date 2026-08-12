@@ -1,11 +1,11 @@
 import { drag, select } from "d3";
-import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
-import { destroyDialogIfExists, ensureEl, findEl, rn } from "../utils";
+import { ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -39,7 +39,7 @@ function open(markerI?: number, target?: Element): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("markerEditor");
+  destroyDialog("markerEditor");
 
   const html = /* html */ `<div id="markerEditor" class="dialog">
     <div id="markerBody" style="padding-bottom: 0.3em">
@@ -322,7 +322,7 @@ function closeMarkerEditor(): void {
   select(selectedElement).on(".drag", null).classed("draggable", false);
   if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
-  destroyDialogIfExists("markerEditor");
+  destroyDialog("markerEditor");
 }
 
 export const MarkersEditor = { open };

@@ -1,5 +1,5 @@
 import { drag, easeSinIn, select, sum, transition } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import type { FillBoxElement } from "@/components/fill-box";
@@ -14,7 +14,7 @@ import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, rn, si } from "../utils";
+import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, rn, si } from "../utils";
 
 function open(): void {
   if (customization) return;
@@ -37,7 +37,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("biomesEditor");
+  destroyDialog("biomesEditor");
   const html = /* html */ `<div id="biomesEditor" class="dialog stable">
       <div id="biomesHeader" class="header" style="grid-template-columns: 12em 10em 5em 6em 7em">
         <div data-tip="Click to sort by biome name" class="sortable alphabetically" data-sortby="name">

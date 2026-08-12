@@ -25,17 +25,6 @@ export const findEl = <T extends Element = HTMLElement>(id: string): T | null =>
 };
 
 /**
- * Remove an element, destroying its jQuery UI dialog widget first if it has one
- * @param {string} id - The ID of the element to remove
- */
-export const destroyDialogIfExists = (id: string): void => {
-  const el = findEl(id);
-  if (!el) return;
-  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
-  el.remove();
-};
-
-/**
  * Get the composed path of a node (including shadow DOM and window)
  * @param {Node | Window} node - The starting node or window
  * @returns {Array<Node>} - The composed path as an array

@@ -1,14 +1,14 @@
-import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { drawMarkers } from "@/renderers/draw-markers";
-import { destroyDialogIfExists, ensureEl } from "@/utils";
+import { ensureEl } from "@/utils";
 
 const DIALOG_ID = "markersSettings";
 
 function open(): void {
   if (customization) return;
-  destroyDialogIfExists(DIALOG_ID);
+  destroyDialog(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${DIALOG_ID}" class="dialog"></div>`);
   drawConfigTable();
 
@@ -101,7 +101,7 @@ function drawConfigTable(): void {
 }
 
 function cleanup(): void {
-  destroyDialogIfExists(DIALOG_ID);
+  destroyDialog(DIALOG_ID);
 }
 
 export const MarkersSettings = { open };

@@ -1,12 +1,12 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
-import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
 import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, destroyDialogIfExists, ensureEl, getPointer, last, rn } from "../utils";
+import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -38,7 +38,7 @@ function editRegiment(selector: string): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("regimentEditor");
+  destroyDialog("regimentEditor");
   const editorHtml = /* html */ `<div id="regimentEditor" class="dialog">
     <div id="regimentBody" style="padding-bottom: 0.3em">
       <div style="padding-bottom: 0.2em">

@@ -1,11 +1,11 @@
 import { color as d3Color, interpolateString, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { downloadFile, getFileName } from "@/utils";
-import { destroyDialogIfExists, ensureEl, findEl, getAdjective, getPointer } from "../utils";
+import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
 interface Relation {
   inText: string;
@@ -85,7 +85,7 @@ function open(): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("diplomacyEditor");
+  destroyDialog("diplomacyEditor");
   const editorHtml = /* html */ `<div id="diplomacyEditor" class="dialog stable">
       <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
         <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
@@ -564,7 +564,7 @@ function showRelationsMatrix(): void {
 }
 
 function renderMatrix(): void {
-  destroyDialogIfExists("diplomacyMatrix");
+  destroyDialog("diplomacyMatrix");
   const matrixHtml = /* html */ `<div id="diplomacyMatrix" class="dialog">
       <div id="diplomacyMatrixBody" class="matrix-table"></div>
     </div>`;

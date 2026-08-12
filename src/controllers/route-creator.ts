@@ -1,11 +1,11 @@
 import { select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
-import { destroyDialogIfExists, ensureEl, getPackPolygon, getPointer, rn } from "../utils";
+import { ensureEl, getPackPolygon, getPointer, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
 
@@ -45,7 +45,7 @@ function open(defaultGroup?: string): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("routeCreator");
+  destroyDialog("routeCreator");
 
   const html = /* html */ `<div id="routeCreator" class="dialog">
     <div>Click on map to add/remove route points</div>
@@ -186,7 +186,7 @@ function closeRouteCreator(): void {
   ensureEl("toggleCells").dataset.forced = "0";
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
-  destroyDialogIfExists("routeCreator");
+  destroyDialog("routeCreator");
 }
 
 export const RouteCreator = { open };

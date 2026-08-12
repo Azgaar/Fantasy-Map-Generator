@@ -1,9 +1,9 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
-import { destroyDialogIfExists, ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
+import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -42,7 +42,7 @@ function open(element: SVGElement): void {
 }
 
 function renderDialog(): void {
-  destroyDialogIfExists("iceEditor");
+  destroyDialog("iceEditor");
 
   const html = /* html */ `<div id="iceEditor" class="dialog">
     <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
@@ -141,7 +141,7 @@ function closeEditor(): void {
   clearMainTip();
   ensureEl("iceNew").classList.remove("pressed");
   if (wasAdding) applyDefaultViewboxEvents();
-  destroyDialogIfExists("iceEditor");
+  destroyDialog("iceEditor");
 }
 
 export const IceEditor = { open };
