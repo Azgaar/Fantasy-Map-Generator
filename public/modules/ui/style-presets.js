@@ -91,11 +91,20 @@ function applyStylePreset(presetJson) {
     }
 
     if (selector === "#terrain") {
-      // set and size are applied to the existing icons, density would require a regeneration
       const { set, size, density } = presetJson[selector];
-      if (size !== undefined && size !== null) Relief.changeSize(size);
-      if (set !== undefined && set !== null) Relief.changeSet(set);
-      if (density !== undefined && density !== null) style.relief.density = density;
+
+      if (size) {
+        const ratio = size / style.relief.size;
+        style.relief.size = size;
+        if (ratio !== 1) Relief.changeSize(size);
+      }
+
+      if (set) {
+        style.relief.set = set;
+        Relief.changeSet(set);
+      }
+
+      if (density) style.relief.density = density; // no model change as it would require regeneration
     }
 
     const el = labelGroup
