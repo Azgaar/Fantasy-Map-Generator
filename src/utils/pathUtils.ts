@@ -415,12 +415,13 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
   const isWaterCell = options.isWaterCell;
 
   const anchorPoints: Point[] = cells.map((cell, i) => {
-    if (customAnchors) return customAnchors[i];
+    if (customAnchors?.[i]) return customAnchors[i];
     if (cell === -1) {
       const prevCell = cells[i - 1];
       const prev: Point = prevCell !== undefined && prevCell >= 0 ? cellPositions[prevCell] : [0, 0];
       if (!bounds) return prev;
-      return projectToNearestEdge(prev, bounds.width, bounds.height);
+      const point = projectToNearestEdge(prev, bounds.width, bounds.height);
+      return point;
     }
     return cellPositions[cell];
   });
