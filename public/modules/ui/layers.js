@@ -236,7 +236,7 @@ function drawLayers() {
     compass.style("display", "block");
   }
   if (layerIsOn("toggleRivers")) drawRivers();
-  if (layerIsOn("toggleRelief")) drawRelief();
+  drawRelief();
   if (layerIsOn("toggleReligions")) drawReligions();
   if (layerIsOn("toggleCultures")) drawCultures();
   if (layerIsOn("toggleStates")) drawStates();

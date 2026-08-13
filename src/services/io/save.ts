@@ -95,10 +95,7 @@ function prepareMapData(): string {
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
   const cloneTerrain = cloneEl.querySelector("#terrain");
-  if (cloneTerrain) {
-    cloneTerrain.innerHTML = "";
-    cloneTerrain.setAttribute("data-layer-active", String(layerIsOn("toggleRelief")));
-  }
+  if (cloneTerrain) cloneTerrain.innerHTML = "";
 
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers

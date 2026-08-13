@@ -12,6 +12,7 @@ import { drawIce } from "@/renderers/draw-ice";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
+import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -1516,7 +1517,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
   if (isOlderThan("1.142.0")) {
     // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
     const terrainEl = document.getElementById("terrain");
-    const iconElements = Array.from(terrainEl?.querySelectorAll("use") || []);
 
     if (terrainEl) {
       // v1.142.0 moved the relief style from the #terrain attributes to style.relief
@@ -1526,21 +1526,19 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         density: Number(terrainEl.getAttribute("density")) || 0.4
       };
       for (const attribute of ["set", "size", "density"]) terrainEl.removeAttribute(attribute);
-    }
 
-    if (terrainEl && iconElements.length) {
-      pack.relief = iconElements.map(useEl => ({
-        icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
-        x: rn(Number(useEl.getAttribute("x")), 2),
-        y: rn(Number(useEl.getAttribute("y")), 2),
-        s: rn(Number(useEl.getAttribute("width")), 2)
-      }));
+      const iconElements = Array.from(terrainEl.querySelectorAll("use"));
+      if (iconElements.length) {
+        pack.relief = iconElements.map(useEl => ({
+          icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
+          x: rn(Number(useEl.getAttribute("x")), 2),
+          y: rn(Number(useEl.getAttribute("y")), 2),
+          s: rn(Number(useEl.getAttribute("width")), 2)
+        }));
+        terrainEl.replaceChildren();
+      }
 
-      // the layer used to be hidden by display, now it is materialized only when active
-      terrainEl.setAttribute("data-layer-active", String(getComputedStyle(terrainEl).display !== "none"));
-      terrainEl.style.removeProperty("display");
-      if (!terrainEl.getAttribute("style")) terrainEl.removeAttribute("style");
-      terrainEl.replaceChildren();
+      setReliefLayerActive(iconElements.length > 0 && getComputedStyle(terrainEl).display !== "none");
     }
   }
 }

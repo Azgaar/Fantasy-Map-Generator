@@ -92,7 +92,7 @@ function applyStylePreset(presetJson) {
 
     if (selector === "#terrain") {
       // set and size are applied to the existing icons, density would require a regeneration
-      const {set, size, density} = presetJson[selector];
+      const { set, size, density } = presetJson[selector];
       if (size !== undefined && size !== null) Relief.changeSize(size);
       if (set !== undefined && set !== null) Relief.changeSet(set);
       if (density !== undefined && density !== null) style.relief.density = density;
@@ -173,24 +173,27 @@ async function changeStyle(desiredPreset) {
   const [presetName, style] = styleData;
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawLabels();
 }
 
 function applyStyleWithUiRefresh(style) {
   applyStylePreset(style);
-  updateElements();
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
-  invokeActiveZooming();
-  setPresetRemoveButtonVisibiliy();
-
   drawScaleBar(scaleBar, scale);
   fitScaleBar(scaleBar, svgWidth, svgHeight);
-
+  if (layerIsOn("toggleHeight")) drawHeightmap();
+  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
+  oceanLayers.selectAll("path").remove();
+  OceanLayers();
   if (layerIsOn("toggleRulers")) drawMeasurers();
+  drawRelief();
+  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  drawLabels();
+
+  invokeActiveZooming();
+  setPresetRemoveButtonVisibiliy();
 }
 
 function addStylePreset() {

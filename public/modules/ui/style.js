@@ -800,12 +800,18 @@ styleHeightmapCurve.addEventListener("change", e => {
 });
 
 styleReliefSet.addEventListener("change", e => {
+  style.relief.set = e.target.value;
   Relief.changeSet(e.target.value);
   drawRelief();
 });
 
 styleReliefSize.addEventListener("change", e => {
-  Relief.changeSize(+e.target.value);
+  const newSize = +e.target.value;
+  const ratio = newSize / style.relief.size;
+  style.relief.size = newSize;
+  if (ratio === 1) return;
+
+  Relief.changeSize(ratio);
   drawRelief();
 });
 
@@ -1230,14 +1236,6 @@ styleScaleBar.addEventListener("input", function (event) {
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
 });
-
-function updateElements() {
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
-  oceanLayers.selectAll("path").remove();
-  OceanLayers();
-  invokeActiveZooming();
-}
 
 // GLOBAL FILTERS
 mapFilters.addEventListener("click", applyMapFilter);

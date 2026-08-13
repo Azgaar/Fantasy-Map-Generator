@@ -10,11 +10,14 @@ const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief })
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {
-  if (!layerIsOn("toggleRelief")) return void removeRelief();
+  const isActive = layerIsOn("toggleRelief");
+  setReliefLayerActive(isActive);
+  if (!isActive) return void removeRelief();
 
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
-  scene.replace(pack.relief.map((icon, i) => ({ ...icon, id: String(i) })));
+  const icons = pack.relief.map((icon, i) => ({ ...icon, id: `reliefIcon${i}` }));
+  scene.replace(icons);
   layer.render();
   TIME && console.timeEnd("drawRelief");
 };
@@ -31,6 +34,13 @@ function removeRelief(): void {
   scene.invalidate();
   document.querySelector("#terrain")?.replaceChildren();
 }
+
+export const setReliefLayerActive = (isActive: boolean): void => {
+  const terrainEl = document.querySelector<SVGAElement>("#terrain");
+  if (!terrainEl) return;
+  terrainEl.style.display = isActive ? "" : "none";
+  if (!terrainEl.getAttribute("style")) terrainEl.removeAttribute("style");
+};
 
 function reconcileRelief(context: ViewportRenderContext): void {
   const terrain = context.root.querySelector("#terrain");

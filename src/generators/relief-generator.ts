@@ -98,10 +98,7 @@ class ReliefModule {
     return relief;
   }
 
-  // restyle the existing icons for a new set, keeping their placement
   changeSet(set: string): void {
-    style.relief.set = set;
-
     for (const icon of pack.relief || []) {
       const [, type, variant] = icon.icon.match(/^relief-(\w+?)-(\d+)/) || [];
       if (!type) continue;
@@ -109,11 +106,7 @@ class ReliefModule {
     }
   }
 
-  changeSize(size: number): void {
-    const ratio = size / style.relief.size;
-    style.relief.size = size;
-    if (ratio === 1) return;
-
+  changeSize(ratio: number): void {
     for (const icon of pack.relief || []) {
       const resized = rn(icon.s * ratio, 2);
       const shift = (resized - icon.s) / 2;
