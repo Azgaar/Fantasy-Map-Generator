@@ -10,7 +10,7 @@ import { drawIce } from "@/renderers/draw-ice";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
-import { drawReliefIcons } from "@/renderers/draw-relief-icons";
+import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
@@ -127,7 +127,8 @@ function regenerateStateLabels(): void {
 }
 
 function regenerateReliefIcons(): void {
-  if (layerIsOn("toggleRelief")) drawReliefIcons();
+  Relief.generate();
+  redrawRelief();
 }
 
 function regenerateRoutes(): void {

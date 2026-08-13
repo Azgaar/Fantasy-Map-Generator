@@ -31,6 +31,8 @@ declare global {
     unlock: typeof import("../utils/preferences").unlock;
     stored: typeof import("../utils/preferences").stored;
     applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
+    drawRelief: typeof import("../renderers/draw-relief-icons").drawRelief;
+    redrawRelief: typeof import("../renderers/draw-relief-icons").redrawRelief;
     redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;

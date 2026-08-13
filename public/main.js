@@ -49,7 +49,7 @@ let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
 let compass = viewbox.append("g").attr("id", "compass").style("display", "none");
 let rivers = viewbox.append("g").attr("id", "rivers");
-let terrain = viewbox.append("g").attr("id", "terrain");
+let terrain = viewbox.append("g").attr("id", "terrain").style("display", "none");
 let relig = viewbox.append("g").attr("id", "relig");
 let cults = viewbox.append("g").attr("id", "cults");
 let regions = viewbox.append("g").attr("id", "regions");
@@ -69,7 +69,7 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.append("g").attr("id", "ice");
 let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
 let markets = viewbox.append("g").attr("id", "markets");
-let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation");
+let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.append("g").attr("id", "population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
@@ -171,7 +171,7 @@ let options = {
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = { labels: { groups: {} }, burgIcons: {}, anchors: {} };
+let style = { labels: { groups: {} }, burgIcons: {}, anchors: {}, relief: { set: "simple", size: 1, density: 0.4 } };
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation

@@ -4,6 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
+import { drawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
@@ -465,6 +466,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
+    pack.relief = data[49] ? JSON.parse(data[49]) : [];
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -515,7 +517,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
       if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
       if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
-      if (isVisible(terrain) && hasChildren(terrain)) turnOn("toggleRelief");
+      if (isVisible(select("#terrain"))) turnOn("toggleRelief");
       if (hasChildren(select("#relig"))) turnOn("toggleReligions");
       if (hasChildren(select("#cults"))) turnOn("toggleCultures");
       if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
@@ -816,6 +818,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
     if (layerIsOn("toggleLabels")) drawLabels();
+    if (layerIsOn("toggleRelief")) drawRelief();
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

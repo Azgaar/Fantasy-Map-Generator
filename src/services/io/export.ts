@@ -369,6 +369,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
       const node = terrainNodes[i] as Element;
       const href = node.getAttribute("href") || node.getAttribute("xlink:href");
       uniqueElements.add(href);
+      node.removeAttribute("data-i"); // rendering index is not needed outside of the app
     }
 
     const defsRelief = svgDefs.getElementById("defs-relief");

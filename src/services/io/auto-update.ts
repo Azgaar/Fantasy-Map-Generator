@@ -1,5 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
+import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
@@ -12,10 +13,12 @@ import { drawIce } from "@/renderers/draw-ice";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
+import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
+import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
@@ -1511,5 +1514,34 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     // other changes
     select("#coastline > #sea_island").attr("filter", null);
+  }
+
+  if (isOlderThan("1.142.0")) {
+    // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
+    const terrainEl = document.getElementById("terrain");
+
+    if (terrainEl) {
+      // v1.142.0 moved the relief style from the #terrain attributes to style.relief
+      const set = terrainEl.getAttribute("set");
+      style.relief = {
+        set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
+        size: Number(terrainEl.getAttribute("size")) || 1,
+        density: Number(terrainEl.getAttribute("density")) || 0.4
+      };
+      for (const attribute of ["set", "size", "density"]) terrainEl.removeAttribute(attribute);
+
+      const iconElements = Array.from(terrainEl.querySelectorAll("use"));
+      if (iconElements.length) {
+        pack.relief = iconElements.map(useEl => ({
+          icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
+          x: rn(Number(useEl.getAttribute("x")), 2),
+          y: rn(Number(useEl.getAttribute("y")), 2),
+          s: rn(Number(useEl.getAttribute("width")), 2)
+        }));
+        terrainEl.replaceChildren();
+      }
+
+      setReliefLayerActive(iconElements.length > 0 && getComputedStyle(terrainEl).display !== "none");
+    }
   }
 }

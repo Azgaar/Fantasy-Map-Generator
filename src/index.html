@@ -1148,7 +1148,7 @@
               </tr>
             </tbody>
             <tbody id="styleRelief">
-              <tr data-tip="Select set of relief icons. All relief icons will be regenerated">
+              <tr data-tip="Select set of relief icons. Existing icons are restyled, not regenerated">
                 <td>Style</td>
                 <td>
                   <select id="styleReliefSet">
@@ -1158,7 +1158,7 @@
                   </select>
                 </td>
               </tr>
-              <tr data-tip="Define the size of relief icons. All relief icons will be regenerated">
+              <tr data-tip="Define the size of relief icons. Existing icons are resized, not regenerated">
                 <td>Size</td>
                 <td>
                   <slider-input id="styleReliefSize" min=".2" max="4" step=".01"></slider-input>
@@ -1170,6 +1170,11 @@
                 <td>Density</td>
                 <td>
                   <slider-input id="styleReliefDensity" min=".3" max=".8" step=".01"></slider-input>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" style="opacity: 0.6">
+                  <i>Density change regenerates relief icons, discarding manual edits</i>
                 </td>
               </tr>
             </tbody>
@@ -2921,13 +2926,8 @@
             />
           </symbol>
           <symbol id="relief-dune-1" viewBox="0 0 100 100">
-            <path
-              d="m 28.7,52.8 c 5,-3.9 10,-8.2 15.8,-8.3 4.5,0 10.8,3.8 15.2,6.5 3.5,2.2 6.8,2 6.8,2"
-              fill="none"
-              stroke="#5c5c70"
-              stroke-width="1.8"
-            />
-            <path d="m 44.2,47.6 c -3.2,3.2 3.5,5.7 5.9,7.8" fill="none" stroke="#5c5c70" />
+            <path d="m 28.7,52.8 c 5,-3.9 10,-8.2 15.8,-8.3 4.5,0 10.8,3.8 15.2,6.5 3.5,2.2 6.8,2 6.8,2" fill="none" stroke="#5c5c70" stroke-width="0.6" />
+            <path d="m 44.2,47.6 c -3.2,3.2 3.5,5.7 5.9,7.8" fill="none" stroke="#5c5c70" stroke-width="0.6" />
           </symbol>
           <symbol id="relief-mount-2-bw" viewBox="-5 -5 50 50">
             <polygon
@@ -5420,11 +5420,11 @@
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/polylabel.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.140.0"></script>
-    <script defer src="modules/ui/style-presets.js?v=1.140.0"></script>
+    <script defer src="modules/ui/layers.js?v=1.142.0"></script>
+    <script defer src="modules/ui/style-presets.js?v=1.142.0"></script>
     <script defer src="modules/ui/options.js?v=1.140.0"></script>
-    <script defer src="main.js?v=1.140.0"></script>
-    <script defer src="modules/ui/style.js?v=1.140.0"></script>
+    <script defer src="main.js?v=1.142.0"></script>
+    <script defer src="modules/ui/style.js?v=1.142.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>

@@ -1,9 +1,44 @@
-import {test, expect} from "@playwright/test";
+import {test, expect, type Page} from "@playwright/test";
 import fs from "fs";
 import path from "path";
 
 declare const notes: {id: string}[]; // page global, resolved inside page.evaluate
 declare const options: {labels: {resizeOnZoom: boolean; showAll: boolean; groups: {type: string; mode?: string}[]}};
+declare const style: {relief: {set: string; size: number; density: number}};
+
+const LEGACY_RELIEF_ICONS = [
+  {icon: "relief-mount-1", x: 100, y: 100, s: 20},
+  {icon: "relief-hill-1", x: 200, y: 150, s: 10}
+];
+
+// 1.139.4.map has an empty #terrain group, so the legacy layout (icons in the svg, relief style
+// in the group attributes, layer hidden by display) has to be re-created to test the migration
+function buildLegacyReliefMap(hidden: boolean): Buffer {
+  const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
+  const mapData = fs.readFileSync(mapFilePath, "utf8").split("\r\n"); // map records are CRLF-delimited
+
+  const icons = LEGACY_RELIEF_ICONS.map(
+    ({icon, x, y, s}) => `<use href="#${icon}" x="${x}" y="${y}" width="${s}" height="${s}"/>`
+  ).join("");
+  const display = hidden ? ' style="display: none;"' : "";
+  const terrain = `<g id="terrain"${display} set="simple" size="2" density="0.5">${icons}</g>`;
+  mapData[5] = mapData[5].replace(/<g id="terrain"[^>]*\/>/, terrain);
+
+  return Buffer.from(mapData.join("\r\n"));
+}
+
+function getReliefState(page: Page) {
+  return page.evaluate(() => {
+    const terrain = document.getElementById("terrain");
+    return {
+      relief: (window as any).pack.relief,
+      // `style` is script-scoped, so it has to be read off the lexical global rather than off window
+      style: style.relief,
+      layerIsOn: (window as any).layerIsOn("toggleRelief"),
+      terrainStyle: terrain?.getAttribute("style") ?? null
+    };
+  });
+}
 
 test.describe("Map loading", () => {
   test.beforeEach(async ({context, page}) => {
@@ -270,6 +305,40 @@ test.describe("Map loading", () => {
     });
 
     expect(migrated).toEqual({resizeOnZoom: false, showAll: true, stateMode: "full"});
+  });
+
+  // v1.142.0 moved relief icons from the #terrain group to pack.relief and renders only the ones
+  // in the viewport, so the layer is saved empty and its display carries the layer state
+  test("legacy relief icons should migrate to pack.relief keeping the layer on", async ({page}) => {
+    await page.locator("#mapToLoad").setInputFiles({
+      name: "legacy-relief.map",
+      mimeType: "text/plain",
+      buffer: buildLegacyReliefMap(false)
+    });
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
+
+    expect(await getReliefState(page)).toEqual({
+      relief: LEGACY_RELIEF_ICONS,
+      style: {set: "simple", size: 2, density: 0.5},
+      layerIsOn: true,
+      terrainStyle: null
+    });
+  });
+
+  test("hidden legacy relief layer should stay off after migration", async ({page}) => {
+    await page.locator("#mapToLoad").setInputFiles({
+      name: "hidden-legacy-relief.map",
+      mimeType: "text/plain",
+      buffer: buildLegacyReliefMap(true)
+    });
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
+
+    expect(await getReliefState(page)).toEqual({
+      relief: LEGACY_RELIEF_ICONS,
+      style: {set: "simple", size: 2, density: 0.5},
+      layerIsOn: false,
+      terrainStyle: "display: none;"
+    });
   });
 
   test("save data should preserve an active but empty label layer", async ({page}) => {

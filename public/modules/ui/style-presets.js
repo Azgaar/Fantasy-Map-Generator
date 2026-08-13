@@ -16,6 +16,7 @@ const systemPresets = [
   "monochrome"
 ];
 const customPresetPrefix = "fmgStyle_";
+const RELIEF_STYLE_ATTRIBUTES = ["set", "size", "density"];
 
 // add style presets to list
 {
@@ -89,6 +90,23 @@ function applyStylePreset(presetJson) {
       style.anchors[group] = presetJson[selector];
     }
 
+    if (selector === "#terrain") {
+      const { set, size, density } = presetJson[selector];
+
+      if (size) {
+        const ratio = size / style.relief.size;
+        style.relief.size = size;
+        if (ratio !== 1) Relief.changeSize(size);
+      }
+
+      if (set) {
+        style.relief.set = set;
+        Relief.changeSet(set);
+      }
+
+      if (density) style.relief.density = density; // no model change as it would require regeneration
+    }
+
     const el = labelGroup
       ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
       : document.querySelector(selector);
@@ -96,6 +114,7 @@ function applyStylePreset(presetJson) {
 
     for (const attribute in presetJson[selector]) {
       if (attribute === "id") continue;
+      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in style.relief
       const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {
@@ -163,24 +182,27 @@ async function changeStyle(desiredPreset) {
   const [presetName, style] = styleData;
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) drawLabels();
 }
 
 function applyStyleWithUiRefresh(style) {
   applyStylePreset(style);
-  updateElements();
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
-  invokeActiveZooming();
-  setPresetRemoveButtonVisibiliy();
-
   drawScaleBar(scaleBar, scale);
   fitScaleBar(scaleBar, svgWidth, svgHeight);
-
+  if (layerIsOn("toggleHeight")) drawHeightmap();
+  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
+  oceanLayers.selectAll("path").remove();
+  OceanLayers();
   if (layerIsOn("toggleRulers")) drawMeasurers();
+  drawRelief();
+  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  drawLabels();
+
+  invokeActiveZooming();
+  setPresetRemoveButtonVisibiliy();
 }
 
 function addStylePreset() {
@@ -267,7 +289,7 @@ function addStylePreset() {
       "#dry": ["opacity", "fill", "stroke", "stroke-width", "filter"],
       "#sea_island": ["opacity", "stroke", "stroke-width", "filter", "auto-filter"],
       "#lake_island": ["opacity", "stroke", "stroke-width", "filter"],
-      "#terrain": ["opacity", "set", "size", "density", "filter", "mask"],
+      "#terrain": ["opacity", "filter", "mask"],
       "#rivers": ["opacity", "filter", "fill"],
       "#ruler": ["opacity", "data-size", "font-size", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
@@ -420,6 +442,8 @@ function addStylePreset() {
         presetStyle[selector][attr] = parseValue(value);
       }
     }
+
+    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
 
     for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, groupStyle);

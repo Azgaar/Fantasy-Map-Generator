@@ -230,9 +230,9 @@ function selectStyleElement() {
 
   if (styleElement === "terrain") {
     styleRelief.style.display = "block";
-    styleReliefSize.value = terrain.attr("size") || 1;
-    styleReliefDensity.value = terrain.attr("density") || 0.4;
-    styleReliefSet.value = terrain.attr("set");
+    styleReliefSize.value = style.relief.size;
+    styleReliefDensity.value = style.relief.density;
+    styleReliefSet.value = style.relief.set;
   }
 
   if (styleElement === "population") {
@@ -800,21 +800,26 @@ styleHeightmapCurve.addEventListener("change", e => {
 });
 
 styleReliefSet.addEventListener("change", e => {
-  terrain.attr("set", e.target.value);
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  style.relief.set = e.target.value;
+  Relief.changeSet(e.target.value);
+  drawRelief();
 });
 
 styleReliefSize.addEventListener("change", e => {
-  terrain.attr("size", e.target.value);
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  const newSize = +e.target.value;
+  const ratio = newSize / style.relief.size;
+  style.relief.size = newSize;
+  if (ratio === 1) return;
+
+  Relief.changeSize(ratio);
+  drawRelief();
 });
 
+// density defines the placement, so it cannot be applied without regenerating the icons
 styleReliefDensity.addEventListener("change", e => {
-  terrain.attr("density", e.target.value);
-  drawReliefIcons();
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  style.relief.density = +e.target.value;
+  Relief.generate();
+  drawRelief();
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
@@ -1231,14 +1236,6 @@ styleScaleBar.addEventListener("input", function (event) {
     fitScaleBar(scaleBar, svgWidth, svgHeight);
   }
 });
-
-function updateElements() {
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
-  oceanLayers.selectAll("path").remove();
-  OceanLayers();
-  invokeActiveZooming();
-}
 
 // GLOBAL FILTERS
 mapFilters.addEventListener("click", applyMapFilter);
