@@ -8,8 +8,7 @@ import {
   isLand,
   isWater,
   rn,
-  TYPED_ARRAY_MAX,
-  unique
+  TYPED_ARRAY_MAX
 } from "../utils";
 
 declare global {
@@ -239,11 +238,7 @@ class FeatureModule {
 
       if (type === "lake") {
         if (area > 0) feature.vertices = (feature.vertices as number[]).reverse();
-        feature.shoreline = unique(
-          (feature.vertices as number[]).flatMap(vertexIndex =>
-            vertices.c[vertexIndex].filter(index => isLand(index, pack))
-          )
-        );
+        feature.shoreline = Lakes.defineShoreline(feature as Feature);
         feature.height = Lakes.getHeight(feature as Feature);
       }
 
