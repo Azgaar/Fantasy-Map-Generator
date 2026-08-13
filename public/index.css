@@ -1569,7 +1569,7 @@ div.states .biomeHabitability {
   -moz-appearance: textfield;
 }
 
-div.states:hover > .hiddenIcon {
+div.states:hover .hiddenIcon {
   visibility: visible !important;
 }
 
