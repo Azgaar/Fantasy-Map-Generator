@@ -493,7 +493,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
         selection.node() && selection.style("display") !== "none";
       const isVisibleNode = (node: SVGElement | HTMLElement | null) => node && node.style.display !== "none";
-      const hasChildren = (selection: { node(): Element | null }) => selection.node()?.hasChildNodes();
+      // element children only: cleared layers can retain whitespace text nodes
+      const hasChildren = (selection: { node(): Element | null }) => Boolean(selection.node()?.childElementCount);
       const hasChild = (selection: { node(): Element | null }, selector: string) =>
         selection.node()?.querySelector(selector);
       const turnOn = (el: string) => ensureEl(el).classList.remove("buttonoff");
@@ -532,8 +533,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
       if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
-      if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
-      if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
+      // trade animation is transient and always stripped on save, so its state is kept as an attribute
+      if (select("#tradeAnimation").attr("data-layer-active") === "true") turnOn("toggleTrade");
+      // toggling goods off keeps the empty subgroups, so check for drawn content
+      if (isVisible(select("#goods")) && hasChild(select("#goods"), "g > *")) turnOn("toggleGoods");
       if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
       if (isVisible(select("#ruler"))) turnOn("toggleRulers");
       if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");

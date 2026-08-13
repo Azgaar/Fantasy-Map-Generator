@@ -25,6 +25,7 @@ export function toggleGoods(event?: MouseEvent) {
   } else {
     if (event && isCtrlClick(event)) return editStyle("goodsIcons");
     SUBGROUPS.forEach(id => void select("#goods").select(`#${id}`).html(""));
+    select("#goods").style("display", "none");
     turnButtonOff("toggleGoods");
   }
 }
