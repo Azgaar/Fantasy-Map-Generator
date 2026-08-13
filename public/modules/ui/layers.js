@@ -870,10 +870,12 @@ function toggleMarkers(event) {
 function toggleTrade(event) {
   if (!layerIsOn("toggleTrade")) {
     turnButtonOn("toggleTrade");
+    tradeAnimation.style("display", null);
     TradeAnimation.start();
     if (event && isCtrlClick(event)) editStyle("tradeAnimation");
   } else {
     if (event && isCtrlClick(event)) return editStyle("tradeAnimation");
+    tradeAnimation.style("display", "none");
     TradeAnimation.stop();
     turnButtonOff("toggleTrade");
   }

@@ -705,7 +705,7 @@
     "data-size": 3
   },
   "#tradeAnimation": {
-    "opacity": 1,
+    "opacity": null,
     "filter": null
   }
 }

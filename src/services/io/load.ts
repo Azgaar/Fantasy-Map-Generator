@@ -517,7 +517,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
       if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
       if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
-      if (isVisible(terrain)) turnOn("toggleRelief"); // the layer is saved empty, display carries its state
+      if (isVisible(select("#terrain"))) turnOn("toggleRelief");
       if (hasChildren(select("#relig"))) turnOn("toggleReligions");
       if (hasChildren(select("#cults"))) turnOn("toggleCultures");
       if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
