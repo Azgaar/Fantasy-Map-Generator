@@ -518,6 +518,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
       if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
       if (terrain.attr("data-layer-active") === "true") turnOn("toggleRelief");
+      terrain.attr("data-layer-active", null); // transport attribute, re-added on save
       if (hasChildren(select("#relig"))) turnOn("toggleReligions");
       if (hasChildren(select("#cults"))) turnOn("toggleCultures");
       if (hasChildren(select("#statesBody"))) turnOn("toggleStates");

@@ -1539,6 +1539,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       // the layer used to be hidden by display, now it is materialized only when active
       terrainEl.setAttribute("data-layer-active", String(getComputedStyle(terrainEl).display !== "none"));
       terrainEl.style.removeProperty("display");
+      if (!terrainEl.getAttribute("style")) terrainEl.removeAttribute("style");
       terrainEl.replaceChildren();
     }
   }
