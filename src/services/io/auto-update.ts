@@ -1368,7 +1368,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         type: "province",
         isDefault: true,
         zoom: deriveZoomExtent(fontSize),
-        layerDependency: "toggleProvinces"
+        layerDependency: "toggleProvinces",
+        active: false
       });
       style.labels.groups.province = oldStyle;
     } else {
