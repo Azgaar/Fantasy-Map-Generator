@@ -27,6 +27,19 @@ function buildLegacyReliefMap(hidden: boolean): Buffer {
   return Buffer.from(mapData.join("\r\n"));
 }
 
+function buildLegacyMapWithoutLakeShorelines(): Buffer {
+  const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
+  const mapData = fs.readFileSync(mapFilePath, "utf8").split("\r\n");
+  const features = JSON.parse(mapData[12]);
+
+  for (const feature of features) {
+    if (feature?.type === "lake") delete feature.shoreline;
+  }
+
+  mapData[12] = JSON.stringify(features);
+  return Buffer.from(mapData.join("\r\n"));
+}
+
 function getReliefState(page: Page) {
   return page.evaluate(() => {
     const terrain = document.getElementById("terrain");
@@ -275,6 +288,22 @@ test.describe("Map loading", () => {
     }
     expect(migrated.rendered).toEqual(["path", "path", "path", "path"]);
     expect(migrated.orphanNotes).toBe(0);
+  });
+
+  test("legacy lakes without shoreline data should get it on load", async ({page}) => {
+    await page.locator("#mapToLoad").setInputFiles({
+      name: "legacy-lakes-without-shorelines.map",
+      mimeType: "text/plain",
+      buffer: buildLegacyMapWithoutLakeShorelines()
+    });
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
+
+    const lakeShorelines = await page.evaluate(() =>
+      (window as any).pack.features.filter((feature: any) => feature?.type === "lake").map((lake: any) => lake.shoreline)
+    );
+
+    expect(lakeShorelines.length).toBeGreaterThan(0);
+    expect(lakeShorelines.every((shoreline: unknown) => Array.isArray(shoreline) && shoreline.length > 0)).toBe(true);
   });
 
   test("legacy label settings should migrate without changing behavior", async ({page}) => {

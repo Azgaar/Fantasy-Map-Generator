@@ -52,6 +52,13 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     });
   }
 
+  if (isOlderThan("1.142.0")) {
+    // v1.142 still has issue with missing shoreline
+    for (const f of pack.features) {
+      if (f?.type === "lake" && !f.shoreline) f.shoreline = Lakes.defineShoreline(f);
+    }
+  }
+
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
     relig = viewbox.insert("g", "#terrain").attr("id", "relig");
@@ -457,9 +464,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const height = (f.height - 18) ** heightExponentInput.valueAsNumber;
       const evaporation = ((700 * (f.temp + 0.006 * height)) / 50 + 75) / (80 - f.temp);
       f.evaporation = rn(evaporation * f.cells);
-      if (!f.shoreline) {
-        f.shoreline = unique(f.vertices.flatMap(v => pack.vertices.c[v].filter(c => pack.cells.h[c] >= 20)));
-      }
+      if (!f.shoreline) f.shoreline = Lakes.defineShoreline(f);
       f.name = f.name || Lakes.getName(f);
       delete f.river;
     }

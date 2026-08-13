@@ -1,5 +1,5 @@
 import { mean, min } from "d3";
-import { ensureEl, rn } from "../utils";
+import { ensureEl, isLand, rn, unique } from "../utils";
 import type { Feature } from "./features";
 
 declare global {
@@ -123,6 +123,12 @@ export class LakesModule {
 
       feature.closed = isDeep;
     });
+  }
+
+  defineShoreline(feature: Feature) {
+    return unique(
+      feature.vertices.flatMap(vertexIndex => pack.vertices.c[vertexIndex].filter(index => isLand(index, pack)))
+    );
   }
 }
 
