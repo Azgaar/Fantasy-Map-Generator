@@ -1,8 +1,9 @@
 import type { ReliefIcon } from "@/generators/relief-generator";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 
-interface ReliefSceneIcon extends ReliefIcon {
+interface ReliefSceneIcon {
   id: string;
+  data: ReliefIcon;
 }
 
 const scene = new Scene<ReliefSceneIcon>();
@@ -16,8 +17,7 @@ export const drawRelief = (): void => {
 
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
-  const icons = pack.relief.map((icon, i) => ({ ...icon, id: `reliefIcon${i}` }));
-  scene.replace(icons);
+  scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
   layer.render();
   TIME && console.timeEnd("drawRelief");
 };
@@ -29,6 +29,8 @@ export const redrawRelief = (): void => {
     drawRelief();
   });
 };
+
+export const getSceneReliefIcon = (id: string): ReliefIcon | undefined => scene.get(id)?.data;
 
 function removeRelief(): void {
   scene.invalidate();
@@ -50,9 +52,10 @@ function reconcileRelief(context: ViewportRenderContext): void {
   const { x0, y0, x1, y1 } = context.bounds;
   const markup: string[] = [];
 
-  for (const { id, icon, x, y, s } of scene.values()) {
+  for (const { id, data } of scene.values()) {
+    const { icon, x, y, s } = data;
     if (x > x1 || y > y1 || x + s < x0 || y + s < y0) continue;
-    markup.push(`<use href="#${icon}" data-i="${id}" x="${x}" y="${y}" width="${s}" height="${s}"/>`);
+    markup.push(`<use href="#${icon}" data-id="${id}" x="${x}" y="${y}" width="${s}" height="${s}"/>`);
   }
 
   terrain.innerHTML = markup.join("");

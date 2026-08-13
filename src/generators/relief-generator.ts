@@ -1,22 +1,11 @@
 import { extent, polygonContains } from "d3";
-import { getPackPolygon, minmax, poissonDiscSampler, rand, rn } from "@/utils";
+import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
+import type { ReliefSet, ReliefTypeIcons } from "@/types/relief";
+import { getPackPolygon, minmax, poissonDiscSampler, ra, rn } from "@/utils";
 
 declare global {
   var Relief: ReliefModule;
 }
-
-// variants available per icon type in the colored and gray sets
-const VARIANTS: Record<string, [number, number]> = {
-  mount: [2, 7],
-  mountSnow: [1, 6],
-  hill: [2, 5],
-  conifer: [2, 2],
-  coniferSnow: [1, 1],
-  swamp: [2, 3],
-  cactus: [1, 3],
-  deadTree: [1, 2]
-};
-const DEFAULT_VARIANT: [number, number] = [2, 2];
 
 export interface ReliefIcon {
   icon: string; // symbol id without the leading "#", e.g. "relief-mount-3"
@@ -34,20 +23,19 @@ class ReliefModule {
     const iconSize = 2 * size;
     const sizeModifier = 0.2 * iconSize;
 
-    const getIcon = (type: string): string => this.getIcon(type, set);
-
-    const getBiomeIcon = (cellIndex: number, biomeIcons: string[]): string => {
+    const getBiomeIcon = (cellIndex: number, biomeIcons: string[]) => {
       let type = biomeIcons[Math.floor(Math.random() * biomeIcons.length)];
       const temp = grid.cells.temp[cells.g[cellIndex]];
       if (type === "conifer" && temp < 0) type = "coniferSnow";
-      return getIcon(type);
+      return this.pickIcon(type, set);
     };
 
     const getReliefIcon = (cellIndex: number, h: number): [string, number] => {
       const temp = grid.cells.temp[cells.g[cellIndex]];
       const type = h > 70 && temp < 0 ? "mountSnow" : h > 70 ? "mount" : "hill";
       const size = h > 70 ? (h - 45) * sizeModifier : minmax((h - 40) * sizeModifier, 3, 6);
-      return [getIcon(type), size];
+      const [icon, scale] = this.pickIcon(type, set);
+      return [icon, size * scale];
     };
 
     const relief: ReliefIcon[] = [];
@@ -72,9 +60,9 @@ class ReliefModule {
 
         for (const [cx, cy] of poissonDiscSampler(minX, minY, maxX, maxY, radius)) {
           if (!polygonContains(polygon, [cx, cy])) continue;
-          let h = (4 + Math.random()) * iconSize;
-          const icon = getBiomeIcon(i, pack.biomes[biome].icons);
-          if (icon === "relief-grass-1") h *= 1.2;
+          const size = (4 + Math.random()) * iconSize;
+          const [icon, scale] = getBiomeIcon(i, pack.biomes[biome].icons);
+          const h = size * scale;
           relief.push({ icon, x: rn(cx - h, 2), y: rn(cy - h, 2), s: rn(h * 2, 2) });
         }
       }
@@ -98,11 +86,11 @@ class ReliefModule {
     return relief;
   }
 
-  changeSet(set: string): void {
+  changeSet(set: ReliefSet): void {
     for (const icon of pack.relief || []) {
       const [, type, variant] = icon.icon.match(/^relief-(\w+?)-(\d+)/) || [];
       if (!type) continue;
-      icon.icon = this.getIcon(type, set, Number(variant));
+      [icon.icon] = this.pickIcon(type, set, Number(variant));
     }
   }
 
@@ -116,33 +104,32 @@ class ReliefModule {
     }
   }
 
-  private getIcon(type: string, set: string, variant?: number): string {
-    if (set === "simple") return `relief-${this.getSimpleIcon(type)}-1`;
-    const [min, max] = VARIANTS[type] || DEFAULT_VARIANT;
-    const valid = variant && variant >= min && variant <= max ? variant : this.getVariant(type);
-    return set === "gray" ? `relief-${type}-${valid}-bw` : `relief-${type}-${valid}`;
-  }
+  // pick an icon of the type in the set, keeping the variant if the set has it
+  private pickIcon(type: string, set: ReliefSet, variant?: number): [icon: string, scale: number] {
+    const icons = getTypeIcons(type, set);
+    if (!icons) return [getReliefIconId(type, variant || 1, set), 1];
 
-  private getVariant(type: string): number {
-    const [min, max] = VARIANTS[type] || DEFAULT_VARIANT;
-    return min === max ? min : rand(min, max);
-  }
-
-  // the simple set has a single variant per type, some types fall back to a similar one
-  private getSimpleIcon(type: string): string {
-    switch (type) {
-      case "mountSnow":
-      case "vulcan":
-        return "mount";
-      case "coniferSnow":
-        return "conifer";
-      case "cactus":
-      case "deadTree":
-        return "dune";
-      default:
-        return type;
-    }
+    const { variants, scale = 1 } = icons;
+    const picked = variant && variants.includes(variant) ? variant : variants.length > 1 ? ra(variants) : variants[0];
+    return [getReliefIconId(icons.type, picked, set), scale];
   }
 }
+
+export const getReliefIconId = (type: string, variant: number, set: ReliefSet): string =>
+  `relief-${type}-${variant}${RELIEF_SETS[set].suffix}`;
+
+// icons of the type available in the set, falling back to the closest type the set has
+function getTypeIcons(type: string, set: ReliefSet): ReliefTypeIcons | null {
+  const base = RELIEF_SETS[set].base;
+
+  for (let name: string | undefined = type; name; name = findType(name)?.fallback) {
+    const icons = RELIEF_ICONS.find(entry => entry.set === base && entry.type === name);
+    if (icons) return icons;
+  }
+
+  return null;
+}
+
+const findType = (type: string) => RELIEF_ICONS.find(entry => entry.type === type);
 
 window.Relief = new ReliefModule();

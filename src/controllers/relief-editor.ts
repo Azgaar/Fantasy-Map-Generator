@@ -2,14 +2,43 @@ import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
-import type { ReliefIcon } from "@/generators/relief-generator";
-import { redrawRelief } from "@/renderers/draw-relief-icons";
+import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
+import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
+import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
+import type { ReliefSet } from "@/types/relief";
+import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 
-// icons are edited in pack.relief, the layer is re-materialized from it. Elements are
-// matched to the data by the data-i attribute set by the renderer
+const ICON_BOX = 40; // icon preview box size in px, as defined in css
+
 let selectedIcon: ReliefIcon | null = null;
+
+const setsHtml = (): string =>
+  Object.entries(RELIEF_SETS)
+    .map(([set, { name }]) => `<option value="${set}">${name}</option>`)
+    .join("");
+
+// icons of every set, only the selected set is displayed
+const iconsHtml = (): string =>
+  Object.keys(RELIEF_SETS)
+    .map(set => `<div data-type="${set}" style="display: none">${setIconsHtml(set as ReliefSet)}</div>`)
+    .join("");
+
+const setIconsHtml = (set: ReliefSet): string =>
+  RELIEF_ICONS.filter(({ set: iconsSet }) => iconsSet === RELIEF_SETS[set].base)
+    .flatMap(({ type, variants, zoom = 1 }) => {
+      const size = ICON_BOX * zoom;
+      const offset = 50 - 50 * zoom; // percent, keeps the zoomed icon centered in the box
+      const name = capitalize(type.replace(/([A-Z])/g, " $1").toLowerCase());
+
+      return variants.map(variant => {
+        const id = getReliefIconId(type, variant, set);
+        return /* html */ `<svg data-type="${id}" data-tip="Select ${name} icon">
+          <use href="#${id}" x="${offset}%" y="${offset}%" width="${size}" height="${size}"></use>
+        </svg>`;
+      });
+    })
+    .join("");
 
 function open(element: SVGElement): void {
   if (customization) return;
@@ -44,11 +73,7 @@ function renderDialog(): void {
       <button id="reliefBulkAdd" data-tip="Place icons in a bulk" class="icon-brush"></button>
       <button id="reliefBulkRemove" data-tip="Remove icons in a bulk" class="icon-eraser"></button>
       <div style="margin-left: 4.6em">Set:</div>
-      <select id="reliefEditorSet">
-        <option value="simple">Simple</option>
-        <option value="colored">Colored</option>
-        <option value="gray">Gray</option>
-      </select>
+      <select id="reliefEditorSet">${setsHtml()}</select>
     </div>
     <div id="reliefSizeDiv" data-tip="Set icon size for individual icon or for bulk placement">
       <div class="reliefEditorLabel">Size:</div>
@@ -87,243 +112,7 @@ function renderDialog(): void {
       <input id="reliefSpacingNumber" oninput="reliefSpacing.value = this.value" type="number" min="2" value="5" />
     </div>
     <div id="reliefIconsDiv" data-tip="Select icon">
-      <div data-type="simple" style="display: none">
-        <svg data-type="#relief-mount-1" data-tip="Select Mountain icon">
-          <use href="#relief-mount-1" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-1" data-tip="Select Hill icon">
-          <use href="#relief-hill-1" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-deciduous-1" data-tip="Select Deciduous Tree icon">
-          <use href="#relief-deciduous-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-conifer-1" data-tip="Select Conifer Tree icon">
-          <use href="#relief-conifer-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-palm-1" data-tip="Select Palm icon">
-          <use href="#relief-palm-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-acacia-1" data-tip="Select Acacia icon">
-          <use href="#relief-acacia-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-swamp-1" data-tip="Select Swamp icon">
-          <use href="#relief-swamp-1" x="-50%" y="-50%" width="80" height="80"></use>
-        </svg>
-        <svg data-type="#relief-grass-1" data-tip="Select Grass icon">
-          <use href="#relief-grass-1" x="-100%" y="-100%" width="120" height="120"></use>
-        </svg>
-        <svg data-type="#relief-dune-1" data-tip="Select Dune icon">
-          <use href="#relief-dune-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-      </div>
-      <div data-type="colored" style="display: none">
-        <svg data-type="#relief-mount-2" data-tip="Select Mountain icon">
-          <use href="#relief-mount-2" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-3" data-tip="Select Mountain icon">
-          <use href="#relief-mount-3" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-4" data-tip="Select Mountain icon">
-          <use href="#relief-mount-4" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-5" data-tip="Select Mountain icon">
-          <use href="#relief-mount-5" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-6" data-tip="Select Mountain icon">
-          <use href="#relief-mount-6" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-7" data-tip="Select Mountain icon">
-          <use href="#relief-mount-7" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-1" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-1" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-2" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-2" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-3" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-3" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-4" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-4" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-5" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-5" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-6" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-6" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-vulcan-1" data-tip="Select Volcano icon">
-          <use href="#relief-vulcan-1" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-vulcan-2" data-tip="Select Volcano icon">
-          <use href="#relief-vulcan-2" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-vulcan-3" data-tip="Select Volcano icon">
-          <use href="#relief-vulcan-3" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-2" data-tip="Select Hill icon">
-          <use href="#relief-hill-2" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-3" data-tip="Select Hill icon">
-          <use href="#relief-hill-3" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-4" data-tip="Select Hill icon">
-          <use href="#relief-hill-4" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-5" data-tip="Select Hill icon">
-          <use href="#relief-hill-5" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-dune-2" data-tip="Select Dune icon">
-          <use href="#relief-dune-2" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-deciduous-2" data-tip="Select Deciduous Tree icon">
-          <use href="#relief-deciduous-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-deciduous-3" data-tip="Select Deciduous Tree icon">
-          <use href="#relief-deciduous-3" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-conifer-2" data-tip="Select Conifer Tree icon">
-          <use href="#relief-conifer-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-coniferSnow-1" data-tip="Select Snow Conifer Tree icon">
-          <use href="#relief-coniferSnow-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-acacia-2" data-tip="Select Acacia icon">
-          <use href="#relief-acacia-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-palm-2" data-tip="Select Palm icon">
-          <use href="#relief-palm-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-grass-2" data-tip="Select Grass icon">
-          <use href="#relief-grass-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-swamp-2" data-tip="Select Swamp icon">
-          <use href="#relief-swamp-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-swamp-3" data-tip="Select Swamp icon">
-          <use href="#relief-swamp-3" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-cactus-1" data-tip="Select Cactus icon">
-          <use href="#relief-cactus-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-cactus-2" data-tip="Select Cactus icon">
-          <use href="#relief-cactus-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-cactus-3" data-tip="Select Cactus icon">
-          <use href="#relief-cactus-3" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-deadTree-1" data-tip="Select Dead Tree icon">
-          <use href="#relief-deadTree-1" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-deadTree-2" data-tip="Select Dead Tree icon">
-          <use href="#relief-deadTree-2" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-      </div>
-      <div data-type="gray" style="display: none">
-        <svg data-type="#relief-mount-2-bw" data-tip="Select Mountain icon">
-          <use href="#relief-mount-2-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-3-bw" data-tip="Select Mountain icon">
-          <use href="#relief-mount-3-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-4-bw" data-tip="Select Mountain icon">
-          <use href="#relief-mount-4-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-5-bw" data-tip="Select Mountain icon">
-          <use href="#relief-mount-5-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-6-bw" data-tip="Select Mountain icon">
-          <use href="#relief-mount-6-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mount-7-bw" data-tip="Select Mountain icon">
-          <use href="#relief-mount-7-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-1-bw" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-1-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-2-bw" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-2-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-3-bw" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-3-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-4-bw" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-4-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-5-bw" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-5-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-mountSnow-6-bw" data-tip="Select Snow Mountain icon">
-          <use href="#relief-mountSnow-6-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-vulcan-1-bw" data-tip="Select Volcano icon">
-          <use href="#relief-vulcan-1-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-vulcan-2-bw" data-tip="Select Volcano icon">
-          <use href="#relief-vulcan-2-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-vulcan-3-bw" data-tip="Select Volcano icon">
-          <use href="#relief-vulcan-3-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-2-bw" data-tip="Select Hill icon">
-          <use href="#relief-hill-2-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-3-bw" data-tip="Select Hill icon">
-          <use href="#relief-hill-3-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-4-bw" data-tip="Select Hill icon">
-          <use href="#relief-hill-4-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-hill-5-bw" data-tip="Select Hill icon">
-          <use href="#relief-hill-5-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-dune-2-bw" data-tip="Select Dune icon">
-          <use href="#relief-dune-2-bw" width="40" height="40"></use>
-        </svg>
-        <svg data-type="#relief-deciduous-2-bw" data-tip="Select Deciduous Tree icon">
-          <use href="#relief-deciduous-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-deciduous-3-bw" data-tip="Select Deciduous Tree icon">
-          <use href="#relief-deciduous-3-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-conifer-2-bw" data-tip="Select Conifer Tree icon">
-          <use href="#relief-conifer-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-coniferSnow-1-bw" data-tip="Select Snow Conifer Tree icon">
-          <use href="#relief-coniferSnow-1-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-acacia-2-bw" data-tip="Select Acacia icon">
-          <use href="#relief-acacia-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-palm-2-bw" data-tip="Select Palm icon">
-          <use href="#relief-palm-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-grass-2-bw" data-tip="Select Grass icon">
-          <use href="#relief-grass-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-swamp-2-bw" data-tip="Select Swamp icon">
-          <use href="#relief-swamp-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-swamp-3-bw" data-tip="Select Swamp icon">
-          <use href="#relief-swamp-3-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-cactus-1-bw" data-tip="Select Cactus icon">
-          <use href="#relief-cactus-1-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-cactus-2-bw" data-tip="Select Cactus icon">
-          <use href="#relief-cactus-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-cactus-3-bw" data-tip="Select Cactus icon">
-          <use href="#relief-cactus-3-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-deadTree-1-bw" data-tip="Select Dead Tree icon">
-          <use href="#relief-deadTree-1-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-        <svg data-type="#relief-deadTree-2-bw" data-tip="Select Dead Tree icon">
-          <use href="#relief-deadTree-2-bw" x="-25%" y="-25%" width="60" height="60"></use>
-        </svg>
-      </div>
+${iconsHtml()}
       <svg id="reliefIconsSeletionAny" data-tip="Select any type of icons"><text x="50%" y="50%">Any</text></svg>
     </div>
     <div id="reliefBottom">
@@ -360,6 +149,8 @@ function renderDialog(): void {
   ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
   ensureEl("reliefMoveBack").addEventListener("click", () => moveIcon("back"));
   ensureEl("reliefRemove").addEventListener("click", removeIcon);
+
+  changeIconsSet(); // all sets are hidden in markup, show the selected one
 }
 
 function dragReliefIcon(event: any): void {
@@ -384,9 +175,8 @@ function restoreEditMode(): void {
 
 function updateReliefIconSelected(): void {
   if (!selectedIcon) return;
-  const type = `#${selectedIcon.icon}`;
   const reliefIconsDiv = ensureEl("reliefIconsDiv");
-  const button = reliefIconsDiv.querySelector(`svg[data-type='${type}']`);
+  const button = reliefIconsDiv.querySelector(`svg[data-type='${selectedIcon.icon}']`);
   if (!button) return;
 
   reliefIconsDiv.querySelectorAll("svg.pressed").forEach(b => {
@@ -469,7 +259,7 @@ function dragToAdd(this: SVGElement, event: any): void {
     return;
   }
 
-  const icon = pressed.dataset.type!.replace("#", "");
+  const icon = pressed.dataset.type!;
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
   const spacing = +ensureEl<HTMLInputElement>("reliefSpacingNumber").value;
   const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
@@ -539,7 +329,7 @@ function dragToRemove(this: SVGElement, event: any): void {
   }
 
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
-  const icon = pressed.dataset.type?.replace("#", "");
+  const icon = pressed.dataset.type;
   const tree = quadtree<[number, number, ReliefIcon]>();
   for (const reliefIcon of pack.relief) {
     if (icon && reliefIcon.icon !== icon) continue;
@@ -592,7 +382,7 @@ function changeIcon(this: SVGElement): void {
   this.classList.add("pressed");
 
   if (ensureEl("reliefIndividual").classList.contains("pressed") && selectedIcon) {
-    selectedIcon.icon = this.dataset.type!.replace("#", "");
+    selectedIcon.icon = this.dataset.type!;
     redrawRelief();
   }
 }
@@ -627,8 +417,7 @@ function moveIcon(direction: "front" | "back"): void {
 
 function removeIcon(): void {
   const isIndividual = ensureEl("reliefTools").querySelector("button.pressed")?.id === "reliefIndividual";
-  const type = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.type;
-  const icon = type?.replace("#", "");
+  const icon = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed")?.dataset.type;
 
   const doomed = isIndividual
     ? new Set(selectedIcon ? [selectedIcon] : [])
@@ -660,7 +449,8 @@ function removeIcon(): void {
 
 function getIconData(element?: Element): ReliefIcon | null {
   if (element?.tagName !== "use") return null;
-  return pack.relief[Number((element as SVGUseElement).dataset.i)] || null;
+  const id = (element as SVGUseElement).dataset.id;
+  return (id && getSceneReliefIcon(id)) || null;
 }
 
 function closeReliefEditor(): void {

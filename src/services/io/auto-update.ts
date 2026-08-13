@@ -1,5 +1,6 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
+import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
@@ -17,6 +18,7 @@ import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
+import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
@@ -1520,8 +1522,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     if (terrainEl) {
       // v1.142.0 moved the relief style from the #terrain attributes to style.relief
+      const set = terrainEl.getAttribute("set");
       style.relief = {
-        set: terrainEl.getAttribute("set") || "simple",
+        set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
         size: Number(terrainEl.getAttribute("size")) || 1,
         density: Number(terrainEl.getAttribute("density")) || 0.4
       };

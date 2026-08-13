@@ -1,3 +1,5 @@
+import type { ReliefSet } from "@/types/relief";
+
 export interface Style {
   // TODO: style = {burgs: { icons, anchors }, labels } is more semantic
   burgIcons: { [key: string]: { [key: string]: string } };
@@ -7,7 +9,7 @@ export interface Style {
 }
 
 export interface ReliefStyle {
-  set: string; // icons set: simple, colored or gray
+  set: ReliefSet;
   size: number;
   density: number;
 }
