@@ -77,6 +77,31 @@ function getColor(value, scheme = getColorScheme("bright")) {
   return scheme(1 - (value < 20 ? value - 5 : value) / 100);
 }
 
+// element select value -> style store LayerId; only elements whose DOM id/select value
+// differs from the LayerId (or that live as a child of another layer) need an entry
+const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"];
+const STYLE_ELEMENT_TARGETS = {
+  ocean: {layerId: "oceanLayers"},
+  goodsIcons: {layerId: "goods", childIds: ["goodsIcons"]},
+  goodsBurgs: {layerId: "goods", childIds: ["goodsBurgs"]}
+};
+
+function styleTargetFromUI() {
+  const element = styleElementSelect.value;
+  const base = STYLE_ELEMENT_TARGETS[element] || {layerId: element};
+  if (base.childIds) return base;
+  const group = styleGroupSelect?.value;
+  return GROUPED_STYLE_ELEMENTS.includes(element) && group ? {...base, childIds: [group]} : base;
+}
+
+// labels/burgIcons/anchors renderers still read the legacy style.labels.groups/style.burgIcons/
+// style.anchors mirrors (Task 12 re-homes them); cheap to just rebuild after any write to those layers
+function syncLegacyStyleMirror(target) {
+  if (["labels", "burgIcons", "anchors"].includes(target.layerId) && window.projectLegacyStyleMirrors) {
+    window.projectLegacyStyleMirrors();
+  }
+}
+
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 
@@ -91,7 +116,7 @@ function selectStyleElement() {
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
-  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
+  if (GROUPED_STYLE_ELEMENTS.includes(styleElement)) {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     if (styleElement === "labels") {
@@ -102,22 +127,37 @@ function selectStyleElement() {
     }
   }
 
+  // resolve the store node for the element actually narrowed above (its true id/data-group,
+  // not the possibly-stale group select value from before this function runs)
+  const currentStyleTarget = STYLE_ELEMENT_TARGETS[styleElement] || {layerId: styleElement};
+  const currentChildId = currentStyleTarget.childIds
+    ? undefined
+    : GROUPED_STYLE_ELEMENTS.includes(styleElement)
+      ? styleElement === "labels"
+        ? el.attr("data-group")
+        : el.attr("id")
+      : undefined;
+  const styleNode = getStyleNode(
+    currentStyleTarget.layerId,
+    ...(currentStyleTarget.childIds ?? (currentChildId ? [currentChildId] : []))
+  );
+
   // opacity
   if (!["landmass", "legend", "ocean", "regions"].includes(styleElement)) {
     styleOpacity.style.display = "block";
-    styleOpacityInput.value = el.attr("opacity") || 1;
+    styleOpacityInput.value = styleNode.presentation?.["opacity"] || 1;
   }
 
   // filter
   if (!["landmass", "legend", "regions", "scaleBar"].includes(styleElement)) {
     styleFilter.style.display = "block";
-    styleFilterInput.value = el.attr("filter") || "";
+    styleFilterInput.value = styleNode.presentation?.["filter"] || "";
   }
 
   // fill
   if (["fogging", "ice", "lakes", "landmass", "prec", "rivers", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill");
+    styleFillInput.value = styleFillOutput.value = styleNode.presentation?.["fill"];
   }
 
   // stroke color and width
@@ -141,9 +181,9 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleStroke.style.display = "block";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke");
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"];
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0;
   }
 
   // stroke dash
@@ -161,8 +201,8 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleStrokeDash.style.display = "block";
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    styleStrokeDasharrayInput.value = styleNode.presentation?.["stroke-dasharray"] || "";
+    styleStrokeLinecapInput.value = styleNode.presentation?.["stroke-linecap"] || "inherit";
   }
 
   // clipping
@@ -183,7 +223,7 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleClipping.style.display = "block";
-    styleClippingInput.value = el.attr("mask") || "";
+    styleClippingInput.value = styleNode.presentation?.["mask"] || "";
   }
 
   // show specific sections
@@ -244,7 +284,7 @@ function selectStyleElement() {
       .select("#urban")
       .attr("stroke");
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0;
   }
 
   if (styleElement === "regions") {
@@ -264,14 +304,14 @@ function selectStyleElement() {
 
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
-    styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
+    styleFillInput.value = styleFillOutput.value = styleNode.presentation?.["fill"] || "#3e3e4b";
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] || "#3a3a3a";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0;
+    styleLetterSpacingInput.value = styleNode.presentation?.["letter-spacing"] || 0;
     styleShadowInput.value = el.style("text-shadow") || "";
 
     styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
+    styleSelectFont.value = styleNode.presentation?.["font-family"];
     styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
 
     styleFontShift.style.display = "block";
@@ -290,11 +330,11 @@ function selectStyleElement() {
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeDash.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") || "";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    styleFillInput.value = styleFillOutput.value = styleNode.presentation?.["fill"] || "#ffffff";
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] || "#3e3e4b";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0.24;
+    styleStrokeDasharrayInput.value = styleNode.presentation?.["stroke-dasharray"] || "";
+    styleStrokeLinecapInput.value = styleNode.presentation?.["stroke-linecap"] || "inherit";
   }
 
   if (styleElement === "anchors") {
@@ -302,9 +342,9 @@ function selectStyleElement() {
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#ffffff";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3e3e4b";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0.24;
+    styleFillInput.value = styleFillOutput.value = styleNode.presentation?.["fill"] || "#ffffff";
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] || "#3e3e4b";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0.24;
     styleFontSize.value = el.attr("font-size") || 1;
   }
 
@@ -319,11 +359,11 @@ function selectStyleElement() {
     styleLegendBack.value = styleLegendBackOutput.value = legendBox.size() ? legendBox.attr("fill") : "#ffffff";
     styleLegendOpacity.value = legendBox.size() ? legendBox.attr("fill-opacity") : 1;
 
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#111111";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0.5;
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] || "#111111";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0.5;
 
     styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
+    styleSelectFont.value = styleNode.presentation?.["font-family"];
     styleFontSize.value = el.attr("data-size");
   }
 
@@ -338,9 +378,9 @@ function selectStyleElement() {
   if (styleElement === "temperature") {
     styleStrokeWidth.style.display = "block";
     styleTemperature.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || "";
     styleTemperatureFillOpacityInput.value = el.attr("fill-opacity") || 0.1;
-    styleTemperatureFillInput.value = styleTemperatureFillOutput.value = el.attr("fill") || "#000";
+    styleTemperatureFillInput.value = styleTemperatureFillOutput.value = styleNode.presentation?.["fill"] || "#000";
     styleTemperatureFontSizeInput.value = el.attr("font-size") || "8px";
   }
 
@@ -351,12 +391,12 @@ function selectStyleElement() {
 
   if (styleElement === "ruler") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 2;
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 2;
 
     // show the effective dash, so maps predating the attribute don't display a misleading blank
     styleStrokeDash.style.display = "block";
-    styleStrokeDasharrayInput.value = el.attr("stroke-dasharray") ?? "10";
-    styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
+    styleStrokeDasharrayInput.value = styleNode.presentation?.["stroke-dasharray"] ?? "10";
+    styleStrokeLinecapInput.value = styleNode.presentation?.["stroke-linecap"] || "inherit";
 
     styleSize.style.display = "block";
     styleFontSize.value = el.attr("data-size") || 20;
@@ -371,7 +411,7 @@ function selectStyleElement() {
   if (styleElement === "emblems") {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 1;
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 1;
     emblemsStateSizeInput.value = emblems.select("#stateEmblems").attr("data-size") || 1;
     emblemsProvinceSizeInput.value = emblems.select("#provinceEmblems").attr("data-size") || 1;
     emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
@@ -379,7 +419,7 @@ function selectStyleElement() {
 
   if (styleElement === "goodsIcons") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || "";
     styleGoods.style.display = "block";
     styleGoodsCircle.checked = +el.attr("data-circle");
     styleGoodsSize.value = el.attr("data-size") || 6;
@@ -387,16 +427,16 @@ function selectStyleElement() {
 
   if (styleElement === "goodsBurgs") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.2";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || "0.2";
     styleStroke.style.display = "block";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] || "#41414f";
     styleGoodsBurgs.style.display = "block";
     styleGoodsBurgsSize.value = el.attr("data-size") || 3;
   }
 
   if (styleElement === "markets") {
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
+    styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || "0.5";
     styleMarketsLayer.style.display = "block";
     styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
     styleMarketsSize.value = el.attr("data-size") || 3;
@@ -406,7 +446,7 @@ function selectStyleElement() {
 
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
-  if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
+  if (GROUPED_STYLE_ELEMENTS.includes(styleElement)) {
     if (styleElement === "labels") {
       options.labels.groups.forEach(group => {
         const groupElement = ensureEl("labels").querySelector(`[data-group="${CSS.escape(group.name)}"]`);
@@ -495,16 +535,16 @@ function updateLabelGroupInlineStyle(group) {
 
 styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
-  getEl().attr("fill", this.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.fill = this.value;
+  const target = styleTargetFromUI();
+  setPresentation(target, "fill", this.value);
+  syncLegacyStyleMirror(target);
 });
 
 styleStrokeInput.addEventListener("input", function () {
   styleStrokeOutput.value = this.value;
-  getEl().attr("stroke", this.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.stroke = this.value;
+  const target = styleTargetFromUI();
+  setPresentation(target, "stroke", this.value);
+  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
@@ -514,27 +554,31 @@ function redrawMeasurersOnStyleChange() {
 }
 
 styleStrokeWidthInput.addEventListener("input", e => {
-  getEl().attr("stroke-width", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["stroke-width"] = e.target.value;
+  const target = styleTargetFromUI();
+  setPresentation(target, "stroke-width", e.target.value);
+  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
 });
 
 styleLetterSpacingInput.addEventListener("input", e => {
-  getEl().attr("letter-spacing", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["letter-spacing"] = e.target.value;
+  const target = styleTargetFromUI();
+  setPresentation(target, "letter-spacing", e.target.value);
+  syncLegacyStyleMirror(target);
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
-  getEl().attr("stroke-dasharray", this.value);
+  const target = styleTargetFromUI();
+  setPresentation(target, "stroke-dasharray", this.value);
+  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
-  getEl().attr("stroke-linecap", this.value);
+  const target = styleTargetFromUI();
+  setPresentation(target, "stroke-linecap", this.value);
+  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
@@ -543,19 +587,16 @@ styleDisplayInput.addEventListener("change", function () {
 });
 
 styleOpacityInput.addEventListener("input", e => {
-  getEl().attr("opacity", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.opacity = e.target.value;
+  const target = styleTargetFromUI();
+  setPresentation(target, "opacity", e.target.value);
+  syncLegacyStyleMirror(target);
 });
 
 styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
-  getEl().attr("filter", this.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) {
-    if (this.value) groupStyle.filter = this.value;
-    else delete groupStyle.filter;
-  }
+  const target = styleTargetFromUI();
+  setPresentation(target, "filter", this.value);
+  syncLegacyStyleMirror(target);
 });
 
 styleTextureInput.addEventListener("change", function () {
@@ -594,7 +635,9 @@ styleTextureShiftY.addEventListener("input", function () {
 });
 
 styleClippingInput.addEventListener("change", function () {
-  getEl().attr("mask", this.value);
+  const target = styleTargetFromUI();
+  setPresentation(target, "mask", this.value);
+  syncLegacyStyleMirror(target);
 });
 
 styleGridType.addEventListener("change", function () {
@@ -887,9 +930,9 @@ styleLegendOpacity.addEventListener("input", e => {
 styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
   const family = styleSelectFont.value;
-  getEl().attr("font-family", family);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["font-family"] = family;
+  const target = styleTargetFromUI();
+  setPresentation(target, "font-family", family);
+  syncLegacyStyleMirror(target);
 
   if (styleElementSelect.value === "legend") redrawLegend();
 }

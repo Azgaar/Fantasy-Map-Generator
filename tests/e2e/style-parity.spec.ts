@@ -105,3 +105,44 @@ test("styled attributes on a freshly generated map match the preset-apply baseli
     expect.soft(snapshot[sel], sel).toEqual(baseline[sel]);
   }
 });
+
+// pins the style editor's write path contract (Task 8): setPresentation must land in both
+// style.layers and the real DOM, for a plain layer, a routes child, and a labels group (which
+// only exists as id="labels-<name>" data-group="<name>" - the data-group fallback in applyLayerStyle)
+test("editor bridge writes reach style.layers, the DOM, and the labels legacy mirror", async ({page}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  const result = await page.evaluate(() => {
+    // `style`/`options` are script-scoped globals, not window properties - read them off the
+    // lexical global rather than off window (same gotcha as getReliefState in load-map.spec.ts)
+    const w = window as any;
+
+    w.setPresentation({layerId: "rivers"}, "fill", "#123456");
+    const riversStore = style.layers.rivers.presentation.fill;
+    const riversDom = document.getElementById("rivers")?.getAttribute("fill");
+
+    w.setPresentation({layerId: "routes", childIds: ["roads"]}, "stroke-width", "3.5");
+    const roadsStore = style.layers.routes.children.roads.presentation["stroke-width"];
+    const roadsDom = document.querySelector("#routes > g#roads")?.getAttribute("stroke-width");
+
+    const groupName = options.labels.groups[0].name;
+    w.setPresentation({layerId: "labels", childIds: [groupName]}, "opacity", "0.42");
+    const labelsStore = style.layers.labels.children[groupName].presentation.opacity;
+    const labelsDom = document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("opacity");
+    w.projectLegacyStyleMirrors();
+    const labelsMirror = style.labels.groups[groupName]?.opacity;
+
+    return {riversStore, riversDom, roadsStore, roadsDom, labelsStore, labelsDom, labelsMirror};
+  });
+
+  expect(result.riversStore).toBe("#123456");
+  expect(result.riversDom).toBe("#123456");
+  expect(result.roadsStore).toBe("3.5");
+  expect(result.roadsDom).toBe("3.5");
+  expect(result.labelsStore).toBe("0.42");
+  expect(result.labelsDom).toBe("0.42");
+  expect(result.labelsMirror).toBe("0.42");
+});
