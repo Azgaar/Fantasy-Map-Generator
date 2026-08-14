@@ -81,7 +81,7 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // differs from the LayerId (or that live as a child of another layer) need an entry
 const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"];
 // layers whose fontSize option reader is migrated off the DOM (Task 9); grows one layer per commit
-const OPTIONS_FONT_SIZE_LAYERS = ["legend", "ruler"];
+const OPTIONS_FONT_SIZE_LAYERS = ["legend", "ruler", "coordinates"];
 const STYLE_ELEMENT_TARGETS = {
   ocean: {layerId: "oceanLayers"},
   goodsIcons: {layerId: "goods", childIds: ["goodsIcons"]},
@@ -393,7 +393,7 @@ function selectStyleElement() {
 
   if (styleElement === "coordinates") {
     styleSize.style.display = "block";
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = getLayerOptions("coordinates").fontSize;
   }
 
   if (styleElement === "ruler") {

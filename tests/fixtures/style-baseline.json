@@ -63,8 +63,7 @@
     "stroke": "#4a4a4a",
     "stroke-width": "1",
     "stroke-dasharray": "6",
-    "font-size": "14",
-    "data-size": "14"
+    "font-size": "14"
   },
   "#cults": {
     "opacity": "0.35",

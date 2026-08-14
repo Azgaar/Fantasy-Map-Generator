@@ -653,7 +653,7 @@ function drawCoordinates() {
   const goal = mapCoordinates.lonT / scale / 10;
   const step = steps.reduce((p, c) => (Math.abs(c - goal) < Math.abs(p - goal) ? c : p));
 
-  const desired = +coordinates.attr("data-size"); // desired label size
+  const desired = window.getLayerOptions("coordinates").fontSize ?? 12; // desired label size
   coordinates.attr("font-size", Math.max(rn(desired / scale ** 0.8, 2), 0.1)); // actual label size
 
   const graticule = d3

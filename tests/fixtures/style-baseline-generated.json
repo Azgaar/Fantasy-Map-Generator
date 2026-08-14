@@ -59,8 +59,7 @@
     "stroke": "#d4d4d4",
     "stroke-width": "1",
     "stroke-dasharray": "5",
-    "font-size": "12",
-    "data-size": "12"
+    "font-size": "12"
   },
   "#cults": {
     "opacity": "0.6",
