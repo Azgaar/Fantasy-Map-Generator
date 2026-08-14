@@ -503,16 +503,16 @@ function selectStyleElement() {
   if (styleElement === "vignette") {
     styleVignette.style.display = "block";
 
-    const maskRect = ensureEl("vignette-rect");
-    if (maskRect) {
-      const digit = str => str.replace(/[^\d.]/g, "");
-      styleVignetteX.value = digit(maskRect.getAttribute("x"));
-      styleVignetteY.value = digit(maskRect.getAttribute("y"));
-      styleVignetteWidth.value = digit(maskRect.getAttribute("width"));
-      styleVignetteHeight.value = digit(maskRect.getAttribute("height"));
-      styleVignetteRx.value = digit(maskRect.getAttribute("rx"));
-      styleVignetteRy.value = digit(maskRect.getAttribute("ry"));
-      styleVignetteBlur.value = digit(maskRect.getAttribute("filter"));
+    const rect = getLayerOptions("vignette").rect;
+    if (rect) {
+      const digit = str => String(str).replace(/[^\d.]/g, "");
+      styleVignetteX.value = digit(rect.x);
+      styleVignetteY.value = digit(rect.y);
+      styleVignetteWidth.value = digit(rect.width);
+      styleVignetteHeight.value = digit(rect.height);
+      styleVignetteRx.value = digit(rect.rx);
+      styleVignetteRy.value = digit(rect.ry);
+      styleVignetteBlur.value = digit(rect.filter);
     }
   }
 }
@@ -1202,65 +1202,67 @@ Object.keys(vignettePresets).forEach(preset => {
   styleVignettePreset.options.add(new Option(preset, preset, false, false));
 });
 
+// projects style.layers.vignette.options.rect onto the live <rect> - the single source of
+// truth for #vignette-rect's geometry; nothing else should setAttribute on it directly
+function applyVignetteRect() {
+  const rect = getLayerOptions("vignette").rect;
+  const rectEl = ensureEl("vignette-rect");
+  if (!rect || !rectEl) return;
+  for (const [attr, value] of Object.entries(rect)) rectEl.setAttribute(attr, value);
+}
+
 styleVignettePreset.addEventListener("change", function () {
   const attributes = JSON.parse(vignettePresets[this.value]);
 
-  for (const selector in attributes) {
-    const el = document.querySelector(selector);
-    if (!el) continue;
-    for (const attr in attributes[selector]) {
-      const value = attributes[selector][attr];
-      el.setAttribute(attr, value);
-    }
+  const vignetteAttrs = attributes["#vignette"];
+  const vignette = ensureEl("vignette");
+  if (vignette && vignetteAttrs) {
+    for (const attr in vignetteAttrs) vignette.setAttribute(attr, vignetteAttrs[attr]);
   }
 
-  const vignette = ensureEl("vignette");
+  const rectAttrs = attributes["#vignette-rect"];
+  if (rectAttrs) {
+    setOptions({layerId: "vignette"}, {rect: {...getLayerOptions("vignette").rect, ...rectAttrs}});
+    applyVignetteRect();
+  }
+
   if (vignette) {
     styleOpacityInput.value = vignette.getAttribute("opacity");
     styleFillInput.value = styleFillOutput.value = vignette.getAttribute("fill");
     styleFilterInput.value = vignette.getAttribute("filter");
   }
 
-  const maskRect = ensureEl("vignette-rect");
-  if (maskRect) {
-    const digit = str => str.replace(/[^\d.]/g, "");
-    styleVignetteX.value = digit(maskRect.getAttribute("x"));
-    styleVignetteY.value = digit(maskRect.getAttribute("y"));
-    styleVignetteWidth.value = digit(maskRect.getAttribute("width"));
-    styleVignetteHeight.value = digit(maskRect.getAttribute("height"));
-    styleVignetteRx.value = digit(maskRect.getAttribute("rx"));
-    styleVignetteRy.value = digit(maskRect.getAttribute("ry"));
-    styleVignetteBlur.value = digit(maskRect.getAttribute("filter"));
+  const rect = getLayerOptions("vignette").rect;
+  if (rect) {
+    const digit = str => String(str).replace(/[^\d.]/g, "");
+    styleVignetteX.value = digit(rect.x);
+    styleVignetteY.value = digit(rect.y);
+    styleVignetteWidth.value = digit(rect.width);
+    styleVignetteHeight.value = digit(rect.height);
+    styleVignetteRx.value = digit(rect.rx);
+    styleVignetteRy.value = digit(rect.ry);
+    styleVignetteBlur.value = digit(rect.filter);
   }
 });
 
-styleVignetteX.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("x", `${e.target.value}%`);
-});
+function setVignetteRectOption(attr, value) {
+  setOptions({layerId: "vignette"}, {rect: {...getLayerOptions("vignette").rect, [attr]: value}});
+  applyVignetteRect();
+}
 
-styleVignetteWidth.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("width", `${e.target.value}%`);
-});
+styleVignetteX.addEventListener("input", e => setVignetteRectOption("x", `${e.target.value}%`));
 
-styleVignetteY.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("y", `${e.target.value}%`);
-});
+styleVignetteWidth.addEventListener("input", e => setVignetteRectOption("width", `${e.target.value}%`));
 
-styleVignetteHeight.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("height", `${e.target.value}%`);
-});
+styleVignetteY.addEventListener("input", e => setVignetteRectOption("y", `${e.target.value}%`));
 
-styleVignetteRx.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("rx", `${e.target.value}%`);
-});
+styleVignetteHeight.addEventListener("input", e => setVignetteRectOption("height", `${e.target.value}%`));
 
-styleVignetteRy.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("ry", `${e.target.value}%`);
-});
+styleVignetteRx.addEventListener("input", e => setVignetteRectOption("rx", `${e.target.value}%`));
 
-styleVignetteBlur.addEventListener("input", e => {
-  ensureEl("vignette-rect").setAttribute("filter", `blur(${e.target.value}px)`);
-});
+styleVignetteRy.addEventListener("input", e => setVignetteRectOption("ry", `${e.target.value}%`));
+
+styleVignetteBlur.addEventListener("input", e => setVignetteRectOption("filter", `blur(${e.target.value}px)`));
 
 styleScaleBar.addEventListener("input", function (event) {
   const scaleBarBack = scaleBar.select("#scaleBarBack");
