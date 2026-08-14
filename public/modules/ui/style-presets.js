@@ -175,8 +175,6 @@ function applyLayerOptionAttributes() {
 const CHILD_OPTION_ATTRIBUTES = {
   "terrs/landHeights": {scheme: "scheme", terracing: "terracing", skip: "skip", relax: "relax", curve: "curve"},
   "terrs/oceanHeights": {scheme: "scheme", terracing: "terracing", skip: "skip", relax: "relax", curve: "curve"},
-  "goods/goodsIcons": {size: "data-size", circle: "data-circle"},
-  "goods/goodsBurgs": {size: "data-size"},
   "regions/statesHalo": {width: "data-width"}
 };
 

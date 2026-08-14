@@ -426,8 +426,8 @@ function selectStyleElement() {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || "";
     styleGoods.style.display = "block";
-    styleGoodsCircle.checked = +el.attr("data-circle");
-    styleGoodsSize.value = el.attr("data-size") || 6;
+    styleGoodsCircle.checked = !!styleNode.options?.circle;
+    styleGoodsSize.value = styleNode.options?.size || 6;
   }
 
   if (styleElement === "goodsBurgs") {
@@ -436,7 +436,7 @@ function selectStyleElement() {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] || "#41414f";
     styleGoodsBurgs.style.display = "block";
-    styleGoodsBurgsSize.value = el.attr("data-size") || 3;
+    styleGoodsBurgsSize.value = styleNode.options?.size || 3;
   }
 
   if (styleElement === "markets") {
@@ -1102,17 +1102,17 @@ emblemsBurgSizeInput.addEventListener("change", e => {
 });
 
 styleGoodsCircle.addEventListener("change", function () {
-  goods.select("#goodsIcons").attr("data-circle", +this.checked);
+  setOptions({layerId: "goods", childIds: ["goodsIcons"]}, {circle: +this.checked});
   drawGoods();
 });
 
 styleGoodsSize.addEventListener("change", function () {
-  goods.select("#goodsIcons").attr("data-size", this.value);
+  setOptions({layerId: "goods", childIds: ["goodsIcons"]}, {size: +this.value});
   drawGoods();
 });
 
 styleGoodsBurgsSize.addEventListener("change", function () {
-  goods.select("#goodsBurgs").attr("data-size", this.value);
+  setOptions({layerId: "goods", childIds: ["goodsBurgs"]}, {size: +this.value});
   drawGoods();
 });
 

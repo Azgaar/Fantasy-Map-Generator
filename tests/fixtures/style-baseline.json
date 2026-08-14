@@ -91,9 +91,7 @@
     "style": "display: none;"
   },
   "#goodsCells": {},
-  "#goodsIcons": {
-    "data-circle": "1"
-  },
+  "#goodsIcons": {},
   "#goodsBurgs": {},
   "#gridOverlay": {
     "opacity": "0.8",

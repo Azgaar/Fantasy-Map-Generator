@@ -1564,7 +1564,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 const REMOVE_AFTER_HARVEST: { selector: string; attributes: string[] }[] = [
   { selector: "#emblems > #stateEmblems", attributes: ["data-size"] },
   { selector: "#emblems > #provinceEmblems", attributes: ["data-size"] },
-  { selector: "#emblems > #burgEmblems", attributes: ["data-size"] }
+  { selector: "#emblems > #burgEmblems", attributes: ["data-size"] },
+  { selector: "#goods > #goodsIcons", attributes: ["data-size", "data-circle"] },
+  { selector: "#goods > #goodsBurgs", attributes: ["data-size"] }
 ];
 
 // selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,

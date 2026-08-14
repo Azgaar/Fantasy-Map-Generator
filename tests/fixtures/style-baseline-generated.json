@@ -89,15 +89,12 @@
   "#goodsIcons": {
     "opacity": "1",
     "stroke-width": "0.3",
-    "filter": "url(#dropShadow01)",
-    "data-size": "6",
-    "data-circle": "1"
+    "filter": "url(#dropShadow01)"
   },
   "#goodsBurgs": {
     "opacity": "1",
     "stroke": "#41414f",
-    "stroke-width": "0.2",
-    "data-size": "3"
+    "stroke-width": "0.2"
   },
   "#gridOverlay": {
     "opacity": "0.8",

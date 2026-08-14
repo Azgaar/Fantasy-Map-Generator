@@ -1,8 +1,18 @@
 import { select } from "d3";
 import { isCtrlClick } from "@/utils";
 import type { Good } from "../generators/goods-generator";
+import { getLayerOptions } from "../services/styles/store";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
+
+interface GoodsIconsOptions {
+  size?: number;
+  circle?: number;
+}
+
+interface GoodsBurgsOptions {
+  size?: number;
+}
 
 const SUBGROUPS = ["goodsCells", "goodsIcons", "goodsBurgs"] as const;
 
@@ -87,9 +97,9 @@ function buildGoodsCellsContent(displayedGoods: Set<number>): string {
 function buildGoodsIconsContent(displayedGoods: Set<number>): string {
   if (!displayedGoods.size || !pack.cells.good) return "";
 
-  const iconsGroup = select("#goods").select("#goodsIcons");
-  const drawCircle = +iconsGroup.attr("data-circle");
-  const iconSize = +iconsGroup.attr("data-size") || DEFAULT_SIZE;
+  const iconsOptions = getLayerOptions<GoodsIconsOptions>("goods", "goodsIcons");
+  const drawCircle = iconsOptions.circle ?? 0;
+  const iconSize = iconsOptions.size || DEFAULT_SIZE;
   const half = iconSize / 2;
   let html = "";
   for (const cellId of pack.cells.i) {
@@ -111,7 +121,7 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
   if (!displayedGoods.size) return "";
 
   // plate icon size is user-defined; the rest of the geometry and font scale with it
-  const plateIcon = +select("#goods").select("#goodsBurgs").attr("data-size") || PLATE_ICON;
+  const plateIcon = getLayerOptions<GoodsBurgsOptions>("goods", "goodsBurgs").size || PLATE_ICON;
   const scale = plateIcon / PLATE_ICON;
   const plateFont = PLATE_FONT * scale;
   const plateGap = PLATE_GAP * scale;
