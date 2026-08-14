@@ -4,9 +4,14 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
+import { getLayerOptions } from "@/services/styles/store";
 import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
+
+const DEFAULT_ARMIES_BOX_SIZE = 3;
+const getArmiesBoxSize = (): number =>
+  getLayerOptions<{ boxSize?: number }>("armies").boxSize ?? DEFAULT_ARMIES_BOX_SIZE;
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -202,7 +207,7 @@ function changeType(): void {
   reg.n = +!reg.n;
   ensureEl("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = getArmiesBoxSize();
   const baseRect = selectedRegiment.querySelectorAll("rect")[0];
   const iconRect = selectedRegiment.querySelectorAll("rect")[1];
   const icon = selectedRegiment.querySelector(".regimentIcon")!;
@@ -283,7 +288,7 @@ function splitRegiment(): void {
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 
   // create new regiment
-  const shift = +select<SVGGElement, unknown>("#armies").attr("box-size") * 2;
+  const shift = getArmiesBoxSize() * 2;
   const findY = (x: number, startY: number): number => {
     let y = startY;
     do {
@@ -543,7 +548,7 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
 
   const reg = pack.states[+this.dataset.state!].military!.find(r => r.i === +this.dataset.id!);
   if (!reg) return;
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = getArmiesBoxSize();
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
 

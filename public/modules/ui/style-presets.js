@@ -146,7 +146,9 @@ const LAYER_OPTION_ATTRIBUTES = {
   gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
   markers: {rescale: "rescale"},
   temperature: {fontSize: "data-size"},
-  armies: {boxSize: "box-size", fontSize: "font-size"},
+  // boxSize is dropped: draw-military.ts/regiment-editor.ts read it via getLayerOptions now.
+  // fontSize stays DOM-written here - it's inherited by regiment text, nothing reads it as JS
+  armies: {fontSize: "font-size"},
   scaleBar: {barSize: "data-bar-size", x: "data-x", y: "data-y", label: "data-label", fontSize: "font-size"},
   oceanLayers: {layers: "layers"}
 };

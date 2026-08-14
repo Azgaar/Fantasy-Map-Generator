@@ -412,7 +412,7 @@ function selectStyleElement() {
   if (styleElement === "armies") {
     styleArmies.style.display = "block";
     styleArmiesFillOpacity.value = el.attr("fill-opacity");
-    styleArmiesSize.value = el.attr("box-size");
+    styleArmiesSize.value = getLayerOptions("armies").boxSize;
   }
 
   if (styleElement === "emblems") {
@@ -1086,7 +1086,10 @@ styleArmiesFillOpacity.addEventListener("input", e => {
 
 styleArmiesSize.addEventListener("input", e => {
   const value = Number(e.target.value);
-  armies.attr("box-size", value).attr("font-size", value * 2);
+  // box-size only lives in style.layers now (draw-military.ts reads it via getLayerOptions);
+  // font-size stays a direct DOM write too - it's inherited by regiment text, not JS-read
+  setOptions({layerId: "armies"}, {boxSize: value, fontSize: value * 2});
+  armies.attr("font-size", value * 2);
 
   armies.selectAll("g").remove(); // clear armies layer
   pack.states.forEach(s => {

@@ -1,6 +1,10 @@
 import { color, easeSinInOut, transition } from "d3";
 import type { Regiment } from "../generators/military-generator";
+import { getLayerOptions } from "../services/styles/store";
 import { rn } from "../utils";
+
+const DEFAULT_BOX_SIZE = 3;
+const getArmiesBoxSize = (): number => getLayerOptions<{ boxSize?: number }>("armies").boxSize ?? DEFAULT_BOX_SIZE;
 
 declare global {
   var drawMilitary: () => void;
@@ -22,7 +26,7 @@ const militaryRenderer = (): void => {
 };
 
 const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
-  const size = +armies.attr("box-size");
+  const size = getArmiesBoxSize();
   const w = (d: Regiment) => (d.n ? size * 4 : size * 6);
   const h = size * 2;
   const x = (d: Regiment) => rn(d.x - w(d) / 2, 2);
@@ -76,7 +80,7 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
 };
 
 const drawRegimentRenderer = (reg: Regiment, stateId: number): void => {
-  const size = +armies.attr("box-size");
+  const size = getArmiesBoxSize();
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = rn(reg.x - w / 2, 2);
@@ -133,7 +137,7 @@ const moveRegimentRenderer = (reg: Regiment, x: number, y: number): void => {
   const duration = Math.hypot(reg.x - x, reg.y - y) * 8;
   reg.x = x;
   reg.y = y;
-  const size = +armies.attr("box-size");
+  const size = getArmiesBoxSize();
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = (x: number) => rn(x - w / 2, 2);
