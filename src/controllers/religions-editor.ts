@@ -43,7 +43,6 @@ const columns: EditorColumn<Religion>[] = [
     label: "Religion",
     width: "14em",
     permanent: true,
-    tip: "Click to sort by religion name",
     sortBy: religion => religion.name || "",
     sortType: "alpha"
   },
@@ -52,7 +51,6 @@ const columns: EditorColumn<Religion>[] = [
     label: "Type",
     width: "6em",
     defaultSort: "asc",
-    tip: "Click to sort by religion type",
     sortBy: religion => religion.type || "",
     sortType: "alpha"
   },
@@ -61,7 +59,6 @@ const columns: EditorColumn<Religion>[] = [
     label: "Form",
     width: "7em",
     mobileHidden: true,
-    tip: "Click to sort by religion form",
     sortBy: religion => religion.form || "",
     sortType: "alpha"
   },
@@ -70,7 +67,6 @@ const columns: EditorColumn<Religion>[] = [
     label: "Deity",
     width: "14em",
     mobileHidden: true,
-    tip: "Click to sort by supreme deity",
     sortBy: religion => religion.deity || "",
     sortType: "alpha"
   },
@@ -79,14 +75,12 @@ const columns: EditorColumn<Religion>[] = [
     label: "Area",
     width: "7em",
     mobileHidden: true,
-    tip: "Click to sort by religion area",
     sortBy: religion => religion.area || 0
   },
   {
     key: "population",
     label: "Population",
     width: "6em",
-    tip: "Click to sort by believers number",
     sortBy: religion => (religion.rural || 0) * populationRate + (religion.urban || 0) * populationRate * urbanization
   },
   {
@@ -95,7 +89,6 @@ const columns: EditorColumn<Religion>[] = [
     width: "5em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by expansion type",
     sortBy: religion => religion.expansion || "",
     sortType: "alpha"
   },
@@ -105,7 +98,6 @@ const columns: EditorColumn<Religion>[] = [
     width: "5em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by expansionism",
     sortBy: religion => religion.expansionism || 0
   },
   { key: "actions", width: "3.2em", permanent: true, align: "right" }

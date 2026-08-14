@@ -25,7 +25,6 @@ const columns: EditorColumn<Route>[] = [
     label: "Route",
     width: "15em",
     permanent: true,
-    tip: "Click to sort by route name",
     sortBy: route => route.name || "",
     sortType: "alpha"
   },
@@ -33,7 +32,6 @@ const columns: EditorColumn<Route>[] = [
     key: "group",
     label: "Group",
     width: "7em",
-    tip: "Click to sort by route group",
     sortBy: route => route.group || "",
     sortType: "alpha"
   },
@@ -41,7 +39,6 @@ const columns: EditorColumn<Route>[] = [
     key: "length",
     label: "Length",
     width: "6em",
-    tip: "Click to sort by route length",
     sortBy: route => route.length || 0,
     defaultSort: "desc"
   },

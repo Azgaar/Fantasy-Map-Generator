@@ -125,7 +125,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
         classes.push(`icon-sort-${type}-${column.defaultSort === "desc" ? "down" : "up"}`);
       }
     }
-    const tip = column.tip ?? "";
+    const tip = column.tip ?? (column.sortBy && column.label ? `Click to sort by ${column.label}` : "");
     const attributes = [
       `data-col="${column.key}"`,
       classes.length ? `class="${classes.join(" ")}"` : "",

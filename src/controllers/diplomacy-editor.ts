@@ -1,9 +1,18 @@
 import { color as d3Color, interpolateString, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import type { State } from "@/generators/states-generator";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
@@ -53,6 +62,38 @@ const relations: Record<string, Relation> = {
   }
 };
 
+const dialogId = "diplomacyEditor" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let selectedDiplomacyId = 0;
+const columns: EditorColumn<State>[] = [
+  {
+    key: "name",
+    label: "State",
+    width: "15em",
+    permanent: true,
+    sortBy: state => state.fullName || state.name,
+    sortType: "alpha"
+  },
+  {
+    key: "relations",
+    label: "Relations",
+    width: "7em",
+    sortBy: state => state.diplomacy?.[selectedDiplomacyId] ?? "",
+    sortType: "alpha"
+  },
+  { key: "actions", width: "1.4em", permanent: true }
+];
+
+const diplomacyTable = initEditorTable<State>({
+  getData: () =>
+    sortDataByColumns(
+      dialogId,
+      pack.states.filter(state => state.i && !state.removed && state.i !== selectedDiplomacyId),
+      columns
+    ),
+  onUpdate: renderDiplomacyPage
+});
+
 // state 0 stores the diplomacy chronicle (array of [title, ...messages]) rather than relations
 const getChronicle = () => pack.states[0].diplomacy as unknown as string[][];
 
@@ -62,8 +103,11 @@ function open(): void {
     tip("There should be at least 2 states to edit the diplomacy", false, "error");
     return;
   }
+  if (!selectedDiplomacyId || !pack.states[selectedDiplomacyId] || pack.states[selectedDiplomacyId].removed) {
+    selectedDiplomacyId = pack.states.find(state => state.i && !state.removed)!.i;
+  }
 
-  closeDialogs("#diplomacyEditor, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleStates")) toggleStates();
   if (!layerIsOn("toggleBorders")) toggleBorders();
   if (layerIsOn("toggleProvinces")) toggleProvinces();
@@ -75,31 +119,21 @@ function open(): void {
   refreshDiplomacyEditor();
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
-  $("#diplomacyEditor").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Diplomacy Editor",
     resizable: false,
     width: "fit-content",
     close: closeDiplomacyEditor,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("diplomacyEditor");
-  const editorHtml = /* html */ `<div id="diplomacyEditor" class="dialog stable">
-      <div id="diplomacyHeader" class="header" style="grid-template-columns: 15em 6em">
-        <div data-tip="Click to sort by state name" class="sortable alphabetically" data-sortby="name">
-          State&nbsp;
-        </div>
-        <div
-          data-tip="Click to sort by diplomatical relations"
-          class="sortable alphabetically"
-          data-sortby="relations"
-        >
-          Relations&nbsp;
-        </div>
-      </div>
+  destroyDialog(dialogId);
+  const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+      ${renderEditorHeader({ dialogId, columns })}
       <div id="diplomacyBodySection" class="table"></div>
+      <div id="diplomacyFooter" class="totalLine"><div>States: <span id="diplomacyFooterStates">0</span></div></div>
       <div class="info-line">Click on state name to see relations.<br />Click on relations name to change it</div>
       <div id="diplomacyBottom" style="margin-top: 0.1em">
         <button id="diplomacyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
@@ -122,10 +156,15 @@ function renderDialog(): void {
           class="icon-download"
         ></button>
       </div>
-    </div>`;
+  </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("diplomacyHeader");
-  applyLineHighlighting("diplomacyEditor", ({ cellId }) => pack.cells.state[cellId]);
+  bindColumnSorting(dialogId, diplomacyTable.reset);
+  applyLineHighlighting(dialogId, ({ cellId }) => pack.cells.state[cellId]);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
   ensureEl("diplomacyEditorRefresh").addEventListener("click", refreshDiplomacyEditor);
   ensureEl("diplomacyEditStyle").addEventListener("click", () => editStyle("regions"));
@@ -137,10 +176,10 @@ function renderDialog(): void {
 
   ensureEl("diplomacyBodySection").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
-    if ((el.parentElement as HTMLElement).classList.contains("Self")) return;
+    const line = el.closest<HTMLElement>(".states");
+    if (!line || line.classList.contains("Self")) return;
 
-    if (el.classList.contains("changeRelations")) {
-      const line = el.parentElement as HTMLElement;
+    if (el.closest(".changeRelations")) {
       const subjectId = +line.dataset.id!;
       const objectId = +ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self")!.dataset.id!;
       const currentRelation = line.dataset.relations!;
@@ -150,33 +189,31 @@ function renderDialog(): void {
     }
 
     // select state of clicked line
-    ensureEl("diplomacyBodySection").querySelector("div.Self")!.classList.remove("Self");
-    (el.parentElement as HTMLElement).classList.add("Self");
+    selectedDiplomacyId = +line.dataset.id!;
     refreshDiplomacyEditor();
   });
 }
 
 function refreshDiplomacyEditor(): void {
-  diplomacyEditorAddLines();
+  diplomacyTable.reset();
   showStateRelations();
 }
 
 // add line for each state
-function diplomacyEditorAddLines(): void {
+function renderDiplomacyPage(view: TableView<State>): void {
   const body = ensureEl("diplomacyBodySection");
   const states = pack.states;
-  const selectedLine = body.querySelector<HTMLElement>("div.Self");
-  const selectedId = selectedLine ? +selectedLine.dataset.id! : states.find(s => s.i && !s.removed)!.i;
+  const selectedId = selectedDiplomacyId;
   const selectedName = states[selectedId].name;
 
   COArenderer.trigger(`stateCOA${selectedId}`, states[selectedId].coa);
   let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
-    <div style="width: max-content">${states[selectedId].fullName}</div>
-    <svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg>
+    <div data-col="name"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg><span>${states[selectedId].fullName}</span></div>
+    <div data-col="relations"></div>
+    <div data-col="actions"></div>
   </div>`;
 
-  for (const state of states) {
-    if (!state.i || state.removed || state.i === selectedId) continue;
+  for (const state of view.rows) {
     const relation = state.diplomacy![selectedId];
     const { color, inText } = relations[relation];
 
@@ -188,12 +225,12 @@ function diplomacyEditorAddLines(): void {
     COArenderer.trigger(`stateCOA${state.i}`, state.coa);
 
     lines += /* html */ `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
-      <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
-      <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
-      <div data-tip="${tipChange}" class="changeRelations" style="width: 6em">
+      <div data-col="name" data-tip="${tipSelect}"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg><span>${name}</span></div>
+      <div data-col="relations" data-tip="${tipChange}" class="changeRelations">
         <fill-box fill="${color}" size=".9em"></fill-box>
         ${relation}
       </div>
+      <div data-col="actions"></div>
     </div>`;
   }
   body.innerHTML = lines;
@@ -206,8 +243,9 @@ function diplomacyEditorAddLines(): void {
     el.addEventListener("mouseleave", stateHighlightOff);
   });
 
-  applySorting(ensureEl("diplomacyHeader"));
-  $("#diplomacyEditor").dialog();
+  ensureEl("diplomacyFooterStates").textContent = String(view.all.length + 1);
+  renderEditorPagination(ensureEl("diplomacyFooter"), view, diplomacyTable.goto);
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 function stateHighlightOn(event: Event): void {
@@ -598,8 +636,8 @@ function closeDiplomacyEditor(): void {
   if (layerIsOn("toggleStates")) drawStates();
   else toggleStates();
   select("#debug").selectAll(".highlight").remove();
-  $("#diplomacyEditor").dialog("destroy");
-  ensureEl("diplomacyEditor").remove();
+  $(`#${dialogId}`).dialog("destroy");
+  ensureEl(dialogId).remove();
 }
 
 export const DiplomacyEditor = { open };

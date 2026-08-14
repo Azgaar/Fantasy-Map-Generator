@@ -1,5 +1,13 @@
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
@@ -10,15 +18,50 @@ import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, findEl } from "@/utils";
 
+const dialogId = "labelsOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const columns: EditorColumn<LabelData>[] = [
+  { key: "selection", width: "1.5em", permanent: true },
+  {
+    key: "text",
+    label: "Text",
+    width: "12em",
+    permanent: true,
+    sortBy: label => label.text,
+    sortType: "alpha"
+  },
+  {
+    key: "type",
+    label: "Type",
+    width: "6em",
+    sortBy: label => label.type,
+    sortType: "alpha"
+  },
+  {
+    key: "group",
+    label: "Group",
+    width: "8em",
+    sortBy: label => label.group,
+    sortType: "alpha"
+  },
+  { key: "actions", width: "3.4em", permanent: true, align: "right" }
+];
+
 const ALL = ""; // filter value meaning "all"
 const filters = { group: ALL, type: ALL, search: "" };
 const listedLabels = new Map<string, LabelData>(); // currently listed labels, keyed by line id
 let isBulkMode = false;
 const spreadPreview: SpreadPreviewState = { phase: "idle", run: 0, snapshot: null };
+let totalLabels = 0;
+
+const labelsTable = initEditorTable<LabelData>({
+  getData: getFilteredLabels,
+  onUpdate: renderLabelsPage
+});
 
 function open(group: string = ALL): void {
   if (customization) return;
-  closeDialogs("#labelsOverview, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleLabels")) toggleLabels();
 
   isBulkMode = false;
@@ -29,26 +72,21 @@ function open(group: string = ALL): void {
   populateGroupFilter();
   populateTypeFilter();
   ensureEl<HTMLInputElement>("labelsSearch").value = filters.search;
-  addLines();
+  labelsTable.reset();
 
-  $("#labelsOverview").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Labels Overview",
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position,
     close
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("labelsOverview");
+  destroyDialog(dialogId);
 
-  const html = /* html */ `<div id="labelsOverview" class="dialog stable">
-    <div id="labelsHeader" class="header" style="grid-template-columns: 0.5em 12em 5em 8em 4em">
-      <div></div>
-      <div data-tip="Click to sort by label text" class="sortable alphabetically" data-sortby="text">Label&nbsp;</div>
-      <div data-tip="Click to sort by label type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-      <div data-tip="Click to sort by label group" class="sortable alphabetically" data-sortby="group">Group&nbsp;</div>
-    </div>
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+    ${renderEditorHeader({ dialogId, columns })}
     <div id="labelsBody" class="table"></div>
     <div
       id="labelsFilters"
@@ -91,7 +129,12 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  applySortingByHeader("labelsHeader");
+  bindColumnSorting(dialogId, labelsTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
   ensureEl("labelsBody").addEventListener("click", onBodyClick);
   ensureEl("labelsBody").addEventListener("change", onBodyChange);
@@ -111,13 +154,13 @@ function renderDialog(): void {
 function close(): void {
   clearTimeout(searchTimeout);
   cancelSpread();
-  destroyDialog("labelsOverview");
+  destroyDialog(dialogId);
 }
 
 function refresh(): void {
   populateGroupFilter();
   populateTypeFilter();
-  addLines();
+  labelsTable.refresh();
 }
 
 // re-listing thousands of labels on every keystroke is slow, so the search is applied once typing settles
@@ -133,7 +176,7 @@ function onFilterChange(): void {
   filters.type = ensureEl<HTMLSelectElement>("labelsFilterType").value;
   filters.group = ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
   filters.search = ensureEl<HTMLInputElement>("labelsSearch").value;
-  addLines();
+  labelsTable.reset();
 }
 
 function populateTypeFilter(): void {
@@ -165,23 +208,31 @@ function populateGroupFilter(): void {
   if (groups.includes(bulkSelected)) bulkSelect.value = bulkSelected;
 }
 
-function addLines(): void {
+function getFilteredLabels(): LabelData[] {
   const allLabels = getLabelsData();
+  totalLabels = allLabels.length;
   let labels = allLabels;
   if (filters.group !== ALL) labels = labels.filter(({ group }) => group === filters.group);
   if (filters.type !== ALL) labels = labels.filter(({ type }) => type === filters.type);
   const search = filters.search.trim().toLowerCase();
   if (search) labels = labels.filter(({ text }) => text.replaceAll("|", "").toLowerCase().includes(search));
 
-  listedLabels.clear();
-  for (const label of labels) listedLabels.set(label.id, label);
+  return sortDataByColumns(dialogId, labels, columns);
+}
 
-  ensureEl("labelsBody").innerHTML = labels.map(createLine).join("");
-  ensureEl("labelsFooterNumber").innerHTML = String(labels.length);
-  ensureEl("labelsFooterTotal").innerHTML = String(allLabels.length);
+function renderLabelsPage(view: TableView<LabelData>): void {
+  const { rows, all } = view;
+
+  listedLabels.clear();
+  for (const label of rows) listedLabels.set(label.id, label);
+
+  ensureEl("labelsBody").innerHTML = rows.map(createLine).join("");
+  ensureEl("labelsFooterNumber").innerHTML = String(all.length);
+  ensureEl("labelsFooterTotal").innerHTML = String(totalLabels);
+  renderEditorPagination(ensureEl("labelsFooter"), view, labelsTable.goto);
 
   updateSelectedCount();
-  applySorting(ensureEl("labelsHeader"));
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 function createLine(label: LabelData): string {
@@ -190,15 +241,17 @@ function createLine(label: LabelData): string {
   const hasOverride = Labels.hasOverride(type, label.entityId);
 
   return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}" style="${hidden ? "opacity: 0.5" : ""}">
-      <input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}">
-      <div data-tip="Label text" style="width:12em">${text}</div>
-      <div data-tip="Label type" style="width:5em">${type}</div>
-      <select class="labelsGroup" data-tip="Label group, select to reassign the label" style="width:7em">
+      <div data-col="selection"><input class="labelsSelect native" type="checkbox" data-tip="Select the label for bulk assignment" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}"></div>
+      <div data-col="text" data-tip="Label text">${text}</div>
+      <div data-col="type" data-tip="Label type">${type}</div>
+      <select data-col="group" class="labelsGroup" data-tip="Label group, select to reassign the label">
         ${createGroupOptions(group)}
       </select>
-      <span data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
-      <span data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
-      <span data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
+      <div data-col="actions">
+        <span data-tip="${hidden ? "Show" : "Hide"} the label" aria-label="${hidden ? "Show" : "Hide"} the label" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
+        <span data-tip="Restore the default label" aria-label="Restore the default label" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
+        <span data-tip="Locate the label" aria-label="Locate the label" class="icon-target"></span>
+      </div>
     </div>`;
 }
 
@@ -217,7 +270,7 @@ function createGroupOptions(selected: string): string {
 
 function onBodyClick(event: Event): void {
   const element = event.target as HTMLElement;
-  const id = element.parentElement?.dataset.id;
+  const id = element.closest<HTMLElement>(".states")?.dataset.id;
   if (element.classList.contains("labelsVisibility")) toggleLabelVisibility(element);
   else if (element.classList.contains("labelsReset")) resetLabel(element);
   else if (element.classList.contains("icon-target")) highlightLabel(element, id);
@@ -233,7 +286,7 @@ function onBodyChange(event: Event): void {
 }
 
 function getLineLabel(element: HTMLElement): LabelData | undefined {
-  const id = (element.parentElement as HTMLElement).dataset.id;
+  const id = element.closest<HTMLElement>(".states")?.dataset.id;
   return id ? listedLabels.get(id) : undefined;
 }
 
@@ -257,7 +310,7 @@ function toggleLabelVisibility(element: HTMLElement): void {
   else entity.label = { ...entity.label, hidden: true };
 
   drawLabels();
-  addLines();
+  labelsTable.refresh();
 }
 
 function resetLabel(element: HTMLElement): void {
@@ -269,7 +322,7 @@ function resetLabel(element: HTMLElement): void {
 
   Labels.resetOverride(label.type, label.entityId);
   drawLabels();
-  addLines();
+  labelsTable.refresh();
 }
 
 function assignGroup(labels: LabelData[], groupName: string): void {
@@ -296,7 +349,7 @@ function assignGroup(labels: LabelData[], groupName: string): void {
     message,
     confirm: "Assign",
     onConfirm: apply,
-    onCancel: addLines // re-render to restore the group shown in the line
+    onCancel: labelsTable.refresh // re-render to restore the group shown in the line
   });
 }
 
@@ -367,7 +420,7 @@ async function spreadLabels(): Promise<void> {
 
     applySpreadPatches(result.patches);
     drawLabels();
-    addLines();
+    labelsTable.refresh();
     spreadPreview.phase = "review";
     syncSpreadControls();
   } catch (error) {
@@ -393,7 +446,7 @@ function cancelSpread(): void {
   finishSpreadPreview();
   drawLabels();
   if (document.getElementById("labelsOverview")) {
-    addLines();
+    labelsTable.refresh();
     syncSpreadControls();
   }
 }

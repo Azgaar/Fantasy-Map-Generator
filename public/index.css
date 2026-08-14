@@ -1470,9 +1470,6 @@ div.header > div:first-child {
 .editorToolbar > .editorToolbarPanel {
   flex-basis: 100%;
 }
-.editorDialog {
-  min-width: 20em;
-}
 
 .editorDialog .header,
 .editorDialog .states {
