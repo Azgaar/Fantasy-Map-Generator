@@ -359,7 +359,7 @@ function selectStyleElement() {
     styleSize.style.display = "block";
 
     styleLegend.style.display = "block";
-    styleLegendColItems.value = el.attr("data-columns") || 8;
+    styleLegendColItems.value = getLayerOptions("legend").columns ?? 8;
     const legendBox = el.select("#legendBox");
     styleLegendBack.value = styleLegendBackOutput.value = legendBox.size() ? legendBox.attr("fill") : "#ffffff";
     styleLegendOpacity.value = legendBox.size() ? legendBox.attr("fill-opacity") : 1;
@@ -369,7 +369,7 @@ function selectStyleElement() {
 
     styleFont.style.display = "block";
     styleSelectFont.value = styleNode.presentation?.["font-family"];
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = getLayerOptions("legend").fontSize;
   }
 
   if (styleElement === "ocean") {
@@ -919,7 +919,7 @@ function shiftCompass() {
 }
 
 styleLegendColItems.addEventListener("input", e => {
-  legend.select("#legendBox").attr("data-columns", e.target.value);
+  setOptions({layerId: "legend"}, {columns: +e.target.value});
   redrawLegend();
 });
 
@@ -1023,7 +1023,12 @@ function changeFontSize(el, size) {
   };
 
   const scaleSize = getSizeOnScale(styleElementSelect.value);
-  el.attr("data-size", size).attr("font-size", scaleSize);
+  if (styleElementSelect.value === "legend") {
+    setOptions({layerId: "legend"}, {fontSize: size});
+    setPresentation({layerId: "legend"}, "font-size", scaleSize);
+  } else {
+    el.attr("data-size", size).attr("font-size", scaleSize);
+  }
 
   if (styleElementSelect.value === "legend") redrawLegend();
   redrawMeasurersOnStyleChange();

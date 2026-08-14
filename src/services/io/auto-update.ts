@@ -1567,7 +1567,8 @@ const REMOVE_AFTER_HARVEST: { selector: string; attributes: string[] }[] = [
   { selector: "#emblems > #burgEmblems", attributes: ["data-size"] },
   { selector: "#goods > #goodsIcons", attributes: ["data-size", "data-circle"] },
   { selector: "#goods > #goodsBurgs", attributes: ["data-size"] },
-  { selector: "#markets", attributes: ["data-size", "data-icon", "font-size"] }
+  { selector: "#markets", attributes: ["data-size", "data-icon", "font-size"] },
+  { selector: "#legend", attributes: ["data-size", "data-x", "data-y", "data-columns"] }
 ];
 
 // selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,

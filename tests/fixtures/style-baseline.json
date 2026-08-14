@@ -160,11 +160,7 @@
     "stroke-dasharray": "0 4 10 4",
     "stroke-linecap": "round",
     "font-size": "13",
-    "font-family": "Almendra SC",
-    "data-size": "13",
-    "data-x": "99",
-    "data-y": "93",
-    "data-columns": "8"
+    "font-family": "Almendra SC"
   },
   "#markers": {
     "opacity": "0.8",

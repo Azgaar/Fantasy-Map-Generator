@@ -143,7 +143,6 @@ function applyTexturePresetOptions() {
 // until they're re-homed (Task 12) - mirror the values back under their pre-migration names,
 // matching FLAT_RENAMES in src/services/styles/legacy.ts
 const LAYER_OPTION_ATTRIBUTES = {
-  legend: {fontSize: "data-size", x: "data-x", y: "data-y", columns: "data-columns"},
   gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
   markers: {rescale: "rescale"},
   ruler: {fontSize: "data-size"},
