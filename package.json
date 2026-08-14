@@ -49,7 +49,8 @@
     "driver.js": "^1.4.0",
     "lineclip": "^2.0.0",
     "polylabel": "^2.0.1",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "zod": "^4.4.3"
   },
   "engines": {
     "node": ">=24.0.0"

@@ -1,0 +1,352 @@
+{
+  "#map": {
+    "background-color": "#000000",
+    "width": "1280",
+    "height": "720"
+  },
+  "#armies": {
+    "fill-opacity": "1",
+    "stroke": "#000000",
+    "stroke-width": "0.6",
+    "font-size": "8",
+    "box-size": "4"
+  },
+  "#anchors": {},
+  "#biomes": {
+    "opacity": "0.7",
+    "filter": "",
+    "mask": "url(#land)"
+  },
+  "#borders": {},
+  "#stateBorders": {
+    "opacity": "1",
+    "stroke": "#ffffff",
+    "stroke-width": "1",
+    "stroke-dasharray": "3",
+    "stroke-linecap": "round",
+    "filter": ""
+  },
+  "#provinceBorders": {
+    "opacity": "0.5",
+    "stroke": "#ffffff",
+    "stroke-width": "0.3",
+    "stroke-dasharray": "1",
+    "stroke-linecap": "round",
+    "filter": ""
+  },
+  "#burgIcons": {},
+  "#cells": {
+    "stroke": "#808080",
+    "stroke-width": "0.1"
+  },
+  "#coastline": {},
+  "#sea_island": {
+    "opacity": "0.6",
+    "stroke": "#1f3846",
+    "stroke-width": "0.7",
+    "style": "filter: none;"
+  },
+  "#lake_island": {
+    "opacity": "1",
+    "stroke": "#7c8eaf",
+    "stroke-width": "0.35"
+  },
+  "#compass": {
+    "opacity": "0.9",
+    "mask": "",
+    "shape-rendering": "optimizespeed",
+    "style": "display: none;"
+  },
+  "#coordinates": {
+    "opacity": "1",
+    "stroke": "#4a4a4a",
+    "stroke-width": "1",
+    "stroke-dasharray": "6",
+    "font-size": "14",
+    "data-size": "14"
+  },
+  "#cults": {
+    "opacity": "0.35",
+    "stroke": "#777777",
+    "stroke-width": "2",
+    "filter": "url(#splotch)"
+  },
+  "#emblems": {
+    "opacity": "0.75",
+    "stroke-width": "0.5",
+    "style": "display: none;"
+  },
+  "#stateEmblems": {
+    "data-size": "1"
+  },
+  "#provinceEmblems": {
+    "data-size": "1"
+  },
+  "#burgEmblems": {
+    "data-size": "1"
+  },
+  "#fogging": {
+    "opacity": "0.98",
+    "fill": "#1b1423",
+    "style": "display: none;"
+  },
+  "#goods": {
+    "stroke-width": "0.32",
+    "filter": "url(#dropShadow01)",
+    "style": "display: none;"
+  },
+  "#goodsCells": {},
+  "#goodsIcons": {
+    "data-circle": "1"
+  },
+  "#goodsBurgs": {},
+  "#gridOverlay": {
+    "opacity": "0.8",
+    "stroke": "#808080",
+    "stroke-width": "0.5",
+    "type": "pointyHex",
+    "scale": "1",
+    "dx": "0",
+    "dy": "0"
+  },
+  "#ice": {
+    "opacity": "0.3",
+    "fill": "#919191",
+    "stroke": "#949494",
+    "stroke-width": "0",
+    "filter": "url(#dropShadow05)"
+  },
+  "#labels": {
+    "font-size": "100px"
+  },
+  "#lakes": {},
+  "#freshwater": {
+    "opacity": "0.9",
+    "fill": "#381579",
+    "stroke": "#47228c",
+    "stroke-width": "3"
+  },
+  "#salt": {
+    "opacity": "0.5",
+    "fill": "#409b8a",
+    "stroke": "#388985",
+    "stroke-width": "0.7"
+  },
+  "#sinkhole": {
+    "opacity": "1",
+    "fill": "#5bc9fd",
+    "stroke": "#53a3b0",
+    "stroke-width": "0.7"
+  },
+  "#frozen": {
+    "opacity": "0.95",
+    "fill": "#cdd4e7",
+    "stroke": "#cfe0eb",
+    "stroke-width": "0"
+  },
+  "#lava": {
+    "opacity": "0.7",
+    "fill": "#90270d",
+    "stroke": "#f93e0c",
+    "stroke-width": "2",
+    "filter": "url(#crumpled)"
+  },
+  "#dry": {
+    "opacity": "0.7",
+    "fill": "#c9bfa7",
+    "stroke": "#8e816f",
+    "stroke-width": "0.7"
+  },
+  "#landmass": {
+    "opacity": "1",
+    "fill": "#04011e"
+  },
+  "#legend": {
+    "stroke": "#812929",
+    "stroke-width": "2.5",
+    "stroke-dasharray": "0 4 10 4",
+    "stroke-linecap": "round",
+    "font-size": "13",
+    "font-family": "Almendra SC",
+    "data-size": "13",
+    "data-x": "99",
+    "data-y": "93",
+    "data-columns": "8"
+  },
+  "#markers": {
+    "opacity": "0.8",
+    "rescale": "1"
+  },
+  "#markets": {
+    "fill-opacity": "0",
+    "style": "display: none;"
+  },
+  "#oceanLayers": {
+    "filter": "",
+    "layers": "-6,-3,-1"
+  },
+  "#oceanBase": {
+    "fill": "#05001f",
+    "x": "0",
+    "y": "0",
+    "width": "1680",
+    "height": "849"
+  },
+  "#oceanicPattern": {
+    "opacity": "0.15",
+    "href": ""
+  },
+  "#population": {
+    "stroke-width": "1.6",
+    "stroke-linecap": "square"
+  },
+  "#rural": {
+    "stroke": "#5294ff"
+  },
+  "#urban": {
+    "stroke": "#5cdeff"
+  },
+  "#prec": {
+    "fill": "#003dff",
+    "stroke": "#000000",
+    "stroke-width": "0.1",
+    "style": "display: none;"
+  },
+  "#provs": {
+    "opacity": "0.2",
+    "fill": "#933e3e",
+    "filter": "",
+    "font-size": "8",
+    "font-family": "Orbitron"
+  },
+  "#regions": {},
+  "#statesBody": {
+    "opacity": "0"
+  },
+  "#statesHalo": {
+    "opacity": "1",
+    "stroke-width": "13",
+    "filter": "blur(8.25px)",
+    "data-width": "13",
+    "style": "display: none;"
+  },
+  "#relig": {
+    "opacity": "0.5",
+    "stroke": "#404040",
+    "stroke-width": "2",
+    "filter": "url(#splotch)"
+  },
+  "#rivers": {
+    "fill": "#6738bc"
+  },
+  "#routes": {},
+  "#roads": {
+    "opacity": "1",
+    "stroke": "#c44ac0",
+    "stroke-width": "0.9",
+    "stroke-dasharray": "2 3",
+    "stroke-linecap": "round"
+  },
+  "#trails": {
+    "opacity": "1",
+    "stroke": "#df2654",
+    "stroke-width": "0.2",
+    "stroke-dasharray": ".5 1",
+    "stroke-linecap": "round"
+  },
+  "#searoutes": {
+    "opacity": "0.8",
+    "stroke": "#a890c6",
+    "stroke-width": "0.6",
+    "stroke-dasharray": "1.2 2.4",
+    "stroke-linecap": "round"
+  },
+  "#ruler": {
+    "style": "display: none;"
+  },
+  "#scaleBar": {
+    "opacity": "1",
+    "fill": "#d0d0dc",
+    "font-size": "11",
+    "data-x": "99",
+    "data-y": "99",
+    "data-bar-size": "2",
+    "data-label": "",
+    "transform": "translate(1037,696)"
+  },
+  "#scaleBarBack": {
+    "opacity": "0.3",
+    "fill": "#05001f",
+    "stroke": "#000000",
+    "stroke-width": "1",
+    "filter": "",
+    "data-top": "23",
+    "data-right": "18",
+    "data-bottom": "18",
+    "data-left": "12",
+    "x": "-12",
+    "y": "-23",
+    "width": "240.30905151367188",
+    "height": "36.60000228881836"
+  },
+  "#temperature": {
+    "opacity": "0.8",
+    "fill": "#551282",
+    "fill-opacity": "0.3",
+    "stroke-width": "3",
+    "stroke-dasharray": "2",
+    "font-size": "22px"
+  },
+  "#terrain": {
+    "opacity": "0.9",
+    "style": "display: none;"
+  },
+  "#terrs": {},
+  "#landHeights": {
+    "opacity": "0.8",
+    "mask": "url(#land)",
+    "scheme": "livid",
+    "terracing": "6",
+    "skip": "0",
+    "relax": "2",
+    "curve": "curveBasisClosed"
+  },
+  "#oceanHeights": {
+    "opacity": "1",
+    "scheme": "olive",
+    "terracing": "0",
+    "skip": "0",
+    "relax": "1",
+    "curve": "curveBasisClosed"
+  },
+  "#texture": {
+    "opacity": "0.2",
+    "mask": "url(#water)",
+    "data-x": "0",
+    "data-y": "0",
+    "data-href": "./images/textures/mercury-small.jpg"
+  },
+  "#tradeAnimation": {},
+  "#vignette": {
+    "opacity": "0",
+    "fill": "#000000",
+    "mask": "url(#vignette-mask)"
+  },
+  "#vignette-rect": {
+    "fill": "black",
+    "filter": "blur(20px)",
+    "x": "0.3%",
+    "y": "0.4%",
+    "width": "99.6%",
+    "height": "99.2%",
+    "rx": "5%",
+    "ry": "5%"
+  },
+  "#zones": {
+    "opacity": "0.7",
+    "stroke": "#ffffff",
+    "stroke-width": "0.3",
+    "stroke-linecap": "inherit",
+    "filter": "url(#dropShadow05)"
+  }
+}
