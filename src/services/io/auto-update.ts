@@ -1571,7 +1571,9 @@ const REMOVE_AFTER_HARVEST: { selector: string; attributes: string[] }[] = [
   { selector: "#legend", attributes: ["data-size", "data-x", "data-y", "data-columns"] },
   { selector: "#ruler", attributes: ["data-size"] },
   { selector: "#coordinates", attributes: ["data-size"] },
-  { selector: "#armies", attributes: ["box-size"] }
+  { selector: "#armies", attributes: ["box-size"] },
+  { selector: "#scaleBar", attributes: ["data-bar-size", "data-x", "data-y", "data-label"] },
+  { selector: "#scaleBarBack", attributes: ["data-top", "data-right", "data-bottom", "data-left"] }
 ];
 
 // selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,

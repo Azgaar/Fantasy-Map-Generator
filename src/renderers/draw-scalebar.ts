@@ -1,5 +1,6 @@
 import type { Selection } from "d3";
 import { range } from "d3";
+import { getLayerOptions } from "../services/styles/store";
 import { rn } from "../utils";
 
 declare global {
@@ -9,13 +10,30 @@ declare global {
 
 type ScaleBarSelection = Selection<SVGGElement, unknown, any, any>;
 
+interface ScaleBarBackOptions {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
+interface ScaleBarOptions {
+  barSize?: number;
+  x?: number;
+  y?: number;
+  label?: string;
+  back?: ScaleBarBackOptions;
+}
+
+const getScaleBarOptions = (): ScaleBarOptions => getLayerOptions<ScaleBarOptions>("scaleBar");
+
 const scaleBarRenderer = (scaleBar: ScaleBarSelection, scaleLevel: number): void => {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
   const unit = distanceUnitInput.value;
-  const size = +scaleBar.attr("data-bar-size");
+  const size = getScaleBarOptions().barSize ?? 2;
 
-  const length = getLength(scaleBar, scaleLevel);
+  const length = getLength(scaleLevel);
   scaleBar.select("#scaleBarContent").remove(); // redraw content every time
   const content = scaleBar.append("g").attr("id", "scaleBarContent");
 
@@ -58,7 +76,7 @@ const scaleBarRenderer = (scaleBar: ScaleBarSelection, scaleLevel: number): void
     .attr("dy", "-.6em")
     .text((d: number) => rn((((d * length) / 5) * distanceScale) / scaleLevel) + (d < 5 ? "" : ` ${unit}`));
 
-  const label = scaleBar.attr("data-label");
+  const label = getScaleBarOptions().label;
   if (label) {
     texts
       .append("text")
@@ -72,10 +90,11 @@ const scaleBarRenderer = (scaleBar: ScaleBarSelection, scaleLevel: number): void
   const scaleBarBack = scaleBar.select<SVGRectElement>("#scaleBarBack");
   if (scaleBarBack.size()) {
     const bbox = (content.node() as SVGGElement).getBBox();
-    const paddingTop = +scaleBarBack.attr("data-top") || 0;
-    const paddingLeft = +scaleBarBack.attr("data-left") || 0;
-    const paddingRight = +scaleBarBack.attr("data-right") || 0;
-    const paddingBottom = +scaleBarBack.attr("data-bottom") || 0;
+    const back = getScaleBarOptions().back ?? {};
+    const paddingTop = back.top || 0;
+    const paddingLeft = back.left || 0;
+    const paddingRight = back.right || 0;
+    const paddingBottom = back.bottom || 0;
 
     scaleBar
       .select("#scaleBarBack")
@@ -86,10 +105,10 @@ const scaleBarRenderer = (scaleBar: ScaleBarSelection, scaleLevel: number): void
   }
 };
 
-function getLength(scaleBar: ScaleBarSelection, scaleLevel: number): number {
+function getLength(scaleLevel: number): number {
   const init = 100;
 
-  const size = +scaleBar.attr("data-bar-size");
+  const size = getScaleBarOptions().barSize ?? 2;
   let val = (init * size * distanceScale) / scaleLevel; // bar length in distance unit
   if (val > 900)
     val = rn(val, -3); // round to 1000
@@ -105,8 +124,9 @@ function getLength(scaleBar: ScaleBarSelection, scaleLevel: number): number {
 const scaleBarResize = (scaleBar: ScaleBarSelection, fullWidth: number, fullHeight: number): void => {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
 
-  const posX = +scaleBar.attr("data-x") || 99;
-  const posY = +scaleBar.attr("data-y") || 99;
+  const scaleBarOptions = getScaleBarOptions();
+  const posX = scaleBarOptions.x ?? 99;
+  const posY = scaleBarOptions.y ?? 99;
   const bbox = (scaleBar.select("rect").node() as SVGRectElement).getBBox();
 
   const x = rn((fullWidth * posX) / 100 - bbox.width + 10);

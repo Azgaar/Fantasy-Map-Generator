@@ -149,7 +149,9 @@ const LAYER_OPTION_ATTRIBUTES = {
   // boxSize is dropped: draw-military.ts/regiment-editor.ts read it via getLayerOptions now.
   // fontSize stays DOM-written here - it's inherited by regiment text, nothing reads it as JS
   armies: {fontSize: "font-size"},
-  scaleBar: {barSize: "data-bar-size", x: "data-x", y: "data-y", label: "data-label", fontSize: "font-size"},
+  // barSize/x/y/label are dropped: draw-scalebar.ts reads them via getLayerOptions now.
+  // fontSize stays DOM-written here - nothing reads it as JS, only CSS inheritance uses it
+  scaleBar: {fontSize: "font-size"},
   oceanLayers: {layers: "layers"}
 };
 
@@ -222,16 +224,15 @@ function applySingleInstanceOptionElements() {
   const back = style.layers.scaleBar?.options?.back;
   if (back) {
     const backEl = document.getElementById("scaleBarBack");
+    // top/right/bottom/left are dropped: draw-scalebar.ts reads options.scaleBar.back via
+    // getLayerOptions now. opacity/fill/stroke/strokeWidth/filter stay DOM-written - nothing
+    // reads them as JS, they're purely visual on the #scaleBarBack rect
     const backRenames = {
       opacity: "opacity",
       fill: "fill",
       stroke: "stroke",
       strokeWidth: "stroke-width",
-      filter: "filter",
-      top: "data-top",
-      right: "data-right",
-      bottom: "data-bottom",
-      left: "data-left"
+      filter: "filter"
     };
     if (backEl)
       for (const [optionKey, attribute] of Object.entries(backRenames))

@@ -478,23 +478,25 @@ function selectStyleElement() {
   if (styleElement === "scaleBar") {
     styleScaleBar.style.display = "block";
 
-    styleScaleBarSize.value = el.attr("data-bar-size");
+    const scaleBarOptions = getLayerOptions("scaleBar");
+    styleScaleBarSize.value = scaleBarOptions.barSize;
     styleScaleBarFontSize.value = el.attr("font-size");
-    styleScaleBarPositionX.value = el.attr("data-x") || "99";
-    styleScaleBarPositionY.value = el.attr("data-y") || "99";
-    styleScaleBarLabel.value = el.attr("data-label") || "";
+    styleScaleBarPositionX.value = scaleBarOptions.x ?? "99";
+    styleScaleBarPositionY.value = scaleBarOptions.y ?? "99";
+    styleScaleBarLabel.value = scaleBarOptions.label ?? "";
 
     const scaleBarBack = el.select("#scaleBarBack");
     if (scaleBarBack.size()) {
+      const back = scaleBarOptions.back ?? {};
       styleScaleBarBackgroundOpacity.value = scaleBarBack.attr("opacity");
       styleScaleBarBackgroundFill.value = styleScaleBarBackgroundFillOutput.value = scaleBarBack.attr("fill");
       styleScaleBarBackgroundStroke.value = styleScaleBarBackgroundStrokeOutput.value = scaleBarBack.attr("stroke");
       styleScaleBarBackgroundStrokeWidth.value = scaleBarBack.attr("stroke-width");
       styleScaleBarBackgroundFilter.value = scaleBarBack.attr("filter");
-      styleScaleBarBackgroundPaddingTop.value = scaleBarBack.attr("data-top");
-      styleScaleBarBackgroundPaddingRight.value = scaleBarBack.attr("data-right");
-      styleScaleBarBackgroundPaddingBottom.value = scaleBarBack.attr("data-bottom");
-      styleScaleBarBackgroundPaddingLeft.value = scaleBarBack.attr("data-left");
+      styleScaleBarBackgroundPaddingTop.value = back.top;
+      styleScaleBarBackgroundPaddingRight.value = back.right;
+      styleScaleBarBackgroundPaddingBottom.value = back.bottom;
+      styleScaleBarBackgroundPaddingLeft.value = back.left;
     }
   }
 
@@ -1266,20 +1268,24 @@ styleScaleBar.addEventListener("input", function (event) {
 
   const { id, value } = event.target;
 
-  if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
+  if (id === "styleScaleBarSize") setOptions({layerId: "scaleBar"}, {barSize: +value});
   else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
-  else if (id === "styleScaleBarPositionX") scaleBar.attr("data-x", value);
-  else if (id === "styleScaleBarPositionY") scaleBar.attr("data-y", value);
-  else if (id === "styleScaleBarLabel") scaleBar.attr("data-label", value);
+  else if (id === "styleScaleBarPositionX") setOptions({layerId: "scaleBar"}, {x: +value});
+  else if (id === "styleScaleBarPositionY") setOptions({layerId: "scaleBar"}, {y: +value});
+  else if (id === "styleScaleBarLabel") setOptions({layerId: "scaleBar"}, {label: value});
   else if (id === "styleScaleBarBackgroundOpacity") scaleBarBack.attr("opacity", value);
   else if (id === "styleScaleBarBackgroundFill") scaleBarBack.attr("fill", value);
   else if (id === "styleScaleBarBackgroundStroke") scaleBarBack.attr("stroke", value);
   else if (id === "styleScaleBarBackgroundStrokeWidth") scaleBarBack.attr("stroke-width", value);
   else if (id === "styleScaleBarBackgroundFilter") scaleBarBack.attr("filter", value);
-  else if (id === "styleScaleBarBackgroundPaddingTop") scaleBarBack.attr("data-top", value);
-  else if (id === "styleScaleBarBackgroundPaddingRight") scaleBarBack.attr("data-right", value);
-  else if (id === "styleScaleBarBackgroundPaddingBottom") scaleBarBack.attr("data-bottom", value);
-  else if (id === "styleScaleBarBackgroundPaddingLeft") scaleBarBack.attr("data-left", value);
+  else if (id === "styleScaleBarBackgroundPaddingTop")
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, top: +value}});
+  else if (id === "styleScaleBarBackgroundPaddingRight")
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, right: +value}});
+  else if (id === "styleScaleBarBackgroundPaddingBottom")
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, bottom: +value}});
+  else if (id === "styleScaleBarBackgroundPaddingLeft")
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, left: +value}});
 
   if (
     [
