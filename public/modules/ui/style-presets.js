@@ -145,7 +145,6 @@ function applyTexturePresetOptions() {
 const LAYER_OPTION_ATTRIBUTES = {
   gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
   markers: {rescale: "rescale"},
-  ruler: {fontSize: "data-size"},
   coordinates: {fontSize: "data-size"},
   temperature: {fontSize: "data-size"},
   armies: {boxSize: "box-size", fontSize: "font-size"},

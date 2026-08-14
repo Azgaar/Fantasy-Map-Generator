@@ -257,7 +257,6 @@
     "stroke-width": "2",
     "stroke-dasharray": "10",
     "font-size": "20",
-    "data-size": "20",
     "style": "display: none;"
   },
   "#scaleBar": {

@@ -80,6 +80,8 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // element select value -> style store LayerId; only elements whose DOM id/select value
 // differs from the LayerId (or that live as a child of another layer) need an entry
 const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"];
+// layers whose fontSize option reader is migrated off the DOM (Task 9); grows one layer per commit
+const OPTIONS_FONT_SIZE_LAYERS = ["legend", "ruler"];
 const STYLE_ELEMENT_TARGETS = {
   ocean: {layerId: "oceanLayers"},
   goodsIcons: {layerId: "goods", childIds: ["goodsIcons"]},
@@ -404,7 +406,7 @@ function selectStyleElement() {
     styleStrokeLinecapInput.value = styleNode.presentation?.["stroke-linecap"] || "inherit";
 
     styleSize.style.display = "block";
-    styleFontSize.value = el.attr("data-size") || 20;
+    styleFontSize.value = getLayerOptions("ruler").fontSize ?? 20;
   }
 
   if (styleElement === "armies") {
@@ -1023,9 +1025,11 @@ function changeFontSize(el, size) {
   };
 
   const scaleSize = getSizeOnScale(styleElementSelect.value);
-  if (styleElementSelect.value === "legend") {
-    setOptions({layerId: "legend"}, {fontSize: size});
-    setPresentation({layerId: "legend"}, "font-size", scaleSize);
+  // layers whose fontSize option reader has been migrated off the DOM (Task 9); every other
+  // element in this shared handler (armies/coordinates/temperature) still reads the DOM directly
+  if (OPTIONS_FONT_SIZE_LAYERS.includes(styleElementSelect.value)) {
+    setOptions({layerId: styleElementSelect.value}, {fontSize: size});
+    setPresentation({layerId: styleElementSelect.value}, "font-size", scaleSize);
   } else {
     el.attr("data-size", size).attr("font-size", scaleSize);
   }
