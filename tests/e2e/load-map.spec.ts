@@ -306,6 +306,29 @@ test.describe("Map loading", () => {
     expect(lakeShorelines.every((shoreline: unknown) => Array.isArray(shoreline) && shoreline.length > 0)).toBe(true);
   });
 
+  // 1.139.4.map predates data[48]/style.layers entirely: its style attrs live only on the embedded
+  // svg, and harvestLegacyLayerStyles (auto-update.ts) must recover them into style.layers on load
+  test("legacy map styles are harvested into style.layers", async ({page}) => {
+    const fileInput = page.locator("#mapToLoad");
+    await fileInput.setInputFiles(path.join(__dirname, "../fixtures/1.139.4.map"));
+    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+    await page.waitForTimeout(500);
+
+    const harvested = await page.evaluate(() => ({
+      // style is script-scoped: read the lexical global, not window
+      rivers: (style as any).layers.rivers,
+      roads: (style as any).layers.routes?.children?.roads,
+      haloWidth: (style as any).layers.regions?.children?.statesHalo?.options?.width,
+      riversFillDom: document.getElementById("rivers")?.getAttribute("fill")
+    }));
+
+    expect(harvested.rivers.presentation.fill).toBeDefined();
+    expect(harvested.roads.presentation.stroke).toBeDefined();
+    expect(typeof harvested.haloWidth).toBe("number");
+    // applier re-wrote the same value the SVG carried — parity, not deletion
+    expect(harvested.riversFillDom).toBe(harvested.rivers.presentation.fill);
+  });
+
   test("legacy label settings should migrate without changing behavior", async ({page}) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
     const mapData = fs.readFileSync(mapFilePath, "utf8").split(/\r?\n/);

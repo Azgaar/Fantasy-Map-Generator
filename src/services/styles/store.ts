@@ -7,6 +7,24 @@ export function ensureStyleShape(input: Style): Style {
   return { ...input, layers };
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// recursive merge where override wins on conflicting leaf keys; plain-object values on both
+// sides merge their children instead of one replacing the other whole
+export function deepMerge<A extends Record<string, unknown>, B extends Record<string, unknown>>(
+  base: A,
+  override: B
+): A & B {
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    const baseValue = result[key];
+    result[key] = isPlainObject(value) && isPlainObject(baseValue) ? deepMerge(baseValue, value) : value;
+  }
+  return result as A & B;
+}
+
 export function getStyleNode(layerId: LayerId, ...childIds: string[]): StyleNode {
   // biome-ignore lint/suspicious/noAssignInExpressions: write-through accessor materializes chain on demand
   let node = (style.layers[layerId] ??= {});

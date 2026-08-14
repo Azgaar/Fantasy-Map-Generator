@@ -267,6 +267,10 @@ function applySelector(layers: Layers, selector: string, attrs: Attrs): void {
   throw new UnknownSelectorError(selector);
 }
 
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
@@ -292,33 +296,171 @@ export function upgradeLegacyPreset(
 }
 if (typeof window !== "undefined") window.upgradeLegacyPreset = upgradeLegacyPreset;
 
-// derived from the same rename/drop tables above so it can't drift from the routing logic;
-// consumed by the DOM-harvesting upgrader (Task 7) to know which attributes to read per selector
+// presentation-only attrs per selector, lifted verbatim from the `attributes` map that used to
+// live in collectStyleData (public/modules/ui/style-presets.js) - the authoritative record of what
+// a real old map's DOM carries beyond the option-routed attrs above. Kept separate from the
+// renames/drops tables (rather than folded in) so neither table has to restate the other's keys;
+// buildSelectorAttributes unions them per selector.
+const FLAT_PRESENTATION_EXTRAS: Partial<Record<string, string[]>> = {
+  map: ["background-color", "filter", "data-filter"],
+  armies: ["stroke", "stroke-width", "fill-opacity", "filter"],
+  biomes: ["opacity", "filter", "mask"],
+  cells: ["opacity", "stroke", "stroke-width", "filter", "mask"],
+  gridOverlay: [
+    "opacity",
+    "stroke",
+    "stroke-width",
+    "stroke-dasharray",
+    "stroke-linecap",
+    "transform",
+    "filter",
+    "mask"
+  ],
+  coordinates: [
+    "opacity",
+    "font-size",
+    "stroke",
+    "stroke-width",
+    "stroke-dasharray",
+    "stroke-linecap",
+    "filter",
+    "mask"
+  ],
+  compass: ["opacity", "transform", "filter", "mask", "shape-rendering"],
+  relig: ["opacity", "stroke", "stroke-width", "filter"],
+  cults: ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+  landmass: ["opacity", "fill", "filter"],
+  markers: ["opacity", "filter"],
+  prec: ["opacity", "stroke", "stroke-width", "fill", "filter"],
+  population: ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+  markets: ["opacity", "stroke-width", "fill-opacity", "stroke-opacity", "filter"],
+  tradeAnimation: ["opacity", "filter"],
+  terrain: ["opacity", "filter", "mask"],
+  rivers: ["opacity", "filter", "fill"],
+  ruler: ["opacity", "font-size", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+  provs: ["opacity", "fill", "font-size", "font-family", "filter"],
+  temperature: [
+    "opacity",
+    "font-size",
+    "fill",
+    "fill-opacity",
+    "stroke",
+    "stroke-width",
+    "stroke-dasharray",
+    "stroke-linecap",
+    "filter"
+  ],
+  ice: ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  emblems: ["opacity", "stroke-width", "filter"],
+  texture: ["opacity", "filter", "mask"],
+  zones: ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
+  oceanLayers: ["filter"],
+  legend: ["font-size", "font-family", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap"],
+  fogging: ["opacity", "fill", "filter"],
+  vignette: ["opacity", "fill", "filter"],
+  scaleBar: ["opacity", "fill"]
+};
+
+const CHILD_PRESENTATION_EXTRAS: Partial<Record<string, string[]>> = {
+  "#stateBorders": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+  "#provinceBorders": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+  "#sea_island": ["opacity", "stroke", "stroke-width", "filter", "auto-filter"],
+  "#lake_island": ["opacity", "stroke", "stroke-width", "filter"],
+  "#freshwater": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  "#salt": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  "#sinkhole": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  "#frozen": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  "#lava": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  "#dry": ["opacity", "fill", "stroke", "stroke-width", "filter"],
+  "#rural": ["stroke"],
+  "#urban": ["stroke"],
+  "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
+  "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
+  "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
+  "#statesBody": ["opacity", "filter"],
+  "#statesHalo": ["opacity", "stroke-width", "filter"],
+  "#goodsCells": ["opacity", "filter"],
+  "#goodsIcons": ["opacity", "stroke-width", "filter"],
+  "#goodsBurgs": ["opacity", "stroke", "stroke-width", "filter"]
+};
+
+// derived from the rename/drop tables plus the presentation-extras above so it can't drift from
+// the routing logic; consumed by the DOM-harvesting upgrader (Task 7) to know which attributes to
+// read per selector. Only concrete, single-element selectors - the parameterized group containers
+// (labels/burgIcons/anchors, whose children are named per burg group, including custom ones) are
+// covered by LEGACY_GROUP_ATTRIBUTES instead, since they can't be enumerated statically.
 export const LEGACY_SELECTOR_ATTRIBUTES: Record<string, string[]> = buildSelectorAttributes();
 
 function buildSelectorAttributes(): Record<string, string[]> {
   const result: Record<string, string[]> = {};
 
   for (const id of FLAT_LAYERS) {
-    result[`#${id}`] = [...Object.keys(FLAT_RENAMES[id] ?? {}), ...(FLAT_DROPS[id] ?? [])];
+    result[`#${id}`] = unique([
+      ...Object.keys(FLAT_RENAMES[id] ?? {}),
+      ...(FLAT_DROPS[id] ?? []),
+      ...(FLAT_PRESENTATION_EXTRAS[id] ?? [])
+    ]);
   }
 
   for (const [selector, rule] of Object.entries(CHILD_RULES)) {
-    result[selector] = Object.keys(rule.renames ?? {});
+    result[selector] = unique([...Object.keys(rule.renames ?? {}), ...(CHILD_PRESENTATION_EXTRAS[selector] ?? [])]);
   }
 
-  result["#labels > #*"] = Object.keys(LABELS_RENAMES);
-  result["#burgIcons > g#*"] = Object.keys(ICON_RENAMES);
-  result["#anchors > g#*"] = Object.keys(ICON_RENAMES);
-  result["#terrs > #*"] = Object.keys(HEIGHTS_RENAMES);
-  result["#emblems > #*"] = Object.keys(EMBLEMS_RENAMES);
+  result["#terrs > #landHeights"] = [...Object.keys(HEIGHTS_RENAMES), "opacity", "filter", "mask"];
+  result["#terrs > #oceanHeights"] = [...Object.keys(HEIGHTS_RENAMES), "data-render", "opacity", "filter", "mask"];
+  result["#emblems > #stateEmblems"] = Object.keys(EMBLEMS_RENAMES);
+  result["#emblems > #provinceEmblems"] = Object.keys(EMBLEMS_RENAMES);
+  result["#emblems > #burgEmblems"] = Object.keys(EMBLEMS_RENAMES);
 
   result["#compass > use"] = COMPASS_USE_ATTRS;
   result["#vignette-rect"] = VIGNETTE_RECT_KEYS;
   result["#scaleBarBack"] = Object.keys(SCALE_BAR_BACK_RENAMES);
   result["#oceanBase"] = OCEAN_BASE_ATTRS;
   result["#oceanicPattern"] = OCEANIC_PATTERN_KEYS;
-  result["#legendBox"] = [];
+  result["#legendBox"] = ["fill", "fill-opacity"];
 
   return result;
 }
+
+// labels/burgIcons/anchors children are named per burg group (including custom, user-defined
+// groups), so they can't be enumerated as literal selectors like the table above. The harvester
+// (harvestLegacyLayerStyles, auto-update.ts) walks the live DOM under each container instead and
+// builds a "#<layer> > [g#]<childId>" selector per child, which the *_RE patterns above already
+// route correctly. attributes = renames ∪ presentation extras, same convention as the table above.
+export const LEGACY_GROUP_ATTRIBUTES: { layerId: "labels" | "burgIcons" | "anchors"; attributes: string[] }[] = [
+  {
+    layerId: "labels",
+    attributes: unique([
+      ...Object.keys(LABELS_RENAMES),
+      "opacity",
+      "fill",
+      "stroke",
+      "stroke-width",
+      "style",
+      "letter-spacing",
+      "font-size",
+      "font-family",
+      "filter"
+    ])
+  },
+  {
+    layerId: "burgIcons",
+    attributes: unique([
+      ...Object.keys(ICON_RENAMES),
+      "opacity",
+      "data-icon",
+      "fill",
+      "fill-opacity",
+      "stroke",
+      "stroke-dasharray",
+      "stroke-linecap",
+      "stroke-linejoin",
+      "stroke-width",
+      "filter"
+    ])
+  },
+  {
+    layerId: "anchors",
+    attributes: unique([...Object.keys(ICON_RENAMES), "opacity", "fill", "stroke", "stroke-width", "filter"])
+  }
+];

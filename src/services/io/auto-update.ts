@@ -17,6 +17,8 @@ import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+import { LEGACY_GROUP_ATTRIBUTES, LEGACY_SELECTOR_ATTRIBUTES, upgradeLegacyPreset } from "@/services/styles/legacy";
+import { deepMerge, ensureStyleShape } from "@/services/styles/store";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -1549,4 +1551,46 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       setReliefLayerActive(iconElements.length > 0 && getComputedStyle(terrainEl).display !== "none");
     }
   }
+
+  if (isOlderThan("1.143.0")) {
+    // styles moved from svg attributes to style.layers; harvest what the old file carried
+    harvestLegacyLayerStyles();
+  }
+}
+
+// selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,
+// then run through the same upgrader the legacy preset importer uses
+function harvestLegacyLayerStyles(): void {
+  const legacy: Record<string, Record<string, unknown>> = {};
+
+  const harvestElement = (selector: string, el: Element, attributes: string[]) => {
+    const bag: Record<string, unknown> = {};
+    for (const attr of attributes) {
+      const value = el.getAttribute(attr);
+      if (value !== null) bag[attr] = value;
+    }
+    if (Object.keys(bag).length) legacy[selector] = bag;
+  };
+
+  for (const [selector, attributes] of Object.entries(LEGACY_SELECTOR_ATTRIBUTES)) {
+    const el = document.querySelector(selector);
+    if (el) harvestElement(selector, el, attributes);
+  }
+
+  // labels/burgIcons/anchors children are named per burg group (including custom ones), so they
+  // can't be enumerated as literal selectors - walk the live groups instead
+  for (const { layerId, attributes } of LEGACY_GROUP_ATTRIBUTES) {
+    const isG = layerId !== "labels";
+    for (const el of document.querySelectorAll<SVGGElement>(`#${layerId} > ${isG ? "g" : "*"}`)) {
+      // the current renderer prefixes label group ids ("labels-state") to avoid id clashes;
+      // burgIcons/anchors groups keep the bare group name as their id
+      const name = layerId === "labels" ? el.dataset.group : el.id;
+      if (!name) continue;
+      harvestElement(`#${layerId} > ${isG ? "g" : ""}#${name}`, el, attributes);
+    }
+  }
+
+  const harvested = upgradeLegacyPreset(legacy, { onUnknownSelector: "skip" });
+  // harvested wins over nothing; existing style.layers (from data[48] of a mid-format map) wins over harvest
+  style = { ...style, ...ensureStyleShape({ layers: deepMerge(harvested.layers, style.layers) }) };
 }

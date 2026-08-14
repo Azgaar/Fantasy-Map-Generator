@@ -8,7 +8,11 @@ import { drawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
+import { applyLayerStyle } from "@/services/styles/apply";
+import { parseStyle } from "@/services/styles/schema";
+import { ensureStyleShape } from "@/services/styles/store";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
+import type { LayerId } from "@/types/style";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -484,7 +488,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    if (data[48]) style = JSON.parse(data[48]);
+    if (data[48]) {
+      const parsed = JSON.parse(data[48]);
+      const legacyKeys = (({ labels, burgIcons, anchors, relief }) => ({ labels, burgIcons, anchors, relief }))(parsed);
+      style = Object.assign(ensureStyleShape(parseStyle({ layers: parsed.layers ?? {} })), legacyKeys);
+    } else {
+      // no data[48] at all (pre-style-export map): keep whatever legacy labels/burgIcons/anchors/relief
+      // the currently active preset already put on `style`; the version migrations below repopulate them
+      style = { ...style, ...ensureStyleShape({ layers: {} }) };
+    }
 
     {
       const { resolveVersionConflicts } = await import("./auto-update");
@@ -819,6 +831,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (layerIsOn("toggleGrid")) drawGrid();
     if (layerIsOn("toggleLabels")) drawLabels();
     if (layerIsOn("toggleRelief")) drawRelief();
+
+    // data[48]/harvest is now authoritative for presentation: re-apply over whatever the embedded svg carried
+    for (const layerId of Object.keys(style.layers) as LayerId[]) applyLayerStyle(layerId);
+    // legacy mirrors (style.labels.groups/burgIcons/anchors) feed getGroupStyle/createIconGroups directly;
+    // applyStylePreset keeps them in sync on the preset path, loaded maps need the same projection
+    window.projectLegacyStyleMirrors();
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

@@ -15,9 +15,10 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-export const VERSION = "1.142.1";
+export const VERSION = "1.143.0";
 
 const latestPublicChanges = [
+  "Presentation styles: unified into a single style store",
   "Relief icons: improved performance",
   "Configurable table columns",
   "Labels: improved performance",
