@@ -83,6 +83,7 @@ function applyStylePreset(presetJson) {
   applyTerrainPresetOptions();
   applyTexturePresetOptions();
   applyLayerOptionAttributes();
+  applyChildOptionAttributes();
   applySingleInstanceOptionElements();
   registerCustomHeightmapSchemes();
   projectLegacyStyleMirrors();
@@ -95,8 +96,9 @@ function applyStylePreset(presetJson) {
     if (defaultGroupStyle) style.labels.groups[group.name] = {...defaultGroupStyle};
   }
 
-  // pack doesn't exist yet on the very first preset apply (before the initial map generation)
-  if (pack.cells?.i && layerIsOn("toggleRelief")) drawRelief();
+  // relief redraw is the caller's job: applyStyleWithUiRefresh always redraws it (letting
+  // drawRelief's own layerIsOn check handle the on/off case); the initial applyStyleOnLoad
+  // path runs before pack exists, so drawing here would crash Relief.generate() on pack.cells
 }
 
 // style.relief mirror consumed by the relief editor and Relief.changeSet/changeSize side effects;
@@ -163,6 +165,48 @@ function applyLayerOptionAttributes() {
 
     for (const [optionKey, attribute] of Object.entries(renames)) {
       if (optionKey in layerOptions) setStyleAttribute(el, attribute, layerOptions[optionKey]);
+    }
+  }
+}
+
+// same idea as LAYER_OPTION_ATTRIBUTES, but for options living on a CHILD node - matching
+// CHILD_RULES/HEIGHTS_RENAMES/EMBLEMS_RENAMES in src/services/styles/legacy.ts. keyed
+// "layerId/childId", DOM element looked up by the child's own id
+const CHILD_OPTION_ATTRIBUTES = {
+  "terrs/landHeights": {scheme: "scheme", terracing: "terracing", skip: "skip", relax: "relax", curve: "curve"},
+  "terrs/oceanHeights": {scheme: "scheme", terracing: "terracing", skip: "skip", relax: "relax", curve: "curve"},
+  "emblems/stateEmblems": {size: "data-size"},
+  "emblems/provinceEmblems": {size: "data-size"},
+  "emblems/burgEmblems": {size: "data-size"},
+  "goods/goodsIcons": {size: "data-size", circle: "data-circle"},
+  "goods/goodsBurgs": {size: "data-size"},
+  "regions/statesHalo": {width: "data-width"}
+};
+
+function applyChildOptionAttributes() {
+  for (const [path, renames] of Object.entries(CHILD_OPTION_ATTRIBUTES)) {
+    const [layerId, childId] = path.split("/");
+    const childOptions = style.layers[layerId]?.children?.[childId]?.options;
+    if (!childOptions) continue;
+
+    const el = document.getElementById(childId);
+    if (!el) continue;
+
+    for (const [optionKey, attribute] of Object.entries(renames)) {
+      if (optionKey in childOptions) setStyleAttribute(el, attribute, childOptions[optionKey]);
+    }
+  }
+
+  // burgIcons/anchors groups share child ids across the two layers (e.g. both have a "capital"
+  // group), so they need a layer-scoped selector rather than document.getElementById. The DOM
+  // write here (not just the style.burgIcons/style.anchors mirror) is mandatory: createIconGroups
+  // (src/renderers/draw-burg-icons.ts) harvests these DOM attributes before recreating the groups
+  for (const layerId of ["burgIcons", "anchors"]) {
+    const children = style.layers[layerId]?.children || {};
+    for (const [name, node] of Object.entries(children)) {
+      if (!node.options || !("size" in node.options)) continue;
+      const el = document.querySelector(`#${layerId} > g#${CSS.escape(name)}`);
+      if (el) setStyleAttribute(el, "font-size", node.options.size);
     }
   }
 }
