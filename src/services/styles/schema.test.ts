@@ -41,6 +41,13 @@ describe("parseStyle", () => {
     expect(() => parseStyle("nope")).toThrow();
   });
 
+  test("falls back to a layerId/* wildcard child options schema", () => {
+    const style = parseStyle({
+      layers: { burgIcons: { children: { skyport: { options: { size: 2, bogus: "nope" } } } } }
+    });
+    expect(style.layers.burgIcons?.children?.skyport.options).toEqual({ size: 2 });
+  });
+
   test("children recurse more than one level", () => {
     const style = parseStyle({
       layers: { labels: { children: { capital: { children: { inner: { presentation: { opacity: 1 } } } } } } }

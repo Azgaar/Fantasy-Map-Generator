@@ -131,6 +131,7 @@ function heightsOptions() {
 }
 
 // options living on a CHILD node (validated when parsing that child)
+// keys of the form "layerId/*" are a wildcard fallback for any child of that layer
 export const childOptionsSchemas: Record<string, z.ZodType> = {
   "emblems/stateEmblems": z.object({ size: z.number() }).partial(),
   "emblems/provinceEmblems": z.object({ size: z.number() }).partial(),
@@ -139,8 +140,15 @@ export const childOptionsSchemas: Record<string, z.ZodType> = {
   "goods/goodsBurgs": z.object({ size: z.number() }).partial(),
   "regions/statesHalo": z.object({ width: z.number() }).partial(),
   "terrs/landHeights": heightsOptions(),
-  "terrs/oceanHeights": heightsOptions()
+  "terrs/oceanHeights": heightsOptions(),
+  "labels/*": z.object({ fontSize: z.number(), dx: z.number(), dy: z.number() }).partial(),
+  "burgIcons/*": z.object({ size: z.number() }).partial(),
+  "anchors/*": z.object({ size: z.number() }).partial()
 };
+
+function findChildOptionsSchema(path: string, childId: string): z.ZodType | undefined {
+  return childOptionsSchemas[`${path}/${childId}`] ?? childOptionsSchemas[`${path}/*`];
+}
 
 const layersSchema = z.record(z.string(), styleNodeSchema);
 const styleSchema = z.object({ layers: layersSchema });
@@ -182,7 +190,7 @@ function validateNodeOptions(node: StyleNode, path: string, schema?: z.ZodType):
   if (node.children) {
     const children: Record<string, StyleNode> = {};
     for (const [childId, child] of Object.entries(node.children)) {
-      children[childId] = validateNodeOptions(child, `${path}/${childId}`, childOptionsSchemas[`${path}/${childId}`]);
+      children[childId] = validateNodeOptions(child, `${path}/${childId}`, findChildOptionsSchema(path, childId));
     }
     result.children = children;
   }
