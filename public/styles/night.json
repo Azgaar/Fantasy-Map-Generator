@@ -138,7 +138,9 @@
         "opacity": 1,
         "filter": "url(#dropShadow01)"
       },
-      "options": {}
+      "options": {
+        "rescale": null
+      }
     },
     "prec": {
       "presentation": {
@@ -473,7 +475,8 @@
       "options": {
         "fontSize": 11.7,
         "x": 14.26,
-        "y": 99.37
+        "y": 99.37,
+        "columns": null
       }
     },
     "labels": {

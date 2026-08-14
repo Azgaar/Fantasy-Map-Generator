@@ -74,6 +74,7 @@
       "options": {
         "scale": 1,
         "dx": 0,
+        "dy": 0,
         "type": "pointyHex"
       }
     },

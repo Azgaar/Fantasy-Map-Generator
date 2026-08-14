@@ -55,4 +55,12 @@ describe("upgradeLegacyPreset", () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  // pins converter output to the shipped file: a converter regression that silently drops or
+  // reshapes an entry would show up as a diff here even if every individual unit test still passes
+  test("upgrading the frozen legacy fixture matches the shipped converted default.json", () => {
+    const shippedPath = path.join(__dirname, "../../../public/styles/default.json");
+    const shipped = JSON.parse(fs.readFileSync(shippedPath, "utf8"));
+    expect(upgradeLegacyPreset(defaultPreset)).toEqual(shipped);
+  });
 });

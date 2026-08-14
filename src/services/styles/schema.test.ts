@@ -21,6 +21,19 @@ describe("parseStyle", () => {
     expect(style.layers.rivers?.presentation?.filter).toBeNull();
   });
 
+  test("an explicit null option survives parsing (remove-attribute semantics)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const style = parseStyle({ layers: { markers: { options: { rescale: null } } } });
+    expect(style.layers.markers?.options).toEqual({ rescale: null });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test("a numeric-string option value coerces to a number", () => {
+    const style = parseStyle({ layers: { gridOverlay: { options: { dy: "0" } } } });
+    expect(style.layers.gridOverlay?.options).toEqual({ dy: 0 });
+  });
+
   test("strips an invalid typed option with a warning instead of failing the preset", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const style = parseStyle({ layers: { terrain: { options: { set: "colored", size: "not-a-number" } } } });

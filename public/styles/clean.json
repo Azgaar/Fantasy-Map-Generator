@@ -74,6 +74,7 @@
       "options": {
         "scale": 1,
         "dx": 0,
+        "dy": 0,
         "type": "pointyHex"
       }
     },
@@ -138,7 +139,9 @@
         "opacity": null,
         "filter": null
       },
-      "options": {}
+      "options": {
+        "rescale": null
+      }
     },
     "prec": {
       "presentation": {

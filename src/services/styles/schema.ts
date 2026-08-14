@@ -65,85 +65,79 @@ const styleNodeSchema: z.ZodType<StyleNode> = z.lazy(() =>
   })
 );
 
+// null is a legitimate option value (remove-attribute semantics, same as presentation); numeric
+// fields coerce numeric strings (legacy JSON sometimes stores e.g. "0" instead of 0) - .nullable()
+// must wrap the coercion so an explicit null bypasses Number(null) === 0 and survives as null
+const num = () => z.coerce.number().nullable();
+const str = () => z.string().nullable();
+
 // typed per-layer options; keys absent here mean the layer has no options
 export const layerOptionsSchemas: Partial<Record<LayerId, z.ZodType>> = {
-  armies: z.object({ fontSize: z.number(), boxSize: z.number() }).partial(),
-  compass: z.object({ use: z.object({ x: z.number(), y: z.number(), scale: z.number() }).partial() }).partial(),
-  coordinates: z.object({ fontSize: z.number() }).partial(),
-  gridOverlay: z.object({ type: z.string(), scale: z.number(), dx: z.number(), dy: z.number() }).partial(),
-  legend: z.object({ fontSize: z.number(), x: z.number(), y: z.number(), columns: z.number() }).partial(),
-  markers: z.object({ rescale: z.number() }).partial(),
-  markets: z.object({ size: z.number(), fontSize: z.number(), icon: z.string() }).partial(),
+  armies: z.object({ fontSize: num(), boxSize: num() }).partial(),
+  compass: z.object({ use: z.object({ x: num(), y: num(), scale: num() }).partial() }).partial(),
+  coordinates: z.object({ fontSize: num() }).partial(),
+  gridOverlay: z.object({ type: str(), scale: num(), dx: num(), dy: num() }).partial(),
+  legend: z.object({ fontSize: num(), x: num(), y: num(), columns: num() }).partial(),
+  markers: z.object({ rescale: num() }).partial(),
+  markets: z.object({ size: num(), fontSize: num(), icon: str() }).partial(),
   oceanLayers: z
     .object({
-      layers: z.string(),
-      baseFill: z.string(),
-      pattern: z.object({ href: z.string(), opacity: z.number() }).partial()
+      layers: str(),
+      baseFill: str(),
+      pattern: z.object({ href: str(), opacity: num() }).partial()
     })
     .partial(),
-  ruler: z.object({ fontSize: z.number() }).partial(),
+  ruler: z.object({ fontSize: num() }).partial(),
   scaleBar: z
     .object({
-      fontSize: z.number(),
-      barSize: z.number(),
-      x: z.number(),
-      y: z.number(),
-      label: z.string(),
+      fontSize: num(),
+      barSize: num(),
+      x: num(),
+      y: num(),
+      label: str(),
       back: z
         .object({
-          opacity: z.number(),
-          fill: z.string(),
-          stroke: z.string(),
-          strokeWidth: z.number(),
-          filter: z.string().nullable(),
-          top: z.number(),
-          right: z.number(),
-          bottom: z.number(),
-          left: z.number()
+          opacity: num(),
+          fill: str(),
+          stroke: str(),
+          strokeWidth: num(),
+          filter: str(),
+          top: num(),
+          right: num(),
+          bottom: num(),
+          left: num()
         })
         .partial()
     })
     .partial(),
-  temperature: z.object({ fontSize: z.number() }).partial(),
-  terrain: z.object({ set: z.enum(["simple", "colored", "gray"]), size: z.number() }).partial(),
-  texture: z.object({ href: z.string(), x: z.number(), y: z.number() }).partial(),
+  temperature: z.object({ fontSize: num() }).partial(),
+  terrain: z.object({ set: z.enum(["simple", "colored", "gray"]).nullable(), size: num() }).partial(),
+  texture: z.object({ href: str(), x: num(), y: num() }).partial(),
   vignette: z
     .object({
-      rect: z
-        .object({
-          x: z.string(),
-          y: z.string(),
-          width: z.string(),
-          height: z.string(),
-          rx: z.string(),
-          ry: z.string(),
-          filter: z.string().nullable()
-        })
-        .partial()
+      rect: z.object({ x: str(), y: str(), width: str(), height: str(), rx: str(), ry: str(), filter: str() }).partial()
     })
     .partial()
 };
 
 function heightsOptions() {
-  return z
-    .object({ scheme: z.string(), terracing: z.number(), skip: z.number(), relax: z.number(), curve: z.string() })
-    .partial();
+  return z.object({ scheme: str(), terracing: num(), skip: num(), relax: num(), curve: str() }).partial();
 }
 
 // options living on a CHILD node (validated when parsing that child)
 // keys of the form "layerId/*" are a wildcard fallback for any child of that layer
 export const childOptionsSchemas: Record<string, z.ZodType> = {
-  "emblems/stateEmblems": z.object({ size: z.number() }).partial(),
-  "emblems/provinceEmblems": z.object({ size: z.number() }).partial(),
-  "emblems/burgEmblems": z.object({ size: z.number() }).partial(),
-  "goods/goodsIcons": z.object({ size: z.number(), circle: z.number() }).partial(),
-  "goods/goodsBurgs": z.object({ size: z.number() }).partial(),
-  "regions/statesHalo": z.object({ width: z.number() }).partial(),
+  "emblems/stateEmblems": z.object({ size: num() }).partial(),
+  "emblems/provinceEmblems": z.object({ size: num() }).partial(),
+  "emblems/burgEmblems": z.object({ size: num() }).partial(),
+  "goods/goodsIcons": z.object({ size: num(), circle: num() }).partial(),
+  "goods/goodsBurgs": z.object({ size: num() }).partial(),
+  "regions/statesHalo": z.object({ width: num() }).partial(),
   "terrs/landHeights": heightsOptions(),
   "terrs/oceanHeights": heightsOptions(),
-  "labels/*": z.object({ fontSize: z.number(), dx: z.number(), dy: z.number() }).partial(),
-  "burgIcons/*": z.object({ size: z.number() }).partial(),
-  "anchors/*": z.object({ size: z.number() }).partial()
+  "labels/*": z.object({ fontSize: num(), dx: num(), dy: num() }).partial(),
+  "burgIcons/*": z.object({ size: num() }).partial(),
+  "anchors/*": z.object({ size: num() }).partial()
 };
 
 function findChildOptionsSchema(path: string, childId: string): z.ZodType | undefined {
@@ -198,4 +192,5 @@ function validateNodeOptions(node: StyleNode, path: string, schema?: z.ZodType):
   return result;
 }
 
-window.parseStyle = parseStyle;
+// guarded: this module is also imported by tools/convert-style-presets.mjs under plain node (no window)
+if (typeof window !== "undefined") window.parseStyle = parseStyle;
