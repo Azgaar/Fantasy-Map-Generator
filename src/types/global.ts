@@ -39,6 +39,9 @@ declare global {
     getLayerOptions: typeof import("../services/styles/store").getLayerOptions;
     setPresentation: typeof import("../services/styles/store").setPresentation;
     setOptions: typeof import("../services/styles/store").setOptions;
+    parseStyle: typeof import("../services/styles/schema").parseStyle;
+    isLegacyPreset: typeof import("../services/styles/legacy").isLegacyPreset;
+    upgradeLegacyPreset: typeof import("../services/styles/legacy").upgradeLegacyPreset;
     redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;

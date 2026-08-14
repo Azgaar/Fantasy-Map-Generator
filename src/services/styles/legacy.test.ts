@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { isLegacyPreset, upgradeLegacyPreset } from "./legacy";
+import { parseStyle } from "./schema";
 
 const defaultPreset = JSON.parse(fs.readFileSync(path.join(__dirname, "legacy-default.fixture.json"), "utf8"));
 
@@ -45,12 +46,13 @@ describe("upgradeLegacyPreset", () => {
     expect(style.layers.map?.presentation).toMatchObject({ fill: "#000" });
   });
 
-  // temporary until presets are converted: this reads the still-legacy public/styles/*.json directly
-  test("every selector in every system preset is consumed (no silent drops) (temporary until presets are converted)", () => {
+  test("all converted system presets parse cleanly with zero warnings", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const stylesDir = path.join(__dirname, "../../../public/styles");
     for (const file of fs.readdirSync(stylesDir)) {
-      const preset = JSON.parse(fs.readFileSync(path.join(stylesDir, file), "utf8"));
-      expect(() => upgradeLegacyPreset(preset)).not.toThrow();
+      parseStyle(JSON.parse(fs.readFileSync(path.join(stylesDir, file), "utf8")));
     }
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

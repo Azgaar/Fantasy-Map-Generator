@@ -197,3 +197,5 @@ function validateNodeOptions(node: StyleNode, path: string, schema?: z.ZodType):
 
   return result;
 }
+
+window.parseStyle = parseStyle;

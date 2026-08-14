@@ -3,6 +3,10 @@ import "./app-shell";
 import "./autosave";
 import "./fonts";
 import "./versioning";
+import "./styles/schema";
+import "./styles/legacy";
+import "./styles/apply";
+import "./styles/store";
 
 export const Services = createRegistry({
   Cloud: () => import("@/services/io/cloud").then(m => m.CloudStorage),

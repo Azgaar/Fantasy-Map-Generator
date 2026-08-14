@@ -270,6 +270,7 @@ function applySelector(layers: Layers, selector: string, attrs: Attrs): void {
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
+window.isLegacyPreset = isLegacyPreset;
 
 export function upgradeLegacyPreset(
   legacy: Record<string, Record<string, unknown>>,
@@ -288,6 +289,7 @@ export function upgradeLegacyPreset(
 
   return parseStyle({ layers });
 }
+window.upgradeLegacyPreset = upgradeLegacyPreset;
 
 // derived from the same rename/drop tables above so it can't drift from the routing logic;
 // consumed by the DOM-harvesting upgrader (Task 7) to know which attributes to read per selector

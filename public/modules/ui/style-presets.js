@@ -16,7 +16,6 @@ const systemPresets = [
   "monochrome"
 ];
 const customPresetPrefix = "fmgStyle_";
-const RELIEF_STYLE_ATTRIBUTES = ["set", "size", "density"];
 
 // add style presets to list
 {
@@ -73,90 +72,188 @@ async function fetchSystemPreset(preset) {
 }
 
 function applyStylePreset(presetJson) {
-  for (const selector in presetJson) {
-    let labelGroup = null;
-    if (selector.startsWith("#labels > #")) {
-      labelGroup = selector.split("#").pop();
-      style.labels.groups[labelGroup] = getStyleAttributes(presetJson[selector]);
-    }
+  const upgraded = isLegacyPreset(presetJson)
+    ? upgradeLegacyPreset(presetJson, {onUnknownSelector: "skip"})
+    : parseStyle(presetJson);
 
-    if (selector.startsWith("#burgIcons")) {
-      const group = selector.split("#").pop();
-      style.burgIcons[group] = presetJson[selector];
-    }
+  style = {...style, ...ensureStyleShape(upgraded)};
 
-    if (selector.startsWith("#anchors")) {
-      const group = selector.split("#").pop();
-      style.anchors[group] = presetJson[selector];
-    }
+  for (const layerId of Object.keys(style.layers)) applyLayerStyle(layerId);
 
-    if (selector === "#terrain") {
-      const { set, size, density } = presetJson[selector];
-
-      if (size) {
-        const ratio = size / style.relief.size;
-        style.relief.size = size;
-        if (ratio !== 1) Relief.changeSize(size);
-      }
-
-      if (set) {
-        style.relief.set = set;
-        Relief.changeSet(set);
-      }
-
-      if (density) style.relief.density = density; // no model change as it would require regeneration
-    }
-
-    const el = labelGroup
-      ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
-      : document.querySelector(selector);
-    if (!el) continue;
-
-    for (const attribute in presetJson[selector]) {
-      if (attribute === "id") continue;
-      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in style.relief
-      const value = presetJson[selector][attribute];
-
-      if (value === "null" || value === null) {
-        el.removeAttribute(attribute);
-        continue;
-      }
-
-      el.setAttribute(attribute, value);
-
-      if (selector === "#texture") {
-        const image = document.querySelector("#texture > image");
-        if (image) {
-          if (attribute === "data-x") image.setAttribute("x", value);
-          if (attribute === "data-y") image.setAttribute("y", value);
-          if (attribute === "data-href") image.setAttribute("href", value);
-        }
-      }
-
-      // add custom heightmap color scheme
-      if (selector === "#terrs" && attribute === "scheme" && !(value in heightmapColorSchemes)) {
-        addCustomColorScheme(value);
-      }
-    }
-
-    if (selector.startsWith("#labels > #")) {
-      const dx = el.dataset.dx || 0;
-      const dy = el.dataset.dy || 0;
-      el.style.transform = +dx || +dy ? `translate(${dx}em, ${dy}em)` : "";
-    }
-  }
+  applyTerrainPresetOptions();
+  applyTexturePresetOptions();
+  applyLayerOptionAttributes();
+  applySingleInstanceOptionElements();
+  registerCustomHeightmapSchemes();
+  projectLegacyStyleMirrors();
 
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
   for (const group of options.labels.groups) {
     if (style.labels.groups[group.name]) continue;
     const defaultGroupStyle = style.labels.groups[Labels.getFallbackGroup(group.type).name];
-    if (defaultGroupStyle) style.labels.groups[group.name] = { ...defaultGroupStyle };
+    if (defaultGroupStyle) style.labels.groups[group.name] = {...defaultGroupStyle};
   }
 
-  function getStyleAttributes(attributes) {
-    return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
+  // pack doesn't exist yet on the very first preset apply (before the initial map generation)
+  if (pack.cells?.i && layerIsOn("toggleRelief")) drawRelief();
+}
+
+// style.relief mirror consumed by the relief editor and Relief.changeSet/changeSize side effects;
+// density has no equivalent in the new schema (dropped on upgrade), so the existing value is kept
+function applyTerrainPresetOptions() {
+  const {set, size} = style.layers.terrain?.options || {};
+
+  if (size) {
+    const ratio = size / style.relief.size;
+    style.relief.size = size;
+    if (ratio !== 1) Relief.changeSize(size);
   }
+
+  if (set) {
+    style.relief.set = set;
+    Relief.changeSet(set);
+  }
+}
+
+// texture options (x/y/href) aren't presentation attrs, so applyLayerStyle never writes them;
+// port them onto #texture (as the legacy data-x/data-y/data-href attrs) and its nested <image>
+function applyTexturePresetOptions() {
+  const {x, y, href} = style.layers.texture?.options || {};
+  const textureEl = document.getElementById("texture");
+  if (textureEl) {
+    if (x !== undefined) textureEl.setAttribute("data-x", x);
+    if (y !== undefined) textureEl.setAttribute("data-y", y);
+    if (href !== undefined) textureEl.setAttribute("data-href", href);
+  }
+
+  const image = document.querySelector("#texture > image");
+  if (image) {
+    if (x !== undefined) image.setAttribute("x", x);
+    if (y !== undefined) image.setAttribute("y", y);
+    if (href !== undefined) image.setAttribute("href", href);
+  }
+}
+
+// options attrs aren't presentation, so applyLayerStyle never writes them to the DOM. These
+// layers' renderers (legend, grid overlay, markers, markets, ruler, coordinates, temperature,
+// armies, scale bar, ocean layers) still read the literal DOM attribute, not getLayerOptions,
+// until they're re-homed (Task 12) - mirror the values back under their pre-migration names,
+// matching FLAT_RENAMES in src/services/styles/legacy.ts
+const LAYER_OPTION_ATTRIBUTES = {
+  legend: {fontSize: "data-size", x: "data-x", y: "data-y", columns: "data-columns"},
+  gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
+  markers: {rescale: "rescale"},
+  markets: {size: "data-size", icon: "data-icon", fontSize: "font-size"},
+  ruler: {fontSize: "data-size"},
+  coordinates: {fontSize: "data-size"},
+  temperature: {fontSize: "data-size"},
+  armies: {boxSize: "box-size", fontSize: "font-size"},
+  scaleBar: {barSize: "data-bar-size", x: "data-x", y: "data-y", label: "data-label", fontSize: "font-size"},
+  oceanLayers: {layers: "layers"}
+};
+
+function applyLayerOptionAttributes() {
+  for (const [layerId, renames] of Object.entries(LAYER_OPTION_ATTRIBUTES)) {
+    const layerOptions = style.layers[layerId]?.options;
+    if (!layerOptions) continue;
+
+    const el = document.getElementById(layerId);
+    if (!el) continue;
+
+    for (const [optionKey, attribute] of Object.entries(renames)) {
+      if (optionKey in layerOptions) setStyleAttribute(el, attribute, layerOptions[optionKey]);
+    }
+  }
+}
+
+// single-instance nested elements parked on a parent layer's options (compass > use, vignette-rect,
+// scaleBarBack, oceanBase, oceanicPattern), matching the CHILD_RULES-adjacent handling in legacy.ts
+function applySingleInstanceOptionElements() {
+  const use = style.layers.compass?.options?.use;
+  if (use && use.x !== undefined && use.y !== undefined && use.scale !== undefined) {
+    const useEl = document.querySelector("#compass > use");
+    if (useEl) useEl.setAttribute("transform", `translate(${use.x} ${use.y}) scale(${use.scale})`);
+  }
+
+  const rect = style.layers.vignette?.options?.rect;
+  if (rect) {
+    const rectEl = document.getElementById("vignette-rect");
+    if (rectEl) for (const [attribute, value] of Object.entries(rect)) setStyleAttribute(rectEl, attribute, value);
+  }
+
+  const back = style.layers.scaleBar?.options?.back;
+  if (back) {
+    const backEl = document.getElementById("scaleBarBack");
+    const backRenames = {
+      opacity: "opacity",
+      fill: "fill",
+      stroke: "stroke",
+      strokeWidth: "stroke-width",
+      filter: "filter",
+      top: "data-top",
+      right: "data-right",
+      bottom: "data-bottom",
+      left: "data-left"
+    };
+    if (backEl)
+      for (const [optionKey, attribute] of Object.entries(backRenames))
+        if (optionKey in back) setStyleAttribute(backEl, attribute, back[optionKey]);
+  }
+
+  const baseFill = style.layers.oceanLayers?.options?.baseFill;
+  if (baseFill !== undefined) {
+    const oceanBaseEl = document.getElementById("oceanBase");
+    if (oceanBaseEl) setStyleAttribute(oceanBaseEl, "fill", baseFill);
+  }
+
+  const pattern = style.layers.oceanLayers?.options?.pattern;
+  if (pattern) {
+    const patternEl = document.getElementById("oceanicPattern");
+    if (patternEl)
+      for (const [attribute, value] of Object.entries(pattern)) setStyleAttribute(patternEl, attribute, value);
+  }
+}
+
+function setStyleAttribute(el, attribute, value) {
+  if (value === null) el.removeAttribute(attribute);
+  else el.setAttribute(attribute, value);
+}
+
+function registerCustomHeightmapSchemes() {
+  const {oceanHeights, landHeights} = style.layers.terrs?.children || {};
+  const oceanScheme = oceanHeights?.options?.scheme;
+  if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
+  const landScheme = landHeights?.options?.scheme;
+  if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
+}
+
+// projects style.layers back onto the legacy attribute-name-keyed bags that getGroupStyle
+// (src/renderers/labels/label-groups.ts) and createIconGroups (src/renderers/draw-burg-icons.ts)
+// still read directly. Temporary scaffolding, removed when those renderers are re-homed (Task 12)
+function projectLegacyStyleMirrors() {
+  const labelsChildren = style.layers.labels?.children || {};
+  for (const [name, node] of Object.entries(labelsChildren)) {
+    style.labels.groups[name] = projectStyleNode(node, {fontSize: "data-size", dx: "data-dx", dy: "data-dy"});
+  }
+
+  const burgIconsChildren = style.layers.burgIcons?.children || {};
+  for (const [name, node] of Object.entries(burgIconsChildren)) {
+    style.burgIcons[name] = projectStyleNode(node, {size: "font-size"});
+  }
+
+  const anchorsChildren = style.layers.anchors?.children || {};
+  for (const [name, node] of Object.entries(anchorsChildren)) {
+    style.anchors[name] = projectStyleNode(node, {size: "font-size"});
+  }
+}
+
+function projectStyleNode(node, optionRenames) {
+  const attributes = {...(node.presentation || {})};
+  for (const [optionKey, attribute] of Object.entries(optionRenames)) {
+    if (node.options && optionKey in node.options) attributes[attribute] = node.options[optionKey];
+  }
+  return attributes;
 }
 
 function requestStylePresetChange(preset) {
