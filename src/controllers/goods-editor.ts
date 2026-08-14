@@ -56,7 +56,7 @@ const columns: EditorColumn<Good>[] = [
     key: "produced",
     label: "Produced",
     width: "6em",
-    sortBy: good => rn(production[good.i].burg + production[good.i].cell),
+    sortBy: good => rn((production[good.i]?.burg ?? 0) + (production[good.i]?.cell ?? 0)),
     defaultSort: "desc",
     tip: "Total units produced daily in cells (raw) and burgs (manufactured). Click to sort"
   },
@@ -199,7 +199,7 @@ function renderGoodsPage(view: TableView<Good>) {
     .map(good => {
       const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
       const goodProduction = production[good.i] || { burg: 0, cell: 0 };
-      const produced = rn(production[good.i].burg + production[good.i].cell);
+      const produced = rn(goodProduction.burg + goodProduction.cell);
       const producedTip = `Good daily production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒`;
       const stock = rn(stockData[good.i]?.total ?? 0);
       const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;

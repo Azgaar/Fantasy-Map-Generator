@@ -18,6 +18,27 @@ test.describe("controller launchers", () => {
     await expect(page.locator("#markersSettings")).toBeVisible();
   });
 
+  test("opens Goods Editor when some goods have no production", async ({page}) => {
+    await page.evaluate(() => {
+      const {Goods, pack} = window as any;
+      const good = structuredClone(pack.goods[0]);
+      good.i = Math.max(...pack.goods.map(({i}: {i: number}) => i)) + 1;
+      good.name = "No Production";
+      good.visible = false;
+      delete good.distribution;
+      delete good.recipes;
+      pack.goods.push(good);
+      Goods.sync();
+    });
+
+    await page.click("#optionsTrigger");
+    await page.click("#toolsTab");
+    await page.click("#editGoods");
+
+    await expect(page.locator("#goodsEditor")).toBeVisible();
+    await expect(page.locator("#goodsBody .goodName", {hasText: "No Production"})).toBeVisible();
+  });
+
   test("opens Relief Editor by clicking a relief icon", async ({page}) => {
     await page.click("#optionsTrigger");
     await page.click("#layersTab");
