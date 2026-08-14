@@ -6,7 +6,7 @@ import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { BurgGroup } from "./burg-groups";
 import type { PackedGraph } from "./PackedGraph";
-import type { Style } from "./style";
+import type { LegacyStyle, Style } from "./style";
 
 declare global {
   var MOBILE: boolean;
@@ -141,7 +141,7 @@ declare global {
   var ruler: Selection<SVGGElement, unknown, null, undefined>;
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[]; // TODO: correct type
-  var style: Style;
+  var style: Style & LegacyStyle;
 
   var mapId: number;
 

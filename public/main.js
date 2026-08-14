@@ -171,7 +171,13 @@ let options = {
 };
 
 // global style object; in v2.0 to be used for all map styles and render settings
-let style = { labels: { groups: {} }, burgIcons: {}, anchors: {}, relief: { set: "simple", size: 1, density: 0.4 } };
+let style = {
+  layers: {},
+  labels: { groups: {} },
+  burgIcons: {},
+  anchors: {},
+  relief: { set: "simple", size: 1, density: 0.4 }
+};
 
 let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
 const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation

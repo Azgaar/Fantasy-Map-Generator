@@ -1,17 +1,21 @@
 import type { ReliefSet } from "@/types/relief";
 
-export interface Style {
-  // TODO: style = {burgs: { icons, anchors }, labels } is more semantic
-  burgIcons: { [key: string]: { [key: string]: string } };
-  anchors: { [key: string]: { [key: string]: string } };
-  labels: { groups: Record<string, LabelGroupStyle> };
-  relief: ReliefStyle;
-}
+export type { LayerId, PresentationValue, Style, StyleNode } from "@/services/styles/schema";
+export { LAYER_IDS } from "@/services/styles/schema";
 
+// legacy shape, removed in the re-homing task (Task 12)
 export interface ReliefStyle {
   set: ReliefSet;
   size: number;
   density: number;
+}
+
+// legacy shape, removed in the re-homing task (Task 12)
+export interface LegacyStyle {
+  burgIcons: { [key: string]: { [key: string]: string } };
+  anchors: { [key: string]: { [key: string]: string } };
+  labels: { groups: Record<string, LabelGroupStyle> };
+  relief: ReliefStyle;
 }
 
 export interface LabelGroupStyle {
