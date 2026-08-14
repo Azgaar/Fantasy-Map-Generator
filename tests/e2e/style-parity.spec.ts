@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 const BASELINE_PATH = path.join(__dirname, "../fixtures/style-baseline.json");
+const GENERATED_BASELINE_PATH = path.join(__dirname, "../fixtures/style-baseline-generated.json");
 
 // attributes that are styling (not content/geometry); id/class/transform-on-viewbox excluded
 const STYLE_ATTRS = [
@@ -64,6 +65,40 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
 
   const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
   // per-selector comparison => a failure names the exact layer and attribute
+  for (const sel of Object.keys(baseline)) {
+    expect.soft(snapshot[sel], sel).toEqual(baseline[sel]);
+  }
+});
+
+// drawScaleBar/fitScaleBar compute #scaleBar's transform and #scaleBarBack's width from the
+// generated map's real-world distance-per-pixel scale, which varies map to map (a "nice" round
+// distance for the bar) - content-derived layout, not a preset style attribute, so it's excluded
+// from this generated-map comparison. The loaded-map spec above is unaffected: it snapshots a
+// fixed saved file, where these values are already deterministic.
+function stripContentDerivedLayout(snapshot: Record<string, Record<string, string>>) {
+  delete snapshot["#scaleBar"]?.transform;
+  delete snapshot["#scaleBarBack"]?.width;
+}
+
+// the spec above only exercises the load-a-saved-map path (load.ts replaces the whole #map SVG
+// wholesale, bypassing applyStylePreset's DOM writes entirely). This covers the other path:
+// applyStylePreset() applying a system preset to a freshly generated map. Style attributes are
+// preset-driven, not seed-driven, so this is stable across random maps.
+test("styled attributes on a freshly generated map match the preset-apply baseline", async ({page}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  const snapshot = await collectStyleSnapshot(page);
+  stripContentDerivedLayout(snapshot);
+
+  if (process.env.UPDATE_STYLE_BASELINE) {
+    fs.writeFileSync(GENERATED_BASELINE_PATH, JSON.stringify(snapshot, null, 2));
+    return;
+  }
+
+  const baseline = JSON.parse(fs.readFileSync(GENERATED_BASELINE_PATH, "utf8"));
   for (const sel of Object.keys(baseline)) {
     expect.soft(snapshot[sel], sel).toEqual(baseline[sel]);
   }
