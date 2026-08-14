@@ -146,7 +146,6 @@ const LAYER_OPTION_ATTRIBUTES = {
   legend: {fontSize: "data-size", x: "data-x", y: "data-y", columns: "data-columns"},
   gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
   markers: {rescale: "rescale"},
-  markets: {size: "data-size", icon: "data-icon", fontSize: "font-size"},
   ruler: {fontSize: "data-size"},
   coordinates: {fontSize: "data-size"},
   temperature: {fontSize: "data-size"},

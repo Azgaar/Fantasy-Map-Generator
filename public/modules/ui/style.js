@@ -444,9 +444,9 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || "0.5";
     styleMarketsLayer.style.display = "block";
     styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
-    styleMarketsSize.value = el.attr("data-size") || 3;
-    styleMarketsIconSize.value = el.attr("font-size") || 5;
-    styleMarketsIcon.innerHTML = el.attr("data-icon") || "⚖️";
+    styleMarketsSize.value = getLayerOptions("markets").size ?? 3;
+    styleMarketsIconSize.value = getLayerOptions("markets").fontSize ?? 5;
+    styleMarketsIcon.innerHTML = getLayerOptions("markets").icon || "⚖️";
   }
 
   // update group options
@@ -1121,18 +1121,18 @@ styleMarketsLayerFillOpacity.addEventListener("input", e => {
 });
 
 styleMarketsSize.addEventListener("change", function () {
-  markets.attr("data-size", this.value);
+  setOptions({layerId: "markets"}, {size: +this.value});
   drawMarketsLayer();
 });
 
 styleMarketsIconSize.addEventListener("change", function () {
-  markets.attr("font-size", this.value);
+  setOptions({layerId: "markets"}, {fontSize: +this.value});
   drawMarketsLayer();
 });
 
 styleMarketsIcon.addEventListener("click", function () {
-  window.Controllers.IconSelector.open(markets.attr("data-icon") || "⚖️", value => {
-    markets.attr("data-icon", value);
+  window.Controllers.IconSelector.open(getLayerOptions("markets").icon || "⚖️", value => {
+    setOptions({layerId: "markets"}, {icon: value});
     this.innerHTML = value;
     drawMarketsLayer();
   });

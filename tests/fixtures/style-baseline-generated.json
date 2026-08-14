@@ -176,10 +176,7 @@
     "opacity": "1",
     "fill-opacity": "0.03",
     "stroke-width": "1",
-    "stroke-opacity": "0.8",
-    "font-size": "5",
-    "data-size": "3",
-    "data-icon": "⚖️"
+    "stroke-opacity": "0.8"
   },
   "#oceanLayers": {
     "layers": "-6,-3,-1"

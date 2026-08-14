@@ -1,7 +1,14 @@
 import { color, curveBasisClosed, line, select } from "d3";
 import { isCtrlClick } from "@/utils";
+import { getLayerOptions } from "../services/styles/store";
 import { rn } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
+
+interface MarketsOptions {
+  size?: number;
+  fontSize?: number;
+  icon?: string;
+}
 
 export function toggleMarketsLayer(event?: MouseEvent) {
   if (!layerIsOn("toggleMarketsLayer")) {
@@ -33,9 +40,10 @@ function buildMarketsContent(): string {
   const isolines = getIsolines(pack, getType, { polygons: true });
 
   // marker circle size, emoji size and emoji icon are independently user-configurable
-  const baseRadius = +select("#markets").attr("data-size") || MARKET_RADIUS;
-  const baseFont = +select("#markets").attr("font-size") || MARKET_FONT;
-  const icon = select("#markets").attr("data-icon") || MARKET_ICON;
+  const marketsOptions = getLayerOptions<MarketsOptions>("markets");
+  const baseRadius = marketsOptions.size || MARKET_RADIUS;
+  const baseFont = marketsOptions.fontSize || MARKET_FONT;
+  const icon = marketsOptions.icon || MARKET_ICON;
 
   return pack.markets
     .map(market => {
