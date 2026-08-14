@@ -355,5 +355,49 @@
     "stroke": "#333333",
     "stroke-width": "0",
     "stroke-linecap": "butt"
+  },
+  "#burgIcons > g#capital": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "2",
+    "data-icon": "#icon-square"
+  },
+  "#burgIcons > g#city": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "1.5",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#town": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "stroke-linecap": "butt",
+    "font-size": "1",
+    "data-icon": "#icon-circle"
+  },
+  "#anchors > g#capital": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "1.9"
+  },
+  "#anchors > g#city": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "1.5"
   }
 }

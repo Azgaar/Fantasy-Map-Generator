@@ -26,7 +26,9 @@ const TARGETS = [
   "#population", "#rural", "#urban", "#prec", "#provs", "#regions", "#statesBody", "#statesHalo",
   "#relig", "#rivers", "#routes", "#roads", "#trails", "#searoutes", "#ruler", "#scaleBar",
   "#scaleBarBack", "#temperature", "#terrain", "#terrs", "#landHeights", "#oceanHeights",
-  "#texture", "#tradeAnimation", "#vignette", "#vignette-rect", "#zones"
+  "#texture", "#tradeAnimation", "#vignette", "#vignette-rect", "#zones",
+  "#burgIcons > g#capital", "#burgIcons > g#city", "#burgIcons > g#town",
+  "#anchors > g#capital", "#anchors > g#city"
 ];
 
 function collectStyleSnapshot(page: Page) {
