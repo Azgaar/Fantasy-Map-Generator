@@ -1,11 +1,37 @@
 import { interpolateString, select, sum } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { applySorting, applySortingByHeader, sortLines } from "@/components/dialog/sorting";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import type { State } from "@/generators/states-generator";
 import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
+
+const dialogId = "militaryOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+type MilitaryRow = {
+  state: State;
+  forces: Record<string, number>;
+  total: number;
+  population: number;
+  rate: number;
+  alert: number;
+};
+let columns: EditorColumn<MilitaryRow>[] = [];
+
+const militaryTable = initEditorTable<MilitaryRow>({
+  getData: getMilitaryData,
+  onUpdate: renderMilitaryPage
+});
 
 function open(): void {
   if (customization) return;
@@ -15,70 +41,42 @@ function open(): void {
   if (!layerIsOn("toggleMilitary")) toggleMilitary();
 
   renderDialog();
-  updateHeaders();
-  refreshMilitaryOverview();
+  militaryTable.reset();
 
   $("#militaryOverview").dialog({
     title: "Military Overview",
     resizable: false,
     width: "fit-content",
     close: closeMilitaryOverview,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
+  columns = getMilitaryColumns();
   document.getElementById("militaryOverview")?.remove();
-  const editorHtml = /* html */ `<div id="militaryOverview" class="dialog stable">
-      <div id="militaryHeader" class="header">
-        <div data-tip="State name. Click to sort" class="sortable alphabetically" data-sortby="state">
-          State&nbsp;
-        </div>
-        <div
-          data-tip="Total military personnel (considering crew). Click to sort"
-          id="militaryTotal"
-          class="sortable icon-sort-number-down"
-          data-sortby="total"
-        >
-          Total&nbsp;
-        </div>
-        <div data-tip="State population. Click to sort" class="sortable" data-sortby="population">
-          Population&nbsp;
-        </div>
-        <div
-          data-tip="Military personnel rate (% of state population). Depends on war alert. Click to sort"
-          class="sortable"
-          data-sortby="rate"
-        >
-          Rate&nbsp;
-        </div>
-        <div
-          data-tip="War Alert. Modifier to military forces number, depends of political situation. Click to sort"
-          class="sortable"
-          data-sortby="alert"
-        >
-          War Alert&nbsp;
-        </div>
+  const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+      <div id="militaryBody" class="table" data-type="absolute">
+        ${renderEditorHeader({ dialogId, columns })}
       </div>
-      <div id="militaryBody" class="table" data-type="absolute"></div>
       <div id="militaryFooter" class="totalLine">
         <div data-tip="States number" style="margin-left: 4px">
           States:&nbsp;<span id="militaryFooterStates">0</span>
         </div>
-        <div data-tip="Total military forces" style="margin-left: 14px">
+        <div data-tip="Total military forces" style="margin-left: 14px" data-col="total">
           Total forces:&nbsp;<span id="militaryFooterForcesTotal">0</span>
         </div>
-        <div data-tip="Average military forces per state" style="margin-left: 14px">
+        <div data-tip="Average military forces per state" style="margin-left: 14px" data-col="total">
           Average forces:&nbsp;<span id="militaryFooterForces">0</span>
         </div>
-        <div data-tip="Average forces rate per state" style="margin-left: 14px">
+        <div data-tip="Average forces rate per state" style="margin-left: 14px" data-col="rate">
           Average rate:&nbsp;<span id="militaryFooterRate">0%</span>
         </div>
-        <div data-tip="Average War Alert" style="margin-left: 14px">
+        <div data-tip="Average War Alert" style="margin-left: 14px" data-col="alert">
           Average alert:&nbsp;<span id="militaryFooterAlert">0</span>
         </div>
       </div>
-      <div id="militaryBottom">
+      <div id="militaryBottom" class="editorToolbar">
         <button id="militaryOverviewRefresh" data-tip="Refresh the overview screen" class="icon-cw"></button>
         <button id="militaryOptionsButton" data-tip="Edit Military units" class="icon-cog"></button>
         <button id="militaryRegimentsList" data-tip="Show regiments list" class="icon-list-bullet"></button>
@@ -101,7 +99,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("militaryHeader");
+  bindMilitaryColumns();
   applyLineHighlighting("militaryOverview", ({ cellId }) => pack.cells.state[cellId]);
 
   const body = ensureEl("militaryBody");
@@ -116,14 +114,16 @@ function renderDialog(): void {
 
   body.addEventListener("change", event => {
     const el = event.target as HTMLInputElement;
-    const line = el.parentNode as HTMLElement;
+    const line = el.closest<HTMLElement>(".states");
+    if (!line) return;
     const state = +line.dataset.id!;
-    changeAlert(state, line, +el.value);
+    changeAlert(state, +el.value);
   });
 
   body.addEventListener("click", event => {
     const el = event.target as HTMLElement;
-    const line = el.parentNode as HTMLElement;
+    const line = el.closest<HTMLElement>(".states");
+    if (!line) return;
     const state = +line.dataset.id!;
     if (el.tagName === "SPAN") openRegimentsOverview(state);
   });
@@ -138,104 +138,152 @@ async function openRegimentsOverview(state: number): Promise<void> {
   Controllers.RegimentsOverview.open(state);
 }
 
-// update military types in header and tooltips
-function updateHeaders(): void {
-  const header = ensureEl("militaryHeader");
-  const units = options.military.length;
-  header.style.gridTemplateColumns = `8em repeat(${units}, 5.2em) 4em 7em 5em 6em`;
+function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
+  const unitColumns: EditorColumn<MilitaryRow>[] = options.military.map(unit => ({
+    key: `unit:${unit.name}`,
+    label: capitalize(unit.name.replace(/_/g, " ")),
+    width: "5em",
+    mobileHidden: true,
+    tip: `State ${unit.name} units number. Click to sort`,
+    sortBy: row => row.forces[unit.name] || 0
+  }));
 
-  header.querySelectorAll(".removable").forEach(el => {
-    el.remove();
-  });
-  const insert = (html: string) => ensureEl("militaryTotal").insertAdjacentHTML("beforebegin", html);
-  for (const u of options.military) {
-    const label = capitalize(u.name.replace(/_/g, " "));
-    insert(
-      `<div data-tip="State ${
-        u.name
-      } units number. Click to sort" class="sortable removable" data-sortby="${u.name.toLowerCase()}">${label}&nbsp;</div>`
-    );
-  }
-  header.querySelectorAll<HTMLElement>(".removable").forEach(el => {
-    el.addEventListener("click", () => sortLines(el));
+  return [
+    { key: "color", width: "1.2em", permanent: true },
+    {
+      key: "state",
+      label: "State",
+      width: "7em",
+      permanent: true,
+      sortBy: row => row.state.name || "",
+      sortType: "alpha"
+    },
+    ...unitColumns,
+    {
+      key: "total",
+      label: "Total",
+      width: "5em",
+      defaultSort: "desc",
+      sortBy: row => row.total,
+      tip: "Total military personnel (considering crew). Click to sort"
+    },
+    { key: "population", label: "Population", width: "6.5em", mobileHidden: true, sortBy: row => row.population },
+    {
+      key: "rate",
+      label: "Rate",
+      width: "5em",
+      sortBy: row => row.rate,
+      tip: "Military personnel rate (% of state population). Depends on war alert. Click to sort"
+    },
+    {
+      key: "alert",
+      label: "War Alert",
+      width: "5.5em",
+      sortBy: row => row.alert,
+      tip: "War Alert. Modifier to military forces number, depends on political situation. Click to sort"
+    },
+    { key: "actions", width: "1.4em", permanent: true, align: "right" }
+  ];
+}
+
+function bindMilitaryColumns(): void {
+  bindColumnSorting(dialogId, militaryTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
 }
 
-// add line for each state
+function rebuildMilitaryColumns(): void {
+  columns = getMilitaryColumns();
+  ensureEl(`${dialogId}Header`).outerHTML = renderEditorHeader({ dialogId, columns });
+  bindMilitaryColumns();
+  militaryTable.reset();
+}
+
+function getMilitaryData(): MilitaryRow[] {
+  const rows = pack.states
+    .filter(state => state.i && !state.removed)
+    .map(state => {
+      const forces = Object.fromEntries(
+        options.military.map(unit => [
+          unit.name,
+          (state.military || []).reduce((total, regiment) => total + (regiment.u[unit.name] || 0), 0)
+        ])
+      );
+      const population = rn(((state.rural || 0) + (state.urban || 0) * urbanization) * populationRate);
+      const total = options.military.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
+      return {
+        state,
+        forces,
+        total,
+        population,
+        rate: population ? (total / population) * 100 : 0,
+        alert: state.alert ?? 0
+      };
+    });
+  return sortDataByColumns(dialogId, rows, columns);
+}
+
 function refreshMilitaryOverview(): void {
-  const body = ensureEl("militaryBody");
-  body.innerHTML = "";
-  let lines = "";
-  const states = pack.states.filter(s => s.i && !s.removed);
-
-  for (const s of states) {
-    const population = rn((s.rural! + s.urban! * urbanization) * populationRate);
-    const getForces = (u: MilitaryUnit) => (s.military || []).reduce((acc, r) => acc + (r.u[u.name] || 0), 0);
-    const total = options.military.reduce((acc, u) => acc + getForces(u) * u.crew, 0);
-    const rate = (total / population) * 100;
-
-    const sortData = options.military.map(u => `data-${u.name.toLowerCase()}="${getForces(u)}"`).join(" ");
-    const lineData = options.military
-      .map(u => `<div data-type="${u.name}" data-tip="State ${u.name} units number">${getForces(u)}</div>`)
-      .join(" ");
-
-    lines += /* html */ `<div
-        class="states"
-        data-id=${s.i}
-        data-state="${s.name}"
-        ${sortData}
-        data-total="${total}"
-        data-population="${population}"
-        data-rate="${rate}"
-        data-alert="${s.alert}"
-      >
-        <fill-box data-tip="${s.fullName}" fill="${s.color}" disabled></fill-box>
-        <input data-tip="${s.fullName}" style="width:6em" value="${s.name}" readonly />
-        ${lineData}
-        <div data-type="total" data-tip="Total state military personnel (considering crew)" style="font-weight: bold">${si(
-          total
-        )}</div>
-        <div data-type="population" data-tip="State population">${si(population)}</div>
-        <div data-type="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(
-          rate,
-          2
-        )}%</div>
-        <input
-          data-tip="War Alert. Editable modifier to military forces number, depends of political situation"
-          style="width:4.1em"
-          type="number"
-          min="0"
-          step=".01"
-          value="${rn(s.alert ?? 0, 2)}"
-        />
-        <span data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
-      </div>`;
-  }
-  body.insertAdjacentHTML("beforeend", lines);
-  updateFooter();
-
-  // add listeners
-  body.querySelectorAll<HTMLElement>("div.states").forEach(el => {
-    el.addEventListener("mouseenter", event => stateHighlightOn(event));
-  });
-  body.querySelectorAll<HTMLElement>("div.states").forEach(el => {
-    el.addEventListener("mouseleave", event => stateHighlightOff(event));
-  });
-
-  if (body.dataset.type === "percentage") {
-    body.dataset.type = "absolute";
-    togglePercentageMode();
-  }
-  applySorting(ensureEl("militaryHeader"));
+  militaryTable.refresh();
 }
 
-function changeAlert(state: number, line: HTMLElement, alert: number): void {
+function renderMilitaryPage(view: TableView<MilitaryRow>): void {
+  const body = ensureEl("militaryBody");
+  const percentage = body.dataset.type === "percentage";
+  const totals = view.all.reduce(
+    (result, row) => {
+      result.total += row.total;
+      result.population += row.population;
+      for (const unit of options.military)
+        result.units[unit.name] = (result.units[unit.name] || 0) + row.forces[unit.name];
+      return result;
+    },
+    { total: 0, population: 0, units: {} as Record<string, number> }
+  );
+  const percent = (value: number, total: number) => `${rn(total ? (value / total) * 100 : 0)}%`;
+  const lines = view.rows
+    .map(row => {
+      const unitCells = options.military
+        .map(unit => {
+          const value = row.forces[unit.name] || 0;
+          return `<div data-col="${`unit:${unit.name}`}" data-tip="State ${unit.name} units number">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
+        })
+        .join("");
+      return /* html */ `<div class="states" data-id="${row.state.i}">
+        <fill-box data-col="color" data-tip="${row.state.fullName}" fill="${row.state.color}" disabled></fill-box>
+        <input data-col="state" data-tip="${row.state.fullName}" value="${row.state.name}" readonly />
+        ${unitCells}
+        <div data-col="total" data-tip="Total state military personnel (considering crew)" style="font-weight:bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
+        <div data-col="population" data-tip="State population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
+        <div data-col="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(row.rate, 2)}%</div>
+        <input data-col="alert" data-tip="War Alert. Editable modifier to military forces number, depends on political situation" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
+        <div data-col="actions"><span data-tip="Show regiments list" class="icon-list-bullet pointer"></span></div>
+      </div>`;
+    })
+    .join("");
+
+  body.querySelectorAll(":scope > .states").forEach(line => {
+    line.remove();
+  });
+  body.insertAdjacentHTML("beforeend", lines);
+  updateFooter(view);
+  renderEditorPagination(ensureEl("militaryFooter"), view, militaryTable.goto);
+
+  body.querySelectorAll<HTMLElement>(":scope > .states").forEach(line => {
+    line.addEventListener("mouseenter", stateHighlightOn);
+    line.addEventListener("mouseleave", stateHighlightOff);
+  });
+  updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function changeAlert(state: number, alert: number): void {
   const s = pack.states[state];
   const prevAlert = s.alert ?? 1;
   const dif = prevAlert ? alert / prevAlert : 0; // modifier
   s.alert = alert;
-  line.dataset.alert = String(alert);
-
   (s.military || []).forEach(r => {
     Object.keys(r.u).forEach(u => {
       r.u[u] = rn(r.u[u] * dif);
@@ -244,34 +292,20 @@ function changeAlert(state: number, line: HTMLElement, alert: number): void {
     select<SVGGElement, unknown>(`#armies > g > g#regiment${s.i}-${r.i} > text`).text(Military.getTotal(r)); // change icon text
   });
 
-  const getForces = (u: MilitaryUnit) => (s.military || []).reduce((acc, r) => acc + (r.u[u.name] || 0), 0);
-  options.military.forEach(u => {
-    const forces = getForces(u);
-    line.dataset[u.name] = String(forces);
-    line.querySelector(`div[data-type='${u.name}']`)!.innerHTML = String(forces);
-  });
-
-  const population = rn((s.rural! + s.urban! * urbanization) * populationRate);
-  const total = options.military.reduce((acc, u) => acc + getForces(u) * u.crew, 0);
-  line.dataset.total = String(total);
-  const rate = (total / population) * 100;
-  line.dataset.rate = String(rate);
-  line.querySelector("div[data-type='total']")!.innerHTML = si(total);
-  line.querySelector("div[data-type='rate']")!.innerHTML = `${rn(rate, 2)}%`;
-
-  updateFooter();
+  militaryTable.refresh();
 }
 
-function updateFooter(): void {
-  const body = ensureEl("militaryBody");
-  const lines = Array.from(body.querySelectorAll<HTMLElement>(":scope > div"));
-  const statesNumber = pack.states.filter(s => s.i && !s.removed).length;
+function updateFooter(view: TableView<MilitaryRow>): void {
+  const statesNumber = view.all.length;
+  const total = sum(view.all.map(row => row.total));
   ensureEl("militaryFooterStates").innerHTML = String(statesNumber);
-  const total = sum(lines.map(el => +el.dataset.total!));
   ensureEl("militaryFooterForcesTotal").innerHTML = si(total);
-  ensureEl("militaryFooterForces").innerHTML = si(total / statesNumber);
-  ensureEl("militaryFooterRate").innerHTML = `${rn(sum(lines.map(el => +el.dataset.rate!)) / statesNumber, 2)}%`;
-  ensureEl("militaryFooterAlert").innerHTML = String(rn(sum(lines.map(el => +el.dataset.alert!)) / statesNumber, 2));
+  ensureEl("militaryFooterForces").innerHTML = si(statesNumber ? total / statesNumber : 0);
+  ensureEl("militaryFooterRate").innerHTML =
+    `${rn(statesNumber ? sum(view.all.map(row => row.rate)) / statesNumber : 0, 2)}%`;
+  ensureEl("militaryFooterAlert").innerHTML = String(
+    rn(statesNumber ? sum(view.all.map(row => row.alert)) / statesNumber : 0, 2)
+  );
 }
 
 function stateHighlightOn(event: Event): void {
@@ -316,30 +350,8 @@ function stateHighlightOff(event: Event): void {
 
 function togglePercentageMode(): void {
   const body = ensureEl("militaryBody");
-  if (body.dataset.type === "absolute") {
-    body.dataset.type = "percentage";
-    const lines = body.querySelectorAll<HTMLElement>(":scope > div");
-    const array = Array.from(lines);
-    const cache: Record<string, number> = {};
-
-    const total = (type: string): number => {
-      if (cache[type]) return cache[type];
-      cache[type] = sum(array.map(el => +(el.dataset[type] || 0)));
-      return cache[type];
-    };
-
-    lines.forEach(el => {
-      el.querySelectorAll<HTMLElement>("div").forEach(div => {
-        const type = div.dataset.type!;
-        if (type === "rate") return;
-        const elTotal = total(type);
-        div.textContent = elTotal ? `${rn((+(el.dataset[type] || 0) / elTotal) * 100)}%` : "0%";
-      });
-    });
-  } else {
-    body.dataset.type = "absolute";
-    refreshMilitaryOverview();
-  }
+  body.dataset.type = body.dataset.type === "absolute" ? "percentage" : "absolute";
+  militaryTable.refresh();
 }
 
 function militaryCustomize(): void {
@@ -606,8 +618,7 @@ function militaryCustomize(): void {
     });
     localStorage.setItem("military", JSON.stringify(options.military));
     Military.generate();
-    updateHeaders();
-    refreshMilitaryOverview();
+    rebuildMilitaryColumns();
   }
 }
 
@@ -667,19 +678,12 @@ function militaryRecalculate(): void {
 }
 
 function downloadMilitaryData(): void {
-  const body = ensureEl("militaryBody");
   const units = options.military.map(u => u.name);
   let data = `Id,State,${units.map(u => capitalize(u)).join(",")},Total,Population,Rate,War Alert\n`; // headers
 
-  body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-    data += `${el.dataset.id},`;
-    data += `${el.dataset.state},`;
-    data += `${units.map(u => el.dataset[u.toLowerCase()]).join(",")},`;
-    data += `${el.dataset.total},`;
-    data += `${el.dataset.population},`;
-    data += `${rn(Number(el.dataset.rate), 2)}%,`;
-    data += `${el.dataset.alert}\n`;
-  });
+  for (const row of getMilitaryData()) {
+    data += `${row.state.i},${row.state.name},${units.map(unit => row.forces[unit] || 0).join(",")},${row.total},${row.population},${rn(row.rate, 2)}%,${row.alert}\n`;
+  }
 
   const name = `${getFileName("Military")}.csv`;
   downloadFile(data, name);
