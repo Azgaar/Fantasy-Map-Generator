@@ -77,15 +77,9 @@
     "stroke-width": "0.5",
     "style": "display: none;"
   },
-  "#stateEmblems": {
-    "data-size": "1"
-  },
-  "#provinceEmblems": {
-    "data-size": "1"
-  },
-  "#burgEmblems": {
-    "data-size": "1"
-  },
+  "#stateEmblems": {},
+  "#provinceEmblems": {},
+  "#burgEmblems": {},
   "#fogging": {
     "opacity": "0.98",
     "fill": "#1b1423",

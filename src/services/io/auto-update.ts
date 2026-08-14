@@ -1558,6 +1558,15 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
   }
 }
 
+// once a layer's reader is migrated off the DOM (Task 9), its options-backed attrs are dead
+// weight on the harvested DOM - nothing reads them, so strip them here right after harvest
+// populates style.layers, keeping old maps' live SVG clean of attrs nothing consults anymore
+const REMOVE_AFTER_HARVEST: { selector: string; attributes: string[] }[] = [
+  { selector: "#emblems > #stateEmblems", attributes: ["data-size"] },
+  { selector: "#emblems > #provinceEmblems", attributes: ["data-size"] },
+  { selector: "#emblems > #burgEmblems", attributes: ["data-size"] }
+];
+
 // selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,
 // then run through the same upgrader the legacy preset importer uses
 function harvestLegacyLayerStyles(): void {
@@ -1598,4 +1607,10 @@ function harvestLegacyLayerStyles(): void {
   const harvested = upgradeLegacyPreset(legacy, { onUnknownSelector: "skip" });
   // harvested wins over nothing; existing style.layers (from data[48] of a mid-format map) wins over harvest
   style = { ...style, ...ensureStyleShape({ layers: deepMerge(harvested.layers, style.layers) }) };
+
+  for (const { selector, attributes } of REMOVE_AFTER_HARVEST) {
+    const el = document.querySelector<SVGElement>(selector);
+    if (!el) continue;
+    for (const attr of attributes) el.removeAttribute(attr);
+  }
 }

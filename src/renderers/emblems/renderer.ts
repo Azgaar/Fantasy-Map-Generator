@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { getEmblemGroupSize } from "../draw-emblems";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -315,7 +316,7 @@ class EmblemRenderModule {
     const g: HTMLElement = document.getElementById(`${type}Emblems`) as HTMLElement;
 
     if (select("#emblems").selectAll("use").size()) {
-      const size = parseFloat(g.getAttribute("font-size") || "50");
+      const size = getEmblemGroupSize(type as "state" | "province" | "burg");
       const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
       g.insertAdjacentHTML("beforeend", use);
     }

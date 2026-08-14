@@ -417,9 +417,9 @@ function selectStyleElement() {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 1;
-    emblemsStateSizeInput.value = emblems.select("#stateEmblems").attr("data-size") || 1;
-    emblemsProvinceSizeInput.value = emblems.select("#provinceEmblems").attr("data-size") || 1;
-    emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
+    emblemsStateSizeInput.value = getLayerOptions("emblems", "stateEmblems").size ?? 1;
+    emblemsProvinceSizeInput.value = getLayerOptions("emblems", "provinceEmblems").size ?? 1;
+    emblemsBurgSizeInput.value = getLayerOptions("emblems", "burgEmblems").size ?? 1;
   }
 
   if (styleElement === "goodsIcons") {
@@ -1087,17 +1087,17 @@ styleArmiesSize.addEventListener("input", e => {
 });
 
 emblemsStateSizeInput.addEventListener("change", e => {
-  emblems.select("#stateEmblems").attr("data-size", e.target.value);
+  setOptions({layerId: "emblems", childIds: ["stateEmblems"]}, {size: +e.target.value});
   drawEmblems();
 });
 
 emblemsProvinceSizeInput.addEventListener("change", e => {
-  emblems.select("#provinceEmblems").attr("data-size", e.target.value);
+  setOptions({layerId: "emblems", childIds: ["provinceEmblems"]}, {size: +e.target.value});
   drawEmblems();
 });
 
 emblemsBurgSizeInput.addEventListener("change", e => {
-  emblems.select("#burgEmblems").attr("data-size", e.target.value);
+  setOptions({layerId: "emblems", childIds: ["burgEmblems"]}, {size: +e.target.value});
   drawEmblems();
 });
 

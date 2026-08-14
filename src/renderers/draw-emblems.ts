@@ -1,7 +1,12 @@
 import { forceCollide, forceSimulation, select, timeout } from "d3";
 import type { Burg } from "../generators/burgs-generator";
 import type { State } from "../generators/states-generator";
+import { getLayerOptions } from "../services/styles/store";
 import { minmax, rn } from "../utils";
+
+interface EmblemChildOptions {
+  size?: number;
+}
 
 declare global {
   var drawEmblems: () => void;
@@ -38,6 +43,36 @@ export function clearEmblems(types: EmblemType[]): void {
   }
 }
 
+export const getStateEmblemsSize = (): number => {
+  const validStates = pack.states.filter(s => s.i && !s.removed && s.coa && s.coa.size !== 0);
+  const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
+  const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
+  const sizeMod = getLayerOptions<EmblemChildOptions>("emblems", "stateEmblems").size ?? 1;
+  return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
+};
+
+export const getProvinceEmblemsSize = (): number => {
+  const validProvinces = (pack.provinces as Province[]).filter(p => p.i && !p.removed && p.coa && p.coa.size !== 0);
+  const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
+  const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
+  const sizeMod = getLayerOptions<EmblemChildOptions>("emblems", "provinceEmblems").size ?? 1;
+  return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
+};
+
+export const getBurgEmblemSize = (): number => {
+  const validBurgs = pack.burgs.filter(b => b.i && !b.removed && b.coa && b.coa.size !== 0);
+  const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
+  const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
+  const sizeMod = getLayerOptions<EmblemChildOptions>("emblems", "burgEmblems").size ?? 1;
+  return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
+};
+
+export function getEmblemGroupSize(type: EmblemType): number {
+  if (type === "state") return getStateEmblemsSize();
+  if (type === "province") return getProvinceEmblemsSize();
+  return getBurgEmblemSize();
+}
+
 const emblemsRenderer = (): void => {
   TIME && console.time("drawEmblems");
   const { states, provinces, burgs } = pack;
@@ -45,27 +80,6 @@ const emblemsRenderer = (): void => {
   const validStates = states.filter(s => s.i && !s.removed && s.coa && s.coa.size !== 0);
   const validProvinces = (provinces as Province[]).filter(p => p.i && !p.removed && p.coa && p.coa.size !== 0);
   const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coa.size !== 0);
-
-  const getStateEmblemsSize = (): number => {
-    const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
-    const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +select("#emblems").select("#stateEmblems").attr("data-size") || 1;
-    return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
-  };
-
-  const getProvinceEmblemsSize = (): number => {
-    const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
-    const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +select("#emblems").select("#provinceEmblems").attr("data-size") || 1;
-    return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
-  };
-
-  const getBurgEmblemSize = (): number => {
-    const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
-    const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +select("#emblems").select("#burgEmblems").attr("data-size") || 1;
-    return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
-  };
 
   const sizeBurgs = getBurgEmblemSize();
   const burgCOAs: EmblemNode[] = validBurgs.map(burg => {
