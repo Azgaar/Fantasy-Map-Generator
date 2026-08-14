@@ -12,7 +12,7 @@ import { applyLayerStyle } from "@/services/styles/apply";
 import { parseStyle } from "@/services/styles/schema";
 import { ensureStyleShape } from "@/services/styles/store";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import type { LayerId } from "@/types/style";
+import type { LayerId, Style } from "@/types/style";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -489,9 +489,25 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     if (data[48]) {
-      const parsed = JSON.parse(data[48]);
+      // malformed data[48] must not abort the load: recover as much as JSON.parse/parseStyle allow
+      // and fall back to an empty style shape for whatever part failed
+      // untyped: mirrors the legacy JSON.parse(data[48]) shape until Task 12
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(data[48]);
+      } catch (error) {
+        ERROR && console.error("Style: data[48] is not valid JSON, falling back to an empty style", error);
+      }
+
       const legacyKeys = (({ labels, burgIcons, anchors, relief }) => ({ labels, burgIcons, anchors, relief }))(parsed);
-      style = Object.assign(ensureStyleShape(parseStyle({ layers: parsed.layers ?? {} })), legacyKeys);
+      let layers: Style["layers"] = {};
+      try {
+        layers = parseStyle({ layers: parsed.layers ?? {} }).layers;
+      } catch (error) {
+        ERROR && console.error("Style: data[48].layers failed validation, falling back to an empty style", error);
+      }
+
+      style = Object.assign(ensureStyleShape({ layers }), legacyKeys);
     } else {
       // no data[48] at all (pre-style-export map): keep whatever legacy labels/burgIcons/anchors/relief
       // the currently active preset already put on `style`; the version migrations below repopulate them
@@ -502,6 +518,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const { resolveVersionConflicts } = await import("./auto-update");
       resolveVersionConflicts(mapVersion!, data);
     }
+
+    // data[48]/harvest is now authoritative for presentation: re-apply over whatever the embedded svg
+    // carried, before anything below draws from it. Must run before drawLabels/drawBurgIcons so their
+    // renderer-owned groups (and the legacy mirrors those renderers still read) aren't stale on first draw
+    for (const layerId of Object.keys(style.layers) as LayerId[]) applyLayerStyle(layerId);
+    if (typeof window.projectLegacyStyleMirrors === "function") window.projectLegacyStyleMirrors();
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
@@ -831,12 +853,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (layerIsOn("toggleGrid")) drawGrid();
     if (layerIsOn("toggleLabels")) drawLabels();
     if (layerIsOn("toggleRelief")) drawRelief();
-
-    // data[48]/harvest is now authoritative for presentation: re-apply over whatever the embedded svg carried
-    for (const layerId of Object.keys(style.layers) as LayerId[]) applyLayerStyle(layerId);
-    // legacy mirrors (style.labels.groups/burgIcons/anchors) feed getGroupStyle/createIconGroups directly;
-    // applyStylePreset keeps them in sync on the preset path, loaded maps need the same projection
-    window.projectLegacyStyleMirrors();
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

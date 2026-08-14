@@ -1563,17 +1563,20 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 function harvestLegacyLayerStyles(): void {
   const legacy: Record<string, Record<string, unknown>> = {};
 
-  const harvestElement = (selector: string, el: Element, attributes: string[]) => {
+  const harvestElement = (selector: string, el: SVGElement, attributes: string[]) => {
     const bag: Record<string, unknown> = {};
     for (const attr of attributes) {
-      const value = el.getAttribute(attr);
+      // matches the legacy collector's precedence: a non-empty inline style wins over the plain
+      // attribute, but an attribute present-and-empty (e.g. scaleBar's data-label="") still counts
+      const styleValue = (el.style as unknown as Record<string, string>)[attr];
+      const value = styleValue ? styleValue : el.getAttribute(attr);
       if (value !== null) bag[attr] = value;
     }
     if (Object.keys(bag).length) legacy[selector] = bag;
   };
 
   for (const [selector, attributes] of Object.entries(LEGACY_SELECTOR_ATTRIBUTES)) {
-    const el = document.querySelector(selector);
+    const el = document.querySelector<SVGElement>(selector);
     if (el) harvestElement(selector, el, attributes);
   }
 
@@ -1582,9 +1585,11 @@ function harvestLegacyLayerStyles(): void {
   for (const { layerId, attributes } of LEGACY_GROUP_ATTRIBUTES) {
     const isG = layerId !== "labels";
     for (const el of document.querySelectorAll<SVGGElement>(`#${layerId} > ${isG ? "g" : "*"}`)) {
-      // the current renderer prefixes label group ids ("labels-state") to avoid id clashes;
-      // burgIcons/anchors groups keep the bare group name as their id
-      const name = layerId === "labels" ? el.dataset.group : el.id;
+      // the current renderer prefixes label group ids ("labels-state") to avoid id clashes and
+      // keeps the bare name on data-group; older/hidden-on-load maps never got that treatment
+      // (dataset.group unset), so fall back to the id itself, stripping a "labels-" prefix if
+      // present, down to a very old map's bare-id group (e.g. <g id="capital"> directly)
+      const name = layerId === "labels" ? el.dataset.group || el.id.replace(/^labels-/, "") : el.id;
       if (!name) continue;
       harvestElement(`#${layerId} > ${isG ? "g" : ""}#${name}`, el, attributes);
     }

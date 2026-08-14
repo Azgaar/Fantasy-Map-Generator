@@ -319,7 +319,8 @@ test.describe("Map loading", () => {
       rivers: (style as any).layers.rivers,
       roads: (style as any).layers.routes?.children?.roads,
       haloWidth: (style as any).layers.regions?.children?.statesHalo?.options?.width,
-      riversFillDom: document.getElementById("rivers")?.getAttribute("fill")
+      riversFillDom: document.getElementById("rivers")?.getAttribute("fill"),
+      labelsChildIds: Array.from(document.querySelectorAll("#labels > [id]")).map(el => el.id)
     }));
 
     expect(harvested.rivers.presentation.fill).toBeDefined();
@@ -327,6 +328,11 @@ test.describe("Map loading", () => {
     expect(typeof harvested.haloWidth).toBe("number");
     // applier re-wrote the same value the SVG carried — parity, not deletion
     expect(harvested.riversFillDom).toBe(harvested.rivers.presentation.fill);
+    // the applier must never create a stray id="<name>" sibling next to the renderer's own
+    // id="labels-<name>" group (CONTROLLER RULING 10 / F1): every #labels child stays "labels-*"
+    expect(harvested.labelsChildIds.length).toBeGreaterThan(0);
+    expect(harvested.labelsChildIds.every(id => id.startsWith("labels-"))).toBe(true);
+    expect(new Set(harvested.labelsChildIds).size).toBe(harvested.labelsChildIds.length);
   });
 
   test("legacy label settings should migrate without changing behavior", async ({page}) => {

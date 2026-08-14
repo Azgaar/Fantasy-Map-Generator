@@ -44,6 +44,7 @@
     "opacity": "0.6",
     "stroke": "#1f3846",
     "stroke-width": "0.7",
+    "filter": "none",
     "style": "filter: none;"
   },
   "#lake_island": {
