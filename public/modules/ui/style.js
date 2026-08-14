@@ -277,23 +277,28 @@ function selectStyleElement() {
 
   if (styleElement === "population") {
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population
-      .select("#rural")
-      .attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population
-      .select("#urban")
-      .attr("stroke");
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = getStyleNode(
+      "population",
+      "rural"
+    ).presentation?.["stroke"];
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = getStyleNode(
+      "population",
+      "urban"
+    ).presentation?.["stroke"];
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0;
   }
 
   if (styleElement === "regions") {
     styleStates.style.display = "block";
-    styleStatesBodyOpacity.value = statesBody.attr("opacity") || 1;
-    styleStatesBodyFilter.value = statesBody.attr("filter") || "";
+    const statesBodyNode = getStyleNode("regions", "statesBody");
+    const statesHaloNode = getStyleNode("regions", "statesHalo");
+    styleStatesBodyOpacity.value = statesBodyNode.presentation?.["opacity"] || 1;
+    styleStatesBodyFilter.value = statesBodyNode.presentation?.["filter"] || "";
     styleStatesHaloWidth.value = statesHalo.attr("data-width") || 10;
-    styleStatesHaloOpacity.value = statesHalo.attr("opacity") || 1;
-    styleStatesHaloBlur.value = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
+    styleStatesHaloOpacity.value = statesHaloNode.presentation?.["opacity"] || 1;
+    styleStatesHaloBlur.value =
+      parseFloat(statesHaloNode.presentation?.["filter"]?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
   }
 
   if (styleElement === "labels") {
@@ -879,12 +884,12 @@ styleTemperatureFillInput.addEventListener("input", e => {
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
-  population.select("#rural").attr("stroke", e.target.value);
+  setPresentation({layerId: "population", childIds: ["rural"]}, "stroke", e.target.value);
   stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
 stylePopulationUrbanStrokeInput.addEventListener("input", e => {
-  population.select("#urban").attr("stroke", e.target.value);
+  setPresentation({layerId: "population", childIds: ["urban"]}, "stroke", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
@@ -1043,26 +1048,27 @@ styleFontShiftY.addEventListener("input", e => {
 });
 
 styleStatesBodyOpacity.addEventListener("input", e => {
-  statesBody.attr("opacity", e.target.value);
+  setPresentation({layerId: "regions", childIds: ["statesBody"]}, "opacity", e.target.value);
 });
 
 styleStatesBodyFilter.addEventListener("change", function () {
-  statesBody.attr("filter", this.value);
+  setPresentation({layerId: "regions", childIds: ["statesBody"]}, "filter", this.value);
 });
 
 styleStatesHaloWidth.addEventListener("input", e => {
   const value = e.target.value;
-  statesHalo.attr("data-width", value).attr("stroke-width", value);
+  statesHalo.attr("data-width", value); // options-backed; Task 10 moves this to setOptions
+  setPresentation({layerId: "regions", childIds: ["statesHalo"]}, "stroke-width", value);
 });
 
 styleStatesHaloOpacity.addEventListener("input", e => {
-  statesHalo.attr("opacity", e.target.value);
+  setPresentation({layerId: "regions", childIds: ["statesHalo"]}, "opacity", e.target.value);
 });
 
 styleStatesHaloBlur.addEventListener("input", e => {
   const value = Number(e.target.value);
   const blur = value > 0 ? `blur(${value}px)` : null;
-  statesHalo.attr("filter", blur);
+  setPresentation({layerId: "regions", childIds: ["statesHalo"]}, "filter", blur);
 });
 
 styleArmiesFillOpacity.addEventListener("input", e => {

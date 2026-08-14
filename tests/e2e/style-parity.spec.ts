@@ -135,7 +135,14 @@ test("editor bridge writes reach style.layers, the DOM, and the labels legacy mi
     w.projectLegacyStyleMirrors();
     const labelsMirror = style.labels.groups[groupName]?.opacity;
 
-    return {riversStore, riversDom, roadsStore, roadsDom, labelsStore, labelsDom, labelsMirror};
+    w.setPresentation({layerId: "regions", childIds: ["statesHalo"]}, "opacity", "0.77");
+    const statesHaloStore = style.layers.regions.children.statesHalo.presentation.opacity;
+    const statesHaloDom = document.querySelector("#regions > g#statesHalo")?.getAttribute("opacity");
+
+    return {
+      riversStore, riversDom, roadsStore, roadsDom, labelsStore, labelsDom, labelsMirror,
+      statesHaloStore, statesHaloDom
+    };
   });
 
   expect(result.riversStore).toBe("#123456");
@@ -145,4 +152,6 @@ test("editor bridge writes reach style.layers, the DOM, and the labels legacy mi
   expect(result.labelsStore).toBe("0.42");
   expect(result.labelsDom).toBe("0.42");
   expect(result.labelsMirror).toBe("0.42");
+  expect(result.statesHaloStore).toBe("0.77");
+  expect(result.statesHaloDom).toBe("0.77");
 });
