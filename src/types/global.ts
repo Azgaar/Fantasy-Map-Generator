@@ -34,6 +34,11 @@ declare global {
     drawRelief: typeof import("../renderers/draw-relief-icons").drawRelief;
     redrawRelief: typeof import("../renderers/draw-relief-icons").redrawRelief;
     applyLayerStyle: typeof import("../services/styles/apply").applyLayerStyle;
+    ensureStyleShape: typeof import("../services/styles/store").ensureStyleShape;
+    getStyleNode: typeof import("../services/styles/store").getStyleNode;
+    getLayerOptions: typeof import("../services/styles/store").getLayerOptions;
+    setPresentation: typeof import("../services/styles/store").setPresentation;
+    setOptions: typeof import("../services/styles/store").setOptions;
     redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;
