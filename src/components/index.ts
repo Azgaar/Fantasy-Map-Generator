@@ -7,6 +7,8 @@ import "./zoom";
 import "./viewbox-events";
 import "./tools";
 import "./hotkeys";
+import "./layers-presets";
+import "./layers-tab";
 import "./dialog/dialog-helpers";
 import "./dialog/sorting";
 import "./fill-box";

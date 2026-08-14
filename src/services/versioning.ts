@@ -15,7 +15,7 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
-export const VERSION = "1.143.1";
+export const VERSION = "1.144.0";
 
 const latestPublicChanges = [
   "Relief icons: improved performance",

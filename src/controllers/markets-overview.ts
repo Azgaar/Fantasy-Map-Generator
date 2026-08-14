@@ -14,8 +14,9 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawGoods } from "@/renderers/draw-goods";
-import { drawMarkets, toggleMarketsLayer } from "@/renderers/draw-markets";
+import { drawMarkets } from "@/renderers/draw-markets";
+import { Layers } from "@/renderers/layers/layers";
+import { goodsLayer, marketsLayer, tradeLayer } from "@/renderers/layers/map-layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName } from "@/utils";
@@ -76,7 +77,7 @@ const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpd
 function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  Layers.show(marketsLayer);
 
   renderDialog();
   marketsTable.reset();
@@ -260,7 +261,7 @@ function renderMarketRow(
 }
 
 function enterMarketsManualAssignment(): void {
-  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  Layers.show(marketsLayer);
   customization = 15;
   marketsManualHistory = [];
 
@@ -495,7 +496,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   if (!ev.shiftKey) exitAddMarketMode();
 
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+  Layers.draw(marketsLayer);
   marketsTable.refresh();
 }
 
@@ -510,7 +511,7 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+      Layers.draw(marketsLayer);
       marketsTable.refresh();
     }
   });
@@ -619,9 +620,8 @@ function regenerateMarkets() {
       if (regenProduction) {
         Production.regenerate();
       }
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      Layers.draw(marketsLayer, goodsLayer);
+      if (tradeLayer.isOn) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -635,8 +635,8 @@ function regenerateProduction() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      Layers.draw(goodsLayer);
+      if (tradeLayer.isOn) tradeAnimation.restart();
       refreshEditors();
     }
   });

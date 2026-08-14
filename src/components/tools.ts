@@ -2,16 +2,29 @@ import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
-import { drawBorders } from "@/renderers/draw-borders";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
-import { drawGoods } from "@/renderers/draw-goods";
-import { drawIce } from "@/renderers/draw-ice";
-import { drawMarkers } from "@/renderers/draw-markers";
-import { drawMarkets } from "@/renderers/draw-markets";
-import { drawMilitary } from "@/renderers/draw-military";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  bordersLayer,
+  burgIconsLayer,
+  culturesLayer,
+  emblemsLayer,
+  goodsLayer,
+  iceLayer,
+  markersLayer,
+  marketsLayer,
+  militaryLayer,
+  populationLayer,
+  provincesLayer,
+  religionsLayer,
+  riversLayer,
+  routesLayer,
+  statesLayer,
+  tradeLayer,
+  zonesLayer
+} from "@/renderers/layers/map-layers";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -133,18 +146,17 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  if (layerIsOn("toggleRoutes")) drawRoutes();
+  Layers.draw(routesLayer);
 }
 
 function regenerateRivers(): void {
   Rivers.regenerate();
-  if (layerIsOn("toggleRivers")) drawRivers();
+  Layers.draw(riversLayer);
 }
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  Layers.draw(populationLayer, goodsLayer);
 }
 
 function regenerateStates(): void {
@@ -153,14 +165,10 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   unfog();
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  Layers.draw(statesLayer, bordersLayer, provincesLayer);
   drawLabels();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleMilitary")) drawMilitary();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleEmblems")) {
+  Layers.draw(burgIconsLayer, militaryLayer, goodsLayer);
+  if (emblemsLayer.isOn) {
     clearEmblems(["state", "province"]);
     drawEmblems();
   }
@@ -169,10 +177,9 @@ function regenerateStates(): void {
 function regenerateProvinces(): void {
   Provinces.regenerate();
   unfog();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  Layers.draw(bordersLayer, provincesLayer);
   drawLabels();
-  if (layerIsOn("toggleEmblems")) {
+  if (emblemsLayer.isOn) {
     clearEmblems(["province"]);
     drawEmblems();
   }
@@ -180,12 +187,10 @@ function regenerateProvinces(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  Layers.draw(burgIconsLayer);
   drawLabels();
-  if (layerIsOn("toggleRoutes")) drawRoutes();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleEmblems")) {
+  Layers.draw(routesLayer, populationLayer, goodsLayer);
+  if (emblemsLayer.isOn) {
     clearEmblems(["burg"]);
     drawEmblems();
   }
@@ -193,69 +198,64 @@ function regenerateBurgs(): void {
 
 function regenerateGoods(): void {
   Goods.regenerate();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  Layers.draw(goodsLayer);
 }
 
 function regenerateMarkets(): void {
   Markets.regenerate();
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+  Layers.draw(marketsLayer, goodsLayer);
+  if (tradeLayer.isOn) tradeAnimation.restart();
 }
 
 function regenerateEconomy(): void {
   Production.regenerateEconomy();
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+  Layers.draw(marketsLayer, goodsLayer);
+  if (tradeLayer.isOn) tradeAnimation.restart();
 }
 
 function regenerateProduction(): void {
   Production.regenerate();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+  Layers.draw(goodsLayer);
+  if (tradeLayer.isOn) tradeAnimation.restart();
 }
 
 function regenerateEmblems(): void {
   COA.regenerate();
-  if (!layerIsOn("toggleEmblems")) return;
+  if (!emblemsLayer.isOn) return;
   clearEmblems(["state", "province", "burg"]);
   drawEmblems();
 }
 
 function regenerateReligions(): void {
   Religions.regenerate();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  Layers.draw(religionsLayer, goodsLayer);
 }
 
 function regenerateCultures(): void {
   Cultures.regenerate();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  Layers.draw(culturesLayer, goodsLayer);
 }
 
 function regenerateMilitary(): void {
   Military.regenerate();
-  if (layerIsOn("toggleMilitary")) drawMilitary();
+  Layers.draw(militaryLayer);
 }
 
 function regenerateIce(): void {
   Ice.regenerate();
-  if (layerIsOn("toggleIce")) drawIce();
+  Layers.draw(iceLayer);
 }
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  Layers.draw(markersLayer);
 }
 
 function regenerateZones(event: MouseEvent): void {
   function applyZonesRegeneration(multiplier: number): void {
     Zones.regenerate(multiplier);
     refreshEditors();
-    if (layerIsOn("toggleZones")) drawZones();
-    if (layerIsOn("toggleGoods")) drawGoods();
+    Layers.draw(zonesLayer, goodsLayer);
   }
 
   if (!isCtrlClick(event)) {

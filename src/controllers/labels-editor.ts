@@ -10,6 +10,8 @@ import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import { labelsLayer } from "@/renderers/layers/map-layers";
 import { speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 
@@ -19,7 +21,7 @@ let label: LabelData;
 function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show(labelsLayer);
 
   const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
   if (!textEl) return;

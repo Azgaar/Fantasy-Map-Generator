@@ -4,7 +4,9 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawMeasurers, undrawMeasurers } from "@/renderers/draw-measurers";
+import { drawMeasurers } from "@/renderers/draw-measurers";
+import { Layers } from "@/renderers/layers/layers";
+import { rulersLayer } from "@/renderers/layers/map-layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, getSegmentId, last, rn } from "../utils";
 
@@ -20,7 +22,7 @@ function open(): void {
   if (customization) return;
 
   closeDialogs("#measurersEditor, .stable");
-  if (!layerIsOn("toggleRulers")) toggleRulers();
+  Layers.show(rulersLayer);
 
   renderDialog();
   select("#ruler").classed("editable", true); // interactive cursor while the editor is open
@@ -62,8 +64,7 @@ function renderDialog(): void {
 function onClose(): void {
   if (ensureEl("measurersBottom").querySelector(".pressed")) exitDrawingMode();
   select("#ruler").classed("editable", false);
-  if (layerIsOn("toggleRulers")) drawMeasurers();
-  else undrawMeasurers();
+  Layers.draw(rulersLayer);
   destroyDialog("measurersEditor");
 }
 

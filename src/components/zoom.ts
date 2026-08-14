@@ -1,6 +1,8 @@
 import type { ZoomBehavior } from "d3";
 import { renderGroupCOAs } from "@/renderers/draw-emblems";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { Layers } from "@/renderers/layers/layers";
+import { coordinatesLayer } from "@/renderers/layers/map-layers";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
@@ -70,7 +72,7 @@ function handleZoomPerFrame(): void {
   }
 
   if (didPositionChange) {
-    if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    Layers.draw(coordinatesLayer);
   }
 }
 

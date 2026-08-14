@@ -4,6 +4,8 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import { burgIconsLayer, cellsLayer, labelsLayer } from "@/renderers/layers/map-layers";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
@@ -22,8 +24,7 @@ let previewLayoutLocked = false;
 function open(id: number | string): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show(burgIconsLayer, labelsLayer);
 
   selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
@@ -704,22 +705,23 @@ function zoomIntoBurg(): void {
   zoomTo(burg.x, burg.y, 8, 2000);
 }
 
+let isCellsLayerForced = false; // the cells layer is turned on for the relocation mode
+
 function toggleRelocateBurg(): void {
-  const toggler = ensureEl("toggleCells");
   ensureEl("burgRelocate").classList.toggle("pressed");
   if (ensureEl("burgRelocate").classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateBurgOnClick);
     tip("Click on map to relocate burg. Hold Shift for continuous move", true);
-    if (!layerIsOn("toggleCells")) {
-      toggleCells();
-      toggler.dataset.forced = "true";
+    if (!cellsLayer.isOn) {
+      Layers.show(cellsLayer);
+      isCellsLayerForced = true;
     }
   } else {
     clearMainTip();
     applyDefaultViewboxEvents();
-    if (layerIsOn("toggleCells") && toggler.dataset.forced) {
-      toggleCells();
-      toggler.dataset.forced = "false";
+    if (isCellsLayerForced) {
+      Layers.hide(cellsLayer);
+      isCellsLayerForced = false;
     }
   }
 }

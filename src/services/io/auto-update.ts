@@ -1,28 +1,46 @@
 // Update an old map file to the current version
+
 import { color, min, select } from "d3";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
-import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
 import { drawMarkers } from "@/renderers/draw-markers";
-import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { drawTexture } from "@/renderers/draw-texture";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { unfog } from "@/renderers/overlays/fogging";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  bordersLayer,
+  burgIconsLayer,
+  heightmapLayer,
+  iceLayer,
+  markersLayer,
+  militaryLayer,
+  routesLayer,
+  scaleBarLayer,
+  statesLayer,
+  zonesLayer
+} from "@/renderers/layers/map-layers";
+import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
-import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
+import { ensureEl, findEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
+/**
+ * Bring an old map file up to the current data format. Runs before the layers state is known, so it speaks the
+ * legacy svg vocabulary only: it never changes the registry state, because that would notify the subscribers and
+ * a viewport re-render would clear the legacy svg the later migrations still have to read. Content it redraws is
+ * what `restoreLayers` reads back to tell which layers were on.
+ */
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
 
@@ -108,8 +126,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
-    if (!layerIsOn("toggleStates")) select("#regions").attr("display", "none").selectAll("path").remove();
+    if (!bordersLayer.isOn) $("#borders").fadeOut();
+    if (!statesLayer.isOn) select("#regions").attr("display", "none").selectAll("path").remove();
 
     // v1.0 added zones layer
     zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
@@ -122,7 +140,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     Zones.generate();
     if (!select("#markers").selectAll("*").size()) {
       Markers.generate();
-      turnButtonOn("toggleMarkers");
+      drawMarkers();
     }
 
     // v1.0 add fogging layer (state focus)
@@ -276,7 +294,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     }
 
     // v1.11 had an issue with fogging being displayed on load
-    unfog();
+    select("#fog").selectAll("path").remove();
+    select("#fogging").style("display", "none");
 
     // v1.2 added new terrain attributes
     if (!terrain.attr("set")) terrain.attr("set", "simple");
@@ -340,8 +359,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("box-size", 3)
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
-    turnButtonOn("toggleMilitary");
     Military.generate();
+    drawMilitary();
   }
 
   if (isOlderThan("1.4.0")) {
@@ -424,7 +443,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#emblems").append("g").attr("id", "stateEmblems");
     COA.regenerate();
     drawEmblems();
-    toggleEmblems();
+    ensureEl("emblems").style.display = "";
 
     // v1.5 changed releif icons data
     terrain.selectAll<SVGUseElement, unknown>("use").each(function () {
@@ -518,10 +537,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     select("#ruler").selectAll("*").remove();
 
-    if (pack.measurers.length) {
-      turnButtonOn("toggleRulers");
-      drawMeasurers();
-    } else turnButtonOff("toggleRulers");
+    // the measurers are redrawn by the load routine once the layer state is restored
+    const ruler = findEl("ruler");
+    if (ruler) ruler.style.display = pack.measurers.length ? "" : "none";
 
     // 1.61 changed oceanicPattern from rect to image
     const pattern = document.getElementById("oceanic")!;
@@ -656,7 +674,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       markerElements.forEach(el => {
         el.remove();
       });
-      if (layerIsOn("markers")) drawMarkers();
+      Layers.draw(markersLayer);
     }
   }
 
@@ -869,7 +887,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("curve", curve)
       .attr("mask", "url(#land)");
 
-    if (layerIsOn("toggleHeight")) drawHeightmap();
+    Layers.draw(heightmapLayer);
 
     // v1.96.00 moved scaleBar options from units editor to style
     select("#scaleBar").remove();
@@ -901,7 +919,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     drawScaleBar(select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], scale);
     fitScaleBar(select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], svgWidth, svgHeight);
 
-    if (!layerIsOn("toggleScaleBar")) select("#scaleBar").style("display", "none");
+    if (!scaleBarLayer.isOn) select("#scaleBar").style("display", "none");
 
     // v1.96.00 changed coloring approach for regiments
     armies.selectAll<SVGGElement, unknown>(":scope > g").each(function () {
@@ -971,7 +989,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     }
     select("#routes").selectAll("path").remove();
-    if (layerIsOn("toggleRoutes")) drawRoutes();
+    Layers.draw(routesLayer);
 
     pack.cells.routes = {};
     const links = pack.cells.routes;
@@ -1005,7 +1023,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         pack.zones.push({ i, name, type, cells, color } as unknown as (typeof pack.zones)[number]);
       });
     select("#zones").style("display", null).selectAll("*").remove();
-    if (layerIsOn("toggleZones")) drawZones();
+    Layers.draw(zonesLayer);
   }
 
   if (isOlderThan("1.104.0")) {
@@ -1045,8 +1063,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.107.0")) {
     // v1.107.0 allowed custom images for markers and regiments
-    if (layerIsOn("toggleMarkers")) drawMarkers();
-    if (layerIsOn("toggleMilitary")) drawMilitary();
+    Layers.draw(markersLayer, militaryLayer);
   }
 
   if (isOlderThan("1.108.0")) {
@@ -1126,7 +1143,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     });
 
-    layerIsOn("toggleBurgIcons") && drawBurgIcons();
+    Layers.draw(burgIconsLayer);
     const opts = options as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
@@ -1140,10 +1157,10 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       pack.ice = [];
       let iceId = 0;
 
-      const iceLayer = document.getElementById("ice");
-      if (iceLayer) {
+      const iceGroup = document.getElementById("ice");
+      if (iceGroup) {
         // Migrate glaciers (type="iceShield")
-        iceLayer.querySelectorAll<SVGPolygonElement>("polygon[type='iceShield']").forEach(polygon => {
+        iceGroup.querySelectorAll<SVGPolygonElement>("polygon[type='iceShield']").forEach(polygon => {
           // Parse points string "x1,y1 x2,y2 x3,y3 ..." into array [[x1,y1], [x2,y2], ...]
           const points = [...polygon.points].map(svgPoint => [svgPoint.x, svgPoint.y]);
 
@@ -1160,7 +1177,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         });
 
         // Migrate icebergs
-        iceLayer.querySelectorAll<SVGPolygonElement>("polygon:not([type])").forEach(polygon => {
+        iceGroup.querySelectorAll<SVGPolygonElement>("polygon:not([type])").forEach(polygon => {
           const cellId = +polygon.getAttribute("cell")!;
           const size = +polygon.getAttribute("size")!;
 
@@ -1185,7 +1202,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         });
 
         // Clear old SVG elements
-        iceLayer.querySelectorAll("*").forEach(el => {
+        iceGroup.querySelectorAll("*").forEach(el => {
           el.remove();
         });
       } else {
@@ -1200,7 +1217,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
 
       // Re-render ice from migrated data
-      if (layerIsOn("toggleIce")) drawIce();
+      Layers.draw(iceLayer);
     }
   }
 
@@ -1295,7 +1312,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("relax", null)
         .attr("curve", null)
         .attr("mask", null);
-      if (layerIsOn("toggleHeight")) drawHeightmap();
+      Layers.draw(heightmapLayer);
     }
   }
 
@@ -1376,7 +1393,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         type: "province",
         isDefault: true,
         zoom: deriveZoomExtent(fontSize),
-        layerDependency: "toggleProvinces",
+        layerDependency: "provinces",
         active: false
       });
       style.labels.groups.province = oldStyle;
@@ -1514,8 +1531,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     provinceGroup?.remove();
     document.getElementById("textPaths")?.replaceChildren();
     labels.replaceChildren();
-    ensureEl("toggleLabels").classList.toggle("buttonoff", !hadVisibleLabels);
-    if (hadVisibleLabels) drawLabels();
+    // record the state for restoreLayers to read: the content this migration wiped is redrawn by the load
+    // routine, so an empty group must not be mistaken for a layer that was off
+    labels.dataset.layerActive = String(hadVisibleLabels);
 
     // other changes
     select("#coastline > #sea_island").attr("filter", null);
@@ -1549,4 +1567,82 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       setReliefLayerActive(iconElements.length > 0 && getComputedStyle(terrainEl).display !== "none");
     }
   }
+
+  if (isOlderThan("1.144.0")) {
+    // v1.144.0 replaced the toggle* button ids with canonical layer ids
+    for (const group of options.labels?.groups ?? []) {
+      if (group.layerDependency) group.layerDependency = toCanonicalLayerId(group.layerDependency);
+    }
+  }
+}
+
+/** Apply the layers state stored with the map. Pre-1.144 maps have none: it is recovered from the loaded svg */
+export function restoreLayers(mapVersion: string, data: string[]): void {
+  const isLegacy = compareVersions(mapVersion, "1.144.0").isOlder;
+  if (!isLegacy && data[50]) return void Layers.restore(JSON.parse(data[50]));
+
+  // the fogging layer used to be wrapped into a masked container: unwrap it in place, before the order is read,
+  // so that it keeps its slot (the registry applies the mask itself)
+  const foggingContainer = findEl("fogging-cont");
+  const fogging = findEl("fogging");
+  if (foggingContainer) foggingContainer.replaceWith(...(fogging ? [fogging] : []));
+
+  const filled = (id: string) => Boolean(findEl(id)?.hasChildNodes());
+  const has = (id: string, selector: string) => Boolean(findEl(id)?.querySelector(selector));
+  const shown = (id: string) => {
+    const group = findEl(id);
+    return Boolean(group) && group!.style.display !== "none";
+  };
+  // the labels layer can be active but empty, so the 1.140 migration records its state on the group
+  const labelsGroup = findEl("labels");
+  const labelsState = labelsGroup?.dataset.layerActive;
+  delete labelsGroup?.dataset.layerActive; // read once: the registry owns the state from here on
+
+  // each layer had its own way of storing "the layer is on"
+  const active = [
+    has("texture", "image") && "texture",
+    filled("landHeights") && "heightmap",
+    shown("lakes") && "lakes",
+    filled("biomes") && "biomes",
+    filled("cells") && "cells",
+    filled("gridOverlay") && "grid",
+    filled("coordinates") && "coordinates",
+    shown("compass") && has("compass", "use") && "compass",
+    filled("rivers") && "rivers",
+    shown("terrain") && "relief",
+    filled("relig") && "religions",
+    filled("cults") && "cultures",
+    filled("statesBody") && "states",
+    filled("provs") && "provinces",
+    shown("zones") && filled("zones") && "zones",
+    shown("borders") && has("borders", "path") && "borders",
+    shown("routes") && has("routes", "path") && "routes",
+    filled("temperature") && "temperature",
+    shown("ice") && "ice",
+    shown("goods") && filled("goods") && "goods",
+    shown("markets") && filled("markets") && "markets",
+    shown("tradeAnimation") && "trade",
+    has("prec", "circle") && "precipitation",
+    has("population", "line") && "population",
+    shown("emblems") && has("emblems", "use") && "emblems",
+    shown("icons") && "burgIcons",
+    (labelsState ? labelsState === "true" : filled("labels")) && "labels",
+    shown("armies") && filled("armies") && "military",
+    has("markers", "svg") && "markers",
+    shown("ruler") && "rulers",
+    shown("scaleBar") && "scaleBar",
+    shown("vignette") && "vignette"
+  ].filter(Boolean) as string[];
+
+  // the layers order is the document order of the loaded groups. Layers the file has no group for are left out:
+  // the registry slots them in after their registration-order predecessor
+  const positions = new Map(
+    Array.from(ensureEl("map").querySelectorAll("#viewbox > *, #map > g"), (node, index) => [node.id, index])
+  );
+  const order = Layers.all
+    .filter(layer => positions.has(layer.elementId))
+    .sort((a, b) => positions.get(a.elementId)! - positions.get(b.elementId)!)
+    .map(layer => layer.id);
+
+  Layers.restore({ order, active });
 }

@@ -1,45 +1,13 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { BUTTONS } from "@/components/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
 import { ensureEl } from "@/utils";
-
-// TODO: replace with Layers registry data
-const LAYER_TOGGLES: { id: string; label: string }[] = [
-  { id: "toggleBorders", label: "Borders" },
-  { id: "toggleBiomes", label: "Biomes" },
-  { id: "toggleBurgIcons", label: "Burg Icons" },
-  { id: "toggleCells", label: "Cells" },
-  { id: "toggleCompass", label: "Wind Rose" },
-  { id: "toggleCoordinates", label: "Coordinates" },
-  { id: "toggleCultures", label: "Cultures" },
-  { id: "toggleEmblems", label: "Emblems" },
-  { id: "toggleGoods", label: "Goods" },
-  { id: "toggleGrid", label: "Grid" },
-  { id: "toggleHeight", label: "Heightmap" },
-  { id: "toggleIce", label: "Ice" },
-  { id: "toggleLabels", label: "Labels" },
-  { id: "toggleLakes", label: "Lakes" },
-  { id: "toggleMarketsLayer", label: "Markets" },
-  { id: "toggleMarkers", label: "Markers" },
-  { id: "toggleMilitary", label: "Military" },
-  { id: "togglePopulation", label: "Population" },
-  { id: "togglePrecipitation", label: "Precipitation" },
-  { id: "toggleProvinces", label: "Provinces" },
-  { id: "toggleRelief", label: "Relief" },
-  { id: "toggleReligions", label: "Religions" },
-  { id: "toggleRoutes", label: "Routes" },
-  { id: "toggleRulers", label: "Rulers" },
-  { id: "toggleScaleBar", label: "Scale Bar" },
-  { id: "toggleTexture", label: "Texture" },
-  { id: "toggleTemperature", label: "Temperature" },
-  { id: "toggleTrade", label: "Trade" },
-  { id: "toggleVignette", label: "Vignette" },
-  { id: "toggleZones", label: "Zones" }
-];
 
 function open(): void {
   if (customization) return;
@@ -185,7 +153,7 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
       <td data-tip="Maximum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>
       <td data-tip="Layer that must be toggled on for this group to be shown"><select name="dependency">
         <option value="">None</option>
-        ${LAYER_TOGGLES.map(({ id, label }) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label}</option>`).join("")}
+        ${[...BUTTONS].map(([layer, { label }]) => `<option value="${layer.id}" ${Layers.get(group.layerDependency ?? "") === layer ? "selected" : ""}>${label.replace(/<\/?u>/g, "")}</option>`).join("")}
       </select></td>
       <td data-tip="Number of labels currently assigned to this group" style="text-align:center">
         <div style="min-width:2em; display:inline-block">${labelCount}</div>

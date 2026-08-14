@@ -1,8 +1,14 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { drawBiomes } from "@/renderers/draw-biomes";
-import { drawTemperature } from "@/renderers/draw-temperature";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  biomesLayer,
+  coordinatesLayer,
+  precipitationLayer,
+  riversLayer,
+  temperatureLayer
+} from "@/renderers/layers/map-layers";
 import { stored } from "@/utils/preferences";
 import { convertTemperature, ensureEl, findEl, parseTransform, rn, round } from "../utils";
 
@@ -373,11 +379,8 @@ function updateWorld(): void {
   Features.defineGroups();
   Lakes.defineNames();
 
-  if (layerIsOn("toggleTemperature")) drawTemperature();
-  if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleRivers")) drawRivers();
+  Layers.draw(temperatureLayer, precipitationLayer);
+  Layers.draw(biomesLayer, coordinatesLayer, riversLayer);
   if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
 }
 

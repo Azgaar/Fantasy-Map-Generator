@@ -154,16 +154,12 @@ declare global {
   var mapHistory: { created: number; [key: string]: unknown }[];
   var customPresetPrefix: string;
 
-  var getCurrentPreset: () => void;
   var focusOn: () => void;
   var fitMapToScreen: () => void;
   var regenerateMap: (reason?: string) => void;
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
   var updateTextureSelectValue: (href: string) => void;
-  var toggleRulers: () => void;
-  var toggleRelief: () => void;
-  var toggleZones: () => void;
   var calculateFriendlyGridSize: () => void;
   // heightmap editor globals
   var color: (value: number) => string;
@@ -175,15 +171,9 @@ declare global {
   var resetZoom: (duration?: number) => void;
   var RgbQuant: any; // external RgbQuant image-quantization lib
 
-  var drawTexture: () => void;
-  var drawRoutes: () => void;
-  var drawZones: () => void;
   var drawGrid: () => void;
-  var toggleEmblems: (event?: MouseEvent) => void;
   var shiftCompass: () => void;
 
-  var layerIsOn: (layerId: string) => boolean;
-  var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;
   var FlatQueue: any;
 
@@ -198,10 +188,6 @@ declare global {
   var calculateTemperatures: () => void;
   var reGraph: () => void;
   var showStatistics: () => void;
-  var drawLayers: () => void;
-  var drawPrecipitation: () => void;
-  var drawCoordinates: () => void;
-  var drawRivers: () => void;
   var applyGraphSize: () => void;
   var cellsDensityMap: Record<number, number>;
   var changeCellsDensity: (value: string) => void;
@@ -215,53 +201,19 @@ declare global {
   // Legacy UI globals
   var toggleOptions: (event?: Event) => void;
   var hideOptions: (event?: Event) => void;
-  var toggleTexture: (event?: Event) => void;
-  var toggleHeight: (event?: Event) => void;
-  var toggleLakes: (event?: Event) => void;
-  var toggleGrid: (event?: Event) => void;
-  var toggleCoordinates: (event?: Event) => void;
-  var toggleCompass: (event?: Event) => void;
-  var toggleTemperature: (event?: Event) => void;
-  var togglePrecipitation: (event?: Event) => void;
-  var toggleScaleBar: (event?: Event) => void;
-  var toggleVignette: (event?: Event) => void;
-  var turnButtonOn: (buttonId: string) => void;
-  var turnButtonOff: (buttonId: string) => void;
-  var toggleGoods: (event?: MouseEvent) => void;
-  var toggleMarketsLayer: (event?: MouseEvent) => void;
   var drawMarketsLayer: () => void;
-  var toggleTrade: (event?: MouseEvent) => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
   var editStyle: (layer: string, group?: string) => void;
   var capitalize: (str: string) => string;
   var rn: (value: number, decimals?: number) => number;
   var openURL: (url: string) => void;
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
-  var toggleCells: () => void;
   var drawGoods: () => void;
   var legend: any;
 
-  var drawCultures: () => void;
-  var drawReligions: () => void;
   var drawStates: () => void;
   var drawBorders: () => void;
-  var drawProvinces: () => void;
   var drawLabels: () => void;
-  var drawPopulation: () => void;
-  var toggleCultures: () => void;
-  var toggleStates: () => void;
-  var toggleBiomes: () => void;
-  var toggleReligions: () => void;
-  var toggleProvinces: () => void;
-  var toggleBorders: () => void;
-  var togglePopulation: () => void;
-  var toggleMilitary: (event?: MouseEvent) => void;
-  var toggleLabels: (event?: MouseEvent) => void;
-  var toggleBurgIcons: (event?: MouseEvent) => void;
-  var toggleRoutes: (event?: MouseEvent) => void;
-  var toggleRivers: (event?: MouseEvent) => void;
-  var toggleIce: (event?: MouseEvent) => void;
-  var toggleMarkers: (event?: MouseEvent) => void;
   var drawMarkers: () => void;
 
   var tinymce:

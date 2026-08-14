@@ -1,6 +1,8 @@
 import type { Burg } from "@/generators/burgs-generator";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
+import { Layers } from "@/renderers/layers/layers";
+import { labelsLayer } from "@/renderers/layers/map-layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { getLabelsData } from "./label-data";
 import { renderLabelGroups } from "./label-groups";
@@ -11,7 +13,7 @@ const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels })
 const labelsByGroup = new Map<string, LabelData[]>();
 
 export function drawLabels(): void {
-  if (!layerIsOn("toggleLabels")) return void removeLabels();
+  if (!labelsLayer.isOn) return void removeLabels();
 
   TIME && console.time("drawLabels");
   renderLabelGroups();
@@ -22,7 +24,7 @@ export function drawLabels(): void {
   TIME && console.timeEnd("drawLabels");
 }
 
-function removeLabels(): void {
+export function removeLabels(): void {
   scene.invalidate();
   labelsByGroup.clear();
   const labels = findElement(document, "labels");
@@ -33,7 +35,7 @@ function removeLabels(): void {
 
 // Re-materialize a single edited label, leaving the rest of the layer untouched
 export function redrawLabel(label: LabelData): void {
-  if (!scene.valid || !layerIsOn("toggleLabels")) return;
+  if (!scene.valid || !labelsLayer.isOn) return;
 
   const previous = scene.get(label.id);
   if (previous) unindexLabel(previous);
@@ -50,7 +52,7 @@ export function getSceneLabel(type: LabelType, id: number): LabelData | undefine
 }
 
 export function getVisibleLabels(): LabelData[] {
-  if (!scene.valid || !layerIsOn("toggleLabels")) return [];
+  if (!scene.valid || !labelsLayer.isOn) return [];
   const bounds = ViewportLayers.getVisibleBounds();
   const visibleGroups = new Set(
     options.labels.groups.filter(group => isGroupVisible({ group, bounds })).map(({ name }) => name)
@@ -77,7 +79,7 @@ function materialize(label: LabelData, group: Element, textPaths: Element): void
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
-  if (!scene.valid || !layerIsOn("toggleLabels")) return;
+  if (!scene.valid || !labelsLayer.isOn) return;
   const labels = findElement(context.root, "labels");
   const textPaths = findElement(context.root, "textPaths");
   if (!labels || !textPaths) return;
@@ -113,7 +115,7 @@ function isGroupVisible({ group, bounds }: { group: LabelGroup; bounds: Viewport
     if (group.zoom.min !== null && bounds.scale < group.zoom.min) return false;
     if (group.zoom.max !== null && bounds.scale > group.zoom.max) return false;
   }
-  return !group.layerDependency || layerIsOn(group.layerDependency);
+  return !group.layerDependency || (Layers.get(group.layerDependency)?.isOn ?? true);
 }
 
 function isLabelVisible(bounds: ViewportRenderContext["bounds"], label: LabelData): boolean {

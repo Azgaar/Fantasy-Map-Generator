@@ -4,9 +4,17 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
-import { drawBiomes } from "@/renderers/draw-biomes";
-import { drawBorders } from "@/renderers/draw-borders";
 import { getFeaturePath } from "@/renderers/draw-features";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  biomesLayer,
+  bordersLayer,
+  cellsLayer,
+  culturesLayer,
+  provincesLayer,
+  religionsLayer,
+  statesLayer
+} from "@/renderers/layers/map-layers";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -16,7 +24,7 @@ let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (layerIsOn("toggleCells")) toggleCells();
+  Layers.hide(cellsLayer);
 
   renderDialog();
 
@@ -201,12 +209,9 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
 }
 
 function handleVertexDragEnd(): void {
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleCultures")) drawCultures();
+  Layers.draw(statesLayer, provincesLayer);
+  Layers.draw(bordersLayer, biomesLayer);
+  Layers.draw(religionsLayer, culturesLayer);
 }
 
 function changeName(this: HTMLInputElement): void {

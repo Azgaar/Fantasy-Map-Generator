@@ -44,14 +44,14 @@ export class LabelsModule {
       {
         name: "river",
         type: "river",
-        layerDependency: "toggleRivers",
+        layerDependency: "rivers",
         zoom: { min: 6, max: 40 },
         isDefault: true
       },
       {
         name: "route",
         type: "route",
-        layerDependency: "toggleRoutes",
+        layerDependency: "routes",
         zoom: { min: 6, max: 40 },
         isDefault: true
       },
@@ -106,7 +106,7 @@ export class LabelsModule {
       {
         name: "province",
         type: "province",
-        layerDependency: "toggleProvinces",
+        layerDependency: "provinces",
         zoom: { min: 1, max: 15 },
         isDefault: true
       },

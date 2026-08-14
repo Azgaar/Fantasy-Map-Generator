@@ -2,6 +2,9 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
+import { drawRivers } from "@/renderers/draw-rivers";
+import { Layers } from "@/renderers/layers/layers";
+import { riversLayer } from "@/renderers/layers/map-layers";
 
 function toggle(): void {
   if (document.getElementById("addRiver")?.classList.contains("pressed")) {
@@ -16,7 +19,7 @@ function toggle(): void {
     "Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers",
     "warn"
   );
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  Layers.show(riversLayer);
 }
 
 function addOnClick(event: MouseEvent): void {

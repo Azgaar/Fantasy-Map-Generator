@@ -755,6 +755,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   display: inline-block;
   padding: 0;
   margin: 0;
+  user-select: none; /* the items are re-rendered, so jQuery disableSelection cannot hold */
 }
 
 #mapFilters > button {

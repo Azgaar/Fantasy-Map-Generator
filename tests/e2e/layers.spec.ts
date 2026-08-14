@@ -263,10 +263,10 @@ test.describe("map layers", () => {
     await sharedPage.evaluate(() => {
       // only the first good is visible by default; make all of them visible for this test
       (window as any).pack.goods.forEach((good: any) => (good.visible = true));
-      (window as any).toggleGoods();
+      (window as any).Layers.toggle((window as any).Layers.get("goods"));
       (window as any).drawGoods();
       // markets render in a standalone layer, toggled independently
-      (window as any).toggleMarketsLayer();
+      (window as any).Layers.toggle((window as any).Layers.get("markets"));
     });
     await sharedPage.waitForTimeout(300);
 
@@ -295,8 +295,8 @@ test.describe("map layers", () => {
 
     // Restore: toggle goods and markets layers off
     await sharedPage.evaluate(() => {
-      (window as any).toggleGoods();
-      (window as any).toggleMarketsLayer();
+      (window as any).Layers.toggle((window as any).Layers.get("goods"));
+      (window as any).Layers.toggle((window as any).Layers.get("markets"));
     });
   });
 

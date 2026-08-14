@@ -1,25 +1,11 @@
 import { color, curveBasisClosed, line, select } from "d3";
-import { isCtrlClick } from "@/utils";
 import { rn } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
-
-export function toggleMarketsLayer(event?: MouseEvent) {
-  if (!layerIsOn("toggleMarketsLayer")) {
-    turnButtonOn("toggleMarketsLayer");
-    drawMarkets();
-    if (event && isCtrlClick(event)) editStyle("markets");
-  } else {
-    if (event && isCtrlClick(event)) return editStyle("markets");
-    select("#markets").html("");
-    turnButtonOff("toggleMarketsLayer");
-  }
-}
 
 export function drawMarkets() {
   TIME && console.time("drawMarkets");
   select("#markets").html(buildMarketsContent());
   highlightMarketsOnHover();
-  select("#markets").style("display", null);
   TIME && console.timeEnd("drawMarkets");
 }
 
@@ -107,10 +93,8 @@ export function highlightMarketOff(marketId: number | string): void {
 
 declare global {
   interface Window {
-    toggleMarketsLayer: typeof toggleMarketsLayer;
     drawMarketsLayer: typeof drawMarkets;
   }
 }
 
-window.toggleMarketsLayer = toggleMarketsLayer;
 window.drawMarketsLayer = drawMarkets;

@@ -1,4 +1,15 @@
 import { select } from "d3";
+import {
+  biomesLayer,
+  culturesLayer,
+  heightmapLayer,
+  populationLayer,
+  precipitationLayer,
+  provincesLayer,
+  religionsLayer,
+  statesLayer,
+  temperatureLayer
+} from "@/renderers/layers/map-layers";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
@@ -237,29 +248,29 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
 function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: boolean): void {
   const { cells } = pack;
 
-  if (layerIsOn("togglePrecipitation") && isLand) {
+  if (precipitationLayer.isOn && isLand) {
     return void tip(`Annual Precipitation: ${getFriendlyPrecipitation(cellId, pack, grid)}`);
   }
 
-  if (layerIsOn("togglePopulation")) return void tip(getPopulationTip(cellId));
+  if (populationLayer.isOn) return void tip(getPopulationTip(cellId));
 
-  if (layerIsOn("toggleTemperature")) {
+  if (temperatureLayer.isOn) {
     return void tip(`Temperature: ${convertTemperature(grid.cells.temp[gridCellId])}`);
   }
 
-  if (layerIsOn("toggleBiomes") && cells.biome[cellId]) {
+  if (biomesLayer.isOn && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
     return void tip(`Biome: ${pack.biomes[biomeId].name}`);
   }
 
-  if (layerIsOn("toggleReligions") && cells.religion[cellId]) {
+  if (religionsLayer.isOn && cells.religion[cellId]) {
     const religionId = cells.religion[cellId];
     const religion = pack.religions[religionId];
     const type = religion.type === "Cult" || religion.type === "Heresy" ? religion.type : `${religion.type} religion`;
     return void tip(`${type}: ${religion.name}`);
   }
 
-  if (cells.state[cellId] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
+  if (cells.state[cellId] && (provincesLayer.isOn || statesLayer.isOn)) {
     const stateId = cells.state[cellId];
     const provinceId = cells.province[cellId];
     const province = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";
@@ -267,10 +278,10 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     return void tip(province + pack.states[stateId].fullName);
   }
 
-  if (layerIsOn("toggleCultures") && cells.culture[cellId]) {
+  if (culturesLayer.isOn && cells.culture[cellId]) {
     const cultureId = cells.culture[cellId];
     return void tip(`Culture: ${pack.cultures[cultureId].name}`);
   }
 
-  if (layerIsOn("toggleHeight")) return void tip(`Height: ${getFriendlyHeight(point, pack, grid)}`);
+  if (heightmapLayer.isOn) return void tip(`Height: ${getFriendlyHeight(point, pack, grid)}`);
 }

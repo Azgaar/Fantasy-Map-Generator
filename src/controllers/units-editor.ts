@@ -1,7 +1,8 @@
 import { type Selection, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { drawTemperature } from "@/renderers/draw-temperature";
+import { Layers } from "@/renderers/layers/layers";
+import { temperatureLayer } from "@/renderers/layers/map-layers";
 import { lock, unlock } from "@/utils/preferences";
 import { ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
@@ -78,11 +79,11 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 
 function changeHeightExponent(): void {
   calculateTemperatures();
-  if (layerIsOn("toggleTemperature")) drawTemperature();
+  Layers.draw(temperatureLayer);
 }
 
 function changeTemperatureScale(): void {
-  if (layerIsOn("toggleTemperature")) drawTemperature();
+  Layers.draw(temperatureLayer);
 }
 
 function changePopulationRate(this: HTMLInputElement): void {

@@ -1,5 +1,7 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
+import { drawRoute } from "@/renderers/draw-routes";
+import { routesLayer } from "@/renderers/layers/map-layers";
 import type { BurgGroup } from "@/types/burg-groups";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -745,7 +747,7 @@ class BurgModule {
     cells.burg[cellId as number] = burgId;
 
     const newRoute = Routes.connect(cellId as number);
-    if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
+    if (newRoute && routesLayer.isOn) drawRoute(newRoute);
 
     window.drawBurgIcon(burg);
 

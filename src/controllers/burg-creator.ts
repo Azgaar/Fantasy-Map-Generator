@@ -3,6 +3,8 @@ import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import { burgIconsLayer, labelsLayer } from "@/renderers/layers/map-layers";
 
 function toggle(): void {
   if (isActive()) {
@@ -20,8 +22,7 @@ function toggle(): void {
   );
   document.getElementById("addNewBurg")?.classList.add("pressed");
 
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show(burgIconsLayer, labelsLayer);
 }
 
 function addOnClick(event: MouseEvent): void {

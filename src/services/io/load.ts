@@ -3,9 +3,8 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
-import { drawMeasurers } from "@/renderers/draw-measurers";
-import { drawRelief } from "@/renderers/draw-relief-icons";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import { gridLayer, labelsLayer, reliefLayer, rulersLayer } from "@/renderers/layers/map-layers";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -487,66 +486,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[48]) style = JSON.parse(data[48]);
 
     {
-      const { resolveVersionConflicts } = await import("./auto-update");
+      // normalize the file first: the layers are restored from data the migrations have already brought up to date
+      const { resolveVersionConflicts, restoreLayers } = await import("./auto-update");
       resolveVersionConflicts(mapVersion!, data);
+      restoreLayers(mapVersion!, data);
     }
-
-    {
-      const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
-        selection.node() && selection.style("display") !== "none";
-      const isVisibleNode = (node: SVGElement | HTMLElement | null) => node && node.style.display !== "none";
-      const hasChildren = (selection: { node(): Element | null }) => selection.node()?.hasChildNodes();
-      const hasChild = (selection: { node(): Element | null }, selector: string) =>
-        selection.node()?.querySelector(selector);
-      const turnOn = (el: string) => ensureEl(el).classList.remove("buttonoff");
-
-      // turn all layers off
-      ensureEl("mapLayers")
-        .querySelectorAll("li")
-        .forEach(el => {
-          el.classList.add("buttonoff");
-        });
-
-      // turn on active layers
-      if (hasChild(select("#texture"), "image")) turnOn("toggleTexture");
-      if (hasChildren(select("#terrs").select("#landHeights"))) turnOn("toggleHeight");
-      if (isVisible(select("#lakes"))) turnOn("toggleLakes");
-      if (hasChildren(select("#biomes"))) turnOn("toggleBiomes");
-      if (hasChildren(select("#cells"))) turnOn("toggleCells");
-      if (hasChildren(select("#gridOverlay"))) turnOn("toggleGrid");
-      if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
-      if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
-      if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
-      if (isVisible(select("#terrain"))) turnOn("toggleRelief");
-      if (hasChildren(select("#relig"))) turnOn("toggleReligions");
-      if (hasChildren(select("#cults"))) turnOn("toggleCultures");
-      if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
-      if (hasChildren(select("#provs"))) turnOn("toggleProvinces");
-      if (hasChildren(select("#zones")) && isVisible(select("#zones"))) turnOn("toggleZones");
-      if (isVisible(select("#borders")) && hasChild(select("#borders"), "path")) turnOn("toggleBorders");
-      if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
-      if (hasChildren(select("#temperature"))) turnOn("toggleTemperature");
-      if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
-      if (isVisible(select("#ice"))) turnOn("toggleIce");
-      if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
-      if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
-      if (hasChildren(select("#labels"))) turnOn("toggleLabels");
-      if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
-      if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
-      if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
-      if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
-      if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
-      if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
-      if (isVisible(select("#ruler"))) turnOn("toggleRulers");
-      if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
-      if (isVisibleNode(ensureEl<SVGGElement>("vignette"))) turnOn("toggleVignette");
-
-      getCurrentPreset();
-      Goods.sync();
-      Markets.sync();
-      Routes.sync();
-      TradeAnimation.sync();
-    }
+    Goods.sync();
+    Markets.sync();
+    Routes.sync();
+    TradeAnimation.sync();
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
       .on("click", () => window.Controllers.UnitsEditor.open());
@@ -814,11 +762,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);
-    // draw data layers (not kept in svg)
-    if (layerIsOn("toggleRulers")) drawMeasurers();
-    if (layerIsOn("toggleGrid")) drawGrid();
-    if (layerIsOn("toggleLabels")) drawLabels();
-    if (layerIsOn("toggleRelief")) drawRelief();
+    // draw the layers whose content is not kept in the svg, now that the restored state says which are on
+    Layers.draw(rulersLayer, gridLayer, labelsLayer, reliefLayer);
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

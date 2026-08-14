@@ -1,8 +1,8 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { drawGoods } from "@/renderers/draw-goods";
-import { drawMarkets } from "@/renderers/draw-markets";
+import { Layers } from "@/renderers/layers/layers";
+import { goodsLayer, marketsLayer, tradeLayer } from "@/renderers/layers/map-layers";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
@@ -152,9 +152,8 @@ function open(editedGood?: Good, onUpdate?: () => void) {
           if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
             Goods.regeneratePlacement(editedGood.i);
             Production.regenerateEconomy();
-            if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-            if (layerIsOn("toggleGoods")) drawGoods();
-            if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+            Layers.draw(marketsLayer, goodsLayer);
+            if (tradeLayer.isOn) tradeAnimation.restart();
             refreshEditors();
           } else {
             Goods.sync();

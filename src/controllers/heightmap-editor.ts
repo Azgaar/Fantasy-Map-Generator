@@ -5,8 +5,9 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { drawFeatures } from "@/renderers/draw-features";
-import { drawGoods } from "@/renderers/draw-goods";
-import { drawMarkets } from "@/renderers/draw-markets";
+import type { Layer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers";
+import { goodsLayer, heightmapLayer, marketsLayer, tradeLayer } from "@/renderers/layers/map-layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -277,7 +278,7 @@ function renderImageConverter(): void {
 
 // The toolbar and brushes panel are static in index.html; they're part of the one long-lived
 // heightmap-editing session, so listeners are wired once at load rather than per open/close.
-let storedLayers: string[] = [];
+let storedLayers: Layer[] = [];
 
 function addToolbarListeners(): void {
   ensureEl("paintBrushes").addEventListener("click", openBrushesPanel);
@@ -314,12 +315,8 @@ function showModeDialog(tool?: string): void {
 }
 
 function enterHeightmapEditMode(mode: string, tool?: string): void {
-  storedLayers = Array.from(ensureEl("mapLayers").querySelectorAll<HTMLElement>("li:not(.buttonoff)")).map(
-    node => node.id
-  ); // store layers preset
-  storedLayers.forEach(l => {
-    ensureEl(l).click(); // turn off all layers
-  });
+  storedLayers = Layers.all.filter(layer => layer.isOn);
+  Layers.setActive([]); // turn off all layers
 
   customization = 1;
   closeDialogs();
@@ -379,7 +376,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("transform", "scale(1)");
   } else exitCustomization.style.display = "block";
 
-  turnButtonOn("toggleHeight");
+  Layers.show(heightmapLayer);
   const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
   layersPreset.value = "heightmap";
   layersPreset.disabled = true;
@@ -472,18 +469,7 @@ function finalizeHeightmap(): void {
   drawFeatures();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
-  turnButtonOff("toggleHeight");
-  ensureEl("mapLayers")
-    .querySelectorAll<HTMLElement>("li")
-    .forEach(e => {
-      const wasOn = storedLayers.includes(e.id);
-      if ((wasOn && !layerIsOn(e.id)) || (!wasOn && layerIsOn(e.id))) e.click();
-    });
-  if (!layerIsOn("toggleBorders")) select("#borders").selectAll("path").remove();
-  if (!layerIsOn("toggleStates")) select("#regions").selectAll("path").remove();
-  if (!layerIsOn("toggleRivers")) select("#rivers").selectAll("*").remove();
-
-  getCurrentPreset();
+  Layers.setActive(storedLayers);
 }
 
 function regenerateErasedData(): void {
@@ -795,9 +781,8 @@ function restoreRiskedData(): void {
       return Boolean(centerBurg && !centerBurg.removed);
     });
     Production.regenerateEconomy();
-    if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-    if (layerIsOn("toggleGoods")) drawGoods();
-    if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+    Layers.draw(marketsLayer, goodsLayer);
+    if (tradeLayer.isOn) tradeAnimation.restart();
     refreshEditors();
   } else {
     Goods.generate();

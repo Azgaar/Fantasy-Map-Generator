@@ -5,18 +5,22 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import { Layers } from "@/renderers/layers/layers";
+import { cellsLayer, routesLayer } from "@/renderers/layers/map-layers";
 import { ensureEl, getPackPolygon, getPointer, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
+
+let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
 
 function open(defaultGroup?: string): void {
   if (customization) return;
   stopMapPlacement();
   closeDialogs();
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  Layers.show(routesLayer);
 
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  isCellsLayerForced = !cellsLayer.isOn;
+  Layers.show(cellsLayer);
 
   tip("Click to add route point", true);
   select("#debug").append("g").attr("id", "controlCells");
@@ -182,9 +186,8 @@ function closeRouteCreator(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
 
-  const forced = +ensureEl("toggleCells").dataset.forced!;
-  ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (isCellsLayerForced) Layers.hide(cellsLayer);
+  isCellsLayerForced = false;
 
   destroyDialog("routeCreator");
 }

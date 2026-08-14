@@ -1,4 +1,5 @@
 import type { ReliefIcon } from "@/generators/relief-generator";
+import { reliefLayer } from "@/renderers/layers/map-layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 
 interface ReliefSceneIcon {
@@ -11,7 +12,7 @@ const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief })
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {
-  const isActive = layerIsOn("toggleRelief");
+  const isActive = reliefLayer.isOn;
   setReliefLayerActive(isActive);
   if (!isActive) return void removeRelief();
 
@@ -32,7 +33,7 @@ export const redrawRelief = (): void => {
 
 export const getSceneReliefIcon = (id: string): ReliefIcon | undefined => scene.get(id)?.data;
 
-function removeRelief(): void {
+export function removeRelief(): void {
   scene.invalidate();
   document.querySelector("#terrain")?.replaceChildren();
 }
@@ -47,7 +48,7 @@ export const setReliefLayerActive = (isActive: boolean): void => {
 function reconcileRelief(context: ViewportRenderContext): void {
   const terrain = context.root.querySelector("#terrain");
   if (!terrain) return;
-  if (!scene.valid || !layerIsOn("toggleRelief")) return void terrain.replaceChildren();
+  if (!scene.valid || !reliefLayer.isOn) return void terrain.replaceChildren();
 
   const { x0, y0, x1, y1 } = context.bounds;
   const markup: string[] = [];

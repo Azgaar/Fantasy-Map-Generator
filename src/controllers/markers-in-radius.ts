@@ -4,6 +4,8 @@ import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
+import { Layers } from "@/renderers/layers/layers";
+import { markersLayer } from "@/renderers/layers/map-layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
 
@@ -29,7 +31,7 @@ function markerName(marker: Marker): string {
 function open(marker: Marker): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  Layers.show(markersLayer);
 
   center = marker;
   renderDialog();
@@ -89,7 +91,7 @@ function applyRadius(distance: number): void {
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
   setMarkersFilter(inRange.map(marker => marker.i));
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  Layers.draw(markersLayer);
   renderMarkersList(inRange);
 }
 
@@ -206,7 +208,7 @@ function locateCenter(): void {
 function closeMarkersInRadius(): void {
   clearMarkerRadius();
   setMarkersFilter(null);
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  Layers.draw(markersLayer);
   inRangeMarkers = [];
   center = null;
   clearMainTip();

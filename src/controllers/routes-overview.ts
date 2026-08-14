@@ -12,6 +12,8 @@ import {
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { Layers } from "@/renderers/layers/layers";
+import { routesLayer } from "@/renderers/layers/map-layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
@@ -71,7 +73,7 @@ const routesTable = initEditorTable<Route>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  Layers.show(routesLayer);
 
   renderDialog();
   routesTable.reset();
@@ -181,7 +183,7 @@ function renderRoutesPage(view: TableView<Route>): void {
 }
 
 function routeHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  Layers.show(routesLayer);
   const routeId = +(event.target as HTMLElement).dataset.id!;
   select("#routes")
     .select(`#route${routeId}`)

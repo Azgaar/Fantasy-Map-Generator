@@ -47,7 +47,7 @@ function getReliefState(page: Page) {
       relief: (window as any).pack.relief,
       // `style` is script-scoped, so it has to be read off the lexical global rather than off window
       style: style.relief,
-      layerIsOn: (window as any).layerIsOn("toggleRelief"),
+      layerIsOn: (window as any).Layers.get("relief").isOn,
       terrainStyle: terrain?.getAttribute("style") ?? null
     };
   });
@@ -239,6 +239,30 @@ test.describe("Map loading", () => {
     expect(measurers).toEqual([{type: "Ruler", points: [[417, 206], [1097, 158]]}]);
   });
 
+  // demo.map wraps its fogging layer into the pre-1.143 masked #fogging-cont container. Unwrapping it must
+  // leave the layer in its own slot — right before the ruler — not at the end of the z-order
+  test("legacy fogging container should be unwrapped in place", async ({page}) => {
+    const fileInput = page.locator("#mapToLoad");
+    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    await fileInput.setInputFiles(mapFilePath);
+
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", {timeout: 120000});
+
+    const fogging = await page.evaluate(() => ({
+      hasContainer: Boolean(document.getElementById("fogging-cont")),
+      parent: document.getElementById("fogging")?.parentElement?.id,
+      mask: document.getElementById("fogging")?.getAttribute("mask"),
+      order: (window as any).Layers.state.order as string[],
+      groups: Array.from(document.querySelectorAll("#viewbox > *"), node => node.id)
+    }));
+
+    expect(fogging.hasContainer).toBe(false);
+    expect(fogging.parent).toBe("viewbox");
+    expect(fogging.mask).toBe("url(#fog)");
+    expect(fogging.order.indexOf("fogging")).toBeLessThan(fogging.order.indexOf("rulers"));
+    expect(fogging.groups.indexOf("fogging")).toBeLessThan(fogging.groups.indexOf("ruler"));
+  });
+
   // 1.139.4.map keeps its 4 user-added labels as <text> in the legacy #addedLabels SVG group,
   // which the v1.140.0 migration turns into pack.addedLabels entities
   test("legacy added labels should migrate to pack.addedLabels", async ({page}) => {
@@ -373,14 +397,14 @@ test.describe("Map loading", () => {
   test("save data should preserve an active but empty label layer", async ({page}) => {
     await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
 
-    const serializedLabels = await page.evaluate(async () => {
-      (window as any).turnButtonOn("toggleLabels");
+    const savedLayers = await page.evaluate(async () => {
+      (window as any).Layers.show((window as any).Layers.get("labels"));
       document.getElementById("labels")?.replaceChildren();
       const mapData = await (window as any).Services.Save.prepareMapData();
-      return mapData.split("\r\n")[5].match(/<g id="labels"[^>]*>/)?.[0];
+      return JSON.parse(mapData.split("\r\n")[50]);
     });
 
-    expect(serializedLabels).toContain('data-layer-active="true"');
+    expect(savedLayers.active).toContain("labels");
   });
 
   test("legacy label and zoom APIs should remain available", async ({page}) => {
@@ -397,7 +421,7 @@ test.describe("Map loading", () => {
         "changeMapZoom"
       ].filter(name => typeof (window as any)[name] !== "function");
 
-      (window as any).turnButtonOn("toggleLabels");
+      (window as any).Layers.show((window as any).Layers.get("labels"));
       options.labels.showAll = true;
       (window as any).drawLabels();
       const burgLabel = document.querySelector<SVGTextElement>('#labels [id^="burgLabel"]');

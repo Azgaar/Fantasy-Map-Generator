@@ -30,91 +30,60 @@ if (PRODUCTION && "serviceWorker" in navigator) {
   );
 }
 
-// append svg layers (in default order)
+// create the svg layer groups: the Layers registry owns their existence and order
+Layers.init();
+
 let svg = d3.select("#map");
 let defs = svg.select("#deftemp");
 let viewbox = svg.select("#viewbox");
 let scaleBar = svg.select("#scaleBar");
-let legend = svg.append("g").attr("id", "legend");
-let ocean = viewbox.append("g").attr("id", "ocean");
-let oceanLayers = ocean.append("g").attr("id", "oceanLayers");
-let oceanPattern = ocean.append("g").attr("id", "oceanPattern");
-let landmass = viewbox.append("g").attr("id", "landmass");
-let texture = viewbox.append("g").attr("id", "texture");
-let terrs = viewbox.append("g").attr("id", "terrs");
-let lakes = viewbox.append("g").attr("id", "lakes");
-let biomes = viewbox.append("g").attr("id", "biomes");
-let cells = viewbox.append("g").attr("id", "cells");
-let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
-let coordinates = viewbox.append("g").attr("id", "coordinates");
-let compass = viewbox.append("g").attr("id", "compass").style("display", "none");
-let rivers = viewbox.append("g").attr("id", "rivers");
-let terrain = viewbox.append("g").attr("id", "terrain").style("display", "none");
-let relig = viewbox.append("g").attr("id", "relig");
-let cults = viewbox.append("g").attr("id", "cults");
-let regions = viewbox.append("g").attr("id", "regions");
-let statesBody = regions.append("g").attr("id", "statesBody");
-let statesHalo = regions.append("g").attr("id", "statesHalo");
-let provs = viewbox.append("g").attr("id", "provs");
-let zones = viewbox.append("g").attr("id", "zones");
-let borders = viewbox.append("g").attr("id", "borders");
-let stateBorders = borders.append("g").attr("id", "stateBorders");
-let provinceBorders = borders.append("g").attr("id", "provinceBorders");
-let routes = viewbox.append("g").attr("id", "routes");
-let roads = routes.append("g").attr("id", "roads");
-let trails = routes.append("g").attr("id", "trails");
-let searoutes = routes.append("g").attr("id", "searoutes");
-let temperature = viewbox.append("g").attr("id", "temperature");
-let coastline = viewbox.append("g").attr("id", "coastline");
-let ice = viewbox.append("g").attr("id", "ice");
-let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
-let markets = viewbox.append("g").attr("id", "markets");
-let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation").style("display", "none");
-let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
-let population = viewbox.append("g").attr("id", "population");
-let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
-let icons = viewbox.append("g").attr("id", "icons");
-let labels = viewbox.append("g").attr("id", "labels").attr("font-size", "100px");
-let burgIcons = icons.append("g").attr("id", "burgIcons");
-let anchors = icons.append("g").attr("id", "anchors");
-let armies = viewbox.append("g").attr("id", "armies");
-let markers = viewbox.append("g").attr("id", "markers");
-let fogging = viewbox
-  .append("g")
-  .attr("id", "fogging-cont")
-  .attr("mask", "url(#fog)")
-  .append("g")
-  .attr("id", "fogging")
-  .style("display", "none");
-let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
-var debug = viewbox.append("g").attr("id", "debug");
-
-lakes.append("g").attr("id", "freshwater");
-lakes.append("g").attr("id", "salt");
-lakes.append("g").attr("id", "sinkhole");
-lakes.append("g").attr("id", "frozen");
-lakes.append("g").attr("id", "lava");
-lakes.append("g").attr("id", "dry");
-
-coastline.append("g").attr("id", "sea_island");
-coastline.append("g").attr("id", "lake_island");
-
-terrs.append("g").attr("id", "oceanHeights");
-terrs.append("g").attr("id", "landHeights");
-
-// population groups
-population.append("g").attr("id", "rural");
-population.append("g").attr("id", "urban");
-
-// goods groups
-goods.append("g").attr("id", "goodsCells");
-goods.append("g").attr("id", "goodsIcons");
-goods.append("g").attr("id", "goodsBurgs");
-
-// emblem groups
-emblems.append("g").attr("id", "burgEmblems");
-emblems.append("g").attr("id", "provinceEmblems");
-emblems.append("g").attr("id", "stateEmblems");
+let legend = svg.select("#legend");
+let ocean = viewbox.select("#ocean");
+let oceanLayers = ocean.select("#oceanLayers");
+let oceanPattern = ocean.select("#oceanPattern");
+let landmass = viewbox.select("#landmass");
+let texture = viewbox.select("#texture");
+let terrs = viewbox.select("#terrs");
+let lakes = viewbox.select("#lakes");
+let biomes = viewbox.select("#biomes");
+let cells = viewbox.select("#cells");
+let gridOverlay = viewbox.select("#gridOverlay");
+let coordinates = viewbox.select("#coordinates");
+let compass = viewbox.select("#compass");
+let rivers = viewbox.select("#rivers");
+let terrain = viewbox.select("#terrain");
+let relig = viewbox.select("#relig");
+let cults = viewbox.select("#cults");
+let regions = viewbox.select("#regions");
+let statesBody = regions.select("#statesBody");
+let statesHalo = regions.select("#statesHalo");
+let provs = viewbox.select("#provs");
+let zones = viewbox.select("#zones");
+let borders = viewbox.select("#borders");
+let stateBorders = borders.select("#stateBorders");
+let provinceBorders = borders.select("#provinceBorders");
+let routes = viewbox.select("#routes");
+let roads = routes.select("#roads");
+let trails = routes.select("#trails");
+let searoutes = routes.select("#searoutes");
+let temperature = viewbox.select("#temperature");
+let coastline = viewbox.select("#coastline");
+let ice = viewbox.select("#ice");
+let goods = viewbox.select("#goods");
+let markets = viewbox.select("#markets");
+let tradeAnimation = viewbox.select("#tradeAnimation");
+let prec = viewbox.select("#prec");
+let population = viewbox.select("#population");
+let emblems = viewbox.select("#emblems");
+let icons = viewbox.select("#icons");
+let labels = viewbox.select("#labels");
+let burgIcons = icons.select("#burgIcons");
+let anchors = icons.select("#anchors");
+let armies = viewbox.select("#armies");
+let markers = viewbox.select("#markers");
+let fogging = viewbox.select("#fogging");
+let ruler = viewbox.select("#ruler");
+var debug = viewbox.select("#debug");
 
 // compass
 compass.append("use").attr("xlink:href", "#defs-compass-rose");
@@ -302,7 +271,7 @@ async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
   applyLayersPreset(); // apply saved layers preset and reder layers
-  drawLayers();
+  Layers.drawAll();
   fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   toggleAssistant();
@@ -1184,7 +1153,7 @@ const regenerateMap = debounce(async function (config) {
   resetZoom(1000);
   undraw();
   await generate(config);
-  drawLayers();
+  Layers.drawAll();
   if (options.threeD.isOn) window.Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 

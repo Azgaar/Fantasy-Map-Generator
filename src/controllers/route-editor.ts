@@ -4,19 +4,23 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import { cellsLayer, routesLayer } from "@/renderers/layers/map-layers";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
 let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
+
+let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
 
 function open(id: string): void {
   if (customization) return;
   if (findEl("routeEditor") && id === selectedRoute.attr("id")) return;
   closeDialogs(".stable");
 
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  Layers.show(routesLayer);
+  isCellsLayerForced = !cellsLayer.isOn;
+  Layers.show(cellsLayer);
 
   selectedRoute = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
@@ -464,9 +468,8 @@ function closeRouteEditor(): void {
   selectedRoute.on("click", null);
   clearMainTip();
 
-  const forced = +ensureEl("toggleCells").dataset.forced!;
-  ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (isCellsLayerForced) Layers.hide(cellsLayer);
+  isCellsLayerForced = false;
 
   destroyDialog("routeEditor");
 }

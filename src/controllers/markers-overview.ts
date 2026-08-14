@@ -13,6 +13,8 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
+import { Layers } from "@/renderers/layers/layers";
+import { markersLayer } from "@/renderers/layers/map-layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { ensureEl } from "../utils";
@@ -44,7 +46,7 @@ const columns: EditorColumn<Marker>[] = [
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  Layers.show(markersLayer);
 
   renderDialog();
   markersTable.reset();
@@ -177,7 +179,7 @@ function closeMarkersOverview(): void {
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  Layers.draw(markersLayer);
   populateFilters();
   markersTable.refresh();
 }
@@ -301,7 +303,7 @@ function syncMapToFilter(filteredMarkers: Marker[], anyFilterActive: boolean): v
   lastFilterSignature = signature;
 
   setMarkersFilter(ids);
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  Layers.draw(markersLayer);
 }
 
 function invertPin(): void {

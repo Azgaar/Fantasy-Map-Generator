@@ -42,7 +42,7 @@ test.describe("controller launchers", () => {
   test("opens Relief Editor by clicking a relief icon", async ({page}) => {
     await page.click("#optionsTrigger");
     await page.click("#layersTab");
-    const reliefToggle = page.locator("#toggleRelief");
+    const reliefToggle = page.locator("#mapLayers > li[data-layer='relief']");
     if (await reliefToggle.evaluate(element => element.classList.contains("buttonoff"))) {
       await reliefToggle.click();
     }

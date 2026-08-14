@@ -16,8 +16,18 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
+import { drawCultures } from "@/renderers/draw-cultures";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  biomesLayer,
+  culturesLayer,
+  populationLayer,
+  provincesLayer,
+  religionsLayer,
+  statesLayer
+} from "@/renderers/layers/map-layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
@@ -120,11 +130,9 @@ const culturesTable = initEditorTable<Culture>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  Layers.show(culturesLayer);
+  Layers.hide(statesLayer, biomesLayer);
+  Layers.hide(religionsLayer, provincesLayer);
 
   renderDialog();
   culturesCollectStatistics();
@@ -475,7 +483,7 @@ function getShapeOptions(selectShape: boolean, selected: string): string {
 const cultureHighlightOn = debounce((event: any) => {
   const cultureId = Number(event.id || event.target.dataset.id);
 
-  if (!layerIsOn("toggleCultures")) return;
+  if (!culturesLayer.isOn) return;
   if (customization) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
@@ -496,7 +504,7 @@ const cultureHighlightOn = debounce((event: any) => {
 function cultureHighlightOff(event: any): void {
   const cultureId = Number(event.id || event.target.dataset.id);
 
-  if (!layerIsOn("toggleCultures")) return;
+  if (!culturesLayer.isOn) return;
   select("#cults").select(`#culture${cultureId}`).transition().attr("stroke-width", null).attr("stroke", null);
   select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
 }
@@ -702,7 +710,7 @@ function applyPopulationChange(
     });
   }
 
-  if (layerIsOn("togglePopulation")) drawPopulation();
+  Layers.draw(populationLayer);
   refreshCulturesEditor();
 }
 
@@ -904,7 +912,7 @@ function recalculateCultures(force?: boolean): void {
 }
 
 function enterCultureManualAssignent(): void {
-  if (!layerIsOn("toggleCultures")) toggleCultures();
+  Layers.show(culturesLayer);
   customization = 4;
   select("#cults").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {

@@ -15,6 +15,8 @@ import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-gen
 import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
+import { labelsLayer } from "@/renderers/layers/map-layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, findEl } from "@/utils";
 
@@ -62,7 +64,7 @@ const labelsTable = initEditorTable<LabelData>({
 function open(group: string = ALL): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show(labelsLayer);
 
   isBulkMode = false;
   resetSpreadPreview();

@@ -18,8 +18,17 @@ import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { drawBiomes } from "@/renderers/draw-biomes";
-import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  biomesLayer,
+  culturesLayer,
+  goodsLayer,
+  populationLayer,
+  provincesLayer,
+  religionsLayer,
+  statesLayer
+} from "@/renderers/layers/map-layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
@@ -83,11 +92,9 @@ const biomesTable = initEditorTable<Biome>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  Layers.show(biomesLayer);
+  Layers.hide(statesLayer, culturesLayer);
+  Layers.hide(religionsLayer, provincesLayer);
 
   renderDialog();
   currentBiomeStatistics = biomesCollectStatistics();
@@ -480,7 +487,7 @@ function downloadBiomesData(): void {
 }
 
 function enterBiomesCustomizationMode(): void {
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
+  Layers.show(biomesLayer);
   customization = 6;
   setModeHiddenColumns(dialogId, ["habitability", "cells", "area", "population", "actions"]);
   select("#biomes").append("g").attr("id", "temp");
@@ -645,8 +652,7 @@ function closeBiomesEditor(): void {
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  Layers.draw(populationLayer, goodsLayer);
 }
 
 export const BiomesEditor = { open };

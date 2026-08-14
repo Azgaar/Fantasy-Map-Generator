@@ -2,6 +2,7 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { Layers } from "@/renderers/layers/layers";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
@@ -83,6 +84,7 @@ function prepareMapData(): string {
   const notesData = JSON.stringify(notes);
   const measurers = JSON.stringify(pack.measurers ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
+  const layers = JSON.stringify(Layers.state);
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
@@ -91,7 +93,6 @@ function prepareMapData(): string {
   cloneEl.setAttribute("width", String(graphWidth));
   cloneEl.setAttribute("height", String(graphHeight));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
-  cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
   const cloneTerrain = cloneEl.querySelector("#terrain");
@@ -196,7 +197,8 @@ function prepareMapData(): string {
     measurers,
     labels,
     styleData,
-    relief
+    relief,
+    layers
   ].join("\r\n");
   return mapData;
 }

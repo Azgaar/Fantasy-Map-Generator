@@ -2,6 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { emblemsLayer } from "@/renderers/layers/map-layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -319,7 +320,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   // add displayed emblems
-  if (layerIsOn("toggleEmblems") && select("#emblems").selectAll("use").size()) {
+  if (emblemsLayer.isOn && select("#emblems").selectAll("use").size()) {
     cloneEl
       .getElementById("emblems")
       ?.querySelectorAll("use")
@@ -459,7 +460,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     }
   }
 
-  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
+  const fogMask = cloneEl.getElementById("fog");
+  if (!fogMask?.querySelector("path")) fogMask?.remove(); // the fog mask is unused until an area is revealed
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 

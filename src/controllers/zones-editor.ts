@@ -16,6 +16,9 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawZones } from "@/renderers/draw-zones";
+import { Layers } from "@/renderers/layers/layers";
+import { populationLayer, zonesLayer } from "@/renderers/layers/map-layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
@@ -42,7 +45,7 @@ const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: r
 
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
-  if (!layerIsOn("toggleZones")) toggleZones();
+  Layers.show(zonesLayer);
 
   renderDialog();
   updateFilters();
@@ -291,7 +294,7 @@ function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): 
 }
 
 function enterZonesManualAssignent(): void {
-  if (!layerIsOn("toggleZones")) toggleZones();
+  Layers.show(zonesLayer);
   customization = 10;
   const body = ensureEl("zonesBodySection");
 
@@ -604,7 +607,7 @@ function changePopulation(zone: Zone): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    Layers.draw(populationLayer);
     zonesTable.refresh();
   }
 }

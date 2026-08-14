@@ -16,6 +16,16 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawReligions } from "@/renderers/draw-religions";
+import { Layers } from "@/renderers/layers/layers";
+import {
+  biomesLayer,
+  culturesLayer,
+  populationLayer,
+  provincesLayer,
+  religionsLayer,
+  statesLayer
+} from "@/renderers/layers/map-layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
@@ -117,11 +127,9 @@ const religionsTable = initEditorTable<Religion>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  Layers.show(religionsLayer);
+  Layers.hide(statesLayer, biomesLayer);
+  Layers.hide(culturesLayer, provincesLayer);
 
   renderDialog();
   religionsCollectStatistics();
@@ -489,7 +497,7 @@ const religionHighlightOn = debounce((event: any) => {
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.add("active");
 
-  if (!layerIsOn("toggleReligions")) return;
+  if (!religionsLayer.isOn) return;
   if (customization) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
@@ -659,7 +667,7 @@ function changePopulation(this: HTMLElement): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    Layers.draw(populationLayer);
     refreshReligionsEditor();
   }
 }
@@ -845,7 +853,7 @@ function toggleExtinct(): void {
 }
 
 function enterReligionsManualAssignent(): void {
-  if (!layerIsOn("toggleReligions")) toggleReligions();
+  Layers.show(religionsLayer);
   customization = 7;
   select("#relig").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
