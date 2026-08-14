@@ -264,10 +264,10 @@ function selectStyleElement() {
 
   if (styleElement === "compass") {
     styleCompass.style.display = "block";
-    const tr = parseTransform(compass.select("use").attr("transform"));
-    styleCompassShiftX.value = tr[0];
-    styleCompassShiftY.value = tr[1];
-    styleCompassSizeInput.value = tr[2];
+    const use = getLayerOptions("compass").use || {};
+    styleCompassShiftX.value = use.x;
+    styleCompassShiftY.value = use.y;
+    styleCompassSizeInput.value = use.scale;
   }
 
   if (styleElement === "terrain") {
@@ -917,9 +917,21 @@ styleCompassSizeInput.addEventListener("input", shiftCompass);
 styleCompassShiftX.addEventListener("input", shiftCompass);
 styleCompassShiftY.addEventListener("input", shiftCompass);
 
+// projects style.layers.compass.options.use onto the live <use> transform - mirrors the
+// existing style-presets.js applySingleInstanceOptionElements projector used on preset load/apply
+function applyCompassTransform() {
+  const use = getLayerOptions("compass").use;
+  const useEl = compass.select("use");
+  if (!use || useEl.empty()) return;
+  useEl.attr("transform", `translate(${use.x} ${use.y}) scale(${use.scale})`);
+}
+
 function shiftCompass() {
-  const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
-  compass.select("use").attr("transform", tr);
+  const x = Number(styleCompassShiftX.value);
+  const y = Number(styleCompassShiftY.value);
+  const scale = Number(styleCompassSizeInput.value);
+  setOptions({layerId: "compass"}, {use: {x, y, scale}});
+  applyCompassTransform();
 }
 
 styleLegendColItems.addEventListener("input", e => {
