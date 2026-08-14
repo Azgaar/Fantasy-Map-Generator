@@ -33,6 +33,7 @@ declare global {
     applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
     drawRelief: typeof import("../renderers/draw-relief-icons").drawRelief;
     redrawRelief: typeof import("../renderers/draw-relief-icons").redrawRelief;
+    applyLayerStyle: typeof import("../services/styles/apply").applyLayerStyle;
     redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;
