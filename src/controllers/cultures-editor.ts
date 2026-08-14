@@ -48,7 +48,6 @@ const columns: EditorColumn<Culture>[] = [
     label: "Culture",
     width: "10em",
     permanent: true,
-    tip: "Click to sort by culture name",
     sortBy: culture => culture.name || "",
     sortType: "alpha"
   },
@@ -57,7 +56,6 @@ const columns: EditorColumn<Culture>[] = [
     label: "Type",
     width: "6em",
     mobileHidden: true,
-    tip: "Click to sort by type",
     sortBy: culture => culture.type || "",
     sortType: "alpha"
   },
@@ -66,7 +64,6 @@ const columns: EditorColumn<Culture>[] = [
     label: "Namesbase",
     width: "9em",
     mobileHidden: true,
-    tip: "Click to sort by culture namesbase",
     sortBy: culture => culture.base
   },
   {
@@ -74,7 +71,6 @@ const columns: EditorColumn<Culture>[] = [
     label: "Cells",
     width: "5em",
     hidden: true,
-    tip: "Click to sort by culture cells count",
     sortBy: culture => culture.cells || 0
   },
   {
@@ -83,7 +79,6 @@ const columns: EditorColumn<Culture>[] = [
     width: "5em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by expansionism",
     sortBy: culture => culture.expansionism || 0
   },
   {
@@ -91,7 +86,6 @@ const columns: EditorColumn<Culture>[] = [
     label: "Area",
     width: "7em",
     mobileHidden: true,
-    tip: "Click to sort by culture area",
     sortBy: culture => culture.area || 0
   },
   {
@@ -99,7 +93,6 @@ const columns: EditorColumn<Culture>[] = [
     label: "Population",
     width: "6em",
     defaultSort: "desc",
-    tip: "Click to sort by culture population",
     sortBy: culture => (culture.rural || 0) * populationRate + (culture.urban || 0) * populationRate * urbanization
   },
   {
@@ -108,7 +101,6 @@ const columns: EditorColumn<Culture>[] = [
     width: "7em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by culture emblems shape",
     sortBy: culture => culture.shield || "",
     sortType: "alpha"
   },

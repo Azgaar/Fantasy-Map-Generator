@@ -99,6 +99,7 @@ export type EditorColumn<T = any> = {
   hidden?: boolean;
   mobileHidden?: boolean;
   align?: "left" | "right";
+  marginLeft?: string;
 };
 
 export function buildTracks(columns: EditorColumn[], hidden: Set<string>): string {
@@ -125,7 +126,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
         classes.push(`icon-sort-${type}-${column.defaultSort === "desc" ? "down" : "up"}`);
       }
     }
-    const tip = column.tip ?? "";
+    const tip = column.tip ?? (column.sortBy && column.label ? `Click to sort by ${column.label}` : "");
     const attributes = [
       `data-col="${column.key}"`,
       classes.length ? `class="${classes.join(" ")}"` : "",
@@ -135,7 +136,13 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       .filter(Boolean)
       .join(" ");
 
-    const style = ["white-space:nowrap", column.align ? `text-align:${column.align}` : ""].filter(Boolean).join("; ");
+    const style = [
+      "white-space:nowrap",
+      column.align ? `text-align:${column.align}` : "",
+      column.marginLeft ? `margin-left:${column.marginLeft}` : ""
+    ]
+      .filter(Boolean)
+      .join("; ");
 
     const button =
       index === lastVisibleIndex

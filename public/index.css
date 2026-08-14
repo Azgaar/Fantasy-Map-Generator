@@ -1416,10 +1416,6 @@ div.header {
   font-size: 0.9em;
 }
 
-div.header > div:first-child {
-  margin-left: 1.8em;
-}
-
 .sortable {
   cursor: pointer;
 }
@@ -1470,9 +1466,6 @@ div.header > div:first-child {
 .editorToolbar > .editorToolbarPanel {
   flex-basis: 100%;
 }
-.editorDialog {
-  min-width: 20em;
-}
 
 .editorDialog .header,
 .editorDialog .states {
@@ -1486,13 +1479,10 @@ div.header > div:first-child {
   top: 0;
   z-index: 1;
   width: auto;
+  line-height: 0;
   background: #f3f4f7;
   border: 1px solid transparent;
   padding: 0 0.2em;
-}
-
-.editorDialog .header > div:first-child {
-  margin-left: 0;
 }
 
 /* cells size to their grid track, not their own content, so long values shrink instead of widening the row */
@@ -2575,49 +2565,6 @@ svg.button {
   body {
     background: #25252a;
   }
-}
-
-/* Goods */
-div.states > .goodIcon {
-  margin: 0;
-  vertical-align: middle;
-}
-div.states > .goodName {
-  width: 7em;
-}
-
-div.states > .goodUnit {
-  width: 4em;
-}
-
-div.states > .goodProduced,
-div.states > .goodStock,
-div.states > .goodBasePrice,
-div.states > .goodBuyPrice,
-div.states > .goodSellPrice {
-  width: 5em;
-  text-align: right;
-}
-
-div.states > .goodEdit {
-  padding-left: 1em;
-}
-
-/* Market Goods */
-div.states > .marketGoodName {
-  width: 8.5em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-div.states > .marketGoodStock,
-div.states > .marketGoodPrice,
-div.states > .goodUnits,
-div.states > .goodPrice,
-div.states > .goodValue {
-  width: 5em;
-  text-align: right;
 }
 
 /* Market Deals */

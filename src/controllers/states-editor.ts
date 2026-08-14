@@ -54,7 +54,6 @@ const columns: EditorColumn<State>[] = [
     label: "State",
     width: "7em",
     permanent: true,
-    tip: "Click to sort by state name",
     sortBy: s => s.name || "",
     sortType: "alpha"
   },
@@ -64,7 +63,6 @@ const columns: EditorColumn<State>[] = [
     label: "Form",
     width: "8em",
     mobileHidden: true,
-    tip: "Click to sort by state form name",
     sortBy: s => (s.i ? s.formName || "" : ""),
     sortType: "alpha"
   },
@@ -72,7 +70,6 @@ const columns: EditorColumn<State>[] = [
     key: "capital",
     label: "Capital",
     width: "7em",
-    tip: "Click to sort by capital name",
     sortBy: s => (s.i ? pack.burgs[s.capital]?.name || "" : ""),
     sortType: "alpha"
   },
@@ -81,7 +78,6 @@ const columns: EditorColumn<State>[] = [
     label: "Culture",
     width: "10em",
     mobileHidden: true,
-    tip: "Click to sort by state dominant culture",
     sortBy: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
     sortType: "alpha"
   },
@@ -90,7 +86,6 @@ const columns: EditorColumn<State>[] = [
     label: "Burgs",
     width: "5em",
     mobileHidden: true,
-    tip: "Click to sort by state burgs count",
     sortBy: s => s.burgs || 0
   },
   {
@@ -99,7 +94,6 @@ const columns: EditorColumn<State>[] = [
     width: "5em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by state cells count",
     sortBy: s => s.cells || 0
   },
   {
@@ -108,14 +102,12 @@ const columns: EditorColumn<State>[] = [
     width: "7em",
     mobileHidden: true,
     defaultSort: "desc",
-    tip: "Click to sort by state area",
     sortBy: s => getArea(s.area || 0)
   },
   {
     key: "population",
     label: "Population",
     width: "6em",
-    tip: "Click to sort by state population",
     sortBy: s => rn((s.rural || 0) * populationRate + (s.urban || 0) * populationRate * urbanization)
   },
   {
@@ -131,7 +123,6 @@ const columns: EditorColumn<State>[] = [
     label: "Type",
     width: "5em",
     hidden: true,
-    tip: "Click to sort by state type",
     sortBy: s => (s.i ? s.type || "" : ""),
     sortType: "alpha"
   },
@@ -140,7 +131,6 @@ const columns: EditorColumn<State>[] = [
     label: "Expansion",
     width: "5em",
     hidden: true,
-    tip: "Click to sort by state expansion value",
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
   },
   { key: "actions", width: "4.2em", permanent: true, align: "right" }
