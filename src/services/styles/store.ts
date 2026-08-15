@@ -56,8 +56,7 @@ interface StyleTarget {
 export function setPresentation(target: StyleTarget, attr: string, value: PresentationValue): void {
   const node = getStyleNode(target.layerId, ...(target.childIds ?? []));
   node.presentation ??= {};
-  if (value === null) node.presentation[attr] = null;
-  else node.presentation[attr] = value;
+  node.presentation[attr] = value;
   applyLayerStyle(target.layerId);
 }
 
@@ -68,6 +67,7 @@ export function setOptions(target: StyleTarget, patch: Record<string, unknown>):
 
 window.ensureStyleShape = ensureStyleShape;
 window.getStyleNode = getStyleNode;
+window.getStyleNodeIfSet = getStyleNodeIfSet;
 window.getLayerOptions = getLayerOptions;
 window.setPresentation = setPresentation;
 window.setOptions = setOptions;

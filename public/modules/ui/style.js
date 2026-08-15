@@ -133,10 +133,13 @@ function selectStyleElement() {
         ? el.attr("data-group")
         : el.attr("id")
       : undefined;
-  const styleNode = getStyleNode(
-    currentStyleTarget.layerId,
-    ...(currentStyleTarget.childIds ?? (currentChildId ? [currentChildId] : []))
-  );
+  // read-only: getStyleNode would materialize an empty child node here, which the renderer
+  // fallbacks (createIconGroups' default-group lookup) then prefer over their fallback
+  const styleNode =
+    getStyleNodeIfSet(
+      currentStyleTarget.layerId,
+      ...(currentStyleTarget.childIds ?? (currentChildId ? [currentChildId] : []))
+    ) ?? {};
 
   // opacity
   if (!["landmass", "legend", "ocean", "regions"].includes(styleElement)) {
@@ -287,22 +290,18 @@ function selectStyleElement() {
 
   if (styleElement === "population") {
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = getStyleNode(
-      "population",
-      "rural"
-    ).presentation?.["stroke"];
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = getStyleNode(
-      "population",
-      "urban"
-    ).presentation?.["stroke"];
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value =
+      getStyleNodeIfSet("population", "rural")?.presentation?.["stroke"];
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value =
+      getStyleNodeIfSet("population", "urban")?.presentation?.["stroke"];
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0;
   }
 
   if (styleElement === "regions") {
     styleStates.style.display = "block";
-    const statesBodyNode = getStyleNode("regions", "statesBody");
-    const statesHaloNode = getStyleNode("regions", "statesHalo");
+    const statesBodyNode = getStyleNodeIfSet("regions", "statesBody") ?? {};
+    const statesHaloNode = getStyleNodeIfSet("regions", "statesHalo") ?? {};
     styleStatesBodyOpacity.value = statesBodyNode.presentation?.["opacity"] || 1;
     styleStatesBodyFilter.value = statesBodyNode.presentation?.["filter"] || "";
     styleStatesHaloWidth.value = getLayerOptions("regions", "statesHalo").width || 10;
@@ -590,7 +589,6 @@ styleOpacityInput.addEventListener("input", e => {
 });
 
 styleFilterInput.addEventListener("change", function () {
-  if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
   const target = styleTargetFromUI();
   setPresentation(target, "filter", this.value);
 });
@@ -1035,14 +1033,19 @@ function changeFontSize(el, size) {
     return;
   }
 
-  // coordinates' displayed font-size is zoom-scaled (rn(size / scale ** 0.8, 2)), not a fixed
-  // value like the other layers here - persisting that scaled number into style.layers would
-  // freeze the wrong number in once the user zooms again. Store only the base size (matching
-  // the old data-size-is-base model) and let drawCoordinates() derive+apply the scaled display
-  // font-size itself, the same way it already does on every zoom-triggered redraw
+  // coordinates' displayed font-size is zoom-scaled, so only the base size is stored;
+  // drawCoordinates() derives and applies the scaled one, as it does on every zoom redraw
   if (styleElementSelect.value === "coordinates") {
     setOptions({layerId: "coordinates"}, {fontSize: size});
     if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    return;
+  }
+
+  // anchor size is an option: createIconGroups re-projects it as font-size on every draw, so a
+  // plain DOM write is reverted by the next drawBurgIcons() and lost on reload
+  if (styleElementSelect.value === "anchors") {
+    setOptions(styleTargetFromUI(), {size});
+    el.attr("font-size", size);
     return;
   }
 
@@ -1095,7 +1098,7 @@ styleStatesHaloBlur.addEventListener("input", e => {
 });
 
 styleArmiesFillOpacity.addEventListener("input", e => {
-  armies.attr("fill-opacity", e.target.value);
+  setPresentation({layerId: "armies"}, "fill-opacity", e.target.value);
 });
 
 styleArmiesSize.addEventListener("input", e => {
@@ -1143,7 +1146,7 @@ styleGoodsBurgsSize.addEventListener("change", function () {
 });
 
 styleMarketsLayerFillOpacity.addEventListener("input", e => {
-  markets.attr("fill-opacity", e.target.value);
+  setPresentation({layerId: "markets"}, "fill-opacity", e.target.value);
 });
 
 styleMarketsSize.addEventListener("change", function () {
@@ -1339,10 +1342,17 @@ mapFilters.addEventListener("click", applyMapFilter);
 function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;
-  svg.attr("data-filter", null).attr("filter", null);
+  setMapFilter(null);
   if (button.classList.contains("pressed")) return button.classList.remove("pressed");
 
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
-  svg.attr("data-filter", button.id).attr("filter", "url(#filter-" + button.id + ")");
+  setMapFilter(button.id);
+}
+
+// the map filter is stored (style.layers.map), not just written to the svg root: load.ts
+// re-applies the stored map node over the restored svg, which would wipe a DOM-only write
+function setMapFilter(filterId) {
+  setPresentation({layerId: "map"}, "data-filter", filterId);
+  setPresentation({layerId: "map"}, "filter", filterId ? `url(#filter-${filterId})` : null);
 }

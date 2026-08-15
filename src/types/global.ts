@@ -36,6 +36,7 @@ declare global {
     applyLayerStyle: typeof import("../services/styles/apply").applyLayerStyle;
     ensureStyleShape: typeof import("../services/styles/store").ensureStyleShape;
     getStyleNode: typeof import("../services/styles/store").getStyleNode;
+    getStyleNodeIfSet: typeof import("../services/styles/store").getStyleNodeIfSet;
     getLayerOptions: typeof import("../services/styles/store").getLayerOptions;
     setPresentation: typeof import("../services/styles/store").setPresentation;
     setOptions: typeof import("../services/styles/store").setOptions;
