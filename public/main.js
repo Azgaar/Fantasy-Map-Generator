@@ -1094,9 +1094,7 @@ const regenerateMap = debounce(async function (config) {
 
 // clear the map
 function undraw() {
-  d3.select("#viewbox")
-    .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
-    .remove();
+  Layers.eraseAll();
   ensureEl("deftemp")
     .querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());

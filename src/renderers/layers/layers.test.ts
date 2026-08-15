@@ -140,6 +140,28 @@ describe("erase", () => {
     expect(document.getElementById("kept")!.children.length).toBe(0);
   });
 
+  it("eraseAll drops the content of every viewbox layer, on or off, keepContent included", () => {
+    const erase = vi.fn();
+    registry(
+      new Layer({ id: "a", element: "a-el", parent: "viewbox", keepContent: true }),
+      new Layer({ id: "b", element: "b-el", parent: "viewbox", children: ["kept"] }),
+      new Layer({ id: "c", element: "c-el", parent: "viewbox", erase }),
+      new Layer({ id: "chrome", element: "chrome-el", parent: "map" })
+    );
+    Layers.show("a");
+    document.getElementById("a-el")!.innerHTML = /* html */ `<circle id="dropped-a" />`;
+    document.getElementById("kept")!.innerHTML = /* html */ `<circle id="dropped-b" />`;
+    document.getElementById("chrome-el")!.innerHTML = /* html */ `<circle id="chrome-content" />`;
+
+    Layers.eraseAll();
+
+    expect(document.getElementById("dropped-a")).toBeNull();
+    expect(document.getElementById("kept")!.children.length).toBe(0); // declared children survive, empty
+    expect(erase).toHaveBeenCalledTimes(1); // erased even though the layer is off
+    expect(document.getElementById("chrome-content")).not.toBeNull(); // chrome is not map content
+    expect([Layers.isOn("a"), Layers.isOn("b")]).toEqual([true, false]); // state is untouched
+  });
+
   it("keeps the content when keepContent is set", () => {
     registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", keepContent: true }));
     Layers.show("a");

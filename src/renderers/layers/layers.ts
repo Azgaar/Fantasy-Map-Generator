@@ -35,7 +35,7 @@ import { drawTexture } from "../draw-texture";
 import { drawVignette } from "../draw-vignette";
 import { drawZones } from "../draw-zones";
 import { drawLabels, removeLabels } from "../labels/labels-renderer";
-import { drawOceanLayers } from "../ocean-layers";
+import { drawOceanLayers, removeOceanLayers } from "../ocean-layers";
 import { tradeAnimation } from "../trade-animation";
 
 interface LayerParams<Id extends string = string> {
@@ -169,6 +169,14 @@ export class LayersRegistry<Id extends string = string> {
     this.draw(...this.layers.map(layer => layer.id));
   }
 
+  eraseAll(): void {
+    for (const layer of this.layers) {
+      if (layer.parent !== "viewbox") continue;
+      if (layer.params.erase) layer.params.erase(layer);
+      else this.eraseContent(layer);
+    }
+  }
+
   move(id: Id, before?: Id): void {
     const layer = this.get(id);
     this.layers.splice(this.layers.indexOf(layer), 1);
@@ -250,7 +258,8 @@ const mapLayers = [
     children: ["oceanLayers", "oceanPattern"],
     permanent: true,
     keepContent: true,
-    draw: drawOceanLayers
+    draw: drawOceanLayers,
+    erase: removeOceanLayers
   }),
 
   new Layer({
