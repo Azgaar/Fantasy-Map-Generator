@@ -325,6 +325,7 @@ type Options = {
   latitude: number; // North-South map shift in %, 50 is centered on equator
   longitude: number; // West-East map shift in %, 50 is centered on prime meridian
   prec: number; // precipitation modifier in %
+  reliefDensity: number; // relief icons placement density
   showBurgPreview: boolean;
   burgs: { groups: BurgGroup[] };
   labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };

@@ -76,11 +76,15 @@ function applyStylePreset(presetJson) {
     ? upgradeLegacyPreset(presetJson, {onUnknownSelector: "skip"})
     : parseStyle(presetJson);
 
+  // the preset replaces style.layers wholesale, so the outgoing terrain options have to be
+  // captured before the swap: relief resizing is relative to the size that is being replaced
+  const previousTerrain = {...(style.layers.terrain?.options || {})};
+
   style = {...style, ...ensureStyleShape(upgraded)};
 
   for (const layerId of Object.keys(style.layers)) applyLayerStyle(layerId);
 
-  applyTerrainPresetOptions();
+  applyTerrainPresetOptions(previousTerrain);
   applyTexturePresetOptions();
   applyLayerOptionAttributes();
   applyChildOptionAttributes();
@@ -101,21 +105,18 @@ function applyStylePreset(presetJson) {
   // path runs before pack exists, so drawing here would crash Relief.generate() on pack.cells
 }
 
-// style.relief mirror consumed by the relief editor and Relief.changeSet/changeSize side effects;
-// density has no equivalent in the new schema (dropped on upgrade), so the existing value is kept
-function applyTerrainPresetOptions() {
+// set/size are stored on the terrain layer, but the already-generated icons carry baked-in sizes
+// and icon ids, so a preset switch has to re-run the Relief side effects. Density is not a style
+// value at all (it drives placement) - it lives in the global options and presets never carry it
+function applyTerrainPresetOptions(previousTerrain) {
   const {set, size} = style.layers.terrain?.options || {};
 
   if (size) {
-    const ratio = size / style.relief.size;
-    style.relief.size = size;
+    const ratio = size / (previousTerrain.size || 1);
     if (ratio !== 1) Relief.changeSize(size);
   }
 
-  if (set) {
-    style.relief.set = set;
-    Relief.changeSet(set);
-  }
+  if (set) Relief.changeSet(set);
 }
 
 // texture options (x/y/href) aren't presentation attrs, so applyLayerStyle never writes them;

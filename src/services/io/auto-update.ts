@@ -18,7 +18,7 @@ import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { LEGACY_GROUP_ATTRIBUTES, LEGACY_SELECTOR_ATTRIBUTES, upgradeLegacyPreset } from "@/services/styles/legacy";
-import { deepMerge, ensureStyleShape } from "@/services/styles/store";
+import { deepMerge, ensureStyleShape, setOptions } from "@/services/styles/store";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -1528,13 +1528,17 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const terrainEl = document.getElementById("terrain");
 
     if (terrainEl) {
-      // v1.142.0 moved the relief style from the #terrain attributes to style.relief
+      // v1.142.0 moved the relief style off the #terrain attributes: set/size are terrain layer
+      // options, density is a global option (it drives placement, not the layer's look)
       const set = terrainEl.getAttribute("set");
-      style.relief = {
-        set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
-        size: Number(terrainEl.getAttribute("size")) || 1,
-        density: Number(terrainEl.getAttribute("density")) || 0.4
-      };
+      setOptions(
+        { layerId: "terrain" },
+        {
+          set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
+          size: Number(terrainEl.getAttribute("size")) || 1
+        }
+      );
+      options.reliefDensity = Number(terrainEl.getAttribute("density")) || 0.4;
       for (const attribute of ["set", "size", "density"]) terrainEl.removeAttribute(attribute);
 
       const iconElements = Array.from(terrainEl.querySelectorAll("use"));

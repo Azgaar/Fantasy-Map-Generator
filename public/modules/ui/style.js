@@ -287,9 +287,10 @@ function selectStyleElement() {
 
   if (styleElement === "terrain") {
     styleRelief.style.display = "block";
-    styleReliefSize.value = style.relief.size;
-    styleReliefDensity.value = style.relief.density;
-    styleReliefSet.value = style.relief.set;
+    const relief = getLayerOptions("terrain");
+    styleReliefSize.value = relief.size ?? 1;
+    styleReliefDensity.value = options.reliefDensity;
+    styleReliefSet.value = relief.set ?? "simple";
   }
 
   if (styleElement === "population") {
@@ -886,15 +887,15 @@ styleHeightmapCurve.addEventListener("change", e => {
 });
 
 styleReliefSet.addEventListener("change", e => {
-  style.relief.set = e.target.value;
+  setOptions({layerId: "terrain"}, {set: e.target.value});
   Relief.changeSet(e.target.value);
   drawRelief();
 });
 
 styleReliefSize.addEventListener("change", e => {
   const newSize = +e.target.value;
-  const ratio = newSize / style.relief.size;
-  style.relief.size = newSize;
+  const ratio = newSize / (getLayerOptions("terrain").size ?? 1);
+  setOptions({layerId: "terrain"}, {size: newSize});
   if (ratio === 1) return;
 
   Relief.changeSize(ratio);
@@ -903,21 +904,22 @@ styleReliefSize.addEventListener("change", e => {
 
 // density defines the placement, so it cannot be applied without regenerating the icons
 styleReliefDensity.addEventListener("change", e => {
-  style.relief.density = +e.target.value;
+  options.reliefDensity = +e.target.value;
   Relief.generate();
   drawRelief();
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
-  temperature.attr("fill-opacity", e.target.value);
+  setPresentation({layerId: "temperature"}, "fill-opacity", e.target.value);
 });
 
 styleTemperatureFontSizeInput.addEventListener("input", e => {
-  temperature.attr("font-size", e.target.value + "px");
+  setOptions({layerId: "temperature"}, {fontSize: +e.target.value});
+  setPresentation({layerId: "temperature"}, "font-size", e.target.value + "px");
 });
 
 styleTemperatureFillInput.addEventListener("input", e => {
-  temperature.attr("fill", e.target.value);
+  setPresentation({layerId: "temperature"}, "fill", e.target.value);
   styleTemperatureFillOutput.value = e.target.value;
 });
 

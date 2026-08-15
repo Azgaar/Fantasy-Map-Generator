@@ -3,8 +3,11 @@ import fs from "fs";
 import path from "path";
 
 declare const notes: {id: string}[]; // page global, resolved inside page.evaluate
-declare const options: {labels: {resizeOnZoom: boolean; showAll: boolean; groups: {type: string; mode?: string}[]}};
-declare const style: {relief: {set: string; size: number; density: number}};
+declare const options: {
+  labels: {resizeOnZoom: boolean; showAll: boolean; groups: {type: string; mode?: string}[]};
+  reliefDensity: number;
+};
+declare const style: {layers: {terrain?: {options?: {set?: string; size?: number}}}};
 
 const LEGACY_RELIEF_ICONS = [
   {icon: "relief-mount-1", x: 100, y: 100, s: 20},
@@ -45,8 +48,14 @@ function getReliefState(page: Page) {
     const terrain = document.getElementById("terrain");
     return {
       relief: (window as any).pack.relief,
-      // `style` is script-scoped, so it has to be read off the lexical global rather than off window
-      style: style.relief,
+      // `style`/`options` are script-scoped, so they have to be read off the lexical global
+      // rather than off window. Relief set/size are terrain layer options; density is a global
+      // option (it drives icon placement, not the layer's look, and must survive preset switches)
+      style: {
+        set: style.layers.terrain?.options?.set,
+        size: style.layers.terrain?.options?.size,
+        density: options.reliefDensity
+      },
       layerIsOn: (window as any).layerIsOn("toggleRelief"),
       terrainStyle: terrain?.getAttribute("style") ?? null
     };

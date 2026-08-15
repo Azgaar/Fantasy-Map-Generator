@@ -159,6 +159,7 @@ let options = {
   latitude: 50, // North-South map shift in %, 50 is centered on equator
   longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
   prec: 100, // precipitation modifier in %
+  reliefDensity: 0.4, // relief icons placement density
   showBurgPreview: true,
   burgs: {
     groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()

@@ -294,6 +294,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       options.mapSize ??= 100;
       options.latitude ??= 50;
       options.prec ??= 100;
+      options.reliefDensity ??= 0.4;
       options.labels ??= Labels.getDefaultOptions();
       options.burgs ??= { groups: Burgs.getDefaultGroups() };
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
