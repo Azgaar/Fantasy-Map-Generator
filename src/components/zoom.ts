@@ -116,7 +116,7 @@ function invokeActiveZooming(): void {
   }
 
   if (!customization && !isOptimized) {
-    const desired = Number(statesHalo.attr("data-width"));
+    const desired = getLayerOptions<{ width?: number }>("regions", "statesHalo").width ?? 0;
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }

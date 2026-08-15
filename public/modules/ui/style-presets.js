@@ -161,26 +161,10 @@ function applyLayerOptionAttributes() {
 }
 
 // same idea as LAYER_OPTION_ATTRIBUTES, but for options living on a CHILD node - matching
-// CHILD_RULES/HEIGHTS_RENAMES/EMBLEMS_RENAMES in src/services/styles/legacy.ts. keyed
-// "layerId/childId", DOM element looked up by the child's own id
-const CHILD_OPTION_ATTRIBUTES = {
-  "regions/statesHalo": {width: "data-width"}
-};
-
+// CHILD_RULES/HEIGHTS_RENAMES/EMBLEMS_RENAMES in src/services/styles/legacy.ts. All flat/child
+// options attrs have now migrated off the DOM (Task 9/10); the only remaining DOM write here is
+// the burgIcons/anchors font-size mirror below, which createIconGroups still harvests (Task 12)
 function applyChildOptionAttributes() {
-  for (const [path, renames] of Object.entries(CHILD_OPTION_ATTRIBUTES)) {
-    const [layerId, childId] = path.split("/");
-    const childOptions = style.layers[layerId]?.children?.[childId]?.options;
-    if (!childOptions) continue;
-
-    const el = document.getElementById(childId);
-    if (!el) continue;
-
-    for (const [optionKey, attribute] of Object.entries(renames)) {
-      if (optionKey in childOptions) setStyleAttribute(el, attribute, childOptions[optionKey]);
-    }
-  }
-
   // burgIcons/anchors groups share child ids across the two layers (e.g. both have a "capital"
   // group), so they need a layer-scoped selector rather than document.getElementById. The DOM
   // write here (not just the style.burgIcons/style.anchors mirror) is mandatory: createIconGroups

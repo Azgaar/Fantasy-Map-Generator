@@ -312,7 +312,7 @@ function selectStyleElement() {
     const statesHaloNode = getStyleNode("regions", "statesHalo");
     styleStatesBodyOpacity.value = statesBodyNode.presentation?.["opacity"] || 1;
     styleStatesBodyFilter.value = statesBodyNode.presentation?.["filter"] || "";
-    styleStatesHaloWidth.value = statesHalo.attr("data-width") || 10;
+    styleStatesHaloWidth.value = getLayerOptions("regions", "statesHalo").width || 10;
     styleStatesHaloOpacity.value = statesHaloNode.presentation?.["opacity"] || 1;
     styleStatesHaloBlur.value =
       parseFloat(statesHaloNode.presentation?.["filter"]?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
@@ -1116,7 +1116,7 @@ styleStatesBodyFilter.addEventListener("change", function () {
 
 styleStatesHaloWidth.addEventListener("input", e => {
   const value = e.target.value;
-  statesHalo.attr("data-width", value); // options-backed; Task 10 moves this to setOptions
+  setOptions({layerId: "regions", childIds: ["statesHalo"]}, {width: +value});
   setPresentation({layerId: "regions", childIds: ["statesHalo"]}, "stroke-width", value);
 });
 

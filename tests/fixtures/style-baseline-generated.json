@@ -208,7 +208,6 @@
     "opacity": "0.4",
     "stroke-width": "10",
     "filter": "blur(3.5px)",
-    "data-width": "10",
     "style": "display: none;"
   },
   "#relig": {

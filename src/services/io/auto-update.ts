@@ -1579,7 +1579,8 @@ const REMOVE_AFTER_HARVEST: { selector: string; attributes: string[] }[] = [
   { selector: "#oceanLayers", attributes: ["layers"] },
   { selector: "#gridOverlay", attributes: ["type", "scale", "dx", "dy"] },
   { selector: "#texture", attributes: ["data-x", "data-y", "data-href"] },
-  { selector: "#markers", attributes: ["rescale"] }
+  { selector: "#markers", attributes: ["rescale"] },
+  { selector: "#statesHalo", attributes: ["data-width"] }
 ];
 
 // selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,
