@@ -112,7 +112,7 @@ function applyTerrainPresetOptions(previousTerrain) {
 
   if (size) {
     const ratio = size / (previousTerrain.size || 1);
-    if (ratio !== 1) Relief.changeSize(size);
+    if (ratio !== 1) Relief.changeSize(ratio);
   }
 
   if (set) Relief.changeSet(set);
