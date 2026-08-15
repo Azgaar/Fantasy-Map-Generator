@@ -104,9 +104,14 @@ function redrawTracedImage(): void {
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
-  if (emblems.style("display") !== "none") {
+  if (layerIsOn("toggleEmblems")) {
     const hideSmallEmblems = ensureEl<HTMLInputElement>("hideEmblems").checked;
     for (const group of emblems.selectAll<SVGGElement, unknown>("g").nodes()) {
+      // read the group's actual rendered font-size (not recomputed from current pack counts):
+      // this runs on every zoom frame, including mid-generation before pack.burgs/states/
+      // provinces exist, so getBurgEmblemSize() et al would throw (they filter pack arrays).
+      // The DOM attribute is also just self-consistent by construction: it's the same value
+      // drawEmblems last stamped on the group, matching the emblems/renderer.ts add() precedent
       const size = Number(group.getAttribute("font-size")) * scale;
       const hidden = hideSmallEmblems && (size < 25 || size > 300);
       group.classList.toggle("hidden", hidden);
