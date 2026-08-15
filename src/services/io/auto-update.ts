@@ -1556,7 +1556,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     }
   }
 
-  if (isOlderThan("1.143.0")) {
+  if (isOlderThan("1.143.3")) {
     // styles moved from svg attributes to style.layers; harvest what the old file carried
     rehomeLegacyStyleBags(data[48]);
     harvestLegacyLayerStyles();

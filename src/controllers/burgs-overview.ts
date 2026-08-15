@@ -28,7 +28,6 @@ const columns: EditorColumn<Burg>[] = [
     label: "Burg",
     width: "8em",
     permanent: true,
-    tip: "Click to sort by burg name",
     sortBy: b => b.name || "",
     sortType: "alpha"
   },
@@ -38,7 +37,6 @@ const columns: EditorColumn<Burg>[] = [
     width: "8em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by province name",
     sortType: "alpha",
     sortBy: b => {
       const p = pack.cells.province[b.cell];
@@ -49,7 +47,6 @@ const columns: EditorColumn<Burg>[] = [
     key: "state",
     label: "State",
     width: "8em",
-    tip: "Click to sort by state name",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
   },
@@ -58,7 +55,6 @@ const columns: EditorColumn<Burg>[] = [
     label: "Culture",
     width: "10em",
     mobileHidden: true,
-    tip: "Click to sort by culture name",
     sortBy: b => pack.cultures[b.culture!]?.name || "",
     sortType: "alpha"
   },
@@ -67,7 +63,6 @@ const columns: EditorColumn<Burg>[] = [
     label: "Group",
     width: "6em",
     mobileHidden: true,
-    tip: "Click to sort by culture group",
     sortBy: b => b.group || "",
     sortType: "alpha"
   },
@@ -76,7 +71,6 @@ const columns: EditorColumn<Burg>[] = [
     label: "Population",
     width: "7em",
     defaultSort: "desc",
-    tip: "Click to sort by population",
     sortBy: b => b.population! * populationRate * urbanization
   },
   {
@@ -85,7 +79,6 @@ const columns: EditorColumn<Burg>[] = [
     width: "6.5em",
     hidden: true,
     mobileHidden: true,
-    tip: "Click to sort by burg product",
     sortBy: b => rn(b.product || 0, 2)
   },
   {
@@ -101,7 +94,6 @@ const columns: EditorColumn<Burg>[] = [
     label: "Treasury",
     width: "6.5em",
     mobileHidden: true,
-    tip: "Click to sort by burg treasury",
     sortBy: b => rn(b.treasury || 0, 2)
   },
   {
@@ -109,7 +101,6 @@ const columns: EditorColumn<Burg>[] = [
     label: "Features",
     width: "6em",
     mobileHidden: true,
-    tip: "Click to sort by burg features",
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },

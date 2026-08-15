@@ -53,4 +53,12 @@ describe("river labels with off-map cells", () => {
     const river = getLabelsData().find(label => label.type === "river");
     expect(river?.anchor).toEqual([10, 10]);
   });
+
+  // old saves can carry rivers whose cells array was never assigned
+  it("skips a river that has no cells array", () => {
+    stubPack([{ i: 1, name: "Colorado", type: "River" }]);
+
+    expect(() => getLabelsData()).not.toThrow();
+    expect(getLabelsData().find(label => label.type === "river")).toBeUndefined();
+  });
 });

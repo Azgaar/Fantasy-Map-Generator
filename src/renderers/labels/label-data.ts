@@ -84,7 +84,7 @@ function buildStateLabel(state: State): LabelData | undefined {
 }
 
 function buildRiverLabel(river: River): LabelData | undefined {
-  if (!river.cells.length || !river.name) return undefined;
+  if (!river.cells?.length || !river.name) return undefined;
   const anchor = getMiddleCellPoint(river.cells);
   if (!anchor) return undefined; // no on-map cell to anchor to
   const customPath = getCustomPath(river.label);

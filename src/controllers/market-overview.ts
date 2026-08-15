@@ -1,6 +1,14 @@
 import { select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -11,6 +19,39 @@ import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, getPointer, rn } from "../utils";
 
 let activeMarketId = 0;
+const dialogId = "marketOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+type MarketGoodRow = { goodId: number; good: string; stock: number; price: number };
+const columns: EditorColumn<MarketGoodRow>[] = [
+  { key: "icon", width: "2.5em", permanent: true },
+  {
+    key: "good",
+    label: "Good",
+    width: "8em",
+    permanent: true,
+    sortBy: item => item.good,
+    sortType: "alpha"
+  },
+  {
+    key: "stock",
+    label: "Stock",
+    width: "5em",
+    sortBy: item => item.stock,
+    defaultSort: "desc"
+  },
+  {
+    key: "price",
+    label: "Price",
+    width: "5em",
+    sortBy: item => item.price
+  },
+  { key: "actions", width: "1.2em", permanent: true }
+];
+
+const marketOverviewTable = initEditorTable<MarketGoodRow>({
+  getData: getMarketGoods,
+  onUpdate: renderMarketOverviewPage
+});
 
 function open(marketId: number): void {
   if (customization) return;
@@ -22,23 +63,26 @@ function open(marketId: number): void {
   }
   activeMarketId = marketId;
 
-  closeDialogs("#marketOverview, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
 
   renderDialog();
-  marketOverviewAddLines();
+  marketOverviewTable.reset();
   refreshNameInput(market);
 
-  $("#marketOverview").dialog({
+  $(`#${dialogId}`).dialog({
     title: `Market Stock: ${Markets.getName(market)}`,
     width: "auto",
     close: closeMarketOverview,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("marketOverview")?.remove();
-  const html = /* html */ `<div id="marketOverview" class="dialog stable">
+  document.getElementById(dialogId)?.remove();
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+      ${renderEditorHeader({ dialogId, columns })}
+      <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
+      <div id="marketOverviewSummary" class="totalLine"></div>
       <div id="marketOverviewNameLine" style="display: flex; align-items: center; margin-bottom: 0.4em">
         <div class="label">Name:</div>
         <input
@@ -55,14 +99,6 @@ function renderDialog(): void {
           style="margin-left: 0.3em"
         ></span>
       </div>
-      <div id="marketOverviewHeader" class="header" style="grid-template-columns: 2.5em 9em 5.5em 3.2em;">
-        <div></div>
-        <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
-        <div data-tip="Click to sort by stock" class="sortable icon-sort-number-down" data-sortby="stock">Stock&nbsp;</div>
-        <div data-tip="Click to sort by price" class="sortable" data-sortby="price">Price&nbsp;</div>
-      </div>
-      <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
-      <div id="marketOverviewSummary" class="totalLine"></div>
       <div id="marketOverviewInfo" style="margin-bottom: 0.3em"></div>
       <div id="marketOverviewBottom">
         <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
@@ -74,11 +110,16 @@ function renderDialog(): void {
         ></button>
         <button id="marketOverviewExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
       </div>
-    </div>`;
+  </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  applySortingByHeader("marketOverviewHeader");
+  bindColumnSorting(dialogId, marketOverviewTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
-  ensureEl("marketOverviewRefresh").addEventListener("click", marketOverviewAddLines);
+  ensureEl("marketOverviewRefresh").addEventListener("click", marketOverviewTable.refresh);
   ensureEl("marketOverviewExport").addEventListener("click", downloadStockCsv);
   ensureEl("marketOverviewOpenDeals").addEventListener("click", () =>
     Controllers.MarketDealsOverview.open(activeMarketId)
@@ -111,39 +152,48 @@ function resetMarketName(): void {
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
 }
 
-function marketOverviewAddLines() {
+function getMarketGoods(): MarketGoodRow[] {
   const market = Markets.get(activeMarketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
-    return;
+    return [];
   }
 
   const centerBurg = pack.burgs[market.centerBurgId] as Burg | undefined;
   if (!centerBurg || centerBurg.removed) {
     tip("Invalid market. The selected market has no center burg", true, "error", 5000);
-    return;
+    return [];
   }
 
-  let lines = "";
-  for (const [goodId, marketGood] of Object.entries(market.goods)) {
-    const good = Goods.get(Number(goodId));
-    if (!good) continue;
+  const rows = Object.entries(market.goods).flatMap(([goodId, marketGood]) => {
+    const good = Goods.get(+goodId);
+    return good ? [{ goodId: +goodId, good: good.name, stock: marketGood.stock, price: marketGood.price }] : [];
+  });
+  return sortDataByColumns(dialogId, rows, columns);
+}
+
+function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
+  const market = Markets.get(activeMarketId);
+  if (!market) return;
+
+  const lines = view.rows.map(row => {
+    const good = Goods.get(row.goodId)!;
     const stroke = Goods.getStroke(good.color);
 
-    lines += /*html*/ `<div class="states marketGood"
+    return /*html*/ `<div class="states marketGood"
       data-good="${good.name}"
-      data-stock="${rn(marketGood.stock, 2)}"
-      data-price="${rn(marketGood.price, 2)}">
-      <svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
+      data-stock="${rn(row.stock, 2)}"
+      data-price="${rn(row.price, 2)}">
+      <svg data-col="icon" data-tip="Good icon" width="2em" height="2em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${stroke}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
-      <div data-tip="Good name" class="goodName">${good.name}</div>
-      <div data-tip="Good stock" class="marketGoodStock">${rn(marketGood.stock, 2)}</div>
-      <div data-tip="Good price" class="marketGoodPrice">${formatPrice(marketGood.price)}</div>
+      <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
+      <div data-col="stock" data-tip="Good stock" class="marketGoodStock">${rn(row.stock, 2)}</div>
+      <div data-col="price" data-tip="Good price" class="marketGoodPrice">${formatPrice(row.price)}</div>
     </div>`;
-  }
-  ensureEl("marketOverviewGoodsBody").innerHTML = lines || "No market goods available";
+  });
+  ensureEl("marketOverviewGoodsBody").innerHTML = lines.join("") || "No market goods available";
 
   const center = pack.burgs[market.centerBurgId];
   const state = pack.states[center?.state || 0];
@@ -154,14 +204,14 @@ function marketOverviewAddLines() {
     `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>Owner:</b> ${state.fullName || state.name}`;
 
   const burgs = pack.burgs.filter(b => !b.removed && b.market === market.i);
-  const totalUnits = Object.values(market.goods).reduce((sum, mg) => sum + mg.stock, 0);
+  const totalUnits = view.all.reduce((sum, row) => sum + row.stock, 0);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div style="margin-left:5px">Cells: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
     <div style="margin-left:12px">Burgs: ${burgs.length}</div>
-    <div style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
+    <div data-col="stock" style="margin-left:12px">Stock: ${rn(totalUnits, 2)}</div>`;
 
-  applySorting(ensureEl("marketOverviewHeader"));
-  $("#marketOverview").dialog({ width: "fit-content" });
+  renderEditorPagination(ensureEl("marketOverviewSummary"), view, marketOverviewTable.goto);
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 function toggleRelocateMarket(): void {
@@ -208,7 +258,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
 
   refreshNameInput(market);
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
-  marketOverviewAddLines();
+  marketOverviewTable.refresh();
 }
 
 function downloadStockCsv() {
@@ -228,8 +278,8 @@ function downloadStockCsv() {
 
 function closeMarketOverview() {
   if (ensureEl("marketOverviewRelocate").classList.contains("pressed")) toggleRelocateMarket();
-  $("#marketOverview").dialog("destroy");
-  ensureEl("marketOverview").remove();
+  $(`#${dialogId}`).dialog("destroy");
+  ensureEl(dialogId).remove();
 }
 
 export const MarketOverview = { open };

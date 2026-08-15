@@ -25,7 +25,6 @@ const columns: EditorColumn<River>[] = [
     label: "River",
     width: "8em",
     permanent: true,
-    tip: "Click to sort by river name",
     sortBy: river => river.name || "",
     sortType: "alpha"
   },
@@ -34,7 +33,6 @@ const columns: EditorColumn<River>[] = [
     label: "Type",
     width: "5em",
     mobileHidden: true,
-    tip: "Click to sort by river type name",
     sortBy: river => river.type || "",
     sortType: "alpha"
   },
@@ -51,7 +49,6 @@ const columns: EditorColumn<River>[] = [
     key: "length",
     label: "Length",
     width: "5em",
-    tip: "Click to sort by river length",
     sortBy: river => river.length
   },
   {
@@ -59,14 +56,12 @@ const columns: EditorColumn<River>[] = [
     label: "Width",
     width: "5em",
     mobileHidden: true,
-    tip: "Click to sort by river mouth width",
     sortBy: river => river.width
   },
   {
     key: "basin",
     label: "Basin",
     width: "9em",
-    tip: "Click to sort by river basin",
     sortBy: river => pack.rivers.find(({ i }) => i === river.basin)?.name || "",
     sortType: "alpha"
   },

@@ -1,6 +1,15 @@
 import { drag, select } from "d3";
-import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { closeDialogs, confirmationDialog, refreshEditors, updateDialog } from "@/components/dialog/dialog-helpers";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  setModeHiddenColumns,
+  type TableView
+} from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -27,6 +36,42 @@ import {
 // Working copy of pack.cells.market mutated during manual assignment; applied on commit.
 let marketsWorking: Uint16Array | null = null;
 let marketsManualHistory: Uint16Array[] = [];
+const dialogId = "marketsOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+
+type MarketRow = {
+  market: Market;
+  name: string;
+  owner: string;
+  cells: number;
+  burgs: number;
+  stock: number;
+  sales: number;
+  buys: number;
+  value: number;
+};
+
+const columns: EditorColumn<MarketRow>[] = [
+  { key: "color", width: "1.6em", permanent: true },
+  { key: "market", label: "Market", width: "7em", permanent: true, sortBy: row => row.name, sortType: "alpha" },
+  { key: "owner", label: "Owner", width: "7em", sortBy: row => row.owner, sortType: "alpha" },
+  { key: "cells", label: "Cells", width: "4em", sortBy: row => row.cells },
+  { key: "burgs", label: "Burgs", width: "4em", sortBy: row => row.burgs },
+  { key: "stock", label: "Stock", width: "5em", sortBy: row => row.stock },
+  { key: "sales", label: "Sales", width: "5em", sortBy: row => row.sales },
+  { key: "buys", label: "Buys", width: "5em", sortBy: row => row.buys },
+  {
+    key: "value",
+    label: "Value",
+    width: "5em",
+    sortBy: row => row.value,
+    defaultSort: "desc",
+    tip: "Market value: net trading flow plus unsold inventory value minus tax. Click to sort"
+  },
+  { key: "actions", width: "1.4em", permanent: true, align: "right" }
+];
+
+const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpdate: renderMarketsPage });
 
 function open(): void {
   if (customization) return;
@@ -34,32 +79,21 @@ function open(): void {
   if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
 
   renderDialog();
-  marketsOverviewAddLines();
+  marketsTable.reset();
 
   $("#marketsOverview").dialog({
     title: "Markets Overview",
     resizable: false,
     width: "auto",
     close: closeMarketsOverview,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
   document.getElementById("marketsOverview")?.remove();
-  const editorHtml = /* html */ `<div id="marketsOverview" class="dialog stable">
-      <div id="marketsOverviewHeader" class="header" style="grid-template-columns: 1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em 1.2em;">
-        <div></div>
-        <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
-        <div data-tip="Owning state. Click to sort" class="sortable alphabetically" data-sortby="owner">Owner&nbsp;</div>
-        <div data-tip="Number of cells in market territory. Click to sort" class="sortable" data-sortby="cells">Cells&nbsp;</div>
-        <div data-tip="Number of burgs in market territory. Click to sort" class="sortable hide" data-sortby="burgs">Burgs&nbsp;</div>
-        <div data-tip="Total stock of all goods. Click to sort" class="sortable hide" data-sortby="stock">Stock&nbsp;</div>
-        <div data-tip="Total gross sales revenue. Click to sort" class="sortable hide" data-sortby="sales">Sales&nbsp;</div>
-        <div data-tip="Total purchase spending. Click to sort" class="sortable hide" data-sortby="buys">Buys&nbsp;</div>
-        <div data-tip="Market value: net trading flow plus unsold inventory value minus tax. Click to sort" class="sortable hide icon-sort-number-down" data-sortby="value">Value&nbsp;</div>
-        <div></div>
-      </div>
+  const editorHtml = /* html */ `<div id="marketsOverview" class="dialog stable editorDialog">
+      ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
       <div id="marketsOverviewFooter" class="totalLine">
         <div data-tip="Total number of markets" style="margin-left:5px">Markets:&nbsp;<span id="marketsOverviewFooterMarkets">0</span></div>
@@ -85,9 +119,14 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("marketsOverviewHeader");
+  bindColumnSorting(dialogId, marketsTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
-  ensureEl("marketsOverviewRefresh").addEventListener("click", marketsOverviewAddLines);
+  ensureEl("marketsOverviewRefresh").addEventListener("click", marketsTable.refresh);
   ensureEl("marketsOverviewExport").addEventListener("click", downloadMarketsCsv);
   ensureEl("marketsOverviewCompare").addEventListener("click", () => Controllers.ComparePrices.open());
   ensureEl("marketsOverviewPercentage").addEventListener("click", togglePercentageMode);
@@ -139,57 +178,49 @@ function renderDialog(): void {
   });
 }
 
-function marketsOverviewAddLines(): void {
-  const markets = pack.markets;
+function getMarketsData(): MarketRow[] {
+  const rows = pack.markets.map(market => {
+    const { sales, buys, value } = getMarketFinancials(market);
+    return {
+      market,
+      name: Markets.getName(market),
+      owner: getOwnerStateName(market),
+      cells: getMarketCells(market.i),
+      burgs: getMarketBurgs(market.i),
+      stock: rn(getMarketTotalStock(market), 2),
+      sales,
+      buys,
+      value
+    };
+  });
+  return sortDataByColumns(dialogId, rows, columns);
+}
+
+function renderMarketsPage(view: TableView<MarketRow>): void {
   const body = ensureEl("marketsOverviewBody");
-
-  if (body.dataset.type === "percentage") {
-    body.dataset.type = "absolute";
-  }
-
-  if (!markets.length) {
+  if (!view.all.length) {
     body.innerHTML = "No markets available";
     updateFooter(0, 0, 0, 0);
+    renderEditorPagination(ensureEl("marketsOverviewFooter"), view, marketsTable.goto);
     return;
   }
 
-  let lines = "";
-  let totalSales = 0;
-  let totalBuys = 0;
-  let totalValue = 0;
-
-  for (const market of markets) {
-    const centerName = Markets.getName(market);
-    const ownerName = getOwnerStateName(market);
-    const cells = getMarketCells(market.i);
-    const burgs = getMarketBurgs(market.i);
-    const stock = rn(getMarketTotalStock(market), 2);
-    const { sales, buys, value } = getMarketFinancials(market);
-
-    totalSales += sales;
-    totalBuys += buys;
-    totalValue += value;
-
-    lines += /*html*/ `<div class="states market" data-id="${market.i}"
-        data-market="${centerName}" data-owner="${ownerName}"
-        data-cells="${cells}" data-burgs="${burgs}"
-        data-stock="${stock}" data-sales="${sales}" data-buys="${buys}" data-value="${value}">
-      <fill-box fill="${market.color}"></fill-box>
-      <div data-tip="Market name. Click to view details" class="marketName" style="width:7em">${centerName}</div>
-      <div data-tip="Owning state" class="marketOwner" style="width:8em">${ownerName}</div>
-      <div data-tip="Number of cells in market territory" data-type="cells" class="marketCells" style="width:3.5em">${cells}</div>
-      <div data-tip="Number of burgs in market territory" data-type="burgs" class="marketBurgs hide" style="width:3.5em">${burgs}</div>
-      <div data-tip="Total stock of all goods in this market" data-type="stock" class="marketStock hide" style="width:5em">${stock}</div>
-      <div data-tip="Total gross sales revenue" data-type="sales" class="marketSales hide" style="width:6em">${formatPrice(rn(sales))}</div>
-      <div data-tip="Total purchase spending" data-type="buys" class="marketBuysCol hide" style="width:6em">${formatPrice(rn(buys))}</div>
-      <div data-tip="Market value: net trading flow plus unsold inventory value minus tax" data-type="value" class="marketValue hide" style="width:6em">${formatPrice(rn(value))}</div>
-      <span data-tip="Remove this market" class="icon-trash-empty hiddenIcon hide" style="visibility:hidden"></span>
-    </div>`;
-  }
-
-  lines += renderNoMarketRow();
-
-  body.innerHTML = lines;
+  const totals = view.all.reduce(
+    (sum, row) => ({
+      cells: sum.cells + row.cells,
+      burgs: sum.burgs + row.burgs,
+      stock: sum.stock + row.stock,
+      sales: sum.sales + row.sales,
+      buys: sum.buys + row.buys,
+      value: sum.value + row.value
+    }),
+    { cells: getMarketCells(0), burgs: getMarketBurgs(0), stock: 0, sales: 0, buys: 0, value: 0 }
+  );
+  const percentage = body.dataset.type === "percentage";
+  const format = (type: keyof typeof totals, value: number, price = false) =>
+    percentage ? `${rn(totals[type] ? (value / totals[type]) * 100 : 0, 2)}%` : price ? formatPrice(rn(value)) : value;
+  const lines = view.rows.map(row => renderMarketRow(row, format)).join("");
+  body.innerHTML = lines + renderNoMarketRow(format);
 
   body.querySelectorAll<HTMLElement>(".states.market").forEach(row => {
     const marketId = row.dataset.id!;
@@ -198,16 +229,34 @@ function marketsOverviewAddLines(): void {
     row.addEventListener("mouseleave", () => highlightMarketOff(marketId));
   });
 
-  const count = markets.length;
+  const count = view.all.length;
   updateFooter(
     count,
-    count ? rn(totalSales / count, 2) : 0,
-    count ? rn(totalBuys / count, 2) : 0,
-    count ? rn(totalValue / count, 2) : 0
+    count ? rn(totals.sales / count, 2) : 0,
+    count ? rn(totals.buys / count, 2) : 0,
+    count ? rn(totals.value / count, 2) : 0
   );
-  applySorting(ensureEl("marketsOverviewHeader"));
+  renderEditorPagination(ensureEl("marketsOverviewFooter"), view, marketsTable.goto);
+  updateDialog(dialogId, { width: "fit-content", position });
+}
 
-  $("#marketsOverview").dialog({ width: "fit-content" });
+function renderMarketRow(
+  row: MarketRow,
+  format: (type: keyof Omit<MarketRow, "market" | "name" | "owner">, value: number, price?: boolean) => string | number
+): string {
+  const { market, name, owner, cells, burgs, stock, sales, buys, value } = row;
+  return /*html*/ `<div class="states market" data-id="${market.i}">
+    <div data-col="color"><fill-box fill="${market.color}"></fill-box></div>
+    <div data-col="market" data-tip="Market name. Click to view details" class="marketName">${name}</div>
+    <div data-col="owner" data-tip="Owning state" class="marketOwner">${owner}</div>
+    <div data-col="cells" data-tip="Number of cells in market territory" class="marketCells">${format("cells", cells)}</div>
+    <div data-col="burgs" data-tip="Number of burgs in market territory" class="marketBurgs">${format("burgs", burgs)}</div>
+    <div data-col="stock" data-tip="Total stock of all goods in this market" class="marketStock">${format("stock", stock)}</div>
+    <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
+    <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
+    <div data-col="value" data-tip="Market value: net trading flow plus unsold inventory value minus tax" class="marketValue">${format("value", value, true)}</div>
+    <div data-col="actions"><span data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span></div>
+  </div>`;
 }
 
 function enterMarketsManualAssignment(): void {
@@ -228,12 +277,7 @@ function enterMarketsManualAssignment(): void {
   ensureEl("marketsManually").classList.add("pressed");
   ensureEl("marketsOverviewFooter").style.display = "none";
 
-  ensureEl("marketsOverviewHeader").style.gridTemplateColumns = "1.6em 7.2em 8em 3.5em";
-  ensureEl("marketsOverview")
-    .querySelectorAll(".hide")
-    .forEach(el => {
-      el.classList.add("hidden");
-    });
+  setModeHiddenColumns(dialogId, ["burgs", "stock", "sales", "buys", "value", "actions"]);
 
   tip('Click a market row (or "No market") to select it, then drag on the map to repaint territory', true);
 
@@ -253,20 +297,25 @@ function saveMarketsManualSnapshot(): void {
   if (marketsWorking) marketsManualHistory.push(Uint16Array.from(marketsWorking));
 }
 
-function renderNoMarketRow(): string {
+function renderNoMarketRow(
+  format: (type: "cells" | "burgs" | "stock" | "sales" | "buys" | "value", value: number) => string | number = (
+    _type,
+    value
+  ) => value
+): string {
   const cells = getMarketCells(0);
   const burgs = getMarketBurgs(0);
-  return /*html*/ `<div class="states market" data-id="0"  data-market="No market" data-owner="" data-cells="${cells}" data-burgs="${burgs}" data-stock="0" data-sales="0" data-buys="0" data-value="0">
-    <fill-box fill="none" data-tip="Cells assigned to no market"></fill-box>
-    <div data-tip="Cells with no market; their burgs are excluded from production" class="marketName" style="width:7em">No market</div>
-    <div class="marketOwner" style="width:8em">—</div>
-    <div data-tip="Number of cells with no market" data-type="cells" class="marketCells" style="width:3.5em">${cells}</div>
-    <div data-tip="Number of burgs with no market" data-type="burgs" class="marketBurgs hide" style="width:3.5em">${burgs}</div>
-    <div data-type="stock" class="marketStock hide" style="width:5em">—</div>
-    <div data-type="sales" class="marketSales hide" style="width:6em">—</div>
-    <div data-type="buys" class="marketBuysCol hide" style="width:6em">—</div>
-    <div data-type="value" class="marketValue hide" style="width:6em">—</div>
-    <span class="hide" style="width:1.2em"></span>
+  return /*html*/ `<div class="states market" data-id="0">
+    <div data-col="color"><fill-box fill="none" data-tip="Cells assigned to no market"></fill-box></div>
+    <div data-col="market" data-tip="Cells with no market; their burgs are excluded from production" class="marketName">No market</div>
+    <div data-col="owner" class="marketOwner">—</div>
+    <div data-col="cells" data-tip="Number of cells with no market" class="marketCells">${format("cells", cells)}</div>
+    <div data-col="burgs" data-tip="Number of burgs with no market" class="marketBurgs">${format("burgs", burgs)}</div>
+    <div data-col="stock" class="marketStock">—</div>
+    <div data-col="sales" class="marketSales">—</div>
+    <div data-col="buys" class="marketBuysCol">—</div>
+    <div data-col="value" class="marketValue">—</div>
+    <div data-col="actions"></div>
   </div>`;
 }
 
@@ -393,11 +442,8 @@ function exitMarketsManualAssignment(apply: boolean): void {
   marketsManualHistory = [];
   document.getElementById("marketsTemp")?.remove();
 
-  ensureEl("marketsOverviewHeader").style.gridTemplateColumns = "1.6em 7.2em 8em 3.5em 4.5em 6.5em 6.4em 6em 6em 1.2em";
-  ensureEl("marketsOverview")
-    .querySelectorAll(".hide")
-    .forEach(el => void el.classList.remove("hidden"));
-  ensureEl("marketsOverviewFooter").style.display = "block";
+  setModeHiddenColumns(dialogId, []);
+  ensureEl("marketsOverviewFooter").style.display = "";
 
   document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button").forEach(b => {
     b.style.display = "";
@@ -413,7 +459,7 @@ function exitMarketsManualAssignment(apply: boolean): void {
 
   if (apply) {
     drawMarkets();
-    marketsOverviewAddLines();
+    marketsTable.refresh();
   }
 
   $("#marketsOverview").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
@@ -450,7 +496,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
   if (!ev.shiftKey) exitAddMarketMode();
 
   if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-  marketsOverviewAddLines();
+  marketsTable.refresh();
 }
 
 function confirmRemoveMarket(marketId: number): void {
@@ -465,7 +511,7 @@ function confirmRemoveMarket(marketId: number): void {
     onConfirm: () => {
       Markets.removeMarket(marketId);
       if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      marketsOverviewAddLines();
+      marketsTable.refresh();
     }
   });
 }
@@ -540,25 +586,8 @@ function getMarketFinancials(market: Market): {
 
 function togglePercentageMode(): void {
   const body = ensureEl("marketsOverviewBody");
-  if (body.dataset.type === "absolute") {
-    body.dataset.type = "percentage";
-    const rows = Array.from(body.querySelectorAll<HTMLElement>(":scope > div"));
-    const totals: Record<string, number> = {};
-    const numericTypes = ["cells", "burgs", "stock", "sales", "buys", "value"];
-    for (const type of numericTypes) {
-      totals[type] = rows.reduce((sum, row) => sum + (+row.dataset[type]! || 0), 0);
-    }
-    rows.forEach(row => {
-      row.querySelectorAll<HTMLElement>("div[data-type]").forEach(cell => {
-        const type = cell.dataset.type!;
-        const val = +row.dataset[type]! || 0;
-        cell.textContent = totals[type] ? `${rn((val / totals[type]) * 100, 2)}%` : "0%";
-      });
-    });
-  } else {
-    body.dataset.type = "absolute";
-    marketsOverviewAddLines();
-  }
+  body.dataset.type = body.dataset.type === "absolute" ? "percentage" : "absolute";
+  marketsTable.refresh();
 }
 
 function updateFooter(count: number, avgSales: number, avgBuys: number, avgValue: number): void {

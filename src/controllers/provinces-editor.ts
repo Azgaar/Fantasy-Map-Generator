@@ -9,9 +9,18 @@ import {
   transition,
   treemap
 } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  setModeHiddenColumns,
+  type TableView
+} from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -24,6 +33,65 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
+
+const dialogId = "provincesEditor" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const getProvinceArea = (province: Province) => getArea(province.area!);
+const getProvincePopulation = (province: Province) =>
+  rn(province.rural! * populationRate + province.urban! * populationRate * urbanization);
+const columns: EditorColumn<Province>[] = [
+  { key: "color", width: "1.2em", permanent: true },
+  {
+    key: "name",
+    label: "Province",
+    width: "7em",
+    permanent: true,
+    sortBy: province => province.name || "",
+    sortType: "alpha"
+  },
+  { key: "emblem", width: "1.4em" },
+  {
+    key: "form",
+    label: "Form",
+    width: "7em",
+    mobileHidden: true,
+    sortBy: province => province.formName || "",
+    sortType: "alpha"
+  },
+  {
+    key: "capital",
+    label: "Capital",
+    width: "7em",
+    sortBy: province => (province.burg ? pack.burgs[province.burg]?.name || "" : ""),
+    sortType: "alpha"
+  },
+  {
+    key: "state",
+    label: "State",
+    width: "7em",
+    permanent: true,
+    sortBy: province => pack.states[province.state]?.name || "",
+    sortType: "alpha"
+  },
+  {
+    key: "burgs",
+    label: "Burgs",
+    width: "5em",
+    mobileHidden: true,
+    sortBy: province => province.burgs?.length || 0
+  },
+  {
+    key: "area",
+    label: "Area",
+    width: "7em",
+    mobileHidden: true,
+    defaultSort: "desc",
+    sortBy: getProvinceArea
+  },
+  { key: "population", label: "Population", width: "6em", sortBy: getProvincePopulation },
+  { key: "actions", width: "5.4em", permanent: true, align: "right" }
+];
+const provincesTable = initEditorTable<Province>({ getData: getProvincesData, onUpdate: renderProvincesPage });
 
 function open(): void {
   if (customization) return;
@@ -41,50 +109,31 @@ function open(): void {
     resizable: false,
     width: "fit-content",
     close: closeProvincesEditor,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
   destroyDialog("provincesEditor");
-  const editorHtml = /* html */ `<div id="provincesEditor" class="dialog stable">
-      <div id="provincesHeader" class="header" style="grid-template-columns: 11em 8em 8em 6em 6em 6em 8em">
-        <div data-tip="Click to sort by province name" class="sortable alphabetically" data-sortby="name">
-          Province&nbsp;
-        </div>
-        <div data-tip="Click to sort by province form name" class="sortable alphabetically hide" data-sortby="form">
-          Form&nbsp;
-        </div>
-        <div data-tip="Click to sort by province capital" class="sortable alphabetically hide" data-sortby="capital">
-          Capital&nbsp;
-        </div>
-        <div data-tip="Click to sort by province owner" class="sortable alphabetically" data-sortby="state">
-          State&nbsp;
-        </div>
-        <div data-tip="Click to sort by province burgs count" class="sortable hide" data-sortby="burgs">
-          Burgs&nbsp;
-        </div>
-        <div data-tip="Click to sort by province area" class="sortable hide" data-sortby="area">Area&nbsp;</div>
-        <div data-tip="Click to sort by province population" class="sortable hide" data-sortby="population">
-          Population&nbsp;
-        </div>
+  const editorHtml = /* html */ `<div id="provincesEditor" class="dialog stable editorDialog">
+      <div id="provincesBodySection" class="table" data-type="absolute">
+        ${renderEditorHeader({ dialogId, columns })}
       </div>
-      <div id="provincesBodySection" class="table" data-type="absolute"></div>
       <div id="provincesFooter" class="totalLine">
         <div data-tip="Provinces displayed" style="margin-left: 4px">
           Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
         </div>
-        <div data-tip="Total burgs number" style="margin-left: 12px">
+        <div data-tip="Total burgs number" style="margin-left: 12px" data-col="burgs">
           Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
         </div>
-        <div data-tip="Average area" style="margin-left: 14px">
+        <div data-tip="Average area" style="margin-left: 14px" data-col="area">
           Mean area:&nbsp;<span id="provincesFooterArea">0</span>
         </div>
-        <div data-tip="Average population" style="margin-left: 14px">
+        <div data-tip="Average population" style="margin-left: 14px" data-col="population">
           Mean population:&nbsp;<span id="provincesFooterPopulation">0</span>
         </div>
       </div>
-      <div id="provincesBottom">
+      <div id="provincesBottom" class="editorToolbar">
         <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
         <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
         <button
@@ -133,12 +182,17 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("provincesHeader");
+  bindColumnSorting(dialogId, provincesTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
   applyLineHighlighting("provincesEditor", ({ cellId }) => pack.cells.province[cellId]);
 
   ensureEl("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
-  ensureEl("provincesFilterState").addEventListener("change", provincesEditorAddLines);
+  ensureEl("provincesFilterState").addEventListener("change", provincesTable.reset);
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
@@ -155,7 +209,8 @@ function renderDialog(): void {
     if (customization) return;
     const el = ev.target as HTMLElement;
     const cl = el.classList;
-    const line = el.parentNode as HTMLElement;
+    const line = el.closest<HTMLElement>(".states");
+    if (!line) return;
     const p = +line.dataset.id!;
     const stateId = pack.provinces[p].state;
 
@@ -177,7 +232,8 @@ function renderDialog(): void {
   ensureEl("provincesBodySection").addEventListener("change", (ev: Event) => {
     const el = ev.target as HTMLSelectElement;
     const cl = el.classList;
-    const line = el.parentNode as HTMLElement;
+    const line = el.closest<HTMLElement>(".states");
+    if (!line) return;
     const p = +line.dataset.id!;
     if (cl.contains("cultureBase")) changeCapital(p, line, el.value);
   });
@@ -186,7 +242,7 @@ function renderDialog(): void {
 function refreshProvincesEditor(): void {
   collectStatistics();
   updateFilter();
-  provincesEditorAddLines();
+  provincesTable.reset();
 }
 
 function collectStatistics(): void {
@@ -227,84 +283,74 @@ function updateFilter(): void {
   });
 }
 
-// add line for each province
-function provincesEditorAddLines(): void {
+function getProvincesData(): Province[] {
+  const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
+  const provinces = pack.provinces.filter(province => province.i && !province.removed);
+  const filtered = selectedState === -1 ? provinces : provinces.filter(province => province.state === selectedState);
+  return sortDataByColumns(dialogId, filtered, columns);
+}
+
+function renderProvincesPage(view: TableView<Province>): void {
   const body = ensureEl("provincesBodySection");
   const unit = ` ${getAreaUnit()}`;
-  const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
-  let filtered = pack.provinces.filter(p => p.i && !p.removed); // all valid provinces
-  if (selectedState !== -1) filtered = filtered.filter(p => p.state === selectedState); // filtered by state
-  body.innerHTML = "";
-
-  let lines = "";
-  let totalArea = 0;
-  let totalPopulation = 0;
-  let totalBurgs = 0;
-
-  for (const p of filtered) {
-    const area = getArea(p.area!);
-    totalArea += area;
-    const rural = p.rural! * populationRate;
-    const urban = p.urban! * populationRate * urbanization;
-    const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
-    totalPopulation += population;
-    totalBurgs += p.burgs!.length;
-
-    const stateName = pack.states[p.state].name;
-    const capital = p.burg ? pack.burgs[p.burg].name : "";
-    const separable = p.burg && p.burg !== pack.states[p.state].capital;
-    const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
-    COArenderer.trigger(`provinceCOA${p.i}`, p.coa);
-    lines += /* html */ `<div
-      class="states"
-      data-id=${p.i}
-      data-name="${p.name}"
-      data-form="${p.formName}"
-      data-color="${p.color}"
-      data-capital="${capital}"
-      data-state="${stateName}"
-      data-area=${area}
-      data-population=${population}
-      data-burgs=${p.burgs!.length}
-    >
-      <fill-box fill="${p.color}"></fill-box>
-      <input data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
-      <svg data-tip="Click to show and edit province emblem" class="coaIcon pointer hide" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
-      <input data-tip="Province form name. Click to change" class="name pointer hide" value="${p.formName}" readonly />
-      <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer hide ${p.burg ? "" : "placeholder"}"></span>
-      <select
-        data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital"
-        class="cultureBase hide ${p.burgs!.length ? "" : "placeholder"}"
-      >
-        ${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}
-      </select>
-      <input data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled">
-      <span data-tip="Click to overview province burgs" style="padding-right: 1px" class="icon-dot-circled pointer hide"></span>
-      <div data-tip="Burgs count" class="provinceBurgs hide">${p.burgs!.length}</div>
-      <span data-tip="Province area" style="padding-right: 4px" class="icon-map-o hide"></span>
-      <div data-tip="Province area" class="biomeArea hide">${si(area) + unit}</div>
-      <span data-tip="${populationTip}" class="icon-male hide"></span>
-      <div data-tip="${populationTip}" class="culturePopulation hide">${si(population)}</div>
-      <span
-        data-tip="Declare province independence (turn non-capital province with burgs into a new state)"
-        class="icon-flag-empty ${separable ? "" : "placeholder"} hide"
-      ></span>
-      <span data-tip="Locate the province" class="icon-target hide"></span>
-      <span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"} hide"></span>
-      <span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"} hide"></span>
-      <span data-tip="Remove the province" class="icon-trash-empty hide"></span>
+  const totals = view.all.reduce(
+    (sum, province) => ({
+      area: sum.area + getProvinceArea(province),
+      population: sum.population + getProvincePopulation(province),
+      burgs: sum.burgs + province.burgs!.length
+    }),
+    { area: 0, population: 0, burgs: 0 }
+  );
+  const percentage = body.dataset.type === "percentage";
+  const lines = view.rows
+    .map(p => {
+      const area = getProvinceArea(p);
+      const rural = p.rural! * populationRate;
+      const urban = p.urban! * populationRate * urbanization;
+      const population = getProvincePopulation(p);
+      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      const stateName = pack.states[p.state].name;
+      const separable = p.burg && p.burg !== pack.states[p.state].capital;
+      const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
+      COArenderer.trigger(`provinceCOA${p.i}`, p.coa);
+      return /* html */ `<div class="states" data-id=${p.i}>
+      <fill-box data-col="color" fill="${p.color}"></fill-box>
+      <input data-col="name" data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
+      <svg data-col="emblem" data-tip="Click to show and edit province emblem" class="coaIcon pointer" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
+      <input data-col="form" data-tip="Province form name. Click to change" class="name pointer" value="${p.formName}" readonly />
+      <div data-col="capital">
+        <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer ${p.burg ? "" : "placeholder"}"></span>
+        <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
+      </div>
+      <input data-col="state" data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled>
+      <div data-col="burgs">
+        <span data-tip="Click to overview province burgs" class="icon-dot-circled pointer"></span>
+        <span data-tip="Burgs count" class="provinceBurgs">${percentage ? `${rn(totals.burgs ? (p.burgs!.length / totals.burgs) * 100 : 0)}%` : p.burgs!.length}</span>
+      </div>
+      <div data-col="area">
+        <span data-tip="Province area" class="icon-map-o" style="padding-right: 4px"></span>
+        <span data-tip="Province area" class="biomeArea">${percentage ? `${rn(totals.area ? (area / totals.area) * 100 : 0)}%` : si(area) + unit}</span>
+      </div>
+      <div data-col="population">
+        <span data-tip="${populationTip}" class="icon-male"></span>
+        <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
+      </div>
+      <div data-col="actions"><span data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span><span data-tip="Locate the province" class="icon-target"></span><span data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span><span data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span><span data-tip="Remove the province" class="icon-trash-empty"></span></div>
     </div>`;
-  }
-  body.innerHTML = lines;
+    })
+    .join("");
+  body.querySelectorAll(":scope > .states").forEach(line => {
+    line.remove();
+  });
+  body.insertAdjacentHTML("beforeend", lines);
 
-  // update footer
-  ensureEl("provincesFooterNumber").innerHTML = String(filtered.length);
-  ensureEl("provincesFooterBurgs").innerHTML = String(totalBurgs);
-  ensureEl("provincesFooterArea").innerHTML = filtered.length ? si(totalArea / filtered.length) + unit : `0${unit}`;
-  ensureEl("provincesFooterPopulation").innerHTML = filtered.length ? si(totalPopulation / filtered.length) : "0";
-  ensureEl("provincesFooterArea").dataset.area = String(totalArea);
-  ensureEl("provincesFooterPopulation").dataset.population = String(totalPopulation);
+  ensureEl("provincesFooterNumber").innerHTML = String(view.all.length);
+  ensureEl("provincesFooterBurgs").innerHTML = String(totals.burgs);
+  ensureEl("provincesFooterArea").innerHTML = view.all.length ? si(totals.area / view.all.length) + unit : `0${unit}`;
+  ensureEl("provincesFooterPopulation").innerHTML = view.all.length ? si(totals.population / view.all.length) : "0";
+  ensureEl("provincesFooterArea").dataset.area = String(totals.area);
+  ensureEl("provincesFooterPopulation").dataset.population = String(totals.population);
+  renderEditorPagination(ensureEl("provincesFooter"), view, provincesTable.goto);
 
   body.querySelectorAll("div.states").forEach(el => {
     el.addEventListener("click", selectProvinceOnLineClick);
@@ -312,12 +358,7 @@ function provincesEditorAddLines(): void {
     el.addEventListener("mouseleave", provinceHighlightOff);
   });
 
-  if (body.dataset.type === "percentage") {
-    body.dataset.type = "absolute";
-    togglePercentageMode();
-  }
-  applySorting(ensureEl("provincesHeader"));
-  $("#provincesEditor").dialog({ width: "fit-content" });
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 function getCapitalOptions(burgs: number[], capital: number): string {
@@ -365,7 +406,7 @@ function provinceHighlightOff(event: Event): void {
 
 function changeFill(fillBox: FillBoxElement): void {
   const currentFill = fillBox.getAttribute("fill")!;
-  const p = +(fillBox.parentNode as HTMLElement).dataset.id!;
+  const p = +fillBox.closest<HTMLElement>(".states")!.dataset.id!;
 
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
@@ -837,22 +878,8 @@ function changeCapital(p: number, line: HTMLElement, value: string): void {
 
 function togglePercentageMode(): void {
   const body = ensureEl("provincesBodySection");
-  if (body.dataset.type === "absolute") {
-    body.dataset.type = "percentage";
-    const totalBurgs = +ensureEl("provincesFooterBurgs").innerText;
-    const totalArea = +ensureEl("provincesFooterArea").dataset.area!;
-    const totalPopulation = +ensureEl("provincesFooterPopulation").dataset.population!;
-
-    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      const { burgs, area, population } = el.dataset;
-      el.querySelector(".provinceBurgs")!.innerHTML = `${rn((+burgs! / totalBurgs) * 100)}%`;
-      el.querySelector(".biomeArea")!.innerHTML = `${rn((+area! / totalArea) * 100)}%`;
-      el.querySelector(".culturePopulation")!.innerHTML = `${rn((+population! / totalPopulation) * 100)}%`;
-    });
-  } else {
-    body.dataset.type = "absolute";
-    provincesEditorAddLines();
-  }
+  body.dataset.type = body.dataset.type === "absolute" ? "percentage" : "absolute";
+  provincesTable.refresh();
 }
 
 type TreeNode = any;
@@ -1041,20 +1068,16 @@ function triggerProvincesRelease(): void {
       const oldStateIds: number[] = [];
       const newStateIds: number[] = [];
 
-      ensureEl("provincesBodySection")
-        .querySelectorAll<HTMLElement>(":scope > div")
-        .forEach(el => {
-          const provinceId = +el.dataset.id!;
-          const province = pack.provinces[provinceId];
-          if (!province.burg) return;
-          if (province.burg === pack.states[province.state].capital) return;
-          if (province.burgs!.some(burgId => pack.burgs[burgId].capital)) return;
+      getProvincesData().forEach(province => {
+        if (!province.burg) return;
+        if (province.burg === pack.states[province.state].capital) return;
+        if (province.burgs!.some(burgId => pack.burgs[burgId].capital)) return;
 
-          const result = declareProvinceIndependence(provinceId);
-          if (!result) return;
-          oldStateIds.push(result[0]);
-          newStateIds.push(result[1]);
-        });
+        const result = declareProvinceIndependence(province.i);
+        if (!result) return;
+        oldStateIds.push(result[0]);
+        newStateIds.push(result[1]);
+      });
 
       updateStatesPostRelease(unique(oldStateIds), newStateIds);
     }
@@ -1088,12 +1111,7 @@ function enterProvincesManualAssignent(): void {
   });
   ensureEl("provincesManuallyButtons").style.display = "inline-block";
 
-  ensureEl("provincesEditor")
-    .querySelectorAll(".hide")
-    .forEach(el => {
-      el.classList.add("hidden");
-    });
-  (ensureEl("provincesHeader").querySelector("div[data-sortby='state']") as HTMLElement).style.left = "7.7em";
+  setModeHiddenColumns(dialogId, [...columns.filter(column => !column.permanent).map(column => column.key), "actions"]);
   ensureEl("provincesFooter").style.display = "none";
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
@@ -1109,7 +1127,7 @@ function enterProvincesManualAssignent(): void {
     .call(drag<SVGElement, unknown>().on("start", dragBrush))
     .on("touchmove mousemove", moveBrush);
 
-  const firstLine = ensureEl("provincesBodySection").querySelector<HTMLElement>("div");
+  const firstLine = ensureEl("provincesBodySection").querySelector<HTMLElement>(":scope > .states");
   firstLine?.classList.add("selected");
   if (firstLine) selectProvince(+firstLine.dataset.id!);
 }
@@ -1241,13 +1259,8 @@ function exitProvincesManualAssignment(close?: string): void {
   });
   ensureEl("provincesManuallyButtons").style.display = "none";
 
-  ensureEl("provincesEditor")
-    .querySelectorAll(".hide:not(.show)")
-    .forEach(el => {
-      el.classList.remove("hidden");
-    });
-  (ensureEl("provincesHeader").querySelector("div[data-sortby='state']") as HTMLElement).style.left = "22em";
-  ensureEl("provincesFooter").style.display = "block";
+  setModeHiddenColumns(dialogId, []);
+  ensureEl("provincesFooter").style.display = "";
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
     .forEach(e => {
@@ -1336,7 +1349,7 @@ function addProvince(this: SVGElement, event: any): void {
 
   collectStatistics();
   ensureEl<HTMLSelectElement>("provincesFilterState").value = String(state);
-  provincesEditorAddLines();
+  provincesTable.reset();
 }
 
 function exitAddProvinceMode(): void {
@@ -1371,24 +1384,10 @@ function downloadProvincesData(): void {
   const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
   let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
 
-  ensureEl("provincesBodySection")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      const key = Number.parseInt(el.dataset.id!, 10);
-      const provincePack = pack.provinces[key];
-      data += `${el.dataset.id},`;
-      data += `${el.dataset.name},`;
-      data += `${provincePack.fullName},`;
-      data += `${el.dataset.form},`;
-      data += `${el.dataset.state},`;
-      data += `${el.dataset.color},`;
-      data += `${el.dataset.capital},`;
-      data += `${el.dataset.area},`;
-      data += `${el.dataset.population},`;
-      data += `${Math.round(provincePack.rural! * populationRate)},`;
-      data += `${Math.round(provincePack.urban! * populationRate * urbanization)},`;
-      data += `${el.dataset.burgs}\n`;
-    });
+  for (const province of getProvincesData()) {
+    const capital = province.burg ? pack.burgs[province.burg].name : "";
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * populationRate)},${Math.round(province.urban! * populationRate * urbanization)},${province.burgs!.length}\n`;
+  }
 
   const name = `${getFileName("Provinces")}.csv`;
   downloadFile(data, name);
@@ -1422,7 +1421,7 @@ function removeAllProvinces(): void {
         turnButtonOff("toggleProvinces");
         drawLabels();
 
-        provincesEditorAddLines();
+        provincesTable.reset();
       },
       Cancel: function (this: HTMLElement) {
         $(this).dialog("close");

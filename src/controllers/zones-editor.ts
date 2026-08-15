@@ -1,6 +1,15 @@
 import { drag, select, sum } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  setModeHiddenColumns,
+  type TableView
+} from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -18,32 +27,39 @@ interface ZoneCellDatum {
   fill: string;
 }
 
+const dialogId = "zonesEditor" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
+const columns: EditorColumn<ZoneRow>[] = [
+  { key: "description", label: "Description", width: "13em", permanent: true },
+  { key: "type", label: "Type", width: "7em" },
+  { key: "cells", label: "Cells", width: "5em" },
+  { key: "area", label: "Area", width: "7em" },
+  { key: "population", label: "Population", width: "6em" },
+  { key: "actions", width: "4.2em", permanent: true, align: "right" }
+];
+const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
+
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
   if (!layerIsOn("toggleZones")) toggleZones();
 
   renderDialog();
   updateFilters();
-  zonesEditorAddLines();
+  zonesTable.reset();
 
   $("#zonesEditor").dialog({
     title: "Zones Editor",
     resizable: false,
     close: closeZonesEditor,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
   destroyDialog("zonesEditor");
-  const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable">
-      <div id="customHeader" class="header" style="grid-template-columns: 13em 7em 6em 5em 9em">
-        <div data-tip="Zone description">Description&nbsp;</div>
-        <div data-tip="Zone type">Type&nbsp;</div>
-        <div data-tip="Zone cells count" class="hide">Cells&nbsp;</div>
-        <div data-tip="Zone area" class="hide">Area&nbsp;</div>
-        <div data-tip="Zone population" class="hide">Population&nbsp;</div>
-      </div>
+  const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable editorDialog">
+      ${renderEditorHeader({ dialogId, columns })}
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
       <div id="zonesFooter" class="totalLine">
         <div data-tip="Number of zones" style="margin-left: 5px">
@@ -100,6 +116,11 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
   applyLineHighlighting("zonesEditor", ({ target }) => {
     const zone = target.closest<SVGElement>("#zones [id^='zone']");
     return zone && /^zone\d+$/.test(zone.id) ? Number(zone.id.slice(4)) : undefined;
@@ -108,7 +129,7 @@ function renderDialog(): void {
   const body = ensureEl("zonesBodySection");
   ensureEl("zonesFilterType").addEventListener("click", updateFilters);
   ensureEl("zonesFilterType").addEventListener("change", filterZonesByType);
-  ensureEl("zonesEditorRefresh").addEventListener("click", zonesEditorAddLines);
+  ensureEl("zonesEditorRefresh").addEventListener("click", zonesTable.refresh);
   ensureEl("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
   ensureEl("zonesPercentage").addEventListener("click", togglePercentageMode);
@@ -182,52 +203,52 @@ function updateFilters(): void {
 }
 
 // add line for each zone
-function zonesEditorAddLines(): void {
-  const body = ensureEl("zonesBodySection");
-  const typeToFilterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const filteredZones = typeToFilterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === typeToFilterBy);
-
-  const lines = filteredZones.map(({ i, name, type, cells, color, hidden }) => {
-    const area = getArea(sum(cells.map(c => pack.cells.area[c])));
-    const rural = sum(cells.map(c => pack.cells.pop[c])) * populationRate;
+function getZonesData(): ZoneRow[] {
+  const type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
+  const zones = type === "all" ? pack.zones : pack.zones.filter(zone => zone.type === type);
+  return zones.map(zone => {
+    const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
+    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * populationRate;
     const urban =
-      sum(cells.map(c => pack.cells.burg[c]).map(b => pack.burgs[b]?.population ?? 0)) * populationRate * urbanization;
-    const population = rn(rural + urban);
+      sum(zone.cells.map(cell => pack.cells.burg[cell]).map(burg => pack.burgs[burg]?.population ?? 0)) *
+      populationRate *
+      urbanization;
+    return { zone, area, rural, urban, population: rn(rural + urban) };
+  });
+}
+
+function renderZonesPage(view: TableView<ZoneRow>): void {
+  const body = ensureEl("zonesBodySection");
+  const totalArea = getArea(graphWidth * graphHeight);
+  const totalPopulation =
+    (sum(pack.cells.pop) + sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) * urbanization) *
+    populationRate;
+  const percentage = body.dataset.type === "percentage";
+  const lines = view.rows.map(({ zone: { i, name, type, cells, color, hidden }, area, rural, urban, population }) => {
     const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
     const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusZone${i}`).size();
 
-    return /* html */ `<div class="states" data-id="${i}" data-color="${color}" data-description="${name}"
-      data-type="${type}" data-cells=${cells.length} data-area=${area} data-population=${population} style="${hidden ? "opacity: 0.5" : ""}">
-      <fill-box fill="${color}"></fill-box>
-      <input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false">
-      <input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}">
-      <span data-tip="Cells count" class="icon-check-empty hide"></span>
-      <div data-tip="Cells count" class="stateCells hide">${cells.length}</div>
-      <span data-tip="Zone area" style="padding-right:4px" class="icon-map-o hide"></span>
-      <div data-tip="Zone area" class="biomeArea hide">${`${si(area)} ${getAreaUnit()}`}</div>
-      <span data-tip="${populationTip}" class="icon-male hide"></span>
-      <div data-tip="${populationTip}" class="zonePopulation hide pointer">${si(population)}</div>
-      <span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical hide"></span>
-      <span data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} hide ${cells.length ? "" : "placeholder"}"></span>
-      <span data-tip="Toggle zone visibility" class="zoneHide icon-eye hide ${cells.length ? "" : " placeholder"}"></span>
-      <span data-tip="Remove zone" class="zoneRemove icon-trash-empty hide"></span>
+    return /* html */ `<div class="states" data-id="${i}" style="${hidden ? "opacity: 0.5" : ""}">
+      <div data-col="description" style="display:flex; align-items:center"><fill-box fill="${color}"></fill-box><input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false"></div>
+      <div data-col="type"><input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}"></div>
+      <div data-col="cells"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
+      <div data-col="area"><span data-tip="Zone area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Zone area" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
+      <div data-col="population"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="zonePopulation pointer">${percentage ? `${rn((population / totalPopulation) * 100, 2)}%` : si(population)}</span></div>
+      <div data-col="actions"><span data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span><span data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span><span data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span><span data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span></div>
     </div>`;
   });
 
   body.innerHTML = lines.join("");
 
   // update footer
-  const totalArea = getArea(graphWidth * graphHeight);
   const footerArea = ensureEl("zonesFooterArea");
   footerArea.dataset.area = String(totalArea);
-  const totalPop =
-    (sum(pack.cells.pop) + sum(pack.burgs.filter(b => !b.removed).map(b => b.population ?? 0)) * urbanization) *
-    populationRate;
-  ensureEl("zonesFooterPopulation").dataset.population = String(totalPop);
-  ensureEl("zonesFooterNumber").innerHTML = `${filteredZones.length} of ${pack.zones.length}`;
+  ensureEl("zonesFooterPopulation").dataset.population = String(totalPopulation);
+  ensureEl("zonesFooterNumber").innerHTML = `${view.all.length} of ${pack.zones.length}`;
   ensureEl("zonesFooterCells").innerHTML = String(pack.cells.i.length);
   footerArea.innerHTML = `${si(totalArea)} ${getAreaUnit()}`;
-  ensureEl("zonesFooterPopulation").innerHTML = si(totalPop);
+  ensureEl("zonesFooterPopulation").innerHTML = si(totalPopulation);
+  renderEditorPagination(ensureEl("zonesFooter"), view, zonesTable.goto);
 
   body.querySelectorAll("div.states").forEach(el => {
     el.addEventListener("mouseenter", zoneHighlightOn);
@@ -236,11 +257,7 @@ function zonesEditorAddLines(): void {
     el.addEventListener("mouseleave", zoneHighlightOff);
   });
 
-  if (body.dataset.type === "percentage") {
-    body.dataset.type = "absolute";
-    togglePercentageMode();
-  }
-  $("#zonesEditor").dialog({ width: "fit-content" });
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 function zoneHighlightOn(this: HTMLElement): void {
@@ -255,17 +272,20 @@ function zoneHighlightOff(this: HTMLElement): void {
 
 function filterZonesByType(): void {
   drawZones();
-  zonesEditorAddLines();
+  zonesTable.reset();
 }
 
 function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): number } }): void {
   const zone = pack.zones.find(z => z.i === +ui.item[0].dataset.id!);
   if (!zone) return;
-  const oldIndex = pack.zones.indexOf(zone);
-  const newIndex = ui.item.index();
-  if (oldIndex === newIndex) return;
-
-  pack.zones.splice(oldIndex, 1);
+  const nextId =
+    ui.item[0].nextElementSibling instanceof HTMLElement ? +ui.item[0].nextElementSibling.dataset.id! : null;
+  const previousId =
+    ui.item[0].previousElementSibling instanceof HTMLElement ? +ui.item[0].previousElementSibling.dataset.id! : null;
+  pack.zones.splice(pack.zones.indexOf(zone), 1);
+  const nextIndex = nextId === null ? -1 : pack.zones.findIndex(item => item.i === nextId);
+  const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
+  const newIndex = nextIndex >= 0 ? nextIndex : previousIndex >= 0 ? previousIndex + 1 : pack.zones.length;
   pack.zones.splice(newIndex, 0, zone);
   drawZones();
 }
@@ -279,11 +299,7 @@ function enterZonesManualAssignent(): void {
     el.style.display = "none";
   });
   ensureEl("zonesManuallyButtons").style.display = "inline-block";
-  ensureEl("zonesEditor")
-    .querySelectorAll(".hide")
-    .forEach(el => {
-      el.classList.add("hidden");
-    });
+  setModeHiddenColumns(dialogId, ["cells", "area", "population", "actions"]);
   ensureEl("zonesFooter").style.display = "none";
   body.querySelectorAll<HTMLElement>("div > input, select, svg").forEach(e => {
     e.style.pointerEvents = "none";
@@ -393,7 +409,7 @@ function applyZonesManualAssignent(): void {
   });
 
   drawZones();
-  zonesEditorAddLines();
+  zonesTable.refresh();
   exitZonesManualAssignment();
 }
 
@@ -410,12 +426,8 @@ function exitZonesManualAssignment(close?: string): void {
   });
   ensureEl("zonesManuallyButtons").style.display = "none";
 
-  ensureEl("zonesEditor")
-    .querySelectorAll(".hide:not(.show)")
-    .forEach(el => {
-      el.classList.remove("hidden");
-    });
-  ensureEl("zonesFooter").style.display = "block";
+  setModeHiddenColumns(dialogId, []);
+  ensureEl("zonesFooter").style.display = "";
   ensureEl("zonesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, svg")
     .forEach(e => {
@@ -448,7 +460,7 @@ function toggleVisibility(zone: Zone): void {
   else zone.hidden = true;
 
   drawZones();
-  zonesEditorAddLines();
+  zonesTable.refresh();
 }
 
 function toggleFog(zone: Zone, cl: DOMTokenList): void {
@@ -478,21 +490,8 @@ function toggleLegend(): void {
 
 function togglePercentageMode(): void {
   const body = ensureEl("zonesBodySection");
-  if (body.dataset.type === "absolute") {
-    body.dataset.type = "percentage";
-    const totalCells = +ensureEl("zonesFooterCells").innerHTML;
-    const totalArea = +ensureEl("zonesFooterArea").dataset.area!;
-    const totalPopulation = +ensureEl("zonesFooterPopulation").dataset.population!;
-
-    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
-      el.querySelector(".stateCells")!.innerHTML = `${rn((+el.dataset.cells! / totalCells) * 100, 2)}%`;
-      el.querySelector(".biomeArea")!.innerHTML = `${rn((+el.dataset.area! / totalArea) * 100, 2)}%`;
-      el.querySelector(".zonePopulation")!.innerHTML = `${rn((+el.dataset.population! / totalPopulation) * 100, 2)}%`;
-    });
-  } else {
-    body.dataset.type = "absolute";
-    zonesEditorAddLines();
-  }
+  body.dataset.type = body.dataset.type === "absolute" ? "percentage" : "absolute";
+  zonesTable.refresh();
 }
 
 function addZonesLayer(): void {
@@ -502,7 +501,7 @@ function addZonesLayer(): void {
   const color = `url(#hatch${zoneId % 42})`;
   pack.zones.push({ i: zoneId, name, type, color, cells: [] });
 
-  zonesEditorAddLines();
+  zonesTable.refresh();
   drawZones();
 }
 
@@ -510,17 +509,9 @@ function downloadZonesData(): void {
   const unit = areaUnit.value === "square" ? `${distanceUnitInput.value}2` : areaUnit.value;
   let data = `Id,Color,Description,Type,Cells,Area ${unit},Population\n`; // headers
 
-  ensureEl("zonesBodySection")
-    .querySelectorAll<HTMLElement>(":scope > div")
-    .forEach(el => {
-      data += `${el.dataset.id},`;
-      data += `${el.dataset.color},`;
-      data += `${el.dataset.description},`;
-      data += `${el.dataset.type},`;
-      data += `${el.dataset.cells},`;
-      data += `${el.dataset.area},`;
-      data += `${el.dataset.population}\n`;
-    });
+  for (const { zone, area, population } of getZonesData()) {
+    data += `${zone.i},${zone.color},${zone.name},${zone.type},${zone.cells.length},${area},${population}\n`;
+  }
 
   const name = `${getFileName("Zones")}.csv`;
   downloadFile(data, name);
@@ -614,7 +605,7 @@ function changePopulation(zone: Zone): void {
     }
 
     if (layerIsOn("togglePopulation")) drawPopulation();
-    zonesEditorAddLines();
+    zonesTable.refresh();
   }
 }
 
@@ -627,7 +618,7 @@ function zoneRemove(zone: Zone): void {
       pack.zones = pack.zones.filter(z => z.i !== zone.i);
       select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
       unfog(`focusZone${zone.i}`);
-      zonesEditorAddLines();
+      zonesTable.refresh();
     }
   });
 }

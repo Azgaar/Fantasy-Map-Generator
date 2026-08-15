@@ -1,5 +1,13 @@
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { clearMainTip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -9,43 +17,53 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { ensureEl } from "../utils";
 
+const dialogId = "markersOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const columns: EditorColumn<Marker>[] = [
+  {
+    key: "type",
+    label: "Type",
+    width: "12em",
+    permanent: true,
+    sortBy: marker => marker.type,
+    sortType: "alpha"
+  },
+  {
+    key: "pin",
+    label: "Pin",
+    width: "1.5em"
+  },
+  {
+    key: "lock",
+    label: "Lock",
+    width: "1.5em"
+  },
+  { key: "actions", width: "3em", permanent: true, align: "right" }
+];
+
 function open(): void {
   if (customization) return;
-  closeDialogs("#markersOverview, .stable");
+  closeDialogs(`#${dialogId}, .stable`);
   if (!layerIsOn("toggleMarkers")) toggleMarkers();
 
   renderDialog();
-  addLines();
+  markersTable.reset();
 
-  $("#markersOverview").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Markers Overview",
     resizable: false,
     width: "fit-content",
     close: closeMarkersOverview,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("markersOverview")?.remove();
+  document.getElementById(dialogId)?.remove();
 
   const html = /* html */ `
-    <div id="markersOverview" class="dialog stable">
-      <div id="markersHeader" class="header" style="grid-template-columns: 15em 1em 3em">
-        <div data-tip="Click to sort by marker type" class="sortable alphabetically" data-sortby="type">Type&nbsp;</div>
-        <div
-          id="markersInverPin"
-          style="color: #6e5e66"
-          data-tip="Click to invert pin state for all markers"
-          class="icon-pin pointer"
-        ></div>
-        <div
-          id="markersInverLock"
-          style="color: #6e5e66"
-          data-tip="Click to invert lock state for all markers"
-          class="icon-lock pointer"
-        ></div>
-      </div>
+    <div id="${dialogId}" class="dialog stable editorDialog">
+      ${renderEditorHeader({ dialogId, columns })}
       <div id="markersBody" class="table"></div>
       <div id="markersFilters" style="display:flex; gap:.2em; padding:0.5em 0; flex-direction:column; font-size:smaller">
         <select id="markersFilterState" data-tip="Show only markers located in the selected state"></select>
@@ -74,24 +92,33 @@ function renderDialog(): void {
         <button id="markersRemoveAll" data-tip="Remove all unlocked markers" class="icon-trash"></button>
         <button id="markersExport" data-tip="Save markers data as a text file (.csv)" class="icon-download"></button>
       </div>
-    </div>`;
+  </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
-  applySortingByHeader("markersHeader");
+  ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="pin"]')!.innerHTML =
+    '<span id="markersInverPin" style="color:#6e5e66" data-tip="Click to invert pin state for all markers" class="icon-pin pointer"></span>';
+  ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="lock"]')!.innerHTML =
+    '<span id="markersInverLock" style="color:#6e5e66" data-tip="Click to invert lock state for all markers" class="icon-lock pointer"></span>';
+  bindColumnSorting(dialogId, markersTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
   ensureEl("markersBody").addEventListener("click", handleLineClick);
   ensureEl("markersInverPin").addEventListener("click", invertPin);
   ensureEl("markersInverLock").addEventListener("click", invertLock);
-  ensureEl("markersOverviewRefresh").addEventListener("click", addLines);
+  ensureEl("markersOverviewRefresh").addEventListener("click", markersTable.refresh);
   ensureEl("markersRegenerate").addEventListener("click", regenerateMarkers);
   ensureEl("markerTypeSelector").addEventListener("click", toggleMarkerTypeMenu);
   ensureEl("markersAddFromOverview").addEventListener("click", () => void Controllers.MarkerCreator.toggle());
   ensureEl("markersGenerationConfig").addEventListener("click", () => void Controllers.MarkersSettings.open());
   ensureEl("markersRemoveAll").addEventListener("click", triggerRemoveAll);
   ensureEl("markersExport").addEventListener("click", exportMarkers);
-  ensureEl("markersSearch").addEventListener("input", addLines);
-  ensureEl("markersFilterState").addEventListener("change", addLines);
-  ensureEl("markersFilterCulture").addEventListener("change", addLines);
-  ensureEl("markersFilterType").addEventListener("change", addLines);
+  ensureEl("markersSearch").addEventListener("input", markersTable.reset);
+  ensureEl("markersFilterState").addEventListener("change", markersTable.reset);
+  ensureEl("markersFilterCulture").addEventListener("change", markersTable.reset);
+  ensureEl("markersFilterType").addEventListener("change", markersTable.reset);
 
   populateMarkerTypeMenu();
   populateFilters();
@@ -99,6 +126,11 @@ function renderDialog(): void {
 
 // remembered filter selections, kept out of the DOM so they survive the dialog being rebuilt on each open
 const filterState = { search: "", state: "", culture: "", type: "" };
+
+const markersTable = initEditorTable<Marker>({
+  getData: getFilteredMarkers,
+  onUpdate: renderMarkersPage
+});
 
 // fill a <select> with a leading placeholder option, restoring `selected` when that option still exists
 function fillSelect(
@@ -139,15 +171,15 @@ function closeMarkersOverview(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
 
-  $("#markersOverview").dialog("destroy");
-  ensureEl("markersOverview").remove();
+  $(`#${dialogId}`).dialog("destroy");
+  ensureEl(dialogId).remove();
 }
 
 function regenerateMarkers(): void {
   Markers.regenerate();
   if (layerIsOn("toggleMarkers")) drawMarkers();
   populateFilters();
-  addLines();
+  markersTable.refresh();
 }
 
 function populateMarkerTypeMenu(): void {
@@ -171,7 +203,7 @@ function populateMarkerTypeMenu(): void {
 
 function handleLineClick(ev: MouseEvent): void {
   const el = ev.target as HTMLElement;
-  const i = +(el.parentNode as HTMLElement).dataset.id!;
+  const i = +el.closest<HTMLElement>(".states")!.dataset.id!;
 
   if (el.classList.contains("icon-pencil")) return void openEditor(i);
   if (el.classList.contains("icon-target")) return void highlightMarker(i);
@@ -180,8 +212,8 @@ function handleLineClick(ev: MouseEvent): void {
   if (el.classList.contains("icon-trash-empty")) return void triggerRemove(i);
 }
 
-function addLines(): void {
-  let markers: Marker[] = pack.markers;
+function getFilteredMarkers(): Marker[] {
+  let markers: Marker[] = [...pack.markers];
 
   const searchRaw = ensureEl<HTMLInputElement>("markersSearch").value;
   const stateFilter = ensureEl<HTMLSelectElement>("markersFilterState").value;
@@ -219,35 +251,43 @@ function addLines(): void {
   const anyFilterActive = Boolean(searchText) || stateFilter !== "" || cultureFilter !== "" || typeFilter !== "";
   syncMapToFilter(markers, anyFilterActive);
 
-  const lines = markers
+  return sortDataByColumns(dialogId, markers, columns);
+}
+
+function renderMarkersPage(view: TableView<Marker>): void {
+  const lines = view.rows
     .map(({ i, type, icon, pinned, lock }) => {
       return /* html */ `
         <div class="states" data-id=${i} data-type="${type}">
-          ${
-            icon.startsWith("http") || icon.startsWith("data:image")
-              ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
-              : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
-          }
-          <div data-tip="Marker type" style="width:10em">${type}</div>
-          <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>
-          <span style="padding-right:.1em" data-tip="Locate the marker" class="icon-target"></span>
-          <span style="padding-right:.1em" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
+          <div data-col="type">
+            ${
+              icon.startsWith("http") || icon.startsWith("data:image")
+                ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
+                : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
+            }
+            <span data-tip="Marker type">${type}</span>
+          </div>
+          <span data-col="pin" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
             pinned ? "" : "inactive"
           }" pointer"></span>
-          <span style="padding-right:.1em" class="locks pointer ${
+          <span data-col="lock" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
-          <span data-tip="Remove marker" class="icon-trash-empty"></span>
+          <div data-col="actions">
+            <span data-tip="Edit marker" class="icon-pencil"></span>
+            <span data-tip="Locate the marker" class="icon-target"></span>
+            <span data-tip="Remove marker" class="icon-trash-empty"></span>
+          </div>
         </div>`;
     })
     .join("");
 
   const body = ensureEl("markersBody");
   body.innerHTML = lines;
-  ensureEl("markersFooterNumber").innerText = String(markers.length);
+  ensureEl("markersFooterNumber").innerText = String(view.all.length);
   ensureEl("markersFooterTotal").innerText = String(pack.markers.length);
-
-  applySorting(ensureEl("markersHeader"));
+  renderEditorPagination(ensureEl("markersFooter"), view, markersTable.goto);
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 // last filter set pushed to the renderer, so we only redraw the map when the visible set actually changes
@@ -277,12 +317,12 @@ function invertPin(): void {
 
   ensureEl("markers").setAttribute("pinned", anyPinned ? "1" : "");
   drawMarkers();
-  addLines();
+  markersTable.refresh();
 }
 
 function invertLock(): void {
   pack.markers = pack.markers.map(marker => ({ ...marker, lock: !marker.lock }));
-  addLines();
+  markersTable.refresh();
 }
 
 function openEditor(i: number): void {
@@ -355,7 +395,7 @@ function removeMarker(i: number): void {
   notes = notes.filter(note => note.id !== `marker${i}`);
   pack.markers = pack.markers.filter(marker => marker.i !== i);
   document.getElementById(`marker${i}`)?.remove();
-  addLines();
+  markersTable.refresh();
 }
 
 function triggerRemoveAll(): void {
@@ -377,7 +417,7 @@ function removeAllMarkers(): void {
     return false;
   });
 
-  addLines();
+  markersTable.refresh();
 }
 
 function exportMarkers(): void {

@@ -1,98 +1,145 @@
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { downloadFile, getFileName } from "@/utils";
+import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
+const dialogId = "marketsGoodCompare" as const;
+const position = { my: "right top", at: "left-10 top", collision: "fit" };
+const columns: EditorColumn<Market>[] = [
+  { key: "color", width: "1.6em", permanent: true },
+  {
+    key: "market",
+    label: "Market",
+    width: "9em",
+    permanent: true,
+    tip: "Market center burg name. Click to sort",
+    sortBy: market => Markets.getName(market),
+    sortType: "alpha"
+  },
+  {
+    key: "stock",
+    label: "Stock",
+    width: "6em",
+    tip: "Good stock in this market. Click to sort",
+    sortBy: market => market.goods[activeGoodId]?.stock ?? 0,
+    defaultSort: "desc"
+  },
+  {
+    key: "price",
+    label: "Price",
+    width: "6em",
+    tip: "Price for this good. Click to sort",
+    sortBy: market => market.goods[activeGoodId]?.price ?? 0
+  },
+  { key: "actions", width: "1.2em", permanent: true }
+];
+
 let activeGoodId = -1;
+let activeAnchor = "#marketsOverview";
+
+const comparePricesTable = initEditorTable<Market>({
+  getData: () => sortDataByColumns(dialogId, [...pack.markets], columns),
+  onUpdate: renderComparePricesPage
+});
 
 function open(goodId?: number, anchor = "#marketsOverview"): void {
   if (goodId !== undefined) activeGoodId = goodId;
+  activeAnchor = anchor;
 
   renderDialog();
   rebuildGoodSelect();
-  addLines();
+  comparePricesTable.reset();
 
-  $("#marketsGoodCompare").dialog({
+  $(`#${dialogId}`).dialog({
     title: "Compare Prices",
-    position: { my: "right top", at: "left-10 top", of: anchor, collision: "fit" },
+    position: { ...position, of: anchor },
     close: closeComparePrices
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("marketsGoodCompare")?.remove();
-  const editorHtml = /* html */ `<div id="marketsGoodCompare" class="dialog">
+  document.getElementById(dialogId)?.remove();
+  const editorHtml = /* html */ `<div id="${dialogId}" class="dialog editorDialog">
       <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
         <label for="marketsGoodCompareSelect" data-tip="Select good to compare stock across markets">Good:</label>
         <select id="marketsGoodCompareSelect" style="flex:1; min-width:8em;"></select>
       </div>
-      <div id="marketsGoodCompareHeader" class="header" style="grid-template-columns: 1.6em 9em 6em 7em;">
-        <div></div>
-        <div data-tip="Market center burg name. Click to sort" class="sortable alphabetically" data-sortby="market" style="margin-left:0">Market&nbsp;</div>
-        <div data-tip="Good stock in this market. Click to sort" class="sortable icon-sort-number-down" data-sortby="stock">Stock&nbsp;</div>
-        <div data-tip="Price for this good. Click to sort" class="sortable" data-sortby="price">Price&nbsp;</div>
-      </div>
+      ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsGoodCompareBody" class="table" data-type="absolute" style="max-height:40em;"></div>
       <div id="marketsGoodCompareFooter" class="totalLine">
-        <div data-tip="Total stock of this good across all markets" style="margin-left:5px">Total Stock:&nbsp;<span id="marketsGoodCompareFooterStock">0</span></div>
-        <div data-tip="Average price of this good across markets" style="margin-left:12px">Avg Price:&nbsp;<span id="marketsGoodCompareFooterPrice">0</span></div>
+        <div data-col="stock" data-tip="Total stock of this good across all markets" style="margin-left:5px">Total Stock:&nbsp;<span id="marketsGoodCompareFooterStock">0</span></div>
+        <div data-col="price" data-tip="Average price of this good across markets" style="margin-left:12px">Avg Price:&nbsp;<span id="marketsGoodCompareFooterPrice">0</span></div>
       </div>
       <div id="marketsGoodCompareBottom">
         <button id="marketsGoodCompareRefresh" data-tip="Refresh" class="icon-cw"></button>
         <button id="marketsGoodComparePercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
         <button id="marketsGoodCompareExport" data-tip="Save data as a CSV file" class="icon-download"></button>
       </div>
-    </div>`;
+  </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("marketsGoodCompareHeader");
+  bindColumnSorting(dialogId, comparePricesTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } })
+  });
 
   ensureEl("marketsGoodCompareSelect").addEventListener("change", () => {
     activeGoodId = +ensureEl<HTMLSelectElement>("marketsGoodCompareSelect").value;
-    addLines();
+    comparePricesTable.reset();
   });
-  ensureEl("marketsGoodCompareRefresh").addEventListener("click", addLines);
+  ensureEl("marketsGoodCompareRefresh").addEventListener("click", comparePricesTable.refresh);
   ensureEl("marketsGoodComparePercentage").addEventListener("click", togglePercentageMode);
   ensureEl("marketsGoodCompareExport").addEventListener("click", downloadCsv);
 }
 
 function closeComparePrices(): void {
-  $("#marketsGoodCompare").dialog("destroy");
-  ensureEl("marketsGoodCompare").remove();
+  $(`#${dialogId}`).dialog("destroy");
+  ensureEl(dialogId).remove();
 }
 
-function addLines(): void {
+function renderComparePricesPage(view: TableView<Market>): void {
   const body = ensureEl("marketsGoodCompareBody");
-  if (body.dataset.type === "percentage") body.dataset.type = "absolute";
 
   const good = activeGoodId >= 0 ? Goods.get(activeGoodId) : undefined;
   if (!good) {
     body.innerHTML = "Select a good";
     updateFooter(0, 0);
+    renderEditorPagination(ensureEl("marketsGoodCompareFooter"), view, comparePricesTable.goto);
     return;
   }
 
-  let lines = "";
-  let totalStock = 0;
-  let priceSum = 0;
+  const totalStock = view.all.reduce((total, market) => total + rn(market.goods[good.i]?.stock ?? 0, 2), 0);
+  const priceSum = view.all.reduce((total, market) => total + rn(market.goods[good.i]?.price ?? 0, 2), 0);
+  const percentage = body.dataset.type === "percentage";
 
-  for (const market of pack.markets) {
+  const lines = view.rows.map(market => {
     const centerName = Markets.getName(market);
     const goodData = market.goods[good.i];
     const stock = rn(goodData?.stock ?? 0, 2);
     const price = rn(goodData?.price ?? 0, 2);
-    totalStock += stock;
-    priceSum += price;
+    const stockText = percentage ? (totalStock ? `${rn((stock / totalStock) * 100, 2)}%` : "0%") : String(stock);
 
-    lines += /*html*/ `<div class="states" data-id="${market.i}" data-market="${centerName}" data-stock="${stock}" data-price="${price}">
-      <fill-box fill="${market.color}"></fill-box>
-      <div style="width:9em">${centerName}</div>
-      <div data-type="stock" style="width:5em">${stock}</div>
-      <div style="width:7em">${formatPrice(price)}</div>
+    return /*html*/ `<div class="states" data-id="${market.i}" data-market="${centerName}" data-stock="${stock}" data-price="${price}">
+      <fill-box data-col="color" fill="${market.color}"></fill-box>
+      <div data-col="market">${centerName}</div>
+      <div data-col="stock" data-type="stock">${stockText}</div>
+      <div data-col="price">${formatPrice(price)}</div>
     </div>`;
-  }
-  body.innerHTML = lines;
-  updateFooter(rn(totalStock, 2), rn(priceSum / pack.markets.length, 2));
-  applySorting(ensureEl("marketsGoodCompareHeader"));
-  $("#marketsGoodCompare").dialog({ width: "fit-content" });
+  });
+  body.innerHTML = lines.join("");
+  updateFooter(rn(totalStock, 2), view.all.length ? rn(priceSum / view.all.length, 2) : 0);
+  renderEditorPagination(ensureEl("marketsGoodCompareFooter"), view, comparePricesTable.goto);
+  updateDialog(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } });
 }
 
 function updateFooter(totalStock: number, avgPrice: number): void {
@@ -102,24 +149,8 @@ function updateFooter(totalStock: number, avgPrice: number): void {
 
 function togglePercentageMode(): void {
   const body = ensureEl("marketsGoodCompareBody");
-  if (body.dataset.type === "absolute") {
-    body.dataset.type = "percentage";
-    const rows = Array.from(body.querySelectorAll<HTMLElement>(":scope > div"));
-    let totalStock = 0;
-    for (const row of rows) {
-      totalStock += +row.dataset.stock! || 0;
-    }
-    rows.forEach(row => {
-      row.querySelectorAll<HTMLElement>("div[data-type]").forEach(cell => {
-        const type = cell.dataset.type!;
-        const val = +row.dataset[type]! || 0;
-        cell.textContent = totalStock ? `${rn((val / totalStock) * 100, 2)}%` : "0%";
-      });
-    });
-  } else {
-    body.dataset.type = "absolute";
-    addLines();
-  }
+  body.dataset.type = body.dataset.type === "absolute" ? "percentage" : "absolute";
+  comparePricesTable.refresh();
 }
 
 function downloadCsv(): void {

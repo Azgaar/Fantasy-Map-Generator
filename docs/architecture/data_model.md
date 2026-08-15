@@ -397,7 +397,7 @@ Relief (terrain) icons are stored in `pack.relief: ReliefIcon[]`. The array orde
 - `y`: `number` - top edge position
 - `s`: `number` - icon size, used as both width and height
 
-Generation settings were `set`, `size` and `density` attributes on the `#terrain` group before v1.142.0, and `style.relief` in v1.142.0. Since v1.143.0 they are split by consumer (see [Style](#style)):
+Generation settings were `set`, `size` and `density` attributes on the `#terrain` group before v1.142.0, and `style.relief` in v1.142.0. Since v1.143.3 they are split by consumer (see [Style](#style)):
 
 - `set`: `string` - icons set: `simple`, `colored` or `gray`. `style.layers.terrain.options.set`
 - `size`: `number` - base icon size multiplier. `style.layers.terrain.options.size`
@@ -489,7 +489,7 @@ Name generator consumes training sets of real-world town names (with the excepti
 
 # Style
 
-Map styling lives in the global `style` object, serialized with the map at data index 48. Since v1.143.0 it has a single member, `layers`, and it is the authority: the SVG carries no styling state of its own, it is only written to.
+Map styling lives in the global `style` object, serialized with the map at data index 48. Since v1.143.3 it has a single member, `layers`, and it is the authority: the SVG carries no styling state of its own, it is only written to.
 
 ```js
 style = {layers: {[layerId]: StyleNode}}
@@ -505,7 +505,7 @@ Every node — a layer or one of its children — has the same three optional me
 - `options`: `Record<string, unknown>` - values the renderers read as data, not attributes: sizes, schemes, counts, positions
 - `children`: `Record<string, StyleNode>` - nested nodes, resolved against **direct `<g>` children** of the layer element, by `id` first and by `data-group` as a fallback (label groups are `id="labels-<name>" data-group="<name>"`)
 
-The split is by consumer, not by name. If the browser consumes the value — `fill`, `stroke`, `opacity`, `filter`, `font-size` — it is `presentation` and the applier is the only writer. If FMG's own code consumes it — relief `set`, heightmap `scheme`, `oceanLayers.layers`, `markers.rescale`, `statesHalo.width` — it is an `option` and the renderer reads it from the store, never from the DOM. Options are therefore no longer mirrored onto the SVG; they were `data-size`, `data-width`, `scheme`, `rescale`, `layers` and friends before v1.143.0.
+The split is by consumer, not by name. If the browser consumes the value — `fill`, `stroke`, `opacity`, `filter`, `font-size` — it is `presentation` and the applier is the only writer. If FMG's own code consumes it — relief `set`, heightmap `scheme`, `oceanLayers.layers`, `markers.rescale`, `statesHalo.width` — it is an `option` and the renderer reads it from the store, never from the DOM. Options are therefore no longer mirrored onto the SVG; they were `data-size`, `data-width`, `scheme`, `rescale`, `layers` and friends before v1.143.3.
 
 Two deliberate exceptions remain, both because CSS inheritance does the work: `armies.options.fontSize` and `scaleBar.options.fontSize` are also written as a `font-size` attribute, since their children inherit it.
 
@@ -519,10 +519,10 @@ Options have no single writer by design: each renderer reads its own with `getLa
 
 Style presets are JSON files in `public/styles/` in exactly the `style` shape (`{"layers": {...}}`), plus user presets in `localStorage` under `fmgStyle_*`. They are parsed by `parseStyle()` (`src/services/styles/schema.ts`), which validates with [zod](https://zod.dev): unknown layer ids are dropped with a warning, and `options` are validated per layer (and per child, with `"layerId/*"` wildcards for label/burg-icon/anchor groups) — numeric options coerce numeric strings, `null` survives as the explicit remove semantics, and anything that fails is dropped with a warning rather than aborting the load.
 
-Presets from before v1.143.0 were flat `{"#selector": {attr: value}}` maps. `isLegacyPreset()` detects them and `upgradeLegacyPreset()` (`src/services/styles/legacy.ts`) converts selector → layer/child and attribute → `presentation` or `options`, so old downloaded and localStorage presets keep working.
+Presets from before v1.143.3 were flat `{"#selector": {attr: value}}` maps. `isLegacyPreset()` detects them and `upgradeLegacyPreset()` (`src/services/styles/legacy.ts`) converts selector → layer/child and attribute → `presentation` or `options`, so old downloaded and localStorage presets keep working.
 
 ## Loading old maps
 
-`data[48]` is parsed on load and is authoritative when present. For maps saved before v1.143.0 the migration in `src/services/io/auto-update.ts` rebuilds the store: `rehomeLegacyStyleBags()` converts the v1.140–v1.142 `style.labels.groups` / `style.burgIcons` / `style.anchors` / `style.relief` bags into layer nodes, then `harvestLegacyLayerStyles()` reads the styling attributes off the SVG the map carries and runs them through the same legacy upgrader. Anything `data[48]` already provided wins over the harvest, and the harvested option attributes are removed from the SVG afterwards.
+`data[48]` is parsed on load and is authoritative when present. For maps saved before v1.143.3 the migration in `src/services/io/auto-update.ts` rebuilds the store: `rehomeLegacyStyleBags()` converts the v1.140–v1.142 `style.labels.groups` / `style.burgIcons` / `style.anchors` / `style.relief` bags into layer nodes, then `harvestLegacyLayerStyles()` reads the styling attributes off the SVG the map carries and runs them through the same legacy upgrader. Anything `data[48]` already provided wins over the harvest, and the harvested option attributes are removed from the SVG afterwards.
 
 Note that relief **density** is not a style value at all — it drives icon placement, not appearance — so it now lives in the global options as `options.reliefDensity`; only `set` and `size` are style (`style.layers.terrain.options`).

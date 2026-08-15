@@ -242,6 +242,23 @@ describe("renderEditorHeader", () => {
     expect(html.includes('data-col="name" class="sortable alphabetically" data-sortby="name"')).toBe(true);
   });
 
+  it("uses the column label as the default sorting tip", () => {
+    expect(
+      html.includes(
+        'data-col="name" class="sortable alphabetically" data-sortby="name" data-tip="Click to sort by Route"'
+      )
+    ).toBe(true);
+  });
+
+  it("preserves an explicitly configured sorting tip", () => {
+    const custom = renderEditorHeader({
+      dialogId: "example",
+      columns: [{ key: "value", label: "Value", sortBy: () => 0, tip: "Custom sorting help" }]
+    });
+    expect(custom.includes('data-tip="Custom sorting help"')).toBe(true);
+    expect(custom.includes("Click to sort by Value")).toBe(false);
+  });
+
   it("leaves structural columns unsortable", () => {
     const locateCell = html.slice(html.indexOf('data-col="locate"'), html.indexOf('data-col="name"'));
     expect(locateCell.includes("sortable")).toBe(false);

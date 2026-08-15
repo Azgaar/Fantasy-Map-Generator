@@ -1,4 +1,13 @@
-import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -7,6 +16,51 @@ import { ensureEl, formatPrice, rn } from "../utils";
 
 let activeMarketId = 0;
 let activeFilter: "all" | "local" | "global" = "all";
+const dialogId = "marketDeals" as const;
+const position = { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" };
+const columns: EditorColumn<Deal>[] = [
+  { key: "icon", width: "2em", permanent: true },
+  {
+    key: "good",
+    label: "Good",
+    width: "6.8em",
+    permanent: true,
+    sortBy: deal => Goods.get(deal.good)?.name ?? "",
+    sortType: "alpha"
+  },
+  {
+    key: "direction",
+    label: "Type",
+    width: "5em",
+    sortBy: deal => getDirection(deal, activeMarketId),
+    sortType: "alpha"
+  },
+  {
+    key: "counterparty",
+    label: "Counterparty",
+    width: "8em",
+    sortBy: deal => getParty(deal)?.name ?? "",
+    sortType: "alpha"
+  },
+  {
+    key: "units",
+    label: "Units",
+    width: "5em",
+    sortBy: deal => deal.units
+  },
+  {
+    key: "income",
+    label: "Income",
+    width: "5em",
+    sortBy: deal => getDealNet(deal, activeMarketId)
+  },
+  { key: "actions", width: "1.2em", permanent: true }
+];
+
+const marketDealsTable = initEditorTable<Deal>({
+  getData: getFilteredMarketDeals,
+  onUpdate: renderMarketDealsPage
+});
 
 function open(marketId: number): void {
   const market = Markets.get(marketId);
@@ -20,32 +74,25 @@ function open(marketId: number): void {
 
   renderDialog();
   (ensureEl("marketDealsFilter") as HTMLSelectElement).value = "all";
-  marketDealsAddLines();
+  marketDealsTable.reset();
 
-  $("#marketDeals").dialog({
+  $(`#${dialogId}`).dialog({
     title: `${Markets.getName(market)} Market Deals`,
-    position: { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" },
+    position,
     close: closeMarketDeals
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("marketDeals")?.remove();
-  const editorHtml = /* html */ `<div id="marketDeals" class="dialog stable">
+  document.getElementById(dialogId)?.remove();
+  const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
-        <div id="marketDealsHeader" class="header" style="grid-template-columns: 2em 6.8em 4em 10em 4em 4em;">
-          <div></div>
-          <div data-tip="Click to sort by good" class="sortable alphabetically" data-sortby="good" style="margin-left:0">Good&nbsp;</div>
-          <div data-tip="Click to sort by deal type" class="sortable alphabetically" data-sortby="direction">Type&nbsp;</div>
-          <div data-tip="Click to sort by counterparty" class="sortable alphabetically" data-sortby="counterparty">Counterparty&nbsp;</div>
-          <div data-tip="Click to sort by units" class="sortable" data-sortby="units">Units&nbsp;</div>
-          <div data-tip="Click to sort by income" class="sortable" data-sortby="income">Income&nbsp;</div>
-        </div>
+        ${renderEditorHeader({ dialogId, columns })}
         <div id="marketDealsBody" class="table" style="max-height:30em"></div>
 
         <div id="marketDealsFooter" class="totalLine">
           <div style="margin-left: 5px" data-tip="Deals count">Deals: <span id="marketDealsFooterDeals">0</span></div>
-          <div style="margin-left: 12px" data-tip="Net flow for this market">Net Flow: <span id="marketDealsFooterNet">🟡 0</span></div>
+          <div data-col="income" style="margin-left: 12px" data-tip="Net flow for this market">Net Flow: <span id="marketDealsFooterNet">🟡 0</span></div>
         </div>
 
         <div id="marketDealsBottom">
@@ -58,15 +105,20 @@ function renderDialog(): void {
           </select>
         </div>
       </div>
-    </div>`;
+  </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("marketDealsHeader");
+  bindColumnSorting(dialogId, marketDealsTable.reset);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
 
-  ensureEl("marketDealsRefresh").addEventListener("click", marketDealsAddLines);
+  ensureEl("marketDealsRefresh").addEventListener("click", marketDealsTable.refresh);
   ensureEl("marketDealsExport").addEventListener("click", downloadDealsCsv);
   ensureEl("marketDealsBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
-    const dealId = el.closest<HTMLElement>(".marketDealParty")?.parentElement?.dataset.id;
+    const dealId = el.closest<HTMLElement>(".marketDealParty")?.closest<HTMLElement>(".marketDeal")?.dataset.id;
     const deal = pack.deals.find(d => d.i === Number(dealId));
     if (!deal) return;
 
@@ -75,20 +127,20 @@ function renderDialog(): void {
   });
   ensureEl("marketDealsFilter").addEventListener("change", ev => {
     activeFilter = (ev.target as HTMLSelectElement).value as typeof activeFilter;
-    marketDealsAddLines();
+    marketDealsTable.reset();
   });
 }
 
 function closeMarketDeals(): void {
-  $("#marketDeals").dialog("destroy");
-  ensureEl("marketDeals").remove();
+  $(`#${dialogId}`).dialog("destroy");
+  ensureEl(dialogId).remove();
 }
 
-function marketDealsAddLines(): void {
+function getFilteredMarketDeals(): Deal[] {
   const market = Markets.get(activeMarketId);
   if (!market) {
     tip("Invalid market. The selected market does not exist", true, "error", 5000);
-    return;
+    return [];
   }
 
   const allDeals = getMarketDeals(pack.deals, activeMarketId);
@@ -97,19 +149,19 @@ function marketDealsAddLines(): void {
     const counterparty = getCounterparty(deal, activeMarketId);
     return activeFilter === "local" ? counterparty.type === "burg" : counterparty.type === "market";
   });
-  let netFlow = 0;
 
-  let lines = "";
-  for (const deal of deals) {
-    netFlow += getDealNet(deal, activeMarketId);
-    lines += renderDealLine(deal);
-  }
+  return sortDataByColumns(dialogId, deals, columns);
+}
+
+function renderMarketDealsPage(view: TableView<Deal>): void {
+  const lines = view.rows.map(renderDealLine).join("");
+  const netFlow = view.all.reduce((total, deal) => total + getDealNet(deal, activeMarketId), 0);
 
   ensureEl("marketDealsBody").innerHTML = lines || "No market deals recorded";
-  ensureEl("marketDealsFooterDeals").innerHTML = String(deals.length);
+  ensureEl("marketDealsFooterDeals").innerHTML = String(view.all.length);
   ensureEl("marketDealsFooterNet").innerHTML = formatPrice(netFlow);
-
-  applySorting(ensureEl("marketDealsHeader"));
+  renderEditorPagination(ensureEl("marketDealsFooter"), view, marketDealsTable.goto);
+  updateDialog(dialogId, { width: "fit-content", position });
 }
 
 export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[] {
@@ -146,18 +198,18 @@ function renderDealLine(deal: Deal): string {
   const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
 
   return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty.type}_${party?.name}" data-income="${dealNet}">
-      <svg data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
+      <svg data-col="icon" data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
         <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
         <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
       </svg>
-      <div data-tip="Good name" class="goodName">${good.name}</div>
-      <div><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
-      <div class="marketDealParty pointer" data-tip="Click to zoom">
+      <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
+      <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
+      <div data-col="counterparty" class="marketDealParty pointer" data-tip="Click to zoom">
         <div class="${counterparty.type === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${counterparty.type === "market" ? "font-size: 0.85em;" : ""}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>
-      <div class="marketDealUnits">${rn(deal.units, 2)}</div>
-      <div class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
+      <div data-col="units" class="marketDealUnits">${rn(deal.units, 2)}</div>
+      <div data-col="income" class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
     </div>`;
 }
 
