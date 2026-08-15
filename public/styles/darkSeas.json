@@ -99,6 +99,13 @@
         "filter": null,
         "mask": "url(#water)",
         "shape-rendering": "optimizespeed"
+      },
+      "options": {
+        "use": {
+          "x": 80,
+          "y": 80,
+          "scale": 0.25
+        }
       }
     },
     "relig": {

@@ -264,10 +264,20 @@ function selectStyleElement() {
 
   if (styleElement === "compass") {
     styleCompass.style.display = "block";
-    const use = getLayerOptions("compass").use || {};
-    styleCompassShiftX.value = use.x;
-    styleCompassShiftY.value = use.y;
-    styleCompassSizeInput.value = use.scale;
+    const use = getLayerOptions("compass").use;
+    if (use) {
+      styleCompassShiftX.value = use.x;
+      styleCompassShiftY.value = use.y;
+      styleCompassSizeInput.value = use.scale;
+    } else {
+      // a preset that never carried options.use (pre-migration data) - fall back to parsing
+      // the live transform instead of reading undefined, which would zero out the compass
+      // on the first input event (translate(0 0) scale(0))
+      const tr = parseTransform(compass.select("use").attr("transform"));
+      styleCompassShiftX.value = tr[0];
+      styleCompassShiftY.value = tr[1];
+      styleCompassSizeInput.value = tr[2];
+    }
   }
 
   if (styleElement === "terrain") {
