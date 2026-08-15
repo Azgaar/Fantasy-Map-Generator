@@ -1324,13 +1324,13 @@ styleScaleBar.addEventListener("input", function (event) {
     // font-size stays a direct DOM write too - it's inherited by CSS, nothing reads it as JS -
     // but it must also go through setOptions, or the next preset apply reverts it: LAYER_OPTION_
     // ATTRIBUTES.scaleBar still projects options.fontSize onto #scaleBar's font-size attribute
-    setOptions({layerId: "scaleBar"}, {fontSize: value});
+    setOptions({layerId: "scaleBar"}, {fontSize: +value});
     scaleBar.attr("font-size", value);
   } else if (id === "styleScaleBarPositionX") setOptions({layerId: "scaleBar"}, {x: +value});
   else if (id === "styleScaleBarPositionY") setOptions({layerId: "scaleBar"}, {y: +value});
   else if (id === "styleScaleBarLabel") setOptions({layerId: "scaleBar"}, {label: value});
   else if (id === "styleScaleBarBackgroundOpacity") {
-    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, opacity: value}});
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, opacity: +value}});
     scaleBarBack.attr("opacity", value);
   } else if (id === "styleScaleBarBackgroundFill") {
     setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, fill: value}});
@@ -1339,7 +1339,7 @@ styleScaleBar.addEventListener("input", function (event) {
     setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, stroke: value}});
     scaleBarBack.attr("stroke", value);
   } else if (id === "styleScaleBarBackgroundStrokeWidth") {
-    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, strokeWidth: value}});
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, strokeWidth: +value}});
     scaleBarBack.attr("stroke-width", value);
   } else if (id === "styleScaleBarBackgroundFilter") {
     setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, filter: value}});
