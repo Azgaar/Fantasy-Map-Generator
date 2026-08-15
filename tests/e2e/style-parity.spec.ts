@@ -4,6 +4,15 @@ import path from "path";
 
 const BASELINE_PATH = path.join(__dirname, "../fixtures/style-baseline.json");
 const GENERATED_BASELINE_PATH = path.join(__dirname, "../fixtures/style-baseline-generated.json");
+const STYLES_DIR = path.join(__dirname, "../../public/styles");
+
+// reads the shipped preset JSON directly (node side, not the browser) so preset-switch
+// assertions pin the actual value a preset carries rather than just "differs from before" -
+// self-updating if a preset is retuned, and catches a wrong-preset-applied bug that "differs
+// from before"-only assertions would miss
+function loadPresetStyle(presetName: string) {
+  return JSON.parse(fs.readFileSync(path.join(STYLES_DIR, `${presetName}.json`), "utf8"));
+}
 
 // attributes that are styling (not content/geometry); id/class/transform-on-viewbox excluded
 const STYLE_ATTRS = [
@@ -210,9 +219,38 @@ test("switching system presets restyles routes/borders/lakes/terrs/label childre
   await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
   await page.waitForTimeout(500);
 
-  const result = await page.evaluate(async () => {
+  // the dynamic label group name is only known in the browser; fetch it first so the node side
+  // can pin the exact preset-file value to expect for that group below
+  const groupName: string = await page.evaluate(() => (options as any).labels.groups[0].name);
+
+  const nightPreset = loadPresetStyle("night");
+  const defaultPreset = loadPresetStyle("default");
+  const expected = {
+    night: {
+      roads: nightPreset.layers.routes.children.roads.presentation.stroke,
+      stateBorders: nightPreset.layers.borders.children.stateBorders.presentation.stroke,
+      freshwater: nightPreset.layers.lakes.children.freshwater.presentation.fill,
+      landHeightsScheme: nightPreset.layers.terrs.children.landHeights.options.scheme,
+      label: nightPreset.layers.labels.children[groupName]?.presentation.fill
+    },
+    default: {
+      roads: defaultPreset.layers.routes.children.roads.presentation.stroke,
+      stateBorders: defaultPreset.layers.borders.children.stateBorders.presentation.stroke,
+      freshwater: defaultPreset.layers.lakes.children.freshwater.presentation.fill,
+      landHeightsScheme: defaultPreset.layers.terrs.children.landHeights.options.scheme,
+      label: defaultPreset.layers.labels.children[groupName]?.presentation.fill
+    }
+  };
+  // sanity: the two presets actually specify different values for everything checked below -
+  // otherwise the "differs" assertions would be vacuous regardless of what the code does
+  expect(expected.night.roads).not.toBe(expected.default.roads);
+  expect(expected.night.stateBorders).not.toBe(expected.default.stateBorders);
+  expect(expected.night.freshwater).not.toBe(expected.default.freshwater);
+  expect(expected.night.landHeightsScheme).not.toBe(expected.default.landHeightsScheme);
+  expect(expected.night.label).not.toBe(expected.default.label);
+
+  const result = await page.evaluate(async groupName => {
     const w = window as any;
-    const groupName = options.labels.groups[0].name;
 
     const before = {
       roadsDom: document.querySelector("#routes > g#roads")?.getAttribute("stroke"),
@@ -249,7 +287,15 @@ test("switching system presets restyles routes/borders/lakes/terrs/label childre
     };
 
     return {before, night, reverted};
-  });
+  }, groupName);
+
+  // the pre-switch state is already the default preset (sanity - not the point of this test,
+  // but confirms "before" is a meaningful baseline to compare against)
+  expect(result.before.roadsDom).toBe(expected.default.roads);
+  expect(result.before.stateBordersDom).toBe(expected.default.stateBorders);
+  expect(result.before.freshwaterDom).toBe(expected.default.freshwater);
+  expect(result.before.landHeightsScheme).toBe(expected.default.landHeightsScheme);
+  expect(result.before.labelDom).toBe(expected.default.label);
 
   // preset switch reaches both the store and the DOM, and they agree
   expect(result.night.roadsStore).toBe(result.night.roadsDom);
@@ -258,23 +304,26 @@ test("switching system presets restyles routes/borders/lakes/terrs/label childre
   expect(result.night.labelStore).toBe(result.night.labelDom);
   expect(result.night.labelStore).toBe(result.night.labelMirror);
 
-  // night genuinely differs from the pre-switch (default) values
-  expect(result.night.roadsDom).not.toBe(result.before.roadsDom);
-  expect(result.night.stateBordersDom).not.toBe(result.before.stateBordersDom);
-  expect(result.night.freshwaterDom).not.toBe(result.before.freshwaterDom);
-  expect(result.night.landHeightsScheme).not.toBe(result.before.landHeightsScheme);
-  expect(result.night.labelDom).not.toBe(result.before.labelDom);
+  // the applied preset is genuinely night.json's values, not merely "different from default" -
+  // this is what catches a wrong-preset-applied bug (e.g. a name-mapping mistake loading
+  // "ancient", or a stale/partially-applied preset) that a differs-from-before-only check misses
+  expect(result.night.roadsDom).toBe(expected.night.roads);
+  expect(result.night.stateBordersDom).toBe(expected.night.stateBorders);
+  expect(result.night.freshwaterDom).toBe(expected.night.freshwater);
+  expect(result.night.landHeightsScheme).toBe(expected.night.landHeightsScheme);
+  expect(result.night.labelDom).toBe(expected.night.label);
 
   // terrs scheme is an options value, not a presentation attr - by design it never lands as a
   // DOM "scheme" attribute (Task 10/C1 removed that mirror); assert it stays absent
   expect(result.night.landHeightsDomSchemeAttr).toBeNull();
 
-  // switching back to default fully restores the baseline - no residue left by night's overrides
-  expect(result.reverted.roadsDom).toBe(result.before.roadsDom);
-  expect(result.reverted.stateBordersDom).toBe(result.before.stateBordersDom);
-  expect(result.reverted.freshwaterDom).toBe(result.before.freshwaterDom);
-  expect(result.reverted.landHeightsScheme).toBe(result.before.landHeightsScheme);
-  expect(result.reverted.labelDom).toBe(result.before.labelDom);
+  // switching back to default fully restores default.json's actual values - no residue left by
+  // night's overrides (pinned to the preset file, not just "equals what it was before")
+  expect(result.reverted.roadsDom).toBe(expected.default.roads);
+  expect(result.reverted.stateBordersDom).toBe(expected.default.stateBorders);
+  expect(result.reverted.freshwaterDom).toBe(expected.default.freshwater);
+  expect(result.reverted.landHeightsScheme).toBe(expected.default.landHeightsScheme);
+  expect(result.reverted.labelDom).toBe(expected.default.label);
 });
 
 // Task 8's editor group navigation: styleElementSelect + styleGroupSelect drive
@@ -340,7 +389,8 @@ test("editor group navigation targets the selected child on both object and DOM,
 
     const labelsTarget = w.styleTargetFromUI();
     const labelsGroupSelectValue = groupSelect.value;
-    const labelsValue = "0.55";
+    // randomized (not a fixed literal) like the other 7 writes above, to rule out a no-op pass
+    const labelsValue = (0.1 + Math.random() * 0.89).toFixed(4);
     w.setPresentation(labelsTarget, "opacity", labelsValue);
     const labelsNode = w.getStyleNode(labelsTarget.layerId, ...(labelsTarget.childIds ?? []));
 
