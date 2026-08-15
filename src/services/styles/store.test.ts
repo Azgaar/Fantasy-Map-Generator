@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { LAYER_IDS } from "./schema";
-import { deepMerge, ensureStyleShape, getLayerOptions, getStyleNode, setOptions, setPresentation } from "./store";
+import {
+  deepMerge,
+  ensureStyleShape,
+  getLayerOptions,
+  getStyleNode,
+  getStyleNodeIfSet,
+  setOptions,
+  setPresentation
+} from "./store";
 
 beforeEach(() => {
   (globalThis as any).style = ensureStyleShape({ layers: {} });
@@ -15,6 +23,18 @@ describe("style store", () => {
     const node = getStyleNode("routes", "roads");
     node.presentation = { stroke: "#000" };
     expect(style.layers.routes?.children?.roads.presentation?.stroke).toBe("#000");
+  });
+
+  // a read that materializes an empty child is indistinguishable from a styled one to the
+  // fallback paths (createIconGroups' default-group fallback, applyStylePreset's uncovered
+  // label groups), so an uncovered group silently loses its styling - submap-tool regression
+  test("getStyleNodeIfSet reads without materializing the child", () => {
+    expect(getStyleNodeIfSet("burgIcons", "hamlet")).toBeUndefined();
+    expect(style.layers.burgIcons?.children).toBeUndefined();
+
+    getStyleNode("burgIcons", "hamlet").options = { size: 0.5 };
+    expect(getStyleNodeIfSet("burgIcons", "hamlet")?.options).toEqual({ size: 0.5 });
+    expect(getStyleNodeIfSet("burgIcons", "hamlet", "deeper")).toBeUndefined();
   });
 
   test("setPresentation writes through to the object", () => {

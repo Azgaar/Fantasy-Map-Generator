@@ -215,6 +215,65 @@ test("burg icon and anchor groups are created from style.layers", async ({page})
   expect(result.burgIcons.every(g => g.expectedFill && g.expectedFontSize)).toBe(true);
 });
 
+// Task 12 fix-round regression (I1/I2): submap-tool used to read the burg icon / label group
+// nodes with getStyleNode, which MATERIALIZES an empty child. createIconGroups then saw a
+// truthy-but-empty node for a group the preset does not cover, skipped its default-group
+// fallback and created the group with no styling at all (fill/data-icon/stroke-width all null);
+// the same empty node would hide a label group from applyStylePreset's uncovered-group pass.
+// Drives the real submap path (Controllers.SubmapTool -> generateSubmap -> rescaleBurgStyles).
+test("a submap keeps an uncovered burg group styled and materializes no empty style nodes", async ({page}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  const result = await page.evaluate(async () => {
+    const w = window as any;
+    // "hamlet" is covered by the default preset - dropping its node is how a custom burg group
+    // (or a preset that omits the group) looks to the renderer
+    const UNCOVERED = "hamlet";
+    const iconChildren = (style as any).layers.burgIcons.children;
+    const fallback = {...iconChildren.town.presentation};
+    delete iconChildren[UNCOVERED];
+
+    // the label half of rescaleBurgStyles only visits the groups the map's burgs actually use,
+    // so pick one of those - the same expression the tool itself derives them with
+    const burg = (window as any).pack.burgs.find((b: any) => b.i && !b.removed);
+    const labelGroup: string = burg?.label?.group || burg?.group || "burg";
+    delete (style as any).layers.labels.children[labelGroup];
+
+    await w.Controllers.SubmapTool.open();
+    (document.getElementById("submapRescaleBurgStyles") as HTMLInputElement).checked = true;
+    const buttons = document.getElementById("submapTool")?.closest(".ui-dialog")?.querySelectorAll("button");
+    const submit = Array.from(buttons ?? []).find(button => button.textContent?.trim() === "Submap");
+    submit?.click(); // generateSubmap runs synchronously, drawLayers included
+
+    const group = document.querySelector(`#burgIcons > g#${UNCOVERED}`);
+    return {
+      fallback,
+      submitFound: Boolean(submit),
+      groupExists: Boolean(group),
+      fill: group?.getAttribute("fill") ?? null,
+      icon: group?.getAttribute("data-icon") ?? null,
+      strokeWidth: group?.getAttribute("stroke-width") ?? null,
+      labelGroup,
+      iconNodeMaterialized: UNCOVERED in (style as any).layers.burgIcons.children,
+      labelNodeMaterialized: labelGroup in ((style as any).layers.labels.children ?? {})
+    };
+  });
+
+  expect(result.submitFound).toBe(true);
+  expect(result.groupExists).toBe(true);
+  // the reads must leave the store alone, so the group stays "uncovered" for the fallback paths
+  expect(result.iconNodeMaterialized).toBe(false);
+  expect(result.labelNodeMaterialized).toBe(false);
+  // and the group renders with the default group's look rather than bare
+  expect(result.fallback.fill).toBeTruthy();
+  expect(result.fill).toBe(result.fallback.fill);
+  expect(result.icon).toBe(result.fallback["data-icon"]);
+  expect(result.strokeWidth).toBe(String(result.fallback["stroke-width"]));
+});
+
 // Task 10 fix-round regression (C1): openCreateHeightmapSchemeButton's click handler read
 // getEl().attr("scheme") - always null after the terrs migration stripped the DOM attribute -
 // which threw inside scheme.startsWith(...) before the dialog ever rendered. Simulates the click

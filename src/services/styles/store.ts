@@ -35,6 +35,15 @@ export function getStyleNode(layerId: LayerId, ...childIds: string[]): StyleNode
   return node;
 }
 
+// non-materializing counterpart of getStyleNode: a plain read must never create the child, since
+// an empty-but-present node is indistinguishable from a styled one to the fallback paths
+// (createIconGroups' default-group fallback, applyStylePreset's uncovered-label-group pass)
+export function getStyleNodeIfSet(layerId: LayerId, ...childIds: string[]): StyleNode | undefined {
+  let node: StyleNode | undefined = style.layers[layerId];
+  for (const childId of childIds) node = node?.children?.[childId];
+  return node;
+}
+
 export function getLayerOptions<T extends object>(layerId: LayerId, ...childIds: string[]): T {
   return (getStyleNode(layerId, ...childIds).options ?? {}) as T;
 }

@@ -1,6 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Resample } from "@/generators/resample";
-import { getStyleNode, setOptions } from "@/services/styles/store";
+import { getStyleNodeIfSet, setOptions } from "@/services/styles/store";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -111,10 +111,17 @@ function recalculateMapSize(x0: number, y0: number): void {
   ensureEl<HTMLInputElement>("populationRateInput").value = String(populationRate);
 }
 
+// a group the style doesn't cover has no node of its own and must keep it that way: it renders
+// with the default group's style (icons) or the built-in fallback (labels), and materializing an
+// empty node here would win over both. Rescaling the covered groups covers it too, since that is
+// where its style comes from
 function rescaleBurgStyles(scale: number): void {
   for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
-    const size = Number(getStyleNode("burgIcons", group.id).options?.size) || 1;
-    setOptions({ layerId: "burgIcons", childIds: [group.id] }, { size: rn(minmax(size * scale, 0.2, 10), 2) });
+    const size = getStyleNodeIfSet("burgIcons", group.id)?.options?.size;
+    if (size !== undefined) {
+      const rescaled = rn(minmax((Number(size) || 1) * scale, 0.2, 10), 2);
+      setOptions({ layerId: "burgIcons", childIds: [group.id] }, { size: rescaled });
+    }
     group.remove(); // drawBurgIcons recreates the groups from the stored style
   }
 
@@ -123,7 +130,7 @@ function rescaleBurgStyles(scale: number): void {
   );
 
   for (const groupName of burgLabelGroups) {
-    const groupStyle = getStyleNode("labels", groupName).presentation;
+    const groupStyle = getStyleNodeIfSet("labels", groupName)?.presentation;
     if (!groupStyle) continue;
 
     const size = Number.parseFloat(String(groupStyle["font-size"])) || 0;

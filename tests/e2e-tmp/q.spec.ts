@@ -145,7 +145,7 @@ test("Q3: preset without font-size and with a legacy absolute size", async ({pag
       return {
         groupAttr: el?.getAttribute("font-size") ?? null,
         computedPx: text ? Number.parseFloat(getComputedStyle(text).fontSize) : null,
-        stored: style.labels.groups[name]?.["font-size"] ?? null
+        stored: style.layers.labels?.children?.[name]?.presentation?.["font-size"] ?? null
       };
     };
     const baseline = measure("state");
