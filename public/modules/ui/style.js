@@ -1265,7 +1265,7 @@ styleVignettePreset.addEventListener("change", function () {
   const vignetteAttrs = attributes["#vignette"];
   const vignette = ensureEl("vignette");
   if (vignette && vignetteAttrs) {
-    for (const attr in vignetteAttrs) vignette.setAttribute(attr, vignetteAttrs[attr]);
+    for (const attr in vignetteAttrs) setPresentation({layerId: "vignette"}, attr, vignetteAttrs[attr]);
   }
 
   const rectAttrs = attributes["#vignette-rect"];
@@ -1319,15 +1319,31 @@ styleScaleBar.addEventListener("input", function (event) {
   const { id, value } = event.target;
 
   if (id === "styleScaleBarSize") setOptions({layerId: "scaleBar"}, {barSize: +value});
-  else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
-  else if (id === "styleScaleBarPositionX") setOptions({layerId: "scaleBar"}, {x: +value});
+  else if (id === "styleScaleBarFontSize") {
+    // font-size stays a direct DOM write too - it's inherited by CSS, nothing reads it as JS -
+    // but it must also go through setOptions, or the next preset apply reverts it: LAYER_OPTION_
+    // ATTRIBUTES.scaleBar still projects options.fontSize onto #scaleBar's font-size attribute
+    setOptions({layerId: "scaleBar"}, {fontSize: value});
+    scaleBar.attr("font-size", value);
+  } else if (id === "styleScaleBarPositionX") setOptions({layerId: "scaleBar"}, {x: +value});
   else if (id === "styleScaleBarPositionY") setOptions({layerId: "scaleBar"}, {y: +value});
   else if (id === "styleScaleBarLabel") setOptions({layerId: "scaleBar"}, {label: value});
-  else if (id === "styleScaleBarBackgroundOpacity") scaleBarBack.attr("opacity", value);
-  else if (id === "styleScaleBarBackgroundFill") scaleBarBack.attr("fill", value);
-  else if (id === "styleScaleBarBackgroundStroke") scaleBarBack.attr("stroke", value);
-  else if (id === "styleScaleBarBackgroundStrokeWidth") scaleBarBack.attr("stroke-width", value);
-  else if (id === "styleScaleBarBackgroundFilter") scaleBarBack.attr("filter", value);
+  else if (id === "styleScaleBarBackgroundOpacity") {
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, opacity: value}});
+    scaleBarBack.attr("opacity", value);
+  } else if (id === "styleScaleBarBackgroundFill") {
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, fill: value}});
+    scaleBarBack.attr("fill", value);
+  } else if (id === "styleScaleBarBackgroundStroke") {
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, stroke: value}});
+    scaleBarBack.attr("stroke", value);
+  } else if (id === "styleScaleBarBackgroundStrokeWidth") {
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, strokeWidth: value}});
+    scaleBarBack.attr("stroke-width", value);
+  } else if (id === "styleScaleBarBackgroundFilter") {
+    setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, filter: value}});
+    scaleBarBack.attr("filter", value);
+  }
   else if (id === "styleScaleBarBackgroundPaddingTop")
     setOptions({layerId: "scaleBar"}, {back: {...getLayerOptions("scaleBar").back, top: +value}});
   else if (id === "styleScaleBarBackgroundPaddingRight")
