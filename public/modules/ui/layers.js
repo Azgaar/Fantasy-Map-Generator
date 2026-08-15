@@ -607,14 +607,15 @@ function toggleGrid(event) {
 
 function drawGrid() {
   gridOverlay.selectAll("*").remove();
-  const pattern = "#pattern_" + (gridOverlay.attr("type") || "pointyHex");
+  const gridOptions = window.getLayerOptions("gridOverlay");
+  const pattern = "#pattern_" + (gridOptions.type || "pointyHex");
   const stroke = gridOverlay.attr("stroke") || "#808080";
   const width = gridOverlay.attr("stroke-width") || 0.5;
   const dasharray = gridOverlay.attr("stroke-dasharray") || null;
   const linecap = gridOverlay.attr("stroke-linecap") || null;
-  const scale = gridOverlay.attr("scale") || 1;
-  const dx = gridOverlay.attr("dx") || 0;
-  const dy = gridOverlay.attr("dy") || 0;
+  const scale = gridOptions.scale || 1;
+  const dx = gridOptions.dx || 0;
+  const dy = gridOptions.dy || 0;
   const tr = `scale(${scale}) translate(${dx} ${dy})`;
 
   const maxWidth = Math.max(+mapWidthInput.value, graphWidth);

@@ -258,10 +258,11 @@ function selectStyleElement() {
 
   if (styleElement === "gridOverlay") {
     styleGrid.style.display = "block";
-    styleGridType.value = el.attr("type");
-    styleGridScale.value = el.attr("scale") || 1;
-    styleGridShiftX.value = el.attr("dx") || 0;
-    styleGridShiftY.value = el.attr("dy") || 0;
+    const gridOptions = getLayerOptions("gridOverlay");
+    styleGridType.value = gridOptions.type;
+    styleGridScale.value = gridOptions.scale || 1;
+    styleGridShiftX.value = gridOptions.dx || 0;
+    styleGridShiftY.value = gridOptions.dy || 0;
     calculateFriendlyGridSize();
   }
 
@@ -664,13 +665,13 @@ styleClippingInput.addEventListener("change", function () {
 });
 
 styleGridType.addEventListener("change", function () {
-  getEl().attr("type", this.value);
+  setOptions({layerId: "gridOverlay"}, {type: this.value});
   if (layerIsOn("toggleGrid")) drawGrid();
   calculateFriendlyGridSize();
 });
 
 styleGridScale.addEventListener("input", function () {
-  getEl().attr("scale", this.value);
+  setOptions({layerId: "gridOverlay"}, {scale: +this.value});
   if (layerIsOn("toggleGrid")) drawGrid();
   calculateFriendlyGridSize();
 });
@@ -682,12 +683,12 @@ function calculateFriendlyGridSize() {
 }
 
 styleGridShiftX.addEventListener("input", function () {
-  getEl().attr("dx", this.value);
+  setOptions({layerId: "gridOverlay"}, {dx: +this.value});
   if (layerIsOn("toggleGrid")) drawGrid();
 });
 
 styleGridShiftY.addEventListener("input", function () {
-  getEl().attr("dy", this.value);
+  setOptions({layerId: "gridOverlay"}, {dy: +this.value});
   if (layerIsOn("toggleGrid")) drawGrid();
 });
 

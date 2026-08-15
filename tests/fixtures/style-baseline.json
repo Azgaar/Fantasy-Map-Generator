@@ -94,11 +94,7 @@
   "#gridOverlay": {
     "opacity": "0.8",
     "stroke": "#808080",
-    "stroke-width": "0.5",
-    "type": "pointyHex",
-    "scale": "1",
-    "dx": "0",
-    "dy": "0"
+    "stroke-width": "0.5"
   },
   "#ice": {
     "opacity": "0.3",

@@ -142,7 +142,6 @@ function applyTexturePresetOptions() {
 // scaleBar's fontSize is inherited CSS sizing with no JS reader either - mirror the values back
 // under their pre-migration names, matching FLAT_RENAMES in src/services/styles/legacy.ts
 const LAYER_OPTION_ATTRIBUTES = {
-  gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
   markers: {rescale: "rescale"},
   temperature: {fontSize: "data-size"},
   // boxSize is dropped: draw-military.ts/regiment-editor.ts read it via getLayerOptions now.
