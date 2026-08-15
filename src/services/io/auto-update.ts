@@ -11,7 +11,6 @@ import { drawFeatures } from "@/renderers/draw-features";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
-import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { drawTexture } from "@/renderers/draw-texture";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { Layers } from "@/renderers/layers/layers";
@@ -877,7 +876,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     // v1.96.00 moved scaleBar options from units editor to style
     select("#scaleBar").remove();
-
     scaleBar = svg
       .insert("g", "#viewbox + *")
       .attr("id", "scaleBar")
@@ -888,7 +886,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("data-x", 99)
       .attr("data-y", 99)
       .attr("data-label", "");
-
     select("#scaleBar")
       .append("rect")
       .attr("id", "scaleBarBack")
@@ -901,11 +898,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("data-right", 15)
       .attr("data-bottom", 15)
       .attr("data-left", 10);
-
-    drawScaleBar(select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], scale);
-    fitScaleBar(select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], svgWidth, svgHeight);
-
-    if (!Layers.isOn("scaleBar")) select("#scaleBar").style("display", "none");
 
     // v1.96.00 changed coloring approach for regiments
     armies.selectAll<SVGGElement, unknown>(":scope > g").each(function () {

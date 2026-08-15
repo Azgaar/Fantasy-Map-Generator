@@ -23,7 +23,7 @@ The canonical "build a world from scratch" routine lives in [`public/main.js`](.
 | 13  | **Naming polish**                    | `Rivers.specify`, `Lakes.defineNames`                                                                       | river/lake names                                                                                   |
 | 14  | **Economy**                          | `Markets.generate`, `Production.produce`, `States.collectTaxes`                                             | `pack.markets`, `cells.market`, `pack.deals`, `burg.production`, `burg.treasury`, `state.treasury` |
 | 15  | **Military & overlays**              | `Military.generate`, `Markers.generate`, `Zones.generate`                                                   | regiments, markers, zones                                                                          |
-| 16  | **Finalise**                         | `drawScaleBar`, `Names.getMapName`, `showStatistics`                                                        | scale bar, map name, stats                                                                         |
+| 16  | **Finalise**                         | `Names.getMapName`, `showStatistics`                                                                        | scale bar, map name, stats                                                                         |
 
 Two ordering constraints matter for replication:
 

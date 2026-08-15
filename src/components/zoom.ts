@@ -1,6 +1,5 @@
 import type { ZoomBehavior } from "d3";
 import { redrawEmblemGroup } from "@/renderers/draw-emblems";
-import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -62,8 +61,7 @@ function handleZoomPerFrame(): void {
   ViewportLayers.schedule();
 
   if (didScaleChange) {
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
+    Layers.draw("scaleBar");
 
     if (options.labels.resizeOnZoom) {
       const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);

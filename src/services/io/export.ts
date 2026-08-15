@@ -1,7 +1,7 @@
 import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
-import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
@@ -269,10 +269,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     clone.select("#viewbox").attr("transform", null);
     ViewportLayers.renderTo(cloneEl);
 
-    if (!noScaleBar) {
-      drawScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], 1);
-      fitScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], graphWidth, graphHeight);
-    }
+    if (!noScaleBar) drawScaleBar(cloneEl, 1, graphWidth, graphHeight);
   }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;

@@ -219,7 +219,7 @@ function fitMapToScreen() {
     ])
     .scaleExtent([zoomMin, zoomMax]);
 
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
+  Layers.draw("scaleBar");
   if (window.fitLegendBox) fitLegendBox();
 }
 

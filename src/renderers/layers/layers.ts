@@ -25,7 +25,7 @@ import { drawRelief, removeRelief } from "../draw-relief-icons";
 import { drawReligions } from "../draw-religions";
 import { drawRivers } from "../draw-rivers";
 import { drawRoutes } from "../draw-routes";
-import { drawScaleBar, fitScaleBar } from "../draw-scalebar";
+import { drawScaleBar, removeScaleBar } from "../draw-scalebar";
 import { drawStates } from "../draw-states";
 import { drawTemperature } from "../draw-temperature";
 import { drawTexture } from "../draw-texture";
@@ -154,7 +154,7 @@ export class LayersRegistry<Id extends string = string> {
     this.emit();
   }
 
-  /** draw the listed layers that are on, always in layer order */
+  /** draw the listed layers that are ON, always in layer order */
   draw(...ids: Id[]): void {
     for (const layer of this.layers) {
       if (ids.includes(layer.id) && this.active.has(layer.id)) layer.params.draw?.(layer);
@@ -406,17 +406,7 @@ const mapLayers = [
 
   new Layer({ id: "debug", element: "debug", parent: "viewbox", permanent: true, keepContent: true }),
 
-  new Layer({
-    id: "scaleBar",
-    element: "scaleBar",
-    parent: "map",
-    keepContent: true,
-    draw: layer => {
-      const scaleBar = select<SVGGElement, unknown>(layer.getEl());
-      drawScaleBar(scaleBar, scale);
-      fitScaleBar(scaleBar, svgWidth, svgHeight);
-    }
-  }),
+  new Layer({ id: "scaleBar", element: "scaleBar", parent: "map", draw: () => drawScaleBar(), erase: removeScaleBar }),
 
   new Layer({
     id: "vignette",

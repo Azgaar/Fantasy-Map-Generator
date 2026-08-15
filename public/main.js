@@ -549,8 +549,6 @@ async function generate(options) {
     Zones.generate();
 
     AddedLabels.initiate();
-
-    drawScaleBar(scaleBar, scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);

@@ -1220,22 +1220,7 @@ styleScaleBar.addEventListener("input", function (event) {
   else if (id === "styleScaleBarBackgroundPaddingRight") scaleBarBack.attr("data-right", value);
   else if (id === "styleScaleBarBackgroundPaddingBottom") scaleBarBack.attr("data-bottom", value);
   else if (id === "styleScaleBarBackgroundPaddingLeft") scaleBarBack.attr("data-left", value);
-
-  if (
-    [
-      "styleScaleBarSize",
-      "styleScaleBarPositionX",
-      "styleScaleBarPositionY",
-      "styleScaleBarLabel",
-      "styleScaleBarBackgroundPaddingLeft",
-      "styleScaleBarBackgroundPaddingTop",
-      "styleScaleBarBackgroundPaddingRight",
-      "styleScaleBarBackgroundPaddingBottom"
-    ].includes(id)
-  ) {
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
-  }
+  Layers.draw("scaleBar");
 });
 
 // GLOBAL FILTERS
