@@ -16,7 +16,7 @@ const DEFAULT_PRESETS: Record<string, string[]> = {
   heightmap: ["heightmap", "lakes", "rivers", "vignette"],
   physical: ["coordinates", "heightmap", "ice", "lakes", "rivers", "scaleBar", "vignette"],
   poi: ["borders", "burgIcons", "heightmap", "ice", "lakes", "markers", "rivers", "routes", "scaleBar", "vignette"],
-  goods: ["borders", "burgIcons", "cells", "goods","lakes","markets","rivers","routes","scaleBar","trade","vignette"], // prettier-ignore
+  goods: ["borders","burgIcons","cells","goods","lakes","markets","rivers","routes","scaleBar","trade","vignette"], // prettier-ignore
   trade: ["borders", "burgIcons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
   military: ["borders","burgIcons","labels","lakes","military","rivers","routes","scaleBar","states","vignette"], // prettier-ignore
   emblems: ["borders", "burgIcons", "emblems", "ice", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
