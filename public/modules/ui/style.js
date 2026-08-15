@@ -254,7 +254,7 @@ function selectStyleElement() {
 
   if (styleElement === "markers") {
     styleMarkers.style.display = "block";
-    styleRescaleMarkers.checked = +markers.attr("rescale");
+    styleRescaleMarkers.checked = +getLayerOptions("markers").rescale;
   }
 
   if (styleElement === "gridOverlay") {
@@ -694,7 +694,7 @@ styleGridShiftY.addEventListener("input", function () {
 });
 
 styleRescaleMarkers.addEventListener("change", function () {
-  markers.attr("rescale", +this.checked);
+  setOptions({layerId: "markers"}, {rescale: +this.checked});
   invokeActiveZooming();
 });
 

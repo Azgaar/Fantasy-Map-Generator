@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { getLayerOptions } from "../services/styles/store";
 import { rn } from "../utils";
 
 interface Marker {
@@ -87,7 +88,7 @@ const setMarkersFilter = (ids: number[] | null): void => {
 const markersRenderer = (): void => {
   TIME && console.time("drawMarkers");
 
-  const rescale = +select("#markers").attr("rescale");
+  const rescale = getLayerOptions<{ rescale?: number }>("markers").rescale ?? 0;
   const pinned = +select("#markers").attr("pinned");
 
   let markersData: Marker[] = pinned

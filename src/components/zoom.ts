@@ -1,6 +1,7 @@
 import type { ZoomBehavior } from "d3";
 import { renderGroupCOAs } from "@/renderers/draw-emblems";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { getLayerOptions } from "@/services/styles/store";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
@@ -120,7 +121,7 @@ function invokeActiveZooming(): void {
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  if (Number(markers.attr("rescale"))) {
+  if (getLayerOptions<{ rescale?: number }>("markers").rescale) {
     for (const marker of pack.markers ?? []) {
       const { i, x, y, size = 30, hidden } = marker;
       const element = hidden ? null : document.getElementById(`marker${i}`);

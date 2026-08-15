@@ -159,9 +159,7 @@
     "font-size": "13",
     "font-family": "Almendra SC"
   },
-  "#markers": {
-    "rescale": "1"
-  },
+  "#markers": {},
   "#markets": {
     "opacity": "1",
     "fill-opacity": "0.03",
