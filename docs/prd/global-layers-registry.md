@@ -248,157 +248,20 @@ Decisions:
 One array in the same file, ordered. `LayerId` falls out of it, and `Layers.init()` is called from the
 main routine (`public/main.js`), right before the legacy globals select the groups it creates.
 
-```ts
-// src/renderers/layers/layers.ts — this order is z-order, init order and draw order
-const mapLayers = [
-  new Layer({
-    id: "ocean",
-    element: "ocean",
-    parent: "viewbox",
-    children: ["oceanLayers", "oceanPattern"],
-    permanent: true,
-    keepContent: true
-  }),
-
-  new Layer({
-    id: "landmass",
-    element: "landmass",
-    parent: "viewbox",
-    permanent: true,
-    keepContent: true,
-    draw: drawFeatures
-  }),
-
-  new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
-
-  // …one entry per layer, technical and toggleable alike
-
-  new Layer({ id: "fogging", element: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, keepContent: true }),
-
-  new Layer({
-    id: "scaleBar",
-    element: "scaleBar",
-    parent: "map",
-    keepContent: true,
-    draw: layer => drawScaleBar(select(layer.getEl()), scale)
-  }),
-
-  new Layer({
-    id: "vignette",
-    element: "vignette",
-    parent: "map",
-    attrs: { mask: "url(#vignette-mask)" },
-    keepContent: true
-  }),
-
-  new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true })
-];
-
-export type LayerId = (typeof mapLayers)[number]["id"];
-```
-
 Nothing else is exported from the list: with ids as the vocabulary, per-layer constants would only be
 a second way to say the same thing.
 
 This replaces the 55-line `viewbox.append("g")` block in `public/main.js:36-90`.
 
-### Layer inventory
-
-In registration order. "Button" marks layers that appear in the Layers tab; the rest are technical.
-
-| id            | element          | parent  | button | erase strategy          |
-| ------------- | ---------------- | ------- | ------ | ----------------------- |
-| ocean         | `ocean`          | viewbox | —      | —                       |
-| landmass      | `landmass`       | viewbox | —      | —                       |
-| texture       | `texture`        | viewbox | yes    | remove `image`          |
-| heightmap     | `terrs`          | viewbox | yes    | clear height sub-groups |
-| lakes         | `lakes`          | viewbox | yes    | keep content            |
-| biomes        | `biomes`         | viewbox | yes    | remove paths            |
-| cells         | `cells`          | viewbox | yes    | remove paths            |
-| grid          | `gridOverlay`    | viewbox | yes    | clear                   |
-| coordinates   | `coordinates`    | viewbox | yes    | clear                   |
-| compass       | `compass`        | viewbox | yes    | keep content            |
-| rivers        | `rivers`         | viewbox | yes    | clear                   |
-| relief        | `terrain`        | viewbox | yes    | invalidate scene        |
-| religions     | `relig`          | viewbox | yes    | remove paths            |
-| cultures      | `cults`          | viewbox | yes    | remove paths            |
-| states        | `regions`        | viewbox | yes    | remove paths            |
-| provinces     | `provs`          | viewbox | yes    | clear                   |
-| zones         | `zones`          | viewbox | yes    | clear                   |
-| borders       | `borders`        | viewbox | yes    | remove paths            |
-| routes        | `routes`         | viewbox | yes    | remove paths            |
-| temperature   | `temperature`    | viewbox | yes    | clear                   |
-| coastline     | `coastline`      | viewbox | —      | —                       |
-| ice           | `ice`            | viewbox | yes    | keep content            |
-| goods         | `goods`          | viewbox | yes    | clear sub-groups        |
-| markets       | `markets`        | viewbox | yes    | clear                   |
-| trade         | `tradeAnimation` | viewbox | yes    | `TradeAnimation.stop()` |
-| precipitation | `prec`           | viewbox | yes    | remove circles          |
-| population    | `population`     | viewbox | yes    | clear sub-groups        |
-| emblems       | `emblems`        | viewbox | yes    | keep content            |
-| burgIcons     | `icons`          | viewbox | yes    | remove `circle, use`    |
-| labels        | `labels`         | viewbox | yes    | invalidate scene        |
-| military      | `armies`         | viewbox | yes    | remove groups           |
-| markers       | `markers`        | viewbox | yes    | clear                   |
-| fogging       | `fogging`        | viewbox | —      | —                       |
-| rulers        | `ruler`          | viewbox | yes    | clear                   |
-| debug         | `debug`          | viewbox | —      | —                       |
-| scaleBar      | `scaleBar`       | map     | yes    | keep content            |
-| vignette      | `vignette`       | map     | yes    | keep content            |
-| legend        | `legend`         | map     | —      | —                       |
-
-`landmass` and `coastline` are both filled by `drawFeatures`; only `landmass` carries the `draw` to
-avoid running it twice. Splitting `drawFeatures` is out of scope.
-
 ### Renderers
 
 A classic renderer becomes two plain functions and loses its toggle wrapper entirely:
-
-```ts
-// src/renderers/draw-goods.ts
-export function drawGoods(layer: Layer): void {
-  TIME && console.time("drawGoods");
-  const goods = select(layer.getEl());
-  const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
-  goods.select("#goodsCells").html(buildGoodsCellsContent(visible));
-  goods.select("#goodsIcons").html(buildGoodsIconsContent(visible));
-  goods.select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
-  TIME && console.timeEnd("drawGoods");
-}
-
-export function eraseGoods(layer: Layer): void {
-  SUBGROUPS.forEach(id => void select(layer.getEl()).select(`#${id}`).html(""));
-}
-```
 
 `toggleGoods`, its ctrl+click branch, its `turnButtonOn/Off` calls and its sub-group bootstrapping all
 disappear: toggling belongs to the registry, style editing to the tab, sub-groups to `children`.
 
 A viewport renderer is unchanged in structure — `ViewportLayers` stays exactly as it is today and is
 orthogonal to this registry:
-
-```ts
-// src/renderers/draw-relief-icons.ts
-const scene = new Scene<ReliefSceneIcon>();
-const viewportLayer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
-
-export function drawRelief(): void {
-  if (!pack.relief?.length) Relief.generate();
-  scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
-  viewportLayer.render();
-}
-
-export function eraseRelief(): void {
-  scene.invalidate();
-}
-
-function reconcileRelief(context: ViewportRenderContext): void {
-  const terrain = context.root.querySelector("#terrain");
-  if (!terrain) return;
-  if (!scene.valid || !Layers.isOn("relief")) return void terrain.replaceChildren();
-  // …unchanged
-}
-```
 
 The internal "am I on?" checks that every viewport renderer performs today (`layerIsOn("toggleRelief")`)
 become `Layers.isOn("relief")` — the same check against real state instead of a CSS class.
@@ -408,79 +271,9 @@ become `Layers.isOn("relief")` — the same check against real state instead of 
 The UI table is the _only_ place that knows a layer has a button. Keyed by `LayerId` so it stays
 typo-proof; iterating `Layers.all` keeps the registry authoritative for order.
 
-```ts
-// src/components/layers-tab.ts
-interface LayerButton {
-  label: string; // may contain markup: "Ro<u>u</u>tes"
-  shortcut?: string; // KeyboardEvent.code
-  hint?: string; // shortcut as shown in the tip, defaults to code without the "Key" prefix
-}
-
-export const BUTTONS = new Map<LayerId, LayerButton>([
-  ["texture", { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
-  ["heightmap", { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
-  ["lakes", { label: "Lakes", shortcut: "KeyQ" }],
-  ["grid", { label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)" }],
-  ["routes", { label: "Ro<u>u</u>tes", shortcut: "KeyU" }],
-  ["markets", { label: "Markets" }]
-  // …one row per button; ocean, landmass, coastline, fogging, debug, legend are absent
-]);
-
-export function initLayersTab(): void {
-  const list = ensureEl("mapLayers");
-  render();
-  Layers.subscribe(render);
-
-  list.on("click", event => {
-    const id = (event.target as HTMLElement).closest("li")?.dataset.layer;
-    if (!id || !Layers.has(id)) return;
-    if (isCtrlClick(event)) return editStyle(Layers.get(id).elementId);
-    Layers.toggle(id);
-  });
-
-  $(list).sortable({
-    items: "li",
-    containment: "parent",
-    update: (_, ui) => {
-      const id = ui.item.data("layer");
-      const before = ui.item.next().data("layer");
-      if (Layers.has(id)) Layers.move(id, Layers.has(before) ? before : undefined);
-    }
-  });
-
-  function render(): void {
-    list.replaceChildren(
-      ...Layers.all.flatMap(layer => {
-        const button = BUTTONS.get(layer.id);
-        if (!button) return [];
-        const item = document.createElement("li");
-        item.dataset.layer = layer.id;
-        item.dataset.tip = "Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style";
-        if (button.shortcut) item.dataset.shortcut = button.hint ?? button.shortcut.replace("Key", "");
-        item.innerHTML = button.label;
-        item.classList.toggle("buttonoff", !Layers.isOn(layer.id));
-        return [item];
-      })
-    );
-  }
-}
-```
-
 Other subscribers replace the cross-calls currently buried in `turnButtonOn`/`turnButtonOff`:
 
-```ts
-Layers.subscribe(() => ViewportLayers.renderNow());
-Layers.subscribe(highlightMatchingPreset);
-Layers.subscribe(() => findEl("canvas3d") && Controllers.View3d.update());
-```
-
 Hotkeys read the same table, so a shortcut is declared once:
-
-```ts
-// src/components/hotkeys.ts
-const id = [...BUTTONS].find(([, button]) => button.shortcut === code)?.[0];
-if (id) return Layers.toggle(id);
-```
 
 This deletes 32 `else if` branches and the entire `<li>` block in `src/index.html`.
 
@@ -517,61 +310,6 @@ restoreLayers(mapVersion, data);
 ### Migration
 
 All legacy compatibility lives in `src/services/io/auto-update.ts` and nowhere else.
-
-```ts
-// auto-update.ts
-/** layer id -> pre-1.144 button id, as stored in saved presets */
-export const LEGACY_LAYER_IDS: Record<string, string> = {
-  heightmap: "toggleHeight",
-  grid: "toggleGrid",
-  relief: "toggleRelief",
-  religions: "toggleReligions",
-  cultures: "toggleCultures",
-  states: "toggleStates",
-  provinces: "toggleProvinces",
-  precipitation: "togglePrecipitation",
-  burgIcons: "toggleBurgIcons",
-  military: "toggleMilitary",
-  rulers: "toggleRulers",
-  trade: "toggleTrade",
-  markets: "toggleMarketsLayer" /* …one per layer */
-};
-
-export function restoreLayers(mapVersion: string, data: string[]): void {
-  const isLegacy = compareVersions(mapVersion, "1.144.0").isOlder;
-  if (!isLegacy && data[50]) return void Layers.restore(JSON.parse(data[50]));
-
-  unwrapFogging(); // move mask="url(#fog)" from #fogging-cont onto #fogging, drop the wrapper
-
-  // order: read once from the loaded svg, the only DOM read in the system
-  const positions = new Map(
-    [...ensureEl("map").querySelectorAll("#viewbox > *, #map > g")].map((node, index) => [node.id, index])
-  );
-  const order = [...Layers.all]
-    .sort((a, b) => (positions.get(a.elementId) ?? Infinity) - (positions.get(b.elementId) ?? Infinity))
-    .map(layer => layer.id);
-
-  // active: the pre-1.144 per-layer heuristics, lifted verbatim from load.ts
-  const filled = (selector: string) => Boolean(document.querySelector(selector)?.childNodes.length);
-  const shown = (elementId: string) => findEl(elementId)?.style.display !== "none";
-  const wasActive: Record<string, () => boolean> = {
-    texture: () => filled("#texture image"),
-    heightmap: () => filled("#landHeights"),
-    lakes: () => shown("lakes"),
-    states: () => filled("#statesBody"),
-    borders: () => shown("borders") && filled("#borders path"),
-    relief: () => shown("terrain"),
-    ocean: () => true,
-    landmass: () => true,
-    coastline: () => true,
-    debug: () => true
-    // …one entry per pre-1.144 layer
-  };
-
-  const active = Layers.all.filter(layer => wasActive[layer.id]?.()).map(layer => layer.id);
-  Layers.restore({ order, active });
-}
-```
 
 `LEGACY_LAYER_IDS` is exported as _data_ (not logic) for the one-time localStorage preset remap, which
 is not map-file state and therefore cannot be version-gated inside this function.

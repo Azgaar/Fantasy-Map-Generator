@@ -490,6 +490,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       resolveVersionConflicts(mapVersion!, data);
       restoreLayers(mapVersion!, data);
     }
+
     Goods.sync();
     Markets.sync();
     Routes.sync();

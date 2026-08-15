@@ -190,16 +190,7 @@ function applyStyleWithUiRefresh(style) {
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
-  drawScaleBar(scaleBar, scale);
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
-  if (Layers.isOn("heightmap")) drawHeightmap();
-  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
-  oceanLayers.selectAll("path").remove();
-  OceanLayers();
-  if (Layers.isOn("rulers")) drawMeasurers();
-  drawRelief();
-  if (Layers.isOn("burgIcons")) drawBurgIcons();
-  drawLabels();
+  Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
 
   invokeActiveZooming();
   setPresetRemoveButtonVisibiliy();

@@ -13,6 +13,7 @@ import { drawGoods } from "../draw-goods";
 import { drawGrid } from "../draw-grid";
 import { drawHeightmap } from "../draw-heightmap";
 import { drawIce } from "../draw-ice";
+import { redrawLegend } from "../draw-legend";
 import { drawMarkers } from "../draw-markers";
 import { drawMarkets } from "../draw-markets";
 import { drawMeasurers } from "../draw-measurers";
@@ -24,11 +25,13 @@ import { drawRelief, removeRelief } from "../draw-relief-icons";
 import { drawReligions } from "../draw-religions";
 import { drawRivers } from "../draw-rivers";
 import { drawRoutes } from "../draw-routes";
+import { drawScaleBar, fitScaleBar } from "../draw-scalebar";
 import { drawStates } from "../draw-states";
 import { drawTemperature } from "../draw-temperature";
 import { drawTexture } from "../draw-texture";
 import { drawZones } from "../draw-zones";
 import { drawLabels, removeLabels } from "../labels/labels-renderer";
+import { drawOceanLayers } from "../ocean-layers";
 import { tradeAnimation } from "../trade-animation";
 
 interface LayerParams<Id extends string = string> {
@@ -242,7 +245,8 @@ const mapLayers = [
     parent: "viewbox",
     children: ["oceanLayers", "oceanPattern"],
     permanent: true,
-    keepContent: true
+    keepContent: true,
+    draw: drawOceanLayers
   }),
 
   new Layer({
@@ -407,7 +411,11 @@ const mapLayers = [
     element: "scaleBar",
     parent: "map",
     keepContent: true,
-    draw: layer => drawScaleBar(select(layer.getEl()), scale)
+    draw: layer => {
+      const scaleBar = select<SVGGElement, unknown>(layer.getEl());
+      drawScaleBar(scaleBar, scale);
+      fitScaleBar(scaleBar, svgWidth, svgHeight);
+    }
   }),
 
   new Layer({
@@ -418,7 +426,7 @@ const mapLayers = [
     keepContent: true
   }),
 
-  new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true })
+  new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true, draw: redrawLegend })
 ];
 
 export type LayerId = (typeof mapLayers)[number]["id"];

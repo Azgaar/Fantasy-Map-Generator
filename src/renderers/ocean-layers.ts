@@ -109,4 +109,8 @@ class OceanModule {
   }
 }
 
-window.OceanLayers = () => new OceanModule(select<SVGGElement, unknown>("#oceanLayers")).draw();
+/** (re)draw the ocean depth outlines; clears the previous paths, so it is safe to call repeatedly */
+export const drawOceanLayers = (): void => new OceanModule(select<SVGGElement, unknown>("#oceanLayers")).draw();
+
+// legacy seam: main.js draws the outlines during generation, style.js after an ocean style change
+window.OceanLayers = drawOceanLayers;

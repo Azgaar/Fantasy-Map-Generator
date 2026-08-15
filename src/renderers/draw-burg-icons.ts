@@ -1,10 +1,5 @@
 import { select } from "d3";
 
-declare global {
-  var drawBurgIcons: () => void;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
@@ -81,5 +76,3 @@ function createIconGroups(): void {
     anchorGroup.attr("id", name);
   }
 }
-
-window.drawBurgIcons = drawBurgIcons;
