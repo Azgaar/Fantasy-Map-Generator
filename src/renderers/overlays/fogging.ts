@@ -31,7 +31,5 @@ export function unfog(id?: string): void {
   if (!fogLayer.selectAll("path").size()) Layers.hide("fogging");
 }
 
-export const Fogging = { fog, unfog };
-
-window.fog = fog;
+// legacy seam: main.js unfogs everything on map reset (`fog` has no classic caller)
 window.unfog = unfog;

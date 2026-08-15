@@ -48,7 +48,8 @@ export interface LayersState {
   active: string[];
 }
 
-class Layer<Id extends string = string> {
+/** A layer is a value: an identity and an svg group. On/off state belongs to the registry */
+export class Layer<Id extends string = string> {
   readonly id: Id;
   readonly elementId: string;
   readonly parent: "viewbox" | "map";

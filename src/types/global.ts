@@ -18,11 +18,6 @@ declare global {
    * When the last classic caller of one is gone, delete the entry and its `window.X =` line.
    */
   interface Window {
-    // called by a generator that cannot import a renderer (the generator is the smell, not this)
-    drawBurgIcon: typeof import("../renderers/draw-burg-icons").drawBurgIcon;
-    removeBurgIcon: typeof import("../renderers/draw-burg-icons").removeBurgIcon;
-    redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
-    redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;
     clearMainTip: typeof import("../components/tooltips").clearMainTip;
     showDataTip: typeof import("../components/tooltips").showDataTip;
@@ -35,7 +30,6 @@ declare global {
     redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;
-    fog: typeof import("../renderers/overlays/fogging").fog;
     unfog: typeof import("../renderers/overlays/fogging").unfog;
     showInfo: typeof import("../components/app-info").showInfo;
     applyOption: typeof import("../utils").applyOption;

@@ -2,6 +2,7 @@ import type { ZoomBehavior } from "d3";
 import { redrawEmblemGroup } from "@/renderers/draw-emblems";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { Layers } from "@/renderers/layers/layers";
+import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 

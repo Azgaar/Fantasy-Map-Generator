@@ -19,11 +19,6 @@ interface Marker {
   hidden?: boolean;
 }
 
-declare global {
-  var drawMarkers: () => void;
-  var drawMarker: (marker: Marker, rescale?: number) => string;
-}
-
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
 

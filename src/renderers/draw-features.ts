@@ -4,7 +4,7 @@ import { clipPoly, round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 
 declare global {
-  var drawFeatures: () => void;
+  // vendored lib, loaded as a classic script from public/libs/simplify.js
   var simplify: (points: [number, number][], tolerance: number, highestQuality?: boolean) => [number, number][];
 }
 

@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
+import { drawBurgIcons, removeBurgIcon } from "@/renderers/draw-burg-icons";
 import { drawRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers/layers";
 import type { BurgGroup } from "@/types/burg-groups";
@@ -749,8 +750,7 @@ class BurgModule {
     const newRoute = Routes.connect(cellId as number);
     if (newRoute && Layers.isOn("routes")) drawRoute(newRoute);
 
-    window.drawBurgIcon(burg);
-
+    drawBurgIcons();
     return burgId;
   }
 
@@ -872,9 +872,7 @@ class BurgModule {
       this.defineGroup(burg, populations);
     }
 
-    if (render) {
-      window.drawBurgIcon(burg);
-    }
+    if (render) drawBurgIcons();
   }
 
   remove(burgId: number) {
@@ -893,7 +891,7 @@ class BurgModule {
       delete burg.coa;
     }
 
-    window.removeBurgIcon(burg.i!);
+    removeBurgIcon(burg.i!);
   }
 }
 

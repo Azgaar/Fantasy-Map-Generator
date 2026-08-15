@@ -3,9 +3,8 @@ import type { Regiment } from "../generators/military-generator";
 import { rn } from "../utils";
 
 declare global {
-  var drawMilitary: () => void;
+  // legacy seam: style.js redraws regiments after a style change
   var drawRegiments: (regiments: Regiment[], stateId: number) => void;
-  var armies: import("d3").Selection<SVGGElement, unknown, null, undefined>;
 }
 
 const militaryRenderer = (): void => {

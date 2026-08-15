@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { min } from "d3";
-import { redrawIceberg } from "@/renderers/draw-ice";
+import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
 import { clipPoly, getGridPolygon, getIsolines, lerp, minmax, normalize, P, ra, rand, rn } from "../utils";
 import type { Point } from "./voronoi";
 
@@ -114,7 +114,7 @@ class IceModule {
       const index = pack.ice.indexOf(ice);
       pack.ice.splice(index, 1);
       if (ice.type === "glacier") {
-        window.redrawGlacier(id);
+        redrawGlacier(id);
       } else {
         redrawIceberg(id);
       }
