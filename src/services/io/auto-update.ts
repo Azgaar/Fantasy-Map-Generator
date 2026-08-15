@@ -7,7 +7,6 @@ import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawEmblems } from "@/renderers/draw-emblems";
-import { drawFeatures } from "@/renderers/draw-features";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
@@ -1053,7 +1052,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       // fix lakes with missing group
       if (f?.type === "lake" && !f.group) f.group = "freshwater";
     });
-    drawFeatures();
+    Layers.draw("landmass", "coastline", "lakes");
 
     // some old maps has incorrect "heights" groups
     select("#viewbox").selectAll("#heights").remove();

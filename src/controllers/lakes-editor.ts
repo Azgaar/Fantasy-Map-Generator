@@ -4,7 +4,7 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
-import { getFeaturePath } from "@/renderers/draw-features";
+import { getFeaturePath } from "@/renderers/feature-path";
 import { Layers } from "@/renderers/layers/layers";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";

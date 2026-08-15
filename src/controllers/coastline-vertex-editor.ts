@@ -3,7 +3,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
-import { getFeaturePath } from "@/renderers/draw-features";
+import { getFeaturePath } from "@/renderers/feature-path";
 import { Layers } from "@/renderers/layers/layers";
 import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";

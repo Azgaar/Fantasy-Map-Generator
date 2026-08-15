@@ -107,6 +107,9 @@ function applyStylePreset(presetJson) {
       if (density) style.relief.density = density; // no model change as it would require regeneration
     }
 
+    // the rose is rendered when the compass layer is drawn, but its style is applied even when the layer is off
+    if (selector === "#compass > use") drawCompass();
+
     const el = labelGroup
       ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
       : document.querySelector(selector);

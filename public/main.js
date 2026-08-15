@@ -32,20 +32,6 @@ if (PRODUCTION && "serviceWorker" in navigator) {
 
 Layers.init(); // create the svg layer groups
 
-// compass
-d3.select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
-
-// fogging
-d3.select("#fogging").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-d3.select("#fogging")
-  .append("rect")
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("width", "100%")
-  .attr("height", "100%")
-  .attr("fill", "#e8f0f6")
-  .attr("filter", "url(#splotch)");
-
 // assign events separately as not a viewbox child
 d3.select("#scaleBar")
   .on("mousemove", () => tip("Click to open Units Editor"))
@@ -113,7 +99,6 @@ var graphHeight = +mapHeightInput.value;
 let svgWidth = graphWidth;
 let svgHeight = graphHeight;
 
-d3.select("#landmass").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 d3.select("#oceanPattern")
   .append("rect")
   .attr("fill", "url(#oceanic)")

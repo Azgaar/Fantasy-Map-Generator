@@ -175,14 +175,14 @@ function renderDialog(): void {
       if (e.target !== e.currentTarget) return;
       defaultCoastSettings[key] = slider.valueAsNumber;
       updatePreviews();
-      Layers.draw("landmass");
+      Layers.draw("landmass", "coastline", "lakes");
     });
 
     resetBtn.addEventListener("click", () => {
       (defaultCoastSettings[key] as number) = defaultVal;
       slider.value = String(defaultVal);
       updatePreviews();
-      Layers.draw("landmass");
+      Layers.draw("landmass", "coastline", "lakes");
     });
   }
 
@@ -208,7 +208,7 @@ function renderDialog(): void {
     defaultCoastSettings.enabled = enabledCb.checked;
     syncToggle();
     updatePreviews();
-    Layers.draw("landmass");
+    Layers.draw("landmass", "coastline", "lakes");
   });
 
   // Preset buttons
@@ -224,7 +224,7 @@ function renderDialog(): void {
         slider.value = String(val);
       }
       updatePreviews();
-      Layers.draw("landmass");
+      Layers.draw("landmass", "coastline", "lakes");
     });
   }
 }

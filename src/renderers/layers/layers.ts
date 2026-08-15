@@ -4,14 +4,18 @@ import { drawBiomes } from "../draw-biomes";
 import { drawBorders } from "../draw-borders";
 import { drawBurgIcons } from "../draw-burg-icons";
 import { drawCells } from "../draw-cells";
+import { drawCoastline } from "../draw-coastline";
+import { drawCompass } from "../draw-compass";
 import { drawCoordinates } from "../draw-coordinates";
 import { drawCultures } from "../draw-cultures";
 import { drawEmblems } from "../draw-emblems";
-import { drawFeatures } from "../draw-features";
+import { drawFogging } from "../draw-fogging";
 import { drawGoods } from "../draw-goods";
 import { drawGrid } from "../draw-grid";
 import { drawHeightmap } from "../draw-heightmap";
 import { drawIce } from "../draw-ice";
+import { drawLakes } from "../draw-lakes";
+import { drawLandmass } from "../draw-landmass";
 import { redrawLegend } from "../draw-legend";
 import { drawMarkers } from "../draw-markers";
 import { drawMarkets } from "../draw-markets";
@@ -28,6 +32,7 @@ import { drawScaleBar, removeScaleBar } from "../draw-scalebar";
 import { drawStates } from "../draw-states";
 import { drawTemperature } from "../draw-temperature";
 import { drawTexture } from "../draw-texture";
+import { drawVignette } from "../draw-vignette";
 import { drawZones } from "../draw-zones";
 import { drawLabels, removeLabels } from "../labels/labels-renderer";
 import { drawOceanLayers } from "../ocean-layers";
@@ -254,7 +259,7 @@ const mapLayers = [
     parent: "viewbox",
     permanent: true,
     keepContent: true,
-    draw: drawFeatures
+    draw: drawLandmass
   }),
 
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
@@ -272,7 +277,8 @@ const mapLayers = [
     element: "lakes",
     parent: "viewbox",
     children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
-    keepContent: true
+    keepContent: true,
+    draw: drawLakes
   }),
 
   new Layer({ id: "biomes", element: "biomes", parent: "viewbox", draw: drawBiomes }),
@@ -283,7 +289,7 @@ const mapLayers = [
 
   new Layer({ id: "coordinates", element: "coordinates", parent: "viewbox", draw: drawCoordinates }),
 
-  new Layer({ id: "compass", element: "compass", parent: "viewbox", keepContent: true }),
+  new Layer({ id: "compass", element: "compass", parent: "viewbox", keepContent: true, draw: drawCompass }),
 
   new Layer({ id: "rivers", element: "rivers", parent: "viewbox", draw: drawRivers }),
 
@@ -329,7 +335,8 @@ const mapLayers = [
     parent: "viewbox",
     children: ["sea_island", "lake_island"],
     permanent: true,
-    keepContent: true
+    keepContent: true,
+    draw: drawCoastline
   }),
 
   new Layer({ id: "ice", element: "ice", parent: "viewbox", draw: drawIce }),
@@ -398,7 +405,8 @@ const mapLayers = [
     element: "fogging",
     parent: "viewbox",
     attrs: { mask: "url(#fog)" },
-    keepContent: true
+    keepContent: true,
+    draw: drawFogging
   }),
 
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
@@ -412,7 +420,8 @@ const mapLayers = [
     element: "vignette",
     parent: "map",
     attrs: { mask: "url(#vignette-mask)" },
-    keepContent: true
+    keepContent: true,
+    draw: drawVignette
   }),
 
   new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true, draw: redrawLegend })

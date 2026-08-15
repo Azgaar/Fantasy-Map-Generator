@@ -1,7 +1,7 @@
 // GPU erosion-detail bake, a noise-based erosion appearance filter for the 3D view
 
 import type * as THREEType from "three";
-import { getFeaturePath } from "./draw-features";
+import { getFeaturePath } from "./feature-path";
 
 export type BakeParams = {
   strength: number;

@@ -460,7 +460,7 @@ function finalizeHeightmap(): void {
   else if (mode === "risk") restoreRiskedData();
 
   // restore initial layers
-  Layers.draw("landmass");
+  Layers.draw("landmass", "coastline", "lakes");
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
   Layers.set(storedLayers);
