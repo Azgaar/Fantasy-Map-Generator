@@ -111,10 +111,8 @@ function recalculateMapSize(x0: number, y0: number): void {
   ensureEl<HTMLInputElement>("populationRateInput").value = String(populationRate);
 }
 
-// a group the style doesn't cover has no node of its own and must keep it that way: it renders
-// with the default group's style (icons) or the built-in fallback (labels), and materializing an
-// empty node here would win over both. Rescaling the covered groups covers it too, since that is
-// where its style comes from
+// a group the style doesn't cover must keep having no node: it renders with the default group's
+// style, and an empty node materialized here would win over that fallback
 function rescaleBurgStyles(scale: number): void {
   for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
     const size = getStyleNodeIfSet("burgIcons", group.id)?.options?.size;

@@ -1563,11 +1563,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
   }
 }
 
-// v1.140-v1.142 saved the style as {layers, labels: {groups}, burgIcons, anchors, relief}: the
-// four legacy bags held attribute names keyed by group name, read directly by the renderers.
-// They are now regular style.layers nodes (presentation + options), so convert what data[48]
-// carried before the svg harvest runs - the bags are more reliable than the live svg, which is
-// empty for layers the old map had turned off
+// v1.140-v1.142 saved the style as {layers, labels: {groups}, burgIcons, anchors, relief}; convert
+// those bags before the svg harvest, as they also cover layers the old map had turned off
 function rehomeLegacyStyleBags(styleJson?: string): void {
   if (!styleJson) return;
 

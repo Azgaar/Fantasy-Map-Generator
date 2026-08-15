@@ -315,10 +315,8 @@ class EmblemRenderModule {
     const g: HTMLElement = document.getElementById(`${type}Emblems`) as HTMLElement;
 
     if (select("#emblems").selectAll("use").size()) {
-      // read the group's actual rendered font-size (not recomputed from current pack counts):
-      // the <use> below is sized in em units against this attribute, so it must match exactly
-      // what drawEmblems last stamped on the group, or the offset math here and the group's
-      // CSS-resolved em size fall out of sync
+      // the <use> is sized in em against the group's font-size, so the offset math must read the
+      // rendered attribute rather than recompute the size
       const size = parseFloat(g.getAttribute("font-size") || "50");
       const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
       g.insertAdjacentHTML("beforeend", use);

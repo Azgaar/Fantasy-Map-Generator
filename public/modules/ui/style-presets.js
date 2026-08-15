@@ -31,9 +31,9 @@ const customPresetPrefix = "fmgStyle_";
 async function applyStyleOnLoad() {
   const desiredPreset = localStorage.getItem("presetStyle") || "default";
   const styleData = await getStylePreset(desiredPreset);
-  const [appliedPreset, style] = styleData;
+  const [appliedPreset, presetStyle] = styleData;
 
-  applyStylePreset(style);
+  applyStylePreset(presetStyle);
   updateMapFilter();
   stylePreset.value = stylePreset.dataset.old = appliedPreset;
   setPresetRemoveButtonVisibiliy();
@@ -118,10 +118,8 @@ function applyTerrainPresetOptions(previousTerrain) {
   if (set) Relief.changeSet(set);
 }
 
-// texture options (x/y/href) aren't presentation attrs, so applyLayerStyle never writes them;
-// drawTexture() (public/modules/ui/layers.js) reads them via getLayerOptions when the layer is
-// (re)drawn from scratch, but the nested <image> - once it exists - is cheaper to patch in place
-// on a preset switch than to remove and redraw
+// texture options aren't presentation attrs, so applyLayerStyle never writes them: patch the
+// existing <image> in place rather than forcing a full drawTexture() redraw
 function applyTexturePresetOptions() {
   const {x, y, href} = style.layers.texture?.options || {};
   const image = document.querySelector("#texture > image");
@@ -132,16 +130,9 @@ function applyTexturePresetOptions() {
   }
 }
 
-// options attrs aren't presentation, so applyLayerStyle never writes them to the DOM. armies/
-// scaleBar's fontSize is inherited CSS sizing that nothing reads as JS, so the rendered text
-// only picks it up from the group attribute - mirror those values back under their pre-migration
-// names, matching FLAT_RENAMES in src/services/styles/legacy.ts
+// the only options still mirrored onto the DOM: their text inherits the group's font-size via CSS
 const LAYER_OPTION_ATTRIBUTES = {
-  // boxSize is dropped: draw-military.ts/regiment-editor.ts read it via getLayerOptions now.
-  // fontSize stays DOM-written here - it's inherited by regiment text, nothing reads it as JS
   armies: {fontSize: "font-size"},
-  // barSize/x/y/label are dropped: draw-scalebar.ts reads them via getLayerOptions now.
-  // fontSize stays DOM-written here - nothing reads it as JS, only CSS inheritance uses it
   scaleBar: {fontSize: "font-size"}
 };
 
@@ -239,13 +230,13 @@ function requestStylePresetChange(preset) {
 
 async function changeStyle(desiredPreset) {
   const styleData = await getStylePreset(desiredPreset);
-  const [presetName, style] = styleData;
+  const [presetName, presetStyle] = styleData;
   localStorage.setItem("presetStyle", presetName);
-  applyStyleWithUiRefresh(style);
+  applyStyleWithUiRefresh(presetStyle);
 }
 
-function applyStyleWithUiRefresh(style) {
-  applyStylePreset(style);
+function applyStyleWithUiRefresh(presetStyle) {
+  applyStylePreset(presetStyle);
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;

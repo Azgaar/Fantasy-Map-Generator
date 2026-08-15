@@ -407,7 +407,7 @@ function changeStatesNumber(value) {
   // setPresentation reaches the live group too (via the data-group fallback in applyLayerStyle)
   const labelGroups = style.layers.labels?.children || {};
   if (labelGroups.capital) setPresentation({layerId: "labels", childIds: ["capital"]}, "font-size", `${capitalSize}%`);
-  if (labelGroups.states) setPresentation({layerId: "labels", childIds: ["states"]}, "font-size", `${stateSize}%`);
+  if (labelGroups.state) setPresentation({layerId: "labels", childIds: ["state"]}, "font-size", `${stateSize}%`);
 }
 
 function changeUiSize(value) {

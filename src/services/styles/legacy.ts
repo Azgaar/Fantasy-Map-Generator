@@ -296,11 +296,8 @@ export function upgradeLegacyPreset(
 }
 if (typeof window !== "undefined") window.upgradeLegacyPreset = upgradeLegacyPreset;
 
-// presentation-only attrs per selector, lifted verbatim from the `attributes` map that used to
-// live in collectStyleData (public/modules/ui/style-presets.js) - the authoritative record of what
-// a real old map's DOM carries beyond the option-routed attrs above. Kept separate from the
-// renames/drops tables (rather than folded in) so neither table has to restate the other's keys;
-// buildSelectorAttributes unions them per selector.
+// presentation-only attrs per selector, lifted from the `attributes` map that used to live in
+// collectStyleData: what an old map's DOM carries beyond the option-routed attrs above
 const FLAT_PRESENTATION_EXTRAS: Partial<Record<string, string[]>> = {
   map: ["background-color", "filter", "data-filter"],
   armies: ["stroke", "stroke-width", "fill-opacity", "filter"],
@@ -384,11 +381,8 @@ const CHILD_PRESENTATION_EXTRAS: Partial<Record<string, string[]>> = {
   "#goodsBurgs": ["opacity", "stroke", "stroke-width", "filter"]
 };
 
-// derived from the rename/drop tables plus the presentation-extras above so it can't drift from
-// the routing logic; consumed by the DOM-harvesting upgrader (Task 7) to know which attributes to
-// read per selector. Only concrete, single-element selectors - the parameterized group containers
-// (labels/burgIcons/anchors, whose children are named per burg group, including custom ones) are
-// covered by LEGACY_GROUP_ATTRIBUTES instead, since they can't be enumerated statically.
+// which attributes the DOM harvester reads per selector, derived from the tables above so it can't
+// drift. Concrete selectors only: the per-group containers use LEGACY_GROUP_ATTRIBUTES instead
 export const LEGACY_SELECTOR_ATTRIBUTES: Record<string, string[]> = buildSelectorAttributes();
 
 function buildSelectorAttributes(): Record<string, string[]> {
@@ -422,11 +416,8 @@ function buildSelectorAttributes(): Record<string, string[]> {
   return result;
 }
 
-// labels/burgIcons/anchors children are named per burg group (including custom, user-defined
-// groups), so they can't be enumerated as literal selectors like the table above. The harvester
-// (harvestLegacyLayerStyles, auto-update.ts) walks the live DOM under each container instead and
-// builds a "#<layer> > [g#]<childId>" selector per child, which the *_RE patterns above already
-// route correctly. attributes = renames ∪ presentation extras, same convention as the table above.
+// labels/burgIcons/anchors children are named per group (custom ones included), so the harvester
+// walks the live DOM under each container and builds a "#<layer> > [g#]<childId>" selector per child
 export const LEGACY_GROUP_ATTRIBUTES: { layerId: "labels" | "burgIcons" | "anchors"; attributes: string[] }[] = [
   {
     layerId: "labels",
