@@ -4,6 +4,7 @@ import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
+import { getLayerOptions } from "@/services/styles/store";
 import {
   connectVertices,
   downloadFile,
@@ -535,7 +536,7 @@ function removeUnusedElements(clone: MapSelection): void {
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
   const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(select("#terrs").select("#landHeights").attr("scheme"));
+  const scheme = getColorScheme(getLayerOptions<{ scheme?: string }>("terrs", "landHeights").scheme ?? null);
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
