@@ -2,10 +2,8 @@
 import { Layers } from "@/renderers/layers/layers";
 import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { ensureEl } from "@/utils";
+import { confirmationDialog } from "./dialog/dialog-helpers";
 import { BUTTONS } from "./layers-tab";
-
-// custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)
-declare const prompt: (text: string, options: { default: string }, callback: (value: string) => void) => void;
 
 const DEFAULT_PRESETS: Record<string, string[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
@@ -63,14 +61,24 @@ function setPresetName(name: string): void {
 }
 
 function savePreset(): void {
-  prompt("Please provide a preset name", { default: "" }, (name: string) => {
-    presets[name] = activeUserLayers();
-    ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name, false, true));
-    localStorage.setItem("presets", JSON.stringify(presets));
-    localStorage.setItem("preset", name);
-    ensureEl("removePresetButton").style.display = "inline-block";
-    ensureEl("savePresetButton").style.display = "none";
+  confirmationDialog({
+    title: "Save layer preset",
+    message: /*html*/ `<label>Preset name: <input id="layersPresetName" type="text" autocomplete="off" /></label>`,
+    confirm: "Save",
+    onConfirm: () => {
+      const name = ensureEl<HTMLInputElement>("layersPresetName").value.trim();
+      if (!name) return;
+
+      presets[name] = activeUserLayers();
+      ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name, false, true));
+      localStorage.setItem("presets", JSON.stringify(presets));
+      localStorage.setItem("preset", name);
+      ensureEl("removePresetButton").style.display = "inline-block";
+      ensureEl("savePresetButton").style.display = "none";
+    }
   });
+
+  ensureEl<HTMLInputElement>("layersPresetName").focus();
 }
 
 function removePreset(): void {
