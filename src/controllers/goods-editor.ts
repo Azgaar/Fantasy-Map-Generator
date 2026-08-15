@@ -20,7 +20,6 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Layers } from "@/renderers/layers/layers";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
@@ -497,7 +496,7 @@ function goodsRestoreDefaults() {
       Goods.generate();
       Production.regenerateEconomy();
       Layers.draw("markets", "goods");
-      if (Layers.isOn("trade")) tradeAnimation.restart();
+      Layers.draw("trade");
       refreshEditors();
     }
   });
@@ -661,7 +660,7 @@ function requestProductionRegeneration() {
     onConfirm: () => {
       Production.regenerate();
       Layers.draw("goods");
-      if (Layers.isOn("trade")) tradeAnimation.restart();
+      Layers.draw("trade");
       refreshEditors();
     }
   });

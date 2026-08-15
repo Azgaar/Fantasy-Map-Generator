@@ -2,7 +2,6 @@ import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helper
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Layers } from "@/renderers/layers/layers";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
@@ -152,7 +151,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
             Goods.regeneratePlacement(editedGood.i);
             Production.regenerateEconomy();
             Layers.draw("markets", "goods");
-            if (Layers.isOn("trade")) tradeAnimation.restart();
+            Layers.draw("trade");
             refreshEditors();
           } else {
             Goods.sync();

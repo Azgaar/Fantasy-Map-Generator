@@ -507,19 +507,19 @@ styleStrokeInput.addEventListener("input", function () {
   getEl().attr("stroke", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
-  if (styleElementSelect.value === "gridOverlay" && Layers.isOn("grid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
 // measurers are rendered with baked-in sizes, so a style change requires a redraw
 function redrawMeasurersOnStyleChange() {
-  if (styleElementSelect.value === "ruler" && Layers.isOn("rulers")) drawMeasurers();
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 }
 
 styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
-  if (styleElementSelect.value === "gridOverlay" && Layers.isOn("grid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   redrawMeasurersOnStyleChange();
 });
 
@@ -531,13 +531,13 @@ styleLetterSpacingInput.addEventListener("input", e => {
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
-  if (styleElementSelect.value === "gridOverlay" && Layers.isOn("grid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   redrawMeasurersOnStyleChange();
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
-  if (styleElementSelect.value === "gridOverlay" && Layers.isOn("grid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
 styleDisplayInput.addEventListener("change", function () {
@@ -601,13 +601,13 @@ styleClippingInput.addEventListener("change", function () {
 
 styleGridType.addEventListener("change", function () {
   getEl().attr("type", this.value);
-  if (Layers.isOn("grid")) drawGrid();
+  Layers.draw("grid");
   calculateFriendlyGridSize();
 });
 
 styleGridScale.addEventListener("input", function () {
   getEl().attr("scale", this.value);
-  if (Layers.isOn("grid")) drawGrid();
+  Layers.draw("grid");
   calculateFriendlyGridSize();
 });
 
@@ -619,12 +619,12 @@ function calculateFriendlyGridSize() {
 
 styleGridShiftX.addEventListener("input", function () {
   getEl().attr("dx", this.value);
-  if (Layers.isOn("grid")) drawGrid();
+  Layers.draw("grid");
 });
 
 styleGridShiftY.addEventListener("input", function () {
   getEl().attr("dy", this.value);
-  if (Layers.isOn("grid")) drawGrid();
+  Layers.draw("grid");
 });
 
 styleRescaleMarkers.addEventListener("change", function () {
@@ -1041,17 +1041,17 @@ styleArmiesSize.addEventListener("input", e => {
 
 emblemsStateSizeInput.addEventListener("change", e => {
   d3.select("#emblems").select("#stateEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  Layers.draw("emblems");
 });
 
 emblemsProvinceSizeInput.addEventListener("change", e => {
   d3.select("#emblems").select("#provinceEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  Layers.draw("emblems");
 });
 
 emblemsBurgSizeInput.addEventListener("change", e => {
   d3.select("#emblems").select("#burgEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  Layers.draw("emblems");
 });
 
 styleGoodsCircle.addEventListener("change", function () {

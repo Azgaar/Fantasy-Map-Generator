@@ -6,7 +6,6 @@ import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
   ensureEl,
@@ -777,7 +776,7 @@ function restoreRiskedData(): void {
     });
     Production.regenerateEconomy();
     Layers.draw("markets", "goods");
-    if (Layers.isOn("trade")) tradeAnimation.restart();
+    Layers.draw("trade");
     refreshEditors();
   } else {
     Goods.generate();

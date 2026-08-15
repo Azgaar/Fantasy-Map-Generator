@@ -6,7 +6,6 @@ import { clearEmblems } from "@/renderers/draw-emblems";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 
 ensureEl("toolsContent").addEventListener("click", event => {
@@ -184,19 +183,19 @@ function regenerateGoods(): void {
 function regenerateMarkets(): void {
   Markets.regenerate();
   Layers.draw("markets", "goods");
-  if (Layers.isOn("trade")) tradeAnimation.restart();
+  Layers.draw("trade");
 }
 
 function regenerateEconomy(): void {
   Production.regenerateEconomy();
   Layers.draw("markets", "goods");
-  if (Layers.isOn("trade")) tradeAnimation.restart();
+  Layers.draw("trade");
 }
 
 function regenerateProduction(): void {
   Production.regenerate();
   Layers.draw("goods");
-  if (Layers.isOn("trade")) tradeAnimation.restart();
+  Layers.draw("trade");
 }
 
 function regenerateEmblems(): void {

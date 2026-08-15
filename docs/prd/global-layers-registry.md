@@ -160,11 +160,8 @@ Decisions:
   already present in `src/index.html`, and is not the registry's business.
 - **`draw` receives its own layer**, so a renderer never needs to import the layer constant it
   belongs to (see _Import cycles_ under Further Notes).
-- **No layer gets a bespoke `draw` closure.** Emblems and ice keep their content when off
-  (`keepContent`) and used to pair that with a "draw only if the group is empty" guard. The guard was a
-  micro-optimisation, not semantics — coat-of-arms rendering is memoised in `<defs>` by
-  `COArenderer.trigger`, and `drawIce` is a deterministic rebuild from `pack.ice` — so both are now
-  plain `draw: drawX` references and `keepContent` carries the only real difference.
+- **No layer gets a bespoke `draw` closure.** Emblems keep their content when off
+  (`keepContent`).
 
 ### Registry
 
@@ -423,8 +420,7 @@ none` is the state carrier and is written before `erase` runs, so anything an `e
   differs from their element — goods (`goodsIcons`) and burg icons (`burgIcons`) — need `goods` and
   `icons` added to the section lists in `public/modules/ui/style.js:133`. This is a fix on the style
   side, not a special case in the registry, and it is needed for the future rename regardless.
-- **Saved file size.** Layers that keep their content when off (lakes, ice, emblems, compass, scale
-  bar, vignette) already behaved this way; the uniform `display: none` rule does not add content to
+- **Saved file size.** Layers that keep their content when off already behaved this way; the uniform `display: none` rule does not add content to
   saved files, because layers that erase still erase.
 - **`#fogging-cont` is unwrapped** so that every layer's toggled node is its own root — the last
   "toggled node ≠ layer root" special case in the system.

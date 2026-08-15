@@ -32,10 +32,6 @@ export function drawMeasurers(): void {
   for (const measurer of pack.measurers) RENDERERS[measurer.type](measurer, style);
 }
 
-export function undrawMeasurers(): void {
-  select("#ruler").selectAll("*").remove();
-}
-
 const RENDERERS: Record<MeasurerType, (measurer: Measurer, style: MeasurerStyle) => void> = {
   Ruler: renderRuler,
   Opisometer: renderPathMeasurer,
@@ -135,10 +131,3 @@ function renderPlanimeter(measurer: Measurer, { strokeWidth, dasharray, fontSize
     .attr("y", y)
     .text(`${si(getArea(area))} ${getAreaUnit()}`);
 }
-
-// Legacy seam — classic layers.js draws the layer via a global
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var drawMeasurers: () => void;
-}
-window.drawMeasurers = drawMeasurers;

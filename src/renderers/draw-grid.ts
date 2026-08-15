@@ -24,5 +24,3 @@ export function drawGrid(): void {
     .attr("fill", `url(${pattern})`)
     .attr("stroke", "none");
 }
-
-window.drawGrid = drawGrid;

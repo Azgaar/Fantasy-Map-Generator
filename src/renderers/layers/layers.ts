@@ -1,5 +1,4 @@
 // Global layers registry: owns layers list, order, and svg skeleton
-import { select } from "d3";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { drawBiomes } from "../draw-biomes";
 import { drawBorders } from "../draw-borders";

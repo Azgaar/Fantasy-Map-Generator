@@ -47,11 +47,6 @@ export class TradeAnimationModule {
     clear();
   }
 
-  restart(): void {
-    this.stop();
-    this.start();
-  }
-
   sync(): void {
     if (Layers.isOn("trade")) this.start();
     else this.stop();

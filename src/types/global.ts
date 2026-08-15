@@ -117,7 +117,6 @@ declare global {
   var resetZoom: (duration?: number) => void;
   var RgbQuant: any; // external RgbQuant image-quantization lib
 
-  var drawGrid: () => void;
   var shiftCompass: () => void;
 
   var invokeActiveZooming: () => void;
