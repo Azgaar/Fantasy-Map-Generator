@@ -756,9 +756,10 @@ function toggleTexture(event) {
 }
 
 function drawTexture() {
-  const x = Number(texture.attr("data-x") || 0);
-  const y = Number(texture.attr("data-y") || 0);
-  const href = texture.attr("data-href");
+  const textureOptions = window.getLayerOptions("texture");
+  const x = Number(textureOptions.x || 0);
+  const y = Number(textureOptions.y || 0);
+  const href = textureOptions.href;
 
   texture
     .append("image")

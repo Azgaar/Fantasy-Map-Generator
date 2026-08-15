@@ -119,16 +119,11 @@ function applyTerrainPresetOptions() {
 }
 
 // texture options (x/y/href) aren't presentation attrs, so applyLayerStyle never writes them;
-// port them onto #texture (as the legacy data-x/data-y/data-href attrs) and its nested <image>
+// drawTexture() (public/modules/ui/layers.js) reads them via getLayerOptions when the layer is
+// (re)drawn from scratch, but the nested <image> - once it exists - is cheaper to patch in place
+// on a preset switch than to remove and redraw
 function applyTexturePresetOptions() {
   const {x, y, href} = style.layers.texture?.options || {};
-  const textureEl = document.getElementById("texture");
-  if (textureEl) {
-    if (x !== undefined) textureEl.setAttribute("data-x", x);
-    if (y !== undefined) textureEl.setAttribute("data-y", y);
-    if (href !== undefined) textureEl.setAttribute("data-href", href);
-  }
-
   const image = document.querySelector("#texture > image");
   if (image) {
     if (x !== undefined) image.setAttribute("x", x);

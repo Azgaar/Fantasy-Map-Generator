@@ -285,10 +285,7 @@
   },
   "#texture": {
     "opacity": "0.2",
-    "mask": "url(#water)",
-    "data-x": "0",
-    "data-y": "0",
-    "data-href": "./images/textures/mercury-small.jpg"
+    "mask": "url(#water)"
   },
   "#tradeAnimation": {},
   "#vignette": {

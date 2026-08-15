@@ -233,9 +233,10 @@ function selectStyleElement() {
   // show specific sections
   if (styleElement === "texture") {
     styleTexture.style.display = "block";
-    styleTextureShiftX.value = el.attr("data-x") || 0;
-    styleTextureShiftY.value = el.attr("data-y") || 0;
-    updateTextureSelectValue(el.attr("data-href"));
+    const textureOptions = getLayerOptions("texture");
+    styleTextureShiftX.value = textureOptions.x || 0;
+    styleTextureShiftY.value = textureOptions.y || 0;
+    updateTextureSelectValue(textureOptions.href);
   }
 
   if (styleElement === "terrs") {
@@ -628,7 +629,7 @@ styleTextureInput.addEventListener("change", function () {
 });
 
 function changeTexture(href) {
-  texture.attr("data-href", href);
+  setOptions({layerId: "texture"}, {href});
   texture.select("image").attr("href", href);
 }
 
@@ -643,7 +644,7 @@ function updateTextureSelectValue(href) {
 }
 
 styleTextureShiftX.addEventListener("input", function () {
-  texture.attr("data-x", this.value);
+  setOptions({layerId: "texture"}, {x: this.valueAsNumber});
   texture
     .select("image")
     .attr("x", this.value)
@@ -651,7 +652,7 @@ styleTextureShiftX.addEventListener("input", function () {
 });
 
 styleTextureShiftY.addEventListener("input", function () {
-  texture.attr("data-y", this.value);
+  setOptions({layerId: "texture"}, {y: this.valueAsNumber});
   texture
     .select("image")
     .attr("y", this.value)

@@ -284,10 +284,7 @@
     "opacity": "1"
   },
   "#texture": {
-    "mask": "url(#land)",
-    "data-x": "0",
-    "data-y": "0",
-    "data-href": "./images/textures/marble-big.jpg"
+    "mask": "url(#land)"
   },
   "#tradeAnimation": {
     "style": "display: none;"

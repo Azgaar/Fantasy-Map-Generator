@@ -10,7 +10,7 @@ import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { applyLayerStyle } from "@/services/styles/apply";
 import { parseStyle } from "@/services/styles/schema";
-import { ensureStyleShape } from "@/services/styles/store";
+import { ensureStyleShape, getLayerOptions } from "@/services/styles/store";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import type { LayerId, Style } from "@/types/style";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
@@ -600,7 +600,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     {
       // add custom texture if any
-      const textureHref = select("#texture").attr("data-href");
+      const textureHref = getLayerOptions<{ href?: string }>("texture").href;
       if (textureHref) updateTextureSelectValue(textureHref);
     }
 

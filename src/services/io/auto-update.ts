@@ -1577,7 +1577,8 @@ const REMOVE_AFTER_HARVEST: { selector: string; attributes: string[] }[] = [
   { selector: "#terrs > #landHeights", attributes: ["scheme", "terracing", "skip", "relax", "curve"] },
   { selector: "#terrs > #oceanHeights", attributes: ["scheme", "terracing", "skip", "relax", "curve"] },
   { selector: "#oceanLayers", attributes: ["layers"] },
-  { selector: "#gridOverlay", attributes: ["type", "scale", "dx", "dy"] }
+  { selector: "#gridOverlay", attributes: ["type", "scale", "dx", "dy"] },
+  { selector: "#texture", attributes: ["data-x", "data-y", "data-href"] }
 ];
 
 // selector => attribute-bag map shaped like a legacy preset, built by reading the live svg,
