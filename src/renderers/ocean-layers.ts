@@ -6,6 +6,18 @@ import { clipPoly, P, rn, round } from "../utils";
 declare global {
   var OceanLayers: typeof OceanModule.prototype.draw;
 }
+
+export const DEFAULT_OCEAN_OUTLINE = "-6,-3,-1";
+
+// a preset that omits the option leaves style.layers without it, where the pre-store code
+// inherited whatever the previous preset had written to the dom
+export function parseOceanOutline(outline: string | undefined | null): number[] {
+  const limits = (outline ?? "")
+    .split(",")
+    .map(value => +value)
+    .filter(value => Number.isInteger(value) && value < 0);
+  return limits.length ? limits : DEFAULT_OCEAN_OUTLINE.split(",").map(value => +value);
+}
 class OceanModule {
   private cells: any;
   private vertices: any;
@@ -73,7 +85,7 @@ class OceanModule {
     this.cells = grid.cells;
     this.pointsN = grid.cells.i.length;
     this.vertices = grid.vertices;
-    const limits = outline === "random" ? this.randomizeOutline() : (outline ?? "").split(",").map((s: string) => +s);
+    const limits = outline === "random" ? this.randomizeOutline() : parseOceanOutline(outline);
 
     const chains: [number, any[]][] = [];
     const opacity = rn(0.4 / limits.length, 2);

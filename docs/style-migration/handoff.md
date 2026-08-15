@@ -177,6 +177,12 @@ A manual pass the automated tests cannot do is written up in
 
 ## Open and known items
 
+- **Options need a renderer-side default.** Presets carry different key sets, and applying one
+  replaces `style.layers` wholesale, so a key the new preset omits is genuinely absent - where the
+  pre-store code inherited the previous preset's DOM attribute. Every option read defaults at its
+  use site except `oceanLayers.layers`, where a custom preset without it traced a non-existent
+  layer (`Next vertex is not found`). Fixed in `parseOceanOutline`; keep in mind for new options.
+
 - **`label-groups.ts` keeps its own one-line non-materializing store reader** instead of importing
   `getStyleNodeIfSet` from the store, to avoid a store → apply → label-groups import cycle.
   Equivalent today; could drift.
