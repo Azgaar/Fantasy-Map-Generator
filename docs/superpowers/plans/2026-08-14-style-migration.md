@@ -1202,28 +1202,56 @@ The children layers (routes, borders, coastline, lakes, population, regions, ter
 
 ---
 
-### Task 13: Final sweep, docs, PR
+### Task 13: Final sweep, docs, branch handoff
+
+**Goal of this task:** leave the branch pushed, fully verified, and documented well enough that Azgaar can assess it against his in-flight Layer registry work. **No PR is opened in this task.**
 
 - [ ] **Step 1: Zero-DOM-read audit** — every command below returns no hits in renderer/logic code (auto-update harvest and the applier itself are the only allowed `getAttribute` sites for style attrs):
 
 ```bash
 git grep -n 'attr("data-size")\|attr("scheme")\|attr("rescale")\|attr("layers")\|attr("data-width")\|attr("set")\|attr("density")\|attr("data-href")' src public
 git grep -n 'getAttribute("data-size")\|getAttribute("scheme")' src public
+git grep -n 'projectLegacyStyleMirrors\|style\.labels\.groups\|style\.burgIcons\[\|style\.anchors\[\|style\.relief\|LegacyStyle' src public
 ```
 
-- [ ] **Step 2: Update `docs/architecture/data_model.md`** — replace the relief-style paragraph's `style.relief` reference and document `style.layers` (shape, consumer split, children rule, preset format, data[48] authority, harvest migration) — mirror the tone of the Relief section Azgaar wrote in 41c7d455.
-- [ ] **Step 3: Full verification** — `npx tsc --noEmit && npx vitest run && npx playwright test && npm run build && npm run lint` — all green; then a manual pass in the browser: new map, style editor across ~6 elements incl. one grouped, preset switch, save, reload, load a pre-1.142 map.
-- [ ] **Step 4: Merge latest `upstream/master`** one final time; resolve; re-run everything.
-- [ ] **Step 5: Push and open the PR**
+- [ ] **Step 2: Deliberate stale-snapshot regeneration** — `tests/e2e/layers.spec.ts` fixtures date from v1.123.2 and now carry attributes this branch intentionally removed. Regenerate the affected snapshots in ONE commit, and in the commit message list each file with a one-line justification (which attribute moved to `style.layers` and in which task). Affected set as tracked in the ledger: `terrain`, `anchors`, `regions`, `armies`, `burgs/icons`, `coordinates`, `emblems`, `goods`, `ocean`, `markers`, `burgIcons` (verify the exact list against the failing run — do not regenerate a snapshot that fails for any other reason; if one fails for a non-style reason, stop and diagnose).
+
+- [ ] **Step 3: Update `docs/architecture/data_model.md`** — document `style.layers`: the shape (`presentation`/`options`/`children`), the consumer split, the `<g>`-children rule, the preset format + Zod validation + legacy upgrader, `data[48]` authority, and the old-map harvest migration. Mirror the tone of the Relief section Azgaar wrote in 41c7d455. Also note `options.reliefDensity`'s move out of style.
+
+- [ ] **Step 4: Full verification** — `npx tsc --noEmit && npx vitest run && npx playwright test && npm run build && npm run lint`. Everything green except known-environmental failures, each named and justified in the report (e.g. the NixOS chromium launch issue in `3d-view.spec.ts`).
+
+- [ ] **Step 5: Merge latest `upstream/master`**, resolve conflicts, re-run Step 4 in full.
+
+- [ ] **Step 6: Manual test pass (the user drives this — produce the checklist, do not perform it)** — write `docs/superpowers/plans/2026-08-14-style-migration-manual-tests.md`: an ordered, tickable checklist covering at minimum:
+  - fresh map: style editor across every styleable element, including each of the 8 group-aware ones and both options-heavy ones (terrs, oceanLayers)
+  - preset switching in both directions between several presets, including back to default
+  - custom preset: create, save, download, re-upload, apply
+  - loading a legacy custom preset from localStorage (`fmgStyle_*` written by an older build)
+  - save → reload round-trip preserving every edited style
+  - loading old maps: pre-1.140, 1.139.4 fixture, demo.map, and a map saved by this branch
+  - relief set/size/density (density now lives in options — confirm it regenerates, and that style changes never do)
+  - the create-custom-heightmap-scheme dialog
+  - texture, vignette, compass, scale bar, legend, markers, emblems, goods — the singletons and options-projected layers
+  - export (SVG/PNG) reflecting current styles
+  Each item names what to look for, so a failure is unambiguous.
+
+- [ ] **Step 7: Push the branch (no PR)**
 
 ```bash
 git push -u origin style-migration
-gh pr create --repo Azgaar/Fantasy-Map-Generator --base master \
-  --title "Store layer styles in style.layers instead of DOM attributes" \
-  --body "<summary: the consumer-split model as agreed on Discord; new dep: zod (as discussed); preset format migration incl. legacy upgrader for user presets; old-map harvest in auto-update; parity-tested against pre-migration attribute baseline. No AI attribution.>"
 ```
 
-(PR body: plain description, no AI attribution, no Co-Authored-By. Flag: `zod` new dependency; presets regenerated by `tools/convert-style-presets.mjs`; the baseline spec + fixture can be dropped post-merge if Azgaar doesn't want them permanently.)
+- [ ] **Step 8: Write the handoff note for Azgaar** — `docs/superpowers/plans/2026-08-14-style-migration-handoff.md`, aimed at assessing conflicts with his Layer registry work:
+  - what changed, in one paragraph, in his vocabulary (the consumer split he approved on Discord)
+  - **the registry seam**: `applyLayerStyle(layerId)` / `applyStyleNode(root, node, {createMissing})` — where a registry should call it when it materializes a layer's `<g>`, and the guarantee that a non-materialized layer is a no-op
+  - **files with the highest conflict surface** against layer work: `public/modules/ui/layers.js`, `public/modules/ui/style-presets.js`, `public/modules/ui/style.js`, `src/services/io/load.ts`, `src/services/io/auto-update.ts`, `src/components/zoom.ts` — with a one-line note per file on what this branch did there
+  - **what is deliberately still DOM-projected** and why: `applySingleInstanceOptionElements` (5 singletons), the 3 CSS-inherited `font-size` duplicates, and anything else the ledger records as kept
+  - **new dependency**: `zod`, and where it validates
+  - **the parity harness**: both baselines, what they pin, how to regenerate deliberately (`UPDATE_STYLE_BASELINE=1`), and why it should survive into master
+  - open items and known-deferred minors from the ledger, including the pre-existing `Relief.changeSize(size)` vs `(ratio)` inconsistency
+  - explicitly: **not a PR** — a branch for him to assess and rebase against his registry work
+
+**Do NOT** run `gh pr create` in this task. The branch is handed over as a branch.
 
 ---
 
