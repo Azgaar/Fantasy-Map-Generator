@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { quadtree } from "d3-quadtree";
 import type { BurgGroup } from "@/types/burg-groups";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
@@ -39,6 +38,9 @@ export interface Burg {
   market?: number;
   label?: Label;
 }
+
+export type BurgAdded = { burgId: number; burg: Burg; route?: unknown };
+export type BurgRemoved = { burgId: number; hadEmblem: boolean };
 
 // A burg that could become a port on a given water body.
 type PortCandidate = {
@@ -708,7 +710,7 @@ class BurgModule {
     return previewGeneratorsMap[group.preview](burg);
   }
 
-  add([x, y]: [number, number]) {
+  add([x, y]: [number, number]): BurgAdded {
     const { cells } = pack;
 
     const burgId = pack.burgs.length;
@@ -744,12 +746,8 @@ class BurgModule {
     pack.burgs.push(burg);
     cells.burg[cellId as number] = burgId;
 
-    const newRoute = Routes.connect(cellId as number);
-    if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
-
-    window.drawBurgIcon(burg);
-
-    return burgId;
+    const route = Routes.connect(cellId as number);
+    return { burgId, burg, route };
   }
 
   regenerate(): void {
@@ -848,20 +846,20 @@ class BurgModule {
       .filter(state => state.i && !state.removed && !state.capital)
       .forEach(state => {
         const [x, y] = cells.p[state.center];
-        const burgId = this.add([x, y]);
+        const { burgId } = this.add([x, y]);
         state.capital = burgId;
         state.center = pack.burgs[burgId].cell;
         const burg = pack.burgs[burgId];
         burg.state = state.i;
         burg.capital = 1;
-        this.changeGroup(burg, null, false);
+        this.changeGroup(burg, null);
       });
 
     this.specify();
     Routes.regenerate();
   }
 
-  changeGroup(burg: Burg, group: string | null = null, render = true) {
+  changeGroup(burg: Burg, group: string | null = null) {
     if (group) {
       burg.group = group;
     } else {
@@ -870,14 +868,12 @@ class BurgModule {
       this.defineGroup(burg, populations);
     }
 
-    if (render) {
-      window.drawBurgIcon(burg);
-    }
+    return burg;
   }
 
-  remove(burgId: number) {
+  remove(burgId: number): BurgRemoved | undefined {
     const burg = pack.burgs[burgId];
-    if (!burg) return window.tip(`Burg ${burgId} not found`, false, "error");
+    if (!burg) return;
 
     pack.cells.burg[burg.cell] = 0;
     burg.removed = true;
@@ -885,13 +881,9 @@ class BurgModule {
     const noteId = notes.findIndex(note => note.id === `burg${burgId}`);
     if (noteId !== -1) notes.splice(noteId, 1);
 
-    if (burg.coa) {
-      document.getElementById(`burgCOA${burgId}`)?.remove();
-      select("#emblems").select(`#burgEmblems > use[data-i='${burgId}']`).remove();
-      delete burg.coa;
-    }
-
-    window.removeBurgIcon(burg.i!);
+    const hadEmblem = Boolean(burg.coa);
+    delete burg.coa;
+    return { burgId, hadEmblem };
   }
 }
 

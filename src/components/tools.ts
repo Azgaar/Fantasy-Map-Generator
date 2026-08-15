@@ -1,6 +1,7 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { Population } from "@/generators/population-generator";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -148,7 +149,7 @@ function regeneratePopulation(): void {
 }
 
 function regenerateStates(): void {
-  const { warning, error } = States.regenerate();
+  const { warning, error } = States.regenerate(getStateExpansionSettings());
   if (error) return void tip(error, false, "error");
   if (warning) tip(warning, false, "warn");
 

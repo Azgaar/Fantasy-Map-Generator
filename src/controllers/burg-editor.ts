@@ -3,6 +3,7 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/di
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { renderBurgChanged, renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
@@ -352,7 +353,7 @@ function generateNameRandom(): void {
 function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
-  Burgs.changeGroup(burg, this.value);
+  renderBurgChanged(Burgs.changeGroup(burg, this.value));
   drawLabels();
 }
 
@@ -461,11 +462,11 @@ function toggleCapital(burgId: number): void {
 
   const capital = burgs[burgId];
   capital.capital = 1;
-  Burgs.changeGroup(capital);
+  renderBurgChanged(Burgs.changeGroup(capital));
 
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
-  Burgs.changeGroup(oldCapital);
+  renderBurgChanged(Burgs.changeGroup(oldCapital));
   drawLabels();
 }
 
@@ -825,7 +826,8 @@ function removeSelectedBurg(): void {
       message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
       confirm: "Remove",
       onConfirm: () => {
-        Burgs.remove(burgId);
+        const removed = Burgs.remove(burgId);
+        if (removed) renderBurgRemoved(removed);
         drawLabels();
         $("#burgEditor").dialog("close");
       }

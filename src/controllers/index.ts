@@ -1,4 +1,5 @@
 import { createRegistry } from "@/utils/registry";
+import "./state-generation-settings";
 
 export const Controllers = createRegistry({
   AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),

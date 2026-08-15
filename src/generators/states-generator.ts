@@ -57,6 +57,11 @@ export interface State {
   label?: Label;
 }
 
+export type StateExpansionSettings = {
+  globalGrowthRate?: number;
+  statesGrowthRate?: number;
+};
+
 interface Campaign {
   attacker: number;
   defender: number;
@@ -77,12 +82,12 @@ const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
 class StatesModule {
-  regenerate(): { warning?: string; error?: string } {
+  regenerate(settings: StateExpansionSettings = {}): { warning?: string; error?: string } {
     const { warning, error, states } = this.recreate();
     if (error || !states) return { warning, error };
 
     pack.states = states;
-    this.expandStates();
+    this.expandStates(settings);
     this.normalize();
     this.getPoles();
     this.findNeighbors();
@@ -120,7 +125,7 @@ class StatesModule {
     for (const burg of validBurgs) {
       if (!burg.capital || lockedCapitals.includes(burg.i)) continue;
       burg.capital = 0;
-      Burgs.changeGroup(burg, null, false);
+      Burgs.changeGroup(burg, null);
     }
 
     for (const state of pack.states) {
@@ -163,7 +168,7 @@ class StatesModule {
           burg.capital = 1;
           capital = burg;
           capitalsTree.add([burg.x, burg.y]);
-          Burgs.changeGroup(capital, null, false);
+          Burgs.changeGroup(capital, null);
           break;
         }
         spacing = Math.max(spacing - 1, 1);
@@ -266,10 +271,10 @@ class StatesModule {
     return 0;
   }
 
-  generate() {
+  generate(settings: StateExpansionSettings = {}) {
     TIME && console.time("generateStates");
     pack.states = this.createStates();
-    this.expandStates();
+    this.expandStates(settings);
     this.normalize();
     this.getPoles();
     this.findNeighbors();
@@ -280,7 +285,7 @@ class StatesModule {
     TIME && console.timeEnd("generateStates");
   }
 
-  expandStates() {
+  expandStates({ globalGrowthRate = 1, statesGrowthRate = 1 }: StateExpansionSettings = {}) {
     TIME && console.time("expandStates");
     const { cells, states, cultures, burgs } = pack;
 
@@ -289,9 +294,6 @@ class StatesModule {
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const globalGrowthRate = (document.getElementById("growthRate") as HTMLInputElement | null)?.valueAsNumber || 1;
-    const statesGrowthRate =
-      (document.getElementById("statesGrowthRate") as HTMLInputElement | null)?.valueAsNumber || 1;
     const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 
     // remove state from all cells except of locked

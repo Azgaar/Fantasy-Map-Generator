@@ -13,6 +13,7 @@ import {
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
+import { renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
@@ -445,7 +446,8 @@ function triggerBurgRemove(this: HTMLElement): void {
     message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      Burgs.remove(burgId);
+      const removed = Burgs.remove(burgId);
+      if (removed) renderBurgRemoved(removed);
       burgsTable.refresh();
       drawLabels();
     }
@@ -770,7 +772,12 @@ function triggerAllBurgsRemove(): void {
         <br><i>To remove a capital you have to remove its state first</i>`,
     confirm: "Remove",
     onConfirm: () => {
-      pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => void Burgs.remove(b.i));
+      pack.burgs
+        .filter(b => b.i && !(b.capital || b.lock))
+        .map(b => Burgs.remove(b.i))
+        .forEach(removed => {
+          if (removed) renderBurgRemoved(removed);
+        });
       burgsTable.refresh();
       drawLabels();
     }

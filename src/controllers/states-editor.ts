@@ -15,8 +15,11 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
+import { ManualAssignmentHistory, selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { renderBurgAdded, renderBurgChanged } from "@/renderers/burg-mutations";
 import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
@@ -43,7 +46,7 @@ import {
   si
 } from "../utils";
 
-let statesManualHistory: string[] = [];
+const statesManualHistory = new ManualAssignmentHistory();
 
 const dialogId = "statesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -1001,7 +1004,7 @@ function stateRemove(stateId: number): void {
       burg.state = 0;
       if (burg.capital) {
         burg.capital = 0;
-        Burgs.changeGroup(burg, null);
+        renderBurgChanged(Burgs.changeGroup(burg, null));
       }
     }
   });
@@ -1251,7 +1254,7 @@ function openRegenerationMenu(): void {
 function recalculateStates(must?: boolean): void {
   if (!must && !ensureEl<HTMLInputElement>("statesAutoChange").checked) return;
 
-  States.expandStates();
+  States.expandStates(getStateExpansionSettings());
   Provinces.generate();
   Provinces.getPoles();
   States.getPoles();
@@ -1324,14 +1327,13 @@ function enterStatesManualAssignent(): void {
     .on("touchmove mousemove", moveStateBrush);
 
   ensureEl("statesBodySection").querySelector(".states")?.classList.add("selected");
-  statesManualHistory = [];
+  statesManualHistory.reset();
 }
 
 function selectStateOnLineClick(this: HTMLElement): void {
   if (customization !== 2) return;
   if ((this.parentNode as HTMLElement).id !== "statesBodySection") return;
-  ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  this.classList.add("selected");
+  selectTerritoryEditorRow(ensureEl("statesBodySection"), this);
 }
 
 function selectStateOnMapClick(this: any, event: any): void {
@@ -1342,8 +1344,8 @@ function selectStateOnMapClick(this: any, event: any): void {
   const assigned = select("#statesBody").select("#temp").select(`polygon[data-cell='${i}']`);
   const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
 
-  ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  ensureEl("statesBodySection").querySelector(`div[data-id='${state}']`)?.classList.add("selected");
+  const body = ensureEl("statesBodySection");
+  selectTerritoryEditorRow(body, body.querySelector(`div[data-id='${state}']`));
 }
 
 function dragStateBrush(this: any, event: any): void {
@@ -1584,7 +1586,7 @@ function adjustProvinces(affectedProvinces: number[]): void {
 
 function exitStatesManualAssignment(close: boolean): void {
   customization = 0;
-  statesManualHistory = [];
+  statesManualHistory.reset();
   select("#statesBody").select("#temp").remove();
   removeCircle();
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
@@ -1614,12 +1616,11 @@ function saveStatesManualSnapshot(): void {
   if (!temp) return;
 
   statesManualHistory.push(temp.innerHTML);
-  if (statesManualHistory.length > 100) statesManualHistory.shift();
 }
 
 function undoStatesManualAssignment(): void {
   const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp || !statesManualHistory.length) return;
+  if (!temp || !statesManualHistory.hasSnapshots) return;
 
   temp.innerHTML = statesManualHistory.pop()!;
 }
@@ -1655,7 +1656,8 @@ function addState(this: SVGElement, event: MouseEvent): void {
     return;
   }
 
-  if (!burgId) burgId = Burgs.add(point as [number, number]);
+  const addedBurg = burgId ? undefined : Burgs.add(point as [number, number]);
+  if (addedBurg) burgId = addedBurg.burgId;
 
   const oldState = cells.state[center];
   const newState = states.length;
@@ -1663,7 +1665,8 @@ function addState(this: SVGElement, event: MouseEvent): void {
   // turn burg into a capital
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
-  Burgs.changeGroup(burgs[burgId], null);
+  renderBurgChanged(Burgs.changeGroup(burgs[burgId], null));
+  if (addedBurg) renderBurgAdded(addedBurg);
   drawLabels();
 
   if (event.shiftKey === false) exitAddStateMode();
@@ -1907,7 +1910,7 @@ function openStateMergeDialog(): void {
       if (statesToMerge.includes(burg.state ?? 0)) {
         if (burg.capital) {
           burg.capital = 0;
-          Burgs.changeGroup(burg, null);
+          renderBurgChanged(Burgs.changeGroup(burg, null));
         }
         burg.state = rulingStateId;
       }

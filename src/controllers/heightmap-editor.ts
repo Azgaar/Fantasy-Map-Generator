@@ -3,10 +3,14 @@ import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { HeightmapHistory } from "@/controllers/heightmap-history";
+import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawMarkets } from "@/renderers/draw-markets";
+import { drawHeightmapPreview as renderHeightmapPreview } from "@/renderers/heightmap-preview";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -18,7 +22,6 @@ import {
   generateSeed,
   getGridPolygon,
   getPointer,
-  last,
   lim,
   link,
   minmax,
@@ -30,6 +33,7 @@ import type { PromptOptions } from "../utils/commonUtils";
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 let defaultCellTypeFilter: "all" | "land" | "water" = "all";
+const history = new HeightmapHistory();
 
 function open(options?: { mode?: string; tool?: string }): void {
   const { mode, tool } = options || {};
@@ -177,8 +181,8 @@ function renderTemplateEditor(): void {
   ensureEl("templateTools").addEventListener("click", addStepOnClick);
   ensureEl("templateSelect").addEventListener("change", selectTemplate);
   ensureEl("templateRun").addEventListener("click", executeTemplate);
-  ensureEl("templateUndo").addEventListener("click", () => restoreHistory(edits.n - 1));
-  ensureEl("templateRedo").addEventListener("click", () => restoreHistory(edits.n + 1));
+  ensureEl("templateUndo").addEventListener("click", () => restoreHistory(history.previousPosition));
+  ensureEl("templateRedo").addEventListener("click", () => restoreHistory(history.nextPosition));
   ensureEl("templateSave").addEventListener("click", downloadTemplate);
   ensureEl("templateLoad").addEventListener("click", () => ensureEl("templateToLoad").click());
 
@@ -445,7 +449,7 @@ function finalizeHeightmap(): void {
     return;
   }
 
-  window.edits = undefined; // remove global variable
+  history.clear();
   setHistoryButtonsDisabled(true, true);
 
   customization = 0;
@@ -529,7 +533,7 @@ function regenerateErasedData(): void {
   Cultures.expand();
 
   Burgs.generate();
-  States.generate();
+  States.generate(getStateExpansionSettings());
   Routes.generate();
   Religions.generate();
 
@@ -725,7 +729,8 @@ function restoreRiskedData(): void {
         console.error(
           `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
         );
-      Burgs.remove(b.i);
+      const removed = Burgs.remove(b.i);
+      if (removed) renderBurgRemoved(removed);
       continue;
     }
 
@@ -733,7 +738,10 @@ function restoreRiskedData(): void {
     b.feature = pack.cells.f[b.cell];
 
     pack.cells.burg[b.cell] = b.i;
-    if (!b.capital && pack.cells.h[b.cell] < 20) Burgs.remove(b.i);
+    if (!b.capital && pack.cells.h[b.cell] < 20) {
+      const removed = Burgs.remove(b.i);
+      if (removed) renderBurgRemoved(removed);
+    }
     if (b.capital) pack.states[b.state!].center = b.cell;
   }
 
@@ -816,7 +824,8 @@ function restoreRiskedData(): void {
 
 // trigger heightmap redraw and history update if at least 1 cell is changed
 function updateHeightmap(): void {
-  const prev = last(edits) as number[];
+  const prev = history.current;
+  if (!prev) return;
   const changed = grid.cells.h.reduce((s: number, h: number, i: number) => (h !== prev[i] ? s + 1 : s), 0);
   tip(`Cells changed: ${changed}`);
   if (!changed) return;
@@ -901,12 +910,8 @@ function setHistoryButtonsDisabled(undo: boolean, redo: boolean): void {
 }
 
 function updateHistory(noStat?: string): void {
-  const step = edits.n;
-  edits = edits.slice(0, step);
-  edits[step] = grid.cells.h.slice();
-  edits.n = step + 1;
-
-  setHistoryButtonsDisabled(edits.n <= 1, true);
+  history.commit(grid.cells.h);
+  setHistoryButtonsDisabled(!history.canUndo, !history.canRedo);
   if (!noStat) {
     updateStatistics();
     if (document.getElementById("preview")) drawHeightmapPreview();
@@ -916,10 +921,10 @@ function updateHistory(noStat?: string): void {
 
 // restoreHistory
 function restoreHistory(step: number): void {
-  edits.n = step;
-  setHistoryButtonsDisabled(edits.n <= 1, edits.n >= edits.length);
-  if (edits[edits.n - 1] === undefined) return;
-  grid.cells.h = edits[edits.n - 1].slice();
+  const heights = history.restore(step);
+  setHistoryButtonsDisabled(!history.canUndo, !history.canRedo);
+  if (!heights) return;
+  grid.cells.h = heights;
   mockHeightmap();
   updateStatistics();
 
@@ -929,10 +934,11 @@ function restoreHistory(step: number): void {
 
 // restart edits from 1st step
 function restartHistory(): void {
-  window.edits = []; // declare temp global variable
-  edits.n = 0;
-  setHistoryButtonsDisabled(true, true);
-  updateHistory();
+  history.reset(grid.cells.h);
+  setHistoryButtonsDisabled(!history.canUndo, !history.canRedo);
+  updateStatistics();
+  if (document.getElementById("preview")) drawHeightmapPreview();
+  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
 }
 
 function openBrushesPanel(): void {
@@ -1078,8 +1084,8 @@ function closeBrushesPanel(): void {
 function addBrushesListeners(): void {
   ensureEl("brushesButtons").addEventListener("click", toggleBrushMode);
   ensureEl("cellTypeFilter").addEventListener("change", cellTypeFilterChange);
-  ensureEl("undo").addEventListener("click", () => restoreHistory(edits.n - 1));
-  ensureEl("redo").addEventListener("click", () => restoreHistory(edits.n + 1));
+  ensureEl("undo").addEventListener("click", () => restoreHistory(history.previousPosition));
+  ensureEl("redo").addEventListener("click", () => restoreHistory(history.nextPosition));
   ensureEl("rescaleShow").addEventListener("click", () => {
     ensureEl("modifyButtons").style.display = "none";
     ensureEl("rescaleSection").style.display = "block";
@@ -2040,7 +2046,7 @@ function applyConversion(): void {
 function cancelConversion(): void {
   restoreImageConverterState();
   select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
-  restoreHistory(edits.n - 1);
+  restoreHistory(history.previousPosition);
 }
 
 function restoreImageConverterState(): void {
@@ -2079,7 +2085,7 @@ function closeImageConverter(event: Event): void {
         $(this).dialog("close");
         restoreImageConverterState();
         select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
-        restoreHistory(edits.n - 1);
+        restoreHistory(history.previousPosition);
       }
     }
   });
@@ -2102,21 +2108,7 @@ function toggleHeightmapPreview(): void {
 }
 
 function drawHeightmapPreview(): void {
-  const ctx = (document.getElementById("preview") as HTMLCanvasElement).getContext("2d")!;
-  const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
-
-  grid.cells.h.forEach((height: number, i: number) => {
-    const h = height < 20 ? Math.max(height / 1.5, 0) : height;
-    const v = (h / 100) * 255;
-
-    const n = i * 4;
-    imageData.data[n] = v;
-    imageData.data[n + 1] = v;
-    imageData.data[n + 2] = v;
-    imageData.data[n + 3] = 255;
-  });
-
-  ctx.putImageData(imageData, 0, 0);
+  renderHeightmapPreview(ensureEl<HTMLCanvasElement>("preview"), grid.cells.h, grid.cellsX, grid.cellsY);
 }
 
 function downloadPreview(): void {

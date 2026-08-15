@@ -570,7 +570,7 @@ async function generate(options) {
       Cultures.generate();
       Cultures.expand();
       Burgs.generate();
-      States.generate();
+      States.generate(getStateExpansionSettings());
       Routes.generate();
       Religions.generate();
       Burgs.specify();

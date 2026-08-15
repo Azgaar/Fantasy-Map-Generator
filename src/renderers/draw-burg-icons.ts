@@ -120,10 +120,8 @@ function createIconGroups(): void {
 
 window.drawBurgIcons = burgIconsRenderer;
 
-export { drawBurgIconRenderer as drawBurgIcon, removeBurgIconRenderer as removeBurgIcon };
-
-// burgs-generator still draws icons directly; it cannot import upwards, so the bridge stays
-window.drawBurgIcon = drawBurgIconRenderer;
-window.removeBurgIcon = removeBurgIconRenderer;
-
-export { burgIconsRenderer as drawBurgIcons };
+export {
+  burgIconsRenderer as drawBurgIcons,
+  drawBurgIconRenderer as drawBurgIcon,
+  removeBurgIconRenderer as removeBurgIcon
+};

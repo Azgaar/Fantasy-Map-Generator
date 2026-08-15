@@ -25,7 +25,9 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
 import type { Province } from "@/generators/provinces-generator";
+import { renderBurgChanged } from "@/renderers/burg-mutations";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -457,7 +459,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   // turn province burg into a capital
   const capital = burgs[burgId];
   capital.capital = 1;
-  Burgs.changeGroup(capital);
+  renderBurgChanged(Burgs.changeGroup(capital));
   drawLabels();
 
   // move all burgs to a new state
@@ -1135,8 +1137,7 @@ function enterProvincesManualAssignent(): void {
 function selectProvinceOnLineClick(this: HTMLElement): void {
   if ((this.parentNode as HTMLElement).id !== "provincesBodySection") return;
   if (customization === 11) {
-    ensureEl("provincesBodySection").querySelector("div.selected")?.classList.remove("selected");
-    this.classList.add("selected");
+    selectTerritoryEditorRow(ensureEl("provincesBodySection"), this);
     selectProvince(+this.dataset.id!);
   }
 }
@@ -1155,8 +1156,7 @@ function selectProvinceOnMapClick(this: SVGElement, event: any): void {
     return;
   }
 
-  ensureEl("provincesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  editorLine.classList.add("selected");
+  selectTerritoryEditorRow(ensureEl("provincesBodySection"), editorLine as HTMLElement);
   selectProvince(province);
 }
 

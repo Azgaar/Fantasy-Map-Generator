@@ -2,6 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
+import { renderBurgAdded } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 
 function toggle(): void {
@@ -38,7 +39,7 @@ function addOnClick(event: MouseEvent): void {
     return;
   }
 
-  Burgs.add(point);
+  renderBurgAdded(Burgs.add(point));
   refreshEditors();
   drawLabels();
 

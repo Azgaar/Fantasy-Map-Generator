@@ -15,6 +15,7 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { ManualAssignmentHistory, selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
@@ -36,7 +37,7 @@ import {
   si
 } from "../utils";
 
-let culturesManualHistory: string[] = [];
+const culturesManualHistory = new ManualAssignmentHistory();
 let selectedCultureId: number | null = null;
 
 const dialogId = "culturesEditor" as const;
@@ -937,14 +938,12 @@ function enterCultureManualAssignent(): void {
     firstLine.classList.add("selected");
     selectedCultureId = +firstLine.dataset.id!;
   }
-  culturesManualHistory = [];
+  culturesManualHistory.reset();
 }
 
 function selectCultureOnLineClick(this: HTMLElement): void {
   if (customization !== 4) return;
-  const previous = ensureEl("culturesBody").querySelector("div.selected");
-  if (previous) previous.classList.remove("selected");
-  this.classList.add("selected");
+  selectTerritoryEditorRow(ensureEl("culturesBody"), this);
   selectedCultureId = +this.dataset.id!;
 }
 
@@ -956,10 +955,10 @@ function selectCultureOnMapClick(this: any, event: any): void {
   const assigned = select("#cults").select("#temp").select(`polygon[data-cell='${i}']`);
   const culture = assigned.size() ? +assigned.attr("data-culture") : pack.cells.culture[i!];
 
-  ensureEl("culturesBody").querySelector("div.selected")?.classList.remove("selected");
+  const body = ensureEl("culturesBody");
   selectedCultureId = culture;
   // row may be on another page; the class re-applies on render if/when that page is shown
-  ensureEl("culturesBody").querySelector(`div[data-id='${culture}']`)?.classList.add("selected");
+  selectTerritoryEditorRow(body, body.querySelector(`div[data-id='${culture}']`));
 }
 
 function dragCultureBrush(this: any, event: any): void {
@@ -1027,7 +1026,7 @@ function applyCultureManualAssignent(): void {
 
 function exitCulturesManualAssignment(close?: string): void {
   customization = 0;
-  culturesManualHistory = [];
+  culturesManualHistory.reset();
   select("#cults").select("#temp").remove();
   removeCircle();
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
@@ -1062,12 +1061,11 @@ function saveCulturesManualSnapshot(): void {
   if (!temp) return;
 
   culturesManualHistory.push(temp.innerHTML);
-  if (culturesManualHistory.length > 100) culturesManualHistory.shift();
 }
 
 function undoCulturesManualAssignment(): void {
   const temp = select("#cults").select("#temp").node() as HTMLElement | null;
-  if (!temp || !culturesManualHistory.length) return;
+  if (!temp || !culturesManualHistory.hasSnapshots) return;
 
   temp.innerHTML = culturesManualHistory.pop()!;
 }

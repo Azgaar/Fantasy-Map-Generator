@@ -14,6 +14,7 @@ import {
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -882,9 +883,7 @@ function enterReligionsManualAssignent(): void {
 
 function selectReligionOnLineClick(this: HTMLElement): void {
   if (customization !== 7) return;
-  const prev = ensureEl("religionsBody").querySelector("div.selected");
-  if (prev) prev.classList.remove("selected");
-  this.classList.add("selected");
+  selectTerritoryEditorRow(ensureEl("religionsBody"), this);
   selectedReligionId = +this.dataset.id!;
 }
 
@@ -896,10 +895,10 @@ function selectReligionOnMapClick(this: any, event: any): void {
   const assigned = select("#relig").select("#temp").select(`polygon[data-cell='${i}']`);
   const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i!];
 
-  ensureEl("religionsBody").querySelector("div.selected")?.classList.remove("selected");
+  const body = ensureEl("religionsBody");
   selectedReligionId = religion;
   // row may be on another page; the class re-applies on render if/when that page is shown
-  ensureEl("religionsBody").querySelector(`div[data-id='${religion}']`)?.classList.add("selected");
+  selectTerritoryEditorRow(body, body.querySelector(`div[data-id='${religion}']`));
 }
 
 function dragReligionBrush(this: any, event: any): void {

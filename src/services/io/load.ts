@@ -487,8 +487,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[48]) style = JSON.parse(data[48]);
 
     {
-      const { resolveVersionConflicts } = await import("./auto-update");
-      resolveVersionConflicts(mapVersion!, data);
+      const { migrateMap } = await import("./map-migrations");
+      migrateMap(mapVersion!, data);
     }
 
     {
