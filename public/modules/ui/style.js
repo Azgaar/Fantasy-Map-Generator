@@ -741,7 +741,8 @@ styleHeightmapScheme.addEventListener("change", function () {
 
 openCreateHeightmapSchemeButton.addEventListener("click", function () {
   // start with current scheme
-  const scheme = getEl().attr("scheme");
+  const childId = getEl().attr("id") || "landHeights";
+  const scheme = getLayerOptions("terrs", childId).scheme || "bright";
   this.dataset.stops = scheme.startsWith("#")
     ? scheme
     : (() => [0, 0.25, 0.5, 0.75, 1].map(heightmapColorSchemes[scheme]).map(toHEX).join(","))();

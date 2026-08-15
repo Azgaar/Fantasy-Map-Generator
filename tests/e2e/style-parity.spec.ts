@@ -155,3 +155,44 @@ test("editor bridge writes reach style.layers, the DOM, and the labels legacy mi
   expect(result.statesHaloStore).toBe("0.77");
   expect(result.statesHaloDom).toBe("0.77");
 });
+
+// Task 10 fix-round regression (C1): openCreateHeightmapSchemeButton's click handler read
+// getEl().attr("scheme") - always null after the terrs migration stripped the DOM attribute -
+// which threw inside scheme.startsWith(...) before the dialog ever rendered. Simulates the click
+// with the terrs/landHeights element selected (matching how the style editor drives the handler)
+// and asserts it no longer throws and seeds a real color-stop list from the stored scheme.
+test("create custom heightmap scheme dialog opens without throwing", async ({page}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  // exceptions thrown inside an addEventListener handler don't propagate to element.click()'s
+  // caller - they surface as an uncaught page error instead, so that's what has to be asserted
+  const pageErrors: string[] = [];
+  page.on("pageerror", err => pageErrors.push(err.message));
+
+  const result = await page.evaluate(() => {
+    const w = window as any;
+    const elementSelect = document.getElementById("styleElementSelect") as HTMLSelectElement;
+    const groupSelect = document.getElementById("styleGroupSelect") as HTMLSelectElement;
+    const button = document.getElementById("openCreateHeightmapSchemeButton") as HTMLButtonElement;
+
+    elementSelect.value = "terrs";
+    elementSelect.dispatchEvent(new Event("change"));
+    groupSelect.value = "landHeights";
+    groupSelect.dispatchEvent(new Event("change"));
+
+    button.click();
+
+    return {
+      stops: button.dataset.stops,
+      storedScheme: w.getLayerOptions("terrs", "landHeights").scheme
+    };
+  });
+
+  expect(pageErrors).toEqual([]);
+  expect(result.stops).toBeTruthy();
+  expect(result.stops!.split(",").length).toBeGreaterThan(1);
+  expect(result.storedScheme).toBeTruthy();
+});

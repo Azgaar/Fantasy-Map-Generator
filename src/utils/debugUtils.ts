@@ -1,5 +1,6 @@
 import { curveBundle, line, max, min } from "d3";
 import type { Point } from "../generators/voronoi";
+import { getLayerOptions } from "../services/styles/store";
 import { C_12 } from "./colorUtils";
 import { getGridPolygon } from "./graphUtils";
 import { normalize } from "./numberUtils";
@@ -26,10 +27,10 @@ export const drawCellsValue = (data: unknown[], points: Point[]): void => {
  * @param {number[]} data - Array of numerical values corresponding to each cell
  * @param {any} terrs - The SVG group element where the polygons will be drawn
  */
-export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
+export const drawPolygons = (data: number[], _terrs: any, grid: any): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
-  const scheme = window.getColorScheme(terrs.select("#landHeights").attr("scheme"));
+  const scheme = window.getColorScheme(getLayerOptions<{ scheme?: string }>("terrs", "landHeights").scheme ?? "bright");
 
   data = data.map(d => 1 - normalize(d, minimum, maximum));
   window.debug.selectAll("polygon").remove();

@@ -590,11 +590,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {
-      const oceanHeights = document.getElementById("oceanHeights");
-      const oceanScheme = oceanHeights?.getAttribute("scheme");
+      const oceanScheme = getLayerOptions<{ scheme?: string }>("terrs", "oceanHeights").scheme;
       if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
-      const landHeights = document.getElementById("landHeights");
-      const landScheme = landHeights?.getAttribute("scheme");
+      const landScheme = getLayerOptions<{ scheme?: string }>("terrs", "landHeights").scheme;
       if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
     }
 

@@ -536,7 +536,7 @@ function removeUnusedElements(clone: MapSelection): void {
 function updateMeshCells(clone: MapSelection): void {
   const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
   const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(getLayerOptions<{ scheme?: string }>("terrs", "landHeights").scheme ?? null);
+  const scheme = getColorScheme(getLayerOptions<{ scheme?: string }>("terrs", "landHeights").scheme ?? "bright");
   clone.select("#heights").attr("filter", "url(#blur1)");
   clone
     .select("#heights")
