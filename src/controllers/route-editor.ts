@@ -3,9 +3,7 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/di
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { cellsLayer, routesLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
@@ -18,9 +16,9 @@ function open(id: string): void {
   if (findEl("routeEditor") && id === selectedRoute.attr("id")) return;
   closeDialogs(".stable");
 
-  Layers.show(routesLayer);
-  isCellsLayerForced = !cellsLayer.isOn;
-  Layers.show(cellsLayer);
+  Layers.show("routes");
+  isCellsLayerForced = !Layers.isOn("cells");
+  Layers.show("cells");
 
   selectedRoute = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
@@ -192,7 +190,7 @@ function redrawRoute(route: Route): void {
   selectedRoute.attr("d", Routes.getPath(route));
   updateRouteLength(route);
   if (findEl("elevationProfile")) showRouteElevationProfile();
-  drawLabels();
+  Layers.draw("labels");
 }
 
 function addControlPoint(this: any, event: any): void {
@@ -468,7 +466,7 @@ function closeRouteEditor(): void {
   selectedRoute.on("click", null);
   clearMainTip();
 
-  if (isCellsLayerForced) Layers.hide(cellsLayer);
+  if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
   destroyDialog("routeEditor");

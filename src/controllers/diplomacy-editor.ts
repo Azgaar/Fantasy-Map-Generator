@@ -13,15 +13,7 @@ import {
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
-import {
-  biomesLayer,
-  bordersLayer,
-  culturesLayer,
-  provincesLayer,
-  religionsLayer,
-  statesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
@@ -117,9 +109,9 @@ function open(): void {
   }
 
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show(statesLayer, bordersLayer);
-  Layers.hide(provincesLayer, culturesLayer);
-  Layers.hide(biomesLayer, religionsLayer);
+  Layers.show("states", "borders");
+  Layers.hide("provinces", "cultures");
+  Layers.hide("biomes", "religions");
 
   renderDialog();
   refreshDiplomacyEditor();
@@ -255,7 +247,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
 }
 
 function stateHighlightOn(event: Event): void {
-  if (!statesLayer.isOn) return;
+  if (!Layers.isOn("states")) return;
   const state = +(event.target as HTMLElement).dataset.id!;
   if (customization || !state) return;
   const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
@@ -291,7 +283,7 @@ function showStateRelations(): void {
   const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self");
   const sel = selectedLine ? +selectedLine.dataset.id! : pack.states.find(s => s.i && !s.removed)!.i;
   if (!sel) return;
-  Layers.show(statesLayer);
+  Layers.show("states");
 
   select<SVGGElement, unknown>("#statesBody")
     .selectAll<SVGPathElement, unknown>("path")
@@ -639,7 +631,7 @@ function closeDiplomacyEditor(): void {
   clearMainTip();
   const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");
   if (selected) selected.classList.remove("Self");
-  Layers.show(statesLayer);
+  Layers.show("states");
   select("#debug").selectAll(".highlight").remove();
   $(`#${dialogId}`).dialog("destroy");
   ensureEl(dialogId).remove();

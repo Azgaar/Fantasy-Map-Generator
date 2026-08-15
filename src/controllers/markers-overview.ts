@@ -12,9 +12,8 @@ import { clearMainTip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
-import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
-import { markersLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { setMarkersFilter } from "@/renderers/draw-markers";
+import { Layers } from "@/renderers/layers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { ensureEl } from "../utils";
@@ -46,7 +45,7 @@ const columns: EditorColumn<Marker>[] = [
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show(markersLayer);
+  Layers.show("markers");
 
   renderDialog();
   markersTable.reset();
@@ -179,7 +178,7 @@ function closeMarkersOverview(): void {
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  Layers.draw(markersLayer);
+  Layers.draw("markers");
   populateFilters();
   markersTable.refresh();
 }
@@ -303,7 +302,7 @@ function syncMapToFilter(filteredMarkers: Marker[], anyFilterActive: boolean): v
   lastFilterSignature = signature;
 
   setMarkersFilter(ids);
-  Layers.draw(markersLayer);
+  Layers.draw("markers");
 }
 
 function invertPin(): void {
@@ -318,7 +317,7 @@ function invertPin(): void {
   });
 
   ensureEl("markers").setAttribute("pinned", anyPinned ? "1" : "");
-  drawMarkers();
+  Layers.draw("markers");
   markersTable.refresh();
 }
 
@@ -356,7 +355,7 @@ function pinMarker(el: HTMLElement, i: number): void {
     markerGroup.setAttribute("pinned", "1");
   }
   el.classList.toggle("inactive");
-  drawMarkers();
+  Layers.draw("markers");
 }
 
 function toggleLockStatus(el: HTMLElement, i: number): void {

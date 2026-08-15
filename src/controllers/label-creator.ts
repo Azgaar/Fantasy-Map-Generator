@@ -3,8 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { createLabelArc } from "@/renderers/labels/label-arc";
-import { labelsLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {
@@ -14,7 +13,7 @@ function toggle(): void {
 
   closeDialogs(".stable");
   toggleMapPlacement("addLabel", addOnClick, "Click on map to place label. Hold Shift to add multiple");
-  Layers.show(labelsLayer);
+  Layers.show("labels");
 }
 
 async function addOnClick(event: MouseEvent): Promise<void> {

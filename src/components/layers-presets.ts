@@ -1,5 +1,5 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { ensureEl } from "@/utils";
 import { BUTTONS } from "./layers-tab";
@@ -16,44 +16,20 @@ const DEFAULT_PRESETS: Record<string, string[]> = {
   heightmap: ["heightmap", "lakes", "rivers", "vignette"],
   physical: ["coordinates", "heightmap", "ice", "lakes", "rivers", "scaleBar", "vignette"],
   poi: ["borders", "burgIcons", "heightmap", "ice", "lakes", "markers", "rivers", "routes", "scaleBar", "vignette"],
-  goods: [
-    "borders",
-    "burgIcons",
-    "cells",
-    "goods",
-    "lakes",
-    "markets",
-    "rivers",
-    "routes",
-    "scaleBar",
-    "trade",
-    "vignette"
-  ], // prettier-ignore
+  goods: ["borders", "burgIcons", "cells", "goods","lakes","markets","rivers","routes","scaleBar","trade","vignette"], // prettier-ignore
   trade: ["borders", "burgIcons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
-  military: [
-    "borders",
-    "burgIcons",
-    "labels",
-    "lakes",
-    "military",
-    "rivers",
-    "routes",
-    "scaleBar",
-    "states",
-    "vignette"
-  ], // prettier-ignore
+  military: ["borders","burgIcons","labels","lakes","military","rivers","routes","scaleBar","states","vignette"], // prettier-ignore
   emblems: ["borders", "burgIcons", "emblems", "ice", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
   landmass: ["scaleBar"]
 };
 
-const select = () => ensureEl<HTMLSelectElement>("layersPreset");
 const presets = restoreCustomPresets();
 
 // a preset lists the layers the user can toggle from the tab. Layers driven by the map itself — fogging follows
 // the state focus — are never part of one, so they must not be compared against it or saved into it
 const activeUserLayers = (): string[] =>
   Layers.all
-    .filter(layer => BUTTONS.has(layer) && layer.isOn)
+    .filter(layer => BUTTONS.has(layer.id) && Layers.isOn(layer.id))
     .map(layer => layer.id)
     .sort();
 
@@ -63,7 +39,7 @@ function restoreCustomPresets(): Record<string, string[]> {
 
   for (const name in stored) {
     stored[name] = stored[name].map(toCanonicalLayerId); // presets saved before 1.144 hold toggle* button ids
-    if (!DEFAULT_PRESETS[name]) select().add(new Option(name, name));
+    if (!DEFAULT_PRESETS[name]) ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name));
   }
 
   localStorage.setItem("presets", JSON.stringify(stored));
@@ -72,7 +48,7 @@ function restoreCustomPresets(): Record<string, string[]> {
 
 /** run on map generation: the layers are drawn right after, so the state is applied without drawing */
 export function applyLayersPreset(): void {
-  const stored = localStorage.getItem("preset") || select().value;
+  const stored = localStorage.getItem("preset") || ensureEl<HTMLSelectElement>("layersPreset").value;
   const name = stored in presets ? stored : "political"; // the stored preset may have been removed
   setPresetName(name);
 
@@ -80,21 +56,16 @@ export function applyLayersPreset(): void {
 }
 
 function setPresetName(name: string): void {
-  select().value = name;
+  ensureEl<HTMLSelectElement>("layersPreset").value = name;
   localStorage.setItem("preset", name);
   ensureEl("removePresetButton").style.display = DEFAULT_PRESETS[name] ? "none" : "inline-block";
   ensureEl("savePresetButton").style.display = "none";
 }
 
-function changePreset(name: string): void {
-  setPresetName(name);
-  Layers.setActive(presets[name].map(layerId => Layers.get(layerId)).filter(layer => layer !== undefined));
-}
-
 function savePreset(): void {
   prompt("Please provide a preset name", { default: "" }, (name: string) => {
     presets[name] = activeUserLayers();
-    select().add(new Option(name, name, false, true));
+    ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name, false, true));
     localStorage.setItem("presets", JSON.stringify(presets));
     localStorage.setItem("preset", name);
     ensureEl("removePresetButton").style.display = "inline-block";
@@ -103,10 +74,12 @@ function savePreset(): void {
 }
 
 function removePreset(): void {
-  const name = select().value;
+  const name = ensureEl<HTMLSelectElement>("layersPreset").value;
   delete presets[name];
-  select().options.remove(Array.from(select().options).findIndex(option => option.value === name));
-  select().value = "custom";
+  ensureEl<HTMLSelectElement>("layersPreset").options.remove(
+    Array.from(ensureEl<HTMLSelectElement>("layersPreset").options).findIndex(option => option.value === name)
+  );
+  ensureEl<HTMLSelectElement>("layersPreset").value = "custom";
   ensureEl("removePresetButton").style.display = "none";
   ensureEl("savePresetButton").style.display = "inline-block";
 
@@ -119,12 +92,16 @@ function highlightCurrentPreset(): void {
   const active = activeUserLayers().join(",");
   const current = Object.keys(presets).find(name => [...presets[name]].sort().join(",") === active);
 
-  select().value = current ?? "custom";
+  ensureEl<HTMLSelectElement>("layersPreset").value = current ?? "custom";
   ensureEl("removePresetButton").style.display = current && !DEFAULT_PRESETS[current] ? "inline-block" : "none";
   ensureEl("savePresetButton").style.display = current ? "none" : "inline-block";
 }
 
-select().addEventListener("change", event => changePreset((event.target as HTMLSelectElement).value));
+ensureEl<HTMLSelectElement>("layersPreset").addEventListener("change", event => {
+  const presetName = (event.target as HTMLSelectElement).value;
+  setPresetName(presetName);
+  Layers.set(presets[presetName]);
+});
 ensureEl("savePresetButton").addEventListener("click", savePreset);
 ensureEl("removePresetButton").addEventListener("click", removePreset);
 Layers.subscribe(highlightCurrentPreset);

@@ -4,8 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
-import { militaryLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
@@ -15,7 +14,7 @@ let selectedRegiment: SVGGElement | null = null;
 function editRegiment(selector: string): void {
   if (customization) return;
   closeDialogs(".stable");
-  Layers.show(militaryLayer);
+  Layers.show("military");
 
   const armies = select<SVGGElement, unknown>("#armies");
   armies.selectAll(":scope > g").classed("draggable", true);

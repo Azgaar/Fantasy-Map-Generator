@@ -100,7 +100,4 @@ const markersRenderer = (): void => {
   TIME && console.timeEnd("drawMarkers");
 };
 
-window.drawMarkers = markersRenderer;
-window.drawMarker = markerRenderer;
-
 export { getPinForShape as getPin, markerRenderer as drawMarker, markersRenderer as drawMarkers, setMarkersFilter };

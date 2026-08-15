@@ -5,8 +5,6 @@ import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl } from "@/utils";
 
 function open(): void {
@@ -153,7 +151,7 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
       <td data-tip="Maximum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>
       <td data-tip="Layer that must be toggled on for this group to be shown"><select name="dependency">
         <option value="">None</option>
-        ${[...BUTTONS].map(([layer, { label }]) => `<option value="${layer.id}" ${Layers.get(group.layerDependency ?? "") === layer ? "selected" : ""}>${label.replace(/<\/?u>/g, "")}</option>`).join("")}
+        ${[...BUTTONS].map(([id, { label }]) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label.replace(/<\/?u>/g, "")}</option>`).join("")}
       </select></td>
       <td data-tip="Number of labels currently assigned to this group" style="text-align:center">
         <div style="min-width:2em; display:inline-block">${labelCount}</div>
@@ -299,7 +297,7 @@ function submitForm(event: Event): void {
   for (const group of options.labels.groups) style.labels.groups[group.name] ??= getGroupStyle(group);
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
-  drawLabels();
+  Layers.draw("labels");
   $("#labelGroupsConfigurator").dialog("close");
 }
 

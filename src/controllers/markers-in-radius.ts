@@ -3,9 +3,8 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
-import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
-import { markersLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { setMarkersFilter } from "@/renderers/draw-markers";
+import { Layers } from "@/renderers/layers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
 
@@ -31,7 +30,7 @@ function markerName(marker: Marker): string {
 function open(marker: Marker): void {
   if (customization) return;
   closeDialogs(".stable");
-  Layers.show(markersLayer);
+  Layers.show("markers");
 
   center = marker;
   renderDialog();
@@ -91,7 +90,7 @@ function applyRadius(distance: number): void {
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
   setMarkersFilter(inRange.map(marker => marker.i));
-  Layers.draw(markersLayer);
+  Layers.draw("markers");
   renderMarkersList(inRange);
 }
 
@@ -152,7 +151,7 @@ function togglePin(marker: Marker, el: HTMLElement): void {
     markerGroup.setAttribute("pinned", "1");
   }
   el.classList.toggle("inactive");
-  drawMarkers();
+  Layers.draw("markers");
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {
@@ -208,7 +207,7 @@ function locateCenter(): void {
 function closeMarkersInRadius(): void {
   clearMarkerRadius();
   setMarkersFilter(null);
-  Layers.draw(markersLayer);
+  Layers.draw("markers");
   inRangeMarkers = [];
   center = null;
   clearMainTip();

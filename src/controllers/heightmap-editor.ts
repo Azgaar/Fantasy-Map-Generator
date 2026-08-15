@@ -4,10 +4,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { drawFeatures } from "@/renderers/draw-features";
-import { goodsLayer, heightmapLayer, marketsLayer, tradeLayer } from "@/renderers/layers/layers";
-import type { Layer } from "@/renderers/layers/layers-registry";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -276,7 +273,7 @@ function renderImageConverter(): void {
   });
 }
 
-let storedLayers: Layer[] = [];
+let storedLayers: string[] = [];
 
 function addToolbarListeners(): void {
   ensureEl("paintBrushes").addEventListener("click", openBrushesPanel);
@@ -313,8 +310,8 @@ function showModeDialog(tool?: string): void {
 }
 
 function enterHeightmapEditMode(mode: string, tool?: string): void {
-  storedLayers = Layers.all.filter(layer => layer.isOn);
-  Layers.setActive([]); // turn off all layers
+  storedLayers = Layers.state.active;
+  Layers.set([]); // turn off all layers
 
   customization = 1;
   closeDialogs();
@@ -374,7 +371,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("transform", "scale(1)");
   } else exitCustomization.style.display = "block";
 
-  Layers.show(heightmapLayer);
+  Layers.show("heightmap");
   const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
   layersPreset.value = "heightmap";
   layersPreset.disabled = true;
@@ -464,10 +461,10 @@ function finalizeHeightmap(): void {
   else if (mode === "risk") restoreRiskedData();
 
   // restore initial layers
-  drawFeatures();
+  Layers.draw("landmass");
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
-  Layers.setActive(storedLayers);
+  Layers.set(storedLayers);
 }
 
 function regenerateErasedData(): void {
@@ -779,8 +776,8 @@ function restoreRiskedData(): void {
       return Boolean(centerBurg && !centerBurg.removed);
     });
     Production.regenerateEconomy();
-    Layers.draw(marketsLayer, goodsLayer);
-    if (tradeLayer.isOn) tradeAnimation.restart();
+    Layers.draw("markets", "goods");
+    if (Layers.isOn("trade")) tradeAnimation.restart();
     refreshEditors();
   } else {
     Goods.generate();

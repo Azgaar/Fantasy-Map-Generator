@@ -1,4 +1,4 @@
-import { tradeLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
@@ -31,7 +31,7 @@ export class TradeAnimationModule {
   private pathCache = new Map<string, TradePath | null>();
 
   start(): void {
-    if (!tradeLayer.isOn) return;
+    if (!Layers.isOn("trade")) return;
     this.stop();
     const batches = this.getDealBatches(pack.deals);
     if (!batches.length) return;
@@ -53,12 +53,12 @@ export class TradeAnimationModule {
   }
 
   sync(): void {
-    if (tradeLayer.isOn) this.start();
+    if (Layers.isOn("trade")) this.start();
     else this.stop();
   }
 
   private topUp(): void {
-    if (!tradeLayer.isOn || !this.cachedBatches) return;
+    if (!Layers.isOn("trade") || !this.cachedBatches) return;
     const target = options.trade.animation.concurrent ?? DEFAULT_OPTIONS.concurrent;
     while (this.activeCount < target) {
       if (!this.spawnOne(this.cachedBatches)) break;
@@ -100,7 +100,7 @@ export class TradeAnimationModule {
 
   trigger(batches: TradeBatch[]): void {
     if (!batches.length) return;
-    if (!tradeLayer.isOn) {
+    if (!Layers.isOn("trade")) {
       clear();
       return;
     }

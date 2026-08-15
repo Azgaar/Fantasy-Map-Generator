@@ -166,7 +166,6 @@ const moveRegimentRenderer = (reg: Regiment, x: number, y: number): void => {
     .attr("width", "6");
 };
 
-window.drawMilitary = militaryRenderer;
 window.drawRegiments = drawRegimentsRenderer;
 
 export { drawRegimentRenderer as drawRegiment, militaryRenderer as drawMilitary, moveRegimentRenderer as moveRegiment };

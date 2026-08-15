@@ -9,11 +9,3 @@ export function drawBiomes(): void {
 
   TIME && console.timeEnd("drawBiomes");
 }
-
-declare global {
-  interface Window {
-    drawBiomes: typeof drawBiomes;
-  }
-}
-
-window.drawBiomes = drawBiomes;

@@ -67,8 +67,6 @@ function getIcebergHtml(iceberg: Ice): string {
   return `<polygon points="${iceberg.points.toString()}" data-id="${iceberg.i}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""}/>`;
 }
 
-window.drawIce = iceRenderer;
-
 export { redrawGlacierRenderer as redrawGlacier, redrawIcebergRenderer as redrawIceberg };
 
 // ice-generator still redraws directly; it cannot import upwards, so the bridge stays

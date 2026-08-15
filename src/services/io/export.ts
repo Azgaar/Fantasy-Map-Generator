@@ -2,7 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { emblemsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -320,7 +320,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   // add displayed emblems
-  if (emblemsLayer.isOn && select("#emblems").selectAll("use").size()) {
+  if (Layers.isOn("emblems") && select("#emblems").selectAll("use").size()) {
     cloneEl
       .getElementById("emblems")
       ?.querySelectorAll("use")

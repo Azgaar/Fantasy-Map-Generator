@@ -192,13 +192,13 @@ function applyStyleWithUiRefresh(style) {
 
   drawScaleBar(scaleBar, scale);
   fitScaleBar(scaleBar, svgWidth, svgHeight);
-  if (Layers.get("heightmap").isOn) drawHeightmap();
+  if (Layers.isOn("heightmap")) drawHeightmap();
   if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
   oceanLayers.selectAll("path").remove();
   OceanLayers();
-  if (Layers.get("rulers").isOn) drawMeasurers();
+  if (Layers.isOn("rulers")) drawMeasurers();
   drawRelief();
-  if (Layers.get("burgIcons").isOn) drawBurgIcons();
+  if (Layers.isOn("burgIcons")) drawBurgIcons();
   drawLabels();
 
   invokeActiveZooming();

@@ -30,8 +30,7 @@ if (PRODUCTION && "serviceWorker" in navigator) {
   );
 }
 
-// create the svg layer groups: the Layers registry owns their existence and order
-Layers.init();
+Layers.init(); // create the svg layer groups
 
 let svg = d3.select("#map");
 let defs = svg.select("#deftemp");

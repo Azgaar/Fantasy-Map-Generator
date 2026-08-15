@@ -17,18 +17,8 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
-import { drawBiomes } from "@/renderers/draw-biomes";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import {
-  biomesLayer,
-  culturesLayer,
-  goodsLayer,
-  populationLayer,
-  provincesLayer,
-  religionsLayer,
-  statesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
@@ -92,9 +82,9 @@ const biomesTable = initEditorTable<Biome>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show(biomesLayer);
-  Layers.hide(statesLayer, culturesLayer);
-  Layers.hide(religionsLayer, provincesLayer);
+  Layers.show("biomes");
+  Layers.hide("states", "cultures");
+  Layers.hide("religions", "provinces");
 
   renderDialog();
   currentBiomeStatistics = biomesCollectStatistics();
@@ -331,7 +321,7 @@ function biomeChangeColor(fillBox: FillBoxElement): void {
   const callback = (newFill: string): void => {
     (fillBox as any).fill = newFill;
     pack.biomes[biomeId].color = newFill;
-    drawBiomes();
+    Layers.draw("biomes");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -487,7 +477,7 @@ function downloadBiomesData(): void {
 }
 
 function enterBiomesCustomizationMode(): void {
-  Layers.show(biomesLayer);
+  Layers.show("biomes");
   customization = 6;
   setModeHiddenColumns(dialogId, ["habitability", "cells", "area", "population", "actions"]);
   select("#biomes").append("g").attr("id", "temp");
@@ -598,7 +588,7 @@ function applyBiomesChange(): void {
   });
 
   if (changed.size()) {
-    drawBiomes();
+    Layers.draw("biomes");
     refreshBiomesEditor();
   }
   exitBiomesCustomizationMode();
@@ -639,7 +629,7 @@ function exitBiomesCustomizationMode(close?: boolean): void {
 function restoreInitialBiomes(): void {
   pack.biomes = Biomes.getDefault();
   Biomes.define();
-  drawBiomes();
+  Layers.draw("biomes");
   regeneratePopulation();
   refreshBiomesEditor();
 }
@@ -652,7 +642,7 @@ function closeBiomesEditor(): void {
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  Layers.draw(populationLayer, goodsLayer);
+  Layers.draw("population", "goods");
 }
 
 export const BiomesEditor = { open };

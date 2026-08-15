@@ -3,8 +3,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
-import { iceLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -14,7 +13,7 @@ function open(element: SVGElement): void {
   if (document.getElementById("iceEditor") && element === selectedIce.node()) return;
 
   closeDialogs(".stable");
-  Layers.show(iceLayer);
+  Layers.show("ice");
 
   selectedIce = select<SVGElement, unknown>(element) as unknown as typeof selectedIce;
   const id = +selectedIce.attr("data-id");

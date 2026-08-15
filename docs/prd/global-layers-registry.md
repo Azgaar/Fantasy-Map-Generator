@@ -40,9 +40,10 @@ layer state in memory and writes it to the DOM; nothing reads state back out of 
 
 Five properties define the design:
 
-1. **Layers are values, not strings.** `Layers.draw(heightmapLayer, lakesLayer)` — call sites hold
-   typed references, so a typo is a compile error rather than a silent no-op. Raw string ids survive
-   only at deserialization seams.
+1. **Layers are addressed by id.** `Layers.draw("heightmap", "lakes")` — `LayerId` is derived from the
+   layer list, so a typo is a compile error rather than a silent no-op, and no consumer imports a layer
+   to name one. `Layers` is the whole public interface; renderers stop leaking into their callers.
+   Untrusted strings — a dataset value, a stored preset, a map file — are narrowed with `Layers.has(id)`.
 2. **The registry is purely structural.** It knows identity, order, the DOM node, and how to
    draw/erase. It knows nothing about buttons, labels or shortcuts — those live in the UI component.
    A layer with a button and a technical layer are the same kind of object; the only difference is
@@ -58,8 +59,8 @@ Five properties define the design:
 
 1. As a contributor adding a layer, I want to add one entry to one list, so that I don't have to
    touch `main.js`, `index.html`, `layers.js`, `hotkeys.ts` and `load.ts` to wire it up.
-2. As a contributor, I want layers to be typed values I import, so that referring to a layer that
-   doesn't exist fails to compile.
+2. As a contributor, I want to name a layer by its id and have the id checked, so that referring to a
+   layer that doesn't exist fails to compile without importing anything but `Layers`.
 3. As a contributor, I want `Layers.draw(a, b, c)` to render in the correct order regardless of the
    order I pass arguments, so that call sites don't encode ordering knowledge.
 4. As a contributor, I want `Layers.drawAll()` to draw every active layer in z-order, so that map
@@ -104,12 +105,13 @@ Five properties define the design:
 
 ### Layer
 
-A `Layer` owns its identity, its DOM node, its active flag, and its render behaviour.
+A `Layer` is a value: an identity, an svg group and how to render it. On/off state belongs to the
+registry, so a layer needs no back-reference to it.
 
 ```ts
-// src/renderers/layers/layer.ts
-export interface LayerParams {
-  id: string; // canonical identity, persisted in the .map file
+// src/renderers/layers/layers.ts
+export interface LayerParams<Id extends string = string> {
+  id: Id; // canonical identity, persisted in the .map file
   element: string; // svg group id (currently legacy names, see Out of Scope)
   parent: "viewbox" | "map";
   children?: string[]; // sub-groups created inside the layer and preserved when the content is erased
@@ -120,62 +122,19 @@ export interface LayerParams {
   erase?: (layer: Layer) => void; // defaults to erasing the content down to the declared children
 }
 
-export class Layer {
-  readonly id: string;
+export class Layer<Id extends string = string> {
+  readonly id: Id;
   readonly elementId: string;
-  private active = false;
 
-  constructor(private readonly params: LayerParams) {
+  constructor(readonly params: LayerParams<Id>) {
     this.id = params.id;
     this.elementId = params.element;
   }
 
-  get isOn(): boolean {
-    return this.active;
-  }
-
   getEl(): SVGGElement {
-    const element = document.getElementById(this.elementId);
-    if (!element) throw new Error(`Layer ${this.id}: element #${this.elementId} is missing`);
-    return element as unknown as SVGGElement;
-  }
-
-  draw(): void {
-    this.params.draw?.(this);
-  }
-
-  erase(): void {
-    this.params.erase?.(this);
-  }
-
-  /** @internal called by Layers.init — creates the group if absent, adopts it if present */
-  create(): void {
-    const parent = ensureEl(this.params.parent);
-    const element = document.getElementById(this.elementId) ?? createGroup(this.elementId);
-    for (const [name, value] of Object.entries(this.params.attrs ?? {})) element.setAttribute(name, value);
-    parent.append(element); // re-append: registration order becomes document order
-    for (const child of this.params.children ?? []) {
-      if (!element.querySelector(`#${child}`)) element.append(createGroup(child));
-    }
-    this.project();
-  }
-
-  /** @internal called by Layers */
-  setActive(active: boolean): void {
-    this.active = active;
-    this.project();
-  }
-
-  private project(): void {
-    this.getEl().style.display = this.active ? "" : "none";
+    return ensureEl<SVGGElement>(this.elementId);
   }
 }
-
-const createGroup = (id: string): SVGGElement => {
-  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  group.id = id;
-  return group;
-};
 ```
 
 Decisions:
@@ -187,9 +146,15 @@ Decisions:
   cached node would go stale; `getElementById` is a hash lookup and not worth an invalidation rule.
   It throws rather than returning `null`: after `Layers.init()` a missing element is a bug, and
   callers should not be writing null checks.
-- **`create()` adopts an existing element.** The same code path initialises a fresh map (creates the
+- **`draw`/`erase` take the non-generic `Layer`**, so that `Layer<"ocean">` stays assignable to
+  `Layer<LayerId>`; a `Layer<Id>` parameter would make the callback contravariant and break `register`.
+- **The skeleton work lives in `Layers.init()`, not `Layer.create()`.** Creating, adopting, ordering
+  and projecting visibility are all registry-order concerns, and keeping them there leaves `Layer` with
+  no methods but `getEl()`.
+- **`init()` adopts an existing element.** The same code path initialises a fresh map (creates the
   group), reorders an existing one (re-appends), and heals a map loaded from an older version
-  (creates only what is missing). No separate "upgrade the SVG skeleton" step exists.
+  (creates only what is missing). No separate "upgrade the SVG skeleton" step exists, and `move` and
+  `restore` simply call `init()` again.
 - **Skeleton vs content.** `children` creates empty `<g>` sub-groups only. Anything with shape —
   `#scaleBarBack`, the vignette rect, the compass `<use>` — is content produced by the renderer or
   already present in `src/index.html`, and is not the registry's business.
@@ -198,117 +163,42 @@ Decisions:
 
 ### Registry
 
+The registry and the layer list share one file: `LayerId` is derived from the list, so splitting them
+would mean the registry could not name its own ids.
+
 ```ts
-// src/renderers/layers/layers-registry.ts
-class LayersRegistry {
-  private layers: Layer[] = [];
+// src/renderers/layers/layers.ts — same file as the list below
+export class LayersRegistry<Id extends string = string> {
+  private layers: Layer<Id>[] = [];
+  private active = new Set<Id>();
   private listeners = new Set<() => void>();
 
-  register(...layers: Layer[]): void {
-    this.layers.push(...layers);
-  }
+  register(...layers: Layer<Id>[]): void;
+  init(): void; // creates missing groups, orders them by registration order, applies the current state
 
-  init(): void {
-    this.layers.forEach(layer => layer.create());
-    this.emit();
-  }
+  get all(): readonly Layer<Id>[];
 
-  get all(): Layer[] {
-    return this.layers;
-  }
-
-  /** string lookup: deserialization and legacy JS only */
-  get(id: string): Layer | undefined {
-    return this.layers.find(layer => layer.id === id);
-  }
+  /** narrow an untrusted string — dataset, stored preset, map file — to a known id */
+  has(id: string): id is Id;
+  get(id: Id): Layer<Id>; // throws: after init a missing layer is a bug, not a null check
+  isOn(id: Id): boolean;
 
   /** turn the layers on if they are off and (re)draw them */
-  show(...layers: Layer[]): void {
-    this.change(layers, true);
-    this.draw(...layers);
-    this.emit();
-  }
+  show(...ids: Id[]): void;
+  hide(...ids: Id[]): void;
+  toggle(id: Id): void;
 
-  hide(...layers: Layer[]): void {
-    this.change(layers, false);
-    this.emit();
-  }
+  /** turn on the listed layers and turn off every other user-controlled one, drawing the ones that were off.
+   *  Takes plain strings and ignores the ones it does not know: the list comes from presets and snapshots */
+  set(ids: readonly string[]): void;
 
-  toggle(layer: Layer): void {
-    layer.isOn ? this.hide(layer) : this.show(layer);
-  }
+  draw(...ids: Id[]): void; // draws the listed layers that are on, always in layer order
+  drawAll(): void;
+  move(id: Id, before?: Id): void;
 
-  /** turn on the listed layers and turn off every other user-controlled one, drawing the ones that were off */
-  setActive(active: Layer[]): void {
-    const drawn = this.layers.filter(layer => active.includes(layer) && !layer.isOn);
-    this.change(
-      this.layers.filter(layer => !layer.params.alwaysOn && !active.includes(layer)),
-      false
-    );
-    this.change(active, true);
-    this.draw(...drawn);
-    this.emit();
-  }
-
-  draw(...layers: Layer[]): void {
-    for (const layer of this.layers) if (layers.includes(layer) && layer.isOn) layer.draw();
-  }
-
-  drawAll(): void {
-    this.draw(...this.layers);
-  }
-
-  move(layer: Layer, before?: Layer): void {
-    this.layers.splice(this.layers.indexOf(layer), 1);
-    this.layers.splice(before ? this.layers.indexOf(before) : this.layers.length, 0, layer);
-    this.reproject();
-  }
-
-  get state(): LayersState {
-    return { order: this.layers.map(l => l.id), active: this.layers.filter(l => l.isOn).map(l => l.id) };
-  }
-
-  /** adopts persisted state: never draws — the loaded svg already holds the content */
-  restore({ order, active }: LayersState): void {
-    this.sortBy(order);
-    this.layers.forEach(layer => layer.setActive(active.includes(layer.id)));
-    this.reproject();
-  }
-
-  subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  private change(layers: Layer[], on: boolean, silent = false): void {
-    for (const layer of this.layers) {
-      if (!layers.includes(layer) || layer.isOn === on) continue;
-      layer.setActive(on);
-      on ? layer.draw() : layer.erase();
-    }
-    if (!silent) this.emit();
-  }
-
-  private reproject(): void {
-    this.layers.forEach(layer => layer.create());
-    this.emit();
-  }
-
-  private sortBy(order: string[]): void {
-    // layers absent from the saved order keep their registration-order neighbours
-    const rank = new Map<string, number>();
-    let previous = -1;
-    for (const layer of this.layers) {
-      const index = order.indexOf(layer.id);
-      previous = index === -1 ? previous + 1e-3 : index;
-      rank.set(layer.id, previous);
-    }
-    this.layers.sort((a, b) => rank.get(a.id)! - rank.get(b.id)!);
-  }
-
-  private emit(): void {
-    this.listeners.forEach(listener => listener());
-  }
+  get state(): LayersState; // {order, active} — alwaysOn layers are structural, not saved state
+  restore(state: LayersState): void; // adopts persisted state: never draws, the loaded svg holds the content
+  subscribe(listener: () => void): () => void;
 }
 
 export interface LayersState {
@@ -316,116 +206,93 @@ export interface LayersState {
   active: string[];
 }
 
-export const Layers = new LayersRegistry();
+declare global {
+  var Layers: LayersRegistry<LayerId>;
+}
+
+export const Layers = new LayersRegistry<LayerId>();
+Layers.register(...mapLayers);
 window.Layers = Layers; // legacy seam for public/modules/**/*.js
 ```
 
 Decisions:
 
-- **Iteration is always over `this.layers`**, so registration order governs `draw`, `setActive` and
+- **Iteration is always over `this.layers`**, so registration order governs `draw`, `set` and
   `change` regardless of the order arguments are passed. Argument order is unobservable.
+- **`LayerId` is derived, not written.** `type LayerId = (typeof mapLayers)[number]["id"]`, which needs
+  `Layer<Id extends string>` so that `new Layer({id: "labels", …})` infers the literal. A hand-written
+  union would be exactly the parallel list this PRD exists to remove.
+- **Strict ids everywhere except the two storage seams.** `show`/`hide`/`draw`/`toggle`/`isOn`/`move`
+  take `LayerId`; `set` and `restore` take plain strings because their input is a stored preset or
+  a map file. Everything else narrows through `has(id)` first.
+- **The registry owns the active set**, so `Layer` is a pure value and needs no back-reference to the
+  registry to answer `isOn`.
 - **`restore` never draws.** A loaded map's SVG already contains the rendered content; redrawing it
   would be both slow and wrong (it would regenerate data the file already carries). This is the one
-  hard behavioural distinction in the API and is why `restore` and `setActive` are separate methods.
+  hard behavioural distinction in the API and is why `restore` and `set` are separate methods.
 - **`sortBy` tolerates both directions of version skew**: ids in the file that this build doesn't
   know are ignored; layers this build has that the file lacks slot in after their registration-order
   predecessor via a fractional rank.
 - **`move` mutates the array, then re-projects.** The registry is the order; the SVG follows.
-- **Subscribers are notified once per operation.** Batch operations (`setActive`, `restore`) mutate
+- **Subscribers are notified once per operation.** Batch operations (`set`, `restore`) mutate
   silently and emit at the end.
 
 ### The layer list
 
-One file, imported for its side effect at startup. `Layers.init()` is called from the main routine
-(`public/main.js`), right before the legacy globals select the groups it creates.
+One array in the same file, ordered. `LayerId` falls out of it, and `Layers.init()` is called from the
+main routine (`public/main.js`), right before the legacy globals select the groups it creates.
 
 ```ts
 // src/renderers/layers/layers.ts — this order is z-order, init order and draw order
-export const oceanLayer = new Layer({
-  id: "ocean",
-  element: "ocean",
-  parent: "viewbox",
-  children: ["oceanLayers", "oceanPattern"]
-});
-export const landmassLayer = new Layer({ id: "landmass", element: "landmass", parent: "viewbox", draw: drawFeatures });
-export const textureLayer = new Layer({
-  id: "texture",
-  element: "texture",
-  parent: "viewbox",
-  draw: drawTexture,
-  erase: eraseTexture
-});
-export const heightmapLayer = new Layer({
-  id: "heightmap",
-  element: "terrs",
-  parent: "viewbox",
-  children: ["oceanHeights", "landHeights"],
-  draw: drawHeightmap,
-  erase: eraseHeightmap
-});
-export const lakesLayer = new Layer({
-  id: "lakes",
-  element: "lakes",
-  parent: "viewbox",
-  children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
-  draw: drawLakes
-});
-// …
-export const foggingLayer = new Layer({
-  id: "fogging",
-  element: "fogging",
-  parent: "viewbox",
-  attrs: { mask: "url(#fog)" }
-});
-export const scaleBarLayer = new Layer({ id: "scaleBar", element: "scaleBar", parent: "map", draw: drawScaleBar });
-export const vignetteLayer = new Layer({
-  id: "vignette",
-  element: "vignette",
-  parent: "map",
-  attrs: { mask: "url(#vignette-mask)" }
-});
+const mapLayers = [
+  new Layer({
+    id: "ocean",
+    element: "ocean",
+    parent: "viewbox",
+    children: ["oceanLayers", "oceanPattern"],
+    alwaysOn: true,
+    keepContent: true
+  }),
 
-Layers.register(
-  oceanLayer,
-  landmassLayer,
-  textureLayer,
-  heightmapLayer,
-  lakesLayer,
-  biomesLayer,
-  cellsLayer,
-  gridLayer,
-  coordinatesLayer,
-  compassLayer,
-  riversLayer,
-  reliefLayer,
-  religionsLayer,
-  culturesLayer,
-  statesLayer,
-  provincesLayer,
-  zonesLayer,
-  bordersLayer,
-  routesLayer,
-  temperatureLayer,
-  coastlineLayer,
-  iceLayer,
-  goodsLayer,
-  marketsLayer,
-  tradeLayer,
-  precipitationLayer,
-  populationLayer,
-  emblemsLayer,
-  burgIconsLayer,
-  labelsLayer,
-  militaryLayer,
-  markersLayer,
-  foggingLayer,
-  rulersLayer,
-  debugLayer,
-  scaleBarLayer,
-  vignetteLayer,
-  legendLayer
-);
+  new Layer({
+    id: "landmass",
+    element: "landmass",
+    parent: "viewbox",
+    alwaysOn: true,
+    keepContent: true,
+    draw: drawFeatures
+  }),
+
+  new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
+
+  // …one entry per layer, technical and toggleable alike
+
+  new Layer({ id: "fogging", element: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, keepContent: true }),
+
+  new Layer({
+    id: "scaleBar",
+    element: "scaleBar",
+    parent: "map",
+    keepContent: true,
+    draw: layer => drawScaleBar(select(layer.getEl()), scale)
+  }),
+
+  new Layer({
+    id: "vignette",
+    element: "vignette",
+    parent: "map",
+    attrs: { mask: "url(#vignette-mask)" },
+    keepContent: true
+  }),
+
+  new Layer({ id: "legend", element: "legend", parent: "map", alwaysOn: true, keepContent: true })
+];
+
+export type LayerId = (typeof mapLayers)[number]["id"];
 ```
+
+Nothing else is exported from the list: with ids as the vocabulary, per-layer constants would only be
+a second way to say the same thing.
 
 This replaces the 55-line `viewbox.append("g")` block in `public/main.js:36-90`.
 
@@ -520,19 +387,19 @@ export function eraseRelief(): void {
 }
 
 function reconcileRelief(context: ViewportRenderContext): void {
-  const terrain = context.root.querySelector(`#${reliefLayer.elementId}`);
+  const terrain = context.root.querySelector("#terrain");
   if (!terrain) return;
-  if (!scene.valid || !reliefLayer.isOn) return void terrain.replaceChildren();
+  if (!scene.valid || !Layers.isOn("relief")) return void terrain.replaceChildren();
   // …unchanged
 }
 ```
 
 The internal "am I on?" checks that every viewport renderer performs today (`layerIsOn("toggleRelief")`)
-become `layer.isOn` — the same check against real state instead of a CSS class.
+become `Layers.isOn("relief")` — the same check against real state instead of a CSS class.
 
 ### Layers tab
 
-The UI table is the _only_ place that knows a layer has a button. Keyed by `Layer` so it stays
+The UI table is the _only_ place that knows a layer has a button. Keyed by `LayerId` so it stays
 typo-proof; iterating `Layers.all` keeps the registry authoritative for order.
 
 ```ts
@@ -543,13 +410,13 @@ interface LayerButton {
   hint?: string; // shortcut as shown in the tip, defaults to code without the "Key" prefix
 }
 
-export const BUTTONS = new Map<Layer, LayerButton>([
-  [textureLayer, { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
-  [heightmapLayer, { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
-  [lakesLayer, { label: "Lakes", shortcut: "KeyQ" }],
-  [gridLayer, { label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)" }],
-  [routesLayer, { label: "Ro<u>u</u>tes", shortcut: "KeyU" }],
-  [marketsLayer, { label: "Markets" }]
+export const BUTTONS = new Map<LayerId, LayerButton>([
+  ["texture", { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
+  ["heightmap", { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
+  ["lakes", { label: "Lakes", shortcut: "KeyQ" }],
+  ["grid", { label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)" }],
+  ["routes", { label: "Ro<u>u</u>tes", shortcut: "KeyU" }],
+  ["markets", { label: "Markets" }]
   // …one row per button; ocean, landmass, coastline, fogging, debug, legend are absent
 ]);
 
@@ -560,33 +427,32 @@ export function initLayersTab(): void {
 
   list.on("click", event => {
     const id = (event.target as HTMLElement).closest("li")?.dataset.layer;
-    const layer = id ? Layers.get(id) : undefined;
-    if (!layer) return;
-    if (isCtrlClick(event)) return editStyle(layer.elementId);
-    Layers.toggle(layer);
+    if (!id || !Layers.has(id)) return;
+    if (isCtrlClick(event)) return editStyle(Layers.get(id).elementId);
+    Layers.toggle(id);
   });
 
   $(list).sortable({
     items: "li",
     containment: "parent",
     update: (_, ui) => {
-      const layer = Layers.get(ui.item.data("layer"));
-      const before = Layers.get(ui.item.next().data("layer") ?? "");
-      if (layer) Layers.move(layer, before);
+      const id = ui.item.data("layer");
+      const before = ui.item.next().data("layer");
+      if (Layers.has(id)) Layers.move(id, Layers.has(before) ? before : undefined);
     }
   });
 
   function render(): void {
     list.replaceChildren(
       ...Layers.all.flatMap(layer => {
-        const button = BUTTONS.get(layer);
+        const button = BUTTONS.get(layer.id);
         if (!button) return [];
         const item = document.createElement("li");
         item.dataset.layer = layer.id;
         item.dataset.tip = "Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style";
         if (button.shortcut) item.dataset.shortcut = button.hint ?? button.shortcut.replace("Key", "");
         item.innerHTML = button.label;
-        item.classList.toggle("buttonoff", !layer.isOn);
+        item.classList.toggle("buttonoff", !Layers.isOn(layer.id));
         return [item];
       })
     );
@@ -606,8 +472,8 @@ Hotkeys read the same table, so a shortcut is declared once:
 
 ```ts
 // src/components/hotkeys.ts
-const layer = [...BUTTONS].find(([, button]) => button.shortcut === code)?.[0];
-if (layer) return Layers.toggle(layer);
+const id = [...BUTTONS].find(([, button]) => button.shortcut === code)?.[0];
+if (id) return Layers.toggle(id);
 ```
 
 This deletes 32 `else if` branches and the entire `<li>` block in `src/index.html`.
@@ -618,7 +484,7 @@ Presets stay arrays of layer ids in localStorage; only the application path chan
 
 ```ts
 export function applyPreset(name: string): void {
-  Layers.setActive(presets[name].map(id => Layers.get(id)).filter(Boolean) as Layer[]);
+  Layers.set(presets[name]);
 }
 
 const currentPreset = (): string | undefined =>
@@ -681,14 +547,14 @@ export function restoreLayers(mapVersion: string, data: string[]): void {
 
   // active: the pre-1.144 per-layer heuristics, lifted verbatim from load.ts
   const filled = (selector: string) => Boolean(document.querySelector(selector)?.childNodes.length);
-  const shown = (layer: Layer) => findEl(layer.elementId)?.style.display !== "none";
-  const wasActive: Record<string, (layer: Layer) => boolean> = {
+  const shown = (elementId: string) => findEl(elementId)?.style.display !== "none";
+  const wasActive: Record<string, () => boolean> = {
     texture: () => filled("#texture image"),
     heightmap: () => filled("#landHeights"),
-    lakes: shown,
+    lakes: () => shown("lakes"),
     states: () => filled("#statesBody"),
-    borders: layer => shown(layer) && filled("#borders path"),
-    relief: shown,
+    borders: () => shown("borders") && filled("#borders path"),
+    relief: () => shown("terrain"),
     ocean: () => true,
     landmass: () => true,
     coastline: () => true,
@@ -696,7 +562,7 @@ export function restoreLayers(mapVersion: string, data: string[]): void {
     // …one entry per pre-1.144 layer
   };
 
-  const active = Layers.all.filter(layer => wasActive[layer.id]?.(layer)).map(layer => layer.id);
+  const active = Layers.all.filter(layer => wasActive[layer.id]?.()).map(layer => layer.id);
   Layers.restore({ order, active });
 }
 ```
@@ -709,41 +575,37 @@ is not map-file state and therefore cannot be version-gated inside this function
 Long `layerIsOn` chains collapse. `src/components/tools.ts:136-163` becomes:
 
 ```ts
-Layers.draw(
-  routesLayer,
-  riversLayer,
-  populationLayer,
-  goodsLayer,
-  statesLayer,
-  bordersLayer,
-  provincesLayer,
-  burgIconsLayer,
-  militaryLayer,
-  emblemsLayer
-);
+Layers.draw("routes", "rivers", "population", "goods", "states", "borders", "provinces", "burgIcons", "military");
 ```
+
+Direct renderer imports go the same way: a controller that called `drawLabels()` now calls
+`Layers.draw("labels")`, which additionally skips the work when the layer is off and keeps z-order.
+`labels-renderer.ts` still exports `redrawLabel`, `getSceneLabel` and `getVisibleLabels` — those are
+label operations, not layer lifecycle, and forcing them through the registry would give `Layer` a
+per-layer method grab-bag.
 
 `drawLayers()` becomes `Layers.drawAll()`. The heightmap editor snapshots and restores state instead of
 synthesising clicks, which also removes the need for a per-layer toggle guard:
 
 ```ts
-const storedLayers = Layers.state.active.map(id => Layers.get(id)!); // on enter
-Layers.setActive([heightmapLayer]);
+const storedLayers = Layers.state.active; // on enter
+Layers.set(["heightmap"]);
 // …
-Layers.setActive(storedLayers); // on exit
+Layers.set(storedLayers); // on exit — set takes plain strings and ignores ids it does not know
 ```
 
-During the migration `layerIsOn` survives as a global shim (`window.Layers.get(id)?.isOn`) so that
-untranslated `public/modules/**/*.js` and the ~341 existing call sites keep working; it is deleted as
-those sites are converted.
+Untranslated `public/modules/**/*.js` reads state through `window.Layers.isOn(id)`; the DOM-sniffing
+`layerIsOn` is gone. `window.drawX` bridges survive only where a classic caller still exists — when the
+last one goes, so does the bridge and its `src/types/global.ts` entry.
 
 ## Testing Decisions
 
 - **What makes a good test here:** assert external behaviour of the registry against fake layers —
   what ends up active, in what order the SVG groups sit, which `draw`/`erase` callbacks ran. Do not
   assert on private fields or listener call counts.
-- **Module under test:** `LayersRegistry` and `Layer`. The real map layers are configuration; the
-  individual renderers keep their own tests.
+- **Module under test:** `LayersRegistry` and `Layer`. `LayersRegistry` is exported so the test builds
+  its own instance over fake layers instead of resetting the singleton's module. The real map layers are
+  configuration; the individual renderers keep their own tests.
 - **Representative cases:**
   - `init` creates missing groups, adopts existing ones, and orders both by registration order;
   - `show`/`hide` set `display` and invoke `draw`/`erase` exactly once, and are no-ops when the layer
@@ -766,17 +628,19 @@ those sites are converted.
 
 Four steps; the first three are independently shippable and each leaves the app working.
 
-1. **Registry.** `layers-registry.ts`, `layers.ts`, `Layers.init()` in the startup path taking
+1. **Registry.** `layers.ts` — the `Layer` value, the registry and the layer list in one file — and
+   `Layers.init()` in the startup path taking
    over group creation from `main.js`. `layerIsOn`, `turnButtonOn`, `turnButtonOff` become shims over
    the registry. Nothing else changes; the DOM is still where the tab renders from.
 2. **UI.** Layers tab component and `BUTTONS`; hotkeys through the same table. Delete the `<li>`
    markup in `index.html`, the `toggleX` functions, `getLayer()`, `turnButton*`, and the hotkey chain.
-   Presets and the heightmap editor move onto `setActive`.
+   Presets and the heightmap editor move onto `set`.
 3. **Persistence.** `data[50]` in save/load, `restoreLayers` in `auto-update.ts` (including the fogging
    unwrap), delete the load heuristics. Bump `VERSION` to 1.144.0.
-4. **Cleanup.** Convert the remaining `layerIsOn` call sites to layer values, delete
+4. **Cleanup.** Convert the remaining `layerIsOn` call sites to ids, delete
    `public/modules/ui/layers.js` (moving its ~10 surviving `drawX` functions into `src/renderers/`),
-   delete the shims.
+   route direct `drawX()` calls in controllers through `Layers.draw(id)`, and drop the `window.drawX`
+   bridges that no classic caller reaches.
 
 ## Out of Scope
 
@@ -798,16 +662,14 @@ Four steps; the first three are independently shippable and each leaves the app 
 
 ## Further Notes
 
-- **Import cycles are the main structural risk.** `layers.ts` imports every renderer; if a
-  renderer imports a layer constant back, the constant can be `undefined` at module-evaluation time —
-  the same failure mode as the top-level `mapId` gotcha. The invariant: _a renderer referenced from
-  `layers.ts` never imports `layers.ts`_; it receives its layer as the `draw`/`erase`
-  argument. Non-renderer consumers (`tools.ts`, `map-tooltip.ts`, `hotkeys.ts`, `view-3d-renderer.ts`,
-  editors) import freely because nothing imports them back. The single in-renderer cross-layer read —
-  `layerDependency` in `src/renderers/labels/label-groups.ts` — uses `Layers.get(id)?.isOn`. If the
-  invariant ever becomes awkward, the fallback is for renderers to attach their behaviour
-  (`heightmapLayer.setRenderer({draw, erase})`), which makes cycles structurally impossible at the
-  cost of splitting the spec across files.
+- **Import cycles are the main structural risk.** `layers.ts` holds both the registry and the layer
+  list, so it imports every renderer while renderers import `Layers` back to query state. The cycle is
+  safe only under one invariant: _no renderer touches `Layers` while its module is evaluating_ — every
+  use sits inside a function, where ESM live bindings have already resolved. A top-level
+  `const x = Layers.get(…)` in a renderer would hit the TDZ, the same failure mode as the top-level
+  `mapId` gotcha. Renderers also receive their layer as the `draw`/`erase` argument, so `getEl()` needs
+  no lookup at all. Non-renderer consumers (`tools.ts`, `map-tooltip.ts`, `hotkeys.ts`, editors) are
+  unconstrained because nothing imports them back.
 - **Behavioural change to flag in review:** jQuery `fadeIn`/`fadeOut` on layer toggle is removed —
   layers appear and disappear immediately. The d3 transitions precipitation and population play while
   _drawing_ are unaffected, being part of their `draw`. Their removal animations go, though: `display:

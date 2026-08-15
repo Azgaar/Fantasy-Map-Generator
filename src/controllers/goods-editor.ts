@@ -19,13 +19,11 @@ import {
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { cellsLayer, goodsLayer, marketsLayer, tradeLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { drawGoods } from "../renderers/draw-goods";
 import { ensureEl, getPointer, unique } from "../utils";
 
 const visibleTags = new Set<string>();
@@ -85,7 +83,7 @@ function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
 
-  Layers.show(goodsLayer);
+  Layers.show("goods");
 
   renderDialog();
   goodsTable.reset();
@@ -103,7 +101,7 @@ function getVisibleCount(): number {
 
 function refreshEditor() {
   goodsTable.refresh();
-  drawGoods();
+  Layers.draw("goods");
 }
 
 function renderDialog(): void {
@@ -498,8 +496,8 @@ function goodsRestoreDefaults() {
       Goods.restoreDefaults();
       Goods.generate();
       Production.regenerateEconomy();
-      Layers.draw(marketsLayer, goodsLayer);
-      if (tradeLayer.isOn) tradeAnimation.restart();
+      Layers.draw("markets", "goods");
+      if (Layers.isOn("trade")) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -515,9 +513,9 @@ function enterResourceAssignMode(this: HTMLElement) {
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
   customization = 14;
   this.classList.add("pressed");
-  Layers.show(goodsLayer);
-  if (!cellsLayer.isOn) {
-    Layers.show(cellsLayer);
+  Layers.show("goods");
+  if (!Layers.isOn("cells")) {
+    Layers.show("cells");
     isCellsLayerForced = true;
   }
 
@@ -556,7 +554,7 @@ function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
     resource.visible = true;
   }
 
-  drawGoods();
+  Layers.draw("goods");
 }
 
 let isCellsLayerForced = false; // the cells layer is turned on for the assignment mode
@@ -567,7 +565,7 @@ function exitResourceAssignMode(close?: string) {
   ensureEl("goodsAssign").classList.remove("pressed");
 
   if (isCellsLayerForced) {
-    Layers.hide(cellsLayer);
+    Layers.hide("cells");
     isCellsLayerForced = false;
   }
 
@@ -615,7 +613,7 @@ function toggleDisplayedGood(good: Good, el: HTMLInputElement) {
   good.visible = el.checked;
 
   updateDisplayAllCheckbox();
-  drawGoods();
+  Layers.draw("goods");
 }
 
 function toggleAllDisplayed(this: HTMLInputElement) {
@@ -628,7 +626,7 @@ function toggleAllDisplayed(this: HTMLInputElement) {
       checkbox.checked = checked;
     });
 
-  drawGoods();
+  Layers.draw("goods");
 }
 
 function updateDisplayAllCheckbox() {
@@ -648,7 +646,7 @@ function requestGoodsRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Goods.regenerate();
-      Layers.draw(goodsLayer);
+      Layers.draw("goods");
       refreshEditors();
     }
   });
@@ -662,8 +660,8 @@ function requestProductionRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      Layers.draw(goodsLayer);
-      if (tradeLayer.isOn) tradeAnimation.restart();
+      Layers.draw("goods");
+      if (Layers.isOn("trade")) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -681,7 +679,7 @@ function removeGood(good: Good) {
     pack.goods = pack.goods.filter(g => g.i !== good.i);
     Goods.sync();
     goodsTable.refresh();
-    drawGoods();
+    Layers.draw("goods");
   };
   confirmationDialog({ title: "Remove resource", message, confirm: "Remove", onConfirm });
 }

@@ -12,8 +12,7 @@ import {
 } from "@/components/dialog/table";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
-import { riversLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
@@ -99,7 +98,7 @@ const riversTable = initEditorTable<River>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show(riversLayer);
+  Layers.show("rivers");
 
   renderDialog();
   riversTable.reset();
@@ -232,7 +231,7 @@ function renderRiversPage(view: TableView<River>): void {
 }
 
 function riverHighlightOn(event: Event): void {
-  Layers.show(riversLayer);
+  Layers.show("rivers");
   const r = +(event.target as HTMLElement).dataset.id!;
   select("#rivers").select(`#river${r}`).attr("stroke", "red").attr("stroke-width", 1);
 }

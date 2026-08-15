@@ -1,7 +1,7 @@
 import type * as THREE from "three";
 import type { Burg } from "@/generators/burgs-generator";
 import type { State } from "@/generators/states-generator";
-import { burgIconsLayer, labelsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers";
 import { Services } from "@/services";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";
@@ -523,7 +523,7 @@ async function createLabels() {
     const burgOptions = getBurgLabelOptions(burg);
     const [x, y, z] = get3dCoords(burg.x, burg.y);
 
-    if (labelsLayer.isOn && !burg.label?.hidden) {
+    if (Layers.isOn("labels") && !burg.label?.hidden) {
       const burgSprite = await createTextLabel({ text: burg.label?.text ?? burg.name ?? "", ...burgOptions });
 
       burgSprite.position.set(x, y + burgOptions.elevation, z);
@@ -534,7 +534,7 @@ async function createLabels() {
     }
 
     // icons
-    if (burgIconsLayer.isOn) {
+    if (Layers.isOn("burgIcons")) {
       const geometry = getIconGeometry(burg.group!, burgOptions.iconSize);
       const material = getIconMaterial(burg.group!, burgOptions.iconColor);
       const iconMesh = new Three.Mesh(geometry, material);
@@ -557,7 +557,7 @@ async function createLabels() {
   }
 
   // state labels
-  if (labelsLayer.isOn) {
+  if (Layers.isOn("labels")) {
     for (let i = 1; i < pack.states.length; i++) {
       const state = pack.states[i];
       if (state.removed || state.label?.hidden) continue;

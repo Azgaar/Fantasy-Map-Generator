@@ -4,27 +4,7 @@ import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
-import {
-  bordersLayer,
-  burgIconsLayer,
-  culturesLayer,
-  emblemsLayer,
-  goodsLayer,
-  iceLayer,
-  markersLayer,
-  marketsLayer,
-  militaryLayer,
-  populationLayer,
-  provincesLayer,
-  religionsLayer,
-  riversLayer,
-  routesLayer,
-  statesLayer,
-  tradeLayer,
-  zonesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -136,7 +116,7 @@ function regenerateStateLabels(): void {
     // cleanup custom label data to force recalculation of pathPoints
     if (state.label) delete state.label;
   }
-  drawLabels();
+  Layers.draw("labels");
 }
 
 function regenerateReliefIcons(): void {
@@ -146,17 +126,17 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  Layers.draw(routesLayer);
+  Layers.draw("routes");
 }
 
 function regenerateRivers(): void {
   Rivers.regenerate();
-  Layers.draw(riversLayer);
+  Layers.draw("rivers");
 }
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  Layers.draw(populationLayer, goodsLayer);
+  Layers.draw("population", "goods");
 }
 
 function regenerateStates(): void {
@@ -165,10 +145,10 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   unfog();
-  Layers.draw(statesLayer, bordersLayer, provincesLayer);
-  drawLabels();
-  Layers.draw(burgIconsLayer, militaryLayer, goodsLayer);
-  if (emblemsLayer.isOn) {
+  Layers.draw("states", "borders", "provinces");
+  Layers.draw("labels");
+  Layers.draw("burgIcons", "military", "goods");
+  if (Layers.isOn("emblems")) {
     clearEmblems(["state", "province"]);
     drawEmblems();
   }
@@ -177,9 +157,9 @@ function regenerateStates(): void {
 function regenerateProvinces(): void {
   Provinces.regenerate();
   unfog();
-  Layers.draw(bordersLayer, provincesLayer);
-  drawLabels();
-  if (emblemsLayer.isOn) {
+  Layers.draw("borders", "provinces");
+  Layers.draw("labels");
+  if (Layers.isOn("emblems")) {
     clearEmblems(["province"]);
     drawEmblems();
   }
@@ -187,10 +167,10 @@ function regenerateProvinces(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  Layers.draw(burgIconsLayer);
-  drawLabels();
-  Layers.draw(routesLayer, populationLayer, goodsLayer);
-  if (emblemsLayer.isOn) {
+  Layers.draw("burgIcons");
+  Layers.draw("labels");
+  Layers.draw("routes", "population", "goods");
+  if (Layers.isOn("emblems")) {
     clearEmblems(["burg"]);
     drawEmblems();
   }
@@ -198,64 +178,64 @@ function regenerateBurgs(): void {
 
 function regenerateGoods(): void {
   Goods.regenerate();
-  Layers.draw(goodsLayer);
+  Layers.draw("goods");
 }
 
 function regenerateMarkets(): void {
   Markets.regenerate();
-  Layers.draw(marketsLayer, goodsLayer);
-  if (tradeLayer.isOn) tradeAnimation.restart();
+  Layers.draw("markets", "goods");
+  if (Layers.isOn("trade")) tradeAnimation.restart();
 }
 
 function regenerateEconomy(): void {
   Production.regenerateEconomy();
-  Layers.draw(marketsLayer, goodsLayer);
-  if (tradeLayer.isOn) tradeAnimation.restart();
+  Layers.draw("markets", "goods");
+  if (Layers.isOn("trade")) tradeAnimation.restart();
 }
 
 function regenerateProduction(): void {
   Production.regenerate();
-  Layers.draw(goodsLayer);
-  if (tradeLayer.isOn) tradeAnimation.restart();
+  Layers.draw("goods");
+  if (Layers.isOn("trade")) tradeAnimation.restart();
 }
 
 function regenerateEmblems(): void {
   COA.regenerate();
-  if (!emblemsLayer.isOn) return;
+  if (!Layers.isOn("emblems")) return;
   clearEmblems(["state", "province", "burg"]);
   drawEmblems();
 }
 
 function regenerateReligions(): void {
   Religions.regenerate();
-  Layers.draw(religionsLayer, goodsLayer);
+  Layers.draw("religions", "goods");
 }
 
 function regenerateCultures(): void {
   Cultures.regenerate();
-  Layers.draw(culturesLayer, goodsLayer);
+  Layers.draw("cultures", "goods");
 }
 
 function regenerateMilitary(): void {
   Military.regenerate();
-  Layers.draw(militaryLayer);
+  Layers.draw("military");
 }
 
 function regenerateIce(): void {
   Ice.regenerate();
-  Layers.draw(iceLayer);
+  Layers.draw("ice");
 }
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  Layers.draw(markersLayer);
+  Layers.draw("markers");
 }
 
 function regenerateZones(event: MouseEvent): void {
   function applyZonesRegeneration(multiplier: number): void {
     Zones.regenerate(multiplier);
     refreshEditors();
-    Layers.draw(zonesLayer, goodsLayer);
+    Layers.draw("zones", "goods");
   }
 
   if (!isCtrlClick(event)) {

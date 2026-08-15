@@ -14,9 +14,7 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawMarkets } from "@/renderers/draw-markets";
-import { goodsLayer, marketsLayer, tradeLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName } from "@/utils";
@@ -77,7 +75,7 @@ const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpd
 function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  Layers.show(marketsLayer);
+  Layers.show("markets");
 
   renderDialog();
   marketsTable.reset();
@@ -261,7 +259,7 @@ function renderMarketRow(
 }
 
 function enterMarketsManualAssignment(): void {
-  Layers.show(marketsLayer);
+  Layers.show("markets");
   customization = 15;
   marketsManualHistory = [];
 
@@ -459,7 +457,7 @@ function exitMarketsManualAssignment(apply: boolean): void {
   removeCircle();
 
   if (apply) {
-    drawMarkets();
+    Layers.draw("markets");
     marketsTable.refresh();
   }
 
@@ -496,7 +494,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   if (!ev.shiftKey) exitAddMarketMode();
 
-  Layers.draw(marketsLayer);
+  Layers.draw("markets");
   marketsTable.refresh();
 }
 
@@ -511,7 +509,7 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      Layers.draw(marketsLayer);
+      Layers.draw("markets");
       marketsTable.refresh();
     }
   });
@@ -524,7 +522,7 @@ function marketChangeFill(fillBox: FillBoxElement, marketId: number): void {
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
     market.color = newFill;
-    drawMarkets();
+    Layers.draw("markets");
   };
 
   void Controllers.ColorPicker.open(market.color, callback);
@@ -620,8 +618,8 @@ function regenerateMarkets() {
       if (regenProduction) {
         Production.regenerate();
       }
-      Layers.draw(marketsLayer, goodsLayer);
-      if (tradeLayer.isOn) tradeAnimation.restart();
+      Layers.draw("markets", "goods");
+      if (Layers.isOn("trade")) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -635,8 +633,8 @@ function regenerateProduction() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      Layers.draw(goodsLayer);
-      if (tradeLayer.isOn) tradeAnimation.restart();
+      Layers.draw("goods");
+      if (Layers.isOn("trade")) tradeAnimation.restart();
       refreshEditors();
     }
   });

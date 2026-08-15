@@ -1,40 +1,5 @@
 // Layers tab: a projection of the Layers registry. Holds the only mapping between a layer and its button.
-import {
-  biomesLayer,
-  bordersLayer,
-  burgIconsLayer,
-  cellsLayer,
-  compassLayer,
-  coordinatesLayer,
-  culturesLayer,
-  emblemsLayer,
-  goodsLayer,
-  gridLayer,
-  heightmapLayer,
-  iceLayer,
-  labelsLayer,
-  lakesLayer,
-  markersLayer,
-  marketsLayer,
-  militaryLayer,
-  populationLayer,
-  precipitationLayer,
-  provincesLayer,
-  reliefLayer,
-  religionsLayer,
-  riversLayer,
-  routesLayer,
-  rulersLayer,
-  scaleBarLayer,
-  statesLayer,
-  temperatureLayer,
-  textureLayer,
-  tradeLayer,
-  vignetteLayer,
-  zonesLayer
-} from "@/renderers/layers/layers";
-import type { Layer } from "@/renderers/layers/layers-registry";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { type LayerId, Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -46,48 +11,48 @@ interface LayerButton {
 }
 
 // only layers listed here get a button, in registry order
-export const BUTTONS = new Map<Layer, LayerButton>([
-  [textureLayer, { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
-  [heightmapLayer, { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
-  [lakesLayer, { label: "Lakes", shortcut: "KeyQ" }],
-  [biomesLayer, { label: "<u>B</u>iomes", shortcut: "KeyB" }],
-  [cellsLayer, { label: "C<u>e</u>lls", shortcut: "KeyE" }],
-  [gridLayer, { label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)" }],
-  [coordinatesLayer, { label: "C<u>o</u>ordinates", shortcut: "KeyO" }],
-  [compassLayer, { label: "<u>W</u>ind Rose", shortcut: "KeyW" }],
-  [riversLayer, { label: "Ri<u>v</u>ers", shortcut: "KeyV" }],
-  [reliefLayer, { label: "Relie<u>f</u>", shortcut: "KeyF" }],
-  [religionsLayer, { label: "<u>R</u>eligions", shortcut: "KeyR" }],
-  [culturesLayer, { label: "<u>C</u>ultures", shortcut: "KeyC" }],
-  [statesLayer, { label: "<u>S</u>tates", shortcut: "KeyS" }],
-  [provincesLayer, { label: "<u>P</u>rovinces", shortcut: "KeyP" }],
-  [zonesLayer, { label: "<u>Z</u>ones", shortcut: "KeyZ" }],
-  [bordersLayer, { label: "Bor<u>d</u>ers", shortcut: "KeyD" }],
-  [routesLayer, { label: "Ro<u>u</u>tes", shortcut: "KeyU" }],
-  [temperatureLayer, { label: "<u>T</u>emperature", shortcut: "KeyT" }],
-  [iceLayer, { label: "Ice", shortcut: "KeyJ" }],
-  [goodsLayer, { label: "<u>G</u>oods", shortcut: "KeyG" }],
-  [marketsLayer, { label: "Markets" }],
-  [tradeLayer, { label: "Trade", shortcut: "Backquote", hint: "` (backtick)" }],
-  [precipitationLayer, { label: "Precipit<u>a</u>tion", shortcut: "KeyA" }],
-  [populationLayer, { label: "Populatio<u>n</u>", shortcut: "KeyN" }],
-  [emblemsLayer, { label: "Emblems", shortcut: "KeyY" }],
-  [burgIconsLayer, { label: "<u>I</u>cons", shortcut: "KeyI" }],
-  [labelsLayer, { label: "<u>L</u>abels", shortcut: "KeyL" }],
-  [militaryLayer, { label: "<u>M</u>ilitary", shortcut: "KeyM" }],
-  [markersLayer, { label: "Mar<u>k</u>ers", shortcut: "KeyK" }],
-  [rulersLayer, { label: "Rulers", shortcut: "Equal", hint: "= (equal sign)" }],
-  [scaleBarLayer, { label: "Scale Bar", shortcut: "Slash", hint: "/ (slash sign)" }],
-  [vignetteLayer, { label: "Vignette", shortcut: "BracketLeft", hint: "[ (left square bracket)" }]
+export const BUTTONS = new Map<LayerId, LayerButton>([
+  ["texture", { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
+  ["heightmap", { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
+  ["lakes", { label: "Lakes", shortcut: "KeyQ" }],
+  ["biomes", { label: "<u>B</u>iomes", shortcut: "KeyB" }],
+  ["cells", { label: "C<u>e</u>lls", shortcut: "KeyE" }],
+  ["grid", { label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)" }],
+  ["coordinates", { label: "C<u>o</u>ordinates", shortcut: "KeyO" }],
+  ["compass", { label: "<u>W</u>ind Rose", shortcut: "KeyW" }],
+  ["rivers", { label: "Ri<u>v</u>ers", shortcut: "KeyV" }],
+  ["relief", { label: "Relie<u>f</u>", shortcut: "KeyF" }],
+  ["religions", { label: "<u>R</u>eligions", shortcut: "KeyR" }],
+  ["cultures", { label: "<u>C</u>ultures", shortcut: "KeyC" }],
+  ["states", { label: "<u>S</u>tates", shortcut: "KeyS" }],
+  ["provinces", { label: "<u>P</u>rovinces", shortcut: "KeyP" }],
+  ["zones", { label: "<u>Z</u>ones", shortcut: "KeyZ" }],
+  ["borders", { label: "Bor<u>d</u>ers", shortcut: "KeyD" }],
+  ["routes", { label: "Ro<u>u</u>tes", shortcut: "KeyU" }],
+  ["temperature", { label: "<u>T</u>emperature", shortcut: "KeyT" }],
+  ["ice", { label: "Ice", shortcut: "KeyJ" }],
+  ["goods", { label: "<u>G</u>oods", shortcut: "KeyG" }],
+  ["markets", { label: "Markets" }],
+  ["trade", { label: "Trade", shortcut: "Backquote", hint: "` (backtick)" }],
+  ["precipitation", { label: "Precipit<u>a</u>tion", shortcut: "KeyA" }],
+  ["population", { label: "Populatio<u>n</u>", shortcut: "KeyN" }],
+  ["emblems", { label: "Emblems", shortcut: "KeyY" }],
+  ["burgIcons", { label: "<u>I</u>cons", shortcut: "KeyI" }],
+  ["labels", { label: "<u>L</u>abels", shortcut: "KeyL" }],
+  ["military", { label: "<u>M</u>ilitary", shortcut: "KeyM" }],
+  ["markers", { label: "Mar<u>k</u>ers", shortcut: "KeyK" }],
+  ["rulers", { label: "Rulers", shortcut: "Equal", hint: "= (equal sign)" }],
+  ["scaleBar", { label: "Scale Bar", shortcut: "Slash", hint: "/ (slash sign)" }],
+  ["vignette", { label: "Vignette", shortcut: "BracketLeft", hint: "[ (left square bracket)" }]
 ]);
 
-export const getLayerByShortcut = (code: string): Layer | undefined =>
+export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...BUTTONS].find(([, button]) => button.shortcut === code)?.[0];
 
 function render(): void {
   ensureEl("mapLayers").replaceChildren(
     ...Layers.all.flatMap(layer => {
-      const button = BUTTONS.get(layer);
+      const button = BUTTONS.get(layer.id);
       if (!button) return [];
 
       const item = document.createElement("li");
@@ -95,7 +60,7 @@ function render(): void {
       item.dataset.tip = `${button.label.replace(/<\/?u>/g, "")}: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style`;
       if (button.shortcut) item.dataset.shortcut = button.hint ?? button.shortcut.replace("Key", "");
       item.innerHTML = button.label;
-      item.classList.toggle("buttonoff", !layer.isOn);
+      item.classList.toggle("buttonoff", !Layers.isOn(layer.id));
       item.classList.toggle("solid", layer.params.parent !== "viewbox"); // layers outside the viewbox cannot be reordered
       return [item];
     })
@@ -103,12 +68,11 @@ function render(): void {
 }
 
 ensureEl("mapLayers").addEventListener("click", event => {
-  const layerId = (event.target as HTMLElement).closest("li")?.dataset.layer;
-  const layer = layerId ? Layers.get(layerId) : undefined;
-  if (!layer) return;
+  const id = (event.target as HTMLElement).closest("li")?.dataset.layer;
+  if (!id || !Layers.has(id)) return;
 
-  if (isCtrlClick(event)) return void editStyle(layer.elementId);
-  Layers.toggle(layer);
+  if (isCtrlClick(event)) return void editStyle(Layers.get(id).elementId);
+  Layers.toggle(id);
 });
 
 // move layers on mapLayers dragging. TODO: deprecate jQuery
@@ -117,8 +81,9 @@ $("#mapLayers").sortable({
   containment: "parent",
   cancel: ".solid",
   update: (_event: Event, ui: { item: any }) => {
-    const layer = Layers.get(ui.item.data("layer"));
-    if (layer) Layers.move(layer, Layers.get(ui.item.next().data("layer")));
+    const id = ui.item.data("layer");
+    const before = ui.item.next().data("layer");
+    if (Layers.has(id)) Layers.move(id, Layers.has(before) ? before : undefined);
   }
 });
 

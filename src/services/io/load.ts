@@ -3,8 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
-import { gridLayer, labelsLayer, reliefLayer, rulersLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -763,7 +762,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);
     // draw the layers whose content is not kept in the svg, now that the restored state says which are on
-    Layers.draw(rulersLayer, gridLayer, labelsLayer, reliefLayer);
+    Layers.draw("rulers", "grid", "labels", "relief");
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();

@@ -19,20 +19,7 @@ import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
-import {
-  biomesLayer,
-  bordersLayer,
-  culturesLayer,
-  emblemsLayer,
-  goodsLayer,
-  militaryLayer,
-  populationLayer,
-  provincesLayer,
-  religionsLayer,
-  statesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -161,8 +148,8 @@ function open(): void {
   if (customization) return;
 
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show(statesLayer, bordersLayer);
-  Layers.hide(culturesLayer, biomesLayer, religionsLayer);
+  Layers.show("states", "borders");
+  Layers.hide("cultures", "biomes", "religions");
 
   renderDialog();
   States.collectStatistics();
@@ -509,7 +496,7 @@ function getTypeOptions(type: string | number): string {
 }
 
 function stateHighlightOn(event: any): void {
-  if (!statesLayer.isOn) return;
+  if (!Layers.isOn("states")) return;
   if (select("#deftemp").select("#fog path").size()) return;
 
   const state = +event.target.dataset.id;
@@ -550,8 +537,8 @@ function stateChangeFill(fillBox: FillBoxElement): void {
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
     pack.states[state].color = newFill;
-    drawStates();
-    Layers.draw(militaryLayer);
+    Layers.draw("states");
+    Layers.draw("military");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -662,7 +649,7 @@ function editStateName(state: number): void {
     s.fullName = fullNameInput.value;
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
       if (s.label?.text) delete s.label.text;
-      drawLabels();
+      Layers.draw("labels");
     }
     refreshStatesEditor();
   }
@@ -896,7 +883,7 @@ function changePopulation(stateId: number): void {
       });
     }
 
-    Layers.draw(populationLayer);
+    Layers.draw("population");
     refreshStatesEditor();
   }
 }
@@ -1013,7 +1000,7 @@ function stateRemove(stateId: number): void {
       }
     }
   });
-  drawLabels();
+  Layers.draw("labels");
 
   pack.cells.state.forEach((s: number, i: number) => {
     if (s === stateId) pack.cells.state[i] = 0;
@@ -1057,7 +1044,7 @@ function stateRemove(stateId: number): void {
 
   select("#debug").selectAll(".highlight").remove();
 
-  Layers.draw(statesLayer, bordersLayer, provincesLayer);
+  Layers.draw("states", "borders", "provinces");
 
   refreshStatesEditor();
 }
@@ -1262,13 +1249,13 @@ function recalculateStates(must?: boolean): void {
   Provinces.getPoles();
   States.getPoles();
 
-  Layers.draw(statesLayer, bordersLayer, provincesLayer);
+  Layers.draw("states", "borders", "provinces");
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
     for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
-    drawLabels();
+    Layers.draw("labels");
   }
-  Layers.draw(goodsLayer);
-  if (emblemsLayer.isOn) {
+  Layers.draw("goods");
+  if (Layers.isOn("emblems")) {
     clearEmblems(["state", "province"]);
     drawEmblems();
   }
@@ -1299,7 +1286,7 @@ function exitRegenerationMenu(): void {
 }
 
 function enterStatesManualAssignent(): void {
-  Layers.show(statesLayer);
+  Layers.show("states");
   customization = 2;
   select("#statesBody").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
@@ -1421,17 +1408,17 @@ function applyStatesManualAssignent(): void {
   if (affectedStates.length) {
     refreshStatesEditor();
     States.getPoles();
-    Layers.show(statesLayer);
+    Layers.show("states");
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
         if (pack.states[stateId].label) delete pack.states[stateId].label;
       }
-      drawLabels();
+      Layers.draw("labels");
     }
     adjustProvinces([...new Set(affectedProvinces)]);
-    Layers.show(bordersLayer);
-    Layers.draw(provincesLayer);
+    Layers.show("borders");
+    Layers.draw("provinces");
   }
 
   exitStatesManualAssignment(false);
@@ -1668,7 +1655,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
-  drawLabels();
+  Layers.draw("labels");
 
   if (event.shiftKey === false) exitAddStateMode();
 
@@ -1734,11 +1721,11 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  drawLabels();
+  Layers.draw("labels");
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
-  Layers.hide(provincesLayer);
-  Layers.show(statesLayer, bordersLayer);
+  Layers.hide("provinces");
+  Layers.show("states", "borders");
 
   statesTable.refresh();
 }
@@ -1795,7 +1782,7 @@ function openStateMergeDialog(): void {
   applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
-    if (!statesLayer.isOn) return;
+    if (!Layers.isOn("states")) return;
     const state = +event.currentTarget.dataset.id;
     if (!state) return;
     const d = select("#regions").select(`#state${state}`).attr("d");
@@ -1930,12 +1917,12 @@ function openStateMergeDialog(): void {
     select("#debug").selectAll(".highlight").remove();
 
     States.getPoles();
-    Layers.show(statesLayer, bordersLayer);
-    Layers.draw(provincesLayer);
+    Layers.show("states", "borders");
+    Layers.draw("provinces");
 
     if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
-    drawLabels();
+    Layers.draw("labels");
     refreshStatesEditor();
   }
 }

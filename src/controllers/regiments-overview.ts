@@ -14,8 +14,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import { drawRegiment } from "@/renderers/draw-military";
-import { militaryLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
@@ -29,7 +28,7 @@ const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData,
 function open(state = -1): void {
   if (customization) return;
   closeDialogs(".stable");
-  Layers.show(militaryLayer);
+  Layers.show("military");
 
   renderDialog();
   updateFilter(state);

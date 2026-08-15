@@ -9,9 +9,8 @@ import type { Point } from "@/generators/voronoi";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
-import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
-import { labelsLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
+import { Layers } from "@/renderers/layers/layers";
 import { speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 
@@ -21,7 +20,7 @@ let label: LabelData;
 function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  Layers.show(labelsLayer);
+  Layers.show("labels");
 
   const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
   if (!textEl) return;
@@ -526,7 +525,7 @@ function removeSelectedLabel(): void {
         $(this).dialog("close");
         if (label.type !== "added") return;
         AddedLabels.remove(label.entityId);
-        drawLabels();
+        Layers.draw("labels");
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -556,7 +555,7 @@ function resetSelectedLabel(): void {
   const { type, entityId } = label;
   Labels.resetOverride(type, entityId);
 
-  drawLabels();
+  Layers.draw("labels");
   label = { ...(getSceneLabel(type, entityId) ?? label) };
   makeLabelDraggable(label.id);
   selectLabelGroup(label.group);

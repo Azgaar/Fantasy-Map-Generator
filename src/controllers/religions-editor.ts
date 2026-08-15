@@ -16,16 +16,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawReligions } from "@/renderers/draw-religions";
-import {
-  biomesLayer,
-  culturesLayer,
-  populationLayer,
-  provincesLayer,
-  religionsLayer,
-  statesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
@@ -127,9 +118,9 @@ const religionsTable = initEditorTable<Religion>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  Layers.show(religionsLayer);
-  Layers.hide(statesLayer, biomesLayer);
-  Layers.hide(culturesLayer, provincesLayer);
+  Layers.show("religions");
+  Layers.hide("states", "biomes");
+  Layers.hide("cultures", "provinces");
 
   renderDialog();
   religionsCollectStatistics();
@@ -497,7 +488,7 @@ const religionHighlightOn = debounce((event: any) => {
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.add("active");
 
-  if (!religionsLayer.isOn) return;
+  if (!Layers.isOn("religions")) return;
   if (customization) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
@@ -667,7 +658,7 @@ function changePopulation(this: HTMLElement): void {
       });
     }
 
-    Layers.draw(populationLayer);
+    Layers.draw("population");
     refreshReligionsEditor();
   }
 }
@@ -853,7 +844,7 @@ function toggleExtinct(): void {
 }
 
 function enterReligionsManualAssignent(): void {
-  Layers.show(religionsLayer);
+  Layers.show("religions");
   customization = 7;
   select("#relig").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
@@ -967,7 +958,7 @@ function applyReligionsManualAssignent(): void {
   });
 
   if (changed.size()) {
-    drawReligions();
+    Layers.draw("religions");
     refreshReligionsEditor();
     drawReligionCenters();
   }
@@ -1047,7 +1038,7 @@ function addReligion(this: SVGElement, event: MouseEvent): void {
   if (event.shiftKey === false) exitAddReligionMode();
   Religions.add(center);
 
-  drawReligions();
+  Layers.draw("religions");
   refreshReligionsEditor();
   drawReligionCenters();
 }
@@ -1107,7 +1098,7 @@ function recalculateReligions(must?: boolean): void {
 
   Religions.recalculate();
 
-  drawReligions();
+  Layers.draw("religions");
   refreshReligionsEditor();
   drawReligionCenters();
 }

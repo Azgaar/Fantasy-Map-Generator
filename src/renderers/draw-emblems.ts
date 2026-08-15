@@ -189,4 +189,3 @@ const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
 export { emblemsRenderer as drawEmblems, renderGroupCOAsRenderer as renderGroupCOAs };
 
 window.drawEmblems = emblemsRenderer;
-window.renderGroupCOAs = renderGroupCOAsRenderer;

@@ -47,7 +47,7 @@ function getReliefState(page: Page) {
       relief: (window as any).pack.relief,
       // `style` is script-scoped, so it has to be read off the lexical global rather than off window
       style: style.relief,
-      layerIsOn: (window as any).Layers.get("relief").isOn,
+      layerIsOn: (window as any).Layers.isOn("relief"),
       terrainStyle: terrain?.getAttribute("style") ?? null
     };
   });
@@ -398,7 +398,7 @@ test.describe("Map loading", () => {
     await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
 
     const savedLayers = await page.evaluate(async () => {
-      (window as any).Layers.show((window as any).Layers.get("labels"));
+      (window as any).Layers.show("labels");
       document.getElementById("labels")?.replaceChildren();
       const mapData = await (window as any).Services.Save.prepareMapData();
       return JSON.parse(mapData.split("\r\n")[50]);
@@ -421,7 +421,7 @@ test.describe("Map loading", () => {
         "changeMapZoom"
       ].filter(name => typeof (window as any)[name] !== "function");
 
-      (window as any).Layers.show((window as any).Layers.get("labels"));
+      (window as any).Layers.show("labels");
       options.labels.showAll = true;
       (window as any).drawLabels();
       const burgLabel = document.querySelector<SVGTextElement>('#labels [id^="burgLabel"]');

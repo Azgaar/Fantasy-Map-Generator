@@ -4,16 +4,7 @@ import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
 import { getFeaturePath } from "@/renderers/draw-features";
-import {
-  biomesLayer,
-  bordersLayer,
-  cellsLayer,
-  culturesLayer,
-  provincesLayer,
-  religionsLayer,
-  statesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
@@ -22,7 +13,7 @@ let selectedCoastline: Selection<SVGElement, unknown, HTMLElement, unknown>;
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
-  Layers.hide(cellsLayer);
+  Layers.hide("cells");
 
   renderDialog();
 
@@ -139,9 +130,9 @@ function handleVertexDrag(
 }
 
 function handleVertexDragEnd(): void {
-  Layers.draw(statesLayer, provincesLayer);
-  Layers.draw(bordersLayer, biomesLayer);
-  Layers.draw(religionsLayer, culturesLayer);
+  Layers.draw("states", "provinces");
+  Layers.draw("borders", "biomes");
+  Layers.draw("religions", "cultures");
 }
 
 function showGroupSection(): void {

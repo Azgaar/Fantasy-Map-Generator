@@ -30,9 +30,9 @@ test.describe("layers round-trip", () => {
 
     // a state that differs from the default preset in both membership and order
     const before = await page.evaluate(() => {
-      Layers.show(Layers.get("biomes"), Layers.get("cells"));
-      Layers.hide(Layers.get("labels"));
-      Layers.move(Layers.get("texture"), Layers.get("relief")); // texture is no longer in its registration slot
+      Layers.show("biomes", "cells");
+      Layers.hide("labels");
+      Layers.move("texture", "relief"); // texture is no longer in its registration slot
       return Layers.state;
     });
 

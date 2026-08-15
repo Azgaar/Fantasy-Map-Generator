@@ -3,8 +3,7 @@ import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarker } from "@/renderers/draw-markers";
-import { markersLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, findEl, rn } from "@/utils";
 
 function toggle(baseMarker?: Marker): void {
@@ -23,7 +22,7 @@ function toggle(baseMarker?: Marker): void {
   );
   document.getElementById("markersAddFromOverview")?.classList.add("pressed");
   document.getElementById("markerAdd")?.classList.add("pressed");
-  Layers.show(markersLayer);
+  Layers.show("markers");
 }
 
 function addOnClick(event: MouseEvent, baseMarker?: Marker): void {

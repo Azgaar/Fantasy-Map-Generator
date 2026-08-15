@@ -4,9 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawMeasurers } from "@/renderers/draw-measurers";
-import { rulersLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, getSegmentId, last, rn } from "../utils";
 
@@ -22,7 +20,7 @@ function open(): void {
   if (customization) return;
 
   closeDialogs("#measurersEditor, .stable");
-  Layers.show(rulersLayer);
+  Layers.show("rulers");
 
   renderDialog();
   select("#ruler").classed("editable", true); // interactive cursor while the editor is open
@@ -64,13 +62,13 @@ function renderDialog(): void {
 function onClose(): void {
   if (ensureEl("measurersBottom").querySelector(".pressed")) exitDrawingMode();
   select("#ruler").classed("editable", false);
-  Layers.draw(rulersLayer);
+  Layers.draw("rulers");
   destroyDialog("measurersEditor");
 }
 
 // every data change goes through a full redraw
 function redraw(): void {
-  drawMeasurers();
+  Layers.draw("rulers");
 
   const groups = document.querySelectorAll<SVGGElement>("#ruler > g");
   groups.forEach((node, index) => {

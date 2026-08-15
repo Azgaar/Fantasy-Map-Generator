@@ -164,6 +164,4 @@ const bordersRenderer = () => {
   TIME && console.timeEnd("drawBorders");
 };
 
-window.drawBorders = bordersRenderer;
-
 export { bordersRenderer as drawBorders };

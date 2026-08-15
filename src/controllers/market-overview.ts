@@ -12,8 +12,7 @@ import {
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { marketsLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
@@ -255,7 +254,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!Markets.relocateMarket(activeMarketId, burgId)) return;
 
   toggleRelocateMarket();
-  Layers.draw(marketsLayer);
+  Layers.draw("markets");
 
   refreshNameInput(market);
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);

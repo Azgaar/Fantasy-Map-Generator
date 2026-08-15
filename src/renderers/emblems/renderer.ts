@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { emblemsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -320,7 +320,7 @@ class EmblemRenderModule {
       const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
       g.insertAdjacentHTML("beforeend", use);
     }
-    if (emblemsLayer.isOn) this.trigger(id, coa);
+    if (Layers.isOn("emblems")) this.trigger(id, coa);
   }
 }
 window.COArenderer = new EmblemRenderModule();

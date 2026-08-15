@@ -4,8 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { cellsLayer, riversLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
@@ -15,10 +14,10 @@ let isCellsLayerForced = false; // the cells layer is turned on for the editing 
 function open(): void {
   if (customization) return;
   closeDialogs();
-  Layers.show(riversLayer);
+  Layers.show("rivers");
 
-  isCellsLayerForced = !cellsLayer.isOn;
-  Layers.show(cellsLayer);
+  isCellsLayerForced = !Layers.isOn("cells");
+  Layers.show("cells");
 
   tip("Click to add river point, click again to remove", true);
   select("#debug").append("g").attr("id", "controlCells");
@@ -169,7 +168,7 @@ function closeRiverCreator(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
 
-  if (isCellsLayerForced) Layers.hide(cellsLayer);
+  if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
   destroyDialog("riverCreator");

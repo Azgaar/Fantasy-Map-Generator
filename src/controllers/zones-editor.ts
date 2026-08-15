@@ -16,9 +16,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawZones } from "@/renderers/draw-zones";
-import { populationLayer, zonesLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
@@ -45,7 +43,7 @@ const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: r
 
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
-  Layers.show(zonesLayer);
+  Layers.show("zones");
 
   renderDialog();
   updateFilters();
@@ -274,7 +272,7 @@ function zoneHighlightOff(this: HTMLElement): void {
 }
 
 function filterZonesByType(): void {
-  drawZones();
+  Layers.draw("zones");
   zonesTable.reset();
 }
 
@@ -290,11 +288,11 @@ function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): 
   const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
   const newIndex = nextIndex >= 0 ? nextIndex : previousIndex >= 0 ? previousIndex + 1 : pack.zones.length;
   pack.zones.splice(newIndex, 0, zone);
-  drawZones();
+  Layers.draw("zones");
 }
 
 function enterZonesManualAssignent(): void {
-  Layers.show(zonesLayer);
+  Layers.show("zones");
   customization = 10;
   const body = ensureEl("zonesBodySection");
 
@@ -411,13 +409,13 @@ function applyZonesManualAssignent(): void {
     zone.cells = zoneCells[zone.i] || [];
   });
 
-  drawZones();
+  Layers.draw("zones");
   zonesTable.refresh();
   exitZonesManualAssignment();
 }
 
 function cancelZonesManualAssignent(): void {
-  drawZones();
+  Layers.draw("zones");
   exitZonesManualAssignment();
 }
 
@@ -452,7 +450,7 @@ function changeFill(fillBox: FillBoxElement, zone: Zone): void {
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
     zone.color = newFill;
-    drawZones();
+    Layers.draw("zones");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -462,7 +460,7 @@ function toggleVisibility(zone: Zone): void {
   if (zone.hidden) delete zone.hidden;
   else zone.hidden = true;
 
-  drawZones();
+  Layers.draw("zones");
   zonesTable.refresh();
 }
 
@@ -505,7 +503,7 @@ function addZonesLayer(): void {
   pack.zones.push({ i: zoneId, name, type, color, cells: [] });
 
   zonesTable.refresh();
-  drawZones();
+  Layers.draw("zones");
 }
 
 function downloadZonesData(): void {
@@ -607,7 +605,7 @@ function changePopulation(zone: Zone): void {
       });
     }
 
-    Layers.draw(populationLayer);
+    Layers.draw("population");
     zonesTable.refresh();
   }
 }

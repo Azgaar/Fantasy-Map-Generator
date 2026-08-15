@@ -66,14 +66,8 @@ class TestFlatQueue {
 
 let isTradeLayerOn = true;
 
-vi.mock("@/renderers/layers/map-layers", () => ({
-  get tradeLayer() {
-    return {
-      get isOn() {
-        return isTradeLayerOn;
-      }
-    };
-  }
+vi.mock("@/renderers/layers/layers", () => ({
+  Layers: { isOn: (id: string) => id === "trade" && isTradeLayerOn }
 }));
 
 beforeEach(() => {

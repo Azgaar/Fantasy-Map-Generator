@@ -1,8 +1,7 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { markersLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { ensureEl } from "@/utils";
 
 const DIALOG_ID = "markersSettings";
@@ -22,7 +21,7 @@ function open(): void {
       Regenerate: () => {
         applyChanges();
         Markers.regenerate();
-        Layers.draw(markersLayer);
+        Layers.draw("markers");
         refreshEditors();
         drawConfigTable();
       },

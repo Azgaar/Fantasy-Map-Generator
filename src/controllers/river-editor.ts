@@ -4,9 +4,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { cellsLayer, riversLayer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rand, rn } from "../utils";
 
@@ -18,10 +16,10 @@ function open(id: string): void {
   if (customization) return;
   if (findEl("riverEditor") && id === selectedRiver.attr("id")) return;
   closeDialogs(".stable");
-  Layers.show(riversLayer);
+  Layers.show("rivers");
 
-  isCellsLayerForced = !cellsLayer.isOn;
-  Layers.show(cellsLayer);
+  isCellsLayerForced = !Layers.isOn("cells");
+  Layers.show("cells");
 
   selectedRiver = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
@@ -245,7 +243,7 @@ function redrawRiver(): void {
   selectedRiver.attr("d", path);
 
   updateRiverLength(river);
-  drawLabels();
+  Layers.draw("labels");
   if (findEl("elevationProfile")) showRiverElevationProfile();
 }
 
@@ -350,7 +348,7 @@ function closeRiverEditor(): void {
   selectedRiver.on("click", null);
   clearMainTip();
 
-  if (isCellsLayerForced) Layers.hide(cellsLayer);
+  if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
   destroyDialog("riverEditor");

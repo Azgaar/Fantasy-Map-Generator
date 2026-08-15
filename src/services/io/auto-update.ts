@@ -15,19 +15,7 @@ import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { drawTexture } from "@/renderers/draw-texture";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import {
-  bordersLayer,
-  burgIconsLayer,
-  heightmapLayer,
-  iceLayer,
-  markersLayer,
-  militaryLayer,
-  routesLayer,
-  scaleBarLayer,
-  statesLayer,
-  zonesLayer
-} from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers";
 import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
@@ -126,8 +114,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    if (!bordersLayer.isOn) $("#borders").fadeOut();
-    if (!statesLayer.isOn) select("#regions").attr("display", "none").selectAll("path").remove();
+    if (!Layers.isOn("borders")) $("#borders").fadeOut();
+    if (!Layers.isOn("states")) select("#regions").attr("display", "none").selectAll("path").remove();
 
     // v1.0 added zones layer
     zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
@@ -674,7 +662,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       markerElements.forEach(el => {
         el.remove();
       });
-      Layers.draw(markersLayer);
+      Layers.draw("markers");
     }
   }
 
@@ -887,7 +875,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("curve", curve)
       .attr("mask", "url(#land)");
 
-    Layers.draw(heightmapLayer);
+    Layers.draw("heightmap");
 
     // v1.96.00 moved scaleBar options from units editor to style
     select("#scaleBar").remove();
@@ -919,7 +907,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     drawScaleBar(select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], scale);
     fitScaleBar(select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], svgWidth, svgHeight);
 
-    if (!scaleBarLayer.isOn) select("#scaleBar").style("display", "none");
+    if (!Layers.isOn("scaleBar")) select("#scaleBar").style("display", "none");
 
     // v1.96.00 changed coloring approach for regiments
     armies.selectAll<SVGGElement, unknown>(":scope > g").each(function () {
@@ -989,7 +977,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     }
     select("#routes").selectAll("path").remove();
-    Layers.draw(routesLayer);
+    Layers.draw("routes");
 
     pack.cells.routes = {};
     const links = pack.cells.routes;
@@ -1023,7 +1011,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         pack.zones.push({ i, name, type, cells, color } as unknown as (typeof pack.zones)[number]);
       });
     select("#zones").style("display", null).selectAll("*").remove();
-    Layers.draw(zonesLayer);
+    Layers.draw("zones");
   }
 
   if (isOlderThan("1.104.0")) {
@@ -1063,7 +1051,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.107.0")) {
     // v1.107.0 allowed custom images for markers and regiments
-    Layers.draw(markersLayer, militaryLayer);
+    Layers.draw("markers", "military");
   }
 
   if (isOlderThan("1.108.0")) {
@@ -1143,7 +1131,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     });
 
-    Layers.draw(burgIconsLayer);
+    Layers.draw("burgIcons");
     const opts = options as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
@@ -1217,7 +1205,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
 
       // Re-render ice from migrated data
-      Layers.draw(iceLayer);
+      Layers.draw("ice");
     }
   }
 
@@ -1312,7 +1300,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("relax", null)
         .attr("curve", null)
         .attr("mask", null);
-      Layers.draw(heightmapLayer);
+      Layers.draw("heightmap");
     }
   }
 

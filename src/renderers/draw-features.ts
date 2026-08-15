@@ -85,6 +85,4 @@ function featurePathRenderer(feature: Feature): string {
   return `${round(buildCoastlinePath(shape))}Z`;
 }
 
-window.drawFeatures = featuresRenderer;
-
 export { featurePathRenderer as getFeaturePath, featuresRenderer as drawFeatures };

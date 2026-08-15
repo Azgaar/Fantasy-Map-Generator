@@ -88,7 +88,7 @@ test.describe("Lakes layer", () => {
     // Simulate the drag of Lakes above Heightmap in the panel
     await page.evaluate(() => {
       const Layers = (window as any).Layers;
-      Layers.move(Layers.get("lakes"), Layers.get("heightmap"));
+      Layers.move("lakes", "heightmap");
     });
 
     // After move: #lakes should be before #terrs in SVG → renders behind heightmap
