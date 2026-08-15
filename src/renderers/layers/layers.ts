@@ -48,12 +48,7 @@ export const landmassLayer = new Layer({
   draw: drawFeatures
 });
 
-export const textureLayer = new Layer({
-  id: "texture",
-  element: "texture",
-  parent: "viewbox",
-  draw: drawTexture
-});
+export const textureLayer = new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture });
 
 export const heightmapLayer = new Layer({
   id: "heightmap",

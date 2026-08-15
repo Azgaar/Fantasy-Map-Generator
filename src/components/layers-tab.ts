@@ -1,5 +1,4 @@
 // Layers tab: a projection of the Layers registry. Holds the only mapping between a layer and its button.
-
 import {
   biomesLayer,
   bordersLayer,
@@ -41,12 +40,9 @@ import { isCtrlClick } from "@/utils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 interface LayerButton {
-  /** button text, may contain markup marking the shortcut letter */
-  label: string;
-  /** KeyboardEvent.code */
-  shortcut?: string;
-  /** shortcut as shown in the tip, defaults to the code without the "Key" prefix */
-  hint?: string;
+  label: string; // button text, may contain markup marking the shortcut letter
+  shortcut?: string; // KeyboardEvent.code
+  hint?: string; // shortcut as shown in the tip, defaults to the code without the "Key" prefix
 }
 
 // only layers listed here get a button, in registry order
@@ -88,10 +84,8 @@ export const BUTTONS = new Map<Layer, LayerButton>([
 export const getLayerByShortcut = (code: string): Layer | undefined =>
   [...BUTTONS].find(([, button]) => button.shortcut === code)?.[0];
 
-const list = ensureEl("mapLayers");
-
 function render(): void {
-  list.replaceChildren(
+  ensureEl("mapLayers").replaceChildren(
     ...Layers.all.flatMap(layer => {
       const button = BUTTONS.get(layer);
       if (!button) return [];
@@ -108,7 +102,7 @@ function render(): void {
   );
 }
 
-list.addEventListener("click", event => {
+ensureEl("mapLayers").addEventListener("click", event => {
   const layerId = (event.target as HTMLElement).closest("li")?.dataset.layer;
   const layer = layerId ? Layers.get(layerId) : undefined;
   if (!layer) return;
@@ -117,7 +111,7 @@ list.addEventListener("click", event => {
   Layers.toggle(layer);
 });
 
-// move layers on mapLayers dragging (jquery sortable)
+// move layers on mapLayers dragging. TODO: deprecate jQuery
 $("#mapLayers").sortable({
   items: "li:not(.solid)",
   containment: "parent",

@@ -5,13 +5,13 @@
 A map layer has no single definition anywhere in the codebase. Its identity is spread across five
 places, none of which is authoritative:
 
-| Concern | Where it lives today |
-|---|---|
-| On/off state | `class="buttonoff"` on an `<li>`, read back via `layerIsOn()` (`public/modules/ui/layers.js:993`) |
-| Toggle behaviour | ~25 near-identical `toggleX(event)` functions (`public/modules/ui/layers.js:264-983`) |
-| Button → SVG group | the `getLayer()` if-chain (`public/modules/ui/layers.js:1021`) |
-| Label, tip, shortcut | 32 hand-written `<li>` blocks (`src/index.html:437`) plus a 32-branch `else if` (`src/components/hotkeys.ts:75`) |
-| Whether it is on after load | 30 lines of per-layer DOM heuristics (`src/services/io/load.ts:504`) |
+| Concern                     | Where it lives today                                                                                             |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| On/off state                | `class="buttonoff"` on an `<li>`, read back via `layerIsOn()` (`public/modules/ui/layers.js:993`)                |
+| Toggle behaviour            | ~25 near-identical `toggleX(event)` functions (`public/modules/ui/layers.js:264-983`)                            |
+| Button → SVG group          | the `getLayer()` if-chain (`public/modules/ui/layers.js:1021`)                                                   |
+| Label, tip, shortcut        | 32 hand-written `<li>` blocks (`src/index.html:437`) plus a 32-branch `else if` (`src/components/hotkeys.ts:75`) |
+| Whether it is on after load | 30 lines of per-layer DOM heuristics (`src/services/io/load.ts:504`)                                             |
 
 Consequences:
 
@@ -29,7 +29,7 @@ Consequences:
   `debug` and `legend` are layers by every structural measure — they occupy a slot in the z-order and
   are drawn — but because they have no button they are absent from every layer mechanism and are
   hand-maintained in `main.js`.
-- **Layer state is not saved.** It is *guessed* on load by sniffing the restored SVG ("does
+- **Layer state is not saved.** It is _guessed_ on load by sniffing the restored SVG ("does
   `#statesBody` have children?"), which is both fragile and the reason several layers restore wrong.
 
 ## Solution
@@ -194,12 +194,12 @@ Decisions:
   `#scaleBarBack`, the vignette rect, the compass `<use>` — is content produced by the renderer or
   already present in `src/index.html`, and is not the registry's business.
 - **`draw` receives its own layer**, so a renderer never needs to import the layer constant it
-  belongs to (see *Import cycles* under Further Notes).
+  belongs to (see _Import cycles_ under Further Notes).
 
 ### Registry
 
 ```ts
-// src/renderers/layers/layers.ts
+// src/renderers/layers/layers-registry.ts
 class LayersRegistry {
   private layers: Layer[] = [];
   private listeners = new Set<() => void>();
@@ -241,7 +241,10 @@ class LayersRegistry {
   /** turn on the listed layers and turn off every other user-controlled one, drawing the ones that were off */
   setActive(active: Layer[]): void {
     const drawn = this.layers.filter(layer => active.includes(layer) && !layer.isOn);
-    this.change(this.layers.filter(layer => !layer.params.alwaysOn && !active.includes(layer)), false);
+    this.change(
+      this.layers.filter(layer => !layer.params.alwaysOn && !active.includes(layer)),
+      false
+    );
     this.change(active, true);
     this.draw(...drawn);
     this.emit();
@@ -262,11 +265,11 @@ class LayersRegistry {
   }
 
   get state(): LayersState {
-    return {order: this.layers.map(l => l.id), active: this.layers.filter(l => l.isOn).map(l => l.id)};
+    return { order: this.layers.map(l => l.id), active: this.layers.filter(l => l.isOn).map(l => l.id) };
   }
 
   /** adopts persisted state: never draws — the loaded svg already holds the content */
-  restore({order, active}: LayersState): void {
+  restore({ order, active }: LayersState): void {
     this.sortBy(order);
     this.layers.forEach(layer => layer.setActive(active.includes(layer.id)));
     this.reproject();
@@ -337,37 +340,90 @@ One file, imported for its side effect at startup. `Layers.init()` is called fro
 (`public/main.js`), right before the legacy globals select the groups it creates.
 
 ```ts
-// src/renderers/layers/map-layers.ts — this order is z-order, init order and draw order
+// src/renderers/layers/layers.ts — this order is z-order, init order and draw order
 export const oceanLayer = new Layer({
-  id: "ocean", element: "ocean", parent: "viewbox", children: ["oceanLayers", "oceanPattern"]
+  id: "ocean",
+  element: "ocean",
+  parent: "viewbox",
+  children: ["oceanLayers", "oceanPattern"]
 });
-export const landmassLayer = new Layer({id: "landmass", element: "landmass", parent: "viewbox", draw: drawFeatures});
+export const landmassLayer = new Layer({ id: "landmass", element: "landmass", parent: "viewbox", draw: drawFeatures });
 export const textureLayer = new Layer({
-  id: "texture", element: "texture", parent: "viewbox", draw: drawTexture, erase: eraseTexture
+  id: "texture",
+  element: "texture",
+  parent: "viewbox",
+  draw: drawTexture,
+  erase: eraseTexture
 });
 export const heightmapLayer = new Layer({
-  id: "heightmap", element: "terrs", parent: "viewbox", children: ["oceanHeights", "landHeights"],
-  draw: drawHeightmap, erase: eraseHeightmap
+  id: "heightmap",
+  element: "terrs",
+  parent: "viewbox",
+  children: ["oceanHeights", "landHeights"],
+  draw: drawHeightmap,
+  erase: eraseHeightmap
 });
 export const lakesLayer = new Layer({
-  id: "lakes", element: "lakes", parent: "viewbox",
-  children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"], draw: drawLakes
+  id: "lakes",
+  element: "lakes",
+  parent: "viewbox",
+  children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
+  draw: drawLakes
 });
 // …
 export const foggingLayer = new Layer({
-  id: "fogging", element: "fogging", parent: "viewbox", attrs: {mask: "url(#fog)"}
+  id: "fogging",
+  element: "fogging",
+  parent: "viewbox",
+  attrs: { mask: "url(#fog)" }
 });
-export const scaleBarLayer = new Layer({id: "scaleBar", element: "scaleBar", parent: "map", draw: drawScaleBar});
+export const scaleBarLayer = new Layer({ id: "scaleBar", element: "scaleBar", parent: "map", draw: drawScaleBar });
 export const vignetteLayer = new Layer({
-  id: "vignette", element: "vignette", parent: "map", attrs: {mask: "url(#vignette-mask)"}
+  id: "vignette",
+  element: "vignette",
+  parent: "map",
+  attrs: { mask: "url(#vignette-mask)" }
 });
 
 Layers.register(
-  oceanLayer, landmassLayer, textureLayer, heightmapLayer, lakesLayer, biomesLayer, cellsLayer, gridLayer,
-  coordinatesLayer, compassLayer, riversLayer, reliefLayer, religionsLayer, culturesLayer, statesLayer,
-  provincesLayer, zonesLayer, bordersLayer, routesLayer, temperatureLayer, coastlineLayer, iceLayer, goodsLayer,
-  marketsLayer, tradeLayer, precipitationLayer, populationLayer, emblemsLayer, burgIconsLayer, labelsLayer,
-  militaryLayer, markersLayer, foggingLayer, rulersLayer, debugLayer, scaleBarLayer, vignetteLayer, legendLayer
+  oceanLayer,
+  landmassLayer,
+  textureLayer,
+  heightmapLayer,
+  lakesLayer,
+  biomesLayer,
+  cellsLayer,
+  gridLayer,
+  coordinatesLayer,
+  compassLayer,
+  riversLayer,
+  reliefLayer,
+  religionsLayer,
+  culturesLayer,
+  statesLayer,
+  provincesLayer,
+  zonesLayer,
+  bordersLayer,
+  routesLayer,
+  temperatureLayer,
+  coastlineLayer,
+  iceLayer,
+  goodsLayer,
+  marketsLayer,
+  tradeLayer,
+  precipitationLayer,
+  populationLayer,
+  emblemsLayer,
+  burgIconsLayer,
+  labelsLayer,
+  militaryLayer,
+  markersLayer,
+  foggingLayer,
+  rulersLayer,
+  debugLayer,
+  scaleBarLayer,
+  vignetteLayer,
+  legendLayer
 );
 ```
 
@@ -377,46 +433,46 @@ This replaces the 55-line `viewbox.append("g")` block in `public/main.js:36-90`.
 
 In registration order. "Button" marks layers that appear in the Layers tab; the rest are technical.
 
-| id | element | parent | button | erase strategy |
-|---|---|---|---|---|
-| ocean | `ocean` | viewbox | — | — |
-| landmass | `landmass` | viewbox | — | — |
-| texture | `texture` | viewbox | yes | remove `image` |
-| heightmap | `terrs` | viewbox | yes | clear height sub-groups |
-| lakes | `lakes` | viewbox | yes | keep content |
-| biomes | `biomes` | viewbox | yes | remove paths |
-| cells | `cells` | viewbox | yes | remove paths |
-| grid | `gridOverlay` | viewbox | yes | clear |
-| coordinates | `coordinates` | viewbox | yes | clear |
-| compass | `compass` | viewbox | yes | keep content |
-| rivers | `rivers` | viewbox | yes | clear |
-| relief | `terrain` | viewbox | yes | invalidate scene |
-| religions | `relig` | viewbox | yes | remove paths |
-| cultures | `cults` | viewbox | yes | remove paths |
-| states | `regions` | viewbox | yes | remove paths |
-| provinces | `provs` | viewbox | yes | clear |
-| zones | `zones` | viewbox | yes | clear |
-| borders | `borders` | viewbox | yes | remove paths |
-| routes | `routes` | viewbox | yes | remove paths |
-| temperature | `temperature` | viewbox | yes | clear |
-| coastline | `coastline` | viewbox | — | — |
-| ice | `ice` | viewbox | yes | keep content |
-| goods | `goods` | viewbox | yes | clear sub-groups |
-| markets | `markets` | viewbox | yes | clear |
-| trade | `tradeAnimation` | viewbox | yes | `TradeAnimation.stop()` |
-| precipitation | `prec` | viewbox | yes | remove circles |
-| population | `population` | viewbox | yes | clear sub-groups |
-| emblems | `emblems` | viewbox | yes | keep content |
-| burgIcons | `icons` | viewbox | yes | remove `circle, use` |
-| labels | `labels` | viewbox | yes | invalidate scene |
-| military | `armies` | viewbox | yes | remove groups |
-| markers | `markers` | viewbox | yes | clear |
-| fogging | `fogging` | viewbox | — | — |
-| rulers | `ruler` | viewbox | yes | clear |
-| debug | `debug` | viewbox | — | — |
-| scaleBar | `scaleBar` | map | yes | keep content |
-| vignette | `vignette` | map | yes | keep content |
-| legend | `legend` | map | — | — |
+| id            | element          | parent  | button | erase strategy          |
+| ------------- | ---------------- | ------- | ------ | ----------------------- |
+| ocean         | `ocean`          | viewbox | —      | —                       |
+| landmass      | `landmass`       | viewbox | —      | —                       |
+| texture       | `texture`        | viewbox | yes    | remove `image`          |
+| heightmap     | `terrs`          | viewbox | yes    | clear height sub-groups |
+| lakes         | `lakes`          | viewbox | yes    | keep content            |
+| biomes        | `biomes`         | viewbox | yes    | remove paths            |
+| cells         | `cells`          | viewbox | yes    | remove paths            |
+| grid          | `gridOverlay`    | viewbox | yes    | clear                   |
+| coordinates   | `coordinates`    | viewbox | yes    | clear                   |
+| compass       | `compass`        | viewbox | yes    | keep content            |
+| rivers        | `rivers`         | viewbox | yes    | clear                   |
+| relief        | `terrain`        | viewbox | yes    | invalidate scene        |
+| religions     | `relig`          | viewbox | yes    | remove paths            |
+| cultures      | `cults`          | viewbox | yes    | remove paths            |
+| states        | `regions`        | viewbox | yes    | remove paths            |
+| provinces     | `provs`          | viewbox | yes    | clear                   |
+| zones         | `zones`          | viewbox | yes    | clear                   |
+| borders       | `borders`        | viewbox | yes    | remove paths            |
+| routes        | `routes`         | viewbox | yes    | remove paths            |
+| temperature   | `temperature`    | viewbox | yes    | clear                   |
+| coastline     | `coastline`      | viewbox | —      | —                       |
+| ice           | `ice`            | viewbox | yes    | keep content            |
+| goods         | `goods`          | viewbox | yes    | clear sub-groups        |
+| markets       | `markets`        | viewbox | yes    | clear                   |
+| trade         | `tradeAnimation` | viewbox | yes    | `TradeAnimation.stop()` |
+| precipitation | `prec`           | viewbox | yes    | remove circles          |
+| population    | `population`     | viewbox | yes    | clear sub-groups        |
+| emblems       | `emblems`        | viewbox | yes    | keep content            |
+| burgIcons     | `icons`          | viewbox | yes    | remove `circle, use`    |
+| labels        | `labels`         | viewbox | yes    | invalidate scene        |
+| military      | `armies`         | viewbox | yes    | remove groups           |
+| markers       | `markers`        | viewbox | yes    | clear                   |
+| fogging       | `fogging`        | viewbox | —      | —                       |
+| rulers        | `ruler`          | viewbox | yes    | clear                   |
+| debug         | `debug`          | viewbox | —      | —                       |
+| scaleBar      | `scaleBar`       | map     | yes    | keep content            |
+| vignette      | `vignette`       | map     | yes    | keep content            |
+| legend        | `legend`         | map     | —      | —                       |
 
 `landmass` and `coastline` are both filled by `drawFeatures`; only `landmass` carries the `draw` to
 avoid running it twice. Splitting `drawFeatures` is out of scope.
@@ -451,11 +507,11 @@ orthogonal to this registry:
 ```ts
 // src/renderers/draw-relief-icons.ts
 const scene = new Scene<ReliefSceneIcon>();
-const viewportLayer = ViewportLayers.register({id: "relief", render: reconcileRelief});
+const viewportLayer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
 
 export function drawRelief(): void {
   if (!pack.relief?.length) Relief.generate();
-  scene.replace(pack.relief.map((data, i) => ({id: String(i), data})));
+  scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
   viewportLayer.render();
 }
 
@@ -476,7 +532,7 @@ become `layer.isOn` — the same check against real state instead of a CSS class
 
 ### Layers tab
 
-The UI table is the *only* place that knows a layer has a button. Keyed by `Layer` so it stays
+The UI table is the _only_ place that knows a layer has a button. Keyed by `Layer` so it stays
 typo-proof; iterating `Layers.all` keeps the registry authoritative for order.
 
 ```ts
@@ -488,12 +544,12 @@ interface LayerButton {
 }
 
 export const BUTTONS = new Map<Layer, LayerButton>([
-  [textureLayer, {label: "Te<u>x</u>ture", shortcut: "KeyX"}],
-  [heightmapLayer, {label: "<u>H</u>eightmap", shortcut: "KeyH"}],
-  [lakesLayer, {label: "Lakes", shortcut: "KeyQ"}],
-  [gridLayer, {label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)"}],
-  [routesLayer, {label: "Ro<u>u</u>tes", shortcut: "KeyU"}],
-  [marketsLayer, {label: "Markets"}],
+  [textureLayer, { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
+  [heightmapLayer, { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
+  [lakesLayer, { label: "Lakes", shortcut: "KeyQ" }],
+  [gridLayer, { label: "Grid", shortcut: "Semicolon", hint: "; (semicolon)" }],
+  [routesLayer, { label: "Ro<u>u</u>tes", shortcut: "KeyU" }],
+  [marketsLayer, { label: "Markets" }]
   // …one row per button; ocean, landmass, coastline, fogging, debug, legend are absent
 ]);
 
@@ -594,10 +650,19 @@ All legacy compatibility lives in `src/services/io/auto-update.ts` and nowhere e
 // auto-update.ts
 /** layer id -> pre-1.144 button id, as stored in saved presets */
 export const LEGACY_LAYER_IDS: Record<string, string> = {
-  heightmap: "toggleHeight", grid: "toggleGrid", relief: "toggleRelief", religions: "toggleReligions",
-  cultures: "toggleCultures", states: "toggleStates", provinces: "toggleProvinces",
-  precipitation: "togglePrecipitation", burgIcons: "toggleBurgIcons", military: "toggleMilitary",
-  rulers: "toggleRulers", trade: "toggleTrade", markets: "toggleMarketsLayer" /* …one per layer */
+  heightmap: "toggleHeight",
+  grid: "toggleGrid",
+  relief: "toggleRelief",
+  religions: "toggleReligions",
+  cultures: "toggleCultures",
+  states: "toggleStates",
+  provinces: "toggleProvinces",
+  precipitation: "togglePrecipitation",
+  burgIcons: "toggleBurgIcons",
+  military: "toggleMilitary",
+  rulers: "toggleRulers",
+  trade: "toggleTrade",
+  markets: "toggleMarketsLayer" /* …one per layer */
 };
 
 export function restoreLayers(mapVersion: string, data: string[]): void {
@@ -632,11 +697,11 @@ export function restoreLayers(mapVersion: string, data: string[]): void {
   };
 
   const active = Layers.all.filter(layer => wasActive[layer.id]?.(layer)).map(layer => layer.id);
-  Layers.restore({order, active});
+  Layers.restore({ order, active });
 }
 ```
 
-`LEGACY_LAYER_IDS` is exported as *data* (not logic) for the one-time localStorage preset remap, which
+`LEGACY_LAYER_IDS` is exported as _data_ (not logic) for the one-time localStorage preset remap, which
 is not map-file state and therefore cannot be version-gated inside this function.
 
 ### Consumers
@@ -644,8 +709,18 @@ is not map-file state and therefore cannot be version-gated inside this function
 Long `layerIsOn` chains collapse. `src/components/tools.ts:136-163` becomes:
 
 ```ts
-Layers.draw(routesLayer, riversLayer, populationLayer, goodsLayer, statesLayer, bordersLayer,
-  provincesLayer, burgIconsLayer, militaryLayer, emblemsLayer);
+Layers.draw(
+  routesLayer,
+  riversLayer,
+  populationLayer,
+  goodsLayer,
+  statesLayer,
+  bordersLayer,
+  provincesLayer,
+  burgIconsLayer,
+  militaryLayer,
+  emblemsLayer
+);
 ```
 
 `drawLayers()` becomes `Layers.drawAll()`. The heightmap editor snapshots and restores state instead of
@@ -691,7 +766,7 @@ those sites are converted.
 
 Four steps; the first three are independently shippable and each leaves the app working.
 
-1. **Registry.** `layer.ts`, `layers.ts`, `map-layers.ts`, `Layers.init()` in the startup path taking
+1. **Registry.** `layers-registry.ts`, `layers.ts`, `Layers.init()` in the startup path taking
    over group creation from `main.js`. `layerIsOn`, `turnButtonOn`, `turnButtonOff` become shims over
    the registry. Nothing else changes; the DOM is still where the tab renders from.
 2. **UI.** Layers tab component and `BUTTONS`; hotkeys through the same table. Delete the `<li>`
@@ -723,10 +798,10 @@ Four steps; the first three are independently shippable and each leaves the app 
 
 ## Further Notes
 
-- **Import cycles are the main structural risk.** `map-layers.ts` imports every renderer; if a
+- **Import cycles are the main structural risk.** `layers.ts` imports every renderer; if a
   renderer imports a layer constant back, the constant can be `undefined` at module-evaluation time —
-  the same failure mode as the top-level `mapId` gotcha. The invariant: *a renderer referenced from
-  `map-layers.ts` never imports `map-layers.ts`*; it receives its layer as the `draw`/`erase`
+  the same failure mode as the top-level `mapId` gotcha. The invariant: _a renderer referenced from
+  `layers.ts` never imports `layers.ts`_; it receives its layer as the `draw`/`erase`
   argument. Non-renderer consumers (`tools.ts`, `map-tooltip.ts`, `hotkeys.ts`, `view-3d-renderer.ts`,
   editors) import freely because nothing imports them back. The single in-renderer cross-layer read —
   `layerDependency` in `src/renderers/labels/label-groups.ts` — uses `Layers.get(id)?.isOn`. If the
@@ -735,8 +810,8 @@ Four steps; the first three are independently shippable and each leaves the app 
   cost of splitting the spec across files.
 - **Behavioural change to flag in review:** jQuery `fadeIn`/`fadeOut` on layer toggle is removed —
   layers appear and disappear immediately. The d3 transitions precipitation and population play while
-  *drawing* are unaffected, being part of their `draw`. Their removal animations go, though: `display:
-  none` is the state carrier and is written before `erase` runs, so anything an `erase` animates is
+  _drawing_ are unaffected, being part of their `draw`. Their removal animations go, though: `display:
+none` is the state carrier and is written before `erase` runs, so anything an `erase` animates is
   already hidden. One visibility mechanism costs the fade-out; that is the trade.
 - **Style targets.** Ctrl+click now opens `layer.elementId`, so the two layers whose style target
   differs from their element — goods (`goodsIcons`) and burg icons (`burgIcons`) — need `goods` and
