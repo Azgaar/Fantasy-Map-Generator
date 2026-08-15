@@ -4,7 +4,6 @@ import { ensureEl } from "@/utils/nodeUtils";
 /** Reads culture controls at the UI boundary for generator calls. */
 export function getCultureGenerationSettings(): CultureGenerationSettings {
   return {
-    neutralRate: ensureEl<HTMLInputElement>("neutralRate").valueAsNumber || 1,
     emblemShape: ensureEl<HTMLSelectElement>("emblemShape").value
   };
 }
