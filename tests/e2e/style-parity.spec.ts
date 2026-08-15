@@ -196,3 +196,171 @@ test("create custom heightmap scheme dialog opens without throwing", async ({pag
   expect(result.stops!.split(",").length).toBeGreaterThan(1);
   expect(result.storedScheme).toBeTruthy();
 });
+
+// proves the preset-dropdown path (not the direct editor writes above) reaches child layers.
+// requestStylePresetChange -> changeStyle -> applyStyleWithUiRefresh(style) is the real call
+// chain the dropdown's onchange handler drives; applyStyleWithUiRefresh itself takes a parsed
+// style OBJECT, not a preset name, so changeStyle (which fetches + names it) is the right entry
+// point to call from a test, not applyStyleWithUiRefresh("night") directly.
+test("switching system presets restyles routes/borders/lakes/terrs/label children on store+DOM, and reverts cleanly", async ({
+  page
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  const result = await page.evaluate(async () => {
+    const w = window as any;
+    const groupName = options.labels.groups[0].name;
+
+    const before = {
+      roadsDom: document.querySelector("#routes > g#roads")?.getAttribute("stroke"),
+      stateBordersDom: document.querySelector("#borders > g#stateBorders")?.getAttribute("stroke"),
+      freshwaterDom: document.querySelector("#lakes > g#freshwater")?.getAttribute("fill"),
+      landHeightsScheme: style.layers.terrs.children.landHeights.options.scheme,
+      labelDom: document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("fill")
+    };
+
+    await w.changeStyle("night");
+
+    const night = {
+      roadsStore: style.layers.routes.children.roads.presentation.stroke,
+      roadsDom: document.querySelector("#routes > g#roads")?.getAttribute("stroke"),
+      stateBordersStore: style.layers.borders.children.stateBorders.presentation.stroke,
+      stateBordersDom: document.querySelector("#borders > g#stateBorders")?.getAttribute("stroke"),
+      freshwaterStore: style.layers.lakes.children.freshwater.presentation.fill,
+      freshwaterDom: document.querySelector("#lakes > g#freshwater")?.getAttribute("fill"),
+      landHeightsScheme: style.layers.terrs.children.landHeights.options.scheme,
+      landHeightsDomSchemeAttr: document.querySelector("#terrs > g#landHeights")?.getAttribute("scheme"),
+      labelStore: style.layers.labels.children[groupName]?.presentation.fill,
+      labelDom: document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("fill"),
+      labelMirror: style.labels.groups[groupName]?.fill
+    };
+
+    await w.changeStyle("default");
+
+    const reverted = {
+      roadsDom: document.querySelector("#routes > g#roads")?.getAttribute("stroke"),
+      stateBordersDom: document.querySelector("#borders > g#stateBorders")?.getAttribute("stroke"),
+      freshwaterDom: document.querySelector("#lakes > g#freshwater")?.getAttribute("fill"),
+      landHeightsScheme: style.layers.terrs.children.landHeights.options.scheme,
+      labelDom: document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("fill")
+    };
+
+    return {before, night, reverted};
+  });
+
+  // preset switch reaches both the store and the DOM, and they agree
+  expect(result.night.roadsStore).toBe(result.night.roadsDom);
+  expect(result.night.stateBordersStore).toBe(result.night.stateBordersDom);
+  expect(result.night.freshwaterStore).toBe(result.night.freshwaterDom);
+  expect(result.night.labelStore).toBe(result.night.labelDom);
+  expect(result.night.labelStore).toBe(result.night.labelMirror);
+
+  // night genuinely differs from the pre-switch (default) values
+  expect(result.night.roadsDom).not.toBe(result.before.roadsDom);
+  expect(result.night.stateBordersDom).not.toBe(result.before.stateBordersDom);
+  expect(result.night.freshwaterDom).not.toBe(result.before.freshwaterDom);
+  expect(result.night.landHeightsScheme).not.toBe(result.before.landHeightsScheme);
+  expect(result.night.labelDom).not.toBe(result.before.labelDom);
+
+  // terrs scheme is an options value, not a presentation attr - by design it never lands as a
+  // DOM "scheme" attribute (Task 10/C1 removed that mirror); assert it stays absent
+  expect(result.night.landHeightsDomSchemeAttr).toBeNull();
+
+  // switching back to default fully restores the baseline - no residue left by night's overrides
+  expect(result.reverted.roadsDom).toBe(result.before.roadsDom);
+  expect(result.reverted.stateBordersDom).toBe(result.before.stateBordersDom);
+  expect(result.reverted.freshwaterDom).toBe(result.before.freshwaterDom);
+  expect(result.reverted.landHeightsScheme).toBe(result.before.landHeightsScheme);
+  expect(result.reverted.labelDom).toBe(result.before.labelDom);
+});
+
+// Task 8's editor group navigation: styleElementSelect + styleGroupSelect drive
+// styleTargetFromUI(), which setPresentation/setOptions consume. This pins that, for each of
+// the 8 group-aware elements, selecting a real child group in the UI produces a target whose
+// childIds match the DOM child's actual id/data-group verbatim (the brief flagged a risk that
+// group selects carry "#"-prefixed values that would need normalizing in styleTargetFromUI).
+const GROUP_AWARE_TARGETS: {element: string; childId: string; selector: string}[] = [
+  {element: "anchors", childId: "capital", selector: "#anchors > g#capital"},
+  {element: "borders", childId: "stateBorders", selector: "#borders > g#stateBorders"},
+  {element: "burgIcons", childId: "capital", selector: "#burgIcons > g#capital"},
+  {element: "coastline", childId: "sea_island", selector: "#coastline > g#sea_island"},
+  {element: "lakes", childId: "freshwater", selector: "#lakes > g#freshwater"},
+  {element: "routes", childId: "roads", selector: "#routes > g#roads"},
+  {element: "terrs", childId: "landHeights", selector: "#terrs > g#landHeights"}
+  // "labels" is handled separately below - its group values are dynamic (map-generated group
+  // names), not the fixed child ids the other 7 elements use
+];
+
+test("editor group navigation targets the selected child on both object and DOM, for all 8 group-aware elements", async ({
+  page
+}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  const results = await page.evaluate(targets => {
+    const w = window as any;
+    const elementSelect = document.getElementById("styleElementSelect") as HTMLSelectElement;
+    const groupSelect = document.getElementById("styleGroupSelect") as HTMLSelectElement;
+
+    const perElement = targets.map(({element, childId, selector}) => {
+      elementSelect.value = element;
+      elementSelect.dispatchEvent(new Event("change"));
+      groupSelect.value = childId;
+      groupSelect.dispatchEvent(new Event("change"));
+
+      const target = w.styleTargetFromUI();
+      const groupSelectValue = groupSelect.value;
+
+      const value = `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0")}`;
+      w.setPresentation(target, "stroke", value);
+
+      const node = w.getStyleNode(target.layerId, ...(target.childIds ?? []));
+      return {
+        element,
+        childId,
+        groupSelectValue,
+        targetChildIds: target.childIds,
+        storeValue: node.presentation?.stroke,
+        domValue: document.querySelector(selector)?.getAttribute("stroke"),
+        expectedValue: value
+      };
+    });
+
+    // labels: group values are dynamic group names, resolved via data-group not id
+    const groupName = options.labels.groups[0].name;
+    elementSelect.value = "labels";
+    elementSelect.dispatchEvent(new Event("change"));
+    groupSelect.value = groupName;
+    groupSelect.dispatchEvent(new Event("change"));
+
+    const labelsTarget = w.styleTargetFromUI();
+    const labelsGroupSelectValue = groupSelect.value;
+    const labelsValue = "0.55";
+    w.setPresentation(labelsTarget, "opacity", labelsValue);
+    const labelsNode = w.getStyleNode(labelsTarget.layerId, ...(labelsTarget.childIds ?? []));
+
+    perElement.push({
+      element: "labels",
+      childId: groupName,
+      groupSelectValue: labelsGroupSelectValue,
+      targetChildIds: labelsTarget.childIds,
+      storeValue: labelsNode.presentation?.opacity,
+      domValue: document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("opacity"),
+      expectedValue: labelsValue
+    });
+
+    return perElement;
+  }, GROUP_AWARE_TARGETS);
+
+  for (const r of results) {
+    expect.soft(r.groupSelectValue, `${r.element} group select value`).toBe(r.childId);
+    expect.soft(r.targetChildIds, `${r.element} styleTargetFromUI childIds`).toEqual([r.childId]);
+    expect.soft(r.storeValue, `${r.element} store value`).toBe(r.expectedValue);
+    expect.soft(r.domValue, `${r.element} DOM value`).toBe(r.expectedValue);
+  }
+});
