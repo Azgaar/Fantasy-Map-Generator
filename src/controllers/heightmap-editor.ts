@@ -3,6 +3,7 @@ import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
 import { HeightmapHistory } from "@/controllers/heightmap-history";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { heightmapTemplates } from "@/data/heightmap-templates";
@@ -530,7 +531,7 @@ function regenerateErasedData(): void {
 
   rankCells();
   Cultures.generate();
-  Cultures.expand();
+  Cultures.expand(getCultureGenerationSettings());
 
   Burgs.generate();
   States.generate(getStateExpansionSettings());

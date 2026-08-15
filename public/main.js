@@ -568,7 +568,7 @@ async function generate(options) {
     measureStep("generation:settlements", () => {
       rankCells();
       Cultures.generate();
-      Cultures.expand();
+      Cultures.expand(getCultureGenerationSettings());
       Burgs.generate();
       States.generate(getStateExpansionSettings());
       Routes.generate();

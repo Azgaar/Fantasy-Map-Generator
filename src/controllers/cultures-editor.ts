@@ -15,6 +15,7 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
 import { ManualAssignmentHistory, selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
@@ -894,7 +895,7 @@ async function showHierarchy(): Promise<void> {
 
 function recalculateCultures(force?: boolean): void {
   if (force || ensureEl<HTMLInputElement>("culturesAutoChange").checked) {
-    Cultures.expand();
+    Cultures.expand(getCultureGenerationSettings());
     drawCultures();
     pack.burgs.forEach(b => {
       if (!b.i || b.removed) return;
@@ -1116,7 +1117,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
   }
 
   if (event.shiftKey === false) exitAddCultureMode();
-  Cultures.add(center);
+  Cultures.add(center, getCultureGenerationSettings());
 
   drawCultureCenters();
   culturesTable.refresh();

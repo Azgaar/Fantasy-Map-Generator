@@ -33,6 +33,11 @@ export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake",
 export type CultureType = (typeof CULTURE_TYPES)[number];
 export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
+export type CultureGenerationSettings = {
+  neutralRate?: number;
+  emblemShape?: string;
+};
+
 class CulturesGenerator {
   cells: any;
 
@@ -1206,7 +1211,7 @@ class CulturesGenerator {
     TIME && console.timeEnd("generateCultures");
   }
 
-  add(center: number) {
+  add(center: number, { emblemShape = "random" }: CultureGenerationSettings = {}) {
     const defaultCultures = this.getDefault();
     let culture: number, base: number, name: string;
 
@@ -1226,9 +1231,6 @@ class CulturesGenerator {
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    // define emblem shape
-    const emblemShape = (document.getElementById("emblemShape") as HTMLInputElement).value;
-
     pack.cultures.push({
       name,
       color,
@@ -1247,14 +1249,13 @@ class CulturesGenerator {
     });
   }
 
-  expand() {
+  expand({ neutralRate = 1 }: CultureGenerationSettings = {}) {
     TIME && console.time("expandCultures");
     const { cells, cultures } = pack;
 
     const queue = new FlatQueue();
     const cost: number[] = [];
 
-    const neutralRate = (document.getElementById("neutralRate") as HTMLInputElement | null)?.valueAsNumber || 1;
     const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked

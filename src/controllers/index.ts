@@ -1,4 +1,5 @@
 import { createRegistry } from "@/utils/registry";
+import "./culture-generation-settings";
 import "./state-generation-settings";
 
 export const Controllers = createRegistry({
