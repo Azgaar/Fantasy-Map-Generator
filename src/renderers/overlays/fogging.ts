@@ -1,5 +1,6 @@
 // Fogging: dim everything outside the focused area by punching its shape out of the fog overlay
 import { easeSinInOut, select, transition } from "d3";
+import { getStyleNode } from "../../services/styles/store";
 
 /** Reveal the area described by the path, fading the fog in on the first call */
 export function fog(id: string, path: string): void {
@@ -16,7 +17,7 @@ export function fog(id: string, path: string): void {
   fogLayer.append("path").attr("d", path).attr("id", id).attr("opacity", 1);
 
   const fogging = select("#fogging");
-  const opacity = fogging.attr("opacity");
+  const opacity = getStyleNode("fogging").presentation?.opacity ?? 1;
   fogging.style("display", "block").attr("opacity", 0).transition(fadeIn).attr("opacity", opacity);
 }
 
