@@ -883,7 +883,6 @@ styleTemperatureFillOpacityInput.addEventListener("input", e => {
 });
 
 styleTemperatureFontSizeInput.addEventListener("input", e => {
-  setOptions({layerId: "temperature"}, {fontSize: +e.target.value});
   setPresentation({layerId: "temperature"}, "font-size", e.target.value + "px");
 });
 

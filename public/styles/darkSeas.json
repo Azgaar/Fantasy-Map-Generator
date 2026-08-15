@@ -419,6 +419,12 @@
         }
       }
     },
+    "terrain": {
+      "options": {
+        "set": "simple",
+        "size": 1
+      }
+    },
     "terrs": {
       "children": {
         "oceanHeights": {
