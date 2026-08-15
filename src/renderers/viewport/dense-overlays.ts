@@ -1,5 +1,5 @@
-import { Scene, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
 import { getGridPolygon, getPackPolygon, rn } from "@/utils";
+import { Scene, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
 
 interface PrecipitationPoint {
   id: string;
@@ -83,7 +83,12 @@ function reconcilePrecipitation(context: ViewportRenderContext): void {
   const { x0, y0, x1, y1 } = context.bounds;
   const markup: string[] = [];
   for (const point of precipitationScene.values()) {
-    if (point.x + point.radius < x0 || point.x - point.radius > x1 || point.y + point.radius < y0 || point.y - point.radius > y1)
+    if (
+      point.x + point.radius < x0 ||
+      point.x - point.radius > x1 ||
+      point.y + point.radius < y0 ||
+      point.y - point.radius > y1
+    )
       continue;
     markup.push(`<circle cx="${point.x}" cy="${point.y}" r="${point.radius}"/>`);
   }
@@ -102,7 +107,12 @@ function drawPopulation(): void {
   }
   for (const burg of burgs) {
     if (!burg.i || burg.removed) continue;
-    lines.push({ id: `urban-${burg.i}`, x: burg.x, y1: burg.y, y2: burg.y - ((burg.population || 0) / 5) * urbanization });
+    lines.push({
+      id: `urban-${burg.i}`,
+      x: burg.x,
+      y1: burg.y,
+      y2: burg.y - ((burg.population || 0) / 5) * urbanization
+    });
   }
   populationScene.replace(lines);
   populationLayer.render();

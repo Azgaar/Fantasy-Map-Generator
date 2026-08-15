@@ -1,6 +1,6 @@
 import Alea from "alea";
 import Delaunator from "delaunator";
-import { Voronoi, type Cells, type Point, type Vertices } from "./voronoi";
+import { type Cells, type Point, type Vertices, Voronoi } from "./voronoi";
 
 export interface GridBuildRequest {
   seed: string;
@@ -63,7 +63,10 @@ function getJitteredGrid(width: number, height: number, spacing: number, random:
   const points: Point[] = [];
   for (let y = radius; y < height; y += spacing) {
     for (let x = radius; x < width; x += spacing) {
-      points.push([Math.min(round(x + random() * jittering * 2 - jittering, 2), width), Math.min(round(y + random() * jittering * 2 - jittering, 2), height)]);
+      points.push([
+        Math.min(round(x + random() * jittering * 2 - jittering, 2), width),
+        Math.min(round(y + random() * jittering * 2 - jittering, 2), height)
+      ]);
     }
   }
   return points;

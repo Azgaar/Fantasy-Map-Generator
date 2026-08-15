@@ -18,9 +18,7 @@ const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
   scene.replace(
-    pack.burgs
-      .filter(burg => burg.i && burg.group && !burg.removed)
-      .map(burg => ({ id: `burg${burg.i}`, burg }))
+    pack.burgs.filter(burg => burg.i && burg.group && !burg.removed).map(burg => ({ id: `burg${burg.i}`, burg }))
   );
   layer.render();
 
@@ -74,7 +72,9 @@ function reconcileBurgIcons(context: ViewportRenderContext): void {
       .join("");
     anchorGroup.innerHTML = burgs
       .filter(burg => burg.port)
-      .map(burg => `<use id="anchor${burg.i}" data-id="${burg.i}" href="#icon-anchor" x="${burg.x}" y="${burg.y}"></use>`)
+      .map(
+        burg => `<use id="anchor${burg.i}" data-id="${burg.i}" href="#icon-anchor" x="${burg.x}" y="${burg.y}"></use>`
+      )
       .join("");
   }
 }
