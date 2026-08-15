@@ -1,5 +1,6 @@
 import type { Selection } from "d3";
 import { curveBasisClosed, line, select } from "d3";
+import { getLayerOptions } from "../services/styles/store";
 import { clipPoly, P, rn, round } from "../utils";
 
 declare global {
@@ -65,14 +66,14 @@ class OceanModule {
   }
 
   draw() {
-    const outline = this.oceanLayers.attr("layers");
+    const outline = getLayerOptions<{ layers?: string }>("oceanLayers").layers;
     if (outline === "none") return;
     TIME && console.time("drawOceanLayers");
     this.oceanLayers.selectAll("path").remove();
     this.cells = grid.cells;
     this.pointsN = grid.cells.i.length;
     this.vertices = grid.vertices;
-    const limits = outline === "random" ? this.randomizeOutline() : outline.split(",").map((s: string) => +s);
+    const limits = outline === "random" ? this.randomizeOutline() : (outline ?? "").split(",").map((s: string) => +s);
 
     const chains: [number, any[]][] = [];
     const opacity = rn(0.4 / limits.length, 2);

@@ -172,9 +172,7 @@
     "stroke-width": "1",
     "stroke-opacity": "0.8"
   },
-  "#oceanLayers": {
-    "layers": "-6,-3,-1"
-  },
+  "#oceanLayers": {},
   "#oceanBase": {
     "fill": "#466eab",
     "x": "0",

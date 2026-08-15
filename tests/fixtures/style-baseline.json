@@ -169,8 +169,7 @@
     "style": "display: none;"
   },
   "#oceanLayers": {
-    "filter": "",
-    "layers": "-6,-3,-1"
+    "filter": ""
   },
   "#oceanBase": {
     "fill": "#05001f",

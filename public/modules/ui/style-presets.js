@@ -137,11 +137,10 @@ function applyTexturePresetOptions() {
   }
 }
 
-// options attrs aren't presentation, so applyLayerStyle never writes them to the DOM. These
-// layers' renderers (legend, grid overlay, markers, markets, ruler, coordinates, temperature,
-// armies, scale bar, ocean layers) still read the literal DOM attribute, not getLayerOptions,
-// until they're re-homed (Task 12) - mirror the values back under their pre-migration names,
-// matching FLAT_RENAMES in src/services/styles/legacy.ts
+// options attrs aren't presentation, so applyLayerStyle never writes them to the DOM. temperature
+// has no reader anywhere (its fontSize option is a legitimate no-op - see Task 9 report); armies/
+// scaleBar's fontSize is inherited CSS sizing with no JS reader either - mirror the values back
+// under their pre-migration names, matching FLAT_RENAMES in src/services/styles/legacy.ts
 const LAYER_OPTION_ATTRIBUTES = {
   gridOverlay: {type: "type", scale: "scale", dx: "dx", dy: "dy"},
   markers: {rescale: "rescale"},
@@ -151,8 +150,7 @@ const LAYER_OPTION_ATTRIBUTES = {
   armies: {fontSize: "font-size"},
   // barSize/x/y/label are dropped: draw-scalebar.ts reads them via getLayerOptions now.
   // fontSize stays DOM-written here - nothing reads it as JS, only CSS inheritance uses it
-  scaleBar: {fontSize: "font-size"},
-  oceanLayers: {layers: "layers"}
+  scaleBar: {fontSize: "font-size"}
 };
 
 function applyLayerOptionAttributes() {

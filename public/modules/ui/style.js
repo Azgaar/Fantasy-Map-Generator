@@ -389,10 +389,11 @@ function selectStyleElement() {
 
   if (styleElement === "ocean") {
     styleOcean.style.display = "block";
-    styleOceanFill.value = styleOceanFillOutput.value = oceanLayers.select("#oceanBase").attr("fill");
-    styleOceanPattern.value = ensureEl("oceanicPattern").getAttribute("href");
-    styleOceanPatternOpacity.value = ensureEl("oceanicPattern").getAttribute("opacity") || 1;
-    outlineLayers.value = oceanLayers.attr("layers");
+    const oceanOptions = getLayerOptions("oceanLayers");
+    styleOceanFill.value = styleOceanFillOutput.value = oceanOptions.baseFill;
+    styleOceanPattern.value = oceanOptions.pattern?.href;
+    styleOceanPatternOpacity.value = oceanOptions.pattern?.opacity || 1;
+    outlineLayers.value = oceanOptions.layers;
   }
 
   if (styleElement === "temperature") {
@@ -695,22 +696,39 @@ styleRescaleMarkers.addEventListener("change", function () {
   invokeActiveZooming();
 });
 
+// projects style.layers.oceanLayers.options.baseFill/pattern onto the live #oceanBase/
+// #oceanicPattern elements - the single source of truth for their fill/href/opacity;
+// nothing else should setAttribute on them directly
+function applyOceanBaseAndPattern() {
+  const oceanOptions = getLayerOptions("oceanLayers");
+  const oceanBaseEl = ensureEl("oceanBase");
+  if (oceanBaseEl && oceanOptions.baseFill !== undefined) oceanBaseEl.setAttribute("fill", oceanOptions.baseFill);
+
+  const patternEl = ensureEl("oceanicPattern");
+  if (patternEl && oceanOptions.pattern) {
+    for (const [attr, value] of Object.entries(oceanOptions.pattern)) patternEl.setAttribute(attr, value);
+  }
+}
+
 styleOceanFill.addEventListener("input", function () {
-  oceanLayers.select("rect").attr("fill", this.value);
+  setOptions({layerId: "oceanLayers"}, {baseFill: this.value});
+  applyOceanBaseAndPattern();
   styleOceanFillOutput.value = this.value;
 });
 
 styleOceanPattern.addEventListener("change", function () {
-  ensureEl("oceanicPattern").setAttribute("href", this.value);
+  setOptions({layerId: "oceanLayers"}, {pattern: {...getLayerOptions("oceanLayers").pattern, href: this.value}});
+  applyOceanBaseAndPattern();
 });
 
 styleOceanPatternOpacity.addEventListener("input", e => {
-  ensureEl("oceanicPattern").setAttribute("opacity", e.target.value);
+  setOptions({layerId: "oceanLayers"}, {pattern: {...getLayerOptions("oceanLayers").pattern, opacity: e.target.value}});
+  applyOceanBaseAndPattern();
 });
 
 outlineLayers.addEventListener("change", function () {
   oceanLayers.selectAll("path").remove();
-  oceanLayers.attr("layers", this.value);
+  setOptions({layerId: "oceanLayers"}, {layers: this.value});
   OceanLayers();
 });
 
