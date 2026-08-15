@@ -704,11 +704,11 @@ styleRescaleMarkers.addEventListener("change", function () {
 function applyOceanBaseAndPattern() {
   const oceanOptions = getLayerOptions("oceanLayers");
   const oceanBaseEl = ensureEl("oceanBase");
-  if (oceanBaseEl && oceanOptions.baseFill !== undefined) oceanBaseEl.setAttribute("fill", oceanOptions.baseFill);
+  if (oceanBaseEl && oceanOptions.baseFill !== undefined) setStyleAttribute(oceanBaseEl, "fill", oceanOptions.baseFill);
 
   const patternEl = ensureEl("oceanicPattern");
   if (patternEl && oceanOptions.pattern) {
-    for (const [attr, value] of Object.entries(oceanOptions.pattern)) patternEl.setAttribute(attr, value);
+    for (const [attr, value] of Object.entries(oceanOptions.pattern)) setStyleAttribute(patternEl, attr, value);
   }
 }
 
