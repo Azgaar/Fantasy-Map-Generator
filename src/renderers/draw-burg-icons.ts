@@ -12,7 +12,11 @@ interface BurgIconSceneItem {
 }
 
 const scene = new Scene<BurgIconSceneItem>();
-const layer = ViewportLayers.register({ id: "burg-icons", render: reconcileBurgIcons });
+const layer = ViewportLayers.register({
+  id: "burg-icons",
+  render: reconcileBurgIcons,
+  clear: () => scene.invalidate()
+});
 
 const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");

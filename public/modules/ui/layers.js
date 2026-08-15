@@ -308,6 +308,11 @@ function togglePrecipitation(event) {
   } else {
     if (event && isCtrlClick(event)) return editStyle("prec");
     turnButtonOff("togglePrecipitation");
+    if (window.ViewportPrecipitation) {
+      window.ViewportPrecipitation.clear();
+      prec.style("display", "none");
+      return;
+    }
     const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
     prec.selectAll("text").attr("opacity", 1).transition(hide).attr("opacity", 0);
     prec.selectAll("circle").transition(hide).attr("r", 0).remove();
@@ -352,6 +357,7 @@ function togglePopulation(event) {
   } else {
     if (event && isCtrlClick(event)) return editStyle("population");
     turnButtonOff("togglePopulation");
+    if (window.ViewportPopulation) return window.ViewportPopulation.clear();
 
     const isD3data = population.select("line").datum();
     if (!isD3data) {
@@ -425,8 +431,9 @@ function toggleCells(event) {
     if (event && isCtrlClick(event)) editStyle("cells");
   } else {
     if (event && isCtrlClick(event)) return editStyle("cells");
-    cells.selectAll("path").remove();
     turnButtonOff("toggleCells");
+    if (window.ViewportCells) return window.ViewportCells.clear();
+    cells.selectAll("path").remove();
   }
 }
 
@@ -1000,13 +1007,13 @@ function layerIsOn(el) {
 function turnButtonOff(el) {
   ensureEl(el).classList.add("buttonoff");
   getCurrentPreset();
-  ViewportLayers.renderNow();
+  ViewportLayers.invalidateAll();
 }
 
 function turnButtonOn(el) {
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
-  ViewportLayers.renderNow();
+  ViewportLayers.invalidateAll();
 }
 
 // move layers on mapLayers dragging (jquery sortable)

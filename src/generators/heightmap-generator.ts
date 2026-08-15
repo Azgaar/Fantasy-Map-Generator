@@ -100,8 +100,8 @@ class HeightmapModule {
       } while (this.heights[start] + h > 90 && limit < 50);
       change[start] = h;
       const queue = [start];
-      while (queue.length) {
-        const q = queue.shift() as number;
+      for (let head = 0; head < queue.length; head++) {
+        const q = queue[head];
 
         for (const c of this.grid.cells.c[q]) {
           if (change[c]) continue;
@@ -136,8 +136,8 @@ class HeightmapModule {
       } while (this.heights[start] < 20 && limit < 50);
 
       const queue = [start];
-      while (queue.length) {
-        const q = queue.shift() as number;
+      for (let head = 0; head < queue.length; head++) {
+        const q = queue[head];
         h = h ** this.blobPower * (Math.random() * 0.2 + 0.9);
         if (h < 1) return;
 

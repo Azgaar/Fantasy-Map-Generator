@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { SpatialIndex, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
@@ -23,14 +23,28 @@ interface ProducedGood {
 }
 
 interface GoodsCellSceneItem {
-  id: string;
   cellId: number;
   total: number;
   produced: ProducedGood[];
 }
 
-const cellsScene = new Scene<GoodsCellSceneItem>();
-const cellsLayer = ViewportLayers.register({ id: "goods-cells", render: reconcileGoodsCells });
+interface GoodsBurgSceneItem {
+  burgId: number;
+  x: number;
+  y: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  markup: string;
+}
+
+const cellsIndex = new SpatialIndex<GoodsCellSceneItem>();
+const iconsIndex = new SpatialIndex<number>();
+const burgsIndex = new SpatialIndex<GoodsBurgSceneItem>();
+let maximumBurgWidth = 0;
+let maximumBurgHeight = 0;
+const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods, clear: clearGoods });
 
 export function toggleGoods(event?: MouseEvent) {
   if (!layerIsOn("toggleGoods")) {
@@ -39,7 +53,7 @@ export function toggleGoods(event?: MouseEvent) {
     if (event && isCtrlClick(event)) editStyle("goodsIcons");
   } else {
     if (event && isCtrlClick(event)) return editStyle("goodsIcons");
-    SUBGROUPS.forEach(id => void select("#goods").select(`#${id}`).html(""));
+    clearGoods();
     turnButtonOff("toggleGoods");
   }
 }
@@ -51,11 +65,16 @@ export function drawGoods() {
     if (select("#goods").select(`#${id}`).empty()) select("#goods").append("g").attr("id", id);
   }
 
-  const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
-  cellsScene.replace(buildGoodsCellsScene(visible));
-  cellsLayer.render();
-  select("#goods").select("#goodsIcons").html(buildGoodsIconsContent(visible));
-  select("#goods").select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
+  const displayedGoods = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
+  const cellItems = buildGoodsCellsScene(displayedGoods);
+  cellsIndex.replace(cellItems, item => pack.cells.p[item.cellId]);
+  iconsIndex.replace(pack.cells.i, cellId => {
+    const goodId = pack.cells.good?.[cellId];
+    return goodId && displayedGoods.has(goodId) ? pack.cells.p[cellId] : null;
+  });
+  const burgItems = buildGoodsBurgsScene(displayedGoods);
+  burgsIndex.replace(burgItems, item => [item.x, item.y]);
+  layer.render();
 
   select("#goods").style("display", null);
   TIME && console.timeEnd("drawGoods");
@@ -81,76 +100,36 @@ function buildGoodsCellsScene(displayedGoods: Set<number>): GoodsCellSceneItem[]
     }
     if (!total) continue;
 
-    cellTotals.push({ id: `goods-cell-${cellId}`, cellId, total, produced: filteredProduced });
+    cellTotals.push({ cellId, total, produced: filteredProduced });
     if (total > maxTotal) maxTotal = total;
   }
-  return maxTotal ? cellTotals.map(item => ({ ...item, total: item.total / maxTotal })) : [];
+
+  if (maxTotal) for (const item of cellTotals) item.total /= maxTotal;
+  return cellTotals;
 }
 
-function reconcileGoodsCells(context: ViewportRenderContext): void {
-  const goodsCells = context.root.querySelector<SVGGElement>("#goodsCells");
-  if (!goodsCells) return;
-  if (!cellsScene.valid) return;
-  if (!layerIsOn("toggleGoods")) return void goodsCells.replaceChildren();
+function buildGoodsBurgsScene(displayedGoods: Set<number>): GoodsBurgSceneItem[] {
+  maximumBurgWidth = 0;
+  maximumBurgHeight = 0;
+  if (!displayedGoods.size) return [];
 
-  const { x0, y0, x1, y1 } = context.bounds;
-  const markup: string[] = [];
-  for (const { cellId, total, produced } of cellsScene.values()) {
-    const [x, y] = pack.cells.p[cellId];
-    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
-    const opacity = rn(0.1 + 0.9 * normalize(total, 0, 1), 2);
-    const points = getPackPolygon(cellId, pack).join(" ");
-    for (const good of produced) {
-      markup.push(`<polygon points="${points}" fill="${good.color}" fill-opacity="${opacity}"/>`);
-    }
-  }
-  goodsCells.innerHTML = markup.join("");
-}
+  const burgsGroup = select("#goods").select("#goodsBurgs");
+  const plateIcon = +burgsGroup.attr("data-size") || PLATE_ICON;
+  const plateScale = plateIcon / PLATE_ICON;
+  const plateFont = PLATE_FONT * plateScale;
+  const plateGap = PLATE_GAP * plateScale;
+  const plateEntryGap = PLATE_ENTRY_GAP * plateScale;
+  const platePadX = PLATE_PAD_X * plateScale;
+  const platePadY = PLATE_PAD_Y * plateScale;
+  const plateRx = PLATE_RX * plateScale;
+  const charWidth = 1.2 * plateScale;
+  const items: GoodsBurgSceneItem[] = [];
 
-function buildGoodsIconsContent(displayedGoods: Set<number>): string {
-  if (!displayedGoods.size || !pack.cells.good) return "";
-
-  const iconsGroup = select("#goods").select("#goodsIcons");
-  const drawCircle = +iconsGroup.attr("data-circle");
-  const iconSize = +iconsGroup.attr("data-size") || DEFAULT_SIZE;
-  const half = iconSize / 2;
-  let html = "";
-  for (const cellId of pack.cells.i) {
-    const goodId = pack.cells.good[cellId];
-    if (!goodId || !displayedGoods.has(goodId)) continue;
-    const good = Goods.get(goodId);
-    if (!good) continue;
-
-    const [x, y] = pack.cells.p[cellId];
-    const stroke = Goods.getStroke(good.color);
-    html += `<g data-i="${good.i}">${
-      drawCircle ? `<circle cx="${x}" cy="${y}" r="${half}" fill="${good.color}" stroke="${stroke}" />` : ""
-    }<use href="#${good.icon}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`;
-  }
-  return html;
-}
-
-function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
-  if (!displayedGoods.size) return "";
-
-  // plate icon size is user-defined; the rest of the geometry and font scale with it
-  const plateIcon = +select("#goods").select("#goodsBurgs").attr("data-size") || PLATE_ICON;
-  const scale = plateIcon / PLATE_ICON;
-  const plateFont = PLATE_FONT * scale;
-  const plateGap = PLATE_GAP * scale;
-  const plateEntryGap = PLATE_ENTRY_GAP * scale;
-  const platePadX = PLATE_PAD_X * scale;
-  const platePadY = PLATE_PAD_Y * scale;
-  const plateRx = PLATE_RX * scale;
-  const charWidth = 1.2 * scale;
-
-  let html = "";
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || !burg.production) continue;
 
     const produced = Production.getBurgProduction(burg);
     const entries: { good: Good; value: number; width: number }[] = [];
-
     for (const good of pack.goods) {
       if (!displayedGoods.has(good.i)) continue;
       const raw = produced[good.i];
@@ -158,19 +137,19 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
 
       const value = rn(raw, 1);
       if (entries.length === 3 && value <= entries[2].value) continue;
-
       const width = plateIcon + plateGap + String(value).length * charWidth + 0.4 * plateFont * 0.62;
-
-      let i = entries.length;
-      while (i > 0 && entries[i - 1].value < value) i--;
-      entries.splice(i, 0, { good, value, width });
+      let index = entries.length;
+      while (index > 0 && entries[index - 1].value < value) index--;
+      entries.splice(index, 0, { good, value, width });
       if (entries.length > 3) entries.pop();
     }
     if (!entries.length) continue;
 
-    const contentWidth = entries.reduce((sum, e) => sum + e.width, 0) + plateEntryGap * (entries.length - 1);
+    const contentWidth = entries.reduce((sum, entry) => sum + entry.width, 0) + plateEntryGap * (entries.length - 1);
     const plateWidth = contentWidth + platePadX * 2;
     const plateHeight = plateIcon + platePadY * 2;
+    maximumBurgWidth = Math.max(maximumBurgWidth, plateWidth);
+    maximumBurgHeight = Math.max(maximumBurgHeight, plateHeight);
     const plateX = burg.x - plateWidth / 2;
     const plateY = burg.y + PLATE_DY;
     const iconY = plateY + platePadY;
@@ -186,9 +165,88 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
       offset += width + plateEntryGap;
     }
 
-    html += `<g data-id="${burg.i}">${content}</g>`;
+    items.push({
+      burgId: burg.i,
+      x: burg.x,
+      y: burg.y,
+      x0: plateX,
+      y0: plateY,
+      x1: plateX + plateWidth,
+      y1: plateY + plateHeight,
+      markup: `<g data-id="${burg.i}">${content}</g>`
+    });
   }
-  return html;
+
+  return items;
+}
+
+function reconcileGoods(context: ViewportRenderContext): void {
+  const goodsCells = context.root.querySelector<SVGGElement>("#goodsCells");
+  const goodsIcons = context.root.querySelector<SVGGElement>("#goodsIcons");
+  const goodsBurgs = context.root.querySelector<SVGGElement>("#goodsBurgs");
+  if (!goodsCells || !goodsIcons || !goodsBurgs) return;
+  if (!cellsIndex.valid || !iconsIndex.valid || !burgsIndex.valid) return;
+  if (!layerIsOn("toggleGoods")) {
+    goodsCells.replaceChildren();
+    goodsIcons.replaceChildren();
+    goodsBurgs.replaceChildren();
+    return;
+  }
+
+  const { x0, y0, x1, y1 } = context.bounds;
+  const cellsMarkup: string[] = [];
+  for (const { cellId, total, produced } of cellsIndex.values(context.bounds)) {
+    const [x, y] = pack.cells.p[cellId];
+    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+    const opacity = rn(0.1 + 0.9 * normalize(total, 0, 1), 2);
+    const points = getPackPolygon(cellId, pack).join(" ");
+    for (const good of produced) {
+      cellsMarkup.push(`<polygon points="${points}" fill="${good.color}" fill-opacity="${opacity}"/>`);
+    }
+  }
+  goodsCells.innerHTML = cellsMarkup.join("");
+
+  const drawCircle = +goodsIcons.dataset.circle!;
+  const iconSize = +goodsIcons.dataset.size! || DEFAULT_SIZE;
+  const half = iconSize / 2;
+  const iconBounds = { ...context.bounds, x0: x0 - half, y0: y0 - half, x1: x1 + half, y1: y1 + half };
+  const iconsMarkup: string[] = [];
+  for (const cellId of iconsIndex.values(iconBounds)) {
+    const good = Goods.get(pack.cells.good[cellId]);
+    if (!good) continue;
+    const [x, y] = pack.cells.p[cellId];
+    if (x + half < x0 || x - half > x1 || y + half < y0 || y - half > y1) continue;
+    const stroke = Goods.getStroke(good.color);
+    iconsMarkup.push(
+      `<g data-i="${good.i}">${
+        drawCircle ? `<circle cx="${x}" cy="${y}" r="${half}" fill="${good.color}" stroke="${stroke}" />` : ""
+      }<use href="#${good.icon}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`
+    );
+  }
+  goodsIcons.innerHTML = iconsMarkup.join("");
+
+  const burgsMarkup: string[] = [];
+  const burgBounds = {
+    ...context.bounds,
+    x0: x0 - maximumBurgWidth,
+    y0: y0 - maximumBurgHeight,
+    x1: x1 + maximumBurgWidth,
+    y1: y1 + maximumBurgHeight
+  };
+  for (const item of burgsIndex.values(burgBounds)) {
+    if (item.x1 < x0 || item.x0 > x1 || item.y1 < y0 || item.y0 > y1) continue;
+    burgsMarkup.push(item.markup);
+  }
+  goodsBurgs.innerHTML = burgsMarkup.join("");
+}
+
+function clearGoods(): void {
+  cellsIndex.clear();
+  iconsIndex.clear();
+  burgsIndex.clear();
+  maximumBurgWidth = 0;
+  maximumBurgHeight = 0;
+  for (const id of SUBGROUPS) document.querySelector(`#goods > #${id}`)?.replaceChildren();
 }
 
 declare global {

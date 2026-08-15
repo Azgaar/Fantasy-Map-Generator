@@ -1207,6 +1207,7 @@ const regenerateMap = debounce(async function (config) {
 
 // clear the map
 function undraw() {
+  window.ViewportLayers?.clearAll();
   viewbox
     .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
     .remove();

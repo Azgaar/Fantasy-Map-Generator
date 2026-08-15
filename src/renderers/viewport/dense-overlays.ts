@@ -1,128 +1,115 @@
+import type { Burg } from "@/generators/burgs-generator";
 import { getGridPolygon, getPackPolygon, rn } from "@/utils";
-import { Scene, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
+import { SpatialIndex, type ViewportBounds, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
 
-interface PrecipitationPoint {
-  id: string;
-  x: number;
-  y: number;
-  radius: number;
-}
+const precipitationIndex = new SpatialIndex<number>();
+const populationIndex = new SpatialIndex<number>();
+const cellsIndex = new SpatialIndex<number>();
+let cellsAreGrid = false;
+let maximumPrecipitationRadius = 0;
+let maximumPopulationHeight = 0;
 
-interface PopulationLine {
-  id: string;
-  x: number;
-  y1: number;
-  y2: number;
-}
-
-interface CellSceneItem {
-  id: string;
-  cellId: number;
-  isGrid: boolean;
-}
-
-const precipitationScene = new Scene<PrecipitationPoint>();
-const populationScene = new Scene<PopulationLine>();
-const cellsScene = new Scene<CellSceneItem>();
-const precipitationLayer = ViewportLayers.register({ id: "precipitation", render: reconcilePrecipitation });
-const populationLayer = ViewportLayers.register({ id: "population", render: reconcilePopulation });
-const cellsLayer = ViewportLayers.register({ id: "cells", render: reconcileCells });
+const precipitationLayer = ViewportLayers.register({
+  id: "precipitation",
+  render: reconcilePrecipitation,
+  clear: clearPrecipitation
+});
+const populationLayer = ViewportLayers.register({
+  id: "population",
+  render: reconcilePopulation,
+  clear: clearPopulation
+});
+const cellsLayer = ViewportLayers.register({ id: "cells", render: reconcileCells, clear: clearCells });
 
 function drawCells(): void {
-  const isGrid = customization === 1;
-  const indexes = isGrid ? grid.cells.i : pack.cells.i;
-  cellsScene.replace(
-    Array.from<number, CellSceneItem>(indexes as ArrayLike<number>, cellId => ({
-      id: `cell-${cellId}`,
-      cellId,
-      isGrid
-    }))
-  );
+  cellsAreGrid = customization === 1;
+  const indexes = cellsAreGrid ? grid.cells.i : pack.cells.i;
+  const points = cellsAreGrid ? grid.points : pack.cells.p;
+  cellsIndex.replace(indexes, cellId => points[cellId]);
   cellsLayer.render();
 }
 
 function reconcileCells(context: ViewportRenderContext): void {
   const cells = context.root.querySelector<SVGGElement>("#cells");
-  if (!cells || !cellsScene.valid || !layerIsOn("toggleCells")) return;
+  if (!cells || !cellsIndex.valid || !layerIsOn("toggleCells")) return;
 
   const { x0, y0, x1, y1 } = context.bounds;
   const paths: string[] = [];
-  for (const { cellId, isGrid } of cellsScene.values()) {
-    const [x, y] = isGrid ? grid.points[cellId] : pack.cells.p[cellId];
+  for (const cellId of cellsIndex.values(context.bounds)) {
+    const [x, y] = cellsAreGrid ? grid.points[cellId] : pack.cells.p[cellId];
     if (x < x0 || x > x1 || y < y0 || y > y1) continue;
-    paths.push(`M${isGrid ? getGridPolygon(cellId, grid) : getPackPolygon(cellId, pack)}`);
+    paths.push(`M${cellsAreGrid ? getGridPolygon(cellId, grid) : getPackPolygon(cellId, pack)}`);
   }
   cells.innerHTML = `<path d="${paths.join("")}"/>`;
+}
+
+function clearCells(): void {
+  cellsIndex.clear();
+  document.querySelector("#cells")?.replaceChildren();
 }
 
 function drawPrecipitation(): void {
   const { cells, points } = grid;
   const cellsNumberModifier = (Number(pointsInput.dataset.cells) / 10000) ** 0.25;
-  const pointsToRender: PrecipitationPoint[] = [];
-  for (const cellId of cells.i) {
+  maximumPrecipitationRadius = 0;
+  precipitationIndex.replace(cells.i, cellId => {
     const precipitation = cells.prec[cellId];
-    if (cells.h[cellId] < 20 || !precipitation) continue;
-    const [x, y] = points[cellId];
-    pointsToRender.push({
-      id: `precipitation-${cellId}`,
-      x,
-      y,
-      radius: rn(Math.sqrt(precipitation / 4) / cellsNumberModifier, 2)
-    });
-  }
-  precipitationScene.replace(pointsToRender);
+    if (cells.h[cellId] < 20 || !precipitation) return null;
+    const radius = rn(Math.sqrt(precipitation / 4) / cellsNumberModifier, 2);
+    maximumPrecipitationRadius = Math.max(maximumPrecipitationRadius, radius);
+    return points[cellId];
+  });
   precipitationLayer.render();
 }
 
 function reconcilePrecipitation(context: ViewportRenderContext): void {
   const layer = context.root.querySelector<SVGGElement>("#prec");
-  if (!layer) return;
-  if (!precipitationScene.valid) return;
+  if (!layer || !precipitationIndex.valid) return;
   if (!layerIsOn("togglePrecipitation")) return void layer.replaceChildren();
 
   const { x0, y0, x1, y1 } = context.bounds;
+  const queryBounds = expandBounds(context.bounds, maximumPrecipitationRadius);
+  const cellsNumberModifier = (Number(pointsInput.dataset.cells) / 10000) ** 0.25;
   const markup: string[] = [];
-  for (const point of precipitationScene.values()) {
-    if (
-      point.x + point.radius < x0 ||
-      point.x - point.radius > x1 ||
-      point.y + point.radius < y0 ||
-      point.y - point.radius > y1
-    )
-      continue;
-    markup.push(`<circle cx="${point.x}" cy="${point.y}" r="${point.radius}"/>`);
+  for (const cellId of precipitationIndex.values(queryBounds)) {
+    const [x, y] = grid.points[cellId];
+    const radius = rn(Math.sqrt(grid.cells.prec[cellId] / 4) / cellsNumberModifier, 2);
+    if (x + radius < x0 || x - radius > x1 || y + radius < y0 || y - radius > y1) continue;
+    markup.push(`<circle cx="${x}" cy="${y}" r="${radius}"/>`);
   }
   layer.innerHTML = markup.join("");
   layer.style.display = "block";
 }
 
+function clearPrecipitation(): void {
+  precipitationIndex.clear();
+  maximumPrecipitationRadius = 0;
+  document.querySelector("#prec")?.replaceChildren();
+}
+
 function drawPopulation(): void {
   const { cells, burgs } = pack;
-  const lines: PopulationLine[] = [];
-  for (const cellId of cells.i) {
-    const population = cells.pop[cellId];
-    if (!population) continue;
-    const [x, y] = cells.p[cellId];
-    lines.push({ id: `rural-${cellId}`, x, y1: y, y2: y - population / 5 });
-  }
-  for (const burg of burgs) {
-    if (!burg.i || burg.removed) continue;
-    lines.push({
-      id: `urban-${burg.i}`,
-      x: burg.x,
-      y1: burg.y,
-      y2: burg.y - ((burg.population || 0) / 5) * urbanization
-    });
-  }
-  populationScene.replace(lines);
+  maximumPopulationHeight = 0;
+  populationIndex.replace(populationIds(cells.i, burgs), itemId => {
+    if (itemId >= 0) {
+      const population = cells.pop[itemId];
+      if (!population) return null;
+      maximumPopulationHeight = Math.max(maximumPopulationHeight, population / 5);
+      return cells.p[itemId];
+    }
+
+    const burg = burgs[-itemId - 1];
+    if (!burg?.i || burg.removed) return null;
+    maximumPopulationHeight = Math.max(maximumPopulationHeight, ((burg.population || 0) / 5) * urbanization);
+    return [burg.x, burg.y];
+  });
   populationLayer.render();
 }
 
 function reconcilePopulation(context: ViewportRenderContext): void {
   const rural = context.root.querySelector<SVGGElement>("#rural");
   const urban = context.root.querySelector<SVGGElement>("#urban");
-  if (!rural || !urban) return;
-  if (!populationScene.valid) return;
+  if (!rural || !urban || !populationIndex.valid) return;
   if (!layerIsOn("togglePopulation")) {
     rural.replaceChildren();
     urban.replaceChildren();
@@ -130,18 +117,54 @@ function reconcilePopulation(context: ViewportRenderContext): void {
   }
 
   const { x0, y0, x1, y1 } = context.bounds;
+  const queryBounds = { ...context.bounds, y1: context.bounds.y1 + maximumPopulationHeight };
   const ruralMarkup: string[] = [];
   const urbanMarkup: string[] = [];
-  for (const line of populationScene.values()) {
-    if (line.x < x0 || line.x > x1 || Math.max(line.y1, line.y2) < y0 || Math.min(line.y1, line.y2) > y1) continue;
-    const markup = `<line x1="${line.x}" y1="${line.y1}" x2="${line.x}" y2="${line.y2}"/>`;
-    if (line.id.startsWith("rural-")) ruralMarkup.push(markup);
+  for (const itemId of populationIndex.values(queryBounds)) {
+    const isRural = itemId >= 0;
+    let x: number;
+    let baseY: number;
+    let topY: number;
+    if (isRural) {
+      [x, baseY] = pack.cells.p[itemId];
+      topY = baseY - pack.cells.pop[itemId] / 5;
+    } else {
+      const burg = pack.burgs[-itemId - 1];
+      x = burg.x;
+      baseY = burg.y;
+      topY = baseY - ((burg.population || 0) / 5) * urbanization;
+    }
+    if (x < x0 || x > x1 || Math.max(baseY, topY) < y0 || Math.min(baseY, topY) > y1) continue;
+    const markup = `<line x1="${x}" y1="${baseY}" x2="${x}" y2="${topY}"/>`;
+    if (isRural) ruralMarkup.push(markup);
     else urbanMarkup.push(markup);
   }
   rural.innerHTML = ruralMarkup.join("");
   urban.innerHTML = urbanMarkup.join("");
 }
 
-window.ViewportPopulation = { draw: drawPopulation };
-window.ViewportPrecipitation = { draw: drawPrecipitation };
-window.ViewportCells = { draw: drawCells };
+function clearPopulation(): void {
+  populationIndex.clear();
+  maximumPopulationHeight = 0;
+  document.querySelector("#rural")?.replaceChildren();
+  document.querySelector("#urban")?.replaceChildren();
+}
+
+function* populationIds(cellIds: Iterable<number>, burgs: Burg[]): IterableIterator<number> {
+  yield* cellIds;
+  for (const burg of burgs) yield -burg.i - 1;
+}
+
+function expandBounds(bounds: ViewportBounds, padding: number): ViewportBounds {
+  return {
+    ...bounds,
+    x0: bounds.x0 - padding,
+    y0: bounds.y0 - padding,
+    x1: bounds.x1 + padding,
+    y1: bounds.y1 + padding
+  };
+}
+
+window.ViewportPopulation = { draw: drawPopulation, clear: clearPopulation };
+window.ViewportPrecipitation = { draw: drawPrecipitation, clear: clearPrecipitation };
+window.ViewportCells = { draw: drawCells, clear: clearCells };

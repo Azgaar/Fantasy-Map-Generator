@@ -7,7 +7,7 @@ interface ReliefSceneIcon {
 }
 
 const scene = new Scene<ReliefSceneIcon>();
-const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
+const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief, clear: removeRelief });
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {

@@ -35,7 +35,7 @@ interface MarkerSceneItem {
 }
 
 const scene = new Scene<MarkerSceneItem>();
-const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers });
+const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers, clear: () => scene.invalidate() });
 
 // prettier-ignore
 const pinShapes: PinShapes = {

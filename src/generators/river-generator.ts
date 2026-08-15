@@ -230,10 +230,13 @@ class RiverModule {
         }
 
         // downhill cell (make sure it's not in the source lake)
-        let min = null;
+        let min: number | null = null;
         if (lakeOutCells[i]) {
-          const filtered = cells.c[i].filter((c: number) => !lakes.map((lake: any) => lake.i).includes(cells.f[c]));
-          min = filtered.sort((a: number, b: number) => h[a] - h[b])[0];
+          const lakeIds = new Set(lakes.map((lake: any) => lake.i));
+          for (const neighborId of cells.c[i]) {
+            if (lakeIds.has(cells.f[neighborId])) continue;
+            if (min === null || h[neighborId] < h[min]) min = neighborId;
+          }
         } else if (cells.haven[i]) {
           min = cells.haven[i];
         } else {
@@ -241,7 +244,7 @@ class RiverModule {
         }
 
         // cells is depressed
-        if (h[i] <= h[min]) continue;
+        if (min === null || h[i] <= h[min]) continue;
 
         // debug
         //   .append("line")

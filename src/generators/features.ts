@@ -105,9 +105,10 @@ class FeatureModule {
     const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
     const features: GridFeature[] = [];
 
-    const queue = [0];
-    for (let featureId = 1; queue[0] !== -1; featureId++) {
-      const firstCell = queue[0];
+    let firstCell = 0;
+    let nextUnmarked = 0;
+    for (let featureId = 1; firstCell !== -1; featureId++) {
+      const queue = [firstCell];
       featureIds[firstCell] = featureId;
 
       const land = heights[firstCell] >= 20;
@@ -133,7 +134,8 @@ class FeatureModule {
       const type = land ? "island" : border ? "ocean" : "lake";
       features.push({ i: featureId, land, border, type });
 
-      queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
+      while (nextUnmarked < cellsNumber && featureIds[nextUnmarked] !== this.UNMARKED) nextUnmarked++;
+      firstCell = nextUnmarked < cellsNumber ? nextUnmarked : -1;
     }
 
     // markup deep ocean cells
@@ -263,9 +265,10 @@ class FeatureModule {
     const harbor = new Uint8Array(packCellsNumber); // harbor: number of adjacent water cells
     const features: Feature[] = [];
 
-    const queue = [0];
-    for (let featureId = 1; queue[0] !== -1; featureId++) {
-      const firstCell = queue[0];
+    let firstCell = 0;
+    let nextUnmarked = 0;
+    for (let featureId = 1; firstCell !== -1; featureId++) {
+      const queue = [firstCell];
       featureIds[firstCell] = featureId;
 
       const land = isLand(firstCell, pack);
@@ -299,7 +302,8 @@ class FeatureModule {
       }
 
       features.push(addFeature({ firstCell, land, border, featureId, totalCells }));
-      queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
+      while (nextUnmarked < packCellsNumber && featureIds[nextUnmarked] !== this.UNMARKED) nextUnmarked++;
+      firstCell = nextUnmarked < packCellsNumber ? nextUnmarked : -1;
     }
 
     this.markup({

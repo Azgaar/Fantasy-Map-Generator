@@ -55,9 +55,25 @@ type MarkerConfig = {
   add: (id: string, cell: number) => void;
 };
 
+type CandidateGroup =
+  | "burg"
+  | "river"
+  | "land"
+  | "water"
+  | "high50"
+  | "high70"
+  | "culture"
+  | "populated"
+  | "harbor"
+  | "biome1"
+  | "habitable";
+
+type MarkerCandidateIndex = Record<CandidateGroup, number[]>;
+
 class MarkersModule {
   private config: MarkerConfig[];
   private occupied: boolean[];
+  private candidateIndex: MarkerCandidateIndex | null = null;
 
   constructor() {
     this.config = this.getDefaultConfig();
@@ -115,7 +131,7 @@ class MarkersModule {
   }
 
   private listParty({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.burg[i]);
+    return this.getIndexedCells("burg", cells).filter(i => !this.occupied[i] && cells.burg[i]);
   }
 
   private addParty(id: string) {
@@ -500,26 +516,67 @@ class MarkersModule {
 
   private generateTypes() {
     TIME && console.time("addMarkers");
+    this.candidateIndex = this.buildCandidateIndex(pack);
 
-    this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
-      if (multiplier === 0) return;
+    try {
+      this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
+        if (multiplier === 0) return;
 
-      const candidates = Array.from(list(pack));
-      let quantity = this.getQuantity(candidates, min, each, multiplier);
-      // uncomment for debugging:
-      // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
+        const candidates = list(pack);
+        let quantity = this.getQuantity(candidates, min, each, multiplier);
+        // uncomment for debugging:
+        // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
-      while (quantity && candidates.length) {
-        const [cell] = this.extractAnyElement(candidates);
-        const marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, { cell });
-        if (!marker) continue;
-        add(`marker${marker.i}`, cell);
-        quantity--;
-      }
-    });
+        while (quantity && candidates.length) {
+          const [cell] = this.extractAnyElement(candidates);
+          const marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, { cell });
+          if (!marker) continue;
+          add(`marker${marker.i}`, cell);
+          quantity--;
+        }
+      });
+    } finally {
+      this.candidateIndex = null;
+      this.occupied = [];
+      TIME && console.timeEnd("addMarkers");
+    }
+  }
 
-    this.occupied = [];
-    TIME && console.timeEnd("addMarkers");
+  private buildCandidateIndex({ cells, biomes }: PackedGraph): MarkerCandidateIndex {
+    const index: MarkerCandidateIndex = {
+      burg: [],
+      river: [],
+      land: [],
+      water: [],
+      high50: [],
+      high70: [],
+      culture: [],
+      populated: [],
+      harbor: [],
+      biome1: [],
+      habitable: []
+    };
+
+    for (const cellId of cells.i) {
+      const height = cells.h[cellId];
+      if (cells.burg[cellId]) index.burg.push(cellId);
+      if (cells.r[cellId]) index.river.push(cellId);
+      if (height >= 20) index.land.push(cellId);
+      else index.water.push(cellId);
+      if (height >= 50) index.high50.push(cellId);
+      if (height >= 70) index.high70.push(cellId);
+      if (cells.culture[cellId]) index.culture.push(cellId);
+      if (cells.pop[cellId]) index.populated.push(cellId);
+      if (cells.harbor[cellId] > 6) index.harbor.push(cellId);
+      if (cells.biome[cellId] === 1) index.biome1.push(cellId);
+      if (biomes[cells.biome[cellId]].habitability) index.habitable.push(cellId);
+    }
+
+    return index;
+  }
+
+  private getIndexedCells(group: CandidateGroup, cells: PackedGraph["cells"]): number[] {
+    return this.candidateIndex?.[group] || cells.i;
   }
 
   private getQuantity(array: any[], min: number, each: number, multiplier: number) {
@@ -556,7 +613,7 @@ class MarkersModule {
   }
 
   private listVolcanoes({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 70);
+    return this.getIndexedCells("high70", cells).filter(i => !this.occupied[i] && cells.h[i] >= 70);
   }
 
   private addVolcano(id: string, cell: number) {
@@ -573,7 +630,7 @@ class MarkersModule {
   }
 
   private listHotSprings({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] > 50 && cells.culture[i]);
+    return this.getIndexedCells("high50", cells).filter(i => !this.occupied[i] && cells.h[i] > 50 && cells.culture[i]);
   }
 
   private addHotSpring(id: string, cell: number) {
@@ -588,7 +645,7 @@ class MarkersModule {
   }
 
   private listWaterSources({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] > 30 && cells.r[i]);
+    return this.getIndexedCells("river", cells).filter(i => !this.occupied[i] && cells.h[i] > 30 && cells.r[i]);
   }
 
   private addWaterSource(id: string, cell: number) {
@@ -615,7 +672,7 @@ class MarkersModule {
   }
 
   private listMines({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] > 47 && cells.burg[i]);
+    return this.getIndexedCells("burg", cells).filter(i => !this.occupied[i] && cells.h[i] > 47 && cells.burg[i]);
   }
 
   private addMine(id: string, cell: number) {
@@ -640,7 +697,7 @@ class MarkersModule {
 
   private listBridges({ cells, burgs }: PackedGraph) {
     const meanFlux = mean(cells.fl.filter(fl => fl)) as number;
-    return cells.i.filter(
+    return this.getIndexedCells("burg", cells).filter(
       i =>
         !this.occupied[i] &&
         cells.burg[i] &&
@@ -682,7 +739,9 @@ class MarkersModule {
   }
 
   private listInns({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.pop[i] > 5 && Routes.isCrossroad(i));
+    return this.getIndexedCells("populated", cells).filter(
+      i => !this.occupied[i] && cells.pop[i] > 5 && Routes.isCrossroad(i)
+    );
   }
 
   private addInn(id: string) {
@@ -944,7 +1003,7 @@ class MarkersModule {
   }
 
   private listLighthouses({ cells }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("harbor", cells).filter(
       i => !this.occupied[i] && cells.harbor[i] > 6 && cells.c[i].some(c => cells.h[c] < 20 && Routes.isConnected(c))
     );
   }
@@ -961,7 +1020,7 @@ class MarkersModule {
   }
 
   private listWaterfalls({ cells }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("river", cells).filter(
       i => cells.r[i] && !this.occupied[i] && cells.h[i] >= 50 && cells.c[i].some(c => cells.h[c] < 40 && cells.r[c])
     );
   }
@@ -987,7 +1046,7 @@ class MarkersModule {
   }
 
   private listBattlefields({ cells }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("land", cells).filter(
       i => !this.occupied[i] && cells.state[i] && cells.pop[i] > 2 && cells.h[i] < 50 && cells.h[i] > 25
     );
   }
@@ -1005,7 +1064,7 @@ class MarkersModule {
   }
 
   private listDungeons({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.pop[i] && cells.pop[i] < 3);
+    return this.getIndexedCells("populated", cells).filter(i => !this.occupied[i] && cells.pop[i] && cells.pop[i] < 3);
   }
 
   private addDungeon(id: string, cell: number) {
@@ -1048,7 +1107,7 @@ class MarkersModule {
   }
 
   private listSeaMonsters({ cells, features }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("water", cells).filter(
       i => !this.occupied[i] && cells.h[i] < 20 && Routes.isConnected(i) && features[cells.f[i]].type === "ocean"
     );
   }
@@ -1061,7 +1120,7 @@ class MarkersModule {
   }
 
   private listHillMonsters({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
+    return this.getIndexedCells("high50", cells).filter(i => !this.occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
   }
 
   private addHillMonster(id: string, cell: number) {
@@ -1138,7 +1197,7 @@ class MarkersModule {
 
   // Sacred mountains spawn on lonely mountains
   private listSacredMountains({ cells }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("high70", cells).filter(
       i =>
         !this.occupied[i] &&
         cells.h[i] >= 70 &&
@@ -1160,7 +1219,7 @@ class MarkersModule {
 
   // Sacred forests spawn on temperate forests
   private listSacredForests({ cells }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("culture", cells).filter(
       i => !this.occupied[i] && cells.culture[i] && cells.religion[i] && [6, 8].includes(cells.biome[i])
     );
   }
@@ -1177,7 +1236,9 @@ class MarkersModule {
 
   // Sacred pineries spawn on boreal forests
   private listSacredPineries({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 9);
+    return this.getIndexedCells("culture", cells).filter(
+      i => !this.occupied[i] && cells.culture[i] && cells.religion[i] && cells.biome[i] === 9
+    );
   }
 
   private addSacredPinery(id: string, cell: number) {
@@ -1192,7 +1253,7 @@ class MarkersModule {
 
   // Sacred palm groves spawn on oasises
   private listSacredPalmGroves({ cells }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("culture", cells).filter(
       i =>
         !this.occupied[i] &&
         cells.culture[i] &&
@@ -1214,7 +1275,9 @@ class MarkersModule {
   }
 
   private listBrigands({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && Routes.hasRoad(i));
+    return this.getIndexedCells("culture", cells).filter(
+      i => !this.occupied[i] && cells.culture[i] && Routes.hasRoad(i)
+    );
   }
 
   private addBrigands(id: string, cell: number) {
@@ -1274,7 +1337,9 @@ class MarkersModule {
 
   // Pirates spawn on sea routes
   private listPirates({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] < 20 && Routes.isConnected(i));
+    return this.getIndexedCells("water", cells).filter(
+      i => !this.occupied[i] && cells.h[i] < 20 && Routes.isConnected(i)
+    );
   }
 
   private addPirates(id: string, _cell: number) {
@@ -1284,7 +1349,7 @@ class MarkersModule {
   }
 
   private listStatues({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.h[i] < 40);
+    return this.getIndexedCells("land", cells).filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.h[i] < 40);
   }
 
   private addStatue(id: string, cell: number) {
@@ -1327,7 +1392,9 @@ class MarkersModule {
   }
 
   private listRuins({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && cells.h[i] >= 20 && cells.h[i] < 60);
+    return this.getIndexedCells("culture", cells).filter(
+      i => !this.occupied[i] && cells.culture[i] && cells.h[i] >= 20 && cells.h[i] < 60
+    );
   }
 
   private addRuins(id: string, _cell: number) {
@@ -1354,7 +1421,9 @@ class MarkersModule {
   }
 
   private listLibraries({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && cells.burg[i] && cells.pop[i] > 10);
+    return this.getIndexedCells("burg", cells).filter(
+      i => !this.occupied[i] && cells.culture[i] && cells.burg[i] && cells.pop[i] > 10
+    );
   }
 
   private addLibrary(id: string, cell: number) {
@@ -1368,7 +1437,9 @@ class MarkersModule {
   }
 
   private listCircuses({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && cells.h[i] >= 20 && Routes.isConnected(i));
+    return this.getIndexedCells("culture", cells).filter(
+      i => !this.occupied[i] && cells.culture[i] && cells.h[i] >= 20 && Routes.isConnected(i)
+    );
   }
 
   private addCircus(id: string, _cell: number) {
@@ -1390,7 +1461,9 @@ class MarkersModule {
   }
 
   private listJousts({ cells, burgs }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population! > 20);
+    return this.getIndexedCells("burg", cells).filter(
+      i => !this.occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population! > 20
+    );
   }
 
   private addJoust(id: string, cell: number) {
@@ -1409,7 +1482,7 @@ class MarkersModule {
   }
 
   private listFairs({ cells, burgs }: PackedGraph) {
-    return cells.i.filter(
+    return this.getIndexedCells("burg", cells).filter(
       i =>
         !this.occupied[i] &&
         cells.burg[i] &&
@@ -1431,7 +1504,7 @@ class MarkersModule {
   }
 
   private listCanoes({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.r[i]);
+    return this.getIndexedCells("river", cells).filter(i => !this.occupied[i] && cells.r[i]);
   }
 
   private addCanoe(id: string, cell: number) {
@@ -1444,7 +1517,7 @@ class MarkersModule {
   }
 
   private listMigrations({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2);
+    return this.getIndexedCells("land", cells).filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2);
   }
 
   private addMigration(id: string, _cell: number) {
@@ -1509,7 +1582,9 @@ class MarkersModule {
   }
 
   private listDances({ cells, burgs }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population! > 15);
+    return this.getIndexedCells("burg", cells).filter(
+      i => !this.occupied[i] && cells.burg[i] && burgs[cells.burg[i]].population! > 15
+    );
   }
 
   private addDances(id: string, cell: number) {
@@ -1548,7 +1623,7 @@ class MarkersModule {
   }
 
   private listMirage({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.biome[i] === 1);
+    return this.getIndexedCells("biome1", cells).filter(i => !this.occupied[i] && cells.biome[i] === 1);
   }
 
   private addMirage(id: string, _cell: number) {
@@ -1561,7 +1636,7 @@ class MarkersModule {
   }
 
   private listCaves({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
+    return this.getIndexedCells("high50", cells).filter(i => !this.occupied[i] && cells.h[i] >= 50 && cells.pop[i]);
   }
 
   private addCave(id: string, cell: number) {
@@ -1616,7 +1691,9 @@ class MarkersModule {
   }
 
   private listRifts({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.pop[i] <= 3 && pack.biomes[cells.biome[i]].habitability);
+    return this.getIndexedCells("habitable", cells).filter(
+      i => !this.occupied[i] && cells.pop[i] <= 3 && pack.biomes[cells.biome[i]].habitability
+    );
   }
 
   private addRift(id: string, _cell: number) {
@@ -1637,7 +1714,7 @@ class MarkersModule {
   }
 
   private listDisturbedBurial({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 2);
+    return this.getIndexedCells("land", cells).filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 2);
   }
 
   private addDisturbedBurial(id: string, _cell: number) {
@@ -1647,7 +1724,7 @@ class MarkersModule {
   }
 
   private listNecropolis({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] < 2);
+    return this.getIndexedCells("land", cells).filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] < 2);
   }
 
   private addNecropolis(id: string, cell: number) {
@@ -1682,7 +1759,7 @@ class MarkersModule {
   }
 
   private listEncounters({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 1);
+    return this.getIndexedCells("land", cells).filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 1);
   }
 
   private addEncounter(id: string, cell: number) {

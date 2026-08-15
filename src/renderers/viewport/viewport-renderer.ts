@@ -1,6 +1,7 @@
 interface ViewportLayerHandle {
   render: () => void;
   invalidate: () => void;
+  clear: () => void;
   unregister: () => void;
 }
 
@@ -12,9 +13,10 @@ export interface ViewportRenderContext {
 interface ViewportLayer {
   id: string;
   render: (context: ViewportRenderContext) => void;
+  clear?: () => void;
 }
 
-interface ViewportBounds {
+export interface ViewportBounds {
   scale: number;
   x0: number;
   y0: number;
@@ -27,7 +29,9 @@ export class Scene<T extends { id: string }> {
   valid = false;
 
   replace(items: T[]): void {
-    this.items = new Map(items.map(item => [item.id, item]));
+    const next = new Map<string, T>();
+    for (const item of items) next.set(item.id, item);
+    this.items = next;
     this.valid = true;
   }
 
@@ -78,6 +82,65 @@ export class Scene<T extends { id: string }> {
   }
 }
 
+/** A compact bucket index for large, immutable viewport draw lists. */
+export class SpatialIndex<T> {
+  private readonly buckets = new Map<number, Map<number, T[]>>();
+  private items: T[] = [];
+  valid = false;
+
+  constructor(private readonly bucketSize = 64) {}
+
+  replace(items: Iterable<T>, getPoint: (item: T) => readonly [number, number] | null): void {
+    this.clear();
+    for (const item of items) {
+      const point = getPoint(item);
+      if (!point) continue;
+
+      this.items.push(item);
+      const columnId = Math.floor(point[0] / this.bucketSize);
+      const rowId = Math.floor(point[1] / this.bucketSize);
+      let column = this.buckets.get(columnId);
+      if (!column) {
+        column = new Map();
+        this.buckets.set(columnId, column);
+      }
+      let bucket = column.get(rowId);
+      if (!bucket) {
+        bucket = [];
+        column.set(rowId, bucket);
+      }
+      bucket.push(item);
+    }
+    this.valid = true;
+  }
+
+  *values(bounds?: ViewportBounds): IterableIterator<T> {
+    if (!bounds || !Number.isFinite(bounds.x0 + bounds.y0 + bounds.x1 + bounds.y1)) {
+      yield* this.items;
+      return;
+    }
+
+    const column0 = Math.floor(bounds.x0 / this.bucketSize);
+    const column1 = Math.floor(bounds.x1 / this.bucketSize);
+    const row0 = Math.floor(bounds.y0 / this.bucketSize);
+    const row1 = Math.floor(bounds.y1 / this.bucketSize);
+    for (let columnId = column0; columnId <= column1; columnId++) {
+      const column = this.buckets.get(columnId);
+      if (!column) continue;
+      for (let rowId = row0; rowId <= row1; rowId++) {
+        const bucket = column.get(rowId);
+        if (bucket) yield* bucket;
+      }
+    }
+  }
+
+  clear(): void {
+    this.buckets.clear();
+    this.items = [];
+    this.valid = false;
+  }
+}
+
 export class ViewportRenderer {
   private layers = new Map<string, ViewportLayer>();
   private dirtyLayers = new Set<string>();
@@ -111,6 +174,11 @@ export class ViewportRenderer {
         this.dirtyLayers.add(layer.id);
         this.schedule();
       },
+      clear: () => {
+        if (this.layers.get(layer.id) !== layer) return;
+        this.dirtyLayers.delete(layer.id);
+        layer.clear?.();
+      },
       unregister: () => {
         if (this.layers.get(layer.id) === layer) {
           this.layers.delete(layer.id);
@@ -118,6 +186,18 @@ export class ViewportRenderer {
         }
       }
     };
+  }
+
+  invalidateAll(): void {
+    for (const id of this.layers.keys()) this.dirtyLayers.add(id);
+    this.schedule();
+  }
+
+  clearAll(): void {
+    this.cancelScheduledRender();
+    this.materializedBounds = null;
+    this.dirtyLayers.clear();
+    for (const layer of this.layers.values()) layer.clear?.();
   }
 
   schedule(): void {
