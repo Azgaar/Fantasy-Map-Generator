@@ -87,17 +87,16 @@ function applyStylePreset(presetJson) {
   applyTerrainPresetOptions(previousTerrain);
   applyTexturePresetOptions();
   applyLayerOptionAttributes();
-  applyChildOptionAttributes();
   applySingleInstanceOptionElements();
   registerCustomHeightmapSchemes();
-  projectLegacyStyleMirrors();
 
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
+  const labelGroupStyles = (style.layers.labels.children ??= {});
   for (const group of options.labels.groups) {
-    if (style.labels.groups[group.name]) continue;
-    const defaultGroupStyle = style.labels.groups[Labels.getFallbackGroup(group.type).name];
-    if (defaultGroupStyle) style.labels.groups[group.name] = {...defaultGroupStyle};
+    if (labelGroupStyles[group.name]) continue;
+    const defaultGroupStyle = labelGroupStyles[Labels.getFallbackGroup(group.type).name];
+    if (defaultGroupStyle) labelGroupStyles[group.name] = structuredClone(defaultGroupStyle);
   }
 
   // relief redraw is the caller's job: applyStyleWithUiRefresh always redraws it (letting
@@ -133,12 +132,11 @@ function applyTexturePresetOptions() {
   }
 }
 
-// options attrs aren't presentation, so applyLayerStyle never writes them to the DOM. temperature
-// has no reader anywhere (its fontSize option is a legitimate no-op - see Task 9 report); armies/
-// scaleBar's fontSize is inherited CSS sizing with no JS reader either - mirror the values back
-// under their pre-migration names, matching FLAT_RENAMES in src/services/styles/legacy.ts
+// options attrs aren't presentation, so applyLayerStyle never writes them to the DOM. armies/
+// scaleBar's fontSize is inherited CSS sizing that nothing reads as JS, so the rendered text
+// only picks it up from the group attribute - mirror those values back under their pre-migration
+// names, matching FLAT_RENAMES in src/services/styles/legacy.ts
 const LAYER_OPTION_ATTRIBUTES = {
-  temperature: {fontSize: "data-size"},
   // boxSize is dropped: draw-military.ts/regiment-editor.ts read it via getLayerOptions now.
   // fontSize stays DOM-written here - it's inherited by regiment text, nothing reads it as JS
   armies: {fontSize: "font-size"},
@@ -157,25 +155,6 @@ function applyLayerOptionAttributes() {
 
     for (const [optionKey, attribute] of Object.entries(renames)) {
       if (optionKey in layerOptions) setStyleAttribute(el, attribute, layerOptions[optionKey]);
-    }
-  }
-}
-
-// same idea as LAYER_OPTION_ATTRIBUTES, but for options living on a CHILD node - matching
-// CHILD_RULES/HEIGHTS_RENAMES/EMBLEMS_RENAMES in src/services/styles/legacy.ts. All flat/child
-// options attrs have now migrated off the DOM (Task 9/10); the only remaining DOM write here is
-// the burgIcons/anchors font-size mirror below, which createIconGroups still harvests (Task 12)
-function applyChildOptionAttributes() {
-  // burgIcons/anchors groups share child ids across the two layers (e.g. both have a "capital"
-  // group), so they need a layer-scoped selector rather than document.getElementById. The DOM
-  // write here (not just the style.burgIcons/style.anchors mirror) is mandatory: createIconGroups
-  // (src/renderers/draw-burg-icons.ts) harvests these DOM attributes before recreating the groups
-  for (const layerId of ["burgIcons", "anchors"]) {
-    const children = style.layers[layerId]?.children || {};
-    for (const [name, node] of Object.entries(children)) {
-      if (!node.options || !("size" in node.options)) continue;
-      const el = document.querySelector(`#${layerId} > g#${CSS.escape(name)}`);
-      if (el) setStyleAttribute(el, "font-size", node.options.size);
     }
   }
 }
@@ -238,34 +217,6 @@ function registerCustomHeightmapSchemes() {
   if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
   const landScheme = landHeights?.options?.scheme;
   if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
-}
-
-// projects style.layers back onto the legacy attribute-name-keyed bags that getGroupStyle
-// (src/renderers/labels/label-groups.ts) and createIconGroups (src/renderers/draw-burg-icons.ts)
-// still read directly. Temporary scaffolding, removed when those renderers are re-homed (Task 12)
-function projectLegacyStyleMirrors() {
-  const labelsChildren = style.layers.labels?.children || {};
-  for (const [name, node] of Object.entries(labelsChildren)) {
-    style.labels.groups[name] = projectStyleNode(node, {fontSize: "data-size", dx: "data-dx", dy: "data-dy"});
-  }
-
-  const burgIconsChildren = style.layers.burgIcons?.children || {};
-  for (const [name, node] of Object.entries(burgIconsChildren)) {
-    style.burgIcons[name] = projectStyleNode(node, {size: "font-size"});
-  }
-
-  const anchorsChildren = style.layers.anchors?.children || {};
-  for (const [name, node] of Object.entries(anchorsChildren)) {
-    style.anchors[name] = projectStyleNode(node, {size: "font-size"});
-  }
-}
-
-function projectStyleNode(node, optionRenames) {
-  const attributes = {...(node.presentation || {})};
-  for (const [optionKey, attribute] of Object.entries(optionRenames)) {
-    if (node.options && optionKey in node.options) attributes[attribute] = node.options[optionKey];
-  }
-  return attributes;
 }
 
 function requestStylePresetChange(preset) {

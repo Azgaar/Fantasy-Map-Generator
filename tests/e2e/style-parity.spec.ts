@@ -118,7 +118,7 @@ test("styled attributes on a freshly generated map match the preset-apply baseli
 // pins the style editor's write path contract (Task 8): setPresentation must land in both
 // style.layers and the real DOM, for a plain layer, a routes child, and a labels group (which
 // only exists as id="labels-<name>" data-group="<name>" - the data-group fallback in applyLayerStyle)
-test("editor bridge writes reach style.layers, the DOM, and the labels legacy mirror", async ({page}) => {
+test("editor bridge writes reach style.layers and the DOM", async ({page}) => {
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
   await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
@@ -141,15 +141,21 @@ test("editor bridge writes reach style.layers, the DOM, and the labels legacy mi
     w.setPresentation({layerId: "labels", childIds: [groupName]}, "opacity", "0.42");
     const labelsStore = style.layers.labels.children[groupName].presentation.opacity;
     const labelsDom = document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("opacity");
-    w.projectLegacyStyleMirrors();
-    const labelsMirror = style.labels.groups[groupName]?.opacity;
+
+    // text-shadow is written through the `style` presentation attribute, which overwrites the
+    // inline transform the group's dx/dy option is projected as - applyLayerStyle re-derives it
+    w.setOptions({layerId: "labels", childIds: [groupName]}, {dy: -0.7});
+    w.setPresentation({layerId: "labels", childIds: [groupName]}, "style", "text-shadow: white 0px 0px 4px");
+    const labelsGroupEl = document.querySelector<SVGGElement>(`#labels [data-group="${groupName}"]`);
+    const labelsShadow = labelsGroupEl?.style.textShadow;
+    const labelsTransform = labelsGroupEl?.style.transform;
 
     w.setPresentation({layerId: "regions", childIds: ["statesHalo"]}, "opacity", "0.77");
     const statesHaloStore = style.layers.regions.children.statesHalo.presentation.opacity;
     const statesHaloDom = document.querySelector("#regions > g#statesHalo")?.getAttribute("opacity");
 
     return {
-      riversStore, riversDom, roadsStore, roadsDom, labelsStore, labelsDom, labelsMirror,
+      riversStore, riversDom, roadsStore, roadsDom, labelsStore, labelsDom, labelsShadow, labelsTransform,
       statesHaloStore, statesHaloDom
     };
   });
@@ -160,7 +166,8 @@ test("editor bridge writes reach style.layers, the DOM, and the labels legacy mi
   expect(result.roadsDom).toBe("3.5");
   expect(result.labelsStore).toBe("0.42");
   expect(result.labelsDom).toBe("0.42");
-  expect(result.labelsMirror).toBe("0.42");
+  expect(result.labelsShadow).toBe("white 0px 0px 4px");
+  expect(result.labelsTransform).toBe("translate(0em, -0.7em)");
   expect(result.statesHaloStore).toBe("0.77");
   expect(result.statesHaloDom).toBe("0.77");
 });
@@ -315,8 +322,7 @@ test("switching system presets restyles routes/borders/lakes/terrs/label childre
       landHeightsScheme: style.layers.terrs.children.landHeights.options.scheme,
       landHeightsDomSchemeAttr: document.querySelector("#terrs > g#landHeights")?.getAttribute("scheme"),
       labelStore: style.layers.labels.children[groupName]?.presentation.fill,
-      labelDom: document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("fill"),
-      labelMirror: style.labels.groups[groupName]?.fill
+      labelDom: document.querySelector(`#labels [data-group="${groupName}"]`)?.getAttribute("fill")
     };
 
     await w.changeStyle("default");
@@ -345,7 +351,6 @@ test("switching system presets restyles routes/borders/lakes/terrs/label childre
   expect(result.night.stateBordersStore).toBe(result.night.stateBordersDom);
   expect(result.night.freshwaterStore).toBe(result.night.freshwaterDom);
   expect(result.night.labelStore).toBe(result.night.labelDom);
-  expect(result.night.labelStore).toBe(result.night.labelMirror);
 
   // the applied preset is genuinely night.json's values, not merely "different from default" -
   // this is what catches a wrong-preset-applied bug (e.g. a name-mapping mistake loading

@@ -20,7 +20,7 @@ import { LEGACY_GROUP_ATTRIBUTES, LEGACY_SELECTOR_ATTRIBUTES, upgradeLegacyPrese
 import { deepMerge, ensureStyleShape, getStyleNode, setOptions } from "@/services/styles/store";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import type { StyleNode } from "@/types/style";
+import type { LayerId, PresentationValue, Style, StyleNode } from "@/types/style";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
@@ -1558,8 +1558,72 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.143.0")) {
     // styles moved from svg attributes to style.layers; harvest what the old file carried
+    rehomeLegacyStyleBags(data[48]);
     harvestLegacyLayerStyles();
   }
+}
+
+// v1.140-v1.142 saved the style as {layers, labels: {groups}, burgIcons, anchors, relief}: the
+// four legacy bags held attribute names keyed by group name, read directly by the renderers.
+// They are now regular style.layers nodes (presentation + options), so convert what data[48]
+// carried before the svg harvest runs - the bags are more reliable than the live svg, which is
+// empty for layers the old map had turned off
+function rehomeLegacyStyleBags(styleJson?: string): void {
+  if (!styleJson) return;
+
+  let parsed: { labels?: { groups?: Record<string, Record<string, unknown>> } } & Record<string, any>;
+  try {
+    parsed = JSON.parse(styleJson);
+  } catch {
+    return; // load.ts already reported the malformed data[48]
+  }
+
+  const layers: Style["layers"] = {};
+
+  const toNode = (bag: Record<string, unknown>, optionRenames: Record<string, string>): StyleNode => {
+    const presentation: Record<string, PresentationValue> = {};
+    const nodeOptions: Record<string, unknown> = {};
+
+    for (const [attribute, value] of Object.entries(bag)) {
+      if (attribute === "id" || value === undefined) continue;
+      const optionKey = optionRenames[attribute];
+      if (optionKey) nodeOptions[optionKey] = Number(value);
+      else presentation[attribute] = value as PresentationValue;
+    }
+
+    const node: StyleNode = { presentation };
+    if (Object.keys(nodeOptions).length) node.options = nodeOptions;
+    return node;
+  };
+
+  const rehomeChildren = (
+    layerId: LayerId,
+    bags: Record<string, Record<string, unknown>> | undefined,
+    optionRenames: Record<string, string>
+  ) => {
+    if (!bags || typeof bags !== "object") return;
+    const children: Record<string, StyleNode> = {};
+    for (const [name, bag] of Object.entries(bags)) {
+      if (bag && typeof bag === "object") children[name] = toNode(bag, optionRenames);
+    }
+    if (Object.keys(children).length) layers[layerId] = { children };
+  };
+
+  rehomeChildren("labels", parsed.labels?.groups, { "data-dx": "dx", "data-dy": "dy", "data-size": "fontSize" });
+  rehomeChildren("burgIcons", parsed.burgIcons, { "font-size": "size" });
+  rehomeChildren("anchors", parsed.anchors, { "font-size": "size" });
+
+  const relief = parsed.relief;
+  if (relief && typeof relief === "object") {
+    const set = relief.set;
+    layers.terrain = {
+      options: { set: set && set in RELIEF_SETS ? set : "simple", size: Number(relief.size) || 1 }
+    };
+    options.reliefDensity = Number(relief.density) || 0.4;
+  }
+
+  // whatever data[48].layers already carried wins: it is the current-format source of truth
+  style = { ...style, ...ensureStyleShape({ layers: deepMerge(layers, style.layers) }) };
 }
 
 // once a layer's reader is migrated off the DOM (Task 9), its options-backed attrs are dead

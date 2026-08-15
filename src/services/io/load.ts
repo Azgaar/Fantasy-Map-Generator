@@ -492,7 +492,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[48]) {
       // malformed data[48] must not abort the load: recover as much as JSON.parse/parseStyle allow
       // and fall back to an empty style shape for whatever part failed
-      // untyped: mirrors the legacy JSON.parse(data[48]) shape until Task 12
       let parsed: any = {};
       try {
         parsed = JSON.parse(data[48]);
@@ -500,7 +499,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ERROR && console.error("Style: data[48] is not valid JSON, falling back to an empty style", error);
       }
 
-      const legacyKeys = (({ labels, burgIcons, anchors, relief }) => ({ labels, burgIcons, anchors, relief }))(parsed);
       let layers: Style["layers"] = {};
       try {
         layers = parseStyle({ layers: parsed.layers ?? {} }).layers;
@@ -508,11 +506,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ERROR && console.error("Style: data[48].layers failed validation, falling back to an empty style", error);
       }
 
-      style = Object.assign(ensureStyleShape({ layers }), legacyKeys);
+      style = ensureStyleShape({ layers });
     } else {
-      // no data[48] at all (pre-style-export map): keep whatever legacy labels/burgIcons/anchors/relief
-      // the currently active preset already put on `style`; the version migrations below repopulate them
-      style = { ...style, ...ensureStyleShape({ layers: {} }) };
+      // no data[48] at all (pre-style-export map): the version migrations below rebuild the style
+      // from the svg the map carries (harvestLegacyLayerStyles), so start from an empty shape
+      style = ensureStyleShape({ layers: {} });
     }
 
     {
@@ -521,10 +519,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     // data[48]/harvest is now authoritative for presentation: re-apply over whatever the embedded svg
-    // carried, before anything below draws from it. Must run before drawLabels/drawBurgIcons so their
-    // renderer-owned groups (and the legacy mirrors those renderers still read) aren't stale on first draw
+    // carried, before anything below draws from it. Must run before drawLabels/drawBurgIcons, which
+    // build their renderer-owned groups from the same store
     for (const layerId of Object.keys(style.layers) as LayerId[]) applyLayerStyle(layerId);
-    if (typeof window.projectLegacyStyleMirrors === "function") window.projectLegacyStyleMirrors();
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>

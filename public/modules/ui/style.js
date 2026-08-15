@@ -98,14 +98,6 @@ function styleTargetFromUI() {
   return GROUPED_STYLE_ELEMENTS.includes(element) && group ? {...base, childIds: [group]} : base;
 }
 
-// labels/burgIcons/anchors renderers still read the legacy style.labels.groups/style.burgIcons/
-// style.anchors mirrors (Task 12 re-homes them); cheap to just rebuild after any write to those layers
-function syncLegacyStyleMirror(target) {
-  if (["labels", "burgIcons", "anchors"].includes(target.layerId) && window.projectLegacyStyleMirrors) {
-    window.projectLegacyStyleMirrors();
-  }
-}
-
 // Toggle style sections on element select
 styleElementSelect.addEventListener("change", selectStyleElement);
 
@@ -545,32 +537,16 @@ function getEl() {
   else return svg.select("#" + el).select("#" + g);
 }
 
-function updateLabelGroupInlineStyle(group) {
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (!groupStyle) return;
-
-  const inlineStyle = group.node().style;
-  const value = Array.from(inlineStyle)
-    .filter(property => property !== "transform")
-    .map(property => `${property}: ${inlineStyle.getPropertyValue(property)}`)
-    .join("; ");
-
-  if (value) groupStyle.style = value;
-  else delete groupStyle.style;
-}
-
 styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
   const target = styleTargetFromUI();
   setPresentation(target, "fill", this.value);
-  syncLegacyStyleMirror(target);
 });
 
 styleStrokeInput.addEventListener("input", function () {
   styleStrokeOutput.value = this.value;
   const target = styleTargetFromUI();
   setPresentation(target, "stroke", this.value);
-  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
@@ -582,7 +558,6 @@ function redrawMeasurersOnStyleChange() {
 styleStrokeWidthInput.addEventListener("input", e => {
   const target = styleTargetFromUI();
   setPresentation(target, "stroke-width", e.target.value);
-  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
 });
@@ -590,13 +565,11 @@ styleStrokeWidthInput.addEventListener("input", e => {
 styleLetterSpacingInput.addEventListener("input", e => {
   const target = styleTargetFromUI();
   setPresentation(target, "letter-spacing", e.target.value);
-  syncLegacyStyleMirror(target);
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
   const target = styleTargetFromUI();
   setPresentation(target, "stroke-dasharray", this.value);
-  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
   redrawMeasurersOnStyleChange();
 });
@@ -604,7 +577,6 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
 styleStrokeLinecapInput.addEventListener("change", function () {
   const target = styleTargetFromUI();
   setPresentation(target, "stroke-linecap", this.value);
-  syncLegacyStyleMirror(target);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
 });
 
@@ -615,14 +587,12 @@ styleDisplayInput.addEventListener("change", function () {
 styleOpacityInput.addEventListener("input", e => {
   const target = styleTargetFromUI();
   setPresentation(target, "opacity", e.target.value);
-  syncLegacyStyleMirror(target);
 });
 
 styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
   const target = styleTargetFromUI();
   setPresentation(target, "filter", this.value);
-  syncLegacyStyleMirror(target);
 });
 
 styleTextureInput.addEventListener("change", function () {
@@ -663,7 +633,6 @@ styleTextureShiftY.addEventListener("input", function () {
 styleClippingInput.addEventListener("change", function () {
   const target = styleTargetFromUI();
   setPresentation(target, "mask", this.value);
-  syncLegacyStyleMirror(target);
 });
 
 styleGridType.addEventListener("change", function () {
@@ -992,7 +961,6 @@ function changeFont() {
   const family = styleSelectFont.value;
   const target = styleTargetFromUI();
   setPresentation(target, "font-family", family);
-  syncLegacyStyleMirror(target);
 
   if (styleElementSelect.value === "legend") redrawLegend();
 }

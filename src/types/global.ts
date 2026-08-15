@@ -6,7 +6,7 @@ import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { BurgGroup } from "./burg-groups";
 import type { PackedGraph } from "./PackedGraph";
-import type { LegacyStyle, Style } from "./style";
+import type { Style } from "./style";
 
 declare global {
   var MOBILE: boolean;
@@ -61,9 +61,6 @@ declare global {
     drawBurgLabels: () => void;
     drawBurgLabel: (burg: import("../generators/burgs-generator").Burg) => void;
     removeBurgLabel: (burgId: number) => void;
-    // defined in public/modules/ui/style-presets.js; projects style.layers back onto the legacy
-    // style.labels.groups/burgIcons/anchors bags the mirrors still carry (deleted with them)
-    projectLegacyStyleMirrors: () => void;
     applyLabelGroupShifts: typeof import("../renderers/labels/label-groups").applyLabelGroupShifts;
   }
 
@@ -154,7 +151,7 @@ declare global {
   var ruler: Selection<SVGGElement, unknown, null, undefined>;
   var fogging: Selection<SVGGElement, unknown, null, undefined>;
   var notes: any[]; // TODO: correct type
-  var style: Style & LegacyStyle;
+  var style: Style;
 
   var mapId: number;
 
