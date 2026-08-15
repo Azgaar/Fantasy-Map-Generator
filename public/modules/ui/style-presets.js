@@ -173,8 +173,6 @@ function applyLayerOptionAttributes() {
 // CHILD_RULES/HEIGHTS_RENAMES/EMBLEMS_RENAMES in src/services/styles/legacy.ts. keyed
 // "layerId/childId", DOM element looked up by the child's own id
 const CHILD_OPTION_ATTRIBUTES = {
-  "terrs/landHeights": {scheme: "scheme", terracing: "terracing", skip: "skip", relax: "relax", curve: "curve"},
-  "terrs/oceanHeights": {scheme: "scheme", terracing: "terracing", skip: "skip", relax: "relax", curve: "curve"},
   "regions/statesHalo": {width: "data-width"}
 };
 

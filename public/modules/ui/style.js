@@ -243,11 +243,12 @@ function selectStyleElement() {
     styleHeightmapRenderOceanOption.style.display = el.attr("id") === "oceanHeights" ? "block" : "none";
     styleHeightmapRenderOcean.checked = +el.attr("data-render");
 
-    styleHeightmapScheme.value = el.attr("scheme");
-    styleHeightmapTerracing.value = el.attr("terracing");
-    styleHeightmapSkip.value = el.attr("skip");
-    styleHeightmapSimplification.value = el.attr("relax");
-    styleHeightmapCurve.value = el.attr("curve");
+    const heightsOptions = getLayerOptions("terrs", el.attr("id"));
+    styleHeightmapScheme.value = heightsOptions.scheme;
+    styleHeightmapTerracing.value = heightsOptions.terracing;
+    styleHeightmapSkip.value = heightsOptions.skip;
+    styleHeightmapSimplification.value = heightsOptions.relax;
+    styleHeightmapCurve.value = heightsOptions.curve;
   }
 
   if (styleElement === "markers") {
@@ -714,7 +715,7 @@ outlineLayers.addEventListener("change", function () {
 });
 
 styleHeightmapScheme.addEventListener("change", function () {
-  getEl().attr("scheme", this.value);
+  setOptions(styleTargetFromUI(), {scheme: this.value});
   drawHeightmap();
 });
 
@@ -844,22 +845,22 @@ styleHeightmapRenderOcean.addEventListener("change", e => {
 });
 
 styleHeightmapTerracing.addEventListener("input", e => {
-  getEl().attr("terracing", e.target.value);
+  setOptions(styleTargetFromUI(), {terracing: +e.target.value});
   drawHeightmap();
 });
 
 styleHeightmapSkip.addEventListener("input", e => {
-  getEl().attr("skip", e.target.value);
+  setOptions(styleTargetFromUI(), {skip: +e.target.value});
   drawHeightmap();
 });
 
 styleHeightmapSimplification.addEventListener("input", e => {
-  getEl().attr("relax", e.target.value);
+  setOptions(styleTargetFromUI(), {relax: +e.target.value});
   drawHeightmap();
 });
 
 styleHeightmapCurve.addEventListener("change", e => {
-  getEl().attr("curve", e.target.value);
+  setOptions(styleTargetFromUI(), {curve: e.target.value});
   drawHeightmap();
 });
 

@@ -22,7 +22,16 @@ import {
   range,
   select
 } from "d3";
+import { getLayerOptions } from "../services/styles/store";
 import { round } from "../utils";
+
+interface HeightsOptions {
+  scheme?: string;
+  terracing?: number;
+  skip?: number;
+  relax?: number;
+  curve?: string;
+}
 
 const CURVE_MAP: Record<string, CurveFactory> = {
   curveBasis,
@@ -64,10 +73,11 @@ const heightmapRenderer = (): void => {
 
   // ocean cells
   const renderOceanCells = Boolean(+ocean.attr("data-render"));
+  const oceanOptions = getLayerOptions<HeightsOptions>("terrs", "oceanHeights");
   if (renderOceanCells) {
-    const skip = +ocean.attr("skip") + 1 || 1;
-    const relax = +ocean.attr("relax") || 0;
-    const curveType = ocean.attr("curve") || "curveBasisClosed";
+    const skip = (oceanOptions.skip ?? 0) + 1;
+    const relax = oceanOptions.relax ?? 0;
+    const curveType = oceanOptions.curve || "curveBasisClosed";
     const lineGen = line().curve(CURVE_MAP[curveType] ?? curveBasisClosed);
 
     let currentLayer = 0;
@@ -89,10 +99,11 @@ const heightmapRenderer = (): void => {
   }
 
   // land cells
+  const landOptions = getLayerOptions<HeightsOptions>("terrs", "landHeights");
   {
-    const skip = +land.attr("skip") + 1 || 1;
-    const relax = +land.attr("relax") || 0;
-    const curveType = land.attr("curve") || "curveBasisClosed";
+    const skip = (landOptions.skip ?? 0) + 1;
+    const relax = landOptions.relax ?? 0;
+    const curveType = landOptions.curve || "curveBasisClosed";
     const lineGen = line().curve(CURVE_MAP[curveType] ?? curveBasisClosed);
 
     let currentLayer = 20;
@@ -118,7 +129,8 @@ const heightmapRenderer = (): void => {
   // render paths
   for (const height of range(0, 101)) {
     const group = height < 20 ? ocean : land;
-    const scheme = getColorScheme(group.attr("scheme"));
+    const groupOptions = height < 20 ? oceanOptions : landOptions;
+    const scheme = getColorScheme(groupOptions.scheme ?? "bright");
 
     if (height === 0 && renderOceanCells) {
       // draw base ocean layer
@@ -143,7 +155,7 @@ const heightmapRenderer = (): void => {
     }
 
     if (paths[height] && paths[height]!.length >= 10) {
-      const terracing = +group.attr("terracing") / 10 || 0;
+      const terracing = (groupOptions.terracing ?? 0) / 10;
       const fillColor = getColor(height, scheme);
 
       if (terracing) {
