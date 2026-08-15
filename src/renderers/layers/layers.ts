@@ -1,10 +1,4 @@
-// Global layers registry: owns layer state, layer order, the svg skeleton and the layer list itself.
-//
-// Layers are addressed by id. `LayerId` is derived from the list below, so a typo is a compile error and no
-// consumer has to import a layer to name one — `Layers` is the whole public interface.
-//
-// The list imports every renderer, and renderers import `Layers` back to query state. That cycle is safe only
-// because no renderer touches `Layers` while its module is evaluating: keep every use inside a function.
+// Global layers registry: owns layers list, order, and svg skeleton
 import { select } from "d3";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { drawBiomes } from "../draw-biomes";
@@ -58,10 +52,13 @@ export interface LayersState {
 export class Layer<Id extends string = string> {
   readonly id: Id;
   readonly elementId: string;
+  readonly parent: "viewbox" | "map";
 
+  /** the registry reads `params`; consumers use the fields above and `getEl()` */
   constructor(readonly params: LayerParams<Id>) {
     this.id = params.id;
     this.elementId = params.element;
+    this.parent = params.parent;
   }
 
   getEl(): SVGGElement {
@@ -70,12 +67,10 @@ export class Layer<Id extends string = string> {
 }
 
 export class LayersRegistry<Id extends string = string> {
-  private layers: Layer<Id>[] = [];
   private active = new Set<Id>();
   private listeners = new Set<() => void>();
 
-  register(...layers: Layer<Id>[]): void {
-    this.layers.push(...layers);
+  constructor(private layers: Layer<Id>[]) {
     for (const layer of layers) if (layer.params.alwaysOn) this.active.add(layer.id);
   }
 
@@ -333,15 +328,7 @@ const mapLayers = [
     keepContent: true
   }),
 
-  new Layer({
-    id: "ice",
-    element: "ice",
-    parent: "viewbox",
-    keepContent: true,
-    draw: layer => {
-      if (!layer.getEl().children.length) drawIce();
-    }
-  }),
+  new Layer({ id: "ice", element: "ice", parent: "viewbox", keepContent: true, draw: drawIce }),
 
   new Layer({
     id: "goods",
@@ -378,10 +365,7 @@ const mapLayers = [
     parent: "viewbox",
     children: ["burgEmblems", "provinceEmblems", "stateEmblems"],
     keepContent: true,
-    draw: layer => {
-      if (!layer.getEl().querySelector("use")) drawEmblems();
-      invokeActiveZooming();
-    }
+    draw: drawEmblems
   }),
 
   new Layer({
@@ -443,7 +427,6 @@ declare global {
 }
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam for public/modules/**/*.js
-export const Layers = new LayersRegistry<LayerId>();
-Layers.register(...mapLayers);
+export const Layers = new LayersRegistry(mapLayers);
 
 window.Layers = Layers;

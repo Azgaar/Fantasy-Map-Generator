@@ -160,6 +160,11 @@ Decisions:
   already present in `src/index.html`, and is not the registry's business.
 - **`draw` receives its own layer**, so a renderer never needs to import the layer constant it
   belongs to (see _Import cycles_ under Further Notes).
+- **No layer gets a bespoke `draw` closure.** Emblems and ice keep their content when off
+  (`keepContent`) and used to pair that with a "draw only if the group is empty" guard. The guard was a
+  micro-optimisation, not semantics — coat-of-arms rendering is memoised in `<defs>` by
+  `COArenderer.trigger`, and `drawIce` is a deterministic rebuild from `pack.ice` — so both are now
+  plain `draw: drawX` references and `keepContent` carries the only real difference.
 
 ### Registry
 
@@ -169,11 +174,10 @@ would mean the registry could not name its own ids.
 ```ts
 // src/renderers/layers/layers.ts — same file as the list below
 export class LayersRegistry<Id extends string = string> {
-  private layers: Layer<Id>[] = [];
   private active = new Set<Id>();
   private listeners = new Set<() => void>();
 
-  register(...layers: Layer<Id>[]): void;
+  constructor(private layers: Layer<Id>[]);
   init(): void; // creates missing groups, orders them by registration order, applies the current state
 
   get all(): readonly Layer<Id>[];
@@ -210,8 +214,7 @@ declare global {
   var Layers: LayersRegistry<LayerId>;
 }
 
-export const Layers = new LayersRegistry<LayerId>();
-Layers.register(...mapLayers);
+export const Layers = new LayersRegistry(mapLayers); // Id is inferred from the list
 window.Layers = Layers; // legacy seam for public/modules/**/*.js
 ```
 
@@ -227,6 +230,9 @@ Decisions:
   a map file. Everything else narrows through `has(id)` first.
 - **The registry owns the active set**, so `Layer` is a pure value and needs no back-reference to the
   registry to answer `isOn`.
+- **Layers are passed to the constructor, not registered.** Membership is then fixed, `Id` is inferred
+  from the list rather than written out, and the public API loses a method whose only caller lived in
+  the same file.
 - **`restore` never draws.** A loaded map's SVG already contains the rendered content; redrawing it
   would be both slow and wrong (it would regenerate data the file already carries). This is the one
   hard behavioural distinction in the API and is why `restore` and `set` are separate methods.

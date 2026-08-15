@@ -17,7 +17,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
+import { clearEmblems } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -1257,7 +1257,7 @@ function recalculateStates(must?: boolean): void {
   Layers.draw("goods");
   if (Layers.isOn("emblems")) {
     clearEmblems(["state", "province"]);
-    drawEmblems();
+    Layers.draw("emblems");
   }
 
   refreshStatesEditor();

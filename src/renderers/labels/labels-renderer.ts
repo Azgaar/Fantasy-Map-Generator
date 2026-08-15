@@ -1,4 +1,3 @@
-import type { Burg } from "@/generators/burgs-generator";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
 import { Layers } from "@/renderers/layers/layers";
@@ -153,20 +152,4 @@ function unindexLabel(label: LabelData): void {
   if (index !== -1) groupLabels.splice(index, 1);
 }
 
-function drawBurgLabel(burg: Burg): void {
-  if (!burg.removed) drawLabels();
-}
-
-function removeBurgLabel(burgId: number): void {
-  const id = `burgLabel${burgId}`;
-  const label = scene.get(id);
-  if (label) unindexLabel(label);
-  scene.remove(id);
-  removeMaterialized(id, document);
-}
-
 window.drawLabels = drawLabels;
-window.drawStateLabels = drawLabels;
-window.drawBurgLabels = drawLabels;
-window.drawBurgLabel = drawBurgLabel;
-window.removeBurgLabel = removeBurgLabel;

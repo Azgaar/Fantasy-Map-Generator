@@ -1,5 +1,5 @@
 import type { ZoomBehavior } from "d3";
-import { renderGroupCOAs } from "@/renderers/draw-emblems";
+import { redrawEmblemGroup } from "@/renderers/draw-emblems";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -111,7 +111,7 @@ function invokeActiveZooming(): void {
       const hidden = hideSmallEmblems && (size < 25 || size > 300);
       group.classList.toggle("hidden", hidden);
       const emblem = group.children[0];
-      if (!hidden && window.COArenderer && emblem && !emblem.getAttribute("href")) renderGroupCOAs(group);
+      if (!hidden && window.COArenderer && emblem && !emblem.getAttribute("href")) redrawEmblemGroup(group);
     }
   }
 

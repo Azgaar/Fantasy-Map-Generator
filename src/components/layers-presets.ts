@@ -14,9 +14,32 @@ const DEFAULT_PRESETS: Record<string, string[]> = {
   heightmap: ["heightmap", "lakes", "rivers", "vignette"],
   physical: ["coordinates", "heightmap", "ice", "lakes", "rivers", "scaleBar", "vignette"],
   poi: ["borders", "burgIcons", "heightmap", "ice", "lakes", "markers", "rivers", "routes", "scaleBar", "vignette"],
-  goods: ["borders","burgIcons","cells","goods","lakes","markets","rivers","routes","scaleBar","trade","vignette"], // prettier-ignore
+  goods: [
+    "borders",
+    "burgIcons",
+    "cells",
+    "goods",
+    "lakes",
+    "markets",
+    "rivers",
+    "routes",
+    "scaleBar",
+    "trade",
+    "vignette"
+  ],
   trade: ["borders", "burgIcons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
-  military: ["borders","burgIcons","labels","lakes","military","rivers","routes","scaleBar","states","vignette"], // prettier-ignore
+  military: [
+    "borders",
+    "burgIcons",
+    "labels",
+    "lakes",
+    "military",
+    "rivers",
+    "routes",
+    "scaleBar",
+    "states",
+    "vignette"
+  ],
   emblems: ["borders", "burgIcons", "emblems", "ice", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
   landmass: ["scaleBar"]
 };
@@ -25,11 +48,7 @@ const presets = restoreCustomPresets();
 
 // a preset lists the layers the user can toggle from the tab. Layers driven by the map itself — fogging follows
 // the state focus — are never part of one, so they must not be compared against it or saved into it
-const activeUserLayers = (): string[] =>
-  Layers.all
-    .filter(layer => BUTTONS.has(layer.id) && Layers.isOn(layer.id))
-    .map(layer => layer.id)
-    .sort();
+const activeUserLayers = (): string[] => Layers.state.active.filter(id => BUTTONS.has(id)).sort();
 
 function restoreCustomPresets(): Record<string, string[]> {
   const stored: Record<string, string[]> | null = JSON.parse(localStorage.getItem("presets") || "null");

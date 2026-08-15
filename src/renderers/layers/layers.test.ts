@@ -7,37 +7,40 @@ let Layers: LayersRegistry;
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
-  Layers = new LayersRegistry();
 });
+
+/** the registry takes its layers up front, so each test builds the one it needs */
+const registry = (...layers: Layer[]) => {
+  Layers = new LayersRegistry(layers);
+  Layers.init();
+};
 
 const groupIds = (parent = "viewbox") => Array.from(document.getElementById(parent)!.children, node => node.id);
 const displayOf = (elementId: string) => document.getElementById(elementId)!.style.display;
 
 describe("init", () => {
   it("creates missing groups in registration order", () => {
-    Layers.register(
+    registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
       new Layer({ id: "b", element: "b-el", parent: "viewbox" })
     );
-    Layers.init();
 
     expect(groupIds()).toEqual(["a-el", "b-el"]);
   });
 
   it("adopts an existing group and reorders it to match registration order", () => {
     document.getElementById("viewbox")!.innerHTML = /* html */ `<g id="b-el"><circle id="kept" /></g>`;
-    Layers.register(
+    registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
       new Layer({ id: "b", element: "b-el", parent: "viewbox" })
     );
-    Layers.init();
 
     expect(groupIds()).toEqual(["a-el", "b-el"]);
     expect(document.getElementById("kept")).not.toBeNull(); // adopted, not recreated
   });
 
   it("creates declared children and applies attrs, appending to the declared parent", () => {
-    Layers.register(
+    registry(
       new Layer({
         id: "a",
         element: "a-el",
@@ -46,7 +49,6 @@ describe("init", () => {
         attrs: { mask: "url(#m)" }
       })
     );
-    Layers.init();
 
     const group = document.getElementById("a-el")!;
     expect(group.parentElement!.id).toBe("map");
@@ -55,11 +57,10 @@ describe("init", () => {
   });
 
   it("hides layers that are off and leaves alwaysOn layers visible without a style attribute", () => {
-    Layers.register(
+    registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
       new Layer({ id: "b", element: "b-el", parent: "viewbox", alwaysOn: true })
     );
-    Layers.init();
 
     expect(displayOf("a-el")).toBe("none");
     expect(document.getElementById("b-el")!.hasAttribute("style")).toBe(false);
@@ -70,8 +71,7 @@ describe("show and hide", () => {
   const setup = () => {
     const draw = vi.fn();
     const erase = vi.fn();
-    Layers.register(new Layer({ id: "a", element: "a-el", parent: "viewbox", draw, erase }));
-    Layers.init();
+    registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", draw, erase }));
     return { draw, erase };
   };
 
@@ -129,8 +129,7 @@ describe("show and hide", () => {
 
 describe("erase", () => {
   it("clears declared children and removes everything else by default", () => {
-    Layers.register(new Layer({ id: "a", element: "a-el", parent: "viewbox", children: ["kept"] }));
-    Layers.init();
+    registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", children: ["kept"] }));
     Layers.show("a");
     document.getElementById("kept")!.innerHTML = /* html */ `<circle />`;
     document.getElementById("a-el")!.insertAdjacentHTML("beforeend", /* html */ `<g id="dropped"></g>`);
@@ -142,8 +141,7 @@ describe("erase", () => {
   });
 
   it("keeps the content when keepContent is set", () => {
-    Layers.register(new Layer({ id: "a", element: "a-el", parent: "viewbox", keepContent: true }));
-    Layers.init();
+    registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", keepContent: true }));
     Layers.show("a");
     document.getElementById("a-el")!.innerHTML = /* html */ `<circle id="kept" />`;
 
@@ -159,8 +157,7 @@ describe("draw", () => {
     const calls: string[] = [];
     const make = (id: string) =>
       new Layer({ id, element: `${id}-el`, parent: "viewbox", draw: () => void calls.push(id) });
-    Layers.register(make("a"), make("b"), make("c"));
-    Layers.init();
+    registry(make("a"), make("b"), make("c"));
     return calls;
   };
 
@@ -197,12 +194,11 @@ describe("draw", () => {
 
 describe("setActive", () => {
   it("turns on the listed layers, turns off the rest and preserves alwaysOn layers", () => {
-    Layers.register(
+    registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
       new Layer({ id: "b", element: "b-el", parent: "viewbox" }),
       new Layer({ id: "s", element: "s-el", parent: "viewbox", alwaysOn: true })
     );
-    Layers.init();
     Layers.show("a");
 
     Layers.set(["b"]);
@@ -215,8 +211,7 @@ describe("setActive", () => {
     const draws: string[] = [];
     const make = (id: string) =>
       new Layer({ id, element: `${id}-el`, parent: "viewbox", draw: () => void draws.push(id) });
-    Layers.register(make("a"), make("b"));
-    Layers.init();
+    registry(make("a"), make("b"));
     Layers.show("a");
     draws.length = 0;
 
@@ -228,8 +223,7 @@ describe("setActive", () => {
 
 describe("move", () => {
   const register = () => {
-    Layers.register(...["a", "b", "c"].map(id => new Layer({ id, element: `${id}-el`, parent: "viewbox" })));
-    Layers.init();
+    registry(...["a", "b", "c"].map(id => new Layer({ id, element: `${id}-el`, parent: "viewbox" })));
   };
 
   it("reorders the registry and the svg together", () => {
@@ -253,8 +247,7 @@ describe("restore", () => {
   const register = (ids = ["a", "b", "c"]) => {
     const draw = vi.fn();
     const erase = vi.fn();
-    Layers.register(...ids.map(id => new Layer({ id, element: `${id}-el`, parent: "viewbox", draw, erase })));
-    Layers.init();
+    registry(...ids.map(id => new Layer({ id, element: `${id}-el`, parent: "viewbox", draw, erase })));
     return { draw, erase };
   };
 
@@ -304,8 +297,7 @@ describe("restore", () => {
 
 describe("subscribe", () => {
   it("notifies once per operation and stops after unsubscribing", () => {
-    Layers.register(new Layer({ id: "a", element: "a-el", parent: "viewbox" }));
-    Layers.init();
+    registry(new Layer({ id: "a", element: "a-el", parent: "viewbox" }));
 
     const listener = vi.fn();
     const unsubscribe = Layers.subscribe(listener);

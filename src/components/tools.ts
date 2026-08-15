@@ -2,7 +2,7 @@ import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
-import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
+import { clearEmblems } from "@/renderers/draw-emblems";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -150,7 +150,7 @@ function regenerateStates(): void {
   Layers.draw("burgIcons", "military", "goods");
   if (Layers.isOn("emblems")) {
     clearEmblems(["state", "province"]);
-    drawEmblems();
+    Layers.draw("emblems");
   }
 }
 
@@ -161,7 +161,7 @@ function regenerateProvinces(): void {
   Layers.draw("labels");
   if (Layers.isOn("emblems")) {
     clearEmblems(["province"]);
-    drawEmblems();
+    Layers.draw("emblems");
   }
 }
 
@@ -172,7 +172,7 @@ function regenerateBurgs(): void {
   Layers.draw("routes", "population", "goods");
   if (Layers.isOn("emblems")) {
     clearEmblems(["burg"]);
-    drawEmblems();
+    Layers.draw("emblems");
   }
 }
 
@@ -203,7 +203,7 @@ function regenerateEmblems(): void {
   COA.regenerate();
   if (!Layers.isOn("emblems")) return;
   clearEmblems(["state", "province", "burg"]);
-  drawEmblems();
+  Layers.draw("emblems");
 }
 
 function regenerateReligions(): void {

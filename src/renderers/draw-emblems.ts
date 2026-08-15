@@ -1,23 +1,17 @@
 import { forceCollide, forceSimulation, select, timeout } from "d3";
+import type { Province } from "@/generators/provinces-generator";
 import type { Burg } from "../generators/burgs-generator";
 import type { State } from "../generators/states-generator";
 import { minmax, rn } from "../utils";
 
 declare global {
   var drawEmblems: () => void;
-  var renderGroupCOAs: (g: SVGGElement) => Promise<void>;
 }
 
-interface Province {
-  i: number;
-  removed?: boolean;
-  coa?: { size?: number; x?: number; y?: number };
-  pole?: [number, number];
-  center: number;
-}
+type EmblemType = "state" | "province" | "burg";
 
-interface EmblemNode {
-  type: "burg" | "province" | "state";
+interface EmblemData {
+  type: EmblemType;
   i: number;
   x: number;
   y: number;
@@ -25,20 +19,8 @@ interface EmblemNode {
   shift: number;
 }
 
-type EmblemType = "state" | "province" | "burg";
-
-export function clearEmblems(types: EmblemType[]): void {
-  for (const type of types) {
-    document.querySelectorAll(`[id^=${type}COA]`).forEach(element => {
-      element.remove();
-    });
-    document.querySelectorAll(`#${type}Emblems > use`).forEach(element => {
-      element.remove();
-    });
-  }
-}
-
-const emblemsRenderer = (): void => {
+// biome-ignore lint/suspicious/noRedeclare: Legacy seam
+const drawEmblems = (): void => {
   TIME && console.time("drawEmblems");
   const { states, provinces, burgs } = pack;
 
@@ -68,48 +50,27 @@ const emblemsRenderer = (): void => {
   };
 
   const sizeBurgs = getBurgEmblemSize();
-  const burgCOAs: EmblemNode[] = validBurgs.map(burg => {
+  const burgCOAs: EmblemData[] = validBurgs.map(burg => {
     const { x, y } = burg;
     const size = burg.coa!.size || 1;
     const shift = (sizeBurgs * size) / 2;
-    return {
-      type: "burg",
-      i: burg.i!,
-      x: burg.coa!.x || x,
-      y: burg.coa!.y || y,
-      size,
-      shift
-    };
+    return { type: "burg", i: burg.i!, x: burg.coa!.x || x, y: burg.coa!.y || y, size, shift };
   });
 
   const sizeProvinces = getProvinceEmblemsSize();
-  const provinceCOAs: EmblemNode[] = validProvinces.map(province => {
+  const provinceCOAs: EmblemData[] = validProvinces.map(province => {
     const [x, y] = province.pole || pack.cells.p[province.center];
     const size = province.coa!.size || 1;
     const shift = (sizeProvinces * size) / 2;
-    return {
-      type: "province",
-      i: province.i,
-      x: province.coa!.x || x,
-      y: province.coa!.y || y,
-      size,
-      shift
-    };
+    return { type: "province", i: province.i, x: province.coa!.x || x, y: province.coa!.y || y, size, shift };
   });
 
   const sizeStates = getStateEmblemsSize();
-  const stateCOAs: EmblemNode[] = validStates.map(state => {
+  const stateCOAs: EmblemData[] = validStates.map(state => {
     const [x, y] = state.pole || pack.cells.p[state.center!];
     const size = state.coa!.size || 1;
     const shift = (sizeStates * size) / 2;
-    return {
-      type: "state",
-      i: state.i,
-      x: state.coa!.x || x,
-      y: state.coa!.y || y,
-      size,
-      shift
-    };
+    return { type: "state", i: state.i, x: state.coa!.x || x, y: state.coa!.y || y, size, shift };
   });
 
   const nodes = burgCOAs.concat(provinceCOAs).concat(stateCOAs);
@@ -119,7 +80,7 @@ const emblemsRenderer = (): void => {
     .velocityDecay(0.6)
     .force(
       "collision",
-      forceCollide<EmblemNode>().radius(d => d.shift)
+      forceCollide<EmblemData>().radius(d => d.shift)
     )
     .stop();
 
@@ -133,34 +94,28 @@ const emblemsRenderer = (): void => {
     const burgString = burgNodes
       .map(
         d =>
-          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
-            d.size
-          }em"/>`
+          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`
       )
       .join("");
-    select("#emblems").select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
+    select("#emblems > #burgEmblems").attr("font-size", sizeBurgs).html(burgString);
 
     const provinceNodes = nodes.filter(node => node.type === "province");
     const provinceString = provinceNodes
       .map(
         d =>
-          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
-            d.size
-          }em"/>`
+          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`
       )
       .join("");
-    select("#emblems").select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
+    select("#emblems > #provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
 
     const stateNodes = nodes.filter(node => node.type === "state");
     const stateString = stateNodes
       .map(
         d =>
-          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
-            d.size
-          }em"/>`
+          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${d.size}em"/>`
       )
       .join("");
-    select("#emblems").select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
+    select("#emblems > #stateEmblems").attr("font-size", sizeStates).html(stateString);
 
     invokeActiveZooming();
   });
@@ -168,24 +123,35 @@ const emblemsRenderer = (): void => {
   TIME && console.timeEnd("drawEmblems");
 };
 
+export function clearEmblems(types: EmblemType[]): void {
+  for (const type of types) {
+    document.querySelectorAll(`[id^=${type}COA]`).forEach(element => {
+      element.remove();
+    });
+    document.querySelectorAll(`#${type}Emblems > use`).forEach(element => {
+      element.remove();
+    });
+  }
+}
+
 const getDataAndType = (id: string): [Burg[] | Province[] | State[], string] => {
   if (id === "burgEmblems") return [pack.burgs, "burg"];
-  if (id === "provinceEmblems") return [pack.provinces as Province[], "province"];
+  if (id === "provinceEmblems") return [pack.provinces, "province"];
   if (id === "stateEmblems") return [pack.states, "state"];
   throw new Error(`Unknown emblem type: ${id}`);
 };
 
-const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
+const redrawEmblemGroup = async (g: SVGGElement): Promise<void> => {
   const [data, type] = getDataAndType(g.id);
 
   for (const use of g.children) {
     const i = +(use as SVGUseElement).dataset.i!;
     const id = `${type}COA${i}`;
-    COArenderer.trigger(id, (data[i] as any).coa);
+    COArenderer.trigger(id, data[i].coa);
     use.setAttribute("href", `#${id}`);
   }
 };
 
-export { emblemsRenderer as drawEmblems, renderGroupCOAsRenderer as renderGroupCOAs };
+export { drawEmblems, redrawEmblemGroup };
 
-window.drawEmblems = emblemsRenderer;
+window.drawEmblems = drawEmblems;
