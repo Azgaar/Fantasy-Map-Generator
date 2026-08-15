@@ -5,6 +5,7 @@ import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
+import { getLayerOptions } from "@/services/styles/store";
 import { ensureEl, findEl, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
@@ -216,7 +217,7 @@ function changeIconShiftY(this: HTMLInputElement): void {
 
 function changeMarkerSize(this: HTMLInputElement): void {
   const size = +this.value;
-  const rescale = +select("#markers").attr("rescale");
+  const rescale = getLayerOptions<{ rescale?: number }>("markers").rescale ?? 0;
 
   getSameTypeMarkers().forEach(marker => {
     marker.size = size;

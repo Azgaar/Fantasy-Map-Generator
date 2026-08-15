@@ -3,6 +3,7 @@ import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarker } from "@/renderers/draw-markers";
+import { getLayerOptions } from "@/services/styles/store";
 import { ensureEl, findEl, rn } from "@/utils";
 
 function toggle(baseMarker?: Marker): void {
@@ -37,7 +38,7 @@ function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
   selectedConfig?.add(`marker${marker.i}`, cell);
 
   const markersElement = select<SVGGElement, unknown>("#markers");
-  const rescale = +markersElement.attr("rescale");
+  const rescale = getLayerOptions<{ rescale?: number }>("markers").rescale ?? 0;
   markersElement.node()?.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
   refreshEditors();
 
