@@ -1,4 +1,3 @@
-import type { ZoomBehavior } from "d3";
 import type { LabelGroup } from "@/generators/labels-generator";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
@@ -41,6 +40,8 @@ declare global {
     panMap: typeof import("../components/zoom").panMap;
     setMapZoom: typeof import("../components/zoom").setMapZoom;
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
+    setZoomExtent: typeof import("../components/zoom").setZoomExtent;
+    setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
   }
 
   var mapId: number;
@@ -138,7 +139,6 @@ declare global {
   var getCellsDensityColor: (cells: number) => string;
   var showExportPane: () => void;
   var customization: number;
-  var zoom: ZoomBehavior<SVGSVGElement, unknown>;
   var zoomTo: (x: number, y: number, zoom?: number, duration?: number) => void;
   var modules: Record<string, boolean>;
 

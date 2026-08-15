@@ -1,41 +1,23 @@
-import { type Selection, select, type ZoomBehavior } from "d3";
+import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
 import { redrawEmblemGroup } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
-// Legacy behaviour from the global d3 v5. TODO: completely migrate to d3v7
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
-let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
-
-function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
-  zoomBehavior ??= window.d3.zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
-  return zoomBehavior;
-}
-
-/**
- * The map root, selected in place with the global d3 v5 — NOT the bundled v7 `select`. The v5 zoom
- * behavior reads the v5 module-global `d3.event`, which only v5's own `selection.on` sets, so binding
- * it through a v7 selection leaves `d3.event` null and kills every pointer gesture (#1508). Selecting
- * on each call also keeps this correct across a map load, which replaces `#map` wholesale.
- */
-function mapRoot(): Selection<SVGSVGElement, unknown, HTMLElement, unknown> {
-  return window.d3.select<SVGSVGElement, unknown>("#map");
-}
+const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
 
 export function applyZoomBehavior(): void {
-  mapRoot().call(zoom().on("zoom", onZoom).on("end", handleZoomEnd));
+  select<SVGSVGElement, unknown>("#map").call(zoomBehavior.on("zoom", onZoom).on("end", handleZoomEnd));
 }
 
 let frameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
 
-function onZoom(): void {
-  const transform = (window.d3 as any).event.transform;
-  if (!transform) return;
-  const { k, x, y } = transform as { k: number; x: number; y: number };
+function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
+  const { k, x, y } = event.transform;
 
   const isScaleChanged = scale !== k;
   const isPositionChanged = viewX !== x || viewY !== y;
@@ -149,30 +131,43 @@ function invokeActiveZooming(): void {
 
 /** Zoom to a specific point */
 function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
-  const transform = window.d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  mapRoot().transition().duration(duration).call(zoom().transform, transform);
+  const transform = zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
 }
 
 /** Reset zoom to initial */
 function resetZoom(duration = 1000): void {
-  mapRoot().transition().duration(duration).call(zoom().transform, window.d3.zoomIdentity);
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, zoomIdentity);
 }
 
 export function panMap(x: number, y: number): void {
-  zoom().translateBy(mapRoot(), x, y);
+  zoomBehavior.translateBy(select<SVGSVGElement, unknown>("#map"), x, y);
 }
 
 export function setMapZoom(value: number): void {
-  zoom().scaleTo(mapRoot(), value);
+  zoomBehavior.scaleTo(select<SVGSVGElement, unknown>("#map"), value);
 }
 
 export function changeMapZoom(factor: number): void {
-  zoom().scaleBy(mapRoot(), factor);
+  zoomBehavior.scaleBy(select<SVGSVGElement, unknown>("#map"), factor);
 }
 
-// consumed by legacy code; a getter so the lazy behavior is created on the first read
-Object.defineProperty(window, "zoom", { get: zoom, configurable: true });
+export function setZoomExtent(min: number, max: number): void {
+  zoomBehavior.scaleExtent([min, max]);
+}
+
+export function setTranslateExtent(x0: number, y0: number, x1: number, y1: number): void {
+  zoomBehavior.translateExtent([
+    [x0, y0],
+    [x1, y1]
+  ]);
+}
+
+// Bridges for classic public/ code. These take numbers only, never a selection: the behavior is
+// d3 v7 while `public/` still speaks the global d3 v5, and the two must not meet.
 window.zoomTo = zoomTo;
+window.setZoomExtent = setZoomExtent;
+window.setTranslateExtent = setTranslateExtent;
 window.resetZoom = resetZoom;
 window.invokeActiveZooming = invokeActiveZooming;
 window.panMap = panMap;

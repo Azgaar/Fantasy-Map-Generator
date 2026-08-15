@@ -212,12 +212,8 @@ function fitMapToScreen() {
   zoomExtentMin.value = zoomMin;
   const zoomMax = +zoomExtentMax.value;
 
-  zoom
-    .translateExtent([
-      [0, 0],
-      [graphWidth, graphHeight]
-    ])
-    .scaleExtent([zoomMin, zoomMax]);
+  setTranslateExtent(0, 0, graphWidth, graphHeight);
+  setZoomExtent(zoomMin, zoomMax);
 
   Layers.draw("scaleBar");
   if (window.fitLegendBox) fitLegendBox();
@@ -226,15 +222,9 @@ function fitMapToScreen() {
 function toggleTranslateExtent(el) {
   const on = (el.dataset.on = +!+el.dataset.on);
   if (on) {
-    zoom.translateExtent([
-      [-graphWidth / 2, -graphHeight / 2],
-      [graphWidth * 1.5, graphHeight * 1.5]
-    ]);
+    setTranslateExtent(-graphWidth / 2, -graphHeight / 2, graphWidth * 1.5, graphHeight * 1.5);
   } else {
-    zoom.translateExtent([
-      [0, 0],
-      [graphWidth, graphHeight]
-    ]);
+    setTranslateExtent(0, 0, graphWidth, graphHeight);
   }
 }
 
@@ -522,15 +512,15 @@ function changeZoomExtent(value) {
   const max = Math.min(+zoomExtentMax.value, 200);
   zoomExtentMin.value = min;
   zoomExtentMax.value = max;
-  zoom.scaleExtent([min, max]);
-  const scale = minmax(+value, 0.01, 200);
-  zoom.scaleTo(d3.select("#map"), scale);
+  setZoomExtent(min, max);
+  setMapZoom(minmax(+value, 0.01, 200));
 }
 
 function restoreDefaultZoomExtent() {
   zoomExtentMin.value = 1;
   zoomExtentMax.value = 20;
-  zoom.scaleExtent([1, 20]).scaleTo(d3.select("#map"), 1);
+  setZoomExtent(1, 20);
+  setMapZoom(1);
 }
 
 // restore options stored in localStorage
