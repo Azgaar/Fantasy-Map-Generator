@@ -48,7 +48,11 @@ const presets = restoreCustomPresets();
 
 // a preset lists the layers the user can toggle from the tab. Layers driven by the map itself — fogging follows
 // the state focus — are never part of one, so they must not be compared against it or saved into it
-const activeUserLayers = (): string[] => Layers.state.active.filter(id => BUTTONS.has(id)).sort();
+const activeUserLayers = (): string[] =>
+  Layers.all
+    .filter(layer => BUTTONS.has(layer.id) && Layers.isOn(layer.id))
+    .map(layer => layer.id)
+    .sort();
 
 function restoreCustomPresets(): Record<string, string[]> {
   const stored: Record<string, string[]> | null = JSON.parse(localStorage.getItem("presets") || "null");

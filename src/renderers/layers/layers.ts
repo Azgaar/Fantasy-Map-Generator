@@ -31,7 +31,7 @@ import { drawZones } from "../draw-zones";
 import { drawLabels, removeLabels } from "../labels/labels-renderer";
 import { tradeAnimation } from "../trade-animation";
 
-export interface LayerParams<Id extends string = string> {
+interface LayerParams<Id extends string = string> {
   id: Id; // canonical identity, persisted in the .map file
   element: string; // id of the svg group holding the layer content
   parent: "viewbox" | "map"; // id of the svg element the layer group is appended to
@@ -48,8 +48,7 @@ export interface LayersState {
   active: string[];
 }
 
-/** A layer is a value: an identity and an svg group. On/off state belongs to the registry */
-export class Layer<Id extends string = string> {
+class Layer<Id extends string = string> {
   readonly id: Id;
   readonly elementId: string;
   readonly parent: "viewbox" | "map";
@@ -124,6 +123,7 @@ export class LayersRegistry<Id extends string = string> {
     this.emit();
   }
 
+  /** turn the layers off */
   hide(...ids: Id[]): void {
     this.change(ids, false);
     this.emit();
