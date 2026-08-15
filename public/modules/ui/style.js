@@ -80,8 +80,10 @@ function getColor(value, scheme = getColorScheme("bright")) {
 // element select value -> style store LayerId; only elements whose DOM id/select value
 // differs from the LayerId (or that live as a child of another layer) need an entry
 const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"];
-// layers whose fontSize option reader is migrated off the DOM (Task 9); grows one layer per commit
-const OPTIONS_FONT_SIZE_LAYERS = ["legend", "ruler", "coordinates"];
+// layers whose fontSize option reader is migrated off the DOM (Task 9) and whose displayed
+// font-size equals the stored base size (coordinates is handled separately in changeFontSize -
+// its display size is zoom-scaled, so it can't share this fixed-value write path)
+const OPTIONS_FONT_SIZE_LAYERS = ["legend", "ruler"];
 const STYLE_ELEMENT_TARGETS = {
   ocean: {layerId: "oceanLayers"},
   goodsIcons: {layerId: "goods", childIds: ["goodsIcons"]},
@@ -1041,21 +1043,24 @@ function changeFontSize(el, size) {
     return;
   }
 
-  const getSizeOnScale = element => {
-    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
+  // coordinates' displayed font-size is zoom-scaled (rn(size / scale ** 0.8, 2)), not a fixed
+  // value like the other layers here - persisting that scaled number into style.layers would
+  // freeze the wrong number in once the user zooms again. Store only the base size (matching
+  // the old data-size-is-base model) and let drawCoordinates() derive+apply the scaled display
+  // font-size itself, the same way it already does on every zoom-triggered redraw
+  if (styleElementSelect.value === "coordinates") {
+    setOptions({layerId: "coordinates"}, {fontSize: size});
+    if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    return;
+  }
 
-    // other has the same size
-    return size;
-  };
-
-  const scaleSize = getSizeOnScale(styleElementSelect.value);
   // layers whose fontSize option reader has been migrated off the DOM (Task 9); every other
-  // element in this shared handler (armies/coordinates/temperature) still reads the DOM directly
+  // element in this shared handler (armies/temperature) still reads the DOM directly
   if (OPTIONS_FONT_SIZE_LAYERS.includes(styleElementSelect.value)) {
     setOptions({layerId: styleElementSelect.value}, {fontSize: size});
-    setPresentation({layerId: styleElementSelect.value}, "font-size", scaleSize);
+    setPresentation({layerId: styleElementSelect.value}, "font-size", size);
   } else {
-    el.attr("data-size", size).attr("font-size", scaleSize);
+    el.attr("data-size", size).attr("font-size", size);
   }
 
   if (styleElementSelect.value === "legend") redrawLegend();
