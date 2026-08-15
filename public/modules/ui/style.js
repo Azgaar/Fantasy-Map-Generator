@@ -934,19 +934,22 @@ stylePopulationUrbanStrokeInput.addEventListener("input", e => {
 });
 
 styleBurgIconsIcon.addEventListener("change", e => {
-  getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
+  setPresentation(styleTargetFromUI(), "data-icon", e.target.value);
+  getEl().selectAll("use").attr("href", e.target.value);
 });
 
+// icon size is an option (drawBurgIcons projects it onto the group as font-size), not a look
 styleBurgIconsIconSize.addEventListener("input", e => {
+  setOptions(styleTargetFromUI(), {size: +e.target.value});
   getEl().attr("font-size", e.target.value);
 });
 
 styleBurgIconsStrokeLinejoin.addEventListener("change", e => {
-  getEl().attr("stroke-linejoin", e.target.value);
+  setPresentation(styleTargetFromUI(), "stroke-linejoin", e.target.value);
 });
 
 styleBurgIconsFillOpacity.addEventListener("input", e => {
-  getEl().attr("fill-opacity", e.target.value);
+  setPresentation(styleTargetFromUI(), "fill-opacity", e.target.value);
 });
 
 styleCompassSizeInput.addEventListener("input", shiftCompass);
@@ -994,9 +997,12 @@ function changeFont() {
   if (styleElementSelect.value === "legend") redrawLegend();
 }
 
+// text-shadow has no presentation attribute of its own - it is set through the `style` attribute,
+// which applyStyleNode writes like any other. applyLayerStyle re-derives the label group transform
+// afterwards, so overwriting the whole style attribute here does not drop the dx/dy shift
 styleShadowInput.addEventListener("input", function () {
-  const group = getEl().style("text-shadow", this.value);
-  updateLabelGroupInlineStyle(group);
+  const shadow = this.value.trim();
+  setPresentation(styleTargetFromUI(), "style", shadow ? `text-shadow: ${shadow}` : null);
 });
 
 styleFontAdd.addEventListener("click", function () {
@@ -1057,13 +1063,8 @@ styleFontMinus.addEventListener("click", function () {
 function changeFontSize(el, size) {
   styleFontSize.value = size;
 
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (styleElementSelect.value === "labels") {
-    el.attr("font-size", `${size}%`).attr("data-size", null);
-    if (groupStyle) {
-      delete groupStyle["data-size"];
-      groupStyle["font-size"] = `${size}%`;
-    }
+    setPresentation(styleTargetFromUI(), "font-size", `${size}%`);
     return;
   }
 
@@ -1091,22 +1092,15 @@ function changeFontSize(el, size) {
   redrawMeasurersOnStyleChange();
 }
 
+// the shift is a label group option; applyLabelGroupShifts projects it back onto the live groups
 styleFontShiftX.addEventListener("input", e => {
-  const group = getEl().attr("data-dx", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["data-dx"] = e.target.value;
-  const dx = e.target.value || 0;
-  const dy = group.attr("data-dy") || 0;
-  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
+  setOptions(styleTargetFromUI(), {dx: +e.target.value || 0});
+  applyLabelGroupShifts();
 });
 
 styleFontShiftY.addEventListener("input", e => {
-  const group = getEl().attr("data-dy", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["data-dy"] = e.target.value;
-  const dx = group.attr("data-dx") || 0;
-  const dy = e.target.value || 0;
-  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
+  setOptions(styleTargetFromUI(), {dy: +e.target.value || 0});
+  applyLabelGroupShifts();
 });
 
 styleStatesBodyOpacity.addEventListener("input", e => {

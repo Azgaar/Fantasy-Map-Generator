@@ -1,5 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Resample } from "@/generators/resample";
+import { getStyleNode, setOptions } from "@/services/styles/store";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -112,14 +113,9 @@ function recalculateMapSize(x0: number, y0: number): void {
 
 function rescaleBurgStyles(scale: number): void {
   for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
-    const iconStyle: Record<string, string> = { ...style.burgIcons[group.id] };
-    for (const { name, value } of group.attributes) iconStyle[name] = value;
-
-    const size = Number(iconStyle["font-size"]) || 1;
-    iconStyle["font-size"] = String(rn(minmax(size * scale, 0.2, 10), 2));
-
-    style.burgIcons[group.id] = iconStyle;
-    group.remove();
+    const size = Number(getStyleNode("burgIcons", group.id).options?.size) || 1;
+    setOptions({ layerId: "burgIcons", childIds: [group.id] }, { size: rn(minmax(size * scale, 0.2, 10), 2) });
+    group.remove(); // drawBurgIcons recreates the groups from the stored style
   }
 
   const burgLabelGroups = new Set(
@@ -127,10 +123,10 @@ function rescaleBurgStyles(scale: number): void {
   );
 
   for (const groupName of burgLabelGroups) {
-    const groupStyle = style.labels.groups[groupName];
+    const groupStyle = getStyleNode("labels", groupName).presentation;
     if (!groupStyle) continue;
 
-    const size = Number.parseFloat(groupStyle["font-size"]) || 0;
+    const size = Number.parseFloat(String(groupStyle["font-size"])) || 0;
     const rescaledSize = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
     groupStyle["font-size"] = `${rn(rescaledSize, 2)}%`;
   }

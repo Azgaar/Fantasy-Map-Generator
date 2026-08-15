@@ -1,5 +1,11 @@
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
-import type { LabelGroupStyle } from "@/types/style";
+import type { PresentationValue, StyleNode } from "@/types/style";
+
+export type LabelGroupStyle = Record<string, PresentationValue>;
+
+// read-only: a getStyleNode() lookup would materialize an empty child for every group merely
+// asked about, and an empty-but-present child hides a group from the preset fallback pass
+const getLabelGroupNode = (name: string): StyleNode => style.layers.labels?.children?.[name] ?? {};
 
 export function renderLabelGroups(root: ParentNode = document): void {
   const labels = root.querySelector<SVGGElement>("#labels");
@@ -16,17 +22,42 @@ export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup):
   group.id = `labels-${groupOptions.name}`;
   group.dataset.group = groupOptions.name;
 
-  const groupStyle = getGroupStyle(groupOptions);
-  for (const [attribute, value] of Object.entries(groupStyle)) {
-    if (value !== null) group.setAttribute(attribute, String(value));
-  }
-
-  const dx = Number(group.dataset.dx) || 0;
-  const dy = Number(group.dataset.dy) || 0;
-  group.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
-
+  applyLabelGroupStyle(group, groupOptions);
   labels.appendChild(group);
   return group;
+}
+
+// label groups are the only style.layers children the renderer creates itself, so the styling an
+// applyLayerStyle pass gives the live groups has to be reproducible on a group built from scratch
+export function applyLabelGroupStyle(group: SVGGElement, groupOptions: { name: string; type: LabelType }): void {
+  for (const [attribute, value] of Object.entries(getGroupStyle(groupOptions))) {
+    if (value !== null) group.setAttribute(attribute, String(value));
+  }
+  applyLabelGroupShift(group, groupOptions.name);
+}
+
+// dx/dy are options (the shift is data the label solver reads, not a look), projected onto the
+// group as data-dx/data-dy + an inline transform. Assigning style.transform - rather than writing
+// the whole style attribute - keeps the text-shadow the `style` presentation attr carries
+export function applyLabelGroupShift(group: SVGGElement, name: string): void {
+  const { dx, dy } = getLabelGroupNode(name).options ?? {};
+  setDataAttribute(group, "data-dx", dx);
+  setDataAttribute(group, "data-dy", dy);
+  group.style.transform = dx || dy ? `translate(${Number(dx) || 0}em, ${Number(dy) || 0}em)` : "";
+  if (!group.getAttribute("style")) group.removeAttribute("style");
+}
+
+// applyLayerStyle rewrites the whole style attribute of every label group it touches, dropping
+// the transform assigned above; re-derive it for the live groups after such a pass
+export function applyLabelGroupShifts(labels: ParentNode | null = document.getElementById("labels")): void {
+  for (const group of labels?.querySelectorAll<SVGGElement>(":scope > [data-group]") ?? []) {
+    applyLabelGroupShift(group, group.dataset.group as string);
+  }
+}
+
+function setDataAttribute(group: SVGGElement, attribute: string, value: unknown): void {
+  if (value === undefined || value === null) group.removeAttribute(attribute);
+  else group.setAttribute(attribute, String(value));
 }
 
 const BASE_STYLE: LabelGroupStyle = {
@@ -55,6 +86,7 @@ export function getGroupStyle(group: { name: string; type: LabelType }): LabelGr
   if (!typeStyle) ERROR && console.error(`No fallback style for label group ${group.name} of type ${group.type}`);
 
   const baseStyle = typeStyle ?? BASE_STYLE;
-  const groupStyle = style.labels.groups[group.name] || {};
-  return { ...baseStyle, ...groupStyle };
+  return { ...baseStyle, ...getLabelGroupNode(group.name).presentation };
 }
+
+window.applyLabelGroupShifts = applyLabelGroupShifts;

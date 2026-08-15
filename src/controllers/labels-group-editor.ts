@@ -3,8 +3,8 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
-import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { getStyleNode } from "@/services/styles/store";
 import { ensureEl } from "@/utils";
 
 // TODO: replace with Layers registry data
@@ -296,6 +296,12 @@ function submitForm(event: Event): void {
   const rows = Array.from(ensureEl("labelGroupsBody").children) as HTMLTableRowElement[];
   if (!rows.length) return void tip("At least one group should be defined", false, "error");
 
+  // a group with no style node of its own renders with the built-in fallback for its type
+  // (getGroupStyle), so a new group needs no entry - only a renamed one has a style to carry over
+  const labelsNode = getStyleNode("labels");
+  labelsNode.children ??= {};
+  const groupStyles = labelsNode.children;
+
   const newGroupNames = new Set<string>();
   rows.forEach(row => {
     const oldName = row.dataset.group;
@@ -303,16 +309,11 @@ function submitForm(event: Event): void {
     const newGroup = rowToGroup(row);
     newGroupNames.add(newGroup.name);
 
-    if (newGroup.name !== oldName) {
-      if (oldName) {
-        // group is renamed
-        replaceGroupInEntities(oldName, newGroup.name);
-        style.labels.groups[newGroup.name] = style.labels.groups[oldName];
-        delete style.labels.groups[oldName];
-      } else {
-        // group is new
-        style.labels.groups[newGroup.name] = getGroupStyle(newGroup);
-      }
+    if (newGroup.name !== oldName && oldName) {
+      // group is renamed
+      replaceGroupInEntities(oldName, newGroup.name);
+      if (groupStyles[oldName]) groupStyles[newGroup.name] = groupStyles[oldName];
+      delete groupStyles[oldName];
     }
   });
 
@@ -321,14 +322,13 @@ function submitForm(event: Event): void {
     // group is removed
     const fallback = Labels.getFallbackGroup(group.type);
     replaceGroupInEntities(group.name, fallback.name);
-    delete style.labels.groups[group.name];
+    delete groupStyles[group.name];
   });
 
   options.labels.groups = rows.map(rowToGroup);
   options.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   options.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked;
 
-  for (const group of options.labels.groups) style.labels.groups[group.name] ??= getGroupStyle(group);
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
   drawLabels();

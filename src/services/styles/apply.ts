@@ -1,3 +1,4 @@
+import { applyLabelGroupShifts } from "@/renderers/labels/label-groups";
 import type { LayerId, StyleNode } from "./schema";
 
 export interface AttributeOp {
@@ -58,9 +59,11 @@ export function applyLayerStyle(layerId: LayerId): void {
   const node = style.layers[layerId];
   const root = layerId === "map" ? document.getElementById("map") : document.getElementById(layerId);
   if (!node || !root) return;
-  // labels groups are renderer-owned (drawLabels/renderLabelGroup) until Task 12 re-homes them;
-  // never create a stray id="<name>" group alongside the renderer's id="labels-<name>"
+  // label groups are renderer-owned (drawLabels/renderLabelGroup): they only exist while the
+  // layer is drawn, so never create a stray id="<name>" group alongside id="labels-<name>"
   applyStyleNode(root, node, { createMissing: layerId !== "labels" });
+  // the `style` presentation attr (text-shadow) overwrites the inline transform of a label group
+  if (layerId === "labels") applyLabelGroupShifts(root);
 }
 
 window.applyLayerStyle = applyLayerStyle;

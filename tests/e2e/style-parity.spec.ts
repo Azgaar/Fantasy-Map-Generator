@@ -165,6 +165,49 @@ test("editor bridge writes reach style.layers, the DOM, and the labels legacy mi
   expect(result.statesHaloDom).toBe("0.77");
 });
 
+// Task 12: burg icon groups are no longer round-tripped through the DOM (createIconGroups used
+// to harvest the live attributes before recreating the groups) - they are built from
+// style.layers.burgIcons/anchors. Pins that every burg group still gets its icon and anchor
+// group, in configured order, carrying the store's presentation attrs and its size option
+test("burg icon and anchor groups are created from style.layers", async ({page}) => {
+  await page.goto("/");
+  await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+  await page.waitForTimeout(500);
+
+  const result = await page.evaluate(() => {
+    const expectedOrder = [...options.burgs.groups].sort((a: any, b: any) => a.order - b.order).map(g => g.name);
+    const readGroups = (layerId: "burgIcons" | "anchors") => {
+      const children = (style as any).layers[layerId].children;
+      return Array.from(document.querySelectorAll(`#${layerId} > g`)).map(el => {
+        const node = children[el.id] ?? {};
+        return {
+          id: el.id,
+          fontSize: el.getAttribute("font-size"),
+          expectedFontSize: node.options?.size === undefined ? null : String(node.options.size),
+          fill: el.getAttribute("fill"),
+          expectedFill: node.presentation?.fill ?? null,
+          icon: el.getAttribute("data-icon"),
+          expectedIcon: node.presentation?.["data-icon"] ?? null
+        };
+      });
+    };
+
+    return {expectedOrder, burgIcons: readGroups("burgIcons"), anchors: readGroups("anchors")};
+  });
+
+  expect(result.burgIcons.map(g => g.id)).toEqual(result.expectedOrder);
+  expect(result.anchors.map(g => g.id)).toEqual(result.expectedOrder);
+
+  for (const group of [...result.burgIcons, ...result.anchors]) {
+    expect.soft(group.fontSize, `${group.id} font-size`).toBe(group.expectedFontSize);
+    expect.soft(group.fill, `${group.id} fill`).toBe(group.expectedFill);
+    expect.soft(group.icon, `${group.id} data-icon`).toBe(group.expectedIcon);
+  }
+  // the default preset styles every default burg group, so the assertions above are not vacuous
+  expect(result.burgIcons.every(g => g.expectedFill && g.expectedFontSize)).toBe(true);
+});
+
 // Task 10 fix-round regression (C1): openCreateHeightmapSchemeButton's click handler read
 // getEl().attr("scheme") - always null after the terrs migration stripped the DOM attribute -
 // which threw inside scheme.startsWith(...) before the dialog ever rendered. Simulates the click

@@ -62,8 +62,9 @@ declare global {
     drawBurgLabel: (burg: import("../generators/burgs-generator").Burg) => void;
     removeBurgLabel: (burgId: number) => void;
     // defined in public/modules/ui/style-presets.js; projects style.layers back onto the legacy
-    // style.labels.groups/burgIcons/anchors bags that getGroupStyle/createIconGroups still read directly
+    // style.labels.groups/burgIcons/anchors bags the mirrors still carry (deleted with them)
     projectLegacyStyleMirrors: () => void;
+    applyLabelGroupShifts: typeof import("../renderers/labels/label-groups").applyLabelGroupShifts;
   }
 
   var seed: string;

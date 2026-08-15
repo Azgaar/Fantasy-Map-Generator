@@ -15,13 +15,12 @@ import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { LEGACY_GROUP_ATTRIBUTES, LEGACY_SELECTOR_ATTRIBUTES, upgradeLegacyPreset } from "@/services/styles/legacy";
-import { deepMerge, ensureStyleShape, setOptions } from "@/services/styles/store";
+import { deepMerge, ensureStyleShape, getStyleNode, setOptions } from "@/services/styles/store";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import type { LabelGroupStyle } from "@/types/style";
+import type { StyleNode } from "@/types/style";
 import { ensureEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
@@ -1322,32 +1321,34 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
     const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;
     options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
-    style.labels.groups = {};
+    // a group with no style node renders with the built-in fallback for its type (getGroupStyle),
+    // so only groups whose look is derived from the old svg get an entry here
+    const labelStyles: Record<string, StyleNode> = {};
+    getStyleNode("labels").children = labelStyles;
 
     for (const type of ["river", "route"] as const) {
       options.labels.groups.push(Labels.getFallbackGroup(type));
-      style.labels.groups[type] = getGroupStyle({ name: type, type });
     }
 
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;
       const oldStyle = deriveLabelsStyle(burgGroup);
-      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+      const fontSize = Number.parseFloat(oldStyle.presentation!["font-size"] as string);
       const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
-      style.labels.groups[name] = oldStyle;
+      labelStyles[name] = oldStyle;
     }
 
-    const migratedBurgStyle = burgGroups.length ? style.labels.groups[burgGroups[0].id] : undefined;
+    const migratedBurgStyle = burgGroups.length ? labelStyles[burgGroups[0].id] : undefined;
     for (const { name } of options.burgs.groups) {
       if (options.labels.groups.some(group => group.name === name)) continue;
 
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
       options.labels.groups.push({ name, type: "burg", zoom });
-      style.labels.groups[name] = migratedBurgStyle ? { ...migratedBurgStyle } : getGroupStyle({ name, type: "burg" });
+      if (migratedBurgStyle) labelStyles[name] = structuredClone(migratedBurgStyle);
     }
 
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
@@ -1371,7 +1372,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const provinceGroup = document.querySelector<SVGGElement>("#provs #provinceLabels");
     if (provs && provinceGroup) {
       const oldStyle = deriveLabelsStyle(provs);
-      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+      const fontSize = Number.parseFloat(oldStyle.presentation!["font-size"] as string);
 
       options.labels.groups.push({
         name: "province",
@@ -1381,10 +1382,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         layerDependency: "toggleProvinces",
         active: false
       });
-      style.labels.groups.province = oldStyle;
+      labelStyles.province = oldStyle;
     } else {
       options.labels.groups.push(Labels.getFallbackGroup("province"));
-      style.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
     pack.addedLabels = [];
@@ -1395,7 +1395,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (isExisting) name += options.labels.groups.length;
 
       const oldStyle = deriveLabelsStyle(addedGroup);
-      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+      const fontSize = Number.parseFloat(oldStyle.presentation!["font-size"] as string);
 
       options.labels.groups.push({
         name,
@@ -1403,7 +1403,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         isDefault: name === "added",
         zoom: deriveZoomExtent(fontSize)
       });
-      style.labels.groups[name] = oldStyle;
+      labelStyles[name] = oldStyle;
 
       for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
         const note = notes.find(note => note.id === textEl.id);
@@ -1425,7 +1425,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const stateGroup = labels.querySelector<SVGGElement>(":scope > #states");
     if (stateGroup) {
       const oldStyle = deriveLabelsStyle(stateGroup);
-      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
+      const fontSize = Number.parseFloat(oldStyle.presentation!["font-size"] as string);
 
       options.labels.groups.push({
         name: "state",
@@ -1434,10 +1434,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         zoom: deriveZoomExtent(fontSize),
         mode: stateMode
       });
-      style.labels.groups.state = oldStyle;
+      labelStyles.state = oldStyle;
     } else {
       options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
-      style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
     for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
@@ -1449,22 +1448,23 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
-    delete (style as any).burgLabels; // migrated to style.labels.groups
+    delete (style as any).burgLabels; // migrated to style.layers.labels
     delete (options as any).stateLabelsMode; // migrated to group settings
 
-    function deriveLabelsStyle(groupEl: SVGGElement): LabelGroupStyle {
+    function deriveLabelsStyle(groupEl: SVGGElement): StyleNode {
       return {
-        opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
-        fill: groupEl.getAttribute("fill") || "#000000",
-        stroke: groupEl.getAttribute("stroke") || "#000000",
-        "stroke-width": Number(groupEl.getAttribute("stroke-width")) || 0,
-        style: groupEl.getAttribute("style") || null,
-        "letter-spacing": Number(groupEl.getAttribute("letter-spacing")) || 0,
-        "font-size": `${Number(groupEl.dataset.size) || Number(groupEl.getAttribute("font-size")) || 18}%`,
-        "font-family": groupEl.getAttribute("font-family") || "Almendra SC",
-        filter: groupEl.getAttribute("filter") || null,
-        "data-dx": Number(groupEl.dataset.dx) || 0,
-        "data-dy": Number(groupEl.dataset.dy) || 0
+        presentation: {
+          opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
+          fill: groupEl.getAttribute("fill") || "#000000",
+          stroke: groupEl.getAttribute("stroke") || "#000000",
+          "stroke-width": Number(groupEl.getAttribute("stroke-width")) || 0,
+          style: groupEl.getAttribute("style") || null,
+          "letter-spacing": Number(groupEl.getAttribute("letter-spacing")) || 0,
+          "font-size": `${Number(groupEl.dataset.size) || Number(groupEl.getAttribute("font-size")) || 18}%`,
+          "font-family": groupEl.getAttribute("font-family") || "Almendra SC",
+          filter: groupEl.getAttribute("filter") || null
+        },
+        options: { dx: Number(groupEl.dataset.dx) || 0, dy: Number(groupEl.dataset.dy) || 0 }
       };
     }
 

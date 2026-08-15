@@ -404,10 +404,10 @@ function changeStatesNumber(value) {
   ensureEl("statesNumber").style.color = +value ? null : "#b12117";
   const capitalSize = Math.max(rn(6 - value / 20), 3);
   const stateSize = Math.max(rn(18 - value / 6), 4);
-  if (style.labels.groups.capital) style.labels.groups.capital["font-size"] = `${capitalSize}%`;
-  if (style.labels.groups.states) style.labels.groups.states["font-size"] = `${stateSize}%`;
-  labels.select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  labels.select("[data-group='states']").attr("font-size", `${stateSize}%`);
+  // setPresentation reaches the live group too (via the data-group fallback in applyLayerStyle)
+  const labelGroups = style.layers.labels?.children || {};
+  if (labelGroups.capital) setPresentation({layerId: "labels", childIds: ["capital"]}, "font-size", `${capitalSize}%`);
+  if (labelGroups.states) setPresentation({layerId: "labels", childIds: ["states"]}, "font-size", `${stateSize}%`);
 }
 
 function changeUiSize(value) {

@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { applyStyleNode } from "@/services/styles/apply";
 import type { Burg } from "../generators/burgs-generator";
 
 declare global {
@@ -73,42 +74,32 @@ const removeBurgIconRenderer = (burgId: number): void => {
   if (existingAnchor) existingAnchor.remove();
 };
 
+// icon groups are recreated on every draw (a burg group may have been added, removed or
+// reordered), so their look comes from style.layers, not from the groups being replaced
 function createIconGroups(): void {
-  // save existing styles and remove all groups
-  document.querySelectorAll("g#burgIcons > g").forEach(group => {
-    style.burgIcons[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
-
-  document.querySelectorAll("g#anchors > g").forEach(group => {
-    style.anchors[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
-    group.remove();
-  });
-
-  // create groups for each burg group and apply stored or default style
-  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
-  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
-  for (const { name } of sortedGroups) {
-    const burgGroup = select("#burgIcons").append("g");
-    const iconStyles = style.burgIcons[name] || defaultIconStyle;
-    Object.entries(iconStyles).forEach(([key, value]) => {
-      burgGroup.attr(key, value);
-    });
-    burgGroup.attr("id", name);
 
-    const anchorGroup = select("#anchors").append("g");
-    const anchorStyles = style.anchors[name] || defaultAnchorStyle;
-    Object.entries(anchorStyles).forEach(([key, value]) => {
-      anchorGroup.attr(key, value);
-    });
-    anchorGroup.attr("id", name);
+  for (const layerId of ["burgIcons", "anchors"] as const) {
+    const container = document.getElementById(layerId);
+    if (!container) continue;
+    container.replaceChildren();
+
+    const children = style.layers[layerId]?.children ?? {};
+    // a group the style doesn't cover (a custom burg group) takes the look of the default one
+    const fallback = children.town ?? Object.values(children)[0] ?? {};
+
+    for (const { name } of sortedGroups) {
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("id", name);
+      container.appendChild(group);
+
+      const node = children[name] ?? fallback;
+      applyStyleNode(group, node);
+      // size is an option (the icon size the burg editor and the style editor read), projected
+      // onto the group as the font-size the <use> icons are scaled by
+      const size = node.options?.size;
+      if (size !== undefined && size !== null) group.setAttribute("font-size", String(size));
+    }
   }
 }
 
