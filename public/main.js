@@ -514,6 +514,8 @@ async function generate(options) {
 
   try {
     const timeStart = performance.now();
+    window.MapPerformance?.reset();
+    const measureStep = (name, action) => window.MapPerformance?.measure(name, action) ?? action();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
     invokeActiveZooming();
@@ -523,69 +525,79 @@ async function generate(options) {
       generationGroupOpen = true;
     }
 
-    applyGraphSize();
-    randomizeOptions();
+    await measureStep("generation:grid", async () => {
+      applyGraphSize();
+      randomizeOptions();
+      if (shouldRegenerateGrid(grid, precreatedSeed)) {
+        grid =
+          precreatedGraph ||
+          (await window.GridGeneration.generate({
+            seed,
+            graphWidth,
+            graphHeight,
+            cellsDesired: +pointsInput.dataset.cells
+          }));
+      }
+      else delete grid.cells.h;
+      grid.cells.h = await HeightmapGenerator.generate(grid);
+      pack = {}; // reset pack
+    });
 
-    if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
-    else delete grid.cells.h;
-    grid.cells.h = await HeightmapGenerator.generate(grid);
-    pack = {}; // reset pack
+    measureStep("generation:climate", () => {
+      Features.markupGrid();
+      addLakesInDeepDepressions();
+      openNearSeaLakes();
+      OceanLayers();
+      defineMapSize();
+      calculateMapCoordinates();
+      calculateTemperatures();
+      generatePrecipitation();
+    });
 
-    Features.markupGrid();
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
+    measureStep("generation:repack", () => {
+      reGraph();
+      Features.markupPack();
+      Measurers.createDefaultRuler();
+      Rivers.generate();
+      Biomes.generate();
+      Features.defineGroups();
+      Ice.generate();
+      Goods.generate();
+    });
 
-    OceanLayers();
-    defineMapSize();
-    calculateMapCoordinates();
-    calculateTemperatures();
-    generatePrecipitation();
+    measureStep("generation:settlements", () => {
+      rankCells();
+      Cultures.generate();
+      Cultures.expand();
+      Burgs.generate();
+      States.generate();
+      Routes.generate();
+      Religions.generate();
+      Burgs.specify();
+      States.collectStatistics();
+      States.defineStateForms();
+      Provinces.generate();
+      Provinces.getPoles();
+      Rivers.specify();
+      Lakes.defineNames();
+    });
 
-    reGraph();
-    Features.markupPack();
-    Measurers.createDefaultRuler();
-
-    Rivers.generate();
-    Biomes.generate();
-    Features.defineGroups();
-
-    Ice.generate();
-
-    Goods.generate();
-
-    rankCells();
-    Cultures.generate();
-    Cultures.expand();
-
-    Burgs.generate();
-    States.generate();
-    Routes.generate();
-    Religions.generate();
-
-    Burgs.specify();
-    States.collectStatistics();
-    States.defineStateForms();
-
-    Provinces.generate();
-    Provinces.getPoles();
-
-    Rivers.specify();
-    Lakes.defineNames();
-
-    Markets.generate();
-    Production.produce();
-    States.collectTaxes();
-
-    Military.generate();
-    Markers.generate();
-    Zones.generate();
-
-    AddedLabels.initiate();
+    measureStep("generation:economy-and-overlays", () => {
+      Markets.generate();
+      Production.produce();
+      States.collectTaxes();
+      Military.generate();
+      Markers.generate();
+      Zones.generate();
+      AddedLabels.initiate();
+    });
 
     drawScaleBar(scaleBar, scale);
     Names.getMapName();
 
-    WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
+    const duration = performance.now() - timeStart;
+    window.MapPerformance?.record("generation:total", duration);
+    WARN && console.warn(`TOTAL: ${rn(duration / 1000, 2)}s`);
     showStatistics();
   } catch (error) {
     ERROR && console.error(error);

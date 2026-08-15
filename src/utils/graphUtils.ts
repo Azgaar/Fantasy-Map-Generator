@@ -1,101 +1,12 @@
 import Alea from "alea";
 import { color, quadtree } from "d3";
 import Delaunator from "delaunator";
+import { buildGrid, type GeneratedGrid } from "@/generators/grid-builder";
 import { type Cells, type Point, type Vertices, Voronoi } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
-
-/**
- * Get boundary points on a regular square grid
- * @param {number} width - The width of the area
- * @param {number} height - The height of the area
- * @param {number} spacing - The spacing between points
- * @returns {Array} - An array of boundary points
- */
-const getBoundaryPoints = (width: number, height: number, spacing: number): Point[] => {
-  const offset = rn(-1 * spacing);
-  const bSpacing = spacing * 2;
-  const w = width - offset * 2;
-  const h = height - offset * 2;
-  const numberX = Math.ceil(w / bSpacing) - 1;
-  const numberY = Math.ceil(h / bSpacing) - 1;
-  const points: Point[] = [];
-
-  for (let i = 0.5; i < numberX; i++) {
-    const x = Math.ceil((w * i) / numberX + offset);
-    points.push([x, offset], [x, h + offset]);
-  }
-
-  for (let i = 0.5; i < numberY; i++) {
-    const y = Math.ceil((h * i) / numberY + offset);
-    points.push([offset, y], [w + offset, y]);
-  }
-
-  return points;
-};
-
-/**
- * Get points on a jittered square grid
- * @param {number} width - The width of the area
- * @param {number} height - The height of the area
- * @param {number} spacing - The spacing between points
- * @returns {Array} - An array of jittered grid points
- */
-const getJitteredGrid = (width: number, height: number, spacing: number): Point[] => {
-  const radius = spacing / 2; // square radius
-  const jittering = radius * 0.9; // max deviation
-  const doubleJittering = jittering * 2;
-  const jitter = () => Math.random() * doubleJittering - jittering;
-
-  const points: Point[] = [];
-  for (let y = radius; y < height; y += spacing) {
-    for (let x = radius; x < width; x += spacing) {
-      const xj = Math.min(rn(x + jitter(), 2), width);
-      const yj = Math.min(rn(y + jitter(), 2), height);
-      points.push([xj, yj]);
-    }
-  }
-  return points;
-};
-
-/**
- * Places points on a jittered grid and calculates spacing and cell counts
- * @param {number} graphWidth - The width of the graph
- * @param {number} graphHeight - The height of the graph
- * @returns {Object} - An object containing spacing, cellsDesired, boundary points, grid points, cellsX, and cellsY
- */
-const placePoints = (
-  graphWidth: number,
-  graphHeight: number
-): {
-  spacing: number;
-  cellsDesired: number;
-  boundary: Point[];
-  points: Point[];
-  cellsX: number;
-  cellsY: number;
-} => {
-  TIME && console.time("placePoints");
-  const cellsDesired = +(ensureEl("pointsInput").dataset.cells || 0);
-  const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
-
-  const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
-  const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
-  const cellCountX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing); // number of cells in x direction
-  const cellCountY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing); // number of cells in y direction
-  TIME && console.timeEnd("placePoints");
-
-  return {
-    spacing,
-    cellsDesired,
-    boundary,
-    points,
-    cellsX: cellCountX,
-    cellsY: cellCountY
-  };
-};
 
 /**
  * Checks if the grid needs to be regenerated based on desired parameters
@@ -118,36 +29,16 @@ export const shouldRegenerateGrid = (grid: any, expectedSeed: number, graphWidth
   return grid.spacing !== newSpacing || grid.cellsX !== newCellsX || grid.cellsY !== newCellsY;
 };
 
-interface Grid {
-  spacing: number;
-  cellsDesired: number;
-  boundary: Point[];
-  points: Point[];
-  cellsX: number;
-  cellsY: number;
-  seed: string | number;
-  cells: Cells;
-  vertices: Vertices;
-}
 /**
  * Generates a Voronoi grid based on jittered grid points
  * @returns {Object} - The generated grid object containing spacing, cellsDesired, boundary, points, cellsX, cellsY, cells, vertices, and seed
  */
-export const generateGrid = (seed: string, graphWidth: number, graphHeight: number): Grid => {
-  Math.random = Alea(seed); // reset PRNG
-  const { spacing, cellsDesired, boundary, points, cellsX, cellsY } = placePoints(graphWidth, graphHeight);
-  const { cells, vertices } = calculateVoronoi(points, boundary);
-  return {
-    spacing,
-    cellsDesired,
-    boundary,
-    points,
-    cellsX,
-    cellsY,
-    cells,
-    vertices,
-    seed
-  };
+export const generateGrid = (seed: string, graphWidth: number, graphHeight: number): GeneratedGrid => {
+  Math.random = Alea(seed);
+  const cellsDesired = +(ensureEl("pointsInput").dataset.cells || 0);
+  const grid = buildGrid({ seed, graphWidth, graphHeight, cellsDesired });
+  for (let i = 0; i < grid.points.length * 2; i++) Math.random(); // preserve the legacy PRNG state
+  return grid;
 };
 
 /**

@@ -19,6 +19,7 @@ import "./draw-markets";
 import "./draw-trade-animation";
 import "./ocean-layers";
 import "./trade-animation";
+import "./viewport/dense-overlays";
 import "./emblems";
 import "./overlays/brush-circle";
 import "./overlays/fogging";

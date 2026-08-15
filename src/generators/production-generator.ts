@@ -1,4 +1,3 @@
-import { sum } from "d3";
 import { rn } from "@/utils";
 import { minmax } from "../utils";
 import type { Burg } from "./burgs-generator";
@@ -707,7 +706,13 @@ export class ProductionModule {
     };
 
     const isWater = pack.cells.h[cellId] < 20;
-    const pop = isWater ? sum(pack.cells.c[cellId].map(c => pack.cells.pop[c])) || 0 : pack.cells.pop[cellId];
+    let pop = pack.cells.pop[cellId];
+    if (isWater) {
+      // Water cells borrow their production population from adjacent land cells.
+      // Avoid creating an intermediate array for every cell when redrawing goods.
+      pop = 0;
+      for (const neighbor of pack.cells.c[cellId]) pop += pack.cells.pop[neighbor];
+    }
 
     if (pop > 0) {
       for (const { goodId, production } of biomeProduction[pack.cells.biome[cellId]] || []) {

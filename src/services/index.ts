@@ -2,6 +2,7 @@ import { createRegistry } from "@/utils/registry";
 import "./app-shell";
 import "./autosave";
 import "./fonts";
+import "./performance-monitor";
 import "./versioning";
 
 export const Services = createRegistry({

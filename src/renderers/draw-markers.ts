@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "../utils";
 
 interface Marker {
@@ -26,6 +27,15 @@ declare global {
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
+
+interface MarkerSceneItem {
+  id: string;
+  marker: Marker;
+  rescale: number;
+}
+
+const scene = new Scene<MarkerSceneItem>();
+const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers });
 
 // prettier-ignore
 const pinShapes: PinShapes = {
@@ -94,11 +104,26 @@ const markersRenderer = (): void => {
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
   if (visibleMarkerIds) markersData = markersData.filter((marker: Marker) => visibleMarkerIds!.has(marker.i));
-  const html = markersData.map(marker => markerRenderer(marker, rescale));
-  select("#markers").html(html.join(""));
+  scene.replace(markersData.map(marker => ({ id: `marker${marker.i}`, marker, rescale })));
+  layer.render();
 
   TIME && console.timeEnd("drawMarkers");
 };
+
+function reconcileMarkers(context: ViewportRenderContext): void {
+  const markers = context.root.querySelector<SVGGElement>("#markers");
+  if (!markers) return;
+  if (!scene.valid) return;
+
+  const { x0, y0, x1, y1 } = context.bounds;
+  const markup: string[] = [];
+  for (const { marker, rescale } of scene.values()) {
+    const size = marker.size || 30;
+    if (marker.x + size < x0 || marker.x - size > x1 || marker.y + size < y0 || marker.y - size > y1) continue;
+    markup.push(markerRenderer(marker, rescale));
+  }
+  markers.innerHTML = markup.join("");
+}
 
 window.drawMarkers = markersRenderer;
 window.drawMarker = markerRenderer;

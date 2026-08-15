@@ -1,5 +1,6 @@
 interface ViewportLayerHandle {
   render: () => void;
+  invalidate: () => void;
   unregister: () => void;
 }
 
@@ -79,8 +80,10 @@ export class Scene<T extends { id: string }> {
 
 export class ViewportRenderer {
   private layers = new Map<string, ViewportLayer>();
+  private dirtyLayers = new Set<string>();
   private frameId: number | null = null;
   private pending: ViewportRenderContext | null = null;
+  private pendingForceAll = false;
   private materializedBounds: ViewportBounds | null = null;
 
   constructor(
@@ -103,29 +106,38 @@ export class ViewportRenderer {
       render: () => {
         if (this.layers.get(layer.id) === layer) layer.render(this.getLiveContext());
       },
+      invalidate: () => {
+        if (this.layers.get(layer.id) !== layer) return;
+        this.dirtyLayers.add(layer.id);
+        this.schedule();
+      },
       unregister: () => {
-        if (this.layers.get(layer.id) === layer) this.layers.delete(layer.id);
+        if (this.layers.get(layer.id) === layer) {
+          this.layers.delete(layer.id);
+          this.dirtyLayers.delete(layer.id);
+        }
       }
     };
   }
 
   schedule(): void {
-    if (!this.shouldReconcile()) return;
+    const needsViewportReconcile = this.shouldReconcile();
+    if (!needsViewportReconcile && !this.dirtyLayers.size) return;
     const context = this.getLiveContext();
-    this.materializedBounds = context.bounds;
-    this.scheduleContext(context);
+    if (needsViewportReconcile) this.materializedBounds = context.bounds;
+    this.scheduleContext(context, needsViewportReconcile);
   }
 
   renderNow(): void {
     const context = this.getLiveContext();
     this.materializedBounds = context.bounds;
     this.cancelScheduledRender();
-    this.renderLayers(context);
+    this.renderLayers(context, true);
   }
 
   renderTo(root: ParentNode): void {
     const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
-    this.renderLayers({ root, bounds });
+    this.renderLayers({ root, bounds }, true);
   }
 
   getContext(): ViewportRenderContext {
@@ -161,14 +173,17 @@ export class ViewportRenderer {
     );
   }
 
-  private scheduleContext(context: ViewportRenderContext): void {
+  private scheduleContext(context: ViewportRenderContext, forceAll: boolean): void {
     this.pending = context;
+    this.pendingForceAll ||= forceAll;
     if (this.frameId !== null) return;
     this.frameId = requestAnimationFrame(() => {
       this.frameId = null;
       const pending = this.pending;
+      const pendingForceAll = this.pendingForceAll;
       this.pending = null;
-      if (pending) this.renderLayers(pending);
+      this.pendingForceAll = false;
+      if (pending) this.renderLayers(pending, pendingForceAll);
     });
   }
 
@@ -180,10 +195,14 @@ export class ViewportRenderer {
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.frameId = null;
     this.pending = null;
+    this.pendingForceAll = false;
   }
 
-  private renderLayers(context: ViewportRenderContext): void {
+  private renderLayers(context: ViewportRenderContext, forceAll: boolean): void {
+    const dirtyLayers = forceAll ? null : new Set(this.dirtyLayers);
+    this.dirtyLayers.clear();
     for (const layer of this.layers.values()) {
+      if (dirtyLayers && !dirtyLayers.has(layer.id)) continue;
       layer.render(context);
     }
   }

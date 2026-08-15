@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { isCtrlClick } from "@/utils";
+import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
@@ -16,6 +17,20 @@ const PLATE_PAD_Y = 0.6;
 const PLATE_RX = 1;
 const PLATE_FILL = "#f5f5f5";
 const DEFAULT_SIZE = 6;
+
+interface ProducedGood {
+  color: string;
+}
+
+interface GoodsCellSceneItem {
+  id: string;
+  cellId: number;
+  total: number;
+  produced: ProducedGood[];
+}
+
+const cellsScene = new Scene<GoodsCellSceneItem>();
+const cellsLayer = ViewportLayers.register({ id: "goods-cells", render: reconcileGoodsCells });
 
 export function toggleGoods(event?: MouseEvent) {
   if (!layerIsOn("toggleGoods")) {
@@ -37,7 +52,8 @@ export function drawGoods() {
   }
 
   const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
-  select("#goods").select("#goodsCells").html(buildGoodsCellsContent(visible));
+  cellsScene.replace(buildGoodsCellsScene(visible));
+  cellsLayer.render();
   select("#goods").select("#goodsIcons").html(buildGoodsIconsContent(visible));
   select("#goods").select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
 
@@ -45,43 +61,50 @@ export function drawGoods() {
   TIME && console.timeEnd("drawGoods");
 }
 
-function buildGoodsCellsContent(displayedGoods: Set<number>): string {
-  if (!displayedGoods.size) return "";
+function buildGoodsCellsScene(displayedGoods: Set<number>): GoodsCellSceneItem[] {
+  if (!displayedGoods.size) return [];
 
-  // First pass: accumulate total production per cell to find the global max
-  const cellTotals = new Map<number, { produced: Map<number, number>; total: number }>();
+  const cellTotals: GoodsCellSceneItem[] = [];
   const biomeProduction = Goods.getBiomesProduction();
   let maxTotal = 0;
   for (const cellId of pack.cells.i) {
     let total = 0;
     const produced = Production.getCellProduction(cellId, biomeProduction);
-    const filteredProduced = Object.entries(produced).reduce((map, [goodId, amount]) => {
-      if (displayedGoods.has(+goodId)) {
-        map.set(+goodId, amount);
-        total += amount;
-      }
-      return map;
-    }, new Map<number, number>());
+    const filteredProduced: ProducedGood[] = [];
+    for (const goodId in produced) {
+      const amount = produced[goodId];
+      if (!displayedGoods.has(+goodId) || amount <= 0) continue;
+      const good = Goods.get(+goodId);
+      if (!good) continue;
+      total += amount;
+      filteredProduced.push({ color: good.color });
+    }
     if (!total) continue;
 
-    cellTotals.set(cellId, { produced: filteredProduced, total });
+    cellTotals.push({ id: `goods-cell-${cellId}`, cellId, total, produced: filteredProduced });
     if (total > maxTotal) maxTotal = total;
   }
-  if (maxTotal === 0) return "";
+  return maxTotal ? cellTotals.map(item => ({ ...item, total: item.total / maxTotal })) : [];
+}
 
-  // Second pass: render polygons with opacity normalized against the global max
-  let html = "";
-  for (const [cellId, { produced, total }] of cellTotals) {
-    const opacity = 0.1 + 0.9 * normalize(total, 0, maxTotal);
+function reconcileGoodsCells(context: ViewportRenderContext): void {
+  const goodsCells = context.root.querySelector<SVGGElement>("#goodsCells");
+  if (!goodsCells) return;
+  if (!cellsScene.valid) return;
+  if (!layerIsOn("toggleGoods")) return void goodsCells.replaceChildren();
+
+  const { x0, y0, x1, y1 } = context.bounds;
+  const markup: string[] = [];
+  for (const { cellId, total, produced } of cellsScene.values()) {
+    const [x, y] = pack.cells.p[cellId];
+    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+    const opacity = rn(0.1 + 0.9 * normalize(total, 0, 1), 2);
     const points = getPackPolygon(cellId, pack).join(" ");
-    for (const [goodId, amount] of produced) {
-      if (amount <= 0) continue;
-      const good = Goods.get(goodId);
-      if (!good) continue;
-      html += `<polygon points="${points}" fill="${good.color}" fill-opacity="${rn(opacity, 2)}"/>`;
+    for (const good of produced) {
+      markup.push(`<polygon points="${points}" fill="${good.color}" fill-opacity="${opacity}"/>`);
     }
   }
-  return html;
+  goodsCells.innerHTML = markup.join("");
 }
 
 function buildGoodsIconsContent(displayedGoods: Set<number>): string {

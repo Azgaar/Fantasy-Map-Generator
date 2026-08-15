@@ -1,8 +1,8 @@
-import { pointer, select } from "d3";
+import { pointer } from "d3";
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
-import { drawMarker } from "@/renderers/draw-markers";
+import { drawMarkers } from "@/renderers/draw-markers";
 import { ensureEl, findEl, rn } from "@/utils";
 
 function toggle(baseMarker?: Marker): void {
@@ -36,9 +36,7 @@ function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
 
   selectedConfig?.add(`marker${marker.i}`, cell);
 
-  const markersElement = select<SVGGElement, unknown>("#markers");
-  const rescale = +markersElement.attr("rescale");
-  markersElement.node()?.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
+  drawMarkers();
   refreshEditors();
 
   if (!event.shiftKey) {

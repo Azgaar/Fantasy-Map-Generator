@@ -10,9 +10,17 @@ const bordersRenderer = () => {
 
   const statePath: string[] = [];
   const provincePath: string[] = [];
-  const checked: { [key: string]: boolean } = {};
+  const checkedStates = new Map<number, Set<number>>();
+  const checkedProvinces = new Map<number, Set<number>>();
 
   const isLand = (cellId: number) => cells.h[cellId] >= 20;
+  const isChecked = (checked: Map<number, Set<number>>, cellId: number, neighborType: number): boolean =>
+    checked.get(cellId)?.has(neighborType) || false;
+  const markChecked = (checked: Map<number, Set<number>>, cellId: number, neighborType: number): void => {
+    const neighbors = checked.get(cellId);
+    if (neighbors) neighbors.add(neighborType);
+    else checked.set(cellId, new Set([neighborType]));
+  };
 
   for (let cellId = 0; cellId < cells.i.length; cellId++) {
     if (!cells.state[cellId]) continue;
@@ -26,14 +34,14 @@ const bordersRenderer = () => {
         return (
           neibProvinceId &&
           provinceId > neibProvinceId &&
-          !checked[`prov-${provinceId}-${neibProvinceId}-${cellId}`] &&
+          !isChecked(checkedProvinces, cellId, neibProvinceId) &&
           cells.state[neibId] === stateId
         );
       });
 
       if (provToCell !== undefined) {
         const addToChecked = (cellId: number) => {
-          checked[`prov-${provinceId}-${cells.province[provToCell]}-${cellId}`] = true;
+          markChecked(checkedProvinces, cellId, cells.province[provToCell]);
         };
         const border = getBorder({
           type: "province",
@@ -53,12 +61,12 @@ const bordersRenderer = () => {
     // if cell is on state border
     const stateToCell = cells.c[cellId].find(neibId => {
       const neibStateId = cells.state[neibId];
-      return isLand(neibId) && stateId > neibStateId && !checked[`state-${stateId}-${neibStateId}-${cellId}`];
+      return isLand(neibId) && stateId > neibStateId && !isChecked(checkedStates, cellId, neibStateId);
     });
 
     if (stateToCell !== undefined) {
       const addToChecked = (cellId: number) => {
-        checked[`state-${stateId}-${cells.state[stateToCell]}-${cellId}`] = true;
+        markChecked(checkedStates, cellId, cells.state[stateToCell]);
       };
       const border = getBorder({
         type: "state",
@@ -139,12 +147,18 @@ const bordersRenderer = () => {
         const current = next;
         chain.push(current);
 
-        const neibCells = vertices.c[current];
-        neibCells.map(addToChecked);
+        const [cell1, cell2, cell3] = vertices.c[current];
+        addToChecked(cell1);
+        addToChecked(cell2);
+        addToChecked(cell3);
+        const c1 = checkCell(cell1);
+        const c2 = checkCell(cell2);
+        const c3 = checkCell(cell3);
 
-        const [c1, c2, c3] = neibCells.map(checkCell);
-        const [v1, v2, v3] = vertices.v[current].map(checkVertex);
         const [vertex1, vertex2, vertex3] = vertices.v[current];
+        const v1 = checkVertex(vertex1);
+        const v2 = checkVertex(vertex2);
+        const v3 = checkVertex(vertex3);
 
         if (v1 && vertex1 !== previous && c1 !== c2) next = vertex1;
         else if (v2 && vertex2 !== previous && c2 !== c3) next = vertex2;

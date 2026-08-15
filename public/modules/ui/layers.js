@@ -301,7 +301,7 @@ function toggleBiomes(event) {
 }
 
 function togglePrecipitation(event) {
-  if (!prec.selectAll("circle").size()) {
+  if (!layerIsOn("togglePrecipitation")) {
     turnButtonOn("togglePrecipitation");
     drawPrecipitation();
     if (event && isCtrlClick(event)) editStyle("prec");
@@ -316,6 +316,7 @@ function togglePrecipitation(event) {
 }
 
 function drawPrecipitation() {
+  if (window.ViewportPrecipitation) return window.ViewportPrecipitation.draw();
   TIME && console.time("drawPrecipitation");
 
   prec.selectAll("circle").remove();
@@ -344,7 +345,7 @@ function drawPrecipitation() {
 }
 
 function togglePopulation(event) {
-  if (!population.selectAll("line").size()) {
+  if (!layerIsOn("togglePopulation")) {
     turnButtonOn("togglePopulation");
     drawPopulation();
     if (event && isCtrlClick(event)) editStyle("population");
@@ -377,6 +378,7 @@ function togglePopulation(event) {
 }
 
 function drawPopulation() {
+  if (window.ViewportPopulation) return window.ViewportPopulation.draw();
   population.selectAll("line").remove();
 
   const { cells, burgs } = pack;
@@ -417,7 +419,7 @@ function drawPopulation() {
 }
 
 function toggleCells(event) {
-  if (!cells.selectAll("path").size()) {
+  if (!layerIsOn("toggleCells")) {
     turnButtonOn("toggleCells");
     drawCells();
     if (event && isCtrlClick(event)) editStyle("cells");
@@ -429,6 +431,7 @@ function toggleCells(event) {
 }
 
 function drawCells() {
+  if (window.ViewportCells) return window.ViewportCells.draw();
   const cells = customization === 1 ? grid.cells.i : pack.cells.i;
   const polygon = customization === 1 ? getGridPolygon : getPackPolygon;
   const paths = Array.from(cells).map(i => "M" + polygon(i));

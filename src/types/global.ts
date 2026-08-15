@@ -48,6 +48,11 @@ declare global {
     panMap: typeof import("../components/zoom").panMap;
     setMapZoom: typeof import("../components/zoom").setMapZoom;
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
+    MapPerformance: typeof import("../services/performance-monitor").MapPerformance;
+    ViewportPopulation: { draw: () => void };
+    ViewportPrecipitation: { draw: () => void };
+    ViewportCells: { draw: () => void };
+    GridGeneration: typeof import("../generators/grid-generation").GridGeneration;
     drawStateLabels: (ids?: number[]) => void;
     drawBurgLabels: () => void;
     drawBurgLabel: (burg: import("../generators/burgs-generator").Burg) => void;

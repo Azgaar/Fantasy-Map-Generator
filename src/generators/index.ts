@@ -1,4 +1,5 @@
 import "./voronoi";
+import "./grid-generation";
 import "./heightmap-generator";
 import "./features";
 import "./names-generator";
@@ -23,4 +24,3 @@ import "./measurers-generator";
 import "./goods-generator";
 import "./production-generator";
 import "./markets-generator";
-import "./resample";

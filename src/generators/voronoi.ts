@@ -8,7 +8,7 @@ export type Cells = {
   v: number[][];
   c: number[][];
   b: number[];
-  i: Uint32Array<ArrayBufferLike>;
+  i: Uint16Array<ArrayBufferLike> | Uint32Array<ArrayBufferLike>;
 };
 
 /**
