@@ -242,7 +242,7 @@ function selectStyleElement() {
   if (styleElement === "terrs") {
     styleHeightmap.style.display = "block";
     styleHeightmapRenderOceanOption.style.display = el.attr("id") === "oceanHeights" ? "block" : "none";
-    styleHeightmapRenderOcean.checked = +el.attr("data-render");
+    styleHeightmapRenderOcean.checked = +styleNode.presentation?.["data-render"];
 
     const heightsOptions = getLayerOptions("terrs", el.attr("id"));
     styleHeightmapScheme.value = heightsOptions.scheme;
@@ -861,7 +861,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 
 styleHeightmapRenderOcean.addEventListener("change", e => {
   const checked = +e.target.checked;
-  getEl().attr("data-render", checked);
+  setPresentation(styleTargetFromUI(), "data-render", checked);
   drawHeightmap();
 });
 
