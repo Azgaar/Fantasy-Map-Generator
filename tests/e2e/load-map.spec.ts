@@ -309,10 +309,37 @@ test.describe("Map loading", () => {
   // 1.139.4.map predates data[48]/style.layers entirely: its style attrs live only on the embedded
   // svg, and harvestLegacyLayerStyles (auto-update.ts) must recover them into style.layers on load
   test("legacy map styles are harvested into style.layers", async ({page}) => {
+    // page.goto("/") in beforeEach kicks off an async auto-generated map (main.js's initial
+    // `await generate()`) that can still be in flight here. If the file upload below starts
+    // before that finishes, its own later showStatistics() call (which also sets window.mapId)
+    // can race with - and overwrite - the uploaded map's harvested style right after this test
+    // observes it. Wait for the initial generation to fully settle first so there's no overlap.
+    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
+    const initialMapId = await page.evaluate(() => (window as any).mapId);
+
     const fileInput = page.locator("#mapToLoad");
     await fileInput.setInputFiles(path.join(__dirname, "../fixtures/1.139.4.map"));
-    await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 120000});
-    await page.waitForTimeout(500);
+    // a fixed timeout here raced under parallel load (harvestLegacyLayerStyles runs as part of
+    // auto-update, which can still be mid-flight when a fixed 500ms elapses on a loaded CI/dev
+    // machine) - wait on the actual post-conditions instead. First, a fresh mapId proves *this*
+    // load's own showStatistics() ran (not a stale value from the initial page-load generation);
+    // then wait for all three harvested fields together, not just one - harvestLegacyLayerStyles
+    // populates style.layers in one synchronous pass, so a snapshot where only some of them are
+    // set is itself a sign the wait resolved mid-harvest rather than after it
+    await page.waitForFunction(id => (window as any).mapId !== undefined && (window as any).mapId !== id, initialMapId, {
+      timeout: 120000
+    });
+    await page.waitForFunction(
+      () => {
+        const layers = (style as any)?.layers;
+        return (
+          Boolean(layers?.rivers?.presentation?.fill) &&
+          Boolean(layers?.routes?.children?.roads?.presentation?.stroke) &&
+          typeof layers?.regions?.children?.statesHalo?.options?.width === "number"
+        );
+      },
+      {timeout: 15000}
+    );
 
     const harvested = await page.evaluate(() => ({
       // style is script-scoped: read the lexical global, not window
