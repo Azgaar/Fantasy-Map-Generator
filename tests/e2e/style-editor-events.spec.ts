@@ -300,3 +300,80 @@ test("the custom heightmap scheme dialog applies and stores the created scheme",
   expect(result.rendered.pathFill).toBe(result.expectedPathFill);
   expect(result.afterRedraw).toEqual(result.rendered);
 });
+
+// Selecting a layer whose store node genuinely lacks a key fed `undefined` into the inputs.
+// The pre-migration reads used d3 .attr(), which yields null for a missing attribute, and
+// `input.value = null` is coerced to "" - undefined is not, it stringifies to "undefined", which
+// a colour input rejects (resetting itself to #000000 and warning). The assignment is the only
+// observable: the rejected value never survives on the element
+test("selecting a layer with no stored fill or stroke never assigns undefined to an input", async ({page}) => {
+  await openGeneratedMap(page);
+
+  const assigned = await page.evaluate(() => {
+    const ids = ["styleFillInput", "styleFillOutput", "styleStrokeInput", "styleStrokeOutput", "styleSelectFont"];
+    const seen: {id: string; element: string; value: string}[] = [];
+    const select = document.getElementById("styleElementSelect") as HTMLSelectElement;
+    let current = "";
+
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const proto = Object.getPrototypeOf(el);
+      const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
+      if (!descriptor?.set || !descriptor.get) continue;
+      Object.defineProperty(el, "value", {
+        configurable: true,
+        get() {
+          return descriptor.get!.call(this);
+        },
+        set(value) {
+          seen.push({id, element: current, value: String(value)});
+          descriptor.set!.call(this, value);
+        }
+      });
+    }
+
+    for (const option of Array.from(select.options)) {
+      current = option.value;
+      select.value = option.value;
+      select.dispatchEvent(new Event("change"));
+    }
+
+    return seen.filter(entry => entry.value === "undefined");
+  });
+
+  expect(assigned).toEqual([]);
+});
+
+// goodsCells is a child of the goods layer in the store and a child <g> in the dom, but only
+// goodsIcons/goodsBurgs were mapped, so its edits were written to a top-level "goodsCells" layer
+// that parseStyle drops as an unknown id on the next load
+test("goods cells edits are stored under the goods layer and survive a style round trip", async ({page}) => {
+  await openGeneratedMap(page);
+
+  const result = await page.evaluate(() => {
+    const w = window as any;
+    const select = document.getElementById("styleElementSelect") as HTMLSelectElement;
+    select.value = "goodsCells";
+    select.dispatchEvent(new Event("change"));
+
+    const input = document.getElementById("styleFillInput") as HTMLInputElement;
+    input.value = "#123456";
+    input.dispatchEvent(new Event("input"));
+
+    // a save/load of the style object drops layer ids the schema does not know
+    const roundTripped = w.parseStyle(JSON.parse(JSON.stringify(style)));
+
+    return {
+      child: style.layers.goods?.children?.goodsCells?.presentation?.fill,
+      strayLayer: (style.layers as Record<string, unknown>).goodsCells,
+      afterRoundTrip: roundTripped.layers.goods?.children?.goodsCells?.presentation?.fill,
+      dom: document.querySelector("#goods > #goodsCells")?.getAttribute("fill")
+    };
+  });
+
+  expect(result.child).toBe("#123456");
+  expect(result.strayLayer).toBeUndefined();
+  expect(result.dom).toBe("#123456");
+  expect(result.afterRoundTrip).toBe("#123456");
+});

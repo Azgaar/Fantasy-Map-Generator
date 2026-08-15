@@ -86,6 +86,7 @@ const GROUPED_STYLE_ELEMENTS = ["anchors", "borders", "burgIcons", "coastline", 
 const OPTIONS_FONT_SIZE_LAYERS = ["legend", "ruler"];
 const STYLE_ELEMENT_TARGETS = {
   ocean: {layerId: "oceanLayers"},
+  goodsCells: {layerId: "goods", childIds: ["goodsCells"]},
   goodsIcons: {layerId: "goods", childIds: ["goodsIcons"]},
   goodsBurgs: {layerId: "goods", childIds: ["goodsBurgs"]}
 };
@@ -156,7 +157,7 @@ function selectStyleElement() {
   // fill
   if (["fogging", "ice", "lakes", "landmass", "prec", "rivers", "scaleBar", "vignette"].includes(styleElement)) {
     styleFill.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = styleNode.presentation?.["fill"];
+    styleFillInput.value = styleFillOutput.value = styleNode.presentation?.["fill"] ?? "";
   }
 
   // stroke color and width
@@ -180,7 +181,7 @@ function selectStyleElement() {
     ].includes(styleElement)
   ) {
     styleStroke.style.display = "block";
-    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"];
+    styleStrokeInput.value = styleStrokeOutput.value = styleNode.presentation?.["stroke"] ?? "";
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0;
   }
@@ -325,7 +326,7 @@ function selectStyleElement() {
     styleShadowInput.value = el.style("text-shadow") || "";
 
     styleFont.style.display = "block";
-    styleSelectFont.value = styleNode.presentation?.["font-family"];
+    styleSelectFont.value = styleNode.presentation?.["font-family"] ?? "";
     styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
 
     styleFontShift.style.display = "block";
@@ -377,7 +378,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = styleNode.presentation?.["stroke-width"] || 0.5;
 
     styleFont.style.display = "block";
-    styleSelectFont.value = styleNode.presentation?.["font-family"];
+    styleSelectFont.value = styleNode.presentation?.["font-family"] ?? "";
     styleFontSize.value = getLayerOptions("legend").fontSize;
   }
 
