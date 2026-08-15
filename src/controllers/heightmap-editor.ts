@@ -5,9 +5,9 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { drawFeatures } from "@/renderers/draw-features";
-import type { Layer } from "@/renderers/layers/layers";
-import { Layers } from "@/renderers/layers/layers";
-import { goodsLayer, heightmapLayer, marketsLayer, tradeLayer } from "@/renderers/layers/map-layers";
+import { goodsLayer, heightmapLayer, marketsLayer, tradeLayer } from "@/renderers/layers/layers";
+import type { Layer } from "@/renderers/layers/layers-registry";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -276,8 +276,6 @@ function renderImageConverter(): void {
   });
 }
 
-// The toolbar and brushes panel are static in index.html; they're part of the one long-lived
-// heightmap-editing session, so listeners are wired once at load rather than per open/close.
 let storedLayers: Layer[] = [];
 
 function addToolbarListeners(): void {

@@ -1,8 +1,8 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { Layers } from "@/renderers/layers/layers";
-import { goodsLayer, marketsLayer, tradeLayer } from "@/renderers/layers/map-layers";
+import { goodsLayer, marketsLayer, tradeLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";

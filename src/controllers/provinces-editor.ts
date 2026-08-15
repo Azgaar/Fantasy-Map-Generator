@@ -28,14 +28,8 @@ import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import { drawProvinces } from "@/renderers/draw-provinces";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
-import {
-  bordersLayer,
-  culturesLayer,
-  populationLayer,
-  provincesLayer,
-  statesLayer
-} from "@/renderers/layers/map-layers";
+import { bordersLayer, culturesLayer, populationLayer, provincesLayer, statesLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";

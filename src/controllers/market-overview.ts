@@ -12,8 +12,8 @@ import {
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { Layers } from "@/renderers/layers/layers";
-import { marketsLayer } from "@/renderers/layers/map-layers";
+import { marketsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";

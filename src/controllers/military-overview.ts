@@ -13,8 +13,8 @@ import {
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
-import { Layers } from "@/renderers/layers/layers";
-import { bordersLayer, militaryLayer, statesLayer } from "@/renderers/layers/map-layers";
+import { bordersLayer, militaryLayer, statesLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 

@@ -3,8 +3,8 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
-import { Layers } from "@/renderers/layers/layers";
-import { iceLayer } from "@/renderers/layers/map-layers";
+import { iceLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;

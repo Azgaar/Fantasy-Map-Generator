@@ -1,5 +1,5 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { ensureEl } from "@/utils";
 import { BUTTONS } from "./layers-tab";

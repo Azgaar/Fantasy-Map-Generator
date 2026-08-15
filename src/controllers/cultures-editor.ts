@@ -19,7 +19,6 @@ import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { drawCultures } from "@/renderers/draw-cultures";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
 import {
   biomesLayer,
   culturesLayer,
@@ -27,7 +26,8 @@ import {
   provincesLayer,
   religionsLayer,
   statesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";

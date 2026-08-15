@@ -3,8 +3,8 @@ import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
 import { drawRivers } from "@/renderers/draw-rivers";
-import { Layers } from "@/renderers/layers/layers";
-import { riversLayer } from "@/renderers/layers/map-layers";
+import { riversLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 
 function toggle(): void {
   if (document.getElementById("addRiver")?.classList.contains("pressed")) {

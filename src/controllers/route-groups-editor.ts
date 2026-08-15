@@ -2,8 +2,8 @@ import { select } from "d3";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
-import { Layers } from "@/renderers/layers/layers";
-import { routesLayer } from "@/renderers/layers/map-layers";
+import { routesLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl } from "../utils";
 
 // custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)

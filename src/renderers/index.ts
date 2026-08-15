@@ -1,4 +1,4 @@
-import "./layers/map-layers";
+import "./layers/layers";
 import "./coastline-fractal";
 import "./draw-borders";
 import "./draw-biomes";

@@ -2,7 +2,7 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";

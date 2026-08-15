@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // The registry is tested against fake layers: ordering, activation and restore are guaranteed without a real map.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { LayersState, Layer as LayerType } from "./layers";
+import type { LayersState, Layer as LayerType } from "./layers-registry";
 
-type Registry = typeof import("./layers").Layers;
-type LayerCtor = typeof import("./layers").Layer;
+type Registry = typeof import("./layers-registry").Layers;
+type LayerCtor = typeof import("./layers-registry").Layer;
 
 let Layers: Registry;
 let Layer: LayerCtor;
@@ -13,7 +13,7 @@ let Layer: LayerCtor;
 beforeEach(async () => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   vi.resetModules();
-  ({ Layers, Layer } = await import("./layers"));
+  ({ Layers, Layer } = await import("./layers-registry"));
 });
 
 const groupIds = (parent = "viewbox") => Array.from(document.getElementById(parent)!.children, node => node.id);

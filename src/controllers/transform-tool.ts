@@ -1,6 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Resample } from "@/generators/resample";
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl, rn } from "../utils";
 
 let mouseIsDown = false;

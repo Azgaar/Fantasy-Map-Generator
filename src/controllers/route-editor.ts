@@ -4,8 +4,8 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
-import { cellsLayer, routesLayer } from "@/renderers/layers/map-layers";
+import { cellsLayer, routesLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 

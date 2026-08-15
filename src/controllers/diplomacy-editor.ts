@@ -13,7 +13,6 @@ import {
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
-import { Layers } from "@/renderers/layers/layers";
 import {
   biomesLayer,
   bordersLayer,
@@ -21,7 +20,8 @@ import {
   provincesLayer,
   religionsLayer,
   statesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
 

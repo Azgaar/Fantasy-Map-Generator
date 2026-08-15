@@ -1,14 +1,14 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { Layers } from "@/renderers/layers/layers";
 import {
   biomesLayer,
   coordinatesLayer,
   precipitationLayer,
   riversLayer,
   temperatureLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { stored } from "@/utils/preferences";
 import { convertTemperature, ensureEl, findEl, parseTransform, rn, round } from "../utils";
 

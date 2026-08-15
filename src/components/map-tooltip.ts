@@ -9,7 +9,7 @@ import {
   religionsLayer,
   statesLayer,
   temperatureLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {

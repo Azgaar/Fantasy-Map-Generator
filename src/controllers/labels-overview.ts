@@ -15,8 +15,8 @@ import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-gen
 import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
-import { labelsLayer } from "@/renderers/layers/map-layers";
+import { labelsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, findEl } from "@/utils";
 

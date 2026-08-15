@@ -5,8 +5,8 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawMeasurers } from "@/renderers/draw-measurers";
-import { Layers } from "@/renderers/layers/layers";
-import { rulersLayer } from "@/renderers/layers/map-layers";
+import { rulersLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, getSegmentId, last, rn } from "../utils";
 

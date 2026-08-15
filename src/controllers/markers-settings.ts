@@ -1,8 +1,8 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { Layers } from "@/renderers/layers/layers";
-import { markersLayer } from "@/renderers/layers/map-layers";
+import { markersLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl } from "@/utils";
 
 const DIALOG_ID = "markersSettings";

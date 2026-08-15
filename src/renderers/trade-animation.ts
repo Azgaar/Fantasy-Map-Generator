@@ -1,4 +1,4 @@
-import { tradeLayer } from "@/renderers/layers/map-layers";
+import { tradeLayer } from "@/renderers/layers/layers";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";

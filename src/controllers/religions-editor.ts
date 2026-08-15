@@ -17,7 +17,6 @@ import { Controllers } from "@/controllers";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { drawReligions } from "@/renderers/draw-religions";
-import { Layers } from "@/renderers/layers/layers";
 import {
   biomesLayer,
   culturesLayer,
@@ -25,7 +24,8 @@ import {
   provincesLayer,
   religionsLayer,
   statesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";

@@ -1,210 +1,326 @@
-// Global layers registry: owns layer state, layer order and the svg skeleton the layers are rendered into.
-// The DOM is written from here and never read back — the only source of truth is the registry itself.
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { select } from "d3";
+import { drawBiomes } from "../draw-biomes";
+import { drawBorders } from "../draw-borders";
+import { drawBurgIcons } from "../draw-burg-icons";
+import { drawCells } from "../draw-cells";
+import { drawCoordinates } from "../draw-coordinates";
+import { drawCultures } from "../draw-cultures";
+import { drawEmblems } from "../draw-emblems";
+import { drawFeatures } from "../draw-features";
+import { drawGoods } from "../draw-goods";
+import { drawGrid } from "../draw-grid";
+import { drawHeightmap } from "../draw-heightmap";
+import { drawIce } from "../draw-ice";
+import { drawMarkers } from "../draw-markers";
+import { drawMarkets } from "../draw-markets";
+import { drawMeasurers } from "../draw-measurers";
+import { drawMilitary } from "../draw-military";
+import { drawPopulation } from "../draw-population";
+import { drawPrecipitation } from "../draw-precipitation";
+import { drawProvinces } from "../draw-provinces";
+import { drawRelief, removeRelief } from "../draw-relief-icons";
+import { drawReligions } from "../draw-religions";
+import { drawRivers } from "../draw-rivers";
+import { drawRoutes } from "../draw-routes";
+import { drawStates } from "../draw-states";
+import { drawTemperature } from "../draw-temperature";
+import { drawTexture } from "../draw-texture";
+import { drawZones } from "../draw-zones";
+import { drawLabels, removeLabels } from "../labels/labels-renderer";
+import { tradeAnimation } from "../trade-animation";
+import { Layer, Layers } from "./layers-registry";
 
-export interface LayerParams {
-  /** canonical identity, persisted in the map file */
-  id: string;
-  /** id of the svg group holding the layer content */
-  element: string;
-  /** id of the svg element the layer group is appended to */
-  parent: "viewbox" | "map";
-  /** sub-groups created inside the layer group and preserved when the content is erased */
-  children?: string[];
-  /** static attributes applied to the layer group */
-  attrs?: Record<string, string>;
-  /** structural layer: on from the start and never turned off by a preset */
-  alwaysOn?: boolean;
-  /** keep the content in the DOM when the layer is turned off */
-  keepContent?: boolean;
-  draw?: (layer: Layer) => void;
-  /** custom teardown, defaults to erasing the content down to the declared children */
-  erase?: (layer: Layer) => void;
-}
+export const oceanLayer = new Layer({
+  id: "ocean",
+  element: "ocean",
+  parent: "viewbox",
+  children: ["oceanLayers", "oceanPattern"],
+  alwaysOn: true,
+  keepContent: true
+});
 
-export interface LayersState {
-  order: string[];
-  active: string[];
-}
+export const landmassLayer = new Layer({
+  id: "landmass",
+  element: "landmass",
+  parent: "viewbox",
+  alwaysOn: true,
+  keepContent: true,
+  draw: drawFeatures
+});
 
-export class Layer {
-  readonly id: string;
-  readonly elementId: string;
+export const textureLayer = new Layer({
+  id: "texture",
+  element: "texture",
+  parent: "viewbox",
+  draw: drawTexture
+});
 
-  constructor(readonly params: LayerParams) {
-    this.id = params.id;
-    this.elementId = params.element;
+export const heightmapLayer = new Layer({
+  id: "heightmap",
+  element: "terrs",
+  parent: "viewbox",
+  children: ["oceanHeights", "landHeights"],
+  draw: drawHeightmap
+});
+
+export const lakesLayer = new Layer({
+  id: "lakes",
+  element: "lakes",
+  parent: "viewbox",
+  children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
+  keepContent: true
+});
+
+export const biomesLayer = new Layer({ id: "biomes", element: "biomes", parent: "viewbox", draw: drawBiomes });
+
+export const cellsLayer = new Layer({ id: "cells", element: "cells", parent: "viewbox", draw: drawCells });
+
+export const gridLayer = new Layer({ id: "grid", element: "gridOverlay", parent: "viewbox", draw: drawGrid });
+
+export const coordinatesLayer = new Layer({
+  id: "coordinates",
+  element: "coordinates",
+  parent: "viewbox",
+  draw: drawCoordinates
+});
+
+export const compassLayer = new Layer({
+  id: "compass",
+  element: "compass",
+  parent: "viewbox",
+  keepContent: true
+});
+
+export const riversLayer = new Layer({ id: "rivers", element: "rivers", parent: "viewbox", draw: drawRivers });
+
+export const reliefLayer = new Layer({
+  id: "relief",
+  element: "terrain",
+  parent: "viewbox",
+  draw: drawRelief,
+  erase: removeRelief
+});
+
+export const religionsLayer = new Layer({
+  id: "religions",
+  element: "relig",
+  parent: "viewbox",
+  draw: drawReligions
+});
+
+export const culturesLayer = new Layer({
+  id: "cultures",
+  element: "cults",
+  parent: "viewbox",
+  draw: drawCultures
+});
+
+export const statesLayer = new Layer({
+  id: "states",
+  element: "regions",
+  parent: "viewbox",
+  children: ["statesBody", "statesHalo"],
+  draw: drawStates
+});
+
+export const provincesLayer = new Layer({
+  id: "provinces",
+  element: "provs",
+  parent: "viewbox",
+  draw: drawProvinces
+});
+
+export const zonesLayer = new Layer({ id: "zones", element: "zones", parent: "viewbox", draw: drawZones });
+
+export const bordersLayer = new Layer({
+  id: "borders",
+  element: "borders",
+  parent: "viewbox",
+  children: ["stateBorders", "provinceBorders"],
+  draw: drawBorders
+});
+
+export const routesLayer = new Layer({
+  id: "routes",
+  element: "routes",
+  parent: "viewbox",
+  children: ["roads", "trails", "searoutes"],
+  draw: drawRoutes
+});
+
+export const temperatureLayer = new Layer({
+  id: "temperature",
+  element: "temperature",
+  parent: "viewbox",
+  draw: drawTemperature
+});
+
+export const coastlineLayer = new Layer({
+  id: "coastline",
+  element: "coastline",
+  parent: "viewbox",
+  children: ["sea_island", "lake_island"],
+  alwaysOn: true,
+  keepContent: true
+});
+
+export const iceLayer = new Layer({
+  id: "ice",
+  element: "ice",
+  parent: "viewbox",
+  keepContent: true,
+  draw: layer => {
+    if (!layer.getEl().children.length) drawIce();
   }
+});
 
-  get isOn(): boolean {
-    return Layers.isOn(this);
+export const goodsLayer = new Layer({
+  id: "goods",
+  element: "goods",
+  parent: "viewbox",
+  children: ["goodsCells", "goodsIcons", "goodsBurgs"],
+  draw: drawGoods
+});
+
+export const marketsLayer = new Layer({ id: "markets", element: "markets", parent: "viewbox", draw: drawMarkets });
+
+export const tradeLayer = new Layer({
+  id: "trade",
+  element: "tradeAnimation",
+  parent: "viewbox",
+  keepContent: true,
+  draw: () => tradeAnimation.start(),
+  erase: () => tradeAnimation.stop()
+});
+
+export const precipitationLayer = new Layer({
+  id: "precipitation",
+  element: "prec",
+  parent: "viewbox",
+  draw: drawPrecipitation
+});
+
+export const populationLayer = new Layer({
+  id: "population",
+  element: "population",
+  parent: "viewbox",
+  children: ["rural", "urban"],
+  draw: drawPopulation
+});
+
+export const emblemsLayer = new Layer({
+  id: "emblems",
+  element: "emblems",
+  parent: "viewbox",
+  children: ["burgEmblems", "provinceEmblems", "stateEmblems"],
+  keepContent: true,
+  draw: layer => {
+    if (!layer.getEl().querySelector("use")) drawEmblems();
+    invokeActiveZooming();
   }
+});
 
-  getEl(): SVGGElement {
-    return ensureEl<SVGGElement>(this.elementId);
-  }
-}
+export const burgIconsLayer = new Layer({
+  id: "burgIcons",
+  element: "icons",
+  parent: "viewbox",
+  children: ["burgIcons", "anchors"],
+  draw: drawBurgIcons
+});
 
-class LayersRegistry {
-  private layers: Layer[] = [];
-  private active = new Set<Layer>();
-  private listeners = new Set<() => void>();
+export const labelsLayer = new Layer({
+  id: "labels",
+  element: "labels",
+  parent: "viewbox",
+  attrs: { "font-size": "100px" },
+  draw: drawLabels,
+  erase: removeLabels
+});
 
-  register(...layers: Layer[]): void {
-    this.layers.push(...layers);
-    for (const layer of layers) if (layer.params.alwaysOn) this.active.add(layer);
-  }
+export const militaryLayer = new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary });
 
-  /** create missing layer groups, order them by registration order and apply the current state */
-  init(): void {
-    for (const layer of this.layers) {
-      const { parent, element, children, attrs } = layer.params;
+export const markersLayer = new Layer({ id: "markers", element: "markers", parent: "viewbox", draw: drawMarkers });
 
-      let group = findEl<SVGGElement>(element);
-      if (!group) {
-        group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.id = element;
-      }
-      for (const [name, value] of Object.entries(attrs ?? {})) group.setAttribute(name, value);
-      ensureEl(parent).append(group);
+export const foggingLayer = new Layer({
+  id: "fogging",
+  element: "fogging",
+  parent: "viewbox",
+  attrs: { mask: "url(#fog)" },
+  keepContent: true
+});
 
-      for (const child of children ?? []) {
-        if (group.querySelector(`#${child}`)) continue;
-        const childGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        childGroup.id = child;
-        group.append(childGroup);
-      }
+export const rulersLayer = new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers });
 
-      setVisible(group, this.active.has(layer));
-    }
-  }
+export const debugLayer = new Layer({
+  id: "debug",
+  element: "debug",
+  parent: "viewbox",
+  alwaysOn: true,
+  keepContent: true
+});
 
-  get all(): Layer[] {
-    return this.layers;
-  }
+export const scaleBarLayer = new Layer({
+  id: "scaleBar",
+  element: "scaleBar",
+  parent: "map",
+  keepContent: true,
+  draw: layer => drawScaleBar(select(layer.getEl()), scale)
+});
 
-  /** lookup by id: for deserialization and legacy js only, prefer the layer references */
-  get(id: string): Layer | undefined {
-    return this.layers.find(layer => layer.id === id);
-  }
+export const vignetteLayer = new Layer({
+  id: "vignette",
+  element: "vignette",
+  parent: "map",
+  attrs: { mask: "url(#vignette-mask)" },
+  keepContent: true
+});
 
-  isOn(layer: Layer): boolean {
-    return this.active.has(layer);
-  }
+export const legendLayer = new Layer({
+  id: "legend",
+  element: "legend",
+  parent: "map",
+  alwaysOn: true,
+  keepContent: true
+});
 
-  /** turn the layers on if they are off and (re)draw them */
-  show(...layers: Layer[]): void {
-    this.change(layers, true);
-    this.draw(...layers);
-    this.emit();
-  }
-
-  hide(...layers: Layer[]): void {
-    this.change(layers, false);
-    this.emit();
-  }
-
-  toggle(layer: Layer): void {
-    this.active.has(layer) ? this.hide(layer) : this.show(layer);
-  }
-
-  /** turn on the listed layers and turn off every other user-controlled one, drawing the ones that were off */
-  setActive(active: Layer[]): void {
-    const drawn = this.layers.filter(layer => active.includes(layer) && !this.active.has(layer));
-    this.change(
-      this.layers.filter(layer => !layer.params.alwaysOn && !active.includes(layer)),
-      false
-    );
-    this.change(active, true);
-    this.draw(...drawn);
-    this.emit();
-  }
-
-  /** draw the listed layers that are on, always in layer order */
-  draw(...layers: Layer[]): void {
-    for (const layer of this.layers) {
-      if (layers.includes(layer) && this.active.has(layer)) layer.params.draw?.(layer);
-    }
-  }
-
-  drawAll(): void {
-    this.draw(...this.layers);
-  }
-
-  move(layer: Layer, before?: Layer): void {
-    this.layers.splice(this.layers.indexOf(layer), 1);
-    this.layers.splice(before ? this.layers.indexOf(before) : this.layers.length, 0, layer);
-    this.init();
-    this.emit();
-  }
-
-  get state(): LayersState {
-    return {
-      order: this.layers.map(layer => layer.id),
-      active: this.layers.filter(layer => this.active.has(layer) && !layer.params.alwaysOn).map(layer => layer.id)
-    };
-  }
-
-  /** apply stored state: the content is already in the DOM, so nothing is drawn or erased */
-  restore({ order, active }: LayersState): void {
-    // layers missing from the stored order keep their registration-order neighbours
-    const ranks = new Map<string, number>();
-    let previous = -1;
-    for (const layer of this.layers) {
-      const index = order.indexOf(layer.id);
-      previous = index === -1 ? previous + 1e-3 : index;
-      ranks.set(layer.id, previous);
-    }
-
-    this.layers.sort((a, b) => ranks.get(a.id)! - ranks.get(b.id)!);
-    this.active = new Set(this.layers.filter(layer => layer.params.alwaysOn || active.includes(layer.id)));
-    this.init();
-    this.emit();
-  }
-
-  subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
-    return () => void this.listeners.delete(listener);
-  }
-
-  /** flip the state and the visibility of the layers that are not in the requested state yet */
-  private change(layers: Layer[], on: boolean): void {
-    for (const layer of this.layers) {
-      if (!layers.includes(layer) || this.active.has(layer) === on) continue;
-
-      on ? this.active.add(layer) : this.active.delete(layer);
-      setVisible(layer.getEl(), on);
-
-      if (on) continue;
-      if (layer.params.erase) layer.params.erase(layer);
-      else if (!layer.params.keepContent) eraseContent(layer);
-    }
-  }
-
-  private emit(): void {
-    for (const listener of this.listeners) listener();
-  }
-}
-
-/** default teardown: drop the content, keeping the declared skeleton */
-function eraseContent(layer: Layer): void {
-  for (const child of Array.from(layer.getEl().children)) {
-    if (layer.params.children?.includes(child.id)) child.replaceChildren();
-    else child.remove();
-  }
-}
-
-/** write visibility, dropping the style attribute when it carries nothing else: keeps the saved svg clean */
-function setVisible(element: SVGGElement, visible: boolean): void {
-  element.style.display = visible ? "" : "none";
-  if (!element.getAttribute("style")) element.removeAttribute("style");
-}
-
-export const Layers = new LayersRegistry();
-
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: legacy seam
-  var Layers: LayersRegistry;
-}
-
-window.Layers = Layers;
+// order matters
+Layers.register(
+  oceanLayer,
+  landmassLayer,
+  textureLayer,
+  heightmapLayer,
+  lakesLayer,
+  biomesLayer,
+  cellsLayer,
+  gridLayer,
+  coordinatesLayer,
+  compassLayer,
+  riversLayer,
+  reliefLayer,
+  religionsLayer,
+  culturesLayer,
+  statesLayer,
+  provincesLayer,
+  zonesLayer,
+  bordersLayer,
+  routesLayer,
+  temperatureLayer,
+  coastlineLayer,
+  iceLayer,
+  goodsLayer,
+  marketsLayer,
+  tradeLayer,
+  precipitationLayer,
+  populationLayer,
+  emblemsLayer,
+  burgIconsLayer,
+  labelsLayer,
+  militaryLayer,
+  markersLayer,
+  foggingLayer,
+  rulersLayer,
+  debugLayer,
+  scaleBarLayer,
+  vignetteLayer,
+  legendLayer
+);

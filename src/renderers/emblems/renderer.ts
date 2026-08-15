@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { emblemsLayer } from "@/renderers/layers/map-layers";
+import { emblemsLayer } from "@/renderers/layers/layers";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";

@@ -5,7 +5,6 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
 import { getFeaturePath } from "@/renderers/draw-features";
-import { Layers } from "@/renderers/layers/layers";
 import {
   biomesLayer,
   bordersLayer,
@@ -14,7 +13,8 @@ import {
   provincesLayer,
   religionsLayer,
   statesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";

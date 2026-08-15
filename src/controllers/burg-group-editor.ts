@@ -2,8 +2,8 @@ import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from 
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
-import { burgIconsLayer } from "@/renderers/layers/map-layers";
+import { burgIconsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import type { BurgGroup } from "@/types/burg-groups";
 import { ensureEl } from "../utils";
 

@@ -10,8 +10,8 @@ import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
-import { labelsLayer } from "@/renderers/layers/map-layers";
+import { labelsLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 

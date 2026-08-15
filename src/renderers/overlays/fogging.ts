@@ -1,7 +1,7 @@
 // Fogging: dim everything outside the focused area by punching its shape out of the fog overlay
 import { easeSinInOut, select, transition } from "d3";
-import { Layers } from "@/renderers/layers/layers";
-import { foggingLayer } from "@/renderers/layers/map-layers";
+import { foggingLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 
 /** Reveal the area described by the path, fading the fog in on the first call */
 export function fog(id: string, path: string): void {

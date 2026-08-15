@@ -3,8 +3,8 @@ import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarker } from "@/renderers/draw-markers";
-import { Layers } from "@/renderers/layers/layers";
-import { markersLayer } from "@/renderers/layers/map-layers";
+import { markersLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl, findEl, rn } from "@/utils";
 
 function toggle(baseMarker?: Marker): void {

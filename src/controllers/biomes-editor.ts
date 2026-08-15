@@ -19,7 +19,6 @@ import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { Layers } from "@/renderers/layers/layers";
 import {
   biomesLayer,
   culturesLayer,
@@ -28,7 +27,8 @@ import {
   provincesLayer,
   religionsLayer,
   statesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";

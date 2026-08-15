@@ -4,8 +4,8 @@ import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
-import { Layers } from "@/renderers/layers/layers";
-import { markersLayer } from "@/renderers/layers/map-layers";
+import { markersLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
 

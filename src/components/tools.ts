@@ -5,7 +5,6 @@ import { Population } from "@/generators/population-generator";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
 import {
   bordersLayer,
   burgIconsLayer,
@@ -24,7 +23,8 @@ import {
   statesLayer,
   tradeLayer,
   zonesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";

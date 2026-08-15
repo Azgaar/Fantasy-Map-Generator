@@ -15,7 +15,6 @@ import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { drawTexture } from "@/renderers/draw-texture";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { Layers } from "@/renderers/layers/layers";
 import {
   bordersLayer,
   burgIconsLayer,
@@ -27,7 +26,8 @@ import {
   scaleBarLayer,
   statesLayer,
   zonesLayer
-} from "@/renderers/layers/map-layers";
+} from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";

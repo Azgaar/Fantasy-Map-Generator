@@ -6,7 +6,7 @@ import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl } from "@/utils";
 
 function open(): void {

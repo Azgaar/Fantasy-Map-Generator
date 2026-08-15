@@ -1,5 +1,5 @@
 import type { ReliefIcon } from "@/generators/relief-generator";
-import { reliefLayer } from "@/renderers/layers/map-layers";
+import { reliefLayer } from "@/renderers/layers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 
 interface ReliefSceneIcon {

@@ -4,8 +4,8 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { Layers } from "@/renderers/layers/layers";
-import { cellsLayer, riversLayer } from "@/renderers/layers/map-layers";
+import { cellsLayer, riversLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];

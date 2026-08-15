@@ -12,8 +12,8 @@ import {
 } from "@/components/dialog/table";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
-import { Layers } from "@/renderers/layers/layers";
-import { riversLayer } from "@/renderers/layers/map-layers";
+import { riversLayer } from "@/renderers/layers/layers";
+import { Layers } from "@/renderers/layers/layers-registry";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
