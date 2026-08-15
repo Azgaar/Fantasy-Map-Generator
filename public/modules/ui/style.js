@@ -805,7 +805,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
     if (stops in heightmapColorSchemes) return tip("This scheme already exists", false, "error");
 
     addCustomColorScheme(stops);
-    getEl().attr("scheme", stops);
+    setOptions({layerId: "terrs", childIds: [childId]}, {scheme: stops});
     drawHeightmap();
 
     handleClose();
