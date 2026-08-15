@@ -1032,7 +1032,7 @@ function stateRemove(stateId: number): void {
     const index = notes.findIndex(n => n.id === id);
     if (index !== -1) notes.splice(index, 1);
   });
-  armies.select(`g#army${stateId}`).remove();
+  select(`#armies g#army${stateId}`).remove();
 
   // clean up neighbors references from other states
   pack.states.forEach(state => {
@@ -1889,7 +1889,7 @@ function openStateMergeDialog(): void {
         }
       });
 
-      armies.select(`g#army${stateId}`).remove();
+      select(`#armies g#army${stateId}`).remove();
     });
 
     // reassing burgs

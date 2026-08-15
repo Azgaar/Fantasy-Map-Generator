@@ -1,6 +1,9 @@
-import { color, easeSinInOut, transition } from "d3";
+import { color, easeSinInOut, select, transition } from "d3";
 import type { Regiment } from "../generators/military-generator";
 import { rn } from "../utils";
+
+/** the military layer, selected in place: a map load replaces the group */
+const armies = () => select<SVGGElement, unknown>("#armies");
 
 declare global {
   // legacy seam: style.js redraws regiments after a style change
@@ -10,7 +13,7 @@ declare global {
 const militaryRenderer = (): void => {
   TIME && console.time("drawMilitary");
 
-  armies.selectAll("g").remove();
+  armies().selectAll("g").remove();
   pack.states
     .filter(s => s.i && !s.removed)
     .forEach(s => {
@@ -21,7 +24,7 @@ const militaryRenderer = (): void => {
 };
 
 const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
-  const size = +armies.attr("box-size");
+  const size = +armies().attr("box-size");
   const w = (d: Regiment) => (d.n ? size * 4 : size * 6);
   const h = size * 2;
   const x = (d: Regiment) => rn(d.x - w(d) / 2, 2);
@@ -30,7 +33,7 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
   const stateColor = pack.states[s]?.color;
   const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
   const darkerColor = color(baseColor)!.darker().formatHex();
-  const army = armies.append("g").attr("id", `army${s}`).attr("fill", baseColor).attr("color", darkerColor);
+  const army = armies().append("g").attr("id", `army${s}`).attr("fill", baseColor).attr("color", darkerColor);
 
   const g = army
     .selectAll("g")
@@ -75,18 +78,18 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
 };
 
 const drawRegimentRenderer = (reg: Regiment, stateId: number): void => {
-  const size = +armies.attr("box-size");
+  const size = +armies().attr("box-size");
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = rn(reg.x - w / 2, 2);
   const y1 = rn(reg.y - size, 2);
 
-  let army = armies.select<SVGGElement>(`g#army${stateId}`);
+  let army = armies().select<SVGGElement>(`g#army${stateId}`);
   if (!army.size()) {
     const stateColor = pack.states[stateId]?.color;
     const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
     const darkerColor = color(baseColor)!.darker().formatHex();
-    army = armies.append("g").attr("id", `army${stateId}`).attr("fill", baseColor).attr("color", darkerColor);
+    army = armies().append("g").attr("id", `army${stateId}`).attr("fill", baseColor).attr("color", darkerColor);
   }
 
   const g = army
@@ -126,13 +129,13 @@ const drawRegimentRenderer = (reg: Regiment, stateId: number): void => {
 
 // move one regiment to another
 const moveRegimentRenderer = (reg: Regiment, x: number, y: number): void => {
-  const el = armies.select(`g#army${reg.state}`).select(`g#regiment${reg.state}-${reg.i}`);
+  const el = armies().select(`g#army${reg.state}`).select(`g#regiment${reg.state}-${reg.i}`);
   if (!el.size()) return;
 
   const duration = Math.hypot(reg.x - x, reg.y - y) * 8;
   reg.x = x;
   reg.y = y;
-  const size = +armies.attr("box-size");
+  const size = +armies().attr("box-size");
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = (x: number) => rn(x - w / 2, 2);

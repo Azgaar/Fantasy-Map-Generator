@@ -1,4 +1,4 @@
-import type { Selection, ZoomBehavior } from "d3";
+import type { ZoomBehavior } from "d3";
 import type { LabelGroup } from "@/generators/labels-generator";
 import type { ThreeDOptions } from "../data/view-3d-options";
 import type { GoodsModule } from "../generators/goods-generator";
@@ -43,6 +43,7 @@ declare global {
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
   }
 
+  var mapId: number;
   var seed: string;
   var pack: PackedGraph;
   var grid: any;
@@ -77,62 +78,17 @@ declare global {
   var temperatureScale: HTMLSelectElement;
 
   // Global variables defined in main.js
+  var scale: number;
   var viewX: number;
   var viewY: number;
 
-  var rivers: Selection<SVGElement, unknown, null, undefined>;
-  var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
-  var emblems: Selection<SVGElement, unknown, null, undefined>;
-  var goods: Selection<SVGGElement, unknown, null, undefined>;
-  var markets: Selection<SVGGElement, unknown, null, undefined>;
-  var svg: Selection<SVGSVGElement, unknown, null, undefined>;
-  var ice: Selection<SVGGElement, unknown, null, undefined>;
-  var labels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgIcons: Selection<SVGGElement, unknown, null, undefined>;
-  var anchors: Selection<SVGGElement, unknown, null, undefined>;
-  var terrs: Selection<SVGGElement, unknown, null, undefined>;
-  var temperature: Selection<SVGGElement, unknown, null, undefined>;
-  var markers: Selection<SVGGElement, unknown, null, undefined>;
-  var tradeAnimation: Selection<SVGGElement, unknown, null, undefined>;
-  var defs: Selection<SVGDefsElement, unknown, null, undefined>;
-  var coastline: Selection<SVGGElement, unknown, null, undefined>;
-  var lakes: Selection<SVGGElement, unknown, null, undefined>;
-  var provs: Selection<SVGGElement, unknown, null, undefined>;
   var getColorScheme: (scheme: string | null) => (t: number) => string;
   var getColor: (height: number, scheme: (t: number) => string) => string;
   var svgWidth: number;
   var svgHeight: number;
-  var viewbox: Selection<SVGElement, unknown, null, undefined>;
-  var routes: Selection<SVGElement, unknown, null, undefined>;
-  var debug: Selection<SVGElement, unknown, null, undefined>;
-  // SVG layer selections reassigned on map load (main.js)
-  var scaleBar: Selection<SVGGElement, unknown, null, undefined>;
-  var ocean: Selection<SVGGElement, unknown, null, undefined>;
-  var oceanPattern: Selection<SVGGElement, unknown, null, undefined>;
-  var landmass: Selection<SVGGElement, unknown, null, undefined>;
-  var texture: Selection<SVGGElement, unknown, null, undefined>;
-  var biomes: Selection<SVGGElement, unknown, null, undefined>;
-  var cells: Selection<SVGGElement, unknown, null, undefined>;
-  var gridOverlay: Selection<SVGGElement, unknown, null, undefined>;
-  var coordinates: Selection<SVGGElement, unknown, null, undefined>;
-  var compass: Selection<SVGGElement, unknown, null, undefined>;
-  var terrain: Selection<SVGGElement, unknown, null, undefined>;
-  var zones: Selection<SVGGElement, unknown, null, undefined>;
-  var borders: Selection<SVGGElement, unknown, null, undefined>;
-  var stateBorders: Selection<SVGGElement, unknown, null, undefined>;
-  var provinceBorders: Selection<SVGGElement, unknown, null, undefined>;
-  var roads: Selection<SVGGElement, unknown, null, undefined>;
-  var trails: Selection<SVGGElement, unknown, null, undefined>;
-  var searoutes: Selection<SVGGElement, unknown, null, undefined>;
-  var prec: Selection<SVGGElement, unknown, null, undefined>;
-  var population: Selection<SVGGElement, unknown, null, undefined>;
-  var icons: Selection<SVGGElement, unknown, null, undefined>;
-  var ruler: Selection<SVGGElement, unknown, null, undefined>;
-  var fogging: Selection<SVGGElement, unknown, null, undefined>;
+
   var notes: any[]; // TODO: correct type
   var style: Style;
-
-  var mapId: number;
 
   // IO / loading helpers defined in classic public/ scripts
   var ldb: {
@@ -169,7 +125,6 @@ declare global {
   var THREE: any; // lazy-loaded
 
   var $: (selector: any) => any;
-  var scale: number;
   var changeFont: () => void;
   var addLakesInDeepDepressions: () => void;
   var openNearSeaLakes: () => void;
@@ -198,7 +153,6 @@ declare global {
   var openURL: (url: string) => void;
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
   var drawGoods: () => void;
-  var legend: any;
 
   var drawStates: () => void;
   var drawLabels: () => void;
@@ -215,13 +169,6 @@ declare global {
   var aleaPRNG: (seed: string | number) => () => number;
   var heightmapColorSchemes: Record<string, unknown>;
   var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
-
-  var cults: Selection<SVGGElement, unknown, null, undefined>;
-  var relig: Selection<SVGGElement, unknown, null, undefined>;
-  var regions: Selection<SVGGElement, unknown, null, undefined>;
-  var statesBody: Selection<SVGGElement, unknown, null, undefined>;
-  var statesHalo: Selection<SVGGElement, unknown, null, undefined>;
-  var armies: Selection<SVGGElement, unknown, null, undefined>;
 
   type MilitaryUnit = {
     icon: string;

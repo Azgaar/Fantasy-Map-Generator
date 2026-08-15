@@ -32,64 +32,12 @@ if (PRODUCTION && "serviceWorker" in navigator) {
 
 Layers.init(); // create the svg layer groups
 
-let svg = d3.select("#map");
-let defs = svg.select("#deftemp");
-let viewbox = svg.select("#viewbox");
-let scaleBar = svg.select("#scaleBar");
-let legend = svg.select("#legend");
-let ocean = viewbox.select("#ocean");
-let oceanLayers = ocean.select("#oceanLayers");
-let oceanPattern = ocean.select("#oceanPattern");
-let landmass = viewbox.select("#landmass");
-let texture = viewbox.select("#texture");
-let terrs = viewbox.select("#terrs");
-let lakes = viewbox.select("#lakes");
-let biomes = viewbox.select("#biomes");
-let cells = viewbox.select("#cells");
-let gridOverlay = viewbox.select("#gridOverlay");
-let coordinates = viewbox.select("#coordinates");
-let compass = viewbox.select("#compass");
-let rivers = viewbox.select("#rivers");
-let terrain = viewbox.select("#terrain");
-let relig = viewbox.select("#relig");
-let cults = viewbox.select("#cults");
-let regions = viewbox.select("#regions");
-let statesBody = regions.select("#statesBody");
-let statesHalo = regions.select("#statesHalo");
-let provs = viewbox.select("#provs");
-let zones = viewbox.select("#zones");
-let borders = viewbox.select("#borders");
-let stateBorders = borders.select("#stateBorders");
-let provinceBorders = borders.select("#provinceBorders");
-let routes = viewbox.select("#routes");
-let roads = routes.select("#roads");
-let trails = routes.select("#trails");
-let searoutes = routes.select("#searoutes");
-let temperature = viewbox.select("#temperature");
-let coastline = viewbox.select("#coastline");
-let ice = viewbox.select("#ice");
-let goods = viewbox.select("#goods");
-let markets = viewbox.select("#markets");
-let tradeAnimation = viewbox.select("#tradeAnimation");
-let prec = viewbox.select("#prec");
-let population = viewbox.select("#population");
-let emblems = viewbox.select("#emblems");
-let icons = viewbox.select("#icons");
-let labels = viewbox.select("#labels");
-let burgIcons = icons.select("#burgIcons");
-let anchors = icons.select("#anchors");
-let armies = viewbox.select("#armies");
-let markers = viewbox.select("#markers");
-let fogging = viewbox.select("#fogging");
-let ruler = viewbox.select("#ruler");
-var debug = viewbox.select("#debug");
-
 // compass
-compass.append("use").attr("xlink:href", "#defs-compass-rose");
+d3.select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
 
 // fogging
-fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-fogging
+d3.select("#fogging").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
+d3.select("#fogging")
   .append("rect")
   .attr("x", 0)
   .attr("y", 0)
@@ -99,10 +47,10 @@ fogging
   .attr("filter", "url(#splotch)");
 
 // assign events separately as not a viewbox child
-scaleBar
+d3.select("#scaleBar")
   .on("mousemove", () => tip("Click to open Units Editor"))
   .on("click", () => window.Controllers.UnitsEditor.open());
-legend
+d3.select("#legend")
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
 
@@ -165,15 +113,15 @@ var graphHeight = +mapHeightInput.value;
 let svgWidth = graphWidth;
 let svgHeight = graphHeight;
 
-landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanPattern
+d3.select("#landmass").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+d3.select("#oceanPattern")
   .append("rect")
   .attr("fill", "url(#oceanic)")
   .attr("x", 0)
   .attr("y", 0)
   .attr("width", graphWidth)
   .attr("height", graphHeight);
-oceanLayers
+d3.select("#oceanLayers")
   .append("rect")
   .attr("id", "oceanBase")
   .attr("x", 0)
@@ -414,7 +362,7 @@ function findBurgForMFCG(params) {
   }
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
-  const label = labels.select("[data-label-type='burg'][data-id='" + burgId + "']");
+  const label = d3.select("#labels").select("[data-label-type='burg'][data-id='" + burgId + "']");
   if (label.size()) {
     label
       .text(b.name)
@@ -829,7 +777,7 @@ function calculateTemperatures() {
 // simplest precipitation model
 function generatePrecipitation() {
   TIME && console.time("generatePrecipitation");
-  prec.selectAll("*").remove();
+  d3.select("#prec").selectAll("*").remove();
   const { cells, cellsX, cellsY } = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
@@ -942,7 +890,7 @@ function generatePrecipitation() {
   }
 
   void (function drawWindDirection() {
-    const wind = prec.append("g").attr("id", "wind");
+    const wind = d3.select("#prec").append("g").attr("id", "wind");
 
     d3.range(0, 6).forEach(function (t) {
       if (westerly.length > 1) {
@@ -1161,7 +1109,7 @@ const regenerateMap = debounce(async function (config) {
 
 // clear the map
 function undraw() {
-  viewbox
+  d3.select("#viewbox")
     .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
     .remove();
   ensureEl("deftemp")

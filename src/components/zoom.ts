@@ -1,4 +1,4 @@
-import type { ZoomBehavior } from "d3";
+import { type Selection, select, type ZoomBehavior } from "d3";
 import { redrawEmblemGroup } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -14,8 +14,18 @@ function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
   return zoomBehavior;
 }
 
+/**
+ * The map root, selected in place with the global d3 v5 — NOT the bundled v7 `select`. The v5 zoom
+ * behavior reads the v5 module-global `d3.event`, which only v5's own `selection.on` sets, so binding
+ * it through a v7 selection leaves `d3.event` null and kills every pointer gesture (#1508). Selecting
+ * on each call also keeps this correct across a map load, which replaces `#map` wholesale.
+ */
+function mapRoot(): Selection<SVGSVGElement, unknown, HTMLElement, unknown> {
+  return window.d3.select<SVGSVGElement, unknown>("#map");
+}
+
 export function applyZoomBehavior(): void {
-  svg.call(zoom().on("zoom", onZoom).on("end", handleZoomEnd));
+  mapRoot().call(zoom().on("zoom", onZoom).on("end", handleZoomEnd));
 }
 
 let frameId: number | null = null;
@@ -55,7 +65,7 @@ function handleZoomPerFrame(): void {
   pendingPositionChange = false;
   if (!didScaleChange && !didPositionChange) return;
 
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  ensureEl<SVGGElement>("viewbox").setAttribute("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
   window.updateMinimap?.();
   redrawTracedImage();
   ViewportLayers.schedule();
@@ -65,7 +75,7 @@ function handleZoomPerFrame(): void {
 
     if (options.labels.resizeOnZoom) {
       const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-      labels.attr("font-size", `${fontSize}px`);
+      select("#labels").attr("font-size", `${fontSize}px`);
     }
   }
 
@@ -103,6 +113,7 @@ function redrawTracedImage(): void {
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
+  const emblems = select<SVGGElement, unknown>("#emblems");
   if (emblems.style("display") !== "none") {
     const hideSmallEmblems = ensureEl<HTMLInputElement>("hideEmblems").checked;
     for (const group of emblems.selectAll<SVGGElement, unknown>("g").nodes()) {
@@ -115,12 +126,13 @@ function invokeActiveZooming(): void {
   }
 
   if (!customization && !isOptimized) {
+    const statesHalo = select("#statesHalo");
     const desired = Number(statesHalo.attr("data-width"));
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  if (Number(markers.attr("rescale"))) {
+  if (Number(select("#markers").attr("rescale"))) {
     for (const marker of pack.markers ?? []) {
       const { i, x, y, size = 30, hidden } = marker;
       const element = hidden ? null : document.getElementById(`marker${i}`);
@@ -138,24 +150,24 @@ function invokeActiveZooming(): void {
 /** Zoom to a specific point */
 function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
   const transform = window.d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(duration).call(zoom().transform, transform);
+  mapRoot().transition().duration(duration).call(zoom().transform, transform);
 }
 
 /** Reset zoom to initial */
 function resetZoom(duration = 1000): void {
-  svg.transition().duration(duration).call(zoom().transform, window.d3.zoomIdentity);
+  mapRoot().transition().duration(duration).call(zoom().transform, window.d3.zoomIdentity);
 }
 
 export function panMap(x: number, y: number): void {
-  zoom().translateBy(svg, x, y);
+  zoom().translateBy(mapRoot(), x, y);
 }
 
 export function setMapZoom(value: number): void {
-  zoom().scaleTo(svg, value);
+  zoom().scaleTo(mapRoot(), value);
 }
 
 export function changeMapZoom(factor: number): void {
-  zoom().scaleBy(svg, factor);
+  zoom().scaleBy(mapRoot(), factor);
 }
 
 // consumed by legacy code; a getter so the lazy behavior is created on the first read

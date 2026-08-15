@@ -194,19 +194,19 @@ function applyGraphSize() {
   graphWidth = +mapWidthInput.value;
   graphHeight = +mapHeightInput.value;
 
-  landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  fogging.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  defs.select("mask#fog > rect").attr("width", graphWidth).attr("height", graphHeight);
-  defs.select("mask#water > rect").attr("width", graphWidth).attr("height", graphHeight);
+  d3.select("#landmass").select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  d3.select("#oceanPattern").select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  d3.select("#oceanLayers").select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  d3.select("#fogging").selectAll("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  d3.select("#deftemp").select("mask#fog > rect").attr("width", graphWidth).attr("height", graphHeight);
+  d3.select("#deftemp").select("mask#water > rect").attr("width", graphWidth).attr("height", graphHeight);
 }
 
 // on generate, on load, on resize, on canvas size change
 function fitMapToScreen() {
   svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
-  svg.attr("width", svgWidth).attr("height", svgHeight);
+  d3.select("#map").attr("width", svgWidth).attr("height", svgHeight);
 
   const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
   zoomExtentMin.value = zoomMin;
@@ -406,8 +406,8 @@ function changeStatesNumber(value) {
   const stateSize = Math.max(rn(18 - value / 6), 4);
   if (style.labels.groups.capital) style.labels.groups.capital["font-size"] = `${capitalSize}%`;
   if (style.labels.groups.states) style.labels.groups.states["font-size"] = `${stateSize}%`;
-  labels.select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  labels.select("[data-group='states']").attr("font-size", `${stateSize}%`);
+  d3.select("#labels").select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
+  d3.select("#labels").select("[data-group='states']").attr("font-size", `${stateSize}%`);
 }
 
 function changeUiSize(value) {
@@ -524,13 +524,13 @@ function changeZoomExtent(value) {
   zoomExtentMax.value = max;
   zoom.scaleExtent([min, max]);
   const scale = minmax(+value, 0.01, 200);
-  zoom.scaleTo(svg, scale);
+  zoom.scaleTo(d3.select("#map"), scale);
 }
 
 function restoreDefaultZoomExtent() {
   zoomExtentMin.value = 1;
   zoomExtentMax.value = 20;
-  zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
+  zoom.scaleExtent([1, 20]).scaleTo(d3.select("#map"), 1);
 }
 
 // restore options stored in localStorage
@@ -669,15 +669,15 @@ function randomizeCultureSet() {
 }
 
 function setRendering(value) {
-  viewbox.attr("shape-rendering", value);
+  d3.select("#viewbox").attr("shape-rendering", value);
 
   if (value === "optimizeSpeed") {
     // block some styles
-    statesHalo.style("display", "none");
+    d3.select("#statesHalo").style("display", "none");
   } else {
     // remove style block
-    statesHalo.style("display", null);
-    if (pack.cells && statesHalo.selectAll("*").size() === 0) drawStates();
+    d3.select("#statesHalo").style("display", null);
+    if (pack.cells && d3.select("#statesHalo").selectAll("*").size() === 0) drawStates();
   }
 }
 
@@ -910,7 +910,7 @@ function openExportToPngTiles() {
     },
     close: () => {
       inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
-      debug.selectAll("*").remove();
+      d3.select("#debug").selectAll("*").remove();
     }
   });
 }
@@ -955,7 +955,7 @@ function updateTilesOptions() {
     }
   }
 
-  debug.html(`
+  d3.select("#debug").html(`
     <g fill='none' stroke='#000'>${rects.join("")}</g>
     <g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='18px'>${labels.join(
       ""

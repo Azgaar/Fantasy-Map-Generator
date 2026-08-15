@@ -517,7 +517,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone: MapSelection): void {
-  if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
+  if (!select("#terrain").selectAll("use").size()) clone.select("#defs-relief").remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;

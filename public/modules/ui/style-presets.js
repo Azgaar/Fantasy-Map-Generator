@@ -540,7 +540,7 @@ function removeStylePreset() {
 }
 
 function updateMapFilter() {
-  const filter = svg.attr("data-filter");
+  const filter = d3.select("#map").attr("data-filter");
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   if (!filter) return;
   mapFilters.querySelector("#" + filter).classList.add("pressed");

@@ -65,11 +65,11 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
-    relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+    select("#viewbox").insert("g", "#terrain").attr("id", "relig");
     Religions.generate();
 
     // v1.0 added a legend box
-    legend = svg.append("g").attr("id", "legend");
+    select("#map").append("g").attr("id", "legend");
     select("#legend")
       .attr("font-family", "Almendra SC")
       .attr("font-size", 13)
@@ -82,8 +82,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("stroke-linecap", "round");
 
     // v1.0 separated drawBorders fron drawStates()
-    stateBorders = borders.append("g").attr("id", "stateBorders");
-    provinceBorders = borders.append("g").attr("id", "provinceBorders");
+    select("#borders").append("g").attr("id", "stateBorders");
+    select("#borders").append("g").attr("id", "provinceBorders");
     select("#borders")
       .attr("opacity", null)
       .attr("stroke", null)
@@ -105,7 +105,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("stroke-linecap", "butt");
 
     // v1.0 added state relations, provinces, forms and full names
-    provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
+    select("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
     States.collectStatistics();
     States.generateCampaigns();
     States.generateDiplomacy();
@@ -116,7 +116,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     if (!Layers.isOn("states")) select("#regions").attr("display", "none").selectAll("path").remove();
 
     // v1.0 added zones layer
-    zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
+    select("#viewbox").insert("g", "#borders").attr("id", "zones").attr("display", "none");
     select("#zones")
       .attr("opacity", 0.6)
       .attr("stroke", null)
@@ -130,7 +130,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     }
 
     // v1.0 add fogging layer (state focus)
-    fogging = viewbox
+    select("#viewbox")
       .insert("g", "#ruler")
       .attr("id", "fogging-cont")
       .attr("mask", "url(#fog)")
@@ -166,7 +166,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.1.0")) {
     // v1.0 code had a bug with religion layer id
-    if (!select("#relig").size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+    if (!select("#relig").size()) select("#viewbox").insert("g", "#terrain").attr("id", "relig");
 
     // v1.0 had Sympathy status then relaced with Friendly
     for (const s of pack.states) {
@@ -284,6 +284,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#fogging").style("display", "none");
 
     // v1.2 added new terrain attributes
+    const terrain = select("#terrain");
     if (!terrain.attr("set")) terrain.attr("set", "simple");
     if (!terrain.attr("size")) terrain.attr("size", 1);
     if (!terrain.attr("density")) terrain.attr("density", 0.4);
@@ -337,8 +338,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     States.generateCampaigns();
 
     // v1.3 added militry layer
-    armies = viewbox.insert("g", "#icons").attr("id", "armies");
-    armies
+    select("#viewbox")
+      .insert("g", "#icons")
+      .attr("id", "armies")
       .attr("opacity", 1)
       .attr("fill-opacity", 1)
       .attr("font-size", 6)
@@ -363,7 +365,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     }
 
     // v1.4 added ice layer
-    ice = viewbox.insert("g", "#coastline").attr("id", "ice").style("display", "none");
+    select("#viewbox").insert("g", "#coastline").attr("id", "ice").style("display", "none");
     select("#ice")
       .attr("opacity", null)
       .attr("fill", "#e8f0f6")
@@ -419,10 +421,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     // v1.5 added emblems
     select("#deftemp").append("g").attr("id", "defs-emblems");
-    emblems = viewbox
-      .insert("g", "#population")
-      .attr("id", "emblems")
-      .style("display", "none") as unknown as typeof emblems;
+    select("#viewbox").insert("g", "#population").attr("id", "emblems").style("display", "none");
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
@@ -431,13 +430,15 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     ensureEl("emblems").style.display = "";
 
     // v1.5 changed releif icons data
-    terrain.selectAll<SVGUseElement, unknown>("use").each(function () {
-      const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
-      this.removeAttribute("xlink:href");
-      this.removeAttribute("data-type");
-      this.removeAttribute("data-size");
-      if (type) this.setAttribute("href", type);
-    });
+    select("#terrain")
+      .selectAll<SVGUseElement, unknown>("use")
+      .each(function () {
+        const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
+        this.removeAttribute("xlink:href");
+        this.removeAttribute("data-type");
+        this.removeAttribute("data-size");
+        if (type) this.setAttribute("href", type);
+      });
   }
 
   if (isOlderThan("1.6.0")) {
@@ -876,7 +877,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     // v1.96.00 moved scaleBar options from units editor to style
     select("#scaleBar").remove();
-    scaleBar = svg
+    select("#map")
       .insert("g", "#viewbox + *")
       .attr("id", "scaleBar")
       .attr("opacity", 1)
@@ -900,15 +901,17 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("data-left", 10);
 
     // v1.96.00 changed coloring approach for regiments
-    armies.selectAll<SVGGElement, unknown>(":scope > g").each(function () {
-      const fill = this.getAttribute("fill");
-      if (!fill) return;
-      const darkerColor = color(fill)!.darker().formatHex();
-      this.setAttribute("color", darkerColor);
-      this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
-        rect.setAttribute("fill", "currentColor");
+    select("#armies")
+      .selectAll<SVGGElement, unknown>(":scope > g")
+      .each(function () {
+        const fill = this.getAttribute("fill");
+        if (!fill) return;
+        const darkerColor = color(fill)!.darker().formatHex();
+        this.setAttribute("color", darkerColor);
+        this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
+          rect.setAttribute("fill", "currentColor");
+        });
       });
-    });
   }
 
   if (isOlderThan("1.98.0")) {
@@ -1185,7 +1188,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         });
       } else {
         // If ice layer element doesn't exist, create it
-        ice = viewbox.insert("g", "#coastline").attr("id", "ice");
+        select("#viewbox").insert("g", "#coastline").attr("id", "ice");
         select("#ice")
           .attr("opacity", null)
           .attr("fill", "#e8f0f6")
@@ -1208,7 +1211,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.124.0")) {
     // v1.124.0 added goods, markets, deals and trade animation data
-    goods = viewbox
+    select("#viewbox")
       .insert("g", "#emblems")
       .attr("id", "goods")
       .style("display", "none")
@@ -1217,8 +1220,8 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#goods").append("g").attr("id", "goodsCells");
     select("#goods").append("g").attr("id", "goodsIcons").attr("data-circle", "1");
     select("#goods").append("g").attr("id", "goodsBurgs");
-    markets = viewbox.insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
-    tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
+    select("#viewbox").insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
+    select("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation");
 
     options.trade = { animation: TradeAnimation.getDefaultOptions() };
 

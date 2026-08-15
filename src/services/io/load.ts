@@ -325,75 +325,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    svg.remove();
+    select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
-    // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
-    // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
-    // v5 global `d3.event`, breaking mouse/zoom handlers after a map load (#1508).
-    // Every layer selection below chains off `svg`, so they all inherit v5.
-    svg = (window as any).d3.select("#map") as typeof svg;
-    defs = svg.select<SVGDefsElement>("#deftemp");
-    viewbox = svg.select<SVGElement>("#viewbox");
-    scaleBar = svg.select<SVGGElement>("#scaleBar");
-    legend = svg.select("#legend");
-    ocean = viewbox.select<SVGGElement>("#ocean");
-    oceanLayers = ocean.select<SVGGElement>("#oceanLayers");
-    oceanPattern = ocean.select<SVGGElement>("#oceanPattern");
-    lakes = viewbox.select<SVGGElement>("#lakes");
-    landmass = viewbox.select<SVGGElement>("#landmass");
-    texture = viewbox.select<SVGGElement>("#texture");
-    terrs = viewbox.select<SVGGElement>("#terrs");
-    biomes = viewbox.select<SVGGElement>("#biomes");
-    ice = viewbox.select<SVGGElement>("#ice");
-    cells = viewbox.select<SVGGElement>("#cells");
-    gridOverlay = viewbox.select<SVGGElement>("#gridOverlay");
-    coordinates = viewbox.select<SVGGElement>("#coordinates");
-    compass = viewbox.select<SVGGElement>("#compass");
-    rivers = viewbox.select<SVGElement>("#rivers");
-    terrain = viewbox.select<SVGGElement>("#terrain");
-    relig = viewbox.select<SVGGElement>("#relig");
-    cults = viewbox.select<SVGGElement>("#cults");
-    regions = viewbox.select<SVGGElement>("#regions");
-    statesBody = regions.select<SVGGElement>("#statesBody");
-    statesHalo = regions.select<SVGGElement>("#statesHalo");
-    provs = viewbox.select<SVGGElement>("#provs");
-    zones = viewbox.select<SVGGElement>("#zones");
-    borders = viewbox.select<SVGGElement>("#borders");
-    stateBorders = borders.select<SVGGElement>("#stateBorders");
-    provinceBorders = borders.select<SVGGElement>("#provinceBorders");
-    routes = viewbox.select<SVGElement>("#routes");
-    roads = routes.select<SVGGElement>("#roads");
-    trails = routes.select<SVGGElement>("#trails");
-    searoutes = routes.select<SVGGElement>("#searoutes");
-    temperature = viewbox.select<SVGGElement>("#temperature");
-    coastline = viewbox.select<SVGGElement>("#coastline");
-    prec = viewbox.select<SVGGElement>("#prec");
-    population = viewbox.select<SVGGElement>("#population");
-    goods = viewbox.select<SVGGElement>("#goods");
-    markets = viewbox.select<SVGGElement>("#markets");
-    emblems = viewbox.select<SVGElement>("#emblems");
-    labels = viewbox.select<SVGGElement>("#labels");
-    icons = viewbox.select<SVGGElement>("#icons");
-    burgIcons = icons.select<SVGGElement>("#burgIcons");
-    anchors = icons.select<SVGGElement>("#anchors");
-    armies = viewbox.select<SVGGElement>("#armies");
-    markers = viewbox.select<SVGGElement>("#markers");
-    tradeAnimation = viewbox.select<SVGGElement>("#tradeAnimation");
-    ruler = viewbox.select<SVGGElement>("#ruler");
-    fogging = viewbox.select<SVGGElement>("#fogging");
-    debug = viewbox.select<SVGElement>("#debug");
-    if (!texture.size()) {
-      texture = viewbox
-        .insert("g", "#landmass")
-        .attr("id", "texture")
-        .attr("data-href", "./images/textures/plaster.jpg");
+
+    const viewbox = select("#viewbox");
+    if (!select("#texture").size()) {
+      viewbox.insert("g", "#landmass").attr("id", "texture").attr("data-href", "./images/textures/plaster.jpg");
     }
-    if (!emblems.size()) {
-      emblems = viewbox
-        .insert("g", "#labels")
-        .attr("id", "emblems")
-        .style("display", "none") as unknown as typeof emblems;
+    if (!select("#emblems").size()) {
+      viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
     }
 
     {
