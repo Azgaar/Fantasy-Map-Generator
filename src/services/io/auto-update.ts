@@ -8,7 +8,6 @@ import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
-import { drawIce } from "@/renderers/draw-ice";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
@@ -372,7 +371,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("stroke", "#e8f0f6")
       .attr("stroke-width", 1)
       .attr("filter", "url(#dropShadow05)");
-    drawIce();
 
     // v1.4 added icon and power attributes for units
     for (const unit of options.military) {

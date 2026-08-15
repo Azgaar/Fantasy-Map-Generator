@@ -116,7 +116,7 @@ export interface LayerParams<Id extends string = string> {
   parent: "viewbox" | "map";
   children?: string[]; // sub-groups created inside the layer and preserved when the content is erased
   attrs?: Record<string, string>; // static attributes (mask, font-size)
-  alwaysOn?: boolean; // structural layer: on from the start, never turned off by a preset
+  permanent?: boolean; // structural layer: on from the start, never turned off by a preset
   keepContent?: boolean; // keep the content in the DOM when the layer is turned off
   draw?: (layer: Layer) => void;
   erase?: (layer: Layer) => void; // defaults to erasing the content down to the declared children
@@ -200,7 +200,7 @@ export class LayersRegistry<Id extends string = string> {
   drawAll(): void;
   move(id: Id, before?: Id): void;
 
-  get state(): LayersState; // {order, active} — alwaysOn layers are structural, not saved state
+  get state(): LayersState; // {order, active} — permanent layers are structural, not saved state
   restore(state: LayersState): void; // adopts persisted state: never draws, the loaded svg holds the content
   subscribe(listener: () => void): () => void;
 }
@@ -256,7 +256,7 @@ const mapLayers = [
     element: "ocean",
     parent: "viewbox",
     children: ["oceanLayers", "oceanPattern"],
-    alwaysOn: true,
+    permanent: true,
     keepContent: true
   }),
 
@@ -264,7 +264,7 @@ const mapLayers = [
     id: "landmass",
     element: "landmass",
     parent: "viewbox",
-    alwaysOn: true,
+    permanent: true,
     keepContent: true,
     draw: drawFeatures
   }),
@@ -291,7 +291,7 @@ const mapLayers = [
     keepContent: true
   }),
 
-  new Layer({ id: "legend", element: "legend", parent: "map", alwaysOn: true, keepContent: true })
+  new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true })
 ];
 
 export type LayerId = (typeof mapLayers)[number]["id"];

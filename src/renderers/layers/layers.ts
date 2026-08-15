@@ -37,7 +37,7 @@ interface LayerParams<Id extends string = string> {
   parent: "viewbox" | "map"; // id of the svg element the layer group is appended to
   children?: string[]; // sub-groups created inside the layer group and preserved when the content is erased
   attrs?: Record<string, string>; // static attributes applied to the layer group
-  alwaysOn?: boolean; // structural layer: on from the start and never turned off
+  permanent?: boolean; // structural layer: on from the start and never turned off
   keepContent?: boolean; // keep the content in the DOM when the layer is turned off
   draw?: (layer: Layer) => void; // renderer function
   erase?: (layer: Layer) => void; // custom teardown, defaults to erasing the content down to the declared children
@@ -70,7 +70,7 @@ export class LayersRegistry<Id extends string = string> {
   private listeners = new Set<() => void>();
 
   constructor(private layers: Layer<Id>[]) {
-    for (const layer of layers) if (layer.params.alwaysOn) this.active.add(layer.id);
+    for (const layer of layers) if (layer.params.permanent) this.active.add(layer.id);
   }
 
   /** create missing layer groups, order them by registration order and apply the current state */
@@ -142,7 +142,7 @@ export class LayersRegistry<Id extends string = string> {
     const drawn = known.filter(id => !this.active.has(id));
 
     this.change(
-      this.layers.filter(layer => !layer.params.alwaysOn && !known.includes(layer.id)).map(layer => layer.id),
+      this.layers.filter(layer => !layer.params.permanent && !known.includes(layer.id)).map(layer => layer.id),
       false
     );
     this.change(known, true);
@@ -172,7 +172,7 @@ export class LayersRegistry<Id extends string = string> {
   get state(): LayersState {
     return {
       order: this.layers.map(layer => layer.id),
-      active: this.layers.filter(layer => this.active.has(layer.id) && !layer.params.alwaysOn).map(layer => layer.id)
+      active: this.layers.filter(layer => this.active.has(layer.id) && !layer.params.permanent).map(layer => layer.id)
     };
   }
 
@@ -189,7 +189,7 @@ export class LayersRegistry<Id extends string = string> {
 
     this.layers.sort((a, b) => ranks.get(a.id)! - ranks.get(b.id)!);
     this.active = new Set(
-      this.layers.filter(layer => layer.params.alwaysOn || active.includes(layer.id)).map(layer => layer.id)
+      this.layers.filter(layer => layer.params.permanent || active.includes(layer.id)).map(layer => layer.id)
     );
     this.init();
     this.emit();
@@ -240,7 +240,7 @@ const mapLayers = [
     element: "ocean",
     parent: "viewbox",
     children: ["oceanLayers", "oceanPattern"],
-    alwaysOn: true,
+    permanent: true,
     keepContent: true
   }),
 
@@ -248,7 +248,7 @@ const mapLayers = [
     id: "landmass",
     element: "landmass",
     parent: "viewbox",
-    alwaysOn: true,
+    permanent: true,
     keepContent: true,
     draw: drawFeatures
   }),
@@ -324,11 +324,11 @@ const mapLayers = [
     element: "coastline",
     parent: "viewbox",
     children: ["sea_island", "lake_island"],
-    alwaysOn: true,
+    permanent: true,
     keepContent: true
   }),
 
-  new Layer({ id: "ice", element: "ice", parent: "viewbox", keepContent: true, draw: drawIce }),
+  new Layer({ id: "ice", element: "ice", parent: "viewbox", draw: drawIce }),
 
   new Layer({
     id: "goods",
@@ -399,7 +399,7 @@ const mapLayers = [
 
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
 
-  new Layer({ id: "debug", element: "debug", parent: "viewbox", alwaysOn: true, keepContent: true }),
+  new Layer({ id: "debug", element: "debug", parent: "viewbox", permanent: true, keepContent: true }),
 
   new Layer({
     id: "scaleBar",
@@ -417,7 +417,7 @@ const mapLayers = [
     keepContent: true
   }),
 
-  new Layer({ id: "legend", element: "legend", parent: "map", alwaysOn: true, keepContent: true })
+  new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true })
 ];
 
 export type LayerId = (typeof mapLayers)[number]["id"];

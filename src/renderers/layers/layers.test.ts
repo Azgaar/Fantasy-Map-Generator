@@ -56,10 +56,10 @@ describe("init", () => {
     expect(Array.from(group.children, node => node.id)).toEqual(["one", "two"]);
   });
 
-  it("hides layers that are off and leaves alwaysOn layers visible without a style attribute", () => {
+  it("hides layers that are off and leaves permanent layers visible without a style attribute", () => {
     registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
-      new Layer({ id: "b", element: "b-el", parent: "viewbox", alwaysOn: true })
+      new Layer({ id: "b", element: "b-el", parent: "viewbox", permanent: true })
     );
 
     expect(displayOf("a-el")).toBe("none");
@@ -193,18 +193,18 @@ describe("draw", () => {
 });
 
 describe("setActive", () => {
-  it("turns on the listed layers, turns off the rest and preserves alwaysOn layers", () => {
+  it("turns on the listed layers, turns off the rest and preserves permanent layers", () => {
     registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
       new Layer({ id: "b", element: "b-el", parent: "viewbox" }),
-      new Layer({ id: "s", element: "s-el", parent: "viewbox", alwaysOn: true })
+      new Layer({ id: "s", element: "s-el", parent: "viewbox", permanent: true })
     );
     Layers.show("a");
 
     Layers.set(["b"]);
 
     expect([Layers.isOn("a"), Layers.isOn("b"), Layers.isOn("s")]).toEqual([false, true, true]);
-    expect(Layers.state.active).toEqual(["b"]); // alwaysOn layers are structural, not saved state
+    expect(Layers.state.active).toEqual(["b"]); // permanent layers are structural, not saved state
   });
 
   it("draws only the layers that were off and ignores unknown ids", () => {
