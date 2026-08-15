@@ -30,44 +30,44 @@ The eight **group-aware** elements have a second dropdown (the group) — for ea
 confirm the editor's inputs repopulate from the selected group, and that an edit only affects that
 group's features on the map:
 
-- [ ] Labels (state / burg / province / river / route groups — the group names are map-generated)
-- [ ] Burg icons (capital / city / town / …)
-- [ ] Anchors (capital / city / town / …)
-- [ ] Borders (state / province)
-- [ ] Lakes (freshwater / salt / sinkhole / frozen / lava / dry)
-- [ ] Routes (roads / trails / sea routes)
-- [ ] Coastline (sea islands / lake islands)
-- [ ] Heightmap (`terrs`: land heights / ocean heights)
+- [x] Labels (state / burg / province / river / route groups — the group names are map-generated)
+- [x] Burg icons (capital / city / town / …)
+- [x] Anchors (capital / city / town / …)
+- [x] Borders (state / province)
+- [x] Lakes (freshwater / salt / sinkhole / frozen / lava / dry)
+- [x] Routes (roads / trails / sea routes)
+- [x] Coastline (sea islands / lake islands)
+- [x] Heightmap (`terrs`: land heights / ocean heights)
 
 Also, not group-select driven but two-child: Regions — states body and the states halo. The halo
 width must survive a zoom in and back out.
 
 The two **options-heavy** elements:
 
-- [ ] Heightmap (`terrs`): scheme, terracing, skip, relax, curve — separately for land and ocean
+- [x] Heightmap (`terrs`): scheme, terracing, skip, relax, curve — separately for land and ocean
       heights. Each must repaint the heightmap; none may be written back as an SVG attribute
       (`#terrs > g` should carry only presentation attributes).
-- [ ] Ocean layers: the layers list (e.g. `-6,-3,-1`), base fill and the oceanic pattern (href +
+- [x] Ocean layers: the layers list (e.g. `-6,-3,-1`), base fill and the oceanic pattern (href +
       opacity). Changing the layers list must redraw the ocean bands.
 
 ## 2. Preset switching
 
-- [ ] Switch default → ancient → night → default. The map fully takes on each preset, and coming
+- [x] Switch default → ancient → night → default. The map fully takes on each preset, and coming
       back to default looks exactly like the fresh map did.
-- [ ] Switch default → pale → default with the relief layer on: relief icon **size** changes with
+- [x] Switch default → pale → default with the relief layer on: relief icon **size** changes with
       the preset and comes back; icon **density** must not change (density is not a style value).
-- [ ] Switch default → darkSeas → default: relief set/size survive the round trip.
-- [ ] Switch to watercolor and gloom (texture and filter heavy) and back.
-- [ ] After every switch, the style editor's inputs show the *new* preset's values, not the old.
+- [x] Switch default → darkSeas → default: relief set/size survive the round trip.
+- [x] Switch to watercolor and gloom (texture and filter heavy) and back.
+- [x] After every switch, the style editor's inputs show the *new* preset's values, not the old.
 
 ## 3. Custom presets
 
-- [ ] Edit a few styles, save as a custom preset (name it), and confirm it appears in the preset list.
-- [ ] Switch away to another preset and back to the custom one — the saved look returns.
-- [ ] Download the custom preset (a `.json` file). Open it: it should be `{"layers": {...}}`, not a
+- [x] Edit a few styles, save as a custom preset (name it), and confirm it appears in the preset list.
+- [x] Switch away to another preset and back to the custom one — the saved look returns.
+- [x] Download the custom preset (a `.json` file). Open it: it should be `{"layers": {...}}`, not a
       flat `{"#selector": …}` map.
-- [ ] Re-upload that file and apply it — same look.
-- [ ] Delete the custom preset; it disappears from the list and the map falls back cleanly.
+- [x] Re-upload that file and apply it — same look.
+- [x] Delete the custom preset; it disappears from the list and the map falls back cleanly.
 
 ## 4. Legacy custom preset from localStorage
 
@@ -81,18 +81,18 @@ localStorage.setItem("fmgStyle_oldOne", JSON.stringify({
 }));
 ```
 
-- [ ] "oldOne" appears in the preset list and applies without console errors.
-- [ ] Regions opacity 0.9 is visible; `style.layers.regions.presentation.opacity === 0.9`.
-- [ ] The heightmap uses the light scheme; `style.layers.terrs.children.landHeights.options.scheme
+- [x] "oldOne" appears in the preset list and applies without console errors.
+- [x] Regions opacity 0.9 is visible; `style.layers.regions.presentation.opacity === 0.9`.
+- [x] The heightmap uses the light scheme; `style.layers.terrs.children.landHeights.options.scheme
       === "light"` and `#terrs > #landHeights` carries **no** `scheme` attribute.
-- [ ] Markers do not rescale on zoom.
+- [x] Markers do not rescale on zoom.
 
 ## 5. Save → reload round trip
 
-- [ ] Edit at least six different styles across different layers (including a label group, a burg
+- [x] Edit at least six different styles across different layers (including a label group, a burg
       icon group, statesHalo width, and a heightmap scheme), save the map, reload the page, load the
       file back. Every edit is preserved, visually and in `style.layers`.
-- [ ] Export to `.map`, then open the file in a text editor: data index 48 is the JSON style with a
+- [x] Export to `.map`, then open the file in a text editor: data index 48 is the JSON style with a
       single `layers` key.
 
 ## 6. Loading old maps
@@ -112,18 +112,18 @@ that saved it:
 
 ## 7. Relief
 
-- [ ] Style → Relief: change **set** (simple / colored / gray) — icons are replaced in place, the
+- [x] Style → Relief: change **set** (simple / colored / gray) — icons are replaced in place, the
       map does not regenerate.
-- [ ] Change **size** — icons resize.
-- [ ] Change **density** (Options, not Style) — relief **regenerates** with a different icon count.
-- [ ] Confirm the reverse: no style change ever regenerates relief placement.
-- [ ] Turn the relief layer off, switch preset, turn it back on — it comes back with the new set/size.
+- [x] Change **size** — icons resize.
+- [x] Change **density** (Options, not Style) — relief **regenerates** with a different icon count.
+- [x] Confirm the reverse: no style change ever regenerates relief placement.
+- [x] Turn the relief layer off, switch preset, turn it back on — it comes back with the new set/size.
 
 ## 8. Heightmap scheme dialog
 
-- [ ] Style → heightmap → create a custom colour scheme: the dialog opens, a scheme can be built and
+- [x] Style → heightmap → create a custom colour scheme: the dialog opens, a scheme can be built and
       saved, and it becomes selectable and renders.
-- [ ] Save the map with the custom scheme, reload, load it back — the scheme is still registered and
+- [x] Save the map with the custom scheme, reload, load it back — the scheme is still registered and
       the heightmap renders with it.
 
 ## 9. Singletons and options-projected layers
@@ -131,22 +131,22 @@ that saved it:
 Each of these is still projected onto a single DOM element rather than being read from the store by
 its renderer — they are the most likely to break:
 
-- [ ] Texture: change the texture image and its x/y offset; toggle the layer off and on.
-- [ ] Vignette: toggle on, change its rect (size/rx/ry/filter) and colour.
-- [ ] Compass: toggle on, move/scale it, and confirm it is not wiped out by the first edit after a
+- [x] Texture: change the texture image and its x/y offset; toggle the layer off and on.
+- [x] Vignette: toggle on, change its rect (size/rx/ry/filter) and colour.
+- [x] Compass: toggle on, move/scale it, and confirm it is not wiped out by the first edit after a
       preset switch (this failed once during development on the darkSeas preset).
-- [ ] Scale bar: change font size, bar size, label and the back-plate (fill/opacity/stroke/filter);
+- [x] Scale bar: change font size, bar size, label and the back-plate (fill/opacity/stroke/filter);
       confirm the bar re-lays out and stays legible after a zoom.
-- [ ] Legend: toggle on, change font size, columns and position.
-- [ ] Markers: change the rescale option and zoom — markers must scale (or not) accordingly.
-- [ ] Emblems: toggle on, change per-type sizes (state / province / burg), zoom in and out — the
+- [x] Legend: toggle on, change font size, columns and position.
+- [x] Markers: change the rescale option and zoom — markers must scale (or not) accordingly.
+- [x] Emblems: toggle on, change per-type sizes (state / province / burg), zoom in and out — the
       "hide small emblems" behaviour must still hide/show at the right zoom.
-- [ ] Goods: toggle on, change icon size/circle and burg-panel size.
-- [ ] Armies: change font size and box size — regiment boxes and their text both follow.
+- [x] Goods: toggle on, change icon size/circle and burg-panel size.
+- [x] Armies: change font size and box size — regiment boxes and their text both follow.
 
 ## 10. Export
 
-- [ ] Export SVG after several style edits: the exported file reflects the current look (open it in
+- [x] Export SVG after several style edits: the exported file reflects the current look (open it in
       a browser).
-- [ ] Export PNG at 1× and 3×: same look, no missing layers.
-- [ ] Export SVG from a map loaded from an **old** file (§6) — the migrated styles must be in it.
+- [x] Export PNG at 1× and 3×: same look, no missing layers.
+- [x] Export SVG from a map loaded from an **old** file (§6) — the migrated styles must be in it.
