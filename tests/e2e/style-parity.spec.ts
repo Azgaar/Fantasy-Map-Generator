@@ -279,6 +279,8 @@ test("a submap keeps an uncovered burg group styled and materializes no empty st
 // which threw inside scheme.startsWith(...) before the dialog ever rendered. Simulates the click
 // with the terrs/landHeights element selected (matching how the style editor drives the handler)
 // and asserts it no longer throws and seeds a real color-stop list from the stored scheme.
+// The Create half of the dialog (the created scheme reaching the store and the rendered
+// heightmap) is covered by style-editor-events.spec.ts.
 test("create custom heightmap scheme dialog opens without throwing", async ({page}) => {
   await page.goto("/");
   await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), {timeout: 120000});
