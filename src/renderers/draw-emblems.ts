@@ -67,12 +67,6 @@ export const getBurgEmblemSize = (): number => {
   return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
 };
 
-export function getEmblemGroupSize(type: EmblemType): number {
-  if (type === "state") return getStateEmblemsSize();
-  if (type === "province") return getProvinceEmblemsSize();
-  return getBurgEmblemSize();
-}
-
 const emblemsRenderer = (): void => {
   TIME && console.time("drawEmblems");
   const { states, provinces, burgs } = pack;
