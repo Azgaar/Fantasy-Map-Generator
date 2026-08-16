@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SpatialIndex } from "./viewport-renderer";
+import { SpatialIndex, ViewportRenderer } from "./viewport-renderer";
 
 describe("SpatialIndex", () => {
   it("returns only items from buckets intersecting finite viewport bounds", () => {
@@ -33,5 +33,28 @@ describe("SpatialIndex", () => {
     index.clear();
     expect(index.valid).toBe(false);
     expect([...index.values()]).toEqual([]);
+  });
+});
+
+describe("ViewportRenderer interaction suspension", () => {
+  it("keeps layers stable while suspended and reconciles once on resume", () => {
+    const renderer = new ViewportRenderer({
+      getViewport: () => ({ scale: 1, x: 0, y: 0, width: 100, height: 100 }),
+      overscanPixels: 20,
+      guardPixels: 10
+    });
+    let renders = 0;
+    const layer = renderer.register({ id: "test", render: () => renders++ });
+
+    renderer.suspend();
+    layer.invalidate();
+    renderer.schedule();
+    expect(renders).toBe(0);
+
+    renderer.resume();
+    expect(renders).toBe(1);
+
+    renderer.resume();
+    expect(renders).toBe(1);
   });
 });
