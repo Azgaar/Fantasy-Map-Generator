@@ -90,15 +90,31 @@ document
 const workspaceSections = {
   layersTab: "layers",
   styleTab: "style",
-  optionsTab: "options",
-  toolsTab: "tools",
   aboutTab: "about"
 };
 
+const workspaceSectionTitles = {
+  create: "Create",
+  edit: "Edit",
+  inspect: "Inspect",
+  layers: "Layers",
+  style: "Style",
+  "world-setup": "World Setup",
+  regenerate: "Regenerate",
+  preferences: "Preferences",
+  about: "About"
+};
+
+function getWorkspaceSection(activeId) {
+  if (activeId === "optionsTab") return ensureEl("optionsContent").dataset.workspaceView || "preferences";
+  if (activeId === "toolsTab") return ensureEl("toolsContent").dataset.workspaceView || "edit";
+  return workspaceSections[activeId] || "layers";
+}
+
 function notifyWorkspacePanelChange(tabId) {
   const activeId = tabId || ensureEl("options").querySelector(".tab > button.active")?.id;
-  const section = workspaceSections[activeId] || "layers";
-  const title = ensureEl(activeId)?.textContent?.trim() || "Layers";
+  const section = getWorkspaceSection(activeId);
+  const title = workspaceSectionTitles[section] || ensureEl(activeId)?.textContent?.trim() || "Layers";
   window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section, title } }));
 }
 

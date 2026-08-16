@@ -1,11 +1,13 @@
+import { Icon } from "@patkepa/kantzen-ui/icons";
 import { Menu, MenuDivider, MenuItem, showContextMenu, type MenuItemProps } from "@patkepa/kantzen-ui/primitives";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { MapContext, MapContextArea, MapContextEntity } from "./map-context";
 import "./map-context-menu.css";
 
-type MenuIcon = MenuItemProps["icon"];
+type MenuIcon = Exclude<MenuItemProps["icon"], undefined>;
+type MenuPage = "add" | "areas" | "copy" | "entities" | "main";
 
 interface ActionItemProps {
   disabled?: boolean;
@@ -18,89 +20,116 @@ interface ActionItemProps {
 export function showMapContextMenu(context: MapContext): void {
   showContextMenu({
     content: <MapContextMenu context={context} />,
-    popoverClassName: `fmg-map-context-menu${context.clientX > window.innerWidth / 2 ? " fmg-map-context-menu--open-left" : ""}`,
+    popoverClassName: "fmg-map-context-menu",
     targetOffset: { left: context.clientX, top: context.clientY }
   });
 }
 
 export function MapContextMenu({ context }: { context: MapContext }): React.JSX.Element {
+  const [page, setPage] = useState<MenuPage>("main");
   const { cellId, entities, point } = context;
   const isLand = pack.cells.h[cellId] >= 20;
   const canAddBurg = isLand && !pack.cells.burg[cellId];
   const canAddRiver = isLand && !pack.cells.b[cellId] && !pack.cells.r[cellId];
+  const pageTitle = { add: "Add here", areas: "Edit map data", copy: "Copy", entities: "Edit object", main: context.title }[
+    page
+  ];
 
   return (
     <Menu className="fmg-map-context-menu-list" aria-label={`Map actions for ${context.title}`}>
       <MenuDivider
         title={
           <span className="fmg-map-context-menu-heading">
-            <strong>{context.title}</strong>
+            <strong>{pageTitle}</strong>
             <span>
-              Cell {cellId} · {formatPoint(point)}
+              {page === "main" ? "" : `${context.title} · `}Cell {cellId} · {formatPoint(point)}
             </span>
           </span>
         }
       />
 
-      {entities.length === 1 ? (
-        <ActionItem icon={getEntityIcon(entities[0])} onSelect={() => editEntity(entities[0])} text={`Edit ${entities[0].label}`} />
+      {page !== "main" ? <NavigationItem icon="arrow-left" onSelect={() => setPage("main")} text="Back" /> : null}
+
+      {page === "main" ? (
+        <>
+          {entities.length === 1 ? (
+            <ActionItem
+              icon={getEntityIcon(entities[0])}
+              onSelect={() => editEntity(entities[0])}
+              text={`Edit ${entities[0].label}`}
+            />
+          ) : null}
+          {entities.length > 1 ? (
+            <NavigationItem icon="select" onSelect={() => setPage("entities")} text={`Edit object (${entities.length})`} />
+          ) : null}
+          <ActionItem icon="info-sign" onSelect={() => Controllers.CellInfo.openAt(point)} text="Inspect this cell" />
+          {context.areas.length ? (
+            <NavigationItem icon="layers" onSelect={() => setPage("areas")} text="Edit map data" />
+          ) : null}
+          <MenuDivider />
+          <NavigationItem icon="add" onSelect={() => setPage("add")} text="Add here" />
+          <ActionItem icon="geotime" onSelect={() => Controllers.MeasurersEditor.addRulerAt(point)} text="Measure from here" />
+          <ActionItem icon="locate" onSelect={() => zoomTo(point[0], point[1], scale, 450)} text="Center here" />
+          <NavigationItem icon="clipboard" onSelect={() => setPage("copy")} text="Copy" />
+        </>
       ) : null}
-      {entities.length > 1 ? (
-        <MenuItem icon="select" text={`Edit object (${entities.length})`}>
-          {entities.map(entity => (
+
+      {page === "entities"
+        ? entities.map(entity => (
             <ActionItem
               icon={getEntityIcon(entity)}
               key={entity.key}
               onSelect={() => editEntity(entity)}
               text={entity.label}
             />
-          ))}
-        </MenuItem>
-      ) : null}
+          ))
+        : null}
 
-      <ActionItem icon="info-sign" onSelect={() => Controllers.CellInfo.openAt(point)} text="Inspect this cell" />
-
-      {context.areas.length ? (
-        <MenuItem icon="layers" text="Edit map data">
-          {context.areas.map(area => (
+      {page === "areas"
+        ? context.areas.map(area => (
             <ActionItem
               icon={getAreaIcon(area)}
               key={`${area.kind}:${area.id}`}
               onSelect={() => editArea(area)}
               text={`${capitalize(area.kind)}: ${area.label}`}
             />
-          ))}
-        </MenuItem>
+          ))
+        : null}
+
+      {page === "add" ? (
+        <>
+          <ActionItem
+            disabled={!canAddBurg}
+            icon="home"
+            label={!isLand ? "Water" : pack.cells.burg[cellId] ? "Occupied" : undefined}
+            onSelect={() => Controllers.BurgCreator.addAt(point)}
+            text="Burg"
+          />
+          <ActionItem icon="tag" onSelect={() => Controllers.LabelCreator.addAt(point)} text="Label" />
+          <ActionItem icon="map-marker" onSelect={() => Controllers.MarkerCreator.addAt(point)} text="Marker" />
+          <ActionItem
+            disabled={!canAddRiver}
+            icon="waves"
+            label={
+              !isLand ? "Water" : pack.cells.r[cellId] ? "Occupied" : pack.cells.b[cellId] ? "Map edge" : undefined
+            }
+            onSelect={() => Controllers.RiverAutoCreator.addAt(point)}
+            text="River"
+          />
+          <ActionItem icon="route" onSelect={() => Controllers.RouteCreator.openAt(point)} text="Start route" />
+        </>
       ) : null}
 
-      <MenuDivider />
-      <MenuItem icon="add" text="Add here">
-        <ActionItem
-          disabled={!canAddBurg}
-          icon="home"
-          label={!isLand ? "Water" : pack.cells.burg[cellId] ? "Occupied" : undefined}
-          onSelect={() => Controllers.BurgCreator.addAt(point)}
-          text="Burg"
-        />
-        <ActionItem icon="tag" onSelect={() => Controllers.LabelCreator.addAt(point)} text="Label" />
-        <ActionItem icon="map-marker" onSelect={() => Controllers.MarkerCreator.addAt(point)} text="Marker" />
-        <ActionItem
-          disabled={!canAddRiver}
-          icon="waves"
-          label={!isLand ? "Water" : pack.cells.r[cellId] ? "Occupied" : pack.cells.b[cellId] ? "Map edge" : undefined}
-          onSelect={() => Controllers.RiverAutoCreator.addAt(point)}
-          text="River"
-        />
-        <ActionItem icon="route" onSelect={() => Controllers.RouteCreator.openAt(point)} text="Start route" />
-      </MenuItem>
-
-      <ActionItem icon="ruler" onSelect={() => Controllers.MeasurersEditor.addRulerAt(point)} text="Measure from here" />
-      <ActionItem icon="locate" onSelect={() => zoomTo(point[0], point[1], scale, 450)} text="Center here" />
-
-      <MenuItem icon="clipboard" text="Copy">
-        <ActionItem icon="map" onSelect={() => copyText(formatPoint(point), "Map coordinates copied")} text="Map coordinates" />
-        <ActionItem icon="grid" onSelect={() => copyText(String(cellId), "Cell ID copied")} text="Cell ID" />
-      </MenuItem>
+      {page === "copy" ? (
+        <>
+          <ActionItem
+            icon="map"
+            onSelect={() => copyText(formatPoint(point), "Map coordinates copied")}
+            text="Map coordinates"
+          />
+          <ActionItem icon="grid" onSelect={() => copyText(String(cellId), "Cell ID copied")} text="Cell ID" />
+        </>
+      ) : null}
     </Menu>
   );
 }
@@ -116,6 +145,18 @@ function ActionItem({ disabled, icon, label, onSelect, text }: ActionItemProps):
       }}
       text={text}
     />
+  );
+}
+
+function NavigationItem({ icon, onSelect, text }: Omit<ActionItemProps, "disabled" | "label">): React.JSX.Element {
+  return (
+    <li className="kui-menu-item-shell" role="none">
+      <button className="kui-menu-item bp6-menu-item fmg-map-context-navigation" onClick={onSelect} role="menuitem" type="button">
+        <Icon icon={icon} />
+        <span className="bp6-text-overflow-ellipsis">{text}</span>
+        {icon === "arrow-left" ? null : <Icon icon="chevron-right" />}
+      </button>
+    </li>
   );
 }
 
@@ -183,7 +224,7 @@ function getEntityIcon(entity: MapContextEntity): MenuIcon {
     lake: "tint",
     market: "shop",
     marker: "map-marker",
-    measurer: "ruler",
+    measurer: "geotime",
     production: "flows",
     regiment: "flag",
     relief: "mountain",

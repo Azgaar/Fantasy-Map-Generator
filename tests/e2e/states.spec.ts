@@ -21,8 +21,8 @@ test.describe("States", () => {
   });
 
   test("removing a state via UI should allow military regeneration without errors", async ({page}) => {
-    // Open the persistent Tools workspace
-    await page.click('#workspaceNavigationRoot [data-href="/tools"]');
+    // Open the domain-editing workspace
+    await page.click('#workspaceNavigationRoot [data-href="/edit"]');
     await page.waitForTimeout(200);
 
     // Click "States" button to open States Editor
@@ -65,8 +65,12 @@ test.describe("States", () => {
     await page.click(".fmg-dialog:has(#statesEditor) .fmg-dialog__close");
     await page.waitForTimeout(200);
 
-    // Now click "Military" regenerate button and verify no errors
+    // Open Regenerate, confirm the destructive action, and verify no errors
+    await page.click('#workspaceNavigationRoot [data-href="/regenerate"]');
     await page.click("#regenerateMilitary");
+    const regenerationConfirmation = page.getByRole("dialog", {name: "Regenerate Military?"});
+    await expect(regenerationConfirmation).toBeVisible({timeout: 3000});
+    await regenerationConfirmation.getByRole("button", {name: "Regenerate", exact: true}).click();
     await page.waitForTimeout(1000);
 
     // Verify military was regenerated without throwing

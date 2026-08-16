@@ -152,13 +152,18 @@ function addEmblemEntities(entities: MapContextEntity[], element: SVGElement, pa
   const id = Number(element.dataset.i);
   const groupId = element.parentElement?.id;
   const type = groupId === "burgEmblems" ? "burg" : groupId === "provinceEmblems" ? "province" : "state";
-  const owner = getNamedArea(type, id, pack);
+  const ownerName =
+    type === "burg"
+      ? pack.burgs[id]?.name
+      : type === "province"
+        ? pack.provinces[id]?.fullName || pack.provinces[id]?.name
+        : pack.states[id]?.fullName || pack.states[id]?.name;
   addEntity(entities, {
     element,
     id,
     key: `emblem:${type}:${id}`,
     kind: "emblem",
-    label: `${owner?.label || capitalize(type)} emblem`
+    label: `${ownerName || capitalize(type)} emblem`
   });
   if (type === "burg") addEntity(entities, getBurgEntity(id, pack));
 }
@@ -179,7 +184,7 @@ function getRouteEntity(id: number, pack: PackedGraph, element?: SVGElement): Ma
 
 function getMarkerEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
   const marker = pack.markers.find(item => item.i === id);
-  const label = marker?.name || (marker?.type ? `${capitalize(marker.type)} marker` : `Marker ${id}`);
+  const label = marker?.type ? `${capitalize(marker.type)} marker` : `Marker ${id}`;
   return { element, id, key: `marker:${id}`, kind: "marker", label };
 }
 
@@ -248,12 +253,7 @@ function getAreas(cellId: number, pack: PackedGraph): MapContextArea[] {
   ].filter((area): area is MapContextArea => Boolean(area));
 }
 
-function getNamedArea(kind: MapContextAreaKind | "burg", id: number, pack: PackedGraph): MapContextArea | undefined {
-  if (kind === "burg") {
-    const burg = pack.burgs[id];
-    return burg && !burg.removed ? { id, kind: "state", label: burg.name } : undefined;
-  }
-
+function getNamedArea(kind: MapContextAreaKind, id: number, pack: PackedGraph): MapContextArea | undefined {
   const collections = {
     biome: pack.biomes,
     culture: pack.cultures,

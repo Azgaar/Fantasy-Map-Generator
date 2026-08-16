@@ -12,11 +12,11 @@ const STEP_TITLES = [
   "Style Tab",                         // 7
   "Style Presets",                     // 8
   "Individual Style Settings",         // 9
-  "Options Tab",                       // 10
-  "Generation Options",                // 11
+  "World Setup",                       // 10
+  "Generation Settings",               // 11
   "Configure World",                   // 12
   "World Configurator",                // 13
-  "Tools Tab",                         // 14
+  "Edit",                              // 14
   "Edit the Heightmap",                // 15
   "Heightmap Editor",                  // 16
   "Export",                            // 17
@@ -89,6 +89,24 @@ test.describe("UI Tour", () => {
 
   test("About is not shown in the workspace sidebar", async ({ page }) => {
     await expect(page.locator('#workspaceNavigationRoot [data-href="/about"]')).toHaveCount(0);
+  });
+
+  test("workspace sidebar exposes the task-based hierarchy", async ({ page }) => {
+    for (const route of [
+      "/create",
+      "/edit",
+      "/inspect",
+      "/layers",
+      "/style",
+      "/world-setup",
+      "/regenerate",
+      "/preferences",
+    ]) {
+      await expect(page.locator(`#workspaceNavigationRoot [data-href="${route}"]`)).toHaveCount(1);
+    }
+
+    await expect(page.locator('#workspaceNavigationRoot [data-target-id="zoomReset"]')).toHaveCount(0);
+    await expect(page.locator('#canvasControlsRoot [data-target-id="zoomReset"]')).toBeVisible();
   });
 
   // ── Tour start ─────────────────────────────────────────────────────────────
@@ -178,15 +196,17 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#styleContent")).toBeVisible();
   });
 
-  test("options tab content is visible on options tab step", async ({ page }) => {
+  test("world setup content is visible on the World Setup step", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // Advance to Options Tab (step index 10 → 10 clicks).
+    // Advance to World Setup (step index 10 → 10 clicks).
     await advanceSteps(page, 10);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[10]);
 
     await expect(page.locator("#optionsContent")).toBeVisible();
+    await expect(page.locator('[data-options-section="world-setup"]')).toBeVisible();
+    await expect(page.locator('[data-options-section="preferences"]')).toBeHidden();
   });
 
   test("layers tab remains active on Layer Presets and Toggle Individual Layers steps", async ({ page }) => {
@@ -213,7 +233,7 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#styleContent")).toBeVisible();
   });
 
-  test("options tab remains active on Generation Options and Configure World steps", async ({ page }) => {
+  test("world setup remains active on Generation Settings and Configure World steps", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
@@ -225,11 +245,11 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#optionsContent")).toBeVisible();
   });
 
-  test("tools tab content is visible on Tools Tab and Edit the Heightmap steps", async ({ page }) => {
+  test("edit content is visible on Edit and Edit the Heightmap steps", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // advanceSteps(14): click 14 fires World Configurator's onNextClick (closeDialogs + clickTab toolsTab).
+    // advanceSteps(14): click 14 closes World Configurator and opens Edit.
     await advanceSteps(page, 14);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[14]);
     await expect(page.locator("#toolsContent")).toBeVisible();
@@ -260,7 +280,7 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#worldConfigurator")).toBeVisible();
   });
 
-  test("World Configurator dialog closes and tools tab activates when advancing from World Configurator step", async ({
+  test("World Configurator dialog closes and Edit activates when advancing from World Configurator step", async ({
     page,
   }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
@@ -271,7 +291,7 @@ test.describe("UI Tour", () => {
     expect(await popoverTitle(page)).toBe(STEP_TITLES[13]);
     await expect(page.locator("#worldConfigurator")).toBeVisible();
 
-    // Clicking Next fires closeDialogs() + clickTab("toolsTab") + moveNext().
+    // Clicking Next closes the dialog, opens Edit, and advances.
     await nextStep(page, STEP_TITLES[14]);
 
     await expect(page.locator("#worldConfigurator")).toBeHidden();
@@ -399,11 +419,11 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#optionsContent")).toBeVisible();
   });
 
-  test("back from Tools Tab to World Configurator reopens the dialog", async ({ page }) => {
+  test("back from Edit to World Configurator reopens the dialog", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // Advance to Tools Tab — World Configurator dialog is closed.
+    // Advance to Edit — World Configurator dialog is closed.
     await advanceSteps(page, 14);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[14]);
     await expect(page.locator("#worldConfigurator")).toBeHidden();
@@ -595,25 +615,27 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#toolsContent")).toBeHidden();
   });
 
-  test("closing tour on Options tab step does not show toolsContent when menu is reopened", async ({
+  test("closing tour on World Setup does not show toolsContent when the panel is reopened", async ({
     page,
   }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // Advance to Options Tab step — options panel is open, Options tab is active.
+    // Advance to World Setup — the generation settings panel is active.
     await advanceSteps(page, 10);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[10]);
 
     await page.locator(".driver-popover-close-btn").click();
     await page.waitForSelector(".driver-popover", { state: "hidden" });
 
-    // Reopen the Options panel from the workspace sidebar.
-    await page.locator('#workspaceNavigationRoot [data-href="/options"]').click();
+    // Reopen World Setup from the workspace sidebar.
+    await page.locator('#workspaceNavigationRoot [data-href="/world-setup"]').click();
     await expect(page.locator("#options")).toBeVisible();
 
-    // Only the Options tab content should be visible — not toolsContent.
+    // Only World Setup should be visible — not toolsContent or Preferences.
     await expect(page.locator("#optionsContent")).toBeVisible();
+    await expect(page.locator('[data-options-section="world-setup"]')).toBeVisible();
+    await expect(page.locator('[data-options-section="preferences"]')).toBeHidden();
     await expect(page.locator("#toolsContent")).toBeHidden();
   });
 });

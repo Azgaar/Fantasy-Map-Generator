@@ -7,7 +7,7 @@ test.describe("controller launchers", () => {
   });
 
   test("opens Markers generation settings from Markers Overview", async ({page}) => {
-    await page.click('#workspaceNavigationRoot [data-href="/tools"]');
+    await page.click('#workspaceNavigationRoot [data-href="/edit"]');
     await page.click("#overviewMarkersButton");
     await expect(page.locator("#markersOverview")).toBeVisible();
 
@@ -29,7 +29,7 @@ test.describe("controller launchers", () => {
       Goods.sync();
     });
 
-    await page.click('#workspaceNavigationRoot [data-href="/tools"]');
+    await page.click('#workspaceNavigationRoot [data-href="/edit"]');
     await page.click("#editGoods");
 
     await expect(page.locator("#goodsEditor")).toBeVisible();

@@ -10,7 +10,7 @@ function closeOptionsPanel() {
   }
 }
 
-function openWorkspacePanel(section: "layers" | "style" | "options" | "tools") {
+function openWorkspacePanel(section: "layers" | "style" | "world-setup" | "edit") {
   document.querySelector<HTMLElement>(`#workspaceNavigationRoot [data-href="/${section}"]`)?.click();
 }
 
@@ -95,7 +95,8 @@ function start() {
         },
         popover: {
           title: "Workspace Sidebar",
-          description: "Use this persistent sidebar to open map layers, styling, options, and editing tools.",
+          description:
+            "Create and edit map features, control the map view, inspect data, and keep generation actions separate from app preferences.",
           side: "right",
           onNextClick: () => {
             openWorkspacePanel("layers");
@@ -179,28 +180,28 @@ function start() {
         }
       },
 
-      // ── Options tab ──────────────────────────────────────────────────────────
+      // ── World setup ──────────────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-href="/options"]',
+        element: '#workspaceNavigationRoot [data-href="/world-setup"]',
         onHighlightStarted: () => {
-          openWorkspacePanel("options");
+          openWorkspacePanel("world-setup");
         },
         popover: {
-          title: "Options Tab",
+          title: "World Setup",
           description:
-            "The Options tab lets you configure world generation parameters like the number of states, cultures, religions, and other settings that shape the generated world.",
+            "World Setup contains generation parameters such as map size, seed, states, cultures, religions, and settlement counts.",
           side: "bottom"
         }
       },
       {
-        element: "#optionsContent",
+        element: '#optionsContent [data-options-section="world-setup"]',
         onHighlightStarted: () => {
-          ensureEl("optionsTab")?.click();
+          openWorkspacePanel("world-setup");
         },
         popover: {
-          title: "Generation Options",
+          title: "Generation Settings",
           description:
-            "Set world parameters like the number of cultures, states, and religions before generating a new map. UI preferences like tooltips and autosave are also here.",
+            "Set world parameters before generating a new map. Interface settings such as tooltips and autosave now live separately under Preferences.",
           side: "right"
         }
       },
@@ -208,7 +209,7 @@ function start() {
         element: "#configureWorld",
         onHighlightStarted: () => {
           closeDialogs();
-          ensureEl("optionsTab")?.click();
+          openWorkspacePanel("world-setup");
         },
         popover: {
           title: "Configure World",
@@ -233,29 +234,29 @@ function start() {
           side: "right",
           onNextClick: () => {
             closeDialogs();
-            openWorkspacePanel("tools");
+            openWorkspacePanel("edit");
             tour.moveNext();
           }
         }
       },
 
-      // ── Tools tab ────────────────────────────────────────────────────────────
+      // ── Edit panel ───────────────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-href="/tools"]',
+        element: '#workspaceNavigationRoot [data-href="/edit"]',
         onHighlightStarted: () => {
-          openWorkspacePanel("tools");
+          openWorkspacePanel("edit");
         },
         popover: {
-          title: "Tools Tab",
+          title: "Edit",
           description:
-            "The Tools tab gives you direct access to all of the map's editors: terrain, biomes, states, cultures, religions, routes, and more.",
+            "Edit groups the map's feature editors by world, politics, settlements, and geography. Creation and inspection actions have their own panels.",
           side: "bottom"
         }
       },
       {
         element: "#editHeightmapButton",
         onHighlightStarted: () => {
-          ensureEl("toolsTab")?.click();
+          openWorkspacePanel("edit");
         },
         popover: {
           title: "Edit the Heightmap",

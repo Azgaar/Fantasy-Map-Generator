@@ -1519,11 +1519,10 @@
             <button id="tint" class="radio">Tint</button>
           </div>
         </div>
-        <div id="optionsContent" class="tabcontent">
-          <p data-tip="Map generation settings. Generate a new map to apply the settings">
-            Map settings (new map to apply):
-          </p>
-          <table>
+        <div id="optionsContent" class="tabcontent" data-workspace-view="preferences">
+          <section class="fmg-options-section" data-options-section="world-setup">
+            <p data-tip="Map generation settings. Generate a new map to apply the settings">Map setup:</p>
+            <table>
             <tr
               data-tip="Set original map size on generation. It cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
             >
@@ -1738,11 +1737,20 @@
                 ></slider-input>
               </td>
             </tr>
-          </table>
-          <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">
-            Generator settings:
-          </p>
-          <table>
+            </table>
+            <div class="fmg-options-actions">
+              <button
+                id="configureWorld"
+                data-tip="Click to open world configurator to setup map position on Globe and World climate"
+                onclick="window.Controllers.WorldConfigurator.open()"
+              >
+                Configure World
+              </button>
+            </div>
+          </section>
+          <section class="fmg-options-section" data-options-section="preferences">
+            <p data-tip="Tool settings that don't affect maps. Changes are getting applied immediately">Preferences:</p>
+            <table>
             <tr
               data-tip="Set user interface size. Please note browser zoom also affects interface size (Ctrl + or Ctrl - to change)"
             >
@@ -1962,25 +1970,19 @@
               </td>
               <td></td>
             </tr>
-          </table>
-          <div>
-            <button
-              id="configureWorld"
-              data-tip="Click to open world configurator to setup map position on Globe and World climate"
-              onclick="window.Controllers.WorldConfigurator.open()"
-            >
-              Configure World
-            </button>
-            <button
-              id="optionsReset"
-              data-tip="Click to restore default options and reload the page"
-              onclick="cleanupData()"
-            >
-              Reset to defaults
-            </button>
-          </div>
+            </table>
+            <div class="fmg-options-actions">
+              <button
+                id="optionsReset"
+                data-tip="Click to restore default options and reload the page"
+                onclick="cleanupData()"
+              >
+                Reset to defaults
+              </button>
+            </div>
+          </section>
         </div>
-        <div id="toolsContent" class="tabcontent">
+        <div id="toolsContent" class="tabcontent" data-workspace-view="edit">
           <div class="separator">Edit</div>
           <div class="grid">
             <button id="editBiomesButton" data-tip="Click to open Biomes Editor" data-shortcut="Shift + B">
@@ -2403,6 +2405,7 @@
         </div>
       </div>
     </div>
+    <div id="canvasControlsRoot"></div>
     <div id="exitCustomization">
       <div data-tip="Drag to move the pane">
         <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">
