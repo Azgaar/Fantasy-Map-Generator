@@ -1,5 +1,6 @@
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";
@@ -51,12 +52,13 @@ function open(id?: string, name?: string): void {
     notesLegend.innerHTML = "No notes added. Click on an element (e.g. label or marker) and add a free text note";
   }
 
-  $("#notesEditor").dialog({
-    title: "Notes Editor",
-    width: svgWidth * 0.8,
+  showDomDialog({
+    content: ensureEl("notesEditor"),
     height: svgHeight * 0.75,
-    position: { my: "center", at: "center", of: "svg" },
-    close: closeNotesEditor
+    onClose: closeNotesEditor,
+    placement: "center",
+    title: "Notes Editor",
+    width: svgWidth * 0.8
   });
 }
 
@@ -100,8 +102,7 @@ function renderDialog(): void {
 
 function closeNotesEditor(): void {
   window.tinymce?.remove();
-  $("#notesEditor").dialog("destroy");
-  ensureEl("notesEditor").remove();
+  destroyDialog("notesEditor");
 }
 
 async function initEditor(): Promise<void> {
@@ -205,7 +206,7 @@ function removeSelectedNote(): void {
   notes = (notes as Note[]).filter(note => note.id !== notesSelect.value);
 
   if (!notes.length) {
-    $("#notesEditor").dialog("close");
+    destroyDialog("notesEditor");
     return;
   }
 

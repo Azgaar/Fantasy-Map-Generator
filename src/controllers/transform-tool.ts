@@ -1,4 +1,5 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Resample } from "@/generators/resample";
 import { ensureEl, rn } from "../utils";
 
@@ -11,20 +12,13 @@ function open(): void {
   addListeners();
   void loadPreview();
 
-  $("#transformTool").dialog({
-    title: "Transform map",
+  showDomDialog({
+    actions: [{ label: "Transform", onClick: transformMap }, { label: "Cancel" }],
+    content: ensureEl("transformTool"),
+    onClose: cleanup,
+    placement: "center",
     resizable: false,
-    position: { my: "center", at: "center", of: "svg" },
-    close: cleanup,
-    buttons: {
-      Transform: function (this: HTMLElement) {
-        transformMap();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    title: "Transform map"
   });
 }
 

@@ -10,7 +10,10 @@
 }
 
 .fmg-dialog {
+  display: flex;
+  flex-direction: column;
   width: min(100%, 560px);
+  max-width: calc(100vw - 16px);
   max-height: calc(100vh - 32px);
   overflow: hidden;
   border: 1px solid var(--kui-line);
@@ -103,13 +106,21 @@
 }
 
 .fmg-dialog__body {
+  flex: 1;
+  min-height: 0;
   max-height: calc(100vh - 150px);
   padding: 18px;
   overflow: auto;
 }
 
+.fmg-dom-dialog__content {
+  height: 100%;
+  max-height: 100%;
+}
+
 .fmg-dom-dialog__content > .dialog {
   display: block;
+  height: 100%;
 }
 
 .fmg-dialog__footer {

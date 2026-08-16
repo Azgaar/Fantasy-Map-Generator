@@ -1,6 +1,7 @@
 // The Icon Selector: pick an emoji or add an external image to use as an icon
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
 import { ensureEl } from "@/utils";
 
@@ -45,19 +46,12 @@ function open(initial: string, callback: (value: string) => void): void {
     image.onclick = () => callback(image.style.backgroundImage.slice(5, -2));
   }
 
-  $(dialog).dialog({
-    width: "fit-content",
+  showDomDialog({
+    actions: [{ label: "Apply" }, { label: "Close", onClick: () => callback(initial) }],
+    content: dialog,
+    onClose: () => destroyDialog("iconSelector"),
     title: "Select Icon",
-    close: () => destroyDialog("iconSelector"),
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        $(this).dialog("close");
-      },
-      Close: function (this: HTMLElement) {
-        callback(initial);
-        $(this).dialog("close");
-      }
-    }
+    width: "fit-content"
   });
 }
 

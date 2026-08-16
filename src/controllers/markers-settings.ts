@@ -1,5 +1,5 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { ensureEl } from "@/utils";
@@ -12,30 +12,33 @@ function open(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${DIALOG_ID}" class="dialog"></div>`);
   drawConfigTable();
 
-  $(`#${DIALOG_ID}`).dialog({
-    resizable: false,
-    title: "Markers generation settings",
-    maxHeight: 600,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    buttons: {
-      Regenerate: () => {
-        applyChanges();
-        Markers.regenerate();
-        if (layerIsOn("toggleMarkers")) drawMarkers();
-        refreshEditors();
-        drawConfigTable();
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Regenerate",
+        onClick: regenerateMarkers,
+        tip: "Apply changes and regenerate markers"
       },
-      Close: function () {
-        $(this).dialog("close");
-      }
-    },
-    open: function () {
-      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-      buttons[0].addEventListener("mousemove", () => tip("Apply changes and regenerate markers"));
-      buttons[1].addEventListener("mousemove", () => tip("Close the window"));
-    },
-    close: cleanup
+      { label: "Close", tip: "Close the window" }
+    ],
+    content: ensureEl(DIALOG_ID),
+    maxHeight: 600,
+    onClose: cleanup,
+    placement: "top-left",
+    placementOffset: { x: 10, y: 10 },
+    placementTarget: document.querySelector("svg"),
+    resizable: false,
+    title: "Markers generation settings"
   });
+}
+
+function regenerateMarkers(): void {
+  applyChanges();
+  Markers.regenerate();
+  if (layerIsOn("toggleMarkers")) drawMarkers();
+  refreshEditors();
+  drawConfigTable();
 }
 
 function applyChanges(): void {

@@ -22,25 +22,17 @@ async function saveMap(method: SaveMethod): Promise<void> {
     if (method === "dropbox") await saveToDropbox(mapData, filename);
   } catch (error) {
     ERROR && console.error(error);
-    alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
+    const messageHtml = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
       "GitHub"
     )}. <p id="errorBox">${parseError(error as Error)}</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
+    const { showMessageDialog } = await import("@/components/ui/message-dialog");
+    showMessageDialog({
+      actions: [{ label: "Retry", onClick: () => void saveMap(method) }, { label: "Close" }],
+      id: "saveErrorDialog",
+      messageHtml,
       title: "Saving error",
-      width: "28em",
-      buttons: {
-        Retry: function (this: HTMLElement) {
-          $(this).dialog("close");
-          saveMap(method);
-        },
-        Close: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+      width: "28em"
     });
   }
 }

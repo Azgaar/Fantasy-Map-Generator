@@ -1,3 +1,4 @@
+import { Button } from "@patkepa/kantzen-ui/primitives";
 import type { CSSProperties } from "react";
 import { useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
@@ -10,10 +11,12 @@ import { WorkspaceDialog } from "./dialog";
 import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-position";
 
 export interface DomDialogOptions {
+  actions?: DomDialogAction[];
   content: HTMLElement;
   destroyOnClose?: boolean;
   height?: CSSProperties["height"];
   isModal?: boolean;
+  maxHeight?: CSSProperties["maxHeight"];
   onClose?: () => void;
   placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
@@ -21,6 +24,13 @@ export interface DomDialogOptions {
   resizable?: boolean;
   title: string;
   width?: CSSProperties["width"];
+}
+
+export interface DomDialogAction {
+  close?: boolean;
+  label: string;
+  onClick?: (button: HTMLButtonElement) => void;
+  tip?: string;
 }
 
 export interface DomDialogHandle {
@@ -32,6 +42,7 @@ const activeDialogs = new Map<string, DomDialogHandle>();
 
 function DomDialogView({ options }: { options: DomDialogOptions }): React.JSX.Element {
   const contentHostRef = useRef<HTMLDivElement>(null);
+  const actions = options.actions ?? [];
 
   useLayoutEffect(() => {
     const host = contentHostRef.current;
@@ -58,16 +69,36 @@ function DomDialogView({ options }: { options: DomDialogOptions }): React.JSX.El
 
   return (
     <WorkspaceDialog
+      footer={
+        actions.length ? (
+          <>
+            {actions.map((action, index) => (
+              <Button
+                data-autofocus={index === actions.length - 1 || undefined}
+                data-tip={action.tip}
+                key={`${action.label}-${index}`}
+                onClick={event => {
+                  action.onClick?.(event.currentTarget);
+                  if (action.close !== false) activeDialogs.get(options.content.id)?.close();
+                }}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </>
+        ) : undefined
+      }
       isModal={options.isModal ?? false}
       isOpen
       height={options.height}
+      maxHeight={options.maxHeight}
       onClose={() => activeDialogs.get(options.content.id)?.close()}
       placement={options.placement}
       placementOffset={options.placementOffset}
       placementTarget={options.placementTarget}
       resizable={options.resizable}
       title={options.title}
-      width={options.width}
+      width={options.width ?? "fit-content"}
     >
       <div className="fmg-dom-dialog__content" ref={contentHostRef} />
     </WorkspaceDialog>
@@ -81,6 +112,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
   if (activeDialog) {
     activeDialog.update({
       height: initialOptions.height,
+      maxHeight: initialOptions.maxHeight,
       resizable: initialOptions.resizable,
       title: initialOptions.title,
       width: initialOptions.width
@@ -118,6 +150,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
       options = {
         ...options,
         height: params.height ?? options.height,
+        maxHeight: params.maxHeight ?? options.maxHeight,
         resizable: params.resizable ?? options.resizable,
         title: params.title ?? options.title,
         width: params.width ?? options.width

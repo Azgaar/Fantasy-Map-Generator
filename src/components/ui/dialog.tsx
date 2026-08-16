@@ -20,6 +20,7 @@ interface WorkspaceDialogProps {
   isDraggable?: boolean;
   isModal?: boolean;
   isOpen: boolean;
+  maxHeight?: CSSProperties["maxHeight"];
   onClose: () => void;
   placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
@@ -62,6 +63,7 @@ export function WorkspaceDialog({
   isDraggable,
   isModal = true,
   isOpen,
+  maxHeight,
   onClose,
   placementOffset,
   placement = "center",
@@ -207,7 +209,7 @@ export function WorkspaceDialog({
       id={dialogId}
       ref={dialogRef}
       role="dialog"
-      style={{ height, width }}
+      style={{ height, maxHeight, width }}
       tabIndex={-1}
     >
       <header

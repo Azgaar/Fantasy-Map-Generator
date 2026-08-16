@@ -1,5 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { openURL } from "@/utils";
 import { ensureEl } from "../utils";
 
@@ -187,26 +188,36 @@ function open(defaultPrompt: string, onApply: (result: string) => void): void {
   renderDialog();
   setInitialValues(defaultPrompt);
 
-  $("#aiGenerator").dialog({
-    title: "AI Text Generator",
-    position: { my: "center", at: "center", of: "svg" },
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Generate",
+        onClick: button => void generate(button)
+      },
+      {
+        close: false,
+        label: "Apply",
+        onClick: () => applyResult(onApply)
+      },
+      { label: "Close" }
+    ],
+    content: ensureEl("aiGenerator"),
+    onClose: () => destroyDialog("aiGenerator"),
+    placement: "center",
     resizable: false,
-    close: () => destroyDialog("aiGenerator"),
-    buttons: {
-      Generate: (e: Event) => {
-        void generate(e.target as HTMLButtonElement);
-      },
-      Apply: function (this: HTMLElement) {
-        const result = ensureEl<HTMLTextAreaElement>("aiGeneratorResult").value;
-        if (!result) return tip("No result to apply", true, "error", 4000);
-        onApply(result);
-        $(this).dialog("close");
-      },
-      Close: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    title: "AI Text Generator"
   });
+}
+
+function applyResult(onApply: (result: string) => void): void {
+  const result = ensureEl<HTMLTextAreaElement>("aiGeneratorResult").value;
+  if (!result) {
+    tip("No result to apply", true, "error", 4000);
+    return;
+  }
+  onApply(result);
+  destroyDialog("aiGenerator");
 }
 
 function renderDialog(): void {

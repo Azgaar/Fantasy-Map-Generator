@@ -1,5 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
@@ -47,31 +48,37 @@ function open(): void {
   renderDialog();
   addRows();
 
-  $("#labelGroupsConfigurator").dialog({
-    title: "Configure Label Groups",
-    resizable: false,
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Apply",
+        onClick: () => ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit()
+      },
+      { close: false, label: "Add", onClick: addGroupRow },
+      { close: false, label: "Restore", onClick: restoreDefaultGroups },
+      { label: "Cancel" }
+    ],
+    content: ensureEl("labelGroupsConfigurator"),
     maxHeight: Math.max(window.innerHeight - 40, 300),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close,
-    buttons: {
-      Apply: () => {
-        ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
-      },
-      Add: () => {
-        const group: LabelGroup = { name: "", type: "state", zoom: { min: null, max: null } };
-        ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
-      },
-      Restore: () => {
-        const defaults = Labels.getDefaultOptions();
-        ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = defaults.resizeOnZoom;
-        ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
-        addRows(defaults.groups);
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    onClose: close,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
+    resizable: false,
+    title: "Configure Label Groups"
   });
+}
+
+function addGroupRow(): void {
+  const group: LabelGroup = { name: "", type: "state", zoom: { min: null, max: null } };
+  ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
+}
+
+function restoreDefaultGroups(): void {
+  const defaults = Labels.getDefaultOptions();
+  ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = defaults.resizeOnZoom;
+  ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
+  addRows(defaults.groups);
 }
 
 function renderDialog(): void {
@@ -332,7 +339,7 @@ function submitForm(event: Event): void {
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
   drawLabels();
-  $("#labelGroupsConfigurator").dialog("close");
+  destroyDialog("labelGroupsConfigurator");
 }
 
 function rowToGroup(row: HTMLTableRowElement): LabelGroup {

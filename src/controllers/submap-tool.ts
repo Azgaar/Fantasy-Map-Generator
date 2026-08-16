@@ -1,4 +1,5 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
@@ -7,21 +8,14 @@ function open(): void {
   renderDialog();
   addListeners();
 
-  $("#submapTool").dialog({
-    title: "Create a submap",
+  showDomDialog({
+    actions: [{ label: "Submap", onClick: generateSubmap }, { label: "Cancel" }],
+    content: ensureEl("submapTool"),
+    onClose: cleanup,
+    placement: "center",
     resizable: false,
-    width: "32em",
-    position: { my: "center", at: "center", of: "svg" },
-    close: cleanup,
-    buttons: {
-      Submap: function (this: HTMLElement) {
-        generateSubmap();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    title: "Create a submap",
+    width: "32em"
   });
 }
 

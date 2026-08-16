@@ -3,6 +3,7 @@ import { findEl } from "@/utils";
 
 export type DialogParams = {
   height?: number | string;
+  maxHeight?: number | string;
   position?: { my: string; at: string; of: string; collision: string };
   resizable?: boolean;
   title?: string;
