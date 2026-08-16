@@ -14,12 +14,24 @@ function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
 }
 
 export function applyZoomBehavior(): void {
-  svg.call(zoom().on("zoom", onZoom).on("end", handleZoomEnd));
+  svg.call(zoom().on("start", handleZoomStart).on("zoom", onZoom).on("end", handleZoomEnd));
 }
 
 let frameId: number | null = null;
+let effectsFrameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
+let gestureScaleChanged = false;
+let gesturePositionChanged = false;
+
+function handleZoomStart(): void {
+  if (effectsFrameId !== null) cancelAnimationFrame(effectsFrameId);
+  effectsFrameId = null;
+  gestureScaleChanged = false;
+  gesturePositionChanged = false;
+  svg.classed("map-zooming", true);
+  ViewportLayers.suspend();
+}
 
 function onZoom(): void {
   const transform = (window.d3 as any).event.transform;
@@ -38,6 +50,8 @@ function onZoom(): void {
   // so keep OR-ing the change flags until the scheduled frame consumes them.
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
+  gestureScaleChanged = gestureScaleChanged || isScaleChanged;
+  gesturePositionChanged = gesturePositionChanged || isPositionChanged;
   if (frameId !== null) return;
 
   frameId = requestAnimationFrame(() => {
@@ -46,7 +60,7 @@ function onZoom(): void {
   });
 }
 
-/** Per-frame view tracking. Keep this cheap */
+/** Per-frame view tracking. Keep this transform-only so Safari can stay on its paint path. */
 function handleZoomPerFrame(): void {
   const didScaleChange = pendingScaleChange;
   const didPositionChange = pendingPositionChange;
@@ -55,11 +69,21 @@ function handleZoomPerFrame(): void {
   if (!didScaleChange && !didPositionChange) return;
 
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-  window.updateMinimap?.();
   redrawTracedImage();
   ViewportLayers.schedule();
+}
 
-  if (didScaleChange) {
+/** Rewrite map content once the gesture settles */
+function handleZoomEnd(): void {
+  if (frameId !== null) {
+    cancelAnimationFrame(frameId);
+    frameId = null;
+    handleZoomPerFrame();
+  }
+
+  window.updateMinimap?.();
+
+  if (gestureScaleChanged) {
     drawScaleBar(scaleBar, scale);
     fitScaleBar(scaleBar, svgWidth, svgHeight);
 
@@ -69,20 +93,16 @@ function handleZoomPerFrame(): void {
     }
   }
 
-  if (didPositionChange) {
-    if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  }
-}
+  if ((gestureScaleChanged || gesturePositionChanged) && layerIsOn("toggleCoordinates")) drawCoordinates();
 
-/** Rewrite map content once the gesture settles */
-function handleZoomEnd(): void {
-  if (frameId !== null) {
-    cancelAnimationFrame(frameId);
-    frameId = null;
-    ViewportLayers.renderNow();
-  }
+  ViewportLayers.resume();
+  if (gestureScaleChanged) invokeActiveZooming();
 
-  invokeActiveZooming();
+  // Restore expensive paint effects only after all settled-state DOM updates are complete.
+  effectsFrameId = requestAnimationFrame(() => {
+    effectsFrameId = null;
+    svg.classed("map-zooming", false);
+  });
 }
 
 /** Mirror the map transform onto the heightmap tracing canvas */

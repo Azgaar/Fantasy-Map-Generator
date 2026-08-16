@@ -82,28 +82,41 @@ function reconcileLabels(context: ViewportRenderContext): void {
   const textPaths = findElement(context.root, "textPaths");
   if (!labels || !textPaths) return;
 
-  for (const group of options.labels.groups) reconcileGroup(labels, textPaths, group.name, context);
+  const materializedPaths = new Map(Array.from(textPaths.children, path => [path.id, path]));
+  for (const group of options.labels.groups) reconcileGroup(labels, textPaths, materializedPaths, group, context);
 }
 
-function reconcileGroup(labels: Element, textPaths: Element, groupName: string, context: ViewportRenderContext): void {
+function reconcileGroup(
+  labels: Element,
+  textPaths: Element,
+  materializedPaths: Map<string, Element>,
+  groupOptions: LabelGroup,
+  context: ViewportRenderContext
+): void {
+  const groupName = groupOptions.name;
   const group = labels.querySelector<SVGGElement>(`#${CSS.escape(`labels-${groupName}`)}`);
-  const groupOptions = options.labels.groups.find(group => group.name === groupName);
-  if (!group || !groupOptions) return;
+  if (!group) return;
 
   const isVisible = isGroupVisible({ group: groupOptions, bounds: context.bounds });
   const visibleLabels = isVisible
     ? (labelsByGroup.get(groupName) || []).filter(label => isLabelVisible(context.bounds, label))
     : [];
   const visibleIds = new Set(visibleLabels.map(label => label.id));
+  const materializedIds = new Set<string>();
 
   for (const child of Array.from(group.children)) {
-    if (visibleIds.has(child.id)) continue;
-    removeMaterialized(child.id, context.root);
+    if (visibleIds.has(child.id)) {
+      materializedIds.add(child.id);
+      continue;
+    }
+    child.remove();
+    const pathId = `textPath_${child.id}`;
+    materializedPaths.get(pathId)?.remove();
+    materializedPaths.delete(pathId);
   }
 
   for (const label of visibleLabels) {
-    const isMaterialized = group.querySelector<SVGTextElement>(`#${label.id}`);
-    if (!isMaterialized) materialize(label, group, textPaths);
+    if (!materializedIds.has(label.id)) materialize(label, group, textPaths);
   }
 }
 

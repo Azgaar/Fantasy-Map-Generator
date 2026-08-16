@@ -2,7 +2,9 @@
 
 How to port a classic, un-bundled module served as-is from `public/`, leaning on
 runtime globals, into a typed module inside Vite's graph. See also [lazy_loading.md](./lazy_loading.md),
-[architecture.md](./architecture.md), and [data_model.md](./data_model.md).
+[architecture.md](./architecture.md), [data_model.md](./data_model.md), and
+[legacy-code.md](./legacy-code.md) for the distinction between removable runtime seams and
+saved-map compatibility that must be retained.
 
 ## Where the file goes
 

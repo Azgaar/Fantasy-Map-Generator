@@ -394,11 +394,14 @@ New bundled code imports third-party dependencies from **npm**; Vite tree-shakes
 into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no vendored
 `libs/` under `src/`**.
 
-`public/libs/*.min.js` (d3 v5, jQuery, three, …) is loaded via `<script>` tags **only**
-for classic `public/**/*.js` that still depend on runtime globals. It is legacy-only and
-shrinks as modules migrate: when a feature ports to `src/`, its dependency flips from a
-vendored global script to an npm import, and the vendored script is dropped once nothing
-classic needs it.
+`public/libs/*.min.js` (d3 v5, jQuery, three, …) is loaded via `<script>` tags for classic
+`public/**/*.js` and a shrinking set of bundled compatibility seams that still depend on
+runtime globals. It is legacy-only and shrinks as modules migrate: when a feature ports to
+`src/`, its dependency flips from a vendored global script to an npm import, and the vendored
+script is dropped once nothing classic or transitional needs it. In particular, global D3 v5
+cannot be removed until zoom/shared SVG selections and all classic D3 consumers use imported
+D3 v7; jQuery remains until the dialog layer and its migrated callers no longer use global `$`.
+See [legacy-code.md](./legacy-code.md) for the inventory and removal policy.
 
 ## Where does my file go?
 
@@ -745,6 +748,9 @@ The refactor is explicitly incremental and is already in progress. The project i
 - Step-by-step modernization
 
 Key strategy: old code continues working, while new subsystems adopt cleaner architecture.
+See [Legacy Code and Compatibility Policy](./legacy-code.md) before deleting a legacy seam:
+runtime code, browser globals, saved-map migrations, and vendored-library warnings have
+different retirement criteria.
 
 ---
 

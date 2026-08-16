@@ -67,7 +67,9 @@
 
 # Known Sharp Edges
 
-- **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid` on the `window`). Be extremely cautious when refactoring these to explicit parameters.
+- **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid`
+  on the `window`). Be extremely cautious when refactoring these to explicit parameters. See
+  `docs/architecture/legacy-code.md` for the inventory and removal policy.
 - **`index.html`**: A massive monolith serving as the primary UI template. It can easily break if structural tags are accidentally nested incorrectly.
 
 # Important Files

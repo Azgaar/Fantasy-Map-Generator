@@ -1,5 +1,6 @@
 import { select } from "d3";
 import type { Burg } from "../generators/burgs-generator";
+import { reconcileSvgUseElements } from "./viewport/svg-use-reconciler";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "./viewport/viewport-renderer";
 
 declare global {
@@ -76,15 +77,16 @@ function reconcileBurgIcons(context: ViewportRenderContext): void {
 
     const burgs = burgsByGroup.get(name) || [];
     const icon = iconGroup.dataset.icon || "#icon-circle";
-    iconGroup.innerHTML = burgs
-      .map(burg => `<use id="burg${burg.i}" data-id="${burg.i}" href="${icon}" x="${burg.x}" y="${burg.y}"></use>`)
-      .join("");
-    anchorGroup.innerHTML = burgs
-      .filter(burg => burg.port)
-      .map(
-        burg => `<use id="anchor${burg.i}" data-id="${burg.i}" href="#icon-anchor" x="${burg.x}" y="${burg.y}"></use>`
-      )
-      .join("");
+    reconcileSvgUseElements(
+      iconGroup,
+      burgs.map(burg => ({ id: `burg${burg.i}`, dataId: burg.i, href: icon, x: burg.x, y: burg.y }))
+    );
+    reconcileSvgUseElements(
+      anchorGroup,
+      burgs
+        .filter(burg => burg.port)
+        .map(burg => ({ id: `anchor${burg.i}`, dataId: burg.i, href: "#icon-anchor", x: burg.x, y: burg.y }))
+    );
   }
 }
 

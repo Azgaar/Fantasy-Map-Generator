@@ -148,6 +148,7 @@ export class ViewportRenderer {
   private pending: ViewportRenderContext | null = null;
   private pendingForceAll = false;
   private materializedBounds: ViewportBounds | null = null;
+  private suspended = false;
 
   constructor(
     private readonly options: {
@@ -193,14 +194,29 @@ export class ViewportRenderer {
     this.schedule();
   }
 
+  /** Keep the currently materialized SVG stable while its parent is being transformed. */
+  suspend(): void {
+    this.suspended = true;
+    this.cancelScheduledRender();
+  }
+
+  /** Reconcile all viewport layers once after an interaction has settled. */
+  resume(): void {
+    if (!this.suspended) return;
+    this.suspended = false;
+    this.renderNow();
+  }
+
   clearAll(): void {
     this.cancelScheduledRender();
+    this.suspended = false;
     this.materializedBounds = null;
     this.dirtyLayers.clear();
     for (const layer of this.layers.values()) layer.clear?.();
   }
 
   schedule(): void {
+    if (this.suspended) return;
     const needsViewportReconcile = this.shouldReconcile();
     if (!needsViewportReconcile && !this.dirtyLayers.size) return;
     const context = this.getLiveContext();
