@@ -10,7 +10,7 @@ function closeOptionsPanel() {
   }
 }
 
-function openWorkspacePanel(section: "layers" | "style" | "options" | "tools" | "about") {
+function openWorkspacePanel(section: "layers" | "style" | "options" | "tools") {
   document.querySelector<HTMLElement>(`#workspaceNavigationRoot [data-href="/${section}"]`)?.click();
 }
 
@@ -96,7 +96,7 @@ function start() {
         popover: {
           title: "Workspace Sidebar",
           description:
-            "Use this persistent sidebar to open map layers, styling, options, tools, and project information.",
+            "Use this persistent sidebar to open map layers, styling, options, and editing tools.",
           side: "right",
           onNextClick: () => {
             openWorkspacePanel("layers");
@@ -284,32 +284,6 @@ function start() {
           title: "Heightmap Editor",
           description:
             "The Heightmap editor panel lets you paint terrain directly on the map. You can raise or lower land, apply templates, convert an image into a heightmap, or preview the terrain in 3D.",
-          side: "right"
-        }
-      },
-
-      // ── About tab ────────────────────────────────────────────────────────────
-      {
-        element: '#workspaceNavigationRoot [data-href="/about"]',
-        onHighlightStarted: () => {
-          openWorkspacePanel("about");
-        },
-        popover: {
-          title: "About Tab",
-          description:
-            "The About tab has links to documentation, video tutorials, the community Discord, and version information.",
-          side: "bottom"
-        }
-      },
-      {
-        element: "#aboutContent",
-        onHighlightStarted: () => {
-          ensureEl("aboutTab")?.click();
-        },
-        popover: {
-          title: "About & Resources",
-          description:
-            "Find the Quick Start guide, video tutorials, hotkey reference, Discord community, and changelog here. The project is open source and actively maintained.",
           side: "right"
         }
       },

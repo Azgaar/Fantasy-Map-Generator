@@ -20,7 +20,7 @@ import "@patkepa/kantzen-ui/app-shell/styles.css";
 import "./ui/workspace-panel.css";
 import "./workspace-sidebar.css";
 
-type WorkspaceSection = "layers" | "style" | "options" | "tools" | "about";
+type WorkspaceSection = "layers" | "style" | "options" | "tools";
 
 interface PendingRegeneration {
   command: ToolCommand;
@@ -32,24 +32,21 @@ const SECTION_ROUTES: Record<WorkspaceSection, string> = {
   layers: "/layers",
   style: "/style",
   options: "/options",
-  tools: "/tools",
-  about: "/about"
+  tools: "/tools"
 };
 
 const SECTION_TABS: Record<WorkspaceSection, string> = {
   layers: "layersTab",
   style: "styleTab",
   options: "optionsTab",
-  tools: "toolsTab",
-  about: "aboutTab"
+  tools: "toolsTab"
 };
 
 const SECTION_TITLES: Record<WorkspaceSection, string> = {
   layers: "Layers",
   style: "Style",
   options: "Options",
-  tools: "Tools",
-  about: "About"
+  tools: "Tools"
 };
 
 const NAV_GROUPS: NavGroup[] = [
@@ -59,8 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Layers", icon: "layers", href: SECTION_ROUTES.layers },
       { label: "Style", icon: "style", href: SECTION_ROUTES.style },
       { label: "Options", icon: "settings", href: SECTION_ROUTES.options },
-      { label: "Tools", icon: "build", href: SECTION_ROUTES.tools },
-      { label: "About", icon: "info-sign", href: SECTION_ROUTES.about }
+      { label: "Tools", icon: "build", href: SECTION_ROUTES.tools }
     ]
   }
 ];

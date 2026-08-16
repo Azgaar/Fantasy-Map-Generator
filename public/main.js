@@ -20,14 +20,6 @@ if (PRODUCTION && "serviceWorker" in navigator) {
     });
   });
 
-  window.addEventListener(
-    "beforeinstallprompt",
-    async event => {
-      event.preventDefault();
-      window.Services.Installation.init(event);
-    },
-    { once: true }
-  );
 }
 
 // append svg layers (in default order)
