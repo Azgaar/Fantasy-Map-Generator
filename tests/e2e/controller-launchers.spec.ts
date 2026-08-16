@@ -7,8 +7,7 @@ test.describe("controller launchers", () => {
   });
 
   test("opens Markers generation settings from Markers Overview", async ({page}) => {
-    await page.click("#optionsTrigger");
-    await page.click("#toolsTab");
+    await page.click('#workspaceNavigationRoot [data-href="/tools"]');
     await page.click("#overviewMarkersButton");
     await expect(page.locator("#markersOverview")).toBeVisible();
     await expect(page.locator("#chat-widget-container")).toBeVisible();
@@ -31,8 +30,7 @@ test.describe("controller launchers", () => {
       Goods.sync();
     });
 
-    await page.click("#optionsTrigger");
-    await page.click("#toolsTab");
+    await page.click('#workspaceNavigationRoot [data-href="/tools"]');
     await page.click("#editGoods");
 
     await expect(page.locator("#goodsEditor")).toBeVisible();
@@ -40,8 +38,7 @@ test.describe("controller launchers", () => {
   });
 
   test("opens Relief Editor by clicking a relief icon", async ({page}) => {
-    await page.click("#optionsTrigger");
-    await page.click("#layersTab");
+    await page.click('#workspaceNavigationRoot [data-href="/layers"]');
     const reliefToggle = page.locator("#toggleRelief");
     if (await reliefToggle.evaluate(element => element.classList.contains("buttonoff"))) {
       await reliefToggle.click();

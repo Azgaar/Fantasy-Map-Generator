@@ -22,6 +22,8 @@ function showOptions(event) {
   regenerate.style.display = "none";
   ensureEl("options").style.display = "block";
   optionsTrigger.style.display = "none";
+  document.body.classList.add("workspace-panel-open");
+  notifyWorkspacePanelChange();
 
   if (event) event.stopPropagation();
 }
@@ -30,6 +32,8 @@ function showOptions(event) {
 function hideOptions(event) {
   ensureEl("options").style.display = "none";
   optionsTrigger.style.display = "block";
+  document.body.classList.remove("workspace-panel-open");
+  window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section: null } }));
   if (event) event.stopPropagation();
 }
 
@@ -56,6 +60,7 @@ document
   .addEventListener("click", function (event) {
     if (event.target.tagName !== "BUTTON") return;
     const id = event.target.id;
+    if (id === "optionsHide") return;
     const active = ensureEl("options").querySelector(".tab > button.active");
     if (active && id === active.id) return; // already active tab is clicked
 
@@ -78,7 +83,25 @@ document
     } else if (id === "aboutTab") {
       aboutContent.style.display = "block";
     }
+
+    notifyWorkspacePanelChange(id);
   });
+
+const workspaceSections = {
+  layersTab: "layers",
+  styleTab: "style",
+  optionsTab: "options",
+  toolsTab: "tools",
+  aboutTab: "about"
+};
+
+function notifyWorkspacePanelChange(tabId) {
+  const activeId = tabId || ensureEl("options").querySelector(".tab > button.active")?.id;
+  const section = workspaceSections[activeId] || "layers";
+  const title = ensureEl(activeId)?.textContent?.trim() || "Layers";
+  ensureEl("workspacePanelTitle").textContent = title;
+  window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section } }));
+}
 
 // show popup with a list of Patreon supportes (updated manually)
 async function showSupporters() {

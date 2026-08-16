@@ -355,6 +355,7 @@
       </div>
     </div>
     <div id="optionsContainer" style="opacity: 0">
+      <div id="workspaceNavigationRoot"></div>
       <div id="collapsible">
         <button
           id="optionsTrigger"
@@ -379,14 +380,16 @@
       <div id="options" style="display: none">
         <div class="drag-trigger" data-tip="Drag to move the Menu"></div>
         <div class="tab">
+          <span id="workspacePanelTitle">Layers</span>
           <button
             id="optionsHide"
-            data-tip="Click to hide the Menu"
+            data-tip="Close the current panel"
             data-shortcut="Tab or Esc"
             class="options"
             onclick="hideOptions(event)"
+            aria-label="Close panel"
           >
-            ◄
+            ×
           </button>
           <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
           <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
@@ -395,7 +398,7 @@
           <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
         </div>
         <div id="layersContent" class="tabcontent" style="display: block">
-          <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
+          <p data-tip="Select a map layers preset" style="display: inline-block">Preset</p>
           <select
             data-tip="Select a map layers preset"
             id="layersPreset"
@@ -431,7 +434,12 @@
             style="display: none"
             onclick="removePreset()"
           ></button>
-          <p>Displayed layers and layers order:</p>
+          <p>Displayed layers</p>
+          <label id="layersSearch" for="layersSearchInput">
+            <span class="icon-search"></span>
+            <input id="layersSearchInput" type="search" placeholder="Search layers" autocomplete="off" />
+            <kbd>Ctrl+F</kbd>
+          </label>
           <ul
             data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style"
             id="mapLayers"

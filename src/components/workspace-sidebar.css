@@ -1,0 +1,682 @@
+:root {
+  --fmg-sidebar-width: 260px;
+  --fmg-sidebar-collapsed-width: 60px;
+  --fmg-panel-width: 420px;
+}
+
+#workspaceNavigationRoot,
+#workspaceNavigationRoot *,
+#options,
+#options * {
+  box-sizing: border-box;
+}
+
+#optionsContainer {
+  position: fixed;
+  z-index: 30;
+  inset: 0 auto auto 0;
+  pointer-events: none;
+}
+
+#workspaceNavigationRoot {
+  position: fixed;
+  z-index: 32;
+  inset: 0 auto 0 0;
+  width: var(--fmg-sidebar-width);
+  color: var(--kui-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  pointer-events: auto;
+}
+
+#workspaceNavigationRoot .kui-icon,
+#workspaceNavigationRoot .bp6-icon,
+#toolsContent .kui-icon,
+#toolsContent .bp6-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  line-height: 1;
+}
+
+#workspaceNavigationRoot .kui-menu,
+#workspaceNavigationRoot .bp6-menu {
+  min-width: 0;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+}
+
+#workspaceNavigationRoot .kui-menu-item-shell {
+  position: relative;
+  list-style: none;
+}
+
+#workspaceNavigationRoot .kui-menu-item,
+#workspaceNavigationRoot .bp6-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+#workspaceNavigationRoot .bp6-text-overflow-ellipsis {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#workspaceNavigationRoot .app-sidebar {
+  width: var(--fmg-sidebar-width);
+  min-width: var(--fmg-sidebar-collapsed-width);
+  box-shadow: 8px 0 28px rgb(0 0 0 / 0.22);
+}
+
+#workspaceNavigationRoot .app-sidebar.collapsed {
+  width: var(--fmg-sidebar-collapsed-width);
+}
+
+#workspaceNavigationRoot .sidebar-menu .sidebar-item-active {
+  border-left-color: hsl(var(--accent));
+  background: hsl(var(--accent) / 0.32) !important;
+  color: var(--kui-text);
+}
+
+#workspaceNavigationRoot .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+#workspaceNavigationRoot .sidebar-header {
+  height: 52px;
+}
+
+#workspaceNavigationRoot .sidebar-header::after {
+  width: 17px;
+  height: 17px;
+  margin-left: auto;
+  border: 1px solid var(--kui-line);
+  color: var(--kui-text-muted);
+  content: "‹";
+  font-size: 15px;
+  line-height: 14px;
+  text-align: center;
+}
+
+#workspaceNavigationRoot .collapsed .sidebar-header::after {
+  display: none;
+}
+
+.fmg-sidebar-actions {
+  margin: auto 10px 6px;
+  padding-top: 9px;
+  border-top: 1px solid var(--kui-line-soft);
+}
+
+.fmg-sidebar-action {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.fmg-sidebar-action:hover,
+.fmg-sidebar-action:focus-visible {
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+.fmg-sidebar-action span:nth-child(2) {
+  flex: 1;
+}
+
+.fmg-sidebar-action kbd,
+.fmg-tool-row kbd,
+.fmg-tool-search kbd,
+#layersSearch kbd {
+  color: var(--kui-text-muted);
+  font: 10px/1.2 "SF Mono", Consolas, monospace;
+  white-space: nowrap;
+}
+
+#workspaceNavigationRoot .collapsed .fmg-sidebar-actions {
+  margin-inline: 8px;
+}
+
+#workspaceNavigationRoot .collapsed .fmg-sidebar-action {
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+#workspaceNavigationRoot .collapsed .fmg-sidebar-action span,
+#workspaceNavigationRoot .collapsed .fmg-sidebar-action kbd {
+  display: none;
+}
+
+#collapsible {
+  display: none !important;
+}
+
+#options {
+  position: fixed;
+  z-index: 31;
+  top: 0;
+  bottom: 0;
+  left: var(--fmg-sidebar-width);
+  width: min(var(--fmg-panel-width), calc(100vw - var(--fmg-sidebar-width)));
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid var(--kui-line);
+  background: var(--kui-surface-panel);
+  box-shadow: 10px 0 34px rgb(0 0 0 / 0.28);
+  color: var(--kui-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  pointer-events: auto;
+}
+
+@media (min-width: 761px) {
+  #options {
+    width: var(--fmg-panel-width) !important;
+    min-width: var(--fmg-panel-width);
+    max-width: none;
+  }
+}
+
+.workspace-sidebar-collapsed #options {
+  left: var(--fmg-sidebar-collapsed-width);
+  width: min(var(--fmg-panel-width), calc(100vw - var(--fmg-sidebar-collapsed-width)));
+}
+
+#options > .drag-trigger {
+  display: none;
+}
+
+#options > .tab {
+  height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 0 18px;
+  border-bottom: 1px solid var(--kui-line);
+  background: var(--kui-surface-panel);
+}
+
+#workspacePanelTitle {
+  overflow: hidden;
+  color: var(--kui-text);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#options > .tab > button:not(#optionsHide) {
+  display: none;
+}
+
+#options > .tab > #optionsHide {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  border: 1px solid var(--kui-line);
+  background: transparent;
+  color: var(--kui-text-muted);
+  font: 20px/24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#options > .tab > #optionsHide:hover {
+  border-color: var(--kui-line-strong);
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+#options .tabcontent {
+  height: calc(100vh - 52px);
+  padding: 16px 18px 22px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--kui-surface-panel);
+  color: var(--kui-text-secondary);
+  opacity: 1;
+  scrollbar-color: var(--kui-line) transparent;
+  scrollbar-width: thin;
+}
+
+#options .tabcontent::-webkit-scrollbar {
+  width: 5px;
+}
+
+#options .tabcontent::-webkit-scrollbar-thumb {
+  background: var(--kui-line);
+}
+
+#sticked {
+  display: none;
+}
+
+#options p,
+#options .separator,
+#options b,
+#options label,
+#options span {
+  color: inherit;
+}
+
+#layersContent > p:first-of-type {
+  display: block !important;
+  margin-top: 0;
+}
+
+#layersContent > #layersPreset {
+  width: calc(100% - 62px) !important;
+}
+
+#options p,
+#options .separator {
+  margin: 14px 0 7px;
+  color: var(--kui-text);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#options .tip {
+  margin: 7px 0 0;
+  color: var(--kui-text-muted);
+  font: italic 11px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#options input,
+#options select,
+#options button,
+#options textarea {
+  border: 1px solid var(--kui-line);
+  border-radius: 0;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  font-family: inherit;
+}
+
+#options input:focus-visible,
+#options select:focus-visible,
+#options button:focus-visible,
+#options textarea:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: -2px;
+}
+
+#options select {
+  height: 32px;
+  padding-inline: 8px;
+  border: 1px solid var(--kui-line);
+  background-color: var(--kui-surface-raised);
+  color-scheme: dark;
+  font-size: 12px;
+}
+
+#options input[type="text"],
+#options input[type="search"],
+#options input.long,
+#options input.paired {
+  min-height: 30px;
+  padding-inline: 8px;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+}
+
+#options input[type="number"] {
+  min-height: 28px;
+  border: 1px solid transparent;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+}
+
+#options .tabcontent > button,
+#options .tabcontent td > button,
+#options #viewMode > button {
+  min-height: 30px;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text-secondary);
+  font-weight: 600;
+}
+
+#options .tabcontent button:hover {
+  border-color: var(--kui-line-strong);
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+#options .tabcontent button.active,
+#options .tabcontent button.pressed {
+  border-color: hsl(var(--accent) / 0.55);
+  background: hsl(var(--accent) / 0.28);
+  color: var(--kui-text);
+  font-style: normal;
+}
+
+#layersSearch,
+.fmg-tool-search {
+  position: relative;
+  display: flex;
+  height: 34px;
+  align-items: center;
+  gap: 8px;
+  margin: 7px 0 10px;
+  padding: 0 9px;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text-muted);
+}
+
+#layersSearch input,
+.fmg-tool-search input {
+  min-width: 0;
+  height: 30px;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kui-text);
+  font: 12px/1.2 inherit;
+}
+
+#layersSearch input:focus-visible,
+.fmg-tool-search input:focus-visible {
+  outline: 0;
+}
+
+#mapLayers {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  border: 1px solid var(--kui-line-soft);
+}
+
+#mapLayers > li {
+  position: relative;
+  display: block;
+  width: auto;
+  min-height: 30px;
+  float: none;
+  margin: 0;
+  padding: 7px 46px 7px 28px;
+  border-bottom: 1px solid var(--kui-line-soft);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  line-height: 15px;
+  text-align: left;
+}
+
+#mapLayers > li:last-child {
+  border-bottom: 0;
+}
+
+#mapLayers > li::before {
+  position: absolute;
+  top: 7px;
+  left: 9px;
+  color: var(--kui-text-muted);
+  content: "⠿";
+  font-size: 12px;
+}
+
+#mapLayers > li::after {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 28px;
+  border: 1px solid hsl(var(--accent) / 0.55);
+  background: hsl(var(--accent) / 0.28);
+  color: var(--kui-text);
+  content: "ON";
+  font: 8px/14px "SF Mono", Consolas, monospace;
+  text-align: center;
+}
+
+#mapLayers > li.buttonoff {
+  background: var(--kui-surface-panel);
+  color: var(--kui-text-muted);
+}
+
+#mapLayers > li.buttonoff::after {
+  border-color: var(--kui-line);
+  background: transparent;
+  color: var(--kui-text-muted);
+  content: "OFF";
+}
+
+#mapLayers > li:hover {
+  box-shadow: inset 2px 0 hsl(var(--accent));
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+#viewMode {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  clear: both;
+}
+
+#viewMode > p {
+  grid-column: 1 / -1;
+}
+
+#viewMode > button {
+  width: auto;
+  float: none;
+  margin: 0;
+  padding: 6px 4px;
+}
+
+#aboutContent {
+  color: var(--kui-text-secondary);
+  text-align: left;
+}
+
+#aboutContent p {
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+#aboutContent a {
+  color: hsl(var(--accent-hover));
+}
+
+.workspace-panel-open #tooltip {
+  left: calc(var(--fmg-sidebar-width) + var(--fmg-panel-width) + 2vw);
+  width: calc(96vw - var(--fmg-sidebar-width) - var(--fmg-panel-width));
+}
+
+.workspace-sidebar-collapsed.workspace-panel-open #tooltip {
+  left: calc(var(--fmg-sidebar-collapsed-width) + var(--fmg-panel-width) + 2vw);
+  width: calc(96vw - var(--fmg-sidebar-collapsed-width) - var(--fmg-panel-width));
+}
+
+#toolsContent {
+  padding: 0 !important;
+}
+
+.fmg-tools-panel {
+  min-height: 100%;
+  padding: 14px 16px 20px;
+  color: var(--kui-text-secondary);
+}
+
+.fmg-tools-panel .fmg-tool-search {
+  margin: 0 0 14px;
+}
+
+.fmg-tools-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(148px, 1fr);
+  gap: 14px;
+}
+
+.fmg-tools-secondary {
+  padding-left: 14px;
+  border-left: 1px solid var(--kui-line-soft);
+}
+
+.fmg-tool-section {
+  margin: 0 0 17px;
+}
+
+.fmg-tool-section h2,
+.fmg-regenerate summary > span {
+  margin: 0 0 6px;
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fmg-tool-list {
+  display: flex;
+  flex-direction: column;
+}
+
+#options .fmg-tool-row {
+  display: flex;
+  width: 100%;
+  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 7px;
+  overflow: visible;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--kui-line-soft);
+  background: transparent;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  text-overflow: clip;
+}
+
+#options .fmg-tool-row > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#options .fmg-tool-row:hover,
+#options .fmg-tool-row:focus-visible {
+  border-left-color: hsl(var(--accent));
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+.fmg-tool-row i {
+  display: inline-flex;
+  padding: 3px;
+  color: var(--kui-text-muted) !important;
+}
+
+.fmg-regenerate {
+  border-top: 1px solid var(--kui-line);
+}
+
+.fmg-regenerate summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 11px 4px;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.fmg-regenerate summary::-webkit-details-marker {
+  display: none;
+}
+
+.fmg-regenerate summary::after {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+  content: "+";
+  font-size: 16px;
+}
+
+.fmg-regenerate[open] summary::after {
+  content: "−";
+}
+
+.fmg-regenerate summary > span {
+  margin: 0;
+}
+
+.fmg-regenerate summary small {
+  grid-column: 1;
+  color: var(--kui-text-muted);
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --fmg-panel-width: calc(100vw - var(--fmg-sidebar-collapsed-width));
+  }
+
+  #workspaceNavigationRoot {
+    width: var(--fmg-sidebar-collapsed-width);
+  }
+
+  .fmg-tools-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .fmg-tools-secondary {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .workspace-panel-open #tooltip,
+  .workspace-panel-open #tourPromptButton,
+  .workspace-panel-open #chat-widget-container {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #workspaceNavigationRoot .app-sidebar {
+    transition: none;
+  }
+}

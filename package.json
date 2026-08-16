@@ -33,6 +33,8 @@
     "@types/lineclip": "^2.0.0",
     "@types/node": "^25.0.10",
     "@types/polylabel": "^1.1.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "@types/three": "^0.184.1",
     "@vitest/browser": "^4.1.10",
     "@vitest/browser-playwright": "^4.0.18",
@@ -43,12 +45,15 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@patkepa/kantzen-ui": "^0.1.0",
     "alea": "^1.0.1",
     "d3": "^7.9.0",
     "delaunator": "^5.0.1",
     "driver.js": "^1.4.0",
     "lineclip": "^2.0.0",
     "polylabel": "^2.0.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "three": "^0.184.0"
   },
   "engines": {

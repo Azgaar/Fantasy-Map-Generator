@@ -5,7 +5,7 @@ const STEP_TITLES = [
   "Welcome to Fantasy Map Generator", // 0
   "Navigate the Map",                  // 1
   "Hover Tooltips",                    // 2
-  "Open the Options Menu",             // 3
+  "Workspace Sidebar",                 // 3
   "Layers Tab",                        // 4
   "Layer Presets",                     // 5
   "Toggle Individual Layers",          // 6
@@ -30,6 +30,7 @@ async function waitForMapLoad(page: Page) {
   await page.waitForFunction(() => (window as any).mapId !== undefined, {
     timeout: 60000,
   });
+  await page.waitForSelector("#workspaceNavigationRoot .app-sidebar");
   await page.waitForTimeout(500);
 }
 
@@ -91,8 +92,7 @@ test.describe("UI Tour", () => {
   test("tour trigger button is present and labelled in the About tab", async ({
     page,
   }) => {
-    await page.locator("#optionsTrigger").click();
-    await page.locator("#aboutTab").click();
+    await page.locator('#workspaceNavigationRoot [data-href="/about"]').click();
     const btn = page.locator("#startTourButton");
     await expect(btn).toBeVisible();
     await expect(btn).toContainText("Tour");
@@ -104,7 +104,7 @@ test.describe("UI Tour", () => {
     page,
   }) => {
     // Open options panel first, then verify the tour closes it.
-    await page.locator("#optionsTrigger").click();
+    await page.locator('#workspaceNavigationRoot [data-href="/layers"]').click();
     await expect(page.locator("#options")).toBeVisible();
 
     await page.evaluate(() => (window as any).Services.UiTour.start());
@@ -134,7 +134,7 @@ test.describe("UI Tour", () => {
     // free-roam class disables driver.js overlay so map hover events fire.
     await expect(page.locator("body")).toHaveClass(/tour-free-roam/);
 
-    await nextStep(page, STEP_TITLES[3]); // → Open the Options Menu
+    await nextStep(page, STEP_TITLES[3]); // → Workspace Sidebar
 
     // onHighlightStarted on the options trigger step removes the class synchronously.
     await expect(page.locator("body")).not.toHaveClass(/tour-free-roam/);
@@ -150,7 +150,7 @@ test.describe("UI Tour", () => {
 
     await nextStep(page, STEP_TITLES[1]); // Navigate
     await nextStep(page, STEP_TITLES[2]); // Tooltip
-    await nextStep(page, STEP_TITLES[3]); // Open the Options Menu
+    await nextStep(page, STEP_TITLES[3]); // Workspace Sidebar
 
     // Panel is still closed while on the trigger step itself.
     await expect(page.locator("#options")).toBeHidden();
@@ -384,7 +384,7 @@ test.describe("UI Tour", () => {
     // the Options Menu where onHighlightStarted removes it.
     await nextStep(page, STEP_TITLES[1]); // → Navigate the Map
     await nextStep(page, STEP_TITLES[2]); // → Hover Tooltips (free-roam added by onNextClick)
-    await nextStep(page, STEP_TITLES[3]); // → Open the Options Menu (free-roam removed)
+    await nextStep(page, STEP_TITLES[3]); // → Workspace Sidebar (free-roam removed)
     await expect(page.locator("body")).not.toHaveClass(/tour-free-roam/);
 
     // Go back: onHighlightStarted on Hover Tooltips must re-add the class.
@@ -392,7 +392,7 @@ test.describe("UI Tour", () => {
     await expect(page.locator("body")).toHaveClass(/tour-free-roam/);
   });
 
-  test("back to Open the Options Menu step closes the options panel", async ({ page }) => {
+  test("back to Workspace Sidebar step closes the options panel", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
@@ -401,7 +401,7 @@ test.describe("UI Tour", () => {
     expect(await popoverTitle(page)).toBe(STEP_TITLES[4]);
     await expect(page.locator("#options")).toBeVisible();
 
-    // Go back to Open the Options Menu: onHighlightStarted must close the panel.
+    // Go back to Workspace Sidebar: onHighlightStarted must close the panel.
     await prevStep(page, STEP_TITLES[3]);
     await expect(page.locator("#options")).toBeHidden();
   });
@@ -586,8 +586,8 @@ test.describe("UI Tour", () => {
     await page.locator(".driver-popover-close-btn").click();
     await page.waitForSelector(".driver-popover", { state: "hidden" });
 
-    // Reopen the options panel.
-    await page.locator("#optionsTrigger").click();
+    // Reopen the Layers panel from the workspace sidebar.
+    await page.locator('#workspaceNavigationRoot [data-href="/layers"]').click();
     await expect(page.locator("#options")).toBeVisible();
 
     // Only the Layers tab content should be visible — not toolsContent.
@@ -608,8 +608,8 @@ test.describe("UI Tour", () => {
     await page.locator(".driver-popover-close-btn").click();
     await page.waitForSelector(".driver-popover", { state: "hidden" });
 
-    // Reopen the options panel.
-    await page.locator("#optionsTrigger").click();
+    // Reopen the Style panel from the workspace sidebar.
+    await page.locator('#workspaceNavigationRoot [data-href="/style"]').click();
     await expect(page.locator("#options")).toBeVisible();
 
     // Only the Style tab content should be visible — not toolsContent.
@@ -630,8 +630,8 @@ test.describe("UI Tour", () => {
     await page.locator(".driver-popover-close-btn").click();
     await page.waitForSelector(".driver-popover", { state: "hidden" });
 
-    // Reopen the options panel.
-    await page.locator("#optionsTrigger").click();
+    // Reopen the Options panel from the workspace sidebar.
+    await page.locator('#workspaceNavigationRoot [data-href="/options"]').click();
     await expect(page.locator("#options")).toBeVisible();
 
     // Only the Options tab content should be visible — not toolsContent.

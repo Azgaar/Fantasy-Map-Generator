@@ -20,10 +20,13 @@ import { ensureEl, gauss, isCtrlClick } from "@/utils";
 ensureEl("toolsContent").addEventListener("click", event => {
   if (customization) return tip("Please exit the customization mode first", false, "error");
   if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
-  if (!["BUTTON", "I"].includes(event.target.tagName)) return;
+  const configButton = event.target.closest<HTMLElement>("#configRegenerateMarkers");
+  const button = event.target.closest<HTMLButtonElement>("button");
+  const action = configButton ?? button;
+  if (!action) return;
 
-  const buttonId = event.target.id;
-  const parentId = event.target.parentElement?.id;
+  const buttonId = action.id;
+  const parentId = button?.parentElement?.id;
   if (parentId === "regenerateFeature") confirmRegeneration(event, buttonId);
   else if (buttonId === "editHeightmapButton") void Controllers.HeightmapEditor.open();
   else if (buttonId === "editBiomesButton") void Controllers.BiomesEditor.open();

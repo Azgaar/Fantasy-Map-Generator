@@ -21,12 +21,8 @@ test.describe("States", () => {
   });
 
   test("removing a state via UI should allow military regeneration without errors", async ({page}) => {
-    // First click the options trigger (►) to open the menu
-    await page.click("#optionsTrigger");
-    await page.waitForTimeout(300);
-
-    // Open the Tools tab
-    await page.click("#toolsTab");
+    // Open the persistent Tools workspace
+    await page.click('#workspaceNavigationRoot [data-href="/tools"]');
     await page.waitForTimeout(200);
 
     // Click "States" button to open States Editor

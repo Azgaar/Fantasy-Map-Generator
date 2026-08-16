@@ -10,6 +10,10 @@ function closeOptionsPanel() {
   }
 }
 
+function openWorkspacePanel(section: "layers" | "style" | "options" | "tools" | "about") {
+  document.querySelector<HTMLElement>(`#workspaceNavigationRoot [data-href="/${section}"]`)?.click();
+}
+
 function start() {
   closeOptionsPanel();
 
@@ -84,18 +88,18 @@ function start() {
         }
       },
       {
-        element: "#optionsTrigger",
+        element: "#workspaceNavigationRoot .app-sidebar",
         onHighlightStarted: () => {
           document.body.classList.remove("tour-free-roam");
           closeOptionsPanel();
         },
         popover: {
-          title: "Open the Options Menu",
-          description: "Click this arrow button to open the main options panel where all configuration tabs live.",
+          title: "Workspace Sidebar",
+          description:
+            "Use this persistent sidebar to open map layers, styling, options, tools, and project information.",
           side: "right",
           onNextClick: () => {
-            const options = ensureEl("options");
-            if (options.style.display === "none") ensureEl("optionsTrigger").click();
+            openWorkspacePanel("layers");
             tour.moveNext();
           }
         }
@@ -103,9 +107,9 @@ function start() {
 
       // ── Layers tab ──────────────────────────────────────────────────────────
       {
-        element: "#layersTab",
+        element: '#workspaceNavigationRoot [data-href="/layers"]',
         onHighlightStarted: () => {
-          ensureEl("layersTab")?.click();
+          openWorkspacePanel("layers");
         },
         popover: {
           title: "Layers Tab",
@@ -140,9 +144,9 @@ function start() {
 
       // ── Style tab ────────────────────────────────────────────────────────────
       {
-        element: "#styleTab",
+        element: '#workspaceNavigationRoot [data-href="/style"]',
         onHighlightStarted: () => {
-          ensureEl("styleTab")?.click();
+          openWorkspacePanel("style");
         },
         popover: {
           title: "Style Tab",
@@ -178,9 +182,9 @@ function start() {
 
       // ── Options tab ──────────────────────────────────────────────────────────
       {
-        element: "#optionsTab",
+        element: '#workspaceNavigationRoot [data-href="/options"]',
         onHighlightStarted: () => {
-          ensureEl("optionsTab")?.click();
+          openWorkspacePanel("options");
         },
         popover: {
           title: "Options Tab",
@@ -230,7 +234,7 @@ function start() {
           side: "right",
           onNextClick: () => {
             closeDialogs();
-            ensureEl("toolsTab")?.click();
+            openWorkspacePanel("tools");
             tour.moveNext();
           }
         }
@@ -238,9 +242,9 @@ function start() {
 
       // ── Tools tab ────────────────────────────────────────────────────────────
       {
-        element: "#toolsTab",
+        element: '#workspaceNavigationRoot [data-href="/tools"]',
         onHighlightStarted: () => {
-          ensureEl("toolsTab")?.click();
+          openWorkspacePanel("tools");
         },
         popover: {
           title: "Tools Tab",
@@ -286,9 +290,9 @@ function start() {
 
       // ── About tab ────────────────────────────────────────────────────────────
       {
-        element: "#aboutTab",
+        element: '#workspaceNavigationRoot [data-href="/about"]',
         onHighlightStarted: () => {
-          ensureEl("aboutTab")?.click();
+          openWorkspacePanel("about");
         },
         popover: {
           title: "About Tab",
@@ -312,7 +316,7 @@ function start() {
 
       // ── Export / Save / Load ─────────────────────────────────────────────────
       {
-        element: "#exportButton",
+        element: '#workspaceNavigationRoot [data-target-id="exportButton"]',
         onHighlightStarted: () => {
           closeDialogs();
         },
@@ -344,7 +348,7 @@ function start() {
         }
       },
       {
-        element: "#saveButton",
+        element: '#workspaceNavigationRoot [data-target-id="saveButton"]',
         popover: {
           title: "Save and Load Maps",
           description:
