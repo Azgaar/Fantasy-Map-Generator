@@ -5,6 +5,8 @@
 This document breaks the user interface migration into small, independently shippable milestones. The target is a
 consistent Kantzen UI workspace without coupling React components to map generation, world state, or SVG rendering.
 
+Shared visual, accessibility, and interaction rules are documented in `docs/architecture/ui_conventions.md`.
+
 The migration is intentionally incremental. Existing controllers and renderers remain authoritative until their
 responsibilities are migrated separately under the FMG 2.0 architecture.
 
@@ -342,10 +344,14 @@ Completed:
 - [x] Add shared toggle-field and confirmation-dialog compositions.
 - [x] Replace the Tools regeneration prompt with the Kantzen confirmation dialog.
 - [x] Preserve regeneration modifiers and the session-level confirmation preference through a typed command event.
+- [x] Add accessible text, number, select, range, and color field compositions.
+- [x] Add a general modal-dialog foundation with focus containment and restoration.
+- [x] Add semantic inline feedback for info, success, warning, and danger states.
+- [x] Document spacing, typography, icon, form, focus, feedback, and destructive-action conventions.
+- [x] Add a Kantzen-backed tabs composition with keyboard navigation.
+- [x] Add a generic accessible data-table foundation with roving row focus and empty states.
 
 Remaining:
 
-- [ ] Add shared field compositions for text, number, select, slider, and color controls.
-- [ ] Add general dialog and inline feedback compositions.
-- [ ] Add shared tabs and data-table foundations.
-- [ ] Document spacing, typography, icon, focus, and destructive-action conventions.
+- [ ] Exercise the general dialog and remaining field types in a migrated workflow.
+- [ ] Exercise tabs and data tables in the first migrated overview workflow.

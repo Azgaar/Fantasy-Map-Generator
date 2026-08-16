@@ -1,0 +1,101 @@
+.fmg-dialog-overlay {
+  position: fixed;
+  z-index: 2100;
+  display: grid;
+  padding: 16px;
+  overflow: auto;
+  background: rgb(0 0 0 / 0.72);
+  inset: 0;
+  place-items: center;
+}
+
+.fmg-dialog {
+  width: min(100%, 560px);
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-panel);
+  box-shadow: var(--kui-overlay-shadow, 0 18px 52px rgb(0 0 0 / 0.56));
+  color: var(--kui-text-secondary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.fmg-dialog--small {
+  width: min(100%, 400px);
+}
+
+.fmg-dialog--large {
+  width: min(100%, 880px);
+}
+
+.fmg-dialog__header {
+  display: flex;
+  min-height: 52px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 14px 12px 18px;
+  border-bottom: 1px solid var(--kui-line);
+}
+
+.fmg-dialog__header h2 {
+  margin: 0;
+  color: var(--kui-text);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.fmg-dialog__header p {
+  margin: 4px 0 0;
+  color: var(--kui-text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.fmg-dialog__close,
+.fmg-dialog__footer .bp6-button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  cursor: pointer;
+  font: 600 12px/18px inherit;
+}
+
+.fmg-dialog__close {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+  background: transparent;
+  color: var(--kui-text-muted);
+}
+
+.fmg-dialog__close:hover,
+.fmg-dialog__close:focus-visible,
+.fmg-dialog__footer .bp6-button:hover,
+.fmg-dialog__footer .bp6-button:focus-visible {
+  border-color: var(--kui-line-strong);
+  outline: 0;
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+.fmg-dialog__body {
+  max-height: calc(100vh - 150px);
+  padding: 18px;
+  overflow: auto;
+}
+
+.fmg-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+}
