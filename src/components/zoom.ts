@@ -71,6 +71,7 @@ function handleZoomEnd(): void {
   if (frameId !== null) {
     cancelAnimationFrame(frameId);
     frameId = null;
+    handleZoomPerFrame();
     ViewportLayers.renderNow();
   }
 
