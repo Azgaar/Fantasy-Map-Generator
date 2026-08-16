@@ -39,7 +39,7 @@ function addOnClick(event: MouseEvent): void {
 
   Burgs.add(point);
   refreshEditors();
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 
   if (!event.shiftKey) stop();
 }

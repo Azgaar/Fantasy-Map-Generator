@@ -1000,7 +1000,7 @@ function stateRemove(stateId: number): void {
       }
     }
   });
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 
   pack.cells.state.forEach((s: number, i: number) => {
     if (s === stateId) pack.cells.state[i] = 0;
@@ -1655,7 +1655,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 
   if (event.shiftKey === false) exitAddStateMode();
 
@@ -1917,12 +1917,11 @@ function openStateMergeDialog(): void {
     select("#debug").selectAll(".highlight").remove();
 
     States.getPoles();
-    Layers.show("states", "borders");
-    Layers.draw("provinces");
 
     if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
-    Layers.draw("labels");
+    Layers.show("states", "borders");
+    Layers.draw("burgIcons", "labels", "provinces");
     refreshStatesEditor();
   }
 }

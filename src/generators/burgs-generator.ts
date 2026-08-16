@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
-import { drawBurgIcons, removeBurgIcon } from "@/renderers/draw-burg-icons";
+import { removeBurgIcon } from "@/renderers/draw-burg-icons";
 import { drawRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers/layers";
 import type { BurgGroup } from "@/types/burg-groups";
@@ -750,7 +750,6 @@ class BurgModule {
     const newRoute = Routes.connect(cellId as number);
     if (newRoute && Layers.isOn("routes")) drawRoute(newRoute);
 
-    drawBurgIcons();
     return burgId;
   }
 
@@ -856,14 +855,14 @@ class BurgModule {
         const burg = pack.burgs[burgId];
         burg.state = state.i;
         burg.capital = 1;
-        this.changeGroup(burg, null, false);
+        this.changeGroup(burg, null);
       });
 
     this.specify();
     Routes.regenerate();
   }
 
-  changeGroup(burg: Burg, group: string | null = null, render = true) {
+  changeGroup(burg: Burg, group: string | null = null) {
     if (group) {
       burg.group = group;
     } else {
@@ -871,8 +870,6 @@ class BurgModule {
       const populations = validBurgs.map(b => b.population as number).sort((a, b) => a - b);
       this.defineGroup(burg, populations);
     }
-
-    if (render) drawBurgIcons();
   }
 
   remove(burgId: number) {
@@ -886,12 +883,11 @@ class BurgModule {
     if (noteId !== -1) notes.splice(noteId, 1);
 
     if (burg.coa) {
+      // TODO: should be handled by emblems renderer
       document.getElementById(`burgCOA${burgId}`)?.remove();
       select("#emblems").select(`#burgEmblems > use[data-i='${burgId}']`).remove();
       delete burg.coa;
     }
-
-    removeBurgIcon(burg.i!);
   }
 }
 

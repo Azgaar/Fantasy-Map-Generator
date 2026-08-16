@@ -446,7 +446,7 @@ function triggerBurgRemove(this: HTMLElement): void {
     onConfirm: () => {
       Burgs.remove(burgId);
       burgsTable.refresh();
-      Layers.draw("labels");
+      Layers.draw("burgIcons", "labels");
     }
   });
 }
@@ -771,7 +771,7 @@ function triggerAllBurgsRemove(): void {
     onConfirm: () => {
       pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => void Burgs.remove(b.i));
       burgsTable.refresh();
-      Layers.draw("labels");
+      Layers.draw("burgIcons", "labels");
     }
   });
 }

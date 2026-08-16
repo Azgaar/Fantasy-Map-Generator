@@ -352,7 +352,7 @@ function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
   Burgs.changeGroup(burg, this.value);
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -465,7 +465,7 @@ function toggleCapital(burgId: number): void {
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
   Burgs.changeGroup(oldCapital);
-  Layers.draw("labels");
+  Layers.draw("burgIcons", "labels");
 }
 
 function toggleBurgLockButton(): void {
@@ -826,7 +826,7 @@ function removeSelectedBurg(): void {
       confirm: "Remove",
       onConfirm: () => {
         Burgs.remove(burgId);
-        Layers.draw("labels");
+        Layers.draw("burgIcons", "labels");
         $("#burgEditor").dialog("close");
       }
     });
