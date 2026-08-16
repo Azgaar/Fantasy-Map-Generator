@@ -1,7 +1,9 @@
 # Review notes — PR #1583 "Global layers registry"
 
 18 findings, each independently verified against the PR head, all at full detail, ranked by
-severity. Line numbers refer to the PR head (5c4d054e).
+severity. Line numbers refer to 5c4d054e; the PR head has since moved to 9c292818, which adds
+only zoom.test.ts and a one-line handleZoomEnd change in zoom.ts — no finding or line number is
+affected.
 
 ## The pattern behind the top findings
 
