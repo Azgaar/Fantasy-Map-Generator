@@ -5,9 +5,9 @@
   "name": "Azgaar's Fantasy Map Generator",
   "short_name": "Azgaar's Fantasy Map Generator",
   "description": "Web application generating interactive and highly customizable maps",
-  "scope": "/Fantasy-Map-Generator/",
-  "start_url": "/Fantasy-Map-Generator/?source=pwa",
-  "url": "https://azgaar.github.io/Fantasy-Map-Generator",
+  "scope": "./",
+  "start_url": "./?source=pwa",
+  "url": "./",
   "icons": [
     {
       "src": "images/icons/icon_x512.png",
