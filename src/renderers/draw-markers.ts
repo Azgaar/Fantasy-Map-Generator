@@ -35,7 +35,7 @@ interface MarkerSceneItem {
 }
 
 const scene = new Scene<MarkerSceneItem>();
-const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers, clear: () => scene.invalidate() });
+const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers, clear: clearMarkers });
 
 // prettier-ignore
 const pinShapes: PinShapes = {
@@ -114,6 +114,11 @@ function reconcileMarkers(context: ViewportRenderContext): void {
   const markers = context.root.querySelector<SVGGElement>("#markers");
   if (!markers) return;
   if (!scene.valid) return;
+  if (!layerIsOn("toggleMarkers")) {
+    scene.invalidate();
+    markers.replaceChildren();
+    return;
+  }
 
   const { x0, y0, x1, y1 } = context.bounds;
   const markup: string[] = [];
@@ -123,6 +128,11 @@ function reconcileMarkers(context: ViewportRenderContext): void {
     markup.push(markerRenderer(marker, rescale));
   }
   markers.innerHTML = markup.join("");
+}
+
+function clearMarkers(): void {
+  scene.invalidate();
+  document.querySelector("#markers")?.replaceChildren();
 }
 
 window.drawMarkers = markersRenderer;

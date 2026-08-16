@@ -416,16 +416,15 @@ export class MarketsModule {
     const DISTANCE_COST_FACTOR = 1;
 
     const markets = pack.markets;
-    const maximumMarketId = markets.reduce((maximum, market) => Math.max(maximum, market.i), 0);
-    const matrixWidth = maximumMarketId + 1;
-    const travelCost = new Float64Array(matrixWidth * matrixWidth);
-    const salesTaxByMarket = new Float64Array(matrixWidth);
+    const marketCount = markets.length;
+    const travelCost = new Float64Array(marketCount * marketCount);
+    const salesTaxByMarket = new Float64Array(marketCount);
 
     for (let marketIndex = 0; marketIndex < markets.length; marketIndex++) {
       const market1 = markets[marketIndex];
       const burg1 = pack.burgs[market1.centerBurgId];
       if (!burg1) continue;
-      salesTaxByMarket[market1.i] = States.getSalesTax(burg1);
+      salesTaxByMarket[marketIndex] = States.getSalesTax(burg1);
 
       for (let otherIndex = marketIndex; otherIndex < markets.length; otherIndex++) {
         const market2 = markets[otherIndex];
@@ -436,28 +435,34 @@ export class MarketsModule {
         const dy = Math.abs(burg1.y - burg2.y);
         const distance = dx > dy ? dx + 0.414 * dy : dy + 0.414 * dx;
         const cost = (distance / mapDiagonal) * DISTANCE_COST_FACTOR;
-        travelCost[market1.i * matrixWidth + market2.i] = cost;
-        travelCost[market2.i * matrixWidth + market1.i] = cost;
+        travelCost[marketIndex * marketCount + otherIndex] = cost;
+        travelCost[otherIndex * marketCount + marketIndex] = cost;
       }
     }
 
     for (const good of pack.goods) {
       if (!good.distribution && !good.recipes?.length) continue;
 
-      type TradeMarket = { market: Market; reserve: number; marketGood: Market["goods"][number] };
+      type TradeMarket = {
+        market: Market;
+        marketIndex: number;
+        reserve: number;
+        marketGood: Market["goods"][number];
+      };
       const exporters: TradeMarket[] = [];
       const importers: TradeMarket[] = [];
 
-      for (const market of markets) {
+      for (let marketIndex = 0; marketIndex < markets.length; marketIndex++) {
+        const market = markets[marketIndex];
         const population = populationByMarket[market.i] || 0;
         const demand = population * ((consumerDemandFactors[good.i] || 0) + (industrialDemandFactors[good.i] || 0));
         const reserve = demand * (1 + TRADE_RESERVE_FACTOR);
 
         const marketGood = this.getMarketGood(market, good);
         if (marketGood.stock > reserve) {
-          exporters.push({ market, reserve, marketGood });
+          exporters.push({ market, marketIndex, reserve, marketGood });
         } else if (marketGood.stock < reserve) {
-          importers.push({ market, reserve, marketGood });
+          importers.push({ market, marketIndex, reserve, marketGood });
         }
       }
 
@@ -482,7 +487,7 @@ export class MarketsModule {
         const available = Math.max(0, exporterGood.stock - exporter.reserve);
         if (available < MIN_UNIT) continue;
 
-        const exporterTaxPerUnit = salesTaxByMarket[exporter.market.i] * exporterGood.price;
+        const exporterTaxPerUnit = salesTaxByMarket[exporter.marketIndex] * exporterGood.price;
 
         for (const importer of importers) {
           const importerGood = importer.marketGood;
@@ -490,7 +495,7 @@ export class MarketsModule {
           const units = Math.min(available, needed);
           if (units < MIN_UNIT) continue;
 
-          const transportCost = travelCost[exporter.market.i * matrixWidth + importer.market.i] * good.value;
+          const transportCost = travelCost[exporter.marketIndex * marketCount + importer.marketIndex] * good.value;
           const unitProfit = importerGood.price - (exporterGood.price + transportCost + exporterTaxPerUnit);
           const totalProfit = unitProfit * units;
           if (totalProfit < MIN_PROFIT) continue;

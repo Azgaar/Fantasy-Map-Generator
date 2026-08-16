@@ -515,7 +515,8 @@ async function generate(options) {
   try {
     const timeStart = performance.now();
     window.MapPerformance?.reset();
-    const measureStep = (name, action) => window.MapPerformance?.measure(name, action) ?? action();
+    const measureStep = (name, action) =>
+      window.MapPerformance ? window.MapPerformance.measure(name, action) : action();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
 
     invokeActiveZooming();
@@ -531,65 +532,71 @@ async function generate(options) {
       if (shouldRegenerateGrid(grid, precreatedSeed)) {
         grid =
           precreatedGraph ||
-          (await window.GridGeneration.generate({
-            seed,
-            graphWidth,
-            graphHeight,
-            cellsDesired: +pointsInput.dataset.cells
-          }));
+          (await measureStep("generation:grid:voronoi", () =>
+            window.GridGeneration.generate({
+              seed,
+              graphWidth,
+              graphHeight,
+              cellsDesired: +pointsInput.dataset.cells
+            })
+          ));
       }
       else delete grid.cells.h;
-      grid.cells.h = await HeightmapGenerator.generate(grid);
+      grid.cells.h = await measureStep("generation:grid:heightmap", () => HeightmapGenerator.generate(grid));
       pack = {}; // reset pack
     });
 
     measureStep("generation:climate", () => {
-      Features.markupGrid();
-      addLakesInDeepDepressions();
-      openNearSeaLakes();
-      OceanLayers();
+      measureStep("generation:features:grid", () => Features.markupGrid());
+      measureStep("generation:lakes:grid", () => {
+        addLakesInDeepDepressions();
+        openNearSeaLakes();
+      });
+      measureStep("generation:ocean-layers", () => OceanLayers());
       defineMapSize();
       calculateMapCoordinates();
-      calculateTemperatures();
-      generatePrecipitation();
+      measureStep("generation:temperature", () => calculateTemperatures());
+      measureStep("generation:precipitation", () => generatePrecipitation());
     });
 
     measureStep("generation:repack", () => {
-      reGraph();
-      Features.markupPack();
+      measureStep("generation:graph:repack", () => reGraph());
+      measureStep("generation:features:pack", () => Features.markupPack());
       Measurers.createDefaultRuler();
-      Rivers.generate();
-      Biomes.generate();
+      measureStep("generation:rivers", () => Rivers.generate());
+      measureStep("generation:biomes", () => Biomes.generate());
       Features.defineGroups();
-      Ice.generate();
-      Goods.generate();
+      measureStep("generation:ice", () => Ice.generate());
+      measureStep("generation:goods", () => Goods.generate());
     });
 
     measureStep("generation:settlements", () => {
       rankCells();
-      Cultures.generate();
-      Cultures.expand(getCultureGenerationSettings());
-      Burgs.generate();
-      States.generate(getStateExpansionSettings());
-      Routes.generate();
-      Religions.generate();
+      measureStep("generation:cultures", () => {
+        Cultures.generate();
+        Cultures.expand(getCultureGenerationSettings());
+      });
+      measureStep("generation:burgs", () => Burgs.generate());
+      measureStep("generation:states", () => States.generate(getStateExpansionSettings()));
+      measureStep("generation:routes", () => Routes.generate());
+      measureStep("generation:religions", () => Religions.generate());
       Burgs.specify();
       States.collectStatistics();
       States.defineStateForms();
-      Provinces.generate();
+      measureStep("generation:provinces", () => Provinces.generate());
       Provinces.getPoles();
       Rivers.specify();
       Lakes.defineNames();
     });
 
     measureStep("generation:economy-and-overlays", () => {
-      Markets.generate();
-      Production.produce();
-      States.collectTaxes();
-      Military.generate();
-      Markers.generate();
-      Zones.generate();
-      AddedLabels.initiate();
+      measureStep("generation:markets", () => Markets.generate());
+      measureStep("generation:production", () => Production.produce());
+      measureStep("generation:taxes", () => States.collectTaxes());
+      measureStep("generation:military", () => Military.generate());
+      measureStep("generation:markers", () => Markers.generate());
+      measureStep("generation:zones", () => Zones.generate());
+      measureStep("generation:labels", () => AddedLabels.initiate());
     });
 
     drawScaleBar(scaleBar, scale);

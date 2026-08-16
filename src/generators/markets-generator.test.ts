@@ -140,6 +140,30 @@ describe("MarketsModule", () => {
       expect(tradeDeal!.price).toBeGreaterThan(5);
     });
 
+    it("runGlobalTrade() keeps its distance matrix compact when market ids are sparse", () => {
+      const exporter: Market = {
+        i: 7,
+        centerBurgId: 1,
+        color: "#ff0000",
+        goods: { 0: { stock: 100, price: 5 } }
+      };
+      const importer: Market = {
+        i: 100_000,
+        centerBurgId: 2,
+        color: "#00ff00",
+        goods: { 0: { stock: 0, price: 20 } }
+      };
+      const burg1: Burg = { i: 1, x: 100, y: 100, population: 100, market: exporter.i } as any;
+      const burg2: Burg = { i: 2, x: 200, y: 100, population: 100, market: importer.i } as any;
+      globalThis.pack.markets = [exporter, importer];
+      globalThis.pack.burgs = [{ i: 0 } as any, burg1, burg2];
+
+      marketsModule.runGlobalTrade();
+
+      expect(importer.goods[0].stock).toBeGreaterThan(0);
+      expect(globalThis.pack.deals).toContainEqual(expect.objectContaining({ seller: exporter.i, buyer: importer.i }));
+    });
+
     it("addMarket() should claim only the center burg's cell and preserve existing borders", () => {
       // Two cells already owned by market 1, plus a manual edit to be preserved.
       const market1: Market = { i: 1, centerBurgId: 1, color: "#ff0000", goods: {} };

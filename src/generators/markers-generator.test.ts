@@ -80,4 +80,32 @@ describe("MarkersModule.addEncounter", () => {
     const note = globalThis.notes[0];
     expect(String(note.legend).includes("deorum.vercel.app")).toBe(true);
   });
+
+  it("builds ordered candidate buckets in one pass", () => {
+    const candidatePack = {
+      cells: {
+        i: [0, 1, 2, 3, 4, 5],
+        h: Uint8Array.from([10, 20, 49, 50, 70, 80]),
+        burg: Uint8Array.from([0, 1, 0, 0, 2, 0]),
+        r: Uint8Array.from([0, 0, 3, 0, 0, 4]),
+        culture: Uint8Array.from([0, 1, 1, 0, 2, 0]),
+        pop: Float32Array.from([0, 2, 0, 4, 0, 1]),
+        harbor: Uint8Array.from([0, 7, 2, 0, 8, 0]),
+        biome: Uint8Array.from([0, 1, 2, 1, 2, 1])
+      },
+      biomes: [{ habitability: 0 }, { habitability: 5 }, { habitability: 0 }]
+    } as any;
+
+    const index = markers.buildCandidateIndex(candidatePack);
+
+    expect(index.burg).toEqual([1, 4]);
+    expect(index.river).toEqual([2, 5]);
+    expect(index.land).toEqual([1, 2, 3, 4, 5]);
+    expect(index.water).toEqual([0]);
+    expect(index.high50).toEqual([3, 4, 5]);
+    expect(index.high70).toEqual([4, 5]);
+    expect(index.harbor).toEqual([1, 4]);
+    expect(index.biome1).toEqual([1, 3, 5]);
+    expect(index.habitable).toEqual([1, 3, 5]);
+  });
 });

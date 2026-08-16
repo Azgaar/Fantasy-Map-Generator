@@ -224,41 +224,48 @@ function getCurrentPreset() {
 
 // run on each map generation
 function drawLayers() {
-  drawFeatures();
-  if (layerIsOn("toggleTexture")) drawTexture();
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleCells")) drawCells();
-  if (layerIsOn("toggleGrid")) drawGrid();
-  if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleCompass")) {
-    if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
-    compass.style("display", "block");
-  }
-  if (layerIsOn("toggleRivers")) drawRivers();
-  drawRelief();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleTrade")) TradeAnimation.start();
-  if (layerIsOn("toggleZones")) drawZones();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleRoutes")) drawRoutes();
-  if (layerIsOn("toggleTemperature")) drawTemperature();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleIce")) drawIce();
-  if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleMarketsLayer")) drawMarketsLayer();
-  if (layerIsOn("toggleEmblems")) drawEmblems();
-  drawLabels();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleMilitary")) drawMilitary();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
-  if (layerIsOn("toggleRulers")) drawMeasurers();
-  // scale bar
-  // vignette
+  const measureLayer = (name, action) =>
+    window.MapPerformance ? window.MapPerformance.measure(`render:${name}`, action) : action();
+  const drawActiveLayers = () => {
+    measureLayer("features", drawFeatures);
+    if (layerIsOn("toggleTexture")) measureLayer("texture", drawTexture);
+    if (layerIsOn("toggleHeight")) measureLayer("height", drawHeightmap);
+    if (layerIsOn("toggleBiomes")) measureLayer("biomes", drawBiomes);
+    if (layerIsOn("toggleCells")) measureLayer("cells", drawCells);
+    if (layerIsOn("toggleGrid")) measureLayer("grid", drawGrid);
+    if (layerIsOn("toggleCoordinates")) measureLayer("coordinates", drawCoordinates);
+    if (layerIsOn("toggleCompass")) {
+      measureLayer("compass", () => {
+        if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
+        compass.style("display", "block");
+      });
+    }
+    if (layerIsOn("toggleRivers")) measureLayer("rivers", drawRivers);
+    measureLayer("relief", drawRelief);
+    if (layerIsOn("toggleReligions")) measureLayer("religions", drawReligions);
+    if (layerIsOn("toggleCultures")) measureLayer("cultures", drawCultures);
+    if (layerIsOn("toggleStates")) measureLayer("states", drawStates);
+    if (layerIsOn("toggleProvinces")) measureLayer("provinces", drawProvinces);
+    if (layerIsOn("toggleTrade")) measureLayer("trade", () => TradeAnimation.start());
+    if (layerIsOn("toggleZones")) measureLayer("zones", drawZones);
+    if (layerIsOn("toggleBorders")) measureLayer("borders", drawBorders);
+    if (layerIsOn("toggleRoutes")) measureLayer("routes", drawRoutes);
+    if (layerIsOn("toggleTemperature")) measureLayer("temperature", drawTemperature);
+    if (layerIsOn("togglePopulation")) measureLayer("population", drawPopulation);
+    if (layerIsOn("toggleIce")) measureLayer("ice", drawIce);
+    if (layerIsOn("togglePrecipitation")) measureLayer("precipitation", drawPrecipitation);
+    if (layerIsOn("toggleGoods")) measureLayer("goods", drawGoods);
+    if (layerIsOn("toggleMarketsLayer")) measureLayer("markets", drawMarketsLayer);
+    if (layerIsOn("toggleEmblems")) measureLayer("emblems", drawEmblems);
+    measureLayer("labels", drawLabels);
+    if (layerIsOn("toggleBurgIcons")) measureLayer("burg-icons", drawBurgIcons);
+    if (layerIsOn("toggleMilitary")) measureLayer("military", drawMilitary);
+    if (layerIsOn("toggleMarkers")) measureLayer("markers", drawMarkers);
+    if (layerIsOn("toggleRulers")) measureLayer("rulers", drawMeasurers);
+    // scale bar
+    // vignette
+  };
+  return window.MapPerformance ? window.MapPerformance.measure("render:total", drawActiveLayers) : drawActiveLayers();
 }
 
 function toggleHeight(event) {
