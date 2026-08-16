@@ -136,8 +136,7 @@
   margin-bottom: 6px;
 }
 
-.fmg-panel-section__header h2,
-.fmg-regenerate summary > span {
+.fmg-panel-section__header h2 {
   margin: 0;
   color: var(--kui-text-muted);
   font-size: 10px;

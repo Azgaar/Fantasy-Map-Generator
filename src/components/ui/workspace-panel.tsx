@@ -1,7 +1,7 @@
 import { EmptyState, SearchField } from "@patkepa/kantzen-ui";
 import type { IconName } from "@patkepa/kantzen-ui/icons";
 import { Button } from "@patkepa/kantzen-ui/primitives";
-import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
+import type { ButtonHTMLAttributes, MouseEventHandler, ReactNode, Ref } from "react";
 
 interface WorkspacePanelProps {
   children: ReactNode;
@@ -35,8 +35,10 @@ interface WorkspacePanelActionProps extends Omit<ButtonHTMLAttributes<HTMLButton
   label: string;
   secondaryAction?: {
     ariaLabel: string;
+    commandId?: string;
     icon: IconName;
     id: string;
+    onClick?: MouseEventHandler<HTMLButtonElement>;
     tip?: string;
   };
   shortcut?: string;
@@ -141,10 +143,12 @@ export function WorkspacePanelAction({
       <Button
         aria-label={secondaryAction.ariaLabel}
         className="fmg-panel-action__secondary"
+        data-command-id={secondaryAction.commandId}
         data-tip={secondaryAction.tip}
         icon={secondaryAction.icon}
         id={secondaryAction.id}
         minimal
+        onClick={secondaryAction.onClick}
       />
     </div>
   );

@@ -312,7 +312,7 @@ Suggested branch: `refactor/remove-legacy-ui`
 | --- | --- | --- |
 | 0. Workspace Shell | Complete | — |
 | 1. Shared UI Foundation | In progress | Workspace Shell |
-| 2. Tool Information Architecture | Planned | Shared UI Foundation |
+| 2. Tool Information Architecture | In progress | Shared UI Foundation |
 | 3. Layers Panel | Planned | Shared UI Foundation |
 | 4. Style Panel | Planned | Shared UI Foundation |
 | 5. Options and About | Planned | Shared UI Foundation |
@@ -324,9 +324,8 @@ Suggested branch: `refactor/remove-legacy-ui`
 
 ## Recommended Next Step
 
-Start Milestone 1 by extracting the existing workspace section, search field, action row, and panel header patterns into
-small project-level compositions. Then use those components to migrate Layers in Milestone 3. This validates the
-foundation against a real, stateful workflow before applying it to the larger editors.
+Verify the domain-oriented tool registry against the rendered application, then migrate Layers in Milestone 3. The
+Layers workflow will exercise shared fields and feedback against real state while preserving the existing SVG renderer.
 
 ## Implementation Log
 
@@ -355,3 +354,21 @@ Remaining:
 
 - [ ] Exercise the general dialog and remaining field types in a migrated workflow.
 - [ ] Exercise tabs and data tables in the first migrated overview workflow.
+
+### Milestone 2
+
+Completed:
+
+- [x] Move tool definitions out of the workspace sidebar into a typed command registry.
+- [x] Give commands stable IDs, compatibility control IDs, icons, descriptions, shortcuts, search terms, and invocation
+      functions.
+- [x] Organize tools into World, Politics, Settlements, Geography, Analysis, Create, and Regenerate domains.
+- [x] Search tool labels, descriptions, domain vocabulary, and synonyms.
+- [x] Invoke editor and placement controllers directly instead of clicking hidden legacy controls.
+- [x] Keep regeneration behind the typed command event and the Kantzen confirmation dialog.
+- [x] Preserve existing DOM IDs used by the guided tour, keyboard shortcuts, and placement state.
+- [x] Replace the expandable regeneration menu with a visible, visually distinct command section.
+
+Remaining:
+
+- [ ] Verify command reachability and responsive grouping in a rendered browser session.

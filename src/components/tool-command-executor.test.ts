@@ -1,0 +1,38 @@
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  openBiomes: vi.fn(),
+  tip: vi.fn()
+}));
+
+vi.mock("@/controllers", () => ({
+  Controllers: { BiomesEditor: { open: mocks.openBiomes } }
+}));
+
+vi.mock("./tooltips", () => ({ tip: mocks.tip }));
+
+import { invokeToolControllerCommand } from "./tool-command-executor";
+
+describe("invokeToolControllerCommand", () => {
+  beforeEach(() => {
+    (globalThis as Record<string, unknown>).customization = 0;
+    vi.clearAllMocks();
+  });
+
+  test("invokes a controller without a legacy control click", () => {
+    expect(invokeToolControllerCommand("editBiomesButton")).toBe("executed");
+    expect(mocks.openBiomes).toHaveBeenCalledOnce();
+  });
+
+  test("blocks tools while customization mode is active", () => {
+    (globalThis as Record<string, unknown>).customization = 1;
+
+    expect(invokeToolControllerCommand("editBiomesButton")).toBe("blocked");
+    expect(mocks.openBiomes).not.toHaveBeenCalled();
+    expect(mocks.tip).toHaveBeenCalledWith("Please exit the customization mode first", false, "error");
+  });
+
+  test("reports unknown commands", () => {
+    expect(invokeToolControllerCommand("unknown-command")).toBe("missing");
+  });
+});

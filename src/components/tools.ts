@@ -1,6 +1,5 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { Controllers } from "@/controllers";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { Population } from "@/generators/population-generator";
 import { drawBorders } from "@/renderers/draw-borders";
@@ -16,56 +15,29 @@ import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
+import { invokeToolControllerCommand, toolsAreAvailable } from "./tool-command-executor";
 import { type RegenerationCommandDetail, RUN_REGENERATION_EVENT } from "./ui/regeneration-command";
 
 ensureEl("toolsContent").addEventListener("click", event => {
-  if (customization) return tip("Please exit the customization mode first", false, "error");
   if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
   const configButton = event.target.closest<HTMLElement>("#configRegenerateMarkers");
   const button = event.target.closest<HTMLButtonElement>("button");
+  if (button?.dataset.commandId) return;
   const action = configButton ?? button;
   if (!action) return;
 
   const buttonId = action.id;
   const parentId = button?.parentElement?.id;
-  if (buttonId === "configRegenerateMarkers") void Controllers.MarkersSettings.open();
-  else if (parentId === "regenerateFeature") confirmRegeneration(event, buttonId);
-  else if (buttonId === "editHeightmapButton") void Controllers.HeightmapEditor.open();
-  else if (buttonId === "editBiomesButton") void Controllers.BiomesEditor.open();
-  else if (buttonId === "editStatesButton") void Controllers.StatesEditor.open();
-  else if (buttonId === "editProvincesButton") void Controllers.ProvincesEditor.open();
-  else if (buttonId === "editDiplomacyButton") void Controllers.DiplomacyEditor.open();
-  else if (buttonId === "editCoastlineSettings") void Controllers.CoastlineEditor.open();
-  else if (buttonId === "editTradeAnimationButton") void Controllers.TradeAnimationEditor.open();
-  else if (buttonId === "editCulturesButton") void Controllers.CulturesEditor.open();
-  else if (buttonId === "editReligions") void Controllers.ReligionsEditor.open();
-  else if (buttonId === "editGoods") void Controllers.GoodsEditor.open();
-  else if (buttonId === "editEmblemButton") void Controllers.EmblemsEditor.openDefault();
-  else if (buttonId === "editNamesBaseButton") void Controllers.NamesbaseEditor.open();
-  else if (buttonId === "editUnitsButton") void Controllers.UnitsEditor.open();
-  else if (buttonId === "editMeasurersButton") void Controllers.MeasurersEditor.open();
-  else if (buttonId === "editNotesButton") void Controllers.NotesEditor.open();
-  else if (buttonId === "editZonesButton") void Controllers.ZonesEditor.open();
-  else if (buttonId === "overviewChartsButton") void Controllers.ChartsOverview.open();
-  else if (buttonId === "overviewBurgsButton") void Controllers.BurgsOverview.open();
-  else if (buttonId === "overviewRoutesButton") void Controllers.RoutesOverview.open();
-  else if (buttonId === "overviewRiversButton") void Controllers.RiversOverview.open();
-  else if (buttonId === "overviewMilitaryButton") void Controllers.MilitaryOverview.open();
-  else if (buttonId === "overviewLabelsButton") void Controllers.LabelsOverview.open();
-  else if (buttonId === "overviewMarkersButton") void Controllers.MarkersOverview.open();
-  else if (buttonId === "overviewMarketsButton") void Controllers.MarketsOverview.open();
-  else if (buttonId === "overviewCellsButton") void Controllers.CellInfo.open();
-  else if (buttonId === "openMinimapButton") void Controllers.Minimap.open();
-  else if (buttonId === "addBurgTool") void Controllers.BurgCreator.toggle();
-  else if (buttonId === "addLabel") void Controllers.LabelCreator.toggle();
-  else if (buttonId === "addRiver") void Controllers.RiverAutoCreator.toggle();
-  else if (buttonId === "addRoute") void Controllers.RouteCreator.open();
-  else if (buttonId === "addMarker") void Controllers.MarkerCreator.toggle();
-  else if (buttonId === "openSubmapTool") void Controllers.SubmapTool.open();
-  else if (buttonId === "openTransformTool") void Controllers.TransformTool.open();
+  if (parentId === "regenerateFeature") {
+    if (toolsAreAvailable()) confirmRegeneration(event, buttonId);
+    return;
+  }
+
+  invokeToolControllerCommand(buttonId);
 });
 
 window.addEventListener(RUN_REGENERATION_EVENT, event => {
+  if (!toolsAreAvailable()) return;
   const detail = (event as CustomEvent<RegenerationCommandDetail>).detail;
   if (!detail?.buttonId) return;
   const { buttonId, ctrlKey, metaKey } = detail;

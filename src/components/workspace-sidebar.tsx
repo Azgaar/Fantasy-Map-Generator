@@ -3,9 +3,9 @@ import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
 import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { getToolCommands, type ToolCommand, type ToolGroup, TOOL_GROUPS } from "./tool-registry";
 import { WorkspaceConfirmDialog } from "./ui/confirm-dialog";
 import { executeLegacyCommand } from "./ui/legacy-command";
-import { dispatchRegenerationCommand } from "./ui/regeneration-command";
 import {
   WorkspacePanel,
   WorkspacePanelAction,
@@ -21,21 +21,8 @@ import "./workspace-sidebar.css";
 
 type WorkspaceSection = "layers" | "style" | "options" | "tools" | "about";
 
-interface ToolAction {
-  id: string;
-  label: string;
-  tip: string;
-  shortcut?: string;
-}
-
-interface ToolGroup {
-  label: string;
-  icon: IconName;
-  actions: ToolAction[];
-}
-
 interface PendingRegeneration {
-  action: ToolAction;
+  command: ToolCommand;
   ctrlKey: boolean;
   metaKey: boolean;
 }
@@ -75,80 +62,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "About", icon: "info-sign", href: SECTION_ROUTES.about }
     ]
   }
-];
-
-const EDIT_ACTIONS: ToolAction[] = [
-  { id: "editBiomesButton", label: "Biomes", tip: "Open Biomes Editor", shortcut: "Shift + B" },
-  { id: "overviewBurgsButton", label: "Burgs", tip: "Open Burgs Overview", shortcut: "Shift + T" },
-  { id: "editCoastlineSettings", label: "Coastlines", tip: "Open Coastline Settings Editor" },
-  { id: "editCulturesButton", label: "Cultures", tip: "Open Cultures Editor", shortcut: "Shift + C" },
-  { id: "editDiplomacyButton", label: "Diplomacy", tip: "Open Diplomatic Relationships Editor", shortcut: "Shift + D" },
-  { id: "editEmblemButton", label: "Emblems", tip: "Open Emblem Editor", shortcut: "Shift + Y" },
-  { id: "editGoods", label: "Goods", tip: "Open Goods Editor", shortcut: "Shift + G" },
-  { id: "editHeightmapButton", label: "Heightmap", tip: "Open Heightmap customization", shortcut: "Shift + H" },
-  { id: "overviewLabelsButton", label: "Labels", tip: "Open Labels Overview", shortcut: "Shift + L" },
-  { id: "overviewMarketsButton", label: "Markets", tip: "Open Markets Overview" },
-  { id: "overviewMarkersButton", label: "Markers", tip: "Open Markers Overview", shortcut: "Shift + K" },
-  { id: "editMeasurersButton", label: "Measurers", tip: "Open Measurers Editor", shortcut: "Shift + =" },
-  { id: "overviewMilitaryButton", label: "Military", tip: "Open Military Forces Overview", shortcut: "Shift + M" },
-  { id: "editNamesBaseButton", label: "Namesbase", tip: "Open Namesbase Editor", shortcut: "Shift + N" },
-  { id: "editNotesButton", label: "Notes", tip: "Open Notes Editor", shortcut: "Shift + O" },
-  { id: "editProvincesButton", label: "Provinces", tip: "Open Provinces Editor", shortcut: "Shift + P" },
-  { id: "editReligions", label: "Religions", tip: "Open Religions Editor", shortcut: "Shift + R" },
-  { id: "overviewRiversButton", label: "Rivers", tip: "Open Rivers Overview", shortcut: "Shift + V" },
-  { id: "overviewRoutesButton", label: "Routes", tip: "Open Routes Overview", shortcut: "Shift + U" },
-  { id: "editStatesButton", label: "States", tip: "Open States Editor", shortcut: "Shift + S" },
-  { id: "editTradeAnimationButton", label: "Trade", tip: "Open Trade Animation Editor" },
-  { id: "editUnitsButton", label: "Units", tip: "Open Units Editor", shortcut: "Shift + Q" },
-  { id: "editZonesButton", label: "Zones", tip: "Open Zones Editor", shortcut: "Shift + Z" }
-];
-
-const ADD_ACTIONS: ToolAction[] = [
-  { id: "addBurgTool", label: "Burg", tip: "Place a burg on the map", shortcut: "Shift + 1" },
-  { id: "addLabel", label: "Label", tip: "Place a label on the map", shortcut: "Shift + 2" },
-  { id: "addMarker", label: "Marker", tip: "Place a marker on the map", shortcut: "Shift + 3" },
-  { id: "addRiver", label: "River", tip: "Place a river on the map", shortcut: "Shift + 4" },
-  { id: "addRoute", label: "Route", tip: "Open route creation dialog", shortcut: "Shift + 5" }
-];
-
-const INSPECT_ACTIONS: ToolAction[] = [
-  { id: "overviewCellsButton", label: "Cells", tip: "Open Cell details", shortcut: "Shift + E" },
-  { id: "overviewChartsButton", label: "Charts", tip: "Open data charts", shortcut: "Shift + A" },
-  { id: "openMinimapButton", label: "Minimap", tip: "Open minimap overview" }
-];
-
-const CREATE_ACTIONS: ToolAction[] = [
-  { id: "openSubmapTool", label: "Submap", tip: "Generate a submap from the current viewport" },
-  { id: "openTransformTool", label: "Transform", tip: "Transform the map" }
-];
-
-const REGENERATE_ACTIONS: ToolAction[] = [
-  { id: "regenerateBurgs", label: "Burgs", tip: "Regenerate all unlocked burgs and routes" },
-  { id: "regenerateCultures", label: "Cultures", tip: "Regenerate non-locked cultures" },
-  { id: "regenerateEconomy", label: "Economy", tip: "Rebuild markets, production, trade, and taxes" },
-  { id: "regenerateEmblems", label: "Emblems", tip: "Regenerate all emblems" },
-  { id: "regenerateGoods", label: "Goods", tip: "Regenerate bonus goods placement" },
-  { id: "regenerateIce", label: "Ice", tip: "Regenerate icebergs and glaciers" },
-  { id: "regenerateStateLabels", label: "State Labels", tip: "Update state label placement" },
-  { id: "regenerateMarkers", label: "Markers", tip: "Regenerate unlocked markers" },
-  { id: "regenerateMarkets", label: "Markets", tip: "Regenerate markets and territories" },
-  { id: "regenerateMilitary", label: "Military", tip: "Recalculate military forces" },
-  { id: "regeneratePopulation", label: "Population", tip: "Recalculate rural and urban population" },
-  { id: "regenerateProduction", label: "Production", tip: "Regenerate production and trade deals" },
-  { id: "regenerateProvinces", label: "Provinces", tip: "Regenerate non-locked provinces" },
-  { id: "regenerateReliefIcons", label: "Relief", tip: "Regenerate relief icons" },
-  { id: "regenerateReligions", label: "Religions", tip: "Regenerate non-locked religions" },
-  { id: "regenerateRivers", label: "Rivers", tip: "Restore generated rivers" },
-  { id: "regenerateRoutes", label: "Routes", tip: "Regenerate unlocked routes" },
-  { id: "regenerateStates", label: "States", tip: "Regenerate non-locked states" },
-  { id: "regenerateZones", label: "Zones", tip: "Regenerate zones" }
-];
-
-const TOOL_GROUPS: ToolGroup[] = [
-  { label: "Edit", icon: "edit", actions: EDIT_ACTIONS },
-  { label: "Add", icon: "plus", actions: ADD_ACTIONS },
-  { label: "Inspect", icon: "eye-open", actions: INSPECT_ACTIONS },
-  { label: "Create", icon: "new-object", actions: CREATE_ACTIONS }
 ];
 
 const SIDEBAR_ACTIONS = [
@@ -253,56 +166,71 @@ function WorkspaceHeader(): React.JSX.Element {
   return <WorkspacePanelHeader onClose={() => executeLegacyCommand("optionsHide")} title={title} />;
 }
 
-function matchesSearch(action: ToolAction, query: string): boolean {
-  return `${action.label} ${action.tip}`.toLocaleLowerCase().includes(query);
-}
-
 function ToolButton({
-  action,
-  icon,
+  command,
   onRegenerate
 }: {
-  action: ToolAction;
-  icon: IconName;
-  onRegenerate?: (action: ToolAction, event: MouseEvent) => void;
+  command: ToolCommand;
+  onRegenerate?: (command: ToolCommand, event: MouseEvent) => void;
 }): React.JSX.Element {
-  const hasMarkerSettings = action.id === "regenerateMarkers";
-  const handleClick = onRegenerate
-    ? (event: React.MouseEvent<HTMLButtonElement>) => {
-        if (event.target instanceof Element && event.target.closest("#configRegenerateMarkers")) return;
-        event.stopPropagation();
-        onRegenerate(action, event.nativeEvent);
-      }
-    : undefined;
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (onRegenerate) onRegenerate(command, event.nativeEvent);
+    else command.invoke();
+  };
 
   return (
     <WorkspacePanelAction
-      id={action.id}
-      data-tip={action.tip}
-      data-shortcut={action.shortcut}
-      icon={icon}
-      label={action.label}
+      id={command.controlId}
+      data-command-id={command.id}
+      data-tip={command.description}
+      data-shortcut={command.shortcut}
+      icon={command.icon}
+      label={command.label}
       onClick={handleClick}
-      secondaryAction={hasMarkerSettings ? {
-        ariaLabel: "Marker settings",
-        icon: "settings",
-        id: "configRegenerateMarkers",
-        tip: "Set marker number multiplier"
+      secondaryAction={command.secondaryAction ? {
+        ariaLabel: command.secondaryAction.ariaLabel,
+        commandId: command.secondaryAction.id,
+        icon: command.secondaryAction.icon,
+        id: command.secondaryAction.controlId,
+        onClick: event => {
+          event.stopPropagation();
+          command.secondaryAction?.invoke();
+        },
+        tip: command.secondaryAction.label
       } : undefined}
-      shortcut={action.shortcut?.replace("Shift + ", "⇧")}
+      shortcut={command.shortcut?.replace("Shift + ", "⇧")}
     />
   );
 }
 
-function ToolSection({ group, query, containerId }: { group: ToolGroup; query: string; containerId?: string }) {
-  const actions = group.actions.filter(action => matchesSearch(action, query));
-  if (!actions.length) return null;
+function ToolSection({
+  group,
+  onRegenerate,
+  query
+}: {
+  group: ToolGroup;
+  onRegenerate: (command: ToolCommand, event: MouseEvent) => void;
+  query: string;
+}): React.JSX.Element | null {
+  const commands = getToolCommands(group.id, query);
+  if (!commands.length) return null;
+
+  const containerId = group.id === "create" ? "addFeature" : group.id === "regenerate" ? "regenerateFeature" : undefined;
 
   return (
-    <WorkspacePanelSection title={group.label}>
+    <WorkspacePanelSection
+      className={group.id === "regenerate" ? "fmg-panel-section--destructive" : undefined}
+      description={group.description}
+      title={group.label}
+    >
       <div className="fmg-panel-action-list" id={containerId}>
-        {actions.map(action => (
-          <ToolButton action={action} icon={group.icon} key={action.id} />
+        {commands.map(command => (
+          <ToolButton
+            command={command}
+            key={command.id}
+            onRegenerate={command.destructive ? onRegenerate : undefined}
+          />
         ))}
       </div>
     </WorkspacePanelSection>
@@ -315,11 +243,7 @@ function ToolsPanel(): React.JSX.Element {
   const [skipFutureConfirmation, setSkipFutureConfirmation] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
   const query = search.trim().toLocaleLowerCase();
-  const [editGroup, addGroup, inspectGroup, createGroup] = TOOL_GROUPS;
-  const regenerateActions = REGENERATE_ACTIONS.filter(action => matchesSearch(action, query));
-  const hasResults =
-    regenerateActions.length > 0 ||
-    TOOL_GROUPS.some(group => group.actions.some(action => matchesSearch(action, query)));
+  const visibleGroups = TOOL_GROUPS.filter(group => getToolCommands(group.id, query).length > 0);
 
   useEffect(() => {
     const focusToolSearch = (event: KeyboardEvent) => {
@@ -335,20 +259,20 @@ function ToolsPanel(): React.JSX.Element {
     return () => window.removeEventListener("keydown", focusToolSearch);
   }, []);
 
-  const requestRegeneration = (action: ToolAction, event: MouseEvent) => {
+  const requestRegeneration = (command: ToolCommand, event: MouseEvent) => {
     if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
-      dispatchRegenerationCommand(action.id, event);
+      command.invoke(event);
       return;
     }
 
     setSkipFutureConfirmation(false);
-    setPendingRegeneration({ action, ctrlKey: event.ctrlKey, metaKey: event.metaKey });
+    setPendingRegeneration({ command, ctrlKey: event.ctrlKey, metaKey: event.metaKey });
   };
 
   const confirmRegeneration = () => {
     if (!pendingRegeneration) return;
     if (skipFutureConfirmation) sessionStorage.setItem("regenerateFeatureDontAsk", "true");
-    dispatchRegenerationCommand(pendingRegeneration.action.id, pendingRegeneration);
+    pendingRegeneration.command.invoke(pendingRegeneration);
     setPendingRegeneration(null);
     setSkipFutureConfirmation(false);
   };
@@ -368,27 +292,11 @@ function ToolsPanel(): React.JSX.Element {
         shortcut="Ctrl K"
         value={search}
       />
-      {hasResults ? (
+      {visibleGroups.length ? (
         <div className="fmg-tools-layout">
-          <div>{editGroup ? <ToolSection group={editGroup} query={query} /> : null}</div>
-          <div className="fmg-tools-secondary">
-            {addGroup ? <ToolSection group={addGroup} query={query} containerId="addFeature" /> : null}
-            {inspectGroup ? <ToolSection group={inspectGroup} query={query} /> : null}
-            {createGroup ? <ToolSection group={createGroup} query={query} /> : null}
-            {regenerateActions.length ? (
-              <details className="fmg-regenerate" open={query ? true : undefined}>
-                <summary>
-                  <span>Regenerate</span>
-                  <small>Rebuild generated features</small>
-                </summary>
-                <div id="regenerateFeature" className="fmg-panel-action-list">
-                  {regenerateActions.map(action => (
-                    <ToolButton action={action} icon="refresh" key={action.id} onRegenerate={requestRegeneration} />
-                  ))}
-                </div>
-              </details>
-            ) : null}
-          </div>
+          {visibleGroups.map(group => (
+            <ToolSection group={group} key={group.id} onRegenerate={requestRegeneration} query={query} />
+          ))}
         </div>
       ) : (
         <WorkspacePanelEmptyState
@@ -408,7 +316,7 @@ function ToolsPanel(): React.JSX.Element {
           label: "Do not ask again this session",
           onChange: setSkipFutureConfirmation
         }}
-        title={`Regenerate ${pendingRegeneration?.action.label ?? "feature"}?`}
+        title={`Regenerate ${pendingRegeneration?.command.label ?? "feature"}?`}
       />
     </WorkspacePanel>
   );
