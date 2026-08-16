@@ -18,6 +18,7 @@ declare global {
    * When the last classic caller of one is gone, delete the entry and its `window.X =` line.
    */
   interface Window {
+    LayerControls: import("../components/layers/layer-controls").LegacyLayerControls;
     redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
     redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;

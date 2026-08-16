@@ -1,6 +1,7 @@
 import { tip } from "@/components/tooltips";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
+import { dispatchViewModeChange, type ViewMode } from "./view-mode-events";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.threeD` (not in this controller);
@@ -59,12 +60,14 @@ function enterStandard(): void {
   ensureEl("heightmap3DView").classList.remove("pressed");
   ensureEl("viewStandard").classList.add("pressed");
   teardown();
+  dispatchViewModeChange("viewStandard");
 }
 
 async function open(type: string): Promise<void> {
   enterStandard(); // tears down any current 3D view and resets the buttons
   ensureEl("viewStandard").classList.remove("pressed");
   ensureEl(type).classList.add("pressed");
+  if (type === "viewMesh" || type === "viewGlobe") dispatchViewModeChange(type as ViewMode);
 
   const canvas = document.createElement("canvas");
   canvas.id = "canvas3d";

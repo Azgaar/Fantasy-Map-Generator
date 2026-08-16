@@ -3,6 +3,7 @@ import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
 import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { LayersPanel } from "./layers/layers-panel";
 import { getToolCommands, type ToolCommand, type ToolGroup, TOOL_GROUPS } from "./tool-registry";
 import { WorkspaceConfirmDialog } from "./ui/confirm-dialog";
 import { executeLegacyCommand } from "./ui/legacy-command";
@@ -322,22 +323,12 @@ function ToolsPanel(): React.JSX.Element {
   );
 }
 
-function bindLayerSearch(): void {
-  const search = document.getElementById("layersSearchInput") as HTMLInputElement | null;
-  if (!search) return;
-  search.addEventListener("input", () => {
-    const query = search.value.trim().toLocaleLowerCase();
-    document.querySelectorAll<HTMLElement>("#mapLayers > li").forEach(layer => {
-      layer.hidden = Boolean(query) && !layer.textContent?.toLocaleLowerCase().includes(query);
-    });
-  });
-}
-
 const navigationRoot = document.getElementById("workspaceNavigationRoot");
 const headerRoot = document.getElementById("workspacePanelHeaderRoot");
+const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
 
 if (navigationRoot) createRoot(navigationRoot).render(<WorkspaceNavigation />);
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
+if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
-bindLayerSearch();

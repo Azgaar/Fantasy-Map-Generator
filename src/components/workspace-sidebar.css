@@ -259,15 +259,6 @@
   color: inherit;
 }
 
-#layersContent > p:first-of-type {
-  display: block !important;
-  margin-top: 0;
-}
-
-#layersContent > #layersPreset {
-  width: calc(100% - 62px) !important;
-}
-
 #options p,
 #options .separator {
   margin: 14px 0 7px;
@@ -353,118 +344,6 @@
   background: hsl(var(--accent) / 0.28);
   color: var(--kui-text);
   font-style: normal;
-}
-
-#layersSearch {
-  position: relative;
-  display: flex;
-  height: 34px;
-  align-items: center;
-  gap: 8px;
-  margin: 7px 0 10px;
-  padding: 0 9px;
-  border: 1px solid var(--kui-line);
-  background: var(--kui-surface-raised);
-  color: var(--kui-text-muted);
-}
-
-#layersSearch input {
-  min-width: 0;
-  height: 30px;
-  flex: 1;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--kui-text);
-  font: 12px/1.2 inherit;
-}
-
-#layersSearch input:focus-visible {
-  outline: 0;
-}
-
-#mapLayers {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  border: 1px solid var(--kui-line-soft);
-}
-
-#mapLayers > li {
-  position: relative;
-  display: block;
-  width: auto;
-  min-height: 30px;
-  float: none;
-  margin: 0;
-  padding: 7px 46px 7px 28px;
-  border-bottom: 1px solid var(--kui-line-soft);
-  background: var(--kui-surface-raised);
-  color: var(--kui-text-secondary);
-  font-size: 12px;
-  line-height: 15px;
-  text-align: left;
-}
-
-#mapLayers > li:last-child {
-  border-bottom: 0;
-}
-
-#mapLayers > li::before {
-  position: absolute;
-  top: 7px;
-  left: 9px;
-  color: var(--kui-text-muted);
-  content: "⠿";
-  font-size: 12px;
-}
-
-#mapLayers > li::after {
-  position: absolute;
-  top: 7px;
-  right: 8px;
-  width: 28px;
-  border: 1px solid hsl(var(--accent) / 0.55);
-  background: hsl(var(--accent) / 0.28);
-  color: var(--kui-text);
-  content: "ON";
-  font: 8px/14px "SF Mono", Consolas, monospace;
-  text-align: center;
-}
-
-#mapLayers > li.buttonoff {
-  background: var(--kui-surface-panel);
-  color: var(--kui-text-muted);
-}
-
-#mapLayers > li.buttonoff::after {
-  border-color: var(--kui-line);
-  background: transparent;
-  color: var(--kui-text-muted);
-  content: "OFF";
-}
-
-#mapLayers > li:hover {
-  box-shadow: inset 2px 0 hsl(var(--accent));
-  background: var(--kui-surface-hover);
-  color: var(--kui-text);
-}
-
-#viewMode {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  clear: both;
-}
-
-#viewMode > p {
-  grid-column: 1 / -1;
-}
-
-#viewMode > button {
-  width: auto;
-  float: none;
-  margin: 0;
-  padding: 6px 4px;
 }
 
 #aboutContent {

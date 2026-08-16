@@ -313,7 +313,7 @@ Suggested branch: `refactor/remove-legacy-ui`
 | 0. Workspace Shell | Complete | — |
 | 1. Shared UI Foundation | In progress | Workspace Shell |
 | 2. Tool Information Architecture | In progress | Shared UI Foundation |
-| 3. Layers Panel | Planned | Shared UI Foundation |
+| 3. Layers Panel | In progress | Shared UI Foundation |
 | 4. Style Panel | Planned | Shared UI Foundation |
 | 5. Options and About | Planned | Shared UI Foundation |
 | 6. New Map, Save, Load, and Export | Planned | Shared UI Foundation |
@@ -324,8 +324,8 @@ Suggested branch: `refactor/remove-legacy-ui`
 
 ## Recommended Next Step
 
-Verify the domain-oriented tool registry against the rendered application, then migrate Layers in Milestone 3. The
-Layers workflow will exercise shared fields and feedback against real state while preserving the existing SVG renderer.
+Verify the migrated Layers panel against the rendered application, then replace its legacy seed markup with typed layer
+definitions. Keep the classic toggle and preset implementation behind the typed bridge until renderer parity is proven.
 
 ## Implementation Log
 
@@ -352,7 +352,8 @@ Completed:
 
 Remaining:
 
-- [ ] Exercise the general dialog and remaining field types in a migrated workflow.
+- [x] Exercise the general dialog and text/select fields in the migrated Layers workflow.
+- [ ] Exercise number, range, and color fields in a migrated workflow.
 - [ ] Exercise tabs and data tables in the first migrated overview workflow.
 
 ### Milestone 2
@@ -372,3 +373,21 @@ Completed:
 Remaining:
 
 - [ ] Verify command reachability and responsive grouping in a rendered browser session.
+
+### Milestone 3
+
+Completed:
+
+- [x] Add a typed layer snapshot and command facade around legacy visibility, preset, and stacking behavior.
+- [x] Render the Layers panel as a React/Kantzen workspace panel while preserving legacy IDs and shortcuts.
+- [x] Add layer search, explicit visible/hidden states, and fixed-position states.
+- [x] Add drag handles and keyboard-accessible move controls without changing SVG renderer ownership.
+- [x] Migrate preset selection, custom preset saving, and preset removal into the workspace panel.
+- [x] Use the shared modal dialog, text/select fields, inline notice, search, section, and empty-state compositions.
+- [x] Preserve Standard, 3D scene, and Globe view controls through the existing lazy View3d controller.
+
+Remaining:
+
+- [ ] Verify toggles, presets, reordering, filtering, view modes, and responsive layout in a rendered browser session.
+- [ ] Replace the legacy layer seed markup with typed definitions after runtime parity is proven.
+- [ ] Remove the jQuery Sortable fallback when no supported workflow uses the legacy list.

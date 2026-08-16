@@ -1,6 +1,8 @@
 // UI module stub to control map layers
 "use strict";
 
+const LAYER_CONTROLS_CHANGE_EVENT = "fmg-layer-controls-change";
+
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
@@ -150,6 +152,7 @@ function applyLayersPreset() {
     if (shouldBeOn) el.classList.remove("buttonoff");
     else el.classList.add("buttonoff");
   });
+  notifyLayerControlsChanged();
 }
 
 function setLayersPreset(preset) {
@@ -174,19 +177,29 @@ function handleLayersPresetChange(preset) {
   });
 
   if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 400);
+  notifyLayerControlsChanged();
 }
 
 function savePreset() {
-  prompt("Please provide a preset name", { default: "" }, preset => {
-    presets[preset] = Array.from(ensureEl("mapLayers").querySelectorAll("li:not(.buttonoff)"))
-      .map(node => node.id)
-      .sort();
-    layersPreset.add(new Option(preset, preset, false, true));
-    localStorage.setItem("presets", JSON.stringify(presets));
-    localStorage.setItem("preset", preset);
-    removePresetButton.style.display = "inline-block";
-    savePresetButton.style.display = "none";
-  });
+  prompt("Please provide a preset name", { default: "" }, savePresetByName);
+}
+
+function savePresetByName(preset) {
+  if (!preset) return;
+  presets[preset] = Array.from(ensureEl("mapLayers").querySelectorAll("li:not(.buttonoff)"))
+    .map(node => node.id)
+    .sort();
+
+  const layersPreset = ensureEl("layersPreset");
+  const existingOption = Array.from(layersPreset.options).find(option => option.value === preset);
+  if (existingOption) layersPreset.value = preset;
+  else layersPreset.add(new Option(preset, preset, false, true));
+
+  localStorage.setItem("presets", JSON.stringify(presets));
+  localStorage.setItem("preset", preset);
+  ensureEl("removePresetButton").style.display = "inline-block";
+  ensureEl("savePresetButton").style.display = "none";
+  notifyLayerControlsChanged();
 }
 
 function removePreset() {
@@ -200,6 +213,7 @@ function removePreset() {
 
   localStorage.setItem("presets", JSON.stringify(presets));
   localStorage.removeItem("preset");
+  notifyLayerControlsChanged();
 }
 
 function getCurrentPreset() {
@@ -213,6 +227,7 @@ function getCurrentPreset() {
       const isDefault = getDefaultPresets()[preset];
       removePresetButton.style.display = isDefault ? "none" : "inline-block";
       savePresetButton.style.display = "none";
+      notifyLayerControlsChanged();
       return;
     }
   }
@@ -220,6 +235,7 @@ function getCurrentPreset() {
   layersPreset.value = "custom";
   removePresetButton.style.display = "none";
   savePresetButton.style.display = "inline-block";
+  notifyLayerControlsChanged();
 }
 
 // run on each map generation
@@ -1026,10 +1042,15 @@ function turnButtonOn(el) {
 // move layers on mapLayers dragging (jquery sortable)
 $("#mapLayers").sortable({ items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer });
 function moveLayer(event, ui) {
-  const el = getLayer(ui.item.attr("id"));
+  moveLayerById(ui.item.attr("id"), ui.item.prev().attr("id"), ui.item.next().attr("id"));
+  notifyLayerControlsChanged();
+}
+
+function moveLayerById(id, previousId, nextId) {
+  const el = getLayer(id);
   if (!el) return;
-  const prev = getLayer(ui.item.prev().attr("id"));
-  const next = getLayer(ui.item.next().attr("id"));
+  const prev = previousId ? getLayer(previousId) : null;
+  const next = nextId ? getLayer(nextId) : null;
   if (prev) el.insertAfter(prev);
   else if (next) el.insertBefore(next);
 }
@@ -1049,6 +1070,7 @@ function getLayer(id) {
   if (id === "toggleCultures") return $("#cults");
   if (id === "toggleStates") return $("#regions");
   if (id === "toggleProvinces") return $("#provs");
+  if (id === "toggleZones") return $("#zones");
   if (id === "toggleBorders") return $("#borders");
   if (id === "toggleRoutes") return $("#routes");
   if (id === "toggleTemperature") return $("#temperature");
@@ -1061,7 +1083,92 @@ function getLayer(id) {
   if (id === "toggleEmblems") return $("#emblems");
   if (id === "toggleLabels") return $("#labels");
   if (id === "toggleBurgIcons") return $("#icons");
+  if (id === "toggleMilitary") return $("#armies");
   if (id === "toggleMarkers") return $("#markers");
   if (id === "toggleTrade") return $("#tradeAnimation");
   if (id === "toggleRulers") return $("#ruler");
 }
+
+function getLayerControlsSnapshot() {
+  const layers = Array.from(ensureEl("mapLayers").querySelectorAll("li")).map(layer => ({
+    description: layer.dataset.tip || "",
+    fixed: layer.classList.contains("solid"),
+    id: layer.id,
+    label: layer.dataset.layerLabel || layer.textContent.trim(),
+    shortcut: layer.dataset.shortcut || "",
+    visible: !layer.classList.contains("buttonoff")
+  }));
+  const presetSelect = ensureEl("layersPreset");
+  const selectedPreset = presetSelect.value;
+  const presetOptions = Array.from(presetSelect.options).map(option => ({
+    hidden: option.hidden,
+    label: option.textContent,
+    value: option.value
+  }));
+  const isDefaultPreset = Boolean(getDefaultPresets()[selectedPreset]);
+
+  return {
+    canRemovePreset: selectedPreset !== "custom" && !isDefaultPreset,
+    canSavePreset: selectedPreset === "custom",
+    layers,
+    presetOptions,
+    selectedPreset
+  };
+}
+
+function notifyLayerControlsChanged() {
+  window.dispatchEvent(
+    new CustomEvent(LAYER_CONTROLS_CHANGE_EVENT, {
+      detail: getLayerControlsSnapshot()
+    })
+  );
+}
+
+const layerToggleHandlers = {
+  toggleTexture: event => toggleTexture(event),
+  toggleHeight: event => toggleHeight(event),
+  toggleLakes: event => toggleLakes(event),
+  toggleBiomes: event => toggleBiomes(event),
+  toggleCells: event => toggleCells(event),
+  toggleGrid: event => toggleGrid(event),
+  toggleCoordinates: event => toggleCoordinates(event),
+  toggleCompass: event => toggleCompass(event),
+  toggleRivers: event => toggleRivers(event),
+  toggleRelief: event => toggleRelief(event),
+  toggleReligions: event => toggleReligions(event),
+  toggleCultures: event => toggleCultures(event),
+  toggleStates: event => toggleStates(event),
+  toggleProvinces: event => toggleProvinces(event),
+  toggleZones: event => toggleZones(event),
+  toggleBorders: event => toggleBorders(event),
+  toggleRoutes: event => toggleRoutes(event),
+  toggleTemperature: event => toggleTemperature(event),
+  toggleIce: event => toggleIce(event),
+  toggleGoods: event => window.toggleGoods(event),
+  toggleMarketsLayer: event => window.toggleMarketsLayer(event),
+  toggleTrade: event => toggleTrade(event),
+  togglePrecipitation: event => togglePrecipitation(event),
+  togglePopulation: event => togglePopulation(event),
+  toggleEmblems: event => toggleEmblems(event),
+  toggleBurgIcons: event => toggleBurgIcons(event),
+  toggleLabels: event => toggleLabels(event),
+  toggleMilitary: event => toggleMilitary(event),
+  toggleMarkers: event => toggleMarkers(event),
+  toggleRulers: event => toggleRulers(event),
+  toggleScaleBar: event => toggleScaleBar(event),
+  toggleVignette: event => toggleVignette(event)
+};
+
+window.LayerControls = {
+  applyPreset: handleLayersPresetChange,
+  getSnapshot: getLayerControlsSnapshot,
+  moveLayer: moveLayerById,
+  removePreset,
+  savePreset: savePresetByName,
+  toggleLayer(id, modifiers = {}) {
+    const handler = layerToggleHandlers[id];
+    if (!handler) return false;
+    handler(new MouseEvent("click", modifiers));
+    return true;
+  }
+};
