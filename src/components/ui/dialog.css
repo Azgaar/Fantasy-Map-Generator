@@ -127,6 +127,11 @@
   height: 100%;
 }
 
+.fmg-dom-dialog__content > .editorDialog > .table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .fmg-dialog__footer {
   display: flex;
   align-items: center;

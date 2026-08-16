@@ -20,6 +20,7 @@ interface Rectangle {
 
 interface Viewport {
   height: number;
+  left?: number;
   width: number;
 }
 
@@ -30,8 +31,8 @@ export interface WorkspaceDialogOffset {
 
 const VIEWPORT_MARGIN = 8;
 
-const clamp = (value: number, maximum: number): number =>
-  Math.max(VIEWPORT_MARGIN, Math.min(value, Math.max(VIEWPORT_MARGIN, maximum)));
+const clamp = (value: number, minimum: number, maximum: number): number =>
+  Math.max(minimum, Math.min(value, Math.max(minimum, maximum)));
 
 export function getDialogPosition(
   anchor: Rectangle,
@@ -40,6 +41,7 @@ export function getDialogPosition(
   viewport: Viewport,
   offset: WorkspaceDialogOffset = { x: 10, y: 10 }
 ): { left: number; top: number } {
+  const viewportLeft = viewport.left ?? 0;
   const anchorRight = anchor.left + anchor.width;
   const anchorBottom = anchor.top + anchor.height;
   const centeredLeft = anchor.left + (anchor.width - dialog.width) / 2;
@@ -65,7 +67,7 @@ export function getDialogPosition(
           : anchor.top + offset.y;
 
   return {
-    left: clamp(left, viewport.width - dialog.width - VIEWPORT_MARGIN),
-    top: clamp(top, viewport.height - dialog.height - VIEWPORT_MARGIN)
+    left: clamp(left, viewportLeft + VIEWPORT_MARGIN, viewport.width - dialog.width - VIEWPORT_MARGIN),
+    top: clamp(top, VIEWPORT_MARGIN, viewport.height - dialog.height - VIEWPORT_MARGIN)
   };
 }

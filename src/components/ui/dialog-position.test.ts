@@ -65,4 +65,13 @@ describe("getDialogPosition", () => {
       top: 8
     });
   });
+
+  test("keeps a dialog to the right of reserved workspace UI", () => {
+    expect(
+      getDialogPosition({ height: 600, left: 0, top: 0, width: 400 }, dialog, "top-right", {
+        ...viewport,
+        left: 500
+      })
+    ).toEqual({ left: 508, top: 10 });
+  });
 });

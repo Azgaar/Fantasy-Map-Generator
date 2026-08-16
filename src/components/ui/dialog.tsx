@@ -42,6 +42,16 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])'
 ].join(",");
 
+const MIN_WORKSPACE_DIALOG_WIDTH = 280;
+
+function getWorkspaceRightEdge(): number {
+  const sidebar = document.querySelector<HTMLElement>("#workspaceNavigationRoot .app-sidebar");
+  const panel = document.body.classList.contains("workspace-panel-open")
+    ? document.getElementById("options")
+    : null;
+  return Math.max(sidebar?.getBoundingClientRect().right ?? 0, panel?.getBoundingClientRect().right ?? 0);
+}
+
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
     element => !element.hidden && element.getAttribute("aria-hidden") !== "true"
@@ -142,6 +152,11 @@ export function WorkspaceDialog({
       const dialog = dialogRef.current;
       if (!dialog) return;
 
+      const workspaceRight = placement === "top-right" ? getWorkspaceRightEdge() : 0;
+      const availableWidth = window.innerWidth - workspaceRight - 16;
+      const viewportLeft = availableWidth >= MIN_WORKSPACE_DIALOG_WIDTH ? workspaceRight : 0;
+      dialog.style.maxWidth = viewportLeft ? `${availableWidth}px` : "";
+
       const targetRect = placementTarget?.getBoundingClientRect() ?? {
         height: window.innerHeight,
         left: 0,
@@ -155,6 +170,7 @@ export function WorkspaceDialog({
         placement,
         {
           height: window.innerHeight,
+          left: viewportLeft,
           width: window.innerWidth
         },
         placementOffset
@@ -165,8 +181,10 @@ export function WorkspaceDialog({
 
     positionDialog();
     window.addEventListener("resize", positionDialog);
+    window.addEventListener("workspace-panel-change", positionDialog);
     return () => {
       window.removeEventListener("resize", positionDialog);
+      window.removeEventListener("workspace-panel-change", positionDialog);
     };
   }, [isModal, isOpen, placement, placementOffset, placementTarget, positionRevision]);
 
