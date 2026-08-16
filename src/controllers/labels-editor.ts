@@ -1,6 +1,7 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Label, LabelType } from "@/generators/labels-generator";
@@ -33,12 +34,14 @@ function open(type: LabelType, id: number): void {
 
   renderDialog();
 
-  $("#labelEditor").dialog({
-    title: "Edit Label",
+  showDomDialog({
+    content: ensureEl("labelEditor"),
+    onClose: closeLabelEditor,
+    placement: "below-center",
+    placementTarget: textEl,
     resizable: false,
-    width: "fit-content",
-    position: { my: "center top+10", at: "bottom", of: textEl, collision: "fit" },
-    close: closeLabelEditor
+    title: "Edit Label",
+    width: "fit-content"
   });
 
   drawControlPointsAndLine();
@@ -515,22 +518,16 @@ function editLabelLegend(): void {
 }
 
 function removeSelectedLabel(): void {
-  alertMessage.innerHTML = "Are you sure you want to remove the label?";
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove label",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
-        if (label.type !== "added") return;
-        AddedLabels.remove(label.entityId);
-        drawLabels();
-        $("#labelEditor").dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove the label?",
+    onConfirm: () => {
+      if (label.type !== "added") return;
+      AddedLabels.remove(label.entityId);
+      drawLabels();
+      destroyDialog("labelEditor");
+    },
+    title: "Remove label"
   });
 }
 
@@ -567,8 +564,7 @@ function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
   select(`#${label.id}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
-  $("#labelEditor").dialog("destroy");
-  ensureEl("labelEditor").remove();
+  destroyDialog("labelEditor");
 }
 
 // An edited label always stores its geometry explicitly, so an empty path is kept as an empty array

@@ -1,6 +1,7 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl, openURL, rn, unique } from "../utils";
 
@@ -12,11 +13,14 @@ function open(): void {
   createBasesList();
   updateInputs();
 
-  $("#namesbaseEditor").dialog({
+  showDomDialog({
+    content: ensureEl("namesbaseEditor"),
+    onClose: closeNamesbaseEditor,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: true,
     title: "Namesbase Editor",
-    width: "60vw",
-    position: { my: "center", at: "center", of: "svg" },
-    close: closeNamesbaseEditor
+    width: "60vw"
   });
 }
 
@@ -139,8 +143,7 @@ function renderDialog(): void {
 }
 
 function closeNamesbaseEditor(): void {
-  $("#namesbaseEditor").dialog("destroy");
-  ensureEl("namesbaseEditor").remove();
+  destroyDialog("namesbaseEditor");
 }
 
 function createBasesList(): void {
@@ -275,7 +278,7 @@ function analyzeNamesbase(): void {
     return "<span data-tip='Namesbase variety is good' style='color:green'>[good]</span>";
   };
 
-  alertMessage.innerHTML = /* html */ `<div style="line-height: 1.6em; max-width: 20em">
+  const messageHtml = /* html */ `<div style="line-height: 1.6em; max-width: 20em">
       <div data-tip="Number of names provided">Namesbase length: ${length} ${getLengthQuality()}</div>
       <div data-tip="Average number of generation variants for each key in the chain">Namesbase variety: ${variety} ${getVarietyLevel()}</div>
       <hr />
@@ -290,17 +293,7 @@ function analyzeNamesbase(): void {
       <div data-tip="Percentage of names containing space character">Multi-word names: ${rn(multiwordRate * 100, 2)}%</div>
     </div>`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Data Analysis",
-    width: "auto",
-    position: { my: "left top-30", at: "right+10 top", of: "#namesbaseEditor" },
-    buttons: {
-      OK: function () {
-        $(this).dialog("close");
-      }
-    }
-  });
+  showNamesbaseMessage("namesbaseAnalysisDialog", "Data Analysis", messageHtml, "auto");
 }
 
 function namesbaseAdd(): void {
@@ -327,22 +320,16 @@ function namesbaseAdd(): void {
 }
 
 function namesbaseRestoreDefault(): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to restore default namesbase?`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Restore default data",
-    buttons: {
-      Restore: function () {
-        $(this).dialog("close");
-        Names.clearChains();
-        Names.nameBases = Names.getNameBases();
-        createBasesList();
-        updateInputs();
-      },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Restore",
+    message: "Are you sure you want to restore default namesbase?",
+    onConfirm: () => {
+      Names.clearChains();
+      Names.nameBases = Names.getNameBases();
+      createBasesList();
+      updateInputs();
+    },
+    title: "Restore default data"
   });
 }
 
@@ -404,7 +391,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       )
       .join("");
 
-    alertMessage.innerHTML = /* html */ `<div>
+    const messageHtml = /* html */ `<div>
         <p style="margin:0.75em;">
           <strong>File parsing error. Only ${lines.length - errors.length} out of ${lines.length} namebases added.</strong>
           Each namebase should be on its own line and follow the format: <code>name|min|max|duplication|m|names</code>. Parameters should be separated with the <code>|</code> character, and this character should not be used within the parameters. Another prohibited character is <code>/</code>. The most common issue is names and other parameters being on two separate lines.
@@ -424,17 +411,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
         </div>
       </div>`;
 
-    $("#alert").dialog({
-      resizable: false,
-      title: "Parsing error",
-      width: "min(72vw, 68em)",
-      position: { my: "center center-4em", at: "center", of: "svg" },
-      buttons: {
-        Continue: function () {
-          $(this).dialog("close");
-        }
-      }
-    });
+    showNamesbaseMessage("namesbaseParsingErrorDialog", "Parsing error", messageHtml, "min(72vw, 68em)");
   }
 
   createBasesList();
@@ -442,6 +419,12 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
 }
 
 const unsafe = /[|/]/g;
+
+function showNamesbaseMessage(id: string, title: string, messageHtml: string, width?: string): void {
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({ id, messageHtml, title, width });
+  });
+}
 
 const escapeHtml = (str: string): string =>
   str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");

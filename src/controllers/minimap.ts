@@ -44,11 +44,6 @@ function renderDialog(): void {
   const style = document.createElement("style");
   style.id = "minimapStyles";
   style.textContent = /* css */ `
-    .minimap-dialog .ui-dialog-content {
-      padding: 0 !important;
-      overflow: hidden;
-    }
-
     .minimap-dialog .fmg-dialog__body {
       padding: 0;
       overflow: hidden;

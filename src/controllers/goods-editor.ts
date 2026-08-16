@@ -17,6 +17,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawMarkets } from "@/renderers/draw-markets";
@@ -90,10 +91,13 @@ function open() {
   renderDialog();
   goodsTable.reset();
 
-  $("#goodsEditor").dialog({
-    title: "Goods Editor",
-    close: closeGoodsEditor,
-    position
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeGoodsEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
+    resizable: true,
+    title: "Goods Editor"
   });
 }
 
@@ -264,6 +268,9 @@ function renderGoodsPage(view: TableView<Good>) {
 function openProducersDialog(goodId: number) {
   const good = Goods.get(goodId);
   if (!good) return;
+  destroyDialog("goodProducersDialog");
+  const content = document.createElement("div");
+  content.id = "goodProducersDialog";
 
   const producers = pack.burgs
     .filter(b => b.i && !b.removed)
@@ -272,7 +279,7 @@ function openProducersDialog(goodId: number) {
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No burgs produced ${good.name}.</i>`;
+    content.innerHTML = `<i style="color:#888">No burgs produced ${good.name}.</i>`;
   } else {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -290,22 +297,22 @@ function openProducersDialog(goodId: number) {
           </div>`
       )
       .join("");
-    alertMessage.innerHTML = header + rows;
-    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
+    content.innerHTML = header + rows;
+    content.querySelectorAll<HTMLElement>(".states").forEach(row => {
       row.addEventListener("click", () => {
         zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
       });
     });
   }
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
+  showDomDialog({
+    actions: [{ label: "Close" }],
+    content,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    title: `${good.name} producers`,
-    buttons: {
-      Close: function () {
-        $(this).dialog("close");
-      }
-    }
+    title: `${good.name} producers`
   });
 }
 
@@ -378,13 +385,16 @@ function getAllStockData(): Record<number, { total: number; sources: StockSource
 function openStockDialog(goodId: number) {
   const good = Goods.get(goodId);
   if (!good) return;
+  destroyDialog("goodStockDialog");
+  const content = document.createElement("div");
+  content.id = "goodStockDialog";
 
   const stockData = getAllStockData();
   const data = stockData[goodId];
   const sources = data?.sources ?? [];
 
   if (!sources.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No stock of ${good.name} found in any market or burg inventory.</i>`;
+    content.innerHTML = `<i style="color:#888">No stock of ${good.name} found in any market or burg inventory.</i>`;
   } else {
     const header = /*html*/ `
       <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -403,22 +413,22 @@ function openStockDialog(goodId: number) {
         </div>`
       )
       .join("");
-    alertMessage.innerHTML = header + rows;
-    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
+    content.innerHTML = header + rows;
+    content.querySelectorAll<HTMLElement>(".states").forEach(row => {
       row.addEventListener("click", () => {
         zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
       });
     });
   }
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
+  showDomDialog({
+    actions: [{ label: "Close" }],
+    content,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    title: `${good.name} stock`,
-    buttons: {
-      Close: function () {
-        $(this).dialog("close");
-      }
-    }
+    title: `${good.name} stock`
   });
 }
 
@@ -456,30 +466,39 @@ function openTagsVisibilityDialog() {
     `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${visibleTags.has(tag) ? "checked" : ""} /> ${tag}</label>`;
   const tagsMarkup = tags.length ? tags.map(renderTag).join("") : '<div style="color:#666">No tags available</div>';
 
-  alertMessage.innerHTML = `
+  destroyDialog("goodsTagsVisibilityDialog");
+  const content = document.createElement("div");
+  content.id = "goodsTagsVisibilityDialog";
+  content.innerHTML = `
     <div data-tip="Only goods with at least one selected tag remain visible in the editor list" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
   `;
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Filter goods by tags",
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
+  showDomDialog({
+    actions: [
+      { label: "Cancel" },
+      {
+        label: "Clear filter",
+        onClick: () => {
+          visibleTags.clear();
+          applyTagVisibilityFilter();
+        }
       },
-      "Clear filter": function () {
-        visibleTags.clear();
-        applyTagVisibilityFilter();
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
-        visibleTags.clear();
-        checks.forEach(check => void visibleTags.add(check.value));
-        applyTagVisibilityFilter();
-        $(this).dialog("close");
+      {
+        label: "Apply",
+        onClick: () => {
+          const checks = Array.from(content.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
+          visibleTags.clear();
+          checks.forEach(check => void visibleTags.add(check.value));
+          applyTagVisibilityFilter();
+        }
       }
-    }
+    ],
+    content,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: false,
+    title: "Filter goods by tags"
   });
 }
 
@@ -525,7 +544,7 @@ function enterResourceAssignMode(this: HTMLElement) {
   setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "actions"]);
   ensureEl("goodsFooter").style.display = "none";
 
-  $("#goodsEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  updateDialog(dialogId, { position });
 
   tip("Select good line in editor, click on cells to remove or add a bonus resource", true);
   select<SVGElement, unknown>("#viewbox").on("click", changeResourceOnCellClick);
@@ -688,8 +707,7 @@ function removeGood(good: Good) {
 
 function closeGoodsEditor() {
   if (customization === 14) exitResourceAssignMode("close");
-  $("#goodsEditor").dialog("destroy");
-  ensureEl("goodsEditor").remove();
+  destroyDialog(dialogId);
 }
 
 export const GoodsEditor = { open };

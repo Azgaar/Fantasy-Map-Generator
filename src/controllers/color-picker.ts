@@ -40,7 +40,7 @@ function renderPicker(): SVGSVGElement {
   const x = (svgWidth - PICKER_WIDTH) / 2;
   const y = (svgHeight - height) / 2;
   const zIndex =
-    Array.from(document.querySelectorAll<HTMLElement>(".ui-front")).reduce(
+    Array.from(document.querySelectorAll<HTMLElement>(".fmg-dialog, .fmg-dialog-overlay")).reduce(
       (max, element) => Math.max(max, Number(getComputedStyle(element).zIndex) || 0),
       100
     ) + 1;

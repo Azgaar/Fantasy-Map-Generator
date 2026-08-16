@@ -1,3 +1,5 @@
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { getHeight, rn } from "@/utils";
 import { convertTemperature, ensureEl, list } from "../utils";
 
@@ -193,8 +195,10 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     return groupExprs.map(g => (g.includes(" && ") ? `(${g})` : g)).join(" || ");
   }
 
+  destroyDialog("goodsDistributionEditor");
   const popupEl = document.createElement("div");
-  document.body.appendChild(popupEl);
+  popupEl.id = "goodsDistributionEditor";
+  ensureEl("dialogs").appendChild(popupEl);
 
   function updateOutput() {
     const expr = generateExpression();
@@ -204,8 +208,10 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   }
 
   function openBiomePicker(cond: DistCondition, onApplied: () => void) {
+    destroyDialog("distributionBiomePicker");
     const pickerEl = document.createElement("div");
-    document.body.appendChild(pickerEl);
+    pickerEl.id = "distributionBiomePicker";
+    ensureEl("dialogs").appendChild(pickerEl);
 
     const grid = document.createElement("div");
     grid.style.cssText =
@@ -232,30 +238,32 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       });
     pickerEl.appendChild(grid);
 
-    $(pickerEl).dialog({
-      title: "Select Biomes",
-      width: "34em",
-      resizable: false,
-      buttons: {
-        Cancel: function () {
-          $(this).dialog("close");
-        },
-        Apply: function () {
-          cond.biomeIds = entries.filter(e => e.cb.checked).map(e => e.id);
-          onApplied();
-          $(this).dialog("close");
+    showDomDialog({
+      actions: [
+        { label: "Cancel" },
+        {
+          label: "Apply",
+          onClick: () => {
+            cond.biomeIds = entries.filter(entry => entry.cb.checked).map(entry => entry.id);
+            onApplied();
+          }
         }
-      },
-      close: () => {
-        $(pickerEl).dialog("destroy");
-        pickerEl.remove();
-      }
+      ],
+      content: pickerEl,
+      isModal: true,
+      placement: "center",
+      placementTarget: document.getElementById("map"),
+      resizable: false,
+      title: "Select Biomes",
+      width: "34em"
     });
   }
 
   function openFeatureTypePicker(cond: DistCondition, onApplied: () => void) {
+    destroyDialog("distributionFeatureTypePicker");
     const pickerEl = document.createElement("div");
-    document.body.appendChild(pickerEl);
+    pickerEl.id = "distributionFeatureTypePicker";
+    ensureEl("dialogs").appendChild(pickerEl);
 
     const list = document.createElement("div");
     list.style.cssText = "display:flex; flex-direction:column; gap:5px; padding:2px 0;";
@@ -275,30 +283,32 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     });
     pickerEl.appendChild(list);
 
-    $(pickerEl).dialog({
-      title: "Select Feature Types",
-      width: "18em",
-      resizable: false,
-      buttons: {
-        Cancel: function () {
-          $(this).dialog("close");
-        },
-        Apply: function () {
-          cond.typeValues = entries.filter(e => e.cb.checked).map(e => e.value);
-          onApplied();
-          $(this).dialog("close");
+    showDomDialog({
+      actions: [
+        { label: "Cancel" },
+        {
+          label: "Apply",
+          onClick: () => {
+            cond.typeValues = entries.filter(entry => entry.cb.checked).map(entry => entry.value);
+            onApplied();
+          }
         }
-      },
-      close: () => {
-        $(pickerEl).dialog("destroy");
-        pickerEl.remove();
-      }
+      ],
+      content: pickerEl,
+      isModal: true,
+      placement: "center",
+      placementTarget: document.getElementById("map"),
+      resizable: false,
+      title: "Select Feature Types",
+      width: "18em"
     });
   }
 
   function openShorePicker(cond: DistCondition, onApplied: () => void) {
+    destroyDialog("distributionShorePicker");
     const pickerEl = document.createElement("div");
-    document.body.appendChild(pickerEl);
+    pickerEl.id = "distributionShorePicker";
+    ensureEl("dialogs").appendChild(pickerEl);
 
     const list = document.createElement("div");
     list.style.cssText = "display:flex; flex-direction:column; gap:5px; padding:2px 0;";
@@ -318,24 +328,24 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     });
     pickerEl.appendChild(list);
 
-    $(pickerEl).dialog({
-      title: "Select Shore Proximity",
-      width: "18em",
-      resizable: false,
-      buttons: {
-        Cancel: function () {
-          $(this).dialog("close");
-        },
-        Apply: function () {
-          cond.shoreValues = entries.filter(e => e.cb.checked).map(e => e.value);
-          onApplied();
-          $(this).dialog("close");
+    showDomDialog({
+      actions: [
+        { label: "Cancel" },
+        {
+          label: "Apply",
+          onClick: () => {
+            cond.shoreValues = entries.filter(entry => entry.cb.checked).map(entry => entry.value);
+            onApplied();
+          }
         }
-      },
-      close: () => {
-        $(pickerEl).dialog("destroy");
-        pickerEl.remove();
-      }
+      ],
+      content: pickerEl,
+      isModal: true,
+      placement: "center",
+      placementTarget: document.getElementById("map"),
+      resizable: false,
+      title: "Select Shore Proximity",
+      width: "18em"
     });
   }
 
@@ -662,24 +672,14 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     updateOutput();
   });
 
-  $(popupEl).dialog({
-    title: "Distribution Editor",
-    width: "60em",
+  showDomDialog({
+    actions: [{ label: "Cancel" }, { label: "Apply", onClick: () => onApply(generateExpression()) }],
+    content: popupEl,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: true,
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        const expr = generateExpression();
-        onApply(expr);
-        $(this).dialog("close");
-      }
-    },
-    close: () => {
-      $(popupEl).dialog("destroy");
-      popupEl.remove();
-    }
+    title: "Distribution Editor",
+    width: "60em"
   });
 }
 

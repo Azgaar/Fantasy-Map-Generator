@@ -10,8 +10,10 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
+import { enableVerticalSortable } from "@/components/dialog/vertical-sortable";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
@@ -48,11 +50,13 @@ function open(): void {
   updateFilters();
   zonesTable.reset();
 
-  $("#zonesEditor").dialog({
-    title: "Zones Editor",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeZonesEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    close: closeZonesEditor,
-    position
+    title: "Zones Editor"
   });
 }
 
@@ -175,19 +179,17 @@ function renderDialog(): void {
     else if (target.classList.contains("zoneType")) changeType(zone, target.value);
   });
 
-  $(body).sortable({
-    items: "div.states",
-    handle: ".icon-resize-vertical",
-    containment: "parent",
-    axis: "y",
-    update: movezone
+  enableVerticalSortable({
+    container: body,
+    handleSelector: ".icon-resize-vertical",
+    itemSelector: "div.states",
+    onUpdate: moveZone
   });
 }
 
 function closeZonesEditor(): void {
   exitZonesManualAssignment("close");
-  $("#zonesEditor").dialog("destroy");
-  ensureEl("zonesEditor").remove();
+  destroyDialog(dialogId);
 }
 
 // update type filter with a list of used types
@@ -275,13 +277,12 @@ function filterZonesByType(): void {
   zonesTable.reset();
 }
 
-function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): number } }): void {
-  const zone = pack.zones.find(z => z.i === +ui.item[0].dataset.id!);
+function moveZone(item: HTMLElement): void {
+  const zone = pack.zones.find(z => z.i === +item.dataset.id!);
   if (!zone) return;
-  const nextId =
-    ui.item[0].nextElementSibling instanceof HTMLElement ? +ui.item[0].nextElementSibling.dataset.id! : null;
+  const nextId = item.nextElementSibling instanceof HTMLElement ? +item.nextElementSibling.dataset.id! : null;
   const previousId =
-    ui.item[0].previousElementSibling instanceof HTMLElement ? +ui.item[0].previousElementSibling.dataset.id! : null;
+    item.previousElementSibling instanceof HTMLElement ? +item.previousElementSibling.dataset.id! : null;
   pack.zones.splice(pack.zones.indexOf(zone), 1);
   const nextIndex = nextId === null ? -1 : pack.zones.findIndex(item => item.i === nextId);
   const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
@@ -304,7 +305,7 @@ function enterZonesManualAssignent(): void {
   body.querySelectorAll<HTMLElement>("div > input, select, svg").forEach(e => {
     e.style.pointerEvents = "none";
   });
-  $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  updateDialog(dialogId, { position });
 
   tip("Click to select a zone, drag to paint a zone", true);
   select<SVGElement, unknown>("#viewbox")
@@ -433,8 +434,7 @@ function exitZonesManualAssignment(close?: string): void {
     .forEach(e => {
       e.style.removeProperty("pointer-events");
     });
-  if (!close)
-    $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  if (!close) updateDialog(dialogId, { position });
 
   applyDefaultViewboxEvents();
   clearMainTip();
@@ -542,37 +542,38 @@ function changePopulation(zone: Zone): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+  destroyDialog("zonePopulationDialog");
+  const content = document.createElement("div");
+  content.id = "zonePopulationDialog";
+  content.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
     <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
-  const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
-  const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
+  ensureEl("dialogs").appendChild(content);
+  const ruralPop = content.querySelector<HTMLInputElement>("#ruralPop")!;
+  const urbanPop = content.querySelector<HTMLInputElement>("#urbanPop")!;
+  const totalPop = content.querySelector<HTMLElement>("#totalPop")!;
+  const totalPopPerc = content.querySelector<HTMLElement>("#totalPopPerc")!;
 
   const update = (): void => {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
     if (Number.isNaN(totalNew)) return;
-    ensureEl("totalPop").innerHTML = l(totalNew);
-    ensureEl("totalPopPerc").innerHTML = String(rn((totalNew / total) * 100));
+    totalPop.innerHTML = l(totalNew);
+    totalPopPerc.innerHTML = String(rn((totalNew / total) * 100));
   };
 
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
 
-  $("#alert").dialog({
+  showDomDialog({
+    actions: [{ label: "Apply", onClick: applyPopulationChange }, { label: "Cancel" }],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Change zone population",
-    width: "24em",
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        applyPopulationChange();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
+    width: "24em"
   });
 
   function applyPopulationChange(): void {

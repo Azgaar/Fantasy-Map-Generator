@@ -40,6 +40,16 @@ declare global {
     applyOption: typeof import("../utils").applyOption;
     closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
     confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
+    destroyDialog: typeof import("../components/dialog/dialog-helpers").destroyDialog;
+    updateDialog: typeof import("../components/dialog/dialog-helpers").updateDialog;
+    enableElementDragging: typeof import("../components/element-dragging").enableElementDragging;
+    enableVerticalSortable: typeof import("../components/dialog/vertical-sortable").enableVerticalSortable;
+    showDomDialog: (
+      options: import("../components/ui/dom-dialog").DomDialogOptions
+    ) => Promise<import("../components/ui/dom-dialog").DomDialogHandle>;
+    showMessageDialog: (
+      options: import("../components/ui/message-dialog").MessageDialogOptions
+    ) => Promise<import("../components/ui/message-dialog").MessageDialogHandle>;
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
     getPrecipitation: typeof import("../utils").getPrecipitation;
@@ -192,7 +202,6 @@ declare global {
 
   var THREE: any; // lazy-loaded
 
-  var $: (selector: any) => any;
   var scale: number;
   var changeFont: () => void;
   var addLakesInDeepDepressions: () => void;

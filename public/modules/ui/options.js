@@ -1,9 +1,9 @@
 // UI module to control the options (preferences)
 "use strict";
 
-$("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both" });
-$("#exitCustomization").draggable({ handle: "div" });
-$("#mapLayers").disableSelection();
+window.enableElementDragging({ element: ensureEl("optionsContainer"), handleSelector: ".drag-trigger" });
+window.enableElementDragging({ element: ensureEl("exitCustomization"), handleSelector: "div" });
+ensureEl("mapLayers").style.userSelect = "none";
 
 // remove glow if tip is aknowledged
 if (stored("disable_click_arrow_tooltip")) {
@@ -107,13 +107,13 @@ async function showSupporters() {
   const list = window.Supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
-  alertMessage.innerHTML =
+  const messageHtml =
     `<ul style='column-count: ${columns}; column-gap: 2em'>` + list.map(n => `<li>${n}</li>`).join("") + "</ul>";
-  $("#alert").dialog({
-    resizable: false,
+  window.showMessageDialog({
+    id: "supportersDialog",
+    messageHtml,
     title: "Patreon Supporters",
-    width: "min-width",
-    position: { my: "center", at: "center", of: "svg" }
+    width: "min-content"
   });
 }
 
@@ -168,7 +168,6 @@ optionsContent.addEventListener("change", event => {
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
   else if (id === "eraInput") changeEra();
-  else if (id === "azgaarAssistant") toggleAssistant();
 });
 
 optionsContent.addEventListener("click", event => {
@@ -308,15 +307,11 @@ function showSeedHistoryDialog() {
     const button = `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
     return `<li>Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</li>`;
   });
-  alertMessage.innerHTML = /* html */ `<ol style="margin: 0; padding-left: 1.5em">
+  const messageHtml = /* html */ `<ol style="margin: 0; padding-left: 1.5em">
     ${lines.join("")}
   </ol>`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Seed history",
-    position: { my: "center", at: "center", of: "svg" }
-  });
+  window.showMessageDialog({ id: "seedHistoryDialog", messageHtml, title: "Seed history" });
 }
 
 // generate map with historical seed
@@ -759,20 +754,15 @@ function regeneratePrompt(options) {
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 1) return regenerateMap(options);
 
-  alertMessage.innerHTML = /* html */ `Are you sure you want to generate a new map?<br />
-    All unsaved changes made to the current map will be lost`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
+    confirm: "Generate",
+    message: /* html */ `Are you sure you want to generate a new map?<br />
+      All unsaved changes made to the current map will be lost`,
+    onConfirm: () => {
+      closeDialogs();
+      regenerateMap(options);
+    },
     title: "Generate new map",
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Generate: function () {
-        closeDialogs();
-        regenerateMap(options);
-      }
-    }
   });
 }
 
@@ -780,16 +770,15 @@ function showSavePane() {
   const sharableLinkContainer = ensureEl("sharableLinkContainer");
   sharableLinkContainer.style.display = "none";
 
-  $("#saveMapData").dialog({
-    title: "Save map",
+  window.showDomDialog({
+    actions: [{ label: "Close" }],
+    content: ensureEl("saveMapData"),
+    destroyOnClose: false,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "25em",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Close: function () {
-        $(this).dialog("close");
-      }
-    }
+    title: "Save map",
+    width: "25em"
   });
 }
 
@@ -807,16 +796,15 @@ ensureEl("showLabels").addEventListener("change", function () {
 function showExportPane() {
   ensureEl("showLabels").checked = options.labels.showAll;
 
-  $("#exportMapData").dialog({
-    title: "Export map data",
+  window.showDomDialog({
+    actions: [{ label: "Close" }],
+    content: ensureEl("exportMapData"),
+    destroyOnClose: false,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "26em",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Close: function () {
-        $(this).dialog("close");
-      }
-    }
+    title: "Export map data",
+    width: "26em"
   });
 }
 
@@ -825,16 +813,15 @@ async function exportToJson(type) {
 }
 
 async function showLoadPane() {
-  $("#loadMapData").dialog({
-    title: "Load map",
+  window.showDomDialog({
+    actions: [{ label: "Close" }],
+    content: ensureEl("loadMapData"),
+    destroyOnClose: false,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "auto",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Close: function () {
-        $(this).dialog("close");
-      }
-    }
+    title: "Load map",
+    width: "fit-content"
   });
 
   // already connected to Dropbox: list saved maps
@@ -882,25 +869,31 @@ function loadURL() {
   const inner = `Provide URL to map file:
     <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
-  alertMessage.innerHTML = inner;
-  $("#alert").dialog({
+  window.destroyDialog("loadMapUrlDialog");
+  const content = document.createElement("div");
+  content.id = "loadMapUrlDialog";
+  content.innerHTML = inner;
+  ensureEl("dialogs").appendChild(content);
+  window.showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Load",
+        onClick: () => {
+          const value = content.querySelector("#mapURL").value;
+          if (!pattern.test(value)) return tip("Please provide a valid URL", false, "error");
+          window.Services.Load.loadMapFromURL(value);
+          window.destroyDialog(content.id);
+        }
+      },
+      { label: "Cancel" }
+    ],
+    content,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Load map from URL",
-    width: "27em",
-    buttons: {
-      Load: function () {
-        const value = mapURL.value;
-        if (!pattern.test(value)) {
-          tip("Please provide a valid URL", false, "error");
-          return;
-        }
-        window.Services.Load.loadMapFromURL(value);
-        $(this).dialog("close");
-      },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+    width: "27em"
   });
 }
 
@@ -920,20 +913,22 @@ function openExportToPngTiles() {
   const inputs = ensureEl("exportToPngTilesScreen").querySelectorAll("input");
   inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
 
-  $("#exportToPngTilesScreen").dialog({
-    resizable: false,
-    title: "Download tiles",
-    width: "23em",
-    buttons: {
-      Download: () => window.Services.ExportMap.exportToPngTiles(),
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    },
-    close: () => {
+  window.showDomDialog({
+    actions: [
+      { close: false, label: "Download", onClick: () => window.Services.ExportMap.exportToPngTiles() },
+      { label: "Cancel" }
+    ],
+    content: ensureEl("exportToPngTilesScreen"),
+    destroyOnClose: false,
+    onClose: () => {
       inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
       debug.selectAll("*").remove();
-    }
+    },
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: false,
+    title: "Download tiles",
+    width: "23em"
   });
 }
 

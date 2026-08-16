@@ -18,7 +18,7 @@ The first stage is implemented on `feat/new-ui`:
 - Layers, Style, Options, Tools, and About have stable navigation entries.
 - Tools are searchable and grouped, while existing controller IDs and shortcuts are preserved.
 - The workspace is responsive and lazy-loaded as a React island.
-- Legacy panels and jQuery UI dialogs still provide most of the content behind the new shell.
+- Legacy panels still provide some content behind the new shell, while dialogs use the shared React implementation.
 
 ## Goals
 
@@ -390,4 +390,4 @@ Remaining:
 
 - [ ] Verify toggles, presets, reordering, filtering, view modes, and responsive layout in a rendered browser session.
 - [ ] Replace the legacy layer seed markup with typed definitions after runtime parity is proven.
-- [ ] Remove the jQuery Sortable fallback when no supported workflow uses the legacy list.
+- [x] Remove the jQuery Sortable fallback when no supported workflow uses the legacy list.

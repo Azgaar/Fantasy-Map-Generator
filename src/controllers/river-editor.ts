@@ -1,6 +1,7 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
@@ -37,11 +38,13 @@ function open(id: string): void {
   drawControlPoints(riverPoints);
   drawCells(cells);
 
-  $("#riverEditor").dialog({
-    title: "Edit River",
+  showDomDialog({
+    content: ensureEl("riverEditor"),
+    onClose: closeRiverEditor,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRiverEditor
+    title: "Edit River"
   });
 }
 
@@ -319,23 +322,16 @@ function editRiverLegend(): void {
 }
 
 function removeRiver(): void {
-  alertMessage.innerHTML = "Are you sure you want to remove the river and all its tributaries";
-  $("#alert").dialog({
-    resizable: false,
-    width: "22em",
-    title: "Remove river and tributaries",
-    buttons: {
-      Remove: function (this: any) {
-        $(this).dialog("close");
-        const river = +selectedRiver.attr("id").slice(5);
-        Rivers.remove(river);
-        selectedRiver.remove();
-        $("#riverEditor").dialog("close");
-      },
-      Cancel: function (this: any) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove the river and all its tributaries",
+    onConfirm: () => {
+      const river = +selectedRiver.attr("id").slice(5);
+      Rivers.remove(river);
+      selectedRiver.remove();
+      destroyDialog("riverEditor");
+    },
+    title: "Remove river and tributaries"
   });
 }
 

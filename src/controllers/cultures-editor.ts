@@ -13,6 +13,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
@@ -133,12 +134,14 @@ function open(): void {
   drawCultureCenters();
   culturesTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Cultures Editor",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeCulturesEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    close: closeCulturesEditor,
-    position
+    title: "Cultures Editor",
+    width: "fit-content"
   });
 }
 
@@ -622,7 +625,10 @@ function changePopulation(this: HTMLElement): void {
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
 
-  alertMessage.innerHTML = /* html */ `<div>
+  destroyDialog("culturePopulationDialog");
+  const content = document.createElement("div");
+  content.id = "culturePopulationDialog";
+  content.innerHTML = /* html */ `<div>
     <i>Change population of all cells assigned to the culture</i>
     <div style="margin: 0.5em 0">
       Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
@@ -634,10 +640,11 @@ function changePopulation(this: HTMLElement): void {
     </div>
   </div>`;
 
-  const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
-  const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
-  const totalPop = ensureEl("totalPop");
-  const totalPopPerc = ensureEl("totalPopPerc");
+  ensureEl("dialogs").appendChild(content);
+  const ruralPop = content.querySelector<HTMLInputElement>("#ruralPop")!;
+  const urbanPop = content.querySelector<HTMLInputElement>("#urbanPop")!;
+  const totalPop = content.querySelector<HTMLElement>("#totalPop")!;
+  const totalPopPerc = content.querySelector<HTMLElement>("#totalPopPerc")!;
 
   const update = () => {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -649,20 +656,21 @@ function changePopulation(this: HTMLElement): void {
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
 
-  $("#alert").dialog({
+  showDomDialog({
+    actions: [
+      {
+        label: "Apply",
+        onClick: () => applyPopulationChange(rural, urban, +ruralPop.value, +urbanPop.value, cultureId)
+      },
+      { label: "Cancel" }
+    ],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Change culture population",
-    width: "24em",
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        applyPopulationChange(rural, urban, +ruralPop.value, +urbanPop.value, cultureId);
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
+    width: "24em"
   });
 }
 
@@ -925,7 +933,7 @@ function enterCultureManualAssignent(): void {
     .forEach(e => {
       e.style.pointerEvents = "none";
     });
-  $(`#${dialogId}`).dialog({ position });
+  updateDialog(dialogId, { position });
 
   tip("Click on culture to select, drag the circle to change culture", true);
   select<SVGElement, unknown>("#viewbox")
@@ -1042,7 +1050,7 @@ function exitCulturesManualAssignment(close?: string): void {
     .forEach(e => {
       e.style.removeProperty("pointer-events");
     });
-  if (!close) $(`#${dialogId}`).dialog({ position });
+  if (!close) updateDialog(dialogId, { position });
 
   select("#debug").select("#cultureCenters").style("display", null);
   applyDefaultViewboxEvents();
@@ -1159,8 +1167,7 @@ function closeCulturesEditor(): void {
   select("#debug #cultureCenters").remove();
   exitCulturesManualAssignment("close");
   exitAddCultureMode();
-  $("#culturesEditor").dialog("destroy");
-  ensureEl("culturesEditor").remove();
+  destroyDialog(dialogId);
 }
 
 async function uploadCulturesData(this: HTMLInputElement): Promise<void> {

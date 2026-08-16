@@ -61,8 +61,8 @@ test.describe("States", () => {
 
     expect(neighborsAfter).toBe(0);
 
-    // Close the States Editor - the close button is in the jQuery UI dialog wrapper
-    await page.click(".ui-dialog:has(#statesEditor) .ui-dialog-titlebar-close");
+    // Close the States Editor
+    await page.click(".fmg-dialog:has(#statesEditor) .fmg-dialog__close");
     await page.waitForTimeout(200);
 
     // Now click "Military" regenerate button and verify no errors

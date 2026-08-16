@@ -1,9 +1,13 @@
 export type WorkspaceDialogPlacement =
   | "below-right"
+  | "below-center"
   | "bottom-center"
   | "bottom-left"
   | "center"
+  | "left-center"
   | "left-top"
+  | "right-center"
+  | "top-center"
   | "top-left"
   | "top-right";
 
@@ -45,16 +49,18 @@ export function getDialogPosition(
       ? anchor.left + offset.x
       : placement === "top-right" || placement === "below-right"
         ? anchorRight - dialog.width - offset.x
-        : placement === "left-top"
+        : placement === "left-top" || placement === "left-center"
           ? anchor.left - dialog.width - offset.x
-          : centeredLeft;
+          : placement === "right-center"
+            ? anchorRight + offset.x
+            : centeredLeft;
 
   const top =
-    placement === "center"
+    placement === "center" || placement === "left-center" || placement === "right-center"
       ? anchor.top + (anchor.height - dialog.height) / 2
       : placement === "bottom-left" || placement === "bottom-center"
         ? anchorBottom - dialog.height - offset.y
-        : placement === "below-right"
+        : placement === "below-right" || placement === "below-center"
           ? anchorBottom + offset.y
           : anchor.top + offset.y;
 

@@ -1,6 +1,7 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
@@ -37,11 +38,13 @@ function open(id: string): void {
     updateLockIcon();
   }
 
-  $("#routeEditor").dialog({
-    title: "Edit Route",
+  showDomDialog({
+    content: ensureEl("routeEditor"),
+    onClose: closeRouteEditor,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRouteEditor
+    title: "Edit Route"
   });
 }
 
@@ -309,26 +312,31 @@ function openJoinRoutesDialog(): void {
       const length = `${rn(r.length * distanceScale)} ${distanceUnitInput.value}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
-    alertMessage.innerHTML = /* html */ `<div>Route to join with:
-        <select>${options.join("")}</select>
+    const messageHtml = /* html */ `<div>Route to join with:
+        <select data-route-join-target>${options.join("")}</select>
       </div>`;
-
-    $("#alert").dialog({
-      title: "Join routes",
-      width: "fit-content",
-      position: { my: "left top", at: "left+10 top+150", of: "#map" },
-      buttons: {
-        Cancel: () => {
-          $("#alert").dialog("close");
-        },
-        Join: () => {
-          const selectedRouteId = +alertMessage.querySelector("select")!.value;
-          const selectedRoute = pack.routes.find((r: Route) => r.i === selectedRouteId) as Route;
-          joinRoutes(route, selectedRoute);
-          tip("Routes joined", false, "success", 5000);
-          $("#alert").dialog("close");
-        }
-      }
+    void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+      showMessageDialog({
+        actions: [
+          { label: "Cancel" },
+          {
+            intent: "primary",
+            label: "Join",
+            onClick: () => {
+              const select = document.querySelector<HTMLSelectElement>(".fmg-message-dialog [data-route-join-target]");
+              if (!select) return;
+              const selectedRouteId = +select.value;
+              const selectedRoute = pack.routes.find((candidate: Route) => candidate.i === selectedRouteId) as Route;
+              joinRoutes(route, selectedRoute);
+              tip("Routes joined", false, "success", 5000);
+            }
+          }
+        ],
+        id: "routeJoinDialog",
+        messageHtml,
+        title: "Join routes",
+        width: "fit-content"
+      });
     });
   } else {
     tip("No routes to join with. Route must start or end at current route's start or end cell", false, "error", 4000);
@@ -452,7 +460,7 @@ function removeRoute(): void {
     confirm: "Remove",
     onConfirm: () => {
       Routes.remove(getRoute());
-      $("#routeEditor").dialog("close");
+      destroyDialog("routeEditor");
     }
   });
 }

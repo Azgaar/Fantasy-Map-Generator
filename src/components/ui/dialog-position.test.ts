@@ -21,6 +21,13 @@ describe("getDialogPosition", () => {
     });
   });
 
+  test("places a dialog at the top center of its anchor", () => {
+    expect(getDialogPosition(anchor, dialog, "top-center", viewport, { x: 0, y: 20 })).toEqual({
+      left: 350,
+      top: 70
+    });
+  });
+
   test("places dialogs along the bottom edge of an anchor", () => {
     expect(getDialogPosition(anchor, dialog, "bottom-left", viewport, { x: 10, y: 25 })).toEqual({
       left: 110,
@@ -36,8 +43,18 @@ describe("getDialogPosition", () => {
     expect(
       getDialogPosition({ ...anchor, left: 500, width: 200 }, dialog, "left-top", viewport, { x: 10, y: 0 })
     ).toEqual({ left: 190, top: 50 });
+    expect(
+      getDialogPosition({ ...anchor, left: 500, width: 200 }, dialog, "left-center", viewport, { x: 10, y: 0 })
+    ).toEqual({ left: 190, top: 250 });
+    expect(
+      getDialogPosition({ ...anchor, left: 500, width: 200 }, dialog, "right-center", viewport, { x: 10, y: 0 })
+    ).toEqual({ left: 710, top: 250 });
     expect(getDialogPosition(anchor, dialog, "below-right", viewport, { x: 0, y: 10 })).toEqual({
       left: 600,
+      top: 660
+    });
+    expect(getDialogPosition(anchor, dialog, "below-center", viewport, { x: 0, y: 10 })).toEqual({
+      left: 350,
       top: 660
     });
   });

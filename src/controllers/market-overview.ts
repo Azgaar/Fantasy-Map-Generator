@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -10,6 +10,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawMarkets } from "@/renderers/draw-markets";
@@ -69,11 +70,14 @@ function open(marketId: number): void {
   marketOverviewTable.reset();
   refreshNameInput(market);
 
-  $(`#${dialogId}`).dialog({
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeMarketOverview,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
+    resizable: true,
     title: `Market Stock: ${Markets.getName(market)}`,
-    width: "auto",
-    close: closeMarketOverview,
-    position
+    width: "fit-content"
   });
 }
 
@@ -141,7 +145,7 @@ function onRenameInput(this: HTMLInputElement): void {
   if (!market) return;
   const value = this.value.trim();
   market.name = value || undefined;
-  $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
+  updateDialog(dialogId, { title: `Market Stock: ${Markets.getName(market)}` });
 }
 
 function resetMarketName(): void {
@@ -149,7 +153,7 @@ function resetMarketName(): void {
   if (!market) return;
   market.name = undefined;
   ensureEl<HTMLInputElement>("marketOverviewName").value = "";
-  $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
+  updateDialog(dialogId, { title: `Market Stock: ${Markets.getName(market)}` });
 }
 
 function getMarketGoods(): MarketGoodRow[] {
@@ -257,7 +261,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   if (layerIsOn("toggleMarketsLayer")) drawMarkets();
 
   refreshNameInput(market);
-  $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
+  updateDialog(dialogId, { title: `Market Stock: ${Markets.getName(market)}` });
   marketOverviewTable.refresh();
 }
 
@@ -278,8 +282,7 @@ function downloadStockCsv() {
 
 function closeMarketOverview() {
   if (ensureEl("marketOverviewRelocate").classList.contains("pressed")) toggleRelocateMarket();
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  destroyDialog(dialogId);
 }
 
 export const MarketOverview = { open };

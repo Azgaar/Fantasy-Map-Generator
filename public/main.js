@@ -220,18 +220,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!location.hostname) {
     const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-    alertMessage.innerHTML = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+    const messageHtml = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
 
-    $("#alert").dialog({
-      resizable: false,
+    window.showMessageDialog({
+      id: "serverlessLoadingErrorDialog",
+      messageHtml,
       title: "Loading error",
-      width: "28em",
-      position: { my: "center center-4em", at: "center", of: "svg" },
-      buttons: {
-        OK: function () {
-          $(this).dialog("close");
-        }
-      }
+      width: "28em"
     });
   } else {
     hideLoading();
@@ -305,7 +300,6 @@ async function generateMapOnLoad() {
   drawLayers();
   fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
-  toggleAssistant();
 }
 
 // focus on coordinates, cell or burg provided in searchParams
@@ -352,31 +346,6 @@ function focusOn() {
     const x = +params.get("x") || graphWidth / 2;
     const y = +params.get("y") || graphHeight / 2;
     zoomTo(x, y, scale, 1600);
-  }
-}
-
-let isAssistantLoaded = false;
-function toggleAssistant() {
-  const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
-  if (showAssistant) {
-    if (isAssistantLoaded) {
-      const assistantContainer = document.getElementById("chat-widget-container");
-      if (assistantContainer) assistantContainer.style.display = "block";
-    } else {
-      import("./libs/openwidget.min.js").then(() => {
-        isAssistantLoaded = true;
-        setTimeout(() => {
-          const bubble = document.getElementById("chat-widget-minimized");
-          if (bubble) {
-            bubble.dataset.tip = "Click to open the Assistant";
-            bubble.addEventListener("mouseover", showDataTip);
-          }
-        }, 5000);
-      });
-    }
-  } else if (isAssistantLoaded) {
-    const assistantContainer = document.getElementById("chat-widget-container");
-    if (assistantContainer) assistantContainer.style.display = "none";
   }
 }
 
@@ -483,17 +452,10 @@ void (function addDragToUpload() {
     const file = e.dataTransfer.items[0].getAsFile();
 
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
-      alertMessage.innerHTML =
-        "Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded";
-      $("#alert").dialog({
-        resizable: false,
+      window.showMessageDialog({
+        id: "invalidMapFileDialog",
+        messageHtml: "Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded",
         title: "Invalid file format",
-        position: { my: "center", at: "center", of: "svg" },
-        buttons: {
-          Close: function () {
-            $(this).dialog("close");
-          }
-        }
       });
       return;
     }
@@ -611,23 +573,18 @@ async function generate(options) {
     const parsedError = parseError(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
+    const messageHtml = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
       <p id="errorBox">${parsedError}</p>`;
-    $("#alert").dialog({
-      resizable: false,
+    window.showMessageDialog({
+      actions: [
+        { close: false, label: "Cleanup data", onClick: cleanupData },
+        { label: "Regenerate", onClick: () => regenerateMap("generation error") },
+        { label: "Ignore" }
+      ],
+      id: "generationErrorDialog",
+      messageHtml,
       title: "Generation error",
-      width: "32em",
-      buttons: {
-        "Cleanup data": () => cleanupData(),
-        Regenerate: function () {
-          regenerateMap("generation error");
-          $(this).dialog("close");
-        },
-        Ignore: function () {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+      width: "32em"
     });
   } finally {
     if (generationGroupOpen) console.groupEnd();

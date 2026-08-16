@@ -22,6 +22,7 @@ interface WorkspaceDialogProps {
   isOpen: boolean;
   maxHeight?: CSSProperties["maxHeight"];
   onClose: () => void;
+  onResizeEnd?: () => void;
   placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
   placementTarget?: Element | null;
@@ -66,6 +67,7 @@ export function WorkspaceDialog({
   isOpen,
   maxHeight,
   onClose,
+  onResizeEnd,
   placementOffset,
   placement = "center",
   placementTarget,
@@ -167,6 +169,27 @@ export function WorkspaceDialog({
       window.removeEventListener("resize", positionDialog);
     };
   }, [isModal, isOpen, placement, placementOffset, placementTarget, positionRevision]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !isOpen || !resizable || !onResizeEnd) return;
+
+    let initialized = false;
+    let resizeTimer: number | undefined;
+    const observer = new ResizeObserver(() => {
+      if (!initialized) {
+        initialized = true;
+        return;
+      }
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(onResizeEnd, 120);
+    });
+    observer.observe(dialog);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(resizeTimer);
+    };
+  }, [isOpen, onResizeEnd, resizable]);
 
   const handleDragStart = (event: ReactPointerEvent<HTMLElement>) => {
     if (!canDrag || event.button !== 0 || (event.target as Element).closest("button")) return;

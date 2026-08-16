@@ -1,6 +1,7 @@
 import { drag, mean, min, polygonArea, polygonLength, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
@@ -27,11 +28,15 @@ function open(element: SVGElement): void {
   drawLakeVertices();
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
-  $("#lakeEditor").dialog({
-    title: "Edit Lake",
+  showDomDialog({
+    content: ensureEl("lakeEditor"),
+    onClose: closeLakesEditor,
+    placement: "top-center",
+    placementOffset: { x: 0, y: 20 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
-    close: closeLakesEditor
+    title: "Edit Lake",
+    width: "fit-content"
   });
 }
 
@@ -304,27 +309,18 @@ function removeLakeGroup(): void {
   }
 
   const count = (selectedLake.node()!.parentNode as SVGGElement).childElementCount;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the group? All lakes of the group (${count}) will be turned into Freshwater`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove lake group",
-    width: "26em",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
-        const freshwater = ensureEl("freshwater");
-        const groupEl = ensureEl(group);
-        while (groupEl.childNodes.length) {
-          freshwater.appendChild(groupEl.childNodes[0]);
-        }
-        groupEl.remove();
-        ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
-        ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: `Are you sure you want to remove the group? All lakes of the group (${count}) will be turned into Freshwater`,
+    onConfirm: () => {
+      const freshwater = ensureEl("freshwater");
+      const groupEl = ensureEl(group);
+      while (groupEl.childNodes.length) freshwater.appendChild(groupEl.childNodes[0]);
+      groupEl.remove();
+      ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
+      ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
+    },
+    title: "Remove lake group"
   });
 }
 

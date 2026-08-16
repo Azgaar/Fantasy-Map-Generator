@@ -10,6 +10,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -76,12 +77,14 @@ function open(): void {
   renderDialog();
   routesTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Routes Overview",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeRoutesOverview,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    position,
-    close: closeRoutesOverview
+    title: "Routes Overview",
+    width: "fit-content"
   });
 }
 
@@ -278,37 +281,29 @@ function triggerAllRoutesRemove(): void {
   }
 
   const lockedCount = pack.routes.length - toRemove.length;
-  alertMessage.innerHTML =
+  const message =
     lockedCount > 0
       ? /* html */ `Remove all <b>unlocked</b> routes (${toRemove.length})? <b>${lockedCount}</b> locked route(s) will be kept. This cannot be undone.`
       : /* html */ `Are you sure you want to remove all routes? This action can't be undone`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: lockedCount > 0 ? "Remove unlocked routes" : "Remove all routes",
-    buttons: {
-      Remove: function (this: any) {
-        const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
-        if (!routesToRemove.length) {
-          if (!pack.routes.length) {
-            tip("There are no routes to remove", false, "error");
-          } else {
-            tip("All routes are now locked; nothing was removed.", false, "error");
-          }
-          $(this).dialog("close");
-          return;
+  confirmationDialog({
+    confirm: "Remove",
+    message,
+    onConfirm: () => {
+      const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
+      if (!routesToRemove.length) {
+        if (!pack.routes.length) {
+          tip("There are no routes to remove", false, "error");
+        } else {
+          tip("All routes are now locked; nothing was removed.", false, "error");
         }
-        for (const route of routesToRemove) {
-          Routes.remove(route);
-        }
-        pack.cells.routes = Routes.buildLinks(pack.routes);
-        routesTable.refresh();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: any) {
-        $(this).dialog("close");
+        return;
       }
-    }
+      for (const route of routesToRemove) Routes.remove(route);
+      pack.cells.routes = Routes.buildLinks(pack.routes);
+      routesTable.refresh();
+    },
+    title: lockedCount > 0 ? "Remove unlocked routes" : "Remove all routes"
   });
 }
 

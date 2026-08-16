@@ -1,6 +1,7 @@
 import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
 import { drawBiomes } from "@/renderers/draw-biomes";
@@ -24,11 +25,15 @@ function open(element: SVGElement): void {
   drawCoastlineVertices();
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
-  $("#coastlineEditor").dialog({
-    title: "Edit Coastline",
+  showDomDialog({
+    content: ensureEl("coastlineEditor"),
+    onClose: closeCoastlineEditor,
+    placement: "top-center",
+    placementOffset: { x: 0, y: 20 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
-    close: closeCoastlineEditor
+    title: "Edit Coastline",
+    width: "fit-content"
   });
 }
 
@@ -237,28 +242,19 @@ function removeCoastlineGroup(): void {
   }
 
   const count = (selectedCoastline.node()!.parentNode as SVGGElement).childElementCount;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the group? All coastline elements of the group (${count}) will be moved under
-    <i>sea_island</i> group`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove coastline group",
-    width: "26em",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
-        const sea = ensureEl("sea_island");
-        const groupEl = ensureEl(group);
-        while (groupEl.childNodes.length) {
-          sea.appendChild(groupEl.childNodes[0]);
-        }
-        groupEl.remove();
-        ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
-        ensureEl<HTMLSelectElement>("coastlineGroup").value = "sea_island";
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: /* html */ `Are you sure you want to remove the group? All coastline elements of the group (${count}) will be moved under
+      <i>sea_island</i> group`,
+    onConfirm: () => {
+      const sea = ensureEl("sea_island");
+      const groupEl = ensureEl(group);
+      while (groupEl.childNodes.length) sea.appendChild(groupEl.childNodes[0]);
+      groupEl.remove();
+      ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
+      ensureEl<HTMLSelectElement>("coastlineGroup").value = "sea_island";
+    },
+    title: "Remove coastline group"
   });
 }
 

@@ -253,7 +253,6 @@
 .icon-coa:before {content:'\f3ed'; font-size: .9em; color: #999;} /* '' */
 .icon-half:before {font-weight: bold;content:'½';}
 .icon-voice:before {content:'🔊';}
-.icon-robot:before {content:'🤖';}
 .icon-die:before {content:'🎲';}
 .icon-button-die:before {content:'🎲'; padding-right: .4em;}
 .icon-button-power:before {content:'💪'; padding-right: .6em;}

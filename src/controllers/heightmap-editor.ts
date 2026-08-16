@@ -1,6 +1,8 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
-import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { enableVerticalSortable } from "@/components/dialog/vertical-sortable";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
@@ -145,11 +147,13 @@ function renderTemplateEditor(): void {
 
   const $body = ensureEl("templateBody");
 
-  $("#templateBody").sortable({
-    items: "> div",
-    handle: ".icon-resize-vertical",
-    containment: "#templateBody",
-    axis: "y"
+  enableVerticalSortable({
+    container: $body,
+    handleSelector: ".icon-resize-vertical",
+    itemSelector: "div",
+    onUpdate: () => {
+      $body.dataset.changed = "1";
+    }
   });
 
   $body.addEventListener("click", (ev: Event) => {
@@ -295,7 +299,7 @@ function addToolbarListeners(): void {
 }
 
 function showModeDialog(tool?: string): void {
-  alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
+  const messageHtml = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
     <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
     <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
@@ -303,18 +307,19 @@ function showModeDialog(tool?: string): void {
     <p>Please <span class="pseudoLink" onclick="window.Services.Save.saveMap('machine')">save the map</span> before editing the heightmap!</p>
     <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Edit Heightmap",
-    width: "28em",
-    buttons: {
-      Erase: () => enterHeightmapEditMode("erase", tool),
-      Keep: () => enterHeightmapEditMode("keep", tool),
-      Risk: () => enterHeightmapEditMode("risk", tool),
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [
+        { label: "Erase", onClick: () => enterHeightmapEditMode("erase", tool) },
+        { label: "Keep", onClick: () => enterHeightmapEditMode("keep", tool) },
+        { label: "Risk", onClick: () => enterHeightmapEditMode("risk", tool) },
+        { label: "Cancel" }
+      ],
+      id: "heightmapModeDialog",
+      messageHtml,
+      title: "Edit Heightmap",
+      width: "28em"
+    });
   });
 }
 
@@ -946,11 +951,13 @@ function openBrushesPanel(): void {
   if (document.getElementById("brushesPanel")) return;
   renderBrushesPanel();
 
-  $("#brushesPanel").dialog({
-    title: "Paint Brushes",
+  showDomDialog({
+    content: ensureEl("brushesPanel"),
+    onClose: closeBrushesPanel,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: closeBrushesPanel
+    title: "Paint Brushes"
   });
 }
 
@@ -1478,19 +1485,19 @@ function openTemplateEditor(): void {
   if (document.getElementById("templateEditor")) return;
   renderTemplateEditor();
 
-  $("#templateEditor").dialog({
-    title: "Template Editor",
-    minHeight: "auto",
-    width: "fit-content",
+  showDomDialog({
+    content: ensureEl("templateEditor"),
+    onClose: closeTemplateEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: closeTemplateEditor
+    title: "Template Editor",
+    width: "fit-content"
   });
 }
 
 function closeTemplateEditor(): void {
-  $("#templateEditor").dialog("destroy");
-  ensureEl("templateEditor").remove();
+  destroyDialog("templateEditor");
 }
 
 function addStepOnClick(e: Event): void {
@@ -1645,19 +1652,11 @@ function selectTemplate(e: Event): void {
     return;
   }
 
-  alertMessage.innerHTML = "Are you sure you want to select a different template? All changes will be lost.";
-  $("#alert").dialog({
-    resizable: false,
-    title: "Change Template",
-    buttons: {
-      Change: function (this: HTMLElement) {
-        changeTemplate(template);
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Change",
+    message: "Are you sure you want to select a different template? All changes will be lost.",
+    onConfirm: () => changeTemplate(template),
+    title: "Change Template"
   });
 }
 
@@ -1774,13 +1773,18 @@ function openImageConverter(): void {
 
   renderImageConverter();
 
-  $("#imageConverter").dialog({
-    title: "Image Converter",
+  showDomDialog({
+    beforeClose: () => {
+      closeImageConverter();
+      return false;
+    },
+    content: ensureEl("imageConverter"),
     maxHeight: svgHeight * 0.8,
-    minHeight: "auto",
-    width: "20em",
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    beforeClose: closeImageConverter
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
+    resizable: true,
+    title: "Image Converter",
+    width: "20em"
   });
 
   // create canvas for image
@@ -2060,35 +2064,25 @@ function restoreImageConverterState(): void {
   ensureEl("colorsSelectValue").innerHTML = ensureEl("colorsSelectFriendly").innerHTML = "0";
   select<SVGElement, unknown>("#viewbox").style("cursor", "default").on(".drag", null);
   tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
-  $("#imageConverter").dialog("destroy");
-  ensureEl("imageConverter").remove();
+  destroyDialog("imageConverter");
   openBrushesPanel();
 }
 
-function closeImageConverter(event: Event): void {
-  event.preventDefault();
-  event.stopPropagation();
-  alertMessage.innerHTML = /* html */ `Are you sure you want to close the Image Converter? Click "Cancel" to keep editing. Click "Complete" to apply
+function closeImageConverter(): void {
+  const messageHtml = /* html */ `Are you sure you want to close the Image Converter? Click "Cancel" to keep editing. Click "Complete" to apply
   the conversion and close the tool. Click "Close" to discard the conversion and restore the previous heightmap.`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Close Image Converter",
-    buttons: {
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      },
-      Complete: function (this: HTMLElement) {
-        $(this).dialog("close");
-        applyConversion();
-      },
-      Close: function (this: HTMLElement) {
-        $(this).dialog("close");
-        restoreImageConverterState();
-        select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
-        restoreHistory(history.previousPosition);
-      }
-    }
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [
+        { label: "Cancel" },
+        { intent: "primary", label: "Complete", onClick: applyConversion },
+        { intent: "danger", label: "Close", onClick: cancelConversion }
+      ],
+      id: "closeImageConverterDialog",
+      messageHtml,
+      title: "Close Image Converter"
+    });
   });
 }
 

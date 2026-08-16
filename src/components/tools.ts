@@ -50,31 +50,24 @@ function confirmRegeneration(event: MouseEvent, button: string): void {
     return;
   }
 
-  const message = ensureEl("alertMessage");
-  message.innerHTML =
-    "Regeneration will remove all the custom changes for the element.<br /><br />Are you sure you want to proceed?";
-  $("#alert").dialog({
-    resizable: false,
-    title: "Regenerate element",
-    buttons: {
-      Proceed: function () {
-        regenerate(event, button);
-        $(this).dialog("close");
+  let dontAskAgain = false;
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [{ label: "Proceed", onClick: () => regenerate(event, button) }, { label: "Cancel" }],
+      id: "regenerateElementDialog",
+      messageHtml:
+        "Regeneration will remove all the custom changes for the element.<br /><br />Are you sure you want to proceed?",
+      onClose: () => {
+        if (dontAskAgain) sessionStorage.setItem("regenerateFeatureDontAsk", "true");
       },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    },
-    open: function () {
-      const checkbox =
-        '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>';
-      this.parentElement.querySelector(".ui-dialog-buttonpane")?.insertAdjacentHTML("afterbegin", checkbox);
-    },
-    close: function () {
-      const checkbox = this.parentElement.querySelector(".checkbox") as HTMLInputElement | null;
-      if (checkbox?.checked) sessionStorage.setItem("regenerateFeatureDontAsk", "true");
-      $(this).dialog("destroy");
-    }
+      rememberChoice: {
+        label: "do not ask again",
+        onChange: checked => {
+          dontAskAgain = checked;
+        }
+      },
+      title: "Regenerate element"
+    });
   });
 }
 

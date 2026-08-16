@@ -1,5 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
@@ -14,28 +15,35 @@ function editBurgGroups(): void {
   renderDialog();
   addRows();
 
-  $("#burgGroupsEditor").dialog({
-    title: "Configure Burg groups",
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Apply",
+        onClick: () => ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit()
+      },
+      {
+        close: false,
+        label: "Add",
+        onClick: () => {
+          const maxOrder = Math.max(0, ...options.burgs.groups.map(({ order }) => order));
+          const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
+          ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
+        }
+      },
+      {
+        close: false,
+        label: "Restore",
+        onClick: () => addRows(Burgs.getDefaultGroups())
+      },
+      { label: "Cancel" }
+    ],
+    content: ensureEl("burgGroupsEditor"),
+    onClose: closeBurgGroupsEditor,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "center", at: "center", of: "svg" },
-    close: closeBurgGroupsEditor,
-    buttons: {
-      Apply: () => {
-        ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
-      },
-      Add: () => {
-        const maxOrder = Math.max(0, ...options.burgs.groups.map(({ order }) => order));
-        const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
-        ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
-      },
-      Restore: () => {
-        // restore the form only, the changes are applied on Apply, so Cancel still discards them
-        addRows(Burgs.getDefaultGroups());
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    title: "Configure Burg groups"
   });
 }
 
@@ -107,8 +115,7 @@ function renderDialog(): void {
 }
 
 function closeBurgGroupsEditor(): void {
-  $("#burgGroupsEditor").dialog("destroy");
-  ensureEl("burgGroupsEditor").remove();
+  destroyDialog("burgGroupsEditor");
 }
 
 function addRows(groups: BurgGroup[] = options.burgs.groups): void {
@@ -185,40 +192,54 @@ function selectLimitation(
         </tr>`
   );
 
-  alertMessage.innerHTML = /* html */ `<b>Limit group by ${el.getAttribute("name")}:</b>
+  destroyDialog("burgGroupLimitationDialog");
+  const content = document.createElement("div");
+  content.id = "burgGroupLimitationDialog";
+  content.innerHTML = /* html */ `<b>Limit group by ${el.getAttribute("name")}:</b>
       <table style="margin-top:.3em">
         <tbody>
           ${rows.join("")}
         </tbody>
       </table>`;
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
-    width: "fit-content",
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Invert",
+        onClick: () => {
+          content.querySelectorAll<HTMLInputElement>("input").forEach(input => {
+            input.checked = !input.checked;
+          });
+        }
+      },
+      {
+        close: false,
+        label: "Apply",
+        onClick: () => {
+          const inputs = Array.from(content.querySelectorAll<HTMLInputElement>("input"));
+          const selected = inputs.reduce<string[]>((acc, input) => {
+            if (input.checked) acc.push(input.dataset.i!);
+            return acc;
+          }, []);
+
+          if (!selected.length) return tip("Select at least one element", false, "error");
+
+          const allAreSelected = selected.length === inputs.length;
+          (el.previousElementSibling as HTMLInputElement).value = allAreSelected ? "" : selected.join(",");
+          el.innerHTML = allAreSelected ? "all" : "some";
+          destroyDialog(content.id);
+        }
+      },
+      { label: "Cancel" }
+    ],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     title: "Limit group",
-    buttons: {
-      Invert: () => {
-        alertMessage.querySelectorAll<HTMLInputElement>("input").forEach(input => {
-          input.checked = !input.checked;
-        });
-      },
-      Apply: function (this: HTMLElement) {
-        const inputs = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input"));
-        const selected = inputs.reduce<string[]>((acc, input) => {
-          if (input.checked) acc.push(input.dataset.i!);
-          return acc;
-        }, []);
-
-        if (!selected.length) return tip("Select at least one element", false, "error");
-
-        const allAreSelected = selected.length === inputs.length;
-        (el.previousElementSibling as HTMLInputElement).value = allAreSelected ? "" : selected.join(",");
-        el.innerHTML = allAreSelected ? "all" : "some";
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    width: "fit-content"
   });
 }
 
@@ -256,7 +277,10 @@ function selectFeaturesLimitation(el: HTMLElement): void {
         </tr>`
   );
 
-  alertMessage.innerHTML = /* html */ `
+  destroyDialog("burgGroupFeatureLimitationDialog");
+  const content = document.createElement("div");
+  content.id = "burgGroupFeatureLimitationDialog";
+  content.innerHTML = /* html */ `
       <form id="featuresLimitationForm">
         <table>
           <thead style="font-weight:bold">
@@ -270,28 +294,32 @@ function selectFeaturesLimitation(el: HTMLElement): void {
           </tbody>
         </table>
       </form>`;
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
-    width: "fit-content",
-    title: "Limit group by features",
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        const form = ensureEl<HTMLFormElement>("featuresLimitationForm");
-        const values = features.reduce<Record<string, boolean>>((acc, { name }) => {
-          const featureValue = (form[name] as RadioNodeList).value;
-          if (featureValue !== "undefined") acc[name] = featureValue === "true";
-          return acc;
-        }, {});
+  showDomDialog({
+    actions: [
+      {
+        label: "Apply",
+        onClick: () => {
+          const form = content.querySelector<HTMLFormElement>("#featuresLimitationForm")!;
+          const values = features.reduce<Record<string, boolean>>((acc, { name }) => {
+            const featureValue = (form[name] as RadioNodeList).value;
+            if (featureValue !== "undefined") acc[name] = featureValue === "true";
+            return acc;
+          }, {});
 
-        (el.previousElementSibling as HTMLInputElement).value = JSON.stringify(values);
-        el.innerHTML = Object.keys(values).length ? "some" : "any";
-
-        $(this).dialog("close");
+          (el.previousElementSibling as HTMLInputElement).value = JSON.stringify(values);
+          el.innerHTML = Object.keys(values).length ? "some" : "any";
+        }
       },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: "Cancel" }
+    ],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    title: "Limit group by features",
+    width: "fit-content"
   });
 }
 
@@ -425,7 +453,7 @@ function submitForm(event: Event): void {
   drawLabels();
   refreshEditors();
 
-  $("#burgGroupsEditor").dialog("close");
+  destroyDialog("burgGroupsEditor");
 }
 
 export const BurgGroupEditor = { open: editBurgGroups };

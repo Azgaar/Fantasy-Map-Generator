@@ -113,6 +113,10 @@
   overflow: auto;
 }
 
+.fmg-dialog--canvas .fmg-dialog__body {
+  padding: 0;
+}
+
 .fmg-dom-dialog__content {
   height: 100%;
   max-height: 100%;

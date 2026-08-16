@@ -1,5 +1,6 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawMarkets } from "@/renderers/draw-markets";
@@ -55,141 +56,136 @@ function open(editedGood?: Good, onUpdate?: () => void) {
   let dialog: HTMLElement;
   renderDialog();
 
-  $(dialog!).dialog({
-    width: "30em",
+  if (editedGood) {
+    dialog!.insertAdjacentHTML(
+      "beforeend",
+      /*html*/ `<div class="dontAsk" data-tip="Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.">
+        <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
+        <label for="goodRegenerateEconomy" class="checkbox-label"><i>regenerate economy on apply</i></label>
+      </div>`
+    );
+  }
+
+  showDomDialog({
+    actions: [{ label: "Cancel" }, { close: false, label: editedGood ? "Apply" : "Add", onClick: applyGood }],
+    content: dialog!,
+    onClose: () => destroyDialog("goodEditor"),
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: editedGood ? "Edit good" : "Add new good",
-    open: function (this: HTMLElement) {
-      if (!editedGood) return; // only edits can recompute the economy
-      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
-      pane?.insertAdjacentHTML(
-        "afterbegin",
-        /*html*/ `<div class="dontAsk" data-tip="Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.">
-          <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
-          <label for="goodRegenerateEconomy" class="checkbox-label"><i>regenerate economy on apply</i></label>
-        </div>`
-      );
-    },
-    close: () => {
-      destroyDialog("goodEditor");
-    },
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      [editedGood ? "Apply" : "Add"]: () => {
-        const errors: string[] = [];
+    width: "30em"
+  });
 
-        const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
-        const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
-        const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
-        const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
-        const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
-        const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
-        const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
-        const color = ensureEl<HTMLInputElement>("newGoodColor").value;
-        const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
+  function applyGood(): void {
+    const errors: string[] = [];
 
-        if (!name) errors.push("Name is required");
-        if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
-        if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
+    const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
+    const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
+    const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
+    const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
+    const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
+    const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
+    const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
+    const color = ensureEl<HTMLInputElement>("newGoodColor").value;
+    const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
 
-        if (distribution) {
-          try {
-            const methods = Goods.getMethods();
-            const allMethods = `{${Object.keys(methods).join(", ")}}`;
-            new Function(allMethods, `return ${distribution}`)(methods);
-          } catch (err) {
-            errors.push(`Distribution function is invalid: ${(err as Error).message || err}`);
-          }
-        }
+    if (!name) errors.push("Name is required");
+    if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
+    if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
 
-        for (const recipe of recipes) {
-          for (const [ingredientId, ingredientAmount] of Object.entries(recipe)) {
-            const id = Number(ingredientId);
-            const good = Goods.get(id);
-            if (!good) errors.push(`Recipe references unknown good id: ${id}`);
-            const amount = Number(ingredientAmount);
-            if (Number.isNaN(amount) || !Number.isFinite(amount) || amount <= 0)
-              errors.push(`Invalid recipe amount for good ${good?.name}`);
-          }
-
-          if (!Object.keys(recipe).length) errors.push("Each recipe must have at least one ingredient");
-        }
-
-        ensureEl("newGoodError").textContent = errors.join(". ");
-        if (errors.length) return;
-
-        function buildFinalMultipliers(): Good["multipliers"] {
-          const result: Good["multipliers"] = {};
-          for (const [dimKey, vals] of Object.entries(multipliers) as [
-            MultiplierDimKey,
-            Partial<Record<string, number>>
-          ][]) {
-            const nonDefault = Object.fromEntries(
-              Object.entries(vals ?? {}).filter(([, v]) => v !== undefined && v !== 1)
-            );
-            if (Object.keys(nonDefault).length) (result as any)[dimKey] = nonDefault;
-          }
-          return Object.keys(result).length ? result : undefined;
-        }
-
-        if (editedGood) {
-          editedGood.name = name;
-          editedGood.tags = tags;
-          editedGood.icon = icon;
-          editedGood.color = color;
-          editedGood.value = value;
-          editedGood.chance = chance;
-          editedGood.unit = unit;
-          editedGood.demandCoverage = demandCoverageState;
-          editedGood.multipliers = buildFinalMultipliers();
-          editedGood.distribution = distribution || undefined;
-          editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
-          editedGood.recipes = recipes.length ? recipes : undefined;
-
-          // opt-out: by default re-place the good and recompute the economy to reflect the change
-          if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
-            Goods.regeneratePlacement(editedGood.i);
-            Production.regenerateEconomy();
-            if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-            if (layerIsOn("toggleGoods")) drawGoods();
-            if (layerIsOn("toggleTrade")) tradeAnimation.restart();
-            refreshEditors();
-          } else {
-            Goods.sync();
-          }
-        } else {
-          const getNextId = () => {
-            let nextId = pack.goods?.at(-1)?.i ?? 1;
-            while (Goods.get(nextId)) nextId++;
-            return nextId;
-          };
-
-          pack.goods.push({
-            i: getNextId(),
-            name,
-            tags,
-            icon,
-            color,
-            value,
-            chance,
-            unit,
-            demandCoverage: demandCoverageState,
-            multipliers: buildFinalMultipliers(),
-            distribution: distribution || undefined,
-            biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
-            recipes: recipes.length ? recipes : undefined
-          });
-          Goods.sync();
-        }
-
-        tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
-        onUpdate?.();
-        $(dialog).dialog("close");
+    if (distribution) {
+      try {
+        const methods = Goods.getMethods();
+        const allMethods = `{${Object.keys(methods).join(", ")}}`;
+        new Function(allMethods, `return ${distribution}`)(methods);
+      } catch (err) {
+        errors.push(`Distribution function is invalid: ${(err as Error).message || err}`);
       }
     }
-  });
+
+    for (const recipe of recipes) {
+      for (const [ingredientId, ingredientAmount] of Object.entries(recipe)) {
+        const id = Number(ingredientId);
+        const good = Goods.get(id);
+        if (!good) errors.push(`Recipe references unknown good id: ${id}`);
+        const amount = Number(ingredientAmount);
+        if (Number.isNaN(amount) || !Number.isFinite(amount) || amount <= 0)
+          errors.push(`Invalid recipe amount for good ${good?.name}`);
+      }
+
+      if (!Object.keys(recipe).length) errors.push("Each recipe must have at least one ingredient");
+    }
+
+    ensureEl("newGoodError").textContent = errors.join(". ");
+    if (errors.length) return;
+
+    function buildFinalMultipliers(): Good["multipliers"] {
+      const result: Good["multipliers"] = {};
+      for (const [dimKey, vals] of Object.entries(multipliers) as [
+        MultiplierDimKey,
+        Partial<Record<string, number>>
+      ][]) {
+        const nonDefault = Object.fromEntries(Object.entries(vals ?? {}).filter(([, v]) => v !== undefined && v !== 1));
+        if (Object.keys(nonDefault).length) (result as any)[dimKey] = nonDefault;
+      }
+      return Object.keys(result).length ? result : undefined;
+    }
+
+    if (editedGood) {
+      editedGood.name = name;
+      editedGood.tags = tags;
+      editedGood.icon = icon;
+      editedGood.color = color;
+      editedGood.value = value;
+      editedGood.chance = chance;
+      editedGood.unit = unit;
+      editedGood.demandCoverage = demandCoverageState;
+      editedGood.multipliers = buildFinalMultipliers();
+      editedGood.distribution = distribution || undefined;
+      editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
+      editedGood.recipes = recipes.length ? recipes : undefined;
+
+      // opt-out: by default re-place the good and recompute the economy to reflect the change
+      if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
+        Goods.regeneratePlacement(editedGood.i);
+        Production.regenerateEconomy();
+        if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+        if (layerIsOn("toggleGoods")) drawGoods();
+        if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+        refreshEditors();
+      } else {
+        Goods.sync();
+      }
+    } else {
+      const getNextId = () => {
+        let nextId = pack.goods?.at(-1)?.i ?? 1;
+        while (Goods.get(nextId)) nextId++;
+        return nextId;
+      };
+
+      pack.goods.push({
+        i: getNextId(),
+        name,
+        tags,
+        icon,
+        color,
+        value,
+        chance,
+        unit,
+        demandCoverage: demandCoverageState,
+        multipliers: buildFinalMultipliers(),
+        distribution: distribution || undefined,
+        biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
+        recipes: recipes.length ? recipes : undefined
+      });
+      Goods.sync();
+    }
+
+    tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
+    onUpdate?.();
+    destroyDialog("goodEditor");
+  }
 
   function renderDialog(): void {
     destroyDialog("goodEditor");
@@ -615,37 +611,39 @@ function openMultiplierPopup(
     return `${box}<span>${entity.name}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
   });
 
+  destroyDialog("goodMultiplierPopup");
   const popupEl = document.createElement("div");
-  document.body.appendChild(popupEl);
+  popupEl.id = "goodMultiplierPopup";
+  ensureEl("dialogs").appendChild(popupEl);
   const body = rows.length
     ? `<div style="display:grid; grid-template-columns:auto 1fr 5em; gap:.3em .5em; align-items:center;">${rows.join("")}</div>`
     : `<div style="color:#777; font-style:italic;">No ${label.toLowerCase()}s available</div>`;
   popupEl.innerHTML = `<div style="max-height:320px; overflow-y:auto; padding:.2em;">${body}</div>`;
 
-  $(popupEl).dialog({
-    title: `${label} multipliers`,
-    width: "22em",
-    resizable: false,
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        const inputs = Array.from(popupEl.querySelectorAll<HTMLInputElement>(".mPopupInput"));
-        const result: Partial<Record<string, number>> = {};
-        for (const input of inputs) {
-          const id = input.dataset.id!;
-          const v = Number(input.value);
-          if (Number.isFinite(v) && v >= 0 && v !== 1) result[id] = v;
+  showDomDialog({
+    actions: [
+      { label: "Cancel" },
+      {
+        label: "Apply",
+        onClick: () => {
+          const inputs = Array.from(popupEl.querySelectorAll<HTMLInputElement>(".mPopupInput"));
+          const result: Partial<Record<string, number>> = {};
+          for (const input of inputs) {
+            const id = input.dataset.id!;
+            const v = Number(input.value);
+            if (Number.isFinite(v) && v >= 0 && v !== 1) result[id] = v;
+          }
+          onApply(result);
         }
-        onApply(result);
-        $(this).dialog("close");
       }
-    },
-    close: () => {
-      $(popupEl).dialog("destroy");
-      popupEl.remove();
-    }
+    ],
+    content: popupEl,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: false,
+    title: `${label} multipliers`,
+    width: "22em"
   });
 }
 
@@ -658,33 +656,35 @@ function openDemandCoveragePopup(
     return `<span>${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(cat)}</span><input type="number" class="dcPopupInput" data-cat="${cat}" min="0" step="0.05" style="width:5em;" value="${val}" />`;
   }).join("");
 
+  destroyDialog("goodDemandCoveragePopup");
   const popupEl = document.createElement("div");
-  document.body.appendChild(popupEl);
+  popupEl.id = "goodDemandCoveragePopup";
+  ensureEl("dialogs").appendChild(popupEl);
   popupEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr 5em;gap:.3em .5em;align-items:center;padding:.2em;">${rows}</div>`;
 
-  $(popupEl).dialog({
-    title: "Demand Coverage",
-    width: "18em",
-    resizable: false,
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        const result: Partial<Record<DemandCategory, number>> = {};
-        popupEl.querySelectorAll<HTMLInputElement>(".dcPopupInput").forEach(input => {
-          const cat = input.dataset.cat as DemandCategory;
-          const v = Number(input.value);
-          if (Number.isFinite(v) && v > 0) result[cat] = v;
-        });
-        onApply(result);
-        $(this).dialog("close");
+  showDomDialog({
+    actions: [
+      { label: "Cancel" },
+      {
+        label: "Apply",
+        onClick: () => {
+          const result: Partial<Record<DemandCategory, number>> = {};
+          popupEl.querySelectorAll<HTMLInputElement>(".dcPopupInput").forEach(input => {
+            const cat = input.dataset.cat as DemandCategory;
+            const v = Number(input.value);
+            if (Number.isFinite(v) && v > 0) result[cat] = v;
+          });
+          onApply(result);
+        }
       }
-    },
-    close: () => {
-      $(popupEl).dialog("destroy");
-      popupEl.remove();
-    }
+    ],
+    content: popupEl,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: false,
+    title: "Demand Coverage",
+    width: "18em"
   });
 }
 
@@ -700,33 +700,35 @@ function openBiomeProductionPopup(
     })
     .join("");
 
+  destroyDialog("goodBiomeProductionPopup");
   const popupEl = document.createElement("div");
-  document.body.appendChild(popupEl);
+  popupEl.id = "goodBiomeProductionPopup";
+  ensureEl("dialogs").appendChild(popupEl);
   popupEl.innerHTML = `<div style="max-height:320px;overflow-y:auto;padding:.2em;"><div style="display:grid;grid-template-columns:1fr 5em;gap:.3em .5em;align-items:center;">${rows}</div></div>`;
 
-  $(popupEl).dialog({
-    title: "Biome Baseline Production",
-    width: "22em",
-    resizable: false,
-    buttons: {
-      Cancel: function () {
-        $(this).dialog("close");
-      },
-      Apply: function () {
-        const result: Partial<Record<number, number>> = {};
-        popupEl.querySelectorAll<HTMLInputElement>(".bpPopupInput").forEach(input => {
-          const id = Number(input.dataset.id!);
-          const v = Number(input.value);
-          if (Number.isFinite(v) && v > 0) result[id] = v;
-        });
-        onApply(result);
-        $(this).dialog("close");
+  showDomDialog({
+    actions: [
+      { label: "Cancel" },
+      {
+        label: "Apply",
+        onClick: () => {
+          const result: Partial<Record<number, number>> = {};
+          popupEl.querySelectorAll<HTMLInputElement>(".bpPopupInput").forEach(input => {
+            const id = Number(input.dataset.id!);
+            const v = Number(input.value);
+            if (Number.isFinite(v) && v > 0) result[id] = v;
+          });
+          onApply(result);
+        }
       }
-    },
-    close: () => {
-      $(popupEl).dialog("destroy");
-      popupEl.remove();
-    }
+    ],
+    content: popupEl,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: false,
+    title: "Biome Baseline Production",
+    width: "22em"
   });
 }
 

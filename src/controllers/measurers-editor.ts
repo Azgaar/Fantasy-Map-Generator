@@ -1,6 +1,7 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
@@ -26,11 +27,14 @@ function open(): void {
   select("#ruler").classed("editable", true); // interactive cursor while the editor is open
   redraw();
 
-  $("#measurersEditor").dialog({
-    title: "Measurers Editor",
+  showDomDialog({
+    content: ensureEl("measurersEditor"),
+    onClose,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: onClose
+    title: "Measurers Editor",
+    width: "fit-content"
   });
 }
 
@@ -109,21 +113,15 @@ function onListClick(event: Event): void {
 
 function removeAllMeasurers(): void {
   if (!pack.measurers.length) return;
-  alertMessage.innerHTML = /* html */ ` Are you sure you want to remove all placed measurers?
-    <br />If you just want to hide them, toggle the Rulers layer off in Menu`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove all measurers",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
-        pack.measurers = [];
-        redraw();
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: /* html */ `Are you sure you want to remove all placed measurers?
+      <br />If you just want to hide them, toggle the Rulers layer off in Menu`,
+    onConfirm: () => {
+      pack.measurers = [];
+      redraw();
+    },
+    title: "Remove all measurers"
   });
 }
 

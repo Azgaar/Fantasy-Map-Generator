@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
@@ -54,20 +54,12 @@ function loadMapPrompt(blob: Blob): void {
     return;
   }
 
-  alertMessage.innerHTML = /* html */ `Are you sure you want to load saved map?<br />
-    All unsaved changes made to the current map will be lost`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Load saved map",
-    buttons: {
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      },
-      Load: function (this: HTMLElement) {
-        loadLastSavedMap();
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Load",
+    message: /* html */ `Are you sure you want to load saved map?<br />
+      All unsaved changes made to the current map will be lost`,
+    onConfirm: loadLastSavedMap,
+    title: "Load saved map"
   });
 
   function loadLastSavedMap() {
@@ -107,19 +99,16 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
 
 function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
+  const messageHtml = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
     random ? `A new random map is generated. ` : ""
   } Please ensure the
-  linked file is reachable and CORS is allowed on server side`;
-  $("#alert").dialog({
+    linked file is reachable and CORS is allowed on server side`;
+  showLoadMessage({
+    actions: [{ close: false, label: "Clear cache", onClick: cleanupData }, { label: "OK" }],
+    id: "mapUploadErrorDialog",
+    messageHtml,
     title: "Loading error",
-    width: "32em",
-    buttons: {
-      "Clear cache": () => cleanupData(),
-      OK: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    width: "32em"
   });
 }
 
@@ -226,15 +215,11 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
     return;
   }
 
-  alertMessage.innerHTML = message;
-  $("#alert").dialog({
-    title,
-    buttons: {
-      "Clear cache": () => cleanupData(),
-      OK: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  showLoadMessage({
+    actions: [{ close: false, label: "Clear cache", onClick: cleanupData }, { label: "OK" }],
+    id: "mapVersionWarningDialog",
+    messageHtml: message,
+    title
   });
 }
 
@@ -831,32 +816,30 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error occurred while loading the map. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
+    const messageHtml = /* html */ `An error occurred while loading the map. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
       <p id="errorBox">${parseError(error as Error)}</p>`;
 
-    $("#alert").dialog({
-      resizable: false,
+    showLoadMessage({
+      actions: [
+        { close: false, label: "Clear cache", onClick: cleanupData },
+        { label: "Select file", onClick: () => ensureEl("mapToLoad").click() },
+        { label: "New map", onClick: () => regenerateMap("loading error") },
+        { label: "Cancel" }
+      ],
+      id: "mapLoadingErrorDialog",
+      messageHtml,
       title: "Loading error",
-      maxWidth: "40em",
-      buttons: {
-        "Clear cache": () => cleanupData(),
-        "Select file": function (this: HTMLElement) {
-          $(this).dialog("close");
-          ensureEl("mapToLoad").click();
-        },
-        "New map": function (this: HTMLElement) {
-          $(this).dialog("close");
-          regenerateMap("loading error");
-        },
-        Cancel: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+      width: "40em"
     });
   } finally {
     if (loadGroupOpen) console.groupEnd();
   }
+}
+
+type LoadMessageOptions = import("@/components/ui/message-dialog").MessageDialogOptions;
+
+function showLoadMessage(options: LoadMessageOptions): void {
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => showMessageDialog(options));
 }
 
 export const Load = {

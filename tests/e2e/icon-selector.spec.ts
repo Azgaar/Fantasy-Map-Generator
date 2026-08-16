@@ -22,8 +22,7 @@ async function openIconSelector(page: Page): Promise<void> {
 
 async function closeIconSelector(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const iconSelector = document.getElementById("iconSelector");
-    if (iconSelector) (window as any).$(iconSelector).dialog("close");
+    (window as any).destroyDialog("iconSelector");
   });
   await page.waitForFunction(() => !document.getElementById("iconSelector"), { timeout: 5000 });
 }

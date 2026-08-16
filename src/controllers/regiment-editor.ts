@@ -1,6 +1,7 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
-import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
@@ -29,11 +30,13 @@ function editRegiment(selector: string): void {
   drawBase();
   drawRotationControl();
 
-  $("#regimentEditor").dialog({
-    title: "Edit Regiment",
+  showDomDialog({
+    content: ensureEl("regimentEditor"),
+    onClose: closeEditor,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    close: closeEditor,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" }
+    title: "Edit Regiment"
   });
 }
 
@@ -434,7 +437,7 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
     .remove();
 
   clearMainTip();
-  $("#regimentEditor").dialog("close");
+  destroyDialog("regimentEditor");
 }
 
 function toggleAttach(): void {
@@ -488,7 +491,7 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   selectedRegiment.remove();
 
   refreshEditors();
-  $("#regimentEditor").dialog("close");
+  destroyDialog("regimentEditor");
   Controllers.RegimentEditor.open(`#${regSelected.id}`);
 }
 
@@ -509,31 +512,25 @@ function editLegend(): void {
 }
 
 function removeRegiment(): void {
-  ensureEl("alertMessage").innerHTML = "Are you sure you want to remove the regiment?";
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove regiment",
-    buttons: {
-      Remove: function () {
-        $(this).dialog("close");
-        if (!selectedRegiment) return;
-        const military = pack.states[+selectedRegiment.dataset.state!].military!;
-        const reg = getRegiment();
-        const regIndex = reg ? military.indexOf(reg) : -1;
-        if (regIndex === -1) return;
-        military.splice(regIndex, 1);
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove the regiment?",
+    onConfirm: () => {
+      if (!selectedRegiment) return;
+      const military = pack.states[+selectedRegiment.dataset.state!].military!;
+      const reg = getRegiment();
+      const regIndex = reg ? military.indexOf(reg) : -1;
+      if (regIndex === -1) return;
+      military.splice(regIndex, 1);
 
-        const index = notes.findIndex(n => n.id === selectedRegiment!.id);
-        if (index !== -1) notes.splice(index, 1);
-        selectedRegiment.remove();
+      const index = notes.findIndex(n => n.id === selectedRegiment!.id);
+      if (index !== -1) notes.splice(index, 1);
+      selectedRegiment.remove();
 
-        refreshEditors();
-        $("#regimentEditor").dialog("close");
-      },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+      refreshEditors();
+      destroyDialog("regimentEditor");
+    },
+    title: "Remove regiment"
   });
 }
 
@@ -613,8 +610,7 @@ function closeEditor(): void {
   ensureEl("regimentAttach").classList.remove("pressed");
   applyDefaultViewboxEvents();
   selectedRegiment = null;
-  $("#regimentEditor").dialog("destroy");
-  ensureEl("regimentEditor").remove();
+  destroyDialog("regimentEditor");
 }
 
 export const RegimentEditor = { open: editRegiment };

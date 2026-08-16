@@ -41,7 +41,7 @@ Classic code relies on:
 - ambient state such as `pack`, `grid`, `options`, SVG selections, and generation settings;
 - functions and registries exposed through `window`;
 - the global D3 v5 calling convention, including `d3.event`;
-- jQuery and jQuery UI dialogs;
+- shared React dialogs and native DOM helpers exposed through `window`;
 - UI markup pre-built in `src/index.html` and shown or hidden rather than created and
   destroyed by its owner.
 
@@ -60,11 +60,9 @@ Two important cases are:
   Map loading deliberately recreates the shared SVG selections with global D3 v5 because
   classic mouse and zoom handlers depend on that event model. Migrate zoom and all remaining
   classic D3 consumers to imported D3 v7 before removing `public/libs/d3.min.js`.
-- **jQuery UI.** The dialog toolkit and many migrated controllers still call the global `$`.
-  Removing jQuery requires a broader dialog/component migration; moving a file to TypeScript
-  alone does not make jQuery removable. At version 1.143.2, a static scan finds jQuery-style
-  calls in roughly 73 TypeScript files, so this is a dedicated modernization project rather
-  than a dependency-only cleanup.
+- **Dialogs and interactions.** jQuery and jQuery UI have been removed. Classic scripts call
+  the typed bridges registered on `window`; bundled controllers import the shared React dialog
+  components and native drag/sort helpers directly. Do not reintroduce a global DOM toolkit.
 
 Other vendored libraries may be loaded at startup or on demand. Remove one only after a
 repository-wide caller audit and a runtime test of the affected feature.

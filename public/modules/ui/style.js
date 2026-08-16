@@ -662,12 +662,16 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
     : (() => [0, 0.25, 0.5, 0.75, 1].map(heightmapColorSchemes[scheme]).map(toHEX).join(","))();
 
   // render dialog base structure
-  alertMessage.innerHTML = /* html */ `<div>
+  window.destroyDialog("heightmapSchemeDialog");
+  const content = document.createElement("div");
+  content.id = "heightmapSchemeDialog";
+  content.innerHTML = /* html */ `<div>
     <i>Define heightmap gradient colors from high to low altitude</i>
     <img id="heightmapSchemePreview" alt="heightmap preview" style="margin-top: 0.5em; width: 100%;" />
     <div id="heightmapSchemeStops" style="margin-block: 0.5em; display: flex; flex-wrap: wrap;"></div>
     <div id="heightmapSchemeGradient" style="height: 1.9em; border: 1px solid #767676;"></div>
   </div>`;
+  ensureEl("dialogs").appendChild(content);
 
   renderPreview();
   renderStops();
@@ -758,18 +762,21 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
   }
 
   function handleClose() {
-    $("#alert").dialog("close");
+    window.destroyDialog(content.id);
   }
 
-  $("#alert").dialog({
+  window.showDomDialog({
+    actions: [
+      { close: false, label: "Create", onClick: handleCreate },
+      { label: "Cancel" }
+    ],
+    content,
+    placement: "top-center",
+    placementOffset: { x: 0, y: 150 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Create heightmap color scheme",
-    width: "28em",
-    buttons: {
-      Create: handleCreate,
-      Cancel: handleClose
-    },
-    position: { my: "center top+150", at: "center top", of: "svg" }
+    width: "28em"
   });
 });
 
@@ -903,36 +910,41 @@ styleFontAdd.addEventListener("click", function () {
   addFontNameInput.value = "";
   addFontURLInput.value = "";
 
-  $("#addFontDialog").dialog({
-    title: "Add custom font",
-    width: "26em",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Add: function () {
-        const family = addFontNameInput.value;
-        const src = addFontURLInput.value;
-        const method = addFontMethod.value;
+  window.showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Add",
+        onClick: () => {
+          const family = addFontNameInput.value;
+          const src = addFontURLInput.value;
+          const method = addFontMethod.value;
 
-        if (!family) return tip("Please provide a font name", false, "error");
+          if (!family) return tip("Please provide a font name", false, "error");
 
-        const existingFont =
-          method === "fontURL"
-            ? fonts.find(font => font.family === family && font.src === src)
-            : fonts.find(font => font.family === family);
-        if (existingFont) return tip("The font is already added", false, "error");
+          const existingFont =
+            method === "fontURL"
+              ? fonts.find(font => font.family === family && font.src === src)
+              : fonts.find(font => font.family === family);
+          if (existingFont) return tip("The font is already added", false, "error");
 
-        if (method === "fontURL") addWebFont(family, src);
-        else if (method === "googleFont") addGoogleFont(family);
-        else if (method === "localFont") addLocalFont(family);
+          if (method === "fontURL") addWebFont(family, src);
+          else if (method === "googleFont") addGoogleFont(family);
+          else if (method === "localFont") addLocalFont(family);
 
-        addFontNameInput.value = "";
-        addFontURLInput.value = "";
-        $(this).dialog("close");
+          addFontNameInput.value = "";
+          addFontURLInput.value = "";
+          window.destroyDialog("addFontDialog");
+        }
       },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+      { label: "Cancel" }
+    ],
+    content: ensureEl("addFontDialog"),
+    destroyOnClose: false,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    title: "Add custom font",
+    width: "26em"
   });
 });
 
@@ -1091,25 +1103,35 @@ styleMarketsIcon.addEventListener("click", function () {
 
 // request a URL to image to be used as a texture
 function textureProvideURL() {
-  alertMessage.innerHTML = /* html */ `Provide a texture image URL:
+  window.destroyDialog("textureUrlDialog");
+  const content = document.createElement("div");
+  content.id = "textureUrlDialog";
+  content.innerHTML = /* html */ `Provide a texture image URL:
     <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" oninput="fetchTextureURL(this.value)" />
     <canvas id="texturePreview" width="256px" height="144px"></canvas>`;
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
+  window.showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Apply",
+        onClick: () => {
+          const url = content.querySelector("#textureURL").value;
+          if (!url) return tip("Please provide a valid URL", false, "error");
+          changeTexture(url);
+          updateTextureSelectValue(url);
+          window.destroyDialog(content.id);
+        }
+      },
+      { label: "Cancel" }
+    ],
+    content,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Load custom texture",
-    width: "28em",
-    buttons: {
-      Apply: function () {
-        if (!textureURL.value) return tip("Please provide a valid URL", false, "error");
-        changeTexture(textureURL.value);
-        updateTextureSelectValue(textureURL.value);
-        $(this).dialog("close");
-      },
-      Cancel: function () {
-        $(this).dialog("close");
-      }
-    }
+    width: "28em"
   });
 }
 

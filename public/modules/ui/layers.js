@@ -471,12 +471,12 @@ function drawCells() {
 function toggleIce(event) {
   if (!layerIsOn("toggleIce")) {
     turnButtonOn("toggleIce");
-    $("#ice").fadeIn();
+    ensureEl("ice").style.display = "";
     if (!ice.selectAll("*").size()) drawIce();
     if (event && isCtrlClick(event)) editStyle("ice");
   } else {
     if (event && isCtrlClick(event)) return editStyle("ice");
-    $("#ice").fadeOut();
+    ensureEl("ice").style.display = "none";
     turnButtonOff("toggleIce");
   }
 }
@@ -743,11 +743,11 @@ function toggleCompass(event) {
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
     if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
-    $("#compass").fadeIn();
+    ensureEl("compass").style.display = "";
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {
     if (event && isCtrlClick(event)) return editStyle("compass");
-    $("#compass").fadeOut();
+    ensureEl("compass").style.display = "none";
     turnButtonOff("toggleCompass");
   }
 }
@@ -766,11 +766,11 @@ function toggleRelief(event) {
 function toggleLakes(event) {
   if (!layerIsOn("toggleLakes")) {
     turnButtonOn("toggleLakes");
-    $("#lakes").fadeIn();
+    ensureEl("lakes").style.display = "";
     if (event && isCtrlClick(event)) editStyle("lakes");
   } else {
     if (event && isCtrlClick(event)) return editStyle("lakes");
-    $("#lakes").fadeOut();
+    ensureEl("lakes").style.display = "none";
     turnButtonOff("toggleLakes");
   }
 }
@@ -954,11 +954,11 @@ function toggleRulers(event) {
 function toggleScaleBar(event) {
   if (!layerIsOn("toggleScaleBar")) {
     turnButtonOn("toggleScaleBar");
-    $("#scaleBar").fadeIn();
+    ensureEl("scaleBar").style.display = "";
     if (event && isCtrlClick(event)) editStyle("scaleBar");
   } else {
     if (event && isCtrlClick(event)) return editStyle("scaleBar");
-    $("#scaleBar").fadeOut();
+    ensureEl("scaleBar").style.display = "none";
     turnButtonOff("toggleScaleBar");
   }
 }
@@ -993,12 +993,12 @@ function toggleEmblems(event) {
   if (!layerIsOn("toggleEmblems")) {
     turnButtonOn("toggleEmblems");
     if (!emblems.selectAll("use").size()) drawEmblems();
-    $("#emblems").fadeIn();
+    ensureEl("emblems").style.display = "";
     invokeActiveZooming();
     if (event && isCtrlClick(event)) editStyle("emblems");
   } else {
     if (event && isCtrlClick(event)) return editStyle("emblems");
-    $("#emblems").fadeOut();
+    ensureEl("emblems").style.display = "none";
     turnButtonOff("toggleEmblems");
   }
 }
@@ -1006,11 +1006,11 @@ function toggleEmblems(event) {
 function toggleVignette(event) {
   if (!layerIsOn("toggleVignette")) {
     turnButtonOn("toggleVignette");
-    $("#vignette").fadeIn();
+    ensureEl("vignette").style.display = "";
     if (event && isCtrlClick(event)) editStyle("vignette");
   } else {
     if (event && isCtrlClick(event)) return editStyle("vignette");
-    $("#vignette").fadeOut();
+    ensureEl("vignette").style.display = "none";
     turnButtonOff("toggleVignette");
   }
 }
@@ -1039,10 +1039,15 @@ function turnButtonOn(el) {
   ViewportLayers.invalidateAll();
 }
 
-// move layers on mapLayers dragging (jquery sortable)
-$("#mapLayers").sortable({ items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer });
-function moveLayer(event, ui) {
-  moveLayerById(ui.item.attr("id"), ui.item.prev().attr("id"), ui.item.next().attr("id"));
+// move layers on mapLayers dragging
+window.enableVerticalSortable({
+  container: ensureEl("mapLayers"),
+  handleSelector: ".fmg-layer-row__handle",
+  itemSelector: "li:not(.solid)",
+  onUpdate: moveLayer
+});
+function moveLayer(item) {
+  moveLayerById(item.id, item.previousElementSibling?.id, item.nextElementSibling?.id);
   notifyLayerControlsChanged();
 }
 
@@ -1051,42 +1056,45 @@ function moveLayerById(id, previousId, nextId) {
   if (!el) return;
   const prev = previousId ? getLayer(previousId) : null;
   const next = nextId ? getLayer(nextId) : null;
-  if (prev) el.insertAfter(prev);
-  else if (next) el.insertBefore(next);
+  if (prev) prev.after(el);
+  else if (next) next.before(el);
 }
 
 // define connection between option layer buttons and actual svg groups to move the element
 function getLayer(id) {
-  if (id === "toggleLakes") return $("#lakes");
-  if (id === "toggleHeight") return $("#terrs");
-  if (id === "toggleBiomes") return $("#biomes");
-  if (id === "toggleCells") return $("#cells");
-  if (id === "toggleGrid") return $("#gridOverlay");
-  if (id === "toggleCoordinates") return $("#coordinates");
-  if (id === "toggleCompass") return $("#compass");
-  if (id === "toggleRivers") return $("#rivers");
-  if (id === "toggleRelief") return $("#terrain");
-  if (id === "toggleReligions") return $("#relig");
-  if (id === "toggleCultures") return $("#cults");
-  if (id === "toggleStates") return $("#regions");
-  if (id === "toggleProvinces") return $("#provs");
-  if (id === "toggleZones") return $("#zones");
-  if (id === "toggleBorders") return $("#borders");
-  if (id === "toggleRoutes") return $("#routes");
-  if (id === "toggleTemperature") return $("#temperature");
-  if (id === "togglePrecipitation") return $("#prec");
-  if (id === "togglePopulation") return $("#population");
-  if (id === "toggleIce") return $("#ice");
-  if (id === "toggleTexture") return $("#texture");
-  if (id === "toggleGoods") return $("#goods");
-  if (id === "toggleMarketsLayer") return $("#markets");
-  if (id === "toggleEmblems") return $("#emblems");
-  if (id === "toggleLabels") return $("#labels");
-  if (id === "toggleBurgIcons") return $("#icons");
-  if (id === "toggleMilitary") return $("#armies");
-  if (id === "toggleMarkers") return $("#markers");
-  if (id === "toggleTrade") return $("#tradeAnimation");
-  if (id === "toggleRulers") return $("#ruler");
+  const layerIds = {
+    toggleLakes: "lakes",
+    toggleHeight: "terrs",
+    toggleBiomes: "biomes",
+    toggleCells: "cells",
+    toggleGrid: "gridOverlay",
+    toggleCoordinates: "coordinates",
+    toggleCompass: "compass",
+    toggleRivers: "rivers",
+    toggleRelief: "terrain",
+    toggleReligions: "relig",
+    toggleCultures: "cults",
+    toggleStates: "regions",
+    toggleProvinces: "provs",
+    toggleZones: "zones",
+    toggleBorders: "borders",
+    toggleRoutes: "routes",
+    toggleTemperature: "temperature",
+    togglePrecipitation: "prec",
+    togglePopulation: "population",
+    toggleIce: "ice",
+    toggleTexture: "texture",
+    toggleGoods: "goods",
+    toggleMarketsLayer: "markets",
+    toggleEmblems: "emblems",
+    toggleLabels: "labels",
+    toggleBurgIcons: "icons",
+    toggleMilitary: "armies",
+    toggleMarkers: "markers",
+    toggleTrade: "tradeAnimation",
+    toggleRulers: "ruler"
+  };
+  return document.getElementById(layerIds[id]);
 }
 
 function getLayerControlsSnapshot() {

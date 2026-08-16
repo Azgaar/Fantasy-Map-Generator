@@ -1,5 +1,11 @@
 import { drag, select } from "d3";
-import { closeDialogs, confirmationDialog, refreshEditors, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  refreshEditors,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -12,6 +18,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawGoods } from "@/renderers/draw-goods";
@@ -81,12 +88,14 @@ function open(): void {
   renderDialog();
   marketsTable.reset();
 
-  $("#marketsOverview").dialog({
-    title: "Markets Overview",
+  showDomDialog({
+    content: ensureEl("marketsOverview"),
+    onClose: closeMarketsOverview,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "auto",
-    close: closeMarketsOverview,
-    position
+    title: "Markets Overview",
+    width: "fit-content"
   });
 }
 
@@ -290,7 +299,7 @@ function enterMarketsManualAssignment(): void {
     .call(drag<SVGElement, unknown>().on("start", startMarketsBrushDrag))
     .on("touchmove mousemove", onMarketsBrushMove);
 
-  $("#marketsOverview").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  updateDialog("marketsOverview", { position });
 }
 
 function saveMarketsManualSnapshot(): void {
@@ -462,7 +471,7 @@ function exitMarketsManualAssignment(apply: boolean): void {
     marketsTable.refresh();
   }
 
-  $("#marketsOverview").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  updateDialog("marketsOverview", { position });
 }
 
 function enterAddMarketMode(): void {
@@ -657,8 +666,7 @@ function downloadMarketsCsv(): void {
 function closeMarketsOverview(): void {
   if (customization === 15) exitMarketsManualAssignment(false);
   if (customization === 16) exitAddMarketMode();
-  $("#marketsOverview").dialog("destroy");
-  ensureEl("marketsOverview").remove();
+  destroyDialog("marketsOverview");
 }
 
 export const MarketsOverview = { open };

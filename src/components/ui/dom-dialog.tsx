@@ -12,6 +12,7 @@ import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-p
 
 export interface DomDialogOptions {
   actions?: DomDialogAction[];
+  beforeClose?: () => boolean | void;
   className?: string;
   content: HTMLElement;
   destroyOnClose?: boolean;
@@ -19,6 +20,7 @@ export interface DomDialogOptions {
   isModal?: boolean;
   maxHeight?: CSSProperties["maxHeight"];
   onClose?: () => void;
+  onResizeEnd?: () => void;
   placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
   placementTarget?: Element | null;
@@ -40,6 +42,15 @@ export interface DomDialogHandle {
 }
 
 const activeDialogs = new Map<string, DomDialogHandle>();
+const contentOrigins = new WeakMap<
+  HTMLElement,
+  {
+    display: string;
+    hidden: boolean;
+    nextSibling: ChildNode | null;
+    parent: ParentNode | null;
+  }
+>();
 
 function DomDialogView({
   options,
@@ -56,21 +67,26 @@ function DomDialogView({
     if (!host) return;
 
     const { content, destroyOnClose = true } = options;
-    const originalParent = content.parentNode;
-    const originalNextSibling = content.nextSibling;
-    const originalDisplay = content.style.display;
-    const originalHidden = content.hidden;
+    const origin = contentOrigins.get(content) ?? {
+      display: content.style.display,
+      hidden: content.hidden,
+      nextSibling: content.nextSibling,
+      parent: content.parentNode
+    };
+    contentOrigins.set(content, origin);
     content.style.removeProperty("display");
     content.hidden = false;
     host.appendChild(content);
 
     return () => {
-      if (destroyOnClose) return;
-      content.style.display = originalDisplay;
-      content.hidden = originalHidden;
-      if (!originalParent) return;
-      if (originalNextSibling?.parentNode === originalParent) originalParent.insertBefore(content, originalNextSibling);
-      else originalParent.appendChild(content);
+      if (destroyOnClose || content.parentNode !== host) return;
+      content.style.display = origin.display;
+      content.hidden = origin.hidden;
+      if (origin.parent) {
+        if (origin.nextSibling?.parentNode === origin.parent) origin.parent.insertBefore(content, origin.nextSibling);
+        else origin.parent.appendChild(content);
+      }
+      contentOrigins.delete(content);
     };
   }, [options.content, options.destroyOnClose]);
 
@@ -100,7 +116,11 @@ function DomDialogView({
       isOpen
       height={options.height}
       maxHeight={options.maxHeight}
-      onClose={() => activeDialogs.get(options.content.id)?.close()}
+      onClose={() => {
+        if (options.beforeClose?.() === false) return;
+        activeDialogs.get(options.content.id)?.close();
+      }}
+      onResizeEnd={options.onResizeEnd}
       placement={options.placement}
       placementOffset={options.placementOffset}
       placementTarget={options.placementTarget}
@@ -170,7 +190,18 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
     }
   } satisfies DomDialogHandle;
 
-  unregister = registerManagedDialog(id, handle.close, initialOptions.content.classList.contains("stable"), handle.update);
+  const requestClose = () => {
+    if (options.beforeClose?.() === false) return;
+    handle.close();
+  };
+
+  unregister = registerManagedDialog(
+    id,
+    handle.close,
+    initialOptions.content.classList.contains("stable"),
+    handle.update,
+    requestClose
+  );
   activeDialogs.set(id, handle);
   flushSync(render);
   return handle;

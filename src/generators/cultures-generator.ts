@@ -38,6 +38,12 @@ export type CultureGenerationSettings = {
   emblemShape?: string;
 };
 
+function showClimateWarning(messageHtml: string): void {
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({ id: "extremeClimateWarning", messageHtml, title: "Extreme climate warning" });
+  });
+}
+
 class CulturesGenerator {
   cells: any;
 
@@ -1044,34 +1050,15 @@ class CulturesGenerator {
         ];
         this.cells.culture = cultureIds;
 
-        alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
+        showClimateWarning(/* html */ `The climate is harsh and people cannot live in this world.<br />
           No cultures, states and burgs will be created.<br />
-          Please consider changing climate settings in the World Configurator`;
-
-        $("#alert").dialog({
-          resizable: false,
-          title: "Extreme climate warning",
-          buttons: {
-            Ok: function () {
-              $(this).dialog("close");
-            }
-          }
-        });
+          Please consider changing climate settings in the World Configurator`);
         return;
       } else {
         WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
-        alertMessage.innerHTML = /* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
+        showClimateWarning(/* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
           Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br />
-          Please consider changing climate settings in the World Configurator`;
-        $("#alert").dialog({
-          resizable: false,
-          title: "Extreme climate warning",
-          buttons: {
-            Ok: function () {
-              $(this).dialog("close");
-            }
-          }
-        });
+          Please consider changing climate settings in the World Configurator`);
       }
     }
 

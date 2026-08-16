@@ -1,5 +1,5 @@
 import { pack as packLayout, select, stratify } from "d3";
-import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -11,6 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
 import { renderBurgRemoved } from "@/renderers/burg-mutations";
@@ -124,17 +125,19 @@ function open(filters: Filters = { stateId: null, cultureId: null }): void {
   updateLockAllIcon();
   burgsTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Burgs Overview",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeBurgsOverview,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    close: closeBurgsOverview,
-    width: "fit-content",
-    position
+    title: "Burgs Overview",
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("burgsOverview")?.remove();
+  destroyDialog(dialogId);
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
@@ -225,8 +228,7 @@ function renderDialog(): void {
 
 function closeBurgsOverview(): void {
   if (document.getElementById("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
-  $("#burgsOverview").dialog("destroy");
-  ensureEl("burgsOverview").remove();
+  destroyDialog(dialogId);
 }
 
 function refreshBurgsEditor(): void {
@@ -515,14 +517,18 @@ function showBurgsChart(): void {
   const treeLayout = packLayout().size([w, h]).padding(3);
 
   // prepare svg
-  alertMessage.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
+  destroyDialog("burgsChartDialog");
+  const chartContent = document.createElement("div");
+  chartContent.id = "burgsChartDialog";
+  chartContent.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
       <option value="states" selected>Group by state</option>
       <option value="cultures">Group by culture</option>
       <option value="parent">Group by province and state</option>
       <option value="provinces">Group by province</option>
-    </select>`;
-  alertMessage.innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
-  const svg = select("#alertMessage")
+    </select>
+    <div id="burgsInfo" class="chartInfo">&#8205;</div>`;
+  ensureEl("dialogs").appendChild(chartContent);
+  const svg = select(chartContent)
     .insert("svg", "#burgsInfo")
     .attr("id", "burgsTree")
     .attr("width", width)
@@ -637,12 +643,12 @@ function showBurgsChart(): void {
       .attr("r", (d: any) => d.r);
   }
 
-  $("#alert").dialog({
+  showDomDialog({
+    content: chartContent,
+    placement: "bottom-left",
+    placementTarget: document.getElementById("map"),
     title: "Burgs bubble chart",
-    width: "fit-content",
-    position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
-    buttons: {},
-    close: () => (alertMessage.innerHTML = "")
+    width: "fit-content"
   });
 }
 
@@ -692,27 +698,32 @@ function downloadBurgsData(): void {
 }
 
 function renameBurgsInBulk(): void {
-  alertMessage.innerHTML = /* html */ `Download burgs list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each
+  const messageHtml = /* html */ `Download burgs list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each
     name on its own line (the dilimiter is CRLF). If you do not want to change the name, just leave it as is`;
 
-  $("#alert").dialog({
-    title: "Burgs bulk renaming",
-    width: "22em",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Download: () => {
-        const data = pack.burgs
-          .filter(b => b.i && !b.removed)
-          .map(b => b.name)
-          .join("\r\n");
-        const name = `${getFileName("Burg names")}.txt`;
-        downloadFile(data, name);
-      },
-      Upload: () => ensureEl("burgsListToLoad").click(),
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [
+        {
+          close: false,
+          label: "Download",
+          onClick: () => {
+            const data = pack.burgs
+              .filter(b => b.i && !b.removed)
+              .map(b => b.name)
+              .join("\r\n");
+            const name = `${getFileName("Burg names")}.txt`;
+            downloadFile(data, name);
+          }
+        },
+        { close: false, label: "Upload", onClick: () => ensureEl("burgsListToLoad").click() },
+        { label: "Cancel" }
+      ],
+      id: "burgsBulkRenameDialog",
+      messageHtml,
+      title: "Burgs bulk renaming",
+      width: "22em"
+    });
   });
 }
 

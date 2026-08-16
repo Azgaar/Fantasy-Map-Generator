@@ -13,6 +13,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
@@ -93,7 +94,15 @@ function open(): void {
   currentBiomeStatistics = biomesCollectStatistics();
   biomesTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: "Biomes Editor", resizable: false, close: closeBiomesEditor, position });
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeBiomesEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
+    resizable: false,
+    title: "Biomes Editor",
+    width: "fit-content"
+  });
 }
 
 function renderDialog(): void {
@@ -504,7 +513,7 @@ function enterBiomesCustomizationMode(): void {
       e.style.pointerEvents = "none";
     });
   ensureEl("biomesFooter").style.display = "none";
-  $("#biomesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
+  updateDialog(dialogId, { position });
 
   tip("Click on biome to select, drag the circle to change biome", true);
   select<SVGElement, unknown>("#viewbox")
@@ -621,7 +630,7 @@ function exitBiomesCustomizationMode(close?: boolean): void {
       el.classList.remove("hidden");
     });
   ensureEl("biomesFooter").style.display = "block";
-  if (!close) $("#biomesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
+  if (!close) updateDialog(dialogId, { position });
 
   applyDefaultViewboxEvents();
   clearMainTip();
@@ -639,8 +648,7 @@ function restoreInitialBiomes(): void {
 
 function closeBiomesEditor(): void {
   exitBiomesCustomizationMode(true);
-  $("#biomesEditor").dialog("destroy");
-  ensureEl("biomesEditor").remove();
+  destroyDialog(dialogId);
 }
 
 function regeneratePopulation(): void {

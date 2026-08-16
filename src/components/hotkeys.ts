@@ -36,6 +36,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") {
+    if (document.activeElement instanceof Element && document.activeElement.closest(".fmg-dialog")) return;
     closeDialogs();
     hideOptions();
   } else if (code === "Delete") removeElementOnKey();

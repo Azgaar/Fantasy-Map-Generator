@@ -23,6 +23,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
@@ -106,12 +107,14 @@ function open(): void {
   renderDialog();
   refreshProvincesEditor();
 
-  $("#provincesEditor").dialog({
-    title: "Provinces Editor",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeProvincesEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    close: closeProvincesEditor,
-    position
+    title: "Provinces Editor",
+    width: "fit-content"
   });
 }
 
@@ -574,37 +577,38 @@ function changePopulation(province: number): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+  destroyDialog("provincePopulationDialog");
+  const content = document.createElement("div");
+  content.id = "provincePopulationDialog";
+  content.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${p.burgs!.length ? "" : "disabled"} />
     <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
-  const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
-  const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
+  ensureEl("dialogs").appendChild(content);
+  const ruralPop = content.querySelector<HTMLInputElement>("#ruralPop")!;
+  const urbanPop = content.querySelector<HTMLInputElement>("#urbanPop")!;
+  const totalPop = content.querySelector<HTMLElement>("#totalPop")!;
+  const totalPopPerc = content.querySelector<HTMLElement>("#totalPopPerc")!;
 
   const update = (): void => {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
     if (Number.isNaN(totalNew)) return;
-    ensureEl("totalPop").innerHTML = l(totalNew);
-    ensureEl("totalPopPerc").innerHTML = String(rn((totalNew / total) * 100));
+    totalPop.innerHTML = l(totalNew);
+    totalPopPerc.innerHTML = String(rn((totalNew / total) * 100));
   };
 
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
 
-  $("#alert").dialog({
+  showDomDialog({
+    actions: [{ label: "Apply", onClick: applyPopulationChange }, { label: "Cancel" }],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Change province population",
-    width: "24em",
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        applyPopulationChange();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
+    width: "24em"
   });
 
   function applyPopulationChange(): void {
@@ -650,38 +654,31 @@ function toggleFog(p: number, cl: DOMTokenList): void {
 }
 
 function removeProvince(p: number): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the province? <br />This action cannot be reverted`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove province",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        pack.cells.province.forEach((province, i) => {
-          if (province === p) pack.cells.province[i] = 0;
-        });
-        const s = pack.provinces[p].state;
-        const state = pack.states[s];
-        if (state.provinces!.includes(p)) state.provinces!.splice(state.provinces!.indexOf(p), 1);
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove the province? <br />This action cannot be reverted",
+    onConfirm: () => {
+      pack.cells.province.forEach((province, i) => {
+        if (province === p) pack.cells.province[i] = 0;
+      });
+      const s = pack.provinces[p].state;
+      const state = pack.states[s];
+      if (state.provinces!.includes(p)) state.provinces!.splice(state.provinces!.indexOf(p), 1);
 
-        unfog(`focusProvince${p}`);
+      unfog(`focusProvince${p}`);
 
-        const coaEl = document.getElementById(`provinceCOA${p}`);
-        if (coaEl) coaEl.remove();
-        select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
-        pack.provinces[p] = { i: p, removed: true } as Province;
+      document.getElementById(`provinceCOA${p}`)?.remove();
+      select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
+      pack.provinces[p] = { i: p, removed: true } as Province;
 
-        const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
-        g.select(`#province${p}`).remove();
-        g.select(`#province-gap${p}`).remove();
-        if (layerIsOn("toggleBorders")) drawBorders();
-        drawLabels();
-        refreshProvincesEditor();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
+      g.select(`#province${p}`).remove();
+      g.select(`#province-gap${p}`).remove();
+      if (layerIsOn("toggleBorders")) drawBorders();
+      drawLabels();
+      refreshProvincesEditor();
+    },
+    title: "Remove province"
   });
 }
 
@@ -696,20 +693,15 @@ function editProvinceName(province: number): void {
   const cultureId = pack.cells.culture[p.center];
   ensureEl("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
 
-  $("#provinceNameEditor").dialog({
+  showDomDialog({
+    actions: [{ label: "Apply", onClick: () => applyNameChange(p) }, { label: "Cancel" }],
+    content: ensureEl("provinceNameEditor"),
+    isModal: true,
+    onClose: closeProvinceNameEditor,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    title: "Change province name",
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        applyNameChange(p);
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" },
-    close: closeProvinceNameEditor
+    title: "Change province name"
   });
 }
 
@@ -825,8 +817,7 @@ function renderNameEditor(): void {
 }
 
 function closeProvinceNameEditor(): void {
-  $("#provinceNameEditor").dialog("destroy");
-  ensureEl("provinceNameEditor").remove();
+  destroyDialog("provinceNameEditor");
 }
 
 function regenerateShortNameCulture(): void {
@@ -918,14 +909,18 @@ function showChart(): void {
   const treeLayout = treemap<TreeNode>().size([w, h]).padding(2);
 
   // prepare svg
-  alertMessage.innerHTML = /* html */ `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
+  destroyDialog("provincesChartDialog");
+  const chartContent = document.createElement("div");
+  chartContent.id = "provincesChartDialog";
+  chartContent.innerHTML = /* html */ `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
     <option value="area" selected>Area</option>
     <option value="population">Total population</option>
     <option value="rural">Rural population</option>
     <option value="urban">Urban population</option>
-  </select>`;
-  alertMessage.innerHTML += `<div id='provinceInfo' class='chartInfo'>&#8205;</div>`;
-  const svg = select("#alertMessage")
+  </select>
+  <div id="provinceInfo" class="chartInfo">&#8205;</div>`;
+  ensureEl("dialogs").appendChild(chartContent);
+  const svg = select(chartContent)
     .insert("svg", "#provinceInfo")
     .attr("id", "provincesTree")
     .attr("width", width)
@@ -1046,14 +1041,12 @@ function showChart(): void {
     setTimeout(hideNonfittingLabels, 2000);
   }
 
-  $("#alert").dialog({
+  showDomDialog({
+    content: chartContent,
+    placement: "bottom-left",
+    placementTarget: document.getElementById("map"),
     title: "Provinces chart",
-    width: "fit-content",
-    position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
-    buttons: {},
-    close: () => {
-      alertMessage.innerHTML = "";
-    }
+    width: "fit-content"
   });
 
   hideNonfittingLabels();
@@ -1120,7 +1113,7 @@ function enterProvincesManualAssignent(): void {
     .forEach(e => {
       e.style.pointerEvents = "none";
     });
-  $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  updateDialog(dialogId, { position });
 
   tip("Click on a province to select, drag the circle to change province", true);
   select<SVGElement, unknown>("#viewbox")
@@ -1266,8 +1259,7 @@ function exitProvincesManualAssignment(close?: string): void {
     .forEach(e => {
       e.style.removeProperty("pointer-events");
     });
-  if (!close)
-    $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  if (!close) updateDialog(dialogId, { position });
 
   applyDefaultViewboxEvents();
   clearMainTip();
@@ -1394,74 +1386,48 @@ function downloadProvincesData(): void {
 }
 
 function removeAllProvinces(): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove all provinces? <br />This action cannot be reverted`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove all provinces",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove all provinces? <br />This action cannot be reverted",
+    onConfirm: () => {
+      document.querySelectorAll("[id^='provinceCOA']").forEach(el => {
+        el.remove();
+      });
+      select<SVGElement, unknown>("#emblems").select("#provinceEmblems").selectAll("*").remove();
 
-        // remove emblems
-        document.querySelectorAll("[id^='provinceCOA']").forEach(el => {
-          el.remove();
-        });
-        select<SVGElement, unknown>("#emblems").select("#provinceEmblems").selectAll("*").remove();
+      pack.provinces = [0] as unknown as Province[];
+      pack.cells.province = new Uint16Array(pack.cells.i.length);
+      pack.states.forEach(s => {
+        s.provinces = [];
+      });
 
-        // remove data
-        pack.provinces = [0] as unknown as Province[];
-        pack.cells.province = new Uint16Array(pack.cells.i.length);
-        pack.states.forEach(s => {
-          s.provinces = [];
-        });
+      unfog();
+      if (layerIsOn("toggleBorders")) drawBorders();
+      select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
+      turnButtonOff("toggleProvinces");
+      drawLabels();
 
-        unfog();
-        if (layerIsOn("toggleBorders")) drawBorders();
-        select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
-        turnButtonOff("toggleProvinces");
-        drawLabels();
-
-        provincesTable.reset();
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      provincesTable.reset();
+    },
+    title: "Remove all provinces"
   });
 }
 
 function closeProvincesEditor(): void {
   if (customization === 11) exitProvincesManualAssignment("close");
   if (customization === 12) exitAddProvinceMode();
-  $("#provincesEditor").dialog("destroy");
-  ensureEl("provincesEditor").remove();
+  destroyDialog(dialogId);
 }
 
 function openProvinceMergeDialog(): void {
   const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
   if (selectedState === -1) {
-    alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
-    $("#alert").dialog({
-      title: "Merge Provinces",
-      buttons: {
-        OK: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      }
-    });
+    showMergeProvincesMessage("Please select a specific state from the filter to merge provinces within that state.");
     return;
   }
   const provincesToMerge = pack.provinces.filter(p => p.i && !p.removed && p.state === selectedState);
   if (provincesToMerge.length < 2) {
-    alertMessage.innerHTML = "Not enough provinces in the selected state to merge.";
-    $("#alert").dialog({
-      title: "Merge Provinces",
-      buttons: {
-        OK: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      }
-    });
+    showMergeProvincesMessage("Not enough provinces in the selected state to merge.");
     return;
   }
 
@@ -1479,7 +1445,10 @@ function openProvinceMergeDialog(): void {
     )
     .join("");
 
-  alertMessage.innerHTML = /* html */ `
+  destroyDialog("mergeProvincesDialog");
+  const content = document.createElement("div");
+  content.id = "mergeProvincesDialog";
+  content.innerHTML = /* html */ `
     <form id='mergeProvincesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
         Check the <b>checkbox</b> next to each province you want to merge.
@@ -1491,55 +1460,62 @@ function openProvinceMergeDialog(): void {
       </main>
     </form>
   `;
+  ensureEl("dialogs").appendChild(content);
 
-  ensureEl("mergeProvincesForm")
+  content
+    .querySelector("#mergeProvincesForm")!
     .querySelectorAll("div[data-id]")
     .forEach(el => {
       el.addEventListener("mouseenter", highlightProvinceOnMergeHover);
       el.addEventListener("mouseleave", provinceHighlightOff);
     });
 
-  $("#alert").dialog({
-    width: 600,
-    title: `Merge provinces`,
-    close: provinceHighlightOff,
-    buttons: {
-      Merge: function (this: HTMLElement) {
-        const formData = new FormData(ensureEl<HTMLFormElement>("mergeProvincesForm"));
-        const primaryProvinceId = Number(formData.get("rulingProvince"));
-        if (!primaryProvinceId) {
-          tip("Please select a province to merge into", false, "error");
-          return;
-        }
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Merge",
+        onClick: () => {
+          const formData = new FormData(content.querySelector<HTMLFormElement>("#mergeProvincesForm")!);
+          const primaryProvinceId = Number(formData.get("rulingProvince"));
+          if (!primaryProvinceId) return tip("Please select a province to merge into", false, "error");
 
-        const provincesToMergeIds = formData
-          .getAll("provincesToMerge")
-          .map(Number)
-          .filter(provinceId => provinceId !== primaryProvinceId);
-        if (!provincesToMergeIds.length) {
-          tip("Please select several provinces to merge", false, "error");
-          return;
-        }
+          const provincesToMergeIds = formData
+            .getAll("provincesToMerge")
+            .map(Number)
+            .filter(provinceId => provinceId !== primaryProvinceId);
+          if (!provincesToMergeIds.length) return tip("Please select several provinces to merge", false, "error");
 
-        confirmationDialog({
-          title: "Merge provinces",
-          message: /* html */ `
-            <p>The following provinces will be <strong>removed</strong>: ${provincesToMergeIds
-              .map(provinceId => `${emblem(provinceId)}${pack.provinces[provinceId].name}`)
-              .join(", ")}.</p>
-            <p>Removed provinces data (burgs and cells) will be assigned to ${emblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
-            <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
-          confirm: "Merge",
-          onConfirm: () => {
-            mergeProvinces(provincesToMergeIds, primaryProvinceId);
-            $(this).dialog("close");
-          }
-        });
+          confirmationDialog({
+            title: "Merge provinces",
+            message: /* html */ `
+              <p>The following provinces will be <strong>removed</strong>: ${provincesToMergeIds
+                .map(provinceId => `${emblem(provinceId)}${pack.provinces[provinceId].name}`)
+                .join(", ")}.</p>
+              <p>Removed provinces data (burgs and cells) will be assigned to ${emblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
+              <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
+            confirm: "Merge",
+            onConfirm: () => {
+              mergeProvinces(provincesToMergeIds, primaryProvinceId);
+              destroyDialog(content.id);
+            }
+          });
+        }
       },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: "Cancel" }
+    ],
+    content,
+    onClose: () => provinceHighlightOff(new Event("close")),
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    title: `Merge provinces`,
+    width: 600
+  });
+}
+
+function showMergeProvincesMessage(messageHtml: string): void {
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({ id: "mergeProvincesMessage", messageHtml, title: "Merge Provinces" });
   });
 }
 

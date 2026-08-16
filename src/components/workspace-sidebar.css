@@ -423,8 +423,7 @@
   }
 
   .workspace-panel-open #tooltip,
-  .workspace-panel-open #tourPromptButton,
-  .workspace-panel-open #chat-widget-container {
+  .workspace-panel-open #tourPromptButton {
     display: none !important;
   }
 }

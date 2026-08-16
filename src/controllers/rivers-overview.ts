@@ -1,5 +1,5 @@
 import { mean, select } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -10,6 +10,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -102,12 +103,14 @@ function open(): void {
   renderDialog();
   riversTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Rivers Overview",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeRiversOverview,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    position,
-    close: closeRiversOverview
+    title: "Rivers Overview",
+    width: "fit-content"
   });
 }
 
@@ -302,39 +305,23 @@ function openRiverEditor(this: HTMLElement): void {
 
 function triggerRiverRemove(this: HTMLElement): void {
   const river = +(this.closest(".states") as HTMLElement).dataset.id!;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the river? All tributaries will be auto-removed`;
-
-  $("#alert").dialog({
-    resizable: false,
-    width: "22em",
-    title: "Remove river",
-    buttons: {
-      Remove: function (this: any) {
-        Rivers.remove(river);
-        riversTable.refresh();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: any) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove the river? All tributaries will be auto-removed",
+    onConfirm: () => {
+      Rivers.remove(river);
+      riversTable.refresh();
+    },
+    title: "Remove river"
   });
 }
 
 function triggerAllRiversRemove(): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove all rivers?`;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove all rivers",
-    buttons: {
-      Remove: function (this: any) {
-        $(this).dialog("close");
-        removeAllRivers();
-      },
-      Cancel: function (this: any) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: "Are you sure you want to remove all rivers?",
+    onConfirm: removeAllRivers,
+    title: "Remove all rivers"
   });
 }
 

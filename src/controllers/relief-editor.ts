@@ -1,6 +1,7 @@
 import { drag, quadtree, range, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
 import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
@@ -55,12 +56,14 @@ function open(element: SVGElement): void {
   updateReliefIconSelected();
   updateReliefSizeInput();
 
-  $("#reliefEditor").dialog({
-    title: "Edit Relief Icons",
+  showDomDialog({
+    content: ensureEl("reliefEditor"),
+    onClose: closeReliefEditor,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "27em",
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeReliefEditor
+    title: "Edit Relief Icons",
+    width: "27em"
   });
 }
 
@@ -423,27 +426,22 @@ function removeIcon(): void {
     ? new Set(selectedIcon ? [selectedIcon] : [])
     : new Set(pack.relief.filter(reliefIcon => !icon || reliefIcon.icon === icon));
 
-  if (isIndividual) alertMessage.innerHTML = "Are you sure you want to remove the icon?";
-  else
-    alertMessage.innerHTML = icon
+  const message = isIndividual
+    ? "Are you sure you want to remove the icon?"
+    : icon
       ? `Are you sure you want to remove all ${icon} icons (${doomed.size})?`
       : `Are you sure you want to remove all icons (${doomed.size})?`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Remove relief icons",
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
-        selectedIcon = null;
-        redrawRelief();
-        $(this).dialog("close");
-        $("#reliefEditor").dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message,
+    onConfirm: () => {
+      pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
+      selectedIcon = null;
+      redrawRelief();
+      destroyDialog("reliefEditor");
+    },
+    title: "Remove relief icons"
   });
 }
 
@@ -460,8 +458,7 @@ function closeReliefEditor(): void {
   removeCircle();
   if (wasUsingBrush) applyDefaultViewboxEvents();
   clearMainTip();
-  $("#reliefEditor").dialog("destroy");
-  ensureEl("reliefEditor").remove();
+  destroyDialog("reliefEditor");
 }
 
 export const ReliefEditor = { open };

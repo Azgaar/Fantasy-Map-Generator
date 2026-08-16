@@ -12,6 +12,7 @@ export type DialogParams = {
 
 interface ManagedDialog {
   close: () => void;
+  requestClose?: () => void;
   stable: boolean;
   update?: (params: DialogParams) => void;
 }
@@ -22,9 +23,10 @@ export function registerManagedDialog(
   id: string,
   close: () => void,
   stable = false,
-  update?: (params: DialogParams) => void
+  update?: (params: DialogParams) => void,
+  requestClose?: () => void
 ): () => void {
-  const dialog = { close, stable, update };
+  const dialog = { close, requestClose, stable, update };
   managedDialogs.set(id, dialog);
   return () => {
     if (managedDialogs.get(id) === dialog) managedDialogs.delete(id);
@@ -41,18 +43,8 @@ function isExcepted(id: string, dialog: ManagedDialog, except: string): boolean 
 /** Close all open dialogs except the stated one */
 export function closeDialogs(except = "#except"): void {
   for (const [id, dialog] of [...managedDialogs]) {
-    if (!isExcepted(id, dialog, except)) dialog.close();
+    if (!isExcepted(id, dialog, except)) (dialog.requestClose ?? dialog.close)();
   }
-
-  $(".dialog:visible")
-    .not(except)
-    .each(function (this: HTMLElement) {
-      try {
-        $(this).dialog("close");
-      } catch {
-        // uninitialized or mid-teardown dialog; skip it so the rest still close
-      }
-    });
 }
 
 interface ConfirmationOptions {
@@ -117,17 +109,10 @@ export function refreshEditors(): void {
 
 export const updateDialog = (id: string, params: DialogParams) => {
   const managedDialog = managedDialogs.get(id);
-  if (managedDialog) {
-    managedDialog.update?.(params);
-    return;
-  }
-
-  const el = findEl(id);
-  if (!el) return;
-  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog(params);
+  managedDialog?.update?.(params);
 };
 
-// Remove an element, destroying its jQuery UI dialog widget first
+// Close a managed dialog, or remove an unmanaged dialog element
 export const destroyDialog = (id: string): void => {
   const managedDialog = managedDialogs.get(id);
   if (managedDialog) {
@@ -136,9 +121,7 @@ export const destroyDialog = (id: string): void => {
   }
 
   const el = findEl(id);
-  if (!el) return;
-  if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");
-  el.remove();
+  el?.remove();
 };
 
 window.closeDialogs = closeDialogs;

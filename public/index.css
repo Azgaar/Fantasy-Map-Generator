@@ -370,22 +370,7 @@ text.drag {
   cursor: move;
 }
 
-.ui-widget-header {
-  border-bottom: 1px solid var(--dark-solid);
-  background: var(--header);
-  color: #ffffff;
-  font-weight: bold;
-}
-
-button.ui-button:disabled {
-  filter: brightness(0.95);
-}
-
-button.ui-button:disabled:hover {
-  cursor: default;
-}
-
-.ui-dialog,
+.fmg-dialog,
 #optionsContainer {
   user-select: none;
 }
@@ -1199,6 +1184,11 @@ div#regimentSelectorBody > div > div {
   opacity: 0.6;
 }
 
+.drag-trigger,
+#exitCustomization > div {
+  touch-action: none;
+}
+
 .tint {
   filter: sepia(1) hue-rotate(200deg);
 }
@@ -1269,14 +1259,14 @@ i.resetButton:active {
   color: var(--dark-solid);
 }
 
-.ui-dialog button.pressed {
+.fmg-dialog button.pressed {
   box-shadow: inset 1px 1px 0 0 #ccc;
   border-color: #a6a6da;
   background-color: #ecd8d8;
   border-radius: 10%;
 }
 
-.ui-dialog input[type="range"] {
+.fmg-dialog input[type="range"] {
   padding: 0;
   height: 2px;
   background: #d4d4d4;
@@ -1285,7 +1275,7 @@ i.resetButton:active {
   -webkit-appearance: none;
 }
 
-.ui-dialog input[type="range"]::-webkit-slider-thumb {
+.fmg-dialog input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   border-radius: 15%;
   width: 1em;
@@ -1295,7 +1285,7 @@ i.resetButton:active {
   cursor: pointer;
 }
 
-.ui-dialog input[type="range"]::-moz-range-thumb {
+.fmg-dialog input[type="range"]::-moz-range-thumb {
   appearance: none;
   border-radius: 15%;
   width: 1em;
@@ -1305,30 +1295,17 @@ i.resetButton:active {
   cursor: pointer;
 }
 
-.ui-dialog input[type="number"] {
+.fmg-dialog input[type="number"] {
   width: 4.5em;
 }
 
-.ui-dialog .disabled {
+.fmg-dialog .disabled {
   opacity: 0.2;
-}
-
-.ui-dialog:disabled {
-  cursor: default;
 }
 
 div.slider {
   width: 40em;
   margin-top: 0.2em;
-}
-
-div.slider .ui-slider-handle {
-  width: 3em;
-  height: 1.6em;
-  top: 50%;
-  margin-top: -0.8em;
-  text-align: center;
-  line-height: 1.6em;
 }
 
 #saveDropdown {
@@ -2490,26 +2467,6 @@ svg.button {
   }
   100% {
     transform: rotate(360deg);
-  }
-}
-
-#chat-widget-container {
-  user-select: none;
-  z-index: 99 !important;
-}
-
-#chat-widget-minimized {
-  animation: fadeIn 1s ease-in;
-  transform: scale(0.65);
-  opacity: var(--bg-opacity);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: var(--bg-opacity);
   }
 }
 

@@ -12,6 +12,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
@@ -129,12 +130,14 @@ function open(): void {
   drawReligionCenters();
   religionsTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Religions Editor",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeReligionsEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    close: closeReligionsEditor,
-    position
+    title: "Religions Editor",
+    width: "fit-content"
   });
 }
 
@@ -586,7 +589,10 @@ function changePopulation(this: HTMLElement): void {
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
 
-  alertMessage.innerHTML = /* html */ `<div>
+  destroyDialog("religionPopulationDialog");
+  const content = document.createElement("div");
+  content.id = "religionPopulationDialog";
+  content.innerHTML = /* html */ `<div>
     <i>All population of religion territory is considered believers of this religion. It means believers number change will directly affect population</i>
     <div style="margin: 0.5em 0">
       Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
@@ -598,10 +604,11 @@ function changePopulation(this: HTMLElement): void {
     </div>
   </div>`;
 
-  const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
-  const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
-  const totalPop = ensureEl("totalPop");
-  const totalPopPerc = ensureEl("totalPopPerc");
+  ensureEl("dialogs").appendChild(content);
+  const ruralPop = content.querySelector<HTMLInputElement>("#ruralPop")!;
+  const urbanPop = content.querySelector<HTMLInputElement>("#urbanPop")!;
+  const totalPop = content.querySelector<HTMLElement>("#totalPop")!;
+  const totalPopPerc = content.querySelector<HTMLElement>("#totalPopPerc")!;
 
   const update = () => {
     const totalNew = ruralPop.valueAsNumber + urbanPop.valueAsNumber;
@@ -613,20 +620,15 @@ function changePopulation(this: HTMLElement): void {
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
 
-  $("#alert").dialog({
+  showDomDialog({
+    actions: [{ label: "Apply", onClick: applyPopulationChange }, { label: "Cancel" }],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Change believers number",
-    width: "24em",
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        applyPopulationChange();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
+    width: "24em"
   });
 
   function applyPopulationChange() {
@@ -865,7 +867,7 @@ function enterReligionsManualAssignent(): void {
     .forEach(e => {
       e.style.pointerEvents = "none";
     });
-  $(`#${dialogId}`).dialog({ position });
+  updateDialog(dialogId, { position });
 
   tip("Click on religion to select, drag the circle to change religion", true);
   select<SVGElement, unknown>("#viewbox")
@@ -981,7 +983,7 @@ function exitReligionsManualAssignment(close?: string): void {
     .forEach(e => {
       e.style.removeProperty("pointer-events");
     });
-  if (!close) $(`#${dialogId}`).dialog({ position });
+  if (!close) updateDialog(dialogId, { position });
 
   select("#debug").select("#religionCenters").style("display", null);
   applyDefaultViewboxEvents();
@@ -1107,8 +1109,7 @@ function closeReligionsEditor(): void {
   select("#debug").select("#religionCenters").remove();
   exitReligionsManualAssignment("close");
   exitAddReligionMode();
-  $("#religionsEditor").dialog("destroy");
-  ensureEl("religionsEditor").remove();
+  destroyDialog(dialogId);
 }
 
 export const ReligionsEditor = { open };

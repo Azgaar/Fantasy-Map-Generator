@@ -1,6 +1,7 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
 import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
@@ -33,11 +34,14 @@ function open(element: SVGElement): void {
     .classed("draggable", true)
     .call(drag<SVGElement, unknown>().on("drag", dragElement));
 
-  $("#iceEditor").dialog({
-    title: `Edit ${type}`,
+  showDomDialog({
+    content: ensureEl("iceEditor"),
+    onClose: closeEditor,
+    placement: "top-center",
+    placementOffset: { x: 0, y: 60 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "center top+60", at: "top", of: "svg", collision: "fit" },
-    close: closeEditor
+    title: `Edit ${type}`
   });
 }
 
@@ -98,20 +102,14 @@ function addIcebergOnClick(event: PointerEvent): void {
 
 function removeIce(): void {
   const type = selectedIce.attr("type") === "glacier" ? "Glacier" : "Iceberg";
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the ${type}?`;
-  $("#alert").dialog({
-    resizable: false,
-    title: `Remove ${type}`,
-    buttons: {
-      Remove: function (this: HTMLElement) {
-        $(this).dialog("close");
-        Ice.removeIce(+selectedIce.attr("data-id"));
-        $("#iceEditor").dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+  confirmationDialog({
+    confirm: "Remove",
+    message: `Are you sure you want to remove the ${type}?`,
+    onConfirm: () => {
+      Ice.removeIce(+selectedIce.attr("data-id"));
+      destroyDialog("iceEditor");
+    },
+    title: `Remove ${type}`
   });
 }
 

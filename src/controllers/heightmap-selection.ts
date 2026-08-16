@@ -1,4 +1,5 @@
-import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { applyOption } from "@/utils";
@@ -19,34 +20,27 @@ function open(): void {
   setSelected($templateInput.value);
   graph = getGraph(graph);
 
-  $("#heightmapSelection").dialog({
-    title: "Select Heightmap",
+  const applySelected = (createNewMap: boolean): void => {
+    const id = getSelected();
+    if (!id) return;
+    applyOption($templateInput, id, getName(id));
+    lock("template");
+    if (createNewMap) regeneratePrompt({ seed: getSeed(), graph });
+    destroyDialog("heightmapSelection");
+  };
+
+  showDomDialog({
+    actions: [
+      { label: "Cancel" },
+      { close: false, label: "Select", onClick: () => applySelected(false) },
+      { close: false, label: "New Map", onClick: () => applySelected(true) }
+    ],
+    content: ensureEl("heightmapSelection"),
+    destroyOnClose: false,
+    placement: "center",
     resizable: false,
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      },
-      Select: function (this: HTMLElement) {
-        const id = getSelected();
-        if (!id) return;
-        applyOption($templateInput, id, getName(id));
-        lock("template");
-
-        $(this).dialog("close");
-      },
-      "New Map": function (this: HTMLElement) {
-        const id = getSelected();
-        if (!id) return;
-        applyOption($templateInput, id, getName(id));
-        lock("template");
-
-        const seed = getSeed();
-        regeneratePrompt({ seed, graph });
-
-        $(this).dialog("close");
-      }
-    }
+    title: "Select Heightmap",
+    width: "min(70vw, 70rem)"
   });
 }
 

@@ -1,7 +1,8 @@
 import { mean, select, sum } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { drawMarkers } from "@/renderers/draw-markers";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
@@ -34,6 +35,7 @@ interface BattleState {
 }
 
 let battle: BattleState | null = null;
+let keepBattleResults = false;
 
 function open(attacker: Regiment, defender: Regiment): void {
   if (customization) return;
@@ -70,18 +72,20 @@ function open(attacker: Regiment, defender: Regiment): void {
   calculateStrength("defenders");
   getInitialMorale();
 
-  $("#battleScreen").dialog({
-    title: battle.name,
+  showDomDialog({
+    content: ensureEl("battleScreen"),
+    onClose: () => (keepBattleResults ? closeBattleScreen() : cancelResults()),
+    placement: "center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    position: { my: "center", at: "center", of: "#map" },
-    close: cancelResults
+    title: battle.name,
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("battleScreen")?.remove();
-  document.getElementById("regimentSelectorScreen")?.remove();
+  destroyDialog("battleScreen");
+  destroyDialog("regimentSelectorScreen");
   const editorHtml = /* html */ `<div id="battleScreen" class="dialog stable">
       <div id="battleBody">
         <template id="battlePhases_field">
@@ -617,17 +621,20 @@ function addSide(): void {
     })
     .join("");
 
-  $("#regimentSelectorScreen").dialog({
+  showDomDialog({
+    actions: [
+      { close: false, label: "Add to attackers", onClick: () => addSideClicked("attackers") },
+      { close: false, label: "Add to defenders", onClick: () => addSideClicked("defenders") },
+      { label: "Cancel" }
+    ],
+    content: ensureEl("regimentSelectorScreen"),
+    destroyOnClose: false,
+    onClose: addSideClosed,
+    placement: "right-center",
+    placementTarget: document.getElementById("battleScreen"),
     resizable: false,
-    width: "fit-content",
     title: "Add regiment to the battle",
-    position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
-    close: addSideClosed,
-    buttons: {
-      "Add to attackers": () => addSideClicked("attackers"),
-      "Add to defenders": () => addSideClicked("defenders"),
-      Cancel: () => $("#regimentSelectorScreen").dialog("close")
-    }
+    width: "fit-content"
   });
 
   applySorting(ensureEl("regimentSelectorHeader"));
@@ -649,7 +656,7 @@ function addSide(): void {
       return;
     }
 
-    $("#regimentSelectorScreen").dialog("close");
+    destroyDialog("regimentSelectorScreen");
     selected.forEach(line => {
       const state = pack.states[+line.dataset.s!];
       const regiment = state.military!.find(r => r.i === +line.dataset.i!)!;
@@ -693,7 +700,7 @@ function hideNameSection(): void {
 function changeName(event: Event): void {
   const value = (event.target as HTMLInputElement).value;
   battle!.name = value;
-  $("#battleScreen").dialog({ title: value });
+  updateDialog("battleScreen", { title: value });
 }
 
 function generateBattleName(type: "culture" | "random"): void {
@@ -706,7 +713,7 @@ function generateBattleName(type: "culture" | "random"): void {
   ensureEl<HTMLInputElement>("battleNamePlace").value = place;
   b.name = defineBattleName();
   ensureEl<HTMLInputElement>("battleNameFull").value = b.name;
-  $("#battleScreen").dialog({ title: b.name });
+  updateDialog("battleScreen", { title: b.name });
 }
 
 function getJoinedForces(regiments: Regiment[]): Record<string, number> {
@@ -1220,7 +1227,7 @@ function changeType(event: Event): void {
   calculateStrength("attackers");
   calculateStrength("defenders");
   b.name = defineBattleName();
-  $("#battleScreen").dialog({ title: b.name });
+  updateDialog("battleScreen", { title: b.name });
 }
 
 function changePhase(event: Event, side: Side): void {
@@ -1362,8 +1369,10 @@ function applyResults(): void {
 
   tip(`${b.name} is over. ${result}`, true, "success", 4000);
 
+  keepBattleResults = true;
   closeBattleScreen();
   cleanData();
+  keepBattleResults = false;
 }
 
 function cancelResults(): void {
@@ -1380,12 +1389,8 @@ function cancelResults(): void {
 }
 
 function closeBattleScreen(): void {
-  $("#battleScreen").dialog("destroy");
-  ensureEl("battleScreen").remove();
-
-  const regimentSelector = document.getElementById("regimentSelectorScreen");
-  if (regimentSelector?.classList.contains("ui-dialog-content")) $("#regimentSelectorScreen").dialog("destroy");
-  regimentSelector?.remove();
+  destroyDialog("battleScreen");
+  destroyDialog("regimentSelectorScreen");
 }
 
 function cleanData(): void {

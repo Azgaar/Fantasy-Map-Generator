@@ -76,7 +76,6 @@ function renderDialog(): void {
     <div id="notesLegend" contenteditable="true"></div>
     <div style="margin-top: 0.3em">
       <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
-      <button id="notesGenerateWithAi" data-tip="Generate note with AI" class="icon-robot"></button>
       <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
       <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
       <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
@@ -91,7 +90,6 @@ function renderDialog(): void {
   ensureEl("notesLegend").addEventListener("blur", updateLegend);
   ensureEl("notesPin").addEventListener("click", toggleNotesPin);
   ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
-  ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
   ensureEl("notesDownload").addEventListener("click", downloadLegends);
   ensureEl("notesUpload").addEventListener("click", () => ensureEl("legendsToLoad").click());
   ensureEl<HTMLInputElement>("legendsToLoad").addEventListener("change", function (this: HTMLInputElement) {
@@ -211,26 +209,6 @@ function removeSelectedNote(): void {
   }
 
   open((notes as Note[])[0].id, (notes as Note[])[0].name);
-}
-
-function openAiGenerator(): void {
-  const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
-  const note = (notes as Note[]).find(note => note.id === notesSelect.value);
-
-  let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
-  if (note?.name) prompt += ` Name: ${note.name}.`;
-  if (note?.legend) prompt += ` Data: ${note.legend}`;
-
-  const onApply = (result: string): void => {
-    ensureEl("notesLegend").innerHTML = result;
-    if (note) {
-      note.legend = result;
-      updateNotesBox(note);
-      window.tinymce?.activeEditor?.setContent(note.legend);
-    }
-  };
-
-  void Controllers.AiGenerator.open(prompt, onApply);
 }
 
 function downloadLegends(): void {

@@ -51,51 +51,66 @@
       #map {
         position: absolute;
       }
-      #loading > * {
+      #loading {
         pointer-events: none;
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-      }
-      #loading > #loading-rose > use {
-        fill: none;
-        stroke: black;
-        opacity: 0.7;
+        inset: 0;
+        z-index: 10000;
+        display: grid;
+        place-items: center;
+        background: var(--kui-surface-canvas, #080808);
+        color: var(--kui-text, #fff);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
       }
       #loading > #loading-typography {
-        opacity: 1;
+        width: min(320px, calc(100vw - 32px));
+      }
+      #loading-brand {
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+      #loading-details {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 8px;
+        color: var(--kui-text-muted, #a8a8a8);
         font-size: 11px;
-        color: #fff5da;
-        text-align: center;
-        text-shadow: 0px 1px 4px #4c3a35;
-        width: 80vw;
-        max-width: 540px;
-      }
-      @media screen and (max-width: 600px) {
-        #loading > #loading-typography {
-          font-size: 8px;
-        }
-      }
-      #titleName {
-        text-align: left;
-        font-size: 3em;
-      }
-      #title {
-        font-size: 7em;
       }
       #versionText {
-        text-align: right;
-        font-size: 2em;
+        font-family: "SF Mono", "Monaco", "Consolas", monospace;
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
       }
-      #loading-text {
-        font-size: 2em;
-        margin: 0.2em;
+      #loading-progress {
+        height: 2px;
+        margin-top: 12px;
+        overflow: hidden;
+        background: var(--kui-line, rgb(255 255 255 / 0.16));
       }
-      #loading-text > span {
-        font-size: 1.3em;
-        padding-left: 1px;
-        line-height: 0px;
+      #loading-progress::after {
+        content: "";
+        display: block;
+        width: 40%;
+        height: 100%;
+        background: hsl(var(--primary, 213 68% 59%));
+        animation: loading-progress 1.2s ease-in-out infinite;
+      }
+      @keyframes loading-progress {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(350%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #loading-progress::after {
+          width: 100%;
+          animation: none;
+        }
       }
       #mapOverlay > span {
         animation: 3s infinite both blink;
@@ -130,15 +145,6 @@
     <link
       rel="preload"
       href="icons.css?v=1.141.0"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
-    <link
-      rel="preload"
-      href="libs/jquery-ui.css?v=1.106.5"
       as="style"
       onload="
         this.onload = null;
@@ -326,19 +332,14 @@
         <rect x="0" y="0" width="100%" height="100%" />
       </g>
     </svg>
-    <div id="loading">
-      <svg width="100%" height="100%">
-        <rect x="-1%" y="-1%" width="102%" height="102%" fill="#466eab" />
-        <rect x="-1%" y="-1%" width="102%" height="102%" fill="url(#oceanic)" />
-      </svg>
-      <svg id="loading-rose" width="100%" height="100%" viewBox="0 0 700 700">
-        <use href="#defs-compass-rose" x="50%" y="50%" />
-      </svg>
+    <div id="loading" role="status" aria-live="polite" aria-label="Preparing your map">
       <div id="loading-typography">
-        <div id="titleName">Azgaar's</div>
-        <div id="title">Fantasy Map Generator</div>
-        <div id="versionText">‎ ‎</div>
-        <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
+        <div id="loading-brand">Fantasy Map Builder</div>
+        <div id="loading-details">
+          <span>Preparing your map</span>
+          <span id="versionText">‎ ‎</span>
+        </div>
+        <div id="loading-progress" aria-hidden="true"></div>
       </div>
     </div>
     <div id="optionsContainer" style="opacity: 0">
@@ -1813,16 +1814,6 @@
                 </select>
               </td>
               <td></td>
-            </tr>
-            <tr data-tip="Toggle Azgaar Assistant (help bubble on the bottom right corner)">
-              <td></td>
-              <td>Azgaar assistant</td>
-              <td>
-                <select id="azgaarAssistant" data-stored="azgaarAssistant">
-                  <option value="show" selected>Show</option>
-                  <option value="hide">Hide</option>
-                </select>
-              </td>
             </tr>
             <tr data-tip="Select speech synthesis voice to pronounce generated names">
               <td></td>
@@ -5396,8 +5387,6 @@
         <g id="trade-markers"></g>
       </defs>
     </svg>
-    <script src="libs/jquery-3.1.1.min.js"></script>
-    <script src="libs/jquery-ui.min.js"></script>
     <script src="libs/d3.min.js"></script>
     <script src="libs/flatqueue.js"></script>
     <script src="libs/indexedDB.js?v=1.99.00"></script>
@@ -5419,6 +5408,5 @@
     <script defer src="main.js?v=1.142.0"></script>
     <script defer src="modules/ui/style.js?v=1.142.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
-    <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>
 </html>

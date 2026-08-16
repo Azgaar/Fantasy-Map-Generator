@@ -1,6 +1,7 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { renderBurgChanged, renderBurgRemoved } from "@/renderers/burg-mutations";
@@ -33,11 +34,13 @@ function open(id: number | string): void {
   updateGroupsList();
   updateBurgValues();
 
-  $("#burgEditor").dialog({
-    title: "Edit Burg",
+  showDomDialog({
+    content: ensureEl("burgEditor"),
+    onClose: closeBurgEditor,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    close: closeBurgEditor,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
+    title: "Edit Burg"
   });
 }
 
@@ -512,7 +515,7 @@ function editGroupLabelStyle(): void {
 
 function editBurgLabel(): void {
   const id = getSelectedId();
-  $("#burgEditor").dialog("close");
+  destroyDialog("burgEditor");
   Controllers.LabelsEditor.open("burg", id);
 }
 
@@ -799,27 +802,9 @@ function removeSelectedBurg(): void {
   const burg = pack.burgs[burgId];
 
   if (burg.capital) {
-    alertMessage.innerHTML = /* html */ `You cannot remove the capital. You must change the state capital first`;
-    $("#alert").dialog({
-      resizable: false,
-      title: "Remove burg",
-      buttons: {
-        Ok: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      }
-    });
+    showRemovalBlocked("You cannot remove the capital. You must change the state capital first");
   } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    alertMessage.innerHTML = /* html */ `You cannot remove a market center burg. Please remove the market first`;
-    $("#alert").dialog({
-      resizable: false,
-      title: "Remove burg",
-      buttons: {
-        Ok: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      }
-    });
+    showRemovalBlocked("You cannot remove a market center burg. Please remove the market first");
   } else {
     confirmationDialog({
       title: "Remove burg",
@@ -829,10 +814,16 @@ function removeSelectedBurg(): void {
         const removed = Burgs.remove(burgId);
         if (removed) renderBurgRemoved(removed);
         drawLabels();
-        $("#burgEditor").dialog("close");
+        destroyDialog("burgEditor");
       }
     });
   }
+}
+
+function showRemovalBlocked(messageHtml: string): void {
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({ id: "burgRemovalBlockedDialog", messageHtml, title: "Remove burg" });
+  });
 }
 
 function editBurgGroups(): void {
@@ -842,8 +833,7 @@ function editBurgGroups(): void {
 function closeBurgEditor(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   selected = null;
-  $("#burgEditor").dialog("destroy");
-  ensureEl("burgEditor").remove();
+  destroyDialog("burgEditor");
 }
 
 function getProduction(pool: Record<number, number>): string {

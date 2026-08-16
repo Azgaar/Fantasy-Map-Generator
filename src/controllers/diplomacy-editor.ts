@@ -11,6 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
 import { downloadFile, getFileName } from "@/utils";
@@ -119,12 +120,14 @@ function open(): void {
   refreshDiplomacyEditor();
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", selectStateOnMapClick);
 
-  $(`#${dialogId}`).dialog({
-    title: "Diplomacy Editor",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeDiplomacyEditor,
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    close: closeDiplomacyEditor,
-    position
+    title: "Diplomacy Editor",
+    width: "fit-content"
   });
 }
 
@@ -354,7 +357,10 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
     )
     .join("");
 
-  alertMessage.innerHTML = /* html */ `
+  destroyDialog("relationsSelectionDialog");
+  const content = document.createElement("div");
+  content.id = "relationsSelectionDialog";
+  content.innerHTML = /* html */ `
     <form id='relationsForm' style="overflow: hidden; display: flex; flex-direction: column; gap: .3em; padding: 0.1em 0;">
       <header>
         <svg class="coaIcon" viewBox="0 0 200 200">
@@ -375,31 +381,34 @@ function selectRelation(subjectId: number, objectId: number, currentRelation: st
       </main>
     </form>
   `;
+  ensureEl("dialogs").appendChild(content);
 
-  $("#alert").dialog({
-    width: "fit-content",
-    title: `Change relations`,
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        const formData = new FormData(ensureEl<HTMLFormElement>("relationsForm"));
-        const newRelation = formData.get("relationSelect") as string;
-        const objectIds = [...formData.getAll("objectSelect")].map(Number);
+  showDomDialog({
+    actions: [
+      {
+        label: "Apply",
+        onClick: () => {
+          const formData = new FormData(content.querySelector<HTMLFormElement>("#relationsForm")!);
+          const newRelation = formData.get("relationSelect") as string;
+          const objectIds = [...formData.getAll("objectSelect")].map(Number);
 
-        for (const oid of objectIds) {
-          changeRelation(subjectId, oid, currentRelation, newRelation);
+          for (const oid of objectIds) changeRelation(subjectId, oid, currentRelation, newRelation);
         }
-        $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: "Cancel" }
+    ],
+    content,
+    isModal: true,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    title: `Change relations`,
+    width: "fit-content"
   });
 
   // Setup Select All / None toggle functionality
-  const selectAllNoneBtn = ensureEl("selectAllNoneBtn");
+  const selectAllNoneBtn = content.querySelector<HTMLElement>("#selectAllNoneBtn")!;
   const stateCheckboxes = () =>
-    document.querySelectorAll<HTMLInputElement>("#stateSelectionContainer input[name='objectSelect']");
+    content.querySelectorAll<HTMLInputElement>("#stateSelectionContainer input[name='objectSelect']");
 
   function updateButtonState(): void {
     const checkboxes = stateCheckboxes();
@@ -518,28 +527,38 @@ function showRelationsHistory(): void {
     message += /* html */ `<div><div contenteditable="true" data-id="0-0">No historical records</div>&#8205;</div>`;
   }
 
-  alertMessage.innerHTML = `${message}</div><div class="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</div>`;
-  alertMessage.querySelectorAll("div[contenteditable='true']").forEach(el => {
+  destroyDialog("relationsHistoryDialog");
+  const content = document.createElement("div");
+  content.id = "relationsHistoryDialog";
+  content.innerHTML = `${message}</div><div class="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</div>`;
+  ensureEl("dialogs").appendChild(content);
+  content.querySelectorAll("div[contenteditable='true']").forEach(el => {
     el.addEventListener("input", changeReliationsHistory);
   });
 
-  $("#alert").dialog({
-    title: "Relations history",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Save: function (this: HTMLElement) {
-        const data = this.querySelector("div")!.innerText.split("\n").join("\r\n");
-        const name = `${getFileName("Relations history")}.txt`;
-        downloadFile(data, name);
+  showDomDialog({
+    actions: [
+      {
+        close: false,
+        label: "Save",
+        onClick: () => {
+          const data = content.querySelector<HTMLElement>(":scope > div")!.innerText.split("\n").join("\r\n");
+          const name = `${getFileName("Relations history")}.txt`;
+          downloadFile(data, name);
+        }
       },
-      Clear: function (this: HTMLElement) {
-        pack.states[0].diplomacy = [] as unknown as string[];
-        $(this).dialog("close");
+      {
+        label: "Clear",
+        onClick: () => {
+          pack.states[0].diplomacy = [] as unknown as string[];
+        }
       },
-      Close: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: "Close" }
+    ],
+    content,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    title: "Relations history"
   });
 }
 
@@ -593,11 +612,13 @@ function showRelationsMatrix(): void {
     selectRelation(subjectId, objectId, currentRelation);
   });
 
-  $("#diplomacyMatrix").dialog({
-    title: "Relations matrix",
-    position: { my: "center", at: "center", of: "svg" },
-    close: closeDiplomacyMatrix,
-    buttons: {}
+  showDomDialog({
+    content: ensureEl("diplomacyMatrix"),
+    onClose: closeDiplomacyMatrix,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: true,
+    title: "Relations matrix"
   });
 }
 
@@ -610,8 +631,7 @@ function renderMatrix(): void {
 }
 
 function closeDiplomacyMatrix(): void {
-  $("#diplomacyMatrix").dialog("destroy");
-  ensureEl("diplomacyMatrix").remove();
+  destroyDialog("diplomacyMatrix");
 }
 
 function downloadDiplomacyData(): void {
@@ -636,8 +656,7 @@ function closeDiplomacyEditor(): void {
   if (layerIsOn("toggleStates")) drawStates();
   else toggleStates();
   select("#debug").selectAll(".highlight").remove();
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  destroyDialog(dialogId);
 }
 
 export const DiplomacyEditor = { open };

@@ -357,9 +357,8 @@ state**._ A controller does **not** hold pure static data, services, or serializ
   subject, so they live here and load with the shell.
 - **`dialog/` — the dialog toolkit.** What every editor dialog is assembled from and what acts
   on dialogs as a set: `closeDialogs`, `confirmationDialog`, `fitContent`, header sorting, and
-  `refreshAllEditors`. These currently wrap jQuery UI; they are collected here so a single
-  self-contained `Dialog` component can replace them without touching the ~40 callers. The
-  toolkit operates on dialogs generically — it never knows what a particular editor does.
+  `refreshAllEditors`. The toolkit is backed by the shared React `Dialog` component and operates
+  on dialogs generically — it never knows what a particular editor does.
 
 Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they generalize.
 
@@ -394,13 +393,14 @@ New bundled code imports third-party dependencies from **npm**; Vite tree-shakes
 into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no vendored
 `libs/` under `src/`**.
 
-`public/libs/*.min.js` (d3 v5, jQuery, three, …) is loaded via `<script>` tags for classic
+`public/libs/*.min.js` (d3 v5, three, …) is loaded via `<script>` tags for classic
 `public/**/*.js` and a shrinking set of bundled compatibility seams that still depend on
 runtime globals. It is legacy-only and shrinks as modules migrate: when a feature ports to
 `src/`, its dependency flips from a vendored global script to an npm import, and the vendored
 script is dropped once nothing classic or transitional needs it. In particular, global D3 v5
 cannot be removed until zoom/shared SVG selections and all classic D3 consumers use imported
-D3 v7; jQuery remains until the dialog layer and its migrated callers no longer use global `$`.
+D3 v7. The jQuery and jQuery UI globals were removed after dialogs, sorting, dragging, and
+remaining classic callers migrated to native browser APIs and shared React components.
 See [legacy-code.md](./legacy-code.md) for the inventory and removal policy.
 
 ## Where does my file go?

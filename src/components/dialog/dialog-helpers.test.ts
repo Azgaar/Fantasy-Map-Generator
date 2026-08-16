@@ -1,14 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { closeDialogs, destroyDialog, registerManagedDialog, updateDialog } from "./dialog-helpers";
-
-const jqueryResult = {
-  each: () => jqueryResult,
-  not: () => jqueryResult
-};
-
-beforeEach(() => {
-  window.$ = (() => jqueryResult) as typeof window.$;
-});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -38,6 +29,18 @@ describe("managed dialogs", () => {
 
     destroyDialog("testDialog");
     expect(close).toHaveBeenCalledOnce();
+    unregister();
+  });
+
+  test("uses the guarded close path for bulk close operations", () => {
+    const close = vi.fn();
+    const requestClose = vi.fn();
+    const unregister = registerManagedDialog("guardedDialog", close, false, undefined, requestClose);
+
+    closeDialogs();
+
+    expect(requestClose).toHaveBeenCalledOnce();
+    expect(close).not.toHaveBeenCalled();
     unregister();
   });
 });

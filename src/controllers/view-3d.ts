@@ -1,4 +1,6 @@
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
 import { dispatchViewModeChange, type ViewMode } from "./view-mode-events";
@@ -47,8 +49,8 @@ function teardown(): void {
   if (!document.getElementById("canvas3d")) return;
   void stop();
   document.getElementById("canvas3d")?.remove();
-  if (document.getElementById("options3d")) $("#options3d").dialog("close");
-  if (document.getElementById("preview3d")) $("#preview3d").dialog("close");
+  destroyDialog("options3d");
+  destroyDialog("preview3d");
 }
 
 function enterStandard(): void {
@@ -74,6 +76,7 @@ async function open(type: string): Promise<void> {
   canvas.dataset.type = type;
 
   if (type === "heightmap3DView") {
+    renderPreviewDialog();
     const preview3d = ensureEl("preview3d");
     canvas.width = parseFloat(preview3d.style.width) || graphWidth / 3;
     canvas.height = canvas.width / (graphWidth / graphHeight);
@@ -86,7 +89,10 @@ async function open(type: string): Promise<void> {
   }
 
   const started = await create(canvas, type);
-  if (!started) return;
+  if (!started) {
+    destroyDialog("preview3d");
+    return;
+  }
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
@@ -96,14 +102,18 @@ async function open(type: string): Promise<void> {
   };
 
   if (type === "heightmap3DView") {
-    renderPreviewDialog();
     ensureEl("preview3d").appendChild(canvas);
-    $("#preview3d").dialog({
-      title: "3D Preview",
+    showDomDialog({
+      className: "fmg-dialog--canvas",
+      content: ensureEl("preview3d"),
+      onClose: closePreview3d,
+      onResizeEnd: resize3d,
+      placement: "bottom-left",
+      placementOffset: { x: 10, y: 20 },
+      placementTarget: document.getElementById("map"),
       resizable: true,
-      position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
-      resizeStop: resize3d,
-      close: closePreview3d
+      title: "3D Preview",
+      width: canvas.width
     });
   } else document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
@@ -111,14 +121,13 @@ async function open(type: string): Promise<void> {
 }
 
 function renderPreviewDialog(): void {
-  document.getElementById("preview3d")?.remove();
+  destroyDialog("preview3d");
   const editorHtml = /* html */ `<div id="preview3d" class="dialog stable" style="padding: 0px"></div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 }
 
 function closePreview3d(): void {
-  $("#preview3d").dialog("destroy");
-  ensureEl("preview3d").remove();
+  destroyDialog("preview3d");
   enterStandard();
 }
 
@@ -126,33 +135,37 @@ function resize3d(): void {
   const canvas = document.getElementById("canvas3d") as HTMLCanvasElement | null;
   if (!canvas) return;
   const preview3d = ensureEl("preview3d");
-  canvas.width = parseFloat(preview3d.style.width);
-  canvas.height = parseFloat(preview3d.style.height) - 2;
+  const body = preview3d.closest<HTMLElement>(".fmg-dialog__body");
+  canvas.width = body?.clientWidth || preview3d.clientWidth;
+  canvas.height = body?.clientHeight || preview3d.clientHeight;
   void redraw();
 }
 
 // --- settings dialog ---------------------------------------------------------
 function toggleOptions(): void {
   if (document.getElementById("options3d")) {
-    $("#options3d").dialog("close");
+    destroyDialog("options3d");
     return;
   }
 
   renderOptionsDialog();
 
-  $("#options3d").dialog({
-    title: "3D mode settings",
+  showDomDialog({
+    content: ensureEl("options3d"),
+    onClose: closeOptionsDialog,
+    placement: "top-right",
+    placementOffset: { x: 30, y: 10 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "fit-content",
-    position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" },
-    close: closeOptionsDialog
+    title: "3D mode settings",
+    width: "fit-content"
   });
 
   updateValues();
 }
 
 function renderOptionsDialog(): void {
-  document.getElementById("options3d")?.remove();
+  destroyDialog("options3d");
   const editorHtml = /* html */ `<div id="options3d" class="dialog stable">
       <div id="options3dMesh" style="display: none">
         <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
@@ -356,8 +369,7 @@ function renderOptionsDialog(): void {
 }
 
 function closeOptionsDialog(): void {
-  $("#options3d").dialog("destroy");
-  ensureEl("options3d").remove();
+  destroyDialog("options3d");
 }
 
 function setInput(id: string, value: string | number): void {

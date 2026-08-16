@@ -2,6 +2,7 @@ import type { D3DragEvent, D3ZoomEvent } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { capitalize } from "@/utils";
 import { ensureEl, minmax } from "../utils";
 
@@ -87,9 +88,14 @@ function open(props: OpenProps): void {
   ]);
   svg.attr("viewBox", `0, 0, ${width}, ${height}`);
 
-  $("#hierarchyTree").dialog({
+  showDomDialog({
+    content: ensureEl("hierarchyTree"),
+    destroyOnClose: false,
+    placement: "left-center",
+    placementOffset: { x: 10, y: 0 },
+    placementTarget: document.getElementById("map"),
+    resizable: true,
     title: `${capitalize(props.type)} tree`,
-    position: { my: "left center", at: "left+10 center", of: "svg" },
     width
   });
 
@@ -477,30 +483,34 @@ function selectElement(d: any): void {
       </form>
     `;
 
-    $("#hierarchyTree_originSelector").dialog({
-      title: "Select origins",
-      position: { my: "center", at: "center", of: "svg" },
-      buttons: {
-        Select: () => {
-          $("#hierarchyTree_originSelector").dialog("close");
-          const $selector = ensureEl("hierarchyTree_originSelector");
-          const selectedRadio = $selector.querySelector<HTMLInputElement>("input[type='radio']:checked");
-          const selectedCheckboxes = $selector.querySelectorAll<HTMLInputElement>("input[type='checkbox']:checked");
+    showDomDialog({
+      actions: [
+        {
+          label: "Select",
+          onClick: () => {
+            const selector = ensureEl("hierarchyTree_originSelector");
+            const selectedRadio = selector.querySelector<HTMLInputElement>("input[type='radio']:checked");
+            const selectedCheckboxes = selector.querySelectorAll<HTMLInputElement>("input[type='checkbox']:checked");
 
-          const primary = selectedRadio ? Number(selectedRadio.value) : 0;
-          const secondary = Array.from(selectedCheckboxes)
-            .map(input => Number(input.dataset.id))
-            .filter(origin => origin !== primary);
+            const primary = selectedRadio ? Number(selectedRadio.value) : 0;
+            const secondary = Array.from(selectedCheckboxes)
+              .map(input => Number(input.dataset.id))
+              .filter(origin => origin !== primary);
 
-          dataElement.origins = [primary, ...secondary];
+            dataElement.origins = [primary, ...secondary];
 
-          updateTree();
-          createOriginButtons();
+            updateTree();
+            createOriginButtons();
+          }
         },
-        Cancel: () => {
-          $("#hierarchyTree_originSelector").dialog("close");
-        }
-      }
+        { label: "Cancel" }
+      ],
+      content: ensureEl("hierarchyTree_originSelector"),
+      destroyOnClose: false,
+      placement: "center",
+      placementTarget: document.getElementById("map"),
+      title: "Select origins",
+      width: "fit-content"
     });
   };
 
