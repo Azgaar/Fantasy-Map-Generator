@@ -313,6 +313,8 @@ function focusOn() {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
+  applyURLLayers(params);
+
   const fromMGCG = params.get("from") === "MFCG" && document.referrer;
   if (fromMGCG) {
     if (params.get("seed").length === 13) {
