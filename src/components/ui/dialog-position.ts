@@ -1,4 +1,11 @@
-export type WorkspaceDialogPlacement = "center" | "top-left" | "top-right";
+export type WorkspaceDialogPlacement =
+  | "below-right"
+  | "bottom-center"
+  | "bottom-left"
+  | "center"
+  | "left-top"
+  | "top-left"
+  | "top-right";
 
 interface Rectangle {
   height: number;
@@ -29,13 +36,27 @@ export function getDialogPosition(
   viewport: Viewport,
   offset: WorkspaceDialogOffset = { x: 10, y: 10 }
 ): { left: number; top: number } {
+  const anchorRight = anchor.left + anchor.width;
+  const anchorBottom = anchor.top + anchor.height;
+  const centeredLeft = anchor.left + (anchor.width - dialog.width) / 2;
+
   const left =
-    placement === "top-left"
+    placement === "top-left" || placement === "bottom-left"
       ? anchor.left + offset.x
-      : placement === "top-right"
-        ? anchor.left + anchor.width - dialog.width - offset.x
-        : anchor.left + (anchor.width - dialog.width) / 2;
-  const top = placement === "center" ? anchor.top + (anchor.height - dialog.height) / 2 : anchor.top + offset.y;
+      : placement === "top-right" || placement === "below-right"
+        ? anchorRight - dialog.width - offset.x
+        : placement === "left-top"
+          ? anchor.left - dialog.width - offset.x
+          : centeredLeft;
+
+  const top =
+    placement === "center"
+      ? anchor.top + (anchor.height - dialog.height) / 2
+      : placement === "bottom-left" || placement === "bottom-center"
+        ? anchorBottom - dialog.height - offset.y
+        : placement === "below-right"
+          ? anchorBottom + offset.y
+          : anchor.top + offset.y;
 
   return {
     left: clamp(left, viewport.width - dialog.width - VIEWPORT_MARGIN),

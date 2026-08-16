@@ -24,17 +24,29 @@ export function applyLineHighlighting(
     else highlightLine(dialogId, lineId);
   }, 100);
 
+  let disposed = false;
+  let observer: MutationObserver | null = null;
   const cleanup = () => {
+    if (disposed) return;
+    disposed = true;
+    observer?.disconnect();
     viewbox.removeEventListener("mousemove", highlight);
     viewbox.removeEventListener("touchmove", highlight);
-    $(dialog).off("dialogclose.mapHoverHighlighting");
     cleanups.delete(dialogId);
   };
 
   viewbox.addEventListener("mousemove", highlight);
   viewbox.addEventListener("touchmove", highlight);
-  $(dialog).one("dialogclose.mapHoverHighlighting", cleanup);
   cleanups.set(dialogId, cleanup);
+
+  queueMicrotask(() => {
+    if (disposed) return;
+    if (!dialog.isConnected) return cleanup();
+    observer = new MutationObserver(() => {
+      if (!dialog.isConnected) cleanup();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
 }
 
 function highlightLine(containerId: string, lineId: number): void {

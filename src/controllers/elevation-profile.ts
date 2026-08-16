@@ -13,8 +13,9 @@ import {
   scaleLinear,
   select
 } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features";
@@ -131,16 +132,15 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
 
   draw();
 
-  $("#elevationProfile").dialog({
-    title: "Elevation profile",
+  showDomDialog({
+    content: ensureEl("elevationProfile"),
+    onClose: closeElevationProfile,
+    placement: "bottom-center",
+    placementOffset: { x: 0, y: 40 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    close: closeElevationProfile,
-    position: {
-      my: "center bottom",
-      at: "center bottom-40px",
-      of: "svg",
-      collision: "fit"
-    }
+    title: "Elevation profile",
+    width: "fit-content"
   });
 
   function draw(): void {
@@ -559,13 +559,12 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
 
   function closeElevationProfile(): void {
     modules.elevation = false;
-    $("#elevationProfile").dialog("destroy");
-    ensureEl("elevationProfile").remove();
+    destroyDialog("elevationProfile");
   }
 }
 
 function renderDialog(): void {
-  document.getElementById("elevationProfile")?.remove();
+  destroyDialog("elevationProfile");
   const editorHtml = /* html */ `<div id="elevationProfile" class="dialog" width="100%">
       <div id="elevationGraph" data-tip="Elevation profile"></div>
       <div style="text-align: center">

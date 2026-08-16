@@ -12,6 +12,7 @@ import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-p
 
 export interface DomDialogOptions {
   actions?: DomDialogAction[];
+  className?: string;
   content: HTMLElement;
   destroyOnClose?: boolean;
   height?: CSSProperties["height"];
@@ -40,7 +41,13 @@ export interface DomDialogHandle {
 
 const activeDialogs = new Map<string, DomDialogHandle>();
 
-function DomDialogView({ options }: { options: DomDialogOptions }): React.JSX.Element {
+function DomDialogView({
+  options,
+  positionRevision
+}: {
+  options: DomDialogOptions;
+  positionRevision: number;
+}): React.JSX.Element {
   const contentHostRef = useRef<HTMLDivElement>(null);
   const actions = options.actions ?? [];
 
@@ -69,6 +76,7 @@ function DomDialogView({ options }: { options: DomDialogOptions }): React.JSX.El
 
   return (
     <WorkspaceDialog
+      className={options.className}
       footer={
         actions.length ? (
           <>
@@ -96,6 +104,7 @@ function DomDialogView({ options }: { options: DomDialogOptions }): React.JSX.El
       placement={options.placement}
       placementOffset={options.placementOffset}
       placementTarget={options.placementTarget}
+      positionRevision={positionRevision}
       resizable={options.resizable}
       title={options.title}
       width={options.width ?? "fit-content"}
@@ -125,10 +134,11 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
   (document.getElementById("dialogs") ?? document.body).appendChild(container);
   const root: Root = createRoot(container);
   let options = initialOptions;
+  let positionRevision = 0;
   let closed = false;
   let unregister = () => {};
 
-  const render = () => root.render(<DomDialogView options={options} />);
+  const render = () => root.render(<DomDialogView options={options} positionRevision={positionRevision} />);
   const handle = {
     close: () => {
       if (closed) return;
@@ -147,6 +157,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
     },
     update: (params: DialogParams) => {
       if (closed) return;
+      positionRevision++;
       options = {
         ...options,
         height: params.height ?? options.height,

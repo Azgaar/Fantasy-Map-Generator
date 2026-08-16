@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -9,6 +9,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
@@ -76,15 +77,20 @@ function open(marketId: number): void {
   (ensureEl("marketDealsFilter") as HTMLSelectElement).value = "all";
   marketDealsTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeMarketDeals,
+    placement: "below-right",
+    placementOffset: { x: 0, y: 10 },
+    placementTarget: document.getElementById("marketOverview"),
+    resizable: true,
     title: `${Markets.getName(market)} Market Deals`,
-    position,
-    close: closeMarketDeals
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         ${renderEditorHeader({ dialogId, columns })}
@@ -132,8 +138,7 @@ function renderDialog(): void {
 }
 
 function closeMarketDeals(): void {
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  destroyDialog(dialogId);
 }
 
 function getFilteredMarketDeals(): Deal[] {

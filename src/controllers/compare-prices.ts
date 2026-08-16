@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -8,6 +8,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { downloadFile, getFileName } from "@/utils";
 import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
@@ -59,15 +60,20 @@ function open(goodId?: number, anchor = "#marketsOverview"): void {
   rebuildGoodSelect();
   comparePricesTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeComparePrices,
+    placement: "left-top",
+    placementOffset: { x: 10, y: 0 },
+    placementTarget: document.querySelector(activeAnchor),
+    resizable: true,
     title: "Compare Prices",
-    position: { ...position, of: anchor },
-    close: closeComparePrices
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog editorDialog">
       <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
         <label for="marketsGoodCompareSelect" data-tip="Select good to compare stock across markets">Good:</label>
@@ -103,8 +109,7 @@ function renderDialog(): void {
 }
 
 function closeComparePrices(): void {
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  destroyDialog(dialogId);
 }
 
 function renderComparePricesPage(view: TableView<Market>): void {

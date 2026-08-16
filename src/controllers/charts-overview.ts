@@ -17,8 +17,9 @@ import {
   stackOrderNone,
   sum
 } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
 
@@ -372,17 +373,19 @@ function open() {
   if (!charts.length) addChart();
   else for (const chart of charts) renderChart(chart);
 
-  $("#chartsOverview").dialog({
+  showDomDialog({
+    content: ensureEl("chartsOverview"),
+    onClose: handleClose,
+    placement: "center",
+    placementTarget: document.getElementById("map"),
+    resizable: true,
     title: "Data Charts",
-    width: "60vw",
-    height: "auto",
-    position: { my: "center", at: "center", of: "svg" },
-    close: handleClose
+    width: "60vw"
   });
 }
 
 function renderDialog() {
-  document.getElementById("chartsOverview")?.remove();
+  destroyDialog("chartsOverview");
   const entities = Object.entries(entitiesMap).map(([entity, { label }]): [string, string] => [entity, label]);
   const plotBy = Object.entries(quantizationMap).map(([plotBy, { label }]): [string, string] => [plotBy, label]);
 
@@ -896,12 +899,13 @@ function changeViewColumns() {
 }
 
 function updateDialogPosition() {
-  $("#chartsOverview").dialog({ position: { my: "center", at: "center", of: "svg" } });
+  updateDialog("chartsOverview", {
+    position: { my: "center", at: "center", of: "svg", collision: "fit" }
+  });
 }
 
 function handleClose() {
-  $("#chartsOverview").dialog("destroy");
-  ensureEl("chartsOverview").remove();
+  destroyDialog("chartsOverview");
   document.getElementById("chartsOverviewStyle")?.remove();
 }
 

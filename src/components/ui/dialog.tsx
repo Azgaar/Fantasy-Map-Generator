@@ -25,6 +25,7 @@ interface WorkspaceDialogProps {
   placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
   placementTarget?: Element | null;
+  positionRevision?: number;
   resizable?: boolean;
   size?: "large" | "medium" | "small";
   title: string;
@@ -68,6 +69,7 @@ export function WorkspaceDialog({
   placementOffset,
   placement = "center",
   placementTarget,
+  positionRevision = 0,
   resizable = false,
   size = "medium",
   title,
@@ -164,7 +166,7 @@ export function WorkspaceDialog({
     return () => {
       window.removeEventListener("resize", positionDialog);
     };
-  }, [isModal, isOpen, placement, placementOffset, placementTarget]);
+  }, [isModal, isOpen, placement, placementOffset, placementTarget, positionRevision]);
 
   const handleDragStart = (event: ReactPointerEvent<HTMLElement>) => {
     if (!canDrag || event.button !== 0 || (event.target as Element).closest("button")) return;

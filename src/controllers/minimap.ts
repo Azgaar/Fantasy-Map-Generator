@@ -1,4 +1,5 @@
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { ensureEl, minmax, rn } from "../utils";
 import { groupOverviewPaths } from "./minimap-overview";
 
@@ -11,20 +12,21 @@ function open(): void {
   renderDialog();
   updateMinimap();
 
-  $("#minimap").dialog({
-    title: "Minimap",
+  showDomDialog({
+    className: "minimap-dialog",
+    content: ensureEl("minimap"),
+    onClose: closeMinimap,
+    placement: "bottom-left",
+    placementOffset: { x: 10, y: 25 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    width: "auto",
-    position: { my: "left bottom", at: "left+10 bottom-25", of: "svg", collision: "fit" },
-    open: function (this: HTMLElement) {
-      $(this).parent().addClass("minimap-dialog");
-    },
-    close: closeMinimap
+    title: "Minimap",
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("minimap")?.remove();
+  destroyDialog("minimap");
   const html = /* html */ `<div id="minimap" class="dialog stable">
       <div id="minimapViewportWrap">
         <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="Map minimap">
@@ -44,6 +46,11 @@ function renderDialog(): void {
   style.textContent = /* css */ `
     .minimap-dialog .ui-dialog-content {
       padding: 0 !important;
+      overflow: hidden;
+    }
+
+    .minimap-dialog .fmg-dialog__body {
+      padding: 0;
       overflow: hidden;
     }
 
@@ -86,8 +93,7 @@ function closeMinimap(): void {
   overviewObserver = null;
   if (overviewFrameId !== null) cancelAnimationFrame(overviewFrameId);
   overviewFrameId = null;
-  $("#minimap").dialog("destroy");
-  ensureEl("minimap").remove();
+  destroyDialog("minimap");
   document.getElementById("minimapStyles")?.remove();
 }
 

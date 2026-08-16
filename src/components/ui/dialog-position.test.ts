@@ -21,6 +21,27 @@ describe("getDialogPosition", () => {
     });
   });
 
+  test("places dialogs along the bottom edge of an anchor", () => {
+    expect(getDialogPosition(anchor, dialog, "bottom-left", viewport, { x: 10, y: 25 })).toEqual({
+      left: 110,
+      top: 425
+    });
+    expect(getDialogPosition(anchor, dialog, "bottom-center", viewport, { x: 0, y: 40 })).toEqual({
+      left: 350,
+      top: 410
+    });
+  });
+
+  test("places dialogs outside an anchor", () => {
+    expect(
+      getDialogPosition({ ...anchor, left: 500, width: 200 }, dialog, "left-top", viewport, { x: 10, y: 0 })
+    ).toEqual({ left: 190, top: 50 });
+    expect(getDialogPosition(anchor, dialog, "below-right", viewport, { x: 0, y: 10 })).toEqual({
+      left: 600,
+      top: 660
+    });
+  });
+
   test("keeps a dialog inside the viewport", () => {
     expect(getDialogPosition({ height: 100, left: -40, top: -30, width: 100 }, dialog, "top-left", viewport)).toEqual({
       left: 8,
