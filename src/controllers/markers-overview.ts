@@ -1,4 +1,4 @@
-import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -9,6 +9,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { clearMainTip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
@@ -49,17 +50,19 @@ function open(): void {
   renderDialog();
   markersTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Markers Overview",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeMarkersOverview,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    width: "fit-content",
-    close: closeMarkersOverview,
-    position
+    title: "Markers Overview",
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
 
   const html = /* html */ `
     <div id="${dialogId}" class="dialog stable editorDialog">
@@ -171,8 +174,7 @@ function closeMarkersOverview(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
 
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  destroyDialog(dialogId);
 }
 
 function regenerateMarkers(): void {

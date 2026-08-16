@@ -2,10 +2,11 @@
 import { findEl } from "@/utils";
 
 export type DialogParams = {
+  height?: number | string;
   position?: { my: string; at: string; of: string; collision: string };
   resizable?: boolean;
   title?: string;
-  width?: string;
+  width?: number | string;
 };
 
 interface ManagedDialog {

@@ -2,6 +2,7 @@ import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { getPin } from "@/renderers/draw-markers";
@@ -30,11 +31,14 @@ function open(markerI?: number, target?: Element): void {
   renderDialog();
   updateInputs();
 
-  $("#markerEditor").dialog({
-    title: "Edit Marker",
+  showDomDialog({
+    content: ensureEl("markerEditor"),
+    onClose: closeMarkerEditor,
+    placement: "top-left",
+    placementTarget: document.querySelector("svg"),
+    placementOffset: { x: 10, y: 10 },
     resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    close: closeMarkerEditor
+    title: "Edit Marker"
   });
 }
 
@@ -314,7 +318,7 @@ function confirmMarkerDeletion(): void {
 function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
   selectedElement.remove();
-  $("#markerEditor").dialog("close");
+  destroyDialog("markerEditor");
   refreshEditors();
 }
 

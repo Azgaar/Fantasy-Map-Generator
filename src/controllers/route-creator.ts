@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
@@ -36,11 +37,14 @@ function open(defaultGroup?: string): void {
     })
     .join("");
 
-  $("#routeCreator").dialog({
-    title: "Create Route",
+  showDomDialog({
+    content: ensureEl("routeCreator"),
+    onClose: closeRouteCreator,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
+    placementOffset: { x: 10, y: 10 },
     resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRouteCreator
+    title: "Create Route"
   });
 }
 
@@ -79,7 +83,7 @@ function openRouteGroupsEditor(): void {
 }
 
 function cancelCreation(): void {
-  $("#routeCreator").dialog("close");
+  destroyDialog("routeCreator");
 }
 
 function onBodyClick(ev: Event): void {

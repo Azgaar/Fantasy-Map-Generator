@@ -16,6 +16,7 @@ interface WorkspaceDialogProps {
   description?: string;
   dialogId?: string;
   footer?: ReactNode;
+  height?: CSSProperties["height"];
   isDraggable?: boolean;
   isModal?: boolean;
   isOpen: boolean;
@@ -57,6 +58,7 @@ export function WorkspaceDialog({
   description,
   dialogId,
   footer,
+  height,
   isDraggable,
   isModal = true,
   isOpen,
@@ -205,7 +207,7 @@ export function WorkspaceDialog({
       id={dialogId}
       ref={dialogRef}
       role="dialog"
-      style={{ width }}
+      style={{ height, width }}
       tabIndex={-1}
     >
       <header

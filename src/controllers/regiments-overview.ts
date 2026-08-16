@@ -1,5 +1,5 @@
 import { select, sum } from "d3";
-import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -10,6 +10,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
@@ -33,18 +34,20 @@ function open(state = -1): void {
   updateFilter(state);
   regimentsTable.reset();
 
-  $("#regimentsOverview").dialog({
-    title: "Regiments Overview",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeRegimentsOverview,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    width: "fit-content",
-    close: closeRegimentsOverview,
-    position
+    title: "Regiments Overview",
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
   columns = getRegimentColumns();
-  document.getElementById("regimentsOverview")?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div id="regimentsBody" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
@@ -94,8 +97,7 @@ function renderDialog(): void {
 
 function closeRegimentsOverview(): void {
   if (ensureEl("regimentsAddNew").classList.contains("pressed")) toggleAdd();
-  $("#regimentsOverview").dialog("destroy");
-  ensureEl("regimentsOverview").remove();
+  destroyDialog(dialogId);
 }
 
 const unitColumnKey = (name: string) => `unit:${name}`;

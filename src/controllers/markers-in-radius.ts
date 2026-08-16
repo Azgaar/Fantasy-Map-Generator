@@ -1,5 +1,6 @@
-import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
@@ -35,17 +36,19 @@ function open(marker: Marker): void {
   renderDialog();
   applyRadius(getRadius());
 
-  $("#markersInRadius").dialog({
-    title: "Markers in Radius",
+  showDomDialog({
+    content: ensureEl("markersInRadius"),
+    onClose: closeMarkersInRadius,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    width: "fit-content",
-    close: closeMarkersInRadius,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    title: "Markers in Radius",
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("markersInRadius")?.remove();
+  destroyDialog("markersInRadius");
 
   const centerName = center ? markerName(center) : "";
   const html = /* html */ `
@@ -210,8 +213,7 @@ function closeMarkersInRadius(): void {
   inRangeMarkers = [];
   center = null;
   clearMainTip();
-  $("#markersInRadius").dialog("destroy");
-  document.getElementById("markersInRadius")?.remove();
+  destroyDialog("markersInRadius");
 }
 
 export const MarkersInRadius = { open };

@@ -1,5 +1,7 @@
 import { type Selection, select, zoom, zoomIdentity } from "d3";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import type { Good } from "../generators/goods-generator";
 import { ensureEl } from "../utils";
 import { C_12 } from "../utils/colorUtils";
@@ -139,18 +141,19 @@ function open() {
   const svgEl = contentEl.querySelector<SVGSVGElement>("#chains-svg");
   if (svgEl) attachGraphInteractions(svgEl, layout);
 
-  $("#productionChainsDialog").dialog({
-    title: "Production Chains",
-    resizable: true,
-    width: dialogSize.width,
+  showDomDialog({
+    content: ensureEl("productionChainsDialog"),
     height: dialogSize.height,
-    position: { my: "center", at: "center", of: window },
-    close: closeProductionChains
+    onClose: closeProductionChains,
+    placement: "center",
+    resizable: true,
+    title: "Production Chains",
+    width: dialogSize.width
   });
 }
 
 function renderDialog(): void {
-  document.getElementById("productionChainsDialog")?.remove();
+  destroyDialog("productionChainsDialog");
   const editorHtml = /* html */ `<div id="productionChainsDialog" class="dialog" style="padding:0">
       <div id="productionChainsContent" style="overflow:auto"></div>
     </div>`;
@@ -158,8 +161,7 @@ function renderDialog(): void {
 }
 
 function closeProductionChains(): void {
-  $("#productionChainsDialog").dialog("destroy");
-  ensureEl("productionChainsDialog").remove();
+  destroyDialog("productionChainsDialog");
 }
 
 function getChainGoods(goods: Good[]): Good[] {

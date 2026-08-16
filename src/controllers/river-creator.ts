@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
@@ -23,11 +24,14 @@ function open(): void {
   creatorCells = [];
   renderDialog();
 
-  $("#riverCreator").dialog({
-    title: "Create River",
+  showDomDialog({
+    content: ensureEl("riverCreator"),
+    onClose: closeRiverCreator,
+    placement: "top-left",
+    placementTarget: document.getElementById("map"),
+    placementOffset: { x: 10, y: 10 },
     resizable: false,
-    position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRiverCreator
+    title: "Create River"
   });
 }
 
@@ -50,7 +54,7 @@ function renderDialog(): void {
 }
 
 function cancelCreation(): void {
-  $("#riverCreator").dialog("close");
+  destroyDialog("riverCreator");
 }
 
 function onBodyClick(ev: Event): void {

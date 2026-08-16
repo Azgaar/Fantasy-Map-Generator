@@ -12,6 +12,7 @@ import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-p
 export interface DomDialogOptions {
   content: HTMLElement;
   destroyOnClose?: boolean;
+  height?: CSSProperties["height"];
   isModal?: boolean;
   onClose?: () => void;
   placementOffset?: WorkspaceDialogOffset;
@@ -59,6 +60,7 @@ function DomDialogView({ options }: { options: DomDialogOptions }): React.JSX.El
     <WorkspaceDialog
       isModal={options.isModal ?? false}
       isOpen
+      height={options.height}
       onClose={() => activeDialogs.get(options.content.id)?.close()}
       placement={options.placement}
       placementOffset={options.placementOffset}
@@ -78,9 +80,10 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
   const activeDialog = activeDialogs.get(id);
   if (activeDialog) {
     activeDialog.update({
+      height: initialOptions.height,
       resizable: initialOptions.resizable,
       title: initialOptions.title,
-      width: typeof initialOptions.width === "string" ? initialOptions.width : undefined
+      width: initialOptions.width
     });
     return activeDialog;
   }
@@ -114,6 +117,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
       if (closed) return;
       options = {
         ...options,
+        height: params.height ?? options.height,
         resizable: params.resizable ?? options.resizable,
         title: params.title ?? options.title,
         width: params.width ?? options.width

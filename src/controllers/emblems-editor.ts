@@ -1,6 +1,7 @@
 import { drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, openURL } from "@/utils";
 import { ensureEl, rn } from "../utils";
@@ -46,13 +47,15 @@ function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): v
 
   updateElementSelectors();
 
-  $("#emblemEditor").dialog({
-    title: "Edit Emblem",
+  showDomDialog({
+    content: ensureEl("emblemEditor"),
+    onClose: closeEmblemEditor,
+    placement: "top-left",
+    placementTarget: document.querySelector("svg"),
+    placementOffset: { x: 10, y: 10 },
     resizable: true,
-    width: "18.2em",
-    height: "auto",
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    close: closeEmblemEditor
+    title: "Edit Emblem",
+    width: "18.2em"
   });
 }
 
@@ -716,8 +719,7 @@ function closeEmblemEditor(): void {
     .selectAll<SVGUseElement, unknown>("use")
     .call(drag<SVGUseElement, unknown>().on("drag", null))
     .attr("class", null);
-  $("#emblemEditor").dialog("destroy");
-  ensureEl("emblemEditor").remove();
+  destroyDialog("emblemEditor");
 }
 
 export const EmblemsEditor = { open, openDefault };

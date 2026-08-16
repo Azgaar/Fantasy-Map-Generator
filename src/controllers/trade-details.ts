@@ -1,4 +1,4 @@
-import { updateDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -8,6 +8,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
@@ -73,16 +74,19 @@ function open(batch: TradeBatch): void {
   tradeDetailsTable.reset();
   highlight(path.points);
 
-  $(`#${dialogId}`).dialog({
-    title: `Trade: ${pack.burgs[batch.startBurgId]?.name} to ${pack.burgs[batch.endBurgId]?.name}`,
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: closeTradeDetails,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    position,
-    close: closeTradeDetails
+    title: `Trade: ${pack.burgs[batch.startBurgId]?.name} to ${pack.burgs[batch.endBurgId]?.name}`,
+    width: "fit-content"
   });
 }
 
 function renderDialog(): void {
-  document.getElementById(dialogId)?.remove();
+  destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         <div id="tradeDetailsSummary" class="totalLine"></div>
@@ -186,8 +190,7 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 
 function closeTradeDetails(): void {
   clearHighlight();
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  destroyDialog(dialogId);
 }
 
 export const TradeDetails = { open };
