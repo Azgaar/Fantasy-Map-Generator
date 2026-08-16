@@ -37,7 +37,7 @@ function open(id: number | string): void {
   showDomDialog({
     content: ensureEl("burgEditor"),
     onClose: closeBurgEditor,
-    placement: "top-left",
+    placement: "top-right",
     placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Edit Burg"

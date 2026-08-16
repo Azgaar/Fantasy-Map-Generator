@@ -34,7 +34,7 @@ function open(markerI?: number, target?: Element): void {
   showDomDialog({
     content: ensureEl("markerEditor"),
     onClose: closeMarkerEditor,
-    placement: "top-left",
+    placement: "top-right",
     placementTarget: document.querySelector("svg"),
     placementOffset: { x: 10, y: 10 },
     resizable: false,

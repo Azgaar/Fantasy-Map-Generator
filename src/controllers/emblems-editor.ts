@@ -50,7 +50,7 @@ function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): v
   showDomDialog({
     content: ensureEl("emblemEditor"),
     onClose: closeEmblemEditor,
-    placement: "top-left",
+    placement: "top-right",
     placementTarget: document.querySelector("svg"),
     placementOffset: { x: 10, y: 10 },
     resizable: true,

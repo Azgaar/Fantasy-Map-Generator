@@ -59,7 +59,7 @@ function open(element: SVGElement): void {
   showDomDialog({
     content: ensureEl("reliefEditor"),
     onClose: closeReliefEditor,
-    placement: "top-left",
+    placement: "top-right",
     placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Edit Relief Icons",

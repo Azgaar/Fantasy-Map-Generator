@@ -41,7 +41,7 @@ function open(id: string): void {
   showDomDialog({
     content: ensureEl("routeEditor"),
     onClose: closeRouteEditor,
-    placement: "top-left",
+    placement: "top-right",
     placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Edit Route"

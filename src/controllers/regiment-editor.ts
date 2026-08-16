@@ -33,7 +33,7 @@ function editRegiment(selector: string): void {
   showDomDialog({
     content: ensureEl("regimentEditor"),
     onClose: closeEditor,
-    placement: "top-left",
+    placement: "top-right",
     placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Edit Regiment"
