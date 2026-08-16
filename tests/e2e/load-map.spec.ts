@@ -84,7 +84,7 @@ test.describe("Map loading", () => {
 
     // Get the file input element and upload the map file
     const fileInput = page.locator("#mapToLoad");
-    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
     // Wait for map to be fully loaded
@@ -139,7 +139,7 @@ test.describe("Map loading", () => {
     });
 
     const fileInput = page.locator("#mapToLoad");
-    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
@@ -191,7 +191,7 @@ test.describe("Map loading", () => {
     });
 
     const fileInput = page.locator("#mapToLoad");
-    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
@@ -227,11 +227,10 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  // demo.map is v1.112.1 and stores its ruler in the legacy data[33] string
-  // ("Ruler: 417,206 1097,158"), which the v1.138.0 migration moves to pack.measurers
+  // 1.112.1.map stores its ruler in the legacy data[33] string
   test("legacy rulers should migrate to pack.measurers", async ({ page }) => {
     const fileInput = page.locator("#mapToLoad");
-    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
@@ -249,11 +248,11 @@ test.describe("Map loading", () => {
     ]);
   });
 
-  // demo.map wraps its fogging layer into the pre-1.143 masked #fogging-cont container. Unwrapping it must
+  // 1.112.1.map wraps its fogging layer into the pre-1.143 masked #fogging-cont container. Unwrapping it must
   // leave the layer in its own slot — right before the ruler — not at the end of the z-order
   test("legacy fogging container should be unwrapped in place", async ({ page }) => {
     const fileInput = page.locator("#mapToLoad");
-    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
@@ -438,7 +437,7 @@ test.describe("Map loading", () => {
     });
 
     const fileInput = page.locator("#mapToLoad");
-    const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
+    const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
     await fileInput.setInputFiles(mapFilePath);
 
     await page.waitForFunction(() => (window as any).mapId !== undefined, {
