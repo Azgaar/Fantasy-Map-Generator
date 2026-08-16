@@ -425,16 +425,17 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[48]) style = JSON.parse(data[48]);
 
     {
-      // normalize the file first: the layers are restored from data the migrations have already brought up to date
-      const { resolveVersionConflicts, restoreLayers } = await import("./auto-update");
+      const { resolveVersionConflicts } = await import("./auto-update");
       resolveVersionConflicts(mapVersion!, data);
-      restoreLayers(mapVersion!, data);
     }
+
+    if (data[50]) Layers.restore(JSON.parse(data[50]));
 
     Goods.sync();
     Markets.sync();
     Routes.sync();
     TradeAnimation.sync();
+
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
       .on("click", () => window.Controllers.UnitsEditor.open());
@@ -700,12 +701,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
+
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);
     // draw the layers whose content is not kept in the svg, now that the restored state says which are on
     Layers.draw("rulers", "grid", "labels", "relief");
-    if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
-    focusOn(); // based on searchParams focus on point, cell or burg
+
+    applyDefaultViewboxEvents();
+    focusOn();
     invokeActiveZooming();
     fitMapToScreen();
 

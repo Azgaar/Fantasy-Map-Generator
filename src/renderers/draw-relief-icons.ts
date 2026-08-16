@@ -38,13 +38,6 @@ export function removeRelief(): void {
   document.querySelector("#terrain")?.replaceChildren();
 }
 
-export const setReliefLayerActive = (isActive: boolean): void => {
-  const terrainEl = document.querySelector<SVGAElement>("#terrain");
-  if (!terrainEl) return;
-  terrainEl.style.display = isActive ? "" : "none";
-  if (!terrainEl.getAttribute("style")) terrainEl.removeAttribute("style");
-};
-
 function reconcileRelief(context: ViewportRenderContext): void {
   const terrain = context.root.querySelector("#terrain");
   if (!terrain) return;

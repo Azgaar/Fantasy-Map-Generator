@@ -1,3 +1,4 @@
+import type { LayerId } from "@/renderers/layers/layers";
 import type { Point } from "@/types/global";
 
 export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
@@ -15,7 +16,7 @@ export interface LabelGroup {
   name: string;
   type: LabelType;
   active?: boolean; // defaults to true
-  layerDependency?: string | null;
+  layerDependency?: LayerId | null;
   zoom: LabelZoomBounds;
   mode?: LabelNameMode; // defaults to "auto"
   isDefault?: boolean; // if group is a default (fallback) group for its type

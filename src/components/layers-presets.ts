@@ -1,9 +1,8 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
 import { Layers } from "@/renderers/layers/layers";
-import { toCanonicalLayerId } from "@/services/io/legacy-layer-ids";
 import { ensureEl } from "@/utils";
 import { confirmationDialog } from "./dialog/dialog-helpers";
-import { BUTTONS } from "./layers-tab";
+import { LAYER_TOGGLES } from "./layers-tab";
 
 const DEFAULT_PRESETS: Record<string, string[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
@@ -44,27 +43,24 @@ const DEFAULT_PRESETS: Record<string, string[]> = {
   landmass: ["scaleBar"]
 };
 
-const presets = restoreCustomPresets();
+const presets: Record<string, string[]> = { ...DEFAULT_PRESETS };
+restoreCustomPresets();
 
-// a preset lists the layers the user can toggle from the tab. Layers driven by the map itself — fogging follows
-// the state focus — are never part of one, so they must not be compared against it or saved into it
-const activeUserLayers = (): string[] =>
-  Layers.all
-    .filter(layer => BUTTONS.has(layer.id) && Layers.isOn(layer.id))
-    .map(layer => layer.id)
-    .sort();
-
-function restoreCustomPresets(): Record<string, string[]> {
+/**
+ * Custom presets are stored in localStorage as plain layer ids. A preset naming a layer this build does not
+ * have — one saved before 1.144 renamed the ids, or against a layer since removed — is dropped rather than
+ * repaired: the registry is the vocabulary, and a half-understood preset is worse than recreating it
+ */
+function restoreCustomPresets(): void {
   const stored: Record<string, string[]> | null = JSON.parse(localStorage.getItem("presets") || "null");
-  if (!stored) return { ...DEFAULT_PRESETS };
+  if (!stored) return;
 
   for (const name in stored) {
-    stored[name] = stored[name].map(toCanonicalLayerId); // presets saved before 1.144 hold toggle* button ids
+    if (!stored[name].every(id => Layers.has(id))) continue;
+
+    presets[name] = stored[name];
     if (!DEFAULT_PRESETS[name]) ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name));
   }
-
-  localStorage.setItem("presets", JSON.stringify(stored));
-  return stored;
 }
 
 /** run on map generation: the layers are drawn right after, so the state is applied without drawing */
@@ -92,7 +88,11 @@ function savePreset(): void {
       const name = ensureEl<HTMLInputElement>("layersPresetName").value.trim();
       if (!name) return;
 
-      presets[name] = activeUserLayers();
+      const activeUserLayers = Layers.all
+        .filter(layer => LAYER_TOGGLES.has(layer.id) && Layers.isOn(layer.id))
+        .map(layer => layer.id);
+
+      presets[name] = activeUserLayers;
       ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name, false, true));
       localStorage.setItem("presets", JSON.stringify(presets));
       localStorage.setItem("preset", name);
@@ -118,10 +118,12 @@ function removePreset(): void {
   localStorage.removeItem("preset");
 }
 
-/** highlight the preset matching the current layers, run on every layers change */
 function highlightCurrentPreset(): void {
-  const active = activeUserLayers().join(",");
-  const current = Object.keys(presets).find(name => [...presets[name]].sort().join(",") === active);
+  const asSet = (ids: readonly string[]): string => [...ids].sort().join(",");
+  const active = asSet(
+    Layers.all.filter(layer => LAYER_TOGGLES.has(layer.id) && Layers.isOn(layer.id)).map(layer => layer.id)
+  );
+  const current = Object.keys(presets).find(name => asSet(presets[name]) === active);
 
   ensureEl<HTMLSelectElement>("layersPreset").value = current ?? "custom";
   ensureEl("removePresetButton").style.display = current && !DEFAULT_PRESETS[current] ? "inline-block" : "none";
@@ -135,6 +137,7 @@ ensureEl<HTMLSelectElement>("layersPreset").addEventListener("change", event => 
 });
 ensureEl("savePresetButton").addEventListener("click", savePreset);
 ensureEl("removePresetButton").addEventListener("click", removePreset);
+
 Layers.subscribe(highlightCurrentPreset);
 
 declare global {

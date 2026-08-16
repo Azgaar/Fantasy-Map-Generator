@@ -160,8 +160,10 @@ Decisions:
   already present in `src/index.html`, and is not the registry's business.
 - **`draw` receives its own layer**, so a renderer never needs to import the layer constant it
   belongs to (see _Import cycles_ under Further Notes).
-- **No layer gets a bespoke `draw` closure.** Emblems keep their content when off
-  (`keepContent`).
+- **No layer gets a bespoke `draw` closure.** Emblems keep their content when off (`keepContent`);
+  ice does not — its shapes are regenerated from `pack.ice` on every show.
+- **`draw` is idempotent.** The registry redraws an active layer whenever anything upstream changes
+  (a style preset calls `drawAll`), so a renderer replaces its content rather than appending to it.
 
 ### Registry
 
@@ -233,6 +235,9 @@ Decisions:
 - **`restore` never draws.** A loaded map's SVG already contains the rendered content; redrawing it
   would be both slow and wrong (it would regenerate data the file already carries). This is the one
   hard behavioural distinction in the API and is why `restore` and `set` are separate methods.
+- **`permanent` is the only exemption from `set`.** A preset lists the layers the user toggles; a
+  layer the map itself drives — `fogging` follows the state focus — must survive a preset change, so
+  it is registered as permanent and its renderer, not its visibility, carries the state.
 - **`sortBy` tolerates both directions of version skew**: ids in the file that this build doesn't
   know are ignored; layers this build has that the file lacks slot in after their registration-order
   predecessor via a fractional rank.
@@ -276,7 +281,9 @@ This deletes 32 `else if` branches and the entire `<li>` block in `src/index.htm
 
 ### Presets
 
-Presets stay arrays of layer ids in localStorage; only the application path changes.
+Presets stay arrays of layer ids in localStorage; only the application path changes. A stored preset is loaded
+only if every id in it is a layer this build has (`Layers.has`); one that names an unknown id is dropped, and
+the user recreates it. Presets are cheap to rebuild, so they are not worth a migration path of their own.
 
 ```ts
 export function applyPreset(name: string): void {
@@ -287,8 +294,7 @@ const currentPreset = (): string | undefined =>
   Object.keys(presets).find(name => sameSet(presets[name], Layers.state.active));
 ```
 
-Stored presets from before the change hold `toggle*` ids; they are remapped once on read with the
-same table the map migration uses (see below) and re-saved with canonical ids.
+Stored presets from before the change hold `toggle*` ids, so they fail that check and are dropped.
 
 ### Persistence
 
@@ -301,15 +307,24 @@ const layers = JSON.stringify(Layers.state); // {order: string[], active: string
 
 ```ts
 // load.ts — replaces the 30-line heuristic block at load.ts:504
-restoreLayers(mapVersion, data);
+if (data[50]) Layers.restore(JSON.parse(data[50]));
 ```
+
+The loader knows one format. A file that predates `data[50]` gets the slot filled in by the migration, so
+there is no "legacy or not" fork on the load path.
 
 ### Migration
 
-All legacy compatibility lives in `src/services/io/auto-update.ts` and nowhere else.
+All legacy compatibility lives in `src/services/io/auto-update.ts` and nowhere else. `LEGACY_LAYER_IDS` is
+module-private there, used only to bring a loaded `.map` file up to date — the label groups' `layerDependency`.
 
-`LEGACY_LAYER_IDS` is exported as _data_ (not logic) for the one-time localStorage preset remap, which
-is not map-file state and therefore cannot be version-gated inside this function.
+The `isOlderThan("1.144.0")` block also **writes `data[50]`**: it unwraps `#fogging-cont`, reads each layer's
+old "am I on?" signal out of the svg, takes the order from the document, and stores the result in the slot the
+loader reads. Recovering the state is a one-time format upgrade like every other migration, not a second code
+path in `load.ts`.
+
+Nothing outside that module translates a legacy id. localStorage presets are the one other place the old
+vocabulary could surface, and they are validated against the registry rather than migrated (see _Presets_).
 
 ### Consumers
 
@@ -376,8 +391,8 @@ Four steps; the first three are independently shippable and each leaves the app 
 2. **UI.** Layers tab component and `BUTTONS`; hotkeys through the same table. Delete the `<li>`
    markup in `index.html`, the `toggleX` functions, `getLayer()`, `turnButton*`, and the hotkey chain.
    Presets and the heightmap editor move onto `set`.
-3. **Persistence.** `data[50]` in save/load, `restoreLayers` in `auto-update.ts` (including the fogging
-   unwrap), delete the load heuristics. Bump `VERSION` to 1.144.0.
+3. **Persistence.** `data[50]` in save/load, and the 1.144 migration recovering it for older files (including
+   the fogging unwrap); delete the load heuristics. Bump `VERSION` to 1.144.0.
 4. **Cleanup.** Convert the remaining `layerIsOn` call sites to ids, delete
    `public/modules/ui/layers.js` (moving its ~10 surviving `drawX` functions into `src/renderers/`),
    route direct `drawX()` calls in controllers through `Layers.draw(id)`, and drop the `window.drawX`
@@ -423,7 +438,9 @@ none` is the state carrier and is written before `erase` runs, so anything an `e
 - **Saved file size.** Layers that keep their content when off already behaved this way; the uniform `display: none` rule does not add content to
   saved files, because layers that erase still erase.
 - **`#fogging-cont` is unwrapped** so that every layer's toggled node is its own root — the last
-  "toggled node ≠ layer root" special case in the system.
+  "toggled node ≠ layer root" special case in the system. The unwrapped `#fogging` is a permanent
+  layer whose renderer projects the `#fog` mask: two rects while an area is revealed, empty otherwise.
+  `fog`/`unfog` edit the mask and call `Layers.draw("fogging")`; nothing shows or hides the group.
 - **Why a registry rather than a base class.** `draw`/`erase` is the entire contract, and the two
   renderer families (eager and viewport) satisfy it differently without sharing implementation. A
   class hierarchy would add a vocabulary without removing a decision.

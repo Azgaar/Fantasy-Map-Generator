@@ -11,7 +11,7 @@ interface LayerButton {
 }
 
 // only layers listed here get a button, in registry order
-export const BUTTONS = new Map<LayerId, LayerButton>([
+export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["texture", { label: "Te<u>x</u>ture", shortcut: "KeyX" }],
   ["heightmap", { label: "<u>H</u>eightmap", shortcut: "KeyH" }],
   ["lakes", { label: "Lakes", shortcut: "KeyQ" }],
@@ -47,12 +47,12 @@ export const BUTTONS = new Map<LayerId, LayerButton>([
 ]);
 
 export const getLayerByShortcut = (code: string): LayerId | undefined =>
-  [...BUTTONS].find(([, button]) => button.shortcut === code)?.[0];
+  [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
 
 function render(): void {
   ensureEl("mapLayers").replaceChildren(
     ...Layers.all.flatMap(layer => {
-      const button = BUTTONS.get(layer.id);
+      const button = LAYER_TOGGLES.get(layer.id);
       if (!button) return [];
 
       const item = document.createElement("li");

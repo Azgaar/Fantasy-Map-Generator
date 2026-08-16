@@ -74,14 +74,9 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "#") Controllers.MarkerCreator.toggle();
   else if (key === "$") Controllers.RiverAutoCreator.toggle();
   else if (key === "%") Controllers.RouteCreator.open();
-  // rulers are not toggled in customization mode, [ resizes the brush when a size input is focused
-  else if (
-    layer &&
-    !(code === "Equal" && customization) &&
-    !(code === "BracketLeft" && handleBracketSizeChange(code))
-  ) {
-    Layers.toggle(layer);
-  } else if (code === "BracketRight") handleBracketSizeChange(code);
+  else if (code === "BracketRight") handleBracketSizeChange(code);
+  else if (code === "BracketLeft" && handleBracketSizeChange(code)) return;
+  else if (layer && !(code === "Equal" && customization)) Layers.toggle(layer);
   else if (code === "ArrowLeft") panMap(10, 0);
   else if (code === "ArrowRight") panMap(-10, 0);
   else if (code === "ArrowUp") panMap(0, 10);

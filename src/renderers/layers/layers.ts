@@ -9,7 +9,6 @@ import { drawCompass } from "../draw-compass";
 import { drawCoordinates } from "../draw-coordinates";
 import { drawCultures } from "../draw-cultures";
 import { drawEmblems } from "../draw-emblems";
-import { drawFogging } from "../draw-fogging";
 import { drawGoods } from "../draw-goods";
 import { drawGrid } from "../draw-grid";
 import { drawHeightmap } from "../draw-heightmap";
@@ -36,11 +35,12 @@ import { drawVignette } from "../draw-vignette";
 import { drawZones } from "../draw-zones";
 import { drawLabels, removeLabels } from "../labels/labels-renderer";
 import { drawOceanLayers, removeOceanLayers } from "../ocean-layers";
+import { drawFogging } from "../overlays/fogging";
 import { tradeAnimation } from "../trade-animation";
 
 interface LayerParams<Id extends string = string> {
   id: Id; // canonical identity, persisted in the .map file
-  element: string; // id of the svg group holding the layer content
+  element?: string; // id of the svg group holding the layer content
   parent: "viewbox" | "map"; // id of the svg element the layer group is appended to
   children?: string[]; // sub-groups created inside the layer group and preserved when the content is erased
   attrs?: Record<string, string>; // static attributes applied to the layer group
@@ -64,7 +64,7 @@ export class Layer<Id extends string = string> {
   /** the registry reads `params`; consumers use the fields above and `getEl()` */
   constructor(readonly params: LayerParams<Id>) {
     this.id = params.id;
-    this.elementId = params.element;
+    this.elementId = params.element ?? params.id;
     this.parent = params.parent;
   }
 
@@ -84,12 +84,12 @@ export class LayersRegistry<Id extends string = string> {
   /** create missing layer groups, order them by registration order and apply the current state */
   init(): void {
     for (const layer of this.layers) {
-      const { parent, element, children, attrs } = layer.params;
+      const { parent, id, element, children, attrs } = layer.params;
 
-      let group = findEl<SVGGElement>(element);
+      let group = findEl<SVGGElement>(element ?? id);
       if (!group) {
         group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.id = element;
+        group.id = element ?? id;
       }
       for (const [name, value] of Object.entries(attrs ?? {})) group.setAttribute(name, value);
       ensureEl(parent).append(group);
@@ -253,7 +253,6 @@ export class LayersRegistry<Id extends string = string> {
 const mapLayers = [
   new Layer({
     id: "ocean",
-    element: "ocean",
     parent: "viewbox",
     children: ["oceanLayers", "oceanPattern"],
     permanent: true,
@@ -261,18 +260,8 @@ const mapLayers = [
     draw: drawOceanLayers,
     erase: removeOceanLayers
   }),
-
-  new Layer({
-    id: "landmass",
-    element: "landmass",
-    parent: "viewbox",
-    permanent: true,
-    keepContent: true,
-    draw: drawLandmass
-  }),
-
+  new Layer({ id: "landmass", parent: "viewbox", permanent: true, keepContent: true, draw: drawLandmass }),
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
-
   new Layer({
     id: "heightmap",
     element: "terrs",
@@ -280,34 +269,22 @@ const mapLayers = [
     children: ["oceanHeights", "landHeights"],
     draw: drawHeightmap
   }),
-
   new Layer({
     id: "lakes",
-    element: "lakes",
     parent: "viewbox",
     children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
     keepContent: true,
     draw: drawLakes
   }),
-
-  new Layer({ id: "biomes", element: "biomes", parent: "viewbox", draw: drawBiomes }),
-
-  new Layer({ id: "cells", element: "cells", parent: "viewbox", draw: drawCells }),
-
+  new Layer({ id: "biomes", parent: "viewbox", draw: drawBiomes }),
+  new Layer({ id: "cells", parent: "viewbox", draw: drawCells }),
   new Layer({ id: "grid", element: "gridOverlay", parent: "viewbox", draw: drawGrid }),
-
-  new Layer({ id: "coordinates", element: "coordinates", parent: "viewbox", draw: drawCoordinates }),
-
-  new Layer({ id: "compass", element: "compass", parent: "viewbox", keepContent: true, draw: drawCompass }),
-
-  new Layer({ id: "rivers", element: "rivers", parent: "viewbox", draw: drawRivers }),
-
+  new Layer({ id: "coordinates", parent: "viewbox", draw: drawCoordinates }),
+  new Layer({ id: "compass", parent: "viewbox", keepContent: true, draw: drawCompass }),
+  new Layer({ id: "rivers", parent: "viewbox", draw: drawRivers }),
   new Layer({ id: "relief", element: "terrain", parent: "viewbox", draw: drawRelief, erase: removeRelief }),
-
   new Layer({ id: "religions", element: "relig", parent: "viewbox", draw: drawReligions }),
-
   new Layer({ id: "cultures", element: "cults", parent: "viewbox", draw: drawCultures }),
-
   new Layer({
     id: "states",
     element: "regions",
@@ -315,51 +292,22 @@ const mapLayers = [
     children: ["statesBody", "statesHalo"],
     draw: drawStates
   }),
-
   new Layer({ id: "provinces", element: "provs", parent: "viewbox", draw: drawProvinces }),
-
-  new Layer({ id: "zones", element: "zones", parent: "viewbox", draw: drawZones }),
-
-  new Layer({
-    id: "borders",
-    element: "borders",
-    parent: "viewbox",
-    children: ["stateBorders", "provinceBorders"],
-    draw: drawBorders
-  }),
-
-  new Layer({
-    id: "routes",
-    element: "routes",
-    parent: "viewbox",
-    children: ["roads", "trails", "searoutes"],
-    draw: drawRoutes
-  }),
-
-  new Layer({ id: "temperature", element: "temperature", parent: "viewbox", draw: drawTemperature }),
-
+  new Layer({ id: "zones", parent: "viewbox", draw: drawZones }),
+  new Layer({ id: "borders", parent: "viewbox", children: ["stateBorders", "provinceBorders"], draw: drawBorders }),
+  new Layer({ id: "routes", parent: "viewbox", children: ["roads", "trails", "searoutes"], draw: drawRoutes }),
+  new Layer({ id: "temperature", parent: "viewbox", draw: drawTemperature }),
   new Layer({
     id: "coastline",
-    element: "coastline",
     parent: "viewbox",
     children: ["sea_island", "lake_island"],
     permanent: true,
     keepContent: true,
     draw: drawCoastline
   }),
-
-  new Layer({ id: "ice", element: "ice", parent: "viewbox", draw: drawIce }),
-
-  new Layer({
-    id: "goods",
-    element: "goods",
-    parent: "viewbox",
-    children: ["goodsCells", "goodsIcons", "goodsBurgs"],
-    draw: drawGoods
-  }),
-
-  new Layer({ id: "markets", element: "markets", parent: "viewbox", draw: drawMarkets }),
-
+  new Layer({ id: "ice", parent: "viewbox", draw: drawIce }),
+  new Layer({ id: "goods", parent: "viewbox", children: ["goodsCells", "goodsIcons", "goodsBurgs"], draw: drawGoods }),
+  new Layer({ id: "markets", parent: "viewbox", draw: drawMarkets }),
   new Layer({
     id: "trade",
     element: "tradeAnimation",
@@ -368,26 +316,15 @@ const mapLayers = [
     draw: () => tradeAnimation.start(),
     erase: () => tradeAnimation.stop()
   }),
-
   new Layer({ id: "precipitation", element: "prec", parent: "viewbox", draw: drawPrecipitation }),
-
-  new Layer({
-    id: "population",
-    element: "population",
-    parent: "viewbox",
-    children: ["rural", "urban"],
-    draw: drawPopulation
-  }),
-
+  new Layer({ id: "population", parent: "viewbox", children: ["rural", "urban"], draw: drawPopulation }),
   new Layer({
     id: "emblems",
-    element: "emblems",
     parent: "viewbox",
     children: ["burgEmblems", "provinceEmblems", "stateEmblems"],
     keepContent: true,
     draw: drawEmblems
   }),
-
   new Layer({
     id: "burgIcons",
     element: "icons",
@@ -395,45 +332,27 @@ const mapLayers = [
     children: ["burgIcons", "anchors"],
     draw: drawBurgIcons
   }),
-
   new Layer({
     id: "labels",
-    element: "labels",
     parent: "viewbox",
     attrs: { "font-size": "100px" },
     draw: drawLabels,
     erase: removeLabels
   }),
-
   new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary }),
-
-  new Layer({ id: "markers", element: "markers", parent: "viewbox", draw: drawMarkers }),
-
-  new Layer({
-    id: "fogging",
-    element: "fogging",
-    parent: "viewbox",
-    attrs: { mask: "url(#fog)" },
-    keepContent: true,
-    draw: drawFogging
-  }),
-
+  new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
+  new Layer({ id: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, permanent: true, draw: drawFogging }),
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
-
-  new Layer({ id: "debug", element: "debug", parent: "viewbox", permanent: true, keepContent: true }),
-
-  new Layer({ id: "scaleBar", element: "scaleBar", parent: "map", draw: () => drawScaleBar(), erase: removeScaleBar }),
-
+  new Layer({ id: "debug", parent: "viewbox", permanent: true, keepContent: true }),
+  new Layer({ id: "scaleBar", parent: "map", draw: () => drawScaleBar(), erase: removeScaleBar }),
   new Layer({
     id: "vignette",
-    element: "vignette",
     parent: "map",
     attrs: { mask: "url(#vignette-mask)" },
     keepContent: true,
     draw: drawVignette
   }),
-
-  new Layer({ id: "legend", element: "legend", parent: "map", permanent: true, keepContent: true, draw: redrawLegend })
+  new Layer({ id: "legend", parent: "map", permanent: true, keepContent: true, draw: redrawLegend })
 ];
 
 export type LayerId = (typeof mapLayers)[number]["id"];
