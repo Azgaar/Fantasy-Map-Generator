@@ -1,8 +1,8 @@
 import type { Selection } from "d3";
 import { select } from "d3";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
-import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {

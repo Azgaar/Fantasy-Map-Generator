@@ -1,6 +1,6 @@
 // Fogging: dim everything outside the focused area by punching its shape out of the fog overlay
 import { easeSinInOut, select, transition } from "d3";
-import { type Layer, Layers } from "@/renderers/layers/layers";
+import { type Layer, Layers } from "@/components/layers";
 
 const FADE_DURATION = 2000;
 const fadeIn = () => transition().duration(FADE_DURATION).ease(easeSinInOut);

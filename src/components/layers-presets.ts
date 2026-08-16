@@ -1,7 +1,7 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
-import { type LayerId, Layers } from "@/renderers/layers/layers";
 import { ensureEl } from "@/utils";
 import { confirmationDialog } from "./dialog/dialog-helpers";
+import type { LayerId } from "./layers";
 import { LAYER_TOGGLES } from "./layers-tab";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {

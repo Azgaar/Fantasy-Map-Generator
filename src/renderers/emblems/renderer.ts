@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/components/layers";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";

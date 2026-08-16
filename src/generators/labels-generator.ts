@@ -1,4 +1,4 @@
-import type { LayerId } from "@/renderers/layers/layers";
+import type { LayerId } from "@/components/layers";
 import type { Point } from "@/types/global";
 
 export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;

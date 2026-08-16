@@ -1,4 +1,4 @@
-import type { Layer } from "./layers/layers";
+import type { Layer } from "@/components/layers";
 
 export function drawLakes(layer: Layer): void {
   const uses: Record<string, string[]> = {};

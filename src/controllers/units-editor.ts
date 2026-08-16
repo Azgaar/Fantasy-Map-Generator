@@ -1,5 +1,5 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/components/layers";
 import { lock, unlock } from "@/utils/preferences";
 import { ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";

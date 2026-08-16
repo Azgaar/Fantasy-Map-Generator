@@ -1,12 +1,12 @@
 // Update an old map file to the current version
 import { color, min, select } from "d3";
+import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { Layers, type LayersState } from "@/renderers/layers/layers";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -1509,11 +1509,43 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
   if (isOlderThan("1.144.0")) {
     // v1.144.0 replaced the toggleLayer ids with layer ids
+    const LAYER_ID_MAP: Record<string, LayerId> = {
+      toggleTexture: "texture",
+      toggleHeight: "heightmap",
+      toggleLakes: "lakes",
+      toggleBiomes: "biomes",
+      toggleCells: "cells",
+      toggleGrid: "grid",
+      toggleCoordinates: "coordinates",
+      toggleCompass: "compass",
+      toggleRivers: "rivers",
+      toggleRelief: "relief",
+      toggleReligions: "religions",
+      toggleCultures: "cultures",
+      toggleStates: "states",
+      toggleProvinces: "provinces",
+      toggleZones: "zones",
+      toggleBorders: "borders",
+      toggleRoutes: "routes",
+      toggleTemperature: "temperature",
+      toggleIce: "ice",
+      toggleGoods: "goods",
+      toggleMarketsLayer: "markets",
+      toggleTrade: "trade",
+      togglePrecipitation: "precipitation",
+      togglePopulation: "population",
+      toggleEmblems: "emblems",
+      toggleBurgIcons: "burgIcons",
+      toggleLabels: "labels",
+      toggleMilitary: "military",
+      toggleMarkers: "markers",
+      toggleRulers: "rulers",
+      toggleScaleBar: "scaleBar",
+      toggleVignette: "vignette"
+    };
     for (const group of options.labels?.groups ?? []) {
-      if (group.layerDependency) {
-        const layer = group.layerDependency.replace("toggle", "").toLowerCase();
-        if (Layers.has(layer)) group.layerDependency = layer;
-      }
+      const layer = group.layerDependency && LAYER_ID_MAP[group.layerDependency];
+      if (layer) group.layerDependency = layer;
     }
 
     // v1.144.0 moved the layers state into data[50]

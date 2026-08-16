@@ -10,10 +10,10 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
-import { Layers } from "@/renderers/layers/layers";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
 

@@ -1,10 +1,10 @@
 import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
 import { getFeaturePath } from "@/renderers/feature-path";
-import { Layers } from "@/renderers/layers/layers";
 import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 

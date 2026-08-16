@@ -1,10 +1,10 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
 import { clearEmblems } from "@/renderers/draw-emblems";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
-import { Layers } from "@/renderers/layers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 

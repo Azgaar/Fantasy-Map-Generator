@@ -1,5 +1,5 @@
 // Layers tab: a projection of the Layers registry. Holds the only mapping between a layer and its button.
-import { type LayerId, Layers } from "@/renderers/layers/layers";
+import { type LayerId, Layers } from "@/components/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";

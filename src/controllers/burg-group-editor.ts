@@ -1,7 +1,7 @@
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { Layers } from "@/renderers/layers/layers";
 import type { BurgGroup } from "@/types/burg-groups";
 import { ensureEl } from "../utils";
 

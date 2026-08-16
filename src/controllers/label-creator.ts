@@ -1,9 +1,9 @@
 import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { createLabelArc } from "@/renderers/labels/label-arc";
-import { Layers } from "@/renderers/layers/layers";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {

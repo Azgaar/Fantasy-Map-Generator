@@ -1,11 +1,11 @@
 import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
 import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
 import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
-import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { ReliefSet } from "@/types/relief";
 import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";

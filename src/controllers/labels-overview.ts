@@ -8,13 +8,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
 import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
-import { Layers } from "@/renderers/layers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, findEl } from "@/utils";
 

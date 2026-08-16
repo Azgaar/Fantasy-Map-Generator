@@ -1,6 +1,6 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
+import { Layers } from "@/components/layers";
 import { redrawEmblemGroup } from "@/renderers/draw-emblems";
-import { Layers } from "@/renderers/layers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";

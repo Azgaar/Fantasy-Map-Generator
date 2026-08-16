@@ -1,6 +1,6 @@
+import { Layers } from "@/components/layers";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
-import { Layers } from "@/renderers/layers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { getLabelsData } from "./label-data";
 import { renderLabelGroups } from "./label-groups";

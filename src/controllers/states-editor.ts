@@ -12,6 +12,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -19,7 +20,6 @@ import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { clearEmblems } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { Layers } from "@/renderers/layers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";

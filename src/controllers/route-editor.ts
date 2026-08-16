@@ -1,9 +1,9 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
-import { Layers } from "@/renderers/layers/layers";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 

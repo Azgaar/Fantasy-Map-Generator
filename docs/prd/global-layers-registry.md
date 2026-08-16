@@ -306,7 +306,6 @@ const layers = JSON.stringify(Layers.state); // {order: string[], active: string
 ```
 
 ```ts
-// load.ts — replaces the 30-line heuristic block at load.ts:504
 if (data[50]) Layers.restore(JSON.parse(data[50]));
 ```
 
@@ -315,16 +314,8 @@ there is no "legacy or not" fork on the load path.
 
 ### Migration
 
-All legacy compatibility lives in `src/services/io/auto-update.ts` and nowhere else. `LEGACY_LAYER_IDS` is
-module-private there, used only to bring a loaded `.map` file up to date — the label groups' `layerDependency`.
-
-The `isOlderThan("1.144.0")` block also **writes `data[50]`**: it unwraps `#fogging-cont`, reads each layer's
-old "am I on?" signal out of the svg, takes the order from the document, and stores the result in the slot the
-loader reads. Recovering the state is a one-time format upgrade like every other migration, not a second code
-path in `load.ts`.
-
-Nothing outside that module translates a legacy id. localStorage presets are the one other place the old
-vocabulary could surface, and they are validated against the registry rather than migrated (see _Presets_).
+All legacy compatibility lives in `src/services/io/auto-update.ts` and nowhere else. `LAYER_ID_MAP` is
+module-private there, used only to bring a loaded `.map` file up to date. The `isOlderThan("1.144.0")` block also **writes `data[50]`**:
 
 ### Consumers
 

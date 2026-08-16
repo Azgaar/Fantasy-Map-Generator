@@ -1,8 +1,8 @@
 import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
-import { Layers } from "@/renderers/layers/layers";
 
 function toggle(): void {
   if (document.getElementById("addRiver")?.classList.contains("pressed")) {

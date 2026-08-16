@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { Layers } from "@/renderers/layers/layers";
+import { Layers } from "@/components/layers";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {

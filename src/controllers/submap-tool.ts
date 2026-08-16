@@ -1,6 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { Resample } from "@/generators/resample";
-import { Layers } from "@/renderers/layers/layers";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 

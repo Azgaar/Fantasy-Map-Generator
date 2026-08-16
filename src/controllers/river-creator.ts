@@ -1,10 +1,10 @@
 import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];

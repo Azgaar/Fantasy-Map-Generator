@@ -1,9 +1,9 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
-import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;

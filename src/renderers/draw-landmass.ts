@@ -1,6 +1,6 @@
+import type { Layer } from "@/components/layers";
 import { ensureEl } from "@/utils";
 import { getFeaturePath } from "./feature-path";
-import type { Layer } from "./layers/layers";
 
 /**
  * The landmass is a plain rect shown through the land mask. The layer also owns the shared feature

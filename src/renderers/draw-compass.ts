@@ -1,4 +1,4 @@
-import { type Layer, Layers } from "./layers/layers";
+import { type Layer, Layers } from "@/components/layers";
 
 export function drawCompass(layer: Layer): void {
   const compass = layer.getEl();

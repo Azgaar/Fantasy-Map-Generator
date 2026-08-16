@@ -1,7 +1,7 @@
 import type * as THREE from "three";
+import { Layers } from "@/components/layers";
 import type { Burg } from "@/generators/burgs-generator";
 import type { State } from "@/generators/states-generator";
-import { Layers } from "@/renderers/layers/layers";
 import { Services } from "@/services";
 import { downloadFile, getFileName } from "@/utils";
 import { timeOfDayPresets } from "../data/view-3d-options";

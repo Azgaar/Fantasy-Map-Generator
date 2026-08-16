@@ -1,5 +1,6 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -10,7 +11,6 @@ import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
-import { Layers } from "@/renderers/layers/layers";
 import { speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 

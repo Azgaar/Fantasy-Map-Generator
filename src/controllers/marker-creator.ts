@@ -1,9 +1,9 @@
 import { pointer, select } from "d3";
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarker } from "@/renderers/draw-markers";
-import { Layers } from "@/renderers/layers/layers";
 import { ensureEl, findEl, rn } from "@/utils";
 
 function toggle(baseMarker?: Marker): void {

@@ -324,9 +324,9 @@ app-shell lifecycle, static content, and shared helpers.
 | `src/generators/`  | Model       | procedural generators & domain logic                 |
 | `src/renderers/`   | View        | code that draws SVG / WebGL layers                   |
 | `src/controllers/` | Controller  | transient editors, tools, dialogs, panels, overviews |
-| `src/services/`    | —           | app-shell & platform infra                           |
+| `src/components/`  | Application | application state and reusable UI                    |
 | `src/data/`        | —           | static content / reference data                      |
-| `src/components/`  | UI (shared) | reusable UI: web components, static UI elements      |
+| `src/services/`    | —           | app-shell & platform infra                           |
 | `src/utils/`       | —           | pure helpers: no ambient state, min 2 consumers      |
 | `src/types/`       | Shape       | shared TypeScript interfaces / domain models         |
 
@@ -348,25 +348,17 @@ state**._ A controller does **not** hold pure static data, services, or serializ
 
 ## What a "component" is
 
-`src/components/` holds UI that is **not owned by one editor**. Four kinds:
+`src/components/` holds Application state and UI that is **not owned by one editor**. Four kinds:
 
+- **Application state** — statefull application-level modules, active layers and their order,
+  viewport zoom and position.
 - **Web components** — reusable custom elements with no map knowledge (`fill-box`,
   `slider-input`).
 - **App-level UI** — dialogs and widgets that are opened over the map but say nothing about it:
   the About dialog (`app-info`). They have a controller's lifecycle but not a controller's
   subject, so they live here and load with the shell.
-- **`dialog/` — the dialog toolkit.** What every editor dialog is assembled from and what acts
-  on dialogs as a set: `closeDialogs`, `confirmationDialog`, `fitContent`, header sorting, and
-  `refreshAllEditors`. These currently wrap jQuery UI; they are collected here so a single
-  self-contained `Dialog` component can replace them without touching the ~40 callers. The
-  toolkit operates on dialogs generically — it never knows what a particular editor does.
 
 Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they generalize.
-
-Why this distinction exists: persistent chrome reads world state, so it is not a service; it
-has no open/close, so it does not fit the controller contract. Filing it under `services/`
-(the mistake this section exists to prevent) breaks the one hard rule services have — no
-`pack`/`grid`.
 
 ## Cross-layer subsystems
 

@@ -1,7 +1,7 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { Layers } from "@/renderers/layers/layers";
 import { stored } from "@/utils/preferences";
 import { convertTemperature, ensureEl, findEl, parseTransform, rn, round } from "../utils";
 
