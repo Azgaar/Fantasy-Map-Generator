@@ -16,7 +16,7 @@ COPY tsconfig.json .
 COPY vite.config.ts .
 
 # Build the application
-ENV NETLIFY=true
+ENV VITE_BASE_PATH=/
 RUN npm run build
 
 # Production stage
