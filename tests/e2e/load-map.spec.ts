@@ -263,7 +263,9 @@ test.describe("Map loading", () => {
       parent: document.getElementById("fogging")?.parentElement?.id,
       mask: document.getElementById("fogging")?.getAttribute("mask"),
       order: (window as any).Layers.state.order as string[],
-      groups: Array.from(document.querySelectorAll("#viewbox > *"), node => node.id)
+      groups: Array.from(document.querySelectorAll("#viewbox > *"), node => node.id),
+      rects: document.querySelectorAll("#fogging rect").length,
+      revealed: document.querySelectorAll("#fog path").length
     }));
 
     expect(fogging.hasContainer).toBe(false);
@@ -271,6 +273,11 @@ test.describe("Map loading", () => {
     expect(fogging.mask).toBe("url(#fog)");
     expect(fogging.order.indexOf("fogging")).toBeLessThan(fogging.order.indexOf("rulers"));
     expect(fogging.groups.indexOf("fogging")).toBeLessThan(fogging.groups.indexOf("ruler"));
+
+    // the layer is permanent, so the old `display: none` no longer hides it: nothing is revealed in this map,
+    // so the overlay must be empty or it would dim the whole map
+    expect(fogging.revealed).toBe(0);
+    expect(fogging.rects).toBe(0);
   });
 
   // 1.139.4.map keeps its 4 user-added labels as <text> in the legacy #addedLabels SVG group,

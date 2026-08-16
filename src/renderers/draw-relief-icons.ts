@@ -12,9 +12,7 @@ const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief })
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {
-  const isActive = Layers.isOn("relief");
-  setReliefLayerActive(isActive);
-  if (!isActive) return void removeRelief();
+  if (!Layers.isOn("relief")) return void removeRelief(); // guards the window.drawRelief seam; Layers.draw skips it
 
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();

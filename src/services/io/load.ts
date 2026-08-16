@@ -702,11 +702,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       }
     }
 
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
-    // draw the layers whose content is not kept in the svg, now that the restored state says which are on
-    Layers.draw("rulers", "grid", "labels", "relief");
-
+    Layers.drawAll();
     applyDefaultViewboxEvents();
     focusOn();
     invokeActiveZooming();

@@ -5,11 +5,6 @@ import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawEmblems } from "@/renderers/draw-emblems";
-import { drawLakes } from "@/renderers/draw-lakes";
-import { drawMarkers } from "@/renderers/draw-markers";
-import { drawMilitary } from "@/renderers/draw-military";
-import { drawTexture } from "@/renderers/draw-texture";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { Layers, type LayersState } from "@/renderers/layers/layers";
 import { compareVersions } from "@/services/versioning";
@@ -103,8 +98,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    if (!Layers.isOn("borders")) $("#borders").fadeOut();
-    if (!Layers.isOn("states")) select("#regions").attr("display", "none").selectAll("path").remove();
 
     // v1.0 added zones layer
     select("#viewbox").insert("g", "#borders").attr("id", "zones").attr("display", "none");
@@ -115,10 +108,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
     Zones.generate();
-    if (!select("#markers").selectAll("*").size()) {
-      Markers.generate();
-      drawMarkers();
-    }
+    if (!select("#markers").selectAll("*").size()) Markers.generate();
 
     // v1.0 add fogging layer (state focus)
     select("#viewbox")
@@ -338,7 +328,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
     Military.generate();
-    drawMilitary();
   }
 
   if (isOlderThan("1.4.0")) {
@@ -416,7 +405,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
     COA.regenerate();
-    drawEmblems();
     ensureEl("emblems").style.display = "";
 
     // v1.5 changed releif icons data
@@ -650,7 +638,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       markerElements.forEach(el => {
         el.remove();
       });
-      Layers.draw("markers");
     }
   }
 
@@ -783,8 +770,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const href = textureImage.attr("xlink:href") || textureImage.attr("href") || textureImage.attr("src");
       // save parameters to parent element
       select("#texture").attr("data-href", href).attr("data-x", x).attr("data-y", y);
-      // recreate image in expected format. Drawn directly: the layer state is restored from this content later
-      drawTexture(Layers.get("texture"));
     }
   }
 
@@ -861,8 +846,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       .attr("relax", relax)
       .attr("curve", curve)
       .attr("mask", "url(#land)");
-
-    Layers.draw("heightmap");
 
     // v1.96.00 moved scaleBar options from units editor to style
     select("#scaleBar").remove();
@@ -959,7 +942,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     }
     select("#routes").selectAll("path").remove();
-    Layers.draw("routes");
 
     pack.cells.routes = {};
     const links = pack.cells.routes;
@@ -993,7 +975,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         pack.zones.push({ i, name, type, cells, color } as unknown as (typeof pack.zones)[number]);
       });
     select("#zones").style("display", null).selectAll("*").remove();
-    Layers.draw("zones");
   }
 
   if (isOlderThan("1.104.0")) {
@@ -1031,21 +1012,12 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     Provinces.getPoles();
   }
 
-  if (isOlderThan("1.107.0")) {
-    // v1.107.0 allowed custom images for markers and regiments
-    Layers.draw("markers", "military");
-  }
-
   if (isOlderThan("1.108.0")) {
     // v1.108.0 changed features rendering method
     pack.features.forEach(f => {
       // fix lakes with missing group
       if (f?.type === "lake" && !f.group) f.group = "freshwater";
     });
-    // landmass and coastline are permanent; lakes is drawn directly because the file's own state is not
-    // restored yet, and a lakes layer this session happens to have off would otherwise stay empty
-    Layers.draw("landmass", "coastline");
-    drawLakes(Layers.get("lakes"));
 
     // some old maps has incorrect "heights" groups
     select("#viewbox").selectAll("#heights").remove();
@@ -1116,7 +1088,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
     });
 
-    Layers.draw("burgIcons");
     const opts = options as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
@@ -1188,9 +1159,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
           .attr("stroke-width", 1)
           .attr("filter", "url(#dropShadow05)");
       }
-
-      // Re-render ice from migrated data
-      Layers.draw("ice");
     }
   }
 
@@ -1285,7 +1253,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         .attr("relax", null)
         .attr("curve", null)
         .attr("mask", null);
-      Layers.draw("heightmap");
     }
   }
 
@@ -1551,6 +1518,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     // v1.144.0 moved the layers state into data[50]
     data[50] = JSON.stringify(recoverLayersState());
+
+    // remove href from emblems, to trigger rendering on load
+    select("#emblems").selectAll("use").attr("href", null);
 
     function recoverLayersState(): LayersState {
       const foggingContainer = findEl("fogging-cont");
