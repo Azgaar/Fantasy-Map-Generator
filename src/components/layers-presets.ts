@@ -1,10 +1,10 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
-import { Layers } from "@/renderers/layers/layers";
+import { type LayerId, Layers } from "@/renderers/layers/layers";
 import { ensureEl } from "@/utils";
 import { confirmationDialog } from "./dialog/dialog-helpers";
 import { LAYER_TOGGLES } from "./layers-tab";
 
-const DEFAULT_PRESETS: Record<string, string[]> = {
+const DEFAULT_PRESETS: Record<string, LayerId[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
   cultural: ["borders", "burgIcons", "cultures", "labels", "lakes", "rivers", "routes", "scaleBar", "vignette"],
   religions: ["borders", "burgIcons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"],
@@ -46,18 +46,12 @@ const DEFAULT_PRESETS: Record<string, string[]> = {
 const presets: Record<string, string[]> = { ...DEFAULT_PRESETS };
 restoreCustomPresets();
 
-/**
- * Custom presets are stored in localStorage as plain layer ids. A preset naming a layer this build does not
- * have — one saved before 1.144 renamed the ids, or against a layer since removed — is dropped rather than
- * repaired: the registry is the vocabulary, and a half-understood preset is worse than recreating it
- */
 function restoreCustomPresets(): void {
   const stored: Record<string, string[]> | null = JSON.parse(localStorage.getItem("presets") || "null");
   if (!stored) return;
 
   for (const name in stored) {
     if (!stored[name].every(id => Layers.has(id))) continue;
-
     presets[name] = stored[name];
     if (!DEFAULT_PRESETS[name]) ensureEl<HTMLSelectElement>("layersPreset").add(new Option(name, name));
   }
