@@ -1,5 +1,27 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpatialIndex, ViewportRenderer } from "./viewport-renderer";
+
+let animationFrames: Map<number, FrameRequestCallback>;
+let nextFrameId: number;
+
+beforeEach(() => {
+  animationFrames = new Map();
+  nextFrameId = 1;
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    const id = nextFrameId++;
+    animationFrames.set(id, callback);
+    return id;
+  });
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => animationFrames.delete(id));
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+function runAnimationFrame(): void {
+  const callbacks = [...animationFrames.values()];
+  animationFrames.clear();
+  for (const callback of callbacks) callback(performance.now());
+}
 
 describe("SpatialIndex", () => {
   it("returns only items from buckets intersecting finite viewport bounds", () => {
@@ -52,9 +74,67 @@ describe("ViewportRenderer interaction suspension", () => {
     expect(renders).toBe(0);
 
     renderer.resume();
+    expect(renders).toBe(0);
+    runAnimationFrame();
     expect(renders).toBe(1);
 
     renderer.resume();
+    expect(renders).toBe(1);
+  });
+
+  it("skips a full reconcile when the settled viewport is already materialized", () => {
+    let viewport = { scale: 1, x: 0, y: 0, width: 100, height: 100 };
+    const renderer = new ViewportRenderer({
+      getViewport: () => viewport,
+      overscanPixels: 20,
+      guardPixels: 10
+    });
+    let renders = 0;
+    renderer.register({ id: "test", render: () => renders++ });
+    renderer.renderNow();
+
+    renderer.suspend();
+    viewport = { ...viewport, scale: 1.1, x: -5, y: -5 };
+    renderer.resume();
+    runAnimationFrame();
+
+    expect(renders).toBe(1);
+  });
+
+  it("reconciles after the viewport moves beyond the materialized guard", () => {
+    let viewport = { scale: 1, x: 0, y: 0, width: 100, height: 100 };
+    const renderer = new ViewportRenderer({
+      getViewport: () => viewport,
+      overscanPixels: 20,
+      guardPixels: 10
+    });
+    let renders = 0;
+    renderer.register({ id: "test", render: () => renders++ });
+    renderer.renderNow();
+
+    renderer.suspend();
+    viewport = { ...viewport, x: -50 };
+    renderer.resume();
+    expect(renders).toBe(1);
+    runAnimationFrame();
+
+    expect(renders).toBe(2);
+  });
+
+  it("does not treat a canceled render as materialized", () => {
+    const renderer = new ViewportRenderer({
+      getViewport: () => ({ scale: 1, x: 0, y: 0, width: 100, height: 100 }),
+      overscanPixels: 20,
+      guardPixels: 10
+    });
+    let renders = 0;
+    renderer.register({ id: "test", render: () => renders++ });
+
+    renderer.schedule();
+    renderer.suspend();
+    renderer.resume();
+    runAnimationFrame();
+
     expect(renders).toBe(1);
   });
 });

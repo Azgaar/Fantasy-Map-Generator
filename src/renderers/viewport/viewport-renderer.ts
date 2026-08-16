@@ -200,11 +200,11 @@ export class ViewportRenderer {
     this.cancelScheduledRender();
   }
 
-  /** Reconcile all viewport layers once after an interaction has settled. */
+  /** Reconcile only viewport layers that need updating after an interaction has settled. */
   resume(): void {
     if (!this.suspended) return;
     this.suspended = false;
-    this.renderNow();
+    this.schedule();
   }
 
   clearAll(): void {
@@ -220,7 +220,6 @@ export class ViewportRenderer {
     const needsViewportReconcile = this.shouldReconcile();
     if (!needsViewportReconcile && !this.dirtyLayers.size) return;
     const context = this.getLiveContext();
-    if (needsViewportReconcile) this.materializedBounds = context.bounds;
     this.scheduleContext(context, needsViewportReconcile);
   }
 
@@ -279,7 +278,10 @@ export class ViewportRenderer {
       const pendingForceAll = this.pendingForceAll;
       this.pending = null;
       this.pendingForceAll = false;
-      if (pending) this.renderLayers(pending, pendingForceAll);
+      if (pending) {
+        if (pendingForceAll) this.materializedBounds = pending.bounds;
+        this.renderLayers(pending, pendingForceAll);
+      }
     });
   }
 
