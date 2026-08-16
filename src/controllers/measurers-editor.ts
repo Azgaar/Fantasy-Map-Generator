@@ -145,6 +145,17 @@ function addRuler(): void {
   redraw();
 }
 
+function addRulerAt(point: Point): void {
+  open();
+  const dx = Math.min(graphWidth / 4, 100 / scale);
+  const endX = point[0] + dx <= graphWidth ? point[0] + dx : point[0] - dx;
+  Measurers.create("Ruler", [
+    [rn(point[0], 1), rn(point[1], 1)],
+    [rn(endX, 1), rn(point[1], 1)]
+  ]);
+  redraw();
+}
+
 function toggleOpisometerMode(this: HTMLElement): void {
   startDrawingMode(this, "Draw a curve to measure length. Hold Shift to disallow path optimization", (event: any) => {
     const opisometer = Measurers.create("Opisometer", [[event.x, event.y]]);
@@ -421,4 +432,4 @@ function dragRouteEndpoint(measurer: Measurer, event: MeasurerDragEvent<SVGCircl
   });
 }
 
-export const MeasurersEditor = { open };
+export const MeasurersEditor = { addRulerAt, open };

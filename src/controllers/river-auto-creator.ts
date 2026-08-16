@@ -2,6 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
+import type { Point } from "@/types/global";
 
 function toggle(): void {
   if (document.getElementById("addRiver")?.classList.contains("pressed")) {
@@ -21,30 +22,37 @@ function toggle(): void {
 
 function addOnClick(event: MouseEvent): void {
   const point = pointer(event, event.currentTarget as SVGGElement);
+  const finalize = !event.shiftKey;
+  if (!addAt(point, finalize)) return;
+
+  if (finalize) stopMapPlacement();
+}
+
+function addAt(point: Point, finalize = true): boolean {
   const cell = findCell(point[0], point[1]);
-  if (cell === undefined) return;
+  if (cell === undefined) return false;
   if (pack.cells.r[cell]) {
     tip("There is already a river here", false, "error");
-    return;
+    return false;
   }
   if (pack.cells.h[cell] < 20) {
     tip("Cannot create river in water cell", false, "error");
-    return;
+    return false;
   }
-  if (pack.cells.b[cell]) return;
+  if (pack.cells.b[cell]) return false;
 
   const result = Rivers.addDownhill(cell);
   if (result.error) {
     tip(result.error, false, "error");
-    return;
+    return false;
   }
 
   drawRivers();
-  if (!event.shiftKey) {
+  if (finalize) {
     Lakes.cleanupLakeData();
-    stopMapPlacement();
     refreshEditors();
   }
+  return true;
 }
 
-export const RiverAutoCreator = { toggle };
+export const RiverAutoCreator = { addAt, toggle };

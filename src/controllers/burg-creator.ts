@@ -4,6 +4,7 @@ import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement
 import { tip } from "@/components/tooltips";
 import { renderBurgAdded } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import type { Point } from "@/types/global";
 
 function toggle(): void {
   if (isActive()) {
@@ -27,23 +28,28 @@ function toggle(): void {
 
 function addOnClick(event: MouseEvent): void {
   const point = pointer(event, event.currentTarget as SVGGElement);
+  if (!addAt(point)) return;
+
+  if (!event.shiftKey) stop();
+}
+
+function addAt(point: Point): boolean {
   const cell = findCell(point[0], point[1]);
-  if (cell === undefined) return;
+  if (cell === undefined) return false;
 
   if (pack.cells.h[cell] < 20) {
     tip("You cannot place a burg in the water. Please click on a land cell", false, "error");
-    return;
+    return false;
   }
   if (pack.cells.burg[cell]) {
     tip("There is already a burg in this cell. Please select a free cell", false, "error");
-    return;
+    return false;
   }
 
   renderBurgAdded(Burgs.add(point));
   refreshEditors();
   drawLabels();
-
-  if (!event.shiftKey) stop();
+  return true;
 }
 
 function stop(): void {
@@ -59,4 +65,4 @@ function unpressProxyButton(): void {
   document.getElementById("addNewBurg")?.classList.remove("pressed");
 }
 
-export const BurgCreator = { toggle, stop };
+export const BurgCreator = { addAt, toggle, stop };

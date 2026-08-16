@@ -95,8 +95,7 @@ function start() {
         },
         popover: {
           title: "Workspace Sidebar",
-          description:
-            "Use this persistent sidebar to open map layers, styling, options, and editing tools.",
+          description: "Use this persistent sidebar to open map layers, styling, options, and editing tools.",
           side: "right",
           onNextClick: () => {
             openWorkspacePanel("layers");

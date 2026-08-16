@@ -3,7 +3,8 @@ import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/generators/labels-generator";
 import { dragLegendBox } from "@/renderers/draw-legend";
-import { debounce } from "@/utils/commonUtils";
+import { debounce, findClosestCell, getPointer } from "@/utils";
+import { buildMapContext } from "./map-context";
 import { handleMouseMove } from "./map-tooltip";
 import { applyZoomBehavior } from "./zoom";
 
@@ -16,7 +17,13 @@ export function applyDefaultViewboxEvents(): void {
     .style("cursor", "default")
     .on(".drag", null)
     .on("click", onClick)
+    .on("contextmenu", onContextMenu)
     .on("touchmove mousemove", onMouseMove);
+
+  select<SVGSVGElement, unknown>("#map")
+    .attr("aria-label", "Fantasy map. Press Shift+F10 for map actions")
+    .attr("tabindex", 0)
+    .on("keydown.mapContextMenu", onMapKeyDown);
 
   select<SVGGElement, unknown>("#legend").call(drag<SVGGElement, unknown>().on("start", dragLegendBox));
 }
@@ -76,6 +83,54 @@ function onClick(event: MouseEvent): void {
 
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
+}
+
+/** Open an action menu for the clicked map objects and cell. Shift preserves the browser menu. */
+function onContextMenu(event: MouseEvent): void {
+  if (event.shiftKey) return;
+  const viewbox = event.currentTarget as SVGGElement | null;
+  if (!viewbox || !contextMenuIsAvailable(viewbox)) return;
+
+  const context = getContextAtClientPoint(event.clientX, event.clientY, viewbox, event.target);
+  if (!context) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  void import("./map-context-menu").then(({ showMapContextMenu }) => showMapContextMenu(context));
+}
+
+/** Keyboard equivalent of right-click, anchored at the center of the focused map. */
+function onMapKeyDown(event: KeyboardEvent): void {
+  if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
+  const viewbox = document.querySelector<SVGGElement>("#viewbox");
+  const map = event.currentTarget as SVGSVGElement | null;
+  if (!viewbox || !map || !contextMenuIsAvailable(viewbox)) return;
+
+  const bounds = map.getBoundingClientRect();
+  const clientX = bounds.left + bounds.width / 2;
+  const clientY = bounds.top + bounds.height / 2;
+  const context = getContextAtClientPoint(clientX, clientY, viewbox, document.elementFromPoint(clientX, clientY));
+  if (!context) return;
+
+  event.preventDefault();
+  void import("./map-context-menu").then(({ showMapContextMenu }) => showMapContextMenu(context));
+}
+
+function contextMenuIsAvailable(viewbox: SVGGElement): boolean {
+  if ((typeof customization !== "undefined" && customization) || !pack.cells?.p) return false;
+  return !viewbox.style.cursor || viewbox.style.cursor === "default";
+}
+
+function getContextAtClientPoint(clientX: number, clientY: number, viewbox: SVGGElement, target: EventTarget | null) {
+  const pointerEvent = { clientX, clientY } as MouseEvent;
+  const point = getPointer(pointerEvent, viewbox);
+  const cellId = findClosestCell(point[0], point[1], undefined, pack);
+  if (cellId === undefined) return null;
+
+  const elements = document.elementsFromPoint(clientX, clientY).filter(element => viewbox.contains(element));
+  if (target instanceof Element && viewbox.contains(target) && !elements.includes(target)) elements.unshift(target);
+
+  return buildMapContext({ cellId, clientX, clientY, elements, pack, point });
 }
 
 window.applyDefaultViewboxEvents = applyDefaultViewboxEvents;

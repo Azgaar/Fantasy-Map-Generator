@@ -1,6 +1,6 @@
 import type { LabelType } from "@/generators/labels-generator";
-import type { PackedGraph } from "@/types/PackedGraph";
 import type { Point } from "@/types/global";
+import type { PackedGraph } from "@/types/PackedGraph";
 
 export type MapContextEntityKind =
   | "burg"
@@ -64,7 +64,8 @@ export function buildMapContext({ cellId, clientX, clientY, elements, pack, poin
   if (cellBurgId) addEntity(entities, getBurgEntity(cellBurgId, pack));
 
   const areas = getAreas(cellId, pack);
-  const title = entities[0]?.label || areas.find(area => area.kind === "province")?.label || areas[0]?.label || `Cell ${cellId}`;
+  const title =
+    entities[0]?.label || areas.find(area => area.kind === "province")?.label || areas[0]?.label || `Cell ${cellId}`;
 
   return { areas, cellId, clientX, clientY, entities, point, title };
 }
@@ -83,10 +84,12 @@ function collectEntities(elements: Element[], pack: PackedGraph): MapContextEnti
     if (emblem) addEmblemEntities(entities, emblem, pack);
 
     const river = element.closest<SVGElement>("#rivers [id^='river']");
-    if (river && /^river\d+$/.test(river.id)) addEntity(entities, getRiverEntity(Number(river.id.slice(5)), pack, river));
+    if (river && /^river\d+$/.test(river.id))
+      addEntity(entities, getRiverEntity(Number(river.id.slice(5)), pack, river));
 
     const route = element.closest<SVGElement>("#routes [id^='route']");
-    if (route && /^route\d+$/.test(route.id)) addEntity(entities, getRouteEntity(Number(route.id.slice(5)), pack, route));
+    if (route && /^route\d+$/.test(route.id))
+      addEntity(entities, getRouteEntity(Number(route.id.slice(5)), pack, route));
 
     const marker = element.closest<SVGElement>("#markers [data-id]");
     if (marker) addEntity(entities, getMarkerEntity(Number(marker.dataset.id), pack, marker));
@@ -107,7 +110,8 @@ function collectEntities(elements: Element[], pack: PackedGraph): MapContextEnti
     if (zone && /^zone\d+$/.test(zone.id)) addEntity(entities, getZoneEntity(Number(zone.id.slice(4)), pack, zone));
 
     const relief = element.closest<SVGElement>("#terrain > *");
-    if (relief) addEntity(entities, { element: relief, key: `relief:${relief.id}`, kind: "relief", label: "Relief icon" });
+    if (relief)
+      addEntity(entities, { element: relief, key: `relief:${relief.id}`, kind: "relief", label: "Relief icon" });
 
     const measurer = element.closest<SVGElement>("#ruler > g");
     if (measurer)

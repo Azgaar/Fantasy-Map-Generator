@@ -58,6 +58,15 @@ function open(): void {
   select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
 }
 
+function openAt(point: Point): void {
+  cleanup();
+  renderDialog();
+
+  const cellId = findClosestCell(...point, undefined, pack);
+  if (cellId === undefined) return;
+  updateFields(point, cellId, findGridCell(point[0], point[1], grid));
+}
+
 function cleanup(): void {
   select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
   unregisterDialog?.();
@@ -243,4 +252,4 @@ function getFriendlyPopulation(cellId: number): string {
   return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;
 }
 
-export const CellInfo = { open };
+export const CellInfo = { open, openAt };

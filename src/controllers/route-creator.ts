@@ -6,6 +6,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import type { Point } from "@/types/global";
 import { ensureEl, getPackPolygon, getPointer, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
@@ -46,6 +47,11 @@ function open(defaultGroup?: string): void {
     resizable: false,
     title: "Create Route"
   });
+}
+
+function openAt(point: Point, defaultGroup?: string): void {
+  open(defaultGroup);
+  addPoint(point);
 }
 
 function renderDialog(): void {
@@ -92,9 +98,13 @@ function onBodyClick(ev: Event): void {
 }
 
 function onClick(this: any, event: any): void {
-  const [x, y] = getPointer(event, this);
+  addPoint(getPointer(event, this));
+}
+
+function addPoint([x, y]: Point): boolean {
   const cellId = findCell(x, y);
-  const point = [rn(x, 2), rn(y, 2), cellId!];
+  if (cellId === undefined) return false;
+  const point = [rn(x, 2), rn(y, 2), cellId];
   creatorPoints.push(point);
 
   drawRoute(creatorPoints);
@@ -108,6 +118,7 @@ function onClick(this: any, event: any): void {
       <span><b>Y</b>: ${point[1]}</span>
       <span data-tip="Remove the point" class="icon-trash-empty pointer"></span>
     </div>`;
+  return true;
 }
 
 function removePoint(pointString: string): void {
@@ -193,4 +204,4 @@ function closeRouteCreator(): void {
   destroyDialog("routeCreator");
 }
 
-export const RouteCreator = { open };
+export const RouteCreator = { open, openAt };

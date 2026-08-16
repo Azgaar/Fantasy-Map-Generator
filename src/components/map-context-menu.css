@@ -1,0 +1,155 @@
+.kui-context-menu-portal {
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  color: var(--kui-text, #f4f4f5);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+.kui-context-menu-overlay,
+.kui-context-menu-overlay .bp6-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+}
+
+.kui-context-menu-overlay .bp6-overlay-backdrop {
+  background: transparent;
+}
+
+.kui-context-menu-overlay .bp6-popover-transition-container {
+  z-index: 1;
+}
+
+.fmg-map-context-menu {
+  min-width: 230px;
+  max-width: min(320px, calc(100vw - 16px));
+  border: 1px solid var(--kui-line, rgb(255 255 255 / 0.16));
+  border-radius: 6px;
+  background: var(--kui-surface, #0d0d0d);
+  box-shadow: 0 18px 52px rgb(0 0 0 / 0.56);
+}
+
+.fmg-map-context-menu .bp6-popover-content {
+  overflow: visible;
+}
+
+.fmg-map-context-menu-list,
+.fmg-map-context-menu .kui-submenu {
+  min-width: 230px;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+}
+
+.fmg-map-context-menu .kui-menu-item-shell {
+  position: relative;
+  list-style: none;
+}
+
+.fmg-map-context-menu .kui-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.fmg-map-context-menu .kui-menu-item:hover,
+.fmg-map-context-menu .kui-menu-item:focus-visible {
+  outline: none;
+  background: var(--kui-surface-hover, #242424);
+}
+
+.fmg-map-context-menu .kui-menu-item[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.fmg-map-context-menu .bp6-text-overflow-ellipsis {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmg-map-context-menu .bp6-menu-item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--kui-text-muted, #a1a1aa);
+  font-size: 11px;
+}
+
+.fmg-map-context-menu .bp6-menu-divider {
+  height: 1px;
+  margin: 5px;
+  background: var(--kui-line-soft, rgb(255 255 255 / 0.1));
+}
+
+.fmg-map-context-menu .bp6-menu-header {
+  padding: 6px 7px 5px;
+  list-style: none;
+}
+
+.fmg-map-context-menu .bp6-menu-header > h6 {
+  margin: 0;
+}
+
+.fmg-map-context-menu-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--kui-text, #f4f4f5);
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.fmg-map-context-menu-heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmg-map-context-menu-heading span {
+  color: var(--kui-text-muted, #a1a1aa);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.fmg-map-context-menu .kui-submenu {
+  position: absolute;
+  z-index: 2;
+  top: -5px;
+  left: calc(100% - 3px);
+  display: none;
+  border: 1px solid var(--kui-line, rgb(255 255 255 / 0.16));
+  border-radius: 6px;
+  background: var(--kui-surface, #0d0d0d);
+  box-shadow: 0 18px 52px rgb(0 0 0 / 0.56);
+}
+
+.fmg-map-context-menu--open-left .kui-submenu {
+  right: calc(100% - 3px);
+  left: auto;
+}
+
+.fmg-map-context-menu .bp6-submenu:hover > .kui-submenu,
+.fmg-map-context-menu .bp6-submenu:focus-within > .kui-submenu {
+  display: block;
+}

@@ -3,6 +3,7 @@ import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
 import { drawMarkers } from "@/renderers/draw-markers";
+import type { Point } from "@/types/global";
 import { ensureEl, findEl, rn } from "@/utils";
 
 function toggle(baseMarker?: Marker): void {
@@ -26,8 +27,17 @@ function toggle(baseMarker?: Marker): void {
 
 function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
   const point = pointer(event, event.currentTarget as SVGGElement);
+  if (!addAt(point, baseMarker)) return;
+
+  if (!event.shiftKey) {
+    unpressProxyButtons();
+    stopMapPlacement();
+  }
+}
+
+function addAt(point: Point, baseMarker?: Marker): boolean {
   const cell = findCell(point[0], point[1]);
-  if (cell === undefined) return;
+  if (cell === undefined) return false;
 
   const selectedType = ensureEl<HTMLSelectElement>("addedMarkerType").value;
   const selectedConfig = Markers.getConfig().find(({ type }) => type === selectedType);
@@ -38,11 +48,7 @@ function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
 
   drawMarkers();
   refreshEditors();
-
-  if (!event.shiftKey) {
-    unpressProxyButtons();
-    stopMapPlacement();
-  }
+  return true;
 }
 
 function unpressProxyButtons(): void {
@@ -50,4 +56,4 @@ function unpressProxyButtons(): void {
   document.getElementById("markersAddFromOverview")?.classList.remove("pressed");
 }
 
-export const MarkerCreator = { toggle };
+export const MarkerCreator = { addAt, toggle };

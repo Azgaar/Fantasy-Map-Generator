@@ -3,6 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { createLabelArc } from "@/renderers/labels/label-arc";
+import type { Point } from "@/types/global";
 
 function toggle(): void {
   if (document.getElementById("addLabel")?.classList.contains("pressed")) {
@@ -17,8 +18,14 @@ function toggle(): void {
 
 async function addOnClick(event: MouseEvent): Promise<void> {
   const point = pointer(event, event.currentTarget as SVGGElement);
+  if (!(await addAt(point))) return;
+
+  if (!event.shiftKey) stopMapPlacement();
+}
+
+async function addAt(point: Point): Promise<boolean> {
   const cell = findCell(point[0], point[1]);
-  if (cell === undefined) return;
+  if (cell === undefined) return false;
 
   const text = Names.getCulture(pack.cells.culture[cell]);
   const lastSelected = await Controllers.LabelsEditor.getLastSelectedGroup();
@@ -27,8 +34,7 @@ async function addOnClick(event: MouseEvent): Promise<void> {
   const pathPoints = createLabelArc({ text, type: "added", group, anchor: [x, y] });
   AddedLabels.add({ x, y, label: { text, group, pathPoints } });
   drawLabels();
-
-  if (!event.shiftKey) stopMapPlacement();
+  return true;
 }
 
-export const LabelCreator = { toggle };
+export const LabelCreator = { addAt, toggle };
