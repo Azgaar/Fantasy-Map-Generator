@@ -1,5 +1,12 @@
 import type { ReliefIcon } from "@/generators/relief-generator";
-import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { reconcileSvgUseElements } from "@/renderers/viewport/svg-use-reconciler";
+import {
+  Scene,
+  SpatialIndex,
+  type ViewportBounds,
+  ViewportLayers,
+  type ViewportRenderContext
+} from "@/renderers/viewport/viewport-renderer";
 
 interface ReliefSceneIcon {
   id: string;
@@ -7,8 +14,10 @@ interface ReliefSceneIcon {
 }
 
 const scene = new Scene<ReliefSceneIcon>();
+const index = new SpatialIndex<ReliefSceneIcon>();
 const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief, clear: removeRelief });
 let frameId: number | null = null;
+let maximumSize = 0;
 
 export const drawRelief = (): void => {
   const isActive = layerIsOn("toggleRelief");
@@ -17,7 +26,10 @@ export const drawRelief = (): void => {
 
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
-  scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
+  const items = pack.relief.map((data, i) => ({ id: String(i), data }));
+  scene.replace(items);
+  index.replace(items, ({ data }) => [data.x, data.y]);
+  maximumSize = pack.relief.reduce((maximum, { s }) => Math.max(maximum, s), 0);
   layer.render();
   TIME && console.timeEnd("drawRelief");
 };
@@ -34,6 +46,8 @@ export const getSceneReliefIcon = (id: string): ReliefIcon | undefined => scene.
 
 function removeRelief(): void {
   scene.invalidate();
+  index.clear();
+  maximumSize = 0;
   document.querySelector("#terrain")?.replaceChildren();
 }
 
@@ -45,20 +59,23 @@ export const setReliefLayerActive = (isActive: boolean): void => {
 };
 
 function reconcileRelief(context: ViewportRenderContext): void {
-  const terrain = context.root.querySelector("#terrain");
+  const terrain = context.root.querySelector<SVGGElement>("#terrain");
   if (!terrain) return;
-  if (!scene.valid || !layerIsOn("toggleRelief")) return void terrain.replaceChildren();
+  if (!scene.valid || !index.valid || !layerIsOn("toggleRelief")) return void terrain.replaceChildren();
 
   const { x0, y0, x1, y1 } = context.bounds;
-  const markup: string[] = [];
-
-  for (const { id, data } of scene.values()) {
+  const items = [];
+  for (const { id, data } of index.values(expandBounds(context.bounds, maximumSize))) {
     const { icon, x, y, s } = data;
     if (x > x1 || y > y1 || x + s < x0 || y + s < y0) continue;
-    markup.push(`<use href="#${icon}" data-id="${id}" x="${x}" y="${y}" width="${s}" height="${s}"/>`);
+    items.push({ id: `relief${id}`, dataId: id, href: `#${icon}`, x, y, width: s, height: s });
   }
 
-  terrain.innerHTML = markup.join("");
+  reconcileSvgUseElements(terrain, items);
+}
+
+function expandBounds(bounds: ViewportBounds, padding: number): ViewportBounds {
+  return { ...bounds, x0: bounds.x0 - padding, y0: bounds.y0 - padding };
 }
 
 window.drawRelief = drawRelief;

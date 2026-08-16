@@ -11,6 +11,12 @@ class FakeUseElement {
     return this.getAttribute("id") || "";
   }
 
+  get nextElementSibling(): FakeUseElement | null {
+    if (!this.parentNode) return null;
+    const index = this.parentNode.children.indexOf(this);
+    return this.parentNode.children[index + 1] || null;
+  }
+
   getAttribute(name: string): string | null {
     return this.attributes.get(name) ?? null;
   }
@@ -34,9 +40,21 @@ class FakeGroupElement {
     createElementNS: () => new FakeUseElement()
   };
 
+  get firstElementChild(): FakeUseElement | null {
+    return this.children[0] || null;
+  }
+
   appendChild(element: FakeUseElement): FakeUseElement {
     element.parentNode = this;
     this.children.push(element);
+    return element;
+  }
+
+  insertBefore(element: FakeUseElement, cursor: FakeUseElement | null): FakeUseElement {
+    element.remove();
+    const index = cursor ? this.children.indexOf(cursor) : this.children.length;
+    this.children.splice(index, 0, element);
+    element.parentNode = this;
     return element;
   }
 }
@@ -75,5 +93,23 @@ describe("reconcileSvgUseElements", () => {
 
     expect(group.children.map(({ id }) => id)).toEqual(["burg2", "burg3"]);
     expect(group.children[0]).toBe(retained);
+  });
+
+  it("preserves requested drawing order without recreating retained nodes", () => {
+    const group = new FakeGroupElement();
+    reconcileSvgUseElements(group as unknown as SVGGElement, [burg(1), burg(2)]);
+    const [first, second] = group.children;
+
+    reconcileSvgUseElements(group as unknown as SVGGElement, [burg(2), burg(1)]);
+
+    expect(group.children).toEqual([second, first]);
+  });
+
+  it("sets optional dimensions for relief-style use elements", () => {
+    const group = new FakeGroupElement();
+    reconcileSvgUseElements(group as unknown as SVGGElement, [{ ...burg(1), width: 12, height: 14 }]);
+
+    expect(group.children[0].getAttribute("width")).toBe("12");
+    expect(group.children[0].getAttribute("height")).toBe("14");
   });
 });

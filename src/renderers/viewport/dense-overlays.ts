@@ -1,6 +1,9 @@
 import type { Burg } from "@/generators/burgs-generator";
 import { getGridPolygon, getPackPolygon, rn } from "@/utils";
+import { reconcileSvgMarkupElements, type SvgMarkupItem } from "./svg-markup-reconciler";
 import { SpatialIndex, type ViewportBounds, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
+
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 const precipitationIndex = new SpatialIndex<number>();
 const populationIndex = new SpatialIndex<number>();
@@ -40,7 +43,7 @@ function reconcileCells(context: ViewportRenderContext): void {
     if (x < x0 || x > x1 || y < y0 || y > y1) continue;
     paths.push(`M${cellsAreGrid ? getGridPolygon(cellId, grid) : getPackPolygon(cellId, pack)}`);
   }
-  cells.innerHTML = `<path d="${paths.join("")}"/>`;
+  reconcilePath(cells, paths.join(""));
 }
 
 function clearCells(): void {
@@ -70,14 +73,15 @@ function reconcilePrecipitation(context: ViewportRenderContext): void {
   const { x0, y0, x1, y1 } = context.bounds;
   const queryBounds = expandBounds(context.bounds, maximumPrecipitationRadius);
   const cellsNumberModifier = (Number(pointsInput.dataset.cells) / 10000) ** 0.25;
-  const markup: string[] = [];
+  const items: SvgMarkupItem[] = [];
   for (const cellId of precipitationIndex.values(queryBounds)) {
     const [x, y] = grid.points[cellId];
     const radius = rn(Math.sqrt(grid.cells.prec[cellId] / 4) / cellsNumberModifier, 2);
     if (x + radius < x0 || x - radius > x1 || y + radius < y0 || y - radius > y1) continue;
-    markup.push(`<circle cx="${x}" cy="${y}" r="${radius}"/>`);
+    const key = `${x}|${y}|${radius}`;
+    items.push({ id: String(cellId), key, markup: `<circle cx="${x}" cy="${y}" r="${radius}"/>` });
   }
-  layer.innerHTML = markup.join("");
+  reconcileSvgMarkupElements(layer, items);
   layer.style.display = "block";
 }
 
@@ -118,8 +122,8 @@ function reconcilePopulation(context: ViewportRenderContext): void {
 
   const { x0, y0, x1, y1 } = context.bounds;
   const queryBounds = { ...context.bounds, y1: context.bounds.y1 + maximumPopulationHeight };
-  const ruralMarkup: string[] = [];
-  const urbanMarkup: string[] = [];
+  const ruralItems: SvgMarkupItem[] = [];
+  const urbanItems: SvgMarkupItem[] = [];
   for (const itemId of populationIndex.values(queryBounds)) {
     const isRural = itemId >= 0;
     let x: number;
@@ -135,12 +139,13 @@ function reconcilePopulation(context: ViewportRenderContext): void {
       topY = baseY - ((burg.population || 0) / 5) * urbanization;
     }
     if (x < x0 || x > x1 || Math.max(baseY, topY) < y0 || Math.min(baseY, topY) > y1) continue;
-    const markup = `<line x1="${x}" y1="${baseY}" x2="${x}" y2="${topY}"/>`;
-    if (isRural) ruralMarkup.push(markup);
-    else urbanMarkup.push(markup);
+    const key = `${x}|${baseY}|${topY}`;
+    const item = { id: String(itemId), key, markup: `<line x1="${x}" y1="${baseY}" x2="${x}" y2="${topY}"/>` };
+    if (isRural) ruralItems.push(item);
+    else urbanItems.push(item);
   }
-  rural.innerHTML = ruralMarkup.join("");
-  urban.innerHTML = urbanMarkup.join("");
+  reconcileSvgMarkupElements(rural, ruralItems);
+  reconcileSvgMarkupElements(urban, urbanItems);
 }
 
 function clearPopulation(): void {
@@ -163,6 +168,15 @@ function expandBounds(bounds: ViewportBounds, padding: number): ViewportBounds {
     x1: bounds.x1 + padding,
     y1: bounds.y1 + padding
   };
+}
+
+function reconcilePath(group: SVGGElement, data: string): void {
+  let path = group.firstElementChild;
+  if (!path || path.tagName.toLowerCase() !== "path" || path.nextElementSibling) {
+    path = group.ownerDocument.createElementNS(SVG_NAMESPACE, "path");
+    group.replaceChildren(path);
+  }
+  if (path.getAttribute("d") !== data) path.setAttribute("d", data);
 }
 
 window.ViewportPopulation = { draw: drawPopulation, clear: clearPopulation };

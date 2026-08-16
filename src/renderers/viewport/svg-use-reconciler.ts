@@ -1,9 +1,13 @@
+import { orderElements } from "./svg-markup-reconciler";
+
 export interface SvgUseItem {
   id: string;
-  dataId: number;
+  dataId: string | number;
   href: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
 }
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -19,6 +23,7 @@ export function reconcileSvgUseElements(group: SVGGElement, items: SvgUseItem[])
     else existing.set(child.id, child as SVGUseElement);
   }
 
+  const ordered: SVGUseElement[] = [];
   for (const item of items) {
     const element = existing.get(item.id) || group.ownerDocument.createElementNS(SVG_NAMESPACE, "use");
     setAttribute(element, "id", item.id);
@@ -26,11 +31,18 @@ export function reconcileSvgUseElements(group: SVGGElement, items: SvgUseItem[])
     setAttribute(element, "href", item.href);
     setAttribute(element, "x", item.x);
     setAttribute(element, "y", item.y);
-    if (!element.parentNode) group.appendChild(element);
+    setOptionalAttribute(element, "width", item.width);
+    setOptionalAttribute(element, "height", item.height);
+    ordered.push(element);
   }
+  orderElements(group, ordered);
 }
 
 function setAttribute(element: SVGUseElement, name: string, value: string | number): void {
   const next = String(value);
   if (element.getAttribute(name) !== next) element.setAttribute(name, next);
+}
+
+function setOptionalAttribute(element: SVGUseElement, name: string, value: number | undefined): void {
+  if (value !== undefined) setAttribute(element, name, value);
 }

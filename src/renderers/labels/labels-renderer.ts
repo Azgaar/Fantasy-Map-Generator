@@ -1,14 +1,19 @@
 import type { Burg } from "@/generators/burgs-generator";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
-import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import {
+  Scene,
+  SpatialIndex,
+  ViewportLayers,
+  type ViewportRenderContext
+} from "@/renderers/viewport/viewport-renderer";
 import { getLabelsData } from "./label-data";
 import { renderLabelGroups } from "./label-groups";
 import { createLabelElements } from "./label-markup";
 
 const scene = new Scene<LabelData>();
+const index = new SpatialIndex<LabelData>();
 const layer = ViewportLayers.register({ id: "labels", render: reconcileLabels, clear: removeLabels });
-const labelsByGroup = new Map<string, LabelData[]>();
 
 export function drawLabels(): void {
   if (!layerIsOn("toggleLabels")) return void removeLabels();
@@ -17,14 +22,14 @@ export function drawLabels(): void {
   renderLabelGroups();
   document.getElementById("textPaths")?.replaceChildren();
   scene.replace(getLabelsData());
-  indexLabelsByGroup();
+  reindexLabels();
   layer.render();
   TIME && console.timeEnd("drawLabels");
 }
 
 function removeLabels(): void {
   scene.invalidate();
-  labelsByGroup.clear();
+  index.clear();
   const labels = findElement(document, "labels");
   if (labels) labels.replaceChildren();
   const textPaths = findElement(document, "textPaths");
@@ -35,13 +40,11 @@ function removeLabels(): void {
 export function redrawLabel(label: LabelData): void {
   if (!scene.valid || !layerIsOn("toggleLabels")) return;
 
-  const previous = scene.get(label.id);
-  if (previous) unindexLabel(previous);
   removeMaterialized(label.id, document);
 
   const stored = { ...label };
   scene.set(stored);
-  indexLabel(stored);
+  reindexLabels();
   materializeLabel(stored, ViewportLayers.getContext());
 }
 
@@ -50,12 +53,12 @@ export function getSceneLabel(type: LabelType, id: number): LabelData | undefine
 }
 
 export function getVisibleLabels(): LabelData[] {
-  if (!scene.valid || !layerIsOn("toggleLabels")) return [];
+  if (!scene.valid || !index.valid || !layerIsOn("toggleLabels")) return [];
   const bounds = ViewportLayers.getVisibleBounds();
   const visibleGroups = new Set(
     options.labels.groups.filter(group => isGroupVisible({ group, bounds })).map(({ name }) => name)
   );
-  return [...scene.values()].filter(label => visibleGroups.has(label.group) && isLabelVisible(bounds, label));
+  return [...index.values(bounds)].filter(label => visibleGroups.has(label.group) && isLabelVisible(bounds, label));
 }
 
 function materializeLabel(label: LabelData, context: ViewportRenderContext): void {
@@ -77,13 +80,23 @@ function materialize(label: LabelData, group: Element, textPaths: Element): void
 }
 
 function reconcileLabels(context: ViewportRenderContext): void {
-  if (!scene.valid || !layerIsOn("toggleLabels")) return;
+  if (!scene.valid || !index.valid || !layerIsOn("toggleLabels")) return;
   const labels = findElement(context.root, "labels");
   const textPaths = findElement(context.root, "textPaths");
   if (!labels || !textPaths) return;
 
   const materializedPaths = new Map(Array.from(textPaths.children, path => [path.id, path]));
-  for (const group of options.labels.groups) reconcileGroup(labels, textPaths, materializedPaths, group, context);
+  const visibleByGroup = new Map<string, LabelData[]>();
+  for (const label of index.values(context.bounds)) {
+    if (!isLabelVisible(context.bounds, label)) continue;
+    const visible = visibleByGroup.get(label.group) || [];
+    visible.push(label);
+    visibleByGroup.set(label.group, visible);
+  }
+
+  for (const group of options.labels.groups) {
+    reconcileGroup(labels, textPaths, materializedPaths, group, visibleByGroup.get(group.name) || [], context);
+  }
 }
 
 function reconcileGroup(
@@ -91,6 +104,7 @@ function reconcileGroup(
   textPaths: Element,
   materializedPaths: Map<string, Element>,
   groupOptions: LabelGroup,
+  candidates: LabelData[],
   context: ViewportRenderContext
 ): void {
   const groupName = groupOptions.name;
@@ -98,9 +112,7 @@ function reconcileGroup(
   if (!group) return;
 
   const isVisible = isGroupVisible({ group: groupOptions, bounds: context.bounds });
-  const visibleLabels = isVisible
-    ? (labelsByGroup.get(groupName) || []).filter(label => isLabelVisible(context.bounds, label))
-    : [];
+  const visibleLabels = isVisible ? candidates : [];
   const visibleIds = new Set(visibleLabels.map(label => label.id));
   const materializedIds = new Set<string>();
 
@@ -146,22 +158,9 @@ function findElement(root: ParentNode, id: string): Element | null {
   return root.querySelector(`#${CSS.escape(id)}`);
 }
 
-function indexLabelsByGroup(): void {
-  labelsByGroup.clear();
-  for (const label of scene.values()) indexLabel(label);
-}
-
-function indexLabel(label: LabelData): void {
-  const groupLabels = labelsByGroup.get(label.group) || [];
-  groupLabels.push(label);
-  labelsByGroup.set(label.group, groupLabels);
-}
-
-function unindexLabel(label: LabelData): void {
-  const groupLabels = labelsByGroup.get(label.group);
-  if (!groupLabels) return;
-  const index = groupLabels.findIndex(({ id }) => id === label.id);
-  if (index !== -1) groupLabels.splice(index, 1);
+function reindexLabels(): void {
+  if (!scene.valid) return void index.clear();
+  index.replace(scene.values(), label => [label.anchor[0] + (label.dx || 0), label.anchor[1] + (label.dy || 0)]);
 }
 
 function drawBurgLabel(burg: Burg): void {
@@ -170,9 +169,8 @@ function drawBurgLabel(burg: Burg): void {
 
 function removeBurgLabel(burgId: number): void {
   const id = `burgLabel${burgId}`;
-  const label = scene.get(id);
-  if (label) unindexLabel(label);
   scene.remove(id);
+  reindexLabels();
   removeMaterialized(id, document);
 }
 

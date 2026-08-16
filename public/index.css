@@ -81,6 +81,7 @@ iframe {
 }
 
 /* Safari/WebKit is especially sensitive to filtered SVG text while an ancestor transform changes. */
+#map.map-zooming,
 #map.map-zooming #labels > g,
 #map.map-zooming #viewbox [filter] {
   filter: none !important;

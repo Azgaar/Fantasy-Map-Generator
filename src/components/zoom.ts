@@ -1,8 +1,10 @@
 import type { ZoomBehavior } from "d3";
 import { renderGroupCOAs } from "@/renderers/draw-emblems";
+import { rescaleVisibleMarkers } from "@/renderers/draw-markers";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
+import { type ZoomChanges, ZoomSettler } from "./zoom-settler";
 
 // Legacy behaviour from the global d3 v5. TODO: completely migrate to d3v7
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
@@ -23,8 +25,10 @@ let pendingScaleChange = false;
 let pendingPositionChange = false;
 let gestureScaleChanged = false;
 let gesturePositionChanged = false;
+const settler = new ZoomSettler(handleZoomSettled);
 
 function handleZoomStart(): void {
+  settler.cancel();
   if (effectsFrameId !== null) cancelAnimationFrame(effectsFrameId);
   effectsFrameId = null;
   gestureScaleChanged = false;
@@ -81,22 +85,27 @@ function handleZoomEnd(): void {
     handleZoomPerFrame();
   }
 
+  settler.schedule({ scale: gestureScaleChanged, position: gesturePositionChanged });
+}
+
+function handleZoomSettled({ scale: didScaleChange, position: didPositionChange }: ZoomChanges): void {
   window.updateMinimap?.();
 
-  if (gestureScaleChanged) {
+  if (didScaleChange) {
     drawScaleBar(scaleBar, scale);
     fitScaleBar(scaleBar, svgWidth, svgHeight);
 
     if (options.labels.resizeOnZoom) {
       const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-      labels.attr("font-size", `${fontSize}px`);
+      const value = `${fontSize}px`;
+      if (labels.attr("font-size") !== value) labels.attr("font-size", value);
     }
   }
 
-  if ((gestureScaleChanged || gesturePositionChanged) && layerIsOn("toggleCoordinates")) drawCoordinates();
+  if ((didScaleChange || didPositionChange) && layerIsOn("toggleCoordinates")) drawCoordinates();
 
   ViewportLayers.resume();
-  if (gestureScaleChanged) invokeActiveZooming();
+  if (didScaleChange) invokeActiveZooming();
 
   // Restore expensive paint effects only after all settled-state DOM updates are complete.
   effectsFrameId = requestAnimationFrame(() => {
@@ -140,19 +149,7 @@ function invokeActiveZooming(): void {
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  if (Number(markers.attr("rescale"))) {
-    for (const marker of pack.markers ?? []) {
-      const { i, x, y, size = 30, hidden } = marker;
-      const element = hidden ? null : document.getElementById(`marker${i}`);
-      if (!element) continue;
-
-      const zoomedSize = Math.max(rn(size / 5 + 24 / scale, 2), 1);
-      element.setAttribute("width", String(zoomedSize));
-      element.setAttribute("height", String(zoomedSize));
-      element.setAttribute("x", String(rn(x - zoomedSize / 2, 1)));
-      element.setAttribute("y", String(rn(y - zoomedSize, 1)));
-    }
-  }
+  rescaleVisibleMarkers();
 }
 
 /** Zoom to a specific point */

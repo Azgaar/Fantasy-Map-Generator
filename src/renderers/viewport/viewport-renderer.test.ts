@@ -47,6 +47,18 @@ describe("SpatialIndex", () => {
     ]);
   });
 
+  it("preserves source order across multiple queried buckets", () => {
+    const index = new SpatialIndex<number>(10);
+    const points = new Map([
+      [3, [25, 5]],
+      [1, [5, 5]],
+      [2, [15, 5]]
+    ]);
+    index.replace([3, 1, 2], id => points.get(id) as [number, number]);
+
+    expect([...index.values({ scale: 1, x0: 0, y0: 0, x1: 29, y1: 9 })]).toEqual([3, 1, 2]);
+  });
+
   it("drops excluded items and releases all data on clear", () => {
     const index = new SpatialIndex<number>();
     index.replace([0, 1, 2], id => (id === 1 ? null : [id, id]));

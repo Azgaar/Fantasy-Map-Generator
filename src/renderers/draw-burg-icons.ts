@@ -1,7 +1,7 @@
 import { select } from "d3";
 import type { Burg } from "../generators/burgs-generator";
 import { reconcileSvgUseElements } from "./viewport/svg-use-reconciler";
-import { Scene, ViewportLayers, type ViewportRenderContext } from "./viewport/viewport-renderer";
+import { Scene, SpatialIndex, ViewportLayers, type ViewportRenderContext } from "./viewport/viewport-renderer";
 
 declare global {
   var drawBurgIcons: () => void;
@@ -13,6 +13,7 @@ interface BurgIconSceneItem {
 }
 
 const scene = new Scene<BurgIconSceneItem>();
+const index = new SpatialIndex<BurgIconSceneItem>();
 const layer = ViewportLayers.register({
   id: "burg-icons",
   render: reconcileBurgIcons,
@@ -22,9 +23,11 @@ const layer = ViewportLayers.register({
 const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
-  scene.replace(
-    pack.burgs.filter(burg => burg.i && burg.group && !burg.removed).map(burg => ({ id: `burg${burg.i}`, burg }))
-  );
+  const items = pack.burgs
+    .filter(burg => burg.i && burg.group && !burg.removed)
+    .map(burg => ({ id: `burg${burg.i}`, burg }));
+  scene.replace(items);
+  index.replace(items, ({ burg }) => [burg.x, burg.y]);
   layer.render();
 
   TIME && console.timeEnd("drawBurgIcons");
@@ -36,12 +39,14 @@ const drawBurgIconRenderer = (burg: Burg): void => {
     return;
   }
   scene.set({ id: `burg${burg.i}`, burg });
+  reindexBurgs();
   layer.invalidate();
 };
 
 const removeBurgIconRenderer = (burgId: number): void => {
   if (scene.valid) {
     scene.remove(`burg${burgId}`);
+    reindexBurgs();
     layer.invalidate();
   }
   document.getElementById(`burg${burgId}`)?.remove();
@@ -52,16 +57,17 @@ function reconcileBurgIcons(context: ViewportRenderContext): void {
   const icons = context.root.querySelector<SVGGElement>("#burgIcons");
   const anchors = context.root.querySelector<SVGGElement>("#anchors");
   if (!icons || !anchors) return;
-  if (!scene.valid) return;
+  if (!scene.valid || !index.valid) return;
   if (!layerIsOn("toggleBurgIcons")) {
     scene.invalidate();
+    index.clear();
     clearMaterializedBurgIcons(icons, anchors);
     return;
   }
 
   const burgsByGroup = new Map<string, Burg[]>();
   const { x0, y0, x1, y1 } = context.bounds;
-  for (const { burg } of scene.values()) {
+  for (const { burg } of index.values(context.bounds)) {
     if (burg.x < x0 || burg.x > x1 || burg.y < y0 || burg.y > y1) continue;
     const groupName = burg.group;
     if (!groupName) continue;
@@ -92,9 +98,15 @@ function reconcileBurgIcons(context: ViewportRenderContext): void {
 
 function clearBurgIcons(): void {
   scene.invalidate();
+  index.clear();
   const icons = document.querySelector<SVGGElement>("#burgIcons");
   const anchors = document.querySelector<SVGGElement>("#anchors");
   if (icons && anchors) clearMaterializedBurgIcons(icons, anchors);
+}
+
+function reindexBurgs(): void {
+  if (!scene.valid) return void index.clear();
+  index.replace(scene.values(), ({ burg }) => [burg.x, burg.y]);
 }
 
 function clearMaterializedBurgIcons(icons: SVGGElement, anchors: SVGGElement): void {

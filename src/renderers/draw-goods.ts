@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { reconcileSvgMarkupElements, type SvgMarkupItem } from "@/renderers/viewport/svg-markup-reconciler";
 import { SpatialIndex, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import type { Good } from "../generators/goods-generator";
@@ -19,6 +20,7 @@ const PLATE_FILL = "#f5f5f5";
 const DEFAULT_SIZE = 6;
 
 interface ProducedGood {
+  id: number;
   color: string;
 }
 
@@ -96,7 +98,7 @@ function buildGoodsCellsScene(displayedGoods: Set<number>): GoodsCellSceneItem[]
       const good = Goods.get(+goodId);
       if (!good) continue;
       total += amount;
-      filteredProduced.push({ color: good.color });
+      filteredProduced.push({ id: good.i, color: good.color });
     }
     if (!total) continue;
 
@@ -194,38 +196,38 @@ function reconcileGoods(context: ViewportRenderContext): void {
   }
 
   const { x0, y0, x1, y1 } = context.bounds;
-  const cellsMarkup: string[] = [];
+  const cellItems: SvgMarkupItem[] = [];
   for (const { cellId, total, produced } of cellsIndex.values(context.bounds)) {
     const [x, y] = pack.cells.p[cellId];
     if (x < x0 || x > x1 || y < y0 || y > y1) continue;
     const opacity = rn(0.1 + 0.9 * normalize(total, 0, 1), 2);
     const points = getPackPolygon(cellId, pack).join(" ");
     for (const good of produced) {
-      cellsMarkup.push(`<polygon points="${points}" fill="${good.color}" fill-opacity="${opacity}"/>`);
+      const markup = `<polygon points="${points}" fill="${good.color}" fill-opacity="${opacity}"/>`;
+      cellItems.push({ id: `${cellId}:${good.id}`, key: markup, markup });
     }
   }
-  goodsCells.innerHTML = cellsMarkup.join("");
+  reconcileSvgMarkupElements(goodsCells, cellItems);
 
   const drawCircle = +goodsIcons.dataset.circle!;
   const iconSize = +goodsIcons.dataset.size! || DEFAULT_SIZE;
   const half = iconSize / 2;
   const iconBounds = { ...context.bounds, x0: x0 - half, y0: y0 - half, x1: x1 + half, y1: y1 + half };
-  const iconsMarkup: string[] = [];
+  const iconItems: SvgMarkupItem[] = [];
   for (const cellId of iconsIndex.values(iconBounds)) {
     const good = Goods.get(pack.cells.good[cellId]);
     if (!good) continue;
     const [x, y] = pack.cells.p[cellId];
     if (x + half < x0 || x - half > x1 || y + half < y0 || y - half > y1) continue;
     const stroke = Goods.getStroke(good.color);
-    iconsMarkup.push(
-      `<g data-i="${good.i}">${
-        drawCircle ? `<circle cx="${x}" cy="${y}" r="${half}" fill="${good.color}" stroke="${stroke}" />` : ""
-      }<use href="#${good.icon}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`
-    );
+    const markup = `<g data-i="${good.i}">${
+      drawCircle ? `<circle cx="${x}" cy="${y}" r="${half}" fill="${good.color}" stroke="${stroke}" />` : ""
+    }<use href="#${good.icon}" x="${rn(x - half, 2)}" y="${rn(y - half, 2)}" width="${iconSize}" height="${iconSize}"/></g>`;
+    iconItems.push({ id: String(cellId), key: markup, markup });
   }
-  goodsIcons.innerHTML = iconsMarkup.join("");
+  reconcileSvgMarkupElements(goodsIcons, iconItems);
 
-  const burgsMarkup: string[] = [];
+  const burgItems: SvgMarkupItem[] = [];
   const burgBounds = {
     ...context.bounds,
     x0: x0 - maximumBurgWidth,
@@ -235,9 +237,9 @@ function reconcileGoods(context: ViewportRenderContext): void {
   };
   for (const item of burgsIndex.values(burgBounds)) {
     if (item.x1 < x0 || item.x0 > x1 || item.y1 < y0 || item.y0 > y1) continue;
-    burgsMarkup.push(item.markup);
+    burgItems.push({ id: String(item.burgId), key: item.markup, markup: item.markup });
   }
-  goodsBurgs.innerHTML = burgsMarkup.join("");
+  reconcileSvgMarkupElements(goodsBurgs, burgItems);
 }
 
 function clearGoods(): void {

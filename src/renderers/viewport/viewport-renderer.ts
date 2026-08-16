@@ -84,7 +84,7 @@ export class Scene<T extends { id: string }> {
 
 /** A compact bucket index for large, immutable viewport draw lists. */
 export class SpatialIndex<T> {
-  private readonly buckets = new Map<number, Map<number, T[]>>();
+  private readonly buckets = new Map<number, Map<number, number[]>>();
   private items: T[] = [];
   valid = false;
 
@@ -96,7 +96,7 @@ export class SpatialIndex<T> {
       const point = getPoint(item);
       if (!point) continue;
 
-      this.items.push(item);
+      const itemIndex = this.items.push(item) - 1;
       const columnId = Math.floor(point[0] / this.bucketSize);
       const rowId = Math.floor(point[1] / this.bucketSize);
       let column = this.buckets.get(columnId);
@@ -109,7 +109,7 @@ export class SpatialIndex<T> {
         bucket = [];
         column.set(rowId, bucket);
       }
-      bucket.push(item);
+      bucket.push(itemIndex);
     }
     this.valid = true;
   }
@@ -124,14 +124,17 @@ export class SpatialIndex<T> {
     const column1 = Math.floor(bounds.x1 / this.bucketSize);
     const row0 = Math.floor(bounds.y0 / this.bucketSize);
     const row1 = Math.floor(bounds.y1 / this.bucketSize);
+    const itemIndexes: number[] = [];
     for (let columnId = column0; columnId <= column1; columnId++) {
       const column = this.buckets.get(columnId);
       if (!column) continue;
       for (let rowId = row0; rowId <= row1; rowId++) {
         const bucket = column.get(rowId);
-        if (bucket) yield* bucket;
+        if (bucket) for (const itemIndex of bucket) itemIndexes.push(itemIndex);
       }
     }
+    itemIndexes.sort((a, b) => a - b);
+    for (const itemIndex of itemIndexes) yield this.items[itemIndex];
   }
 
   clear(): void {
