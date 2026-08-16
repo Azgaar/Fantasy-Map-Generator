@@ -1,6 +1,7 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawTemperature } from "@/renderers/draw-temperature";
 import { stored } from "@/utils/preferences";
@@ -18,23 +19,14 @@ function open(): void {
   updateGlobePosition();
   updateWindDirections();
 
-  $("#worldConfigurator").dialog({
-    title: "Configure World",
+  showDomDialog({
+    content: ensureEl("worldConfigurator"),
+    onClose: () => destroyDialog("worldConfigurator"),
+    placement: "center",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    width: "minmax(40em, 85vw)",
-    buttons: { "Update world": updateWorld },
-    open: function (this: HTMLElement) {
-      const checkbox = /* html */ `<div class="dontAsk" data-tip="Automatically update world on input changes and button clicks">
-        <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
-        <label for="wcAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
-      </div>`;
-      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
-      pane?.insertAdjacentHTML("afterbegin", checkbox);
-
-      const button = this.parentElement?.querySelector(".ui-dialog-buttonset > button");
-      button?.addEventListener("mousemove", () => tip("Apply current settings to the map"));
-    },
-    close: () => destroyDialog("worldConfigurator")
+    title: "Configure World",
+    width: "min(85vw, 48em)"
   });
 }
 
@@ -197,6 +189,13 @@ function createDialogHtml(): string {
       <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
       <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1em;margin-top:.8em;padding-top:.6em;border-top:1px solid #ddd">
+      <label class="dontAsk" style="margin:0" data-tip="Automatically update world on input changes and button clicks">
+        <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
+        <span><i>auto-apply changes</i></span>
+      </label>
+      <button id="worldConfiguratorUpdate">Update world</button>
+    </div>
   </div>`;
 }
 
@@ -226,6 +225,8 @@ function addListeners(): void {
   ensureEl("wcNorthern").addEventListener("click", () => applyWorldPreset(33, 25));
   ensureEl("wcTropical").addEventListener("click", () => applyWorldPreset(33, 50));
   ensureEl("wcSouthern").addEventListener("click", () => applyWorldPreset(33, 75));
+  ensureEl("worldConfiguratorUpdate").addEventListener("click", updateWorld);
+  ensureEl("worldConfiguratorUpdate").addEventListener("mousemove", () => tip("Apply current settings to the map"));
 
   // lock icons: sync state from storage and toggle on click (stored == locked)
   ensureEl("worldConfigurator")

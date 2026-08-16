@@ -1,6 +1,8 @@
 import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime, select, timeFormat } from "d3";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { convertTemperature, rn, round } from "../utils";
+import { showDomDialog } from "@/components/ui/dom-dialog";
+import { convertTemperature, ensureEl, rn, round } from "../utils";
 
 const MONTHS = [
   "January",
@@ -18,6 +20,12 @@ const MONTHS = [
 ];
 
 function open(id: number): void {
+  destroyDialog("temperatureGraph");
+  const dialog = document.createElement("div");
+  dialog.id = "temperatureGraph";
+  dialog.className = "dialog";
+  ensureEl("dialogs").appendChild(dialog);
+
   const b = pack.burgs[id];
   const lat = (mapCoordinates.latN ?? 0) - (b.y / graphHeight) * (mapCoordinates.latT ?? 0);
   const burgTemp = grid.cells.temp[pack.cells.g[b.cell]];
@@ -148,17 +156,20 @@ function open(id: number): void {
 
   drawGraph();
 
-  $("#alert").dialog({
+  showDomDialog({
+    content: dialog,
+    placement: "center",
+    placementTarget: document.querySelector("svg"),
+    resizable: true,
     title: `Average temperature in ${b.name}`,
-    position: { my: "center", at: "center", of: "svg" }
+    width: "fit-content"
   });
 
   function drawGraph(): void {
-    alertMessage.innerHTML = "";
     const getCurve = (data: [number, number][]): string => round(line().curve(curveBasis)(data) ?? "", 2);
 
     const legendSize = 60;
-    const chart = select("#alertMessage")
+    const chart = select(dialog)
       .append("svg")
       .attr("width", chartWidth + 120)
       .attr("height", chartHeight + yOffset + legendSize);

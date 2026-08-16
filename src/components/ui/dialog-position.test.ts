@@ -14,6 +14,13 @@ describe("getDialogPosition", () => {
     expect(getDialogPosition(anchor, dialog, "center", viewport)).toEqual({ left: 350, top: 250 });
   });
 
+  test("supports independent placement offsets", () => {
+    expect(getDialogPosition(anchor, dialog, "top-left", viewport, { x: 10, y: 140 })).toEqual({
+      left: 110,
+      top: 190
+    });
+  });
+
   test("keeps a dialog inside the viewport", () => {
     expect(getDialogPosition({ height: 100, left: -40, top: -30, width: 100 }, dialog, "top-left", viewport)).toEqual({
       left: 8,

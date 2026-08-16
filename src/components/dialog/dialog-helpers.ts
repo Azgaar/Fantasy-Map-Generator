@@ -1,15 +1,28 @@
 // Building blocks shared by every editor dialog
-import { ensureEl, findEl } from "@/utils";
+import { findEl } from "@/utils";
+
+export type DialogParams = {
+  position?: { my: string; at: string; of: string; collision: string };
+  resizable?: boolean;
+  title?: string;
+  width?: string;
+};
 
 interface ManagedDialog {
   close: () => void;
   stable: boolean;
+  update?: (params: DialogParams) => void;
 }
 
 const managedDialogs = new Map<string, ManagedDialog>();
 
-export function registerManagedDialog(id: string, close: () => void, stable = false): () => void {
-  const dialog = { close, stable };
+export function registerManagedDialog(
+  id: string,
+  close: () => void,
+  stable = false,
+  update?: (params: DialogParams) => void
+): () => void {
+  const dialog = { close, stable, update };
   managedDialogs.set(id, dialog);
   return () => {
     if (managedDialogs.get(id) === dialog) managedDialogs.delete(id);
@@ -60,21 +73,16 @@ export function confirmationDialog(options: ConfirmationOptions): void {
     onConfirm
   } = options;
 
-  ensureEl("alertMessage").innerHTML = message;
-
-  $("#alert").dialog({
-    resizable: false,
-    title,
-    buttons: {
-      [confirm]: function (this: HTMLElement) {
-        onConfirm?.();
-        $(this).dialog("close");
-      },
-      [cancel]: function (this: HTMLElement) {
-        onCancel?.();
-        $(this).dialog("close");
-      }
-    }
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [
+        { label: cancel, onClick: onCancel },
+        { intent: "danger", label: confirm, onClick: onConfirm }
+      ],
+      id: "confirmationDialog",
+      messageHtml: message,
+      title
+    });
   });
 }
 
@@ -105,14 +113,13 @@ export function refreshEditors(): void {
   for (const buttonId of REFRESHABLE_EDITORS) findEl(buttonId)?.click();
 }
 
-type DialogParams = {
-  title?: string;
-  resizable?: boolean;
-  width?: string;
-  position?: { my: string; at: string; of: string; collision: string };
-};
-
 export const updateDialog = (id: string, params: DialogParams) => {
+  const managedDialog = managedDialogs.get(id);
+  if (managedDialog) {
+    managedDialog.update?.(params);
+    return;
+  }
+
   const el = findEl(id);
   if (!el) return;
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog(params);
@@ -120,6 +127,12 @@ export const updateDialog = (id: string, params: DialogParams) => {
 
 // Remove an element, destroying its jQuery UI dialog widget first
 export const destroyDialog = (id: string): void => {
+  const managedDialog = managedDialogs.get(id);
+  if (managedDialog) {
+    managedDialog.close();
+    return;
+  }
+
   const el = findEl(id);
   if (!el) return;
   if (el.classList.contains("ui-dialog-content")) window.$(el).dialog("destroy");

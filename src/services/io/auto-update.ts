@@ -75,7 +75,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    if (!layerIsOn("toggleBorders")) $("#borders").fadeOut();
+    if (!layerIsOn("toggleBorders")) select("#borders").style("display", "none");
     if (!layerIsOn("toggleStates")) select("#regions").attr("display", "none").selectAll("path").remove();
 
     // v1.0 added zones layer

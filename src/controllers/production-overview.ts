@@ -1,11 +1,13 @@
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import type { Burg } from "../generators/burgs-generator";
 import type { DemandCategory } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../generators/goods-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { ProductionCandidate } from "../generators/production-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { formatPrice, rn } from "../utils";
+import { ensureEl, formatPrice, rn } from "../utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
@@ -365,15 +367,20 @@ function open(burgId: number): void {
     empty: "No goods manufactured"
   });
 
-  alertMessage.innerHTML = /*html*/ `
+  destroyDialog("productionOverviewDialog");
+  const dialog = document.createElement("div");
+  dialog.id = "productionOverviewDialog";
+  dialog.className = "dialog";
+  dialog.innerHTML = /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection("Manufactured Goods", producedTable, "Goods manufactured by this burg in this production cycle.")}
       ${renderSection("Production and Trade history", jobsTable, "Chronological local production, market purchases, sales, and demand-fill operations for this burg.")}
     </div>
   `;
+  ensureEl("dialogs").appendChild(dialog);
 
-  const overviewContent = alertMessage.querySelector<HTMLElement>("#productionOverviewContent");
+  const overviewContent = dialog.querySelector<HTMLElement>("#productionOverviewContent");
   if (overviewContent) {
     overviewContent.onclick = event => {
       const target = event.target as HTMLElement;
@@ -390,16 +397,13 @@ function open(burgId: number): void {
     };
   }
 
-  $("#alert").dialog({
-    width: "48em",
+  showDomDialog({
+    content: dialog,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: true,
     title: `Production Overview: ${burg.name}`,
-    position: {
-      my: "right top",
-      at: "right-10 top+10",
-      of: "svg",
-      collision: "fit"
-    }
+    width: "48em"
   });
 }
 

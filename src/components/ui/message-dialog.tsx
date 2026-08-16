@@ -103,12 +103,15 @@ export function showMessageDialog(options: MessageDialogOptions): MessageDialogH
       if (closed) return;
       closed = true;
       unregister();
-      options.onClose?.();
-      if (activeDialogs.get(options.id) === handle) activeDialogs.delete(options.id);
-      queueMicrotask(() => {
-        root.unmount();
-        container.remove();
-      });
+      try {
+        options.onClose?.();
+      } finally {
+        if (activeDialogs.get(options.id) === handle) activeDialogs.delete(options.id);
+        queueMicrotask(() => {
+          root.unmount();
+          container.remove();
+        });
+      }
     }
   } satisfies MessageDialogHandle;
 

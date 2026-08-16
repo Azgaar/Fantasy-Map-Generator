@@ -47,9 +47,10 @@ test.describe("States", () => {
     // Click the trash icon to remove the state
     await page.click(`#statesBodySection > div[data-id="${stateId}"] .icon-trash-empty`);
 
-    // Confirm the removal in the jQuery dialog - look for "Remove" button in the dialog buttonpane
-    await page.waitForSelector(".ui-dialog:has(#alert) .ui-dialog-buttonpane", {state: "visible", timeout: 3000});
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child"); // "Remove" is first button
+    // Confirm the removal in the shared application dialog
+    const confirmation = page.getByRole("dialog", {name: "Remove state"});
+    await expect(confirmation).toBeVisible({timeout: 3000});
+    await confirmation.getByRole("button", {name: "Remove", exact: true}).click();
     await page.waitForTimeout(500);
 
     // Verify the state is no longer in neighbors of any other state

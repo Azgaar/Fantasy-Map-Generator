@@ -108,6 +108,10 @@
   overflow: auto;
 }
 
+.fmg-dom-dialog__content > .dialog {
+  display: block;
+}
+
 .fmg-dialog__footer {
   display: flex;
   align-items: center;

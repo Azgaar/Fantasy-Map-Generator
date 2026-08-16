@@ -1,5 +1,6 @@
 import { type Selection, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { drawTemperature } from "@/renderers/draw-temperature";
 import { lock, unlock } from "@/utils/preferences";
@@ -19,9 +20,13 @@ let initialized = false; // TODO: refactor to eliminate initialization arc
 function open(): void {
   closeDialogs("#unitsEditor, .stable");
 
-  $("#unitsEditor").dialog({
+  showDomDialog({
+    content: ensureEl("unitsEditor"),
+    destroyOnClose: false,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     title: "Units Editor",
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    width: "24em"
   });
 
   if (initialized) return;

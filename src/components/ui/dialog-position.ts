@@ -12,6 +12,11 @@ interface Viewport {
   width: number;
 }
 
+export interface WorkspaceDialogOffset {
+  x: number;
+  y: number;
+}
+
 const VIEWPORT_MARGIN = 8;
 
 const clamp = (value: number, maximum: number): number =>
@@ -22,15 +27,15 @@ export function getDialogPosition(
   dialog: Pick<Rectangle, "height" | "width">,
   placement: WorkspaceDialogPlacement,
   viewport: Viewport,
-  offset = 10
+  offset: WorkspaceDialogOffset = { x: 10, y: 10 }
 ): { left: number; top: number } {
   const left =
     placement === "top-left"
-      ? anchor.left + offset
+      ? anchor.left + offset.x
       : placement === "top-right"
-        ? anchor.left + anchor.width - dialog.width - offset
+        ? anchor.left + anchor.width - dialog.width - offset.x
         : anchor.left + (anchor.width - dialog.width) / 2;
-  const top = placement === "center" ? anchor.top + (anchor.height - dialog.height) / 2 : anchor.top + offset;
+  const top = placement === "center" ? anchor.top + (anchor.height - dialog.height) / 2 : anchor.top + offset.y;
 
   return {
     left: clamp(left, viewport.width - dialog.width - VIEWPORT_MARGIN),

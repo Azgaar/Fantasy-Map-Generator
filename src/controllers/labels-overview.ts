@@ -9,6 +9,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
 import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
@@ -74,11 +75,14 @@ function open(group: string = ALL): void {
   ensureEl<HTMLInputElement>("labelsSearch").value = filters.search;
   labelsTable.reset();
 
-  $(`#${dialogId}`).dialog({
-    title: "Labels Overview",
+  showDomDialog({
+    content: ensureEl(dialogId),
+    onClose: close,
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    position,
-    close
+    title: "Labels Overview",
+    width: "fit-content"
   });
 }
 

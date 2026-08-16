@@ -1,4 +1,5 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { ensureEl } from "../utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
@@ -74,13 +75,13 @@ function open(): void {
   closeDialogs("#tradeAnimationEditor, .stable");
   renderDialog();
 
-  $("#tradeAnimationEditor").dialog({
-    title: "Trade Animation Editor",
+  showDomDialog({
+    content: ensureEl("tradeAnimationEditor"),
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: () => {
-      destroyDialog("tradeAnimationEditor");
-    }
+    title: "Trade Animation Editor",
+    width: "fit-content"
   });
 }
 

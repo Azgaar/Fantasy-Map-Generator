@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import type { Route } from "@/generators/routes-generator";
 import { ensureEl } from "../utils";
 
@@ -16,11 +17,15 @@ function open(): void {
   renderDialog();
   addLines();
 
-  $("#routeGroupsEditor").dialog({
-    title: "Edit Route groups",
+  showDomDialog({
+    content: ensureEl("routeGroupsEditor"),
+    onClose: closeRouteGroupsEditor,
+    placement: "top-left",
+    placementOffset: { x: 10, y: 140 },
+    placementTarget: document.getElementById("map"),
     resizable: false,
-    position: { my: "left top", at: "left+10 top+140", of: "#map" },
-    close: closeRouteGroupsEditor
+    title: "Edit Route groups",
+    width: "22em"
   });
 }
 

@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { drawFeatures } from "@/renderers/draw-features";
 import {
   buildCoastlinePath,
@@ -150,14 +151,13 @@ function open(): void {
   renderDialog();
   updatePreviews();
 
-  $("#coastlineSettingsDialog").dialog({
-    title: "Coastline Settings Editor",
+  showDomDialog({
+    content: ensureEl("coastlineSettingsDialog"),
+    placement: "top-right",
+    placementTarget: document.querySelector("svg"),
     resizable: false,
-    width: "auto",
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: () => {
-      destroyDialog("coastlineSettingsDialog");
-    }
+    title: "Coastline Settings Editor",
+    width: "auto"
   });
 }
 

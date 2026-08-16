@@ -2,7 +2,11 @@ import { Button } from "@patkepa/kantzen-ui/primitives";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { getDialogPosition, type WorkspaceDialogPlacement } from "./dialog-position";
+import {
+  getDialogPosition,
+  type WorkspaceDialogOffset,
+  type WorkspaceDialogPlacement
+} from "./dialog-position";
 import "./dialog.css";
 
 interface WorkspaceDialogProps {
@@ -16,6 +20,7 @@ interface WorkspaceDialogProps {
   isModal?: boolean;
   isOpen: boolean;
   onClose: () => void;
+  placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
   placementTarget?: Element | null;
   resizable?: boolean;
@@ -56,6 +61,7 @@ export function WorkspaceDialog({
   isModal = true,
   isOpen,
   onClose,
+  placementOffset,
   placement = "center",
   placementTarget,
   resizable = false,
@@ -135,10 +141,16 @@ export function WorkspaceDialog({
         width: window.innerWidth
       };
       const dialogRect = dialog.getBoundingClientRect();
-      const position = getDialogPosition(targetRect, dialogRect, placement, {
-        height: window.innerHeight,
-        width: window.innerWidth
-      });
+      const position = getDialogPosition(
+        targetRect,
+        dialogRect,
+        placement,
+        {
+          height: window.innerHeight,
+          width: window.innerWidth
+        },
+        placementOffset
+      );
       dialog.style.left = `${position.left}px`;
       dialog.style.top = `${position.top}px`;
     };
@@ -148,7 +160,7 @@ export function WorkspaceDialog({
     return () => {
       window.removeEventListener("resize", positionDialog);
     };
-  }, [isModal, isOpen, placement, placementTarget]);
+  }, [isModal, isOpen, placement, placementOffset, placementTarget]);
 
   const handleDragStart = (event: ReactPointerEvent<HTMLElement>) => {
     if (!canDrag || event.button !== 0 || (event.target as Element).closest("button")) return;
