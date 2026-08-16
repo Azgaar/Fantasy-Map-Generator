@@ -4,6 +4,54 @@
   color: var(--kui-text-secondary);
 }
 
+#workspacePanelHeaderRoot {
+  width: 100%;
+  height: 100%;
+}
+
+.fmg-panel-header {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fmg-panel-header h1 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--kui-text);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#options .fmg-panel-header__close {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--kui-line);
+  background: transparent;
+  color: var(--kui-text-muted);
+}
+
+#options .fmg-panel-header__close:hover,
+#options .fmg-panel-header__close:focus-visible {
+  border-color: var(--kui-line-strong);
+  outline: 0;
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
 .fmg-panel-search {
   position: relative;
   display: flex;
@@ -110,6 +158,12 @@
   flex-direction: column;
 }
 
+.fmg-panel-action-group {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--kui-line-soft);
+}
+
 #options .fmg-panel-action {
   display: flex;
   width: 100%;
@@ -129,6 +183,12 @@
   text-align: left;
 }
 
+.fmg-panel-action-group .fmg-panel-action {
+  min-width: 0;
+  flex: 1;
+  border-bottom: 0 !important;
+}
+
 #options .fmg-panel-action > .bp6-button-text {
   display: flex;
   min-width: 0;
@@ -142,12 +202,6 @@
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.fmg-panel-action i {
-  display: inline-flex;
-  padding: 3px;
-  color: var(--kui-text-muted) !important;
 }
 
 #options .fmg-panel-action:hover,
@@ -164,6 +218,25 @@
   background: hsl(var(--accent) / 0.22);
   color: var(--kui-text);
   font-style: normal;
+}
+
+#options .fmg-panel-action__secondary {
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  align-self: center;
+  margin: 0 4px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--kui-text-muted);
+}
+
+#options .fmg-panel-action__secondary:hover,
+#options .fmg-panel-action__secondary:focus-visible {
+  outline: 0;
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
 }
 
 .fmg-panel-empty {
@@ -194,4 +267,176 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.fmg-toggle-field {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+}
+
+.fmg-toggle-field input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.fmg-toggle-field__control {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 18px;
+  flex: 0 0 30px;
+  border: 1px solid var(--kui-line-strong);
+  background: var(--kui-surface-raised);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.fmg-toggle-field__control > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  background: var(--kui-text-muted);
+  transition:
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.fmg-toggle-field input:checked + .fmg-toggle-field__control {
+  border-color: hsl(var(--accent));
+  background: hsl(var(--accent) / 0.3);
+}
+
+.fmg-toggle-field input:checked + .fmg-toggle-field__control > span {
+  background: var(--kui-text);
+  transform: translateX(12px);
+}
+
+.fmg-toggle-field input:focus-visible + .fmg-toggle-field__control {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+.fmg-toggle-field__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fmg-toggle-field__copy strong {
+  color: var(--kui-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fmg-toggle-field__copy small {
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.kui-overlay {
+  position: fixed;
+  z-index: 2100;
+  display: grid;
+  inset: 0;
+  place-items: center;
+}
+
+.kui-overlay .bp6-overlay-backdrop {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: rgb(0 0 0 / 0.72);
+  pointer-events: auto;
+}
+
+.fmg-confirm-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-panel);
+  box-shadow: var(--kui-overlay-shadow, 0 18px 52px rgb(0 0 0 / 0.56));
+  color: var(--kui-text-secondary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.fmg-confirm-dialog .bp6-alert-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.fmg-confirm-dialog .bp6-alert-body > .bp6-intent-warning {
+  color: hsl(var(--warning));
+}
+
+.fmg-confirm-dialog .bp6-alert-contents {
+  min-width: 0;
+  flex: 1;
+}
+
+.fmg-confirm-dialog h2 {
+  margin: 0 0 8px;
+  color: var(--kui-text);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.fmg-confirm-dialog p {
+  margin: 0 0 18px;
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.fmg-confirm-dialog .bp6-alert-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.fmg-confirm-dialog .bp6-button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  cursor: pointer;
+  font: 600 12px/18px inherit;
+}
+
+.fmg-confirm-dialog .bp6-button:hover,
+.fmg-confirm-dialog .bp6-button:focus-visible {
+  border-color: var(--kui-line-strong);
+  outline: 0;
+  background: var(--kui-surface-hover);
+}
+
+.fmg-confirm-dialog .bp6-button.bp6-intent-warning {
+  border-color: hsl(var(--warning) / 0.75);
+  background: hsl(var(--warning));
+  color: hsl(220 25% 4%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fmg-toggle-field__control,
+  .fmg-toggle-field__control > span {
+    transition: none;
+  }
 }

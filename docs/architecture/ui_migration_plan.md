@@ -338,11 +338,14 @@ Completed:
 - [x] Add a typed compatibility adapter for commands still owned by legacy controls.
 - [x] Add unit coverage for available, disabled, and missing legacy command targets.
 - [x] Make the displayed Tools search shortcut functional while the panel is active.
+- [x] Extract the visible workspace panel header from legacy markup.
+- [x] Add shared toggle-field and confirmation-dialog compositions.
+- [x] Replace the Tools regeneration prompt with the Kantzen confirmation dialog.
+- [x] Preserve regeneration modifiers and the session-level confirmation preference through a typed command event.
 
 Remaining:
 
-- [ ] Add shared field compositions for text, number, select, slider, toggle, and color controls.
-- [ ] Add dialog, confirmation, and inline feedback compositions.
+- [ ] Add shared field compositions for text, number, select, slider, and color controls.
+- [ ] Add general dialog and inline feedback compositions.
 - [ ] Add shared tabs and data-table foundations.
-- [ ] Extract the workspace panel header from legacy markup.
 - [ ] Document spacing, typography, icon, focus, and destructive-action conventions.

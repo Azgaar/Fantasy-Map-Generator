@@ -16,6 +16,7 @@ import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
+import { type RegenerationCommandDetail, RUN_REGENERATION_EVENT } from "./ui/regeneration-command";
 
 ensureEl("toolsContent").addEventListener("click", event => {
   if (customization) return tip("Please exit the customization mode first", false, "error");
@@ -27,7 +28,8 @@ ensureEl("toolsContent").addEventListener("click", event => {
 
   const buttonId = action.id;
   const parentId = button?.parentElement?.id;
-  if (parentId === "regenerateFeature") confirmRegeneration(event, buttonId);
+  if (buttonId === "configRegenerateMarkers") void Controllers.MarkersSettings.open();
+  else if (parentId === "regenerateFeature") confirmRegeneration(event, buttonId);
   else if (buttonId === "editHeightmapButton") void Controllers.HeightmapEditor.open();
   else if (buttonId === "editBiomesButton") void Controllers.BiomesEditor.open();
   else if (buttonId === "editStatesButton") void Controllers.StatesEditor.open();
@@ -54,7 +56,6 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "overviewMarketsButton") void Controllers.MarketsOverview.open();
   else if (buttonId === "overviewCellsButton") void Controllers.CellInfo.open();
   else if (buttonId === "openMinimapButton") void Controllers.Minimap.open();
-  else if (buttonId === "configRegenerateMarkers") void Controllers.MarkersSettings.open();
   else if (buttonId === "addBurgTool") void Controllers.BurgCreator.toggle();
   else if (buttonId === "addLabel") void Controllers.LabelCreator.toggle();
   else if (buttonId === "addRiver") void Controllers.RiverAutoCreator.toggle();
@@ -62,6 +63,13 @@ ensureEl("toolsContent").addEventListener("click", event => {
   else if (buttonId === "addMarker") void Controllers.MarkerCreator.toggle();
   else if (buttonId === "openSubmapTool") void Controllers.SubmapTool.open();
   else if (buttonId === "openTransformTool") void Controllers.TransformTool.open();
+});
+
+window.addEventListener(RUN_REGENERATION_EVENT, event => {
+  const detail = (event as CustomEvent<RegenerationCommandDetail>).detail;
+  if (!detail?.buttonId) return;
+  const { buttonId, ctrlKey, metaKey } = detail;
+  regenerate(new MouseEvent("click", { ctrlKey, metaKey }), buttonId);
 });
 
 function confirmRegeneration(event: MouseEvent, button: string): void {

@@ -3,11 +3,14 @@ import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
 import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { WorkspaceConfirmDialog } from "./ui/confirm-dialog";
 import { executeLegacyCommand } from "./ui/legacy-command";
+import { dispatchRegenerationCommand } from "./ui/regeneration-command";
 import {
   WorkspacePanel,
   WorkspacePanelAction,
   WorkspacePanelEmptyState,
+  WorkspacePanelHeader,
   WorkspacePanelSearch,
   WorkspacePanelSection
 } from "./ui/workspace-panel";
@@ -31,6 +34,12 @@ interface ToolGroup {
   actions: ToolAction[];
 }
 
+interface PendingRegeneration {
+  action: ToolAction;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}
+
 const SECTION_ROUTES: Record<WorkspaceSection, string> = {
   layers: "/layers",
   style: "/style",
@@ -45,6 +54,14 @@ const SECTION_TABS: Record<WorkspaceSection, string> = {
   options: "optionsTab",
   tools: "toolsTab",
   about: "aboutTab"
+};
+
+const SECTION_TITLES: Record<WorkspaceSection, string> = {
+  layers: "Layers",
+  style: "Style",
+  options: "Options",
+  tools: "Tools",
+  about: "About"
 };
 
 const NAV_GROUPS: NavGroup[] = [
@@ -220,12 +237,44 @@ function WorkspaceNavigation(): React.JSX.Element {
   );
 }
 
+function WorkspaceHeader(): React.JSX.Element {
+  const [title, setTitle] = useState(SECTION_TITLES.layers);
+
+  useEffect(() => {
+    const handlePanelChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ section: WorkspaceSection | null; title?: string }>).detail;
+      if (detail.section) setTitle(detail.title ?? SECTION_TITLES[detail.section]);
+    };
+
+    window.addEventListener("workspace-panel-change", handlePanelChange);
+    return () => window.removeEventListener("workspace-panel-change", handlePanelChange);
+  }, []);
+
+  return <WorkspacePanelHeader onClose={() => executeLegacyCommand("optionsHide")} title={title} />;
+}
+
 function matchesSearch(action: ToolAction, query: string): boolean {
   return `${action.label} ${action.tip}`.toLocaleLowerCase().includes(query);
 }
 
-function ToolButton({ action, icon }: { action: ToolAction; icon: IconName }): React.JSX.Element {
+function ToolButton({
+  action,
+  icon,
+  onRegenerate
+}: {
+  action: ToolAction;
+  icon: IconName;
+  onRegenerate?: (action: ToolAction, event: MouseEvent) => void;
+}): React.JSX.Element {
   const hasMarkerSettings = action.id === "regenerateMarkers";
+  const handleClick = onRegenerate
+    ? (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (event.target instanceof Element && event.target.closest("#configRegenerateMarkers")) return;
+        event.stopPropagation();
+        onRegenerate(action, event.nativeEvent);
+      }
+    : undefined;
+
   return (
     <WorkspacePanelAction
       id={action.id}
@@ -233,12 +282,14 @@ function ToolButton({ action, icon }: { action: ToolAction; icon: IconName }): R
       data-shortcut={action.shortcut}
       icon={icon}
       label={action.label}
+      onClick={handleClick}
+      secondaryAction={hasMarkerSettings ? {
+        ariaLabel: "Marker settings",
+        icon: "settings",
+        id: "configRegenerateMarkers",
+        tip: "Set marker number multiplier"
+      } : undefined}
       shortcut={action.shortcut?.replace("Shift + ", "⇧")}
-      trailing={hasMarkerSettings ? (
-        <i id="configRegenerateMarkers" data-tip="Set marker number multiplier" aria-label="Marker settings">
-          <Icon icon="settings" size={12} />
-        </i>
-      ) : null}
     />
   );
 }
@@ -260,12 +311,15 @@ function ToolSection({ group, query, containerId }: { group: ToolGroup; query: s
 
 function ToolsPanel(): React.JSX.Element {
   const [search, setSearch] = useState("");
+  const [pendingRegeneration, setPendingRegeneration] = useState<PendingRegeneration | null>(null);
+  const [skipFutureConfirmation, setSkipFutureConfirmation] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
   const query = search.trim().toLocaleLowerCase();
   const [editGroup, addGroup, inspectGroup, createGroup] = TOOL_GROUPS;
   const regenerateActions = REGENERATE_ACTIONS.filter(action => matchesSearch(action, query));
   const hasResults =
-    regenerateActions.length > 0 || TOOL_GROUPS.some(group => group.actions.some(action => matchesSearch(action, query)));
+    regenerateActions.length > 0 ||
+    TOOL_GROUPS.some(group => group.actions.some(action => matchesSearch(action, query)));
 
   useEffect(() => {
     const focusToolSearch = (event: KeyboardEvent) => {
@@ -280,6 +334,29 @@ function ToolsPanel(): React.JSX.Element {
     window.addEventListener("keydown", focusToolSearch);
     return () => window.removeEventListener("keydown", focusToolSearch);
   }, []);
+
+  const requestRegeneration = (action: ToolAction, event: MouseEvent) => {
+    if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
+      dispatchRegenerationCommand(action.id, event);
+      return;
+    }
+
+    setSkipFutureConfirmation(false);
+    setPendingRegeneration({ action, ctrlKey: event.ctrlKey, metaKey: event.metaKey });
+  };
+
+  const confirmRegeneration = () => {
+    if (!pendingRegeneration) return;
+    if (skipFutureConfirmation) sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+    dispatchRegenerationCommand(pendingRegeneration.action.id, pendingRegeneration);
+    setPendingRegeneration(null);
+    setSkipFutureConfirmation(false);
+  };
+
+  const cancelRegeneration = () => {
+    setPendingRegeneration(null);
+    setSkipFutureConfirmation(false);
+  };
 
   return (
     <WorkspacePanel className="fmg-tools-panel">
@@ -306,7 +383,7 @@ function ToolsPanel(): React.JSX.Element {
                 </summary>
                 <div id="regenerateFeature" className="fmg-panel-action-list">
                   {regenerateActions.map(action => (
-                    <ToolButton action={action} icon="refresh" key={action.id} />
+                    <ToolButton action={action} icon="refresh" key={action.id} onRegenerate={requestRegeneration} />
                   ))}
                 </div>
               </details>
@@ -320,6 +397,19 @@ function ToolsPanel(): React.JSX.Element {
         />
       )}
       <input type="hidden" id="addedMarkerType" name="addedMarkerType" value="" />
+      <WorkspaceConfirmDialog
+        confirmLabel="Regenerate"
+        description="Regeneration removes custom changes made to this feature. This action cannot be undone."
+        isOpen={pendingRegeneration !== null}
+        onCancel={cancelRegeneration}
+        onConfirm={confirmRegeneration}
+        rememberChoice={{
+          checked: skipFutureConfirmation,
+          label: "Do not ask again this session",
+          onChange: setSkipFutureConfirmation
+        }}
+        title={`Regenerate ${pendingRegeneration?.action.label ?? "feature"}?`}
+      />
     </WorkspacePanel>
   );
 }
@@ -336,8 +426,10 @@ function bindLayerSearch(): void {
 }
 
 const navigationRoot = document.getElementById("workspaceNavigationRoot");
+const headerRoot = document.getElementById("workspacePanelHeaderRoot");
 const toolsRoot = document.getElementById("toolsContent");
 
 if (navigationRoot) createRoot(navigationRoot).render(<WorkspaceNavigation />);
+if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
 bindLayerSearch();

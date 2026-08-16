@@ -223,35 +223,8 @@
   background: var(--kui-surface-panel);
 }
 
-#workspacePanelTitle {
-  overflow: hidden;
-  color: var(--kui-text);
-  font-size: 18px;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#options > .tab > button:not(#optionsHide) {
+#options > .tab > button {
   display: none;
-}
-
-#options > .tab > #optionsHide {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  padding: 0;
-  border: 1px solid var(--kui-line);
-  background: transparent;
-  color: var(--kui-text-muted);
-  font: 20px/24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-#options > .tab > #optionsHide:hover {
-  border-color: var(--kui-line-strong);
-  background: var(--kui-surface-hover);
-  color: var(--kui-text);
 }
 
 #options .tabcontent {

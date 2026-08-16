@@ -99,8 +99,7 @@ function notifyWorkspacePanelChange(tabId) {
   const activeId = tabId || ensureEl("options").querySelector(".tab > button.active")?.id;
   const section = workspaceSections[activeId] || "layers";
   const title = ensureEl(activeId)?.textContent?.trim() || "Layers";
-  ensureEl("workspacePanelTitle").textContent = title;
-  window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section } }));
+  window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section, title } }));
 }
 
 // show popup with a list of Patreon supportes (updated manually)

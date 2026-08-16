@@ -8,6 +8,12 @@ interface WorkspacePanelProps {
   className?: string;
 }
 
+interface WorkspacePanelHeaderProps {
+  closeLabel?: string;
+  onClose: () => void;
+  title: string;
+}
+
 interface WorkspacePanelSearchProps {
   ariaLabel: string;
   inputRef?: Ref<HTMLInputElement>;
@@ -27,8 +33,13 @@ interface WorkspacePanelSectionProps {
 interface WorkspacePanelActionProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   icon: IconName;
   label: string;
+  secondaryAction?: {
+    ariaLabel: string;
+    icon: IconName;
+    id: string;
+    tip?: string;
+  };
   shortcut?: string;
-  trailing?: ReactNode;
 }
 
 interface WorkspacePanelEmptyStateProps {
@@ -43,6 +54,28 @@ function classes(...values: (string | undefined)[]): string {
 
 export function WorkspacePanel({ children, className }: WorkspacePanelProps): React.JSX.Element {
   return <div className={classes("fmg-workspace-panel", className)}>{children}</div>;
+}
+
+export function WorkspacePanelHeader({
+  closeLabel = "Close panel",
+  onClose,
+  title
+}: WorkspacePanelHeaderProps): React.JSX.Element {
+  return (
+    <header className="fmg-panel-header">
+      <h1>{title}</h1>
+      <Button
+        aria-label={closeLabel}
+        className="fmg-panel-header__close"
+        icon="cross"
+        minimal
+        onClick={event => {
+          event.stopPropagation();
+          onClose();
+        }}
+      />
+    </header>
+  );
 }
 
 export function WorkspacePanelSearch({
@@ -89,16 +122,31 @@ export function WorkspacePanelAction({
   className,
   icon,
   label,
+  secondaryAction,
   shortcut,
-  trailing,
   ...buttonProps
 }: WorkspacePanelActionProps): React.JSX.Element {
-  return (
+  const action = (
     <Button {...buttonProps} className={classes("fmg-panel-action", className)} fill icon={icon} minimal>
       <span className="fmg-panel-action__label">{label}</span>
       {shortcut ? <kbd>{shortcut}</kbd> : null}
-      {trailing}
     </Button>
+  );
+
+  if (!secondaryAction) return action;
+
+  return (
+    <div className="fmg-panel-action-group">
+      {action}
+      <Button
+        aria-label={secondaryAction.ariaLabel}
+        className="fmg-panel-action__secondary"
+        data-tip={secondaryAction.tip}
+        icon={secondaryAction.icon}
+        id={secondaryAction.id}
+        minimal
+      />
+    </div>
   );
 }
 
