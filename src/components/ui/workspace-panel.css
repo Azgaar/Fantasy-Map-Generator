@@ -1,0 +1,197 @@
+.fmg-workspace-panel {
+  min-height: 100%;
+  padding: 14px 16px 20px;
+  color: var(--kui-text-secondary);
+}
+
+.fmg-panel-search {
+  position: relative;
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: var(--kui-text-muted);
+}
+
+.fmg-panel-search__field,
+.fmg-panel-search .bp6-input-group {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+}
+
+.fmg-panel-search .bp6-input-group > .bp6-icon {
+  position: absolute;
+  z-index: 1;
+  left: 9px;
+  pointer-events: none;
+}
+
+.fmg-panel-search .bp6-input {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 70px 5px 30px;
+  border: 1px solid var(--kui-line);
+  outline: 0;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  font: 500 12px/1.2 inherit;
+}
+
+.fmg-panel-search .bp6-input:focus {
+  border-color: hsl(var(--accent));
+  box-shadow: 0 0 0 1px hsl(var(--accent));
+}
+
+.fmg-panel-search .bp6-input::placeholder {
+  color: var(--kui-text-muted);
+}
+
+.fmg-panel-search .bp6-input-action {
+  position: absolute;
+  z-index: 2;
+  right: 38px;
+  display: inline-flex;
+}
+
+#options .fmg-panel-search .bp6-input-action .bp6-button {
+  min-width: 26px;
+  min-height: 26px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--kui-text-muted);
+}
+
+.fmg-panel-search > kbd,
+.fmg-panel-action kbd {
+  color: var(--kui-text-muted);
+  font: 10px/1.2 "SF Mono", Consolas, monospace;
+  white-space: nowrap;
+}
+
+.fmg-panel-search > kbd {
+  position: absolute;
+  z-index: 1;
+  right: 9px;
+  pointer-events: none;
+}
+
+.fmg-panel-section {
+  margin: 0 0 17px;
+}
+
+.fmg-panel-section__header {
+  margin-bottom: 6px;
+}
+
+.fmg-panel-section__header h2,
+.fmg-regenerate summary > span {
+  margin: 0;
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fmg-panel-section__header p {
+  margin: 3px 0 0;
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.fmg-panel-action-list {
+  display: flex;
+  flex-direction: column;
+}
+
+#options .fmg-panel-action {
+  display: flex;
+  width: 100%;
+  min-height: 30px;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 7px;
+  overflow: visible;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--kui-line-soft);
+  background: transparent;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  font: 500 12px/18px inherit;
+  text-align: left;
+}
+
+#options .fmg-panel-action > .bp6-button-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+
+.fmg-panel-action__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fmg-panel-action i {
+  display: inline-flex;
+  padding: 3px;
+  color: var(--kui-text-muted) !important;
+}
+
+#options .fmg-panel-action:hover,
+#options .fmg-panel-action:focus-visible {
+  border-left-color: hsl(var(--accent));
+  outline: 0;
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+#options .fmg-panel-action.pressed,
+#options .fmg-panel-action.bp6-active {
+  border-left-color: hsl(var(--accent));
+  background: hsl(var(--accent) / 0.22);
+  color: var(--kui-text);
+  font-style: normal;
+}
+
+.fmg-panel-empty {
+  display: flex;
+  min-height: 240px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--kui-text-muted);
+  text-align: center;
+}
+
+.fmg-panel-empty .bp6-icon {
+  margin-bottom: 14px;
+  opacity: 0.58;
+}
+
+.fmg-panel-empty h4 {
+  margin: 0 0 7px;
+  color: var(--kui-text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.fmg-panel-empty p {
+  max-width: 260px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}

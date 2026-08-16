@@ -1,10 +1,19 @@
 import { WorkspaceSidebar } from "@patkepa/kantzen-ui/app-shell";
 import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
 import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { executeLegacyCommand } from "./ui/legacy-command";
+import {
+  WorkspacePanel,
+  WorkspacePanelAction,
+  WorkspacePanelEmptyState,
+  WorkspacePanelSearch,
+  WorkspacePanelSection
+} from "./ui/workspace-panel";
 import "@patkepa/kantzen-ui/theme.css";
 import "@patkepa/kantzen-ui/app-shell/styles.css";
+import "./ui/workspace-panel.css";
 import "./workspace-sidebar.css";
 
 type WorkspaceSection = "layers" | "style" | "options" | "tools" | "about";
@@ -148,7 +157,7 @@ function SidebarActions(): React.JSX.Element {
           className="fmg-sidebar-action"
           key={action.targetId}
           data-target-id={action.targetId}
-          onClick={() => document.getElementById(action.targetId)?.click()}
+          onClick={() => executeLegacyCommand(action.targetId)}
         >
           <Icon icon={action.icon} size={16} />
           <span>{action.label}</span>
@@ -218,22 +227,19 @@ function matchesSearch(action: ToolAction, query: string): boolean {
 function ToolButton({ action, icon }: { action: ToolAction; icon: IconName }): React.JSX.Element {
   const hasMarkerSettings = action.id === "regenerateMarkers";
   return (
-    <button
-      type="button"
+    <WorkspacePanelAction
       id={action.id}
-      className="fmg-tool-row"
       data-tip={action.tip}
       data-shortcut={action.shortcut}
-    >
-      <Icon icon={icon} size={14} />
-      <span>{action.label}</span>
-      {action.shortcut ? <kbd>{action.shortcut.replace("Shift + ", "⇧")}</kbd> : null}
-      {hasMarkerSettings ? (
+      icon={icon}
+      label={action.label}
+      shortcut={action.shortcut?.replace("Shift + ", "⇧")}
+      trailing={hasMarkerSettings ? (
         <i id="configRegenerateMarkers" data-tip="Set marker number multiplier" aria-label="Marker settings">
           <Icon icon="settings" size={12} />
         </i>
       ) : null}
-    </button>
+    />
   );
 }
 
@@ -242,59 +248,79 @@ function ToolSection({ group, query, containerId }: { group: ToolGroup; query: s
   if (!actions.length) return null;
 
   return (
-    <section className="fmg-tool-section">
-      <h2>{group.label}</h2>
-      <div className="fmg-tool-list" id={containerId}>
+    <WorkspacePanelSection title={group.label}>
+      <div className="fmg-panel-action-list" id={containerId}>
         {actions.map(action => (
           <ToolButton action={action} icon={group.icon} key={action.id} />
         ))}
       </div>
-    </section>
+    </WorkspacePanelSection>
   );
 }
 
 function ToolsPanel(): React.JSX.Element {
   const [search, setSearch] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
   const query = search.trim().toLocaleLowerCase();
   const [editGroup, addGroup, inspectGroup, createGroup] = TOOL_GROUPS;
   const regenerateActions = REGENERATE_ACTIONS.filter(action => matchesSearch(action, query));
+  const hasResults =
+    regenerateActions.length > 0 || TOOL_GROUPS.some(group => group.actions.some(action => matchesSearch(action, query)));
+
+  useEffect(() => {
+    const focusToolSearch = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLocaleLowerCase() !== "k") return;
+      const panel = document.getElementById("toolsContent");
+      if (!panel || getComputedStyle(panel).display === "none") return;
+
+      event.preventDefault();
+      searchInput.current?.focus();
+    };
+
+    window.addEventListener("keydown", focusToolSearch);
+    return () => window.removeEventListener("keydown", focusToolSearch);
+  }, []);
 
   return (
-    <div className="fmg-tools-panel">
-      <label className="fmg-tool-search">
-        <Icon icon="search" size={14} />
-        <input
-          type="search"
-          value={search}
-          onChange={event => setSearch(event.target.value)}
-          placeholder="Search tools"
-          aria-label="Search tools"
-        />
-        <kbd>Ctrl+K</kbd>
-      </label>
-      <div className="fmg-tools-layout">
-        <div>{editGroup ? <ToolSection group={editGroup} query={query} /> : null}</div>
-        <div className="fmg-tools-secondary">
-          {addGroup ? <ToolSection group={addGroup} query={query} containerId="addFeature" /> : null}
-          {inspectGroup ? <ToolSection group={inspectGroup} query={query} /> : null}
-          {createGroup ? <ToolSection group={createGroup} query={query} /> : null}
-          {regenerateActions.length ? (
-            <details className="fmg-regenerate" open={query ? true : undefined}>
-              <summary>
-                <span>Regenerate</span>
-                <small>Rebuild generated features</small>
-              </summary>
-              <div id="regenerateFeature" className="fmg-tool-list">
-                {regenerateActions.map(action => (
-                  <ToolButton action={action} icon="refresh" key={action.id} />
-                ))}
-              </div>
-            </details>
-          ) : null}
+    <WorkspacePanel className="fmg-tools-panel">
+      <WorkspacePanelSearch
+        ariaLabel="Search tools"
+        inputRef={searchInput}
+        onChange={setSearch}
+        placeholder="Search tools"
+        shortcut="Ctrl K"
+        value={search}
+      />
+      {hasResults ? (
+        <div className="fmg-tools-layout">
+          <div>{editGroup ? <ToolSection group={editGroup} query={query} /> : null}</div>
+          <div className="fmg-tools-secondary">
+            {addGroup ? <ToolSection group={addGroup} query={query} containerId="addFeature" /> : null}
+            {inspectGroup ? <ToolSection group={inspectGroup} query={query} /> : null}
+            {createGroup ? <ToolSection group={createGroup} query={query} /> : null}
+            {regenerateActions.length ? (
+              <details className="fmg-regenerate" open={query ? true : undefined}>
+                <summary>
+                  <span>Regenerate</span>
+                  <small>Rebuild generated features</small>
+                </summary>
+                <div id="regenerateFeature" className="fmg-panel-action-list">
+                  {regenerateActions.map(action => (
+                    <ToolButton action={action} icon="refresh" key={action.id} />
+                  ))}
+                </div>
+              </details>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : (
+        <WorkspacePanelEmptyState
+          description="Try a feature name such as states, routes, or markets."
+          title={`No tools found for “${search.trim()}”`}
+        />
+      )}
       <input type="hidden" id="addedMarkerType" name="addedMarkerType" value="" />
-    </div>
+    </WorkspacePanel>
   );
 }
 

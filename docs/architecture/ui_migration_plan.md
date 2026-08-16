@@ -309,7 +309,7 @@ Suggested branch: `refactor/remove-legacy-ui`
 | Milestone | Status | Depends on |
 | --- | --- | --- |
 | 0. Workspace Shell | Complete | — |
-| 1. Shared UI Foundation | Next | Workspace Shell |
+| 1. Shared UI Foundation | In progress | Workspace Shell |
 | 2. Tool Information Architecture | Planned | Shared UI Foundation |
 | 3. Layers Panel | Planned | Shared UI Foundation |
 | 4. Style Panel | Planned | Shared UI Foundation |
@@ -325,3 +325,24 @@ Suggested branch: `refactor/remove-legacy-ui`
 Start Milestone 1 by extracting the existing workspace section, search field, action row, and panel header patterns into
 small project-level compositions. Then use those components to migrate Layers in Milestone 3. This validates the
 foundation against a real, stateful workflow before applying it to the larger editors.
+
+## Implementation Log
+
+### Milestone 1
+
+Completed:
+
+- [x] Extract shared workspace panel, search, section, action-row, and empty-state compositions.
+- [x] Use Kantzen SearchField, Button, Icon, and EmptyState primitives in the extracted components.
+- [x] Refactor the Tools panel to consume the shared compositions.
+- [x] Add a typed compatibility adapter for commands still owned by legacy controls.
+- [x] Add unit coverage for available, disabled, and missing legacy command targets.
+- [x] Make the displayed Tools search shortcut functional while the panel is active.
+
+Remaining:
+
+- [ ] Add shared field compositions for text, number, select, slider, toggle, and color controls.
+- [ ] Add dialog, confirmation, and inline feedback compositions.
+- [ ] Add shared tabs and data-table foundations.
+- [ ] Extract the workspace panel header from legacy markup.
+- [ ] Document spacing, typography, icon, focus, and destructive-action conventions.

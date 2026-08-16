@@ -152,8 +152,6 @@
 }
 
 .fmg-sidebar-action kbd,
-.fmg-tool-row kbd,
-.fmg-tool-search kbd,
 #layersSearch kbd {
   color: var(--kui-text-muted);
   font: 10px/1.2 "SF Mono", Consolas, monospace;
@@ -384,8 +382,7 @@
   font-style: normal;
 }
 
-#layersSearch,
-.fmg-tool-search {
+#layersSearch {
   position: relative;
   display: flex;
   height: 34px;
@@ -398,8 +395,7 @@
   color: var(--kui-text-muted);
 }
 
-#layersSearch input,
-.fmg-tool-search input {
+#layersSearch input {
   min-width: 0;
   height: 30px;
   flex: 1;
@@ -410,8 +406,7 @@
   font: 12px/1.2 inherit;
 }
 
-#layersSearch input:focus-visible,
-.fmg-tool-search input:focus-visible {
+#layersSearch input:focus-visible {
   outline: 0;
 }
 
@@ -529,16 +524,6 @@
   padding: 0 !important;
 }
 
-.fmg-tools-panel {
-  min-height: 100%;
-  padding: 14px 16px 20px;
-  color: var(--kui-text-secondary);
-}
-
-.fmg-tools-panel .fmg-tool-search {
-  margin: 0 0 14px;
-}
-
 .fmg-tools-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(148px, 1fr);
@@ -548,66 +533,6 @@
 .fmg-tools-secondary {
   padding-left: 14px;
   border-left: 1px solid var(--kui-line-soft);
-}
-
-.fmg-tool-section {
-  margin: 0 0 17px;
-}
-
-.fmg-tool-section h2,
-.fmg-regenerate summary > span {
-  margin: 0 0 6px;
-  color: var(--kui-text-muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.fmg-tool-list {
-  display: flex;
-  flex-direction: column;
-}
-
-#options .fmg-tool-row {
-  display: flex;
-  width: 100%;
-  min-height: 30px;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 5px 7px;
-  overflow: visible;
-  border: 0;
-  border-left: 2px solid transparent;
-  border-bottom: 1px solid var(--kui-line-soft);
-  background: transparent;
-  color: var(--kui-text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  text-align: left;
-  text-overflow: clip;
-}
-
-#options .fmg-tool-row > span:nth-child(2) {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#options .fmg-tool-row:hover,
-#options .fmg-tool-row:focus-visible {
-  border-left-color: hsl(var(--accent));
-  background: var(--kui-surface-hover);
-  color: var(--kui-text);
-}
-
-.fmg-tool-row i {
-  display: inline-flex;
-  padding: 3px;
-  color: var(--kui-text-muted) !important;
 }
 
 .fmg-regenerate {
