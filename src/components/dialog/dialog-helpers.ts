@@ -1,8 +1,34 @@
 // Building blocks shared by every editor dialog
 import { ensureEl, findEl } from "@/utils";
 
+interface ManagedDialog {
+  close: () => void;
+  stable: boolean;
+}
+
+const managedDialogs = new Map<string, ManagedDialog>();
+
+export function registerManagedDialog(id: string, close: () => void, stable = false): () => void {
+  const dialog = { close, stable };
+  managedDialogs.set(id, dialog);
+  return () => {
+    if (managedDialogs.get(id) === dialog) managedDialogs.delete(id);
+  };
+}
+
+function isExcepted(id: string, dialog: ManagedDialog, except: string): boolean {
+  return except
+    .split(",")
+    .map(selector => selector.trim())
+    .some(selector => selector === `#${id}` || (selector === ".stable" && dialog.stable));
+}
+
 /** Close all open dialogs except the stated one */
 export function closeDialogs(except = "#except"): void {
+  for (const [id, dialog] of [...managedDialogs]) {
+    if (!isExcepted(id, dialog, except)) dialog.close();
+  }
+
   $(".dialog:visible")
     .not(except)
     .each(function (this: HTMLElement) {

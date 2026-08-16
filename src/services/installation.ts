@@ -34,36 +34,30 @@ function createButton(): HTMLButtonElement {
 }
 
 function openDialog(): void {
-  alertMessage.innerHTML = /* html */ `You can install the tool so that it will look and feel like desktop application:
+  const messageHtml = /* html */ `You can install the tool so that it will look and feel like desktop application:
     have its own icon on your home screen and work offline with some limitations
   `;
-  $("#alert").dialog({
-    resizable: false,
-    title: "Install the Application",
-    width: "38em",
-    buttons: {
-      Install: function (this: HTMLElement) {
-        $(this).dialog("close");
-        deferredPrompt?.prompt();
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    open: function (this: HTMLElement) {
-      const checkbox =
-        '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label></span>';
-      const pane = this.parentElement!.querySelector(".ui-dialog-buttonpane")!;
-      pane.insertAdjacentHTML("afterbegin", checkbox);
-    },
-    close: function (this: HTMLElement) {
-      const box = this.parentElement!.querySelector<HTMLInputElement>(".checkbox");
-      if (box?.checked) {
+  let dontAskAgain = false;
+
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [{ label: "Cancel" }, { label: "Install", intent: "primary", onClick: () => deferredPrompt?.prompt() }],
+      id: "installationDialog",
+      messageHtml,
+      onClose: () => {
+        if (!dontAskAgain) return;
         localStorage.setItem("installationDontAsk", "true");
         cleanup();
-      }
-      $(this).dialog("destroy");
-    }
+      },
+      rememberChoice: {
+        label: "Do not ask again",
+        onChange: checked => {
+          dontAskAgain = checked;
+        }
+      },
+      title: "Install the Application",
+      width: "38em"
+    });
   });
 }
 

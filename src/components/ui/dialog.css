@@ -20,6 +20,17 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.fmg-dialog--modeless {
+  position: fixed;
+  z-index: 2050;
+}
+
+.fmg-dialog--resizable {
+  min-width: 280px;
+  min-height: 160px;
+  resize: both;
+}
+
 .fmg-dialog--small {
   width: min(100%, 400px);
 }
@@ -36,6 +47,12 @@
   gap: 16px;
   padding: 13px 14px 12px 18px;
   border-bottom: 1px solid var(--kui-line);
+}
+
+.fmg-dialog__header--draggable {
+  cursor: move;
+  touch-action: none;
+  user-select: none;
 }
 
 .fmg-dialog__header h2 {
@@ -93,9 +110,27 @@
 
 .fmg-dialog__footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 18px;
   border-top: 1px solid var(--kui-line);
   background: var(--kui-surface-raised);
+}
+
+.fmg-dialog__footer-leading {
+  margin-right: auto;
+}
+
+.fmg-message-dialog {
+  line-height: 1.5;
+  user-select: text;
+}
+
+.fmg-message-dialog > :first-child {
+  margin-top: 0;
+}
+
+.fmg-message-dialog > :last-child {
+  margin-bottom: 0;
 }

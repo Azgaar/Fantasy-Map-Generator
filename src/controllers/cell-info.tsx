@@ -1,6 +1,9 @@
 // The Cell Info panel: everything known about the cell under the cursor
 import { select } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { flushSync } from "react-dom";
+import { createRoot, type Root } from "react-dom/client";
+import { registerManagedDialog } from "@/components/dialog/dialog-helpers";
+import { WorkspaceDialog } from "@/components/ui/dialog";
 import type { Feature } from "@/generators/features";
 import type { Point } from "@/generators/voronoi";
 import {
@@ -21,52 +24,88 @@ import {
   si
 } from "@/utils";
 
+const INFO_FIELDS = [
+  ["Latitude", "infoLat", ""],
+  ["Longitude", "infoLon", ""],
+  ["Geozone", "infoGeozone", ""],
+  ["Area", "infoArea", "0"],
+  ["Type", "infoFeature", "n/a"],
+  ["Precipitation", "infoPrec", "0"],
+  ["River", "infoRiver", "no"],
+  ["Population", "infoPopulation", "0"],
+  ["Elevation", "infoElevation", "0"],
+  ["Depth", "infoDepth", "0"],
+  ["Temperature", "infoTemp", "0"],
+  ["Biome", "infoBiome", "n/a"],
+  ["State", "infoState", "n/a"],
+  ["Province", "infoProvince", "n/a"],
+  ["Culture", "infoCulture", "n/a"],
+  ["Religion", "infoReligion", "n/a"],
+  ["Burg", "infoBurg", "n/a"],
+  ["Good", "infoGood", "n/a"],
+  ["Market", "infoMarket", "n/a"],
+  ["Cell Production", "infoCellProduction", "n/a"],
+  ["Burg Production", "infoBurgProduction", "n/a"]
+] as const;
+
+let dialogHost: HTMLDivElement | null = null;
+let dialogRoot: Root | null = null;
+let unregisterDialog: (() => void) | null = null;
+
 function open(): void {
   cleanup();
   renderDialog();
   select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
-
-  $("#cellInfo").dialog({
-    resizable: false,
-    width: "22em",
-    title: "Cell Details",
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: cleanup
-  });
 }
 
 function cleanup(): void {
   select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
-  destroyDialog("cellInfo");
+  unregisterDialog?.();
+  unregisterDialog = null;
+
+  const root = dialogRoot;
+  const host = dialogHost;
+  dialogRoot = null;
+  dialogHost = null;
+  if (!root) return;
+
+  queueMicrotask(() => {
+    root.unmount();
+    host?.remove();
+  });
 }
 
 function renderDialog(): void {
-  const HTML = /* html */ `<div id="cellInfo" class="dialog stable">
-    <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
-    <p><b>Latitude:</b> <span id="infoLat"></span></p>
-    <p><b>Longitude:</b> <span id="infoLon"></span></p>
-    <p><b>Geozone:</b> <span id="infoGeozone"></span></p>
-    <p><b>Area:</b> <span id="infoArea">0</span></p>
-    <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
-    <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
-    <p><b>River:</b> <span id="infoRiver">no</span></p>
-    <p><b>Population:</b> <span id="infoPopulation">0</span></p>
-    <p><b>Elevation:</b> <span id="infoElevation">0</span></p>
-    <p><b>Depth:</b> <span id="infoDepth">0</span></p>
-    <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
-    <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
-    <p><b>State:</b> <span id="infoState">n/a</span></p>
-    <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
-    <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
-    <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
-    <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
-    <p><b>Good:</b> <span id="infoGood">n/a</span></p>
-    <p><b>Market:</b> <span id="infoMarket">n/a</span></p>
-    <p><b>Cell Production:</b> <span id="infoCellProduction">n/a</span></p>
-    <p><b>Burg Production:</b> <span id="infoBurgProduction">n/a</span></p>
-  </div>`;
+  dialogHost = document.createElement("div");
+  dialogHost.dataset.dialogHost = "cellInfo";
+  ensureEl("dialogs").appendChild(dialogHost);
+  dialogRoot = createRoot(dialogHost);
+  unregisterDialog = registerManagedDialog("cellInfo", cleanup, true);
 
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
+  flushSync(() => {
+    dialogRoot?.render(
+      <WorkspaceDialog
+        className="dialog stable"
+        dialogId="cellInfo"
+        isModal={false}
+        isOpen
+        onClose={cleanup}
+        placement="top-right"
+        placementTarget={document.querySelector("svg")}
+        title="Cell Details"
+        width="22em"
+      >
+        <p>
+          <b>Cell:</b> <span id="infoCell" /> <b>X:</b> <span id="infoX" /> <b>Y:</b> <span id="infoY" />
+        </p>
+        {INFO_FIELDS.map(([label, id, initialValue]) => (
+          <p key={id}>
+            <b>{label}:</b> <span id={id}>{initialValue}</span>
+          </p>
+        ))}
+      </WorkspaceDialog>
+    );
+  });
 }
 
 const updateCellInfo = debounce((event: MouseEvent | TouchEvent): void => {

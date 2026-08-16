@@ -62,7 +62,7 @@ function showUpdateWindow(storedVersion: string | null): void {
   const discord = "https://discordapp.com/invite/X7E84HU";
   const patreon = "https://www.patreon.com/azgaar";
 
-  alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${VERSION}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
+  const messageHtml = /* html */ `The Fantasy Map Generator is updated up to version <strong>${VERSION}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
     ${storedVersion ? "<span>In case of errors reload the page to update the code.</span>" : ""}
 
     <ul>
@@ -73,18 +73,21 @@ function showUpdateWindow(storedVersion: string | null): void {
     <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.</p>
     <span><i>Thanks for all supporters on <a href="${patreon}" target="_blank">Patreon</a>!</i></span>`;
 
-  $("#alert").dialog({
-    resizable: false,
-    title: "Fantasy Map Generator update",
-    width: "28em",
-    position: { my: "center center-4em", at: "center", of: "svg" },
-    buttons: {
-      "Clear cache": () => cleanupData(),
-      "Don't show again": function (this: HTMLElement) {
-        $(this).dialog("close");
-        localStorage.setItem("version", VERSION);
-      }
-    }
+  void import("@/components/ui/message-dialog").then(({ showMessageDialog }) => {
+    showMessageDialog({
+      actions: [
+        { close: false, label: "Clear cache", onClick: () => void cleanupData() },
+        {
+          intent: "primary",
+          label: "Don't show again",
+          onClick: () => localStorage.setItem("version", VERSION)
+        }
+      ],
+      id: "versionDialog",
+      messageHtml,
+      title: "Fantasy Map Generator update",
+      width: "28em"
+    });
   });
 }
 
