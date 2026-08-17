@@ -112,8 +112,7 @@ function regenerate(event: MouseEvent, button: string): void {
 function regenerateStateLabels(): void {
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
-    // cleanup custom label data to force recalculation of pathPoints
-    if (state.label) delete state.label;
+    if (state.label) delete state.label; // cleanup custom label data to force recalculation of pathPoints
   }
   Layers.draw("labels");
 }
@@ -144,9 +143,7 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   unfog();
-  Layers.draw("states", "borders", "provinces");
-  Layers.draw("labels");
-  Layers.draw("burgIcons", "military", "goods");
+  Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods");
   if (Layers.isOn("emblems")) {
     clearEmblems(["state", "province"]);
     Layers.draw("emblems");
@@ -156,8 +153,7 @@ function regenerateStates(): void {
 function regenerateProvinces(): void {
   Provinces.regenerate();
   unfog();
-  Layers.draw("borders", "provinces");
-  Layers.draw("labels");
+  Layers.draw("borders", "provinces", "labels");
   if (Layers.isOn("emblems")) {
     clearEmblems(["province"]);
     Layers.draw("emblems");
@@ -166,9 +162,7 @@ function regenerateProvinces(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  Layers.draw("burgIcons");
-  Layers.draw("labels");
-  Layers.draw("routes", "population", "goods");
+  Layers.draw("burgIcons", "labels", "routes", "population", "goods");
   if (Layers.isOn("emblems")) {
     clearEmblems(["burg"]);
     Layers.draw("emblems");
@@ -182,25 +176,21 @@ function regenerateGoods(): void {
 
 function regenerateMarkets(): void {
   Markets.regenerate();
-  Layers.draw("markets", "goods");
-  Layers.draw("trade");
+  Layers.draw("markets", "goods", "trade");
 }
 
 function regenerateEconomy(): void {
   Production.regenerateEconomy();
-  Layers.draw("markets", "goods");
-  Layers.draw("trade");
+  Layers.draw("markets", "goods", "trade");
 }
 
 function regenerateProduction(): void {
   Production.regenerate();
-  Layers.draw("goods");
-  Layers.draw("trade");
+  Layers.draw("goods", "trade");
 }
 
 function regenerateEmblems(): void {
   COA.regenerate();
-  if (!Layers.isOn("emblems")) return;
   clearEmblems(["state", "province", "burg"]);
   Layers.draw("emblems");
 }

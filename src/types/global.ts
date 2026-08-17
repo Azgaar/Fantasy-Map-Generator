@@ -149,10 +149,6 @@ declare global {
   var openURL: (url: string) => void;
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
 
-  var drawStates: () => void;
-  var drawLabels: () => void;
-  var drawCompass: () => void;
-
   var tinymce:
     | {
         _setBaseUrl: (url: string) => void;

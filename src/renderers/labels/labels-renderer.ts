@@ -151,5 +151,3 @@ function unindexLabel(label: LabelData): void {
   const index = groupLabels.findIndex(({ id }) => id === label.id);
   if (index !== -1) groupLabels.splice(index, 1);
 }
-
-window.drawLabels = drawLabels;

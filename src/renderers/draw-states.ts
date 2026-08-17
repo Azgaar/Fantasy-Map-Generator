@@ -27,5 +27,3 @@ export function drawStates(): void {
 
   TIME && console.timeEnd("drawStates");
 }
-
-window.drawStates = drawStates;

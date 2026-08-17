@@ -746,9 +746,7 @@ class BurgModule {
     pack.burgs.push(burg);
     cells.burg[cellId as number] = burgId;
 
-    const newRoute = Routes.connect(cellId as number);
-    if (newRoute && Layers.isOn("routes")) drawRoute(newRoute);
-
+    Routes.connect(cellId as number);
     return burgId;
   }
 

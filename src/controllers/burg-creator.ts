@@ -39,7 +39,7 @@ function addOnClick(event: MouseEvent): void {
 
   Burgs.add(point);
   refreshEditors();
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("burgIcons", "labels", "routes");
 
   if (!event.shiftKey) stop();
 }

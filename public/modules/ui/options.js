@@ -667,7 +667,7 @@ function setRendering(value) {
   } else {
     // remove style block
     d3.select("#statesHalo").style("display", null);
-    if (pack.cells && d3.select("#statesHalo").selectAll("*").size() === 0) drawStates();
+    if (pack.cells && d3.select("#statesHalo").selectAll("*").size() === 0) Layers.draw("states");
   }
 }
 
@@ -769,7 +769,7 @@ function copyLinkToClickboard() {
 
 ensureEl("showLabels").addEventListener("change", function () {
   options.labels.showAll = Boolean(this.checked);
-  drawLabels();
+  Layers.draw("labels");
 });
 
 function showExportPane() {

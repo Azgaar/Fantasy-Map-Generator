@@ -1,4 +1,4 @@
-import { type Layer, Layers } from "@/components/layers";
+import type { Layer } from "@/components/layers";
 
 export function drawCompass(layer: Layer): void {
   const compass = layer.getEl();
@@ -6,5 +6,3 @@ export function drawCompass(layer: Layer): void {
 
   compass.innerHTML = /* html */ `<use xlink:href="#defs-compass-rose"></use>`;
 }
-
-window.drawCompass = () => drawCompass(Layers.get("compass"));

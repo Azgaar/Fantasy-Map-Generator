@@ -1655,7 +1655,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("burgIcons", "labels", "routes");
 
   if (event.shiftKey === false) exitAddStateMode();
 

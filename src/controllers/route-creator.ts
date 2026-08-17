@@ -66,23 +66,11 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("routeCreatorGroupSelect").addEventListener("change", redrawCreatorRoute);
-  ensureEl("routeCreatorGroupEdit").addEventListener("click", openRouteGroupsEditor);
+  ensureEl("routeCreatorGroupSelect").addEventListener("change", () => drawRoute(creatorPoints));
+  ensureEl("routeCreatorGroupEdit").addEventListener("click", () => void Controllers.RouteGroupsEditor.open());
   ensureEl("routeCreatorComplete").addEventListener("click", completeCreation);
-  ensureEl("routeCreatorCancel").addEventListener("click", cancelCreation);
+  ensureEl("routeCreatorCancel").addEventListener("click", () => $("#routeCreator").dialog("close"));
   ensureEl("routeCreatorBody").addEventListener("click", onBodyClick);
-}
-
-function redrawCreatorRoute(): void {
-  drawRoute(creatorPoints);
-}
-
-function openRouteGroupsEditor(): void {
-  void Controllers.RouteGroupsEditor.open();
-}
-
-function cancelCreation(): void {
-  $("#routeCreator").dialog("close");
 }
 
 function onBodyClick(ev: Event): void {

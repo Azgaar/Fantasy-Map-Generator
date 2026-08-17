@@ -27,7 +27,7 @@ async function addOnClick(event: MouseEvent): Promise<void> {
   const [x, y] = point;
   const pathPoints = createLabelArc({ text, type: "added", group, anchor: [x, y] });
   AddedLabels.add({ x, y, label: { text, group, pathPoints } });
-  drawLabels();
+  Layers.draw("labels");
 
   if (!event.shiftKey) stopMapPlacement();
 }
