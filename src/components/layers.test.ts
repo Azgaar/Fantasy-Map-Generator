@@ -45,7 +45,7 @@ describe("init", () => {
         id: "a",
         element: "a-el",
         parent: "map",
-        children: ["one", "two"],
+        children: ["one", "two"].map(id => ({ id, tag: "g" })),
         attrs: { mask: "url(#m)" }
       })
     );
@@ -62,7 +62,10 @@ describe("init", () => {
         id: "a",
         element: "a-el",
         parent: "viewbox",
-        children: ["one", { id: "rose", tag: "use", attrs: { href: "#defs-rose" } }]
+        children: [
+          { id: "one", tag: "g" },
+          { id: "rose", tag: "use", attrs: { href: "#defs-rose" } }
+        ]
       })
     );
 
@@ -168,7 +171,7 @@ describe("show and hide", () => {
 
 describe("erase", () => {
   it("clears declared children and removes everything else by default", () => {
-    registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", children: ["kept"] }));
+    registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", children: [{ id: "kept", tag: "g" }] }));
     Layers.show("a");
     document.getElementById("kept")!.innerHTML = /* html */ `<circle />`;
     document.getElementById("a-el")!.insertAdjacentHTML("beforeend", /* html */ `<g id="dropped"></g>`);
@@ -202,7 +205,7 @@ describe("erase", () => {
     const erase = vi.fn();
     registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox", keepContent: true }),
-      new Layer({ id: "b", element: "b-el", parent: "viewbox", children: ["kept"] }),
+      new Layer({ id: "b", element: "b-el", parent: "viewbox", children: [{ id: "kept", tag: "g" }] }),
       new Layer({ id: "c", element: "c-el", parent: "viewbox", erase }),
       new Layer({ id: "chrome", element: "chrome-el", parent: "map" })
     );

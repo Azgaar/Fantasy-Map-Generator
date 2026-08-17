@@ -197,6 +197,37 @@ test.describe("layer teardown keeps user data", () => {
     expect(await page.locator("#compass use").count()).toBe(1); // not duplicated by the show
   });
 
+  // the rendered shields are cached in #coas by entity id, and regeneration reuses those ids
+  test("reassigned arms replace the rendered shield, whether the layer was on or off", async ({ page }) => {
+    // the shield the cached def was actually rendered from, read off its clip path id
+    const renderedShield = () =>
+      page.evaluate(
+        () => document.querySelector("#coas > #stateCOA1")?.querySelector("clipPath")?.id.split("_")[0] ?? null
+      );
+    const setArms = (shield: string) =>
+      page.evaluate((value: string) => {
+        (window as any).pack.states[1].coa.shield = value;
+        (window as any).Layers.draw("emblems");
+      }, shield);
+
+    await page.evaluate(() => (window as any).Layers.show("emblems"));
+    await expect.poll(renderedShield).not.toBeNull();
+
+    // give state 1 different arms, the way a states regeneration does
+    await setArms("polish");
+    await expect.poll(renderedShield).toBe("polish");
+    expect(await page.locator("#coas > #stateCOA1").count()).toBe(1); // replaced, not duplicated
+
+    // the same holds when the arms change while the layer is off: the old code skipped the purge
+    // entirely in that case, so showing the layer brought the stale shield back
+    await page.evaluate(() => (window as any).Layers.hide("emblems"));
+    await setArms("swiss"); // the draw is a no-op while the layer is off
+    expect(await renderedShield()).toBe("polish");
+
+    await page.evaluate(() => (window as any).Layers.show("emblems"));
+    await expect.poll(renderedShield).toBe("swiss");
+  });
+
   // style.js used to call the renderers straight, drawing into layers the user has turned off
   test("a style change does not render into a layer that is off", async ({ page }) => {
     expect(await page.evaluate(() => (window as any).Layers.isOn("goods"))).toBe(false);

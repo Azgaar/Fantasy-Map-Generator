@@ -18,7 +18,6 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import { clearEmblems } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -1249,15 +1248,10 @@ function recalculateStates(must?: boolean): void {
   Provinces.getPoles();
   States.getPoles();
 
-  Layers.draw("states", "borders", "provinces");
+  Layers.draw("states", "borders", "provinces", "goods", "emblems");
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
     for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
     Layers.draw("labels");
-  }
-  Layers.draw("goods");
-  if (Layers.isOn("emblems")) {
-    clearEmblems(["state", "province"]);
-    Layers.draw("emblems");
   }
 
   refreshStatesEditor();

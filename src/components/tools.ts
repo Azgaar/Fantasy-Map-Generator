@@ -3,7 +3,6 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
-import { clearEmblems } from "@/renderers/draw-emblems";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { unfog } from "@/renderers/overlays/fogging";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
@@ -119,7 +118,7 @@ function regenerateStateLabels(): void {
 
 function regenerateReliefIcons(): void {
   Relief.generate();
-  redrawRelief();
+  Layers.draw("relief");
 }
 
 function regenerateRoutes(): void {
@@ -143,30 +142,18 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   unfog();
-  Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods");
-  if (Layers.isOn("emblems")) {
-    clearEmblems(["state", "province"]);
-    Layers.draw("emblems");
-  }
+  Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods", "emblems");
 }
 
 function regenerateProvinces(): void {
   Provinces.regenerate();
   unfog();
-  Layers.draw("borders", "provinces", "labels");
-  if (Layers.isOn("emblems")) {
-    clearEmblems(["province"]);
-    Layers.draw("emblems");
-  }
+  Layers.draw("borders", "provinces", "labels", "emblems");
 }
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  Layers.draw("burgIcons", "labels", "routes", "population", "goods");
-  if (Layers.isOn("emblems")) {
-    clearEmblems(["burg"]);
-    Layers.draw("emblems");
-  }
+  Layers.draw("burgIcons", "labels", "routes", "population", "goods", "emblems");
 }
 
 function regenerateGoods(): void {
@@ -191,7 +178,6 @@ function regenerateProduction(): void {
 
 function regenerateEmblems(): void {
   COA.regenerate();
-  clearEmblems(["state", "province", "burg"]);
   Layers.draw("emblems");
 }
 

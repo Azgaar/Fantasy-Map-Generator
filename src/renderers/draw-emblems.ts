@@ -104,17 +104,6 @@ export function drawEmblems(): void {
   });
 }
 
-export function clearEmblems(types: EmblemType[]): void {
-  for (const type of types) {
-    document.querySelectorAll(`[id^=${type}COA]`).forEach(element => {
-      element.remove();
-    });
-    document.querySelectorAll(`#${GROUPS[type]} > use`).forEach(element => {
-      element.remove();
-    });
-  }
-}
-
 /** render the emblems of a group that is scrolled into view: the `use` elements are drawn without a target */
 export function redrawEmblemGroup(group: SVGGElement): void {
   const [data, type] = getDataAndType(group.id);
