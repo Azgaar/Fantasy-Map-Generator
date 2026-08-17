@@ -3,7 +3,6 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Population } from "@/generators/population-generator";
-import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { unfog } from "@/renderers/overlays/fogging";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 
