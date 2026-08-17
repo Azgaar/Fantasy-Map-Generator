@@ -2,7 +2,7 @@
 
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { drawBurgIcons, removeBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCompass } from "@/renderers/draw-compass";
@@ -21,12 +21,12 @@ import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { drawPopulation } from "@/renderers/draw-population";
-import { drawPrecipitation } from "@/renderers/draw-precipitation";
+import { drawPrecipitation, removePrecipitation } from "@/renderers/draw-precipitation";
 import { drawProvinces } from "@/renderers/draw-provinces";
 import { drawRelief, removeRelief } from "@/renderers/draw-relief-icons";
 import { drawReligions } from "@/renderers/draw-religions";
 import { drawRivers } from "@/renderers/draw-rivers";
-import { drawRoutes } from "@/renderers/draw-routes";
+import { drawRoutes, removeRoutes } from "@/renderers/draw-routes";
 import { drawScaleBar, removeScaleBar } from "@/renderers/draw-scalebar";
 import { drawStates } from "@/renderers/draw-states";
 import { drawTemperature } from "@/renderers/draw-temperature";
@@ -125,16 +125,22 @@ export class LayersRegistry<Id extends string = string> {
     return this.active.has(id);
   }
 
-  /** turn the layers on if they are off and (re)draw them */
+  /** turn on the layers that are off and draw them; layers already on are left alone */
   show(...ids: Id[]): void {
-    this.change(ids, true);
-    this.draw(...ids);
+    const inactiveLayers = ids.filter(id => !this.active.has(id));
+    if (!inactiveLayers.length) return;
+
+    this.change(inactiveLayers, true);
+    this.draw(...inactiveLayers);
     this.emit();
   }
 
-  /** turn the layers off */
+  /** turn off the layers that are on */
   hide(...ids: Id[]): void {
-    this.change(ids, false);
+    const activeLayers = ids.filter(id => this.active.has(id));
+    if (!activeLayers.length) return;
+
+    this.change(activeLayers, false);
     this.emit();
   }
 
@@ -149,12 +155,12 @@ export class LayersRegistry<Id extends string = string> {
   set(ids: readonly string[]): void {
     const known = this.layers.filter(layer => ids.includes(layer.id)).map(layer => layer.id);
     const drawn = known.filter(id => !this.active.has(id));
+    const hidden = this.layers
+      .filter(layer => !layer.params.permanent && !known.includes(layer.id) && this.active.has(layer.id))
+      .map(layer => layer.id);
 
-    this.change(
-      this.layers.filter(layer => !layer.params.permanent && !known.includes(layer.id)).map(layer => layer.id),
-      false
-    );
-    this.change(known, true);
+    this.change(hidden, false);
+    this.change(drawn, true);
     this.draw(...drawn);
     this.emit();
   }
@@ -217,10 +223,10 @@ export class LayersRegistry<Id extends string = string> {
     return () => void this.listeners.delete(listener);
   }
 
-  /** flip the state and the visibility of the layers that are not in the requested state yet */
+  /** flip the state and the visibility of the given layers, in layer order */
   private change(ids: readonly Id[], on: boolean): void {
     for (const layer of this.layers) {
-      if (!ids.includes(layer.id) || this.active.has(layer.id) === on) continue;
+      if (!ids.includes(layer.id)) continue;
 
       on ? this.active.add(layer.id) : this.active.delete(layer.id);
       this.setVisible(layer.getEl(), on);
@@ -296,7 +302,13 @@ const mapLayers = [
   new Layer({ id: "provinces", element: "provs", parent: "viewbox", draw: drawProvinces }),
   new Layer({ id: "zones", parent: "viewbox", draw: drawZones }),
   new Layer({ id: "borders", parent: "viewbox", children: ["stateBorders", "provinceBorders"], draw: drawBorders }),
-  new Layer({ id: "routes", parent: "viewbox", children: ["roads", "trails", "searoutes"], draw: drawRoutes }),
+  new Layer({
+    id: "routes",
+    parent: "viewbox",
+    children: ["roads", "trails", "searoutes"],
+    draw: drawRoutes,
+    erase: removeRoutes
+  }),
   new Layer({ id: "temperature", parent: "viewbox", draw: drawTemperature }),
   new Layer({
     id: "coastline",
@@ -317,7 +329,13 @@ const mapLayers = [
     draw: () => tradeAnimation.start(),
     erase: () => tradeAnimation.stop()
   }),
-  new Layer({ id: "precipitation", element: "prec", parent: "viewbox", draw: drawPrecipitation }),
+  new Layer({
+    id: "precipitation",
+    element: "prec",
+    parent: "viewbox",
+    draw: drawPrecipitation,
+    erase: removePrecipitation
+  }),
   new Layer({ id: "population", parent: "viewbox", children: ["rural", "urban"], draw: drawPopulation }),
   new Layer({
     id: "emblems",
@@ -331,7 +349,8 @@ const mapLayers = [
     element: "icons",
     parent: "viewbox",
     children: ["burgIcons", "anchors"],
-    draw: drawBurgIcons
+    draw: drawBurgIcons,
+    erase: removeBurgIcons
   }),
   new Layer({
     id: "labels",

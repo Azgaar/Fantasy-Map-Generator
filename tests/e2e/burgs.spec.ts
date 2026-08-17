@@ -94,6 +94,9 @@ test.describe("Burgs.add", () => {
 
     expect(burgId).not.toBeNull();
 
+    // render the new burg, the way BurgCreator does after Burgs.add
+    await page.evaluate(() => (window as any).Layers.draw("burgIcons", "labels"));
+
     // Open the burg editor
     await page.evaluate((id: number) => {
       (window as any).Controllers.BurgEditor.open(id);

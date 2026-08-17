@@ -875,6 +875,7 @@ function generatePrecipitation() {
   }
 
   void (function drawWindDirection() {
+    d3.select("#prec").select("#wind").remove(); // the group survives layer erasure, so replace it
     const wind = d3.select("#prec").append("g").attr("id", "wind");
 
     d3.range(0, 6).forEach(function (t) {

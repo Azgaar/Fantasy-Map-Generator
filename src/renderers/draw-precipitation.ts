@@ -28,3 +28,8 @@ export function drawPrecipitation(): void {
 
   TIME && console.timeEnd("drawPrecipitation");
 }
+
+/** drop the circles, keeping #wind: the wind direction arrows are written once, at map generation */
+export function removePrecipitation(): void {
+  select(ensureEl<SVGGElement>("prec")).selectAll("circle").remove();
+}

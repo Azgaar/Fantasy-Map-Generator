@@ -29,6 +29,17 @@ function buildLegacyReliefMap(hidden: boolean): Buffer {
   return Buffer.from(mapData.join("\r\n"));
 }
 
+// legacy maps also hide a layer with the `display` presentation attribute, which inline style cannot
+// override. 1.139.4.map has #borders shown, so the attribute-hidden variant has to be re-created
+function buildLegacyMapWithAttributeHiddenBorders(): Buffer {
+  const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
+  const mapData = fs.readFileSync(mapFilePath, "utf8").split("\r\n");
+
+  mapData[5] = mapData[5].replace('<g id="borders" fill="none">', '<g id="borders" fill="none" display="none">');
+
+  return Buffer.from(mapData.join("\r\n"));
+}
+
 function buildLegacyMapWithoutLakeShorelines(): Buffer {
   const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
   const mapData = fs.readFileSync(mapFilePath, "utf8").split("\r\n");
@@ -345,6 +356,26 @@ test.describe("Map loading", () => {
 
     expect(lakeShorelines.length).toBeGreaterThan(0);
     expect(lakeShorelines.every((shoreline: unknown) => Array.isArray(shoreline) && shoreline.length > 0)).toBe(true);
+  });
+
+  test("a layer hidden by the display attribute should migrate as off, not as active and invisible", async ({
+    page
+  }) => {
+    await page.locator("#mapToLoad").setInputFiles({
+      name: "legacy-attribute-hidden-borders.map",
+      mimeType: "text/plain",
+      buffer: buildLegacyMapWithAttributeHiddenBorders()
+    });
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const borders = page.locator("#borders");
+    expect(await borders.getAttribute("display")).toBeNull(); // converted to inline style on migration
+    expect(await page.evaluate(() => (window as any).Layers.isOn("borders"))).toBe(false);
+    await expect(borders).toBeHidden();
+
+    // the layer used to migrate as active while staying invisible, with no way to reveal it
+    await page.evaluate(() => (window as any).Layers.show("borders"));
+    await expect(borders).toBeVisible();
   });
 
   test("legacy label settings should migrate without changing behavior", async ({ page }) => {

@@ -232,9 +232,6 @@ Decisions:
 - **Layers are passed to the constructor, not registered.** Membership is then fixed, `Id` is inferred
   from the list rather than written out, and the public API loses a method whose only caller lived in
   the same file.
-- **`restore` never draws.** A loaded map's SVG already contains the rendered content; redrawing it
-  would be both slow and wrong (it would regenerate data the file already carries). This is the one
-  hard behavioural distinction in the API and is why `restore` and `set` are separate methods.
 - **`permanent` is the only exemption from `set`.** A preset lists the layers the user toggles; a
   layer the map itself drives — `fogging` follows the state focus — must survive a preset change, so
   it is registered as permanent and its renderer, not its visibility, carries the state.

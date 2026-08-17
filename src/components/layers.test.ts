@@ -102,13 +102,26 @@ describe("show and hide", () => {
     expect(erase).not.toHaveBeenCalled();
   });
 
-  it("redraws a layer that is already on without erasing it", () => {
+  it("does not redraw a layer that is already on", () => {
     const { draw, erase } = setup();
     Layers.show("a");
     Layers.show("a");
 
-    expect(draw).toHaveBeenCalledTimes(2);
+    expect(draw).toHaveBeenCalledTimes(1);
     expect(erase).not.toHaveBeenCalled();
+  });
+
+  it("draws only the layers that were off", () => {
+    const drawn: string[] = [];
+    const make = (id: string) =>
+      new Layer({ id, element: `${id}-el`, parent: "viewbox", draw: () => void drawn.push(id) });
+    registry(make("a"), make("b"));
+    Layers.show("a");
+    drawn.length = 0;
+
+    Layers.show("a", "b");
+
+    expect(drawn).toEqual(["b"]);
   });
 
   it("toggles between the two states", () => {

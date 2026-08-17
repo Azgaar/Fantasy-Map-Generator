@@ -3,7 +3,12 @@ import { ensureEl, rn } from "../utils";
 
 export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width = svgWidth, height = svgHeight): void {
   const parentEl = parent || ensureEl<SVGSVGElement>("map");
-  const scaleBar = select(parentEl).select("#scaleBar");
+  const scaleBar = select(parentEl).select<SVGGElement>("#scaleBar");
+
+  // getBBox() below throws on a subtree that is not rendered, so never draw into a hidden scale bar
+  const scaleBarEl = scaleBar.node();
+  if (!scaleBarEl || getComputedStyle(scaleBarEl).display === "none") return;
+
   const renderedContent = scaleBar.select("#scaleBarContent");
   const isRendered = Boolean(renderedContent.size());
   TIME && !isRendered && console.time("drawScaleBar");

@@ -22,6 +22,11 @@ export function drawRoutes(): void {
   TIME && console.timeEnd("drawRoutes");
 }
 
+/** drop the paths, keeping the route groups: they are user data carrying the group styles */
+export function removeRoutes(): void {
+  for (const path of Array.from(document.querySelectorAll("#routes path"))) path.remove();
+}
+
 export function drawRoute(route: Route): void {
   select(ensureEl<SVGGElement>("routes"))
     .select(`#${route.group}`)

@@ -1559,6 +1559,14 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const fogging = findEl("fogging");
       if (foggingContainer) foggingContainer.replaceWith(...(fogging ? [fogging] : []));
 
+      // legacy maps can hide layers with the `display` presentation attribute
+      for (const layer of Layers.all) {
+        const el = findEl<SVGGElement>(layer.elementId);
+        if (el?.getAttribute("display") !== "none") continue;
+        el.removeAttribute("display");
+        el.style.display = "none";
+      }
+
       const filled = (id: string) => Boolean(findEl(id)?.hasChildNodes());
       const has = (id: string, selector: string) => Boolean(findEl(id)?.querySelector(selector));
       const shown = (id: string) => findEl(id) && findEl(id)?.style.display !== "none";
