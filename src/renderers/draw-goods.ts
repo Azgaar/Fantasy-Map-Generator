@@ -146,11 +146,3 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
   }
   return html;
 }
-
-declare global {
-  interface Window {
-    drawGoods: typeof drawGoods;
-  }
-}
-
-window.drawGoods = drawGoods;

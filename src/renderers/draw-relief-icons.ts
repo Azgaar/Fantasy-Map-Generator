@@ -12,8 +12,6 @@ const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief })
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {
-  if (!Layers.isOn("relief")) return void removeRelief(); // guards the window.drawRelief seam; Layers.draw skips it
-
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   scene.replace(pack.relief.map((data, i) => ({ id: String(i), data })));
@@ -25,7 +23,7 @@ export const redrawRelief = (): void => {
   if (frameId !== null) return;
   frameId = requestAnimationFrame(() => {
     frameId = null;
-    drawRelief();
+    Layers.draw("relief");
   });
 };
 
@@ -52,5 +50,3 @@ function reconcileRelief(context: ViewportRenderContext): void {
 
   terrain.innerHTML = markup.join("");
 }
-
-window.drawRelief = drawRelief;

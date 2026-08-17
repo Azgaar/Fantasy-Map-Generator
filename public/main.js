@@ -436,7 +436,7 @@ async function generate(options) {
     addLakesInDeepDepressions();
     openNearSeaLakes();
 
-    OceanLayers();
+    Layers.draw("ocean");
     defineMapSize();
     calculateMapCoordinates();
     calculateTemperatures();

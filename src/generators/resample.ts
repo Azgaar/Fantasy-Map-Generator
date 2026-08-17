@@ -441,7 +441,7 @@ class Resampler {
     addLakesInDeepDepressions();
     openNearSeaLakes();
 
-    OceanLayers();
+    Layers.draw("ocean");
     calculateMapCoordinates();
     calculateTemperatures();
 

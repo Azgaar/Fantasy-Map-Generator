@@ -20,6 +20,7 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
+import { drawOceanLayers, removeOceanLayers } from "@/renderers/draw-ocean-layers";
 import { drawPopulation } from "@/renderers/draw-population";
 import { drawPrecipitation, removePrecipitation } from "@/renderers/draw-precipitation";
 import { drawProvinces } from "@/renderers/draw-provinces";
@@ -34,7 +35,6 @@ import { drawTexture } from "@/renderers/draw-texture";
 import { drawVignette } from "@/renderers/draw-vignette";
 import { drawZones } from "@/renderers/draw-zones";
 import { drawLabels, removeLabels } from "@/renderers/labels/labels-renderer";
-import { drawOceanLayers, removeOceanLayers } from "@/renderers/ocean-layers";
 import { drawFogging } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -263,7 +263,6 @@ const mapLayers = [
     parent: "viewbox",
     children: ["oceanLayers", "oceanPattern"],
     permanent: true,
-    keepContent: true,
     draw: drawOceanLayers,
     erase: removeOceanLayers
   }),

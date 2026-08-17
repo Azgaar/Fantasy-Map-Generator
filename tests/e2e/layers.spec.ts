@@ -264,7 +264,6 @@ test.describe("map layers", () => {
       // only the first good is visible by default; make all of them visible for this test
       (window as any).pack.goods.forEach((good: any) => (good.visible = true));
       (window as any).Layers.toggle("goods");
-      (window as any).drawGoods();
       // markets render in a standalone layer, toggled independently
       (window as any).Layers.toggle("markets");
     });

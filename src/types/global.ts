@@ -25,9 +25,6 @@ declare global {
     unlock: typeof import("../utils/preferences").unlock;
     stored: typeof import("../utils/preferences").stored;
     applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
-    drawRelief: typeof import("../renderers/draw-relief-icons").drawRelief;
-    drawCompass: () => void;
-    redrawLegend: typeof import("../renderers/draw-legend").redrawLegend;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     clearLegend: typeof import("../renderers/draw-legend").clearLegend;
     unfog: typeof import("../renderers/overlays/fogging").unfog;
@@ -145,17 +142,16 @@ declare global {
   // Legacy UI globals
   var toggleOptions: (event?: Event) => void;
   var hideOptions: (event?: Event) => void;
-  var drawMarketsLayer: () => void;
   var isCtrlClick: (event: MouseEvent) => boolean;
   var editStyle: (layer: string, group?: string) => void;
   var capitalize: (str: string) => string;
   var rn: (value: number, decimals?: number) => number;
   var openURL: (url: string) => void;
   var findCell: (x: number, y: number, radius?: number) => number | undefined;
-  var drawGoods: () => void;
 
   var drawStates: () => void;
   var drawLabels: () => void;
+  var drawCompass: () => void;
 
   var tinymce:
     | {

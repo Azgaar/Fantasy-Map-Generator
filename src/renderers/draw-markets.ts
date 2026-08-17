@@ -90,11 +90,3 @@ export function highlightMarketOff(marketId: number | string): void {
     .attr("stroke-width", 0)
     .remove();
 }
-
-declare global {
-  interface Window {
-    drawMarketsLayer: typeof drawMarkets;
-  }
-}
-
-window.drawMarketsLayer = drawMarkets;

@@ -330,7 +330,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     undraw();
     defaultCellTypeFilter = "all";
   } else if (mode === "keep") {
-    select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", "none");
+    Layers.hide("landmass"); // expose the heightmap being edited; the other layers are already off
     defaultCellTypeFilter = "land";
   } else if (mode === "risk") {
     select<SVGElement, unknown>("#deftemp").selectAll("#land, #water").selectAll("path").remove();
@@ -370,7 +370,6 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("transform", "scale(1)");
   } else exitCustomization.style.display = "block";
 
-  Layers.show("heightmap");
   const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
   layersPreset.value = "heightmap";
   layersPreset.disabled = true;
@@ -459,8 +458,10 @@ function finalizeHeightmap(): void {
   else if (mode === "keep") restoreKeptData();
   else if (mode === "risk") restoreRiskedData();
 
-  // restore initial layers
-  Layers.draw("landmass", "coastline", "lakes");
+  // restore initial layers; keep mode turned the landmass off, and show() redraws what it turns back on
+  if (Layers.isOn("landmass")) Layers.draw("landmass");
+  else Layers.show("landmass");
+  Layers.draw("coastline", "lakes");
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
   Layers.set(storedLayers);
@@ -483,7 +484,7 @@ function regenerateErasedData(): void {
     addLakesInDeepDepressions();
     openNearSeaLakes();
   }
-  OceanLayers();
+  Layers.draw("ocean");
   calculateTemperatures();
   generatePrecipitation();
   reGraph();
@@ -537,7 +538,6 @@ function regenerateErasedData(): void {
 }
 
 function restoreKeptData(): void {
-  select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", null);
   for (const i of pack.cells.i) {
     pack.cells.h[i] = grid.cells.h[pack.cells.g[i]];
   }
@@ -634,7 +634,7 @@ function restoreRiskedData(): void {
 
   Features.markupGrid();
   if (erosionAllowed) addLakesInDeepDepressions();
-  OceanLayers();
+  Layers.draw("ocean");
   calculateTemperatures();
   generatePrecipitation();
   reGraph();

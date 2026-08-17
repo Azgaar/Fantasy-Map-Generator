@@ -116,4 +116,78 @@ test.describe("layer teardown keeps user data", () => {
 
     expect(await landHeights.count()).toBeGreaterThan(0);
   });
+
+  // the whole edit view is #heights, so the heightmap layer stays off and the landmass is turned off
+  test("heightmap keep mode hides the landmass through the registry and restores it on exit", async ({ page }) => {
+    await page.evaluate(() => (window as any).Controllers.HeightmapEditor.open({ mode: "keep" }));
+    await expect(page.locator("#heights polygon").first()).toBeAttached();
+
+    const state = await page.evaluate(() => ({
+      landmass: (window as any).Layers.isOn("landmass"),
+      heightmap: (window as any).Layers.isOn("heightmap"),
+      lakes: (window as any).Layers.isOn("lakes"),
+      landmassDisplay: document.getElementById("landmass")!.style.display,
+      lakesDisplay: document.getElementById("lakes")!.style.display
+    }));
+
+    expect(state).toEqual({
+      landmass: false,
+      heightmap: false,
+      lakes: false,
+      landmassDisplay: "none",
+      lakesDisplay: "none"
+    });
+    // the edit-mode tip is not clobbered by a layer refusal
+    await expect(page.locator("#tooltip")).toHaveText(/Heightmap edit mode is active/);
+
+    await page.locator("#finalizeHeightmap").click();
+    await expect(page.locator("#heights")).toHaveCount(0);
+
+    const restored = await page.evaluate(() => ({
+      landmass: (window as any).Layers.isOn("landmass"),
+      landmassDisplay: document.getElementById("landmass")!.style.display,
+      // the layer state and the element used to drift apart: display cleared behind the registry's back
+      lakesMatchesState:
+        (window as any).Layers.isOn("lakes") === (document.getElementById("lakes")!.style.display !== "none")
+    }));
+
+    expect(restored).toEqual({ landmass: true, landmassDisplay: "", lakesMatchesState: true });
+    expect(await page.locator("#landmass rect").count()).toBe(1); // redrawn, exactly once
+  });
+
+  // the ocean outline is regenerated from the `layers` attribute on every draw
+  test("ocean outlines follow the layers attribute and keep the base rect", async ({ page }) => {
+    const rings = page.locator("#oceanLayers path");
+    const base = page.locator("#oceanLayers #oceanBase");
+
+    const drawn = await rings.count();
+    expect(drawn).toBeGreaterThan(0);
+    await expect(base).toBeAttached();
+
+    await page.evaluate(() => {
+      document.getElementById("oceanLayers")!.setAttribute("layers", "none");
+      (window as any).Layers.draw("ocean");
+    });
+    expect(await rings.count()).toBe(0); // the renderer clears its own content, style.js no longer does
+    await expect(base).toBeAttached(); // the base rect is not outline content
+
+    await page.evaluate(() => {
+      document.getElementById("oceanLayers")!.setAttribute("layers", "-6,-3,-1");
+      (window as any).Layers.draw("ocean");
+    });
+    expect(await rings.count()).toBe(drawn);
+  });
+
+  // style.js used to call the renderers straight, drawing into layers the user has turned off
+  test("a style change does not render into a layer that is off", async ({ page }) => {
+    expect(await page.evaluate(() => (window as any).Layers.isOn("goods"))).toBe(false);
+
+    await page.evaluate(() => {
+      const input = document.getElementById("styleGoodsSize") as HTMLInputElement;
+      input.value = "2";
+      input.dispatchEvent(new Event("change"));
+    });
+
+    expect(await page.locator("#goods > * > *").count()).toBe(0);
+  });
 });

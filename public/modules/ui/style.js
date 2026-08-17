@@ -238,10 +238,12 @@ function selectStyleElement() {
 
   if (styleElement === "population") {
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = d3.select("#population")
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = d3
+      .select("#population")
       .select("#rural")
       .attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = d3.select("#population")
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = d3
+      .select("#population")
       .select("#urban")
       .attr("stroke");
     styleStrokeWidth.style.display = "block";
@@ -254,7 +256,13 @@ function selectStyleElement() {
     styleStatesBodyFilter.value = d3.select("#statesBody").attr("filter") || "";
     styleStatesHaloWidth.value = d3.select("#statesHalo").attr("data-width") || 10;
     styleStatesHaloOpacity.value = d3.select("#statesHalo").attr("opacity") || 1;
-    styleStatesHaloBlur.value = parseFloat(d3.select("#statesHalo").attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
+    styleStatesHaloBlur.value =
+      parseFloat(
+        d3
+          .select("#statesHalo")
+          .attr("filter")
+          ?.match(/blur\(([^)]+)\)/)?.[1]
+      ) || 0;
   }
 
   if (styleElement === "labels") {
@@ -510,17 +518,12 @@ styleStrokeInput.addEventListener("input", function () {
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
-// measurers are rendered with baked-in sizes, so a style change requires a redraw
-function redrawMeasurersOnStyleChange() {
-  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
-}
-
 styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
-  redrawMeasurersOnStyleChange();
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleLetterSpacingInput.addEventListener("input", e => {
@@ -532,7 +535,7 @@ styleLetterSpacingInput.addEventListener("input", e => {
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
-  redrawMeasurersOnStyleChange();
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
@@ -646,14 +649,13 @@ styleOceanPatternOpacity.addEventListener("input", e => {
 });
 
 outlineLayers.addEventListener("change", function () {
-  d3.select("#oceanLayers").selectAll("path").remove();
   d3.select("#oceanLayers").attr("layers", this.value);
-  OceanLayers();
+  Layers.draw("ocean");
 });
 
 styleHeightmapScheme.addEventListener("change", function () {
   getEl().attr("scheme", this.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 openCreateHeightmapSchemeButton.addEventListener("click", function () {
@@ -754,7 +756,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 
     addCustomColorScheme(stops);
     getEl().attr("scheme", stops);
-    drawHeightmap();
+    Layers.draw("heightmap");
 
     handleClose();
   }
@@ -778,33 +780,33 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 styleHeightmapRenderOcean.addEventListener("change", e => {
   const checked = +e.target.checked;
   getEl().attr("data-render", checked);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapTerracing.addEventListener("input", e => {
   getEl().attr("terracing", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapSkip.addEventListener("input", e => {
   getEl().attr("skip", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapSimplification.addEventListener("input", e => {
   getEl().attr("relax", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapCurve.addEventListener("change", e => {
   getEl().attr("curve", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleReliefSet.addEventListener("change", e => {
   style.relief.set = e.target.value;
   Relief.changeSet(e.target.value);
-  drawRelief();
+  Layers.draw("relief");
 });
 
 styleReliefSize.addEventListener("change", e => {
@@ -814,14 +816,14 @@ styleReliefSize.addEventListener("change", e => {
   if (ratio === 1) return;
 
   Relief.changeSize(ratio);
-  drawRelief();
+  Layers.draw("relief");
 });
 
 // density defines the placement, so it cannot be applied without regenerating the icons
 styleReliefDensity.addEventListener("change", e => {
   style.relief.density = +e.target.value;
   Relief.generate();
-  drawRelief();
+  Layers.draw("relief");
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
@@ -874,7 +876,7 @@ function shiftCompass() {
 
 styleLegendColItems.addEventListener("input", e => {
   d3.select("#legend").select("#legendBox").attr("data-columns", e.target.value);
-  redrawLegend();
+  Layers.draw("legend");
 });
 
 styleLegendBack.addEventListener("input", e => {
@@ -893,7 +895,7 @@ function changeFont() {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["font-family"] = family;
 
-  if (styleElementSelect.value === "legend") redrawLegend();
+  if (styleElementSelect.value === "legend") Layers.draw("legend");
 }
 
 styleShadowInput.addEventListener("input", function () {
@@ -969,18 +971,11 @@ function changeFontSize(el, size) {
     return;
   }
 
-  const getSizeOnScale = element => {
-    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
-
-    // other has the same size
-    return size;
-  };
-
-  const scaleSize = getSizeOnScale(styleElementSelect.value);
+  const scaleSize = styleElementSelect.value === "coordinates" ? rn(size / scale ** 0.8, 2) : size;
   el.attr("data-size", size).attr("font-size", scaleSize);
 
-  if (styleElementSelect.value === "legend") redrawLegend();
-  redrawMeasurersOnStyleChange();
+  if (styleElementSelect.value === "legend") Layers.draw("legend");
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 }
 
 styleFontShiftX.addEventListener("input", e => {
@@ -1030,13 +1025,11 @@ styleArmiesFillOpacity.addEventListener("input", e => {
 
 styleArmiesSize.addEventListener("input", e => {
   const value = Number(e.target.value);
-  d3.select("#armies").attr("box-size", value).attr("font-size", value * 2);
+  d3.select("#armies")
+    .attr("box-size", value)
+    .attr("font-size", value * 2);
 
-  d3.select("#armies").selectAll("g").remove(); // clear armies layer
-  pack.states.forEach(s => {
-    if (!s.i || s.removed || !s.military.length) return;
-    drawRegiments(s.military, s.i);
-  });
+  Layers.draw("military");
 });
 
 emblemsStateSizeInput.addEventListener("change", e => {
@@ -1056,17 +1049,17 @@ emblemsBurgSizeInput.addEventListener("change", e => {
 
 styleGoodsCircle.addEventListener("change", function () {
   d3.select("#goods").select("#goodsIcons").attr("data-circle", +this.checked);
-  drawGoods();
+  Layers.draw("goods");
 });
 
 styleGoodsSize.addEventListener("change", function () {
   d3.select("#goods").select("#goodsIcons").attr("data-size", this.value);
-  drawGoods();
+  Layers.draw("goods");
 });
 
 styleGoodsBurgsSize.addEventListener("change", function () {
   d3.select("#goods").select("#goodsBurgs").attr("data-size", this.value);
-  drawGoods();
+  Layers.draw("goods");
 });
 
 styleMarketsLayerFillOpacity.addEventListener("input", e => {
@@ -1075,19 +1068,19 @@ styleMarketsLayerFillOpacity.addEventListener("input", e => {
 
 styleMarketsSize.addEventListener("change", function () {
   d3.select("#markets").attr("data-size", this.value);
-  drawMarketsLayer();
+  Layers.draw("markets");
 });
 
 styleMarketsIconSize.addEventListener("change", function () {
   d3.select("#markets").attr("font-size", this.value);
-  drawMarketsLayer();
+  Layers.draw("markets");
 });
 
 styleMarketsIcon.addEventListener("click", function () {
   window.Controllers.IconSelector.open(d3.select("#markets").attr("data-icon") || "⚖️", value => {
     d3.select("#markets").attr("data-icon", value);
     this.innerHTML = value;
-    drawMarketsLayer();
+    Layers.draw("markets");
   });
 });
 
@@ -1234,5 +1227,7 @@ function applyMapFilter(event) {
 
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
-  d3.select("#map").attr("data-filter", button.id).attr("filter", "url(#filter-" + button.id + ")");
+  d3.select("#map")
+    .attr("data-filter", button.id)
+    .attr("filter", "url(#filter-" + button.id + ")");
 }

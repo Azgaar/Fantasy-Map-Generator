@@ -45,11 +45,7 @@ const CURVE_MAP: Record<string, CurveFactory> = {
   curveStepBefore
 };
 
-declare global {
-  var drawHeightmap: () => void;
-}
-
-const heightmapRenderer = (): void => {
+export const drawHeightmap = (): void => {
   if (customization === 1)
     return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
 
@@ -198,7 +194,3 @@ const heightmapRenderer = (): void => {
 
   TIME && console.timeEnd("drawHeightmap");
 };
-
-window.drawHeightmap = heightmapRenderer;
-
-export { heightmapRenderer as drawHeightmap };
