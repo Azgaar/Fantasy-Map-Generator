@@ -3,7 +3,6 @@ import "./coastline-fractal";
 import "./draw-borders";
 import "./draw-biomes";
 import "./draw-burg-icons";
-import "./draw-compass";
 import "./labels/labels-renderer";
 import "./draw-emblems";
 import "./draw-heightmap";

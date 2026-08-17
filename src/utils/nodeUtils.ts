@@ -25,6 +25,23 @@ export const findEl = <T extends Element = HTMLElement>(id: string): T | null =>
 };
 
 /**
+ * Create an svg element
+ * @param tag - The svg element name, e.g. "g" or "use"
+ * @param id - The id to assign
+ * @param attrs - Attributes to set on the element
+ */
+export const createEl = <T extends Element = SVGElement>(
+  tag: string,
+  id: string,
+  attrs: Record<string, string> = {}
+): T => {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  el.id = id;
+  for (const [name, value] of Object.entries(attrs)) el.setAttribute(name, value);
+  return el as unknown as T;
+};
+
+/**
  * Get the composed path of a node (including shadow DOM and window)
  * @param {Node | Window} node - The starting node or window
  * @returns {Array<Node>} - The composed path as an array

@@ -1,7 +1,5 @@
 import { select } from "d3";
 import { quadtree } from "d3-quadtree";
-import { Layers } from "@/components/layers";
-import { drawRoute } from "@/renderers/draw-routes";
 import type { BurgGroup } from "@/types/burg-groups";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";

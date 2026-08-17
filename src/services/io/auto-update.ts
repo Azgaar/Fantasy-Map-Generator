@@ -1548,6 +1548,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (layer) group.layerDependency = layer;
     }
 
+    // v1.144.0 made the compass rose a declared layer child, so it needs the id the registry looks up
+    findEl("compass")?.querySelector("use")?.setAttribute("id", "compassRose");
+
     // v1.144.0 moved the layers state into data[50]
     data[50] = JSON.stringify(recoverLayersState());
 

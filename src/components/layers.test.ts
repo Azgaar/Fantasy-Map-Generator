@@ -56,6 +56,32 @@ describe("init", () => {
     expect(Array.from(group.children, node => node.id)).toEqual(["one", "two"]);
   });
 
+  it("creates children that are not groups, with their attributes", () => {
+    registry(
+      new Layer({
+        id: "a",
+        element: "a-el",
+        parent: "viewbox",
+        children: ["one", { id: "rose", tag: "use", attrs: { href: "#defs-rose" } }]
+      })
+    );
+
+    const rose = document.getElementById("rose")!;
+    expect(Array.from(document.getElementById("a-el")!.children, node => node.id)).toEqual(["one", "rose"]);
+    expect(rose.tagName).toBe("use");
+    expect(rose.getAttribute("href")).toBe("#defs-rose");
+  });
+
+  it("adopts a child that is already in the svg instead of duplicating it", () => {
+    document.getElementById("viewbox")!.innerHTML = /* html */ `<g id="a-el"><use id="rose" href="#kept" /></g>`;
+    registry(
+      new Layer({ id: "a", element: "a-el", parent: "viewbox", children: [{ id: "rose", tag: "use", attrs: {} }] })
+    );
+
+    expect(document.querySelectorAll("#a-el use").length).toBe(1);
+    expect(document.getElementById("rose")!.getAttribute("href")).toBe("#kept"); // the saved map owns it
+  });
+
   it("hides layers that are off and leaves permanent layers visible without a style attribute", () => {
     registry(
       new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
@@ -151,6 +177,25 @@ describe("erase", () => {
 
     expect(Array.from(document.getElementById("a-el")!.children, node => node.id)).toEqual(["kept"]);
     expect(document.getElementById("kept")!.children.length).toBe(0);
+  });
+
+  it("keeps a declared child that is not a group, content and all", () => {
+    registry(
+      new Layer({
+        id: "a",
+        element: "a-el",
+        parent: "viewbox",
+        children: [{ id: "rose", tag: "use", attrs: { href: "#defs-rose" } }]
+      })
+    );
+    Layers.show("a");
+    document.getElementById("a-el")!.insertAdjacentHTML("beforeend", /* html */ `<circle id="dropped" />`);
+
+    Layers.hide("a");
+    Layers.eraseAll();
+
+    expect(document.getElementById("dropped")).toBeNull();
+    expect(document.getElementById("rose")!.getAttribute("href")).toBe("#defs-rose"); // skeleton, not content
   });
 
   it("eraseAll drops the content of every viewbox layer, on or off, keepContent included", () => {

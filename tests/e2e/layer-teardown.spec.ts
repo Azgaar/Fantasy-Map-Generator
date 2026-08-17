@@ -178,6 +178,25 @@ test.describe("layer teardown keeps user data", () => {
     expect(await rings.count()).toBe(drawn);
   });
 
+  // the rose is layer skeleton, so it is there before the compass is ever shown and survives an erase
+  test("the compass rose exists while the layer is off and outlives eraseAll", async ({ page }) => {
+    const rose = page.locator("#compass > #compassRose");
+
+    expect(await page.evaluate(() => (window as any).Layers.isOn("compass"))).toBe(false);
+    await expect(rose).toBeAttached();
+    expect(await rose.getAttribute("href")).toBe("#defs-compass-rose");
+
+    // the Style editor writes the rose transform even when the compass is hidden
+    await page.evaluate(() => document.querySelector("#compass > use")!.setAttribute("transform", "scale(2)"));
+
+    await page.evaluate(() => (window as any).Layers.eraseAll()); // what a regeneration does
+    await expect(rose).toBeAttached();
+
+    await page.evaluate(() => (window as any).Layers.show("compass"));
+    await expect(page.locator("#compass")).toBeVisible();
+    expect(await page.locator("#compass use").count()).toBe(1); // not duplicated by the show
+  });
+
   // style.js used to call the renderers straight, drawing into layers the user has turned off
   test("a style change does not render into a layer that is off", async ({ page }) => {
     expect(await page.evaluate(() => (window as any).Layers.isOn("goods"))).toBe(false);

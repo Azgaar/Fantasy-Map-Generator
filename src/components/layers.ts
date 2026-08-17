@@ -1,11 +1,9 @@
 // Global layers registry: owns layers list, order, and svg skeleton
-
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons, removeBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
-import { drawCompass } from "@/renderers/draw-compass";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
 import { drawCultures } from "@/renderers/draw-cultures";
 import { drawEmblems } from "@/renderers/draw-emblems";
@@ -37,13 +35,13 @@ import { drawZones } from "@/renderers/draw-zones";
 import { drawLabels, removeLabels } from "@/renderers/labels/labels-renderer";
 import { drawFogging } from "@/renderers/overlays/fogging";
 import { tradeAnimation } from "@/renderers/trade-animation";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
 
 interface LayerParams<Id extends string = string> {
   id: Id; // canonical identity, persisted in the .map file
   element?: string; // id of the svg group holding the layer content
   parent: "viewbox" | "map"; // id of the svg element the layer group is appended to
-  children?: string[]; // sub-groups created inside the layer group and preserved when the content is erased
+  children?: ChildParams[]; // permament elements created inside the group
   attrs?: Record<string, string>; // static attributes applied to the layer group
   permanent?: boolean; // structural layer: on from the start and never turned off
   keepContent?: boolean; // keep the content in the DOM when the layer is turned off
@@ -51,22 +49,25 @@ interface LayerParams<Id extends string = string> {
   erase?: (layer: Layer) => void; // custom teardown, defaults to erasing the content down to the declared children
 }
 
+type ChildParams = { id: string; tag: string; attrs?: Record<string, string> };
+
 export interface LayersState {
   order: string[];
   active: string[];
 }
 
-/** A layer is a value: an identity and an svg group. On/off state belongs to the registry */
 export class Layer<Id extends string = string> {
   readonly id: Id;
   readonly elementId: string;
   readonly parent: "viewbox" | "map";
+  readonly children: ChildParams[] = [];
 
   /** the registry reads `params`; consumers use the fields above and `getEl()` */
   constructor(readonly params: LayerParams<Id>) {
     this.id = params.id;
     this.elementId = params.element ?? params.id;
     this.parent = params.parent;
+    this.children = params.children ?? [];
   }
 
   getEl(): SVGGElement {
@@ -85,21 +86,16 @@ export class LayersRegistry<Id extends string = string> {
   /** create missing layer groups, order them by registration order and apply the current state */
   init(): void {
     for (const layer of this.layers) {
-      const { parent, id, element, children, attrs } = layer.params;
+      const { parent, attrs } = layer.params;
 
-      let group = findEl<SVGGElement>(element ?? id);
-      if (!group) {
-        group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.id = element ?? id;
-      }
+      let group = findEl<SVGGElement>(layer.elementId);
+      if (!group) group = createEl<SVGGElement>("g", layer.elementId);
       for (const [name, value] of Object.entries(attrs ?? {})) group.setAttribute(name, value);
       ensureEl(parent).append(group);
 
-      for (const child of children ?? []) {
-        if (group.querySelector(`#${child}`)) continue;
-        const childGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        childGroup.id = child;
-        group.append(childGroup);
+      for (const { id, tag, attrs } of layer.children) {
+        if (group.querySelector(`#${id}`)) continue;
+        group.append(createEl(tag, id, attrs));
       }
 
       this.setVisible(group, this.active.has(layer.id));
@@ -110,7 +106,6 @@ export class LayersRegistry<Id extends string = string> {
     return this.layers;
   }
 
-  /** narrow an untrusted string — a dataset value, a stored preset, a map file — to a known layer id */
   has(id: string): id is Id {
     return this.layers.some(layer => layer.id === id);
   }
@@ -125,7 +120,7 @@ export class LayersRegistry<Id extends string = string> {
     return this.active.has(id);
   }
 
-  /** turn on the layers that are off and draw them; layers already on are left alone */
+  /** turn on the layers that are off and draw them */
   show(...ids: Id[]): void {
     const inactiveLayers = ids.filter(id => !this.active.has(id));
     if (!inactiveLayers.length) return;
@@ -148,10 +143,7 @@ export class LayersRegistry<Id extends string = string> {
     this.active.has(id) ? this.hide(id) : this.show(id);
   }
 
-  /**
-   * Turn on the listed layers and turn off every other user-controlled one, drawing the ones that were off.
-   * Takes plain strings and ignores the ones it does not know: the list comes from presets and snapshots
-   */
+  /* Turn on the listed layers and turn off every other user-controlled one */
   set(ids: readonly string[]): void {
     const known = this.layers.filter(layer => ids.includes(layer.id)).map(layer => layer.id);
     const drawn = known.filter(id => !this.active.has(id));
@@ -201,7 +193,6 @@ export class LayersRegistry<Id extends string = string> {
 
   /** apply stored state: the content is already in the DOM, so nothing is drawn or erased */
   restore({ order, active }: LayersState): void {
-    // layers missing from the stored order keep their registration-order neighbours
     const ranks = new Map<string, number>();
     let previous = -1;
     for (const layer of this.layers) {
@@ -243,8 +234,9 @@ export class LayersRegistry<Id extends string = string> {
 
   /** default teardown: drop the content, keeping the declared skeleton */
   private eraseContent(layer: Layer<Id>): void {
+    const declared = layer.children.map(child => child.id);
     for (const child of Array.from(layer.getEl().children)) {
-      if (layer.params.children?.includes(child.id)) child.replaceChildren();
+      if (declared.includes(child.id)) child.replaceChildren();
       else child.remove();
     }
   }
@@ -261,7 +253,7 @@ const mapLayers = [
   new Layer({
     id: "ocean",
     parent: "viewbox",
-    children: ["oceanLayers", "oceanPattern"],
+    children: ["oceanLayers", "oceanPattern"].map(id => ({ id, tag: "g" })),
     permanent: true,
     draw: drawOcean,
     erase: removeOcean
@@ -272,13 +264,13 @@ const mapLayers = [
     id: "heightmap",
     element: "terrs",
     parent: "viewbox",
-    children: ["oceanHeights", "landHeights"],
+    children: ["oceanHeights", "landHeights"].map(id => ({ id, tag: "g" })),
     draw: drawHeightmap
   }),
   new Layer({
     id: "lakes",
     parent: "viewbox",
-    children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
+    children: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].map(id => ({ id, tag: "g" })),
     keepContent: true,
     draw: drawLakes
   }),
@@ -286,7 +278,11 @@ const mapLayers = [
   new Layer({ id: "cells", parent: "viewbox", draw: drawCells }),
   new Layer({ id: "grid", element: "gridOverlay", parent: "viewbox", draw: drawGrid }),
   new Layer({ id: "coordinates", parent: "viewbox", draw: drawCoordinates }),
-  new Layer({ id: "compass", parent: "viewbox", keepContent: true, draw: drawCompass }),
+  new Layer({
+    id: "compass",
+    parent: "viewbox",
+    children: [{ id: "compassRose", tag: "use", attrs: { href: "#defs-compass-rose" } }]
+  }),
   new Layer({ id: "rivers", parent: "viewbox", draw: drawRivers }),
   new Layer({ id: "relief", element: "terrain", parent: "viewbox", draw: drawRelief, erase: removeRelief }),
   new Layer({ id: "religions", element: "relig", parent: "viewbox", draw: drawReligions }),
@@ -295,16 +291,21 @@ const mapLayers = [
     id: "states",
     element: "regions",
     parent: "viewbox",
-    children: ["statesBody", "statesHalo"],
+    children: ["statesBody", "statesHalo"].map(id => ({ id, tag: "g" })),
     draw: drawStates
   }),
   new Layer({ id: "provinces", element: "provs", parent: "viewbox", draw: drawProvinces }),
   new Layer({ id: "zones", parent: "viewbox", draw: drawZones }),
-  new Layer({ id: "borders", parent: "viewbox", children: ["stateBorders", "provinceBorders"], draw: drawBorders }),
+  new Layer({
+    id: "borders",
+    parent: "viewbox",
+    children: ["stateBorders", "provinceBorders"].map(id => ({ id, tag: "g" })),
+    draw: drawBorders
+  }),
   new Layer({
     id: "routes",
     parent: "viewbox",
-    children: ["roads", "trails", "searoutes"],
+    children: ["roads", "trails", "searoutes"].map(id => ({ id, tag: "g" })),
     draw: drawRoutes,
     erase: removeRoutes
   }),
@@ -312,13 +313,18 @@ const mapLayers = [
   new Layer({
     id: "coastline",
     parent: "viewbox",
-    children: ["sea_island", "lake_island"],
+    children: ["sea_island", "lake_island"].map(id => ({ id, tag: "g" })),
     permanent: true,
     keepContent: true,
     draw: drawCoastline
   }),
   new Layer({ id: "ice", parent: "viewbox", draw: drawIce }),
-  new Layer({ id: "goods", parent: "viewbox", children: ["goodsCells", "goodsIcons", "goodsBurgs"], draw: drawGoods }),
+  new Layer({
+    id: "goods",
+    parent: "viewbox",
+    children: ["goodsCells", "goodsIcons", "goodsBurgs"].map(id => ({ id, tag: "g" })),
+    draw: drawGoods
+  }),
   new Layer({ id: "markets", parent: "viewbox", draw: drawMarkets }),
   new Layer({
     id: "trade",
@@ -335,11 +341,16 @@ const mapLayers = [
     draw: drawPrecipitation,
     erase: removePrecipitation
   }),
-  new Layer({ id: "population", parent: "viewbox", children: ["rural", "urban"], draw: drawPopulation }),
+  new Layer({
+    id: "population",
+    parent: "viewbox",
+    children: ["rural", "urban"].map(id => ({ id, tag: "g" })),
+    draw: drawPopulation
+  }),
   new Layer({
     id: "emblems",
     parent: "viewbox",
-    children: ["burgEmblems", "provinceEmblems", "stateEmblems"],
+    children: ["burgEmblems", "provinceEmblems", "stateEmblems"].map(id => ({ id, tag: "g" })),
     keepContent: true,
     draw: drawEmblems
   }),
@@ -347,7 +358,7 @@ const mapLayers = [
     id: "burgIcons",
     element: "icons",
     parent: "viewbox",
-    children: ["burgIcons", "anchors"],
+    children: ["burgIcons", "anchors"].map(id => ({ id, tag: "g" })),
     draw: drawBurgIcons,
     erase: removeBurgIcons
   }),

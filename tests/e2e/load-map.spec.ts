@@ -378,6 +378,32 @@ test.describe("Map loading", () => {
     await expect(borders).toBeVisible();
   });
 
+  // the rose became a declared layer child, which the registry matches by id: an id-less legacy rose
+  // would otherwise be left in place and a second one created next to it
+  test("the legacy compass rose should be adopted rather than duplicated", async ({ page }) => {
+    const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
+    await page.locator("#mapToLoad").setInputFiles(mapFilePath);
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const compass = await page.evaluate(() => {
+      const uses = document.querySelectorAll("#compass use");
+      return {
+        count: uses.length,
+        id: uses[0]?.id,
+        transform: uses[0]?.getAttribute("transform"),
+        layerIsOn: (window as any).Layers.isOn("compass")
+      };
+    });
+
+    // the fixture carries the rose with a style transform and the layer turned off
+    expect(compass).toEqual({
+      count: 1,
+      id: "compassRose",
+      transform: "translate(80 80) scale(0.25)",
+      layerIsOn: false
+    });
+  });
+
   test("legacy label settings should migrate without changing behavior", async ({ page }) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.139.4.map");
     const mapData = fs.readFileSync(mapFilePath, "utf8").split(/\r?\n/);
