@@ -1,31 +1,30 @@
 import { curveBasisClosed, line } from "d3";
-import { generateOceanOutlines, getOceanLimits } from "@/generators/ocean-layers-generator";
+import { generateOcean, getOceanLimits } from "@/generators/ocean-generator";
 import { ensureEl, rn, round } from "@/utils";
 
-const lineGen = line().curve(curveBasisClosed);
-
 /** the ocean outline rings, stacked from the coast outwards so the overlap deepens the shade */
-export function drawOceanLayers(): void {
+export function drawOcean(): void {
   const oceanLayers = ensureEl<SVGGElement>("oceanLayers");
-  removeOceanLayers();
+  removeOcean();
 
   const limits = getOceanLimits(oceanLayers.getAttribute("layers") ?? "");
   if (!limits.length) return;
 
-  TIME && console.time("drawOceanLayers");
+  TIME && console.time("drawOcean");
 
   const opacity = rn(0.4 / limits.length, 2);
-  const paths = generateOceanOutlines(limits)
+  const lineGen = line().curve(curveBasisClosed);
+  const paths = generateOcean(limits)
     .map(({ rings }) => rings.map(ring => round(lineGen(ring) || "")).join(""))
     .filter(Boolean)
     .map(path => /* html */ `<path d="${path}" fill="#ecf2f9" fill-opacity="${opacity}"></path>`);
 
   oceanLayers.insertAdjacentHTML("beforeend", paths.join(""));
 
-  TIME && console.timeEnd("drawOceanLayers");
+  TIME && console.timeEnd("drawOcean");
 }
 
 /** drop the rings, keeping #oceanBase: the base rect is created once, at startup */
-export function removeOceanLayers(): void {
+export function removeOcean(): void {
   for (const path of Array.from(document.querySelectorAll("#oceanLayers path"))) path.remove();
 }

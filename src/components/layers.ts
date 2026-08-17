@@ -20,7 +20,7 @@ import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
-import { drawOceanLayers, removeOceanLayers } from "@/renderers/draw-ocean-layers";
+import { drawOcean, removeOcean } from "@/renderers/draw-ocean";
 import { drawPopulation } from "@/renderers/draw-population";
 import { drawPrecipitation, removePrecipitation } from "@/renderers/draw-precipitation";
 import { drawProvinces } from "@/renderers/draw-provinces";
@@ -263,8 +263,8 @@ const mapLayers = [
     parent: "viewbox",
     children: ["oceanLayers", "oceanPattern"],
     permanent: true,
-    draw: drawOceanLayers,
-    erase: removeOceanLayers
+    draw: drawOcean,
+    erase: removeOcean
   }),
   new Layer({ id: "landmass", parent: "viewbox", permanent: true, keepContent: true, draw: drawLandmass }),
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),

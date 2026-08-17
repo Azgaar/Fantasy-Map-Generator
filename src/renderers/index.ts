@@ -18,7 +18,7 @@ import "./draw-temperature";
 import "./draw-goods";
 import "./draw-markets";
 import "./draw-trade-animation";
-import "./draw-ocean-layers";
+import "./draw-ocean";
 import "./trade-animation";
 import "./emblems";
 import "./overlays/brush-circle";

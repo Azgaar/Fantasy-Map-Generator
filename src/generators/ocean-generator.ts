@@ -30,8 +30,8 @@ export function getOceanLimits(outline: string): number[] {
 }
 
 /** trace the ocean rings for the requested distances, clipped to the map */
-export function generateOceanOutlines(limits: number[]): OceanOutline[] {
-  TIME && console.time("generateOceanOutlines");
+export function generateOcean(limits: number[]): OceanOutline[] {
+  TIME && console.time("generateOcean");
 
   const { cells, vertices } = grid;
   const pointsN = cells.i.length;
@@ -62,7 +62,7 @@ export function generateOceanOutlines(limits: number[]): OceanOutline[] {
     outlines.get(t)!.push(ring);
   }
 
-  TIME && console.timeEnd("generateOceanOutlines");
+  TIME && console.timeEnd("generateOcean");
 
   // in limits order, so the renderer stacks the rings from the coast outwards
   return limits.map(t => ({ t, rings: outlines.get(t)! }));
