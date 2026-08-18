@@ -4,7 +4,7 @@
 
 Layer styling lives as attributes on SVG groups. Three costs, all growing with the layers registry:
 
-1. The registry's erase-on-hide model deletes DOM state nothing else owns: toggling a layer off can destroy style edits, custom groups and skeleton siblings, because the DOM is both the render target and the database.
+1. The registry's erase-on-hide model is only safe for state something else owns, so layers whose groups carry style edits or user-created sub-groups need hand-written `erase` overrides (`removeRoutes`, `removePrecipitation`, `removeBurgIcons`) to avoid deleting them. Each is a per-layer exception that exists only because the DOM is both the render target and the database.
 2. Renderers make decisions by reading attributes back (`+coordinates.attr("data-size")`, halo `data-width`, heightmap `scheme`), so a layer that is off — no element — cannot even be reasoned about, and every read is stringly-typed.
 3. Style persistence rides inside the serialized SVG, so styles cannot be read, validated or migrated without instantiating the whole document.
 
@@ -119,7 +119,7 @@ mapStyle.options("markers").resscale;       // compile error
 
 ## Consumers
 
-Registry — one call, two sites. `applyTo` is what makes erase-on-hide safe: the DOM stops being the only owner of styling, so `eraseContent()` may delete anything and re-show restores it.
+Registry — one call, two sites. `applyTo` is what makes the uniform erase safe: the DOM stops being the only owner of styling, so `eraseContent()` may delete anything and re-show restores it — and the hand-written `erase` overrides protecting style state become deletable.
 
 ```ts
 // LayersRegistry.init(), after ensuring the group and its children exist
