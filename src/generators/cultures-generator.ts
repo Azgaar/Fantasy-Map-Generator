@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { Emblems } from "@/generators/emblems-generator";
 import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 declare global {

@@ -1,5 +1,5 @@
 import { quadtree } from "d3-quadtree";
-import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
+import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
@@ -743,7 +743,6 @@ class BurgModule {
 
     pack.burgs.push(burg);
     cells.burg[cellId as number] = burgId;
-    redrawEmblem("burg", burgId);
 
     Routes.connect(cellId as number);
     return burgId;
@@ -879,7 +878,6 @@ class BurgModule {
     if (noteId !== -1) notes.splice(noteId, 1);
 
     if (burg.coa) {
-      removeEmblem("burg", burgId);
       delete burg.coa;
     }
   }

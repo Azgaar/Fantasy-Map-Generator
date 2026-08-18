@@ -16,10 +16,12 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -1640,7 +1642,10 @@ function addState(this: SVGElement, event: MouseEvent): void {
     return;
   }
 
-  if (!burgId) burgId = Burgs.add(point as [number, number]);
+  if (!burgId) {
+    burgId = Burgs.add(point as [number, number]);
+    redrawEmblem("burg", burgId);
+  }
 
   const oldState = cells.state[center];
   const newState = states.length;

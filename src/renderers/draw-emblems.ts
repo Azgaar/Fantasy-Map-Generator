@@ -1,6 +1,6 @@
 import { forceCollide, forceSimulation, type SimulationNodeDatum, timeout } from "d3";
-import { Layers } from "@/components/layers";
 import type { Province } from "@/generators/provinces-generator";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
 import { ensureEl, minmax, rn } from "@/utils";
@@ -39,8 +39,8 @@ interface Sizing {
 }
 
 const SIZING: Record<EmblemType, Sizing> = {
-  state: { extent: 60, min: 10, max: 90, expected: 20, countDivisor: 100, deficitDivisor: 200 },
-  province: { extent: 110, min: 5, max: 70, expected: 115, countDivisor: 1000, deficitDivisor: 1000 },
+  state: { extent: 40, min: 10, max: 100, expected: 15, countDivisor: 100, deficitDivisor: 200 },
+  province: { extent: 100, min: 5, max: 70, expected: 115, countDivisor: 1000, deficitDivisor: 1000 },
   burg: { extent: 185, min: 2, max: 50, expected: 450, countDivisor: 1000, deficitDivisor: 1000 }
 };
 
@@ -130,8 +130,12 @@ export function redrawEmblem(type: EmblemType, i: number): void {
     return;
   }
   const entity = getEntity(type, i);
-  const replacements = entity && isValidEmblem(entity) ? [getNode(type, entity)] : [];
-  scene.replaceWhere(item => item.id === getId(type, i), replacements);
+  if (entity && isValidEmblem(entity)) scene.set(getNode(type, entity));
+  else {
+    const id = getId(type, i);
+    scene.remove(id);
+    EmblemRenderer.remove(id);
+  }
   layer.render();
 }
 
@@ -142,11 +146,6 @@ export function removeEmblem(type: EmblemType, i: number): void {
   scenes[type].remove(id);
   document.querySelector(`#${GROUPS[type]} > use[data-i="${i}"]`)?.remove();
   EmblemRenderer.remove(id);
-}
-
-/** Apply viewport and zoom visibility after a settled zoom or a hide-small-emblems change. */
-export function renderEmblems(): void {
-  layer.render();
 }
 
 export function subscribeToEmblemReconciliation(listener: () => void): () => void {
@@ -171,8 +170,6 @@ export async function renderEmblemDefinitions(root: ParentNode): Promise<void> {
 }
 
 function reconcileEmblems(context: ViewportRenderContext): void {
-  if (!Layers.isOn("emblems")) return;
-
   for (const type of TYPES) {
     const group = context.root.querySelector<SVGGElement>(`#${GROUPS[type]}`);
     if (!group) continue;

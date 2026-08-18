@@ -9,7 +9,9 @@ import { shieldSize } from "./size";
 import { templates } from "./templates";
 
 declare global {
-  var EmblemRenderer: EmblemRendererModule;
+  interface Window {
+    EmblemRenderer: EmblemRendererModule;
+  }
 }
 class EmblemRendererModule {
   private versions = new Map<string, number>();
@@ -311,4 +313,5 @@ class EmblemRendererModule {
   }
 }
 
-window.EmblemRenderer = new EmblemRendererModule();
+export const EmblemRenderer = new EmblemRendererModule();
+window.EmblemRenderer = EmblemRenderer;

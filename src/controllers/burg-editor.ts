@@ -4,6 +4,8 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { removeEmblem } from "@/renderers/draw-emblems";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
@@ -826,6 +828,7 @@ function removeSelectedBurg(): void {
       confirm: "Remove",
       onConfirm: () => {
         Burgs.remove(burgId);
+        removeEmblem("burg", burgId);
         Layers.draw("burgIcons", "labels");
         $("#burgEditor").dialog("close");
       }

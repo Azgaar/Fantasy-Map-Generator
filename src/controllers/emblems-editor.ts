@@ -2,9 +2,11 @@ import { type D3DragEvent, drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import type { Burg } from "@/generators/burgs-generator";
+import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "@/renderers/draw-emblems";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
 import { downloadFile, getFileName, openURL } from "@/utils";
@@ -457,7 +459,6 @@ function upload(type: "image" | "svg"): void {
   reader.onload = readerEvent => {
     const result = readerEvent.target!.result as string;
     const defsEmblems = ensureEl("defs-emblems");
-    const oldEmblem = document.getElementById(currentId);
 
     let href = result; // raster images
     if (type === "svg") {
@@ -484,9 +485,8 @@ function upload(type: "image" | "svg"): void {
     }
 
     const svg = `<svg id="${currentId}" viewBox="0 0 200 200"><image width="200" height="200" href="${href}"/></svg>`;
+    EmblemRenderer.remove(currentId);
     defsEmblems.insertAdjacentHTML("beforeend", svg);
-
-    if (oldEmblem) oldEmblem.remove();
 
     const customCoa: Emblem = { custom: true };
     if (el.coa.size !== undefined) customCoa.size = el.coa.size;

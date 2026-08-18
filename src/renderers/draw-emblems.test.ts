@@ -12,10 +12,13 @@ const mocks = vi.hoisted(() => ({
         bounds: { scale: number; x0: number; y0: number; x1: number; y1: number };
       }) => void)
     | undefined,
-  isOn: vi.fn(() => true)
+  emblemRenderer: {
+    remove: vi.fn((id: string) => document.getElementById(id)?.remove()),
+    trigger: vi.fn()
+  }
 }));
 
-vi.mock("@/components/layers", () => ({ Layers: { isOn: mocks.isOn } }));
+vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: mocks.emblemRenderer }));
 vi.mock("@/renderers/viewport/viewport-renderer", async importOriginal => {
   const actual = await importOriginal<typeof import("@/renderers/viewport/viewport-renderer")>();
   return {
@@ -42,7 +45,11 @@ vi.mock("d3", async importOriginal => {
   };
 });
 
-import { drawEmblems, redrawEmblem, removeEmblem, renderEmblemDefinitions, renderEmblems } from "./draw-emblems";
+import { drawEmblems, redrawEmblem, removeEmblem, renderEmblemDefinitions } from "./draw-emblems";
+
+function renderViewport(): void {
+  mocks.reconcile?.({ root: document, bounds: mocks.bounds });
+}
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `
@@ -77,15 +84,13 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
-    EmblemRenderer: {
-      remove: vi.fn((id: string) => document.getElementById(id)?.remove()),
-      trigger: vi.fn()
-    }
+    EmblemRenderer: mocks.emblemRenderer
   });
   Object.assign(mocks.bounds, { scale: 1, x0: 0, y0: 0, x1: 100, y1: 100 });
   mocks.deferredTimeouts.length = 0;
   mocks.deferTimeout = false;
-  mocks.isOn.mockReturnValue(true);
+  mocks.emblemRenderer.remove.mockClear();
+  mocks.emblemRenderer.trigger.mockClear();
 });
 
 describe("viewport emblem rendering", () => {
@@ -110,16 +115,16 @@ describe("viewport emblem rendering", () => {
     expect(uses).toHaveLength(1);
     expect(uses[0].dataset.i).toBe("1");
     expect(uses[0].getAttribute("href")).toBe("#stateCOA1");
-    expect(EmblemRenderer.trigger).toHaveBeenCalledTimes(1);
-    expect(EmblemRenderer.trigger).toHaveBeenCalledWith("stateCOA1", pack.states[1].coa);
+    expect(mocks.emblemRenderer.trigger).toHaveBeenCalledTimes(1);
+    expect(mocks.emblemRenderer.trigger).toHaveBeenCalledWith("stateCOA1", pack.states[1].coa);
 
     Object.assign(mocks.bounds, { x0: 450, x1: 550 });
-    renderEmblems();
+    renderViewport();
 
     const pannedUses = document.querySelectorAll<SVGUseElement>("#stateEmblems use");
     expect(pannedUses).toHaveLength(1);
     expect(pannedUses[0].dataset.i).toBe("2");
-    expect(EmblemRenderer.trigger).toHaveBeenCalledTimes(2);
+    expect(mocks.emblemRenderer.trigger).toHaveBeenCalledTimes(2);
   });
 
   it("keeps an edited emblem scene and DOM in sync", () => {
@@ -159,7 +164,7 @@ describe("viewport emblem rendering", () => {
 
     pack.states[1] = { i: 1, removed: true } as (typeof pack.states)[number];
     document.querySelector("#stateEmblems use[data-i='1']")?.remove();
-    renderEmblems();
+    renderViewport();
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")).toBeNull();
   });
@@ -171,7 +176,7 @@ describe("viewport emblem rendering", () => {
 
     pack.states[1] = { i: 1, removed: true } as (typeof pack.states)[number];
     pack.provinces[1] = { i: 1, removed: true } as Province;
-    renderEmblems();
+    renderViewport();
 
     expect(document.getElementById("stateCOA1")).toBeNull();
     expect(document.getElementById("provinceCOA1")).toBeNull();
@@ -193,7 +198,7 @@ describe("viewport emblem rendering", () => {
     drawEmblems();
 
     removeEmblem("state", 1);
-    renderEmblems();
+    renderViewport();
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")).toBeNull();
   });
@@ -204,7 +209,7 @@ describe("viewport emblem rendering", () => {
 
     await renderEmblemDefinitions(document);
 
-    expect(EmblemRenderer.trigger).toHaveBeenCalledWith("stateCOA3", pack.states[3].coa);
+    expect(mocks.emblemRenderer.trigger).toHaveBeenCalledWith("stateCOA3", pack.states[3].coa);
   });
 
   it("persists the moved position on the COA belonging to the dragged use", () => {
@@ -220,9 +225,9 @@ describe("viewport emblem rendering", () => {
     expect(pack.states[2].coa).toMatchObject({ x: 125, y: 75 });
 
     Object.assign(mocks.bounds, { x0: 700, x1: 800 });
-    renderEmblems();
+    renderViewport();
     Object.assign(mocks.bounds, { x0: 0, x1: 200 });
-    renderEmblems();
+    renderViewport();
 
     const restored = document.querySelector<SVGUseElement>("#stateEmblems use[data-i='2']")!;
     const fontSize = Number(document.querySelector("#stateEmblems")!.getAttribute("font-size"));
@@ -247,7 +252,7 @@ describe("viewport emblem rendering", () => {
     drawEmblems();
 
     pack.states[1].pole = [75, 75];
-    renderEmblems();
+    renderViewport();
 
     const use = document.querySelector<SVGUseElement>("#stateEmblems use[data-i='1']")!;
     const fontSize = Number(document.querySelector("#stateEmblems")!.getAttribute("font-size"));
@@ -265,9 +270,9 @@ describe("viewport emblem rendering", () => {
     expect(document.querySelector("#stateEmblems use[data-i='1']")?.getAttribute("width")).toBe("2.5em");
 
     Object.assign(mocks.bounds, { x0: 700, x1: 800 });
-    renderEmblems();
+    renderViewport();
     Object.assign(mocks.bounds, { x0: 0, x1: 100 });
-    renderEmblems();
+    renderViewport();
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")?.getAttribute("width")).toBe("2.5em");
   });

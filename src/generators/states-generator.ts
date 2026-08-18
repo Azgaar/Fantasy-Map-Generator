@@ -1,4 +1,5 @@
 import { mean, median, quadtree, sum } from "d3";
+import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import {
   each,

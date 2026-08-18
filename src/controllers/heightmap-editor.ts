@@ -5,6 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { removeEmblem } from "@/renderers/draw-emblems";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
@@ -704,6 +705,7 @@ function restoreRiskedData(): void {
           `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
         );
       Burgs.remove(b.i);
+      removeEmblem("burg", b.i);
       continue;
     }
 
@@ -711,7 +713,10 @@ function restoreRiskedData(): void {
     b.feature = pack.cells.f[b.cell];
 
     pack.cells.burg[b.cell] = b.i;
-    if (!b.capital && pack.cells.h[b.cell] < 20) Burgs.remove(b.i);
+    if (!b.capital && pack.cells.h[b.cell] < 20) {
+      Burgs.remove(b.i);
+      removeEmblem("burg", b.i);
+    }
     if (b.capital) pack.states[b.state!].center = b.cell;
   }
 

@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { HeraldicEmblem } from "@/types/emblems";
 
-import "./renderer";
+import { EmblemRenderer } from "./renderer";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg><g id="coas"></g></svg>`;
@@ -27,6 +27,16 @@ describe("EmblemRenderer", () => {
     await pending;
 
     expect(document.getElementById("stateCOA1")).toBeNull();
+  });
+
+  it("does not overwrite a custom definition inserted after a pending render is removed", async () => {
+    const pending = EmblemRenderer.trigger("stateCOA1", { t1: "gules", shield: "heater" });
+    EmblemRenderer.remove("stateCOA1");
+    document.getElementById("coas")!.insertAdjacentHTML("beforeend", '<svg id="stateCOA1" data-custom="true" />');
+
+    await pending;
+
+    expect(document.getElementById("stateCOA1")?.dataset.custom).toBe("true");
   });
 
   it("cancels a pending change when the latest request restores the rendered definition", async () => {

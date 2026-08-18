@@ -1,6 +1,5 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
 import { Layers } from "@/components/layers";
-import { renderEmblems } from "@/renderers/draw-emblems";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -72,7 +71,6 @@ function handleZoomEnd(): void {
     cancelAnimationFrame(frameId);
     frameId = null;
     handleZoomPerFrame();
-    ViewportLayers.renderNow();
   }
 
   invokeActiveZooming();
@@ -96,7 +94,7 @@ function redrawTracedImage(): void {
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
-  renderEmblems();
+  ViewportLayers.renderNow();
 
   if (!customization && !isOptimized) {
     const statesHalo = select("#statesHalo");

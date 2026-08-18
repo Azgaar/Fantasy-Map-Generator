@@ -12,7 +12,9 @@ import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/typ
 import { P, rw } from "@/utils";
 
 declare global {
-  var Emblems: EmblemsGenerator;
+  interface Window {
+    Emblems: EmblemsGenerator;
+  }
 }
 
 function createTinctures() {
@@ -477,4 +479,5 @@ export class EmblemsGenerator {
   }
 }
 
-window.Emblems = new EmblemsGenerator();
+export const Emblems = new EmblemsGenerator();
+window.Emblems = Emblems;
