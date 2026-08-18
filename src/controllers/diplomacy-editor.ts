@@ -306,12 +306,9 @@ function selectStateOnMapClick(this: SVGElement, event: any): void {
   const point = getPointer(event, this);
   const i = findCell(point[0], point[1])!;
   const state = pack.cells.state[i];
-  if (!state) return;
-  const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self")!;
-  if (+selectedLine.dataset.id! === state) return;
+  if (!state || !pack.states[state] || pack.states[state].removed || selectedDiplomacyId === state) return;
 
-  selectedLine.classList.remove("Self");
-  ensureEl("diplomacyBodySection").querySelector(`div[data-id='${state}']`)!.classList.add("Self");
+  selectedDiplomacyId = state;
   refreshDiplomacyEditor();
 }
 

@@ -1634,4 +1634,31 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       return { order, active };
     }
   }
+
+  if (isOlderThan("1.145.0")) {
+    // Old maps can have duplicate groups
+    const groups = new Set<SVGGElement>();
+    for (const layer of Layers.all) {
+      for (const group of document.querySelectorAll<SVGGElement>(`#map g#${layer.elementId}`)) {
+        groups.add(group);
+        for (const child of group.querySelectorAll<SVGGElement>("g[id]")) groups.add(child);
+      }
+    }
+
+    const groupsById = new Map<string, SVGGElement[]>();
+    for (const group of groups) {
+      const sameId = groupsById.get(group.id) ?? [];
+      sameId.push(group);
+      groupsById.set(group.id, sameId);
+    }
+
+    const isEmpty = (group: SVGGElement) => group.childElementCount === 0;
+    for (const sameId of groupsById.values()) {
+      const nonEmpty = sameId.filter(group => !isEmpty(group));
+      const keep = nonEmpty[0];
+      for (const group of sameId) {
+        if (isEmpty(group) || (keep && group !== keep)) group.remove();
+      }
+    }
+  }
 }
