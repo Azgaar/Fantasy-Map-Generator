@@ -405,7 +405,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
-    COA.regenerate();
+    Emblems.regenerate();
     ensureEl("emblems").style.display = "";
 
     // v1.5 changed releif icons data

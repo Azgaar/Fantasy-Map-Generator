@@ -20,6 +20,7 @@ import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
+import type { Emblem } from "@/types/emblems";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
   abbreviate,
@@ -463,7 +464,7 @@ function getBaseOptions(base: number): string {
 function getShapeOptions(selectShape: boolean, selected: string): string {
   if (!selectShape) return "";
 
-  const shapes = Object.keys(COA.shields.types).flatMap(type => Object.keys(COA.shields[type]));
+  const shapes = Object.keys(Emblems.shields.types).flatMap(type => Object.keys(Emblems.shields[type]));
   const options = shapes.map(
     shape => `<option ${shape === selected ? "selected" : ""} value="${shape}">${capitalize(shape)}</option>`
   );
@@ -568,11 +569,11 @@ function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
   const shape = this.value;
   row.dataset.emblems = pack.cultures[culture].shield = shape;
 
-  const rerenderCOA = (id: string, coa: any) => {
+  const rerenderCOA = (id: string, coa: Emblem) => {
     const $coa = document.getElementById(id);
     if (!$coa) return; // not rendered
     $coa.remove();
-    COArenderer.trigger(id, coa);
+    EmblemRenderer.trigger(id, coa);
   };
 
   pack.states.forEach(state => {
@@ -1179,7 +1180,7 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
   }));
 
   const { cultures, cells } = pack as any;
-  const shapes = Object.keys(COA.shields.types).flatMap(type => Object.keys(COA.shields[type]));
+  const shapes = Object.keys(Emblems.shields.types).flatMap(type => Object.keys(Emblems.shields[type]));
 
   const populated = cells.pop.map((c: number, i: number) => (c ? i : null)).filter((c: number | null) => c);
   cultures.forEach((item: any) => {

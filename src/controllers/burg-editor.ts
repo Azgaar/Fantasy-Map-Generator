@@ -326,7 +326,7 @@ function updateBurgValues(): void {
 
   // set emblem image
   const coaID = `burgCOA${id}`;
-  COArenderer.trigger(coaID, b.coa);
+  EmblemRenderer.trigger(coaID, b.coa);
   ensureEl("burgEmblem").setAttribute("href", `#${coaID}`);
 
   updateBurgPreview(b);

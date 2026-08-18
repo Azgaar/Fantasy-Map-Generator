@@ -1,9 +1,7 @@
-import { P } from "../../utils";
-
-export const createTinctures = () => ({
-  field: { metals: 3, colours: 4, stains: +P(0.03), patterns: 1 },
-  division: { metals: 5, colours: 8, stains: +P(0.03), patterns: 1 },
-  charge: { metals: 2, colours: 3, stains: +P(0.05), patterns: 0 },
+export const tinctures = {
+  field: { metals: 3, colours: 4, stains: 0.03, patterns: 1 },
+  division: { metals: 5, colours: 8, stains: 0.03, patterns: 1 },
+  charge: { metals: 2, colours: 3, stains: 0.05, patterns: 0 },
   metals: { argent: 3, or: 2 },
   colours: { gules: 5, azure: 4, sable: 3, purpure: 3, vert: 2 },
   stains: { murrey: 1, sanguine: 1, tenné: 1 },
@@ -40,4 +38,4 @@ export const createTinctures = () => ({
     maily: 2,
     honeycombed: 1
   }
-});
+};

@@ -27,6 +27,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
+import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -309,7 +310,7 @@ function renderProvincesPage(view: TableView<Province>): void {
       const stateName = pack.states[p.state].name;
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
-      COArenderer.trigger(`provinceCOA${p.i}`, p.coa);
+      EmblemRenderer.trigger(`provinceCOA${p.i}`, p.coa);
       return /* html */ `<div class="states" data-id=${p.i}>
       <fill-box data-col="color" fill="${p.color}"></fill-box>
       <input data-col="name" data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
@@ -468,7 +469,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const coa = province.coa;
   const coaEl = ensureEl(`provinceCOA${provinceId}`);
   if (coaEl) coaEl.id = `stateCOA${newStateId}`;
-  select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
+  removeEmblem("province", provinceId);
 
   // update cells
   cells.i
@@ -538,9 +539,7 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
 
   // redraw emblems
   allStates.forEach(stateId => {
-    select<SVGElement, unknown>("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
-    const { coa, pole } = pack.states[stateId];
-    COArenderer.add("state", stateId, coa, pole![0], pole![1]);
+    redrawEmblem("state", stateId);
   });
 
   Layers.hide("provinces");
@@ -654,9 +653,7 @@ function removeProvince(p: number): void {
 
         unfog(`focusProvince${p}`);
 
-        const coaEl = document.getElementById(`provinceCOA${p}`);
-        if (coaEl) coaEl.remove();
-        select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
+        removeEmblem("province", p);
         pack.provinces[p] = { i: p, removed: true } as Province;
 
         const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
@@ -1317,13 +1314,13 @@ function addProvince(this: SVGElement, event: any): void {
 
   // generate emblem
   const kinship = burg ? 0.8 : 0.4;
-  const parent: any = burg ? pack.burgs[burg].coa : pack.states[state].coa;
-  const type = Burgs.getType(center, parent.port);
-  const coa = COA.generate(parent, kinship, +P(0.1), type);
-  coa.shield = COA.getShield(c, state);
-  COArenderer.add("province", province, coa as any, point[0], point[1]);
-
+  const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
+  const port = burg ? pack.burgs[burg].port : undefined;
+  const type = Burgs.getType(center, port);
+  const coa = Emblems.generate(parent, kinship, +P(0.1), type);
+  coa.shield = Emblems.getShield(c, state);
   provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa } as Province);
+  redrawEmblem("province", province);
 
   cells.province[center] = province;
   cells.c[center].forEach(nc => {
@@ -1390,10 +1387,9 @@ function removeAllProvinces(): void {
         $(this).dialog("close");
 
         // remove emblems
-        document.querySelectorAll("[id^='provinceCOA']").forEach(el => {
-          el.remove();
+        pack.provinces.forEach(province => {
+          if (province.i) removeEmblem("province", province.i);
         });
-        select<SVGElement, unknown>("#emblems").select("#provinceEmblems").selectAll("*").remove();
 
         // remove data
         pack.provinces = [0] as unknown as Province[];
@@ -1562,9 +1558,7 @@ function cleanupMergedProvince(provinceId: number): void {
   // Clean up UI artifacts for a province being merged (similar to removeProvince cleanup)
   unfog(`focusProvince${provinceId}`);
 
-  const coaEl = document.getElementById(`provinceCOA${provinceId}`);
-  if (coaEl) coaEl.remove();
-  select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
+  removeEmblem("province", provinceId);
 }
 
 function mergeProvinces(ids: number[], primary: number): void {

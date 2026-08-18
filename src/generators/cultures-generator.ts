@@ -37,8 +37,8 @@ class CulturesGenerator {
   cells: any;
 
   getRandomShield() {
-    const type = rw(COA.shields.types);
-    return rw(COA.shields[type]);
+    const type = rw(Emblems.shields.types);
+    return rw(Emblems.shields[type]);
   }
 
   getDefault(count: number = 0): Omit<Culture, "i" | "type">[] {

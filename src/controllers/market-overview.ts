@@ -198,7 +198,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   const center = pack.burgs[market.centerBurgId];
   const state = pack.states[center?.state || 0];
   const coaId = `stateCOA${state.i}`;
-  if (state) COArenderer.trigger(coaId, state.coa);
+  if (state) EmblemRenderer.trigger(coaId, state.coa);
 
   ensureEl("marketOverviewInfo").innerHTML =
     `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>Owner:</b> ${state.fullName || state.name}`;

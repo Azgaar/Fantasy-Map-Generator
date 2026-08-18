@@ -176,7 +176,7 @@ function regenerateProduction(): void {
 }
 
 function regenerateEmblems(): void {
-  COA.regenerate();
+  Emblems.regenerate();
   Layers.draw("emblems");
 }
 

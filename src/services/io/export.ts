@@ -2,6 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
@@ -316,17 +317,16 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     symbols[i].remove();
   }
 
-  // add displayed emblems
-  if (Layers.isOn("emblems") && select("#emblems").selectAll("use").size()) {
-    cloneEl
-      .getElementById("emblems")
-      ?.querySelectorAll("use")
-      .forEach(el => {
-        const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-        if (!href) return;
-        const emblem = findEl(href.slice(1));
-        if (emblem) cloneDefs.append(emblem.cloneNode(true));
-      });
+  // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
+  const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
+  if (Layers.isOn("emblems") && cloneEmblems.length) {
+    await renderEmblemDefinitions(cloneEl);
+    cloneEmblems.forEach(el => {
+      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
+      if (!href || cloneEl.getElementById(href.slice(1))) return;
+      const emblem = findEl(href.slice(1));
+      if (emblem) cloneDefs.append(emblem.cloneNode(true));
+    });
   } else {
     cloneDefs.querySelector("#defs-emblems")?.remove();
   }
