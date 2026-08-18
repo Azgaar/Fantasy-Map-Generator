@@ -10,7 +10,7 @@ Layer styling lives as attributes on SVG groups. Three costs, all growing with t
 
 ## Proposal
 
-One class owns all style state. Everything else — node tree, schema, legacy formats, DOM writing — is a private module of `src/styles/` that nothing outside the folder may import.
+One class owns all style state. Everything else — node tree, schema, legacy formats, DOM writing — is a private module of `src/styles/` that nothing outside the folder may import. The single live instance replaces the current `style` global (and the legacy `Style` interface in `src/types/style.ts` retires with it).
 
 ```mermaid
 flowchart TB
@@ -21,13 +21,13 @@ flowchart TB
     harvest["old-map SVG harvest<br/>(auto-update only)"]
   end
 
-  subgraph facade ["MapStyle — the only public surface"]
+  subgraph facade ["Style — the only public surface"]
     fromJSON["static fromJSON(json)"]
     toJSON["toJSON()"]
     applyTo["applyTo(layer)"]
-    optionsFn["options(id) — typed by id"]
-    setAttr["setAttr(id, name, value)"]
-    setOptionsFn["setOptions(id, patch)"]
+    optionsFn["options(id, child?) — typed"]
+    setAttr["setAttr(id, child?, name, value)"]
+    setOptionsFn["setOptions(id, child?, patch)"]
   end
 
   subgraph internals ["private modules"]
@@ -56,7 +56,7 @@ flowchart TB
 
 ## Data
 
-Keyed by registry layer id, children by the registry's declared children. Two kinds of values per node: `attrs` are raw SVG presentation attributes (open bag, applied verbatim, `null` = remove — never renamed, never migrated); `options` are typed inputs to renderer logic (never written to the DOM).
+Keyed by registry layer id; children by the layer's declared children. Two kinds of values per node: `attrs` are raw SVG presentation attributes (open bag, applied verbatim, `null` = remove — never renamed, never migrated); `options` are typed inputs to renderer logic (never written to the DOM).
 
 ```json
 {
@@ -81,51 +81,64 @@ A style change never regenerates data: anything that would (relief density) live
 ## Public API
 
 ```ts
-class MapStyle {
-  /** validates; recognizes and upgrades pre-1.14x selector-keyed presets internally */
-  static fromJSON(json: unknown): MapStyle;
+class Style {
+  /** validates; recognizes and upgrades old selector-keyed presets internally */
+  static fromJSON(json: unknown): Style;
 
   /** single serializer: map file style data and preset download */
   toJSON(): StyleData;
 
-  /** write attrs onto layer.getEl() and its declared children; no-op cost when the layer has no content */
+  /** write attrs onto layer.getEl() and its declared children; cheap no-op when the layer has no content */
   applyTo(layer: Layer): void;
 
-  /** typed by id — no call-site generics */
-  options<Id extends StyledId>(id: Id): LayerOptionsFor<Id>;
+  options<Id extends LayerId>(id: Id): LayerOptions[Id];
+  options<Id extends LayerId, C extends ChildId<Id>>(id: Id, child: C): ChildOptions[Id][C];
 
-  setAttr(id: StyledId, name: string, value: string | number | null): void;
-  setOptions<Id extends StyledId>(id: Id, patch: Partial<LayerOptionsFor<Id>>): void;
+  setAttr(id: LayerId, name: string, value: string | number | null): void;
+  setAttr<Id extends LayerId>(id: Id, child: ChildId<Id>, name: string, value: string | number | null): void;
+
+  setOptions<Id extends LayerId>(id: Id, patch: Partial<LayerOptions[Id]>): void;
+  setOptions<Id extends LayerId, C extends ChildId<Id>>(id: Id, child: C, patch: Partial<ChildOptions[Id][C]>): void;
 }
 ```
 
-`StyledId` is the registry `LayerId` plus child paths as literals: `"routes"`, `"routes/roads"`, `"heightmap/landHeights"`. Child paths kill the varargs-and-generics accessors of the first attempt and make a typo a compile error.
-
-Type inference comes from one declaration map, so option reads need no annotation and get autocomplete:
+Layer and child are separate, registry-typed parameters — no compound string ids. Types come from two declaration maps, so option reads need no annotation and a typo in either parameter is a compile error:
 
 ```ts
 interface LayerOptions {
   coordinates: { fontSize?: number };
   markers: { rescale?: number };
-  "regions/statesHalo": { width?: number };
-  "heightmap/landHeights": { scheme?: string; terracing?: number; skip?: number };
-  // ...
 }
-type LayerOptionsFor<Id> = Id extends keyof LayerOptions ? LayerOptions[Id] : Record<string, never>;
+interface ChildOptions {
+  regions: { statesHalo: { width?: number } };
+  heightmap: { landHeights: HeightsOptions; oceanHeights: HeightsOptions };
+}
+type ChildId<Id> = Id extends keyof ChildOptions ? keyof ChildOptions[Id] : never;
 
-mapStyle.options("markers").rescale;        // number | undefined
-mapStyle.options("markers").resscale;       // compile error
+style.options("markers").rescale;                   // number | undefined
+style.options("heightmap", "landHeights").scheme;   // string | undefined
+style.options("heightmap", "landHights");           // compile error
 ```
 
-## Consumers
+## How it is used
+
+Generation and load both end in the same two steps: build the instance, let the registry apply it.
+
+```ts
+// boot / preset switch (style-presets):
+style = Style.fromJSON(presetJson);       // system, localStorage or uploaded preset — legacy or current
+// map load (load.ts):
+style = Style.fromJSON(mapStyleData);     // own record in the map file; auto-update feeds harvested
+                                          // legacy SVG attrs through the same call for old maps
+```
 
 Registry — one call, two sites. `applyTo` is what makes the uniform erase safe: the DOM stops being the only owner of styling, so `eraseContent()` may delete anything and re-show restores it — and the hand-written `erase` overrides protecting style state become deletable.
 
 ```ts
-// LayersRegistry.init(), after ensuring the group and its children exist
-mapStyle.applyTo(layer);          // replaces the static attrs bag on LayerParams
+// LayersRegistry.init(), after ensuring the group and its declared children exist
+style.applyTo(layer);          // replaces the static attrs bag on LayerParams
 // LayersRegistry.show(), before draw(layer)
-mapStyle.applyTo(layer);
+style.applyTo(layer);
 ```
 
 Renderers — read options, never attributes:
@@ -134,34 +147,29 @@ Renderers — read options, never attributes:
 // draw-coordinates.ts, before
 const desiredSize = +coordinates.attr("data-size");
 // after
-const desiredSize = mapStyle.options("coordinates").fontSize ?? 12;
+const desiredSize = style.options("coordinates").fontSize ?? 12;
 ```
 
-Every option read states its default at the use site — presets are allowed to omit keys, and applying a preset replaces the whole style, so "the previous preset's value is still on the DOM" no longer exists as a fallback.
+Every option read states its default at the use site — presets may omit keys, and applying a preset replaces the whole style, so "the previous preset's value is still on the DOM" no longer exists as a fallback.
 
 Editor — two write paths:
 
 ```ts
-mapStyle.setAttr("routes/roads", "stroke", "#803a2b");   // re-applies the routes layer
-mapStyle.setOptions("coordinates", { fontSize: 14 });    // caller redraws: Layers.draw("coordinates")
+style.setAttr("routes", "roads", "stroke", "#803a2b");   // re-applies the routes layer
+style.setOptions("coordinates", { fontSize: 14 });       // caller redraws: Layers.draw("coordinates")
 ```
 
-Save/load and presets — `toJSON` on save and preset download; `fromJSON` on load, preset apply and upload. Old maps: auto-update scrapes the legacy SVG attributes into a legacy-preset-shaped object and feeds it to `fromJSON` like any other legacy input; no legacy symbol is visible outside `src/styles/`.
+Save and preset download — one serializer:
+
+```ts
+mapData.style = JSON.stringify(style.toJSON());          // save.ts
+downloadFile(JSON.stringify(style.toJSON()), name);      // style saver
+```
 
 ## Validation
 
 Runtime-validate everything `fromJSON` accepts (users upload outdated presets; map files carry years-old data). Unknown attrs pass through — they are the open bag. Unknown option keys and unknown layer ids are dropped with a console warning, never a hard failure. Zod fits (types derive from the schema, one source of truth) and is a new dependency to sanction — or a hand-rolled validator if a dependency is unwanted; the API above does not change either way.
 
-## Migration steps
+## Out of scope here
 
-Each lands green on its own; steps 3-5 can each split further per layer group.
-
-1. `src/styles/` with `MapStyle`, schema, applier; registry calls `applyTo` in `init()`/`show()`; presentation attrs of current presets move to the new format; the static `attrs` bags on layer entries fold in. DOM output identical before/after.
-2. Persistence: style data becomes its own record in the map file; load applies it over the restored SVG; auto-update harvests older maps.
-3. Options, per consumer: each `data-*`/decision attribute moves into `LayerOptions`, its renderer read and its editor input migrate together, the attribute stops being written.
-4. Style editor reads/writes through the facade.
-5. Legacy style objects (`style.labels.groups`, `style.burgIcons`, …) re-home and disappear.
-
-## Non-goals
-
-Layer materialization and visibility (registry owns it); naming custom heightmap schemes; any preset visual retuning; TS migration of style.js beyond the reads/writes it needs.
+Migration from the current attribute-based styling (sequencing, auto-update details, preset conversion) is specified separately once this design is agreed. Layer materialization and visibility stay with the registry. Naming custom heightmap schemes and preset visual retuning are unrelated.
