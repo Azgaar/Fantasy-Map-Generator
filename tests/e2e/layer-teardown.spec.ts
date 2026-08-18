@@ -117,8 +117,9 @@ test.describe("layer teardown keeps user data", () => {
     expect(await landHeights.count()).toBeGreaterThan(0);
   });
 
-  // the whole edit view is #heights, so the heightmap layer stays off and the landmass is turned off
-  test("heightmap keep mode hides the landmass through the registry and restores it on exit", async ({ page }) => {
+  // the whole edit view is #heights: the heightmap layer stays off and the landmass is emptied.
+  // the landmass is permanent, so it keeps its on state and its visibility -- only the content goes
+  test("heightmap keep mode clears the landmass content and redraws it on exit", async ({ page }) => {
     await page.evaluate(() => (window as any).Controllers.HeightmapEditor.open({ mode: "keep" }));
     await expect(page.locator("#heights polygon").first()).toBeAttached();
 
@@ -126,15 +127,17 @@ test.describe("layer teardown keeps user data", () => {
       landmass: (window as any).Layers.isOn("landmass"),
       heightmap: (window as any).Layers.isOn("heightmap"),
       lakes: (window as any).Layers.isOn("lakes"),
+      landmassRects: document.querySelectorAll("#landmass rect").length,
       landmassDisplay: document.getElementById("landmass")!.style.display,
       lakesDisplay: document.getElementById("lakes")!.style.display
     }));
 
     expect(state).toEqual({
-      landmass: false,
+      landmass: true,
       heightmap: false,
       lakes: false,
-      landmassDisplay: "none",
+      landmassRects: 0,
+      landmassDisplay: "",
       lakesDisplay: "none"
     });
     // the edit-mode tip is not clobbered by a layer refusal

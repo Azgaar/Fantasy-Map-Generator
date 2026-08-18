@@ -10,7 +10,7 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
-import { ensureEl, findEl, P, parseTransform, rand, rn, rw, unique } from "@/utils";
+import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
@@ -1546,6 +1546,15 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     for (const group of options.labels?.groups ?? []) {
       const layer = group.layerDependency && LAYER_ID_MAP[group.layerDependency];
       if (layer) group.layerDependency = layer;
+    }
+
+    const storedPresets: Record<string, string[]> | null = safeParseJSON(localStorage.getItem("presets") ?? "");
+    if (storedPresets) {
+      const remapped = Object.entries(storedPresets).map(([name, ids]) => [
+        name,
+        Array.isArray(ids) ? ids.map(id => LAYER_ID_MAP[id] ?? id) : ids
+      ]);
+      localStorage.setItem("presets", JSON.stringify(Object.fromEntries(remapped)));
     }
 
     // v1.144.0 made the compass rose a declared layer child, so it needs the id the registry looks up
