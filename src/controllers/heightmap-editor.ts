@@ -330,7 +330,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     undraw();
     defaultCellTypeFilter = "all";
   } else if (mode === "keep") {
-    Layers.hide("landmass"); // expose the heightmap being edited; the other layers are already off
+    Layers.get("landmass").getEl().replaceChildren();
     defaultCellTypeFilter = "land";
   } else if (mode === "risk") {
     select<SVGElement, unknown>("#deftemp").selectAll("#land, #water").selectAll("path").remove();
@@ -458,10 +458,8 @@ function finalizeHeightmap(): void {
   else if (mode === "keep") restoreKeptData();
   else if (mode === "risk") restoreRiskedData();
 
-  // restore initial layers; keep mode turned the landmass off, and show() redraws what it turns back on
-  if (Layers.isOn("landmass")) Layers.draw("landmass");
-  else Layers.show("landmass");
-  Layers.draw("coastline", "lakes");
+  // restore initial layers; the landmass, coastline and lakes all follow the edited heightmap
+  Layers.draw("landmass", "coastline", "lakes");
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
   Layers.set(storedLayers);

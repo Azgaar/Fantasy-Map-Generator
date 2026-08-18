@@ -43,7 +43,7 @@ interface LayerParams<Id extends string = string> {
   parent: "viewbox" | "map"; // id of the svg element the layer group is appended to
   children?: ChildParams[]; // permament elements created inside the group
   attrs?: Record<string, string>; // static attributes applied to the layer group
-  permanent?: boolean; // structural layer: on from the start and never turned off
+  permanent?: boolean; // structural layer: on from the start, never turned off and never saved as state
   keepContent?: boolean; // keep the content in the DOM when the layer is turned off
   draw?: (layer: Layer) => void; // renderer function
   erase?: (layer: Layer) => void; // custom teardown, defaults to erasing the content down to the declared children
@@ -130,9 +130,9 @@ export class LayersRegistry<Id extends string = string> {
     this.emit();
   }
 
-  /** turn off the layers that are on */
+  /** turn off the layers that are on; a permanent layer has no off state and is ignored */
   hide(...ids: Id[]): void {
-    const activeLayers = ids.filter(id => this.active.has(id));
+    const activeLayers = ids.filter(id => this.active.has(id) && !this.get(id).params.permanent);
     if (!activeLayers.length) return;
 
     this.change(activeLayers, false);

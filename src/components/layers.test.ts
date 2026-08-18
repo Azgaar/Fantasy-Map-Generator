@@ -131,6 +131,18 @@ describe("show and hide", () => {
     expect(erase).not.toHaveBeenCalled();
   });
 
+  // a permanent layer has no off state: presets already skip it, and so must a direct call
+  it("ignores a permanent layer, leaving it on, visible and intact", () => {
+    const erase = vi.fn();
+    registry(new Layer({ id: "s", element: "s-el", parent: "viewbox", permanent: true, erase }));
+    Layers.hide("s");
+    Layers.toggle("s");
+
+    expect(Layers.isOn("s")).toBe(true);
+    expect(displayOf("s-el")).toBe("");
+    expect(erase).not.toHaveBeenCalled();
+  });
+
   it("does not redraw a layer that is already on", () => {
     const { draw, erase } = setup();
     Layers.show("a");
