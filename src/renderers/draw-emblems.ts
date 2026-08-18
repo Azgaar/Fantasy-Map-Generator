@@ -15,6 +15,8 @@ interface EmblemData extends SimulationNodeDatum {
   i: number;
   x: number;
   y: number;
+  poleX: number;
+  poleY: number;
   size: number;
   shift: number;
   coa: Emblem;
@@ -52,6 +54,7 @@ const layer = ViewportLayers.register({ id: "emblems", render: reconcileEmblems 
 const sizes: Record<EmblemType, number> = { burg: 0, province: 0, state: 0 };
 const reconcileListeners = new Set<() => void>();
 let drawVersion = 0;
+let needsFullRedraw = false;
 
 // emblems shrink as their number grows, so that a crowded map does not turn into a wall of shields
 function getEmblemSize(type: EmblemType, count: number): number {
@@ -65,6 +68,7 @@ function getEmblemSize(type: EmblemType, count: number): number {
 export function drawEmblems(): void {
   TIME && console.time("drawEmblems");
   const version = ++drawVersion;
+  needsFullRedraw = false;
   const { states, provinces, burgs } = pack;
 
   const valid = {
@@ -108,6 +112,11 @@ export function drawEmblems(): void {
       }
       scene.replace(next);
     }
+    if (needsFullRedraw) {
+      needsFullRedraw = false;
+      drawEmblems();
+      return;
+    }
     layer.render();
     TIME && console.timeEnd("drawEmblems");
   });
@@ -116,7 +125,10 @@ export function drawEmblems(): void {
 /** Reconcile an edited or newly-created emblem without rebuilding the collision scene. */
 export function redrawEmblem(type: EmblemType, i: number): void {
   const scene = scenes[type];
-  if (!scene.valid) return;
+  if (!scene.valid) {
+    needsFullRedraw = true;
+    return;
+  }
   const entity = getEntity(type, i);
   const replacements = entity && isValidEmblem(entity) ? [getNode(type, entity)] : [];
   scene.replaceWhere(item => item.id === getId(type, i), replacements);
@@ -126,6 +138,7 @@ export function redrawEmblem(type: EmblemType, i: number): void {
 /** Remove an entity from the viewport scene and its materialized output. */
 export function removeEmblem(type: EmblemType, i: number): void {
   const id = getId(type, i);
+  if (!scenes[type].valid) needsFullRedraw = true;
   scenes[type].remove(id);
   document.querySelector(`#${GROUPS[type]} > use[data-i="${i}"]`)?.remove();
   EmblemRenderer.remove(id);
@@ -182,7 +195,7 @@ function reconcileEmblems(context: ViewportRenderContext): void {
         continue;
       }
 
-      const item = entity.coa === stored.coa ? stored : getNode(type, entity);
+      const item = isCurrentNode(type, entity, stored) ? stored : getNode(type, entity);
       if (item !== stored) scene.set(item);
       if (isVisible(item, context)) visible.push(item);
     }
@@ -241,12 +254,22 @@ function getNode(type: EmblemType, entity: Burg | Province | State): EmblemData 
     i: entity.i,
     x: emblem.x ?? poleX,
     y: emblem.y ?? poleY,
+    poleX,
+    poleY,
     fx: emblem.x,
     fy: emblem.y,
     size,
     shift: (sizes[type] * size) / 2,
     coa: emblem
   };
+}
+
+function isCurrentNode(type: EmblemType, entity: Burg | Province | State, stored: EmblemData): boolean {
+  if (entity.coa !== stored.coa) return false;
+  const [poleX, poleY] = getPole(type, entity);
+  return (
+    (entity.coa.x !== undefined || stored.poleX === poleX) && (entity.coa.y !== undefined || stored.poleY === poleY)
+  );
 }
 
 function getPole(type: EmblemType, entity: Burg | Province | State): [number, number] {

@@ -323,9 +323,12 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     await renderEmblemDefinitions(cloneEl);
     cloneEmblems.forEach(el => {
       const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-      if (!href || cloneEl.getElementById(href.slice(1))) return;
-      const emblem = findEl(href.slice(1));
-      if (emblem) cloneDefs.append(emblem.cloneNode(true));
+      if (!href) return;
+      const id = href.slice(1);
+      const emblem = findEl(id);
+      if (!emblem) return;
+      cloneEl.getElementById(id)?.remove();
+      cloneDefs.append(emblem.cloneNode(true));
     });
   } else {
     cloneDefs.querySelector("#defs-emblems")?.remove();

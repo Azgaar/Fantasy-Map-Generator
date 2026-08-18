@@ -4,6 +4,8 @@ import type { Province } from "@/generators/provinces-generator";
 
 const mocks = vi.hoisted(() => ({
   bounds: { scale: 1, x0: 0, y0: 0, x1: 100, y1: 100 },
+  deferredTimeouts: [] as Array<() => void>,
+  deferTimeout: false,
   reconcile: undefined as
     | ((context: {
         root: ParentNode;
@@ -31,7 +33,13 @@ vi.mock("@/renderers/viewport/viewport-renderer", async importOriginal => {
 });
 vi.mock("d3", async importOriginal => {
   const actual = await importOriginal<typeof import("d3")>();
-  return { ...actual, timeout: (callback: () => void) => void callback() };
+  return {
+    ...actual,
+    timeout: (callback: () => void) => {
+      if (mocks.deferTimeout) mocks.deferredTimeouts.push(callback);
+      else callback();
+    }
+  };
 });
 
 import { drawEmblems, redrawEmblem, removeEmblem, renderEmblemDefinitions, renderEmblems } from "./draw-emblems";
@@ -75,10 +83,26 @@ beforeEach(() => {
     }
   });
   Object.assign(mocks.bounds, { scale: 1, x0: 0, y0: 0, x1: 100, y1: 100 });
+  mocks.deferredTimeouts.length = 0;
+  mocks.deferTimeout = false;
   mocks.isOn.mockReturnValue(true);
 });
 
 describe("viewport emblem rendering", () => {
+  it("retries a full draw when an emblem is added during the deferred collision pass", () => {
+    mocks.deferTimeout = true;
+    drawEmblems();
+
+    pack.provinces.push({ i: 1, center: 1, coa: { shield: "heater", t1: "gules" } } as Province);
+    redrawEmblem("province", 1);
+
+    mocks.deferredTimeouts.shift()!();
+    mocks.deferTimeout = false;
+    mocks.deferredTimeouts.shift()!();
+
+    expect(document.querySelector("#provinceEmblems use[data-i='1']")).not.toBeNull();
+  });
+
   it("only materializes and renders definitions for emblems inside the viewport", () => {
     drawEmblems();
 
@@ -217,6 +241,18 @@ describe("viewport emblem rendering", () => {
     const fontSize = Number(document.querySelector("#stateEmblems")!.getAttribute("font-size"));
     expect(Number(restored.getAttribute("x")) + fontSize / 2).toBe(50);
     expect(Number(restored.getAttribute("y")) + fontSize / 2).toBe(50);
+  });
+
+  it("updates an emblem when its pole changes without replacing the COA", () => {
+    drawEmblems();
+
+    pack.states[1].pole = [75, 75];
+    renderEmblems();
+
+    const use = document.querySelector<SVGUseElement>("#stateEmblems use[data-i='1']")!;
+    const fontSize = Number(document.querySelector("#stateEmblems")!.getAttribute("font-size"));
+    expect(Number(use.getAttribute("x")) + fontSize / 2).toBe(75);
+    expect(Number(use.getAttribute("y")) + fontSize / 2).toBe(75);
   });
 
   it("persists an edited size on the COA across viewport rematerialization", () => {
