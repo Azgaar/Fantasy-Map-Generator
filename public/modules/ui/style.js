@@ -64,9 +64,10 @@ function addCustomColorScheme(scheme) {
   ensureEl("styleHeightmapScheme").options.add(new Option(scheme, scheme, false, true));
 }
 
-function getColorScheme(scheme = "bright") {
+function getColorScheme(scheme) {
+  if (!scheme) scheme = "bright";
   if (!(scheme in heightmapColorSchemes)) {
-    const colors = scheme.split(",");
+    const colors = schemescheme.split(",");
     heightmapColorSchemes[scheme] = d3.scaleSequential(d3.interpolateRgbBasis(colors));
   }
 
