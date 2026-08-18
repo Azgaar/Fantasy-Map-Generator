@@ -66,7 +66,7 @@ const columns: EditorColumn<Biome>[] = [
       return statistics ? statistics.rural + statistics.urban : 0;
     }
   },
-  { key: "actions", width: "1.2em", permanent: true }
+  { key: "actions", width: "2em", permanent: true }
 ];
 
 const biomesTable = initEditorTable<Biome>({
