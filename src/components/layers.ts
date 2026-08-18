@@ -181,7 +181,11 @@ export class LayersRegistry<Id extends string = string> {
     const layer = this.get(id);
     const target = before ? this.get(before) : undefined;
     this.layers.splice(this.layers.indexOf(layer), 1);
-    this.layers.splice(target ? this.layers.indexOf(target) : this.layers.length, 0, layer);
+
+    const isSibling = (other: Layer<Id>) => other.parent === layer.parent;
+    const index = target && isSibling(target) ? this.layers.indexOf(target) : this.layers.findLastIndex(isSibling) + 1;
+    this.layers.splice(index, 0, layer);
+
     this.init();
     this.emit();
   }

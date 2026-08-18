@@ -343,6 +343,22 @@ describe("move", () => {
     expect(Layers.has("b")).toBe(true);
     expect(groupIds()).toEqual(["a-el", "b-el", "c-el"]);
   });
+
+  // the panel lists every parent in one list, so a drag can name a successor the svg cannot honour:
+  // the order must stay realisable, or the panel and the saved order claim a z-order that never renders
+  it("keeps a layer among its own parent's layers when the successor is in another parent", () => {
+    registry(
+      new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
+      new Layer({ id: "b", element: "b-el", parent: "viewbox" }),
+      new Layer({ id: "bar", element: "bar-el", parent: "map" }),
+      new Layer({ id: "top", element: "top-el", parent: "map" })
+    );
+    Layers.move("a", "top"); // past a layer that lives outside the viewbox
+
+    expect(Layers.all.map(layer => layer.id)).toEqual(["b", "a", "bar", "top"]);
+    expect(groupIds()).toEqual(["b-el", "a-el"]);
+    expect(groupIds("map")).toEqual(["viewbox", "bar-el", "top-el"]);
+  });
 });
 
 describe("restore", () => {

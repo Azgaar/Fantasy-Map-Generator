@@ -128,12 +128,12 @@ This document outlines the expected data structure. Current data model described
           "density": 10
         }
       }
-    },
-
-    "layers": {
-      "heightmap": false,
-      "states": true
     }
+  },
+
+  "layers": {
+    "order": ["ocean", "landmass", "heightmap", "lakes", "rivers", "states", "borders", "labels", "scaleBar"],
+    "active": ["heightmap", "lakes", "rivers", "states", "borders", "labels", "scaleBar"]
   },
 
   "style": {

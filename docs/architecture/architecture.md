@@ -176,8 +176,7 @@ The renderer becomes a pure visualization step.
 Responsibilities:
 
 - Convert world data into SVG / WebGL / canvas output
-- Handle layer ordering
-- Draw labels and geometry
+- Draw labels and geometry into the layer group it is given (ordering and visibility are owned by the layers registry)
 - Apply visual styling from serialized style state
 - Visual optimizations
 
@@ -203,8 +202,7 @@ Map styling is map state. The desired model is one plain, JSON-compatible `style
 object that contains everything needed to reproduce the map appearance. SVG attributes
 and other rendered output are projections of that object, never the source of truth.
 
-Layer visibility, layer presets, and stacking order are separate concerns and are not
-part of the style model described here.
+Layer visibility, layer presets, and stacking order are separate concerns and are not part of the style model described here — they belong to the layers registry.
 
 ## Problems with the current approach
 
@@ -400,6 +398,7 @@ classic needs it.
 - A dialog or widget that knows nothing about the map and loads with the shell (About) → `components/`
 - Transient UI loaded only when opened (for example, the color picker) → `controllers/`
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
+  — and the layer itself is declared in the registry in `components/layers.ts`
 - Draws transient feedback that removes itself (highlight, brush circle, fog) → `renderers/overlays/`
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `services/io/`
@@ -562,6 +561,25 @@ directly and, in chrome's case, because there is no moment at which they would b
 
 ---
 
+# Map Layers
+
+A map layer is one slot in the map's z-order: an SVG group, the code that draws it, and whether it
+is currently on. Layers are the unit the user toggles, reorders and saves, so they are **application
+state**, not style and not world data. They live in one registry — `src/components/layers.ts` —
+which is the single source of truth for layer identity, order and visibility.
+
+Each layer is declared exactly once, as a value in one ordered list. **Registration order is the
+z-order, the init order and the draw order**, so the SVG, the Layers tab and the draw sequence
+cannot drift apart. A declaration names the layer's id, the SVG group and its parent root, any
+permanent child elements and static attributes, and the `draw` / `erase` functions.
+
+The active set and the layer order are serialized with the map (`data[50]`) and re-applied with
+`Layers.restore` on load, which adopts the state without redrawing content the loaded SVG already
+carries. `restore` tolerates version skew in both directions: unknown ids are ignored, and layers
+the file predates slot in after their registration-order predecessor.
+
+---
+
 # Performance & Resource Discipline
 
 The whole tool runs in the browser — no server does the heavy lifting — on maps of
@@ -606,8 +624,10 @@ reflow. **Minimising element count is the single biggest rendering lever.**
 - **Reuse, don't duplicate.** Define a glyph once in `<defs>` and stamp it with
   `<use href>`; share gradients, filters, and clip-paths by id. The DOM keeps one
   definition, not N copies.
-- **Off costs nothing.** A hidden layer should be _cleared_ (`group.html("")`), not left as
-  thousands of `display:none` nodes. Re-render only the layers a change actually touches.
+- **Off costs nothing.** A hidden layer is hidden with `display: none` on its group and its content
+  is dropped, not kept as thousands of hidden nodes — the registry does both. Only content that is
+  expensive to rebuild or holds user edits opts out (`keepContent`). Re-render only the layers a
+  change actually touches, through `Layers.draw(...)`.
 - **Round coordinates** (`rn`) in path data — shorter strings parse and paint faster and
   shrink saved SVG.
 

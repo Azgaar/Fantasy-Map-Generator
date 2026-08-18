@@ -1181,7 +1181,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#goods").append("g").attr("id", "goodsIcons").attr("data-circle", "1");
     select("#goods").append("g").attr("id", "goodsBurgs");
     select("#viewbox").insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
-    select("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation");
+    select("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation").style("display", "none");
 
     options.trade = { animation: TradeAnimation.getDefaultOptions() };
 
