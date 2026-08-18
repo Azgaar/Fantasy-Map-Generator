@@ -14,7 +14,7 @@ class OceanModule {
   /** read the distances the `layers` attribute asks for: a preset list or none */
   getLimits(outline: string): number[] {
     if (!outline || outline === "none") return [];
-    return outline.split(",").map(Number);
+    return outline.split(",").map(Number).filter(Boolean);
   }
 
   /** trace the ocean rings for the requested distances, clipped to the map */
