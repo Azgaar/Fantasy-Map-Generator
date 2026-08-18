@@ -82,3 +82,35 @@ describe("v1.144 layer id migration", () => {
     expect(localStorage.getItem("presets")).toBe("{not json");
   });
 });
+
+describe("v1.145 svg layer cleanup", () => {
+  it("removes empty groups and keeps one non-empty group for duplicated ids", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="routes">
+        <g id="roads"> </g>
+        <g id="roads"><path id="road1"></path></g>
+        <g id="trails"><path id="trail1"></path></g>
+        <g id="trails"><path id="trail2"></path></g>
+        <g id="empty"> </g>
+      </g>
+    </g></svg>`;
+
+    resolveVersionConflicts("1.144.0", []);
+
+    expect(document.querySelectorAll("#routes > #roads")).toHaveLength(1);
+    expect(document.querySelector("#routes > #roads #road1")).not.toBeNull();
+    expect(document.querySelectorAll("#routes > #trails")).toHaveLength(1);
+    expect(document.querySelector("#routes > #trails #trail1")).not.toBeNull();
+    expect(document.querySelector("#routes > #empty")).toBeNull();
+  });
+
+  it("does not clean current maps", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="routes"><g id="empty"></g></g>
+    </g></svg>`;
+
+    resolveVersionConflicts("1.145.0", []);
+
+    expect(document.querySelector("#routes > #empty")).not.toBeNull();
+  });
+});

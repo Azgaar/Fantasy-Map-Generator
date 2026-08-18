@@ -1400,9 +1400,10 @@ function applyStatesManualAssignent(): void {
     });
 
   if (affectedStates.length) {
-    refreshStatesEditor();
     States.getPoles();
-    Layers.show("states");
+    adjustProvinces([...new Set(affectedProvinces)]);
+    Layers.draw("states", "borders", "provinces");
+
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
@@ -1410,9 +1411,8 @@ function applyStatesManualAssignent(): void {
       }
       Layers.draw("labels");
     }
-    adjustProvinces([...new Set(affectedProvinces)]);
-    Layers.show("borders");
-    Layers.draw("provinces");
+
+    refreshStatesEditor();
   }
 
   exitStatesManualAssignment(false);
