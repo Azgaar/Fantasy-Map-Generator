@@ -324,6 +324,25 @@ describe("move", () => {
     expect(Layers.all.map(layer => layer.id)).toEqual(["b", "c", "a"]);
     expect(groupIds()).toEqual(["b-el", "c-el", "a-el"]);
   });
+
+  it("keeps the layer registered when it is moved before itself", () => {
+    register();
+    Layers.move("b", "b");
+
+    expect(Layers.all.map(layer => layer.id)).toEqual(["a", "b", "c"]);
+    expect(groupIds()).toEqual(["a-el", "b-el", "c-el"]);
+  });
+
+  // the layer used to be spliced out before the successor was resolved, so a throw left it
+  // deregistered: its group stayed in the svg, rendered but no longer under the registry
+  it("leaves the registry untouched when the successor is not registered", () => {
+    register();
+    expect(() => Layers.move("b", "nope" as never)).toThrow();
+
+    expect(Layers.all.map(layer => layer.id)).toEqual(["a", "b", "c"]);
+    expect(Layers.has("b")).toBe(true);
+    expect(groupIds()).toEqual(["a-el", "b-el", "c-el"]);
+  });
 });
 
 describe("restore", () => {

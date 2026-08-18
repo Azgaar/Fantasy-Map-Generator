@@ -177,9 +177,11 @@ export class LayersRegistry<Id extends string = string> {
   }
 
   move(id: Id, before?: Id): void {
+    if (before === id) return; // cannot be moved before itself
     const layer = this.get(id);
+    const target = before ? this.get(before) : undefined;
     this.layers.splice(this.layers.indexOf(layer), 1);
-    this.layers.splice(before ? this.layers.indexOf(this.get(before)) : this.layers.length, 0, layer);
+    this.layers.splice(target ? this.layers.indexOf(target) : this.layers.length, 0, layer);
     this.init();
     this.emit();
   }

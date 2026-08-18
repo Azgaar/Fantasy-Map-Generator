@@ -83,7 +83,9 @@ $("#mapLayers").sortable({
   update: (_event: Event, ui: { item: any }) => {
     const id = ui.item.data("layer");
     const before = ui.item.next().data("layer");
-    if (Layers.has(id)) Layers.move(id, Layers.has(before) ? before : undefined);
+    const thisLayer = Layers.has(id) ? id : undefined;
+    const beforeLayer = Layers.has(before) ? before : undefined;
+    if (thisLayer) Layers.move(thisLayer, beforeLayer);
   }
 });
 
