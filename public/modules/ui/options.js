@@ -349,6 +349,7 @@ function changeCultureSet() {
 }
 
 function changeEmblemShape(emblemShape) {
+  Emblems.setShape(emblemShape);
   const image = ensureEl("emblemShapeImage");
   const shapePath = window.EmblemRenderer && EmblemRenderer.shieldPaths[emblemShape];
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
@@ -557,6 +558,8 @@ function applyStoredOptions() {
     // add saved style presets to options
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
+
+  Emblems.setShape(emblemShape.value);
 
   if (stored("winds")) options.winds = stored("winds").split(",").map(Number);
   if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");

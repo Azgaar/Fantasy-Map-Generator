@@ -9,7 +9,7 @@ import {
   typeMapping
 } from "@/data/emblems";
 import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
-import { ensureEl, P, rw } from "@/utils";
+import { P, rw } from "@/utils";
 
 declare global {
   var Emblems: EmblemsGenerator;
@@ -27,7 +27,13 @@ function createTinctures() {
   };
 }
 
-class EmblemsGenerator {
+export class EmblemsGenerator {
+  private emblemShape = "culture";
+
+  setShape(shape: string): void {
+    this.emblemShape = shape;
+  }
+
   generate(
     parent: Emblem | null | undefined,
     kinship: number | null,
@@ -449,12 +455,10 @@ class EmblemsGenerator {
     });
   }
 
-  getShield(culture: number, state?: number): string {
-    const emblemShape = ensureEl<HTMLSelectElement>("emblemShape");
-    const shapeGroup = emblemShape.selectedOptions[0]?.parentElement?.getAttribute("label") || "Diversiform";
-    if (shapeGroup !== "Diversiform") return emblemShape.value;
+  getShield(culture: number, state?: number, emblemShape = this.emblemShape): string {
+    if (!["culture", "random", "state"].includes(emblemShape)) return emblemShape;
 
-    if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa!.shield!;
+    if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
     ERROR && console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
     return "heater";

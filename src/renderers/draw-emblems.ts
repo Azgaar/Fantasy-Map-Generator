@@ -166,6 +166,7 @@ function reconcileEmblems(context: ViewportRenderContext): void {
       const entity = getEntity(type, stored.i);
       if (!entity || !isValidEmblem(entity)) {
         scene.remove(stored.id);
+        EmblemRenderer.remove(stored.id);
         continue;
       }
 

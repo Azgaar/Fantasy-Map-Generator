@@ -45,6 +45,7 @@ beforeEach(() => {
         <g id="provinceEmblems" data-size="1"></g>
         <g id="stateEmblems" data-size="1"></g>
       </g>
+      <g id="coas"></g>
     </svg>
   `;
 
@@ -68,7 +69,10 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
-    EmblemRenderer: { remove: vi.fn(), trigger: vi.fn() }
+    EmblemRenderer: {
+      remove: vi.fn((id: string) => document.getElementById(id)?.remove()),
+      trigger: vi.fn()
+    }
   });
   Object.assign(mocks.bounds, { scale: 1, x0: 0, y0: 0, x1: 100, y1: 100 });
   mocks.isOn.mockReturnValue(true);
@@ -134,6 +138,19 @@ describe("viewport emblem rendering", () => {
     renderEmblems();
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")).toBeNull();
+  });
+
+  it("removes definitions for invalid entities during reconciliation", () => {
+    document.querySelector("#coas")!.innerHTML = '<g id="stateCOA1"></g><g id="provinceCOA1"></g>';
+    pack.provinces.push({ i: 1, center: 1, coa: { shield: "heater", t1: "gules" } } as Province);
+    drawEmblems();
+
+    pack.states[1] = { i: 1, removed: true } as (typeof pack.states)[number];
+    pack.provinces[1] = { i: 1, removed: true } as Province;
+    renderEmblems();
+
+    expect(document.getElementById("stateCOA1")).toBeNull();
+    expect(document.getElementById("provinceCOA1")).toBeNull();
   });
 
   it("removes an emblem from the viewport scene through the renderer API", () => {

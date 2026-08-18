@@ -1319,6 +1319,8 @@ function addProvince(this: SVGElement, event: any): void {
   const type = Burgs.getType(center, port);
   const coa = Emblems.generate(parent, kinship, +P(0.1), type);
   coa.shield = Emblems.getShield(c, state);
+  coa.x = point[0];
+  coa.y = point[1];
   provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa } as Province);
   redrawEmblem("province", province);
 
