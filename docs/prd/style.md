@@ -28,6 +28,7 @@ flowchart TB
     optionsFn["options(id, child?) — typed"]
     setAttr["setAttr(id, child?, name, value)"]
     setOptionsFn["setOptions(id, child?, patch)"]
+    invalidate["schedule redraw<br/>(existing render scheduler)"]
   end
 
   subgraph internals ["private modules"]
@@ -50,13 +51,13 @@ flowchart TB
   registry --> applyTo --> applier --> svg[("layer.getEl()")]
   renderers --> optionsFn --> tree
   editor --> setAttr & setOptionsFn --> tree
-  setAttr -- "re-apply layer" --> applier
+  setAttr & setOptionsFn --> invalidate --> registry
   save --> toJSON --> tree
 ```
 
 ## Data
 
-Keyed by registry layer id; children by the layer's declared children. Two kinds of values per node: `attrs` are raw SVG presentation attributes (open bag, applied verbatim, `null` = remove — never renamed, never migrated); `options` are typed inputs to renderer logic (never written to the DOM).
+Keyed by registry layer id; children by the layer's declared children. Two kinds of values per node, both typed: `attrs` are SVG presentation attributes from one shared `Attrs` interface (~18 paint attributes — the full vocabulary the 12 presets actually use; `null` = remove); `options` are per-layer inputs to renderer logic (never written to the DOM).
 
 ```json
 {
@@ -94,17 +95,29 @@ class Style {
   options<Id extends LayerId>(id: Id): LayerOptions[Id];
   options<Id extends LayerId, C extends ChildId<Id>>(id: Id, child: C): ChildOptions[Id][C];
 
-  setAttr(id: LayerId, name: string, value: string | number | null): void;
-  setAttr<Id extends LayerId>(id: Id, child: ChildId<Id>, name: string, value: string | number | null): void;
+  setAttr<K extends keyof Attrs>(id: LayerId, name: K, value: Attrs[K] | null): void;
+  setAttr<Id extends LayerId, K extends keyof Attrs>(id: Id, child: ChildId<Id>, name: K, value: Attrs[K] | null): void;
 
   setOptions<Id extends LayerId>(id: Id, patch: Partial<LayerOptions[Id]>): void;
   setOptions<Id extends LayerId, C extends ChildId<Id>>(id: Id, child: C, patch: Partial<ChildOptions[Id][C]>): void;
 }
 ```
 
-Layer and child are separate, registry-typed parameters — no compound string ids. Types come from two declaration maps, so option reads need no annotation and a typo in either parameter is a compile error:
+Layer and child are separate, registry-typed parameters — no compound string ids. Attribute names and values are typed by one shared interface; options come from two declaration maps. Reads need no annotation, and a typo in any parameter is a compile error:
 
 ```ts
+interface Attrs {
+  opacity?: number;
+  fill?: string;
+  stroke?: string;
+  "stroke-width"?: number;
+  "stroke-dasharray"?: string;
+  filter?: string;
+  mask?: string;
+  "font-size"?: number | string;
+  "font-family"?: string;
+  // ...the full set is ~18 fields: every paint attribute the presets use
+}
 interface LayerOptions {
   coordinates: { fontSize?: number };
   markers: { rescale?: number };
@@ -137,7 +150,7 @@ Registry — one call, two sites. `applyTo` is what makes the uniform erase safe
 ```ts
 // LayersRegistry.init(), after ensuring the group and its declared children exist
 style.applyTo(layer);          // replaces the static attrs bag on LayerParams
-// LayersRegistry.show(), before draw(layer)
+// inside the registry's redraw, before draw(layer)
 style.applyTo(layer);
 ```
 
@@ -152,11 +165,11 @@ const desiredSize = style.options("coordinates").fontSize ?? 12;
 
 Every option read states its default at the use site — presets may omit keys, and applying a preset replaces the whole style, so "the previous preset's value is still on the DOM" no longer exists as a fallback.
 
-Editor — two write paths:
+Editor — one rule, both setters: mutate, then a redraw of the affected layer is scheduled through the existing render scheduler (frame-coalesced, so slider drags render at frame rate on SVG and WebGL alike). Callers never think about invalidation:
 
 ```ts
-style.setAttr("routes", "roads", "stroke", "#803a2b");   // re-applies the routes layer
-style.setOptions("coordinates", { fontSize: 14 });       // caller redraws: Layers.draw("coordinates")
+style.setAttr("routes", "roads", "stroke", "#803a2b");
+style.setOptions("coordinates", { fontSize: 14 });
 ```
 
 Save and preset download — one serializer:
@@ -168,8 +181,8 @@ downloadFile(JSON.stringify(style.toJSON()), name);      // style saver
 
 ## Validation
 
-Runtime-validate everything `fromJSON` accepts (users upload outdated presets; map files carry years-old data). Unknown attrs pass through — they are the open bag. Unknown option keys and unknown layer ids are dropped with a console warning, never a hard failure. Zod fits (types derive from the schema, one source of truth) and is a new dependency to sanction — or a hand-rolled validator if a dependency is unwanted; the API above does not change either way.
+Runtime-validate everything `fromJSON` accepts (users upload outdated presets; map files carry years-old data). The whole document is schema-covered: unknown attrs, unknown option keys and unknown layer ids are dropped with a console warning, never a hard failure. Zod fits (types derive from the schema, one source of truth) and is a new dependency to sanction — or a hand-rolled validator if a dependency is unwanted; the API above does not change either way.
 
 ## Out of scope here
 
-Migration from the current attribute-based styling (sequencing, auto-update details, preset conversion) is specified separately once this design is agreed. Layer materialization and visibility stay with the registry. Naming custom heightmap schemes and preset visual retuning are unrelated.
+Migration from the current attribute-based styling (sequencing, auto-update details, preset conversion) is specified separately once this design is agreed. Per-layer narrowing of `Attrs` (which paint attributes each layer may carry) is deliberate later polish — the shared interface is already fully typed and validated. Layer materialization and visibility stay with the registry. Naming custom heightmap schemes and preset visual retuning are unrelated.
