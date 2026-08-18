@@ -12,10 +12,6 @@ import {
 } from "d3";
 import { connectVertices, convertTemperature, ensureEl, round } from "../utils";
 
-declare global {
-  var drawTemperature: () => void;
-}
-
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");
 
@@ -134,7 +130,5 @@ const temperatureRenderer = (): void => {
 
   TIME && console.timeEnd("drawTemperature");
 };
-
-window.drawTemperature = temperatureRenderer;
 
 export { temperatureRenderer as drawTemperature };

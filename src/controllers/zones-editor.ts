@@ -11,6 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -42,7 +43,7 @@ const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: r
 
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
-  if (!layerIsOn("toggleZones")) toggleZones();
+  Layers.show("zones");
 
   renderDialog();
   updateFilters();
@@ -271,7 +272,7 @@ function zoneHighlightOff(this: HTMLElement): void {
 }
 
 function filterZonesByType(): void {
-  drawZones();
+  Layers.draw("zones");
   zonesTable.reset();
 }
 
@@ -287,11 +288,11 @@ function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): 
   const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
   const newIndex = nextIndex >= 0 ? nextIndex : previousIndex >= 0 ? previousIndex + 1 : pack.zones.length;
   pack.zones.splice(newIndex, 0, zone);
-  drawZones();
+  Layers.draw("zones");
 }
 
 function enterZonesManualAssignent(): void {
-  if (!layerIsOn("toggleZones")) toggleZones();
+  Layers.show("zones");
   customization = 10;
   const body = ensureEl("zonesBodySection");
 
@@ -408,13 +409,13 @@ function applyZonesManualAssignent(): void {
     zone.cells = zoneCells[zone.i] || [];
   });
 
-  drawZones();
+  Layers.draw("zones");
   zonesTable.refresh();
   exitZonesManualAssignment();
 }
 
 function cancelZonesManualAssignent(): void {
-  drawZones();
+  Layers.draw("zones");
   exitZonesManualAssignment();
 }
 
@@ -449,7 +450,7 @@ function changeFill(fillBox: FillBoxElement, zone: Zone): void {
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
     zone.color = newFill;
-    drawZones();
+    Layers.draw("zones");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -459,7 +460,7 @@ function toggleVisibility(zone: Zone): void {
   if (zone.hidden) delete zone.hidden;
   else zone.hidden = true;
 
-  drawZones();
+  Layers.draw("zones");
   zonesTable.refresh();
 }
 
@@ -502,7 +503,7 @@ function addZonesLayer(): void {
   pack.zones.push({ i: zoneId, name, type, color, cells: [] });
 
   zonesTable.refresh();
-  drawZones();
+  Layers.draw("zones");
 }
 
 function downloadZonesData(): void {
@@ -604,7 +605,7 @@ function changePopulation(zone: Zone): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    Layers.draw("population");
     zonesTable.refresh();
   }
 }

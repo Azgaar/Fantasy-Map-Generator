@@ -8,13 +8,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
 import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, findEl } from "@/utils";
 
@@ -62,7 +62,7 @@ const labelsTable = initEditorTable<LabelData>({
 function open(group: string = ALL): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show("labels");
 
   isBulkMode = false;
   resetSpreadPreview();
@@ -309,7 +309,7 @@ function toggleLabelVisibility(element: HTMLElement): void {
   if (entity.label?.hidden) delete entity.label.hidden;
   else entity.label = { ...entity.label, hidden: true };
 
-  drawLabels();
+  Layers.draw("labels");
   labelsTable.refresh();
 }
 
@@ -321,7 +321,7 @@ function resetLabel(element: HTMLElement): void {
   if (!hasOverride) return;
 
   Labels.resetOverride(label.type, label.entityId);
-  drawLabels();
+  Layers.draw("labels");
   labelsTable.refresh();
 }
 
@@ -331,7 +331,7 @@ function assignGroup(labels: LabelData[], groupName: string): void {
 
   const apply = () => {
     for (const { type, entityId } of labels) Labels.setGroup({ type, entityId, group: groupName });
-    drawLabels();
+    Layers.draw("labels");
     refresh();
     tip(`${labels.length} label(s) assigned to the "${groupName}" group`, false, "success", 4000);
   };
@@ -419,7 +419,7 @@ async function spreadLabels(): Promise<void> {
     }
 
     applySpreadPatches(result.patches);
-    drawLabels();
+    Layers.draw("labels");
     labelsTable.refresh();
     spreadPreview.phase = "review";
     syncSpreadControls();
@@ -427,7 +427,7 @@ async function spreadLabels(): Promise<void> {
     if (run !== spreadPreview.run) return;
     restoreLabelSnapshot();
     finishSpreadPreview();
-    drawLabels();
+    Layers.draw("labels");
     syncSpreadControls();
     ERROR && console.error(error);
   }
@@ -444,7 +444,7 @@ function cancelSpread(): void {
   spreadPreview.run++;
   restoreLabelSnapshot();
   finishSpreadPreview();
-  drawLabels();
+  Layers.draw("labels");
   if (document.getElementById("labelsOverview")) {
     labelsTable.refresh();
     syncSpreadControls();

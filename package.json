@@ -36,6 +36,7 @@
     "@types/three": "^0.184.1",
     "@vitest/browser": "^4.1.10",
     "@vitest/browser-playwright": "^4.0.18",
+    "jsdom": "^29.1.1",
     "playwright": "^1.57.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",

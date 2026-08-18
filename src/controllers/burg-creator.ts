@@ -1,8 +1,8 @@
 import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 
 function toggle(): void {
   if (isActive()) {
@@ -20,8 +20,7 @@ function toggle(): void {
   );
   document.getElementById("addNewBurg")?.classList.add("pressed");
 
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show("burgIcons", "labels");
 }
 
 function addOnClick(event: MouseEvent): void {
@@ -40,7 +39,7 @@ function addOnClick(event: MouseEvent): void {
 
   Burgs.add(point);
   refreshEditors();
-  drawLabels();
+  Layers.draw("burgIcons", "labels", "routes");
 
   if (!event.shiftKey) stop();
 }

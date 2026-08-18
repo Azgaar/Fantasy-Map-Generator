@@ -1,30 +1,23 @@
-import type { ZoomBehavior } from "d3";
-import { renderGroupCOAs } from "@/renderers/draw-emblems";
-import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
+import { Layers } from "@/components/layers";
+import { redrawEmblemGroup } from "@/renderers/draw-emblems";
+import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
-// Legacy behaviour from the global d3 v5. TODO: completely migrate to d3v7
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
-let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
-
-function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
-  zoomBehavior ??= window.d3.zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
-  return zoomBehavior;
-}
+const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
 
 export function applyZoomBehavior(): void {
-  svg.call(zoom().on("zoom", onZoom).on("end", handleZoomEnd));
+  select<SVGSVGElement, unknown>("#map").call(zoomBehavior.on("zoom", onZoom).on("end", handleZoomEnd));
 }
 
 let frameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
 
-function onZoom(): void {
-  const transform = (window.d3 as any).event.transform;
-  if (!transform) return;
-  const { k, x, y } = transform as { k: number; x: number; y: number };
+function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
+  const { k, x, y } = event.transform;
 
   const isScaleChanged = scale !== k;
   const isPositionChanged = viewX !== x || viewY !== y;
@@ -54,23 +47,22 @@ function handleZoomPerFrame(): void {
   pendingPositionChange = false;
   if (!didScaleChange && !didPositionChange) return;
 
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  ensureEl<SVGGElement>("viewbox").setAttribute("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
   window.updateMinimap?.();
   redrawTracedImage();
   ViewportLayers.schedule();
 
   if (didScaleChange) {
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
+    Layers.draw("scaleBar");
 
     if (options.labels.resizeOnZoom) {
       const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-      labels.attr("font-size", `${fontSize}px`);
+      select("#labels").attr("font-size", `${fontSize}px`);
     }
   }
 
   if (didPositionChange) {
-    if (layerIsOn("toggleCoordinates")) drawCoordinates();
+    Layers.draw("coordinates");
   }
 }
 
@@ -79,6 +71,7 @@ function handleZoomEnd(): void {
   if (frameId !== null) {
     cancelAnimationFrame(frameId);
     frameId = null;
+    handleZoomPerFrame();
     ViewportLayers.renderNow();
   }
 
@@ -103,6 +96,7 @@ function redrawTracedImage(): void {
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
+  const emblems = select<SVGGElement, unknown>("#emblems");
   if (emblems.style("display") !== "none") {
     const hideSmallEmblems = ensureEl<HTMLInputElement>("hideEmblems").checked;
     for (const group of emblems.selectAll<SVGGElement, unknown>("g").nodes()) {
@@ -110,17 +104,18 @@ function invokeActiveZooming(): void {
       const hidden = hideSmallEmblems && (size < 25 || size > 300);
       group.classList.toggle("hidden", hidden);
       const emblem = group.children[0];
-      if (!hidden && window.COArenderer && emblem && !emblem.getAttribute("href")) renderGroupCOAs(group);
+      if (!hidden && window.COArenderer && emblem && !emblem.getAttribute("href")) redrawEmblemGroup(group);
     }
   }
 
   if (!customization && !isOptimized) {
+    const statesHalo = select("#statesHalo");
     const desired = Number(statesHalo.attr("data-width"));
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  if (Number(markers.attr("rescale"))) {
+  if (Number(select("#markers").attr("rescale"))) {
     for (const marker of pack.markers ?? []) {
       const { i, x, y, size = 30, hidden } = marker;
       const element = hidden ? null : document.getElementById(`marker${i}`);
@@ -137,30 +132,43 @@ function invokeActiveZooming(): void {
 
 /** Zoom to a specific point */
 function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
-  const transform = window.d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(duration).call(zoom().transform, transform);
+  const transform = zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, transform);
 }
 
 /** Reset zoom to initial */
 function resetZoom(duration = 1000): void {
-  svg.transition().duration(duration).call(zoom().transform, window.d3.zoomIdentity);
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoomBehavior.transform, zoomIdentity);
 }
 
 export function panMap(x: number, y: number): void {
-  zoom().translateBy(svg, x, y);
+  zoomBehavior.translateBy(select<SVGSVGElement, unknown>("#map"), x, y);
 }
 
 export function setMapZoom(value: number): void {
-  zoom().scaleTo(svg, value);
+  zoomBehavior.scaleTo(select<SVGSVGElement, unknown>("#map"), value);
 }
 
 export function changeMapZoom(factor: number): void {
-  zoom().scaleBy(svg, factor);
+  zoomBehavior.scaleBy(select<SVGSVGElement, unknown>("#map"), factor);
 }
 
-// consumed by legacy code; a getter so the lazy behavior is created on the first read
-Object.defineProperty(window, "zoom", { get: zoom, configurable: true });
+export function setZoomExtent(min: number, max: number): void {
+  zoomBehavior.scaleExtent([min, max]);
+}
+
+export function setTranslateExtent(x0: number, y0: number, x1: number, y1: number): void {
+  zoomBehavior.translateExtent([
+    [x0, y0],
+    [x1, y1]
+  ]);
+}
+
+// Bridges for classic public/ code. These take numbers only, never a selection: the behavior is
+// d3 v7 while `public/` still speaks the global d3 v5, and the two must not meet.
 window.zoomTo = zoomTo;
+window.setZoomExtent = setZoomExtent;
+window.setTranslateExtent = setTranslateExtent;
 window.resetZoom = resetZoom;
 window.invokeActiveZooming = invokeActiveZooming;
 window.panMap = panMap;

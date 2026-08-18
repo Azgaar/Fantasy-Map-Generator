@@ -1,14 +1,11 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { drawFeatures } from "@/renderers/draw-features";
-import { drawGoods } from "@/renderers/draw-goods";
-import { drawMarkets } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
   ensureEl,
@@ -275,8 +272,6 @@ function renderImageConverter(): void {
   });
 }
 
-// The toolbar and brushes panel are static in index.html; they're part of the one long-lived
-// heightmap-editing session, so listeners are wired once at load rather than per open/close.
 let storedLayers: string[] = [];
 
 function addToolbarListeners(): void {
@@ -314,12 +309,8 @@ function showModeDialog(tool?: string): void {
 }
 
 function enterHeightmapEditMode(mode: string, tool?: string): void {
-  storedLayers = Array.from(ensureEl("mapLayers").querySelectorAll<HTMLElement>("li:not(.buttonoff)")).map(
-    node => node.id
-  ); // store layers preset
-  storedLayers.forEach(l => {
-    ensureEl(l).click(); // turn off all layers
-  });
+  storedLayers = Layers.state.active;
+  Layers.set([]); // turn off all layers
 
   customization = 1;
   closeDialogs();
@@ -339,7 +330,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     undraw();
     defaultCellTypeFilter = "all";
   } else if (mode === "keep") {
-    select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", "none");
+    Layers.get("landmass").getEl().replaceChildren();
     defaultCellTypeFilter = "land";
   } else if (mode === "risk") {
     select<SVGElement, unknown>("#deftemp").selectAll("#land, #water").selectAll("path").remove();
@@ -379,7 +370,6 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("transform", "scale(1)");
   } else exitCustomization.style.display = "block";
 
-  turnButtonOn("toggleHeight");
   const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
   layersPreset.value = "heightmap";
   layersPreset.disabled = true;
@@ -468,22 +458,11 @@ function finalizeHeightmap(): void {
   else if (mode === "keep") restoreKeptData();
   else if (mode === "risk") restoreRiskedData();
 
-  // restore initial layers
-  drawFeatures();
+  // restore initial layers; the landmass, coastline and lakes all follow the edited heightmap
+  Layers.draw("landmass", "coastline", "lakes");
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
-  turnButtonOff("toggleHeight");
-  ensureEl("mapLayers")
-    .querySelectorAll<HTMLElement>("li")
-    .forEach(e => {
-      const wasOn = storedLayers.includes(e.id);
-      if ((wasOn && !layerIsOn(e.id)) || (!wasOn && layerIsOn(e.id))) e.click();
-    });
-  if (!layerIsOn("toggleBorders")) select("#borders").selectAll("path").remove();
-  if (!layerIsOn("toggleStates")) select("#regions").selectAll("path").remove();
-  if (!layerIsOn("toggleRivers")) select("#rivers").selectAll("*").remove();
-
-  getCurrentPreset();
+  Layers.set(storedLayers);
 }
 
 function regenerateErasedData(): void {
@@ -503,7 +482,7 @@ function regenerateErasedData(): void {
     addLakesInDeepDepressions();
     openNearSeaLakes();
   }
-  OceanLayers();
+  Layers.draw("ocean");
   calculateTemperatures();
   generatePrecipitation();
   reGraph();
@@ -557,7 +536,6 @@ function regenerateErasedData(): void {
 }
 
 function restoreKeptData(): void {
-  select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", null);
   for (const i of pack.cells.i) {
     pack.cells.h[i] = grid.cells.h[pack.cells.g[i]];
   }
@@ -654,7 +632,7 @@ function restoreRiskedData(): void {
 
   Features.markupGrid();
   if (erosionAllowed) addLakesInDeepDepressions();
-  OceanLayers();
+  Layers.draw("ocean");
   calculateTemperatures();
   generatePrecipitation();
   reGraph();
@@ -795,9 +773,8 @@ function restoreRiskedData(): void {
       return Boolean(centerBurg && !centerBurg.removed);
     });
     Production.regenerateEconomy();
-    if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-    if (layerIsOn("toggleGoods")) drawGoods();
-    if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+    Layers.draw("markets", "goods");
+    Layers.draw("trade");
     refreshEditors();
   } else {
     Goods.generate();

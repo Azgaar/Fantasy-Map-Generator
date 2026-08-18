@@ -1,4 +1,5 @@
 import type * as THREE from "three";
+import { Layers } from "@/components/layers";
 import type { Burg } from "@/generators/burgs-generator";
 import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
@@ -522,7 +523,7 @@ async function createLabels() {
     const burgOptions = getBurgLabelOptions(burg);
     const [x, y, z] = get3dCoords(burg.x, burg.y);
 
-    if (layerIsOn("toggleLabels") && !burg.label?.hidden) {
+    if (Layers.isOn("labels") && !burg.label?.hidden) {
       const burgSprite = await createTextLabel({ text: burg.label?.text ?? burg.name ?? "", ...burgOptions });
 
       burgSprite.position.set(x, y + burgOptions.elevation, z);
@@ -533,7 +534,7 @@ async function createLabels() {
     }
 
     // icons
-    if (layerIsOn("toggleBurgIcons")) {
+    if (Layers.isOn("burgIcons")) {
       const geometry = getIconGeometry(burg.group!, burgOptions.iconSize);
       const material = getIconMaterial(burg.group!, burgOptions.iconColor);
       const iconMesh = new Three.Mesh(geometry, material);
@@ -556,7 +557,7 @@ async function createLabels() {
   }
 
   // state labels
-  if (layerIsOn("toggleLabels")) {
+  if (Layers.isOn("labels")) {
     for (let i = 1; i < pack.states.length; i++) {
       const state = pack.states[i];
       if (state.removed || state.label?.hidden) continue;

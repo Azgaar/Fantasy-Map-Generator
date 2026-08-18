@@ -1,8 +1,8 @@
 import { mean, select, sum } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { drawMarker } from "@/renderers/draw-markers";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
@@ -1309,8 +1309,7 @@ function applyResults(): void {
     // append battlefield marker
     const marker: Marker = { i, x: b.x, y: b.y, cell: b.cell, icon: "⚔️", type: "battlefields", dy: 52 };
     pack.markers.push(marker);
-    const markerHTML = drawMarker(marker);
-    ensureEl("markers").insertAdjacentHTML("beforeend", markerHTML);
+    Layers.draw("markers");
   }
 
   const getSide = (regs: Regiment[], n: number): string =>

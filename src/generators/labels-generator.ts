@@ -1,3 +1,4 @@
+import type { LayerId } from "@/components/layers";
 import type { Point } from "@/types/global";
 
 export const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as const;
@@ -15,7 +16,7 @@ export interface LabelGroup {
   name: string;
   type: LabelType;
   active?: boolean; // defaults to true
-  layerDependency?: string | null;
+  layerDependency?: LayerId | null;
   zoom: LabelZoomBounds;
   mode?: LabelNameMode; // defaults to "auto"
   isDefault?: boolean; // if group is a default (fallback) group for its type
@@ -44,14 +45,14 @@ export class LabelsModule {
       {
         name: "river",
         type: "river",
-        layerDependency: "toggleRivers",
+        layerDependency: "rivers",
         zoom: { min: 6, max: 40 },
         isDefault: true
       },
       {
         name: "route",
         type: "route",
-        layerDependency: "toggleRoutes",
+        layerDependency: "routes",
         zoom: { min: 6, max: 40 },
         isDefault: true
       },
@@ -106,7 +107,7 @@ export class LabelsModule {
       {
         name: "province",
         type: "province",
-        layerDependency: "toggleProvinces",
+        layerDependency: "provinces",
         zoom: { min: 1, max: 15 },
         isDefault: true
       },

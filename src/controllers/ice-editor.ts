@@ -1,5 +1,6 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
@@ -12,7 +13,7 @@ function open(element: SVGElement): void {
   if (document.getElementById("iceEditor") && element === selectedIce.node()) return;
 
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIce")) toggleIce();
+  Layers.show("ice");
 
   selectedIce = select<SVGElement, unknown>(element) as unknown as typeof selectedIce;
   const id = +selectedIce.attr("data-id");

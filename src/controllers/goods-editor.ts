@@ -16,15 +16,13 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawMarkets } from "@/renderers/draw-markets";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { drawGoods, toggleGoods } from "../renderers/draw-goods";
 import { ensureEl, getPointer, unique } from "../utils";
 
 const visibleTags = new Set<string>();
@@ -84,8 +82,7 @@ function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
 
-  if (!layerIsOn("toggleGoods")) toggleGoods();
-  else drawGoods();
+  Layers.show("goods");
 
   renderDialog();
   goodsTable.reset();
@@ -103,7 +100,7 @@ function getVisibleCount(): number {
 
 function refreshEditor() {
   goodsTable.refresh();
-  drawGoods();
+  Layers.draw("goods");
 }
 
 function renderDialog(): void {
@@ -498,9 +495,8 @@ function goodsRestoreDefaults() {
       Goods.restoreDefaults();
       Goods.generate();
       Production.regenerateEconomy();
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      Layers.draw("markets", "goods");
+      Layers.draw("trade");
       refreshEditors();
     }
   });
@@ -516,10 +512,10 @@ function enterResourceAssignMode(this: HTMLElement) {
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
   customization = 14;
   this.classList.add("pressed");
-  if (!layerIsOn("toggleGoods")) toggleGoods();
-  if (!layerIsOn("toggleCells")) {
-    ensureEl<HTMLButtonElement>("toggleCells").dataset.forced = "true";
-    toggleCells();
+  Layers.show("goods");
+  if (!Layers.isOn("cells")) {
+    Layers.show("cells");
+    isCellsLayerForced = true;
   }
 
   setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "actions"]);
@@ -557,18 +553,19 @@ function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
     resource.visible = true;
   }
 
-  drawGoods();
+  Layers.draw("goods");
 }
+
+let isCellsLayerForced = false; // the cells layer is turned on for the assignment mode
 
 function exitResourceAssignMode(close?: string) {
   const body = ensureEl("goodsBody");
   customization = 0;
   ensureEl("goodsAssign").classList.remove("pressed");
 
-  if (layerIsOn("toggleCells")) {
-    const toggler = ensureEl<HTMLButtonElement>("toggleCells");
-    if (toggler.dataset.forced) toggleCells();
-    delete toggler.dataset.forced;
+  if (isCellsLayerForced) {
+    Layers.hide("cells");
+    isCellsLayerForced = false;
   }
 
   setModeHiddenColumns(dialogId, []);
@@ -615,7 +612,7 @@ function toggleDisplayedGood(good: Good, el: HTMLInputElement) {
   good.visible = el.checked;
 
   updateDisplayAllCheckbox();
-  drawGoods();
+  Layers.draw("goods");
 }
 
 function toggleAllDisplayed(this: HTMLInputElement) {
@@ -628,7 +625,7 @@ function toggleAllDisplayed(this: HTMLInputElement) {
       checkbox.checked = checked;
     });
 
-  drawGoods();
+  Layers.draw("goods");
 }
 
 function updateDisplayAllCheckbox() {
@@ -648,7 +645,7 @@ function requestGoodsRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Goods.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
+      Layers.draw("goods");
       refreshEditors();
     }
   });
@@ -662,8 +659,8 @@ function requestProductionRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      Layers.draw("goods");
+      Layers.draw("trade");
       refreshEditors();
     }
   });
@@ -681,7 +678,7 @@ function removeGood(good: Good) {
     pack.goods = pack.goods.filter(g => g.i !== good.i);
     Goods.sync();
     goodsTable.refresh();
-    drawGoods();
+    Layers.draw("goods");
   };
   confirmationDialog({ title: "Remove resource", message, confirm: "Remove", onConfirm });
 }

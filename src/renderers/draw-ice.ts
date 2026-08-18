@@ -1,15 +1,10 @@
 import { select } from "d3";
 import type { Ice } from "@/generators/ice-generator";
 
-declare global {
-  var drawIce: () => void;
-}
-
-const iceRenderer = (): void => {
+export const drawIce = (): void => {
   TIME && console.time("drawIce");
 
   select("#ice").selectAll("*").remove();
-
   let html = "";
 
   pack.ice.forEach((ice: Ice) => {
@@ -25,7 +20,7 @@ const iceRenderer = (): void => {
   TIME && console.timeEnd("drawIce");
 };
 
-const redrawIcebergRenderer = (id: number): void => {
+export const redrawIceberg = (id: number): void => {
   const iceberg = pack.ice.find((element: Ice) => element.i === id);
   let el = select("#ice").selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"]:not([type="glacier"])`);
   if (!iceberg && !el.empty()) {
@@ -42,7 +37,7 @@ const redrawIcebergRenderer = (id: number): void => {
   }
 };
 
-const redrawGlacierRenderer = (id: number): void => {
+export const redrawGlacier = (id: number): void => {
   const glacier = pack.ice.find((element: Ice) => element.i === id);
   let el = select("#ice").selectAll<SVGPolygonElement, unknown>(`polygon[data-id="${id}"][type="glacier"]`);
   if (!glacier && !el.empty()) {
@@ -60,19 +55,9 @@ const redrawGlacierRenderer = (id: number): void => {
 };
 
 function getGlacierHtml(glacier: Ice): string {
-  return `<polygon points="${glacier.points.toString()}" type="glacier" data-id="${glacier.i}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""}/>`;
+  return /*html*/ `<polygon points="${glacier.points.toString()}" type="glacier" data-id="${glacier.i}" ${glacier.offset ? `transform="translate(${glacier.offset[0]},${glacier.offset[1]})"` : ""}/>`;
 }
 
 function getIcebergHtml(iceberg: Ice): string {
-  return `<polygon points="${iceberg.points.toString()}" data-id="${iceberg.i}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""}/>`;
+  return /*html*/ `<polygon points="${iceberg.points.toString()}" data-id="${iceberg.i}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""}/>`;
 }
-
-window.drawIce = iceRenderer;
-
-export { redrawGlacierRenderer as redrawGlacier, redrawIcebergRenderer as redrawIceberg };
-
-// ice-generator still redraws directly; it cannot import upwards, so the bridge stays
-window.redrawGlacier = redrawGlacierRenderer;
-window.redrawIceberg = redrawIcebergRenderer;
-
-export { iceRenderer as drawIce };

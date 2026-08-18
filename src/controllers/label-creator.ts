@@ -1,5 +1,6 @@
 import { pointer } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { createLabelArc } from "@/renderers/labels/label-arc";
@@ -12,7 +13,7 @@ function toggle(): void {
 
   closeDialogs(".stable");
   toggleMapPlacement("addLabel", addOnClick, "Click on map to place label. Hold Shift to add multiple");
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show("labels");
 }
 
 async function addOnClick(event: MouseEvent): Promise<void> {
@@ -26,7 +27,7 @@ async function addOnClick(event: MouseEvent): Promise<void> {
   const [x, y] = point;
   const pathPoints = createLabelArc({ text, type: "added", group, anchor: [x, y] });
   AddedLabels.add({ x, y, label: { text, group, pathPoints } });
-  drawLabels();
+  Layers.draw("labels");
 
   if (!event.shiftKey) stopMapPlacement();
 }

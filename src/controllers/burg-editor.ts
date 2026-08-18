@@ -1,9 +1,9 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
@@ -22,8 +22,7 @@ let previewLayoutLocked = false;
 function open(id: number | string): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show("burgIcons", "labels");
 
   selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
   if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
@@ -340,7 +339,7 @@ function changeName(): void {
 
   if (!pack.burgs[id].label) pack.burgs[id].label = {};
   Object.assign(pack.burgs[id].label, { text: value });
-  drawLabels();
+  Layers.draw("labels");
 }
 
 function generateNameRandom(): void {
@@ -353,7 +352,7 @@ function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
   Burgs.changeGroup(burg, this.value);
-  drawLabels();
+  Layers.draw("burgIcons", "labels");
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -466,7 +465,7 @@ function toggleCapital(burgId: number): void {
   const oldCapital = burgs[oldCapitalId];
   oldCapital.capital = 0;
   Burgs.changeGroup(oldCapital);
-  drawLabels();
+  Layers.draw("burgIcons", "labels");
 }
 
 function toggleBurgLockButton(): void {
@@ -704,22 +703,23 @@ function zoomIntoBurg(): void {
   zoomTo(burg.x, burg.y, 8, 2000);
 }
 
+let isCellsLayerForced = false; // the cells layer is turned on for the relocation mode
+
 function toggleRelocateBurg(): void {
-  const toggler = ensureEl("toggleCells");
   ensureEl("burgRelocate").classList.toggle("pressed");
   if (ensureEl("burgRelocate").classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateBurgOnClick);
     tip("Click on map to relocate burg. Hold Shift for continuous move", true);
-    if (!layerIsOn("toggleCells")) {
-      toggleCells();
-      toggler.dataset.forced = "true";
+    if (!Layers.isOn("cells")) {
+      Layers.show("cells");
+      isCellsLayerForced = true;
     }
   } else {
     clearMainTip();
     applyDefaultViewboxEvents();
-    if (layerIsOn("toggleCells") && toggler.dataset.forced) {
-      toggleCells();
-      toggler.dataset.forced = "false";
+    if (isCellsLayerForced) {
+      Layers.hide("cells");
+      isCellsLayerForced = false;
     }
   }
 }
@@ -772,7 +772,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
 
   // the label snaps back to the relocated burg, so its custom path is no longer valid
   if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
-  drawLabels();
+  Layers.draw("labels");
 
   if (event.shiftKey === false) toggleRelocateBurg();
 }
@@ -826,7 +826,7 @@ function removeSelectedBurg(): void {
       confirm: "Remove",
       onConfirm: () => {
         Burgs.remove(burgId);
-        drawLabels();
+        Layers.draw("burgIcons", "labels");
         $("#burgEditor").dialog("close");
       }
     });

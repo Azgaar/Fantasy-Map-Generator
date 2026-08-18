@@ -9,6 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
@@ -71,7 +72,7 @@ const routesTable = initEditorTable<Route>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  Layers.show("routes");
 
   renderDialog();
   routesTable.reset();
@@ -181,7 +182,7 @@ function renderRoutesPage(view: TableView<Route>): void {
 }
 
 function routeHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  Layers.show("routes");
   const routeId = +(event.target as HTMLElement).dataset.id!;
   select("#routes")
     .select(`#route${routeId}`)

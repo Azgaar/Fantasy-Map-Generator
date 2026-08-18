@@ -1,7 +1,8 @@
 import type { Selection } from "d3";
 import { select } from "d3";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
-import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -268,10 +269,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     clone.select("#viewbox").attr("transform", null);
     ViewportLayers.renderTo(cloneEl);
 
-    if (!noScaleBar) {
-      drawScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], 1);
-      fitScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], graphWidth, graphHeight);
-    }
+    if (!noScaleBar) drawScaleBar(cloneEl, 1, graphWidth, graphHeight);
   }
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
@@ -319,7 +317,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   // add displayed emblems
-  if (layerIsOn("toggleEmblems") && select("#emblems").selectAll("use").size()) {
+  if (Layers.isOn("emblems") && select("#emblems").selectAll("use").size()) {
     cloneEl
       .getElementById("emblems")
       ?.querySelectorAll("use")
@@ -459,7 +457,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     }
   }
 
-  if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
+  const fogMask = cloneEl.getElementById("fog");
+  if (!fogMask?.querySelector("path")) fogMask?.remove(); // the fog mask is unused until an area is revealed
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
 
@@ -518,7 +517,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone: MapSelection): void {
-  if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
+  if (!select("#terrain").selectAll("use").size()) clone.select("#defs-relief").remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;

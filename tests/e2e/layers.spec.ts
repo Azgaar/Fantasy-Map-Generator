@@ -2,7 +2,6 @@ import { Browser, BrowserContext, expect, Page, test } from "@playwright/test";
 
 // map globals used inside page.evaluate
 declare const options: { labels: { groups: { name: string; active?: boolean }[] } };
-declare const drawLabels: () => void;
 
 // All tests in this describe block only READ the DOM — they never modify state.
 // Load the map once for the entire suite instead of before every test.
@@ -211,12 +210,12 @@ test.describe("map layers", () => {
       const before = count();
 
       stateGroup.active = false;
-      drawLabels();
+      (window as any).Layers.draw("labels");
       await new Promise(resolve => setTimeout(resolve, 300));
       const deactivated = count();
 
       delete stateGroup.active;
-      drawLabels();
+      (window as any).Layers.draw("labels");
       await new Promise(resolve => setTimeout(resolve, 300));
       return { before, deactivated, reactivated: count() };
     });
@@ -263,10 +262,9 @@ test.describe("map layers", () => {
     await sharedPage.evaluate(() => {
       // only the first good is visible by default; make all of them visible for this test
       (window as any).pack.goods.forEach((good: any) => (good.visible = true));
-      (window as any).toggleGoods();
-      (window as any).drawGoods();
+      (window as any).Layers.toggle("goods");
       // markets render in a standalone layer, toggled independently
-      (window as any).toggleMarketsLayer();
+      (window as any).Layers.toggle("markets");
     });
     await sharedPage.waitForTimeout(300);
 
@@ -295,8 +293,8 @@ test.describe("map layers", () => {
 
     // Restore: toggle goods and markets layers off
     await sharedPage.evaluate(() => {
-      (window as any).toggleGoods();
-      (window as any).toggleMarketsLayer();
+      (window as any).Layers.toggle("goods");
+      (window as any).Layers.toggle("markets");
     });
   });
 

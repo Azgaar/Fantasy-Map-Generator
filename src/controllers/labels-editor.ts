@@ -1,5 +1,6 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -9,7 +10,7 @@ import type { Point } from "@/generators/voronoi";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
-import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
+import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { speak } from "@/utils";
 import { ensureEl, getPointer, round } from "../utils";
 
@@ -19,7 +20,7 @@ let label: LabelData;
 function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show("labels");
 
   const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
   if (!textEl) return;
@@ -524,7 +525,7 @@ function removeSelectedLabel(): void {
         $(this).dialog("close");
         if (label.type !== "added") return;
         AddedLabels.remove(label.entityId);
-        drawLabels();
+        Layers.draw("labels");
         $("#labelEditor").dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -554,7 +555,7 @@ function resetSelectedLabel(): void {
   const { type, entityId } = label;
   Labels.resetOverride(type, entityId);
 
-  drawLabels();
+  Layers.draw("labels");
   label = { ...(getSceneLabel(type, entityId) ?? label) };
   makeLabelDraggable(label.id);
   selectLabelGroup(label.group);

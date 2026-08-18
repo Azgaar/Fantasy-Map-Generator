@@ -1,5 +1,6 @@
 import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
@@ -43,7 +44,7 @@ const setIconsHtml = (set: ReliefSet): string =>
 function open(element: SVGElement): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  Layers.show("relief");
 
   selectedIcon = getIconData(element);
   select<SVGGElement, unknown>("#terrain")

@@ -197,10 +197,3 @@ export const ViewportLayers = new ViewportRenderer({
   overscanPixels: OVERSCAN_PIXELS,
   guardPixels: GUARD_PIXELS
 });
-
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: legacy seam
-  var ViewportLayers: ViewportRenderer;
-}
-
-window.ViewportLayers = ViewportLayers;

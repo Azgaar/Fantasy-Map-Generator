@@ -12,13 +12,12 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
-import { drawBiomes } from "@/renderers/draw-biomes";
-import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { PackedGraph } from "@/types/PackedGraph";
@@ -83,11 +82,9 @@ const biomesTable = initEditorTable<Biome>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  Layers.show("biomes");
+  Layers.hide("states", "cultures");
+  Layers.hide("religions", "provinces");
 
   renderDialog();
   currentBiomeStatistics = biomesCollectStatistics();
@@ -324,7 +321,7 @@ function biomeChangeColor(fillBox: FillBoxElement): void {
   const callback = (newFill: string): void => {
     (fillBox as any).fill = newFill;
     pack.biomes[biomeId].color = newFill;
-    drawBiomes();
+    Layers.draw("biomes");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -480,7 +477,7 @@ function downloadBiomesData(): void {
 }
 
 function enterBiomesCustomizationMode(): void {
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
+  Layers.show("biomes");
   customization = 6;
   setModeHiddenColumns(dialogId, ["habitability", "cells", "area", "population", "actions"]);
   select("#biomes").append("g").attr("id", "temp");
@@ -591,7 +588,7 @@ function applyBiomesChange(): void {
   });
 
   if (changed.size()) {
-    drawBiomes();
+    Layers.draw("biomes");
     refreshBiomesEditor();
   }
   exitBiomesCustomizationMode();
@@ -632,7 +629,7 @@ function exitBiomesCustomizationMode(close?: boolean): void {
 function restoreInitialBiomes(): void {
   pack.biomes = Biomes.getDefault();
   Biomes.define();
-  drawBiomes();
+  Layers.draw("biomes");
   regeneratePopulation();
   refreshBiomesEditor();
 }
@@ -645,8 +642,7 @@ function closeBiomesEditor(): void {
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  Layers.draw("population", "goods");
 }
 
 export const BiomesEditor = { open };

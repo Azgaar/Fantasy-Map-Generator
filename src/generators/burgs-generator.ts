@@ -744,11 +744,7 @@ class BurgModule {
     pack.burgs.push(burg);
     cells.burg[cellId as number] = burgId;
 
-    const newRoute = Routes.connect(cellId as number);
-    if (newRoute && layerIsOn("toggleRoutes")) drawRoute(newRoute);
-
-    window.drawBurgIcon(burg);
-
+    Routes.connect(cellId as number);
     return burgId;
   }
 
@@ -854,24 +850,20 @@ class BurgModule {
         const burg = pack.burgs[burgId];
         burg.state = state.i;
         burg.capital = 1;
-        this.changeGroup(burg, null, false);
+        this.changeGroup(burg, null);
       });
 
     this.specify();
     Routes.regenerate();
   }
 
-  changeGroup(burg: Burg, group: string | null = null, render = true) {
+  changeGroup(burg: Burg, group: string | null = null) {
     if (group) {
       burg.group = group;
     } else {
       const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
       const populations = validBurgs.map(b => b.population as number).sort((a, b) => a - b);
       this.defineGroup(burg, populations);
-    }
-
-    if (render) {
-      window.drawBurgIcon(burg);
     }
   }
 
@@ -886,12 +878,11 @@ class BurgModule {
     if (noteId !== -1) notes.splice(noteId, 1);
 
     if (burg.coa) {
+      // TODO: should be handled by emblems renderer
       document.getElementById(`burgCOA${burgId}`)?.remove();
       select("#emblems").select(`#burgEmblems > use[data-i='${burgId}']`).remove();
       delete burg.coa;
     }
-
-    window.removeBurgIcon(burg.i!);
   }
 }
 

@@ -33,11 +33,11 @@ test.describe("Lakes layer", () => {
     await expect(lakes).toBeVisible();
 
     // Click the toggle button to hide; wait for jQuery fadeOut to complete
-    await page.locator("#toggleLakes").click();
+    await page.locator("#mapLayers > li[data-layer='lakes']").click();
     await expect(lakes).toBeHidden();
 
     // Click again to show; wait for jQuery fadeIn to complete
-    await page.locator("#toggleLakes").click();
+    await page.locator("#mapLayers > li[data-layer='lakes']").click();
     await expect(lakes).toBeVisible();
   });
 
@@ -64,8 +64,8 @@ test.describe("Lakes layer", () => {
         document.querySelectorAll("#mapLayers > li")
       ) as HTMLElement[];
       return [
-        items.findIndex((li) => li.id === "toggleLakes"),
-        items.findIndex((li) => li.id === "toggleHeight"),
+        items.findIndex((li) => li.dataset.layer === "lakes"),
+        items.findIndex((li) => li.dataset.layer === "heightmap"),
       ];
     });
 
@@ -85,11 +85,10 @@ test.describe("Lakes layer", () => {
     expect(initialOrder.terrs).toBeGreaterThanOrEqual(0);
     expect(initialOrder.lakes).toBeGreaterThan(initialOrder.terrs);
 
-    // Simulate what moveLayer does when the user drags Lakes above Heightmap:
-    // panel item "toggleLakes" is now before "toggleHeight" → el.insertBefore(#terrs)
+    // Simulate the drag of Lakes above Heightmap in the panel
     await page.evaluate(() => {
-      const $ = (window as any).$;
-      $("#lakes").insertBefore($("#terrs"));
+      const Layers = (window as any).Layers;
+      Layers.move("lakes", "heightmap");
     });
 
     // After move: #lakes should be before #terrs in SVG → renders behind heightmap

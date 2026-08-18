@@ -12,16 +12,13 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import { drawBorders } from "@/renderers/draw-borders";
-import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
-import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -150,11 +147,8 @@ function open(): void {
   if (customization) return;
 
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleStates")) toggleStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
+  Layers.show("states", "borders");
+  Layers.hide("cultures", "biomes", "religions");
 
   renderDialog();
   States.collectStatistics();
@@ -501,7 +495,7 @@ function getTypeOptions(type: string | number): string {
 }
 
 function stateHighlightOn(event: any): void {
-  if (!layerIsOn("toggleStates")) return;
+  if (!Layers.isOn("states")) return;
   if (select("#deftemp").select("#fog path").size()) return;
 
   const state = +event.target.dataset.id;
@@ -542,8 +536,8 @@ function stateChangeFill(fillBox: FillBoxElement): void {
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
     pack.states[state].color = newFill;
-    drawStates();
-    if (layerIsOn("toggleMilitary")) drawMilitary();
+    Layers.draw("states");
+    Layers.draw("military");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -654,7 +648,7 @@ function editStateName(state: number): void {
     s.fullName = fullNameInput.value;
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
       if (s.label?.text) delete s.label.text;
-      drawLabels();
+      Layers.draw("labels");
     }
     refreshStatesEditor();
   }
@@ -888,7 +882,7 @@ function changePopulation(stateId: number): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    Layers.draw("population");
     refreshStatesEditor();
   }
 }
@@ -1005,7 +999,7 @@ function stateRemove(stateId: number): void {
       }
     }
   });
-  drawLabels();
+  Layers.draw("burgIcons", "labels");
 
   pack.cells.state.forEach((s: number, i: number) => {
     if (s === stateId) pack.cells.state[i] = 0;
@@ -1037,7 +1031,7 @@ function stateRemove(stateId: number): void {
     const index = notes.findIndex(n => n.id === id);
     if (index !== -1) notes.splice(index, 1);
   });
-  armies.select(`g#army${stateId}`).remove();
+  select(`#armies g#army${stateId}`).remove();
 
   // clean up neighbors references from other states
   pack.states.forEach(state => {
@@ -1049,9 +1043,7 @@ function stateRemove(stateId: number): void {
 
   select("#debug").selectAll(".highlight").remove();
 
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  Layers.draw("states", "borders", "provinces");
 
   refreshStatesEditor();
 }
@@ -1256,17 +1248,10 @@ function recalculateStates(must?: boolean): void {
   Provinces.getPoles();
   States.getPoles();
 
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  Layers.draw("states", "borders", "provinces", "goods", "emblems");
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
     for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
-    drawLabels();
-  }
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleEmblems")) {
-    clearEmblems(["state", "province"]);
-    drawEmblems();
+    Layers.draw("labels");
   }
 
   refreshStatesEditor();
@@ -1295,7 +1280,7 @@ function exitRegenerationMenu(): void {
 }
 
 function enterStatesManualAssignent(): void {
-  if (!layerIsOn("toggleStates")) toggleStates();
+  Layers.show("states");
   customization = 2;
   select("#statesBody").append("g").attr("id", "temp");
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
@@ -1417,17 +1402,17 @@ function applyStatesManualAssignent(): void {
   if (affectedStates.length) {
     refreshStatesEditor();
     States.getPoles();
-    layerIsOn("toggleStates") ? drawStates() : toggleStates();
+    Layers.show("states");
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
         if (pack.states[stateId].label) delete pack.states[stateId].label;
       }
-      drawLabels();
+      Layers.draw("labels");
     }
     adjustProvinces([...new Set(affectedProvinces)]);
-    layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
-    if (layerIsOn("toggleProvinces")) drawProvinces();
+    Layers.show("borders");
+    Layers.draw("provinces");
   }
 
   exitStatesManualAssignment(false);
@@ -1664,7 +1649,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   burgs[burgId].capital = 1;
   burgs[burgId].state = newState;
   Burgs.changeGroup(burgs[burgId], null);
-  drawLabels();
+  Layers.draw("burgIcons", "labels", "routes");
 
   if (event.shiftKey === false) exitAddStateMode();
 
@@ -1730,12 +1715,11 @@ function addState(this: SVGElement, event: MouseEvent): void {
   States.defineStateForms([newState]);
   adjustProvinces([cells.province[center]]);
 
-  drawLabels();
+  Layers.draw("labels");
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
-  layerIsOn("toggleProvinces") && toggleProvinces();
-  layerIsOn("toggleStates") ? drawStates() : toggleStates();
-  layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
+  Layers.hide("provinces");
+  Layers.show("states", "borders");
 
   statesTable.refresh();
 }
@@ -1792,7 +1776,7 @@ function openStateMergeDialog(): void {
   applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
-    if (!layerIsOn("toggleStates")) return;
+    if (!Layers.isOn("states")) return;
     const state = +event.currentTarget.dataset.id;
     if (!state) return;
     const d = select("#regions").select(`#state${state}`).attr("d");
@@ -1899,7 +1883,7 @@ function openStateMergeDialog(): void {
         }
       });
 
-      armies.select(`g#army${stateId}`).remove();
+      select(`#armies g#army${stateId}`).remove();
     });
 
     // reassing burgs
@@ -1927,13 +1911,11 @@ function openStateMergeDialog(): void {
     select("#debug").selectAll(".highlight").remove();
 
     States.getPoles();
-    layerIsOn("toggleStates") ? drawStates() : toggleStates();
-    layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
-    layerIsOn("toggleProvinces") && drawProvinces();
 
     if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
-    drawLabels();
+    Layers.show("states", "borders");
+    Layers.draw("burgIcons", "labels", "provinces");
     refreshStatesEditor();
   }
 }

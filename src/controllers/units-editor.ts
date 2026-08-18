@@ -1,15 +1,11 @@
-import { type Selection, select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { drawTemperature } from "@/renderers/draw-temperature";
+import { Layers } from "@/components/layers";
 import { lock, unlock } from "@/utils/preferences";
 import { ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 // Custom app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor).
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
-
-type ScaleBarSelection = Selection<SVGGElement, unknown, HTMLElement, unknown>;
 
 // The #unitsEditor inputs (distanceUnitInput, heightUnit, temperatureScale, …) are app-wide
 // settings cached as globals at load and read across the codebase, so this module does NOT
@@ -40,30 +36,24 @@ function open(): void {
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
-function renderScaleBar(): void {
-  const bar = select("#scaleBar") as unknown as ScaleBarSelection;
-  drawScaleBar(bar, scale);
-  fitScaleBar(bar, svgWidth, svgHeight);
-}
-
 function changeDistanceUnit(this: HTMLSelectElement): void {
   if (this.value === "custom_name") {
     prompt("Provide a custom name for a distance unit", { default: "" }, custom => {
       this.options.add(new Option(String(custom), String(custom), false, true));
       lock("distanceUnit");
-      renderScaleBar();
+      Layers.draw("scaleBar");
       calculateFriendlyGridSize();
     });
     return;
   }
 
-  renderScaleBar();
+  Layers.draw("scaleBar");
   calculateFriendlyGridSize();
 }
 
 function changeDistanceScale(this: HTMLInputElement): void {
   distanceScale = +this.value;
-  renderScaleBar();
+  Layers.draw("scaleBar");
   calculateFriendlyGridSize();
 }
 
@@ -78,11 +68,11 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 
 function changeHeightExponent(): void {
   calculateTemperatures();
-  if (layerIsOn("toggleTemperature")) drawTemperature();
+  Layers.draw("temperature");
 }
 
 function changeTemperatureScale(): void {
-  if (layerIsOn("toggleTemperature")) drawTemperature();
+  Layers.draw("temperature");
 }
 
 function changePopulationRate(this: HTMLInputElement): void {
@@ -120,7 +110,7 @@ function restoreDefaultUnits(): void {
   localStorage.removeItem("heightExponent");
   calculateTemperatures();
 
-  renderScaleBar();
+  Layers.draw("scaleBar");
 
   // population
   populationRate = 1000;

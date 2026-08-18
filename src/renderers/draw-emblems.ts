@@ -1,23 +1,13 @@
-import { forceCollide, forceSimulation, select, timeout } from "d3";
+import { forceCollide, forceSimulation, timeout } from "d3";
+import type { Province } from "@/generators/provinces-generator";
+import { ensureEl, minmax, rn } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { State } from "../generators/states-generator";
-import { minmax, rn } from "../utils";
 
-declare global {
-  var drawEmblems: () => void;
-  var renderGroupCOAs: (g: SVGGElement) => Promise<void>;
-}
+type EmblemType = "state" | "province" | "burg";
 
-interface Province {
-  i: number;
-  removed?: boolean;
-  coa?: { size?: number; x?: number; y?: number };
-  pole?: [number, number];
-  center: number;
-}
-
-interface EmblemNode {
-  type: "burg" | "province" | "state";
+interface EmblemData {
+  type: EmblemType;
   i: number;
   x: number;
   y: number;
@@ -25,168 +15,110 @@ interface EmblemNode {
   shift: number;
 }
 
-type EmblemType = "state" | "province" | "burg";
+const GROUPS: Record<EmblemType, string> = {
+  burg: "burgEmblems",
+  province: "provinceEmblems",
+  state: "stateEmblems"
+};
 
-export function clearEmblems(types: EmblemType[]): void {
-  for (const type of types) {
-    document.querySelectorAll(`[id^=${type}COA]`).forEach(element => {
-      element.remove();
-    });
-    document.querySelectorAll(`#${type}Emblems > use`).forEach(element => {
-      element.remove();
-    });
-  }
+// sizing is tuned for a 1536x754 map: ~50px for 15 states, ~20px for 115 provinces, ~8.5px for 450 burgs
+interface Sizing {
+  extent: number; // map size is divided by it to get the base size
+  min: number;
+  max: number;
+  expected: number; // number of elements the base size is tuned for
+  countDivisor: number;
+  deficitDivisor: number;
 }
 
-const emblemsRenderer = (): void => {
+const SIZING: Record<EmblemType, Sizing> = {
+  state: { extent: 40, min: 10, max: 100, expected: 15, countDivisor: 100, deficitDivisor: 200 },
+  province: { extent: 100, min: 5, max: 70, expected: 115, countDivisor: 1000, deficitDivisor: 1000 },
+  burg: { extent: 185, min: 2, max: 50, expected: 450, countDivisor: 1000, deficitDivisor: 1000 }
+};
+
+// emblems shrink as their number grows, so that a crowded map does not turn into a wall of shields
+function getEmblemSize(type: EmblemType, count: number): number {
+  const { extent, min, max, expected, countDivisor, deficitDivisor } = SIZING[type];
+  const startSize = minmax((graphHeight + graphWidth) / extent, min, max);
+  const countMod = 1 + count / countDivisor - (expected - count) / deficitDivisor;
+  const sizeMod = Number(ensureEl(GROUPS[type]).getAttribute("data-size")) || 1;
+  return rn((startSize / countMod) * sizeMod);
+}
+
+export function drawEmblems(): void {
   TIME && console.time("drawEmblems");
-  const { states, provinces, burgs } = pack;
+  const { cells, states, provinces, burgs } = pack;
 
   const validStates = states.filter(s => s.i && !s.removed && s.coa && s.coa.size !== 0);
   const validProvinces = (provinces as Province[]).filter(p => p.i && !p.removed && p.coa && p.coa.size !== 0);
   const validBurgs = burgs.filter(b => b.i && !b.removed && b.coa && b.coa.size !== 0);
 
-  const getStateEmblemsSize = (): number => {
-    const startSize = minmax((graphHeight + graphWidth) / 40, 10, 100);
-    const statesMod = 1 + validStates.length / 100 - (15 - validStates.length) / 200; // states number modifier
-    const sizeMod = +select("#emblems").select("#stateEmblems").attr("data-size") || 1;
-    return rn((startSize / statesMod) * sizeMod); // target size ~50px on 1536x754 map with 15 states
+  const sizes = {
+    burg: getEmblemSize("burg", validBurgs.length),
+    province: getEmblemSize("province", validProvinces.length),
+    state: getEmblemSize("state", validStates.length)
   };
 
-  const getProvinceEmblemsSize = (): number => {
-    const startSize = minmax((graphHeight + graphWidth) / 100, 5, 70);
-    const provincesMod = 1 + validProvinces.length / 1000 - (115 - validProvinces.length) / 1000; // states number modifier
-    const sizeMod = +select("#emblems").select("#provinceEmblems").attr("data-size") || 1;
-    return rn((startSize / provincesMod) * sizeMod); // target size ~20px on 1536x754 map with 115 provinces
+  // the emblem sits on its element's pole unless the user has dragged it elsewhere
+  const getNode = (type: EmblemType, i: number, [poleX, poleY]: number[], coa: any): EmblemData => {
+    const size = coa.size || 1;
+    return { type, i, x: coa.x || poleX, y: coa.y || poleY, size, shift: (sizes[type] * size) / 2 };
   };
 
-  const getBurgEmblemSize = (): number => {
-    const startSize = minmax((graphHeight + graphWidth) / 185, 2, 50);
-    const burgsMod = 1 + validBurgs.length / 1000 - (450 - validBurgs.length) / 1000; // states number modifier
-    const sizeMod = +select("#emblems").select("#burgEmblems").attr("data-size") || 1;
-    return rn((startSize / burgsMod) * sizeMod); // target size ~8.5px on 1536x754 map with 450 burgs
-  };
+  const nodes: EmblemData[] = [
+    ...validBurgs.map(burg => getNode("burg", burg.i!, [burg.x!, burg.y!], burg.coa)),
+    ...validProvinces.map(p => getNode("province", p.i, p.pole || cells.p[p.center], p.coa)),
+    ...validStates.map(s => getNode("state", s.i, s.pole || cells.p[s.center!], s.coa))
+  ];
 
-  const sizeBurgs = getBurgEmblemSize();
-  const burgCOAs: EmblemNode[] = validBurgs.map(burg => {
-    const { x, y } = burg;
-    const size = burg.coa!.size || 1;
-    const shift = (sizeBurgs * size) / 2;
-    return {
-      type: "burg",
-      i: burg.i!,
-      x: burg.coa!.x || x,
-      y: burg.coa!.y || y,
-      size,
-      shift
-    };
-  });
-
-  const sizeProvinces = getProvinceEmblemsSize();
-  const provinceCOAs: EmblemNode[] = validProvinces.map(province => {
-    const [x, y] = province.pole || pack.cells.p[province.center];
-    const size = province.coa!.size || 1;
-    const shift = (sizeProvinces * size) / 2;
-    return {
-      type: "province",
-      i: province.i,
-      x: province.coa!.x || x,
-      y: province.coa!.y || y,
-      size,
-      shift
-    };
-  });
-
-  const sizeStates = getStateEmblemsSize();
-  const stateCOAs: EmblemNode[] = validStates.map(state => {
-    const [x, y] = state.pole || pack.cells.p[state.center!];
-    const size = state.coa!.size || 1;
-    const shift = (sizeStates * size) / 2;
-    return {
-      type: "state",
-      i: state.i,
-      x: state.coa!.x || x,
-      y: state.coa!.y || y,
-      size,
-      shift
-    };
-  });
-
-  const nodes = burgCOAs.concat(provinceCOAs).concat(stateCOAs);
   const simulation = forceSimulation(nodes)
     .alphaMin(0.6)
     .alphaDecay(0.2)
     .velocityDecay(0.6)
     .force(
       "collision",
-      forceCollide<EmblemNode>().radius(d => d.shift)
+      forceCollide<EmblemData>().radius(d => d.shift)
     )
     .stop();
 
+  // the collision pass is heavy, so it is deferred to the next frame
   timeout(() => {
-    const n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
-    for (let i = 0; i < n; ++i) {
-      simulation.tick();
+    const ticks = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
+    for (let i = 0; i < ticks; i++) simulation.tick();
+
+    for (const type of ["burg", "province", "state"] as const) {
+      const group = ensureEl(GROUPS[type]);
+      group.setAttribute("font-size", String(sizes[type]));
+      group.innerHTML = nodes
+        .filter(node => node.type === type)
+        .map(
+          ({ i, x, y, size, shift }) =>
+            `<use data-i="${i}" x="${rn(x - shift)}" y="${rn(y - shift)}" width="${size}em" height="${size}em"/>`
+        )
+        .join("");
     }
 
-    const burgNodes = nodes.filter(node => node.type === "burg");
-    const burgString = burgNodes
-      .map(
-        d =>
-          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
-            d.size
-          }em"/>`
-      )
-      .join("");
-    select("#emblems").select("#burgEmblems").attr("font-size", sizeBurgs).html(burgString);
-
-    const provinceNodes = nodes.filter(node => node.type === "province");
-    const provinceString = provinceNodes
-      .map(
-        d =>
-          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
-            d.size
-          }em"/>`
-      )
-      .join("");
-    select("#emblems").select("#provinceEmblems").attr("font-size", sizeProvinces).html(provinceString);
-
-    const stateNodes = nodes.filter(node => node.type === "state");
-    const stateString = stateNodes
-      .map(
-        d =>
-          `<use data-i="${d.i}" x="${rn(d.x - d.shift)}" y="${rn(d.y - d.shift)}" width="${d.size}em" height="${
-            d.size
-          }em"/>`
-      )
-      .join("");
-    select("#emblems").select("#stateEmblems").attr("font-size", sizeStates).html(stateString);
-
     invokeActiveZooming();
+    TIME && console.timeEnd("drawEmblems");
   });
+}
 
-  TIME && console.timeEnd("drawEmblems");
-};
+/** render the emblems of a group that is scrolled into view: the `use` elements are drawn without a target */
+export function redrawEmblemGroup(group: SVGGElement): void {
+  const [data, type] = getDataAndType(group.id);
 
-const getDataAndType = (id: string): [Burg[] | Province[] | State[], string] => {
-  if (id === "burgEmblems") return [pack.burgs, "burg"];
-  if (id === "provinceEmblems") return [pack.provinces as Province[], "province"];
-  if (id === "stateEmblems") return [pack.states, "state"];
-  throw new Error(`Unknown emblem type: ${id}`);
-};
-
-const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
-  const [data, type] = getDataAndType(g.id);
-
-  for (const use of g.children) {
+  for (const use of group.children) {
     const i = +(use as SVGUseElement).dataset.i!;
     const id = `${type}COA${i}`;
-    COArenderer.trigger(id, (data[i] as any).coa);
+    COArenderer.trigger(id, data[i].coa);
     use.setAttribute("href", `#${id}`);
   }
-};
+}
 
-export { emblemsRenderer as drawEmblems, renderGroupCOAsRenderer as renderGroupCOAs };
-
-window.drawEmblems = emblemsRenderer;
-window.renderGroupCOAs = renderGroupCOAsRenderer;
+function getDataAndType(groupId: string): [Burg[] | Province[] | State[], EmblemType] {
+  if (groupId === GROUPS.burg) return [pack.burgs, "burg"];
+  if (groupId === GROUPS.province) return [pack.provinces, "province"];
+  if (groupId === GROUPS.state) return [pack.states, "state"];
+  throw new Error(`Unknown emblem group: ${groupId}`);
+}

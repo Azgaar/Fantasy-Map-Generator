@@ -1,28 +1,6 @@
 import { select } from "d3";
+import type { Marker } from "@/generators/markers-generator";
 import { rn } from "../utils";
-
-interface Marker {
-  i: number;
-  icon: string;
-  x: number;
-  y: number;
-  name?: string;
-  type?: string;
-  dx?: number;
-  dy?: number;
-  px?: number;
-  size?: number;
-  pin?: string;
-  fill?: string;
-  stroke?: string;
-  pinned?: boolean;
-  hidden?: boolean;
-}
-
-declare global {
-  var drawMarkers: () => void;
-  var drawMarker: (marker: Marker, rescale?: number) => string;
-}
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
@@ -54,12 +32,12 @@ const pinShapes: PinShapes = {
   no: () => ""
 };
 
-const getPinForShape = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
+export const getPin = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
   const shapeFunction = pinShapes[shape] || pinShapes.bubble;
   return shapeFunction(fill, stroke);
 };
 
-function markerRenderer(marker: Marker, rescale = 1): string {
+export function drawMarker(marker: Marker, rescale = 1): string {
   const { i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke } = marker;
   const id = `marker${i}`;
   const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
@@ -70,21 +48,19 @@ function markerRenderer(marker: Marker, rescale = 1): string {
 
   return /* html */ `
     <svg id="${id}" viewbox="0 0 30 30" width="${zoomSize}" height="${zoomSize}" x="${viewX}" y="${viewY}">
-      <g>${getPinForShape(pin, fill, stroke)}</g>
+      <g>${getPin(pin, fill, stroke)}</g>
       <text x="${dx}%" y="${dy}%" font-size="${px}px" >${isExternal ? "" : icon}</text>
       <image x="${dx / 2}%" y="${dy / 2}%" width="${px}px" height="${px}px" href="${isExternal ? icon : ""}" />
     </svg>`;
 }
 
-// transient set of marker ids the map should render, driven by the Markers Overview filter.
-// null = no filter (render everything). Not persisted — never touches pack data or the .map file.
+// transient set of marker ids the map should render, driven by the Markers Overview filter
 let visibleMarkerIds: Set<number> | null = null;
-
-const setMarkersFilter = (ids: number[] | null): void => {
+export const setMarkersFilter = (ids: number[] | null): void => {
   visibleMarkerIds = ids ? new Set(ids) : null;
 };
 
-const markersRenderer = (): void => {
+export const drawMarkers = (): void => {
   TIME && console.time("drawMarkers");
 
   const rescale = +select("#markers").attr("rescale");
@@ -94,13 +70,8 @@ const markersRenderer = (): void => {
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
   if (visibleMarkerIds) markersData = markersData.filter((marker: Marker) => visibleMarkerIds!.has(marker.i));
-  const html = markersData.map(marker => markerRenderer(marker, rescale));
+  const html = markersData.map(marker => drawMarker(marker, rescale));
   select("#markers").html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");
 };
-
-window.drawMarkers = markersRenderer;
-window.drawMarker = markerRenderer;
-
-export { getPinForShape as getPin, markerRenderer as drawMarker, markersRenderer as drawMarkers, setMarkersFilter };

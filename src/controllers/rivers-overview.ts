@@ -10,6 +10,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -97,7 +98,7 @@ const riversTable = initEditorTable<River>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  Layers.show("rivers");
 
   renderDialog();
   riversTable.reset();
@@ -230,7 +231,7 @@ function renderRiversPage(view: TableView<River>): void {
 }
 
 function riverHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  Layers.show("rivers");
   const r = +(event.target as HTMLElement).dataset.id!;
   select("#rivers").select(`#river${r}`).attr("stroke", "red").attr("stroke-width", 1);
 }

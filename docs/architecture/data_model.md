@@ -345,7 +345,7 @@ Each `LabelGroupOptions` contains:
 - `name`: `string` - globally unique logical group id
 - `type`: `states | burgs | provinces | added` - organizational category and default source
 - `active`: `boolean` - manual visibility switch
-- `layerDependency`: `string | null` - optional layer-toggle id; unknown ids fail closed
+- `layerDependency`: `LayerId | null` - optional layer-toggle id; unknown ids fail closed
 - `zoom.min` and `zoom.max`: `number | null` - inclusive map-scale bounds
 - `mode`: `auto | short | full` - generated State and Province name policy
 

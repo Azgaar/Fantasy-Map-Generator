@@ -1,10 +1,10 @@
 import { Controllers } from "@/controllers";
-import { toggleGoods } from "@/renderers/draw-goods";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { findEl, minmax } from "@/utils";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
+import { getLayerByShortcut } from "./layers-tab";
 import { changeMapZoom, panMap, setMapZoom } from "./zoom";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
@@ -29,6 +29,8 @@ function handleKeyup(event: KeyboardEvent): void {
   const ctrl = ctrlKey || metaKey || key === "Control";
   const shift = (shiftKey || key === "Shift") && !altKey;
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
+
+  const layer = getLayerByShortcut(code);
 
   if (code === "F1") showInfo();
   else if (code === "F2") regeneratePrompt();
@@ -72,38 +74,9 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "#") Controllers.MarkerCreator.toggle();
   else if (key === "$") Controllers.RiverAutoCreator.toggle();
   else if (key === "%") Controllers.RouteCreator.open();
-  else if (code === "KeyX") toggleTexture();
-  else if (code === "KeyH") toggleHeight();
-  else if (code === "KeyQ") toggleLakes();
-  else if (code === "KeyB") toggleBiomes();
-  else if (code === "KeyE") toggleCells();
-  else if (code === "KeyG") toggleGoods();
-  else if (code === "Semicolon") toggleGrid();
-  else if (code === "KeyO") toggleCoordinates();
-  else if (code === "KeyW") toggleCompass();
-  else if (code === "KeyV") toggleRivers();
-  else if (code === "KeyF") toggleRelief();
-  else if (code === "KeyC") toggleCultures();
-  else if (code === "KeyS") toggleStates();
-  else if (code === "KeyP") toggleProvinces();
-  else if (code === "KeyZ") toggleZones();
-  else if (code === "KeyD") toggleBorders();
-  else if (code === "KeyR") toggleReligions();
-  else if (code === "KeyU") toggleRoutes();
-  else if (code === "KeyT") toggleTemperature();
-  else if (code === "KeyN") togglePopulation();
-  else if (code === "KeyJ") toggleIce();
-  else if (code === "KeyA") togglePrecipitation();
-  else if (code === "KeyY") toggleEmblems();
-  else if (code === "KeyL") toggleLabels();
-  else if (code === "KeyI") toggleBurgIcons();
-  else if (code === "KeyM") toggleMilitary();
-  else if (code === "KeyK") toggleMarkers();
-  else if (code === "Equal" && !customization) toggleRulers();
-  else if (code === "Slash") toggleScaleBar();
-  else if (code === "BracketLeft" && !handleBracketSizeChange(code)) toggleVignette();
   else if (code === "BracketRight") handleBracketSizeChange(code);
-  else if (code === "Backquote") toggleTrade();
+  else if (code === "BracketLeft" && handleBracketSizeChange(code)) return;
+  else if (layer && !(code === "Equal" && customization)) Layers.toggle(layer);
   else if (code === "ArrowLeft") panMap(10, 0);
   else if (code === "ArrowRight") panMap(-10, 0);
   else if (code === "ArrowUp") panMap(0, 10);

@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { Layers } from "@/components/layers";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -11,7 +12,6 @@ import { templates } from "./templates";
 declare global {
   var COArenderer: EmblemRenderModule;
 }
-
 interface Division {
   division: string;
   line?: string;
@@ -299,15 +299,23 @@ class EmblemRenderModule {
         ${overlay}</svg>`;
 
     // insert coa svg to defs
-    document.getElementById("coas")!.insertAdjacentHTML("beforeend", svg);
+    const coas = document.getElementById("coas")!;
+    coas.insertAdjacentHTML("beforeend", svg);
+    // the cache key travels with the rendered shield, so clearing #coas clears the cache with it
+    (coas.lastElementChild as SVGElement).dataset.coa = JSON.stringify(coa);
     return true;
   }
 
-  // render coa if does not exist
+  /** render the coa unless the rendered one is already up to date: a reassigned coa replaces its shield */
   async trigger(id: string, coa: Emblem) {
     if (!coa) return console.warn(`Emblem ${id} is undefined`);
     if (coa.custom) return console.warn("Cannot render custom emblem", coa);
-    if (!document.getElementById(id)) return this.draw(id, coa);
+
+    const rendered = document.getElementById(id);
+    if (rendered?.dataset.coa === JSON.stringify(coa)) return;
+
+    rendered?.remove(); // the entity kept its id but got new arms, e.g. on a states regeneration
+    return this.draw(id, coa);
   }
 
   async add(type: string, i: number, coa: Emblem, x: number, y: number) {
@@ -319,7 +327,7 @@ class EmblemRenderModule {
       const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
       g.insertAdjacentHTML("beforeend", use);
     }
-    if (layerIsOn("toggleEmblems")) this.trigger(id, coa);
+    if (Layers.isOn("emblems")) this.trigger(id, coa);
   }
 }
 window.COArenderer = new EmblemRenderModule();

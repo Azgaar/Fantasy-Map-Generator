@@ -1,7 +1,7 @@
 import { easeBounceOut, easeLinear, easeSinIn, select, transition } from "d3";
 import { parseTransform } from "@/utils";
 
-const debugLayer = () => select(debug.node() as SVGGElement);
+const debugLayer = () => select<SVGGElement, unknown>("#debug");
 
 function getBBox(element: Element): DOMRect {
   const attr = (name: string) => Number(element.getAttribute(name));

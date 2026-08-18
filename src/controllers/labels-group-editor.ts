@@ -1,45 +1,12 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
+import { LAYER_TOGGLES } from "@/components/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { ensureEl } from "@/utils";
-
-// TODO: replace with Layers registry data
-const LAYER_TOGGLES: { id: string; label: string }[] = [
-  { id: "toggleBorders", label: "Borders" },
-  { id: "toggleBiomes", label: "Biomes" },
-  { id: "toggleBurgIcons", label: "Burg Icons" },
-  { id: "toggleCells", label: "Cells" },
-  { id: "toggleCompass", label: "Wind Rose" },
-  { id: "toggleCoordinates", label: "Coordinates" },
-  { id: "toggleCultures", label: "Cultures" },
-  { id: "toggleEmblems", label: "Emblems" },
-  { id: "toggleGoods", label: "Goods" },
-  { id: "toggleGrid", label: "Grid" },
-  { id: "toggleHeight", label: "Heightmap" },
-  { id: "toggleIce", label: "Ice" },
-  { id: "toggleLabels", label: "Labels" },
-  { id: "toggleLakes", label: "Lakes" },
-  { id: "toggleMarketsLayer", label: "Markets" },
-  { id: "toggleMarkers", label: "Markers" },
-  { id: "toggleMilitary", label: "Military" },
-  { id: "togglePopulation", label: "Population" },
-  { id: "togglePrecipitation", label: "Precipitation" },
-  { id: "toggleProvinces", label: "Provinces" },
-  { id: "toggleRelief", label: "Relief" },
-  { id: "toggleReligions", label: "Religions" },
-  { id: "toggleRoutes", label: "Routes" },
-  { id: "toggleRulers", label: "Rulers" },
-  { id: "toggleScaleBar", label: "Scale Bar" },
-  { id: "toggleTexture", label: "Texture" },
-  { id: "toggleTemperature", label: "Temperature" },
-  { id: "toggleTrade", label: "Trade" },
-  { id: "toggleVignette", label: "Vignette" },
-  { id: "toggleZones", label: "Zones" }
-];
 
 function open(): void {
   if (customization) return;
@@ -172,6 +139,8 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
     ? "Name display mode: auto picks the best fit, short/full force a specific name form"
     : "Name display mode is only applicable to States and Provinces";
 
+  const layers = [...LAYER_TOGGLES.keys()].sort();
+
   return /* html */ `<tr data-group="${isNew ? "" : group.name}" data-is-default="${isDefault ? "1" : ""}">
       <td data-tip="Activate/deactivate group"><input type="checkbox" name="active" class="native" ${group.active !== false ? "checked" : ""}></td>
       <td data-tip="${nameTip}"><input type="text" name="name" value="${group.name}" ${isDefault ? "disabled" : "required"}></td>
@@ -184,8 +153,8 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
       <td data-tip="Minimum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-min" min="0.01" max="200" step=".01" value="${group.zoom.min ?? ""}"></td>
       <td data-tip="Maximum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>
       <td data-tip="Layer that must be toggled on for this group to be shown"><select name="dependency">
-        <option value="">None</option>
-        ${LAYER_TOGGLES.map(({ id, label }) => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${label}</option>`).join("")}
+        <option value="">none</option>
+        ${layers.map(id => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${id}</option>`).join("")}
       </select></td>
       <td data-tip="Number of labels currently assigned to this group" style="text-align:center">
         <div style="min-width:2em; display:inline-block">${labelCount}</div>
@@ -331,7 +300,7 @@ function submitForm(event: Event): void {
   for (const group of options.labels.groups) style.labels.groups[group.name] ??= getGroupStyle(group);
   localStorage.setItem("options-labels", JSON.stringify(options.labels));
 
-  drawLabels();
+  Layers.draw("labels");
   $("#labelGroupsConfigurator").dialog("close");
 }
 
@@ -350,7 +319,7 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
 
   if (!active) group.active = false;
   if (mode !== "auto") group.mode = mode;
-  if (dependency) group.layerDependency = dependency;
+  if (Layers.has(dependency)) group.layerDependency = dependency;
   if (row.dataset.isDefault === "1") group.isDefault = true;
   return group;
 }

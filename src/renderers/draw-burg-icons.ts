@@ -1,11 +1,6 @@
 import { select } from "d3";
-import type { Burg } from "../generators/burgs-generator";
 
-declare global {
-  var drawBurgIcons: () => void;
-}
-
-const burgIconsRenderer = (): void => {
+export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
 
@@ -35,37 +30,12 @@ const burgIconsRenderer = (): void => {
   TIME && console.timeEnd("drawBurgIcons");
 };
 
-const drawBurgIconRenderer = (burg: Burg): void => {
-  const iconGroup = select("#burgIcons").select<SVGGElement>(`#${burg.group}`);
-  if (iconGroup.empty()) {
-    drawBurgIcons();
-    return; // redraw all icons if group is missing
-  }
-
-  removeBurgIconRenderer(burg.i!);
-  const icon = iconGroup.attr("data-icon") || "#icon-circle";
-  select("#burgIcons")
-    .select(`#${burg.group}`)
-    .append("use")
-    .attr("href", icon)
-    .attr("id", `burg${burg.i}`)
-    .attr("data-id", burg.i!)
-    .attr("x", burg.x)
-    .attr("y", burg.y);
-
-  if (burg.port) {
-    select("#anchors")
-      .select(`#${burg.group}`)
-      .append("use")
-      .attr("href", "#icon-anchor")
-      .attr("id", `anchor${burg.i}`)
-      .attr("data-id", burg.i!)
-      .attr("x", burg.x)
-      .attr("y", burg.y);
-  }
+/** drop the icons, keeping the burg groups: they carry the styles edited in the Style editor */
+export const removeBurgIcons = (): void => {
+  for (const icon of Array.from(document.querySelectorAll("#icons use, #icons circle"))) icon.remove();
 };
 
-const removeBurgIconRenderer = (burgId: number): void => {
+export const removeBurgIcon = (burgId: number): void => {
   const existingIcon = document.getElementById(`burg${burgId}`);
   if (existingIcon) existingIcon.remove();
 
@@ -111,13 +81,3 @@ function createIconGroups(): void {
     anchorGroup.attr("id", name);
   }
 }
-
-window.drawBurgIcons = burgIconsRenderer;
-
-export { drawBurgIconRenderer as drawBurgIcon, removeBurgIconRenderer as removeBurgIcon };
-
-// burgs-generator still draws icons directly; it cannot import upwards, so the bridge stays
-window.drawBurgIcon = drawBurgIconRenderer;
-window.removeBurgIcon = removeBurgIconRenderer;
-
-export { burgIconsRenderer as drawBurgIcons };

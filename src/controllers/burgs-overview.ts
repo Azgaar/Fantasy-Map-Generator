@@ -10,10 +10,10 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -115,8 +115,7 @@ const burgsTable = initEditorTable<Burg>({
 function open(filters: Filters = { stateId: null, cultureId: null }): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  Layers.show("burgIcons", "labels");
 
   renderDialog();
   updateFilter(filters);
@@ -447,7 +446,7 @@ function triggerBurgRemove(this: HTMLElement): void {
     onConfirm: () => {
       Burgs.remove(burgId);
       burgsTable.refresh();
-      drawLabels();
+      Layers.draw("burgIcons", "labels");
     }
   });
 }
@@ -460,7 +459,7 @@ function regenerateNames(): void {
   }
 
   burgsTable.refresh();
-  drawLabels();
+  Layers.draw("labels");
 }
 
 function showBurgsChart(): void {
@@ -750,7 +749,7 @@ function importBurgNames(dataLoaded: string): void {
       pack.burgs[id].name = change[i].name;
     }
     burgsTable.refresh();
-    drawLabels();
+    Layers.draw("labels");
   };
 
   confirmationDialog({
@@ -772,7 +771,7 @@ function triggerAllBurgsRemove(): void {
     onConfirm: () => {
       pack.burgs.filter(b => b.i && !(b.capital || b.lock)).forEach(b => void Burgs.remove(b.i));
       burgsTable.refresh();
-      drawLabels();
+      Layers.draw("burgIcons", "labels");
     }
   });
 }

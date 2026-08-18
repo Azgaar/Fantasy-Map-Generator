@@ -1,4 +1,5 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
@@ -88,7 +89,7 @@ function generateSubmap(): void {
   Resample.process({ projection, inverse, scale });
 
   if (ensureEl<HTMLInputElement>("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
-  drawLayers();
+  Layers.drawAll();
 
   INFO && console.groupEnd();
 }

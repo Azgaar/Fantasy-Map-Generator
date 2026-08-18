@@ -64,11 +64,17 @@ class TestFlatQueue {
   }
 }
 
+let isTradeLayerOn = true;
+
+vi.mock("@/components/layers", () => ({
+  Layers: { isOn: (id: string) => id === "trade" && isTradeLayerOn }
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   ta = new TradeAnimationModule();
   globalThis.pack = makePack() as any;
-  globalThis.layerIsOn = vi.fn(() => true);
+  isTradeLayerOn = true;
   (globalThis as any).FlatQueue = TestFlatQueue;
   globalThis.Markets = {
     get: vi.fn((id: number) => {
@@ -235,7 +241,7 @@ describe("trigger", () => {
   });
 
   it("clears animations and returns when the layer is disabled", () => {
-    vi.mocked(globalThis.layerIsOn).mockReturnValue(false);
+    isTradeLayerOn = false;
     ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" }]);
     expect(drawTrade.clear).toHaveBeenCalled();
     expect(drawTrade.draw).not.toHaveBeenCalled();

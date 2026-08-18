@@ -1,11 +1,9 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { clearLegend } from "@/renderers/draw-legend";
-import { drawMeasurers } from "@/renderers/draw-measurers";
-import { drawRelief } from "@/renderers/draw-relief-icons";
-import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -327,75 +325,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    svg.remove();
+    select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
-    // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
-    // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
-    // v5 global `d3.event`, breaking mouse/zoom handlers after a map load (#1508).
-    // Every layer selection below chains off `svg`, so they all inherit v5.
-    svg = (window as any).d3.select("#map") as typeof svg;
-    defs = svg.select<SVGDefsElement>("#deftemp");
-    viewbox = svg.select<SVGElement>("#viewbox");
-    scaleBar = svg.select<SVGGElement>("#scaleBar");
-    legend = svg.select("#legend");
-    ocean = viewbox.select<SVGGElement>("#ocean");
-    oceanLayers = ocean.select<SVGGElement>("#oceanLayers");
-    oceanPattern = ocean.select<SVGGElement>("#oceanPattern");
-    lakes = viewbox.select<SVGGElement>("#lakes");
-    landmass = viewbox.select<SVGGElement>("#landmass");
-    texture = viewbox.select<SVGGElement>("#texture");
-    terrs = viewbox.select<SVGGElement>("#terrs");
-    biomes = viewbox.select<SVGGElement>("#biomes");
-    ice = viewbox.select<SVGGElement>("#ice");
-    cells = viewbox.select<SVGGElement>("#cells");
-    gridOverlay = viewbox.select<SVGGElement>("#gridOverlay");
-    coordinates = viewbox.select<SVGGElement>("#coordinates");
-    compass = viewbox.select<SVGGElement>("#compass");
-    rivers = viewbox.select<SVGElement>("#rivers");
-    terrain = viewbox.select<SVGGElement>("#terrain");
-    relig = viewbox.select<SVGGElement>("#relig");
-    cults = viewbox.select<SVGGElement>("#cults");
-    regions = viewbox.select<SVGGElement>("#regions");
-    statesBody = regions.select<SVGGElement>("#statesBody");
-    statesHalo = regions.select<SVGGElement>("#statesHalo");
-    provs = viewbox.select<SVGGElement>("#provs");
-    zones = viewbox.select<SVGGElement>("#zones");
-    borders = viewbox.select<SVGGElement>("#borders");
-    stateBorders = borders.select<SVGGElement>("#stateBorders");
-    provinceBorders = borders.select<SVGGElement>("#provinceBorders");
-    routes = viewbox.select<SVGElement>("#routes");
-    roads = routes.select<SVGGElement>("#roads");
-    trails = routes.select<SVGGElement>("#trails");
-    searoutes = routes.select<SVGGElement>("#searoutes");
-    temperature = viewbox.select<SVGGElement>("#temperature");
-    coastline = viewbox.select<SVGGElement>("#coastline");
-    prec = viewbox.select<SVGGElement>("#prec");
-    population = viewbox.select<SVGGElement>("#population");
-    goods = viewbox.select<SVGGElement>("#goods");
-    markets = viewbox.select<SVGGElement>("#markets");
-    emblems = viewbox.select<SVGElement>("#emblems");
-    labels = viewbox.select<SVGGElement>("#labels");
-    icons = viewbox.select<SVGGElement>("#icons");
-    burgIcons = icons.select<SVGGElement>("#burgIcons");
-    anchors = icons.select<SVGGElement>("#anchors");
-    armies = viewbox.select<SVGGElement>("#armies");
-    markers = viewbox.select<SVGGElement>("#markers");
-    tradeAnimation = viewbox.select<SVGGElement>("#tradeAnimation");
-    ruler = viewbox.select<SVGGElement>("#ruler");
-    fogging = viewbox.select<SVGGElement>("#fogging");
-    debug = viewbox.select<SVGElement>("#debug");
-    if (!texture.size()) {
-      texture = viewbox
-        .insert("g", "#landmass")
-        .attr("id", "texture")
-        .attr("data-href", "./images/textures/plaster.jpg");
+
+    const viewbox = select("#viewbox");
+    if (!select("#texture").size()) {
+      viewbox.insert("g", "#landmass").attr("id", "texture").attr("data-href", "./images/textures/plaster.jpg");
     }
-    if (!emblems.size()) {
-      emblems = viewbox
-        .insert("g", "#labels")
-        .attr("id", "emblems")
-        .style("display", "none") as unknown as typeof emblems;
+    if (!select("#emblems").size()) {
+      viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
     }
 
     {
@@ -491,62 +429,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       resolveVersionConflicts(mapVersion!, data);
     }
 
-    {
-      const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
-        selection.node() && selection.style("display") !== "none";
-      const isVisibleNode = (node: SVGElement | HTMLElement | null) => node && node.style.display !== "none";
-      const hasChildren = (selection: { node(): Element | null }) => selection.node()?.hasChildNodes();
-      const hasChild = (selection: { node(): Element | null }, selector: string) =>
-        selection.node()?.querySelector(selector);
-      const turnOn = (el: string) => ensureEl(el).classList.remove("buttonoff");
+    if (data[50]) Layers.restore(JSON.parse(data[50]));
 
-      // turn all layers off
-      ensureEl("mapLayers")
-        .querySelectorAll("li")
-        .forEach(el => {
-          el.classList.add("buttonoff");
-        });
+    Goods.sync();
+    Markets.sync();
+    Routes.sync();
+    TradeAnimation.sync();
 
-      // turn on active layers
-      if (hasChild(select("#texture"), "image")) turnOn("toggleTexture");
-      if (hasChildren(select("#terrs").select("#landHeights"))) turnOn("toggleHeight");
-      if (isVisible(select("#lakes"))) turnOn("toggleLakes");
-      if (hasChildren(select("#biomes"))) turnOn("toggleBiomes");
-      if (hasChildren(select("#cells"))) turnOn("toggleCells");
-      if (hasChildren(select("#gridOverlay"))) turnOn("toggleGrid");
-      if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
-      if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
-      if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
-      if (isVisible(select("#terrain"))) turnOn("toggleRelief");
-      if (hasChildren(select("#relig"))) turnOn("toggleReligions");
-      if (hasChildren(select("#cults"))) turnOn("toggleCultures");
-      if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
-      if (hasChildren(select("#provs"))) turnOn("toggleProvinces");
-      if (hasChildren(select("#zones")) && isVisible(select("#zones"))) turnOn("toggleZones");
-      if (isVisible(select("#borders")) && hasChild(select("#borders"), "path")) turnOn("toggleBorders");
-      if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
-      if (hasChildren(select("#temperature"))) turnOn("toggleTemperature");
-      if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
-      if (isVisible(select("#ice"))) turnOn("toggleIce");
-      if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
-      if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
-      if (hasChildren(select("#labels"))) turnOn("toggleLabels");
-      if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
-      if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
-      if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
-      if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
-      if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
-      if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
-      if (isVisible(select("#ruler"))) turnOn("toggleRulers");
-      if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
-      if (isVisibleNode(ensureEl<SVGGElement>("vignette"))) turnOn("toggleVignette");
-
-      getCurrentPreset();
-      Goods.sync();
-      Markets.sync();
-      Routes.sync();
-      TradeAnimation.sync();
-    }
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
       .on("click", () => window.Controllers.UnitsEditor.open());
@@ -812,15 +701,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
-    // draw data layers (not kept in svg)
-    if (layerIsOn("toggleRulers")) drawMeasurers();
-    if (layerIsOn("toggleGrid")) drawGrid();
-    if (layerIsOn("toggleLabels")) drawLabels();
-    if (layerIsOn("toggleRelief")) drawRelief();
-    if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
-    focusOn(); // based on searchParams focus on point, cell or burg
+
+    Layers.drawAll();
+    applyDefaultViewboxEvents();
+    focusOn();
     invokeActiveZooming();
     fitMapToScreen();
 

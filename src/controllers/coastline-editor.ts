@@ -1,6 +1,5 @@
 import Alea from "alea";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { drawFeatures } from "@/renderers/draw-features";
 import {
   buildCoastlinePath,
   type CoastlineSettings,
@@ -176,14 +175,14 @@ function renderDialog(): void {
       if (e.target !== e.currentTarget) return;
       defaultCoastSettings[key] = slider.valueAsNumber;
       updatePreviews();
-      drawFeatures();
+      Layers.draw("landmass", "coastline", "lakes");
     });
 
     resetBtn.addEventListener("click", () => {
       (defaultCoastSettings[key] as number) = defaultVal;
       slider.value = String(defaultVal);
       updatePreviews();
-      drawFeatures();
+      Layers.draw("landmass", "coastline", "lakes");
     });
   }
 
@@ -209,7 +208,7 @@ function renderDialog(): void {
     defaultCoastSettings.enabled = enabledCb.checked;
     syncToggle();
     updatePreviews();
-    drawFeatures();
+    Layers.draw("landmass", "coastline", "lakes");
   });
 
   // Preset buttons
@@ -225,7 +224,7 @@ function renderDialog(): void {
         slider.value = String(val);
       }
       updatePreviews();
-      drawFeatures();
+      Layers.draw("landmass", "coastline", "lakes");
     });
   }
 }

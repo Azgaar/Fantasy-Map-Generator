@@ -10,6 +10,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
@@ -108,12 +109,9 @@ function open(): void {
   }
 
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleStates")) toggleStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
+  Layers.show("states", "borders");
+  Layers.hide("provinces", "cultures");
+  Layers.hide("biomes", "religions");
 
   renderDialog();
   refreshDiplomacyEditor();
@@ -249,7 +247,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
 }
 
 function stateHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleStates")) return;
+  if (!Layers.isOn("states")) return;
   const state = +(event.target as HTMLElement).dataset.id!;
   if (customization || !state) return;
   const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
@@ -285,7 +283,7 @@ function showStateRelations(): void {
   const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self");
   const sel = selectedLine ? +selectedLine.dataset.id! : pack.states.find(s => s.i && !s.removed)!.i;
   if (!sel) return;
-  if (!layerIsOn("toggleStates")) toggleStates();
+  Layers.show("states");
 
   select<SVGGElement, unknown>("#statesBody")
     .selectAll<SVGPathElement, unknown>("path")
@@ -633,8 +631,7 @@ function closeDiplomacyEditor(): void {
   clearMainTip();
   const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");
   if (selected) selected.classList.remove("Self");
-  if (layerIsOn("toggleStates")) drawStates();
-  else toggleStates();
+  Layers.show("states");
   select("#debug").selectAll(".highlight").remove();
   $(`#${dialogId}`).dialog("destroy");
   ensureEl(dialogId).remove();

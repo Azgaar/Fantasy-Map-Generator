@@ -1,10 +1,10 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawMeasurers, undrawMeasurers } from "@/renderers/draw-measurers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { ensureEl, getSegmentId, last, rn } from "../utils";
 
@@ -20,7 +20,7 @@ function open(): void {
   if (customization) return;
 
   closeDialogs("#measurersEditor, .stable");
-  if (!layerIsOn("toggleRulers")) toggleRulers();
+  Layers.show("rulers");
 
   renderDialog();
   select("#ruler").classed("editable", true); // interactive cursor while the editor is open
@@ -62,14 +62,13 @@ function renderDialog(): void {
 function onClose(): void {
   if (ensureEl("measurersBottom").querySelector(".pressed")) exitDrawingMode();
   select("#ruler").classed("editable", false);
-  if (layerIsOn("toggleRulers")) drawMeasurers();
-  else undrawMeasurers();
+  Layers.draw("rulers");
   destroyDialog("measurersEditor");
 }
 
 // every data change goes through a full redraw
 function redraw(): void {
-  drawMeasurers();
+  Layers.draw("rulers");
 
   const groups = document.querySelectorAll<SVGGElement>("#ruler > g");
   groups.forEach((node, index) => {

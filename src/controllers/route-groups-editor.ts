@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
 import { ensureEl } from "../utils";
@@ -11,7 +12,7 @@ const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
 
 function open(): void {
   if (customization) return;
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  Layers.show("routes");
 
   renderDialog();
   addLines();

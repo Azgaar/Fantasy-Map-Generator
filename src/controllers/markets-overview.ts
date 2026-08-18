@@ -11,13 +11,11 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
+import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawGoods } from "@/renderers/draw-goods";
-import { drawMarkets, toggleMarketsLayer } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
@@ -76,7 +74,7 @@ const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpd
 function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  Layers.show("markets");
 
   renderDialog();
   marketsTable.reset();
@@ -260,7 +258,7 @@ function renderMarketRow(
 }
 
 function enterMarketsManualAssignment(): void {
-  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  Layers.show("markets");
   customization = 15;
   marketsManualHistory = [];
 
@@ -458,7 +456,7 @@ function exitMarketsManualAssignment(apply: boolean): void {
   removeCircle();
 
   if (apply) {
-    drawMarkets();
+    Layers.draw("markets");
     marketsTable.refresh();
   }
 
@@ -495,7 +493,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   if (!ev.shiftKey) exitAddMarketMode();
 
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+  Layers.draw("markets");
   marketsTable.refresh();
 }
 
@@ -510,7 +508,7 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+      Layers.draw("markets");
       marketsTable.refresh();
     }
   });
@@ -523,7 +521,7 @@ function marketChangeFill(fillBox: FillBoxElement, marketId: number): void {
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
     market.color = newFill;
-    drawMarkets();
+    Layers.draw("markets");
   };
 
   void Controllers.ColorPicker.open(market.color, callback);
@@ -619,9 +617,8 @@ function regenerateMarkets() {
       if (regenProduction) {
         Production.regenerate();
       }
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      Layers.draw("markets", "goods");
+      Layers.draw("trade");
       refreshEditors();
     }
   });
@@ -635,8 +632,8 @@ function regenerateProduction() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      Layers.draw("goods");
+      Layers.draw("trade");
       refreshEditors();
     }
   });

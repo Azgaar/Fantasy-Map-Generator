@@ -130,6 +130,7 @@ function selectStyleElement() {
       "coastline",
       "coordinates",
       "cults",
+      "goods",
       "gridOverlay",
       "ice",
       "icons",
@@ -208,7 +209,7 @@ function selectStyleElement() {
 
   if (styleElement === "markers") {
     styleMarkers.style.display = "block";
-    styleRescaleMarkers.checked = +markers.attr("rescale");
+    styleRescaleMarkers.checked = +d3.select("#markers").attr("rescale");
   }
 
   if (styleElement === "gridOverlay") {
@@ -222,7 +223,7 @@ function selectStyleElement() {
 
   if (styleElement === "compass") {
     styleCompass.style.display = "block";
-    const tr = parseTransform(compass.select("use").attr("transform"));
+    const tr = parseTransform(d3.select("#compass").select("use").attr("transform"));
     styleCompassShiftX.value = tr[0];
     styleCompassShiftY.value = tr[1];
     styleCompassSizeInput.value = tr[2];
@@ -237,10 +238,12 @@ function selectStyleElement() {
 
   if (styleElement === "population") {
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = d3
+      .select("#population")
       .select("#rural")
       .attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = d3
+      .select("#population")
       .select("#urban")
       .attr("stroke");
     styleStrokeWidth.style.display = "block";
@@ -249,11 +252,17 @@ function selectStyleElement() {
 
   if (styleElement === "regions") {
     styleStates.style.display = "block";
-    styleStatesBodyOpacity.value = statesBody.attr("opacity") || 1;
-    styleStatesBodyFilter.value = statesBody.attr("filter") || "";
-    styleStatesHaloWidth.value = statesHalo.attr("data-width") || 10;
-    styleStatesHaloOpacity.value = statesHalo.attr("opacity") || 1;
-    styleStatesHaloBlur.value = parseFloat(statesHalo.attr("filter")?.match(/blur\(([^)]+)\)/)?.[1]) || 0;
+    styleStatesBodyOpacity.value = d3.select("#statesBody").attr("opacity") || 1;
+    styleStatesBodyFilter.value = d3.select("#statesBody").attr("filter") || "";
+    styleStatesHaloWidth.value = d3.select("#statesHalo").attr("data-width") || 10;
+    styleStatesHaloOpacity.value = d3.select("#statesHalo").attr("opacity") || 1;
+    styleStatesHaloBlur.value =
+      parseFloat(
+        d3
+          .select("#statesHalo")
+          .attr("filter")
+          ?.match(/blur\(([^)]+)\)/)?.[1]
+      ) || 0;
   }
 
   if (styleElement === "labels") {
@@ -329,10 +338,10 @@ function selectStyleElement() {
 
   if (styleElement === "ocean") {
     styleOcean.style.display = "block";
-    styleOceanFill.value = styleOceanFillOutput.value = oceanLayers.select("#oceanBase").attr("fill");
+    styleOceanFill.value = styleOceanFillOutput.value = d3.select("#oceanLayers").select("#oceanBase").attr("fill");
     styleOceanPattern.value = ensureEl("oceanicPattern").getAttribute("href");
     styleOceanPatternOpacity.value = ensureEl("oceanicPattern").getAttribute("opacity") || 1;
-    outlineLayers.value = oceanLayers.attr("layers");
+    outlineLayers.value = d3.select("#oceanLayers").attr("layers");
   }
 
   if (styleElement === "temperature") {
@@ -372,9 +381,9 @@ function selectStyleElement() {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 1;
-    emblemsStateSizeInput.value = emblems.select("#stateEmblems").attr("data-size") || 1;
-    emblemsProvinceSizeInput.value = emblems.select("#provinceEmblems").attr("data-size") || 1;
-    emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
+    emblemsStateSizeInput.value = d3.select("#emblems").select("#stateEmblems").attr("data-size") || 1;
+    emblemsProvinceSizeInput.value = d3.select("#emblems").select("#provinceEmblems").attr("data-size") || 1;
+    emblemsBurgSizeInput.value = d3.select("#emblems").select("#burgEmblems").attr("data-size") || 1;
   }
 
   if (styleElement === "goodsIcons") {
@@ -474,9 +483,10 @@ styleGroupSelect.addEventListener("change", selectStyleElement);
 function getEl() {
   const el = styleElementSelect.value;
   const g = styleGroupSelect.value;
-  if (g === el || g === "") return svg.select("#" + el);
-  if (el === "labels") return svg.select("#labels").select(`[data-group="${CSS.escape(g)}"]`);
-  else return svg.select("#" + el).select("#" + g);
+  const map = d3.select("#map");
+  if (g === el || g === "") return map.select("#" + el);
+  if (el === "labels") return map.select("#labels").select(`[data-group="${CSS.escape(g)}"]`);
+  else return map.select("#" + el).select("#" + g);
 }
 
 function updateLabelGroupInlineStyle(group) {
@@ -505,20 +515,15 @@ styleStrokeInput.addEventListener("input", function () {
   getEl().attr("stroke", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
-
-// measurers are rendered with baked-in sizes, so a style change requires a redraw
-function redrawMeasurersOnStyleChange() {
-  if (styleElementSelect.value === "ruler" && layerIsOn("toggleRulers")) drawMeasurers();
-}
 
 styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  redrawMeasurersOnStyleChange();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleLetterSpacingInput.addEventListener("input", e => {
@@ -529,13 +534,13 @@ styleLetterSpacingInput.addEventListener("input", e => {
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  redrawMeasurersOnStyleChange();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
 styleDisplayInput.addEventListener("change", function () {
@@ -549,7 +554,7 @@ styleOpacityInput.addEventListener("input", e => {
 });
 
 styleFilterInput.addEventListener("change", function () {
-  if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
+  if (styleGroupSelect.value === "ocean") return d3.select("#oceanLayers").attr("filter", this.value);
   getEl().attr("filter", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) {
@@ -563,8 +568,8 @@ styleTextureInput.addEventListener("change", function () {
 });
 
 function changeTexture(href) {
-  texture.attr("data-href", href);
-  texture.select("image").attr("href", href);
+  d3.select("#texture").attr("data-href", href);
+  d3.select("#texture").select("image").attr("href", href);
 }
 
 function updateTextureSelectValue(href) {
@@ -578,16 +583,16 @@ function updateTextureSelectValue(href) {
 }
 
 styleTextureShiftX.addEventListener("input", function () {
-  texture.attr("data-x", this.value);
-  texture
+  d3.select("#texture").attr("data-x", this.value);
+  d3.select("#texture")
     .select("image")
     .attr("x", this.value)
     .attr("width", graphWidth - this.valueAsNumber);
 });
 
 styleTextureShiftY.addEventListener("input", function () {
-  texture.attr("data-y", this.value);
-  texture
+  d3.select("#texture").attr("data-y", this.value);
+  d3.select("#texture")
     .select("image")
     .attr("y", this.value)
     .attr("height", graphHeight - this.valueAsNumber);
@@ -599,13 +604,13 @@ styleClippingInput.addEventListener("change", function () {
 
 styleGridType.addEventListener("change", function () {
   getEl().attr("type", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  Layers.draw("grid");
   calculateFriendlyGridSize();
 });
 
 styleGridScale.addEventListener("input", function () {
   getEl().attr("scale", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  Layers.draw("grid");
   calculateFriendlyGridSize();
 });
 
@@ -617,21 +622,21 @@ function calculateFriendlyGridSize() {
 
 styleGridShiftX.addEventListener("input", function () {
   getEl().attr("dx", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  Layers.draw("grid");
 });
 
 styleGridShiftY.addEventListener("input", function () {
   getEl().attr("dy", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  Layers.draw("grid");
 });
 
 styleRescaleMarkers.addEventListener("change", function () {
-  markers.attr("rescale", +this.checked);
+  d3.select("#markers").attr("rescale", +this.checked);
   invokeActiveZooming();
 });
 
 styleOceanFill.addEventListener("input", function () {
-  oceanLayers.select("rect").attr("fill", this.value);
+  d3.select("#oceanLayers").select("rect").attr("fill", this.value);
   styleOceanFillOutput.value = this.value;
 });
 
@@ -644,14 +649,13 @@ styleOceanPatternOpacity.addEventListener("input", e => {
 });
 
 outlineLayers.addEventListener("change", function () {
-  oceanLayers.selectAll("path").remove();
-  oceanLayers.attr("layers", this.value);
-  OceanLayers();
+  d3.select("#oceanLayers").attr("layers", this.value);
+  Layers.draw("ocean");
 });
 
 styleHeightmapScheme.addEventListener("change", function () {
   getEl().attr("scheme", this.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 openCreateHeightmapSchemeButton.addEventListener("click", function () {
@@ -752,7 +756,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 
     addCustomColorScheme(stops);
     getEl().attr("scheme", stops);
-    drawHeightmap();
+    Layers.draw("heightmap");
 
     handleClose();
   }
@@ -776,33 +780,33 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 styleHeightmapRenderOcean.addEventListener("change", e => {
   const checked = +e.target.checked;
   getEl().attr("data-render", checked);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapTerracing.addEventListener("input", e => {
   getEl().attr("terracing", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapSkip.addEventListener("input", e => {
   getEl().attr("skip", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapSimplification.addEventListener("input", e => {
   getEl().attr("relax", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleHeightmapCurve.addEventListener("change", e => {
   getEl().attr("curve", e.target.value);
-  drawHeightmap();
+  Layers.draw("heightmap");
 });
 
 styleReliefSet.addEventListener("change", e => {
   style.relief.set = e.target.value;
   Relief.changeSet(e.target.value);
-  drawRelief();
+  Layers.draw("relief");
 });
 
 styleReliefSize.addEventListener("change", e => {
@@ -812,36 +816,36 @@ styleReliefSize.addEventListener("change", e => {
   if (ratio === 1) return;
 
   Relief.changeSize(ratio);
-  drawRelief();
+  Layers.draw("relief");
 });
 
 // density defines the placement, so it cannot be applied without regenerating the icons
 styleReliefDensity.addEventListener("change", e => {
   style.relief.density = +e.target.value;
   Relief.generate();
-  drawRelief();
+  Layers.draw("relief");
 });
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
-  temperature.attr("fill-opacity", e.target.value);
+  d3.select("#temperature").attr("fill-opacity", e.target.value);
 });
 
 styleTemperatureFontSizeInput.addEventListener("input", e => {
-  temperature.attr("font-size", e.target.value + "px");
+  d3.select("#temperature").attr("font-size", e.target.value + "px");
 });
 
 styleTemperatureFillInput.addEventListener("input", e => {
-  temperature.attr("fill", e.target.value);
+  d3.select("#temperature").attr("fill", e.target.value);
   styleTemperatureFillOutput.value = e.target.value;
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
-  population.select("#rural").attr("stroke", e.target.value);
+  d3.select("#population").select("#rural").attr("stroke", e.target.value);
   stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
 stylePopulationUrbanStrokeInput.addEventListener("input", e => {
-  population.select("#urban").attr("stroke", e.target.value);
+  d3.select("#population").select("#urban").attr("stroke", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
@@ -867,21 +871,21 @@ styleCompassShiftY.addEventListener("input", shiftCompass);
 
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
-  compass.select("use").attr("transform", tr);
+  d3.select("#compass").select("use").attr("transform", tr);
 }
 
 styleLegendColItems.addEventListener("input", e => {
-  legend.select("#legendBox").attr("data-columns", e.target.value);
-  redrawLegend();
+  d3.select("#legend").select("#legendBox").attr("data-columns", e.target.value);
+  Layers.draw("legend");
 });
 
 styleLegendBack.addEventListener("input", e => {
   styleLegendBackOutput.value = e.target.value;
-  legend.select("#legendBox").attr("fill", e.target.value);
+  d3.select("#legend").select("#legendBox").attr("fill", e.target.value);
 });
 
 styleLegendOpacity.addEventListener("input", e => {
-  legend.select("#legendBox").attr("fill-opacity", e.target.value);
+  d3.select("#legend").select("#legendBox").attr("fill-opacity", e.target.value);
 });
 
 styleSelectFont.addEventListener("change", changeFont);
@@ -891,7 +895,7 @@ function changeFont() {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["font-family"] = family;
 
-  if (styleElementSelect.value === "legend") redrawLegend();
+  if (styleElementSelect.value === "legend") Layers.draw("legend");
 }
 
 styleShadowInput.addEventListener("input", function () {
@@ -967,18 +971,11 @@ function changeFontSize(el, size) {
     return;
   }
 
-  const getSizeOnScale = element => {
-    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
-
-    // other has the same size
-    return size;
-  };
-
-  const scaleSize = getSizeOnScale(styleElementSelect.value);
+  const scaleSize = styleElementSelect.value === "coordinates" ? rn(size / scale ** 0.8, 2) : size;
   el.attr("data-size", size).attr("font-size", scaleSize);
 
-  if (styleElementSelect.value === "legend") redrawLegend();
-  redrawMeasurersOnStyleChange();
+  if (styleElementSelect.value === "legend") Layers.draw("legend");
+  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 }
 
 styleFontShiftX.addEventListener("input", e => {
@@ -1000,92 +997,90 @@ styleFontShiftY.addEventListener("input", e => {
 });
 
 styleStatesBodyOpacity.addEventListener("input", e => {
-  statesBody.attr("opacity", e.target.value);
+  d3.select("#statesBody").attr("opacity", e.target.value);
 });
 
 styleStatesBodyFilter.addEventListener("change", function () {
-  statesBody.attr("filter", this.value);
+  d3.select("#statesBody").attr("filter", this.value);
 });
 
 styleStatesHaloWidth.addEventListener("input", e => {
   const value = e.target.value;
-  statesHalo.attr("data-width", value).attr("stroke-width", value);
+  d3.select("#statesHalo").attr("data-width", value).attr("stroke-width", value);
 });
 
 styleStatesHaloOpacity.addEventListener("input", e => {
-  statesHalo.attr("opacity", e.target.value);
+  d3.select("#statesHalo").attr("opacity", e.target.value);
 });
 
 styleStatesHaloBlur.addEventListener("input", e => {
   const value = Number(e.target.value);
   const blur = value > 0 ? `blur(${value}px)` : null;
-  statesHalo.attr("filter", blur);
+  d3.select("#statesHalo").attr("filter", blur);
 });
 
 styleArmiesFillOpacity.addEventListener("input", e => {
-  armies.attr("fill-opacity", e.target.value);
+  d3.select("#armies").attr("fill-opacity", e.target.value);
 });
 
 styleArmiesSize.addEventListener("input", e => {
   const value = Number(e.target.value);
-  armies.attr("box-size", value).attr("font-size", value * 2);
+  d3.select("#armies")
+    .attr("box-size", value)
+    .attr("font-size", value * 2);
 
-  armies.selectAll("g").remove(); // clear armies layer
-  pack.states.forEach(s => {
-    if (!s.i || s.removed || !s.military.length) return;
-    drawRegiments(s.military, s.i);
-  });
+  Layers.draw("military");
 });
 
 emblemsStateSizeInput.addEventListener("change", e => {
-  emblems.select("#stateEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  d3.select("#emblems").select("#stateEmblems").attr("data-size", e.target.value);
+  Layers.draw("emblems");
 });
 
 emblemsProvinceSizeInput.addEventListener("change", e => {
-  emblems.select("#provinceEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  d3.select("#emblems").select("#provinceEmblems").attr("data-size", e.target.value);
+  Layers.draw("emblems");
 });
 
 emblemsBurgSizeInput.addEventListener("change", e => {
-  emblems.select("#burgEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  d3.select("#emblems").select("#burgEmblems").attr("data-size", e.target.value);
+  Layers.draw("emblems");
 });
 
 styleGoodsCircle.addEventListener("change", function () {
-  goods.select("#goodsIcons").attr("data-circle", +this.checked);
-  drawGoods();
+  d3.select("#goods").select("#goodsIcons").attr("data-circle", +this.checked);
+  Layers.draw("goods");
 });
 
 styleGoodsSize.addEventListener("change", function () {
-  goods.select("#goodsIcons").attr("data-size", this.value);
-  drawGoods();
+  d3.select("#goods").select("#goodsIcons").attr("data-size", this.value);
+  Layers.draw("goods");
 });
 
 styleGoodsBurgsSize.addEventListener("change", function () {
-  goods.select("#goodsBurgs").attr("data-size", this.value);
-  drawGoods();
+  d3.select("#goods").select("#goodsBurgs").attr("data-size", this.value);
+  Layers.draw("goods");
 });
 
 styleMarketsLayerFillOpacity.addEventListener("input", e => {
-  markets.attr("fill-opacity", e.target.value);
+  d3.select("#markets").attr("fill-opacity", e.target.value);
 });
 
 styleMarketsSize.addEventListener("change", function () {
-  markets.attr("data-size", this.value);
-  drawMarketsLayer();
+  d3.select("#markets").attr("data-size", this.value);
+  Layers.draw("markets");
 });
 
 styleMarketsIconSize.addEventListener("change", function () {
-  markets.attr("font-size", this.value);
-  drawMarketsLayer();
+  d3.select("#markets").attr("font-size", this.value);
+  Layers.draw("markets");
 });
 
 styleMarketsIcon.addEventListener("click", function () {
-  window.Controllers.IconSelector.open(markets.attr("data-icon") || "⚖️", value => {
-    markets.attr("data-icon", value);
+  window.Controllers.IconSelector.open(d3.select("#markets").attr("data-icon") || "⚖️", value => {
+    d3.select("#markets").attr("data-icon", value);
     this.innerHTML = value;
-    drawMarketsLayer();
+    Layers.draw("markets");
   });
 });
 
@@ -1200,16 +1195,16 @@ styleVignetteBlur.addEventListener("input", e => {
 });
 
 styleScaleBar.addEventListener("input", function (event) {
-  const scaleBarBack = scaleBar.select("#scaleBarBack");
+  const scaleBarBack = d3.select("#scaleBar").select("#scaleBarBack");
   if (!scaleBarBack.size()) return;
 
   const { id, value } = event.target;
 
-  if (id === "styleScaleBarSize") scaleBar.attr("data-bar-size", value);
-  else if (id === "styleScaleBarFontSize") scaleBar.attr("font-size", value);
-  else if (id === "styleScaleBarPositionX") scaleBar.attr("data-x", value);
-  else if (id === "styleScaleBarPositionY") scaleBar.attr("data-y", value);
-  else if (id === "styleScaleBarLabel") scaleBar.attr("data-label", value);
+  if (id === "styleScaleBarSize") d3.select("#scaleBar").attr("data-bar-size", value);
+  else if (id === "styleScaleBarFontSize") d3.select("#scaleBar").attr("font-size", value);
+  else if (id === "styleScaleBarPositionX") d3.select("#scaleBar").attr("data-x", value);
+  else if (id === "styleScaleBarPositionY") d3.select("#scaleBar").attr("data-y", value);
+  else if (id === "styleScaleBarLabel") d3.select("#scaleBar").attr("data-label", value);
   else if (id === "styleScaleBarBackgroundOpacity") scaleBarBack.attr("opacity", value);
   else if (id === "styleScaleBarBackgroundFill") scaleBarBack.attr("fill", value);
   else if (id === "styleScaleBarBackgroundStroke") scaleBarBack.attr("stroke", value);
@@ -1219,22 +1214,7 @@ styleScaleBar.addEventListener("input", function (event) {
   else if (id === "styleScaleBarBackgroundPaddingRight") scaleBarBack.attr("data-right", value);
   else if (id === "styleScaleBarBackgroundPaddingBottom") scaleBarBack.attr("data-bottom", value);
   else if (id === "styleScaleBarBackgroundPaddingLeft") scaleBarBack.attr("data-left", value);
-
-  if (
-    [
-      "styleScaleBarSize",
-      "styleScaleBarPositionX",
-      "styleScaleBarPositionY",
-      "styleScaleBarLabel",
-      "styleScaleBarBackgroundPaddingLeft",
-      "styleScaleBarBackgroundPaddingTop",
-      "styleScaleBarBackgroundPaddingRight",
-      "styleScaleBarBackgroundPaddingBottom"
-    ].includes(id)
-  ) {
-    drawScaleBar(scaleBar, scale);
-    fitScaleBar(scaleBar, svgWidth, svgHeight);
-  }
+  Layers.draw("scaleBar");
 });
 
 // GLOBAL FILTERS
@@ -1242,10 +1222,12 @@ mapFilters.addEventListener("click", applyMapFilter);
 function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;
-  svg.attr("data-filter", null).attr("filter", null);
+  d3.select("#map").attr("data-filter", null).attr("filter", null);
   if (button.classList.contains("pressed")) return button.classList.remove("pressed");
 
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
-  svg.attr("data-filter", button.id).attr("filter", "url(#filter-" + button.id + ")");
+  d3.select("#map")
+    .attr("data-filter", button.id)
+    .attr("filter", "url(#filter-" + button.id + ")");
 }

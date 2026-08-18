@@ -1,10 +1,7 @@
 import { select } from "d3";
-import { isCtrlClick } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { normalize, rn } from "../utils";
 import { getPackPolygon } from "../utils/graphUtils";
-
-const SUBGROUPS = ["goodsCells", "goodsIcons", "goodsBurgs"] as const;
 
 const PLATE_ICON = 3;
 const PLATE_FONT = 3.5;
@@ -17,31 +14,13 @@ const PLATE_RX = 1;
 const PLATE_FILL = "#f5f5f5";
 const DEFAULT_SIZE = 6;
 
-export function toggleGoods(event?: MouseEvent) {
-  if (!layerIsOn("toggleGoods")) {
-    turnButtonOn("toggleGoods");
-    drawGoods();
-    if (event && isCtrlClick(event)) editStyle("goodsIcons");
-  } else {
-    if (event && isCtrlClick(event)) return editStyle("goodsIcons");
-    SUBGROUPS.forEach(id => void select("#goods").select(`#${id}`).html(""));
-    turnButtonOff("toggleGoods");
-  }
-}
-
 export function drawGoods() {
   TIME && console.time("drawGoods");
-
-  for (const id of SUBGROUPS) {
-    if (select("#goods").select(`#${id}`).empty()) select("#goods").append("g").attr("id", id);
-  }
 
   const visible = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
   select("#goods").select("#goodsCells").html(buildGoodsCellsContent(visible));
   select("#goods").select("#goodsIcons").html(buildGoodsIconsContent(visible));
   select("#goods").select("#goodsBurgs").html(buildGoodsBurgsContent(visible));
-
-  select("#goods").style("display", null);
   TIME && console.timeEnd("drawGoods");
 }
 
@@ -167,13 +146,3 @@ function buildGoodsBurgsContent(displayedGoods: Set<number>): string {
   }
   return html;
 }
-
-declare global {
-  interface Window {
-    toggleGoods: typeof toggleGoods;
-    drawGoods: typeof drawGoods;
-  }
-}
-
-window.toggleGoods = toggleGoods;
-window.drawGoods = drawGoods;

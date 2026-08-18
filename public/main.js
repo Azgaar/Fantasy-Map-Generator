@@ -30,111 +30,13 @@ if (PRODUCTION && "serviceWorker" in navigator) {
   );
 }
 
-// append svg layers (in default order)
-let svg = d3.select("#map");
-let defs = svg.select("#deftemp");
-let viewbox = svg.select("#viewbox");
-let scaleBar = svg.select("#scaleBar");
-let legend = svg.append("g").attr("id", "legend");
-let ocean = viewbox.append("g").attr("id", "ocean");
-let oceanLayers = ocean.append("g").attr("id", "oceanLayers");
-let oceanPattern = ocean.append("g").attr("id", "oceanPattern");
-let landmass = viewbox.append("g").attr("id", "landmass");
-let texture = viewbox.append("g").attr("id", "texture");
-let terrs = viewbox.append("g").attr("id", "terrs");
-let lakes = viewbox.append("g").attr("id", "lakes");
-let biomes = viewbox.append("g").attr("id", "biomes");
-let cells = viewbox.append("g").attr("id", "cells");
-let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
-let coordinates = viewbox.append("g").attr("id", "coordinates");
-let compass = viewbox.append("g").attr("id", "compass").style("display", "none");
-let rivers = viewbox.append("g").attr("id", "rivers");
-let terrain = viewbox.append("g").attr("id", "terrain").style("display", "none");
-let relig = viewbox.append("g").attr("id", "relig");
-let cults = viewbox.append("g").attr("id", "cults");
-let regions = viewbox.append("g").attr("id", "regions");
-let statesBody = regions.append("g").attr("id", "statesBody");
-let statesHalo = regions.append("g").attr("id", "statesHalo");
-let provs = viewbox.append("g").attr("id", "provs");
-let zones = viewbox.append("g").attr("id", "zones");
-let borders = viewbox.append("g").attr("id", "borders");
-let stateBorders = borders.append("g").attr("id", "stateBorders");
-let provinceBorders = borders.append("g").attr("id", "provinceBorders");
-let routes = viewbox.append("g").attr("id", "routes");
-let roads = routes.append("g").attr("id", "roads");
-let trails = routes.append("g").attr("id", "trails");
-let searoutes = routes.append("g").attr("id", "searoutes");
-let temperature = viewbox.append("g").attr("id", "temperature");
-let coastline = viewbox.append("g").attr("id", "coastline");
-let ice = viewbox.append("g").attr("id", "ice");
-let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
-let markets = viewbox.append("g").attr("id", "markets");
-let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation").style("display", "none");
-let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
-let population = viewbox.append("g").attr("id", "population");
-let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
-let icons = viewbox.append("g").attr("id", "icons");
-let labels = viewbox.append("g").attr("id", "labels").attr("font-size", "100px");
-let burgIcons = icons.append("g").attr("id", "burgIcons");
-let anchors = icons.append("g").attr("id", "anchors");
-let armies = viewbox.append("g").attr("id", "armies");
-let markers = viewbox.append("g").attr("id", "markers");
-let fogging = viewbox
-  .append("g")
-  .attr("id", "fogging-cont")
-  .attr("mask", "url(#fog)")
-  .append("g")
-  .attr("id", "fogging")
-  .style("display", "none");
-let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
-var debug = viewbox.append("g").attr("id", "debug");
-
-lakes.append("g").attr("id", "freshwater");
-lakes.append("g").attr("id", "salt");
-lakes.append("g").attr("id", "sinkhole");
-lakes.append("g").attr("id", "frozen");
-lakes.append("g").attr("id", "lava");
-lakes.append("g").attr("id", "dry");
-
-coastline.append("g").attr("id", "sea_island");
-coastline.append("g").attr("id", "lake_island");
-
-terrs.append("g").attr("id", "oceanHeights");
-terrs.append("g").attr("id", "landHeights");
-
-// population groups
-population.append("g").attr("id", "rural");
-population.append("g").attr("id", "urban");
-
-// goods groups
-goods.append("g").attr("id", "goodsCells");
-goods.append("g").attr("id", "goodsIcons");
-goods.append("g").attr("id", "goodsBurgs");
-
-// emblem groups
-emblems.append("g").attr("id", "burgEmblems");
-emblems.append("g").attr("id", "provinceEmblems");
-emblems.append("g").attr("id", "stateEmblems");
-
-// compass
-compass.append("use").attr("xlink:href", "#defs-compass-rose");
-
-// fogging
-fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-fogging
-  .append("rect")
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("width", "100%")
-  .attr("height", "100%")
-  .attr("fill", "#e8f0f6")
-  .attr("filter", "url(#splotch)");
+Layers.init(); // create the svg layer groups
 
 // assign events separately as not a viewbox child
-scaleBar
+d3.select("#scaleBar")
   .on("mousemove", () => tip("Click to open Units Editor"))
   .on("click", () => window.Controllers.UnitsEditor.open());
-legend
+d3.select("#legend")
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
 
@@ -197,15 +99,14 @@ var graphHeight = +mapHeightInput.value;
 let svgWidth = graphWidth;
 let svgHeight = graphHeight;
 
-landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanPattern
+d3.select("#oceanPattern")
   .append("rect")
   .attr("fill", "url(#oceanic)")
   .attr("x", 0)
   .attr("y", 0)
   .attr("width", graphWidth)
   .attr("height", graphHeight);
-oceanLayers
+d3.select("#oceanLayers")
   .append("rect")
   .attr("id", "oceanBase")
   .attr("x", 0)
@@ -302,7 +203,7 @@ async function generateMapOnLoad() {
   await applyStyleOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
   applyLayersPreset(); // apply saved layers preset and reder layers
-  drawLayers();
+  Layers.drawAll();
   fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   toggleAssistant();
@@ -446,7 +347,7 @@ function findBurgForMFCG(params) {
   }
   if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
 
-  const label = labels.select("[data-label-type='burg'][data-id='" + burgId + "']");
+  const label = d3.select("#labels").select("[data-label-type='burg'][data-id='" + burgId + "']");
   if (label.size()) {
     label
       .text(b.name)
@@ -535,7 +436,6 @@ async function generate(options) {
     addLakesInDeepDepressions();
     openNearSeaLakes();
 
-    OceanLayers();
     defineMapSize();
     calculateMapCoordinates();
     calculateTemperatures();
@@ -581,8 +481,6 @@ async function generate(options) {
     Zones.generate();
 
     AddedLabels.initiate();
-
-    drawScaleBar(scaleBar, scale);
     Names.getMapName();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
@@ -863,7 +761,7 @@ function calculateTemperatures() {
 // simplest precipitation model
 function generatePrecipitation() {
   TIME && console.time("generatePrecipitation");
-  prec.selectAll("*").remove();
+  d3.select("#prec").selectAll("*").remove();
   const { cells, cellsX, cellsY } = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
@@ -976,7 +874,8 @@ function generatePrecipitation() {
   }
 
   void (function drawWindDirection() {
-    const wind = prec.append("g").attr("id", "wind");
+    d3.select("#prec").select("#wind").remove(); // the group survives layer erasure, so replace it
+    const wind = d3.select("#prec").append("g").attr("id", "wind");
 
     d3.range(0, 6).forEach(function (t) {
       if (westerly.length > 1) {
@@ -1184,7 +1083,7 @@ const regenerateMap = debounce(async function (config) {
   resetZoom(1000);
   undraw();
   await generate(config);
-  drawLayers();
+  Layers.drawAll();
   if (options.threeD.isOn) window.Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 
@@ -1195,9 +1094,7 @@ const regenerateMap = debounce(async function (config) {
 
 // clear the map
 function undraw() {
-  viewbox
-    .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
-    .remove();
+  Layers.eraseAll();
   ensureEl("deftemp")
     .querySelectorAll("path, clipPath, svg")
     .forEach(el => el.remove());

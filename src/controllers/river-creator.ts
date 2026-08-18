@@ -1,5 +1,6 @@
 import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -8,13 +9,15 @@ import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
 
+let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
+
 function open(): void {
   if (customization) return;
   closeDialogs();
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  Layers.show("rivers");
 
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  isCellsLayerForced = !Layers.isOn("cells");
+  Layers.show("cells");
 
   tip("Click to add river point, click again to remove", true);
   select("#debug").append("g").attr("id", "controlCells");
@@ -165,9 +168,8 @@ function closeRiverCreator(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
 
-  const forced = +ensureEl("toggleCells").dataset.forced!;
-  ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (isCellsLayerForced) Layers.hide("cells");
+  isCellsLayerForced = false;
 
   destroyDialog("riverCreator");
 }

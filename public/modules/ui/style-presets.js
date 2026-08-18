@@ -190,16 +190,7 @@ function applyStyleWithUiRefresh(style) {
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
-  drawScaleBar(scaleBar, scale);
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
-  if (layerIsOn("toggleHeight")) drawHeightmap();
-  if (legend.selectAll("*").size() && window.redrawLegend) redrawLegend();
-  oceanLayers.selectAll("path").remove();
-  OceanLayers();
-  if (layerIsOn("toggleRulers")) drawMeasurers();
-  drawRelief();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  drawLabels();
+  Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
 
   invokeActiveZooming();
   setPresetRemoveButtonVisibiliy();
@@ -549,7 +540,7 @@ function removeStylePreset() {
 }
 
 function updateMapFilter() {
-  const filter = svg.attr("data-filter");
+  const filter = d3.select("#map").attr("data-filter");
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   if (!filter) return;
   mapFilters.querySelector("#" + filter).classList.add("pressed");

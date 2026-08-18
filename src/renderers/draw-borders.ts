@@ -1,9 +1,5 @@
 import { select } from "d3";
 
-declare global {
-  var drawBorders: () => void;
-}
-
 const bordersRenderer = () => {
   TIME && console.time("drawBorders");
   const { cells, vertices } = pack;
@@ -163,7 +159,5 @@ const bordersRenderer = () => {
 
   TIME && console.timeEnd("drawBorders");
 };
-
-window.drawBorders = bordersRenderer;
 
 export { bordersRenderer as drawBorders };

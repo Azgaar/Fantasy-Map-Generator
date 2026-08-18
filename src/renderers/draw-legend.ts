@@ -128,6 +128,5 @@ const getBBox = (legend: ReturnType<typeof getLegend>) => (legend.node() as SVGG
 
 export const Legend = { draw: drawLegend, redraw: redrawLegend, fit: fitLegendBox, clear: clearLegend };
 
-window.redrawLegend = redrawLegend;
 window.fitLegendBox = fitLegendBox;
 window.clearLegend = clearLegend;

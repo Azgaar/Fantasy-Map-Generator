@@ -10,6 +10,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
@@ -36,9 +37,7 @@ const militaryTable = initEditorTable<MilitaryRow>({
 function open(): void {
   if (customization) return;
   closeDialogs("#militaryOverview, .stable");
-  if (!layerIsOn("toggleStates")) toggleStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  Layers.show("states", "borders", "military");
 
   renderDialog();
   militaryTable.reset();
@@ -314,7 +313,7 @@ function stateHighlightOn(event: Event): void {
   if (customization || !state) return;
   select<SVGGElement, unknown>(`#armies > g > g#army${state}`).transition().duration(2000).style("fill", "#ff0000");
 
-  if (!layerIsOn("toggleStates")) return;
+  if (!Layers.isOn("states")) return;
   const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
 
   const path = select<SVGGElement, unknown>("#debug")
@@ -667,7 +666,7 @@ function militaryRecalculate(): void {
       Recalculate: function () {
         $(this).dialog("close");
         Military.generate();
-        if (layerIsOn("toggleMilitary")) drawMilitary();
+        Layers.draw("military");
         refreshMilitaryOverview();
       },
       Cancel: function () {

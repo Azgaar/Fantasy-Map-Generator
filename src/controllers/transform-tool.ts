@@ -1,4 +1,5 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { Resample } from "@/generators/resample";
 import { ensureEl, rn } from "../utils";
 
@@ -203,7 +204,7 @@ function transformMap(): void {
   undraw();
   Resample.process({ projection, inverse, scale: 1 });
 
-  drawLayers();
+  Layers.drawAll();
 
   INFO && console.groupEnd();
 }
