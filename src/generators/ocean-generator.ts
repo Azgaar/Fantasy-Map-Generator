@@ -11,23 +11,10 @@ export interface OceanOutline {
 }
 
 class OceanModule {
-  /** read the distances the `layers` attribute asks for: a preset list, a random selection, or none */
+  /** read the distances the `layers` attribute asks for: a preset list or none */
   getLimits(outline: string): number[] {
     if (!outline || outline === "none") return [];
-    if (outline !== "random") return outline.split(",").map(Number);
-
-    // thin the rings out with the distance from the coast: the further out, the likelier a gap
-    const limits: number[] = [];
-    let odd = 0.2;
-    for (let t = -9; t < 0; t++) {
-      if (!P(odd)) {
-        odd *= 2;
-        continue;
-      }
-      odd = 0.2;
-      limits.push(t);
-    }
-    return limits;
+    return outline.split(",").map(Number);
   }
 
   /** trace the ocean rings for the requested distances, clipped to the map */
