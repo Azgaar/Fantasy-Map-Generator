@@ -34,7 +34,7 @@ vi.mock("d3", async importOriginal => {
   return { ...actual, timeout: (callback: () => void) => void callback() };
 });
 
-import { drawEmblems, redrawEmblem, removeEmblem, renderEmblems } from "./draw-emblems";
+import { drawEmblems, redrawEmblem, removeEmblem, renderEmblemDefinitions, renderEmblems } from "./draw-emblems";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `
@@ -153,6 +153,18 @@ describe("viewport emblem rendering", () => {
     expect(document.getElementById("provinceCOA1")).toBeNull();
   });
 
+  it("removes definitions for entities omitted by a full redraw", () => {
+    document.querySelector("#coas")!.innerHTML = '<g id="stateCOA1"></g><g id="stateCOA2"></g>';
+    drawEmblems();
+    expect(document.getElementById("stateCOA1")).not.toBeNull();
+
+    pack.states[1] = { i: 1, removed: true } as (typeof pack.states)[number];
+    drawEmblems();
+
+    expect(document.getElementById("stateCOA1")).toBeNull();
+    expect(document.getElementById("stateCOA2")).not.toBeNull();
+  });
+
   it("removes an emblem from the viewport scene through the renderer API", () => {
     drawEmblems();
 
@@ -160,6 +172,15 @@ describe("viewport emblem rendering", () => {
     renderEmblems();
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")).toBeNull();
+  });
+
+  it("resolves export definitions from pack data when a viewport scene is not ready", async () => {
+    pack.states.push({ i: 3, center: 1, coa: { shield: "heater", t1: "gules" } } as (typeof pack.states)[number]);
+    document.querySelector("#stateEmblems")!.insertAdjacentHTML("beforeend", '<use data-i="3" />');
+
+    await renderEmblemDefinitions(document);
+
+    expect(EmblemRenderer.trigger).toHaveBeenCalledWith("stateCOA3", pack.states[3].coa);
   });
 
   it("persists the moved position on the COA belonging to the dragged use", () => {

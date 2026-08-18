@@ -99,7 +99,15 @@ export function drawEmblems(): void {
     for (let i = 0; i < ticks; i++) simulation.tick();
 
     for (const type of TYPES) ensureEl(GROUPS[type]).setAttribute("font-size", String(sizes[type]));
-    for (const type of TYPES) scenes[type].replace(nodes.filter(node => node.type === type));
+    for (const type of TYPES) {
+      const next = nodes.filter(node => node.type === type);
+      const scene = scenes[type];
+      const nextIds = new Set(next.map(node => node.id));
+      for (const item of scene.values()) {
+        if (!nextIds.has(item.id)) EmblemRenderer.remove(item.id);
+      }
+      scene.replace(next);
+    }
     layer.render();
     TIME && console.timeEnd("drawEmblems");
   });
@@ -140,7 +148,11 @@ export async function renderEmblemDefinitions(root: ParentNode): Promise<void> {
     uses.map(use => {
       const type = getType(use.parentElement?.id);
       const i = Number(use.dataset.i);
-      return type === null ? undefined : renderDefinition(scenes[type].get(getId(type, i)));
+      if (type === null) return undefined;
+      const id = getId(type, i);
+      const sceneItem = scenes[type].get(id);
+      const entity = getEntity(type, i);
+      return renderDefinition(id, sceneItem?.coa ?? entity?.coa);
     })
   );
 }
@@ -210,30 +222,30 @@ function materialize(
   use.setAttribute("width", `${item.size}em`);
   use.setAttribute("height", `${item.size}em`);
   use.setAttribute("href", `#${item.id}`);
-  if (renderCoa) void renderDefinition(item);
+  if (renderCoa) void renderDefinition(item.id, item.coa);
 }
 
-function renderDefinition(item: EmblemData | undefined): Promise<unknown> | undefined {
-  if (!item || item.coa.custom) return;
-  return EmblemRenderer.trigger(item.id, item.coa);
+function renderDefinition(id: string, emblem: Emblem | undefined): Promise<unknown> | undefined {
+  if (!emblem || emblem.custom) return;
+  return EmblemRenderer.trigger(id, emblem);
 }
 
 function getNode(type: EmblemType, entity: Burg | Province | State): EmblemData {
-  const coa = entity.coa;
-  if (!coa) throw new Error(`Cannot render ${getId(type, entity.i)} without a COA`);
-  const size = coa.size || 1;
+  const emblem = entity.coa;
+  if (!emblem) throw new Error(`Cannot render ${getId(type, entity.i)} without a COA`);
+  const size = emblem.size || 1;
   const [poleX, poleY] = getPole(type, entity);
   return {
     id: getId(type, entity.i),
     type,
     i: entity.i,
-    x: coa.x ?? poleX,
-    y: coa.y ?? poleY,
-    fx: coa.x,
-    fy: coa.y,
+    x: emblem.x ?? poleX,
+    y: emblem.y ?? poleY,
+    fx: emblem.x,
+    fy: emblem.y,
     size,
     shift: (sizes[type] * size) / 2,
-    coa
+    coa: emblem
   };
 }
 
