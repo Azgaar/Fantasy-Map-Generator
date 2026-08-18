@@ -9,6 +9,18 @@ beforeEach(() => {
 });
 
 describe("v1.144 layer id migration", () => {
+  it("clears legacy fogging state", () => {
+    document.body.innerHTML = /* html */ `<svg id="map">
+      <defs id="deftemp"><mask id="fog"><rect></rect><path id="focusState1"></path></mask></defs>
+      <g id="viewbox"><g id="fogging-cont"><g id="fogging"><rect></rect></g></g></g>
+    </svg>`;
+
+    resolveVersionConflicts("1.143.0", []);
+
+    expect(document.querySelectorAll("#fog path")).toHaveLength(0);
+    expect(document.querySelectorAll("#fogging rect")).toHaveLength(0);
+  });
+
   it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
     globalThis.options = {
       labels: {

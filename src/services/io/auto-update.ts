@@ -7,6 +7,7 @@ import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
+import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -1562,6 +1563,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
     // v1.144.0 moved the layers state into data[50]
     data[50] = JSON.stringify(recoverLayersState());
+    if (findEl("fog") && findEl("fogging")) unfog();
 
     // remove href from emblems, to trigger rendering on load
     select("#emblems").selectAll("use").attr("href", null);

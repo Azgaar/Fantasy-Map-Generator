@@ -629,7 +629,10 @@ class ReligionsModule {
     const namedReligions = this.specifyReligions([...folkReligions, ...organizedReligions]);
     const indexedReligions = this.combineReligions(namedReligions, lockedReligions);
     const religionIds = this.expandReligions(indexedReligions);
-    const religions = this.defineOrigins(religionIds, indexedReligions);
+    const baseReligions = this.defineOrigins(religionIds, indexedReligions);
+    const heresies = this.generateHeresies(baseReligions, religionIds);
+    const religions = [...baseReligions, ...heresies];
+    this.expandHeresies(religions, religionIds, heresies);
 
     pack.religions = religions;
     pack.cells.religion = religionIds;
@@ -652,7 +655,7 @@ class ReligionsModule {
 
   private generateOrganizedReligions(desiredReligionNumber: number, lockedReligions: Religion[]): ReligionBase[] {
     const cells = pack.cells;
-    const lockedReligionCount = lockedReligions.filter(({ type }) => type !== "Folk").length || 0;
+    const lockedReligionCount = lockedReligions.filter(({ type }) => type === "Organized" || type === "Cult").length;
     const requiredReligionsNumber = desiredReligionNumber - lockedReligionCount;
     if (requiredReligionsNumber < 1) return [];
 
@@ -660,13 +663,11 @@ class ReligionsModule {
     const religionCores = placeReligions();
 
     const cultsCount = Math.floor((rand(1, 4) / 10) * religionCores.length); // 10-40%
-    const heresiesCount = Math.floor((rand(0, 3) / 10) * religionCores.length); // 0-30%
-    const organizedCount = religionCores.length - cultsCount - heresiesCount;
+    const organizedCount = religionCores.length - cultsCount;
 
-    const getType = (index: number): "Organized" | "Cult" | "Heresy" => {
+    const getType = (index: number): "Organized" | "Cult" => {
       if (index < organizedCount) return "Organized";
-      if (index < organizedCount + cultsCount) return "Cult";
-      return "Heresy";
+      return "Cult";
     };
 
     return religionCores.map((cellId, index) => {
@@ -757,10 +758,11 @@ class ReligionsModule {
   private combineReligions(namedReligions: NamedReligion[], lockedReligions: Religion[]): Religion[] {
     const indexedReligions: Religion[] = [{ name: "No religion", i: 0 } as Religion];
 
-    const { lockedReligionQueue, highestLockedIndex, codes, numberLockedFolk } = parseLockedReligions();
+    const { lockedReligionQueue, reservedOriginIds, highestReservedIndex, codes, numberLockedFolk } =
+      parseLockedReligions();
     const maxIndex = Math.max(
-      highestLockedIndex,
-      namedReligions.length + lockedReligions.length + 1 - numberLockedFolk
+      highestReservedIndex + 1,
+      namedReligions.length + lockedReligions.length + reservedOriginIds.size + 1 - numberLockedFolk
     );
 
     for (let index = 1, progress = 0; index < maxIndex; index = indexedReligions.length) {
@@ -768,6 +770,18 @@ class ReligionsModule {
       if (index === lockedReligionQueue[0]?.i) {
         const nextReligion = lockedReligionQueue.shift()!;
         indexedReligions.push(nextReligion);
+        continue;
+      }
+
+      // keep origin IDs referenced by locked religions from being rebound to a new religion
+      if (reservedOriginIds.has(index)) {
+        indexedReligions.push({
+          i: index,
+          type: "Folk",
+          culture: 0,
+          name: "Removed religion",
+          removed: true
+        } as Religion);
         continue;
       }
 
@@ -806,22 +820,22 @@ class ReligionsModule {
 
     function parseLockedReligions() {
       // copy and sort the locked religions list
-      const lockedReligionQueue = lockedReligions
-        .map(religion => {
-          // and filter their origins to locked religions
-          let newOrigin = religion.origins!.filter(n => lockedReligions.some(({ i: index }) => index === n));
-          if (newOrigin.length === 0) newOrigin = [0];
-          return { ...religion, origins: newOrigin };
-        })
-        .sort((a, b) => a.i - b.i);
+      const lockedReligionQueue = lockedReligions.map(religion => ({ ...religion })).sort((a, b) => a.i - b.i);
 
-      const highestLockedIndex = Math.max(...lockedReligions.map(r => r.i), 0);
+      const lockedReligionIds = new Set(lockedReligions.map(religion => religion.i));
+      const reservedOriginIds = new Set(
+        lockedReligions
+          .flatMap(religion => religion.origins ?? [])
+          .filter(originId => originId > 0 && !lockedReligionIds.has(originId))
+      );
+      const highestReservedIndex = Math.max(...lockedReligionIds, ...reservedOriginIds, 0);
       const codes = lockedReligions.length > 0 ? lockedReligions.map(r => r.code!) : [];
       const numberLockedFolk = lockedReligions.filter(({ type }) => type === "Folk").length;
 
       return {
         lockedReligionQueue,
-        highestLockedIndex,
+        reservedOriginIds,
+        highestReservedIndex,
         codes,
         numberLockedFolk
       };
@@ -847,27 +861,109 @@ class ReligionsModule {
   private defineOrigins(religionIds: Uint16Array, indexedReligions: Religion[]): Religion[] {
     const religionOriginsParamsMap: Record<string, { clusterSize: number; maxReligions: number }> = {
       Organized: { clusterSize: 100, maxReligions: 2 },
-      Cult: { clusterSize: 50, maxReligions: 3 },
-      Heresy: { clusterSize: 50, maxReligions: 4 }
+      Cult: { clusterSize: 50, maxReligions: 3 }
     };
 
-    const origins = indexedReligions.map(({ i, type, culture: cultureId, expansion, center }) => {
-      if (i === 0) return null; // no religion
-      if (type === "Folk") return [0]; // folk religions originate from its parent culture only
+    const religions = [...indexedReligions];
 
-      const folkReligion = indexedReligions.find(({ culture, type }) => type === "Folk" && culture === cultureId);
+    for (const religion of indexedReligions) {
+      const { i, type, culture: cultureId, expansion, center } = religion;
+      if (i === 0) {
+        religions[i] = { ...religion, origins: null }; // no religion
+        continue;
+      }
+      if (religion.lock || type === "Heresy") continue;
+      if (type === "Folk") {
+        religions[i] = { ...religion, origins: [0] }; // folk religions originate from its parent culture only
+        continue;
+      }
+
+      const folkReligion = religions.find(({ culture, type }) => type === "Folk" && culture === cultureId);
       const isFolkBased = folkReligion && cultureId && expansion === "culture" && each(2)(center);
-      if (isFolkBased) return [folkReligion.i];
+      if (isFolkBased) {
+        religions[i] = { ...religion, origins: [folkReligion.i] };
+        continue;
+      }
 
       const { clusterSize, maxReligions } = religionOriginsParamsMap[type];
       const fallbackOrigin = folkReligion?.i || 0;
-      return this.getReligionsInRadius(pack.cells.c, center, religionIds, i, clusterSize, maxReligions, fallbackOrigin);
-    });
+      const origins = this.getReligionsInRadius(
+        pack.cells.c,
+        center,
+        religionIds,
+        i,
+        clusterSize,
+        maxReligions,
+        fallbackOrigin,
+        religions
+      );
+      religions[i] = { ...religion, origins };
+    }
 
-    return indexedReligions.map((religion, index) => ({
-      ...religion,
-      origins: origins[index]
-    }));
+    return religions;
+  }
+
+  private generateHeresies(religions: Religion[], religionIds: Uint16Array): Religion[] {
+    const organizedReligions = religions.filter(
+      religion =>
+        religion.type === "Organized" && !religion.lock && !religion.removed && (religion.expansionism ?? 0) >= 3
+    );
+    if (!organizedReligions.length) return [];
+
+    const organizedIds = new Set(organizedReligions.map(religion => religion.i));
+    const boundaryCells = new Map<number, number[]>();
+    for (const cellId of pack.cells.i) {
+      const religionId = religionIds[cellId];
+      if (!organizedIds.has(religionId)) continue;
+      if (!pack.cells.c[cellId].some(neighborId => religionIds[neighborId] !== religionId)) continue;
+
+      const cells = boundaryCells.get(religionId) ?? [];
+      cells.push(cellId);
+      boundaryCells.set(religionId, cells);
+    }
+
+    const occupiedCenters = new Set(religions.filter(religion => !religion.removed).map(religion => religion.center));
+    const codes = religions.map(religion => religion.code!);
+    const heresies: Religion[] = [];
+
+    for (const parent of organizedReligions) {
+      const candidates = (boundaryCells.get(parent.i) ?? []).filter(cellId => !occupiedCenters.has(cellId));
+      const count = gauss(0, 1, 0, 3);
+
+      for (let index = 0; index < count && candidates.length; index++) {
+        const candidateIndex = rand(0, candidates.length - 1);
+        const center = candidates.splice(candidateIndex, 1)[0];
+        const heresy = this.createHeresy(parent, center, religions.length + heresies.length, codes);
+        occupiedCenters.add(center);
+        codes.push(heresy.code!);
+        heresies.push(heresy);
+      }
+    }
+
+    return heresies;
+  }
+
+  private createHeresy(parent: Religion, center: number, i: number, codes: string[]): Religion {
+    const [name, expansion] = this.generateReligionName("Heresy", "Heresy", parent.deity ?? "", center);
+
+    return {
+      i,
+      name,
+      color: getMixedColor(parent.color, 0.4, 0.2),
+      culture: pack.cells.culture[center],
+      type: "Heresy",
+      form: parent.form,
+      deity: parent.deity,
+      expansion,
+      expansionism: expansionismMap.Heresy(),
+      center,
+      cells: 0,
+      area: 0,
+      rural: 0,
+      urban: 0,
+      origins: [parent.i],
+      code: abbreviate(name, codes)
+    };
   }
 
   private getReligionsInRadius(
@@ -877,7 +973,8 @@ class ReligionsModule {
     religionId: number,
     clusterSize: number,
     maxReligions: number,
-    fallbackOrigin: number
+    fallbackOrigin: number,
+    religions: Religion[]
   ): number[] {
     const foundReligions = new Set<number>();
     const queue = [center];
@@ -892,13 +989,35 @@ class ReligionsModule {
         checked[neibId] = true;
 
         const neibReligion = religionIds[neibId];
-        if (neibReligion && neibReligion < religionId) foundReligions.add(neibReligion);
+        if (
+          neibReligion &&
+          neibReligion < religionId &&
+          !this.wouldCreateOriginCycle(religionId, neibReligion, religions)
+        )
+          foundReligions.add(neibReligion);
         if (foundReligions.size >= maxReligions) return [...foundReligions];
         queue.push(neibId);
       }
     }
 
-    return foundReligions.size ? [...foundReligions] : [fallbackOrigin];
+    if (foundReligions.size) return [...foundReligions];
+    return this.wouldCreateOriginCycle(religionId, fallbackOrigin, religions) ? [0] : [fallbackOrigin];
+  }
+
+  private wouldCreateOriginCycle(religionId: number, originId: number, religions: Religion[]): boolean {
+    const queue = [originId];
+    const checked = new Set<number>();
+
+    while (queue.length) {
+      const currentId = queue.shift()!;
+      if (currentId === religionId) return true;
+      if (!currentId || checked.has(currentId)) continue;
+
+      checked.add(currentId);
+      queue.push(...(religions[currentId]?.origins ?? []).filter((origin): origin is number => origin !== null));
+    }
+
+    return false;
   }
 
   // growth algorithm to assign cells to religions
@@ -913,7 +1032,7 @@ class ReligionsModule {
     const maxExpansionCost = (cells.i.length / 20) * (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
 
     religions
-      .filter(r => r.i && !r.lock && r.type !== "Folk" && !r.removed)
+      .filter(r => r.i && !r.lock && r.type !== "Folk" && r.type !== "Heresy" && !r.removed)
       .forEach(r => {
         religionIds[r.center] = r.i;
         queue.push({ e: r.center, p: 0, r: r.i, s: cells.state[r.center] }, 0);
@@ -934,7 +1053,7 @@ class ReligionsModule {
 
         const cultureCost = culture !== cells.culture[nextCell] ? 10 : 0;
         const stateCost = state !== cells.state[nextCell] ? 10 : 0;
-        const passageCost = getPassageCost(cellId, nextCell);
+        const passageCost = this.getPassageCost(cellId, nextCell);
 
         const cellCost = cultureCost + stateCost + passageCost;
         const totalCost = p + 10 + cellCost / expansionism;
@@ -950,20 +1069,103 @@ class ReligionsModule {
     }
 
     return religionIds;
+  }
 
-    function getPassageCost(cellId: number, nextCellId: number): number {
-      const route = Routes.getRoute(cellId, nextCellId);
-      if (isWater(cellId, pack)) return route ? 50 : 500;
+  private expandHeresies(religions: Religion[], religionIds: Uint16Array, heresies: Religion[]): void {
+    if (!heresies.length) return;
 
-      const biomePassageCost = pack.biomes[cells.biome[nextCellId]].cost;
+    const { cells } = pack;
+    const queue = new FlatQueue();
+    const cost: number[] = [];
+    const maxExpansionCost = (cells.i.length / 20) * (ensureEl("growthRate") as HTMLInputElement).valueAsNumber;
+    const religionsMap = new Map(religions.map(religion => [religion.i, religion]));
 
-      if (route) {
-        if (route.group === "roads") return 1;
-        return biomePassageCost / 3; // trails and other routes
-      }
+    for (const heresy of heresies) {
+      const baseReligionId = heresy.origins?.[0];
+      if (!baseReligionId || religionsMap.get(baseReligionId)?.type !== "Organized") continue;
+      if (religionsMap.get(religionIds[heresy.center])?.lock) continue;
 
-      return biomePassageCost;
+      religionIds[heresy.center] = heresy.i;
+      queue.push({ e: heresy.center, p: 0, r: heresy.i, b: baseReligionId }, 0);
+      cost[heresy.center] = 1;
     }
+
+    while (queue.length) {
+      const { e: cellId, p, r, b: baseReligionId } = queue.pop();
+      const religion = religionsMap.get(r)!;
+
+      for (const nextCell of cells.c[cellId]) {
+        if (religionsMap.get(religionIds[nextCell])?.lock) continue;
+
+        const religionCost = religionIds[nextCell] === baseReligionId ? 0 : 2000;
+        const passageCost = this.getPassageCost(cellId, nextCell);
+        const totalCost = p + 10 + (religionCost + passageCost) / Math.max(religion.expansionism, 0.1);
+        if (totalCost > maxExpansionCost) continue;
+
+        if (!cost[nextCell] || totalCost < cost[nextCell]) {
+          if (cells.culture[nextCell]) religionIds[nextCell] = r;
+          cost[nextCell] = totalCost;
+          queue.push({ e: nextCell, p: totalCost, r, b: baseReligionId }, totalCost);
+        }
+      }
+    }
+  }
+
+  private normalizeHeresiesForExpansion(religions: Religion[], religionIds: Uint16Array): Religion[] {
+    const religionsMap = new Map(religions.map(religion => [religion.i, religion]));
+    const organizedReligions = religions.filter(
+      religion => religion.type === "Organized" && !religion.lock && !religion.removed
+    );
+
+    return religions
+      .filter(religion => religion.type === "Heresy" && !religion.lock && !religion.removed)
+      .flatMap(heresy => {
+        const centerParent = religionsMap.get(religionIds[heresy.center]);
+        const originParents = (heresy.origins ?? []).map(originId => religionsMap.get(originId));
+        const candidates = [...originParents, centerParent, ...organizedReligions];
+        const checked = new Set<number>();
+        const parent = candidates.find(candidate => {
+          if (!candidate || checked.has(candidate.i)) return false;
+          checked.add(candidate.i);
+          return (
+            candidate.type === "Organized" &&
+            !candidate.lock &&
+            !candidate.removed &&
+            !this.wouldCreateOriginCycle(heresy.i, candidate.i, religions)
+          );
+        });
+
+        if (!parent) {
+          heresy.removed = true;
+          heresy.origins = [0];
+          heresy.cells = 0;
+          heresy.area = 0;
+          heresy.rural = 0;
+          heresy.urban = 0;
+
+          for (const religion of religions) {
+            if (religion.lock || !religion.origins?.includes(heresy.i)) continue;
+            const origins = religion.origins.filter(originId => originId !== heresy.i);
+            religion.origins = origins.length ? origins : [0];
+          }
+
+          return [];
+        }
+
+        heresy.origins = [parent.i];
+        heresy.form = parent.form;
+        heresy.deity = parent.deity;
+        return [heresy];
+      });
+  }
+
+  private getPassageCost(cellId: number, nextCellId: number): number {
+    const route = Routes.getRoute(cellId, nextCellId);
+    if (isWater(cellId, pack)) return route ? 50 : 500;
+
+    const biomePassageCost = pack.biomes[pack.cells.biome[nextCellId]].cost;
+    if (!route) return biomePassageCost;
+    return route.group === "roads" ? 1 : biomePassageCost / 3;
   }
 
   // folk religions initially get all cells of their culture, and locked religions are retained
@@ -1004,6 +1206,8 @@ class ReligionsModule {
 
   recalculate() {
     const newReligionIds = this.expandReligions(pack.religions);
+    const heresies = this.normalizeHeresiesForExpansion(pack.religions, newReligionIds);
+    this.expandHeresies(pack.religions, newReligionIds, heresies);
     pack.cells.religion = newReligionIds;
 
     this.checkCenters();
@@ -1018,29 +1222,39 @@ class ReligionsModule {
     const missingFolk =
       cultureId !== 0 &&
       !religions.some(({ type, culture, removed }) => type === "Folk" && culture === cultureId && !removed);
-    const color = missingFolk ? cultures[cultureId].color! : getMixedColor(religions[religionId].color!, 0.3, 0);
+    const parentReligion = religions[religionId];
 
     const type: "Folk" | "Organized" | "Cult" | "Heresy" = missingFolk
       ? "Folk"
       : religions[religionId].type === "Organized"
         ? (rw({ Organized: 4, Cult: 1, Heresy: 2 }) as "Organized" | "Cult" | "Heresy")
         : (rw({ Organized: 5, Cult: 2 }) as "Organized" | "Cult");
+
+    const codes = religions.map(religion => religion.code!);
+    if (type === "Heresy") {
+      religions.push(this.createHeresy(parentReligion, center, i, codes));
+      cells.religion[center] = i;
+      return;
+    }
+
+    const color = missingFolk ? cultures[cultureId].color! : getMixedColor(parentReligion.color!, 0.3, 0);
     const form = rw(forms[type]);
     const deity: string | null =
-      type === "Heresy"
-        ? religions[religionId].deity
-        : form === "Non-theism" || form === "Animism"
-          ? null
-          : (this.getDeityName(cultureId) ?? null);
+      form === "Non-theism" || form === "Animism" ? null : (this.getDeityName(cultureId) ?? null);
 
     const [name, expansion] = this.generateReligionName(type, form, deity!, center);
 
-    const formName = type === "Heresy" ? religions[religionId].form : form;
-    const code = abbreviate(
-      name,
-      religions.map(r => r.code!)
+    const code = abbreviate(name, codes);
+    const influences = this.getReligionsInRadius(
+      cells.c,
+      center,
+      cells.religion as Uint16Array,
+      i,
+      25,
+      3,
+      0,
+      religions
     );
-    const influences = this.getReligionsInRadius(cells.c, center, cells.religion as Uint16Array, i, 25, 3, 0);
     const origins = type === "Folk" ? [0] : influences;
 
     religions.push({
@@ -1049,7 +1263,7 @@ class ReligionsModule {
       color,
       culture: cultureId,
       type,
-      form: formName,
+      form,
       deity,
       expansion,
       expansionism: expansionismMap[type](),
