@@ -15,6 +15,8 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
+import { tip } from "@/components/tooltips";
+
 export const VERSION = "1.145.2";
 
 const latestPublicChanges = [
@@ -86,20 +88,26 @@ export function compareVersions(
   return { isEqual, isNewer, isOlder };
 }
 
-export async function cleanupData(): Promise<void> {
-  await clearCache();
-  localStorage.clear();
-  localStorage.setItem("version", VERSION);
-  localStorage.setItem("disable_click_arrow_tooltip", "true");
+export async function clearCache(): Promise<void> {
+  const cacheNames = await caches.keys();
+  await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+
+  const registrations = (await navigator.serviceWorker?.getRegistrations()) ?? [];
+  await Promise.all(registrations.map(registration => registration.unregister()));
+
   location.reload();
 }
 
-async function clearCache(): Promise<unknown> {
-  const cacheNames = await caches.keys();
-  return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+export async function cleanupData(): Promise<void> {
+  localStorage.clear();
+  localStorage.setItem("version", VERSION);
+  localStorage.setItem("disable_click_arrow_tooltip", "true");
+  await clearCache();
 }
 
 function showUpdateWindow(storedVersion: string | null): void {
+  localStorage.setItem("version", VERSION);
+
   const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
   const reddit = "https://www.reddit.com/r/FantasyMapGenerator";
   const discord = "https://discordapp.com/invite/X7E84HU";
@@ -122,10 +130,9 @@ function showUpdateWindow(storedVersion: string | null): void {
     width: "28em",
     position: { my: "center center-4em", at: "center", of: "svg" },
     buttons: {
-      "Clear cache": () => cleanupData(),
+      "Clear cache": () => clearCache(),
       "Don't show again": function (this: HTMLElement) {
         $(this).dialog("close");
-        localStorage.setItem("version", VERSION);
       }
     }
   });
@@ -141,6 +148,9 @@ function announceVersion(): void {
   const storedVersion = localStorage.getItem("version");
   if (compareVersions(storedVersion, VERSION, { major: true, minor: true, patch: false }).isOlder) {
     setTimeout(() => showUpdateWindow(storedVersion), 6000);
+  } else if (compareVersions(storedVersion, VERSION).isOlder) {
+    localStorage.setItem("version", VERSION);
+    tip(`Updated to v${VERSION}. Reload the page if you get errors`, true, "success", 6000);
   }
 }
 
