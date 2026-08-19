@@ -10,7 +10,7 @@ const COMMUNITY = {
 };
 
 const PROJECTS = {
-  armoria: link("https://azgaar.github.io/Armoria", "Armoria"),
+  armoria: link("https://armoria.vercel.app", "Armoria"),
   deorum: link("https://deorum.vercel.app", "Deorum")
 };
 

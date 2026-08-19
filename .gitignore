@@ -3,6 +3,7 @@
 .claude/worktrees
 /node_modules
 */node_modules
+/public/charges
 /dist
 /coverage
 /playwright-report

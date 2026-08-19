@@ -106,6 +106,7 @@ function renderDialog(): void {
               <option value="targe2">Targe2</option>
               <option value="pavise">Pavise</option>
               <option value="wedged">Wedged</option>
+              <option value="embowed">Embowed</option>
             </optgroup>
             <optgroup label="Banner">
               <option value="flag">Flag</option>
@@ -122,6 +123,7 @@ function renderDialog(): void {
               <option value="vesicaPiscis">Vesica Piscis</option>
               <option value="square">Square</option>
               <option value="diamond">Diamond</option>
+              <option value="hexagon">Hexagon</option>
             </optgroup>
             <optgroup label="Fantasy">
               <option value="fantasy1">Fantasy1</option>
@@ -445,7 +447,7 @@ function regenerate(): void {
 function openInArmoria(): void {
   const coa = currentEl.coa && !currentEl.coa.custom ? currentEl.coa : { t1: "sable" };
   const json = JSON.stringify(coa).replaceAll("#", "%23");
-  const url = `https://azgaar.github.io/Armoria/?coa=${json}&from=FMG`;
+  const url = `https://armoria.vercel.app/?coa=${json}&from=FMG`;
   openURL(url);
 }
 

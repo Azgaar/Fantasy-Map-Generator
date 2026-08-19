@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "postinstall": "symlink-dir ../node_modules/armoria/charges public/charges",
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",
@@ -45,11 +46,13 @@
   },
   "dependencies": {
     "alea": "^1.0.1",
+    "armoria": "file:../armoria/dist",
     "d3": "^7.9.0",
     "delaunator": "^5.0.1",
     "driver.js": "^1.4.0",
     "lineclip": "^2.0.0",
     "polylabel": "^2.0.1",
+    "symlink-dir": "^9.0.0",
     "three": "^0.184.0"
   },
   "engines": {
