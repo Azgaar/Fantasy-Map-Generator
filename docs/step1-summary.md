@@ -13,11 +13,15 @@ nothing. No live code path changes on this branch — the pipeline swap is step 
   selector-keyed document (`"#burgIcons > g#capital": {...}`) into `StyleData`, renaming
   the decision attributes (`data-size`, `scheme`, `data-width`, …) into options on the way.
   `applyStaticDefaults` supplies the three paint attrs a legacy preset never carried because
-  the registry hardcoded them; it runs on this path only.
+  the registry hardcoded them; it runs on this path only, before the schema parse, so the
+  defaults are validated with the rest of the document.
 - `src/styles/style.ts` — the class: `fromJSON`/`toJSON`, `applyTo(layer)`, `applyMapStyle()`
   for the `#map` root, `setAttr`/`setOptions` with a rAF-coalesced redraw scheduler.
-- `src/styles/index.ts` — the folder's only public surface. Nothing outside imports it yet.
-- `tools/convert-style-presets.mjs` — rewrites `public/styles/*.json` through the upgrader.
+- `src/styles/index.ts` — the folder's only public surface. Nothing outside imports it yet. The
+  upgrader is not on it: `Style.fromJSON` is the sole way in, so a caller cannot get a
+  half-converted document that skipped the static defaults.
+- `tools/convert-style-presets.mjs` — rewrites `public/styles/*.json` through
+  `Style.fromJSON(...).toJSON()`.
   Not run: the 12 shipped presets are still legacy on disk, and converting them belongs to
   the swap.
 
@@ -29,6 +33,10 @@ style.options("heightmap", "landHeights").scheme;
 style.setAttr("routes", "roads", "stroke", "#803a2b");
 style.setOptions("coordinates", {fontSize: 14});
 ```
+
+`options()` is typed for the option-carrying layers only (a layer with no options has nothing to
+read) and returns a `Readonly` shallow copy — deliberately stricter than the PRD's sketch, so a
+caller cannot mutate the tree behind the redraw scheduler's back.
 
 Two things that do not obviously fit two levels, and how they do:
 
@@ -57,8 +65,9 @@ Two things that do not obviously fit two levels, and how they do:
   matching baselines captured on master. On this branch they are the dormancy guarantee; at
   the swap they become the parity guarantee.
 - `git diff 61008d7c..HEAD -- public/ src/services/ src/components/ src/index.html src/types/`
-  is empty. Build-file diffs are `tsconfig.json` (node types, for the preset test's file read)
-  and the two vitest configs.
+  is empty. Build-file diffs are `tsconfig.json` (node types, for the preset test's file read),
+  the two vitest configs, `playwright.config.ts` (the same env-gated browser path the vitest
+  browser config uses), and `package.json`/`package-lock.json` (the one new dependency, zod).
 - `npx tsc --noEmit`, `npm run build`, `npm run lint` clean.
   `npx playwright test style-parity layers load-map layer-teardown` — 58 passing.
 
