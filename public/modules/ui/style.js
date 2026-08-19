@@ -67,7 +67,7 @@ function addCustomColorScheme(scheme) {
 function getColorScheme(scheme) {
   if (!scheme) scheme = "bright";
   if (!(scheme in heightmapColorSchemes)) {
-    const colors = schemescheme.split(",");
+    const colors = scheme.split(",");
     heightmapColorSchemes[scheme] = d3.scaleSequential(d3.interpolateRgbBasis(colors));
   }
 
