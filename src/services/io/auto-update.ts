@@ -3,7 +3,6 @@ import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
-import type { Feature } from "@/generators/features";
 import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
@@ -1020,7 +1019,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     // v1.108.0 changed features rendering method
     pack.features.forEach(f => {
       // fix lakes with missing group
-      if (f?.type === "lake" && !f.group) f.group = "freshwater";
+      if (f?.type === "lake" && !f.group) f.group = "freshwater"; // becomes the subtype in v1.146.0
     });
 
     // some old maps has incorrect "heights" groups
@@ -1666,17 +1665,19 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
   }
 
   if (isOlderThan("1.146.0")) {
-    // v1.146.0 stores the svg group of a feature on the feature itself
-    const adoptRenderingGroups = (layerId: string, getDefault: (feature: Feature) => string) => {
-      for (const use of Array.from(document.querySelectorAll(`#${layerId} > g > use[data-f]`))) {
-        const feature = pack.features[Number(use.getAttribute("data-f"))];
-        const group = (use.parentNode as SVGGElement).id;
-        if (!feature || !group || group === getDefault(feature)) continue;
-        feature.renderingGroup = group;
-      }
-    };
-    adoptRenderingGroups("coastline", () => "sea_island");
-    adoptRenderingGroups("lakes", feature => feature.group || "freshwater");
+    // v1.146.0 renamed the feature group to subtype and reused group for the svg rendering
+    for (const feature of pack.features) {
+      if (!feature) continue;
+      feature.subtype = feature.group;
+      feature.group = Features.getDefaultGroup(feature);
+    }
+
+    // the placement stored in the svg wins over the derived group
+    for (const use of Array.from(document.querySelectorAll("#coastline > g > use[data-f], #lakes > g > use[data-f]"))) {
+      const feature = pack.features[Number(use.getAttribute("data-f"))];
+      const group = (use.parentNode as SVGGElement).id;
+      if (feature && group) feature.group = group;
+    }
 
     // v1.146.0 preserves vertices dragged in the coastline and lake editors
     if (!data[51]) {

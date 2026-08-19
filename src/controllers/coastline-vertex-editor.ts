@@ -164,14 +164,12 @@ function changeCoastlineGroup(this: HTMLSelectElement): void {
   assignGroup([selectedCoastline.node()!], this.value);
 }
 
-const DEFAULT_GROUP = "sea_island";
 function assignGroup(elements: Element[], group: string): void {
   for (const element of elements) {
     const feature = pack.features[+(element.getAttribute("data-f") || 0)];
     if (!feature) continue;
 
-    if (group === DEFAULT_GROUP) delete feature.renderingGroup;
-    else feature.renderingGroup = group;
+    feature.group = group;
   }
 }
 
@@ -253,7 +251,7 @@ function removeCoastlineGroup(): void {
         $(this).dialog("close");
         const sea = ensureEl("sea_island");
         const groupEl = ensureEl(group);
-        assignGroup(Array.from(groupEl.children), DEFAULT_GROUP);
+        assignGroup(Array.from(groupEl.children), "sea_island");
         while (groupEl.childNodes.length) {
           sea.appendChild(groupEl.childNodes[0]);
         }

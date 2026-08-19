@@ -385,6 +385,7 @@ class Resampler {
       if (parentCell === undefined) return;
       const parentFeature = parentMap.pack.features[parentMap.pack.cells.f[parentCell]];
 
+      if (parentFeature.subtype) feature.subtype = parentFeature.subtype;
       if (parentFeature.group) feature.group = parentFeature.group;
       if (parentFeature.name) feature.name = parentFeature.name;
       if (parentFeature.height) feature.height = parentFeature.height;

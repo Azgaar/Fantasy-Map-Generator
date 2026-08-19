@@ -10,11 +10,11 @@ const createLayer = (groups: string[]) => {
   return { getEl: () => document.getElementById("coastline") } as unknown as Layer;
 };
 
-const feature = (i: number, group: string, renderingGroup?: string) => ({
+const feature = (i: number, subtype: string, group = "sea_island") => ({
   i,
   type: "island",
-  group,
-  ...(renderingGroup && { renderingGroup })
+  subtype,
+  group
 });
 
 beforeEach(() => {

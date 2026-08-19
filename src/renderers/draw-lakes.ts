@@ -7,8 +7,7 @@ export function drawLakes(layer: Layer): void {
 
   for (const feature of pack.features) {
     if (!feature || feature.type !== "lake") continue;
-    const renderingGroup = feature.renderingGroup;
-    const group = renderingGroup && groupIds.has(renderingGroup) ? renderingGroup : "freshwater";
+    const group = groupIds.has(feature.group) ? feature.group : "freshwater"; // the group may have been removed
 
     if (!uses[group]) uses[group] = [];
     uses[group].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);

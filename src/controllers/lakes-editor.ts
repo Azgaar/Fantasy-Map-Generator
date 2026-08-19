@@ -214,21 +214,32 @@ function generateNameRandom(): void {
   lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(rand(Names.nameBases.length - 1));
 }
 
+const isLakeType = (group: string) => Layers.get("lakes").children.some(child => child.id === group);
+function assignGroup(elements: Element[], group: string): void {
+  for (const element of elements) {
+    const feature = pack.features[+(element.getAttribute("data-f") || 0)];
+    if (!feature) continue;
+    if (isLakeType(group)) feature.subtype = group; // a default group is the lake subtype as well
+    feature.group = group;
+  }
+}
+
 function selectLakeGroup(): void {
   const lake = getLake();
+  const currentGroup = lake.group;
 
   const groupSelect = ensureEl<HTMLSelectElement>("lakeGroup");
   groupSelect.options.length = 0; // remove all options
   select<SVGGElement, unknown>("#lakes")
     .selectAll<SVGGElement, unknown>("g")
     .each(function () {
-      groupSelect.options.add(new Option(this.id, this.id, false, this.id === lake.group));
+      groupSelect.options.add(new Option(this.id, this.id, false, this.id === currentGroup));
     });
 }
 
 function changeLakeGroup(this: HTMLSelectElement): void {
   ensureEl(this.value).appendChild(selectedLake.node()!);
-  getLake().group = this.value;
+  assignGroup([selectedLake.node()!], this.value);
 }
 
 function toggleNewGroupInput(): void {
@@ -266,11 +277,12 @@ function createNewGroup(this: HTMLInputElement): void {
 
   // just rename if only 1 element left
   const oldGroup = selectedLake.node()!.parentNode as SVGGElement;
-  const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
+  const basic = isLakeType(oldGroup.id);
   if (!basic && oldGroup.childElementCount === 1) {
     ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
     ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
     oldGroup.id = group;
+    assignGroup(Array.from(oldGroup.children), group);
     toggleNewGroupInput();
     ensureEl<HTMLInputElement>("lakeGroupName").value = "";
     return;
@@ -282,6 +294,7 @@ function createNewGroup(this: HTMLInputElement): void {
   newGroup.id = group;
   ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
   ensureEl(group).appendChild(selectedLake.node()!);
+  assignGroup([selectedLake.node()!], group);
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("lakeGroupName").value = "";
@@ -289,7 +302,7 @@ function createNewGroup(this: HTMLInputElement): void {
 
 function removeLakeGroup(): void {
   const group = (selectedLake.node()!.parentNode as SVGGElement).id;
-  if (["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(group)) {
+  if (isLakeType(group)) {
     tip("This is one of the default groups, it cannot be removed", false, "error");
     return;
   }
@@ -305,6 +318,7 @@ function removeLakeGroup(): void {
         $(this).dialog("close");
         const freshwater = ensureEl("freshwater");
         const groupEl = ensureEl(group);
+        assignGroup(Array.from(groupEl.children), "freshwater");
         while (groupEl.childNodes.length) {
           freshwater.appendChild(groupEl.childNodes[0]);
         }

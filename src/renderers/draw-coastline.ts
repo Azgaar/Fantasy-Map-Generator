@@ -7,8 +7,7 @@ export function drawCoastline(layer: Layer): void {
 
   for (const feature of pack.features) {
     if (!feature || feature.type === "ocean" || feature.type === "lake") continue;
-    const renderingGroup = feature.renderingGroup;
-    const group = renderingGroup && groupIds.has(renderingGroup) ? renderingGroup : "sea_island";
+    const group = groupIds.has(feature.group) ? feature.group : "sea_island"; // the group may have been removed
 
     if (!uses[group]) uses[group] = [];
     uses[group].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);

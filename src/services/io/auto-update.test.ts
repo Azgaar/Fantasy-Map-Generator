@@ -6,6 +6,7 @@ beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   localStorage.clear();
   globalThis.options = { labels: { groups: [] } } as unknown as typeof globalThis.options;
+  globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
 });
 
 describe("v1.144 layer id migration", () => {
@@ -118,6 +119,7 @@ describe("v1.145 svg layer cleanup", () => {
 describe("v1.145.2 moved vertices recovery", () => {
   // a ring of 4 vertices around the central one, each connected to its two neighbors and to the center
   const createGraph = () => ({
+    features: [],
     vertices: {
       p: [
         [10, 10],
@@ -201,7 +203,7 @@ describe("v1.146 rendering groups", () => {
         { i: 1, type: "island", group: "continent" },
         { i: 2, type: "island", group: "lake_island" },
         { i: 3, type: "lake", group: "salt" },
-        { i: 4, type: "lake", group: "freshwater" }
+        { i: 4, type: "lake", group: "freshwater" } // the old group is the classification
       ]
     } as unknown as typeof globalThis.pack;
 
@@ -217,18 +219,39 @@ describe("v1.146 rendering groups", () => {
     </g></svg>`;
   });
 
-  it("adopts the svg placement that differs from the layer default", () => {
+  it("adopts the svg placement of every feature", () => {
     resolveVersionConflicts("1.145.1", []);
 
-    expect(pack.features[1].renderingGroup).toBeUndefined(); // the default group is not stored
-    expect(pack.features[2].renderingGroup).toBe("lake_island");
-    expect(pack.features[3].renderingGroup).toBe("my_lakes"); // the lake type says salt, the svg says otherwise
-    expect(pack.features[4].renderingGroup).toBeUndefined();
+    expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
+      "sea_island",
+      "lake_island",
+      "my_lakes", // the subtype says salt, the svg says the user moved it
+      "freshwater"
+    ]);
+    expect(pack.features.slice(1).map(feature => feature.subtype)).toEqual([
+      "continent",
+      "lake_island",
+      "salt",
+      "freshwater"
+    ]);
+  });
+
+  it("derives a group for features the svg does not place", () => {
+    document.body.innerHTML = '<svg id="map"><g id="viewbox"></g></svg>'; // nothing was drawn
+
+    resolveVersionConflicts("1.145.1", []);
+
+    expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
+      "sea_island",
+      "lake_island",
+      "salt",
+      "freshwater"
+    ]);
   });
 
   it("leaves current maps alone", () => {
     resolveVersionConflicts("1.146.0", []);
 
-    expect(pack.features.slice(1).every(feature => !feature.renderingGroup)).toBe(true);
+    expect(pack.features.slice(1).every(feature => !feature.subtype)).toBe(true);
   });
 });

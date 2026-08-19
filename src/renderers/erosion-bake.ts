@@ -24,7 +24,7 @@ type RiverPoint = [number, number, number];
 const SEA_LEVEL = 20;
 
 // lake group -> coast texture A channel code (byte = code * 40, 0 = none)
-const LAKE_GROUP_CODES: Record<string, number> = {
+const LAKE_SUBTYPE_CODES: Record<string, number> = {
   freshwater: 1,
   salt: 2,
   sinkhole: 3,
@@ -296,7 +296,7 @@ function buildCoastTexture(bakeW: number, bakeH: number) {
   groupCtx.lineWidth = (taperPx * 6) / scaleX;
   for (const feature of pack.features) {
     if (!feature || feature.type !== "lake") continue;
-    const code = LAKE_GROUP_CODES[feature.group as string] ?? 1;
+    const code = LAKE_SUBTYPE_CODES[feature.subtype] ?? 1;
     const gray = code * 40;
     const path = new Path2D(getFeaturePath(feature));
     groupCtx.fillStyle = groupCtx.strokeStyle = `rgb(${gray},${gray},${gray})`;
