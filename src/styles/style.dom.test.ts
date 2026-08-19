@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Layer } from "@/components/layers";
-import { Style, setMapStyle } from "./style";
+import { Style, setActiveStyle } from "./style";
 
 // "map" isn't a registry layer, so the redraw scheduler's dynamic `import("@/components/layers")`
 // must not receive it; Layers.draw is mocked here purely to assert that. The scheduler drops any
@@ -159,7 +159,7 @@ describe('setAttr("map", ...) redraw routing', () => {
     document.body.appendChild(mapEl);
 
     const style = Style.fromJSON({});
-    setMapStyle(style); // the scheduler only flushes a batch whose instance is still the map style
+    setActiveStyle(style); // the scheduler only flushes a batch whose instance is still the map style
     layersHas.mockImplementation(() => false);
     style.setAttr("map", "fill", "#111111");
 
@@ -183,7 +183,7 @@ describe("setAttr(<real layer id>, ...) redraw routing", () => {
     layersGet.mockImplementation((id: string) => fakeLayer(id, root));
 
     const style = Style.fromJSON({});
-    setMapStyle(style);
+    setActiveStyle(style);
     style.setAttr("routes", "opacity", 0.42);
 
     await vi.waitFor(() => expect(root.getAttribute("opacity")).toBe("0.42"));
@@ -205,11 +205,11 @@ describe("a stale instance never repaints the map", () => {
     layersGet.mockImplementation((id: string) => fakeLayer(id, root));
 
     const stale = Style.fromJSON({});
-    setMapStyle(stale);
+    setActiveStyle(stale);
     stale.setAttr("routes", "opacity", 0.42); // queued against `stale`
 
     const live = Style.fromJSON({});
-    setMapStyle(live); // ...and superseded before the frame runs
+    setActiveStyle(live); // ...and superseded before the frame runs
 
     // give the scheduler its frame (and the dynamic import that follows it) room to run
     await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));

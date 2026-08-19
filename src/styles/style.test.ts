@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import { upgradeLegacyPreset } from "./legacy";
 import fixture from "./legacy-default.fixture.json";
 import { parseStyleData } from "./schema";
-import { buildAttributeOps, createDrawScheduler, getMapStyle, Style, setMapStyle } from "./style";
+import { buildAttributeOps, createDrawScheduler, getActiveStyle, Style, setActiveStyle } from "./style";
 
 describe("buildAttributeOps", () => {
   test("flattens a layer's own attrs at the root path", () => {
@@ -286,14 +286,14 @@ describe("createDrawScheduler", () => {
   });
 });
 
-describe("getMapStyle", () => {
-  // the only suite in this file that touches the module-level `mapStyle`, so the unset state it
+describe("getActiveStyle", () => {
+  // the only suite in this file that touches the module-level `activeStyle`, so the unset state it
   // asserts first is the module's genuine initial state
-  test("throws before setMapStyle, and returns the instance after it", () => {
-    expect(() => getMapStyle()).toThrow(/setMapStyle/);
+  test("throws before setActiveStyle, and returns the instance after it", () => {
+    expect(() => getActiveStyle()).toThrow(/setActiveStyle/);
 
     const style = Style.fromJSON({});
-    setMapStyle(style);
-    expect(getMapStyle()).toBe(style);
+    setActiveStyle(style);
+    expect(getActiveStyle()).toBe(style);
   });
 });

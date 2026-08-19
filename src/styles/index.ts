@@ -3,4 +3,4 @@
 // Style.fromJSON - the one entry point that also supplies the static defaults an upgraded
 // document needs. Exporting it would let a caller build a half-converted style.
 export type { Attrs, ChildId, ChildOptions, LayerOptions, StyleData, StyleLayerId } from "./schema";
-export { applyMapStyle, getMapStyle, Style, setMapStyle } from "./style";
+export { applyMapStyle, getActiveStyle, Style, setActiveStyle } from "./style";
