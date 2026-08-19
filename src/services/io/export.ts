@@ -254,6 +254,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     fullMap = false
   } = options;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
+  cloneEl.querySelector("#pixi-map-prototype")?.remove();
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);

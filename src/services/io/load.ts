@@ -812,6 +812,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();
     tip("Map is successfully loaded", true, "success", 7000);
+    window.dispatchEvent(new CustomEvent("map:loaded", { detail: { mapVersion } }));
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();

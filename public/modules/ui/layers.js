@@ -281,7 +281,9 @@ function drawLayers() {
     // scale bar
     // vignette
   };
-  return window.MapPerformance ? window.MapPerformance.measure("render:total", drawActiveLayers) : drawActiveLayers();
+  const result = window.MapPerformance ? window.MapPerformance.measure("render:total", drawActiveLayers) : drawActiveLayers();
+  window.PixiMapPrototype?.queueRebuild();
+  return result;
 }
 
 function toggleHeight(event) {

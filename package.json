@@ -51,6 +51,7 @@
     "delaunator": "^5.0.1",
     "driver.js": "^1.4.0",
     "lineclip": "^2.0.0",
+    "pixi.js": "^8.19.0",
     "polylabel": "^2.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

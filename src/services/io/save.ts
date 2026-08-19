@@ -78,6 +78,8 @@ function prepareMapData(): string {
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
+  cloneEl.querySelector("#pixi-map-prototype")?.remove();
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(graphWidth));

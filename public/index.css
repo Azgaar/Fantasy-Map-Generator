@@ -93,6 +93,19 @@ iframe {
   text-rendering: optimizeSpeed;
 }
 
+/* Opt-in Pixi renderer prototype. The SVG fallback stays intact for saving, exporting and disabling the prototype. */
+#map.pixi-prototype-states #terrain,
+#map.pixi-prototype-states #regions,
+#map.pixi-prototype-states #borders,
+#map.pixi-prototype-biomes #biomes {
+  visibility: hidden;
+}
+
+#pixi-map-prototype {
+  overflow: visible;
+  pointer-events: none;
+}
+
 #canvas {
   position: absolute;
   pointer-events: none;
