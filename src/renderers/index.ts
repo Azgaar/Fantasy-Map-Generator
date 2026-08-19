@@ -1,5 +1,4 @@
 import "@/components/layers";
-import "./coastline-fractal";
 import "./draw-borders";
 import "./draw-biomes";
 import "./draw-burg-icons";

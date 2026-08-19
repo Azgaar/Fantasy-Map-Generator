@@ -1,6 +1,6 @@
 import type { Layer } from "@/components/layers";
+import { Coastline } from "@/generators/coastline-generator";
 import { ensureEl } from "@/utils";
-import { getFeaturePath } from "./feature-path";
 
 /**
  * The landmass is a plain rect shown through the land mask. The layer also owns the shared feature
@@ -17,7 +17,9 @@ export function drawLandmass(layer: Layer): void {
     if (!feature || feature.type === "ocean") continue;
     const isLake = feature.type === "lake";
 
-    paths.push(`<path d="${getFeaturePath(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`);
+    paths.push(
+      `<path d="${Coastline.getFeaturePath(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`
+    );
     landMask.push(
       `<use href="#feature_${feature.i}" data-f="${feature.i}" fill="${isLake ? "black" : "white"}"></use>`
     );

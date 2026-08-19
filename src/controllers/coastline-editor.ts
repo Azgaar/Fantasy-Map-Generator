@@ -1,13 +1,6 @@
 import Alea from "alea";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import {
-  buildCoastlinePath,
-  type CoastlineSettings,
-  defaultCoastSettings,
-  fractalize,
-  makeRoughnessProfile,
-  PROFILE_SIZE
-} from "../renderers/coastline-fractal";
+import { Coastline, type CoastlineSettings } from "@/generators/coastline-generator";
 import { ensureEl } from "../utils";
 
 interface SliderDef {
@@ -96,9 +89,7 @@ const SLIDER_DEFS: SliderDef[] = [
 ];
 
 const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled">> = {
-  Default: {
-    ...defaultCoastSettings
-  },
+  Default: Coastline.getDefaultSettings(),
   Smooth: {
     maxDepth: 3,
     baseAmplitude: 1,
@@ -168,21 +159,17 @@ function renderDialog(): void {
     const slider = ensureEl<HTMLInputElement>(id);
     const resetBtn = ensureEl(`${id}Reset`);
 
-    const defaultVal = defaultCoastSettings[key] as number;
+    const defaultVal = Coastline.getDefaultSettings()[key] as number;
 
     slider.addEventListener("input", e => {
       // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
       if (e.target !== e.currentTarget) return;
-      defaultCoastSettings[key] = slider.valueAsNumber;
-      updatePreviews();
-      Layers.draw("landmass", "coastline", "lakes");
+      applyChange({ [key]: slider.valueAsNumber });
     });
 
     resetBtn.addEventListener("click", () => {
-      (defaultCoastSettings[key] as number) = defaultVal;
       slider.value = String(defaultVal);
-      updatePreviews();
-      Layers.draw("landmass", "coastline", "lakes");
+      applyChange({ [key]: defaultVal });
     });
   }
 
@@ -191,24 +178,23 @@ function renderDialog(): void {
   const track = ensureEl("coastEnabledTrack");
   const thumb = ensureEl("coastEnabledThumb");
 
-  enabledCb.checked = defaultCoastSettings.enabled;
+  enabledCb.checked = Coastline.settings.enabled;
   const syncToggle = () => {
-    track.style.background = defaultCoastSettings.enabled ? "#33bb88" : "#bbb";
-    thumb.style.left = defaultCoastSettings.enabled ? "18px" : "2px";
-    slidersDiv.style.opacity = defaultCoastSettings.enabled ? "" : "0.4";
-    slidersDiv.style.pointerEvents = defaultCoastSettings.enabled ? "" : "none";
+    const { enabled } = Coastline.settings;
+    track.style.background = enabled ? "#33bb88" : "#bbb";
+    thumb.style.left = enabled ? "18px" : "2px";
+    slidersDiv.style.opacity = enabled ? "" : "0.4";
+    slidersDiv.style.pointerEvents = enabled ? "" : "none";
     Object.keys(COAST_PRESETS).forEach(name => {
       const btn = ensureEl<HTMLButtonElement>(`coastPreset_${name}`);
-      btn.disabled = !defaultCoastSettings.enabled;
+      btn.disabled = !enabled;
     });
   };
 
   syncToggle();
   enabledCb.addEventListener("change", () => {
-    defaultCoastSettings.enabled = enabledCb.checked;
+    applyChange({ enabled: enabledCb.checked });
     syncToggle();
-    updatePreviews();
-    Layers.draw("landmass", "coastline", "lakes");
   });
 
   // Preset buttons
@@ -218,24 +204,27 @@ function renderDialog(): void {
       const preset = COAST_PRESETS[name];
       for (const { id, key } of SLIDER_DEFS) {
         if (!(key in preset)) continue;
-        const val = preset[key as keyof typeof preset];
-        defaultCoastSettings[key] = val;
-        const slider = ensureEl<HTMLInputElement>(id);
-        slider.value = String(val);
+        ensureEl<HTMLInputElement>(id).value = String(preset[key as keyof typeof preset]);
       }
-      updatePreviews();
-      Layers.draw("landmass", "coastline", "lakes");
+      applyChange(preset);
     });
   }
 }
 
+function applyChange(change: Partial<CoastlineSettings>): void {
+  Coastline.update(change);
+  updatePreviews();
+  Layers.draw("landmass", "coastline", "lakes");
+}
+
 function buildDialogHTML(): string {
+  const settings = Coastline.settings;
   const presetButtons = Object.keys(COAST_PRESETS)
     .map(name => `<button id="coastPreset_${name}" style="font-size:.78em;padding:2px 8px">${name}</button>`)
     .join("");
 
   const rows = SLIDER_DEFS.map(({ id, label, tip, min, max, step, key }) => {
-    const value = defaultCoastSettings[key];
+    const value = settings[key];
     return /* html */ `
       <tr data-tip="${tip}">
         <td style="padding:2px 0;white-space:nowrap">${label}</td>
@@ -256,10 +245,10 @@ function buildDialogHTML(): string {
       </style>
       <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #ddd">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time, especially at high detail levels.">
-          <input id="coastEnabled" type="checkbox" ${defaultCoastSettings.enabled ? "checked" : ""}
+          <input id="coastEnabled" type="checkbox" ${settings.enabled ? "checked" : ""}
             style="position:absolute;opacity:0;pointer-events:none;width:0;height:0"/>
-          <span id="coastEnabledTrack" style="position:relative;display:inline-block;width:36px;height:20px;border-radius:10px;background:${defaultCoastSettings.enabled ? "#33bb88" : "#bbb"};cursor:pointer;flex-shrink:0">
-            <span id="coastEnabledThumb" style="position:absolute;top:2px;left:${defaultCoastSettings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
+          <span id="coastEnabledTrack" style="position:relative;display:inline-block;width:36px;height:20px;border-radius:10px;background:${settings.enabled ? "#33bb88" : "#bbb"};cursor:pointer;flex-shrink:0">
+            <span id="coastEnabledThumb" style="position:absolute;top:2px;left:${settings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
           </span>
         </label>
         <div style="display:flex;align-items:center;gap:4px">
@@ -301,23 +290,20 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext("2d")!;
   ctx.clearRect(0, 0, W, H);
 
+  const settings = Coastline.settings;
   const rand = Alea(PREVIEW_SEED);
-  const profile = makeRoughnessProfile(
-    rand,
-    defaultCoastSettings.roughnessContrast,
-    defaultCoastSettings.profileHarmonics
-  );
+  const profile = Coastline.getRoughnessProfile(rand, settings.roughnessContrast, settings.profileHarmonics);
 
-  const thresh = Math.min(Math.max(defaultCoastSettings.smoothThreshold, 0), 1);
+  const thresh = Math.min(Math.max(settings.smoothThreshold, 0), 1);
   const threshY = H * (1 - thresh);
   const baseY = H;
 
   // Pre-compute curve points
   const xs: number[] = [];
   const ys: number[] = [];
-  for (let i = 0; i <= PROFILE_SIZE; i++) {
-    xs.push((i / PROFILE_SIZE) * W);
-    ys.push(H * (1 - profile[i % PROFILE_SIZE]));
+  for (let i = 0; i <= Coastline.PROFILE_SIZE; i++) {
+    xs.push((i / Coastline.PROFILE_SIZE) * W);
+    ys.push(H * (1 - profile[i % Coastline.PROFILE_SIZE]));
   }
 
   // Helper: fill area under curve clipped to a horizontal band
@@ -388,7 +374,7 @@ function drawRoughnessGraph(canvas: HTMLCanvasElement): void {
     ctx.fillText("CALM", 12, baseY - 4);
   }
 
-  if (!defaultCoastSettings.enabled) {
+  if (!settings.enabled) {
     ctx.fillStyle = "rgba(0,0,0,0.38)";
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#fff";
@@ -413,10 +399,11 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
     [cx - r, cy] // left
   ];
 
-  const shape = defaultCoastSettings.enabled
-    ? fractalize(basePts, Alea(PREVIEW_SEED), defaultCoastSettings)
+  const settings = Coastline.settings;
+  const shape = settings.enabled
+    ? Coastline.fractalize(basePts, Alea(PREVIEW_SEED), settings)
     : { points: basePts, origIndices: [0, 1, 2, 3] };
-  const path = new Path2D(`${buildCoastlinePath(shape)}Z`);
+  const path = new Path2D(`${Coastline.buildPath(shape)}Z`);
 
   // Ocean background — radial gradient, lighter at centre
   const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
@@ -470,7 +457,7 @@ function drawShapePreview(canvas: HTMLCanvasElement): void {
     ctx.stroke();
   }
 
-  if (!defaultCoastSettings.enabled) {
+  if (!settings.enabled) {
     ctx.fillStyle = "rgba(0,0,0,0.38)";
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#fff";

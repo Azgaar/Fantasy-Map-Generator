@@ -3,9 +3,9 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
 import { GraphOverride } from "@/generators/graph-override";
-import { getFeaturePath } from "@/renderers/feature-path";
 import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
@@ -116,7 +116,7 @@ function handleVertexDrag(
   // change coastline path
   select<SVGElement, unknown>("#deftemp")
     .select(`#featurePaths > path#feature_${featureId}`)
-    .attr("d", getFeaturePath(feature));
+    .attr("d", Coastline.getFeaturePath(feature));
   ensureEl("coastlineArea").innerHTML = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell

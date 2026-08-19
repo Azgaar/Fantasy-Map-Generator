@@ -4,9 +4,9 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
 import { GraphOverride } from "@/generators/graph-override";
-import { getFeaturePath } from "@/renderers/feature-path";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
@@ -186,7 +186,7 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
   // update lake path
   select<SVGElement, unknown>("#deftemp")
     .select(`#featurePaths > path#feature_${feature.i}`)
-    .attr("d", getFeaturePath(feature));
+    .attr("d", Coastline.getFeaturePath(feature));
   ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell

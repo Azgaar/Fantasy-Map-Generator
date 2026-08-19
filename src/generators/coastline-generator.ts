@@ -1,4 +1,12 @@
 import Alea from "alea";
+import type { Point } from "@/types/global";
+import { clipPoly, round } from "../utils";
+import type { Feature } from "./features";
+
+declare global {
+  // vendored lib, loaded as a classic script from public/libs/simplify.js
+  var simplify: (points: Point[], tolerance: number, highestQuality?: boolean) => Point[];
+}
 
 export interface CoastlineSettings {
   enabled: boolean; // master toggle — false bypasses all fractalization
@@ -12,7 +20,12 @@ export interface CoastlineSettings {
   lakeSmoothThreshMult: number; // smooth-threshold multiplier for lake shores (1 = same as ocean, higher = calmer)
 }
 
-export const defaultCoastSettings: CoastlineSettings = {
+export interface FractalizedShape {
+  points: Point[];
+  origIndices: number[]; // index in points[] where original vertex i lives
+}
+
+const DEFAULT_SETTINGS: Readonly<CoastlineSettings> = {
   enabled: true,
   maxDepth: 4,
   baseAmplitude: 1.5,
@@ -24,11 +37,14 @@ export const defaultCoastSettings: CoastlineSettings = {
   lakeSmoothThreshMult: 2.0
 };
 
-export const PROFILE_SIZE = 256;
+const STORAGE_KEY = "coastline-settings";
+const SIMPLIFICATION_TOLERANCE = 0.3;
+
+const PROFILE_SIZE = 256;
 
 // Build a smooth closed roughness envelope via sum-of-cosine harmonics.
 // Intrinsically seam-free; result raised to `contrast` power for calm/rough contrast.
-export function makeRoughnessProfile(rand: () => number, contrast: number, numHarmonics = 4): Float32Array {
+function makeRoughnessProfile(rand: () => number, contrast: number, numHarmonics = 4): Float32Array {
   const profile = new Float32Array(PROFILE_SIZE);
   for (let k = 1; k <= numHarmonics; k++) {
     const amp = rand();
@@ -102,34 +118,7 @@ function subdivideEdge(
   subdivideEdge(mx, my, x1, y1, tm, t1, depth - 1, nextAmp, profile, rand, resultPts, settings);
 }
 
-export interface FractalizedShape {
-  points: [number, number][];
-  origIndices: number[]; // index in points[] where original vertex i lives
-}
-
-export function fractalizeCoastline(
-  points: [number, number][],
-  featureIndex: number,
-  featureType: "ocean" | "lake" | "island" = "island"
-): FractalizedShape {
-  if (points.length < 3) return { points, origIndices: points.map((_, i) => i) };
-  if (!defaultCoastSettings.enabled) return { points, origIndices: points.map((_, i) => i) };
-  const rand = Alea(`${seed}_c${featureIndex}`);
-  const settings =
-    featureType === "lake" && defaultCoastSettings.lakeSmoothThreshMult !== 1
-      ? {
-          ...defaultCoastSettings,
-          smoothThreshold: Math.min(1, defaultCoastSettings.smoothThreshold * defaultCoastSettings.lakeSmoothThreshMult)
-        }
-      : defaultCoastSettings;
-  return fractalize(points, rand, settings);
-}
-
-export function fractalize(
-  points: [number, number][],
-  rand: () => number,
-  settings: CoastlineSettings
-): FractalizedShape {
+function fractalize(points: [number, number][], rand: () => number, settings: CoastlineSettings): FractalizedShape {
   const profile = makeRoughnessProfile(rand, settings.roughnessContrast, settings.profileHarmonics);
 
   const n = points.length;
@@ -191,7 +180,7 @@ function isOnBorder([x, y]: [number, number]) {
  * Smooth span: Q midpoint B-spline — identical to curveBasisClosed. Produces flowing arcs that hide Voronoi angularity.
  * Jagged span: centripetal Catmull-Rom (α=0.5) through every fractal sub-point. Rounds sharp kinks into gentle curves.
  */
-export function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
+function buildCoastlinePath({ points, origIndices }: FractalizedShape): string {
   const N = points.length;
   const M = origIndices.length;
   if (N < 3 || M < 3) return "";
@@ -250,3 +239,89 @@ export function buildCoastlinePath({ points, origIndices }: FractalizedShape): s
 
   return d.join("");
 }
+
+/**
+ * Owns everything coastlines: the user-tunable settings, the fractal displacement of the
+ * feature outlines and the SVG path built from them. Renderers and editors ask it for a path,
+ * they never fractalize on their own.
+ */
+class CoastlineGenerator {
+  readonly PROFILE_SIZE = PROFILE_SIZE;
+
+  /**
+   * Settings of the current map. Kept in options, so they are saved to the .map file and the
+   * coastlines are reproduced exactly on reload. A map saved before the settings existed (or a
+   * brand new map) starts from the last values the user picked
+   */
+  get settings(): CoastlineSettings {
+    options.coastline ??= this.getStoredSettings();
+    return options.coastline;
+  }
+
+  /** Apply a user change: it defines the coastlines of this map and the defaults for the next one */
+  update(change: Partial<CoastlineSettings>): void {
+    const settings = Object.assign(this.settings, change);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }
+
+  getDefaultSettings(): CoastlineSettings {
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  /** Closed SVG path of the feature outline, fractalized as configured */
+  getFeaturePath(feature: Feature): string {
+    const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
+    if (points.some(point => point === undefined)) {
+      ERROR && console.error("Undefined point in getFeaturePath");
+      return "";
+    }
+
+    const simplifiedPoints = simplify(points, SIMPLIFICATION_TOLERANCE);
+    const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
+    const shape = this.fractalizeFeature(clippedPoints, feature);
+    return `${round(buildCoastlinePath(shape))}Z`;
+  }
+
+  /** Displace a polygon into a naturalistic coastline. Deterministic: the same rand and settings repeat the shape */
+  fractalize(points: Point[], rand: () => number, settings = this.settings): FractalizedShape {
+    return fractalize(points, rand, settings);
+  }
+
+  buildPath(shape: FractalizedShape): string {
+    return buildCoastlinePath(shape);
+  }
+
+  /** Roughness envelope along the perimeter: which parts of the coast are jagged and which stay calm */
+  getRoughnessProfile(rand: () => number, contrast: number, harmonics: number): Float32Array {
+    return makeRoughnessProfile(rand, contrast, harmonics);
+  }
+
+  /** Seeded per feature, so a feature keeps its shape no matter what else was generated or drawn before */
+  private fractalizeFeature(points: Point[], { i, type }: Feature): FractalizedShape {
+    const unchanged = { points, origIndices: points.map((_, index) => index) };
+    if (points.length < 3 || !this.settings.enabled) return unchanged;
+
+    const { lakeSmoothThreshMult, smoothThreshold } = this.settings;
+    const settings =
+      type === "lake" && lakeSmoothThreshMult !== 1
+        ? { ...this.settings, smoothThreshold: Math.min(1, smoothThreshold * lakeSmoothThreshMult) }
+        : this.settings;
+
+    return fractalize(points, Alea(`${seed}_c${i}`), settings);
+  }
+
+  /** The values the user picked last, falling back to the defaults for keys the stored data misses */
+  private getStoredSettings(): CoastlineSettings {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return this.getDefaultSettings();
+
+    try {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+    } catch (error) {
+      ERROR && console.error("Invalid stored coastline settings", error);
+      return this.getDefaultSettings();
+    }
+  }
+}
+
+export const Coastline = new CoastlineGenerator();
