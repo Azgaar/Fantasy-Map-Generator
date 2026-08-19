@@ -32,7 +32,7 @@ export type Attrs = z.infer<typeof attrsSchema>;
 // `map` is the svg root, and `burgIcons`/`anchors` are the two container groups the registry's
 // icons layer (`<g id="icons">`) nests - all three are resolved by the applier, which keeps the
 // tree two levels deep everywhere.
-export const STYLE_LAYER_IDS = [
+const STYLE_LAYER_IDS = [
   "ocean",
   "landmass",
   "texture",
@@ -82,7 +82,7 @@ export type StyleLayerId = (typeof STYLE_LAYER_IDS)[number];
 // (draw-legend, overlays/fogging, trade-animation) — importing it here would throw when this
 // schema loads under plain node (e.g. a future preset-conversion script) instead of a browser
 // or a vitest run with test-setup's window shim. schema.test.ts asserts this stays in sync.
-export const DECLARED_CHILDREN = {
+const DECLARED_CHILDREN = {
   ocean: ["oceanLayers", "oceanPattern"],
   heightmap: ["oceanHeights", "landHeights"],
   lakes: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
