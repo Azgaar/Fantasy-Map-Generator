@@ -46,8 +46,10 @@ export class PixiMapPrototype {
     const started = performance.now();
     this.resize();
     this.clearStage();
+    this.app.renderer.background.color = getLayerFillColor("oceanBase", "#466eab");
 
     const theme = this.stats.theme;
+    const baseContainer = this.buildBaseContainer();
     const fillContainer = this.buildFillContainer(theme);
     let reliefSprites = 0;
     let batches = fillContainer.children.length;
@@ -58,9 +60,9 @@ export class PixiMapPrototype {
       reliefSprites = reliefContainer.children.length;
       const borderContainer = this.buildBordersContainer();
       batches += borderContainer.children.length;
-      this.app.stage.addChild(reliefContainer, fillContainer, borderContainer);
+      this.app.stage.addChild(baseContainer, reliefContainer, fillContainer, borderContainer);
     } else {
-      this.app.stage.addChild(fillContainer);
+      this.app.stage.addChild(baseContainer, fillContainer);
     }
 
     this.syncVisibility();
@@ -90,12 +92,14 @@ export class PixiMapPrototype {
 
   syncVisibility(): void {
     if (!this.app || !this.stats.enabled) return;
-    const [relief, fills, borders] = this.app.stage.children;
+    const [, reliefOrFills, fillsOrUndefined, borders] = this.app.stage.children;
     if (this.stats.theme === "states") {
+      const relief = reliefOrFills;
+      const fills = fillsOrUndefined;
       if (relief) relief.visible = layerIsOn("toggleRelief");
       if (fills) fills.visible = layerIsOn("toggleStates");
       if (borders) borders.visible = layerIsOn("toggleBorders");
-    } else if (fills) fills.visible = layerIsOn("toggleBiomes");
+    } else if (reliefOrFills) reliefOrFills.visible = layerIsOn("toggleBiomes");
     this.app.render();
   }
 
@@ -128,7 +132,8 @@ export class PixiMapPrototype {
       antialias: false,
       autoDensity: true,
       autoStart: false,
-      backgroundAlpha: 0,
+      backgroundAlpha: 1,
+      backgroundColor: getLayerFillColor("oceanBase", "#466eab"),
       clearBeforeRender: true,
       height: graphHeight,
       preference: "webgl",
@@ -193,6 +198,31 @@ export class PixiMapPrototype {
     return container;
   }
 
+  private buildBaseContainer(): Container {
+    const container = new Container();
+    container.label = "land-base";
+
+    const landGroups = new Uint8Array(pack.cells.h.length);
+    landGroups.fill(1);
+    const [landBatch] = buildCellFillBatches({
+      cellIds: pack.cells.i,
+      cellVertices: pack.cells.v,
+      colors: [{}, { color: getLayerFillColor("landmass", "#eef6fb") }],
+      groups: landGroups,
+      heights: pack.cells.h,
+      vertexPoints: pack.vertices.p
+    });
+    if (!landBatch) return container;
+
+    const context = new GraphicsContext();
+    for (const polygon of landBatch.polygons) context.poly(polygon);
+    context.fill({ color: landBatch.color });
+    const graphic = new Graphics(context);
+    graphic.label = "land-base-fill";
+    container.addChild(graphic);
+    return container;
+  }
+
   private buildBordersContainer(): Container {
     const container = new Container();
     container.label = "borders";
@@ -253,6 +283,13 @@ function getLayerOpacity(id: string): number {
   if (!element) return 1;
   const computed = getComputedStyle(element);
   return parseOpacity(computed.opacity) * parseOpacity(computed.fillOpacity);
+}
+
+function getLayerFillColor(id: string, fallback: string): string {
+  const element = document.getElementById(id);
+  if (!element) return fallback;
+  const fill = getComputedStyle(element).fill;
+  return fill && fill !== "none" ? fill : fallback;
 }
 
 function parseOpacity(value: string): number {
