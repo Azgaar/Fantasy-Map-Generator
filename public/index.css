@@ -133,12 +133,26 @@ a {
   fill-rule: evenodd;
 }
 
+#lakes {
+  mask: url(#water);
+}
+
 #lakes,
 #coastline,
 #armies,
 #ice,
-#emblems {
+#emblems,
+#goodsCells,
+#goodsIcons,
+#goodsBurgs,
+#markets {
   cursor: pointer;
+}
+
+#markets > g > path,
+#markets > g > text {
+  user-select: none;
+  pointer-events: none;
 }
 
 #temperature {
@@ -310,8 +324,7 @@ i.icon-lock {
   }
 }
 
-#provinceLabels,
-#burgLabels {
+#labels text[data-label-type="burg"][data-label-shape="point"] {
   dominant-baseline: alphabetic;
   text-anchor: middle;
 }
@@ -742,6 +755,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   display: inline-block;
   padding: 0;
   margin: 0;
+  user-select: none; /* the items are re-rendered, so jQuery disableSelection cannot hold */
 }
 
 #mapFilters > button {
@@ -1403,10 +1417,6 @@ div.header {
   font-size: 0.9em;
 }
 
-div.header > div:first-child {
-  margin-left: 1.8em;
-}
-
 .sortable {
   cursor: pointer;
 }
@@ -1420,6 +1430,90 @@ div.header > div:first-child {
 
 .totalLine > div {
   display: inline-block;
+}
+
+/* floor picked to fit a usable search input plus a couple of wrapped icon rows, shared by all six overview editors */
+.editorFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  padding-block: 0.1em;
+  /* width:0 + min-width:100% fills the table-driven dialog width without contributing to it, same trick as the pagination footer */
+  width: 0;
+  min-width: 100%;
+}
+/* fixed label column (a text node + control per label, both grid items) so controls line up across rows */
+.editorFilters label {
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  align-items: center;
+  column-gap: 0.3em;
+}
+.editorFilters input[type="search"],
+.editorFilters select {
+  width: 100%;
+  min-width: 3em;
+}
+.editorToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em;
+  width: 0;
+  min-width: 100%;
+  /* max-content of a wrapping flex row ignores the wrap, so cap it to force real wrapping instead of setting the dialog's fit-content width */
+  max-width: 20em;
+}
+.editorToolbar > .editorToolbarPanel {
+  flex-basis: 100%;
+}
+
+.editorDialog .header,
+.editorDialog .states {
+  display: grid;
+  grid-template-columns: var(--table-columns, auto);
+  align-items: center;
+}
+
+.editorDialog .header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  width: auto;
+  line-height: 0;
+  background: #f3f4f7;
+  border: 1px solid transparent;
+  padding: 0 0.2em;
+}
+
+/* cells size to their grid track, not their own content, so long values shrink instead of widening the row */
+.editorDialog .states > * {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  width: auto;
+  min-width: 0;
+  /* resolves against the column track, so no cell can overflow into its neighbour */
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.editorDialog > .table {
+  width: auto;
+}
+
+/* flex items default to min-width:auto, so an <input>'s UA-default content width would otherwise ignore the cell's cap */
+.editorDialog .states [data-col] input:not([type="checkbox"]),
+.editorDialog .states [data-col] select {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.editorDialog .states [data-col] select {
+  appearance: none;
 }
 
 div.states {
@@ -1447,10 +1541,14 @@ div.totalLine > div {
   display: inline-block;
 }
 
-div.states > input {
-  width: 7em;
+div.states > input:not([type="checkbox"]) {
   background: none;
   border: 0;
+}
+
+/* the fixed 7em only applies outside the migrated grid editors, where .editorDialog .states > * already sets width from the column track */
+div.states > input:not([type="checkbox"]):not(.editorDialog *) {
+  width: 7em;
 }
 
 div.states div {
@@ -1462,11 +1560,7 @@ div.states .biomeHabitability {
   -moz-appearance: textfield;
 }
 
-div.states > .statePopulation {
-  width: 3em;
-}
-
-div.states:hover > .hiddenIcon {
+div.states:hover .hiddenIcon {
   visibility: visible !important;
 }
 
@@ -1477,7 +1571,8 @@ div.states .icon-pin,
 div.states .icon-flag-empty,
 div.states .icon-cw,
 div.states .icon-lock,
-div.states .icon-lock-open {
+div.states .icon-lock-open,
+div.states .icon-target {
   cursor: pointer;
 }
 
@@ -1522,14 +1617,6 @@ div.states span.inactive {
 
 div.states span.inactive:hover {
   color: #abaaaa;
-}
-
-div.states > .riverName {
-  width: 7em;
-}
-
-div.states > .riverType {
-  width: 5em;
 }
 
 .coaIcon {
@@ -1849,13 +1936,21 @@ div.editorLine {
 }
 
 #ruler {
-  cursor: move;
+  cursor: pointer;
   fill: none;
+}
+
+#ruler.editable {
+  cursor: move;
 }
 
 #ruler .rulerPoints {
   stroke: #4e5a69;
   fill: yellow;
+  cursor: pointer;
+}
+
+#ruler.editable .rulerPoints {
   cursor: grab;
 }
 
@@ -2188,7 +2283,7 @@ svg.button {
 }
 
 #globeLatLabels {
-  font-size: 12px;
+  font-size: 9px;
   font-family: var(--monospace);
   stroke: none;
   fill: #001754;
@@ -2388,6 +2483,7 @@ svg.button {
 
 #chat-widget-container {
   user-select: none;
+  z-index: 99 !important;
 }
 
 #chat-widget-minimized {
@@ -2403,6 +2499,46 @@ svg.button {
   to {
     opacity: var(--bg-opacity);
   }
+}
+
+#tourPromptButton {
+  position: fixed;
+  bottom: 100px;
+  right: 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;
+  animation: fadeIn 1s ease-in 1s forwards;
+  z-index: 9999;
+}
+
+#tourPromptButton button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#tourPromptButton svg path {
+  fill: #000000;
+  stroke: #000000;
+  fill-opacity: 1;
+  stroke-width: 0;
+  transition: all 0.3s ease-out;
+  stroke-linejoin: round;
+}
+
+#tourPromptButton:hover svg path {
+  fill-opacity: 0;
+  stroke-width: 5;
 }
 
 @media print {
@@ -2430,4 +2566,83 @@ svg.button {
   body {
     background: #25252a;
   }
+}
+
+/* Market Deals */
+div.states > .marketDealUnits {
+  width: 4em;
+  text-align: right;
+}
+
+div.states > .marketDealParty {
+  width: 8em;
+}
+
+div.states > .marketDealIncome {
+  width: 5em;
+  text-align: right;
+}
+
+div.states .marketBadge {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0 0.4em;
+  font-size: 0.8em;
+  font-weight: bold;
+  line-height: 1.35;
+}
+
+.fmg-tour.driver-popover {
+  border-radius: 4px;
+}
+
+.fmg-tour .driver-popover-title {
+  font-size: 1.1em;
+  border-bottom: 1px solid;
+  padding-bottom: 0.4em;
+  margin-bottom: 0.5em;
+}
+
+.fmg-tour .driver-popover-description {
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.fmg-tour .driver-popover-footer button {
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.fmg-tour .driver-popover-footer button:hover {
+  background-color: #e0e0e0;
+}
+
+.fmg-tour .driver-popover-progress-text {
+  font-size: 0.8em;
+}
+
+/* Tooltip demo step: hide overlay and restore all pointer events so the map is fully hoverable */
+body.tour-free-roam .driver-overlay {
+  opacity: 0 !important;
+}
+
+body.tour-free-roam * {
+  pointer-events: auto !important;
+}
+
+#startTourButton {
+  display: block;
+  margin: 0.8em auto 0.4em auto;
+  padding: 0.4em 1.2em;
+  background-color: #3a3a5c;
+  border: 1px solid #5a5a7a;
+  color: #e8d5a3;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+
+#startTourButton:hover {
+  background-color: #4a4a6c;
 }

@@ -1,17 +1,58 @@
 import type { CurveFactory } from "d3";
-import * as d3 from "d3";
-import { color, line, range } from "d3";
+import {
+  color,
+  curveBasis,
+  curveBasisClosed,
+  curveBasisOpen,
+  curveCardinal,
+  curveCardinalClosed,
+  curveCardinalOpen,
+  curveCatmullRom,
+  curveCatmullRomClosed,
+  curveCatmullRomOpen,
+  curveLinear,
+  curveLinearClosed,
+  curveMonotoneX,
+  curveMonotoneY,
+  curveNatural,
+  curveStep,
+  curveStepAfter,
+  curveStepBefore,
+  line,
+  range,
+  select
+} from "d3";
+import { tip } from "../components/tooltips";
 import { round } from "../utils";
 
-declare global {
-  var drawHeightmap: () => void;
-}
+const CURVE_MAP: Record<string, CurveFactory> = {
+  curveBasis,
+  curveBasisClosed,
+  curveBasisOpen,
+  curveCardinal,
+  curveCardinalClosed,
+  curveCardinalOpen,
+  curveCatmullRom,
+  curveCatmullRomClosed,
+  curveCatmullRomOpen,
+  curveLinear,
+  curveLinearClosed,
+  curveMonotoneX,
+  curveMonotoneY,
+  curveNatural,
+  curveStep,
+  curveStepAfter,
+  curveStepBefore
+};
 
-const heightmapRenderer = (): void => {
+export const drawHeightmap = (): void => {
+  if (customization === 1)
+    return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
+
   TIME && console.time("drawHeightmap");
 
-  const ocean = terrs.select<SVGGElement>("#oceanHeights");
-  const land = terrs.select<SVGGElement>("#landHeights");
+  const ocean = select("#terrs").select<SVGGElement>("#oceanHeights");
+  const land = select("#terrs").select<SVGGElement>("#landHeights");
 
   ocean.selectAll("*").remove();
   land.selectAll("*").remove();
@@ -19,19 +60,15 @@ const heightmapRenderer = (): void => {
   const paths: (string | undefined)[] = new Array(101);
   const { cells, vertices } = grid;
   const used = new Uint8Array(cells.i.length);
-  const heights = Array.from(cells.i as number[]).sort(
-    (a, b) => cells.h[a] - cells.h[b],
-  );
+  const heights = Array.from(cells.i as number[]).sort((a, b) => cells.h[a] - cells.h[b]);
 
   // ocean cells
   const renderOceanCells = Boolean(+ocean.attr("data-render"));
   if (renderOceanCells) {
     const skip = +ocean.attr("skip") + 1 || 1;
     const relax = +ocean.attr("relax") || 0;
-    // TODO: Improve for treeshaking
-    const curveType: keyof typeof d3 = (ocean.attr("curve") ||
-      "curveBasisClosed") as keyof typeof d3;
-    const lineGen = line().curve(d3[curveType] as CurveFactory);
+    const curveType = ocean.attr("curve") || "curveBasisClosed";
+    const lineGen = line().curve(CURVE_MAP[curveType] ?? curveBasisClosed);
 
     let currentLayer = 0;
     for (const i of heights) {
@@ -42,14 +79,10 @@ const heightmapRenderer = (): void => {
       if (used[i]) continue; // already marked
       const onborder = cells.c[i].some((n: number) => cells.h[n] < h);
       if (!onborder) continue;
-      const vertex = cells.v[i].find((v: number) =>
-        vertices.c[v].some((i: number) => cells.h[i] < h),
-      );
+      const vertex = cells.v[i].find((v: number) => vertices.c[v].some((i: number) => cells.h[i] < h));
       const chain = connectVertices(cells, vertices, vertex, h, used);
       if (chain.length < 3) continue;
-      const points = simplifyLine(chain, relax).map(
-        (v: number) => vertices.p[v],
-      );
+      const points = simplifyLine(chain, relax).map((v: number) => vertices.p[v]);
       if (!paths[h]) paths[h] = "";
       paths[h] += round(lineGen(points) || "");
     }
@@ -59,9 +92,8 @@ const heightmapRenderer = (): void => {
   {
     const skip = +land.attr("skip") + 1 || 1;
     const relax = +land.attr("relax") || 0;
-    const curveType: keyof typeof d3 = (land.attr("curve") ||
-      "curveBasisClosed") as keyof typeof d3;
-    const lineGen = line().curve(d3[curveType] as CurveFactory);
+    const curveType = land.attr("curve") || "curveBasisClosed";
+    const lineGen = line().curve(CURVE_MAP[curveType] ?? curveBasisClosed);
 
     let currentLayer = 20;
     for (const i of heights) {
@@ -73,15 +105,11 @@ const heightmapRenderer = (): void => {
       const onborder = cells.c[i].some((n: number) => cells.h[n] < h);
       if (!onborder) continue;
 
-      const startVertex = cells.v[i].find((v: number) =>
-        vertices.c[v].some((i: number) => cells.h[i] < h),
-      );
+      const startVertex = cells.v[i].find((v: number) => vertices.c[v].some((i: number) => cells.h[i] < h));
       const chain = connectVertices(cells, vertices, startVertex, h, used);
       if (chain.length < 3) continue;
 
-      const points = simplifyLine(chain, relax).map(
-        (v: number) => vertices.p[v],
-      );
+      const points = simplifyLine(chain, relax).map((v: number) => vertices.p[v]);
       if (!paths[h]) paths[h] = "";
       paths[h] += round(lineGen(points) || "");
     }
@@ -126,31 +154,17 @@ const heightmapRenderer = (): void => {
           .attr("fill", color(fillColor)!.darker(terracing).toString())
           .attr("data-height", height);
       }
-      group
-        .append("path")
-        .attr("d", paths[height]!)
-        .attr("fill", fillColor)
-        .attr("data-height", height);
+      group.append("path").attr("d", paths[height]!).attr("fill", fillColor).attr("data-height", height);
     }
   }
 
   // connect vertices to chain: specific case for heightmap
-  function connectVertices(
-    cells: any,
-    vertices: any,
-    start: number,
-    h: number,
-    used: Uint8Array,
-  ): number[] {
+  function connectVertices(cells: any, vertices: any, start: number, h: number, used: Uint8Array): number[] {
     const MAX_ITERATIONS = vertices.c.length;
 
     const n = cells.i.length;
     const chain: number[] = []; // vertices chain to form a path
-    for (
-      let i = 0, current = start;
-      i === 0 || (current !== start && i < MAX_ITERATIONS);
-      i++
-    ) {
+    for (let i = 0, current = start; i === 0 || (current !== start && i < MAX_ITERATIONS); i++) {
       const prev = chain[chain.length - 1]; // previous vertex in chain
       chain.push(current); // add current vertex to sequence
       const c = vertices.c[current]; // cells adjacent to vertex
@@ -180,5 +194,3 @@ const heightmapRenderer = (): void => {
 
   TIME && console.timeEnd("drawHeightmap");
 };
-
-window.drawHeightmap = heightmapRenderer;

@@ -1,5 +1,6 @@
 .vscode
 .idea
+.claude/worktrees
 /node_modules
 */node_modules
 /public/charges
@@ -7,3 +8,9 @@
 /coverage
 /playwright-report
 /test-results
+/_bmad
+/_bmad-output
+/memory
+.github/agents/bmad-*
+.github/prompts/bmad-*
+.serena/project.yml

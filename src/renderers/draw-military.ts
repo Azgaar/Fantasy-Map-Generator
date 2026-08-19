@@ -1,42 +1,30 @@
-import { color, easeSinInOut, transition } from "d3";
-import type { MilitaryRegiment } from "../modules/military-generator";
+import { color, easeSinInOut, select, transition } from "d3";
+import type { Regiment } from "../generators/military-generator";
 import { rn } from "../utils";
 
-declare global {
-  var drawMilitary: () => void;
-  var drawRegiments: (regiments: MilitaryRegiment[], stateId: number) => void;
-  var drawRegiment: (reg: MilitaryRegiment, stateId: number) => void;
-  var moveRegiment: (reg: MilitaryRegiment, x: number, y: number) => void;
-  var armies: import("d3").Selection<SVGGElement, unknown, null, undefined>;
-}
-
-const militaryRenderer = (): void => {
+export const drawMilitary = (): void => {
   TIME && console.time("drawMilitary");
 
-  armies.selectAll("g").remove();
-  pack.states
-    .filter((s) => s.i && !s.removed)
-    .forEach((s) => {
-      drawRegiments(s.military || [], s.i);
-    });
+  select<SVGGElement, unknown>("#armies").selectAll("g").remove();
+  for (const state of pack.states) {
+    if (!state.i || state.removed) continue;
+    drawRegimentsRenderer(state.military || [], state.i);
+  }
 
   TIME && console.timeEnd("drawMilitary");
 };
 
-const drawRegimentsRenderer = (
-  regiments: MilitaryRegiment[],
-  s: number,
-): void => {
-  const size = +armies.attr("box-size");
-  const w = (d: MilitaryRegiment) => (d.n ? size * 4 : size * 6);
+const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
+  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const w = (d: Regiment) => (d.n ? size * 4 : size * 6);
   const h = size * 2;
-  const x = (d: MilitaryRegiment) => rn(d.x - w(d) / 2, 2);
-  const y = (d: MilitaryRegiment) => rn(d.y - size, 2);
+  const x = (d: Regiment) => rn(d.x - w(d) / 2, 2);
+  const y = (d: Regiment) => rn(d.y - size, 2);
 
   const stateColor = pack.states[s]?.color;
   const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
   const darkerColor = color(baseColor)!.darker().formatHex();
-  const army = armies
+  const army = select<SVGGElement, unknown>("#armies")
     .append("g")
     .attr("id", `army${s}`)
     .attr("fill", baseColor)
@@ -47,64 +35,56 @@ const drawRegimentsRenderer = (
     .data(regiments)
     .enter()
     .append("g")
-    .attr("id", (d) => `regiment${s}-${d.i}`)
-    .attr("data-name", (d) => d.name)
+    .attr("id", d => `regiment${s}-${d.i}`)
+    .attr("data-name", d => d.name)
     .attr("data-state", s)
-    .attr("data-id", (d) => d.i)
-    .attr("transform", (d) => (d.angle ? `rotate(${d.angle})` : null))
-    .attr("transform-origin", (d) => `${d.x}px ${d.y}px`);
+    .attr("data-id", d => d.i)
+    .attr("transform", d => (d.angle ? `rotate(${d.angle})` : null))
+    .attr("transform-origin", d => `${d.x}px ${d.y}px`);
   g.append("rect")
-    .attr("x", (d) => x(d))
-    .attr("y", (d) => y(d))
-    .attr("width", (d) => w(d))
+    .attr("x", d => x(d))
+    .attr("y", d => y(d))
+    .attr("width", d => w(d))
     .attr("height", h);
   g.append("text")
-    .attr("x", (d) => d.x)
-    .attr("y", (d) => d.y)
+    .attr("x", d => d.x)
+    .attr("y", d => d.y)
     .attr("text-rendering", "optimizeSpeed")
-    .text((d) => Military.getTotal(d));
+    .text(d => Military.getTotal(d));
   g.append("rect")
     .attr("fill", "currentColor")
-    .attr("x", (d) => x(d) - h)
-    .attr("y", (d) => y(d))
+    .attr("x", d => x(d) - h)
+    .attr("y", d => y(d))
     .attr("width", h)
     .attr("height", h);
   g.append("text")
     .attr("class", "regimentIcon")
     .attr("text-rendering", "optimizeSpeed")
-    .attr("x", (d) => x(d) - size)
-    .attr("y", (d) => d.y)
-    .text((d) =>
-      d.icon!.startsWith("http") || d.icon!.startsWith("data:image")
-        ? ""
-        : d.icon!,
-    );
+    .attr("x", d => x(d) - size)
+    .attr("y", d => d.y)
+    .text(d => (d.icon!.startsWith("http") || d.icon!.startsWith("data:image") ? "" : d.icon!));
   g.append("image")
     .attr("class", "regimentImage")
-    .attr("x", (d) => x(d) - h)
-    .attr("y", (d) => y(d))
+    .attr("x", d => x(d) - h)
+    .attr("y", d => y(d))
     .attr("height", h)
     .attr("width", h)
-    .attr("href", (d) =>
-      d.icon!.startsWith("http") || d.icon!.startsWith("data:image")
-        ? d.icon!
-        : "",
-    );
+    .attr("href", d => (d.icon!.startsWith("http") || d.icon!.startsWith("data:image") ? d.icon! : ""));
 };
 
-const drawRegimentRenderer = (reg: MilitaryRegiment, stateId: number): void => {
-  const size = +armies.attr("box-size");
+export const drawRegiment = (reg: Regiment, stateId: number): void => {
+  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = rn(reg.x - w / 2, 2);
   const y1 = rn(reg.y - size, 2);
 
-  let army = armies.select<SVGGElement>(`g#army${stateId}`);
+  let army = select<SVGGElement, unknown>("#armies").select<SVGGElement>(`g#army${stateId}`);
   if (!army.size()) {
     const stateColor = pack.states[stateId]?.color;
     const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
     const darkerColor = color(baseColor)!.darker().formatHex();
-    army = armies
+    army = select<SVGGElement, unknown>("#armies")
       .append("g")
       .attr("id", `army${stateId}`)
       .attr("fill", baseColor)
@@ -119,11 +99,7 @@ const drawRegimentRenderer = (reg: MilitaryRegiment, stateId: number): void => {
     .attr("data-id", reg.i)
     .attr("transform", `rotate(${reg.angle || 0})`)
     .attr("transform-origin", `${reg.x}px ${reg.y}px`);
-  g.append("rect")
-    .attr("x", x1)
-    .attr("y", y1)
-    .attr("width", w)
-    .attr("height", h);
+  g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
   g.append("text")
     .attr("x", reg.x)
     .attr("y", reg.y)
@@ -140,32 +116,19 @@ const drawRegimentRenderer = (reg: MilitaryRegiment, stateId: number): void => {
     .attr("text-rendering", "optimizeSpeed")
     .attr("x", x1 - size)
     .attr("y", reg.y)
-    .text(
-      reg.icon!.startsWith("http") || reg.icon!.startsWith("data:image")
-        ? ""
-        : reg.icon!,
-    );
+    .text(reg.icon!.startsWith("http") || reg.icon!.startsWith("data:image") ? "" : reg.icon!);
   g.append("image")
     .attr("class", "regimentImage")
     .attr("x", x1 - h)
     .attr("y", y1)
     .attr("height", h)
     .attr("width", h)
-    .attr(
-      "href",
-      reg.icon!.startsWith("http") || reg.icon!.startsWith("data:image")
-        ? reg.icon!
-        : "",
-    );
+    .attr("href", reg.icon!.startsWith("http") || reg.icon!.startsWith("data:image") ? reg.icon! : "");
 };
 
 // move one regiment to another
-const moveRegimentRenderer = (
-  reg: MilitaryRegiment,
-  x: number,
-  y: number,
-): void => {
-  const el = armies
+export const moveRegiment = (reg: Regiment, x: number, y: number): void => {
+  const el = select<SVGGElement, unknown>("#armies")
     .select(`g#army${reg.state}`)
     .select(`g#regiment${reg.state}-${reg.i}`);
   if (!el.size()) return;
@@ -173,7 +136,7 @@ const moveRegimentRenderer = (
   const duration = Math.hypot(reg.x - x, reg.y - y) * 8;
   reg.x = x;
   reg.y = y;
-  const size = +armies.attr("box-size");
+  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = (x: number) => rn(x - w / 2, 2);
@@ -205,8 +168,3 @@ const moveRegimentRenderer = (
     .attr("height", "6")
     .attr("width", "6");
 };
-
-window.drawMilitary = militaryRenderer;
-window.drawRegiments = drawRegimentsRenderer;
-window.drawRegiment = drawRegimentRenderer;
-window.moveRegiment = moveRegimentRenderer;

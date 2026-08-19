@@ -1,24 +1,6 @@
+import { select } from "d3";
+import type { Marker } from "@/generators/markers-generator";
 import { rn } from "../utils";
-
-interface Marker {
-  i: number;
-  icon: string;
-  x: number;
-  y: number;
-  dx?: number;
-  dy?: number;
-  px?: number;
-  size?: number;
-  pin?: string;
-  fill?: string;
-  stroke?: string;
-  pinned?: boolean;
-}
-
-declare global {
-  var drawMarkers: () => void;
-  var drawMarker: (marker: Marker, rescale?: number) => string;
-}
 
 type PinShapeFunction = (fill: string, stroke: string) => string;
 type PinShapes = { [key: string]: PinShapeFunction };
@@ -33,8 +15,7 @@ const pinShapes: PinShapes = {
     `<path d="m 20,25 -5,4 -5,-4 z" fill="${stroke}"/><path d="M 5,5 H 25 V 25 H 5 Z" fill="${fill}" stroke="${stroke}"/>`,
   squarish: (fill: string, stroke: string) =>
     `<path d="m 5,5 h 20 v 20 h -6 l -4,4 -4,-4 H 5 Z" fill="${fill}" stroke="${stroke}" />`,
-  diamond: (fill: string, stroke: string) =>
-    `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`,
+  diamond: (fill: string, stroke: string) => `<path d="M 2,15 15,1 28,15 15,29 Z" fill="${fill}" stroke="${stroke}" />`,
   hex: (fill: string, stroke: string) =>
     `<path d="M 15,29 4.61,21 V 9 L 15,3 25.4,9 v 12 z" fill="${fill}" stroke="${stroke}" />`,
   hexy: (fill: string, stroke: string) =>
@@ -47,30 +28,17 @@ const pinShapes: PinShapes = {
     `<path d="M 4,16 9,4 h 12 l 5,12 -11,13 z" fill="${fill}" stroke="${stroke}" />`,
   heptagon: (fill: string, stroke: string) =>
     `<path d="M 15,29 6,22 4,12 10,4 h 10 l 6,8 -2,10 z" fill="${fill}" stroke="${stroke}" />`,
-  circle: (fill: string, stroke: string) =>
-    `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`,
-  no: () => "",
+  circle: (fill: string, stroke: string) => `<circle cx="15" cy="15" r="11" fill="${fill}" stroke="${stroke}" />`,
+  no: () => ""
 };
 
-const getPin = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
+export const getPin = (shape = "bubble", fill = "#fff", stroke = "#000"): string => {
   const shapeFunction = pinShapes[shape] || pinShapes.bubble;
   return shapeFunction(fill, stroke);
 };
 
-function markerRenderer(marker: Marker, rescale = 1): string {
-  const {
-    i,
-    icon,
-    x,
-    y,
-    dx = 50,
-    dy = 50,
-    px = 12,
-    size = 30,
-    pin,
-    fill,
-    stroke,
-  } = marker;
+export function drawMarker(marker: Marker, rescale = 1): string {
+  const { i, icon, x, y, dx = 50, dy = 50, px = 12, size = 30, pin, fill, stroke } = marker;
   const id = `marker${i}`;
   const zoomSize = rescale ? Math.max(rn(size / 5 + 24 / scale, 2), 1) : size;
   const viewX = rn(x - zoomSize / 2, 1);
@@ -86,20 +54,24 @@ function markerRenderer(marker: Marker, rescale = 1): string {
     </svg>`;
 }
 
-const markersRenderer = (): void => {
+// transient set of marker ids the map should render, driven by the Markers Overview filter
+let visibleMarkerIds: Set<number> | null = null;
+export const setMarkersFilter = (ids: number[] | null): void => {
+  visibleMarkerIds = ids ? new Set(ids) : null;
+};
+
+export const drawMarkers = (): void => {
   TIME && console.time("drawMarkers");
 
-  const rescale = +markers.attr("rescale");
-  const pinned = +markers.attr("pinned");
+  const rescale = +select("#markers").attr("rescale");
+  const pinned = +select("#markers").attr("pinned");
 
-  const markersData: Marker[] = pinned
-    ? pack.markers.filter((m: Marker) => m.pinned)
-    : pack.markers;
-  const html = markersData.map((marker) => markerRenderer(marker, rescale));
-  markers.html(html.join(""));
+  let markersData: Marker[] = pinned
+    ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
+    : pack.markers || [];
+  if (visibleMarkerIds) markersData = markersData.filter((marker: Marker) => visibleMarkerIds!.has(marker.i));
+  const html = markersData.map(marker => drawMarker(marker, rescale));
+  select("#markers").html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");
 };
-
-window.drawMarkers = markersRenderer;
-window.drawMarker = markerRenderer;

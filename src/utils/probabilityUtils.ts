@@ -46,22 +46,9 @@ export const each = (n: number) => {
  * @param {number} round - round value to n decimals
  * @return {number} random number
  */
-export const gauss = (
-  expected = 100,
-  deviation = 30,
-  min = 0,
-  max = 300,
-  round = 0,
-) => {
+export const gauss = (expected = 100, deviation = 30, min = 0, max = 300, round = 0) => {
   // Use .source() to get a version that uses the current Math.random (which may be seeded)
-  return rn(
-    minmax(
-      randomNormal.source(() => Math.random())(expected, deviation)(),
-      min,
-      max,
-    ),
-    round,
-  );
+  return rn(minmax(randomNormal.source(() => Math.random())(expected, deviation)(), min, max), round);
 };
 
 /**
@@ -78,7 +65,7 @@ export const Pint = (float: number): number => {
  * @param {Array} array - the array to pick from
  * @return {any} a random element from the array
  */
-export const ra = (array: any[]): any => {
+export const ra = <T>(array: T[]): T => {
   return array[Math.floor(Math.random() * array.length)];
 };
 
@@ -152,11 +139,7 @@ declare global {
     P: typeof P;
     each: typeof each;
     gauss: typeof gauss;
-    Pint: typeof Pint;
-    ra: typeof ra;
     rw: typeof rw;
-    biased: typeof biased;
-    getNumberInRange: typeof getNumberInRange;
     generateSeed: typeof generateSeed;
   }
 }

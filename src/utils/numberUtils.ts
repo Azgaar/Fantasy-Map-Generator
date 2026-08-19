@@ -55,8 +55,6 @@ declare global {
   interface Window {
     rn: typeof rn;
     minmax: typeof minmax;
-    lim: typeof lim;
     normalize: typeof normalize;
-    lerp: typeof lerp;
   }
 }

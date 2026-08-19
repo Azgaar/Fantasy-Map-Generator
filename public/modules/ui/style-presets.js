@@ -16,6 +16,7 @@ const systemPresets = [
   "monochrome"
 ];
 const customPresetPrefix = "fmgStyle_";
+const RELIEF_STYLE_ATTRIBUTES = ["set", "size", "density"];
 
 // add style presets to list
 {
@@ -33,7 +34,7 @@ async function applyStyleOnLoad() {
   const styleData = await getStylePreset(desiredPreset);
   const [appliedPreset, style] = styleData;
 
-  applyStyle(style);
+  applyStylePreset(style);
   updateMapFilter();
   stylePreset.value = stylePreset.dataset.old = appliedPreset;
   setPresetRemoveButtonVisibiliy();
@@ -71,28 +72,50 @@ async function fetchSystemPreset(preset) {
   }
 }
 
-function applyStyle(styleJSON) {
-  for (const selector in styleJSON) {
-    if (selector.startsWith("#burgLabels")) {
-      const group = selector.split("#").pop();
-      style.burgLabels[group] = styleJSON[selector];
+function applyStylePreset(presetJson) {
+  for (const selector in presetJson) {
+    let labelGroup = null;
+    if (selector.startsWith("#labels > #")) {
+      labelGroup = selector.split("#").pop();
+      style.labels.groups[labelGroup] = getStyleAttributes(presetJson[selector]);
     }
 
     if (selector.startsWith("#burgIcons")) {
       const group = selector.split("#").pop();
-      style.burgIcons[group] = styleJSON[selector];
+      style.burgIcons[group] = presetJson[selector];
     }
 
     if (selector.startsWith("#anchors")) {
       const group = selector.split("#").pop();
-      style.anchors[group] = styleJSON[selector];
+      style.anchors[group] = presetJson[selector];
     }
 
-    const el = document.querySelector(selector);
+    if (selector === "#terrain") {
+      const { set, size, density } = presetJson[selector];
+
+      if (size) {
+        const ratio = size / style.relief.size;
+        style.relief.size = size;
+        if (ratio !== 1) Relief.changeSize(size);
+      }
+
+      if (set) {
+        style.relief.set = set;
+        Relief.changeSet(set);
+      }
+
+      if (density) style.relief.density = density; // no model change as it would require regeneration
+    }
+
+    const el = labelGroup
+      ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
+      : document.querySelector(selector);
     if (!el) continue;
 
-    for (const attribute in styleJSON[selector]) {
-      const value = styleJSON[selector][attribute];
+    for (const attribute in presetJson[selector]) {
+      if (attribute === "id") continue;
+      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in style.relief
+      const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {
         el.removeAttribute(attribute);
@@ -115,6 +138,24 @@ function applyStyle(styleJSON) {
         addCustomColorScheme(value);
       }
     }
+
+    if (selector.startsWith("#labels > #")) {
+      const dx = el.dataset.dx || 0;
+      const dy = el.dataset.dy || 0;
+      el.style.transform = +dx || +dy ? `translate(${dx}em, ${dy}em)` : "";
+    }
+  }
+
+  // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
+  // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
+  for (const group of options.labels.groups) {
+    if (style.labels.groups[group.name]) continue;
+    const defaultGroupStyle = style.labels.groups[Labels.getFallbackGroup(group.type).name];
+    if (defaultGroupStyle) style.labels.groups[group.name] = { ...defaultGroupStyle };
+  }
+
+  function getStyleAttributes(attributes) {
+    return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
   }
 }
 
@@ -141,29 +182,22 @@ async function changeStyle(desiredPreset) {
   const [presetName, style] = styleData;
   localStorage.setItem("presetStyle", presetName);
   applyStyleWithUiRefresh(style);
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
-  if (layerIsOn("toggleLabels")) {
-    drawBurgLabels();
-    drawStateLabels();
-  }
 }
 
 function applyStyleWithUiRefresh(style) {
-  applyStyle(style);
-  updateElements();
+  applyStylePreset(style);
   selectStyleElement(); // re-select element to trigger values update
   updateMapFilter();
   stylePreset.dataset.old = stylePreset.value;
 
+  Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
+
   invokeActiveZooming();
   setPresetRemoveButtonVisibiliy();
-
-  drawScaleBar(scaleBar, scale);
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
 }
 
 function addStylePreset() {
-  $("#styleSaver").dialog({title: "Style Saver", width: "26em", position: {my: "center", at: "center", of: "svg"}});
+  $("#styleSaver").dialog({ title: "Style Saver", width: "26em", position: { my: "center", at: "center", of: "svg" } });
 
   const styleName = stylePreset.value.replace(customPresetPrefix, "");
   document.getElementById("styleSaverName").value = styleName;
@@ -181,7 +215,7 @@ function addStylePreset() {
   document.getElementById("styleToLoad").addEventListener("change", loadStyleFile);
 
   function collectStyleData() {
-    const style = {};
+    const presetStyle = {};
     const attributes = {
       "#map": ["background-color", "filter", "data-filter"],
       "#armies": ["font-size", "box-size", "stroke", "stroke-width", "fill-opacity", "filter"],
@@ -222,6 +256,20 @@ function addStylePreset() {
       "#markers": ["opacity", "rescale", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
+      "#markets": [
+        "opacity",
+        "stroke-width",
+        "fill-opacity",
+        "stroke-opacity",
+        "data-size",
+        "font-size",
+        "data-icon",
+        "filter"
+      ],
+      "#goodsCells": ["opacity", "filter"],
+      "#goodsIcons": ["opacity", "stroke-width", "data-circle", "data-size", "filter"],
+      "#goodsBurgs": ["opacity", "stroke", "stroke-width", "data-size", "filter"],
+      "#tradeAnimation": ["opacity", "filter"],
       "#rural": ["stroke"],
       "#urban": ["stroke"],
       "#freshwater": ["opacity", "fill", "stroke", "stroke-width", "filter"],
@@ -232,9 +280,9 @@ function addStylePreset() {
       "#dry": ["opacity", "fill", "stroke", "stroke-width", "filter"],
       "#sea_island": ["opacity", "stroke", "stroke-width", "filter", "auto-filter"],
       "#lake_island": ["opacity", "stroke", "stroke-width", "filter"],
-      "#terrain": ["opacity", "set", "size", "density", "filter", "mask"],
+      "#terrain": ["opacity", "filter", "mask"],
       "#rivers": ["opacity", "filter", "fill"],
-      "#ruler": ["opacity", "filter"],
+      "#ruler": ["opacity", "data-size", "font-size", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#roads": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
@@ -287,7 +335,7 @@ function addStylePreset() {
         "data-columns"
       ],
       "#legendBox": ["fill", "fill-opacity"],
-      "#labels > #states": [
+      "#labels > #state": [
         "opacity",
         "fill",
         "stroke",
@@ -299,7 +347,19 @@ function addStylePreset() {
         "font-family",
         "filter"
       ],
-      "#labels > #addedLabels": [
+      "#labels > #province": [
+        "opacity",
+        "fill",
+        "stroke",
+        "stroke-width",
+        "style",
+        "letter-spacing",
+        "data-size",
+        "font-size",
+        "font-family",
+        "filter"
+      ],
+      "#labels > #added": [
         "opacity",
         "fill",
         "stroke",
@@ -355,8 +415,8 @@ function addStylePreset() {
       "filter"
     ];
     const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
-    options.burgs.groups.forEach(({name}) => {
-      attributes[`#burgLabels > g#${name}`] = burgLabelsAttributes;
+    options.burgs.groups.forEach(({ name }) => {
+      attributes[`#labels > #${name}`] = burgLabelsAttributes;
       attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
       attributes[`#anchors > g#${name}`] = anchorsAttributes;
     });
@@ -365,12 +425,28 @@ function addStylePreset() {
       const el = document.querySelector(selector);
       if (!el) continue;
 
-      style[selector] = {};
+      presetStyle[selector] = {};
       for (const attr of attributes[selector]) {
         let value = el.style[attr] || el.getAttribute(attr);
-        if (attr === "font-size" && el.hasAttribute("data-size")) value = el.getAttribute("data-size");
-        style[selector][attr] = parseValue(value);
+        if (attr === "font-size" && selector !== "#markets" && el.hasAttribute("data-size"))
+          value = el.getAttribute("data-size");
+        presetStyle[selector][attr] = parseValue(value);
       }
+    }
+
+    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
+
+    for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
+      addStoredLabelStyle(`#labels > #${group}`, groupStyle);
+    }
+
+    function addStoredLabelStyle(selector, groupStyle) {
+      if (!groupStyle) return;
+      presetStyle[selector] = Object.fromEntries(
+        Object.entries(groupStyle)
+          .filter(([key]) => key !== "id" && key !== "transform")
+          .map(([key, value]) => [key, parseValue(value)])
+      );
     }
 
     function parseValue(value) {
@@ -380,7 +456,7 @@ function addStylePreset() {
       return value;
     }
 
-    return style;
+    return presetStyle;
   }
 
   function checkName() {
@@ -464,7 +540,7 @@ function removeStylePreset() {
 }
 
 function updateMapFilter() {
-  const filter = svg.attr("data-filter");
+  const filter = d3.select("#map").attr("data-filter");
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   if (!filter) return;
   mapFilters.querySelector("#" + filter).classList.add("pressed");

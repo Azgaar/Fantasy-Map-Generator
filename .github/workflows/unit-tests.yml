@@ -1,17 +1,21 @@
 name: Unit Tests
 on:
   pull_request:
-    branches: [ master ]
+    branches: [master]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - uses: actions/setup-node@v5
-      with:
-        node-version: '24'
-    - name: Install dependencies
-      run: npm ci
-    - name: Run Unit tests
-      run: npm run test
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Unit tests
+        run: npm run test

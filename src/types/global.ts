@@ -1,26 +1,67 @@
-import type { Selection } from "d3";
-import type { NameBase } from "../modules/names-generator";
+import type { LabelGroup } from "@/generators/labels-generator";
+import type { ThreeDOptions } from "../data/view-3d-options";
+import type { GoodsModule } from "../generators/goods-generator";
+import type { MarketsModule } from "../generators/markets-generator";
+import type { ProductionModule } from "../generators/production-generator";
+import type { BurgGroup } from "./burg-groups";
 import type { PackedGraph } from "./PackedGraph";
+import type { Style } from "./style";
 
 declare global {
+  var MOBILE: boolean;
+
+  /**
+   * Migrated helpers, reachable ONLY as `window.X` — deliberately not `var`, so that bare `X`
+   * in a bundled module is a compile error. src/ imports what it calls; these entries exist so
+   * the owning module can register the bridge and classic public/ code can keep calling it.
+   * When the last classic caller of one is gone, delete the entry and its `window.X =` line.
+   */
+  interface Window {
+    tip: typeof import("../components/tooltips").tip;
+    clearMainTip: typeof import("../components/tooltips").clearMainTip;
+    showDataTip: typeof import("../components/tooltips").showDataTip;
+    showElementLockTip: typeof import("../components/tooltips").showElementLockTip;
+    lock: typeof import("../utils/preferences").lock;
+    unlock: typeof import("../utils/preferences").unlock;
+    stored: typeof import("../utils/preferences").stored;
+    applyDefaultViewboxEvents: typeof import("../components/viewbox-events").applyDefaultViewboxEvents;
+    fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
+    clearLegend: typeof import("../renderers/draw-legend").clearLegend;
+    unfog: typeof import("../renderers/overlays/fogging").unfog;
+    showInfo: typeof import("../components/app-info").showInfo;
+    applyOption: typeof import("../utils").applyOption;
+    closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
+    confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
+    downloadFile: typeof import("../utils").downloadFile;
+    uploadFile: typeof import("../utils").uploadFile;
+    getPrecipitation: typeof import("../utils").getPrecipitation;
+    panMap: typeof import("../components/zoom").panMap;
+    setMapZoom: typeof import("../components/zoom").setMapZoom;
+    changeMapZoom: typeof import("../components/zoom").changeMapZoom;
+    setZoomExtent: typeof import("../components/zoom").setZoomExtent;
+    setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
+  }
+
+  var mapId: number;
   var seed: string;
   var pack: PackedGraph;
   var grid: any;
   var graphHeight: number;
   var graphWidth: number;
   var TIME: boolean;
+  var INFO: boolean;
   var WARN: boolean;
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
-  var options: any;
+  var options: Options;
 
-  var heightmapTemplates: any;
-  var Routes: any;
+  var Goods: GoodsModule;
+  var Production: ProductionModule;
+  var Markets: MarketsModule;
   var populationRate: number;
   var urbanDensity: number;
   var urbanization: number;
   var distanceScale: number;
-  var nameBases: NameBase[];
 
   var pointsInput: HTMLInputElement;
   var culturesInput: HTMLInputElement;
@@ -31,62 +72,133 @@ declare global {
   var religionsNumber: HTMLInputElement;
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
+  var areaUnit: HTMLInputElement;
+  var stylePreset: HTMLSelectElement;
+  var temperatureScale: HTMLSelectElement;
 
-  var rivers: Selection<SVGElement, unknown, null, undefined>;
-  var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
-  var emblems: Selection<SVGElement, unknown, null, undefined>;
-  var svg: Selection<SVGSVGElement, unknown, null, undefined>;
-  var ice: Selection<SVGGElement, unknown, null, undefined>;
-  var labels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgLabels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgIcons: Selection<SVGGElement, unknown, null, undefined>;
-  var anchors: Selection<SVGGElement, unknown, null, undefined>;
-  var terrs: Selection<SVGGElement, unknown, null, undefined>;
-  var temperature: Selection<SVGGElement, unknown, null, undefined>;
-  var markers: Selection<SVGGElement, unknown, null, undefined>;
-  var defs: Selection<SVGDefsElement, unknown, null, undefined>;
-  var coastline: Selection<SVGGElement, unknown, null, undefined>;
-  var lakes: Selection<SVGGElement, unknown, null, undefined>;
-  var provs: Selection<SVGGElement, unknown, null, undefined>;
+  // Global variables defined in main.js
+  var scale: number;
+  var viewX: number;
+  var viewY: number;
+
   var getColorScheme: (scheme: string | null) => (t: number) => string;
   var getColor: (height: number, scheme: (t: number) => string) => string;
   var svgWidth: number;
   var svgHeight: number;
-  var viewbox: Selection<SVGElement, unknown, null, undefined>;
-  var routes: Selection<SVGElement, unknown, null, undefined>;
-  var biomesData: {
-    i: number[];
-    name: string[];
-    color: string[];
-    biomesMatrix: Uint8Array[];
-    habitability: number[];
-    iconsDensity: number[];
-    icons: string[][];
-    cost: number[];
-  };
-  var notes: any[];
-  var style: {
-    burgLabels: { [key: string]: { [key: string]: string } };
-    burgIcons: { [key: string]: { [key: string]: string } };
-    anchors: { [key: string]: { [key: string]: string } };
-    [key: string]: any;
-  };
 
-  var layerIsOn: (layerId: string) => boolean;
-  var drawRoute: (route: any) => void;
+  var notes: any[]; // TODO: correct type
+  var style: Style;
+
+  // IO / loading helpers defined in classic public/ scripts
+  var ldb: {
+    get: (key: string) => Promise<Blob | undefined>;
+    set: (key: string, value: Blob) => Promise<void>;
+  };
+  var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
+  var mapHistory: { created: number; [key: string]: unknown }[];
+  var customPresetPrefix: string;
+
+  var focusOn: () => void;
+  var fitMapToScreen: () => void;
+  var regenerateMap: (reason?: string) => void;
+  var generateMapOnLoad: () => void;
+  var addCustomColorScheme: (scheme: string) => void;
+  var updateTextureSelectValue: (href: string) => void;
+  var calculateFriendlyGridSize: () => void;
+  // heightmap editor globals
+  var color: (value: number) => string;
+  var edits: any; // heightmap edit history: Uint8Array[] with an extra .n cursor
+  var undraw: () => void;
+  var rankCells: () => void;
+  var generatePrecipitation: () => void;
+  var changeViewMode: (event?: Event) => void;
+  var resetZoom: (duration?: number) => void;
+  var RgbQuant: any; // external RgbQuant image-quantization lib
+
+  var shiftCompass: () => void;
+
   var invokeActiveZooming: () => void;
   var FlatQueue: any;
 
-  var tip: (
-    message: string,
-    autoHide?: boolean,
-    type?: "info" | "warn" | "error" | "success",
-    timeout?: number,
-  ) => void;
-  var locked: (settingId: string) => boolean;
-  var unlock: (settingId: string) => void;
+  var THREE: any; // lazy-loaded
+
   var $: (selector: any) => any;
-  var scale: number;
   var changeFont: () => void;
-  var getFriendlyHeight: (coords: [number, number]) => string;
+  var addLakesInDeepDepressions: () => void;
+  var openNearSeaLakes: () => void;
+  var calculateMapCoordinates: () => void;
+  var calculateTemperatures: () => void;
+  var reGraph: () => void;
+  var showStatistics: () => void;
+  var applyGraphSize: () => void;
+  var cellsDensityMap: Record<number, number>;
+  var changeCellsDensity: (value: string) => void;
+  var getCellsDensityColor: (cells: number) => string;
+  var showExportPane: () => void;
+  var customization: number;
+  var zoomTo: (x: number, y: number, zoom?: number, duration?: number) => void;
+  var modules: Record<string, boolean>;
+
+  // Legacy UI globals
+  var toggleOptions: (event?: Event) => void;
+  var hideOptions: (event?: Event) => void;
+  var isCtrlClick: (event: MouseEvent) => boolean;
+  var editStyle: (layer: string, group?: string) => void;
+  var capitalize: (str: string) => string;
+  var rn: (value: number, decimals?: number) => number;
+  var openURL: (url: string) => void;
+  var findCell: (x: number, y: number, radius?: number) => number | undefined;
+
+  var tinymce:
+    | {
+        _setBaseUrl: (url: string) => void;
+        init: (config: Record<string, unknown>) => void;
+        remove: () => void;
+        activeEditor?: { getContent: () => string; setContent: (content: string) => void };
+      }
+    | undefined;
+
+  var aleaPRNG: (seed: string | number) => () => number;
+  var heightmapColorSchemes: Record<string, unknown>;
+  var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
+
+  type MilitaryUnit = {
+    icon: string;
+    name: string;
+    rural: number;
+    urban: number;
+    crew: number;
+    power: number;
+    type: string;
+    separate: number;
+    biomes?: number[];
+    states?: number[];
+    cultures?: number[];
+    religions?: number[];
+  };
 }
+
+type Options = {
+  year: number;
+  era: string;
+  eraShort: string;
+  pinNotes: boolean;
+  winds: number[];
+  temperatureEquator: number;
+  temperatureNorthPole: number;
+  temperatureSouthPole: number;
+  mapSize: number; // map size in % of the world
+  latitude: number; // North-South map shift in %, 50 is centered on equator
+  longitude: number; // West-East map shift in %, 50 is centered on prime meridian
+  prec: number; // precipitation modifier in %
+  showBurgPreview: boolean;
+  burgs: { groups: BurgGroup[] };
+  labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
+  military: MilitaryUnit[];
+  trade: {
+    animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
+  };
+  threeD: ThreeDOptions;
+};
+
+export type Point = [number, number];

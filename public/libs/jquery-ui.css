@@ -328,13 +328,16 @@ body .ui-dialog {
 }
 
 .ui-dialog .ui-dialog-titlebar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 3px;
   margin-left: 5px;
   width: 19px;
   height: 18px;
+  line-height: 1;
   color: #ffffff;
   background: none;
-  font-size: 0.8em;
   border: 1px solid #c5c5c5;
 }
 
@@ -344,17 +347,14 @@ body .ui-dialog {
   }
 
   .ui-dialog .ui-dialog-titlebar button {
-    padding: 3px;
     margin-left: 10px;
     width: 40px;
     height: 32px;
-    font-size: 1.6em;
   }
 }
 
 .ui-dialog .ui-dialog-titlebar button:active {
   border: 1px solid #5d4651;
-  color: #5d4651;
 }
 
 .ui-dialog .ui-dialog-content {
