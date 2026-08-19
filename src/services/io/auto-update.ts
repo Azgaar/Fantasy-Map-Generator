@@ -3,6 +3,7 @@ import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
+import type { Feature } from "@/generators/features";
 import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
@@ -1665,13 +1666,43 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
   }
 
   if (isOlderThan("1.146.0")) {
+    // v1.146.0 stores the svg group of a feature on the feature itself
+    const adoptRenderingGroups = (layerId: string, getDefault: (feature: Feature) => string) => {
+      for (const use of Array.from(document.querySelectorAll(`#${layerId} > g > use[data-f]`))) {
+        const feature = pack.features[Number(use.getAttribute("data-f"))];
+        const group = (use.parentNode as SVGGElement).id;
+        if (!feature || !group || group === getDefault(feature)) continue;
+        feature.renderingGroup = group;
+      }
+    };
+    adoptRenderingGroups("coastline", () => "sea_island");
+    adoptRenderingGroups("lakes", feature => feature.group || "freshwater");
+
     // v1.146.0 preserves vertices dragged in the coastline and lake editors
-    const recovered = recoverMovedVertices();
-    if (recovered) data[51] = JSON.stringify(recovered);
+    if (!data[51]) {
+      const recovered = recoverMovedVertices();
+      if (recovered) data[51] = JSON.stringify(recovered);
+    }
 
     function recoverMovedVertices(): GraphOverrides | null {
       const FILL_LAYERS = ["statesBody", "provincesBody", "biomes", "cults", "relig"];
       const POINT = /-?[\d.]+(?:e-?\d+)?,-?[\d.]+(?:e-?\d+)?/g;
+
+      const chains: string[][] = [];
+      for (const layerId of FILL_LAYERS) {
+        const paths = Array.from(findEl(layerId)?.querySelectorAll("path") || []);
+
+        for (const path of paths) {
+          if (path.getAttribute("fill") === "none") continue; // stroked gap paths are not full vertex chains
+
+          for (const ring of (path.getAttribute("d") || "").split("Z")) {
+            const chain = ring.match(POINT) || [];
+            if (chain[chain.length - 1] === chain[0]) chain.pop(); // the ring is closed
+            if (chain.length > 2) chains.push(chain);
+          }
+        }
+      }
+      if (!chains.length) return null; // no area layer was drawn, there is nothing to recover from
 
       const vertexByPoint = new Map<string, number>();
       pack.vertices.p.forEach((point, vertexId) => {
@@ -1682,21 +1713,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       let points = 0;
       let unresolved = 0;
 
-      for (const layerId of FILL_LAYERS) {
-        const paths = Array.from(findEl(layerId)?.querySelectorAll("path") || []);
-
-        for (const path of paths) {
-          if (path.getAttribute("fill") === "none") continue; // stroked gap paths are not full vertex chains
-
-          for (const ring of (path.getAttribute("d") || "").split("Z")) {
-            const chain = ring.match(POINT) || [];
-            if (chain[chain.length - 1] === chain[0]) chain.pop(); // the ring is closed
-            if (chain.length < 3) continue;
-
-            points += chain.length;
-            unresolved += recoverChain(chain, vertexByPoint, moved);
-          }
-        }
+      for (const chain of chains) {
+        points += chain.length;
+        unresolved += recoverChain(chain, vertexByPoint, moved);
       }
 
       if (!Object.keys(moved).length) return null;

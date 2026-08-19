@@ -11,13 +11,19 @@ const getLegend = () => select<SVGGElement, unknown>("#legend");
 /** Draw the legend box with the given title and items, replacing whatever is there */
 export function drawLegend(name: string, data: LegendItem[]): void {
   const legend = getLegend();
+
+  // the box drawn before carries the legend styling; the style inputs only seed a legend drawn anew
+  const box = legend.select<SVGRectElement>("#legendBox").node();
+  const styleInput = (id: string) => ensureEl<HTMLInputElement>(id).value;
+  const boxStyle = (attr: string, inputId: string) => box?.getAttribute(attr) ?? styleInput(inputId);
+
+  const itemsInCol = Number(boxStyle("data-columns", "styleLegendColItems"));
+  const backColor = boxStyle("fill", "styleLegendBack");
+  const opacity = Number(boxStyle("fill-opacity", "styleLegendOpacity"));
+  const fontSize = Number(legend.attr("font-size"));
+
   legend.selectAll("*").remove(); // fully redraw every time
   legend.attr("data", data.join("|")); // store data to redraw on style change
-
-  const itemsInCol = Number(ensureEl<HTMLInputElement>("styleLegendColItems").value);
-  const fontSize = Number(legend.attr("font-size"));
-  const backColor = ensureEl<HTMLInputElement>("styleLegendBack").value;
-  const opacity = Number(ensureEl<HTMLInputElement>("styleLegendOpacity").value);
 
   const lineHeight = Math.round(fontSize * 1.7);
   const colorBoxSize = Math.round(fontSize / 1.7);
@@ -66,6 +72,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   legend
     .insert("rect", ":first-child")
     .attr("id", "legendBox")
+    .attr("data-columns", itemsInCol)
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", bbox.width + colOffset * 2)

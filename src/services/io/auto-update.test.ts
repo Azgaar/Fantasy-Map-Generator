@@ -146,7 +146,6 @@ describe("v1.145.2 moved vertices recovery", () => {
   it("recovers a vertex dragged out of its generated position", () => {
     document.body.innerHTML = withStates("M0,0 L20,0 24.5,21 0,20 Z"); // vertex 3 was dragged
     const data: string[] = [];
-    data[5] = "svg";
 
     resolveVersionConflicts("1.145.1", data);
 
@@ -167,7 +166,6 @@ describe("v1.145.2 moved vertices recovery", () => {
   it("keeps out of the way when nothing was dragged", () => {
     document.body.innerHTML = withStates("M0,0 L20,0 20,20 0,20 Z");
     const data: string[] = [];
-    data[5] = "svg";
 
     resolveVersionConflicts("1.145.1", data);
 
@@ -177,7 +175,6 @@ describe("v1.145.2 moved vertices recovery", () => {
   it("ignores an svg that does not match the graph", () => {
     document.body.innerHTML = withStates("M1,1 L2,2 3,3 4,4 5,5 6,6 7,7 8,8 Z");
     const data: string[] = [];
-    data[5] = "svg";
 
     resolveVersionConflicts("1.145.1", data);
 
@@ -187,11 +184,51 @@ describe("v1.145.2 moved vertices recovery", () => {
   it("does not touch maps that carry the data", () => {
     document.body.innerHTML = withStates("M0,0 L20,0 24.5,21 0,20 Z");
     const data: string[] = [];
-    data[5] = "svg";
     data[51] = "{}";
 
     resolveVersionConflicts("1.145.1", data);
+    resolveVersionConflicts("1.146.0", data);
 
     expect(data[51]).toBe("{}");
+  });
+});
+
+describe("v1.146 rendering groups", () => {
+  beforeEach(() => {
+    globalThis.pack = {
+      features: [
+        0,
+        { i: 1, type: "island", group: "continent" },
+        { i: 2, type: "island", group: "lake_island" },
+        { i: 3, type: "lake", group: "salt" },
+        { i: 4, type: "lake", group: "freshwater" }
+      ]
+    } as unknown as typeof globalThis.pack;
+
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="coastline">
+        <g id="sea_island"><use data-f="1"></use></g>
+        <g id="lake_island"><use data-f="2"></use></g>
+      </g>
+      <g id="lakes">
+        <g id="freshwater"><use data-f="4"></use></g>
+        <g id="my_lakes"><use data-f="3"></use></g>
+      </g>
+    </g></svg>`;
+  });
+
+  it("adopts the svg placement that differs from the layer default", () => {
+    resolveVersionConflicts("1.145.1", []);
+
+    expect(pack.features[1].renderingGroup).toBeUndefined(); // the default group is not stored
+    expect(pack.features[2].renderingGroup).toBe("lake_island");
+    expect(pack.features[3].renderingGroup).toBe("my_lakes"); // the lake type says salt, the svg says otherwise
+    expect(pack.features[4].renderingGroup).toBeUndefined();
+  });
+
+  it("leaves current maps alone", () => {
+    resolveVersionConflicts("1.146.0", []);
+
+    expect(pack.features.slice(1).every(feature => !feature.renderingGroup)).toBe(true);
   });
 });

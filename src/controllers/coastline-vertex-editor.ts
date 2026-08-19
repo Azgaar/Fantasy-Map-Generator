@@ -161,6 +161,18 @@ function selectCoastlineGroup(node: SVGElement): void {
 
 function changeCoastlineGroup(this: HTMLSelectElement): void {
   ensureEl(this.value).appendChild(selectedCoastline.node()!);
+  assignGroup([selectedCoastline.node()!], this.value);
+}
+
+const DEFAULT_GROUP = "sea_island";
+function assignGroup(elements: Element[], group: string): void {
+  for (const element of elements) {
+    const feature = pack.features[+(element.getAttribute("data-f") || 0)];
+    if (!feature) continue;
+
+    if (group === DEFAULT_GROUP) delete feature.renderingGroup;
+    else feature.renderingGroup = group;
+  }
 }
 
 function toggleNewGroupInput(): void {
@@ -204,6 +216,7 @@ function createNewGroup(this: HTMLInputElement): void {
     ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
     ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
     oldGroup.id = group;
+    assignGroup(Array.from(oldGroup.children), group);
     toggleNewGroupInput();
     ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
     return;
@@ -215,6 +228,7 @@ function createNewGroup(this: HTMLInputElement): void {
   newGroup.id = group;
   ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
   ensureEl(group).appendChild(selectedCoastline.node()!);
+  assignGroup([selectedCoastline.node()!], group);
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
@@ -239,6 +253,7 @@ function removeCoastlineGroup(): void {
         $(this).dialog("close");
         const sea = ensureEl("sea_island");
         const groupEl = ensureEl(group);
+        assignGroup(Array.from(groupEl.children), DEFAULT_GROUP);
         while (groupEl.childNodes.length) {
           sea.appendChild(groupEl.childNodes[0]);
         }

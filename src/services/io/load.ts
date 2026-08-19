@@ -704,7 +704,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       }
     }
 
-    Layers.drawSafe();
+    Layers.drawAll();
     applyDefaultViewboxEvents();
     focusOn();
     invokeActiveZooming();

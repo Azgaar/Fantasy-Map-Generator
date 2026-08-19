@@ -30,6 +30,7 @@ export interface Feature {
   shoreline: number[];
   height: number;
   group: string;
+  renderingGroup?: string; // group the feature is drawn in, when it differs from the layer default
   temp: number;
   flux: number;
   evaporation: number;
@@ -374,6 +375,7 @@ class FeatureModule {
 
       if (feature.type === "lake") feature.height = Lakes.getHeight(feature);
       feature.group = defineGroup(feature);
+      if (feature.group === "lake_island") feature.renderingGroup = "lake_island";
     }
   }
 }
