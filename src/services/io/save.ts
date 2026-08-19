@@ -3,8 +3,10 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
+
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
@@ -85,6 +87,7 @@ function prepareMapData(): string {
   const measurers = JSON.stringify(pack.measurers ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
   const layers = JSON.stringify(Layers.state);
+  const graphOverride = JSON.stringify(GraphOverride.state);
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
@@ -198,7 +201,8 @@ function prepareMapData(): string {
     labels,
     styleData,
     relief,
-    layers
+    layers,
+    graphOverride
   ].join("\r\n");
   return mapData;
 }

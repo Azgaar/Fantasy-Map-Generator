@@ -5,6 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { GraphOverride } from "@/generators/graph-override";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
@@ -637,6 +638,7 @@ function restoreRiskedData(): void {
   generatePrecipitation();
   reGraph();
   Features.markupPack();
+  GraphOverride.restore(); // the graph is rebuilt, re-apply user edits that still fit it
 
   if (erosionAllowed) {
     Rivers.generate(true);

@@ -168,6 +168,14 @@ export class LayersRegistry<Id extends string = string> {
     this.draw(...this.layers.map(layer => layer.id));
   }
 
+  /** draw all rerendarable layers */
+  drawSafe(): void {
+    const layers = this.layers
+      .filter(layer => !layer.params.permanent && !layer.params.keepContent)
+      .map(layer => layer.id);
+    this.draw(...layers);
+  }
+
   eraseAll(): void {
     for (const layer of this.layers) {
       if (layer.parent !== "viewbox") continue;

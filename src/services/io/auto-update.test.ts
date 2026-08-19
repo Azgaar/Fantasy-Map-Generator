@@ -114,3 +114,84 @@ describe("v1.145 svg layer cleanup", () => {
     expect(document.querySelector("#routes > #empty")).not.toBeNull();
   });
 });
+
+describe("v1.145.2 moved vertices recovery", () => {
+  // a ring of 4 vertices around the central one, each connected to its two neighbors and to the center
+  const createGraph = () => ({
+    vertices: {
+      p: [
+        [10, 10],
+        [0, 0],
+        [20, 0],
+        [20, 20],
+        [0, 20]
+      ],
+      v: [
+        [1, 2, 3],
+        [4, 2, 0],
+        [1, 3, 0],
+        [2, 4, 0],
+        [3, 1, 0]
+      ]
+    }
+  });
+
+  const withStates = (d: string) => /* html */ `<svg id="map"><g id="viewbox"><g id="regions"><g id="statesBody">
+    <path fill="#aaa" d="${d}"></path></g></g></g></svg>`;
+
+  beforeEach(() => {
+    globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
+  });
+
+  it("recovers a vertex dragged out of its generated position", () => {
+    document.body.innerHTML = withStates("M0,0 L20,0 24.5,21 0,20 Z"); // vertex 3 was dragged
+    const data: string[] = [];
+    data[5] = "svg";
+
+    resolveVersionConflicts("1.145.1", data);
+
+    expect(JSON.parse(data[51])).toEqual({
+      pack: {
+        vertices: {
+          p: {
+            3: [
+              [20, 20],
+              [24.5, 21]
+            ]
+          }
+        }
+      }
+    });
+  });
+
+  it("keeps out of the way when nothing was dragged", () => {
+    document.body.innerHTML = withStates("M0,0 L20,0 20,20 0,20 Z");
+    const data: string[] = [];
+    data[5] = "svg";
+
+    resolveVersionConflicts("1.145.1", data);
+
+    expect(data[51]).toBeUndefined();
+  });
+
+  it("ignores an svg that does not match the graph", () => {
+    document.body.innerHTML = withStates("M1,1 L2,2 3,3 4,4 5,5 6,6 7,7 8,8 Z");
+    const data: string[] = [];
+    data[5] = "svg";
+
+    resolveVersionConflicts("1.145.1", data);
+
+    expect(data[51]).toBeUndefined();
+  });
+
+  it("does not touch maps that carry the data", () => {
+    document.body.innerHTML = withStates("M0,0 L20,0 24.5,21 0,20 Z");
+    const data: string[] = [];
+    data[5] = "svg";
+    data[51] = "{}";
+
+    resolveVersionConflicts("1.145.1", data);
+
+    expect(data[51]).toBe("{}");
+  });
+});

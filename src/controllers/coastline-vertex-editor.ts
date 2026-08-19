@@ -1,9 +1,10 @@
-import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
+import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { Feature } from "@/generators/features";
+import { GraphOverride } from "@/generators/graph-override";
 import { getFeaturePath } from "@/renderers/feature-path";
 import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
@@ -100,14 +101,14 @@ function handleVertexDrag(
   event: D3DragEvent<SVGCircleElement, number, number>,
   vertexId: number
 ): void {
-  const { vertices, features } = pack;
+  const { features } = pack;
 
   const x = rn(event.x, 2);
   const y = rn(event.y, 2);
   this.setAttribute("cx", String(x));
   this.setAttribute("cy", String(y));
 
-  vertices.p[vertexId] = [x, y];
+  GraphOverride.movePackVertex(vertexId, [x, y]);
 
   const featureId = +selectedCoastline.attr("data-f");
   const feature = features[featureId];
@@ -116,10 +117,6 @@ function handleVertexDrag(
   select<SVGElement, unknown>("#deftemp")
     .select(`#featurePaths > path#feature_${featureId}`)
     .attr("d", getFeaturePath(feature));
-
-  // update area
-  const points = feature.vertices.map(vertex => vertices.p[vertex] as [number, number]);
-  feature.area = Math.abs(polygonArea(points));
   ensureEl("coastlineArea").innerHTML = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell
@@ -130,9 +127,7 @@ function handleVertexDrag(
 }
 
 function handleVertexDragEnd(): void {
-  Layers.draw("states", "provinces");
-  Layers.draw("borders", "biomes");
-  Layers.draw("religions", "cultures");
+  Layers.draw("states", "provinces", "borders", "biomes", "religions", "cultures");
 }
 
 function showGroupSection(): void {

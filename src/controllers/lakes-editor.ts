@@ -1,10 +1,11 @@
-import { drag, mean, min, polygonArea, polygonLength, type Selection, select } from "d3";
+import { drag, mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Feature } from "@/generators/features";
+import { GraphOverride } from "@/generators/graph-override";
 import { getFeaturePath } from "@/renderers/feature-path";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
@@ -178,7 +179,7 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
   this.setAttribute("cx", String(x));
   this.setAttribute("cy", String(y));
 
-  pack.vertices.p[vertexId] = [x, y];
+  GraphOverride.movePackVertex(vertexId, [x, y]);
 
   const feature = getLake();
 
@@ -186,10 +187,6 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
   select<SVGElement, unknown>("#deftemp")
     .select(`#featurePaths > path#feature_${feature.i}`)
     .attr("d", getFeaturePath(feature));
-
-  // update area
-  const points = feature.vertices.map(vertex => pack.vertices.p[vertex] as [number, number]);
-  feature.area = Math.abs(polygonArea(points));
   ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell
@@ -200,9 +197,7 @@ function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number):
 }
 
 function handleVertexDragEnd(): void {
-  Layers.draw("states", "provinces");
-  Layers.draw("borders", "biomes");
-  Layers.draw("religions", "cultures");
+  Layers.draw("states", "provinces", "borders", "biomes", "religions", "cultures");
 }
 
 function changeName(this: HTMLInputElement): void {

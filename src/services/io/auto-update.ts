@@ -3,11 +3,13 @@ import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
+import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -1659,6 +1661,93 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       for (const group of sameId) {
         if (isEmpty(group) || (keep && group !== keep)) group.remove();
       }
+    }
+  }
+
+  if (isOlderThan("1.146.0")) {
+    // v1.146.0 preserves vertices dragged in the coastline and lake editors
+    const recovered = recoverMovedVertices();
+    if (recovered) data[51] = JSON.stringify(recovered);
+
+    function recoverMovedVertices(): GraphOverrides | null {
+      const FILL_LAYERS = ["statesBody", "provincesBody", "biomes", "cults", "relig"];
+      const POINT = /-?[\d.]+(?:e-?\d+)?,-?[\d.]+(?:e-?\d+)?/g;
+
+      const vertexByPoint = new Map<string, number>();
+      pack.vertices.p.forEach((point, vertexId) => {
+        vertexByPoint.set(String(point), vertexId);
+      });
+
+      const moved: Record<number, [Point, Point]> = {};
+      let points = 0;
+      let unresolved = 0;
+
+      for (const layerId of FILL_LAYERS) {
+        const paths = Array.from(findEl(layerId)?.querySelectorAll("path") || []);
+
+        for (const path of paths) {
+          if (path.getAttribute("fill") === "none") continue; // stroked gap paths are not full vertex chains
+
+          for (const ring of (path.getAttribute("d") || "").split("Z")) {
+            const chain = ring.match(POINT) || [];
+            if (chain[chain.length - 1] === chain[0]) chain.pop(); // the ring is closed
+            if (chain.length < 3) continue;
+
+            points += chain.length;
+            unresolved += recoverChain(chain, vertexByPoint, moved);
+          }
+        }
+      }
+
+      if (!Object.keys(moved).length) return null;
+      if (unresolved > points * 0.05) return null; // the svg does not match the graph, the result is not trustworthy
+
+      INFO && console.info(`Recovered ${Object.keys(moved).length} moved vertices from the map svg`);
+      return { pack: { vertices: { p: moved } } };
+    }
+
+    function distance([x1, y1]: Point, [x2, y2]: Point): number {
+      return (x2 - x1) ** 2 + (y2 - y1) ** 2;
+    }
+
+    function recoverChain(
+      chain: string[],
+      vertexByPoint: Map<string, number>,
+      moved: Record<number, [Point, Point]>
+    ): number {
+      const { vertices } = pack;
+      const ids = chain.map(point => vertexByPoint.get(point) ?? null);
+      const inChain = new Set(chain.filter((_, index) => ids[index] !== null));
+
+      for (let resolved = true; resolved; ) {
+        resolved = false;
+
+        for (let index = 0; index < ids.length; index++) {
+          if (ids[index] !== null) continue;
+
+          const prev = ids[(index - 1 + ids.length) % ids.length];
+          const next = ids[(index + 1) % ids.length];
+          if (prev === null || next === null) continue;
+
+          // the moved point is the vertex connecting its neighbors in the chain, and it's not there itself
+          const candidates = vertices.v[prev].filter(
+            vertexId => vertices.v[next].includes(vertexId) && !inChain.has(String(vertices.p[vertexId]))
+          );
+          if (!candidates.length) continue;
+
+          const point = chain[index].split(",").map(Number) as Point;
+          const vertexId = candidates.sort(
+            (a, b) => distance(vertices.p[a], point) - distance(vertices.p[b], point)
+          )[0];
+
+          ids[index] = vertexId;
+          inChain.add(chain[index]);
+          moved[vertexId] = [vertices.p[vertexId], point];
+          resolved = true;
+        }
+      }
+
+      return ids.filter(vertexId => vertexId === null).length;
     }
   }
 }

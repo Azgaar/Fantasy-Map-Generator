@@ -3,6 +3,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { GraphOverride } from "@/generators/graph-override";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
@@ -429,6 +430,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       resolveVersionConflicts(mapVersion!, data);
     }
 
+    if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
     if (data[50]) Layers.restore(JSON.parse(data[50]));
 
     Goods.sync();
@@ -702,7 +704,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       }
     }
 
-    Layers.drawAll();
+    Layers.drawSafe();
     applyDefaultViewboxEvents();
     focusOn();
     invokeActiveZooming();
