@@ -23,6 +23,11 @@ export const drawRelief = (): void => {
   const isActive = layerIsOn("toggleRelief");
   setReliefLayerActive(isActive);
   if (!isActive) return void removeRelief();
+  if (window.PixiMapPrototype?.ownsLayer("relief")) {
+    removeRelief();
+    window.PixiMapPrototype.queueRebuild();
+    return;
+  }
 
   TIME && console.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();

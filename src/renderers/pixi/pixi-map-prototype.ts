@@ -1,4 +1,5 @@
 import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, type Texture } from "pixi.js";
+import { buildBorderPaths } from "../draw-borders";
 import { buildCellFillBatches } from "./pixi-map-data";
 
 export type PixiMapTheme = "states" | "biomes";
@@ -226,10 +227,12 @@ export class PixiMapPrototype {
   private buildBordersContainer(): Container {
     const container = new Container();
     container.label = "borders";
-    for (const groupId of ["stateBorders", "provinceBorders"]) {
+    const paths = buildBorderPaths(pack);
+    for (const [groupId, data] of [
+      ["stateBorders", paths.state],
+      ["provinceBorders", paths.province]
+    ] as const) {
       const group = document.getElementById(groupId);
-      const path = group?.querySelector("path");
-      const data = path?.getAttribute("d");
       if (!group || !data) continue;
 
       const computed = getComputedStyle(group);
@@ -251,6 +254,7 @@ export class PixiMapPrototype {
     const container = new Container();
     container.label = "relief";
     container.alpha = getLayerOpacity("terrain");
+    if (!pack.relief?.length) Relief.generate();
     if (!pack.relief?.length) return container;
 
     const icons = new Set(pack.relief.map(({ icon }) => icon));

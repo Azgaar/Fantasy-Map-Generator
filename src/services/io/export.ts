@@ -253,6 +253,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     noVignette = false,
     fullMap = false
   } = options;
+  const releaseSvgFallback = window.PixiMapPrototype?.materializeSvgFallback();
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
   cloneEl.querySelector("#pixi-map-prototype")?.remove();
@@ -275,6 +276,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
       fitScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], graphWidth, graphHeight);
     }
   }
+  releaseSvgFallback?.();
 
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();

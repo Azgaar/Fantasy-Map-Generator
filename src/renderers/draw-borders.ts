@@ -1,12 +1,17 @@
 import { select } from "d3";
+import type { PackedGraph } from "@/types/PackedGraph";
 
 declare global {
   var drawBorders: () => void;
 }
 
-const bordersRenderer = () => {
-  TIME && console.time("drawBorders");
-  const { cells, vertices } = pack;
+export interface BorderPaths {
+  province: string;
+  state: string;
+}
+
+export const buildBorderPaths = (graph: Pick<PackedGraph, "cells" | "vertices">): BorderPaths => {
+  const { cells, vertices } = graph;
 
   const statePath: string[] = [];
   const provincePath: string[] = [];
@@ -81,10 +86,6 @@ const bordersRenderer = () => {
       }
     }
   }
-
-  select("#map").select("#borders").attr("fill", "none").selectAll("path").remove();
-  select("#map").select("#stateBorders").append("path").attr("d", statePath.join(" "));
-  select("#map").select("#provinceBorders").append("path").attr("d", provincePath.join(" "));
 
   function getBorder({
     type,
@@ -175,6 +176,22 @@ const bordersRenderer = () => {
     return chain;
   }
 
+  return { province: provincePath.join(" "), state: statePath.join(" ") };
+};
+
+const bordersRenderer = () => {
+  TIME && console.time("drawBorders");
+  if (window.PixiMapPrototype?.ownsLayer("borders")) {
+    select("#map").select("#borders").selectAll("path").remove();
+    window.PixiMapPrototype.queueRebuild();
+    TIME && console.timeEnd("drawBorders");
+    return;
+  }
+
+  const paths = buildBorderPaths(pack);
+  select("#map").select("#borders").attr("fill", "none").selectAll("path").remove();
+  select("#map").select("#stateBorders").append("path").attr("d", paths.state);
+  select("#map").select("#provinceBorders").append("path").attr("d", paths.province);
   TIME && console.timeEnd("drawBorders");
 };
 

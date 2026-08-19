@@ -18,6 +18,12 @@ export function buildBiomePaths(biomes: Biome[], isolines: BiomeIsolines): strin
 
 export function drawBiomes(): void {
   TIME && console.time("drawBiomes");
+  if (window.PixiMapPrototype?.ownsLayer("biomes")) {
+    ensureEl("biomes").replaceChildren();
+    window.PixiMapPrototype.queueRebuild();
+    TIME && console.timeEnd("drawBiomes");
+    return;
+  }
 
   const isolines = getIsolines(pack, cellId => pack.cells.biome[cellId], { fill: true, waterGap: true });
   ensureEl("biomes").innerHTML = buildBiomePaths(pack.biomes, isolines);

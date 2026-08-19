@@ -556,6 +556,14 @@ function toggleStates(event) {
 
 function drawStates() {
   TIME && console.time("drawStates");
+  if (window.PixiMapPrototype?.ownsLayer("states")) {
+    ensureEl("statesBody").replaceChildren();
+    ensureEl("statesHalo").replaceChildren();
+    ensureEl("statePaths").replaceChildren();
+    window.PixiMapPrototype.queueRebuild();
+    TIME && console.timeEnd("drawStates");
+    return;
+  }
   const { cells, states } = pack;
 
   const maxLength = states.length - 1;

@@ -77,26 +77,32 @@ function prepareMapData(): string {
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
   // save svg
-  const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
-  cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
-  cloneEl.querySelector("#pixi-map-prototype")?.remove();
+  const releaseSvgFallback = window.PixiMapPrototype?.materializeSvgFallback();
+  let serializedSVG: string;
+  try {
+    const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+    cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
+    cloneEl.querySelector("#pixi-map-prototype")?.remove();
 
-  // reset transform values to default
-  cloneEl.setAttribute("width", String(graphWidth));
-  cloneEl.setAttribute("height", String(graphHeight));
-  cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
-  cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
+    // reset transform values to default
+    cloneEl.setAttribute("width", String(graphWidth));
+    cloneEl.setAttribute("height", String(graphHeight));
+    cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
+    cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
 
-  // relief icons are stored in pack.relief, the layer holds only the currently visible ones
-  const cloneTerrain = cloneEl.querySelector("#terrain");
-  if (cloneTerrain) cloneTerrain.innerHTML = "";
+    // relief icons are stored in pack.relief, the layer holds only the currently visible ones
+    const cloneTerrain = cloneEl.querySelector("#terrain");
+    if (cloneTerrain) cloneTerrain.innerHTML = "";
 
-  const cloneRuler = cloneEl.querySelector("#ruler");
-  if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
-  const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
-  if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
+    const cloneRuler = cloneEl.querySelector("#ruler");
+    if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
+    const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
+    if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
 
-  const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
+    serializedSVG = new XMLSerializer().serializeToString(cloneEl);
+  } finally {
+    releaseSvgFallback?.();
+  }
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
   const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
