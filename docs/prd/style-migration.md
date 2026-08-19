@@ -11,8 +11,10 @@ Today styling lives in four places: attributes on SVG groups (persisted inside t
 **1. The library, dormant.** `src/styles/` with `Style`, the `Attrs`/options schemas, the legacy upgrader and the private applier — landed and tested, consumed by nobody. Migration is its own concern, so this step touches no live code path: no preset-pipeline change, no save/load change, no registry change. What it buys is a reviewable library and the parity baselines that later steps are measured against. `docs/step1-summary.md` records what landed.
 
 ```ts
-// the upgrader ships permanently (users upload old presets forever), but privately:
-Style.fromJSON(oldSelectorKeyedJson);  // works, warns nothing, returns the same result
+// the upgrader ships permanently (users upload old presets forever), but privately - it is not
+// exported from src/styles/, so Style.fromJSON is the only way in:
+Style.fromJSON(oldSelectorKeyedJson);  // works, and warns only about keys it drops on purpose
+                                       // (`auto-filter`, `#provs`'s unread `data-size`)
 ```
 
 **2. The pipeline swap.** Presets stop being applied as raw DOM writes: `applyStylePreset` builds a `Style` and the registry calls `style.applyTo(layer)` in `init()` and in its redraw, the static `attrs` bags on layer entries fold into the default style, and the 12 preset JSONs convert to the new format by script (`tools/convert-style-presets.mjs`). Renderers are untouched — the applier writes the same attributes they already read, so the DOM output is identical before and after. Custom localStorage presets and uploads keep working through the upgrader, with no user action.
