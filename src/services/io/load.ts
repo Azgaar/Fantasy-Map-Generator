@@ -7,7 +7,7 @@ import { GraphOverride } from "@/generators/graph-override";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
-import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
+import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -114,7 +114,7 @@ function showUploadErrorMessage(error: string, maplink: string, random?: boolean
     title: "Loading error",
     width: "32em",
     buttons: {
-      "Clear cache": () => cleanupData(),
+      "Clear cache": () => clearCache(),
       OK: function (this: HTMLElement) {
         $(this).dialog("close");
       }
@@ -229,7 +229,7 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
   $("#alert").dialog({
     title,
     buttons: {
-      "Clear cache": () => cleanupData(),
+      "Clear cache": () => clearCache(),
       OK: function (this: HTMLElement) {
         $(this).dialog("close");
       }
@@ -725,7 +725,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       title: "Loading error",
       maxWidth: "40em",
       buttons: {
-        "Clear cache": () => cleanupData(),
+        "Clear cache": () => clearCache(),
         "Select file": function (this: HTMLElement) {
           $(this).dialog("close");
           ensureEl("mapToLoad").click();

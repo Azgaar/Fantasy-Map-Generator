@@ -8,7 +8,7 @@
  *   - src/services/versioning.ts — VERSION constant
  *   - package.json           — "version" field
  *   - package-lock.json      — top-level "version" and packages[""].version fields
- *   - src/index.html         — ?v= cache-busting hashes for changed public/*.js files
+ *   - src/index.html         — ?v= cache-busting hashes for changed public/*.{js,css} files
  *   - public/**\/*.js        — ?v= cache-busting hashes in dynamic import() calls
  *
  * Usage:
@@ -76,19 +76,19 @@ function isVersionGreater(versionA, versionB) {
 }
 
 /**
- * Returns public/*.js paths (relative to repo root) that have changed.
+ * Returns public/*.{js,css} paths (relative to repo root) that have changed.
  * Checks (in order, deduplicating):
  *   1. Upstream branch diff  — catches everything on a feature/PR branch
  *   2. Staged (index) diff   — catches files staged but not yet committed
  *   3. Last-commit diff      — fallback for main / detached HEAD
  */
-function getChangedPublicJsFiles() {
+function getChangedPublicAssets() {
   const run = cmd => execSync(cmd, {encoding: "utf8", cwd: repoRoot});
   const parseFiles = output =>
     output
       .split("\n")
       .map(f => f.trim())
-      .filter(f => f.startsWith("public/") && f.endsWith(".js"));
+      .filter(f => f.startsWith("public/") && /\.(js|css)$/.test(f));
 
   const seen = new Set();
   const collect = files => files.forEach(f => seen.add(f));
@@ -291,7 +291,7 @@ async function main() {
       `\n[bump-version] Version already updated manually: ${baseVersion} → ${currentVersion} (base was ${baseVersion})\n`
     );
     console.log("  Skipping version increment — updating ?v= hashes only.\n");
-    const changedFiles = getChangedPublicJsFiles();
+    const changedFiles = getChangedPublicAssets();
     updateIndexHtmlHashes(changedFiles, currentVersion, dry);
     updatePublicJsDynamicImportHashes(changedFiles, currentVersion, dry);
     console.log(`\n[bump-version] ${dry ? "(dry run) " : ""}done.\n`);
@@ -310,7 +310,7 @@ async function main() {
 
   console.log(`\n[bump-version] ${bumpType}: ${currentVersion}  →  ${newVersion}\n`);
 
-  const changedFiles = getChangedPublicJsFiles();
+  const changedFiles = getChangedPublicAssets();
   updateVersioningTs(newVersion, dry);
   updatePackageJson(newVersion, dry);
   updatePackageLockJson(newVersion, dry);
