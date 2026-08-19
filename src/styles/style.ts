@@ -127,9 +127,9 @@ const scheduleRedraw = createDrawScheduler<Style>(
     // The edited instance, not the current one: a preset switch or a map load can replace the
     // map style between the edit and this frame, and an edit to an instance that is no longer
     // the map's must never repaint the map with it.
-    if (style !== mapStyle) return;
+    if (style !== activeStyle) return;
     return import("@/components/layers").then(({ Layers }) => {
-      if (style !== mapStyle) return;
+      if (style !== activeStyle) return;
       if (ids.includes("map")) applyMapStyle(style);
       const layerIds = [...new Set(ids.filter(id => id !== "map").map(registryLayerId))];
       for (const id of layerIds) {
@@ -256,13 +256,13 @@ export function applyMapStyle(style: Style): void {
   writeNode(typeof document !== "undefined" ? document.getElementById("map") : null, "map", node);
 }
 
-let mapStyle: Style | undefined;
+let activeStyle: Style | undefined;
 
-export function getMapStyle(): Style {
-  if (!mapStyle) throw new Error("getMapStyle: no Style instance set — call setMapStyle first");
-  return mapStyle;
+export function getActiveStyle(): Style {
+  if (!activeStyle) throw new Error("getActiveStyle: no Style instance set — call setActiveStyle first");
+  return activeStyle;
 }
 
-export function setMapStyle(style: Style): void {
-  mapStyle = style;
+export function setActiveStyle(style: Style): void {
+  activeStyle = style;
 }
