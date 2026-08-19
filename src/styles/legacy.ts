@@ -327,5 +327,9 @@ export function upgradeLegacyPreset(legacy: Record<string, Record<string, unknow
     }
   }
 
+  // before the parse, not after it: the defaults are part of the upgraded document, so they go
+  // through the same schema validation as everything the legacy file itself carried.
+  applyStaticDefaults(layers);
+
   return parseStyleData(layers);
 }
