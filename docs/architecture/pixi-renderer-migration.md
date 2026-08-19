@@ -8,6 +8,15 @@ renderer reaches feature parity and the project has a renderer-independent expor
 
 The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer-prototype.md).
 
+## Implementation progress
+
+- Phase 1 is implemented in the prototype: selected layers have one live owner, borders use shared geometry, and SVG
+  fallback is materialized only for compatibility operations.
+- Phase 2 is implemented for evaluation: Pixi uses a viewport-sized HTML surface, shares the D3 camera transform, reacts
+  to SVG resizing, and enables culling on suitable display objects.
+- The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
+  WebGL context-loss recovery are verified.
+
 ## Why migrate
 
 The current SVG renderer is valuable for vector output and DOM-based editing, but its cost grows with the number of
@@ -301,6 +310,5 @@ behavior are suitable; do not make the migration depend on it.
 2. Complete Phase 1 save/export and disable-path tests.
 3. Extract state and biome scene builders from DOM/style reads.
 4. Introduce a typed camera model and HTML viewport stack.
-5. Move the Pixi canvas outside SVG and measure pan/zoom again.
+5. Benchmark the viewport-sized canvas against SVG for pan, zoom, resize, and high-DPI cases.
 6. Add retained geometry for cell fills before migrating more layers.
-

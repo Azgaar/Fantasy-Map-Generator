@@ -7,11 +7,14 @@ export type PixiMapTheme = "states" | "biomes";
 export interface PixiPrototypeSnapshot {
   batches: number;
   buildDuration: number;
+  cameraScale: number;
   cells: number;
   enabled: boolean;
   reliefSprites: number;
   renderer: string | null;
   theme: PixiMapTheme;
+  viewportHeight: number;
+  viewportWidth: number;
 }
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -20,23 +23,28 @@ const MAX_RESOLUTION = 2;
 
 export class PixiMapPrototype {
   private app: Application | null = null;
-  private foreignObject: SVGForeignObjectElement | null = null;
   private rebuildSequence = 0;
+  private resizeFrameId: number | null = null;
+  private resizeObserver: ResizeObserver | null = null;
+  private surface: HTMLDivElement | null = null;
   private stats: PixiPrototypeSnapshot = {
     batches: 0,
     buildDuration: 0,
+    cameraScale: 1,
     cells: 0,
     enabled: false,
     reliefSprites: 0,
     renderer: null,
-    theme: "states"
+    theme: "states",
+    viewportHeight: 0,
+    viewportWidth: 0
   };
 
   async enable(theme: PixiMapTheme = "states"): Promise<void> {
     this.stats.theme = theme;
     await this.ensureApplication();
     this.stats.enabled = true;
-    this.positionCanvas();
+    this.positionSurface();
     await this.rebuild();
   }
 
@@ -47,6 +55,7 @@ export class PixiMapPrototype {
     const started = performance.now();
     this.resize();
     this.clearStage();
+    if (this.surface) this.surface.style.display = "block";
     this.app.renderer.background.color = getLayerFillColor("oceanBase", "#466eab");
 
     const theme = this.stats.theme;
@@ -71,6 +80,7 @@ export class PixiMapPrototype {
 
     const buildDuration = performance.now() - started;
     this.stats = {
+      ...this.stats,
       batches,
       buildDuration,
       cells: pack.cells.i.length,
@@ -104,20 +114,35 @@ export class PixiMapPrototype {
     this.app.render();
   }
 
+  syncCamera(): void {
+    if (!this.app || !this.stats.enabled) return;
+    const started = performance.now();
+    this.app.stage.position.set(viewX, viewY);
+    this.app.stage.scale.set(scale);
+    this.stats.cameraScale = scale;
+    this.app.render();
+    window.MapPerformance?.record("pixi:camera", performance.now() - started);
+  }
+
   clear(): void {
     this.rebuildSequence++;
     this.clearStage();
     this.app?.render();
+    if (this.surface) this.surface.style.display = "none";
   }
 
   disable(): void {
     this.rebuildSequence++;
     document.getElementById("map")?.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
+    if (this.resizeFrameId !== null) cancelAnimationFrame(this.resizeFrameId);
+    this.resizeFrameId = null;
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.clearStage();
     this.app?.destroy({ removeView: true }, { children: true });
     this.app = null;
-    this.foreignObject?.remove();
-    this.foreignObject = null;
+    this.surface?.remove();
+    this.surface = null;
     this.stats = { ...this.stats, batches: 0, enabled: false, reliefSprites: 0, renderer: null };
   }
 
@@ -128,6 +153,15 @@ export class PixiMapPrototype {
   private async ensureApplication(): Promise<void> {
     if (this.app) return;
 
+    const map = document.getElementById("map");
+    if (!map) throw new Error("Cannot mount the Pixi renderer without #map");
+    const surface = document.createElement("div");
+    surface.id = PROTOTYPE_ID;
+    surface.style.pointerEvents = "none";
+    map.before(surface);
+    this.surface = surface;
+
+    const viewport = getViewportSize(map);
     this.app = new Application();
     await this.app.init({
       antialias: false,
@@ -136,41 +170,55 @@ export class PixiMapPrototype {
       backgroundAlpha: 1,
       backgroundColor: getLayerFillColor("oceanBase", "#466eab"),
       clearBeforeRender: true,
-      height: graphHeight,
+      culler: { updateTransform: false },
+      height: viewport.height,
       preference: "webgl",
       resolution: Math.min(devicePixelRatio, MAX_RESOLUTION),
-      width: graphWidth
+      width: viewport.width
     });
     this.app.stage.eventMode = "none";
-
-    const foreignObject = document.createElementNS(SVG_NAMESPACE, "foreignObject");
-    foreignObject.id = PROTOTYPE_ID;
-    foreignObject.setAttribute("x", "0");
-    foreignObject.setAttribute("y", "0");
-    foreignObject.style.pointerEvents = "none";
-    foreignObject.appendChild(this.app.canvas);
-    this.foreignObject = foreignObject;
+    surface.appendChild(this.app.canvas);
+    this.resizeObserver = new ResizeObserver(() => this.queueResize());
+    this.resizeObserver.observe(map);
     this.resize();
   }
 
   private resize(): void {
-    if (!this.app || !this.foreignObject) return;
+    if (!this.app || !this.surface) return;
+    const map = document.getElementById("map");
+    if (!map) return;
+    const viewport = getViewportSize(map);
+    const bounds = map.getBoundingClientRect();
     const resolution = Math.min(devicePixelRatio, MAX_RESOLUTION);
-    this.app.renderer.resize(graphWidth, graphHeight, resolution);
-    this.foreignObject.setAttribute("width", String(graphWidth));
-    this.foreignObject.setAttribute("height", String(graphHeight));
+    this.app.renderer.resize(viewport.width, viewport.height, resolution);
+    this.surface.style.height = `${viewport.height}px`;
+    this.surface.style.left = `${bounds.left + window.scrollX}px`;
+    this.surface.style.top = `${bounds.top + window.scrollY}px`;
+    this.surface.style.width = `${viewport.width}px`;
     this.app.canvas.style.display = "block";
-    this.app.canvas.style.height = `${graphHeight}px`;
-    this.app.canvas.style.width = `${graphWidth}px`;
+    this.app.canvas.style.height = `${viewport.height}px`;
+    this.app.canvas.style.width = `${viewport.width}px`;
+    this.stats.viewportHeight = viewport.height;
+    this.stats.viewportWidth = viewport.width;
+    this.syncCamera();
   }
 
-  private positionCanvas(): void {
-    if (!this.foreignObject) return;
+  private queueResize(): void {
+    if (this.resizeFrameId !== null) return;
+    this.resizeFrameId = requestAnimationFrame(() => {
+      this.resizeFrameId = null;
+      this.resize();
+    });
+  }
+
+  private positionSurface(): void {
+    if (!this.surface) return;
     const map = document.getElementById("map");
-    const anchorId = this.stats.theme === "states" ? "regions" : "biomes";
-    document.getElementById(anchorId)?.before(this.foreignObject);
+    if (map && this.surface.nextElementSibling !== map) map.before(this.surface);
     map?.classList.toggle("pixi-prototype-states", this.stats.theme === "states");
     map?.classList.toggle("pixi-prototype-biomes", this.stats.theme === "biomes");
+    this.surface.style.display = "block";
+    this.resize();
   }
 
   private buildFillContainer(theme: PixiMapTheme): Container {
@@ -194,6 +242,7 @@ export class PixiMapPrototype {
       context.fill({ color: batch.color });
       const graphic = new Graphics(context);
       graphic.label = `${theme}-${batch.groupId}`;
+      graphic.cullable = true;
       container.addChild(graphic);
     }
     return container;
@@ -270,6 +319,7 @@ export class PixiMapPrototype {
       const texture = textures.get(icon);
       if (!texture) continue;
       const sprite = new Sprite({ height: s, position: { x, y }, texture, width: s });
+      sprite.cullable = true;
       sprite.eventMode = "none";
       container.addChild(sprite);
     }
@@ -280,6 +330,14 @@ export class PixiMapPrototype {
     if (!this.app) return;
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
   }
+}
+
+function getViewportSize(map: HTMLElement): { height: number; width: number } {
+  const bounds = map.getBoundingClientRect();
+  return {
+    height: Math.max(1, Math.round(bounds.height || svgHeight)),
+    width: Math.max(1, Math.round(bounds.width || svgWidth))
+  };
 }
 
 function getLayerOpacity(id: string): number {

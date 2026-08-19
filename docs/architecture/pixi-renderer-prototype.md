@@ -37,14 +37,19 @@ Pixi renderer. Rebuild duration is also recorded as `pixi:rebuild` in `MapPerfor
 
 ## Prototype constraints
 
-- The opaque canvas is embedded at map resolution and inherits the SVG viewbox transform. High zoom levels can expose
-  raster softness, and moving to a viewport-sized HTML canvas is the next camera optimization.
+- The opaque canvas is an HTML sibling immediately behind the SVG overlay. It is sized to the visible viewport and its
+  Pixi stage receives the same `{x, y, scale}` camera values as the SVG `#viewbox` on every zoom frame.
+- The viewport surface uses Pixi culling for state/biome graphics and relief sprites. Geometry is still rebuilt as
+  `Graphics` objects, so retained vertex and index buffers remain future work.
 - State hatching paint servers currently use a neutral fallback color.
 - SVG filters, masks, halos, exact water gaps, editing targets, and label rendering remain outside the prototype.
 - In state mode, relief, state fills, and borders share one canvas position in the SVG stack, so combinations with
   religions and cultures are not yet pixel-identical to the SVG layer ordering.
 - Borders and the SVG renderer share the same extracted border-path builder. The result still uses path tessellation,
   and retained GPU geometry is future work.
+
+Camera render duration is recorded as `pixi:camera` in `MapPerformance`. The prototype snapshot also exposes camera
+scale and viewport dimensions to help diagnose alignment and resolution issues.
 
 Saving and exporting materialize the SVG fallback for the clone, remove the experimental canvas, and then release the
 temporary live SVG geometry.

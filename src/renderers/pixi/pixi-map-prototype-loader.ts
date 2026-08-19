@@ -11,6 +11,7 @@ export interface PixiMapPrototypeApi {
   ownsLayer: (layer: PixiOwnedLayer) => boolean;
   queueRebuild: () => void;
   rebuild: () => Promise<void>;
+  syncCamera: () => void;
 }
 
 let instancePromise: Promise<PixiMapPrototype> | null = null;
@@ -95,7 +96,8 @@ const api: PixiMapPrototypeApi = {
   queueRebuild: () => {
     void instancePromise?.then(instance => instance.queueRebuild());
   },
-  rebuild: async () => (await getInstance()).rebuild()
+  rebuild: async () => (await getInstance()).rebuild(),
+  syncCamera: () => instance?.syncCamera()
 };
 
 window.PixiMapPrototype = api;

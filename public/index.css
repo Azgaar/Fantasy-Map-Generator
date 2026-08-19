@@ -94,16 +94,33 @@ iframe {
 }
 
 /* Opt-in Pixi renderer prototype. The SVG fallback stays intact for saving, exporting and disabling the prototype. */
+#map.pixi-prototype-states,
+#map.pixi-prototype-biomes {
+  position: relative;
+  z-index: 0;
+  background-color: transparent;
+}
+
+#map.pixi-prototype-states #ocean,
+#map.pixi-prototype-states #landmass,
 #map.pixi-prototype-states #terrain,
 #map.pixi-prototype-states #regions,
 #map.pixi-prototype-states #borders,
+#map.pixi-prototype-biomes #ocean,
+#map.pixi-prototype-biomes #landmass,
 #map.pixi-prototype-biomes #biomes {
   visibility: hidden;
 }
 
 #pixi-map-prototype {
-  overflow: visible;
+  position: absolute;
+  z-index: 0;
+  overflow: hidden;
   pointer-events: none;
+}
+
+#pixi-map-prototype canvas {
+  display: block;
 }
 
 #canvas {

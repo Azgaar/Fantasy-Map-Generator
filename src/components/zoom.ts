@@ -73,6 +73,7 @@ function handleZoomPerFrame(): void {
   if (!didScaleChange && !didPositionChange) return;
 
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  window.PixiMapPrototype?.syncCamera();
   redrawTracedImage();
   ViewportLayers.schedule();
 }
