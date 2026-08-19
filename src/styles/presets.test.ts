@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, test, vi } from "vitest";
 import { isLegacyPreset, upgradeLegacyPreset } from "./legacy";
 import { parseStyleData } from "./schema";
+import { Style } from "./style";
 
 // The fidelity guarantee behind tools/convert-style-presets.mjs: whatever the converter is
 // pointed at, the 12 shipped presets go through the upgrader whole. Nothing here writes to
@@ -53,5 +54,36 @@ describe("the shipped style presets convert losslessly", () => {
 
     expect(messages).toEqual([]);
     expect(reparsed).toEqual(converted);
+  });
+
+  // the per-preset test above only checks that each warning it *does* see is a known drop, which
+  // passes vacuously if a refactor silences the warnings altogether. This pins the other half:
+  // across the 12 files, exactly the two known-dead keys are dropped and no selector is skipped.
+  test("across all presets, the dropped keys are exactly the two known-dead ones", () => {
+    const dropped = new Set<string>();
+    const skipped: string[] = [];
+    for (const [, json] of PRESETS) {
+      for (const message of warnings(() => upgradeLegacyPreset(json))) {
+        const drop = /dropping unknown attr "([^"]+)"/.exec(message);
+        if (drop) dropped.add(drop[1]);
+        else skipped.push(message);
+      }
+    }
+
+    expect([...dropped].sort()).toEqual(["auto-filter", "data-size"]);
+    expect(skipped).toEqual([]);
+  });
+
+  // tools/convert-style-presets.mjs writes Style.fromJSON(...).toJSON(), not the bare upgrader's
+  // output, precisely because of these three: the registry hardcoded them, so a legacy preset
+  // never carried them, and a converted preset that lost them renders the map unmasked.
+  test.each(PRESETS)("%s: converting through Style keeps the three static defaults", (_file, json) => {
+    let converted!: ReturnType<typeof parseStyleData>;
+    warnings(() => (converted = Style.fromJSON(json).toJSON()));
+
+    const tree = converted as Record<string, { attrs?: Record<string, unknown> }>;
+    expect(tree.labels?.attrs?.["font-size"]).toBe("100px");
+    expect(tree.fogging?.attrs?.mask).toBe("url(#fog)");
+    expect(tree.vignette?.attrs?.mask).toBe("url(#vignette-mask)");
   });
 });
