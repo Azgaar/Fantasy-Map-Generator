@@ -1,5 +1,5 @@
 import type { Layer, LayerId } from "@/components/layers";
-import { applyStaticDefaults, isLegacyPreset, upgradeLegacyPreset } from "./legacy";
+import { isLegacyPreset, upgradeLegacyPreset } from "./legacy";
 import type { Attrs, ChildId, ChildOptions, LayerOptions, StyleData, StyleLayerId } from "./schema";
 import { parseStyleData } from "./schema";
 
@@ -77,26 +77,37 @@ function writeNode(root: Element | null, layerId: string, node: MutableNode | un
   }
 }
 
-/** Batches setAttr/setOptions-triggered redraws into one requestAnimationFrame per frame. No-ops under node (tests, SSR). */
-export function createDrawScheduler(
+/**
+ * Batches setAttr/setOptions-triggered redraws into one requestAnimationFrame per frame, per
+ * editing instance: the owner is captured at schedule time and handed back to `draw`, so the
+ * flush can tell which instance the queued edits belong to. No-ops under node (tests, SSR).
+ */
+export function createDrawScheduler<Owner>(
   raf: ((cb: () => void) => number) | undefined,
-  draw: (...ids: StyleLayerId[]) => void | Promise<void>
-): (id: StyleLayerId) => void {
-  let pending: Set<StyleLayerId> | null = null;
+  draw: (owner: Owner, ...ids: StyleLayerId[]) => void | Promise<void>
+): (owner: Owner, id: StyleLayerId) => void {
+  let pending: Map<Owner, Set<StyleLayerId>> | null = null;
 
   function flush(): void {
-    const ids = pending ? Array.from(pending) : [];
+    const batches = pending ? Array.from(pending) : [];
     pending = null;
-    if (ids.length) draw(...ids);
+    for (const [owner, ids] of batches) {
+      if (ids.size) draw(owner, ...ids);
+    }
   }
 
-  return function schedule(id: StyleLayerId): void {
+  return function schedule(owner: Owner, id: StyleLayerId): void {
     if (!raf) return;
     if (!pending) {
-      pending = new Set();
+      pending = new Map();
       raf(flush);
     }
-    pending.add(id);
+    let ids = pending.get(owner);
+    if (!ids) {
+      ids = new Set();
+      pending.set(owner, ids);
+    }
+    ids.add(id);
   };
 }
 
@@ -110,19 +121,23 @@ function registryLayerId(id: Exclude<StyleLayerId, "map">): string {
 // "map" is the svg root, not a registry layer, so it goes to applyMapStyle and never to
 // Layers.draw. The registry import stays inside the callback so this module's static graph does
 // not drag in components/layers.ts (and with it every renderer) for pure consumers.
-const scheduleRedraw = createDrawScheduler(
+const scheduleRedraw = createDrawScheduler<Style>(
   typeof requestAnimationFrame === "function" ? requestAnimationFrame : undefined,
-  (...ids) =>
-    import("@/components/layers").then(({ Layers }) => {
-      if (ids.includes("map") && mapStyle) applyMapStyle(mapStyle);
+  (style, ...ids) => {
+    // The edited instance, not the current one: a preset switch or a map load can replace the
+    // map style between the edit and this frame, and an edit to an instance that is no longer
+    // the map's must never repaint the map with it.
+    if (style !== mapStyle) return;
+    return import("@/components/layers").then(({ Layers }) => {
+      if (style !== mapStyle) return;
+      if (ids.includes("map")) applyMapStyle(style);
       const layerIds = [...new Set(ids.filter(id => id !== "map").map(registryLayerId))];
-      if (mapStyle) {
-        for (const id of layerIds) {
-          if (Layers.has(id)) mapStyle.applyTo(Layers.get(id));
-        }
+      for (const id of layerIds) {
+        if (Layers.has(id)) style.applyTo(Layers.get(id));
       }
       Layers.draw(...layerIds.filter((id): id is LayerId => Layers.has(id)));
-    })
+    });
+  }
 );
 
 // Per-instance tree storage, keyed off the instance rather than a class field: `applyMapStyle` is
@@ -138,15 +153,12 @@ export class Style {
     if (typeof json !== "object" || json === null) {
       throw new TypeError("Style.fromJSON: expected an object");
     }
-    let data: StyleData;
-    if (isLegacyPreset(json)) {
-      data = upgradeLegacyPreset(json as Record<string, Record<string, unknown>>);
-      // migration only: the three attrs a legacy preset could not carry (see legacy.ts). A
-      // new-format document is taken at its word - a missing attr there is the author's choice.
-      applyStaticDefaults(data as MutableTree);
-    } else {
-      data = parseStyleData(json);
-    }
+    // the legacy branch also supplies the three attrs an old preset could not carry (see
+    // legacy.ts). A new-format document is taken at its word - a missing attr there is the
+    // author's choice, so nothing is injected.
+    const data: StyleData = isLegacyPreset(json)
+      ? upgradeLegacyPreset(json as Record<string, Record<string, unknown>>)
+      : parseStyleData(json);
     const style = new Style();
     trees.set(style, data as MutableTree);
     return style;
@@ -201,7 +213,7 @@ export class Style {
     const [name, value] = rest.slice(-2) as [string, unknown];
     node.attrs ??= {};
     node.attrs[name] = value;
-    scheduleRedraw(id);
+    scheduleRedraw(this, id);
   }
 
   setOptions<Id extends keyof LayerOptions>(id: Id, patch: Partial<LayerOptions[Id]>): void;
@@ -214,7 +226,7 @@ export class Style {
     const node = rest.length === 1 ? this.ensureLayer(id) : this.ensureChild(id, rest[0] as string);
     const patch = rest[rest.length - 1] as Record<string, unknown>;
     node.options = { ...(node.options ?? {}), ...patch };
-    scheduleRedraw(id);
+    scheduleRedraw(this, id);
   }
 
   private get tree(): MutableTree {
@@ -253,9 +265,4 @@ export function getMapStyle(): Style {
 
 export function setMapStyle(style: Style): void {
   mapStyle = style;
-}
-
-/** True once a preset has been applied; getMapStyle() throws before that. */
-export function hasMapStyle(): boolean {
-  return mapStyle !== undefined;
 }

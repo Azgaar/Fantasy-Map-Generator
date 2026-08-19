@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
-import { applyStaticDefaults, upgradeLegacyPreset } from "./legacy";
+import { upgradeLegacyPreset } from "./legacy";
 import fixture from "./legacy-default.fixture.json";
 import { parseStyleData } from "./schema";
-import { buildAttributeOps, createDrawScheduler, Style } from "./style";
+import { buildAttributeOps, createDrawScheduler, getMapStyle, Style, setMapStyle } from "./style";
 
 describe("buildAttributeOps", () => {
   test("flattens a layer's own attrs at the root path", () => {
@@ -51,10 +51,8 @@ describe("Style.fromJSON", () => {
   test("routes a legacy (selector-keyed) preset through upgradeLegacyPreset", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const style = Style.fromJSON(fixture);
-    // the legacy branch also runs applyStaticDefaults - apply it to `expected` too, so this test
-    // compares routing rather than that one extra step
+    // the upgrader owns applyStaticDefaults, so its output is already the whole legacy branch
     const expected = upgradeLegacyPreset(fixture as Record<string, Record<string, unknown>>);
-    applyStaticDefaults(expected as Parameters<typeof applyStaticDefaults>[0]);
     expect(style.toJSON()).toEqual(expected);
     warn.mockRestore();
   });
@@ -218,10 +216,12 @@ describe("Style setter typing (compile-time)", () => {
 });
 
 describe("createDrawScheduler", () => {
+  const owner = {}; // stand-in for the editing Style instance the scheduler batches per
+
   test("no-ops when raf is undefined (node/SSR env)", () => {
     const draw = vi.fn();
     const schedule = createDrawScheduler(undefined, draw);
-    schedule("routes");
+    schedule(owner, "routes");
     expect(draw).not.toHaveBeenCalled();
   });
 
@@ -234,9 +234,9 @@ describe("createDrawScheduler", () => {
     const draw = vi.fn();
     const schedule = createDrawScheduler(raf, draw);
 
-    schedule("routes");
-    schedule("labels");
-    schedule("routes"); // duplicate, still one entry in the batched Set
+    schedule(owner, "routes");
+    schedule(owner, "labels");
+    schedule(owner, "routes"); // duplicate, still one entry in the batched Set
 
     expect(raf).toHaveBeenCalledTimes(1); // only the first schedule() in a frame requests one
     expect(draw).not.toHaveBeenCalled();
@@ -244,7 +244,7 @@ describe("createDrawScheduler", () => {
     queued?.();
 
     expect(draw).toHaveBeenCalledTimes(1);
-    expect(draw).toHaveBeenCalledWith("routes", "labels");
+    expect(draw).toHaveBeenCalledWith(owner, "routes", "labels");
   });
 
   test("a new frame is requested again after a flush", () => {
@@ -256,13 +256,44 @@ describe("createDrawScheduler", () => {
     const draw = vi.fn();
     const schedule = createDrawScheduler(raf, draw);
 
-    schedule("routes");
+    schedule(owner, "routes");
     frames[0]();
-    schedule("labels");
+    schedule(owner, "labels");
     frames[1]();
 
     expect(raf).toHaveBeenCalledTimes(2);
-    expect(draw).toHaveBeenNthCalledWith(1, "routes");
-    expect(draw).toHaveBeenNthCalledWith(2, "labels");
+    expect(draw).toHaveBeenNthCalledWith(1, owner, "routes");
+    expect(draw).toHaveBeenNthCalledWith(2, owner, "labels");
+  });
+
+  test("edits from two owners in one frame are drawn as one batch each, never merged", () => {
+    let queued: (() => void) | undefined;
+    const raf = vi.fn((cb: () => void) => {
+      queued = cb;
+      return 1;
+    });
+    const draw = vi.fn();
+    const schedule = createDrawScheduler(raf, draw);
+    const other = {};
+
+    schedule(owner, "routes");
+    schedule(other, "labels");
+    queued?.();
+
+    expect(draw).toHaveBeenCalledTimes(2);
+    expect(draw).toHaveBeenCalledWith(owner, "routes");
+    expect(draw).toHaveBeenCalledWith(other, "labels");
+  });
+});
+
+describe("getMapStyle", () => {
+  // the only suite in this file that touches the module-level `mapStyle`, so the unset state it
+  // asserts first is the module's genuine initial state
+  test("throws before setMapStyle, and returns the instance after it", () => {
+    expect(() => getMapStyle()).toThrow(/setMapStyle/);
+
+    const style = Style.fromJSON({});
+    setMapStyle(style);
+    expect(getMapStyle()).toBe(style);
   });
 });

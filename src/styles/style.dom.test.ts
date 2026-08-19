@@ -3,15 +3,14 @@ import type { Layer } from "@/components/layers";
 import { Style, setMapStyle } from "./style";
 
 // "map" isn't a registry layer, so the redraw scheduler's dynamic `import("@/components/layers")`
-// must not receive it; Layers.draw is mocked here purely to assert that. `has` defaults to false:
-// most tests in this file call setAttr() on real layer ids (burgIcons, ...) purely to populate a
-// tree they then read via applyTo() directly, without ever awaiting the scheduler's rAF - those
-// schedules can still be pending when a later test's own rAF tick flushes them, so the
-// scheduler's Layers.has/get lookups (see style.ts) must stay harmless no-ops by default rather
-// than assume only "map" edits are ever in flight. The "reaches the DOM" test below overrides
-// has/get for its own duration and restores the default in afterEach.
+// must not receive it; Layers.draw is mocked here purely to assert that. The scheduler drops any
+// batch whose instance is no longer the map style, so the setAttr() calls other tests make on
+// throwaway instances (to populate a tree they then read via applyTo() directly) can never reach
+// this mock - `has`/`get` throw by default, and each redraw test installs the behaviour it needs.
 const layersDraw = vi.fn();
-const layersHas = vi.fn((_id: string) => false);
+const layersHas = vi.fn((_id: string): boolean => {
+  throw new Error("Layers.has: unexpected scheduler flush - no test installed a mock for it");
+});
 const layersGet = vi.fn((_id: string): Layer => {
   throw new Error("not registered in this mock");
 });
@@ -25,7 +24,9 @@ vi.mock("@/components/layers", () => ({
 
 afterEach(() => {
   layersDraw.mockClear();
-  layersHas.mockReset().mockImplementation(() => false);
+  layersHas.mockReset().mockImplementation(() => {
+    throw new Error("Layers.has: unexpected scheduler flush - no test installed a mock for it");
+  });
   layersGet.mockReset().mockImplementation(() => {
     throw new Error("not registered in this mock");
   });
@@ -158,7 +159,8 @@ describe('setAttr("map", ...) redraw routing', () => {
     document.body.appendChild(mapEl);
 
     const style = Style.fromJSON({});
-    setMapStyle(style); // the module-scope scheduler reads the current instance via getMapStyle/setMapStyle
+    setMapStyle(style); // the scheduler only flushes a batch whose instance is still the map style
+    layersHas.mockImplementation(() => false);
     style.setAttr("map", "fill", "#111111");
 
     // the scheduler's rAF callback awaits a dynamic import, so the write can land any number of
@@ -186,6 +188,34 @@ describe("setAttr(<real layer id>, ...) redraw routing", () => {
 
     await vi.waitFor(() => expect(root.getAttribute("opacity")).toBe("0.42"));
     expect(layersDraw).toHaveBeenCalledWith("routes");
+
+    document.body.removeChild(root);
+  });
+});
+
+describe("a stale instance never repaints the map", () => {
+  // setAttr schedules a redraw for the instance it was called on; by the time the frame runs, a
+  // preset switch or a map load may have made a different instance the map style. The queued
+  // batch must be dropped, not applied over the live one.
+  test("editing an instance that is no longer the map style leaves the DOM alone", async () => {
+    const root = svg("g", "routes");
+    root.setAttribute("opacity", "1");
+    document.body.appendChild(root);
+    layersHas.mockImplementation((id: string) => id === "routes");
+    layersGet.mockImplementation((id: string) => fakeLayer(id, root));
+
+    const stale = Style.fromJSON({});
+    setMapStyle(stale);
+    stale.setAttr("routes", "opacity", 0.42); // queued against `stale`
+
+    const live = Style.fromJSON({});
+    setMapStyle(live); // ...and superseded before the frame runs
+
+    // give the scheduler its frame (and the dynamic import that follows it) room to run
+    await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));
+
+    expect(root.getAttribute("opacity")).toBe("1");
+    expect(layersDraw).not.toHaveBeenCalled();
 
     document.body.removeChild(root);
   });
