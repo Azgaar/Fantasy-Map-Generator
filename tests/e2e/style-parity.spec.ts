@@ -16,6 +16,13 @@ const STYLE_ATTRS = [
   "width", "height", "rx", "ry", "style"
 ];
 
+// the burg tiers, and the label groups, that both maps render (options.burgs.groups /
+// options.labels): styling is per group, so each one is its own snapshot target
+const BURG_GROUPS = [
+  "capital", "city", "town", "village", "hamlet", "fort", "monastery", "caravanserai", "trading_post"
+];
+const LABEL_GROUPS = [...BURG_GROUPS, "state", "province", "river", "route", "added"];
+
 const TARGETS = [
   "#map", "#armies", "#anchors", "#biomes", "#borders", "#stateBorders", "#provinceBorders",
   "#burgIcons", "#cells", "#coastline", "#sea_island", "#lake_island", "#compass", "#coordinates",
@@ -27,8 +34,13 @@ const TARGETS = [
   "#relig", "#rivers", "#routes", "#roads", "#trails", "#searoutes", "#ruler", "#scaleBar",
   "#scaleBarBack", "#temperature", "#terrain", "#terrs", "#landHeights", "#oceanHeights",
   "#texture", "#tradeAnimation", "#vignette", "#vignette-rect", "#zones",
-  "#burgIcons > g#capital", "#burgIcons > g#city", "#burgIcons > g#town",
-  "#anchors > g#capital", "#anchors > g#city"
+  // every burg-icon and anchor group type the two maps carry - the style tree addresses these
+  // per group, so a partial list would let a whole group class drift unnoticed
+  ...BURG_GROUPS.map(group => `#burgIcons > g#${group}`),
+  ...BURG_GROUPS.map(group => `#anchors > g#${group}`),
+  // label groups render as <g id="labels-capital" data-group="capital">; addressed by data-group
+  // because that is what the group is keyed by everywhere but its element id
+  ...LABEL_GROUPS.map(group => `#labels > [data-group="${group}"]`)
 ];
 
 function collectStyleSnapshot(page: Page) {
@@ -68,6 +80,9 @@ test("styled attributes match the pre-migration baseline", async ({page}) => {
   }
 
   const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+  // the per-selector loop below iterates baseline keys, so on its own it cannot see a selector
+  // that appeared or vanished. Compare the key sets first: an added group is a change too.
+  expect(Object.keys(snapshot).sort()).toEqual(Object.keys(baseline).sort());
   // per-selector comparison => a failure names the exact layer and attribute
   for (const sel of Object.keys(baseline)) {
     expect.soft(snapshot[sel], sel).toEqual(baseline[sel]);
@@ -103,6 +118,7 @@ test("styled attributes on a freshly generated map match the preset-apply baseli
   }
 
   const baseline = JSON.parse(fs.readFileSync(GENERATED_BASELINE_PATH, "utf8"));
+  expect(Object.keys(snapshot).sort()).toEqual(Object.keys(baseline).sort());
   for (const sel of Object.keys(baseline)) {
     expect.soft(snapshot[sel], sel).toEqual(baseline[sel]);
   }

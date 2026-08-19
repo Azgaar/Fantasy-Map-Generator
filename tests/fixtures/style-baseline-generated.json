@@ -402,6 +402,66 @@
     "font-size": "1",
     "data-icon": "#icon-circle"
   },
+  "#burgIcons > g#village": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#hamlet": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "stroke-linecap": "butt",
+    "font-size": "0.5",
+    "data-icon": "#icon-circle"
+  },
+  "#burgIcons > g#fort": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-square"
+  },
+  "#burgIcons > g#monastery": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-cross"
+  },
+  "#burgIcons > g#caravanserai": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-triangle"
+  },
+  "#burgIcons > g#trading_post": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "fill-opacity": "0.7",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1",
+    "stroke-linecap": "butt",
+    "font-size": "0.7",
+    "data-icon": "#icon-triangle"
+  },
   "#anchors > g#capital": {
     "opacity": "1",
     "fill": "#ffffff",
@@ -415,5 +475,194 @@
     "stroke": "#3e3e4b",
     "stroke-width": "1.2",
     "font-size": "1.5"
+  },
+  "#anchors > g#town": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "1"
+  },
+  "#anchors > g#village": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#hamlet": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.5"
+  },
+  "#anchors > g#fort": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#monastery": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#caravanserai": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#anchors > g#trading_post": {
+    "opacity": "1",
+    "fill": "#ffffff",
+    "stroke": "#3e3e4b",
+    "stroke-width": "1.2",
+    "font-size": "0.7"
+  },
+  "#labels > [data-group=\"capital\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "6%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em);"
+  },
+  "#labels > [data-group=\"city\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "5%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em);"
+  },
+  "#labels > [data-group=\"town\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "4%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em);"
+  },
+  "#labels > [data-group=\"village\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "3%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em);"
+  },
+  "#labels > [data-group=\"hamlet\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em);"
+  },
+  "#labels > [data-group=\"fort\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em);"
+  },
+  "#labels > [data-group=\"monastery\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em);"
+  },
+  "#labels > [data-group=\"caravanserai\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em);"
+  },
+  "#labels > [data-group=\"trading_post\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "2%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em);"
+  },
+  "#labels > [data-group=\"state\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "22%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px"
+  },
+  "#labels > [data-group=\"province\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "6%",
+    "font-family": "Cinzel",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px"
+  },
+  "#labels > [data-group=\"river\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "1.5%",
+    "font-family": "Lugrasimo",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 1px 6px"
+  },
+  "#labels > [data-group=\"route\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "1.5%",
+    "font-family": "Lugrasimo",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 1px 6px"
+  },
+  "#labels > [data-group=\"added\"]": {
+    "opacity": "1",
+    "fill": "#3e3e4b",
+    "stroke": "#3a3a3a",
+    "stroke-width": "0",
+    "font-size": "18%",
+    "font-family": "Almendra SC",
+    "letter-spacing": "0",
+    "style": "text-shadow: white 0px 0px 4px"
   }
 }
