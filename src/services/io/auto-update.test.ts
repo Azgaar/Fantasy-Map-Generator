@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import "@/generators/features"; // migrations call the Features module through its global
 import { resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
