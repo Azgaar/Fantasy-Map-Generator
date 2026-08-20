@@ -1,5 +1,5 @@
+import { setMarkerPinnedOnly, setMarkerRenderFilter } from "./marker-render-state";
 import { invalidatePixiRendererLayer } from "./pixi/pixi-renderer-controller";
-import { setMarkerRenderFilter, setMarkerPinnedOnly } from "./marker-render-state";
 
 export function invalidateBurgSymbols(): void {
   invalidatePixiRendererLayer("burgIcons");

@@ -148,7 +148,6 @@ function invokeActiveZooming(): void {
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
-
 }
 
 /** Zoom to a specific point */

@@ -15,7 +15,7 @@ function open(markerI?: number, target?: Element): void {
   if (customization) return;
   closeDialogs(".stable");
 
-  const targetId = Number((target?.closest<SVGElement>("[data-id]")?.dataset.id ?? markerI));
+  const targetId = Number(target?.closest<SVGElement>("[data-id]")?.dataset.id ?? markerI);
   const marker = pack.markers.find(({ i }) => i === targetId);
   if (!marker) return;
   selectedMarker = marker;

@@ -2,8 +2,8 @@ import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from 
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
-import { invalidateBurgSymbols } from "@/renderers/point-symbols";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { invalidateBurgSymbols } from "@/renderers/point-symbols";
 import type { BurgGroup } from "@/types/burg-groups";
 import { ensureEl } from "../utils";
 

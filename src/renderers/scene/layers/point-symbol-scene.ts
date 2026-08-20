@@ -1,6 +1,11 @@
 import type { Burg } from "@/generators/burgs-generator";
 import type { Marker } from "@/generators/markers-generator";
-import type { PointSymbolBatchPrimitive, PointSymbolInstancePrimitive, SceneBounds, SceneRevision } from "../primitives";
+import type {
+  PointSymbolBatchPrimitive,
+  PointSymbolInstancePrimitive,
+  SceneBounds,
+  SceneRevision
+} from "../primitives";
 import type { BurgLayerStyle, MarkerLayerStyle, PointSymbolStyle } from "../styles";
 
 export interface MarkerRenderState {

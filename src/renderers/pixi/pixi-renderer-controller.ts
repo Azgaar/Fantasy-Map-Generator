@@ -1,7 +1,7 @@
 import type { TemperatureScale } from "@/utils/temperature";
-import { getMarkerRenderState } from "../marker-render-state";
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
+import { getMarkerRenderState } from "../marker-render-state";
 import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
 import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
@@ -126,11 +126,15 @@ const getCamera = (): MapCamera => {
 };
 
 const getWorld = () =>
-  createMapRenderWorld(pack, {
-    grid,
-    requestedCells: Number(pointsInput.dataset.cells) || grid.cells.i.length,
-    temperatureScale: temperatureScale.value as TemperatureScale
-  }, getMarkerRenderState());
+  createMapRenderWorld(
+    pack,
+    {
+      grid,
+      requestedCells: Number(pointsInput.dataset.cells) || grid.cells.i.length,
+      temperatureScale: temperatureScale.value as TemperatureScale
+    },
+    getMarkerRenderState()
+  );
 
 const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),

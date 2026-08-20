@@ -1,12 +1,12 @@
 import type { BurgAdded, BurgRemoved } from "@/generators/burgs-generator";
 import { invalidateBurgSymbols } from "./point-symbols";
 
-export function renderBurgAdded({ burg, route }: BurgAdded): void {
+export function renderBurgAdded({ route }: BurgAdded): void {
   if (route && layerIsOn("toggleRoutes")) drawRoute(route);
   invalidateBurgSymbols();
 }
 
-export function renderBurgChanged(burg: BurgAdded["burg"]): void {
+export function renderBurgChanged(_burg: BurgAdded["burg"]): void {
   invalidateBurgSymbols();
 }
 
