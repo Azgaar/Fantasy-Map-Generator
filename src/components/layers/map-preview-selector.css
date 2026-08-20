@@ -1,89 +1,126 @@
 #mapPreviewRoot {
   position: fixed;
   z-index: 29;
-  top: 18px;
-  right: 24px;
+  top: 14px;
+  right: 18px;
   color: var(--kui-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   pointer-events: auto;
 }
 
-.fmg-map-preview {
-  display: grid;
-  width: 220px;
-  min-height: 50px;
-  grid-template-columns: 34px minmax(0, 1fr) 18px;
-  align-items: center;
-  padding: 6px 9px 6px 7px;
+#mapPreviewRoot .fmg-map-preview__trigger {
+  position: relative;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  justify-content: center;
+  padding: 0;
   border: 1px solid var(--kui-line);
-  background: color-mix(in srgb, var(--kui-surface-panel) 94%, transparent);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.32);
-  cursor: pointer;
-  backdrop-filter: blur(10px);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--kui-surface-panel) 96%, transparent);
+  box-shadow: 0 5px 18px rgb(0 0 0 / 0.26);
+  color: var(--kui-text-secondary);
+  backdrop-filter: blur(12px);
 }
 
-.fmg-map-preview:hover,
-.fmg-map-preview:focus-within {
+#mapPreviewRoot .fmg-map-preview__trigger:hover,
+#mapPreviewRoot .fmg-map-preview__trigger:focus-visible,
+#mapPreviewRoot .fmg-map-preview__trigger.bp6-active {
   border-color: var(--kui-line-strong);
   background: var(--kui-surface-panel);
+  color: var(--kui-text);
 }
 
-.fmg-map-preview:focus-within {
+#mapPreviewRoot .fmg-map-preview__trigger:focus-visible {
   outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
 }
 
-.fmg-map-preview:has(.fmg-map-preview__select:disabled) {
-  cursor: not-allowed;
+#mapPreviewRoot .fmg-map-preview__trigger:disabled {
   opacity: 0.58;
 }
 
-.fmg-map-preview__icon {
+.fmg-map-preview__glyph {
+  position: relative;
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
   place-items: center;
-  background: hsl(var(--accent) / 0.18);
-  color: hsl(var(--accent));
 }
 
-.fmg-map-preview__content {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
+.fmg-map-preview__glyph > svg:first-child {
+  display: block;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
 }
 
-.fmg-map-preview__label {
+.fmg-map-preview__glyph-chevron {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
   color: var(--kui-text-muted);
-  font-size: 9px;
-  font-weight: 700;
+}
+
+.fmg-map-preview__legacy-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fmg-map-preview__popover {
+  min-width: 210px;
+  border: 1px solid var(--kui-line);
+  border-radius: 5px;
+  background: var(--kui-surface-panel);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.34);
+  overflow: hidden;
+}
+
+.fmg-map-preview__menu {
+  width: 210px;
+  max-height: min(440px, calc(100vh - 64px));
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.fmg-map-preview__menu .kui-menu-header {
+  margin: 0;
+  padding: 6px 10px 7px;
+}
+
+.fmg-map-preview__menu .kui-menu-header h6 {
+  margin: 0;
+  color: var(--kui-text-muted);
+  font: 700 10px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0.08em;
-  line-height: 1.2;
   text-transform: uppercase;
 }
 
-.fmg-map-preview__select {
-  width: 100%;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  appearance: none;
-  background: transparent;
+.fmg-map-preview__menu .kui-menu-item {
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  color: var(--kui-text-secondary);
+  font: 500 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.fmg-map-preview__menu .bp6-menu-item-label {
+  display: inline-flex;
+  align-items: center;
+  color: hsl(var(--accent));
+}
+
+.fmg-map-preview__menu .kui-menu-item.bp6-active {
+  background: hsl(var(--accent) / 0.18);
   color: var(--kui-text);
-  cursor: pointer;
-  font: 600 12px/1.5 inherit;
-  text-overflow: ellipsis;
-}
-
-.fmg-map-preview__select:disabled {
-  color: var(--kui-text-muted);
-  cursor: not-allowed;
-}
-
-.fmg-map-preview__chevron {
-  color: var(--kui-text-muted);
-  pointer-events: none;
 }
 
 @media (max-width: 760px) {
@@ -92,8 +129,8 @@
     right: 12px;
   }
 
-  .fmg-map-preview {
-    width: 196px;
+  .fmg-map-preview__menu {
+    width: 210px;
   }
 }
 

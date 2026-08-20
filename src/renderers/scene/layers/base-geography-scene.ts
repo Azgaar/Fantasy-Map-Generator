@@ -42,7 +42,7 @@ export function buildBaseGeographyScene(
   const waterRegions: MaskRegionPrimitive[] = [createMapMaskRegion(mapBounds)];
 
   for (const feature of source.features) {
-    if (!feature || feature.type === "ocean") continue;
+    if (!feature || feature.type === "ocean" || !Array.isArray(feature.vertices)) continue;
     const shape = buildFeatureShape(feature, source.vertices, mapBounds, shapeOptions);
     if (!shape) continue;
 

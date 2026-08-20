@@ -316,7 +316,7 @@ function toggleTemperature(event) {
 }
 
 function toggleBiomes(event) {
-  if (!biomes.selectAll("path").size()) {
+  if (!layerIsOn("toggleBiomes")) {
     turnButtonOn("toggleBiomes");
     drawBiomes();
     if (event && isCtrlClick(event)) editStyle("biomes");

@@ -1,9 +1,9 @@
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";
-import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
 import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
 import { type PixiOwnedLayer, pixiOwnsLayer } from "./pixi-renderer-ownership";
+import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
@@ -100,9 +100,7 @@ const api: PixiRendererControllerApi = {
   },
   ownsLayer: layer => pixiOwnsLayer(layer),
   queueRebuild: () => {
-    void instancePromise?.then(renderer =>
-      renderer.queueRender(pack, getMapRendererStyle(style), { kind: "world" })
-    );
+    void instancePromise?.then(renderer => renderer.queueRender(pack, getMapRendererStyle(style), { kind: "world" }));
   },
   start: async () => {
     if (!pack?.cells?.i?.length) return;

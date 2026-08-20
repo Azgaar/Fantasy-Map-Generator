@@ -2,31 +2,31 @@
 
 ## Status
 
-This document is the implementation roadmap for migrating the interactive map viewport from SVG to PixiJS. It is
-not a commitment to remove SVG everywhere. SVG remains the compatibility and vector-export backend until the Pixi
-renderer reaches feature parity and the project has a renderer-independent export pipeline.
+This document is the implementation roadmap for replacing the interactive SVG renderer with PixiJS. As of the
+2026-08-20 hard-cutover decision, the legacy renderer is not a supported fallback or compatibility target. Temporary
+SVG/HTML may remain only for not-yet-migrated layers and active interaction controls while this branch is in progress.
 
 In this document, **total conversion** means that PixiJS is the only persistent renderer for the interactive map.
-The application may still use HTML for panels and accessible controls, a small HTML/SVG overlay for active editor
-handles, and a renderer-independent SVG backend for vector export. It does not mean retaining an invisible, fully
-rendered SVG map behind the canvas.
+The application may still use HTML for panels and accessible controls and a small HTML/SVG overlay for active editor
+handles. Export must be rebuilt from domain/scene data or Pixi render targets; cloning or reconstructing the legacy
+live SVG renderer is explicitly out of scope.
 
-The current default-on integration is described in [pixi-renderer-prototype.md](pixi-renderer-prototype.md).
+The former opt-in experiment is retained only as historical context in
+[pixi-renderer-prototype.md](pixi-renderer-prototype.md).
 
 ## Implementation progress
 
-- Phase 1 is implemented in the prototype: selected layers have one live owner, borders use shared geometry, and SVG
-  fallback is materialized only for compatibility operations.
-- Phase 2 is implemented for evaluation: Pixi uses a viewport-sized HTML surface, shares the D3 camera transform, reacts
+- The renderer now boots unconditionally after generation/load. The prototype flag, theme switch, disable path,
+  console global, and lazy SVG materializer have been removed. Migrated layers have a one-way Pixi owner.
+- Pixi uses a viewport-sized HTML surface, shares the D3 camera transform, reacts
   to SVG resizing, and enables culling on suitable display objects.
 - S-002 retained cell topology is implemented: stable typed positions and indices, per-cell triangle ranges and bounds,
   and revision-aware CPU reuse are available without DOM or Pixi dependencies.
 - R-001 through R-003 now include the typed renderer contract, camera state, canonical layer registry, one-owner
   coordinator, typed invalidation coalescing, and an on-demand scheduler. Classic application scripts dispatch typed
-  bridge events and no longer call `window.PixiMapPrototype`; that global remains only as a development console shim
-  scheduled for removal with the other prototype bridges in M13.
-- S-001 and L-001 are implemented for the prototype's state and biome fills: legacy presentation is adapted at the
-  compatibility boundary, scene construction no longer reads DOM styles, both modes use retained indexed meshes, and
+  bridge events and no longer call or expose `window.PixiMapPrototype`.
+- S-001 and L-001 are implemented for state and biome fills: semantic renderer style is serialized in application
+  state, scene construction no longer reads DOM styles, both layers use retained indexed meshes simultaneously, and
   assignment changes update color attributes without rebuilding topology.
 - R-004 now has resource byte/count accounting, an adaptive DPR policy bounded by viewport pixels and device memory,
   deterministic WebGL context listener cleanup, context-restoration reconstruction scheduling, and repeated
@@ -35,12 +35,12 @@ The current default-on integration is described in [pixi-renderer-prototype.md](
   baseline. Browser-verified reconstruction and GPU/heap memory evidence remain open.
 - M2 scene contracts now define renderer-neutral polygon, line, sprite, label, hit-region, and mask primitives. State
   and biome fills build polygon batches from retained topology, relief builds a pure sprite-instance batch, and Pixi
-  consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds, while the SVG path is now
-  a derived compatibility representation. World/topology/layer revision tokens advance from typed invalidations.
+  consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds and are drawn directly with
+  Pixi graphics. World/topology/layer revision tokens advance from typed invalidations.
 - S-003 now has a pure base-geography builder for the ocean rectangle, grouped land and lake polygon paths, coastline
   paths, and ordered include/exclude land and water masks. Feature shaping and boundary clipping are renderer-neutral,
-  and the legacy SVG feature renderer consumes the same extracted shape builder. Pixi consumption, depth bands,
-  patterns, and visual parity remain part of M4.
+  and Pixi consumes the ocean, landmass, lake, and coastline outputs in canonical order. Depth bands, patterns, and
+  visual parity remain part of M4.
 - V-001 now has an editor-free mount/update/destroy API, a static typed world fixture, and a separate production build.
   The first build proves that the production renderer can be lazy-loaded without the classic scripts and records its
   bundle and asset assumptions in [pixi-viewer-spike.md](pixi-viewer-spike.md). Browser startup and embed proof remain
@@ -48,9 +48,8 @@ The current default-on integration is described in [pixi-renderer-prototype.md](
 - Q-001 now has deterministic 10k/50k/100k seed recipes, a checked-in legacy fixture, fixed reference profiles, a
   versioned report contract, separate scene-build/GPU-submit instrumentation, and a two-run SVG/Pixi benchmark command.
   Checked-in reference measurements still require browser execution on the documented profiles.
-- P-001 now has an idempotent lazy SVG materializer with exact-content restoration and failure cleanup tests. Save and
-  export release the compatibility window deterministically; full browser round trips and hidden-layer export evidence
-  are still open.
+- P-001 was retired by the hard-cutover decision. Save no longer materializes Pixi-owned SVG layers, and legacy SVG
+  export is allowed to omit migrated content until M11 replaces it with scene/Pixi export.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 
@@ -80,8 +79,8 @@ Measure the same fixed map fixtures on the same browser and hardware. Include 10
 | DOM size | At least 60% fewer nodes below `#map` in read-only Pixi mode |
 | Memory | No unbounded growth after 50 layer toggles and 20 map regenerations |
 | Visual fidelity | No unexplained high-severity differences in reference screenshots |
-| Compatibility | Existing `.map` files load without schema changes or data loss |
-| Export | SVG and raster exports remain visually usable throughout migration |
+| Persistence | Current-format `.map` round trips preserve domain and semantic style data |
+| Export | Pixi raster export meets the M11 size, tiling, and cleanup gates |
 
 Generation time is a separate metric. Pixi does not accelerate climate, topology, state expansion, economy, or other
 procedural generators.
@@ -93,12 +92,12 @@ world data + semantic style
             |
             v
      renderer coordinator
-       /             \
-      v               v
-Pixi viewport     SVG export renderer
-      |
-      v
-canvas + HTML editing overlays
+              |
+              v
+       Pixi viewport ----> snapshot/export services
+              |
+              v
+    canvas + HTML editing overlays
 ```
 
 The world model must not contain Pixi objects, DOM nodes, GPU buffers, or textures. Runtime resources belong to the
@@ -129,9 +128,9 @@ The coordinator decides which backend owns each live layer. A layer must have on
 
 - dispatch invalidations instead of calling global drawing functions;
 - preserve canonical layer ordering;
-- switch SVG/Pixi ownership for development comparisons;
+- assign migrated layers permanently to Pixi and reject duplicate live owners;
 - expose diagnostics and per-layer timings;
-- materialize SVG only when an operation still requires it.
+- expose diagnostics and fail visibly when the mandatory renderer cannot start.
 
 The prototype's `ownsLayer` check is a temporary bridge for classic scripts, not the final coordinator API.
 
@@ -141,7 +140,7 @@ Separate geometry preparation from painting. Each migrated layer should have a p
 
 ```text
 pack + semantic style -> layer scene data -> Pixi resources
-                                  `-------> SVG output
+                                  `-------> export data (M11)
 ```
 
 Examples of renderer-neutral scene data are polygon batches, polyline strips, label runs, sprite instances, and hit
@@ -181,7 +180,7 @@ Labels need a dedicated milestone, not an incidental conversion.
 - Load and validate fonts before measuring or placing text.
 - Cache glyphs through bitmap or signed-distance-field atlases.
 - Preserve curved labels, letter spacing, multiline labels, zoom bounds, and label groups.
-- Keep a DOM/SVG fallback until screenshot comparisons cover the supported font and path cases.
+- Treat missing text features as explicit migration defects; do not route them through the old live renderer.
 
 ### Editing overlays
 
@@ -263,8 +262,8 @@ Exit gate: common read-only maps no longer require persistent SVG feature layers
 - Add curved path text and label-group zoom rules.
 - Compare label placement across bundled presets and representative user fonts.
 
-Exit gate: label readability and placement are acceptable at normal viewing scales, with a documented fallback for
-unsupported fonts or effects.
+Exit gate: label readability and placement are acceptable at normal viewing scales; unsupported fonts or effects are
+reported explicitly and do not invoke legacy rendering.
 
 ### Phase 7: editor integration
 
@@ -285,14 +284,14 @@ Exit gate: all core editors work without reconstructing the full SVG map.
 
 Exit gate: a minimal external page can load a map, resize it, control layers, and dispose it without the editor shell.
 
-### Phase 9: default rollout and cleanup
+### Phase 9: hard cutover and cleanup
 
-- Run opt-in, percentage, and default-on rollout stages with a persistent SVG fallback switch.
-- Compare telemetry or submitted benchmark reports by renderer and device class.
-- Remove SVG live-render paths only after export and editor replacements are proven.
-- Keep SVG export as a supported backend if it remains valuable.
+- Boot Pixi unconditionally and remove renderer flags, themes, disable paths, and materialization bridges.
+- Compare current performance and visual evidence against checked-in historical SVG baselines only.
+- Delete each SVG live-render path as soon as its Pixi owner and editor integration are usable.
+- Reintroduce vector output only from renderer-neutral scene data if it remains valuable.
 
-Exit gate: Pixi is the default interactive renderer and fallback usage is understood and acceptably low.
+Exit gate: Pixi is the mandatory interactive renderer and no legacy renderer path is callable.
 
 | Existing phase | Executable milestone mapping |
 | --- | --- |
@@ -310,9 +309,9 @@ Exit gate: Pixi is the default interactive renderer and fallback usage is unders
 ## Save, load, and export
 
 - Do not add Pixi runtime objects to `.map` serialization.
-- Preserve current `.map` compatibility until a separately versioned viewer format is introduced.
-- During early phases, materialize missing SVG layers only while cloning for save/export.
-- Long term, build SVG export from renderer-neutral scene data instead of cloning the live DOM.
+- Preserve domain-data loading where practical, but do not serialize or materialize Pixi-owned SVG layers.
+- Store semantic renderer style with application style data, never as computed SVG presentation.
+- Build raster export from Pixi render targets and optional vector output from renderer-neutral scene data.
 - Raster export may render Pixi to an offscreen target, but must account for maximum texture size and tiled output.
 - Test save/load round trips with Pixi enabled and disabled.
 
@@ -324,10 +323,10 @@ For each layer:
 1. define and serialize its typed style subtree;
 2. migrate preset selector values into that subtree;
 3. make controllers update style state;
-4. make both renderers consume the same state;
+4. make Pixi and export consumers use the same state;
 5. remove DOM style reads from the normal Pixi path.
 
-Computed SVG style reads are acceptable only as a temporary compatibility bridge.
+Computed SVG style reads are prohibited in migrated rendering paths.
 
 ## Testing and quality gates
 
@@ -336,7 +335,7 @@ Every migrated layer should add:
 - unit tests for scene-data generation and invalidation decisions;
 - deterministic screenshot comparisons at representative zoom levels;
 - layer toggle and z-order interaction tests;
-- save/load and SVG/raster export coverage;
+- save/load and Pixi raster export coverage;
 - context loss, resize, device-pixel-ratio, and destroy/remount tests;
 - performance measurements against the fixed fixtures;
 - memory checks after repeated rebuilds and map changes.
@@ -350,11 +349,11 @@ behavior are suitable; do not make the migration depend on it.
 | --- | --- |
 | Pixi is slower because geometry is rebuilt | Retain buffers and use granular invalidations |
 | Large GPU allocations | Viewport-sized targets, culling, adaptive resolution, resource budgets |
-| Loss of SVG visual effects | Catalogue effects, implement high-value equivalents, document fallbacks |
-| Text fidelity regressions | Separate label milestone and keep fallback until proven |
+| Loss of SVG visual effects | Catalogue effects, implement high-value equivalents, and record intentional removals |
+| Text fidelity regressions | Separate label milestone and fail explicitly for unsupported cases |
 | Editors coupled to SVG nodes | Introduce domain-ID picking and transient overlays |
-| Save/export loses hidden layers | Lazy SVG materialization followed by renderer-neutral export |
-| WebGL context loss | Recreate resources from scene caches and show a recoverable fallback |
+| Save/export loses hidden layers | Snapshot visibility/style state and export from Pixi/neutral scenes |
+| WebGL context loss | Recreate resources from scene caches and show a recoverable renderer error state |
 | Bundle growth | Keep Pixi code-split and create a minimal viewer entry point |
 | Migration stalls in permanent dual rendering | Enforce one live owner per layer and phase exit gates |
 
@@ -550,7 +549,7 @@ Deliverables:
 - introduce the coordinator, canonical layer registry, typed camera, render-on-invalidation scheduler, and diagnostics;
 - make mount, resize, device-pixel ratio changes, destroy/remount, and WebGL context restoration deterministic;
 - define a resource budget and cache eviction rules for textures, geometry, and glyph atlases;
-- retain the SVG/Pixi comparison switch only as a development facility.
+- boot the production renderer unconditionally with no disable or fallback path.
 
 Tests: lifecycle unit tests, resize/DPR screenshots, context-loss recovery, repeated mount/destroy memory check, and
 camera alignment with the interaction overlay.
@@ -562,7 +561,7 @@ lifecycle cases without a continuous ticker.
 
 Deliverables:
 
-- define typed style subtrees for the first migrated layers and converters from current preset/DOM values;
+- define typed, serialized style subtrees for migrated layers without computed DOM values;
 - define scene primitives for polygon batches, line batches, sprite instances, labels, hit regions, masks, and bounds;
 - add stable world/style revision tokens and typed invalidations;
 - move shared geometry such as borders behind pure scene builders;
@@ -598,7 +597,7 @@ Deliverables:
   physical-map effects;
 - renderer-neutral pattern definitions with explicit fallback behavior;
 - clipping and z-order that do not depend on SVG `<defs>`, filters, or element order;
-- lazy SVG compatibility only for export operations still awaiting M11.
+- no reconstruction or materialization of the removed SVG base renderer.
 
 Tests: political, physical, heightmap, and satellite preset screenshots; texture loading failures; clipping at map
 edges; very large viewport and high-DPI behavior.
@@ -645,8 +644,7 @@ Deliverables:
 Tests: atlas invalidation, zoom bounds, offscreen culling, line hit tolerance data, missing assets, and animation
 start/stop cleanup.
 
-Exit gate: a common read-only map has no persistent SVG feature layer except labels or explicitly documented temporary
-fallbacks.
+Exit gate: a common read-only map has no persistent SVG feature layer except not-yet-migrated labels.
 
 ### M8 — Labels, emblems, and viewport decoration
 
@@ -661,8 +659,8 @@ Deliverables:
 Tests: bundled fonts, failed/custom font behavior, curved and multiline cases, different DPR values, zoom transitions,
 atlas eviction, and reference screenshots.
 
-Exit gate: normal viewing no longer needs live SVG labels, and every unsupported text/effect case has an explicit,
-measured fallback rather than silently reconstructing the full SVG map.
+Exit gate: normal viewing no longer needs live SVG labels, and unsupported text/effect cases fail explicitly rather
+than silently reconstructing the removed renderer.
 
 ### M9 — Picking and interaction foundation
 
@@ -705,27 +703,22 @@ Each migrated editor must:
 Exit gate: all core editors operate with the SVG live renderer disabled, and no controller reconstructs the full SVG
 map as a side effect.
 
-### M11 — Persistence, compatibility, and export
+### M11 — Persistence and export
 
-Deliverables proceed in four safe steps:
+Deliverables:
 
-1. Keep current `.map` reading/writing behavior while lazily materializing missing SVG only inside compatibility
-   operations. Cover every Pixi-owned layer with round-trip tests.
-2. Introduce an immutable `WorldSnapshot` plus semantic `MapStyle`/`RenderSnapshot`. Loading an old map converts SVG
-   style attributes into semantic state once; normal rendering never reads them again.
-3. Build `SvgExportRenderer` from renderer-neutral scene data. Match layer order, definitions, fonts, patterns, masks,
-   metadata, and hidden-layer rules without cloning `#map`.
-4. Build raster export from Pixi/offscreen scene data with overlap-safe tiling, maximum texture-size detection, progress,
+1. Serialize domain data, semantic `MapStyle`, visibility, and view metadata without Pixi objects or persistent layer
+   markup. Current-format round trips are required; older SVG-centric files are best-effort imports, not a release gate.
+2. Introduce an immutable `WorldSnapshot` plus semantic `MapStyle`/`RenderSnapshot` shared by editor and viewer.
+3. Build raster export from Pixi/offscreen scene data with overlap-safe tiling, maximum texture-size detection, progress,
    and deterministic cleanup.
+4. If vector output is retained, build it from renderer-neutral scene data as a separate exporter. It must never clone
+   or reconstruct the removed live SVG renderer.
 
-`src/services/io/auto-update.ts` and existing data migrations remain responsible for old format compatibility. Any new
-viewer-optimized file is separately versioned and derived from world/style data; it does not replace `.map` without a
-separate compatibility decision.
+Tests: current round trips, maps with hidden layers and custom fonts/images, raster pixel dimensions, tiled seams,
+canceled exports, and deterministic renderer cleanup.
 
-Tests: oldest supported fixtures, current round trips, maps with hidden layers and custom fonts/images, SVG structural
-checks, raster pixel dimensions, tiled seams, canceled exports, and Pixi-disabled compatibility.
-
-Exit gate: save and both export types work when `#map` contains no persistent feature geometry.
+Exit gate: save and raster export work when `#map` contains no persistent feature geometry.
 
 ### M12 — Standalone viewer and embedding
 
@@ -757,7 +750,7 @@ Remove legacy code by dependency, not by file age:
 | `public/modules/ui/options.js` | typed generation/view options and command handlers | No renderer changes performed through classic globals |
 | `public/main.js` map bootstrap | typed application bootstrap, world store, viewport surface, layer registry | No global SVG layer selections are initialized |
 | Global D3 v5 selections/zoom | imported geometry utilities where needed and the typed camera/input layer | No `d3.event`, global selection, or SVG zoom dependency remains |
-| Prototype bridges | coordinator and renderer lifecycle | No `window.PixiMapPrototype`, `ownsLayer`, or lazy live-layer bridge |
+| Prototype bridges | coordinator and renderer lifecycle | No `window.PixiMapPrototype`, renderer flag/theme, disable path, or lazy materializer |
 
 Before deleting any classic symbol, search classic scripts, TypeScript, inline HTML handlers, tests, save/load migrations,
 and external compatibility shims. Keep positional placeholders in the `.map` format and old data migrations even if
@@ -766,18 +759,18 @@ their original live renderer has gone.
 Exit gate: the editor and viewer boot without classic rendering scripts or global SVG layer selections. Any remaining
 legacy code is documented as data compatibility or unrelated editor UI, not interactive map rendering.
 
-### M14 — Default rollout and final cleanup
+### M14 — Hard-cutover cleanup
 
 Deliverables:
 
-- opt-in, default-on-with-fallback, and final-default release stages;
+- unconditional Pixi startup and removal of every renderer selection/fallback branch;
 - benchmark/diagnostic export that includes browser, GPU backend, fixture, layer set, and renderer version;
 - a supported-browser matrix and graceful canvas/WebGL failure message;
-- removal of comparison-only duplicate paths after the fallback window;
+- removal of comparison-only and migrated SVG paths immediately after ownership transfer;
 - updated architecture, contributor, embedding, troubleshooting, and performance documentation.
 
-Exit gate: Pixi is the single persistent interactive renderer, fallback use is understood, all completion-boundary
-items are checked, and deletion candidates have passed the removal audit.
+Exit gate: Pixi is the single persistent interactive renderer, all completion-boundary items are checked, and deletion
+candidates have passed the removal audit.
 
 ## Pull request slicing and acceptance rules
 
@@ -787,8 +780,8 @@ Use small vertical slices rather than a renderer-wide branch. A typical layer PR
 2. a Pixi consumer with deterministic resource cleanup;
 3. ownership registration and canonical z-order;
 4. visual, interaction, invalidation, and performance coverage;
-5. save/export compatibility for the layer;
-6. deletion of its obsolete live SVG path after the gate, or a named follow-up with a temporary expiry condition.
+5. save/export behavior for the layer, which may intentionally break legacy SVG output before M11;
+6. deletion of its obsolete live SVG path in the same slice.
 
 Rules for every slice:
 
@@ -799,14 +792,14 @@ Rules for every slice:
 - fixtures and benchmark method must remain comparable to the baseline;
 - intentional visual differences require a screenshot, rationale, and acceptance in the PR;
 - resource counts must return to baseline after destroy or map replacement;
-- a feature flag may compare renderers, but production must not draw both simultaneously.
+- renderer flags and runtime SVG/Pixi comparisons are prohibited; use checked-in baselines instead.
 
 ## First execution tickets
 
 These are the first independently mergeable tickets, in dependency order:
 
 1. **Q-001: deterministic benchmark fixtures.** Add 10k/50k/100k and legacy-load fixtures, a report schema, and the
-   reference SVG/Pixi measurements.
+   reference historical-SVG and current-Pixi measurements.
 2. **R-001: typed renderer lifecycle.** Define `MapRenderer`, move mount/resize/camera/destroy out of the prototype
    global, and add lifecycle tests without changing visual ownership.
 3. **R-002: layer registry and coordinator.** Encode canonical order, visibility, dependencies, and one-owner checks;
@@ -821,10 +814,10 @@ These are the first independently mergeable tickets, in dependency order:
    incrementally, and benchmark layer toggles and edits.
 8. **R-004: resource lifecycle and context recovery.** Add buffer/texture accounting, disposal, resolution caps, and a
    complete WebGL context reconstruction test.
-9. **Q-002: visual comparison harness.** Capture fixed SVG/Pixi views, z-order combinations, resize, and overlay
-   alignment with an intentional-difference allowlist.
-10. **P-001: compatibility boundary tests.** Verify current save/load, lazy SVG export materialization, and hidden-layer
-    behavior before additional layer ownership moves.
+9. **Q-002: visual reference harness.** Capture fixed Pixi views against checked-in historical baselines, z-order
+   combinations, resize, and overlay alignment with an intentional-difference allowlist.
+10. **P-001: retired.** The hard-cutover decision removed lazy SVG materialization and exact legacy SVG export as a
+    migration requirement.
 11. **S-003: base geography scene builders.** Extract ocean, landmass, lakes, and coastline without DOM or Pixi access.
 12. **V-001: viewer contract spike.** Mount the production renderer through an editor-free entry using a static scene
     fixture; record bundle and asset assumptions before the API becomes difficult to separate.
@@ -839,10 +832,10 @@ layers.
 - [ ] No hidden or background full SVG map is rendered during normal editor or viewer use.
 - [ ] Camera, styles, visibility, ordering, selection, and invalidation are typed state.
 - [ ] All core editors work through domain mutations, `MapHit`, and transient overlays.
-- [ ] Save/load compatibility covers the oldest supported fixtures and current round trips.
-- [ ] SVG and tiled raster export are independent of the live DOM.
+- [ ] Current-format save/load round trips preserve domain and semantic renderer state.
+- [ ] Pixi tiled raster export is independent of the live DOM; any retained vector exporter uses neutral scenes.
 - [ ] The standalone viewer passes embedding, lifecycle, CSP, and multi-instance tests.
 - [ ] Performance, memory, context recovery, visual, and browser gates pass.
 - [ ] Classic layer/style rendering globals and prototype bridges are removed.
-- [ ] Remaining SVG usage is limited to export or small documented UI overlays.
+- [ ] Remaining SVG usage is limited to small documented UI/interaction overlays.
 - [ ] Architecture and contributor documentation describe the new ownership model.

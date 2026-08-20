@@ -1,15 +1,7 @@
 import { MAP_LAYER_REGISTRY } from "../core/layer-registry";
 import { RendererCoordinator } from "../core/renderer-coordinator";
 
-export type PixiOwnedLayer =
-  | "biomes"
-  | "borders"
-  | "coastline"
-  | "lakes"
-  | "landmass"
-  | "ocean"
-  | "relief"
-  | "states";
+export type PixiOwnedLayer = "biomes" | "borders" | "coastline" | "lakes" | "landmass" | "ocean" | "relief" | "states";
 
 export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "ocean",

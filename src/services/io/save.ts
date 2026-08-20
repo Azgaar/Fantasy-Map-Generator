@@ -79,20 +79,20 @@ function prepareMapData(): string {
   // The SVG slot is retained temporarily for unmigrated overlay data. Pixi-owned layers are intentionally absent.
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
-    // reset transform values to default
-    cloneEl.setAttribute("width", String(graphWidth));
-    cloneEl.setAttribute("height", String(graphHeight));
-    cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
-    cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
+  // reset transform values to default
+  cloneEl.setAttribute("width", String(graphWidth));
+  cloneEl.setAttribute("height", String(graphHeight));
+  cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
+  cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
 
-    // relief icons are stored in pack.relief, the layer holds only the currently visible ones
-    const cloneTerrain = cloneEl.querySelector("#terrain");
-    if (cloneTerrain) cloneTerrain.innerHTML = "";
+  // relief icons are stored in pack.relief, the layer holds only the currently visible ones
+  const cloneTerrain = cloneEl.querySelector("#terrain");
+  if (cloneTerrain) cloneTerrain.innerHTML = "";
 
-    const cloneRuler = cloneEl.querySelector("#ruler");
-    if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
-    const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
-    if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
+  const cloneRuler = cloneEl.querySelector("#ruler");
+  if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
+  const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
+  if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
 
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 

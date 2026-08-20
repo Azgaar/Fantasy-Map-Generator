@@ -1,8 +1,5 @@
 import { LAYER_CONTROLS_CHANGE_EVENT } from "@/components/layers/layer-controls";
-import {
-  pixiRendererController,
-  syncPixiRendererVisibility
-} from "./pixi-renderer-controller";
+import { pixiRendererController, syncPixiRendererVisibility } from "./pixi-renderer-controller";
 import { registerPixiRendererEventBridge } from "./pixi-renderer-events";
 import { activatePixiRendererOwnership } from "./pixi-renderer-ownership";
 

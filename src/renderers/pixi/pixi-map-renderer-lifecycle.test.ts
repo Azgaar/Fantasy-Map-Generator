@@ -8,7 +8,8 @@ const applicationState = vi.hoisted(() => ({
   positionSet: vi.fn(),
   render: vi.fn(),
   resize: vi.fn(),
-  scaleSet: vi.fn()
+  scaleSet: vi.fn(),
+  stage: undefined as { children: Array<{ label: string; visible: boolean }> } | undefined
 }));
 
 vi.mock("pixi.js", () => {
@@ -45,6 +46,9 @@ vi.mock("pixi.js", () => {
     destroy = applicationState.destroy;
     init = applicationState.init;
     render = applicationState.render;
+    constructor() {
+      applicationState.stage = this.stage;
+    }
   }
 
   class Buffer {
@@ -60,10 +64,22 @@ vi.mock("pixi.js", () => {
   }
 
   class GraphicsContext {
+    closePath() {
+      return this;
+    }
     fill() {
       return this;
     }
+    lineTo() {
+      return this;
+    }
+    moveTo() {
+      return this;
+    }
     poly() {
+      return this;
+    }
+    stroke() {
       return this;
     }
   }
@@ -126,6 +142,7 @@ describe("PixiMapRenderer lifecycle", () => {
     applicationState.render.mockClear();
     applicationState.resize.mockClear();
     applicationState.scaleSet.mockClear();
+    applicationState.stage = undefined;
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -246,7 +263,7 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 4, textureCacheEntries: 1 });
+    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 7, textureCacheEntries: 1 });
     expect(applicationState.assetLoad).toHaveBeenCalledOnce();
 
     renderer.clear();
@@ -264,7 +281,20 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 3 });
+    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 6 });
+    expect(applicationState.stage?.children.map(child => child.label)).toEqual([
+      "ocean",
+      "landmass",
+      "lakes",
+      "biomes",
+      "relief",
+      "states",
+      "borders",
+      "coastline"
+    ]);
+    renderer.setLayerVisibility("biomes", false);
+    expect(applicationState.stage?.children.find(child => child.label === "biomes")?.visible).toBe(false);
+    expect(applicationState.stage?.children.find(child => child.label === "states")?.visible).toBe(true);
     renderer.destroy();
     expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
   });

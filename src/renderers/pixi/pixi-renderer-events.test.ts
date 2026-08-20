@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import mainScript from "../../../public/main.js?raw";
 import layersScript from "../../../public/modules/ui/layers.js?raw";
 import type { PixiRendererControllerApi } from "./pixi-renderer-controller";
+import rendererController from "./pixi-renderer-controller.ts?raw";
 import {
   PIXI_RENDERER_COMMAND_EVENT,
   PIXI_RENDERER_OWNERSHIP_REQUEST_EVENT,
@@ -9,6 +10,7 @@ import {
   type PixiRendererOwnershipRequest,
   registerPixiRendererEventBridge
 } from "./pixi-renderer-events";
+import rendererLoader from "./pixi-renderer-loader.ts?raw";
 
 const createController = (): PixiRendererControllerApi => ({
   clear: vi.fn(async () => undefined),
@@ -28,6 +30,15 @@ describe("Pixi renderer classic event bridge", () => {
     const combined = scripts.join("\n");
     expect(combined.includes(PIXI_RENDERER_COMMAND_EVENT)).toBe(true);
     expect(combined.includes(PIXI_RENDERER_OWNERSHIP_REQUEST_EVENT)).toBe(true);
+  });
+
+  it("boots Pixi unconditionally without a prototype flag, theme switch, or fallback API", () => {
+    expect(rendererLoader.includes("pixiRendererController.start()")).toBe(true);
+    expect(rendererLoader.includes("URLSearchParams")).toBe(false);
+    expect(rendererLoader.includes("PixiMapPrototype")).toBe(false);
+    expect(rendererController.includes("materializeSvgFallback")).toBe(false);
+    expect(rendererController.includes("disable:")).toBe(false);
+    expect(rendererController.includes("setTheme")).toBe(false);
   });
 
   it("routes classic commands through the typed controller", () => {
