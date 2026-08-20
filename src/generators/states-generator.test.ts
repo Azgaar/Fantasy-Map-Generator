@@ -19,7 +19,6 @@ describe("StatesModule.collectTaxes", () => {
     } as any;
     // Stub Names/COA data not needed for this test
     globalThis.Names = { getCultureShort: () => "X", getState: () => "X" } as any;
-    globalThis.Emblems = { generate: () => ({}), getShield: () => "" } as any;
     globalThis.FlatQueue = class {
       length = 0;
       pop() {
