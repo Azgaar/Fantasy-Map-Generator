@@ -1,10 +1,10 @@
 import { LAYER_CONTROLS_CHANGE_EVENT } from "@/components/layers/layer-controls";
 import {
   getPendingPixiTheme,
+  type PixiMapPrototypeApi,
   pixiRendererController,
   setPendingPixiTheme,
-  syncPixiRendererVisibility,
-  type PixiMapPrototypeApi
+  syncPixiRendererVisibility
 } from "./pixi-renderer-controller";
 
 export type { PixiMapPrototypeApi } from "./pixi-renderer-controller";

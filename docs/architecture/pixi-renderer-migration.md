@@ -27,8 +27,13 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
 - S-001 and L-001 are implemented for the prototype's state and biome fills: legacy presentation is adapted at the
   compatibility boundary, scene construction no longer reads DOM styles, both modes use retained indexed meshes, and
   assignment changes update color attributes without rebuilding topology.
-- R-004 has resource byte/count accounting and deterministic WebGL context listener cleanup. Browser-verified context
-  reconstruction, resolution-budget policy, and repeated lifecycle memory evidence remain open.
+- R-004 now has resource byte/count accounting, an adaptive DPR policy bounded by viewport pixels and device memory,
+  deterministic WebGL context listener cleanup, context-restoration reconstruction scheduling, and repeated
+  destroy/remount unit coverage. Browser-verified reconstruction and GPU/heap memory evidence remain open.
+- M2 scene contracts now define renderer-neutral polygon, line, sprite, label, hit-region, and mask primitives. State
+  and biome fills build polygon batches from retained topology, relief builds a pure sprite-instance batch, and Pixi
+  consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds, while the SVG path is now
+  a derived compatibility representation. World/topology/layer revision tokens advance from typed invalidations.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 

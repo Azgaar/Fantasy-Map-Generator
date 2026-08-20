@@ -4,11 +4,19 @@ import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import type { MapLayerId } from "../core/layer-registry";
 import type { MapHit, MapRenderer, ScreenPoint } from "../core/map-renderer";
+import { RenderDiagnostics, type RenderDiagnosticsSnapshot } from "../core/render-diagnostics";
 import { RenderScheduler } from "../core/render-scheduler";
+import {
+  DEFAULT_RENDERER_RESOLUTION_POLICY,
+  type RendererResolutionPolicy,
+  selectRendererResolution
+} from "../core/resolution";
 import { RendererResourceTracker } from "../core/resource-budget";
-import { buildBorderPaths } from "../draw-borders";
+import { buildBorderScene } from "../scene/layers/border-paths";
+import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { DEFAULT_PIXI_MAP_STYLE, type MapStyle } from "../scene/styles";
+import { WorldSceneRevisionTracker } from "../scene/world-scene";
 import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 import { buildCellFillBatches } from "./pixi-map-data";
@@ -21,8 +29,10 @@ export interface PixiPrototypeSnapshot {
   cameraScale: number;
   cells: number;
   contextLost: boolean;
+  diagnostics: RenderDiagnosticsSnapshot;
   enabled: boolean;
   reliefSprites: number;
+  resolution: number;
   resourceBytes: number;
   resourceCount: number;
   renderer: string | null;
@@ -32,10 +42,12 @@ export interface PixiPrototypeSnapshot {
 }
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
-const MAX_RESOLUTION = 2;
 
 export interface PixiMapRendererOptions {
+  deviceMemoryGb?: number;
+  getDevicePixelRatio?: () => number;
   recordPerformance?: (name: string, duration: number) => void;
+  resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
 }
 
@@ -44,6 +56,7 @@ export class PixiMapRenderer implements MapRenderer {
   private app: Application | null = null;
   private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
   private contextRecoveryRelease: (() => void) | null = null;
+  private diagnostics = new RenderDiagnostics();
   private layerVisibility = new Map<MapLayerId, boolean>();
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
@@ -52,6 +65,7 @@ export class PixiMapRenderer implements MapRenderer {
   private resizeObserver: ResizeObserver | null = null;
   private scheduler: RenderScheduler | null = null;
   private semanticStyle: MapStyle = structuredClone(DEFAULT_PIXI_MAP_STYLE);
+  private sceneRevisions = new WorldSceneRevisionTracker();
   private surface: HTMLElement | null = null;
   private fillContainer: Container | null = null;
   private topologyCache = new RetainedCellTopologyCache();
@@ -64,8 +78,10 @@ export class PixiMapRenderer implements MapRenderer {
     cameraScale: 1,
     cells: 0,
     contextLost: false,
+    diagnostics: {},
     enabled: false,
     reliefSprites: 0,
+    resolution: 1,
     resourceBytes: 0,
     resourceCount: 0,
     renderer: null,
@@ -212,12 +228,19 @@ export class PixiMapRenderer implements MapRenderer {
     this.surface = null;
     this.topologyCache.clear();
     this.topologyInputs = null;
+    this.sceneRevisions.reset();
+    this.diagnostics.clear();
     this.stats = { ...this.stats, batches: 0, enabled: false, reliefSprites: 0, renderer: null };
   }
 
   getSnapshot(): PixiPrototypeSnapshot {
     const resources = this.resources.getSnapshot();
-    return { ...this.stats, resourceBytes: resources.totalBytes, resourceCount: resources.totalCount };
+    return {
+      ...this.stats,
+      diagnostics: this.diagnostics.getSnapshot(),
+      resourceBytes: resources.totalBytes,
+      resourceCount: resources.totalCount
+    };
   }
 
   private async initializeApplication(): Promise<void> {
@@ -236,7 +259,7 @@ export class PixiMapRenderer implements MapRenderer {
       culler: { updateTransform: false },
       height: viewport.height,
       preference: "webgl",
-      resolution: Math.min(globalThis.devicePixelRatio || 1, MAX_RESOLUTION),
+      resolution: this.getResolution(viewport),
       width: viewport.width
     });
     this.app.stage.eventMode = "none";
@@ -258,7 +281,7 @@ export class PixiMapRenderer implements MapRenderer {
 
   resize(viewport: ViewportSize): void {
     if (!this.app || !this.surface) return;
-    const resolution = Math.min(globalThis.devicePixelRatio || 1, MAX_RESOLUTION);
+    const resolution = this.getResolution(viewport);
     this.app.renderer.resize(viewport.width, viewport.height, resolution);
     this.surface.style.height = `${viewport.height}px`;
     this.surface.style.width = `${viewport.width}px`;
@@ -267,6 +290,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.app.canvas.style.width = `${viewport.width}px`;
     this.stats.viewportHeight = viewport.height;
     this.stats.viewportWidth = viewport.width;
+    this.stats.resolution = resolution;
     this.camera = { ...this.camera, height: viewport.height, width: viewport.width };
     this.applyCamera();
   }
@@ -292,6 +316,7 @@ export class PixiMapRenderer implements MapRenderer {
         fallbackColor: style.fallbackColor,
         heights: world.cells.h
       },
+      theme,
       this.resources
     );
 
@@ -336,11 +361,12 @@ export class PixiMapRenderer implements MapRenderer {
     const world = this.getWorld();
     const container = new Container();
     container.label = "borders";
-    const paths = buildBorderPaths(world);
-    for (const [groupId, data, style] of [
-      ["stateBorders", paths.state, this.semanticStyle.borders.state],
-      ["provinceBorders", paths.province, this.semanticStyle.borders.province]
+    const scene = buildBorderScene(world, this.sceneRevisions.getLayerRevision("borders"));
+    for (const [groupId, batch, style] of [
+      ["stateBorders", scene.state, this.semanticStyle.borders.state],
+      ["provinceBorders", scene.province, this.semanticStyle.borders.province]
     ] as const) {
+      const data = batch.paths.map(path => `M${path.points.join(" ")}`).join(" ");
       if (!data) continue;
       const dash = style.dash ? ` stroke-dasharray="${style.dash}"` : "";
       const graphic = new Graphics().svg(
@@ -357,9 +383,10 @@ export class PixiMapRenderer implements MapRenderer {
     const container = new Container();
     container.label = "relief";
     container.alpha = this.semanticStyle.relief.opacity;
-    if (!world.relief?.length) return container;
+    const scene = buildReliefSpriteScene(world.relief ?? [], this.sceneRevisions.getLayerRevision("relief"));
+    if (!scene.instances.length) return container;
 
-    const icons = new Set(world.relief.map(({ icon }) => icon));
+    const icons = new Set(scene.instances.map(({ icon }) => icon));
     const textures = new Map<string, Texture>();
     await Promise.all(
       [...icons].map(async icon => {
@@ -368,10 +395,10 @@ export class PixiMapRenderer implements MapRenderer {
       })
     );
 
-    for (const { icon, x, y, s } of world.relief) {
+    for (const { height, icon, width, x, y } of scene.instances) {
       const texture = textures.get(icon);
       if (!texture) continue;
-      const sprite = new Sprite({ height: s, position: { x, y }, texture, width: s });
+      const sprite = new Sprite({ height, position: { x, y }, texture, width });
       sprite.cullable = true;
       sprite.eventMode = "none";
       container.addChild(sprite);
@@ -401,7 +428,7 @@ export class PixiMapRenderer implements MapRenderer {
     return this.topologyCache.get({
       cellIds: world.cells.i,
       cellVertices: inputs.cellVertices,
-      revision: this.topologyRevision,
+      revision: `${this.sceneRevisions.getTopologyRevision()}:source:${this.topologyRevision}`,
       vertexPoints: inputs.vertexPoints
     });
   }
@@ -413,6 +440,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private async renderInvalidations(batch: RenderInvalidationBatch): Promise<void> {
+    this.sceneRevisions.apply(batch.invalidations);
     const assignments = batch.invalidations.filter(
       (invalidation): invalidation is Extract<RenderInvalidation, { kind: "assignment" }> =>
         invalidation.kind === "assignment" && invalidation.layer === this.stats.theme
@@ -458,7 +486,19 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private recordPerformance(name: string, duration: number): void {
+    this.diagnostics.record(name, duration);
     this.rendererOptions.recordPerformance?.(name, duration);
+  }
+
+  private getResolution(viewport: ViewportSize): number {
+    return selectRendererResolution(
+      {
+        ...viewport,
+        deviceMemoryGb: this.rendererOptions.deviceMemoryGb,
+        devicePixelRatio: this.rendererOptions.getDevicePixelRatio?.() ?? globalThis.devicePixelRatio ?? 1
+      },
+      this.rendererOptions.resolutionPolicy ?? { ...DEFAULT_RENDERER_RESOLUTION_POLICY }
+    );
   }
 }
 

@@ -1,10 +1,7 @@
 import { Buffer, BufferUsage, Geometry, Mesh, Shader } from "pixi.js";
 import type { RendererResourceTracker } from "../../core/resource-budget";
-import {
-  buildCellFillAttributes,
-  type CellFillAttributeSource,
-  updateCellFillAttributes
-} from "../../scene/layers/cell-fill-attributes";
+import { type CellFillAttributeSource, updateCellFillAttributes } from "../../scene/layers/cell-fill-attributes";
+import { buildCellFillScene, type CellLayerId } from "../../scene/layers/cell-fill-scene";
 import type { RetainedCellTopology } from "../../scene/layers/retained-cell-topology";
 
 const vertex = /* glsl */ `
@@ -45,26 +42,28 @@ export class RetainedCellMesh {
   constructor(
     private readonly topology: RetainedCellTopology,
     source: CellFillAttributeSource,
+    layer: CellLayerId,
     private readonly resources?: RendererResourceTracker
   ) {
+    const scene = buildCellFillScene(topology, source, layer);
     const resourcePrefix = `retained-cells:${++RetainedCellMesh.sequence}`;
     this.resourceIds = [`${resourcePrefix}:positions`, `${resourcePrefix}:colors`, `${resourcePrefix}:indices`];
-    resources?.acquire(this.resourceIds[0], "geometry", topology.positions.byteLength);
-    resources?.acquire(this.resourceIds[1], "geometry", topology.vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT);
-    resources?.acquire(this.resourceIds[2], "geometry", topology.indices.byteLength);
+    resources?.acquire(this.resourceIds[0], "geometry", scene.positions.byteLength);
+    resources?.acquire(this.resourceIds[1], "geometry", scene.colors?.byteLength ?? 0);
+    resources?.acquire(this.resourceIds[2], "geometry", scene.indices.byteLength);
     const positionBuffer = new Buffer({
-      data: topology.positions,
+      data: scene.positions,
       label: "retained-cell-positions",
       usage: BufferUsage.VERTEX | BufferUsage.STATIC
     });
     this.colorBuffer = new Buffer({
-      data: buildCellFillAttributes(topology, source),
+      data: scene.colors,
       label: "retained-cell-colors",
       shrinkToFit: false,
       usage: BufferUsage.VERTEX | BufferUsage.COPY_DST
     });
     const indexBuffer = new Buffer({
-      data: topology.indices,
+      data: scene.indices,
       label: "retained-cell-indices",
       usage: BufferUsage.INDEX | BufferUsage.STATIC
     });

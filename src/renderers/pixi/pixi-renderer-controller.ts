@@ -53,6 +53,7 @@ const renderSvgFallback = (theme: PixiMapTheme): void => {
 const getInstance = async (): Promise<PixiMapRenderer> => {
   instancePromise ??= import("./pixi-map-renderer").then(({ PixiMapRenderer }) => {
     instance = new PixiMapRenderer({
+      deviceMemoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
       recordPerformance: (name, duration) => window.MapPerformance?.record(name, duration),
       resolveReliefIcon: readLegacyReliefSvgDataUri
     });

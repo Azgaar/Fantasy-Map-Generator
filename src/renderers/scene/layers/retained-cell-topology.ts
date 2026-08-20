@@ -1,11 +1,8 @@
-export type CellTopologyRevision = number | string;
+import { mergeSceneBounds, type SceneBounds } from "../primitives";
 
-export interface SceneBounds {
-  maxX: number;
-  maxY: number;
-  minX: number;
-  minY: number;
-}
+export type { SceneBounds } from "../primitives";
+
+export type CellTopologyRevision = number | string;
 
 export interface CellGeometryRange {
   bounds: SceneBounds;
@@ -64,7 +61,7 @@ export function buildRetainedCellTopology(source: CellTopologySource): RetainedC
     cells.push({ bounds: cellBounds, cellId, vertexIds });
     vertexCount += vertexIds.length;
     triangleCount += vertexIds.length - 2;
-    bounds = mergeBounds(bounds, cellBounds);
+    bounds = mergeSceneBounds(bounds, cellBounds);
   }
 
   const positions = new Float32Array(vertexCount * 2);
@@ -162,14 +159,4 @@ function getBounds(vertexIds: readonly number[], points: CellTopologySource["ver
     bounds.minY = Math.min(bounds.minY, y);
   }
   return bounds;
-}
-
-function mergeBounds(bounds: SceneBounds | null, next: SceneBounds): SceneBounds {
-  if (!bounds) return { ...next };
-  return {
-    maxX: Math.max(bounds.maxX, next.maxX),
-    maxY: Math.max(bounds.maxY, next.maxY),
-    minX: Math.min(bounds.minX, next.minX),
-    minY: Math.min(bounds.minY, next.minY)
-  };
 }

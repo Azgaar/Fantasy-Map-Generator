@@ -93,4 +93,59 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(renderer.getSnapshot().enabled).toBe(true);
     renderer.destroy();
   });
+
+  it("re-evaluates the injected DPR against the resolution budget on resize", async () => {
+    let devicePixelRatio = 3;
+    const renderer = new PixiMapRenderer({ getDevicePixelRatio: () => devicePixelRatio });
+    renderer.setCamera({ height: 2160, scale: 1, width: 3840, x: 0, y: 0 });
+    await renderer.mount(createSurface());
+
+    expect(applicationState.init).toHaveBeenCalledWith(expect.objectContaining({ resolution: 1.01 }));
+    expect(renderer.getSnapshot().resolution).toBe(1.01);
+
+    devicePixelRatio = 1;
+    renderer.resize({ height: 600, width: 800 });
+    expect(applicationState.resize).toHaveBeenLastCalledWith(800, 600, 1);
+    expect(renderer.getSnapshot().resolution).toBe(1);
+    renderer.destroy();
+  });
+
+  it("tracks context loss, schedules reconstruction, and removes listeners on destroy", async () => {
+    let scheduledFrame: FrameRequestCallback | undefined;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      scheduledFrame = callback;
+      return 7;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const renderer = new PixiMapRenderer();
+    const surface = createSurface();
+    await renderer.mount(surface);
+    const canvas = surface.children[0] as EventTarget;
+
+    const lost = new Event("webglcontextlost", { cancelable: true });
+    canvas.dispatchEvent(lost);
+    expect(lost.defaultPrevented).toBe(true);
+    expect(renderer.getSnapshot().contextLost).toBe(true);
+
+    canvas.dispatchEvent(new Event("webglcontextrestored"));
+    expect(renderer.getSnapshot().contextLost).toBe(false);
+    expect(scheduledFrame).toBeTypeOf("function");
+    scheduledFrame?.(0);
+
+    renderer.destroy();
+    canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+    expect(renderer.getSnapshot().contextLost).toBe(false);
+  });
+
+  it("returns to a clean lifecycle baseline across repeated mount and destroy loops", async () => {
+    const renderer = new PixiMapRenderer();
+    for (let iteration = 0; iteration < 20; iteration++) {
+      await renderer.mount(createSurface());
+      renderer.destroy();
+      expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
+    }
+
+    expect(applicationState.init).toHaveBeenCalledTimes(20);
+    expect(applicationState.destroy).toHaveBeenCalledTimes(20);
+  });
 });
