@@ -20,6 +20,7 @@ import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { buildZoneScene } from "../scene/layers/zone-scene";
 import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
+import type { MapRenderWorld } from "../scene/render-world";
 import {
   DEFAULT_PIXI_MAP_STYLE,
   type MapStyle,
@@ -28,7 +29,6 @@ import {
   type SemanticLineStyle
 } from "../scene/styles";
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
-import type { MapRenderWorld } from "../scene/render-world";
 import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 

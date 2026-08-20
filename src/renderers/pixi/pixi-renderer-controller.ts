@@ -122,7 +122,9 @@ const api: PixiRendererControllerApi = {
     );
   },
   queueRebuild: () => {
-    void instancePromise?.then(renderer => renderer.queueRender(getWorld(), getMapRendererStyle(style), { kind: "world" }));
+    void instancePromise?.then(renderer =>
+      renderer.queueRender(getWorld(), getMapRendererStyle(style), { kind: "world" })
+    );
   },
   start: async () => {
     if (!pack?.cells?.i?.length) return;

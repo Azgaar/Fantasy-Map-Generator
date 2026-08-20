@@ -2,8 +2,8 @@ import type { MapCamera } from "../renderers/core/camera";
 import { coalesceInvalidations, type RenderInvalidation } from "../renderers/core/invalidation";
 import type { MapLayerId } from "../renderers/core/layer-registry";
 import type { MapRenderer } from "../renderers/core/map-renderer";
-import type { MapStyle } from "../renderers/scene/styles";
 import type { MapRenderWorld } from "../renderers/scene/render-world";
+import type { MapStyle } from "../renderers/scene/styles";
 
 export type PixiViewerRenderer = MapRenderer;
 

@@ -1,5 +1,5 @@
-import type { MapStyle } from "../scene/styles";
 import type { MapRenderWorld } from "../scene/render-world";
+import type { MapStyle } from "../scene/styles";
 import type { MapCamera, ViewportSize } from "./camera";
 import type { RenderInvalidationBatch } from "./invalidation";
 import type { MapLayerId } from "./layer-registry";
