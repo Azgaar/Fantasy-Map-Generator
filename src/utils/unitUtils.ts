@@ -3,7 +3,7 @@ import { findClosestCell, findGridCell } from "./graphUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 
-type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
+export type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
 /**
  * Convert temperature from Celsius to other scales
  * @param {number} temperatureInCelsius - Temperature in Celsius

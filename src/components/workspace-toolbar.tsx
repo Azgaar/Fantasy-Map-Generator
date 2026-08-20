@@ -1,4 +1,4 @@
-import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
+import { Icon, type IconName, IconSize, Icons } from "@patkepa/kantzen-ui/icons";
 import { Menu, MenuDivider, MenuItem } from "@patkepa/kantzen-ui/primitives";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
@@ -37,6 +37,7 @@ interface FloatingMenuProps {
 }
 
 const EDIT_GROUPS = TOOL_GROUPS.filter(group => ["world", "politics", "settlements", "geography"].includes(group.id));
+const TOOLBAR_ICONS: IconName[] = ["folder-open", "chart", "refresh", "plus", "map", "eye-open", "chevron-down"];
 
 const PROJECT_ACTIONS = [
   { label: "New Map", icon: "document", targetId: "newMapButton", shortcut: "F2" },
@@ -310,6 +311,18 @@ function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSect
 }
 
 export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Element {
+  const [, setIconsLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void Icons.load(TOOLBAR_ICONS, IconSize.STANDARD).then(() => {
+      if (active) setIconsLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <nav aria-label="Map workspace" className="fmg-workspace-toolbar">
       <div className="fmg-workspace-toolbar__group">

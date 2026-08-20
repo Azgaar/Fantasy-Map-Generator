@@ -1,6 +1,7 @@
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";
+import { createMapRenderWorld } from "../scene/render-world";
 import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
 import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
 import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
@@ -99,6 +100,13 @@ const getCamera = (): MapCamera => {
   };
 };
 
+const getWorld = () =>
+  createMapRenderWorld(pack, {
+    grid,
+    requestedCells: Number(pointsInput.dataset.cells) || grid.cells.i.length,
+    temperatureScale: temperatureScale.value
+  });
+
 const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),
   getCanvas: () => instance?.getCanvas() ?? null,
@@ -106,7 +114,7 @@ const api: PixiRendererControllerApi = {
   invalidateLayer: (layer, cellIds) => {
     if (!instance) return;
     instance.queueRender(
-      pack,
+      getWorld(),
       getMapRendererStyle(style),
       ["biomes", "cultures", "provinces", "religions", "states"].includes(layer)
         ? { cellIds, kind: "assignment", layer }
@@ -114,7 +122,7 @@ const api: PixiRendererControllerApi = {
     );
   },
   queueRebuild: () => {
-    void instancePromise?.then(renderer => renderer.queueRender(pack, getMapRendererStyle(style), { kind: "world" }));
+    void instancePromise?.then(renderer => renderer.queueRender(getWorld(), getMapRendererStyle(style), { kind: "world" }));
   },
   start: async () => {
     if (!pack?.cells?.i?.length) return;
@@ -124,7 +132,7 @@ const api: PixiRendererControllerApi = {
     renderer.setCamera(getCamera());
     await renderer.mount(prepareSurface());
     syncVisibility(renderer);
-    await renderer.render(pack, getMapRendererStyle(style), coalesceInvalidations([{ kind: "world" }]));
+    await renderer.render(getWorld(), getMapRendererStyle(style), coalesceInvalidations([{ kind: "world" }]));
     document.getElementById("map")?.classList.add("pixi-renderer-active");
   },
   syncCamera: () => instance?.setCamera(getCamera())

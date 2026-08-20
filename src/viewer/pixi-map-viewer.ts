@@ -1,9 +1,9 @@
-import type { PackedGraph } from "@/types/PackedGraph";
 import type { MapCamera } from "../renderers/core/camera";
 import { coalesceInvalidations, type RenderInvalidation } from "../renderers/core/invalidation";
 import type { MapLayerId } from "../renderers/core/layer-registry";
 import type { MapRenderer } from "../renderers/core/map-renderer";
 import type { MapStyle } from "../renderers/scene/styles";
+import type { MapRenderWorld } from "../renderers/scene/render-world";
 
 export type PixiViewerRenderer = MapRenderer;
 
@@ -13,12 +13,12 @@ export interface PixiMapViewerOptions {
   layerVisibility?: Readonly<Partial<Record<MapLayerId, boolean>>>;
   style: MapStyle;
   surface: HTMLElement;
-  world: PackedGraph;
+  world: MapRenderWorld;
 }
 
 export interface PixiMapViewerHandle {
   destroy: () => void;
-  render: (world: PackedGraph, style: MapStyle, invalidations: readonly RenderInvalidation[]) => Promise<void>;
+  render: (world: MapRenderWorld, style: MapStyle, invalidations: readonly RenderInvalidation[]) => Promise<void>;
   renderer: PixiViewerRenderer;
   setCamera: (camera: MapCamera) => void;
   setLayerVisibility: (layer: MapLayerId, visible: boolean) => void;

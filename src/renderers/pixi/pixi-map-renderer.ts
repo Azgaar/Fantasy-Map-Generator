@@ -1,5 +1,4 @@
 import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, type Texture } from "pixi.js";
-import type { PackedGraph } from "@/types/PackedGraph";
 import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type ViewportSize } from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
@@ -29,6 +28,7 @@ import {
   type SemanticLineStyle
 } from "../scene/styles";
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
+import type { MapRenderWorld } from "../scene/render-world";
 import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 
@@ -84,7 +84,7 @@ export class PixiMapRenderer implements MapRenderer {
   private topologyInputs: { cellVertices: number[][]; vertexPoints: [number, number][] } | null = null;
   private topologyRevision = 0;
   private textureCache: RendererResourceCache<Texture>;
-  private world: PackedGraph | null = null;
+  private world: MapRenderWorld | null = null;
   private stats: PixiRendererSnapshot = {
     batches: 0,
     buildDuration: 0,
@@ -125,13 +125,13 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.enabled = true;
   }
 
-  async render(world: PackedGraph, style: MapStyle, invalidation: RenderInvalidationBatch): Promise<void> {
+  async render(world: MapRenderWorld, style: MapStyle, invalidation: RenderInvalidationBatch): Promise<void> {
     this.world = world;
     this.semanticStyle = structuredClone(style);
     await this.renderInvalidations(invalidation);
   }
 
-  queueRender(world: PackedGraph, style: MapStyle, invalidation: RenderInvalidation): void {
+  queueRender(world: MapRenderWorld, style: MapStyle, invalidation: RenderInvalidation): void {
     this.world = world;
     this.semanticStyle = structuredClone(style);
     this.scheduler?.invalidate(invalidation);
@@ -694,7 +694,7 @@ function getRenderableColor(color: string, fallbackColor: string): string {
   return color.startsWith("url(") ? fallbackColor : color;
 }
 
-function getWorldBounds(world: Pick<PackedGraph, "vertices">): { height: number; width: number } {
+function getWorldBounds(world: Pick<MapRenderWorld, "vertices">): { height: number; width: number } {
   let width = 0;
   let height = 0;
   for (const [x, y] of world.vertices.p) {
