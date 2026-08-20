@@ -1,4 +1,5 @@
 import type { Biome } from "@/generators/biomes-generator";
+import { invalidatePixiRendererLayer, pixiRendererOwnsLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { ensureEl, getIsolines } from "@/utils";
 
 type BiomeIsolines = ReturnType<typeof getIsolines>;
@@ -18,9 +19,9 @@ export function buildBiomePaths(biomes: Biome[], isolines: BiomeIsolines): strin
 
 export function drawBiomes(): void {
   TIME && console.time("drawBiomes");
-  if (window.PixiMapPrototype?.ownsLayer("biomes")) {
+  if (pixiRendererOwnsLayer("biomes")) {
     ensureEl("biomes").replaceChildren();
-    window.PixiMapPrototype.invalidateLayer("biomes");
+    invalidatePixiRendererLayer("biomes");
     TIME && console.timeEnd("drawBiomes");
     return;
   }

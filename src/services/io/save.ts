@@ -2,6 +2,7 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { materializePixiSvgFallback } from "@/renderers/pixi/pixi-renderer-controller";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
@@ -77,7 +78,7 @@ function prepareMapData(): string {
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
   // save svg
-  const releaseSvgFallback = window.PixiMapPrototype?.materializeSvgFallback();
+  const releaseSvgFallback = materializePixiSvgFallback();
   let serializedSVG: string;
   try {
     const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;

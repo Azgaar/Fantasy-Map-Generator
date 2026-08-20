@@ -1,4 +1,5 @@
 import type { ReliefIcon } from "@/generators/relief-generator";
+import { invalidatePixiRendererLayer, pixiRendererOwnsLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { reconcileSvgUseElements } from "@/renderers/viewport/svg-use-reconciler";
 import {
   Scene,
@@ -23,9 +24,9 @@ export const drawRelief = (): void => {
   const isActive = layerIsOn("toggleRelief");
   setReliefLayerActive(isActive);
   if (!isActive) return void removeRelief();
-  if (window.PixiMapPrototype?.ownsLayer("relief")) {
+  if (pixiRendererOwnsLayer("relief")) {
     removeRelief();
-    window.PixiMapPrototype.invalidateLayer("relief");
+    invalidatePixiRendererLayer("relief");
     return;
   }
 

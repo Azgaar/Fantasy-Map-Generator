@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { invalidatePixiRendererLayer, pixiRendererOwnsLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import type { PackedGraph } from "@/types/PackedGraph";
 
 declare global {
@@ -181,9 +182,9 @@ export const buildBorderPaths = (graph: Pick<PackedGraph, "cells" | "vertices">)
 
 const bordersRenderer = () => {
   TIME && console.time("drawBorders");
-  if (window.PixiMapPrototype?.ownsLayer("borders")) {
+  if (pixiRendererOwnsLayer("borders")) {
     select("#map").select("#borders").selectAll("path").remove();
-    window.PixiMapPrototype.invalidateLayer("borders");
+    invalidatePixiRendererLayer("borders");
     TIME && console.timeEnd("drawBorders");
     return;
   }

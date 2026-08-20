@@ -2,6 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { materializePixiSvgFallback } from "@/renderers/pixi/pixi-renderer-controller";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -253,7 +254,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     noVignette = false,
     fullMap = false
   } = options;
-  const releaseSvgFallback = window.PixiMapPrototype?.materializeSvgFallback();
+  const releaseSvgFallback = materializePixiSvgFallback();
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
   cloneEl.querySelector("#pixi-map-prototype")?.remove();
