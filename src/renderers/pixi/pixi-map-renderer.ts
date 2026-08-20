@@ -2,7 +2,7 @@ import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, type
 import type { PackedGraph } from "@/types/PackedGraph";
 import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type ViewportSize } from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
-import type { MapLayerId } from "../core/layer-registry";
+import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
 import type { MapHit, MapRenderer, ScreenPoint } from "../core/map-renderer";
 import { RenderDiagnostics, type RenderDiagnosticsSnapshot } from "../core/render-diagnostics";
 import { RenderScheduler } from "../core/render-scheduler";
@@ -13,18 +13,23 @@ import {
 } from "../core/resolution";
 import { DEFAULT_RENDERER_RESOURCE_BUDGET, RendererResourceTracker } from "../core/resource-budget";
 import { RendererResourceCache, type RendererResourceHandle } from "../core/resource-cache";
+import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
-import { DEFAULT_PIXI_MAP_STYLE, type MapStyle } from "../scene/styles";
+import {
+  DEFAULT_PIXI_MAP_STYLE,
+  type MapStyle,
+  type SemanticAreaStyle,
+  type SemanticFillStyle,
+  type SemanticLineStyle
+} from "../scene/styles";
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
 import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
-import { buildCellFillBatches } from "./pixi-map-data";
+import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
 
-export type PixiMapTheme = "states" | "biomes";
-
-export interface PixiPrototypeSnapshot {
+export interface PixiRendererSnapshot {
   batches: number;
   buildDuration: number;
   cameraScale: number;
@@ -38,12 +43,11 @@ export interface PixiPrototypeSnapshot {
   resourceCount: number;
   renderer: string | null;
   textureCacheEntries: number;
-  theme: PixiMapTheme;
   viewportHeight: number;
   viewportWidth: number;
 }
 
-const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+type CellFillLayer = "biomes" | "states";
 
 export interface PixiMapRendererOptions {
   deviceMemoryGb?: number;
@@ -55,11 +59,11 @@ export interface PixiMapRendererOptions {
 }
 
 export class PixiMapRenderer implements MapRenderer {
-  private activeCellMesh: RetainedCellMesh | null = null;
   private app: Application | null = null;
   private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
   private contextRecoveryRelease: (() => void) | null = null;
   private diagnostics = new RenderDiagnostics();
+  private cellMeshes = new Map<CellFillLayer, { container: Container; retained: RetainedCellMesh }>();
   private layerVisibility = new Map<MapLayerId, boolean>();
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
@@ -71,13 +75,12 @@ export class PixiMapRenderer implements MapRenderer {
   private semanticStyle: MapStyle = structuredClone(DEFAULT_PIXI_MAP_STYLE);
   private sceneRevisions = new WorldSceneRevisionTracker();
   private surface: HTMLElement | null = null;
-  private fillContainer: Container | null = null;
   private topologyCache = new RetainedCellTopologyCache();
   private topologyInputs: { cellVertices: number[][]; vertexPoints: [number, number][] } | null = null;
   private topologyRevision = 0;
   private textureCache: RendererResourceCache<Texture>;
   private world: PackedGraph | null = null;
-  private stats: PixiPrototypeSnapshot = {
+  private stats: PixiRendererSnapshot = {
     batches: 0,
     buildDuration: 0,
     cameraScale: 1,
@@ -91,7 +94,6 @@ export class PixiMapRenderer implements MapRenderer {
     resourceCount: 0,
     renderer: null,
     textureCacheEntries: 0,
-    theme: "states",
     viewportHeight: 0,
     viewportWidth: 0
   };
@@ -106,10 +108,6 @@ export class PixiMapRenderer implements MapRenderer {
       kind: "texture",
       tracker: this.resources
     });
-  }
-
-  setTheme(theme: PixiMapTheme): void {
-    this.stats.theme = theme;
   }
 
   async mount(surface: HTMLElement): Promise<void> {
@@ -143,24 +141,24 @@ export class PixiMapRenderer implements MapRenderer {
     this.resize({ height: this.camera.height, width: this.camera.width });
     this.clearStage();
     if (this.surface) this.surface.style.display = "block";
-    this.app.renderer.background.color = this.semanticStyle.ocean.color;
-
-    const theme = this.stats.theme;
-    const baseContainer = this.buildBaseContainer();
-    const fillContainer = this.buildFillContainer(theme);
-    let reliefSprites = 0;
-    let batches = fillContainer.children.length;
-
-    if (theme === "states") {
-      const reliefContainer = await this.buildReliefContainer(sequence);
-      if (sequence !== this.rebuildSequence) return;
-      reliefSprites = reliefContainer.children.length;
-      const borderContainer = this.buildBordersContainer();
-      batches += borderContainer.children.length;
-      this.app.stage.addChild(baseContainer, reliefContainer, fillContainer, borderContainer);
-    } else {
-      this.app.stage.addChild(baseContainer, fillContainer);
-    }
+    const geography = this.buildGeographyContainers();
+    const biomeContainer = this.buildFillContainer("biomes");
+    const reliefContainer = await this.buildReliefContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
+    const stateContainer = this.buildFillContainer("states");
+    const borderContainer = this.buildBordersContainer();
+    this.app.stage.addChild(
+      geography.ocean,
+      geography.landmass,
+      geography.lakes,
+      biomeContainer,
+      reliefContainer,
+      stateContainer,
+      borderContainer,
+      geography.coastline
+    );
+    const reliefSprites = reliefContainer.children.length;
+    const batches = this.app.stage.children.reduce((total, child) => total + Math.max(1, child.children.length), 0);
 
     this.recordPerformance("pixi:scene-build", performance.now() - started);
 
@@ -177,8 +175,7 @@ export class PixiMapRenderer implements MapRenderer {
       cells: world.cells.i.length,
       enabled: true,
       reliefSprites,
-      renderer: this.app.renderer.constructor.name,
-      theme
+      renderer: this.app.renderer.constructor.name
     };
     this.recordPerformance("pixi:rebuild", buildDuration);
   }
@@ -190,14 +187,9 @@ export class PixiMapRenderer implements MapRenderer {
 
   private applyVisibility(render = true): void {
     if (!this.app || !this.stats.enabled) return;
-    const [, reliefOrFills, fillsOrUndefined, borders] = this.app.stage.children;
-    if (this.stats.theme === "states") {
-      const relief = reliefOrFills;
-      const fills = fillsOrUndefined;
-      if (relief) relief.visible = this.layerVisibility.get("relief") ?? true;
-      if (fills) fills.visible = this.layerVisibility.get("states") ?? true;
-      if (borders) borders.visible = this.layerVisibility.get("borders") ?? true;
-    } else if (reliefOrFills) reliefOrFills.visible = this.layerVisibility.get("biomes") ?? true;
+    for (const child of this.app.stage.children) {
+      if (isMapLayerId(child.label)) child.visible = this.layerVisibility.get(child.label) ?? true;
+    }
     if (render) this.app.render();
   }
 
@@ -257,7 +249,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats = { ...this.stats, batches: 0, enabled: false, reliefSprites: 0, renderer: null };
   }
 
-  getSnapshot(): PixiPrototypeSnapshot {
+  getSnapshot(): PixiRendererSnapshot {
     const resources = this.resources.getSnapshot();
     const textures = this.textureCache.getSnapshot();
     return {
@@ -329,11 +321,11 @@ export class PixiMapRenderer implements MapRenderer {
     });
   }
 
-  private buildFillContainer(theme: PixiMapTheme): Container {
+  private buildFillContainer(layer: CellFillLayer): Container {
     const world = this.getWorld();
-    const groups = theme === "states" ? world.cells.state : world.cells.biome;
-    const colors = theme === "states" ? world.states : world.biomes;
-    const style = this.semanticStyle[theme];
+    const groups = layer === "states" ? world.cells.state : world.cells.biome;
+    const colors = layer === "states" ? world.states : world.biomes;
+    const style = this.semanticStyle[layer];
     const retained = new RetainedCellMesh(
       this.getCellTopology(),
       {
@@ -342,44 +334,92 @@ export class PixiMapRenderer implements MapRenderer {
         fallbackColor: style.fallbackColor,
         heights: world.cells.h
       },
-      theme,
+      layer,
       this.resources
     );
 
     const container = new Container();
-    container.label = `${theme}-fills`;
+    container.label = layer;
     container.alpha = style.opacity;
-    retained.mesh.label = `${theme}-retained-cells`;
+    retained.mesh.label = `${layer}-retained-cells`;
     this.retainedCellMeshes.add(retained);
     container.addChild(retained.mesh);
-    this.activeCellMesh = retained;
-    this.fillContainer = container;
+    this.cellMeshes.set(layer, { container, retained });
     return container;
   }
 
-  private buildBaseContainer(): Container {
+  private buildGeographyContainers(): {
+    coastline: Container;
+    lakes: Container;
+    landmass: Container;
+    ocean: Container;
+  } {
     const world = this.getWorld();
+    const bounds = getWorldBounds(world);
+    const scene = buildBaseGeographyScene(
+      world,
+      bounds,
+      this.sceneRevisions.getLayerRevision("landmass")
+    );
+    return {
+      coastline: this.buildLineContainer(
+        "coastline",
+        scene.coastline.paths,
+        role => this.semanticStyle.coastline.roles[role] ?? this.semanticStyle.coastline.default
+      ),
+      lakes: this.buildPolygonContainer(
+        "lakes",
+        scene.lakes.polygons,
+        role => this.semanticStyle.lakes.roles[role] ?? this.semanticStyle.lakes.default
+      ),
+      landmass: this.buildPolygonContainer("landmass", scene.landmass.polygons, () => ({
+        fill: this.semanticStyle.landmass,
+        stroke: { cap: "butt", color: this.semanticStyle.landmass.color, dash: "", opacity: 0, width: 0 }
+      })),
+      ocean: this.buildRectangleContainer("ocean", scene.ocean.positions, this.semanticStyle.ocean)
+    };
+  }
+
+  private buildRectangleContainer(layer: "ocean", positions: Float32Array, style: SemanticFillStyle): Container {
     const container = new Container();
-    container.label = "land-base";
+    container.label = layer;
+    if (positions.length < 8) return container;
+    const context = new GraphicsContext()
+      .poly(Array.from(positions), true)
+      .fill({ alpha: style.opacity, color: style.color });
+    container.addChild(new Graphics(context));
+    return container;
+  }
 
-    const landGroups = new Uint8Array(world.cells.h.length);
-    landGroups.fill(1);
-    const [landBatch] = buildCellFillBatches({
-      cellIds: world.cells.i,
-      cellVertices: world.cells.v,
-      colors: [{}, { color: this.semanticStyle.landmass.color }],
-      groups: landGroups,
-      heights: world.cells.h,
-      vertexPoints: world.vertices.p
-    });
-    if (!landBatch) return container;
+  private buildPolygonContainer(
+    layer: "lakes" | "landmass",
+    polygons: readonly PolygonPathPrimitive[],
+    getStyle: (role: string) => SemanticAreaStyle
+  ): Container {
+    const container = new Container();
+    container.label = layer;
+    const byRole = groupByRole(polygons);
+    for (const [role, rolePolygons] of byRole) {
+      const graphic = createPolygonGraphic(rolePolygons, getStyle(role));
+      graphic.label = `${layer}:${role}`;
+      container.addChild(graphic);
+    }
+    return container;
+  }
 
-    const context = new GraphicsContext();
-    for (const polygon of landBatch.polygons) context.poly(polygon);
-    context.fill({ color: landBatch.color });
-    const graphic = new Graphics(context);
-    graphic.label = "land-base-fill";
-    container.addChild(graphic);
+  private buildLineContainer(
+    layer: "coastline",
+    paths: readonly LinePathPrimitive[],
+    getStyle: (role: string) => SemanticLineStyle
+  ): Container {
+    const container = new Container();
+    container.label = layer;
+    const byRole = groupByRole(paths);
+    for (const [role, rolePaths] of byRole) {
+      const graphic = createLineGraphic(rolePaths, getStyle(role));
+      graphic.label = `${layer}:${role}`;
+      container.addChild(graphic);
+    }
     return container;
   }
 
@@ -392,12 +432,8 @@ export class PixiMapRenderer implements MapRenderer {
       ["stateBorders", scene.state, this.semanticStyle.borders.state],
       ["provinceBorders", scene.province, this.semanticStyle.borders.province]
     ] as const) {
-      const data = batch.paths.map(path => `M${path.points.join(" ")}`).join(" ");
-      if (!data) continue;
-      const dash = style.dash ? ` stroke-dasharray="${style.dash}"` : "";
-      const graphic = new Graphics().svg(
-        `<svg xmlns="${SVG_NAMESPACE}"><path d="${data}" fill="none" stroke="${style.color}" stroke-width="${style.width}" stroke-linecap="${style.cap}" opacity="${style.opacity}"${dash}/></svg>`
-      );
+      if (!batch.paths.length) continue;
+      const graphic = createLineGraphic(batch.paths, style);
       graphic.label = groupId;
       container.addChild(graphic);
     }
@@ -448,8 +484,7 @@ export class PixiMapRenderer implements MapRenderer {
     if (!this.app) return;
     for (const retained of this.retainedCellMeshes) retained.destroy();
     this.retainedCellMeshes.clear();
-    this.activeCellMesh = null;
-    this.fillContainer = null;
+    this.cellMeshes.clear();
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
     for (const handle of this.reliefTextureHandles) handle.release();
     this.reliefTextureHandles.clear();
@@ -483,12 +518,12 @@ export class PixiMapRenderer implements MapRenderer {
     this.sceneRevisions.apply(batch.invalidations);
     const assignments = batch.invalidations.filter(
       (invalidation): invalidation is Extract<RenderInvalidation, { kind: "assignment" }> =>
-        invalidation.kind === "assignment" && invalidation.layer === this.stats.theme
+        invalidation.kind === "assignment" && (invalidation.layer === "states" || invalidation.layer === "biomes")
     );
     if (
       assignments.length &&
       assignments.length === batch.invalidations.length &&
-      this.updateActiveCellMesh(assignments)
+      this.updateCellMeshes(assignments)
     ) {
       return;
     }
@@ -499,23 +534,27 @@ export class PixiMapRenderer implements MapRenderer {
     if (batch.invalidations.some(invalidation => invalidation.kind === "camera")) this.applyCamera();
   }
 
-  private updateActiveCellMesh(assignments: readonly Extract<RenderInvalidation, { kind: "assignment" }>[]): boolean {
-    if (!this.activeCellMesh || !this.fillContainer || !this.app) return false;
+  private updateCellMeshes(assignments: readonly Extract<RenderInvalidation, { kind: "assignment" }>[]): boolean {
+    if (!this.app) return false;
     const world = this.getWorld();
-    const theme = this.stats.theme;
-    const style = this.semanticStyle[theme];
-    this.activeCellMesh.update(
-      {
-        assignments: theme === "states" ? world.cells.state : world.cells.biome,
-        colors: theme === "states" ? world.states : world.biomes,
-        fallbackColor: style.fallbackColor,
-        heights: world.cells.h
-      },
-      assignments.some(invalidation => !invalidation.cellIds)
-        ? world.cells.i
-        : assignments.flatMap(invalidation => invalidation.cellIds ?? [])
-    );
-    this.fillContainer.alpha = style.opacity;
+    for (const layer of new Set(assignments.map(invalidation => invalidation.layer as CellFillLayer))) {
+      const target = this.cellMeshes.get(layer);
+      if (!target) return false;
+      const style = this.semanticStyle[layer];
+      const layerInvalidations = assignments.filter(invalidation => invalidation.layer === layer);
+      target.retained.update(
+        {
+          assignments: layer === "states" ? world.cells.state : world.cells.biome,
+          colors: layer === "states" ? world.states : world.biomes,
+          fallbackColor: style.fallbackColor,
+          heights: world.cells.h
+        },
+        layerInvalidations.some(invalidation => !invalidation.cellIds)
+          ? world.cells.i
+          : layerInvalidations.flatMap(invalidation => invalidation.cellIds ?? [])
+      );
+      target.container.alpha = style.opacity;
+    }
     this.app.render();
     return true;
   }
@@ -540,6 +579,63 @@ export class PixiMapRenderer implements MapRenderer {
       this.rendererOptions.resolutionPolicy ?? { ...DEFAULT_RENDERER_RESOLUTION_POLICY }
     );
   }
+}
+
+const MAP_LAYER_IDS = new Set(MAP_LAYER_REGISTRY.map(layer => layer.id));
+
+function isMapLayerId(label: unknown): label is MapLayerId {
+  return typeof label === "string" && MAP_LAYER_IDS.has(label as MapLayerId);
+}
+
+function groupByRole<T extends { role?: string }>(items: readonly T[]): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const role = item.role ?? "default";
+    const group = groups.get(role);
+    if (group) group.push(item);
+    else groups.set(role, [item]);
+  }
+  return groups;
+}
+
+function createPolygonGraphic(polygons: readonly PolygonPathPrimitive[], style: SemanticAreaStyle): Graphics {
+  const context = new GraphicsContext();
+  for (const polygon of polygons) context.poly(polygon.points.flat(), true);
+  context.fill({ alpha: style.fill.opacity, color: style.fill.color });
+  if (style.stroke.width > 0 && style.stroke.opacity > 0) {
+    context.stroke({
+      alpha: style.stroke.opacity,
+      cap: style.stroke.cap,
+      color: style.stroke.color,
+      width: style.stroke.width
+    });
+  }
+  return new Graphics(context);
+}
+
+function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticLineStyle): Graphics {
+  const context = new GraphicsContext();
+  for (const path of paths) {
+    const [first, ...rest] = path.points;
+    if (!first) continue;
+    context.moveTo(first[0], first[1]);
+    for (const point of rest) context.lineTo(point[0], point[1]);
+    if (path.closed) context.closePath();
+  }
+  if (style.width > 0 && style.opacity > 0) {
+    context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, width: style.width });
+  }
+  return new Graphics(context);
+}
+
+function getWorldBounds(world: Pick<PackedGraph, "vertices">): { height: number; width: number } {
+  let width = 0;
+  let height = 0;
+  for (const [x, y] of world.vertices.p) {
+    if (Number.isFinite(x)) width = Math.max(width, x);
+    if (Number.isFinite(y)) height = Math.max(height, y);
+  }
+  return { height: Math.max(1, height), width: Math.max(1, width) };
 }
 
 function getViewportSize(surface: HTMLElement, fallback: ViewportSize): ViewportSize {

@@ -11,7 +11,7 @@ The application may still use HTML for panels and accessible controls, a small H
 handles, and a renderer-independent SVG backend for vector export. It does not mean retaining an invisible, fully
 rendered SVG map behind the canvas.
 
-The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer-prototype.md).
+The current default-on integration is described in [pixi-renderer-prototype.md](pixi-renderer-prototype.md).
 
 ## Implementation progress
 

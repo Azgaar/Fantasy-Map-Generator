@@ -1,22 +1,23 @@
 # Pixi renderer prototype
 
-The Pixi renderer is an opt-in performance experiment. SVG remains the default renderer and the source used for
-editing, saving, and export.
+The Pixi renderer is enabled by default for the interactive map. SVG remains the compatibility renderer and the source
+used for editing, saving, and export.
 
 The phased production roadmap is in [pixi-renderer-migration.md](pixi-renderer-migration.md).
 
 ## Run
 
-Start the app normally and add the renderer query parameter:
+Start the app normally. The renderer query parameter is no longer required:
 
 ```text
-/?renderer=pixi&pixiTheme=states
-/?renderer=pixi&pixiTheme=biomes
+/
+/?pixiTheme=biomes
 ```
 
+Existing `?renderer=pixi` links remain supported. Use `?renderer=svg` to explicitly opt out to the SVG renderer.
+
 `states` renders grouped state-cell fills, relief sprites, and border geometry through Pixi.
-`biomes` renders grouped biome-cell fills. The Pixi dependency is dynamically imported only when the prototype is
-enabled.
+`biomes` renders grouped biome-cell fills. The Pixi dependency is dynamically imported when the renderer is enabled.
 
 Pixi-owned layers are no longer rendered into the live SVG first. The prototype currently owns states, relief, and
 borders in `states` mode, and biomes in `biomes` mode. It temporarily materializes those SVG layers only while saving,

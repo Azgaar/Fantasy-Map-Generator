@@ -16,12 +16,24 @@ export interface SemanticLineStyle {
   width: number;
 }
 
+export interface SemanticAreaStyle {
+  fill: SemanticFillStyle;
+  stroke: SemanticLineStyle;
+}
+
+export interface SemanticRoleStyles<T> {
+  default: T;
+  roles: Record<string, T>;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
     province: SemanticLineStyle;
     state: SemanticLineStyle;
   };
+  coastline: SemanticRoleStyles<SemanticLineStyle>;
+  lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
   ocean: SemanticFillStyle;
   relief: { opacity: number };
@@ -35,6 +47,45 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   borders: {
     province: { cap: "butt", color: "#777777", dash: "", opacity: 1, width: 0.5 },
     state: { cap: "butt", color: "#555555", dash: "", opacity: 1, width: 1 }
+  },
+  coastline: {
+    default: { cap: "round", color: "#1f3846", dash: "", opacity: 0.5, width: 0.5 },
+    roles: {
+      lake_island: { cap: "round", color: "#7c8eaf", dash: "", opacity: 1, width: 0.35 },
+      sea_island: { cap: "round", color: "#1f3846", dash: "", opacity: 0.5, width: 0.5 }
+    }
+  },
+  lakes: {
+    default: {
+      fill: { color: "#a6c1fd", opacity: 0.5 },
+      stroke: { cap: "round", color: "#5f799d", dash: "", opacity: 1, width: 0.7 }
+    },
+    roles: {
+      dry: {
+        fill: { color: "#c9bfa7", opacity: 1 },
+        stroke: { cap: "round", color: "#8e816f", dash: "", opacity: 1, width: 0.7 }
+      },
+      freshwater: {
+        fill: { color: "#a6c1fd", opacity: 0.5 },
+        stroke: { cap: "round", color: "#5f799d", dash: "", opacity: 1, width: 0.7 }
+      },
+      frozen: {
+        fill: { color: "#cdd4e7", opacity: 0.95 },
+        stroke: { cap: "round", color: "#cfe0eb", dash: "", opacity: 1, width: 0 }
+      },
+      lava: {
+        fill: { color: "#90270d", opacity: 0.7 },
+        stroke: { cap: "round", color: "#f93e0c", dash: "", opacity: 1, width: 2 }
+      },
+      salt: {
+        fill: { color: "#409b8a", opacity: 0.5 },
+        stroke: { cap: "round", color: "#388985", dash: "", opacity: 1, width: 0.7 }
+      },
+      sinkhole: {
+        fill: { color: "#5bc9fd", opacity: 1 },
+        stroke: { cap: "round", color: "#53a3b0", dash: "", opacity: 1, width: 0.7 }
+      }
+    }
   },
   landmass: { color: "#eef6fb", opacity: 1 },
   ocean: { color: "#466eab", opacity: 1 },

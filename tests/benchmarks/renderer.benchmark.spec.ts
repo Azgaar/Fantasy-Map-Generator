@@ -23,8 +23,8 @@ test.describe.configure({ mode: "serial", timeout: 10 * 60_000 });
 for (const { backend, fixture, run } of BENCHMARK_CASES) {
   test(`${fixture.id} / ${backend} / run ${run}`, async ({ page }, testInfo) => {
       const query = new URLSearchParams({ height: "720", options: "default", width: "1280" });
+      query.set("renderer", backend);
       if (backend === "pixi") {
-        query.set("renderer", "pixi");
         query.set("pixiTheme", "states");
       }
       await page.goto(`/?${query}`);

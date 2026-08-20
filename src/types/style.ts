@@ -1,10 +1,12 @@
 import type { ReliefSet } from "@/types/relief";
+import type { MapStyle } from "@/renderers/scene/styles";
 
 export interface Style {
   // TODO: style = {burgs: { icons, anchors }, labels } is more semantic
   burgIcons: { [key: string]: { [key: string]: string } };
   anchors: { [key: string]: { [key: string]: string } };
   labels: { groups: Record<string, LabelGroupStyle> };
+  mapRenderer?: MapStyle;
   relief: ReliefStyle;
 }
 
