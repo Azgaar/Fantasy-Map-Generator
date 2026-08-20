@@ -20,8 +20,15 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
 - Phase 2 is implemented for evaluation: Pixi uses a viewport-sized HTML surface, shares the D3 camera transform, reacts
   to SVG resizing, and enables culling on suitable display objects.
 - S-002 retained cell topology is implemented: stable typed positions and indices, per-cell triangle ranges and bounds,
-  and revision-aware CPU reuse are available without DOM or Pixi dependencies. Pixi mesh consumption and incremental
-  attributes remain part of L-001.
+  and revision-aware CPU reuse are available without DOM or Pixi dependencies.
+- R-001 through R-003 foundations now include the typed renderer contract, camera state, canonical layer registry,
+  one-owner coordinator, typed invalidation coalescing, and an on-demand scheduler. The compatibility global still
+  wraps lifecycle operations and must be removed before R-001 is complete.
+- S-001 and L-001 are implemented for the prototype's state and biome fills: legacy presentation is adapted at the
+  compatibility boundary, scene construction no longer reads DOM styles, both modes use retained indexed meshes, and
+  assignment changes update color attributes without rebuilding topology.
+- R-004 has resource byte/count accounting and deterministic WebGL context listener cleanup. Browser-verified context
+  reconstruction, resolution-budget policy, and repeated lifecycle memory evidence remain open.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 

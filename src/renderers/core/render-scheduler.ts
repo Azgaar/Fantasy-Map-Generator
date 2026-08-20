@@ -56,10 +56,14 @@ export class RenderScheduler {
     });
   }
 
-  destroy(): void {
-    this.destroyed = true;
+  clear(): void {
     this.invalidations = [];
     if (this.frameId !== null) this.cancelFrame(this.frameId);
     this.frameId = null;
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    this.clear();
   }
 }

@@ -32,15 +32,17 @@ PixiMapPrototype.getSnapshot();
 await PixiMapPrototype.disable();
 ```
 
-`getSnapshot` reports the last build duration, source cell count, graphics-batch count, relief-sprite count, and active
-Pixi renderer. Rebuild duration is also recorded as `pixi:rebuild` in `MapPerformance`.
+`getSnapshot` reports the last build duration, source cell count, graphics-batch count, relief-sprite count, retained
+resource bytes/count, context-loss state, and active Pixi renderer. Rebuild duration is also recorded as
+`pixi:rebuild` in `MapPerformance`.
 
 ## Prototype constraints
 
 - The opaque canvas is an HTML sibling immediately behind the SVG overlay. It is sized to the visible viewport and its
   Pixi stage receives the same `{x, y, scale}` camera values as the SVG `#viewbox` on every zoom frame.
-- The viewport surface uses Pixi culling for state/biome graphics and relief sprites. Geometry is still rebuilt as
-  `Graphics` objects, so retained vertex and index buffers remain future work.
+- State and biome fills use one retained indexed mesh with shared CPU topology. Assignment changes update the color
+  attribute buffer without re-tessellating cells. A full map rebuild still recreates the GPU buffers, so cross-rebuild
+  GPU resource retention remains future work.
 - State hatching paint servers currently use a neutral fallback color.
 - SVG filters, masks, halos, exact water gaps, editing targets, and label rendering remain outside the prototype.
 - In state mode, relief, state fills, and borders share one canvas position in the SVG stack, so combinations with

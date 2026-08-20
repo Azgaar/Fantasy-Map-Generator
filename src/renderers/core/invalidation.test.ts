@@ -70,4 +70,17 @@ describe("RenderScheduler", () => {
     expect(cancelFrame).toHaveBeenCalledWith(9);
     expect(render).not.toHaveBeenCalled();
   });
+
+  it("clears stale invalidations while keeping the scheduler reusable", async () => {
+    const cancelFrame = vi.fn();
+    const render = vi.fn();
+    const scheduler = new RenderScheduler(render, { cancelFrame, requestFrame: () => 11 });
+    scheduler.invalidate({ kind: "world" });
+    scheduler.clear();
+    scheduler.invalidate({ kind: "camera" });
+    await scheduler.flush();
+
+    expect(cancelFrame).toHaveBeenCalledWith(11);
+    expect(render).toHaveBeenCalledWith({ invalidations: [{ kind: "camera" }], requiresSceneBuild: false });
+  });
 });

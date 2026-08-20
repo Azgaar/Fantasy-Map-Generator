@@ -1,11 +1,13 @@
 import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, type Texture } from "pixi.js";
 import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera } from "../core/camera";
-import type { RenderInvalidationBatch } from "../core/invalidation";
+import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import type { MapLayerId } from "../core/layer-registry";
 import { RenderScheduler } from "../core/render-scheduler";
+import { RendererResourceTracker } from "../core/resource-budget";
 import { buildBorderPaths } from "../draw-borders";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { DEFAULT_PIXI_MAP_STYLE, type PixiMapSemanticStyle } from "../scene/styles";
+import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 import { buildCellFillBatches } from "./pixi-map-data";
 
@@ -16,8 +18,11 @@ export interface PixiPrototypeSnapshot {
   buildDuration: number;
   cameraScale: number;
   cells: number;
+  contextLost: boolean;
   enabled: boolean;
   reliefSprites: number;
+  resourceBytes: number;
+  resourceCount: number;
   renderer: string | null;
   theme: PixiMapTheme;
   viewportHeight: number;
@@ -32,9 +37,11 @@ export class PixiMapPrototype {
   private activeCellMesh: RetainedCellMesh | null = null;
   private app: Application | null = null;
   private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
+  private contextRecoveryRelease: (() => void) | null = null;
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
   private resizeFrameId: number | null = null;
+  private resources = new RendererResourceTracker();
   private resizeObserver: ResizeObserver | null = null;
   private scheduler: RenderScheduler | null = null;
   private semanticStyle: PixiMapSemanticStyle = structuredClone(DEFAULT_PIXI_MAP_STYLE);
@@ -48,8 +55,11 @@ export class PixiMapPrototype {
     buildDuration: 0,
     cameraScale: 1,
     cells: 0,
+    contextLost: false,
     enabled: false,
     reliefSprites: 0,
+    resourceBytes: 0,
+    resourceCount: 0,
     renderer: null,
     theme: "states",
     viewportHeight: 0,
@@ -160,6 +170,7 @@ export class PixiMapPrototype {
 
   clear(): void {
     this.rebuildSequence++;
+    this.scheduler?.clear();
     this.clearStage();
     this.app?.render();
     if (this.surface) this.surface.style.display = "none";
@@ -172,6 +183,8 @@ export class PixiMapPrototype {
     this.resizeFrameId = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    this.contextRecoveryRelease?.();
+    this.contextRecoveryRelease = null;
     this.scheduler?.destroy();
     this.scheduler = null;
     this.clearStage();
@@ -185,7 +198,8 @@ export class PixiMapPrototype {
   }
 
   getSnapshot(): PixiPrototypeSnapshot {
-    return { ...this.stats };
+    const resources = this.resources.getSnapshot();
+    return { ...this.stats, resourceBytes: resources.totalBytes, resourceCount: resources.totalCount };
   }
 
   private async ensureApplication(): Promise<void> {
@@ -215,6 +229,15 @@ export class PixiMapPrototype {
       width: viewport.width
     });
     this.app.stage.eventMode = "none";
+    this.contextRecoveryRelease = monitorWebGlContext(this.app.canvas, {
+      lost: () => {
+        this.stats.contextLost = true;
+      },
+      restored: () => {
+        this.stats.contextLost = false;
+        this.scheduler?.invalidate({ kind: "topology" });
+      }
+    });
     surface.appendChild(this.app.canvas);
     this.resizeObserver = new ResizeObserver(() => this.queueResize());
     this.resizeObserver.observe(map);
@@ -265,12 +288,16 @@ export class PixiMapPrototype {
     const groups = theme === "states" ? pack.cells.state : pack.cells.biome;
     const colors = theme === "states" ? pack.states : pack.biomes;
     const style = this.semanticStyle[theme];
-    const retained = new RetainedCellMesh(this.getCellTopology(), {
-      assignments: groups,
-      colors,
-      fallbackColor: style.fallbackColor,
-      heights: pack.cells.h
-    });
+    const retained = new RetainedCellMesh(
+      this.getCellTopology(),
+      {
+        assignments: groups,
+        colors,
+        fallbackColor: style.fallbackColor,
+        heights: pack.cells.h
+      },
+      this.resources
+    );
 
     const container = new Container();
     container.label = `${theme}-fills`;
@@ -395,7 +422,8 @@ export class PixiMapPrototype {
 
   private async renderInvalidations(batch: RenderInvalidationBatch): Promise<void> {
     const assignments = batch.invalidations.filter(
-      invalidation => invalidation.kind === "assignment" && invalidation.layer === this.stats.theme
+      (invalidation): invalidation is Extract<RenderInvalidation, { kind: "assignment" }> =>
+        invalidation.kind === "assignment" && invalidation.layer === this.stats.theme
     );
     if (
       assignments.length &&
@@ -411,9 +439,7 @@ export class PixiMapPrototype {
     if (batch.invalidations.some(invalidation => invalidation.kind === "camera")) this.applyCamera();
   }
 
-  private updateActiveCellMesh(
-    assignments: readonly Extract<RenderInvalidationBatch["invalidations"][number], { kind: "assignment" }>[]
-  ): boolean {
+  private updateActiveCellMesh(assignments: readonly Extract<RenderInvalidation, { kind: "assignment" }>[]): boolean {
     if (!this.activeCellMesh || !this.fillContainer || !this.app) return false;
     const theme = this.stats.theme;
     const style = this.semanticStyle[theme];

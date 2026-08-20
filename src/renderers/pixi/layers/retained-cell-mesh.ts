@@ -1,4 +1,5 @@
 import { Buffer, BufferUsage, Geometry, Mesh, Shader } from "pixi.js";
+import type { RendererResourceTracker } from "../../core/resource-budget";
 import {
   buildCellFillAttributes,
   type CellFillAttributeSource,
@@ -38,11 +39,19 @@ export class RetainedCellMesh {
   private readonly colorBuffer: Buffer;
   private readonly geometry: Geometry;
   private readonly shader: Shader;
+  private readonly resourceIds: readonly string[];
+  private static sequence = 0;
 
   constructor(
     private readonly topology: RetainedCellTopology,
-    source: CellFillAttributeSource
+    source: CellFillAttributeSource,
+    private readonly resources?: RendererResourceTracker
   ) {
+    const resourcePrefix = `retained-cells:${++RetainedCellMesh.sequence}`;
+    this.resourceIds = [`${resourcePrefix}:positions`, `${resourcePrefix}:colors`, `${resourcePrefix}:indices`];
+    resources?.acquire(this.resourceIds[0], "geometry", topology.positions.byteLength);
+    resources?.acquire(this.resourceIds[1], "geometry", topology.vertexCount * 4 * Float32Array.BYTES_PER_ELEMENT);
+    resources?.acquire(this.resourceIds[2], "geometry", topology.indices.byteLength);
     const positionBuffer = new Buffer({
       data: topology.positions,
       label: "retained-cell-positions",
@@ -83,5 +92,6 @@ export class RetainedCellMesh {
     this.mesh.destroy();
     this.geometry.destroy();
     this.shader.destroy();
+    for (const resourceId of this.resourceIds) this.resources?.release(resourceId);
   }
 }
