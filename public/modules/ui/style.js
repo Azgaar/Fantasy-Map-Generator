@@ -544,6 +544,10 @@ styleDisplayInput.addEventListener("change", function () {
 
 styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
+  const pixiCellLayer = {biomes: "biomes", cults: "cultures", provs: "provinces", relig: "religions"}[
+    styleElementSelect.value
+  ];
+  if (pixiCellLayer) setPixiCellLayerOpacity(pixiCellLayer, e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.opacity = e.target.value;
 });
@@ -1013,7 +1017,22 @@ styleFontShiftY.addEventListener("input", e => {
 
 styleStatesBodyOpacity.addEventListener("input", e => {
   statesBody.attr("opacity", e.target.value);
+  setPixiCellLayerOpacity("states", e.target.value);
 });
+
+function setPixiCellLayerOpacity(layer, opacity) {
+  style.mapRenderer ||= {};
+  const current = style.mapRenderer[layer] || {};
+  style.mapRenderer[layer] = {
+    fallbackColor: current.fallbackColor || "#888888",
+    opacity: Number(opacity)
+  };
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer}
+    })
+  );
+}
 
 styleStatesBodyFilter.addEventListener("change", function () {
   statesBody.attr("filter", this.value);

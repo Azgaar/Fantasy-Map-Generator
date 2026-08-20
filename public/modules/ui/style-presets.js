@@ -154,9 +154,36 @@ function applyStylePreset(presetJson) {
     if (defaultGroupStyle) style.labels.groups[group.name] = { ...defaultGroupStyle };
   }
 
+  syncPixiCellStylePreset(presetJson);
+
   function getStyleAttributes(attributes) {
     return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
   }
+}
+
+function syncPixiCellStylePreset(presetJson) {
+  const layerSelectors = {
+    biomes: "#biomes",
+    cultures: "#cults",
+    provinces: "#provs",
+    religions: "#relig",
+    states: "#statesBody"
+  };
+  style.mapRenderer ||= {};
+  for (const [layer, selector] of Object.entries(layerSelectors)) {
+    const opacity = presetJson[selector]?.opacity;
+    if (opacity === undefined || opacity === null) continue;
+    const current = style.mapRenderer[layer] || {};
+    style.mapRenderer[layer] = {
+      fallbackColor: current.fallbackColor || "#888888",
+      opacity: Number(opacity)
+    };
+  }
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "queue-rebuild"}
+    })
+  );
 }
 
 function requestStylePresetChange(preset) {

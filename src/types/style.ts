@@ -1,5 +1,5 @@
-import type { MapStyle } from "@/renderers/scene/styles";
 import type { MapLayerId } from "@/renderers/core/layer-registry";
+import type { MapStyle } from "@/renderers/scene/styles";
 import type { ReliefSet } from "@/types/relief";
 
 export interface Style {

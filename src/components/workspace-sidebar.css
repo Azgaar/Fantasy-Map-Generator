@@ -268,6 +268,28 @@
   width: min(var(--fmg-panel-width), calc(100vw - var(--fmg-sidebar-collapsed-width)));
 }
 
+body[data-workspace-section="preferences"] #options {
+  top: 64px;
+  right: 24px;
+  bottom: auto;
+  left: auto;
+  width: min(460px, calc(100vw - var(--fmg-sidebar-width) - 48px)) !important;
+  min-width: 0;
+  max-width: 460px;
+  height: min(720px, calc(100vh - 88px));
+  border: 1px solid var(--kui-line);
+  border-radius: 8px;
+  box-shadow: 0 18px 52px rgb(0 0 0 / 0.42);
+}
+
+body.workspace-sidebar-collapsed[data-workspace-section="preferences"] #options {
+  width: min(460px, calc(100vw - var(--fmg-sidebar-collapsed-width) - 48px)) !important;
+}
+
+body[data-workspace-section="preferences"] #options .tabcontent {
+  height: calc(100% - 52px);
+}
+
 #options > .drag-trigger {
   display: none;
 }
@@ -513,6 +535,16 @@
   .workspace-panel-open #tooltip,
   .workspace-panel-open #tourPromptButton {
     display: none !important;
+  }
+
+  body[data-workspace-section="preferences"] #options,
+  body.workspace-sidebar-collapsed[data-workspace-section="preferences"] #options {
+    top: 64px;
+    right: 12px;
+    left: calc(var(--fmg-sidebar-collapsed-width) + 12px);
+    width: auto !important;
+    height: calc(100vh - 76px);
+    max-width: none;
   }
 }
 

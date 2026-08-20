@@ -2,7 +2,7 @@ import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";
 import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
-import { type PixiOwnedLayer, pixiOwnsLayer } from "./pixi-renderer-ownership";
+import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
 import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
 
 export interface PixiRendererControllerApi {
@@ -10,7 +10,6 @@ export interface PixiRendererControllerApi {
   getCanvas: () => CanvasImageSource | null;
   getSnapshot: () => PixiRendererSnapshot | null;
   invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
-  ownsLayer: (layer: PixiOwnedLayer) => boolean;
   queueRebuild: () => void;
   start: () => Promise<void>;
   syncCamera: () => void;
@@ -108,7 +107,6 @@ const api: PixiRendererControllerApi = {
         : { kind: "geometry", layer }
     );
   },
-  ownsLayer: layer => pixiOwnsLayer(layer),
   queueRebuild: () => {
     void instancePromise?.then(renderer => renderer.queueRender(pack, getMapRendererStyle(style), { kind: "world" }));
   },
@@ -129,7 +127,6 @@ const api: PixiRendererControllerApi = {
 export const clearPixiRenderer = api.clear;
 export const getPixiRendererCanvas = api.getCanvas;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
-export const pixiRendererOwnsLayer = api.ownsLayer;
 export const queuePixiRendererRebuild = api.queueRebuild;
 export const startPixiRenderer = api.start;
 export const syncPixiRendererCamera = api.syncCamera;

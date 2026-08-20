@@ -513,7 +513,7 @@ function cultureChangeColor(this: FillBoxElement): void {
   const callback = (newFill: string) => {
     this.fill = newFill;
     pack.cultures[cultureId].color = newFill;
-    select("#cults").select(`#culture${cultureId}`).attr("fill", newFill);
+    drawCultures();
     select("#debug").select(`#cultureCenter${cultureId}`).attr("fill", newFill);
   };
 

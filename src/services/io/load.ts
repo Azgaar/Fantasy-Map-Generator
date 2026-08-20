@@ -6,6 +6,7 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { getStoredPixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -484,6 +485,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const hasChild = (selection: { node(): Element | null }, selector: string) =>
         selection.node()?.querySelector(selector);
       const turnOn = (el: string) => ensureEl(el).classList.remove("buttonoff");
+      const turnOnPixiLayer = (
+        layer: Parameters<typeof getStoredPixiLayerVisibility>[1],
+        controlId: string,
+        legacyVisible: boolean
+      ) => {
+        if (getStoredPixiLayerVisibility(style, layer) ?? legacyVisible) turnOn(controlId);
+      };
 
       // turn all layers off
       ensureEl("mapLayers")
@@ -495,20 +503,24 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       // turn on active layers
       if (hasChild(select("#texture"), "image")) turnOn("toggleTexture");
       if (hasChildren(select("#terrs").select("#landHeights"))) turnOn("toggleHeight");
-      if (isVisible(select("#lakes"))) turnOn("toggleLakes");
-      if (hasChildren(select("#biomes"))) turnOn("toggleBiomes");
+      turnOnPixiLayer("lakes", "toggleLakes", Boolean(isVisible(select("#lakes"))));
+      turnOnPixiLayer("biomes", "toggleBiomes", Boolean(hasChildren(select("#biomes"))));
       if (hasChildren(select("#cells"))) turnOn("toggleCells");
       if (hasChildren(select("#gridOverlay"))) turnOn("toggleGrid");
       if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
       if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
       if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
-      if (isVisible(select("#terrain"))) turnOn("toggleRelief");
-      if (hasChildren(select("#relig"))) turnOn("toggleReligions");
-      if (hasChildren(select("#cults"))) turnOn("toggleCultures");
-      if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
-      if (hasChildren(select("#provs"))) turnOn("toggleProvinces");
+      turnOnPixiLayer("relief", "toggleRelief", Boolean(isVisible(select("#terrain"))));
+      turnOnPixiLayer("religions", "toggleReligions", Boolean(hasChildren(select("#relig"))));
+      turnOnPixiLayer("cultures", "toggleCultures", Boolean(hasChildren(select("#cults"))));
+      turnOnPixiLayer("states", "toggleStates", Boolean(hasChildren(select("#statesBody"))));
+      turnOnPixiLayer("provinces", "toggleProvinces", Boolean(hasChildren(select("#provs"))));
       if (hasChildren(select("#zones")) && isVisible(select("#zones"))) turnOn("toggleZones");
-      if (isVisible(select("#borders")) && hasChild(select("#borders"), "path")) turnOn("toggleBorders");
+      turnOnPixiLayer(
+        "borders",
+        "toggleBorders",
+        Boolean(isVisible(select("#borders")) && hasChild(select("#borders"), "path"))
+      );
       if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
       if (hasChildren(select("#temperature"))) turnOn("toggleTemperature");
       if (hasChild(select("#population"), "line")) turnOn("togglePopulation");

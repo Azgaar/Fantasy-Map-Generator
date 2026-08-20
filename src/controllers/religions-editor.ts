@@ -527,7 +527,7 @@ function religionChangeColor(this: HTMLElement): void {
   const callback = (newFill: string) => {
     (this as any).fill = newFill;
     pack.religions[religionId].color = newFill;
-    select("#relig").select(`#religion${religionId}`).attr("fill", newFill);
+    drawReligions();
     select("#debug").select(`#religionsCenter${religionId}`).attr("fill", newFill);
   };
 

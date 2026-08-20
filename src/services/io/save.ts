@@ -4,6 +4,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
+import { capturePixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
@@ -116,6 +117,7 @@ function prepareMapData(): string {
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
+  capturePixiLayerVisibility(style, controlId => layerIsOn(controlId));
   const styleData = JSON.stringify(style);
 
   // store custom good icons

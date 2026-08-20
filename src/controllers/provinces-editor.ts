@@ -1088,13 +1088,17 @@ function enterProvincesManualAssignent(): void {
   select<SVGGElement, unknown>("#stateBorders").select("path").attr("stroke", "#000").attr("stroke-width", 1.2);
 
   customization = 11;
-  select<SVGGElement, unknown>("#provs")
-    .select("g#provincesBody")
+  const provincesOverlay = select<SVGGElement, unknown>("#provs")
+    .selectAll<SVGGElement, null>("g#provincesBody")
+    .data([null])
+    .join("g")
+    .attr("id", "provincesBody")
+    .attr("data-renderer-overlay", "transient");
+  provincesOverlay
     .append("g")
     .attr("id", "temp")
     .attr("stroke-width", 0.3);
-  select<SVGGElement, unknown>("#provs")
-    .select("g#provincesBody")
+  provincesOverlay
     .append("g")
     .attr("id", "centers")
     .attr("fill", "none")

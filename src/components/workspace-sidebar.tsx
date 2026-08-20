@@ -4,7 +4,6 @@ import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LayersPanel } from "./layers/layers-panel";
-import { MapPreviewSelector } from "./layers/map-preview-selector";
 import {
   getToolCommands,
   type ToolCommand,
@@ -14,6 +13,7 @@ import {
 } from "./tool-registry";
 import { WorkspaceConfirmDialog } from "./ui/confirm-dialog";
 import { executeLegacyCommand } from "./ui/legacy-command";
+import { WorkspaceToolbar } from "./workspace-toolbar";
 import {
   WorkspacePanel,
   WorkspacePanelAction,
@@ -99,10 +99,9 @@ const TOOL_PANEL_COPY: Record<
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Create & Edit",
+    label: "Tools",
     items: [
       { label: "Create", icon: "plus", href: WORKSPACE_SECTIONS.create.route },
-      { label: "Edit", icon: "build", href: WORKSPACE_SECTIONS.edit.route },
       { label: "Inspect", icon: "chart", href: WORKSPACE_SECTIONS.inspect.route }
     ]
   },
@@ -119,10 +118,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "World Setup", icon: "globe-network", href: WORKSPACE_SECTIONS["world-setup"].route },
       { label: "Regenerate", icon: "refresh", href: WORKSPACE_SECTIONS.regenerate.route }
     ]
-  },
-  {
-    label: "App",
-    items: [{ label: "Preferences", icon: "settings", href: WORKSPACE_SECTIONS.preferences.route }]
   }
 ];
 
@@ -147,6 +142,14 @@ function normalizeWorkspaceSection(section: LegacyWorkspaceSection | null): Work
 
 function setWorkspaceView(section: WorkspaceSection): void {
   document.body.dataset.workspaceSection = section;
+  const options = document.getElementById("options");
+  if (section === "preferences") {
+    options?.setAttribute("role", "dialog");
+    options?.setAttribute("aria-label", "Preferences");
+  } else {
+    options?.removeAttribute("role");
+    options?.removeAttribute("aria-label");
+  }
   if (isToolWorkspaceSection(section)) {
     const toolsContent = document.getElementById("toolsContent");
     if (toolsContent) toolsContent.dataset.workspaceView = section;
@@ -224,7 +227,7 @@ function WorkspaceNavigation(): React.JSX.Element {
   const [collapsed, setCollapsed] = useState(() =>
     window.innerWidth < 720 || localStorage.getItem("fmg_workspace_sidebar_collapsed") === "true"
   );
-  const [currentPath, setCurrentPath] = useState(WORKSPACE_SECTIONS.edit.route);
+  const [currentPath, setCurrentPath] = useState(WORKSPACE_SECTIONS.layers.route);
 
   useEffect(() => {
     document.body.classList.toggle("workspace-sidebar-collapsed", collapsed);
@@ -237,7 +240,7 @@ function WorkspaceNavigation(): React.JSX.Element {
       const section = normalizeWorkspaceSection(detail.section);
       setCurrentPath(section ? WORKSPACE_SECTIONS[section].route : "");
     };
-    const openDefaultPanel = () => openWorkspaceSection("edit");
+    const openDefaultPanel = () => openWorkspaceSection("layers");
 
     window.addEventListener("workspace-panel-change", handlePanelChange);
     if (document.readyState === "complete") openDefaultPanel();
@@ -489,4 +492,6 @@ if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
 if (canvasControlsRoot) createRoot(canvasControlsRoot).render(<CanvasControls />);
-if (mapPreviewRoot) createRoot(mapPreviewRoot).render(<MapPreviewSelector />);
+if (mapPreviewRoot) {
+  createRoot(mapPreviewRoot).render(<WorkspaceToolbar onOpenPreferences={() => openWorkspaceSection("preferences")} />);
+}

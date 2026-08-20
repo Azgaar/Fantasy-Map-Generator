@@ -5,9 +5,7 @@ import type { PixiRendererControllerApi } from "./pixi-renderer-controller";
 import rendererController from "./pixi-renderer-controller.ts?raw";
 import {
   PIXI_RENDERER_COMMAND_EVENT,
-  PIXI_RENDERER_OWNERSHIP_REQUEST_EVENT,
   type PixiRendererCommand,
-  type PixiRendererOwnershipRequest,
   registerPixiRendererEventBridge
 } from "./pixi-renderer-events";
 import rendererLoader from "./pixi-renderer-loader.ts?raw";
@@ -17,7 +15,6 @@ const createController = (): PixiRendererControllerApi => ({
   getCanvas: vi.fn(() => null),
   getSnapshot: vi.fn(() => null),
   invalidateLayer: vi.fn(),
-  ownsLayer: vi.fn(layer => layer === "states"),
   queueRebuild: vi.fn(),
   start: vi.fn(async () => undefined),
   syncCamera: vi.fn()
@@ -30,7 +27,7 @@ describe("Pixi renderer classic event bridge", () => {
     for (const script of scripts) expect(script.includes("PixiMapPrototype")).toBe(false);
     const combined = scripts.join("\n");
     expect(combined.includes(PIXI_RENDERER_COMMAND_EVENT)).toBe(true);
-    expect(combined.includes(PIXI_RENDERER_OWNERSHIP_REQUEST_EVENT)).toBe(true);
+    expect(combined.includes("map:pixi-renderer:ownership-request")).toBe(false);
   });
 
   it("boots Pixi unconditionally without a prototype flag, theme switch, or fallback API", () => {
@@ -60,21 +57,7 @@ describe("Pixi renderer classic event bridge", () => {
     expect(controller.invalidateLayer).toHaveBeenCalledWith("states", [3, 8]);
   });
 
-  it("answers synchronous ownership requests without exposing the controller", () => {
-    const target = new EventTarget();
-    const controller = createController();
-    registerPixiRendererEventBridge(controller, target);
-    const states: PixiRendererOwnershipRequest = { layer: "states", owner: "svg" };
-    const unknown: PixiRendererOwnershipRequest = { layer: "labels", owner: "svg" };
-
-    target.dispatchEvent(new CustomEvent(PIXI_RENDERER_OWNERSHIP_REQUEST_EVENT, { detail: states }));
-    target.dispatchEvent(new CustomEvent(PIXI_RENDERER_OWNERSHIP_REQUEST_EVENT, { detail: unknown }));
-
-    expect(states.owner).toBe("pixi");
-    expect(unknown.owner).toBe("svg");
-  });
-
-  it("removes both listeners deterministically", () => {
+  it("removes the command listener deterministically", () => {
     const target = new EventTarget();
     const controller = createController();
     const release = registerPixiRendererEventBridge(controller, target);

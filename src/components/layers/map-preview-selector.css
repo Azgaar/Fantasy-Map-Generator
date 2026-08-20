@@ -1,13 +1,3 @@
-#mapPreviewRoot {
-  position: fixed;
-  z-index: 29;
-  top: 16px;
-  right: 24px;
-  color: var(--kui-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  pointer-events: auto;
-}
-
 .fmg-map-preview {
   position: relative;
   box-sizing: border-box;
@@ -170,13 +160,8 @@
 }
 
 @media (max-width: 760px) {
-  #mapPreviewRoot {
-    top: 12px;
-    right: 12px;
-  }
-
   .fmg-map-preview {
-    width: 168px;
+    width: 152px;
   }
 }
 
@@ -188,11 +173,5 @@
 
   .fmg-map-preview__dropdown {
     animation: none;
-  }
-}
-
-@media print {
-  #mapPreviewRoot {
-    display: none;
   }
 }

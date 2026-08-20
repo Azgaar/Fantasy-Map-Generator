@@ -1,33 +1,10 @@
-import type { Biome } from "@/generators/biomes-generator";
-import { invalidatePixiRendererLayer, pixiRendererOwnsLayer } from "@/renderers/pixi/pixi-renderer-controller";
-import { ensureEl, getIsolines } from "@/utils";
-
-type BiomeIsolines = ReturnType<typeof getIsolines>;
-
-export function buildBiomePaths(biomes: Biome[], isolines: BiomeIsolines): string {
-  return Object.entries(isolines)
-    .map(([index, { fill, waterGap }]) => {
-      const color = biomes[+index].color;
-      let paths = "";
-      if (fill) paths += `<path d="${fill}" fill="${color}" id="biome${index}" />`;
-      if (waterGap)
-        paths += `<path d="${waterGap}" fill="none" stroke="${color}" stroke-width="3" id="biome-gap${index}" />`;
-      return paths;
-    })
-    .join("");
-}
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
+import { ensureEl } from "@/utils";
 
 export function drawBiomes(): void {
   TIME && console.time("drawBiomes");
-  if (pixiRendererOwnsLayer("biomes")) {
-    ensureEl("biomes").replaceChildren();
-    invalidatePixiRendererLayer("biomes");
-    TIME && console.timeEnd("drawBiomes");
-    return;
-  }
-
-  const isolines = getIsolines(pack, cellId => pack.cells.biome[cellId], { fill: true, waterGap: true });
-  ensureEl("biomes").innerHTML = buildBiomePaths(pack.biomes, isolines);
+  ensureEl("biomes").replaceChildren();
+  invalidatePixiRendererLayer("biomes");
 
   TIME && console.timeEnd("drawBiomes");
 }

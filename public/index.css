@@ -105,7 +105,6 @@ iframe {
 #map.pixi-renderer-active #lakes,
 #map.pixi-renderer-active #biomes,
 #map.pixi-renderer-active #terrain,
-#map.pixi-renderer-active #regions,
 #map.pixi-renderer-active #borders,
 #map.pixi-renderer-active #coastline {
   visibility: hidden;

@@ -11,7 +11,12 @@ function closeOptionsPanel() {
 }
 
 function openWorkspacePanel(section: "layers" | "style" | "world-setup" | "edit") {
-  document.querySelector<HTMLElement>(`#workspaceNavigationRoot [data-href="/${section}"]`)?.click();
+  const navigationItem = document.querySelector<HTMLElement>(`#workspaceNavigationRoot [data-href="/${section}"]`);
+  if (navigationItem) return void navigationItem.click();
+  if (section !== "edit") return;
+
+  ensureEl("toolsContent").dataset.workspaceView = "edit";
+  ensureEl("toolsTab").click();
 }
 
 function start() {
@@ -238,15 +243,15 @@ function start() {
 
       // ── Edit panel ───────────────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-href="/edit"]',
+        element: "#workspaceOptionsTrigger",
         onHighlightStarted: () => {
-          openWorkspacePanel("edit");
+          ensureEl("workspaceOptionsTrigger").click();
         },
         popover: {
           title: "Edit",
           description:
-            "Edit groups the map's feature editors by world, politics, settlements, and geography. Creation and inspection actions have their own panels.",
-          side: "bottom"
+            "Open Options, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
+          side: "right"
         }
       },
       {
