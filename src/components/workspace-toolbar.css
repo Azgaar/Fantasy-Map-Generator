@@ -1,33 +1,24 @@
 #mapPreviewRoot {
   position: fixed;
-  z-index: 29;
+  z-index: 32;
   top: 16px;
   right: 24px;
-  left: calc(var(--fmg-sidebar-width) + 24px);
+  left: 24px;
   color: var(--kui-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   pointer-events: none;
 }
 
-.workspace-sidebar-collapsed #mapPreviewRoot {
-  left: calc(var(--fmg-sidebar-collapsed-width) + 24px);
-}
-
 .fmg-workspace-toolbar {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   pointer-events: auto;
 }
 
-.fmg-workspace-edit {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.fmg-workspace-edit__trigger,
-.fmg-workspace-toolbar__preferences {
+.fmg-fantasia,
+.fmg-floating-menu__trigger {
   box-sizing: border-box;
   height: 40px;
   border: 1px solid var(--kui-line);
@@ -35,35 +26,62 @@
   background: color-mix(in srgb, var(--kui-surface-panel) 94%, transparent);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
   color: var(--kui-text-secondary);
-  cursor: pointer;
   backdrop-filter: blur(12px);
+}
+
+.fmg-fantasia {
+  display: grid;
+  min-width: 116px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  padding: 0 12px 0 10px;
+}
+
+.fmg-fantasia__mark {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font: 700 13px/1 Georgia, serif;
+  place-items: center;
+}
+
+.fmg-fantasia__label {
+  color: var(--kui-text);
+  font: 700 14px/1.2 Georgia, serif;
+  letter-spacing: 0.01em;
+}
+
+.fmg-floating-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.fmg-floating-menu__trigger {
+  display: grid;
+  min-width: 96px;
+  grid-template-columns: 24px minmax(0, 1fr) 12px;
+  gap: 8px;
+  align-items: center;
+  padding: 0 10px;
+  cursor: pointer;
   transition:
     border-color 120ms ease,
     background-color 120ms ease,
     box-shadow 120ms ease;
 }
 
-.fmg-workspace-edit__trigger {
-  display: grid;
-  width: 110px;
-  grid-template-columns: 24px minmax(0, 1fr) 12px;
-  gap: 9px;
-  align-items: center;
-  padding: 0 11px;
+#workspaceProjectTrigger,
+#workspaceGenerateTrigger {
+  min-width: 108px;
 }
 
-.fmg-workspace-toolbar__preferences {
-  display: grid;
-  width: 40px;
-  padding: 0;
-  place-items: center;
-}
-
-.fmg-workspace-edit__trigger:hover,
-.fmg-workspace-edit__trigger:focus-visible,
-.fmg-workspace-edit__trigger[aria-expanded="true"],
-.fmg-workspace-toolbar__preferences:hover,
-.fmg-workspace-toolbar__preferences:focus-visible {
+.fmg-floating-menu__trigger:hover,
+.fmg-floating-menu__trigger:focus-visible,
+.fmg-floating-menu__trigger[aria-expanded="true"] {
   border-color: var(--kui-line-strong);
   outline: 0;
   background: var(--kui-surface-panel);
@@ -71,8 +89,7 @@
   color: var(--kui-text);
 }
 
-.fmg-workspace-edit__trigger:focus-visible,
-.fmg-workspace-toolbar__preferences:focus-visible {
+.fmg-floating-menu__trigger:focus-visible {
   outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
 }
@@ -88,28 +105,30 @@
   pointer-events: none;
 }
 
-.fmg-workspace-edit__label {
+.fmg-floating-menu__label {
   color: var(--kui-text);
   font: 600 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   text-align: left;
 }
 
-.fmg-workspace-edit__chevron {
+.fmg-floating-menu__chevron {
   color: var(--kui-text-muted);
   pointer-events: none;
   transition: transform 120ms ease;
 }
 
-.fmg-workspace-edit__trigger[aria-expanded="true"] .fmg-workspace-edit__chevron {
+.fmg-floating-menu__trigger[aria-expanded="true"] .fmg-floating-menu__chevron {
   transform: rotate(180deg);
 }
 
-.fmg-workspace-edit__menu.kui-menu {
+.fmg-floating-menu__menu.kui-menu {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
-  width: 204px;
+  left: 0;
+  width: 216px;
+  max-height: calc(100vh - 80px);
   padding: 6px;
+  overflow-y: auto;
   border: 1px solid var(--kui-line);
   border-radius: 8px;
   background: var(--kui-surface-panel);
@@ -117,7 +136,12 @@
   animation: fmg-workspace-menu-in 100ms ease-out;
 }
 
-.fmg-workspace-edit__menu .kui-menu-item {
+.fmg-floating-menu--align-right > .fmg-floating-menu__menu.kui-menu {
+  right: 0;
+  left: auto;
+}
+
+.fmg-floating-menu__menu .kui-menu-item {
   min-height: 34px;
   padding: 7px 8px;
   border-radius: 5px;
@@ -126,15 +150,15 @@
   font: 500 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.fmg-workspace-edit__menu .kui-menu-item:hover,
-.fmg-workspace-edit__menu .kui-menu-item:focus-visible,
-.fmg-workspace-edit__menu .bp6-submenu:hover > .kui-menu-item,
-.fmg-workspace-edit__menu .bp6-submenu:focus-within > .kui-menu-item {
+.fmg-floating-menu__menu .kui-menu-item:hover,
+.fmg-floating-menu__menu .kui-menu-item:focus-visible,
+.fmg-floating-menu__menu .bp6-submenu:hover > .kui-menu-item,
+.fmg-floating-menu__menu .bp6-submenu:focus-within > .kui-menu-item {
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-workspace-edit__menu .bp6-menu-item-label {
+.fmg-floating-menu__menu .bp6-menu-item-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -142,28 +166,30 @@
   color: var(--kui-text-muted);
 }
 
-.fmg-workspace-edit__menu kbd {
+.fmg-floating-menu__menu kbd {
   color: var(--kui-text-muted);
   font: 10px/1.2 "SF Mono", Consolas, monospace;
   white-space: nowrap;
 }
 
-.fmg-workspace-edit__menu .kui-submenu {
+.fmg-floating-menu__menu .kui-submenu {
   position: absolute;
   z-index: 2;
   top: -6px;
   left: calc(100% - 3px);
   display: none;
-  width: 220px;
+  width: 224px;
+  max-height: calc(100vh - 48px);
   padding: 6px;
+  overflow-y: auto;
   border: 1px solid var(--kui-line);
   border-radius: 8px;
   background: var(--kui-surface-panel);
   box-shadow: 0 14px 36px rgb(0 0 0 / 0.38);
 }
 
-.fmg-workspace-edit__menu .bp6-submenu:hover > .kui-submenu,
-.fmg-workspace-edit__menu .bp6-submenu:focus-within > .kui-submenu {
+.fmg-floating-menu__menu .bp6-submenu:hover > .kui-submenu,
+.fmg-floating-menu__menu .bp6-submenu:focus-within > .kui-submenu {
   display: block;
 }
 
@@ -179,52 +205,66 @@
   }
 }
 
-@media (max-width: 760px) {
-  #mapPreviewRoot,
-  .workspace-sidebar-collapsed #mapPreviewRoot {
-    top: 12px;
-    right: 12px;
-    left: calc(var(--fmg-sidebar-collapsed-width) + 12px);
-  }
-
+@media (max-width: 920px) {
   .fmg-workspace-toolbar {
-    gap: 8px;
+    gap: 6px;
   }
 
-  .fmg-workspace-edit__trigger {
+  .fmg-fantasia,
+  .fmg-floating-menu__trigger,
+  #workspaceProjectTrigger,
+  #workspaceGenerateTrigger {
     width: 40px;
+    min-width: 40px;
     grid-template-columns: 1fr;
     padding: 0 7px;
   }
 
-  .fmg-workspace-edit__label,
-  .fmg-workspace-edit__chevron {
+  .fmg-fantasia__label,
+  .fmg-floating-menu__label,
+  .fmg-floating-menu__chevron {
     display: none;
   }
+}
 
-  .fmg-workspace-edit__menu.kui-menu,
-  .fmg-workspace-edit__menu .kui-submenu {
-    width: 145px;
+@media (max-width: 760px) {
+  #mapPreviewRoot {
+    top: 12px;
+    right: 12px;
+    left: 12px;
   }
 
-  .fmg-workspace-edit__menu.kui-menu {
-    right: auto;
-    left: 0;
+  .fmg-workspace-toolbar {
+    gap: 4px;
   }
 
-  .fmg-workspace-edit__menu .kui-submenu {
-    left: calc(100% - 12px);
+  .fmg-fantasia,
+  .fmg-floating-menu__trigger,
+  #workspaceProjectTrigger,
+  #workspaceGenerateTrigger {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 5px;
+  }
+
+  .fmg-floating-menu__menu.kui-menu,
+  .fmg-floating-menu__menu .kui-submenu {
+    width: 172px;
+  }
+
+  .fmg-floating-menu__menu .kui-submenu {
+    left: calc(100% - 16px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fmg-workspace-edit__trigger,
-  .fmg-workspace-edit__chevron,
-  .fmg-workspace-toolbar__preferences {
+  .fmg-floating-menu__trigger,
+  .fmg-floating-menu__chevron {
     transition: none;
   }
 
-  .fmg-workspace-edit__menu.kui-menu {
+  .fmg-floating-menu__menu.kui-menu {
     animation: none;
   }
 }

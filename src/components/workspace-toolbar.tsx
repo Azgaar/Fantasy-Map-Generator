@@ -1,23 +1,63 @@
-import { Icon } from "@patkepa/kantzen-ui/icons";
-import { Menu, MenuItem } from "@patkepa/kantzen-ui/primitives";
-import { useEffect, useRef, useState } from "react";
-import { type LayerControlsSnapshot, type LegacyLayerControls } from "./layers/layer-controls";
-import { MapPreviewSelector } from "./layers/map-preview-selector";
+import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
+import { Menu, MenuDivider, MenuItem } from "@patkepa/kantzen-ui/primitives";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type LayerControlsSnapshot,
+  LAYER_CONTROLS_CHANGE_EVENT,
+  type LegacyLayerControls
+} from "./layers/layer-controls";
 import { getToolCommands, TOOL_GROUPS } from "./tool-registry";
+import { executeLegacyCommand } from "./ui/legacy-command";
 import "./workspace-toolbar.css";
+
+export type ToolbarWorkspaceSection =
+  | "create"
+  | "edit"
+  | "inspect"
+  | "layers"
+  | "style"
+  | "world-setup"
+  | "regenerate"
+  | "preferences";
 
 interface WorkspaceToolbarProps {
   initialMapSnapshot?: LayerControlsSnapshot;
   mapControls?: LegacyLayerControls;
-  onOpenPreferences: () => void;
+  onOpenSection: (section: ToolbarWorkspaceSection) => void;
+}
+
+interface FloatingMenuProps {
+  align?: "left" | "right";
+  children: (close: () => void) => ReactNode;
+  icon: IconName;
+  id: string;
+  label: string;
+  route?: string;
+  tip: string;
 }
 
 const EDIT_GROUPS = TOOL_GROUPS.filter(group => ["world", "politics", "settlements", "geography"].includes(group.id));
 
-function WorkspaceEditMenu(): React.JSX.Element {
+const PROJECT_ACTIONS = [
+  { label: "New Map", icon: "document", targetId: "newMapButton", shortcut: "F2" },
+  { label: "Load", icon: "import", targetId: "loadButton" },
+  { label: "Save", icon: "floppy-disk", targetId: "saveButton", shortcut: "Ctrl+S" },
+  { label: "Export", icon: "export", targetId: "exportButton" }
+] satisfies { label: string; icon: IconName; targetId: string; shortcut?: string }[];
+
+function FloatingMenu({
+  align = "left",
+  children,
+  icon,
+  id,
+  label,
+  route,
+  tip
+}: FloatingMenuProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const menuId = `${id}Menu`;
 
   useEffect(() => {
     if (!open) return;
@@ -39,78 +79,255 @@ function WorkspaceEditMenu(): React.JSX.Element {
     };
   }, [open]);
 
-  const invoke = (command: ReturnType<typeof getToolCommands>[number]) => {
-    setOpen(false);
-    command.invoke();
-  };
+  const close = () => setOpen(false);
 
   return (
-    <div className="fmg-workspace-edit" ref={root}>
+    <div className={`fmg-floating-menu fmg-floating-menu--align-${align}`} ref={root}>
       <button
-        aria-controls="workspaceEditMenu"
+        aria-controls={menuId}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Edit map"
-        className="fmg-workspace-edit__trigger"
-        data-tip="Edit map features"
-        id="workspaceEditTrigger"
+        aria-label={label}
+        className="fmg-floating-menu__trigger"
+        data-href={route}
+        data-tip={tip}
+        id={id}
         onClick={() => setOpen(current => !current)}
         ref={trigger}
         type="button"
       >
         <span className="fmg-workspace-toolbar__icon" aria-hidden="true">
-          <Icon icon="build" size={17} />
+          <Icon icon={icon} size={17} />
         </span>
-        <span className="fmg-workspace-edit__label">Edit</span>
-        <Icon
-          aria-hidden="true"
-          className="fmg-workspace-edit__chevron"
-          icon="chevron-down"
-          size={12}
-        />
+        <span className="fmg-floating-menu__label">{label}</span>
+        <Icon aria-hidden="true" className="fmg-floating-menu__chevron" icon="chevron-down" size={12} />
       </button>
       {open ? (
-        <Menu aria-label="Edit map" className="fmg-workspace-edit__menu" id="workspaceEditMenu">
-          {EDIT_GROUPS.map(group => (
-            <MenuItem icon={group.icon} key={group.id} text={group.label}>
-              {getToolCommands(group.id).map(command => (
-                <MenuItem
-                  key={command.id}
-                  labelElement={
-                    command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined
-                  }
-                  onClick={() => invoke(command)}
-                  text={command.label}
-                />
-              ))}
-            </MenuItem>
-          ))}
+        <Menu aria-label={label} className="fmg-floating-menu__menu" id={menuId}>
+          {children(close)}
         </Menu>
       ) : null}
     </div>
   );
 }
 
-export function WorkspaceToolbar({
+function ProjectMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSection">): React.JSX.Element {
+  return (
+    <FloatingMenu
+      icon="folder-open"
+      id="workspaceProjectTrigger"
+      label="Project"
+      tip="Create, load, save, and export maps"
+    >
+      {close => (
+        <>
+          {PROJECT_ACTIONS.map(action => (
+            <MenuItem
+              icon={action.icon}
+              key={action.targetId}
+              labelElement={action.shortcut ? <kbd>{action.shortcut}</kbd> : undefined}
+              onClick={() => {
+                close();
+                executeLegacyCommand(action.targetId);
+              }}
+              text={action.label}
+            />
+          ))}
+          <MenuDivider />
+          <MenuItem
+            icon="settings"
+            onClick={() => {
+              close();
+              onOpenSection("preferences");
+            }}
+            text="Preferences"
+          />
+        </>
+      )}
+    </FloatingMenu>
+  );
+}
+
+function ToolMenu({
+  groupId,
+  icon,
+  id,
+  label,
+  route,
+  tip
+}: Pick<FloatingMenuProps, "icon" | "id" | "label" | "route" | "tip"> & {
+  groupId: "analysis" | "create";
+}): React.JSX.Element {
+  return (
+    <FloatingMenu icon={icon} id={id} label={label} route={route} tip={tip}>
+      {close =>
+        getToolCommands(groupId).map(command => (
+          <MenuItem
+            icon={command.icon}
+            key={command.id}
+            labelElement={command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined}
+            onClick={() => {
+              close();
+              command.invoke();
+            }}
+            text={command.label}
+          />
+        ))
+      }
+    </FloatingMenu>
+  );
+}
+
+function MapMenu(): React.JSX.Element {
+  return (
+    <FloatingMenu icon="map" id="workspaceMapTrigger" label="Map" route="/edit" tip="Edit map features">
+      {close =>
+        EDIT_GROUPS.map(group => (
+          <MenuItem icon={group.icon} key={group.id} text={group.label}>
+            {getToolCommands(group.id).map(command => (
+              <MenuItem
+                key={command.id}
+                labelElement={command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined}
+                onClick={() => {
+                  close();
+                  command.invoke();
+                }}
+                text={command.label}
+              />
+            ))}
+          </MenuItem>
+        ))
+      }
+    </FloatingMenu>
+  );
+}
+
+function ViewsMenu({
   initialMapSnapshot,
   mapControls,
-  onOpenPreferences
+  onOpenSection
 }: WorkspaceToolbarProps): React.JSX.Element {
+  const controls = mapControls ?? window.LayerControls;
+  const [snapshot, setSnapshot] = useState(() => initialMapSnapshot ?? controls.getSnapshot());
+  const presetOptions = snapshot.presetOptions.filter(
+    option => !option.hidden || option.value === snapshot.selectedPreset
+  );
+  const selectedPreset = presetOptions.find(option => option.value === snapshot.selectedPreset);
+
+  useEffect(() => {
+    const handleControlsChange = (event: Event) => {
+      setSnapshot((event as CustomEvent<LayerControlsSnapshot>).detail);
+    };
+    window.addEventListener(LAYER_CONTROLS_CHANGE_EVENT, handleControlsChange);
+    return () => window.removeEventListener(LAYER_CONTROLS_CHANGE_EVENT, handleControlsChange);
+  }, []);
+
   return (
-    <div className="fmg-workspace-toolbar">
-      <WorkspaceEditMenu />
-      <MapPreviewSelector controls={mapControls} initialSnapshot={initialMapSnapshot} />
-      <button
-        aria-label="Preferences"
-        className="fmg-workspace-toolbar__preferences"
-        data-tip="Open Preferences"
-        id="workspacePreferencesTrigger"
-        onClick={onOpenPreferences}
-        title="Preferences"
-        type="button"
+    <FloatingMenu icon="eye-open" id="workspaceViewsTrigger" label="Views" tip="Map views, layers, and style">
+      {close => (
+        <>
+          <MenuItem icon="layers" text={selectedPreset?.label ?? "Custom map"}>
+            {presetOptions.map(option => (
+              <MenuItem
+                icon={option.value === snapshot.selectedPreset ? "tick" : "blank"}
+                key={option.value}
+                onClick={() => {
+                  close();
+                  controls.applyPreset(option.value);
+                }}
+                text={option.label}
+              />
+            ))}
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            icon="layers"
+            onClick={() => {
+              close();
+              onOpenSection("layers");
+            }}
+            text="Layers"
+          />
+          <MenuItem
+            icon="style"
+            onClick={() => {
+              close();
+              onOpenSection("style");
+            }}
+            text="Style"
+          />
+        </>
+      )}
+    </FloatingMenu>
+  );
+}
+
+function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSection">): React.JSX.Element {
+  return (
+    <FloatingMenu
+      align="right"
+      icon="refresh"
+      id="workspaceGenerateTrigger"
+      label="Generate"
+      tip="World setup and regeneration"
+    >
+      {close => (
+        <>
+          <MenuItem
+            icon="globe-network"
+            onClick={() => {
+              close();
+              onOpenSection("world-setup");
+            }}
+            text="World Setup"
+          />
+          <MenuItem
+            icon="refresh"
+            onClick={() => {
+              close();
+              onOpenSection("regenerate");
+            }}
+            text="Regenerate features"
+          />
+        </>
+      )}
+    </FloatingMenu>
+  );
+}
+
+export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Element {
+  return (
+    <nav aria-label="Map workspace" className="fmg-workspace-toolbar">
+      <div
+        aria-label="Fantasia, country information placeholder"
+        className="fmg-fantasia"
+        data-tip="Country information will appear here"
       >
-        <Icon aria-hidden="true" icon="settings" size={17} />
-      </button>
-    </div>
+        <span className="fmg-fantasia__mark" aria-hidden="true">
+          F
+        </span>
+        <span className="fmg-fantasia__label">Fantasia</span>
+      </div>
+      <ProjectMenu onOpenSection={props.onOpenSection} />
+      <ToolMenu
+        groupId="create"
+        icon="plus"
+        id="workspaceCreateTrigger"
+        label="Create"
+        route="/create"
+        tip="Create map features"
+      />
+      <ToolMenu
+        groupId="analysis"
+        icon="chart"
+        id="workspaceInspectTrigger"
+        label="Inspect"
+        route="/inspect"
+        tip="Inspect map data"
+      />
+      <MapMenu />
+      <ViewsMenu {...props} />
+      <GenerateMenu onOpenSection={props.onOpenSection} />
+    </nav>
   );
 }

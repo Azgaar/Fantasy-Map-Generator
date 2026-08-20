@@ -1,6 +1,4 @@
-import { WorkspaceSidebar } from "@patkepa/kantzen-ui/app-shell";
-import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
-import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
+import { Icon } from "@patkepa/kantzen-ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LayersPanel } from "./layers/layers-panel";
@@ -23,7 +21,6 @@ import {
   WorkspacePanelSection
 } from "./ui/workspace-panel";
 import "@patkepa/kantzen-ui/theme.css";
-import "@patkepa/kantzen-ui/app-shell/styles.css";
 import "./ui/workspace-panel.css";
 import "./workspace-sidebar.css";
 
@@ -60,10 +57,6 @@ const WORKSPACE_SECTIONS: Record<WorkspaceSection, WorkspaceSectionConfig> = {
   preferences: { route: "/preferences", tabId: "optionsTab", title: "Preferences" }
 };
 
-const SECTION_BY_ROUTE = new Map(
-  Object.entries(WORKSPACE_SECTIONS).map(([section, config]) => [config.route, section as WorkspaceSection])
-);
-
 const TOOL_GROUPS_BY_SECTION: Record<ToolWorkspaceSection, readonly ToolGroupId[]> = {
   create: ["create"],
   edit: ["world", "politics", "settlements", "geography"],
@@ -96,35 +89,6 @@ const TOOL_PANEL_COPY: Record<
     searchLabel: "Search regeneration actions"
   }
 };
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Tools",
-    items: [
-      { label: "Create", icon: "plus", href: WORKSPACE_SECTIONS.create.route },
-      { label: "Inspect", icon: "chart", href: WORKSPACE_SECTIONS.inspect.route }
-    ]
-  },
-  {
-    label: "Map View",
-    items: [
-      { label: "Layers", icon: "layers", href: WORKSPACE_SECTIONS.layers.route },
-      { label: "Style", icon: "style", href: WORKSPACE_SECTIONS.style.route }
-    ]
-  },
-  {
-    label: "Generation",
-    items: [
-      { label: "World Setup", icon: "globe-network", href: WORKSPACE_SECTIONS["world-setup"].route },
-      { label: "Regenerate", icon: "refresh", href: WORKSPACE_SECTIONS.regenerate.route }
-    ]
-  }
-];
-
-const COLLAPSED_NAV_GROUPS = NAV_GROUPS.map(group => ({
-  ...group,
-  items: group.items.map(item => ({ ...item, label: "" }))
-}));
 
 const OPTIONS_SECTIONS = new Set<WorkspaceSection>(["world-setup", "preferences"]);
 
@@ -183,34 +147,6 @@ function openWorkspaceSection(section: WorkspaceSection): void {
   else tab?.click();
 }
 
-const SIDEBAR_ACTIONS = [
-  { label: "New Map", icon: "document", targetId: "newMapButton", shortcut: "F2" },
-  { label: "Load", icon: "import", targetId: "loadButton" },
-  { label: "Save", icon: "floppy-disk", targetId: "saveButton", shortcut: "Ctrl+S" },
-  { label: "Export", icon: "export", targetId: "exportButton" }
-] satisfies { label: string; icon: IconName; targetId: string; shortcut?: string }[];
-
-function SidebarActions(): React.JSX.Element {
-  return (
-    <div className="fmg-sidebar-actions" aria-label="Project actions">
-      <div className="fmg-sidebar-actions__label">Project</div>
-      {SIDEBAR_ACTIONS.map(action => (
-        <button
-          type="button"
-          className="fmg-sidebar-action"
-          key={action.targetId}
-          data-target-id={action.targetId}
-          onClick={() => executeLegacyCommand(action.targetId)}
-        >
-          <Icon icon={action.icon} size={16} />
-          <span>{action.label}</span>
-          {action.shortcut ? <kbd>{action.shortcut}</kbd> : null}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function CanvasControls(): React.JSX.Element {
   return (
     <div className="fmg-canvas-controls" aria-label="Canvas controls">
@@ -225,52 +161,6 @@ function CanvasControls(): React.JSX.Element {
         <Icon icon="reset" size={16} />
       </button>
     </div>
-  );
-}
-
-function WorkspaceNavigation(): React.JSX.Element {
-  const [collapsed, setCollapsed] = useState(() =>
-    window.innerWidth < 720 || localStorage.getItem("fmg_workspace_sidebar_collapsed") === "true"
-  );
-  const [currentPath, setCurrentPath] = useState("");
-
-  useEffect(() => {
-    document.body.classList.toggle("workspace-sidebar-collapsed", collapsed);
-    localStorage.setItem("fmg_workspace_sidebar_collapsed", String(collapsed));
-  }, [collapsed]);
-
-  useEffect(() => {
-    const handlePanelChange = (event: Event) => {
-      const detail = (event as CustomEvent<WorkspacePanelChangeDetail>).detail;
-      const section = normalizeWorkspaceSection(detail.section);
-      setCurrentPath(section ? WORKSPACE_SECTIONS[section].route : "");
-    };
-    window.addEventListener("workspace-panel-change", handlePanelChange);
-
-    return () => {
-      window.removeEventListener("workspace-panel-change", handlePanelChange);
-    };
-  }, []);
-
-  const navigate = (href: string) => {
-    const section = SECTION_BY_ROUTE.get(href);
-    if (!section) return;
-    setCurrentPath(href);
-    openWorkspaceSection(section);
-  };
-
-  return (
-    <WorkspaceSidebar
-      isCollapsed={collapsed}
-      productName="Fantasy Map Generator"
-      collapsedProductName="FM"
-      currentPath={currentPath}
-      navGroups={collapsed ? COLLAPSED_NAV_GROUPS : NAV_GROUPS}
-      onExpandSidebar={() => setCollapsed(value => !value)}
-      onNavigate={navigate}
-      navigationFooter={<SidebarActions />}
-      sidebarShortcutLabel="click"
-    />
   );
 }
 
@@ -480,18 +370,16 @@ function ToolsPanel(): React.JSX.Element {
   );
 }
 
-const navigationRoot = document.getElementById("workspaceNavigationRoot");
 const headerRoot = document.getElementById("workspacePanelHeaderRoot");
 const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
 const canvasControlsRoot = document.getElementById("canvasControlsRoot");
 const mapPreviewRoot = document.getElementById("mapPreviewRoot");
 
-if (navigationRoot) createRoot(navigationRoot).render(<WorkspaceNavigation />);
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
 if (canvasControlsRoot) createRoot(canvasControlsRoot).render(<CanvasControls />);
 if (mapPreviewRoot) {
-  createRoot(mapPreviewRoot).render(<WorkspaceToolbar onOpenPreferences={() => openWorkspaceSection("preferences")} />);
+  createRoot(mapPreviewRoot).render(<WorkspaceToolbar onOpenSection={openWorkspaceSection} />);
 }

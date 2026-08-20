@@ -465,11 +465,9 @@ function toggleCells(event) {
 }
 
 function drawCells() {
-  if (window.ViewportCells) return window.ViewportCells.draw();
-  const cells = customization === 1 ? grid.cells.i : pack.cells.i;
-  const polygon = customization === 1 ? getGridPolygon : getPackPolygon;
-  const paths = Array.from(cells).map(i => "M" + polygon(i));
-  ensureEl("cells").innerHTML = `<path d="${paths.join("")}" />`;
+  if (customization === 1 && window.ViewportCells) return window.ViewportCells.draw();
+  window.ViewportCells?.clear();
+  redrawPixiLayer("cells", "cells");
 }
 
 function toggleIce(event) {

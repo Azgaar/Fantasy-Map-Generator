@@ -21,18 +21,23 @@ const controls: LegacyLayerControls = {
 };
 
 describe("WorkspaceToolbar", () => {
-  test("renders Edit, the map chooser, and an icon-only Preferences control", () => {
+  test("renders the floating workspace menus in the requested order", () => {
     const markup = renderToStaticMarkup(
-      <WorkspaceToolbar initialMapSnapshot={snapshot} mapControls={controls} onOpenPreferences={vi.fn()} />
+      <WorkspaceToolbar initialMapSnapshot={snapshot} mapControls={controls} onOpenSection={vi.fn()} />
     );
 
-    expect(markup.includes('id="workspaceEditTrigger"')).toBe(true);
-    expect(markup.includes('aria-controls="workspaceEditMenu"')).toBe(true);
-    expect(markup.indexOf('id="workspaceEditTrigger"')).toBeLessThan(markup.indexOf('id="mapPreviewTrigger"'));
-    expect(markup.includes('id="mapPreviewTrigger"')).toBe(true);
-    expect(markup.includes('id="workspacePreferencesTrigger"')).toBe(true);
-    expect(markup.indexOf('id="mapPreviewTrigger"')).toBeLessThan(markup.indexOf('id="workspacePreferencesTrigger"'));
-    expect(markup.includes('aria-label="Preferences"')).toBe(true);
-    expect(markup.includes(">Preferences</button>")).toBe(false);
+    const labels = ["Fantasia", "Project", "Create", "Inspect", "Map", "Views", "Generate"];
+    labels.reduce((previousIndex, label) => {
+      const index = markup.indexOf(`>${label}<`);
+      expect(index).toBeGreaterThan(previousIndex);
+      return index;
+    }, -1);
+
+    expect(markup.includes('id="workspaceProjectTrigger"')).toBe(true);
+    expect(markup.includes('id="workspaceCreateTrigger"')).toBe(true);
+    expect(markup.includes('id="workspaceInspectTrigger"')).toBe(true);
+    expect(markup.includes('id="workspaceMapTrigger"')).toBe(true);
+    expect(markup.includes('id="workspaceViewsTrigger"')).toBe(true);
+    expect(markup.includes('id="workspaceGenerateTrigger"')).toBe(true);
   });
 });

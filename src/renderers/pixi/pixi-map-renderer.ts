@@ -15,6 +15,7 @@ import { DEFAULT_RENDERER_RESOURCE_BUDGET, RendererResourceTracker } from "../co
 import { RendererResourceCache, type RendererResourceHandle } from "../core/resource-cache";
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
+import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { buildZoneScene } from "../scene/layers/zone-scene";
@@ -146,6 +147,7 @@ export class PixiMapRenderer implements MapRenderer {
     if (this.surface) this.surface.style.display = "block";
     const geography = this.buildGeographyContainers();
     const biomeContainer = this.buildFillContainer("biomes");
+    const cellsContainer = this.buildCellsContainer();
     const reliefContainer = await this.buildReliefContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     const religionContainer = this.buildFillContainer("religions");
@@ -159,6 +161,7 @@ export class PixiMapRenderer implements MapRenderer {
       geography.landmass,
       geography.lakes,
       biomeContainer,
+      cellsContainer,
       reliefContainer,
       religionContainer,
       cultureContainer,
@@ -415,7 +418,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildLineContainer(
-    layer: "coastline",
+    layer: "cells" | "coastline",
     paths: readonly LinePathPrimitive[],
     getStyle: (role: string) => SemanticLineStyle
   ): Container {
@@ -428,6 +431,11 @@ export class PixiMapRenderer implements MapRenderer {
       container.addChild(graphic);
     }
     return container;
+  }
+
+  private buildCellsContainer(): Container {
+    const scene = buildCellOutlineScene(this.getWorld(), this.sceneRevisions.getLayerRevision("cells"));
+    return this.buildLineContainer("cells", scene.paths, () => this.semanticStyle.cells);
   }
 
   private buildBordersContainer(): Container {

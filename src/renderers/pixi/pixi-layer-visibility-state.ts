@@ -4,6 +4,7 @@ import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
 export const PIXI_LAYER_CONTROL_IDS = {
   biomes: "toggleBiomes",
   borders: "toggleBorders",
+  cells: "toggleCells",
   cultures: "toggleCultures",
   lakes: "toggleLakes",
   provinces: "toggleProvinces",

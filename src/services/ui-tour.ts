@@ -11,12 +11,12 @@ function closeOptionsPanel() {
 }
 
 function openWorkspacePanel(section: "layers" | "style" | "world-setup" | "edit") {
-  const navigationItem = document.querySelector<HTMLElement>(`#workspaceNavigationRoot [data-href="/${section}"]`);
-  if (navigationItem) return void navigationItem.click();
-  if (section !== "edit") return;
-
-  ensureEl("toolsContent").dataset.workspaceView = "edit";
-  ensureEl("toolsTab").click();
+  const options = ensureEl("options");
+  if (options.style.display === "none") ensureEl("optionsTrigger").click();
+  if (section === "edit") ensureEl("toolsContent").dataset.workspaceView = "edit";
+  if (section === "world-setup") ensureEl("optionsContent").dataset.workspaceView = "world-setup";
+  const tabId = section === "edit" ? "toolsTab" : section === "world-setup" ? "optionsTab" : `${section}Tab`;
+  ensureEl(tabId).click();
 }
 
 function start() {
@@ -93,16 +93,16 @@ function start() {
         }
       },
       {
-        element: "#workspaceNavigationRoot .app-sidebar",
+        element: "#mapPreviewRoot .fmg-workspace-toolbar",
         onHighlightStarted: () => {
           document.body.classList.remove("tour-free-roam");
           closeOptionsPanel();
         },
         popover: {
-          title: "Workspace Sidebar",
+          title: "Floating Workspace",
           description:
-            "Create and inspect map features, control map layers and style, and keep generation actions close at hand.",
-          side: "right",
+            "Project, creation, inspection, map editing, views, and generation are available from the floating menu bar.",
+          side: "bottom",
           onNextClick: () => {
             openWorkspacePanel("layers");
             tour.moveNext();
@@ -112,18 +112,18 @@ function start() {
 
       // ── Layers tab ──────────────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-href="/layers"]',
+        element: "#workspaceViewsTrigger",
         onHighlightStarted: () => {
           openWorkspacePanel("layers");
         },
         popover: {
-          title: "Layers Tab",
-          description: "The Layers tab controls which map elements are visible on the map.",
+          title: "Views",
+          description: "Views contains map presets plus the Layers and Style panels.",
           side: "bottom"
         }
       },
       {
-        element: "#mapPreviewTrigger",
+        element: "#workspaceViewsTrigger",
         popover: {
           title: "Map Views",
           description: "Choose how the map is presented: Political, Physical, Religions, Biomes, and more.",
@@ -145,7 +145,7 @@ function start() {
 
       // ── Style tab ────────────────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-href="/style"]',
+        element: "#workspaceViewsTrigger",
         onHighlightStarted: () => {
           openWorkspacePanel("style");
         },
@@ -183,7 +183,7 @@ function start() {
 
       // ── World setup ──────────────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-href="/world-setup"]',
+        element: "#workspaceGenerateTrigger",
         onHighlightStarted: () => {
           openWorkspacePanel("world-setup");
         },
@@ -243,15 +243,15 @@ function start() {
 
       // ── Edit panel ───────────────────────────────────────────────────────────
       {
-        element: "#workspaceEditTrigger",
+        element: "#workspaceMapTrigger",
         onHighlightStarted: () => {
-          const trigger = ensureEl("workspaceEditTrigger");
+          const trigger = ensureEl("workspaceMapTrigger");
           if (trigger.getAttribute("aria-expanded") !== "true") trigger.click();
         },
         popover: {
-          title: "Edit",
+          title: "Map",
           description:
-            "Open Edit, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
+            "Open Map, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
           side: "right"
         }
       },
@@ -292,7 +292,7 @@ function start() {
 
       // ── Export / Save / Load ─────────────────────────────────────────────────
       {
-        element: '#workspaceNavigationRoot [data-target-id="exportButton"]',
+        element: "#workspaceProjectTrigger",
         onHighlightStarted: () => {
           closeDialogs();
         },
@@ -324,7 +324,7 @@ function start() {
         }
       },
       {
-        element: '#workspaceNavigationRoot [data-target-id="saveButton"]',
+        element: "#workspaceProjectTrigger",
         popover: {
           title: "Save and Load Maps",
           description:

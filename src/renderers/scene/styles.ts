@@ -40,6 +40,7 @@ export interface MapStyle {
     state: SemanticLineStyle;
   };
   coastline: SemanticRoleStyles<SemanticLineStyle>;
+  cells: SemanticLineStyle;
   cultures: CellLayerStyle;
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
@@ -66,6 +67,7 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
       sea_island: { cap: "round", color: "#1f3846", dash: "", opacity: 0.5, width: 0.5 }
     }
   },
+  cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
   cultures: { fallbackColor: "#888888", opacity: 0.6 },
   lakes: {
     default: {

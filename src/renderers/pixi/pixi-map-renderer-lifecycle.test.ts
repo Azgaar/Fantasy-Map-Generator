@@ -287,6 +287,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "landmass",
       "lakes",
       "biomes",
+      "cells",
       "relief",
       "religions",
       "cultures",

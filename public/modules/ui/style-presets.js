@@ -164,6 +164,7 @@ function applyStylePreset(presetJson) {
 function syncPixiCellStylePreset(presetJson) {
   const layerSelectors = {
     biomes: "#biomes",
+    cells: "#cells",
     cultures: "#cults",
     provinces: "#provs",
     religions: "#relig",
@@ -177,25 +178,24 @@ function syncPixiCellStylePreset(presetJson) {
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
       ...current,
-      ...(layer === "zones" ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
+      ...(["cells", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
       opacity: Number(opacity)
     };
   }
-  const zonePreset = presetJson["#zones"];
-  if (zonePreset) {
-    const zonesStyle = style.mapRenderer.zones || {};
-    const stroke = zonesStyle.stroke || {};
-    style.mapRenderer.zones = {
-      ...zonesStyle,
-      stroke: {
-        ...stroke,
-        cap: zonePreset["stroke-linecap"] || stroke.cap || "butt",
-        color: zonePreset.stroke || stroke.color || "#333333",
-        dash: zonePreset["stroke-dasharray"] || "",
-        opacity: 1,
-        width: Number(zonePreset["stroke-width"] || 0)
-      }
+  for (const [layer, selector] of Object.entries({cells: "#cells", zones: "#zones"})) {
+    const preset = presetJson[selector];
+    if (!preset) continue;
+    const layerStyle = style.mapRenderer[layer] || {};
+    const stroke = (layer === "zones" ? layerStyle.stroke : layerStyle) || {};
+    const updatedStroke = {
+      ...stroke,
+      cap: preset["stroke-linecap"] || stroke.cap || "butt",
+      color: preset.stroke || stroke.color || "#333333",
+      dash: preset["stroke-dasharray"] || "",
+      opacity: Number(preset.opacity ?? stroke.opacity ?? 1),
+      width: Number(preset["stroke-width"] || 0)
     };
+    style.mapRenderer[layer] = layer === "zones" ? {...layerStyle, stroke: updatedStroke} : updatedStroke;
   }
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {

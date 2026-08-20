@@ -506,7 +506,9 @@ styleStrokeInput.addEventListener("input", function () {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  if (styleElementSelect.value === "zones") setPixiZoneStroke("color", this.value);
+  if (["cells", "zones"].includes(styleElementSelect.value)) {
+    setPixiLineStyle(styleElementSelect.value, "color", this.value);
+  }
 });
 
 // measurers are rendered with baked-in sizes, so a style change requires a redraw
@@ -519,7 +521,9 @@ styleStrokeWidthInput.addEventListener("input", e => {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  if (styleElementSelect.value === "zones") setPixiZoneStroke("width", Number(e.target.value));
+  if (["cells", "zones"].includes(styleElementSelect.value)) {
+    setPixiLineStyle(styleElementSelect.value, "width", Number(e.target.value));
+  }
   redrawMeasurersOnStyleChange();
 });
 
@@ -532,14 +536,18 @@ styleLetterSpacingInput.addEventListener("input", e => {
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  if (styleElementSelect.value === "zones") setPixiZoneStroke("dash", this.value);
+  if (["cells", "zones"].includes(styleElementSelect.value)) {
+    setPixiLineStyle(styleElementSelect.value, "dash", this.value);
+  }
   redrawMeasurersOnStyleChange();
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
-  if (styleElementSelect.value === "zones") setPixiZoneStroke("cap", this.value);
+  if (["cells", "zones"].includes(styleElementSelect.value)) {
+    setPixiLineStyle(styleElementSelect.value, "cap", this.value);
+  }
 });
 
 styleDisplayInput.addEventListener("change", function () {
@@ -548,9 +556,14 @@ styleDisplayInput.addEventListener("change", function () {
 
 styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
-  const pixiLayer = {biomes: "biomes", cults: "cultures", provs: "provinces", relig: "religions", zones: "zones"}[
-    styleElementSelect.value
-  ];
+  const pixiLayer = {
+    biomes: "biomes",
+    cells: "cells",
+    cults: "cultures",
+    provs: "provinces",
+    relig: "religions",
+    zones: "zones"
+  }[styleElementSelect.value];
   if (pixiLayer) setPixiLayerOpacity(pixiLayer, e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.opacity = e.target.value;
@@ -1029,7 +1042,7 @@ function setPixiLayerOpacity(layer, opacity) {
   const current = style.mapRenderer[layer] || {};
   style.mapRenderer[layer] = {
     ...current,
-    ...(layer === "zones" ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
+    ...(["cells", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
     opacity: Number(opacity)
   };
   window.dispatchEvent(
@@ -1039,20 +1052,21 @@ function setPixiLayerOpacity(layer, opacity) {
   );
 }
 
-function setPixiZoneStroke(property, value) {
+function setPixiLineStyle(layer, property, value) {
   style.mapRenderer ||= {};
-  const zonesStyle = style.mapRenderer.zones || {};
-  const stroke = zonesStyle.stroke || {
+  const layerStyle = style.mapRenderer[layer] || {};
+  const stroke = (layer === "zones" ? layerStyle.stroke : layerStyle) || {
     cap: "butt",
     color: "#333333",
     dash: "",
     opacity: 1,
     width: 0
   };
-  style.mapRenderer.zones = {...zonesStyle, stroke: {...stroke, [property]: value}};
+  style.mapRenderer[layer] =
+    layer === "zones" ? {...layerStyle, stroke: {...stroke, [property]: value}} : {...stroke, [property]: value};
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
-      detail: {command: "invalidate-layer", layer: "zones"}
+      detail: {command: "invalidate-layer", layer}
     })
   );
 }

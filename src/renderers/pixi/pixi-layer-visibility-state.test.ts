@@ -14,6 +14,7 @@ describe("Pixi layer visibility state", () => {
     expect(Object.keys(PIXI_LAYER_CONTROL_IDS)).toEqual([
       "biomes",
       "borders",
+      "cells",
       "cultures",
       "lakes",
       "provinces",

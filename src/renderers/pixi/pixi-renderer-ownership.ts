@@ -4,6 +4,7 @@ import { RendererCoordinator } from "../core/renderer-coordinator";
 export type PixiOwnedLayer =
   | "biomes"
   | "borders"
+  | "cells"
   | "coastline"
   | "cultures"
   | "lakes"
@@ -20,6 +21,7 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "landmass",
   "lakes",
   "biomes",
+  "cells",
   "relief",
   "religions",
   "cultures",
