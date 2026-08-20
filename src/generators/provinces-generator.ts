@@ -263,8 +263,8 @@ class ProvinceModule {
 
         const provCells = stateNoProvince.filter(i => provinceIds[i] === provinceId);
         const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
-        const isleGroup = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].group !== "isle");
-        const colony = !singleIsle && !isleGroup && P(0.5) && !isPassable(s.center, center);
+        const isleSubtype = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].subtype !== "isle");
+        const colony = !singleIsle && !isleSubtype && P(0.5) && !isPassable(s.center, center);
 
         const name = (() => {
           const colonyName = colony && P(0.8) && getColonyName();
@@ -275,14 +275,14 @@ class ProvinceModule {
 
         const formName = (() => {
           if (singleIsle) return "Island";
-          if (isleGroup) return "Islands";
+          if (isleSubtype) return "Islands";
           if (colony) return "Colony";
           return rw(this.forms.Wild);
         })();
 
         const fullName = `${name} ${formName}`;
 
-        const dominion = colony ? P(0.95) : singleIsle || isleGroup ? P(0.7) : P(0.3);
+        const dominion = colony ? P(0.95) : singleIsle || isleSubtype ? P(0.7) : P(0.3);
         const kinship = dominion ? 0 : 0.4;
         const type = Burgs.getType(center, burgs[burg]?.port);
         const coa = Emblems.generate(s.coa, kinship, dominion ? 1 : 0, type);

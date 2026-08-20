@@ -1,10 +1,11 @@
-import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
+import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Coastline } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features";
-import { getFeaturePath } from "@/renderers/feature-path";
+import { GraphOverride } from "@/generators/graph-override";
 import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
 
@@ -100,14 +101,14 @@ function handleVertexDrag(
   event: D3DragEvent<SVGCircleElement, number, number>,
   vertexId: number
 ): void {
-  const { vertices, features } = pack;
+  const { features } = pack;
 
   const x = rn(event.x, 2);
   const y = rn(event.y, 2);
   this.setAttribute("cx", String(x));
   this.setAttribute("cy", String(y));
 
-  vertices.p[vertexId] = [x, y];
+  GraphOverride.movePackVertex(vertexId, [x, y]);
 
   const featureId = +selectedCoastline.attr("data-f");
   const feature = features[featureId];
@@ -115,11 +116,7 @@ function handleVertexDrag(
   // change coastline path
   select<SVGElement, unknown>("#deftemp")
     .select(`#featurePaths > path#feature_${featureId}`)
-    .attr("d", getFeaturePath(feature));
-
-  // update area
-  const points = feature.vertices.map(vertex => vertices.p[vertex] as [number, number]);
-  feature.area = Math.abs(polygonArea(points));
+    .attr("d", Coastline.getFeaturePath(feature));
   ensureEl("coastlineArea").innerHTML = `${si(getArea(feature.area))} ${getAreaUnit()}`;
 
   // update cell
@@ -130,9 +127,7 @@ function handleVertexDrag(
 }
 
 function handleVertexDragEnd(): void {
-  Layers.draw("states", "provinces");
-  Layers.draw("borders", "biomes");
-  Layers.draw("religions", "cultures");
+  Layers.draw("states", "provinces", "borders", "biomes", "religions", "cultures");
 }
 
 function showGroupSection(): void {
@@ -166,6 +161,16 @@ function selectCoastlineGroup(node: SVGElement): void {
 
 function changeCoastlineGroup(this: HTMLSelectElement): void {
   ensureEl(this.value).appendChild(selectedCoastline.node()!);
+  assignGroup([selectedCoastline.node()!], this.value);
+}
+
+function assignGroup(elements: Element[], group: string): void {
+  for (const element of elements) {
+    const feature = pack.features[+(element.getAttribute("data-f") || 0)];
+    if (!feature) continue;
+
+    feature.group = group;
+  }
 }
 
 function toggleNewGroupInput(): void {
@@ -209,6 +214,7 @@ function createNewGroup(this: HTMLInputElement): void {
     ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
     ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
     oldGroup.id = group;
+    assignGroup(Array.from(oldGroup.children), group);
     toggleNewGroupInput();
     ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
     return;
@@ -220,6 +226,7 @@ function createNewGroup(this: HTMLInputElement): void {
   newGroup.id = group;
   ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
   ensureEl(group).appendChild(selectedCoastline.node()!);
+  assignGroup([selectedCoastline.node()!], group);
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
@@ -244,6 +251,7 @@ function removeCoastlineGroup(): void {
         $(this).dialog("close");
         const sea = ensureEl("sea_island");
         const groupEl = ensureEl(group);
+        assignGroup(Array.from(groupEl.children), "sea_island");
         while (groupEl.childNodes.length) {
           sea.appendChild(groupEl.childNodes[0]);
         }

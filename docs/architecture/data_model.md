@@ -68,7 +68,8 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `land`: `boolean` - `true` if feature is land (height >= `20`)
 - - `border`: `boolean` - `true` if feature touches map border (used to separate lakes from oceans)
 - - `type`: `string` - feature type, can be `ocean`, `island` or `lake`
-- - `group`: `string`: feature subtype, depends on type. Subtype for ocean is `ocean`; for land it is `continent`, `island`, `isle` or `lake_island`; for lake it is `freshwater`, `salt`, `dry`, `sinkhole` or `lava`
+- - `subtype`: `string`: feature subtype, depends on type. Subtype for ocean is `ocean`; for land it is `continent`, `island`, `isle` or `lake_island`; for lake it is `freshwater`, `salt`, `dry`, `sinkhole` or `lava`
+- - `group`: `string`: rendering group, the id of the SVG group the feature is drawn in. Defaults to the subtype for lakes, `lake_island` for islands within lakes and `sea_island` for the rest of the land; users can move a feature into a group of their own in the Coastline and Lake editors
 - - `cells`: `number` - number of cells in feature
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
