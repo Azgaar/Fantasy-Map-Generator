@@ -30,11 +30,17 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
   assignment changes update color attributes without rebuilding topology.
 - R-004 now has resource byte/count accounting, an adaptive DPR policy bounded by viewport pixels and device memory,
   deterministic WebGL context listener cleanup, context-restoration reconstruction scheduling, and repeated
-  destroy/remount unit coverage. Browser-verified reconstruction and GPU/heap memory evidence remain open.
+  destroy/remount unit coverage. Relief textures use a reference-counted, concurrent-load-deduplicating LRU cache with
+  a byte budget; retained geometry and cached textures have lifecycle tests proving that clear returns accounting to
+  baseline. Browser-verified reconstruction and GPU/heap memory evidence remain open.
 - M2 scene contracts now define renderer-neutral polygon, line, sprite, label, hit-region, and mask primitives. State
   and biome fills build polygon batches from retained topology, relief builds a pure sprite-instance batch, and Pixi
   consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds, while the SVG path is now
   a derived compatibility representation. World/topology/layer revision tokens advance from typed invalidations.
+- S-003 now has a pure base-geography builder for the ocean rectangle, grouped land and lake polygon paths, coastline
+  paths, and ordered include/exclude land and water masks. Feature shaping and boundary clipping are renderer-neutral,
+  and the legacy SVG feature renderer consumes the same extracted shape builder. Pixi consumption, depth bands,
+  patterns, and visual parity remain part of M4.
 - Q-001 now has deterministic 10k/50k/100k seed recipes, a checked-in legacy fixture, fixed reference profiles, a
   versioned report contract, separate scene-build/GPU-submit instrumentation, and a two-run SVG/Pixi benchmark command.
   Checked-in reference measurements still require browser execution on the documented profiles.

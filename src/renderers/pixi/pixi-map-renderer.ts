@@ -11,7 +11,8 @@ import {
   type RendererResolutionPolicy,
   selectRendererResolution
 } from "../core/resolution";
-import { RendererResourceTracker } from "../core/resource-budget";
+import { DEFAULT_RENDERER_RESOURCE_BUDGET, RendererResourceTracker } from "../core/resource-budget";
+import { RendererResourceCache, type RendererResourceHandle } from "../core/resource-cache";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
@@ -36,6 +37,7 @@ export interface PixiPrototypeSnapshot {
   resourceBytes: number;
   resourceCount: number;
   renderer: string | null;
+  textureCacheEntries: number;
   theme: PixiMapTheme;
   viewportHeight: number;
   viewportWidth: number;
@@ -49,6 +51,7 @@ export interface PixiMapRendererOptions {
   recordPerformance?: (name: string, duration: number) => void;
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
+  textureBudgetBytes?: number;
 }
 
 export class PixiMapRenderer implements MapRenderer {
@@ -60,6 +63,7 @@ export class PixiMapRenderer implements MapRenderer {
   private layerVisibility = new Map<MapLayerId, boolean>();
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
+  private reliefTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private resizeFrameId: number | null = null;
   private resources = new RendererResourceTracker();
   private resizeObserver: ResizeObserver | null = null;
@@ -71,6 +75,7 @@ export class PixiMapRenderer implements MapRenderer {
   private topologyCache = new RetainedCellTopologyCache();
   private topologyInputs: { cellVertices: number[][]; vertexPoints: [number, number][] } | null = null;
   private topologyRevision = 0;
+  private textureCache: RendererResourceCache<Texture>;
   private world: PackedGraph | null = null;
   private stats: PixiPrototypeSnapshot = {
     batches: 0,
@@ -85,12 +90,23 @@ export class PixiMapRenderer implements MapRenderer {
     resourceBytes: 0,
     resourceCount: 0,
     renderer: null,
+    textureCacheEntries: 0,
     theme: "states",
     viewportHeight: 0,
     viewportWidth: 0
   };
 
-  constructor(private readonly rendererOptions: PixiMapRendererOptions = {}) {}
+  constructor(private readonly rendererOptions: PixiMapRendererOptions = {}) {
+    this.textureCache = new RendererResourceCache<Texture>({
+      budgetBytes: rendererOptions.textureBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.texture,
+      destroy: (texture, source) => {
+        void Assets.unload(source).catch(() => texture.destroy(true));
+      },
+      estimateBytes: texture => Math.ceil(texture.width * texture.height * 4),
+      kind: "texture",
+      tracker: this.resources
+    });
+  }
 
   setTheme(theme: PixiMapTheme): void {
     this.stats.theme = theme;
@@ -136,7 +152,7 @@ export class PixiMapRenderer implements MapRenderer {
     let batches = fillContainer.children.length;
 
     if (theme === "states") {
-      const reliefContainer = await this.buildReliefContainer();
+      const reliefContainer = await this.buildReliefContainer(sequence);
       if (sequence !== this.rebuildSequence) return;
       reliefSprites = reliefContainer.children.length;
       const borderContainer = this.buildBordersContainer();
@@ -212,6 +228,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.rebuildSequence++;
     this.scheduler?.clear();
     this.clearStage();
+    this.textureCache.clear();
     this.app?.render();
     if (this.surface) this.surface.style.display = "none";
   }
@@ -227,6 +244,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.scheduler?.destroy();
     this.scheduler = null;
     this.clearStage();
+    this.textureCache.clear();
     this.app?.destroy({ removeView: true }, { children: true });
     this.app = null;
     this.surface = null;
@@ -239,11 +257,13 @@ export class PixiMapRenderer implements MapRenderer {
 
   getSnapshot(): PixiPrototypeSnapshot {
     const resources = this.resources.getSnapshot();
+    const textures = this.textureCache.getSnapshot();
     return {
       ...this.stats,
       diagnostics: this.diagnostics.getSnapshot(),
       resourceBytes: resources.totalBytes,
-      resourceCount: resources.totalCount
+      resourceCount: resources.totalCount,
+      textureCacheEntries: textures.entries
     };
   }
 
@@ -382,7 +402,7 @@ export class PixiMapRenderer implements MapRenderer {
     return container;
   }
 
-  private async buildReliefContainer(): Promise<Container> {
+  private async buildReliefContainer(sequence: number): Promise<Container> {
     const world = this.getWorld();
     const container = new Container();
     container.label = "relief";
@@ -391,22 +411,34 @@ export class PixiMapRenderer implements MapRenderer {
     if (!scene.instances.length) return container;
 
     const icons = new Set(scene.instances.map(({ icon }) => icon));
-    const textures = new Map<string, Texture>();
-    await Promise.all(
-      [...icons].map(async icon => {
-        const source = this.rendererOptions.resolveReliefIcon?.(icon);
-        if (source) textures.set(icon, await Assets.load<Texture>(source));
-      })
-    );
+    const textures = new Map<string, RendererResourceHandle<Texture>>();
+    try {
+      await Promise.all(
+        [...icons].map(async icon => {
+          const source = this.rendererOptions.resolveReliefIcon?.(icon);
+          if (source) textures.set(icon, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+        })
+      );
+    } catch (error) {
+      for (const handle of textures.values()) handle.release();
+      if (sequence !== this.rebuildSequence) return container;
+      throw error;
+    }
+
+    if (sequence !== this.rebuildSequence) {
+      for (const handle of textures.values()) handle.release();
+      return container;
+    }
 
     for (const { height, icon, width, x, y } of scene.instances) {
-      const texture = textures.get(icon);
-      if (!texture) continue;
-      const sprite = new Sprite({ height, position: { x, y }, texture, width });
+      const handle = textures.get(icon);
+      if (!handle) continue;
+      const sprite = new Sprite({ height, position: { x, y }, texture: handle.value, width });
       sprite.cullable = true;
       sprite.eventMode = "none";
       container.addChild(sprite);
     }
+    for (const handle of textures.values()) this.reliefTextureHandles.add(handle);
     return container;
   }
 
@@ -417,6 +449,8 @@ export class PixiMapRenderer implements MapRenderer {
     this.activeCellMesh = null;
     this.fillContainer = null;
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
+    for (const handle of this.reliefTextureHandles) handle.release();
+    this.reliefTextureHandles.clear();
   }
 
   private getCellTopology(): RetainedCellTopology {

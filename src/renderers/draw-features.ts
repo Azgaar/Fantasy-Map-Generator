@@ -1,7 +1,8 @@
 import { select } from "d3";
 import type { Feature } from "../generators/features";
-import { clipPoly, round } from "../utils";
+import { round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
+import { buildFeatureShape } from "./scene/layers/feature-shapes";
 
 declare global {
   var drawFeatures: () => void;
@@ -73,15 +74,20 @@ const featuresRenderer = (): void => {
 };
 
 function featurePathRenderer(feature: Feature): string {
-  const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
-  if (points.some(point => point === undefined)) {
+  const shape = buildFeatureShape(
+    feature,
+    pack.vertices,
+    { height: graphHeight, width: graphWidth },
+    {
+      fractalize: (points, currentFeature) => fractalizeCoastline(points, currentFeature.i, currentFeature.type),
+      secureBoundary: true,
+      simplify
+    }
+  );
+  if (!shape) {
     ERROR && console.error("Undefined point in getFeaturePath");
     return "";
   }
-
-  const simplifiedPoints = simplify(points, 0.3);
-  const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight, 1);
-  const shape = fractalizeCoastline(clippedPoints, feature.i, feature.type);
   return `${round(buildCoastlinePath(shape))}Z`;
 }
 

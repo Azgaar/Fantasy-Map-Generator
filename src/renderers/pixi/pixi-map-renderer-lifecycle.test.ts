@@ -1,8 +1,34 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const applicationState = vi.hoisted(() => ({ destroy: vi.fn(), init: vi.fn(), render: vi.fn(), resize: vi.fn() }));
+const applicationState = vi.hoisted(() => ({
+  assetLoad: vi.fn(async () => ({ destroy: vi.fn(), height: 8, width: 8 })),
+  assetUnload: vi.fn(async () => undefined),
+  destroy: vi.fn(),
+  init: vi.fn(),
+  render: vi.fn(),
+  resize: vi.fn()
+}));
 
 vi.mock("pixi.js", () => {
+  class DisplayObject {
+    alpha = 1;
+    children: DisplayObject[] = [];
+    eventMode = "auto";
+    label = "";
+    visible = true;
+    addChild(...children: DisplayObject[]) {
+      this.children.push(...children);
+      return children[0];
+    }
+    destroy() {}
+    removeChildren() {
+      return this.children.splice(0);
+    }
+    removeFromParent() {}
+  }
+
+  class Container extends DisplayObject {}
+
   class Application {
     canvas = Object.assign(new EventTarget(), { style: {} });
     renderer = {
@@ -10,34 +36,68 @@ vi.mock("pixi.js", () => {
       constructor: { name: "MockRenderer" },
       resize: applicationState.resize
     };
-    stage = {
-      children: [],
-      eventMode: "auto",
-      position: { set: vi.fn() },
-      removeChildren: () => [],
-      scale: { set: vi.fn() }
-    };
+    stage = Object.assign(new Container(), { position: { set: vi.fn() }, scale: { set: vi.fn() } });
     destroy = applicationState.destroy;
     init = applicationState.init;
     render = applicationState.render;
   }
 
-  class EmptyDisplayObject {}
+  class Buffer {
+    data: unknown;
+    constructor(options: { data: unknown }) {
+      this.data = options.data;
+    }
+    update() {}
+  }
+
+  class Geometry {
+    destroy() {}
+  }
+
+  class GraphicsContext {
+    fill() {
+      return this;
+    }
+    poly() {
+      return this;
+    }
+  }
+
+  class Graphics extends DisplayObject {
+    svg() {
+      return this;
+    }
+  }
+
+  class Mesh extends DisplayObject {}
+
+  class Shader {
+    static from() {
+      return new Shader();
+    }
+    destroy() {}
+  }
+
+  class Sprite extends DisplayObject {}
+
   return {
     Application,
-    Assets: { load: vi.fn() },
-    Buffer: EmptyDisplayObject,
+    Assets: { load: applicationState.assetLoad, unload: applicationState.assetUnload },
+    Buffer,
     BufferUsage: { COPY_DST: 1, INDEX: 2, STATIC: 4, VERTEX: 8 },
-    Container: EmptyDisplayObject,
-    Geometry: EmptyDisplayObject,
-    Graphics: EmptyDisplayObject,
-    GraphicsContext: EmptyDisplayObject,
-    Mesh: EmptyDisplayObject,
-    Shader: EmptyDisplayObject,
-    Sprite: EmptyDisplayObject
+    Container,
+    Geometry,
+    Graphics,
+    GraphicsContext,
+    Mesh,
+    Shader,
+    Sprite
   };
 });
 
+import type { PackedGraph } from "@/types/PackedGraph";
+import { coalesceInvalidations } from "../core/invalidation";
+import { DEFAULT_PIXI_MAP_STYLE } from "../scene/styles";
 import { PixiMapRenderer } from "./pixi-map-renderer";
 
 const createSurface = () => {
@@ -53,6 +113,8 @@ const createSurface = () => {
 describe("PixiMapRenderer lifecycle", () => {
   beforeEach(() => {
     applicationState.destroy.mockClear();
+    applicationState.assetLoad.mockClear();
+    applicationState.assetUnload.mockClear();
     applicationState.init.mockClear();
     applicationState.render.mockClear();
     applicationState.resize.mockClear();
@@ -148,4 +210,93 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.init).toHaveBeenCalledTimes(20);
     expect(applicationState.destroy).toHaveBeenCalledTimes(20);
   });
+
+  it("accounts and releases retained geometry and relief textures", async () => {
+    const renderer = new PixiMapRenderer({ resolveReliefIcon: () => "data:image/svg+xml,relief" });
+    await renderer.mount(createSurface());
+    await renderer.render(
+      createWorld(),
+      structuredClone(DEFAULT_PIXI_MAP_STYLE),
+      coalesceInvalidations([{ kind: "world" }])
+    );
+
+    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 4, textureCacheEntries: 1 });
+    expect(applicationState.assetLoad).toHaveBeenCalledOnce();
+
+    renderer.clear();
+    expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    expect(applicationState.assetUnload).toHaveBeenCalledOnce();
+    renderer.destroy();
+  });
 });
+
+function createWorld(): PackedGraph {
+  return {
+    addedLabels: [],
+    biomes: [{}, { color: "#00aa00" }],
+    burgs: [],
+    cells: {
+      area: Uint8Array.from([1]),
+      b: [false],
+      biome: Uint8Array.from([1]),
+      burg: Uint8Array.from([0]),
+      c: [[]],
+      conf: Uint8Array.from([0]),
+      culture: Uint8Array.from([0]),
+      f: Uint8Array.from([0]),
+      fl: Uint8Array.from([0]),
+      g: [0],
+      good: Uint16Array.from([0]),
+      h: Uint8Array.from([30]),
+      harbor: Uint8Array.from([0]),
+      haven: Uint8Array.from([0]),
+      i: [0],
+      market: Uint16Array.from([0]),
+      p: [[2, 2]],
+      pop: Uint8Array.from([0]),
+      province: Uint8Array.from([0]),
+      r: Uint8Array.from([0]),
+      religion: Uint8Array.from([0]),
+      routes: {},
+      s: Uint8Array.from([0]),
+      state: Uint8Array.from([1]),
+      t: Uint8Array.from([0]),
+      v: [[0, 1, 2]]
+    },
+    cultures: [],
+    deals: [],
+    features: [],
+    goods: [],
+    ice: [],
+    markers: [],
+    markets: [],
+    measurers: [],
+    provinces: [],
+    relief: [{ icon: "relief-mount-1", s: 8, x: 1, y: 1 }],
+    religions: [],
+    rivers: [],
+    routes: [],
+    states: [{}, { color: "#aa0000" }],
+    vertices: {
+      c: [
+        [0, -1, -1],
+        [0, -1, -1],
+        [0, -1, -1]
+      ],
+      i: [0, 1, 2],
+      p: [
+        [0, 0],
+        [4, 0],
+        [0, 4]
+      ],
+      v: [
+        [1, 2, 2],
+        [0, 2, 2],
+        [0, 1, 1]
+      ],
+      x: [0, 4, 0],
+      y: [0, 0, 4]
+    },
+    zones: []
+  } as unknown as PackedGraph;
+}

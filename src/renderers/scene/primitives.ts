@@ -25,10 +25,22 @@ export interface PolygonBatchPrimitive extends ScenePrimitiveBase {
   positions: Float32Array;
 }
 
+export interface PolygonPathPrimitive {
+  domainId: SceneDomainId;
+  points: readonly ScenePoint[];
+  role?: string;
+}
+
+export interface PolygonPathBatchPrimitive extends ScenePrimitiveBase {
+  kind: "polygon-path-batch";
+  polygons: readonly PolygonPathPrimitive[];
+}
+
 export interface LinePathPrimitive {
   closed?: boolean;
   domainId: SceneDomainId;
   points: readonly ScenePoint[];
+  role?: string;
 }
 
 export interface LineBatchPrimitive extends ScenePrimitiveBase {
@@ -71,13 +83,18 @@ export interface HitRegionPrimitive extends ScenePrimitiveBase {
   regions: readonly { bounds: SceneBounds; domainId: SceneDomainId }[];
 }
 
+export interface MaskRegionPrimitive extends PolygonPathPrimitive {
+  operation: "exclude" | "include";
+}
+
 export interface MaskPrimitive extends ScenePrimitiveBase {
   kind: "mask";
-  polygons: readonly (readonly ScenePoint[])[];
+  regions: readonly MaskRegionPrimitive[];
 }
 
 export type ScenePrimitive =
   | PolygonBatchPrimitive
+  | PolygonPathBatchPrimitive
   | LineBatchPrimitive
   | SpriteBatchPrimitive
   | LabelBatchPrimitive
