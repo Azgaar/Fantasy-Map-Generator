@@ -1,12 +1,15 @@
 import { LAYER_CONTROLS_CHANGE_EVENT } from "@/components/layers/layer-controls";
+import type { MapCamera } from "../core/camera";
+import { readLegacyPixiMapStyle } from "./legacy-pixi-style-adapter";
 import type { PixiMapPrototype, PixiMapTheme, PixiPrototypeSnapshot } from "./pixi-map-prototype";
-import { isPixiLayerOwned, type PixiOwnedLayer } from "./pixi-renderer-ownership";
+import { type PixiOwnedLayer, pixiOwnsLayer, setPixiRendererTheme } from "./pixi-renderer-ownership";
 
 export interface PixiMapPrototypeApi {
   clear: () => Promise<void>;
   disable: () => Promise<void>;
   enable: (theme?: PixiMapTheme) => Promise<void>;
   getSnapshot: () => PixiPrototypeSnapshot | null;
+  invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
   materializeSvgFallback: () => () => void;
   ownsLayer: (layer: PixiOwnedLayer) => boolean;
   queueRebuild: () => void;
@@ -55,21 +58,43 @@ const getInstance = async (): Promise<PixiMapPrototype> => {
   return instancePromise;
 };
 
+const getLegacyCamera = (): MapCamera => {
+  const map = document.getElementById("map");
+  const bounds = map?.getBoundingClientRect();
+  return {
+    height: Math.max(1, Math.round(bounds?.height || svgHeight)),
+    scale,
+    width: Math.max(1, Math.round(bounds?.width || svgWidth)),
+    x: viewX,
+    y: viewY
+  };
+};
+
 const api: PixiMapPrototypeApi = {
   clear: async () => instance?.clear(),
   disable: async () => {
     if (pendingTheme) renderSvgFallback(pendingTheme);
     pendingTheme = null;
+    setPixiRendererTheme(null);
     instance?.disable();
   },
   enable: async (theme = "states") => {
     if (pendingTheme && pendingTheme !== theme) renderSvgFallback(pendingTheme);
     pendingTheme = theme;
+    setPixiRendererTheme(theme);
     clearOwnedSvgLayers(theme);
     if (theme === "states") window.drawRelief();
-    await (await getInstance()).enable(theme);
+    const renderer = await getInstance();
+    renderer.setCamera(getLegacyCamera());
+    renderer.setSemanticStyle(readLegacyPixiMapStyle());
+    await renderer.enable(theme);
   },
   getSnapshot: () => instance?.getSnapshot() ?? null,
+  invalidateLayer: (layer, cellIds) => {
+    if (!instance) return;
+    instance.setSemanticStyle(readLegacyPixiMapStyle());
+    instance.invalidateLayer(layer, cellIds);
+  },
   materializeSvgFallback: () => {
     const theme = pendingTheme;
     if (!theme) return () => undefined;
@@ -92,12 +117,19 @@ const api: PixiMapPrototypeApi = {
       if (theme === "states") window.drawRelief();
     };
   },
-  ownsLayer: layer => !materializingSvgFallback && pendingTheme !== null && isPixiLayerOwned(pendingTheme, layer),
+  ownsLayer: layer => !materializingSvgFallback && pendingTheme !== null && pixiOwnsLayer(layer),
   queueRebuild: () => {
-    void instancePromise?.then(instance => instance.queueRebuild());
+    void instancePromise?.then(instance => {
+      instance.setSemanticStyle(readLegacyPixiMapStyle());
+      instance.queueRebuild();
+    });
   },
-  rebuild: async () => (await getInstance()).rebuild(),
-  syncCamera: () => instance?.syncCamera()
+  rebuild: async () => {
+    const renderer = await getInstance();
+    renderer.setSemanticStyle(readLegacyPixiMapStyle());
+    await renderer.rebuild();
+  },
+  syncCamera: () => instance?.setCamera(getLegacyCamera())
 };
 
 window.PixiMapPrototype = api;
@@ -114,4 +146,7 @@ window.addEventListener(LAYER_CONTROLS_CHANGE_EVENT, () => {
 });
 
 const params = new URLSearchParams(location.search);
-if (params.get("renderer") === "pixi") pendingTheme = params.get("pixiTheme") === "biomes" ? "biomes" : "states";
+if (params.get("renderer") === "pixi") {
+  pendingTheme = params.get("pixiTheme") === "biomes" ? "biomes" : "states";
+  setPixiRendererTheme(pendingTheme);
+}

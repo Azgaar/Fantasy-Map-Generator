@@ -183,7 +183,7 @@ const bordersRenderer = () => {
   TIME && console.time("drawBorders");
   if (window.PixiMapPrototype?.ownsLayer("borders")) {
     select("#map").select("#borders").selectAll("path").remove();
-    window.PixiMapPrototype.queueRebuild();
+    window.PixiMapPrototype.invalidateLayer("borders");
     TIME && console.timeEnd("drawBorders");
     return;
   }

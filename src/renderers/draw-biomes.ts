@@ -20,7 +20,7 @@ export function drawBiomes(): void {
   TIME && console.time("drawBiomes");
   if (window.PixiMapPrototype?.ownsLayer("biomes")) {
     ensureEl("biomes").replaceChildren();
-    window.PixiMapPrototype.queueRebuild();
+    window.PixiMapPrototype.invalidateLayer("biomes");
     TIME && console.timeEnd("drawBiomes");
     return;
   }

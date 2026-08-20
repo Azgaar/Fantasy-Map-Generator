@@ -25,7 +25,7 @@ export const drawRelief = (): void => {
   if (!isActive) return void removeRelief();
   if (window.PixiMapPrototype?.ownsLayer("relief")) {
     removeRelief();
-    window.PixiMapPrototype.queueRebuild();
+    window.PixiMapPrototype.invalidateLayer("relief");
     return;
   }
 

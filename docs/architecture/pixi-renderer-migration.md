@@ -19,6 +19,9 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
   fallback is materialized only for compatibility operations.
 - Phase 2 is implemented for evaluation: Pixi uses a viewport-sized HTML surface, shares the D3 camera transform, reacts
   to SVG resizing, and enables culling on suitable display objects.
+- S-002 retained cell topology is implemented: stable typed positions and indices, per-cell triangle ranges and bounds,
+  and revision-aware CPU reuse are available without DOM or Pixi dependencies. Pixi mesh consumption and incremental
+  attributes remain part of L-001.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 

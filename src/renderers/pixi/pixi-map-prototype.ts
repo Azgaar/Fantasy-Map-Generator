@@ -1,5 +1,12 @@
 import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, type Texture } from "pixi.js";
+import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera } from "../core/camera";
+import type { RenderInvalidationBatch } from "../core/invalidation";
+import type { MapLayerId } from "../core/layer-registry";
+import { RenderScheduler } from "../core/render-scheduler";
 import { buildBorderPaths } from "../draw-borders";
+import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
+import { DEFAULT_PIXI_MAP_STYLE, type PixiMapSemanticStyle } from "../scene/styles";
+import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 import { buildCellFillBatches } from "./pixi-map-data";
 
 export type PixiMapTheme = "states" | "biomes";
@@ -22,11 +29,20 @@ const PROTOTYPE_ID = "pixi-map-prototype";
 const MAX_RESOLUTION = 2;
 
 export class PixiMapPrototype {
+  private activeCellMesh: RetainedCellMesh | null = null;
   private app: Application | null = null;
+  private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
   private rebuildSequence = 0;
+  private retainedCellMeshes = new Set<RetainedCellMesh>();
   private resizeFrameId: number | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private scheduler: RenderScheduler | null = null;
+  private semanticStyle: PixiMapSemanticStyle = structuredClone(DEFAULT_PIXI_MAP_STYLE);
   private surface: HTMLDivElement | null = null;
+  private fillContainer: Container | null = null;
+  private topologyCache = new RetainedCellTopologyCache();
+  private topologyInputs: { cellVertices: number[][]; vertexPoints: [number, number][] } | null = null;
+  private topologyRevision = 0;
   private stats: PixiPrototypeSnapshot = {
     batches: 0,
     buildDuration: 0,
@@ -56,7 +72,7 @@ export class PixiMapPrototype {
     this.resize();
     this.clearStage();
     if (this.surface) this.surface.style.display = "block";
-    this.app.renderer.background.color = getLayerFillColor("oceanBase", "#466eab");
+    this.app.renderer.background.color = this.semanticStyle.ocean.color;
 
     const theme = this.stats.theme;
     const baseContainer = this.buildBaseContainer();
@@ -94,11 +110,16 @@ export class PixiMapPrototype {
 
   queueRebuild(): void {
     if (!this.stats.enabled) return;
-    const sequence = ++this.rebuildSequence;
-    requestAnimationFrame(() => {
-      if (sequence !== this.rebuildSequence) return;
-      void this.rebuild();
-    });
+    this.scheduler?.invalidate({ kind: "world" });
+  }
+
+  invalidateLayer(layer: MapLayerId, cellIds?: readonly number[]): void {
+    if (!this.stats.enabled) return;
+    if (layer === this.stats.theme) {
+      this.scheduler?.invalidate({ cellIds, kind: "assignment", layer });
+      return;
+    }
+    this.scheduler?.invalidate({ kind: "geometry", layer });
   }
 
   syncVisibility(): void {
@@ -114,12 +135,25 @@ export class PixiMapPrototype {
     this.app.render();
   }
 
-  syncCamera(): void {
-    if (!this.app || !this.stats.enabled) return;
+  setCamera(camera: MapCamera): void {
+    const normalized = normalizeCamera(camera);
+    if (camerasEqual(this.camera, normalized)) return;
+    this.camera = normalized;
+    this.stats.cameraScale = normalized.scale;
+    this.stats.viewportHeight = normalized.height;
+    this.stats.viewportWidth = normalized.width;
+    if (this.stats.enabled) this.scheduler?.invalidate({ kind: "camera" });
+  }
+
+  setSemanticStyle(style: PixiMapSemanticStyle): void {
+    this.semanticStyle = structuredClone(style);
+  }
+
+  private applyCamera(): void {
+    if (!this.app) return;
     const started = performance.now();
-    this.app.stage.position.set(viewX, viewY);
-    this.app.stage.scale.set(scale);
-    this.stats.cameraScale = scale;
+    this.app.stage.position.set(this.camera.x, this.camera.y);
+    this.app.stage.scale.set(this.camera.scale);
     this.app.render();
     window.MapPerformance?.record("pixi:camera", performance.now() - started);
   }
@@ -138,11 +172,15 @@ export class PixiMapPrototype {
     this.resizeFrameId = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    this.scheduler?.destroy();
+    this.scheduler = null;
     this.clearStage();
     this.app?.destroy({ removeView: true }, { children: true });
     this.app = null;
     this.surface?.remove();
     this.surface = null;
+    this.topologyCache.clear();
+    this.topologyInputs = null;
     this.stats = { ...this.stats, batches: 0, enabled: false, reliefSprites: 0, renderer: null };
   }
 
@@ -168,7 +206,7 @@ export class PixiMapPrototype {
       autoDensity: true,
       autoStart: false,
       backgroundAlpha: 1,
-      backgroundColor: getLayerFillColor("oceanBase", "#466eab"),
+      backgroundColor: this.semanticStyle.ocean.color,
       clearBeforeRender: true,
       culler: { updateTransform: false },
       height: viewport.height,
@@ -180,6 +218,7 @@ export class PixiMapPrototype {
     surface.appendChild(this.app.canvas);
     this.resizeObserver = new ResizeObserver(() => this.queueResize());
     this.resizeObserver.observe(map);
+    this.scheduler = this.createScheduler();
     this.resize();
   }
 
@@ -200,7 +239,8 @@ export class PixiMapPrototype {
     this.app.canvas.style.width = `${viewport.width}px`;
     this.stats.viewportHeight = viewport.height;
     this.stats.viewportWidth = viewport.width;
-    this.syncCamera();
+    this.camera = { ...this.camera, height: viewport.height, width: viewport.width };
+    this.applyCamera();
   }
 
   private queueResize(): void {
@@ -224,27 +264,22 @@ export class PixiMapPrototype {
   private buildFillContainer(theme: PixiMapTheme): Container {
     const groups = theme === "states" ? pack.cells.state : pack.cells.biome;
     const colors = theme === "states" ? pack.states : pack.biomes;
-    const batches = buildCellFillBatches({
-      cellIds: pack.cells.i,
-      cellVertices: pack.cells.v,
+    const style = this.semanticStyle[theme];
+    const retained = new RetainedCellMesh(this.getCellTopology(), {
+      assignments: groups,
       colors,
-      groups,
-      heights: pack.cells.h,
-      vertexPoints: pack.vertices.p
+      fallbackColor: style.fallbackColor,
+      heights: pack.cells.h
     });
 
     const container = new Container();
     container.label = `${theme}-fills`;
-    container.alpha = getLayerOpacity(theme === "states" ? "regions" : "biomes");
-    for (const batch of batches) {
-      const context = new GraphicsContext();
-      for (const polygon of batch.polygons) context.poly(polygon);
-      context.fill({ color: batch.color });
-      const graphic = new Graphics(context);
-      graphic.label = `${theme}-${batch.groupId}`;
-      graphic.cullable = true;
-      container.addChild(graphic);
-    }
+    container.alpha = style.opacity;
+    retained.mesh.label = `${theme}-retained-cells`;
+    this.retainedCellMeshes.add(retained);
+    container.addChild(retained.mesh);
+    this.activeCellMesh = retained;
+    this.fillContainer = container;
     return container;
   }
 
@@ -257,7 +292,7 @@ export class PixiMapPrototype {
     const [landBatch] = buildCellFillBatches({
       cellIds: pack.cells.i,
       cellVertices: pack.cells.v,
-      colors: [{}, { color: getLayerFillColor("landmass", "#eef6fb") }],
+      colors: [{}, { color: this.semanticStyle.landmass.color }],
       groups: landGroups,
       heights: pack.cells.h,
       vertexPoints: pack.vertices.p
@@ -302,7 +337,7 @@ export class PixiMapPrototype {
   private async buildReliefContainer(): Promise<Container> {
     const container = new Container();
     container.label = "relief";
-    container.alpha = getLayerOpacity("terrain");
+    container.alpha = this.semanticStyle.relief.opacity;
     if (!pack.relief?.length) Relief.generate();
     if (!pack.relief?.length) return container;
 
@@ -328,7 +363,74 @@ export class PixiMapPrototype {
 
   private clearStage(): void {
     if (!this.app) return;
+    for (const retained of this.retainedCellMeshes) retained.destroy();
+    this.retainedCellMeshes.clear();
+    this.activeCellMesh = null;
+    this.fillContainer = null;
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
+  }
+
+  private getCellTopology(): RetainedCellTopology {
+    const inputs = { cellVertices: pack.cells.v, vertexPoints: pack.vertices.p };
+    if (
+      this.topologyInputs?.cellVertices !== inputs.cellVertices ||
+      this.topologyInputs.vertexPoints !== inputs.vertexPoints
+    ) {
+      this.topologyInputs = inputs;
+      this.topologyRevision++;
+    }
+    return this.topologyCache.get({
+      cellIds: pack.cells.i,
+      cellVertices: inputs.cellVertices,
+      revision: this.topologyRevision,
+      vertexPoints: inputs.vertexPoints
+    });
+  }
+
+  private createScheduler(): RenderScheduler {
+    return new RenderScheduler(batch => this.renderInvalidations(batch), {
+      onDiagnostic: diagnostic => window.MapPerformance?.record("pixi:scheduled", diagnostic.duration)
+    });
+  }
+
+  private async renderInvalidations(batch: RenderInvalidationBatch): Promise<void> {
+    const assignments = batch.invalidations.filter(
+      invalidation => invalidation.kind === "assignment" && invalidation.layer === this.stats.theme
+    );
+    if (
+      assignments.length &&
+      assignments.length === batch.invalidations.length &&
+      this.updateActiveCellMesh(assignments)
+    ) {
+      return;
+    }
+    if (batch.requiresSceneBuild) {
+      await this.rebuild();
+      return;
+    }
+    if (batch.invalidations.some(invalidation => invalidation.kind === "camera")) this.applyCamera();
+  }
+
+  private updateActiveCellMesh(
+    assignments: readonly Extract<RenderInvalidationBatch["invalidations"][number], { kind: "assignment" }>[]
+  ): boolean {
+    if (!this.activeCellMesh || !this.fillContainer || !this.app) return false;
+    const theme = this.stats.theme;
+    const style = this.semanticStyle[theme];
+    this.activeCellMesh.update(
+      {
+        assignments: theme === "states" ? pack.cells.state : pack.cells.biome,
+        colors: theme === "states" ? pack.states : pack.biomes,
+        fallbackColor: style.fallbackColor,
+        heights: pack.cells.h
+      },
+      assignments.some(invalidation => !invalidation.cellIds)
+        ? pack.cells.i
+        : assignments.flatMap(invalidation => invalidation.cellIds ?? [])
+    );
+    this.fillContainer.alpha = style.opacity;
+    this.app.render();
+    return true;
   }
 }
 
@@ -338,25 +440,6 @@ function getViewportSize(map: HTMLElement): { height: number; width: number } {
     height: Math.max(1, Math.round(bounds.height || svgHeight)),
     width: Math.max(1, Math.round(bounds.width || svgWidth))
   };
-}
-
-function getLayerOpacity(id: string): number {
-  const element = document.getElementById(id);
-  if (!element) return 1;
-  const computed = getComputedStyle(element);
-  return parseOpacity(computed.opacity) * parseOpacity(computed.fillOpacity);
-}
-
-function getLayerFillColor(id: string, fallback: string): string {
-  const element = document.getElementById(id);
-  if (!element) return fallback;
-  const fill = getComputedStyle(element).fill;
-  return fill && fill !== "none" ? fill : fallback;
-}
-
-function parseOpacity(value: string): number {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : 1;
 }
 
 function getReliefSvgDataUri(icon: string): string | null {

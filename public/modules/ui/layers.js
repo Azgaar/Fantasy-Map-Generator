@@ -560,7 +560,7 @@ function drawStates() {
     ensureEl("statesBody").replaceChildren();
     ensureEl("statesHalo").replaceChildren();
     ensureEl("statePaths").replaceChildren();
-    window.PixiMapPrototype.queueRebuild();
+    window.PixiMapPrototype.invalidateLayer("states");
     TIME && console.timeEnd("drawStates");
     return;
   }
