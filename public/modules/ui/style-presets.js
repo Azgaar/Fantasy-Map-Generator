@@ -171,8 +171,8 @@ function syncPixiCellStylePreset(presetJson) {
   };
   style.mapRenderer ||= {};
   for (const [layer, selector] of Object.entries(layerSelectors)) {
-    const opacity = presetJson[selector]?.opacity;
-    if (opacity === undefined || opacity === null) continue;
+    if (!presetJson[selector]) continue;
+    const opacity = presetJson[selector].opacity ?? 1;
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
       fallbackColor: current.fallbackColor || "#888888",

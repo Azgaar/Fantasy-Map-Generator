@@ -21,7 +21,12 @@ describe("Pixi layer visibility state", () => {
       "religions",
       "states"
     ]);
-    expect(appStyle.mapLayerVisibility).toMatchObject({ labels: false, religions: false, cultures: true, states: true });
+    expect(appStyle.mapLayerVisibility).toMatchObject({
+      labels: false,
+      religions: false,
+      cultures: true,
+      states: true
+    });
   });
 
   it("distinguishes an absent value from an explicitly hidden layer", () => {

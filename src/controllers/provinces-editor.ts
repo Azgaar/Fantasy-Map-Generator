@@ -1094,10 +1094,7 @@ function enterProvincesManualAssignent(): void {
     .join("g")
     .attr("id", "provincesBody")
     .attr("data-renderer-overlay", "transient");
-  provincesOverlay
-    .append("g")
-    .attr("id", "temp")
-    .attr("stroke-width", 0.3);
+  provincesOverlay.append("g").attr("id", "temp").attr("stroke-width", 0.3);
   provincesOverlay
     .append("g")
     .attr("id", "centers")

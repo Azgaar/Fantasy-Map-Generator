@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import layersSource from "../../../public/modules/ui/layers.js?raw";
-import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
 import styleUiSource from "../../../public/modules/ui/style.js?raw";
-import drawBiomesSource from "../draw-biomes.ts?raw";
-import drawBordersSource from "../draw-borders.ts?raw";
+import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
 import exportSource from "../../services/io/export.ts?raw";
 import loadSource from "../../services/io/load.ts?raw";
 import saveSource from "../../services/io/save.ts?raw";
+import drawBiomesSource from "../draw-biomes.ts?raw";
+import drawBordersSource from "../draw-borders.ts?raw";
 import renderersIndex from "../index.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
 import loaderSource from "./pixi-renderer-loader.ts?raw";

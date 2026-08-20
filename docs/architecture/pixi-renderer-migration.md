@@ -28,6 +28,13 @@ The former opt-in experiment is retained only as historical context in
 - S-001 and L-001 are implemented for state and biome fills: semantic renderer style is serialized in application
   state, scene construction no longer reads DOM styles, both layers use retained indexed meshes simultaneously, and
   assignment changes update color attributes without rebuilding topology.
+- M5 now also owns culture, religion, and province fills. All five single-assignment thematic layers share retained
+  cell topology, independently update attributes and opacity, and render in canonical order. Their classic isoline
+  draw branches and the synchronous SVG/Pixi ownership-request bridge have been deleted. Zones remain separate because
+  their memberships can overlap and cannot be represented by one assignment value per cell.
+- Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
+  visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
+  The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.
 - R-004 now has resource byte/count accounting, an adaptive DPR policy bounded by viewport pixels and device memory,
   deterministic WebGL context listener cleanup, context-restoration reconstruction scheduling, and repeated
   destroy/remount unit coverage. Relief textures use a reference-counted, concurrent-load-deduplicating LRU cache with

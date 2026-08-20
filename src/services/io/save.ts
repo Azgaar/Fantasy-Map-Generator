@@ -2,9 +2,9 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { capturePixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
-import { capturePixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
