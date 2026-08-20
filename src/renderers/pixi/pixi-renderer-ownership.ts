@@ -1,6 +1,6 @@
 import { MAP_LAYER_REGISTRY } from "../core/layer-registry";
 import { RendererCoordinator } from "../core/renderer-coordinator";
-import type { PixiMapTheme } from "./pixi-map-prototype";
+import type { PixiMapTheme } from "./pixi-map-renderer";
 
 export type PixiOwnedLayer = "biomes" | "borders" | "relief" | "states";
 
