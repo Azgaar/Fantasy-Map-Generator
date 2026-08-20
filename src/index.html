@@ -2246,15 +2246,6 @@
           </div>
         </div>
         <div id="aboutContent" class="tabcontent">
-          <p style="text-align: center; margin-top: 1em">
-            <button
-              id="startTourButton"
-              onclick="window.Services.UiTour.start()"
-              data-tip="Take an interactive tour of the map generator"
-            >
-              &#9654; Take an Interactive Tour
-            </button>
-          </p>
           <p>
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
@@ -2400,7 +2391,6 @@
         <option hidden value="custom">Custom (not saved)</option>
       </select>
     </div>
-    <div id="canvasControlsRoot"></div>
     <div id="exitCustomization">
       <div data-tip="Drag to move the pane">
         <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">
@@ -2824,13 +2814,6 @@
       <input type="file" accept=".txt" id="namesbaseToLoad" />
       <input type="file" accept=".json" id="styleToLoad" />
       <input type="file" accept=".csv" id="culturesCSVToLoad" />
-    </div>
-    <div id="tourPromptButton" style="display: none" data-tip="Take an interactive tour of the map generator">
-      <button type="button" aria-label="Launch UI Tour">
-        <svg preserveAspectRatio="xMidYMid" viewBox="0 0 58 52" height="30px" width="30px">
-          <path d="M20 10 L20 42 L42 26 Z" />
-        </svg>
-      </button>
     </div>
     <!-- reusable svg elements -->
     <svg id="defElements" width="0" height="0" style="position: absolute">
@@ -5188,54 +5171,6 @@
           <use href="#s3" transform="scale(-1)" />
         </g>
         <g id="coas"></g>
-        <g id="gridPatterns">
-          <pattern id="pattern_square" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 25 0 L 0 0 0 25" />
-          </pattern>
-          <pattern id="pattern_pointyHex" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 0,0 12.5,7.2 25,0 M 12.5,21.7 V 7.2 Z M 0,43.4 V 28.9 L 12.5,21.7 25,28.9 v 14.5" />
-          </pattern>
-          <pattern id="pattern_flatHex" width="43.4" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 43.4,0 36.2,12.5 43.4,25 M 21.7,12.5 H 36.2 Z M 0,0 H 14.5 L 21.7,12.5 14.5,25 H 0" />
-          </pattern>
-          <pattern id="pattern_square45deg" width="35.355" height="35.355" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 0 0 L 35.355 35.355 M 0 35.355 L 35.355 0" />
-          </pattern>
-          <pattern id="pattern_squareTruncated" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path
-              d="M 8.33 25 L 0 16.66 V 8.33 L 8.33 0 16.66 0 25 8.33  M 16.66 25 L 25 16.66 L 25 8.33 M 8.33 25 L 16.66 25"
-            />
-          </pattern>
-          <pattern id="pattern_squareTetrakis" width="25" height="25" patternUnits="userSpaceOnUse" fill="none">
-            <path
-              d="M 25 0 L 0 0 0 25 M 0 0 L 25 25 M 0 25 L 25 0 M 12.5 0 L 12.5 25 M 0 12.5 L 25 12.5 M 0 25 L 25 25 L 25 0"
-            />
-          </pattern>
-          <pattern
-            id="pattern_triangleHorizontal"
-            width="41.76"
-            height="72.33"
-            patternUnits="userSpaceOnUse"
-            fill="none"
-          >
-            <path
-              d="M 41.76 36.165 H 0 L 20.88 0 41.76 36.165 20.88 72.33 0 36.165 M 0 0 H 72.33 M 0 72.33 L 41.76 72.33"
-            />
-          </pattern>
-          <pattern id="pattern_triangleVertical" width="72.33" height="41.76" patternUnits="userSpaceOnUse" fill="none">
-            <path
-              d="M 36.165 0 L 0 20.88 36.165 41.76 72.33 20.88 36.165 0 V 41.76 M 0 0 V 72.33 M 72.33 0 L 72.33 41.76"
-            />
-          </pattern>
-          <pattern id="pattern_trihexagonal" width="25" height="43.4" patternUnits="userSpaceOnUse" fill="none">
-            <path d="M 25 10.85 H 0 L 18.85 43.4 25 32.55 H 0 L 18.85 0 25 10.85" />
-          </pattern>
-          <pattern id="pattern_rhombille" width="82.5" height="50" patternUnits="userSpaceOnUse" fill="none">
-            <path
-              d="M 13.8 50 L 0 25 13.8 0 H 41.2 L 27.5 25 41.2 50 55 25 41.2 0 68.8 0 82.5 25 68.8 50 M 0 25 H 27.5 M 55 25 H 82.5 M 13.8 50 H 41.2 L 68.8 50"
-            />
-          </pattern>
-        </g>
         <g id="defs-hatching">
           <pattern id="hatch0" patternUnits="userSpaceOnUse" width="4" height="4">
             <line x1="0" y1="0" x2="0" y2="4" style="stroke: black; stroke-width: 2" />

@@ -27,9 +27,20 @@
 .fmg-workspace-toolbar {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 24px;
   pointer-events: auto;
+}
+
+.fmg-workspace-toolbar__group {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fmg-workspace-toolbar__group--right {
+  flex: 0 0 auto;
 }
 
 .fmg-fantasia,
@@ -250,6 +261,11 @@
   display: block;
 }
 
+.fmg-floating-menu--align-right .fmg-floating-menu__menu .kui-submenu {
+  right: calc(100% - 3px);
+  left: auto;
+}
+
 @keyframes fmg-workspace-menu-in {
   from {
     opacity: 0;
@@ -263,7 +279,7 @@
 }
 
 @media (max-width: 920px) {
-  .fmg-workspace-toolbar {
+  .fmg-workspace-toolbar__group {
     gap: 6px;
   }
 
@@ -295,6 +311,10 @@
     gap: 4px;
   }
 
+  .fmg-workspace-toolbar__group {
+    gap: 4px;
+  }
+
   .fmg-fantasia,
   .fmg-floating-menu__trigger,
   #workspaceProjectTrigger,
@@ -310,8 +330,10 @@
     width: 172px;
   }
 
-  .fmg-floating-menu__menu .kui-submenu {
-    left: calc(100% - 16px);
+  .fmg-floating-menu--align-right .fmg-floating-menu__menu .kui-submenu {
+    top: calc(100% - 4px);
+    right: 0;
+    left: auto;
   }
 }
 

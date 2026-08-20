@@ -230,7 +230,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     await checkLoadParameters();
   }
   initiateAutosave();
-  initTourPromptButton();
 });
 
 function hideLoading() {
@@ -344,24 +343,6 @@ function focusOn() {
     const y = +params.get("y") || graphHeight / 2;
     zoomTo(x, y, scale, 1600);
   }
-}
-
-function initTourPromptButton() {
-  const MAX_SHOWS = 3;
-  const STORAGE_KEY = "fmg-tour-prompt-count";
-
-  const count = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-  if (count >= MAX_SHOWS) return;
-
-  const btn = document.getElementById("tourPromptButton");
-  if (!btn) return;
-
-  btn.style.display = "flex";
-  btn.addEventListener("click", async () => {
-    window.Services.UiTour.start();
-    localStorage.setItem(STORAGE_KEY, MAX_SHOWS);
-  });
-  localStorage.setItem(STORAGE_KEY, count + 1);
 }
 
 // find burg for MFCG and focus on it

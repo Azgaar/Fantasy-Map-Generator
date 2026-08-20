@@ -180,7 +180,14 @@ function ToolMenu({
 
 function MapMenu(): React.JSX.Element {
   return (
-    <FloatingMenu icon="map" id="workspaceMapTrigger" label="Map" route="/edit" tip="Edit map features">
+    <FloatingMenu
+      align="right"
+      icon="map"
+      id="workspaceMapTrigger"
+      label="Map"
+      route="/edit"
+      tip="Edit map features"
+    >
       {close =>
         EDIT_GROUPS.map(group => (
           <MenuItem icon={group.icon} key={group.id} text={group.label}>
@@ -223,7 +230,13 @@ function ViewsMenu({
   }, []);
 
   return (
-    <FloatingMenu icon="eye-open" id="workspaceViewsTrigger" label="Views" tip="Map views, layers, and style">
+    <FloatingMenu
+      align="right"
+      icon="eye-open"
+      id="workspaceViewsTrigger"
+      label="Views"
+      tip="Map views, layers, and style"
+    >
       {close => (
         <>
           <MenuItem icon="layers" text={selectedPreset?.label ?? "Custom map"}>
@@ -299,36 +312,40 @@ function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSect
 export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Element {
   return (
     <nav aria-label="Map workspace" className="fmg-workspace-toolbar">
-      <div
-        aria-label="Fantasia, country information placeholder"
-        className="fmg-fantasia"
-        data-tip="Country information will appear here"
-      >
-        <span className="fmg-fantasia__mark" aria-hidden="true">
-          F
-        </span>
-        <span className="fmg-fantasia__label">Fantasia</span>
+      <div className="fmg-workspace-toolbar__group">
+        <div
+          aria-label="Fantasia, country information placeholder"
+          className="fmg-fantasia"
+          data-tip="Country information will appear here"
+        >
+          <span className="fmg-fantasia__mark" aria-hidden="true">
+            F
+          </span>
+          <span className="fmg-fantasia__label">Fantasia</span>
+        </div>
+        <ProjectMenu onOpenSection={props.onOpenSection} />
+        <ToolMenu
+          groupId="analysis"
+          icon="chart"
+          id="workspaceInspectTrigger"
+          label="Inspect"
+          route="/inspect"
+          tip="Inspect map data"
+        />
+        <GenerateMenu onOpenSection={props.onOpenSection} />
+        <ToolMenu
+          groupId="create"
+          icon="plus"
+          id="workspaceCreateTrigger"
+          label="Create"
+          route="/create"
+          tip="Create map features"
+        />
       </div>
-      <ProjectMenu onOpenSection={props.onOpenSection} />
-      <ToolMenu
-        groupId="create"
-        icon="plus"
-        id="workspaceCreateTrigger"
-        label="Create"
-        route="/create"
-        tip="Create map features"
-      />
-      <ToolMenu
-        groupId="analysis"
-        icon="chart"
-        id="workspaceInspectTrigger"
-        label="Inspect"
-        route="/inspect"
-        tip="Inspect map data"
-      />
-      <MapMenu />
-      <ViewsMenu {...props} />
-      <GenerateMenu onOpenSection={props.onOpenSection} />
+      <div className="fmg-workspace-toolbar__group fmg-workspace-toolbar__group--right">
+        <MapMenu />
+        <ViewsMenu {...props} />
+      </div>
     </nav>
   );
 }

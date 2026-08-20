@@ -23,7 +23,7 @@ properties are its public methods.
   Each entry resolves to the module's `ModuleType` export: `Controllers.MarketOverview.open(id)`.
 - **`Services`** (in `src/services/index.ts`) — service- and IO-layer app-shell modules. IO lives
   under `src/services/io/`. Each module likewise exports one object (`Save`, `Load`, `ExportMap`,
-  `ExportJson`, `Installation`, `CloudStorage`, `UiTour`): `Services.Save.saveMap("machine")`.
+  `ExportJson`, `Installation`, `CloudStorage`): `Services.Save.saveMap("machine")`.
 
 The mechanism is **dispatch-only**: callers invoke methods, they don't read properties off the
 resolved object. A module that exposes data or a nested object must wrap it in a method facade (e.g.

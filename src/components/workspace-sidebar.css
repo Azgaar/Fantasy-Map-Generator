@@ -30,43 +30,6 @@
   white-space: nowrap;
 }
 
-#canvasControlsRoot {
-  position: fixed;
-  z-index: 29;
-  right: 30px;
-  bottom: 32px;
-  color: var(--kui-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  pointer-events: auto;
-}
-
-.fmg-canvas-controls {
-  display: flex;
-  border: 1px solid var(--kui-line);
-  background: var(--kui-surface-panel);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.32);
-}
-
-.fmg-canvas-control {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--kui-text-secondary);
-  cursor: pointer;
-}
-
-.fmg-canvas-control:hover,
-.fmg-canvas-control:focus-visible {
-  outline: 0;
-  background: var(--kui-surface-hover);
-  color: var(--kui-text);
-}
-
 #collapsible {
   display: none !important;
 }
@@ -332,11 +295,6 @@ body[data-workspace-section="preferences"] #options .tabcontent {
     --fmg-panel-width: calc(100vw - 24px);
   }
 
-  #canvasControlsRoot {
-    right: 16px;
-    bottom: 24px;
-  }
-
   .fmg-tools-layout {
     grid-template-columns: 1fr;
   }
@@ -345,8 +303,7 @@ body[data-workspace-section="preferences"] #options .tabcontent {
     grid-template-columns: 1fr;
   }
 
-  .workspace-panel-open #tooltip,
-  .workspace-panel-open #tourPromptButton {
+  .workspace-panel-open #tooltip {
     display: none !important;
   }
 
@@ -358,11 +315,5 @@ body[data-workspace-section="preferences"] #options .tabcontent {
     width: auto !important;
     height: calc(100vh - 72px);
     max-width: none;
-  }
-}
-
-@media print {
-  #canvasControlsRoot {
-    display: none;
   }
 }

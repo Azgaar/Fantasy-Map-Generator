@@ -26,7 +26,7 @@ describe("WorkspaceToolbar", () => {
       <WorkspaceToolbar initialMapSnapshot={snapshot} mapControls={controls} onOpenSection={vi.fn()} />
     );
 
-    const labels = ["Fantasia", "Project", "Create", "Inspect", "Map", "Views", "Generate"];
+    const labels = ["Fantasia", "Project", "Inspect", "Generate", "Create", "Map", "Views"];
     labels.reduce((previousIndex, label) => {
       const index = markup.indexOf(`>${label}<`);
       expect(index).toBeGreaterThan(previousIndex);

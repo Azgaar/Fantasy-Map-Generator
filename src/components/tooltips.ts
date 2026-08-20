@@ -69,7 +69,7 @@ export function showElementLockTip(event: Event): void {
 }
 
 // non-svg containers holding elements with data-tip
-const TIP_CONTAINERS = ["dialogs", "optionsContainer", "exitCustomization", "tourPromptButton"];
+const TIP_CONTAINERS = ["dialogs", "optionsContainer", "exitCustomization"];
 
 function initialize(): void {
   const onDataTipMove = debounce(showDataTip, 50);

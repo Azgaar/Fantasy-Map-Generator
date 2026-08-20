@@ -1,4 +1,3 @@
-import { Icon } from "@patkepa/kantzen-ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LayersPanel } from "./layers/layers-panel";
@@ -145,23 +144,6 @@ function openWorkspaceSection(section: WorkspaceSection): void {
   const tab = document.getElementById(WORKSPACE_SECTIONS[section].tabId);
   if (tab?.classList.contains("active")) dispatchWorkspacePanelChange(section);
   else tab?.click();
-}
-
-function CanvasControls(): React.JSX.Element {
-  return (
-    <div className="fmg-canvas-controls" aria-label="Canvas controls">
-      <button
-        type="button"
-        className="fmg-canvas-control"
-        aria-label="Reset zoom"
-        data-target-id="zoomReset"
-        onClick={() => executeLegacyCommand("zoomReset")}
-        title="Reset zoom (0)"
-      >
-        <Icon icon="reset" size={16} />
-      </button>
-    </div>
-  );
 }
 
 function WorkspaceHeader(): React.JSX.Element {
@@ -373,13 +355,11 @@ function ToolsPanel(): React.JSX.Element {
 const headerRoot = document.getElementById("workspacePanelHeaderRoot");
 const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
-const canvasControlsRoot = document.getElementById("canvasControlsRoot");
 const mapPreviewRoot = document.getElementById("mapPreviewRoot");
 
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
-if (canvasControlsRoot) createRoot(canvasControlsRoot).render(<CanvasControls />);
 if (mapPreviewRoot) {
   createRoot(mapPreviewRoot).render(<WorkspaceToolbar onOpenSection={openWorkspaceSection} />);
 }
