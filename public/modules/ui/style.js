@@ -506,6 +506,7 @@ styleStrokeInput.addEventListener("input", function () {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "zones") setPixiZoneStroke("color", this.value);
 });
 
 // measurers are rendered with baked-in sizes, so a style change requires a redraw
@@ -518,6 +519,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "zones") setPixiZoneStroke("width", Number(e.target.value));
   redrawMeasurersOnStyleChange();
 });
 
@@ -530,12 +532,14 @@ styleLetterSpacingInput.addEventListener("input", e => {
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "zones") setPixiZoneStroke("dash", this.value);
   redrawMeasurersOnStyleChange();
 });
 
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
   if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "zones") setPixiZoneStroke("cap", this.value);
 });
 
 styleDisplayInput.addEventListener("change", function () {
@@ -1031,6 +1035,24 @@ function setPixiLayerOpacity(layer, opacity) {
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "invalidate-layer", layer}
+    })
+  );
+}
+
+function setPixiZoneStroke(property, value) {
+  style.mapRenderer ||= {};
+  const zonesStyle = style.mapRenderer.zones || {};
+  const stroke = zonesStyle.stroke || {
+    cap: "butt",
+    color: "#333333",
+    dash: "",
+    opacity: 1,
+    width: 0
+  };
+  style.mapRenderer.zones = {...zonesStyle, stroke: {...stroke, [property]: value}};
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer: "zones"}
     })
   );
 }

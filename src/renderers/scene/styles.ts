@@ -27,6 +27,7 @@ export interface SemanticRoleStyles<T> {
 }
 
 export interface ZoneLayerStyle {
+  fallbackColor: string;
   filterType: string | null;
   opacity: number;
   stroke: SemanticLineStyle;
@@ -105,6 +106,7 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   religions: { fallbackColor: "#888888", opacity: 0.7 },
   states: { fallbackColor: "#888888", opacity: 0.4 },
   zones: {
+    fallbackColor: "#888888",
     filterType: null,
     opacity: 0.6,
     stroke: { cap: "butt", color: "#333333", dash: "", opacity: 1, width: 0 }

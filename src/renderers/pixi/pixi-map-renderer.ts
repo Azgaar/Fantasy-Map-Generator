@@ -456,7 +456,7 @@ export class PixiMapRenderer implements MapRenderer {
     });
     for (const zone of scene.zones) {
       const graphic = createPolygonGraphic(zone.polygons, {
-        fill: { color: zone.color, opacity: 1 },
+        fill: { color: getRenderableColor(zone.color, this.semanticStyle.zones.fallbackColor), opacity: 1 },
         stroke: this.semanticStyle.zones.stroke
       });
       graphic.label = `zone:${zone.zoneId}`;
@@ -665,6 +665,10 @@ function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticL
     context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, width: style.width });
   }
   return new Graphics(context);
+}
+
+function getRenderableColor(color: string, fallbackColor: string): string {
+  return color.startsWith("url(") ? fallbackColor : color;
 }
 
 function getWorldBounds(world: Pick<PackedGraph, "vertices">): { height: number; width: number } {

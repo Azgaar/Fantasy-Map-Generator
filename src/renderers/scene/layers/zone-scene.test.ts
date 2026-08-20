@@ -3,7 +3,12 @@ import type { PackedGraph } from "@/types/PackedGraph";
 import { buildZoneScene } from "./zone-scene";
 
 const source = {
-  cells: { v: [[0, 1, 2], [1, 3, 2]] },
+  cells: {
+    v: [
+      [0, 1, 2],
+      [1, 3, 2]
+    ]
+  },
   vertices: {
     p: [
       [0, 0],
@@ -28,7 +33,9 @@ describe("zone scene", () => {
       layer: "zones",
       revision: "zones:3"
     });
-    expect(scene.zones.map(({ color, domainIds, polygons, zoneId }) => [zoneId, color, domainIds, polygons.length])).toEqual([
+    expect(
+      scene.zones.map(({ color, domainIds, polygons, zoneId }) => [zoneId, color, domainIds, polygons.length])
+    ).toEqual([
       [4, "#ff0000", [4], 2],
       [7, "#0000ff", [7], 1]
     ]);

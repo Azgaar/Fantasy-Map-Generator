@@ -181,6 +181,22 @@ function syncPixiCellStylePreset(presetJson) {
       opacity: Number(opacity)
     };
   }
+  const zonePreset = presetJson["#zones"];
+  if (zonePreset) {
+    const zonesStyle = style.mapRenderer.zones || {};
+    const stroke = zonesStyle.stroke || {};
+    style.mapRenderer.zones = {
+      ...zonesStyle,
+      stroke: {
+        ...stroke,
+        cap: zonePreset["stroke-linecap"] || stroke.cap || "butt",
+        color: zonePreset.stroke || stroke.color || "#333333",
+        dash: zonePreset["stroke-dasharray"] || "",
+        opacity: 1,
+        width: Number(zonePreset["stroke-width"] || 0)
+      }
+    };
+  }
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "queue-rebuild"}

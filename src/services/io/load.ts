@@ -515,11 +515,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("cultures", "toggleCultures", Boolean(hasChildren(select("#cults"))));
       turnOnPixiLayer("states", "toggleStates", Boolean(hasChildren(select("#statesBody"))));
       turnOnPixiLayer("provinces", "toggleProvinces", Boolean(hasChildren(select("#provs"))));
-      turnOnPixiLayer(
-        "zones",
-        "toggleZones",
-        Boolean(hasChildren(select("#zones")) && isVisible(select("#zones")))
-      );
+      turnOnPixiLayer("zones", "toggleZones", Boolean(hasChildren(select("#zones")) && isVisible(select("#zones"))));
       turnOnPixiLayer(
         "borders",
         "toggleBorders",

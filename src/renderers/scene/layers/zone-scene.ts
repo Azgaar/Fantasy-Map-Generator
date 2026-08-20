@@ -64,7 +64,9 @@ function buildZoneBatch(
 }
 
 function isZoneVisible(zone: Zone, filterType?: string | null): boolean {
-  return !zone.hidden && Boolean(zone.cells.length) && (!filterType || filterType === "all" || zone.type === filterType);
+  return (
+    !zone.hidden && Boolean(zone.cells.length) && (!filterType || filterType === "all" || zone.type === filterType)
+  );
 }
 
 function getSceneBounds(polygons: readonly PolygonPathPrimitive[]): SceneBounds | null {
