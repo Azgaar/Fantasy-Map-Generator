@@ -16,6 +16,7 @@ describe("Pixi layer visibility state", () => {
       "borders",
       "cells",
       "cultures",
+      "grid",
       "lakes",
       "provinces",
       "relief",

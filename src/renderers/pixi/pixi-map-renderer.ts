@@ -16,6 +16,7 @@ import { RendererResourceCache, type RendererResourceHandle } from "../core/reso
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
+import { buildGridScene } from "../scene/layers/grid-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { buildZoneScene } from "../scene/layers/zone-scene";
@@ -148,6 +149,7 @@ export class PixiMapRenderer implements MapRenderer {
     const geography = this.buildGeographyContainers();
     const biomeContainer = this.buildFillContainer("biomes");
     const cellsContainer = this.buildCellsContainer();
+    const gridContainer = this.buildGridContainer();
     const reliefContainer = await this.buildReliefContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     const religionContainer = this.buildFillContainer("religions");
@@ -162,6 +164,7 @@ export class PixiMapRenderer implements MapRenderer {
       geography.lakes,
       biomeContainer,
       cellsContainer,
+      gridContainer,
       reliefContainer,
       religionContainer,
       cultureContainer,
@@ -418,7 +421,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildLineContainer(
-    layer: "cells" | "coastline",
+    layer: "cells" | "coastline" | "grid",
     paths: readonly LinePathPrimitive[],
     getStyle: (role: string) => SemanticLineStyle
   ): Container {
@@ -436,6 +439,14 @@ export class PixiMapRenderer implements MapRenderer {
   private buildCellsContainer(): Container {
     const scene = buildCellOutlineScene(this.getWorld(), this.sceneRevisions.getLayerRevision("cells"));
     return this.buildLineContainer("cells", scene.paths, () => this.semanticStyle.cells);
+  }
+
+  private buildGridContainer(): Container {
+    const gridStyle = this.semanticStyle.grid;
+    const scene = buildGridScene(getWorldBounds(this.getWorld()), gridStyle, this.sceneRevisions.getLayerRevision("grid"));
+    const container = this.buildLineContainer("grid", scene.paths, () => gridStyle.stroke);
+    container.alpha = gridStyle.opacity;
+    return container;
   }
 
   private buildBordersContainer(): Container {

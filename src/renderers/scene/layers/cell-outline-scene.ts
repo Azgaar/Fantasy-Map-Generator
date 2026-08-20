@@ -6,10 +6,7 @@ export interface CellOutlineSource {
   vertices: Pick<PackedGraph["vertices"], "p">;
 }
 
-export function buildCellOutlineScene(
-  source: CellOutlineSource,
-  revision: SceneRevision = 0
-): LineBatchPrimitive {
+export function buildCellOutlineScene(source: CellOutlineSource, revision: SceneRevision = 0): LineBatchPrimitive {
   const paths: LinePathPrimitive[] = [];
   const edgeKeys = new Set<string>();
   let bounds: SceneBounds | null = null;

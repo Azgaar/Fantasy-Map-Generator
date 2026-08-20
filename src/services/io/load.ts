@@ -506,7 +506,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("lakes", "toggleLakes", Boolean(isVisible(select("#lakes"))));
       turnOnPixiLayer("biomes", "toggleBiomes", Boolean(hasChildren(select("#biomes"))));
       turnOnPixiLayer("cells", "toggleCells", Boolean(hasChildren(select("#cells"))));
-      if (hasChildren(select("#gridOverlay"))) turnOn("toggleGrid");
+      turnOnPixiLayer("grid", "toggleGrid", Boolean(hasChildren(select("#gridOverlay"))));
       if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
       if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
       if (hasChildren(select("#rivers"))) turnOn("toggleRivers");

@@ -25,6 +25,7 @@ const OWNED_SVG_SELECTORS = [
   "#lakes",
   "#biomes",
   "#cells",
+  "#gridOverlay",
   "#terrain",
   "#relig",
   "#cults",
@@ -75,6 +76,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("lakes", layerIsOn("toggleLakes"));
   renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
   renderer.setLayerVisibility("cells", layerIsOn("toggleCells"));
+  renderer.setLayerVisibility("grid", layerIsOn("toggleGrid"));
   renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
   renderer.setLayerVisibility("religions", layerIsOn("toggleReligions"));
   renderer.setLayerVisibility("cultures", layerIsOn("toggleCultures"));

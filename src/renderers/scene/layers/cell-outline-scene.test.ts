@@ -37,7 +37,12 @@ describe("cell outline scene", () => {
   it("skips invalid and duplicate edges", () => {
     const scene = buildCellOutlineScene({
       cells: { i: [0], v: [[0, 0, 1, 99]] },
-      vertices: { p: [[0, 0], [1, 0]] }
+      vertices: {
+        p: [
+          [0, 0],
+          [1, 0]
+        ]
+      }
     });
 
     expect(scene.domainIds).toEqual(["0:1"]);

@@ -33,6 +33,15 @@ export interface ZoneLayerStyle {
   stroke: SemanticLineStyle;
 }
 
+export interface GridLayerStyle {
+  dx: number;
+  dy: number;
+  opacity: number;
+  scale: number;
+  stroke: SemanticLineStyle;
+  type: GridPatternType;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
@@ -42,6 +51,7 @@ export interface MapStyle {
   coastline: SemanticRoleStyles<SemanticLineStyle>;
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
+  grid: GridLayerStyle;
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
   ocean: SemanticFillStyle;
@@ -69,6 +79,14 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   },
   cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
   cultures: { fallbackColor: "#888888", opacity: 0.6 },
+  grid: {
+    dx: 0,
+    dy: 0,
+    opacity: 0.8,
+    scale: 1,
+    stroke: { cap: "butt", color: "#777777", dash: "", opacity: 1, width: 0.5 },
+    type: "pointyHex"
+  },
   lakes: {
     default: {
       fill: { color: "#a6c1fd", opacity: 0.5 },
@@ -117,3 +135,4 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
 
 export const normalizeOpacity = (value: number): number =>
   Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
+import type { GridPatternType } from "./layers/grid-scene";

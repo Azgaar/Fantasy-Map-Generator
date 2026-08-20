@@ -250,8 +250,7 @@ function start() {
         },
         popover: {
           title: "Map",
-          description:
-            "Open Map, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
+          description: "Open Map, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
           side: "right"
         }
       },

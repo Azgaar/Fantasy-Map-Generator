@@ -11,7 +11,8 @@ describe("grid scene", () => {
       layer: "grid",
       revision: "grid:1"
     });
-    expect(scene.paths).toHaveLength(6);
+    expect(scene.paths).toHaveLength(12);
+    expect(new Set(scene.paths.map(path => JSON.stringify(path.points))).size).toBe(scene.paths.length);
     expect(scene.paths.every(path => path.points.flat().every(value => value >= 0 && value <= 50))).toBe(true);
   });
 

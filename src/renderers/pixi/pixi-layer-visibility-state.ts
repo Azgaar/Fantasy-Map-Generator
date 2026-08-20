@@ -6,6 +6,7 @@ export const PIXI_LAYER_CONTROL_IDS = {
   borders: "toggleBorders",
   cells: "toggleCells",
   cultures: "toggleCultures",
+  grid: "toggleGrid",
   lakes: "toggleLakes",
   provinces: "toggleProvinces",
   relief: "toggleRelief",

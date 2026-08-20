@@ -16,6 +16,7 @@ describe("Pixi renderer ownership", () => {
       "lakes",
       "biomes",
       "cells",
+      "grid",
       "relief",
       "religions",
       "cultures",
