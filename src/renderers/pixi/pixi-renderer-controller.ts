@@ -1,5 +1,5 @@
-import type { MapCamera } from "../core/camera";
 import type { TemperatureScale } from "@/utils/unitUtils";
+import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
@@ -9,6 +9,7 @@ import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
+  createOverview: (maxWidth: number, maxHeight: number) => PixiRendererOverview | null;
   getCanvas: () => CanvasImageSource | null;
   getSnapshot: () => PixiRendererSnapshot | null;
   invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
@@ -16,6 +17,14 @@ export interface PixiRendererControllerApi {
   start: () => Promise<void>;
   syncCamera: () => void;
 }
+
+export interface PixiRendererOverview {
+  height: number;
+  source: CanvasImageSource;
+  width: number;
+}
+
+export const PIXI_RENDERER_SCENE_CHANGE_EVENT = "map:pixi-renderer:scene-change";
 
 let instancePromise: Promise<PixiMapRenderer> | null = null;
 let instance: PixiMapRenderer | null = null;
@@ -38,7 +47,9 @@ const OWNED_SVG_SELECTORS = [
   "#zones",
   "#stateBorders",
   "#provinceBorders",
-  "#coastline"
+  "#temperature",
+  "#coastline",
+  "#prec"
 ] as const;
 
 const clearOwnedSvgLayers = (): void => {
@@ -49,6 +60,7 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
   instancePromise ??= import("./pixi-map-renderer").then(({ PixiMapRenderer }) => {
     instance = new PixiMapRenderer({
       deviceMemoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+      onSceneChange: () => window.dispatchEvent(new Event(PIXI_RENDERER_SCENE_CHANGE_EVENT)),
       recordPerformance: (name, duration) => window.MapPerformance?.record(name, duration),
       resolveReliefIcon: readReliefSvgDataUri
     });
@@ -86,7 +98,9 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("provinces", layerIsOn("toggleProvinces"));
   renderer.setLayerVisibility("zones", layerIsOn("toggleZones"));
   renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
+  renderer.setLayerVisibility("temperature", layerIsOn("toggleTemperature"));
   renderer.setLayerVisibility("coastline", true);
+  renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));
 };
 
 const getCamera = (): MapCamera => {
@@ -110,6 +124,7 @@ const getWorld = () =>
 
 const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),
+  createOverview: (maxWidth, maxHeight) => instance?.createOverview(maxWidth, maxHeight) ?? null,
   getCanvas: () => instance?.getCanvas() ?? null,
   getSnapshot: () => instance?.getSnapshot() ?? null,
   invalidateLayer: (layer, cellIds) => {
@@ -142,6 +157,7 @@ const api: PixiRendererControllerApi = {
 };
 
 export const clearPixiRenderer = api.clear;
+export const createPixiRendererOverview = api.createOverview;
 export const getPixiRendererCanvas = api.getCanvas;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
 export const queuePixiRendererRebuild = api.queueRebuild;

@@ -1,5 +1,15 @@
 import { color, interpolateSpectral } from "d3";
-import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, Text, type Texture } from "pixi.js";
+import {
+  Application,
+  Assets,
+  Container,
+  Graphics,
+  GraphicsContext,
+  Rectangle,
+  Sprite,
+  Text,
+  type Texture
+} from "pixi.js";
 import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type ViewportSize } from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
@@ -59,6 +69,7 @@ const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cult
 export interface PixiMapRendererOptions {
   deviceMemoryGb?: number;
   getDevicePixelRatio?: () => number;
+  onSceneChange?: () => void;
   recordPerformance?: (name: string, duration: number) => void;
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
@@ -200,10 +211,12 @@ export class PixiMapRenderer implements MapRenderer {
       reliefSprites,
       renderer: this.app.renderer.constructor.name
     };
+    this.rendererOptions.onSceneChange?.();
     this.recordPerformance("pixi:rebuild", buildDuration);
   }
 
   setLayerVisibility(layer: MapLayerId, visible: boolean): void {
+    if (this.layerVisibility.get(layer) === visible) return;
     this.layerVisibility.set(layer, visible);
     this.applyVisibility();
   }
@@ -213,7 +226,10 @@ export class PixiMapRenderer implements MapRenderer {
     for (const child of this.app.stage.children) {
       if (isMapLayerId(child.label)) child.visible = this.layerVisibility.get(child.label) ?? true;
     }
-    if (render) this.app.render();
+    if (render) {
+      this.app.render();
+      this.rendererOptions.onSceneChange?.();
+    }
   }
 
   pick(_point: ScreenPoint): MapHit | null {
@@ -247,6 +263,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.clearStage();
     this.textureCache.clear();
     this.app?.render();
+    this.rendererOptions.onSceneChange?.();
     if (this.surface) this.surface.style.display = "none";
   }
 
@@ -288,6 +305,36 @@ export class PixiMapRenderer implements MapRenderer {
     return (this.app?.canvas as unknown as CanvasImageSource | undefined) ?? null;
   }
 
+  createOverview(
+    maxWidth: number,
+    maxHeight: number
+  ): { height: number; source: CanvasImageSource; width: number } | null {
+    if (!this.app || !this.world?.vertices.p.length) return null;
+
+    const bounds = getWorldBounds(this.world);
+    const resolution = Math.min(1, maxWidth / bounds.width, maxHeight / bounds.height);
+    const position = { x: this.app.stage.position.x, y: this.app.stage.position.y };
+    const stageScale = { x: this.app.stage.scale.x, y: this.app.stage.scale.y };
+
+    this.app.stage.position.set(0, 0);
+    this.app.stage.scale.set(1, 1);
+    let source: { height: number; width: number } | null = null;
+    try {
+      source = this.app.renderer.extract.canvas({
+        clearColor: this.semanticStyle.ocean.color,
+        frame: new Rectangle(0, 0, bounds.width, bounds.height),
+        resolution,
+        target: this.app.stage
+      });
+    } finally {
+      this.app.stage.position.set(position.x, position.y);
+      this.app.stage.scale.set(stageScale.x, stageScale.y);
+    }
+    if (!source) return null;
+
+    return { height: source.height, source: source as unknown as CanvasImageSource, width: source.width };
+  }
+
   private async initializeApplication(): Promise<void> {
     if (this.app) return;
     if (!this.surface) throw new Error("Cannot initialize an unmounted Pixi renderer");
@@ -301,7 +348,8 @@ export class PixiMapRenderer implements MapRenderer {
       backgroundAlpha: 1,
       backgroundColor: this.semanticStyle.ocean.color,
       clearBeforeRender: true,
-      culler: { updateTransform: false },
+      // Camera renders are one-shot, so culling must use the new stage transform in the same frame.
+      culler: { updateTransform: true },
       height: viewport.height,
       preference: "webgl",
       resolution: this.getResolution(viewport),
@@ -670,6 +718,7 @@ export class PixiMapRenderer implements MapRenderer {
       target.container.alpha = style.opacity;
     }
     this.app.render();
+    this.rendererOptions.onSceneChange?.();
     return true;
   }
 

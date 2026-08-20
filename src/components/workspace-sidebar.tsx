@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LayersPanel } from "./layers/layers-panel";
+import { MapMinimap } from "./map-minimap";
 import {
   getToolCommands,
   type ToolCommand,
@@ -78,7 +79,7 @@ const TOOL_PANEL_COPY: Record<
     searchLabel: "Search editors"
   },
   inspect: {
-    emptyDescription: "Try cells, charts, minimap, or notes.",
+    emptyDescription: "Try cells, charts, or notes.",
     placeholder: "Search inspection tools",
     searchLabel: "Search inspection tools"
   },
@@ -361,5 +362,10 @@ if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
 if (mapPreviewRoot) {
-  createRoot(mapPreviewRoot).render(<WorkspaceToolbar onOpenSection={openWorkspaceSection} />);
+  createRoot(mapPreviewRoot).render(
+    <>
+      <WorkspaceToolbar onOpenSection={openWorkspaceSection} />
+      <MapMinimap />
+    </>
+  );
 }

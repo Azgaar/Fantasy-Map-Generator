@@ -1,22 +1,15 @@
 import type { Burg } from "@/generators/burgs-generator";
-import { getGridPolygon, getPackPolygon, rn } from "@/utils";
+import { getGridPolygon, getPackPolygon } from "@/utils";
 import { reconcileSvgMarkupElements, type SvgMarkupItem } from "./svg-markup-reconciler";
-import { SpatialIndex, type ViewportBounds, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
+import { SpatialIndex, ViewportLayers, type ViewportRenderContext } from "./viewport-renderer";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-const precipitationIndex = new SpatialIndex<number>();
 const populationIndex = new SpatialIndex<number>();
 const cellsIndex = new SpatialIndex<number>();
 let cellsAreGrid = false;
-let maximumPrecipitationRadius = 0;
 let maximumPopulationHeight = 0;
 
-const precipitationLayer = ViewportLayers.register({
-  id: "precipitation",
-  render: reconcilePrecipitation,
-  clear: clearPrecipitation
-});
 const populationLayer = ViewportLayers.register({
   id: "population",
   render: reconcilePopulation,
@@ -49,46 +42,6 @@ function reconcileCells(context: ViewportRenderContext): void {
 function clearCells(): void {
   cellsIndex.clear();
   document.querySelector("#cells")?.replaceChildren();
-}
-
-function drawPrecipitation(): void {
-  const { cells, points } = grid;
-  const cellsNumberModifier = (Number(pointsInput.dataset.cells) / 10000) ** 0.25;
-  maximumPrecipitationRadius = 0;
-  precipitationIndex.replace(cells.i, cellId => {
-    const precipitation = cells.prec[cellId];
-    if (cells.h[cellId] < 20 || !precipitation) return null;
-    const radius = rn(Math.sqrt(precipitation / 4) / cellsNumberModifier, 2);
-    maximumPrecipitationRadius = Math.max(maximumPrecipitationRadius, radius);
-    return points[cellId];
-  });
-  precipitationLayer.render();
-}
-
-function reconcilePrecipitation(context: ViewportRenderContext): void {
-  const layer = context.root.querySelector<SVGGElement>("#prec");
-  if (!layer || !precipitationIndex.valid) return;
-  if (!layerIsOn("togglePrecipitation")) return void layer.replaceChildren();
-
-  const { x0, y0, x1, y1 } = context.bounds;
-  const queryBounds = expandBounds(context.bounds, maximumPrecipitationRadius);
-  const cellsNumberModifier = (Number(pointsInput.dataset.cells) / 10000) ** 0.25;
-  const items: SvgMarkupItem[] = [];
-  for (const cellId of precipitationIndex.values(queryBounds)) {
-    const [x, y] = grid.points[cellId];
-    const radius = rn(Math.sqrt(grid.cells.prec[cellId] / 4) / cellsNumberModifier, 2);
-    if (x + radius < x0 || x - radius > x1 || y + radius < y0 || y - radius > y1) continue;
-    const key = `${x}|${y}|${radius}`;
-    items.push({ id: String(cellId), key, markup: `<circle cx="${x}" cy="${y}" r="${radius}"/>` });
-  }
-  reconcileSvgMarkupElements(layer, items);
-  layer.style.display = "block";
-}
-
-function clearPrecipitation(): void {
-  precipitationIndex.clear();
-  maximumPrecipitationRadius = 0;
-  document.querySelector("#prec")?.replaceChildren();
 }
 
 function drawPopulation(): void {
@@ -160,16 +113,6 @@ function* populationIds(cellIds: Iterable<number>, burgs: Burg[]): IterableItera
   for (const burg of burgs) yield -burg.i - 1;
 }
 
-function expandBounds(bounds: ViewportBounds, padding: number): ViewportBounds {
-  return {
-    ...bounds,
-    x0: bounds.x0 - padding,
-    y0: bounds.y0 - padding,
-    x1: bounds.x1 + padding,
-    y1: bounds.y1 + padding
-  };
-}
-
 function reconcilePath(group: SVGGElement, data: string): void {
   let path = group.firstElementChild;
   if (!path || path.tagName.toLowerCase() !== "path" || path.nextElementSibling) {
@@ -180,5 +123,4 @@ function reconcilePath(group: SVGGElement, data: string): void {
 }
 
 window.ViewportPopulation = { draw: drawPopulation, clear: clearPopulation };
-window.ViewportPrecipitation = { draw: drawPrecipitation, clear: clearPrecipitation };
 window.ViewportCells = { draw: drawCells, clear: clearCells };

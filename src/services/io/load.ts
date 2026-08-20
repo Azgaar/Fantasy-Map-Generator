@@ -522,10 +522,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         Boolean(isVisible(select("#borders")) && hasChild(select("#borders"), "path"))
       );
       if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
-      if (hasChildren(select("#temperature"))) turnOn("toggleTemperature");
+      turnOnPixiLayer("temperature", "toggleTemperature", Boolean(hasChildren(select("#temperature"))));
       if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
       if (isVisible(select("#ice"))) turnOn("toggleIce");
-      if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
+      turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
       if (hasChildren(select("#labels"))) turnOn("toggleLabels");
       if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");

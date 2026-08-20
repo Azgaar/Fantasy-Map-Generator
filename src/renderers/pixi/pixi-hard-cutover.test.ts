@@ -7,6 +7,7 @@ import loadSource from "../../services/io/load.ts?raw";
 import saveSource from "../../services/io/save.ts?raw";
 import drawBiomesSource from "../draw-biomes.ts?raw";
 import drawBordersSource from "../draw-borders.ts?raw";
+import drawTemperatureSource from "../draw-temperature.ts?raw";
 import renderersIndex from "../index.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
 import loaderSource from "./pixi-renderer-loader.ts?raw";
@@ -35,11 +36,15 @@ describe("Pixi hard cutover", () => {
     expect(layersSource.includes('redrawPixiLayer("zones", "zones")')).toBe(true);
     expect(layersSource.includes('redrawPixiLayer("cells", "cells")')).toBe(true);
     expect(layersSource.includes('redrawPixiLayer("grid", "gridOverlay")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("precipitation", "prec")')).toBe(true);
     expect(layersSource.includes('"#pattern_"')).toBe(false);
     expect(layersSource.includes("getGappedFillPaths")).toBe(false);
     expect([layersSource, drawBiomesSource, drawBordersSource].join("\n").includes("ownership-request")).toBe(false);
     expect(drawBiomesSource.includes("getIsolines")).toBe(false);
     expect(drawBordersSource.includes("buildBorderPaths(pack)")).toBe(false);
+    expect(drawTemperatureSource.includes('invalidatePixiRendererLayer("temperature")')).toBe(true);
+    expect(drawTemperatureSource.includes("connectVertices")).toBe(false);
+    expect(layersSource.includes("ViewportPrecipitation")).toBe(false);
   });
 
   it("persists migrated visibility and semantic opacity instead of deriving them from SVG paths", () => {

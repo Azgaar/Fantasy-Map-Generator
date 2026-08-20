@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildGrid } from "@/generators/grid-builder";
 import type { ClimateRenderGrid } from "../render-world";
 import { buildPrecipitationScene, buildTemperatureScene } from "./climate-scene";
 
@@ -53,5 +54,32 @@ describe("climate scenes", () => {
       }
     ]);
     expect(scene.labels.labels).toEqual([]);
+  });
+
+  it("extracts stable temperature contours from the generation-grid topology", () => {
+    const generated = buildGrid({ cellsDesired: 400, graphHeight: 200, graphWidth: 300, seed: "climate-scene" });
+    const count = generated.cells.i.length;
+    const detailedClimate = {
+      cells: {
+        ...generated.cells,
+        f: new Uint16Array(count),
+        h: new Uint8Array(count).fill(30),
+        prec: new Uint8Array(count),
+        t: new Int8Array(count),
+        temp: Int8Array.from(generated.points, ([x]) => Math.round(x / 30) * 5 - 25)
+      },
+      points: generated.points,
+      requestedCells: 400,
+      temperatureScale: "°C",
+      vertices: generated.vertices
+    } as ClimateRenderGrid;
+
+    const first = buildTemperatureScene(detailedClimate, { height: 200, width: 300 }, "temperature:contours");
+    const second = buildTemperatureScene(detailedClimate, { height: 200, width: 300 }, "temperature:contours");
+
+    expect(first.bands.polygons.length).toBeGreaterThan(1);
+    expect(first.bands).toEqual(second.bands);
+    expect(first.labels).toEqual(second.labels);
+    expect(first.labels.labels.every(label => label.text.endsWith("°C"))).toBe(true);
   });
 });

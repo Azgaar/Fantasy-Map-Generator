@@ -105,10 +105,22 @@ function getLength(scaleBar: ScaleBarSelection, scaleLevel: number): number {
 const scaleBarResize = (scaleBar: ScaleBarSelection, fullWidth: number, fullHeight: number): void => {
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
 
+  const bbox = (scaleBar.select("rect").node() as SVGRectElement).getBBox();
+  const minimap = document.querySelector<HTMLElement>(".fmg-map-minimap");
+  const map = document.getElementById("map");
+  const isLiveScaleBar = document.getElementById("scaleBar") === scaleBar.node();
+
+  if (minimap && map && isLiveScaleBar) {
+    const minimapBounds = minimap.getBoundingClientRect();
+    const mapBounds = map.getBoundingClientRect();
+    const x = rn(minimapBounds.left - mapBounds.left - bbox.x - bbox.width - 10);
+    const y = rn(minimapBounds.bottom - mapBounds.top - bbox.y - bbox.height);
+    scaleBar.attr("transform", `translate(${x},${y})`);
+    return;
+  }
+
   const posX = +scaleBar.attr("data-x") || 99;
   const posY = +scaleBar.attr("data-y") || 99;
-  const bbox = (scaleBar.select("rect").node() as SVGRectElement).getBBox();
-
   const x = rn((fullWidth * posX) / 100 - bbox.width + 10);
   const y = rn((fullHeight * posY) / 100 - bbox.height + 20);
   scaleBar.attr("transform", `translate(${x},${y})`);

@@ -224,6 +224,15 @@ describe("PixiMapRenderer lifecycle", () => {
     renderer.destroy();
   });
 
+  it("updates transforms before culling an invalidation-driven camera frame", async () => {
+    const renderer = new PixiMapRenderer();
+
+    await renderer.mount(createSurface());
+
+    expect(applicationState.init).toHaveBeenCalledWith(expect.objectContaining({ culler: { updateTransform: true } }));
+    renderer.destroy();
+  });
+
   it("tracks context loss, schedules reconstruction, and removes listeners on destroy", async () => {
     let scheduledFrame: FrameRequestCallback | undefined;
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {

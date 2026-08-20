@@ -75,6 +75,7 @@ function handleZoomPerFrame(): void {
 
   viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
   syncPixiRendererCamera();
+  window.updateMinimap?.();
   redrawTracedImage();
   ViewportLayers.schedule();
 }
@@ -91,8 +92,6 @@ function handleZoomEnd(): void {
 }
 
 function handleZoomSettled({ scale: didScaleChange, position: didPositionChange }: ZoomChanges): void {
-  window.updateMinimap?.();
-
   if (didScaleChange) {
     drawScaleBar(scaleBar, scale);
     fitScaleBar(scaleBar, svgWidth, svgHeight);

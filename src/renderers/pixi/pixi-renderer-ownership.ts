@@ -11,10 +11,12 @@ export type PixiOwnedLayer =
   | "lakes"
   | "landmass"
   | "ocean"
+  | "precipitation"
   | "provinces"
   | "relief"
   | "religions"
   | "states"
+  | "temperature"
   | "zones";
 
 export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
@@ -31,7 +33,9 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "provinces",
   "zones",
   "borders",
-  "coastline"
+  "temperature",
+  "coastline",
+  "precipitation"
 ];
 
 export const isPixiOwnedLayer = (layer: string): layer is PixiOwnedLayer =>

@@ -18,10 +18,12 @@ describe("Pixi layer visibility state", () => {
       "cultures",
       "grid",
       "lakes",
+      "precipitation",
       "provinces",
       "relief",
       "religions",
       "states",
+      "temperature",
       "zones"
     ]);
     expect(appStyle.mapLayerVisibility).toMatchObject({

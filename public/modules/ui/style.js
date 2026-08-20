@@ -498,6 +498,7 @@ styleFillInput.addEventListener("input", function () {
   getEl().attr("fill", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.fill = this.value;
+  if (styleElementSelect.value === "prec") setPixiAreaFillColor("precipitation", this.value);
 });
 
 styleStrokeInput.addEventListener("input", function () {
@@ -506,8 +507,9 @@ styleStrokeInput.addEventListener("input", function () {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay") drawGrid();
-  if (["cells", "zones"].includes(styleElementSelect.value)) {
-    setPixiLineStyle(styleElementSelect.value, "color", this.value);
+  const pixiStrokeLayer = {cells: "cells", prec: "precipitation", zones: "zones"}[styleElementSelect.value];
+  if (pixiStrokeLayer) {
+    setPixiLineStyle(pixiStrokeLayer, "color", this.value);
   }
 });
 
@@ -521,8 +523,14 @@ styleStrokeWidthInput.addEventListener("input", e => {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay") drawGrid();
-  if (["cells", "zones"].includes(styleElementSelect.value)) {
-    setPixiLineStyle(styleElementSelect.value, "width", Number(e.target.value));
+  const pixiStrokeLayer = {
+    cells: "cells",
+    prec: "precipitation",
+    temperature: "temperature",
+    zones: "zones"
+  }[styleElementSelect.value];
+  if (pixiStrokeLayer) {
+    setPixiLineStyle(pixiStrokeLayer, "width", Number(e.target.value));
   }
   redrawMeasurersOnStyleChange();
 });
@@ -536,8 +544,9 @@ styleLetterSpacingInput.addEventListener("input", e => {
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay") drawGrid();
-  if (["cells", "zones"].includes(styleElementSelect.value)) {
-    setPixiLineStyle(styleElementSelect.value, "dash", this.value);
+  const pixiStrokeLayer = {cells: "cells", temperature: "temperature", zones: "zones"}[styleElementSelect.value];
+  if (pixiStrokeLayer) {
+    setPixiLineStyle(pixiStrokeLayer, "dash", this.value);
   }
   redrawMeasurersOnStyleChange();
 });
@@ -545,8 +554,9 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
   if (styleElementSelect.value === "gridOverlay") drawGrid();
-  if (["cells", "zones"].includes(styleElementSelect.value)) {
-    setPixiLineStyle(styleElementSelect.value, "cap", this.value);
+  const pixiStrokeLayer = {cells: "cells", temperature: "temperature", zones: "zones"}[styleElementSelect.value];
+  if (pixiStrokeLayer) {
+    setPixiLineStyle(pixiStrokeLayer, "cap", this.value);
   }
 });
 
@@ -561,8 +571,10 @@ styleOpacityInput.addEventListener("input", e => {
     cells: "cells",
     cults: "cultures",
     gridOverlay: "grid",
+    prec: "precipitation",
     provs: "provinces",
     relig: "religions",
+    temperature: "temperature",
     zones: "zones"
   }[styleElementSelect.value];
   if (pixiLayer) setPixiLayerOpacity(pixiLayer, e.target.value);
@@ -853,15 +865,18 @@ styleReliefDensity.addEventListener("change", e => {
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
   temperature.attr("fill-opacity", e.target.value);
+  setPixiTemperatureStyle({bandOpacity: Number(e.target.value)});
 });
 
 styleTemperatureFontSizeInput.addEventListener("input", e => {
   temperature.attr("font-size", e.target.value + "px");
+  setPixiTemperatureStyle({labels: {...getPixiTemperatureStyle().labels, fontSize: Number(e.target.value)}});
 });
 
 styleTemperatureFillInput.addEventListener("input", e => {
   temperature.attr("fill", e.target.value);
   styleTemperatureFillOutput.value = e.target.value;
+  setPixiTemperatureStyle({labels: {...getPixiTemperatureStyle().labels, color: e.target.value}});
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
@@ -1043,7 +1058,9 @@ function setPixiLayerOpacity(layer, opacity) {
   const current = style.mapRenderer[layer] || {};
   style.mapRenderer[layer] = {
     ...current,
-    ...(["cells", "grid", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
+    ...(["cells", "grid", "precipitation", "temperature", "zones"].includes(layer)
+      ? {}
+      : {fallbackColor: current.fallbackColor || "#888888"}),
     opacity: Number(opacity)
   };
   window.dispatchEvent(
@@ -1056,19 +1073,55 @@ function setPixiLayerOpacity(layer, opacity) {
 function setPixiLineStyle(layer, property, value) {
   style.mapRenderer ||= {};
   const layerStyle = style.mapRenderer[layer] || {};
-  const stroke = (["grid", "zones"].includes(layer) ? layerStyle.stroke : layerStyle) || {
+  const stroke = (["grid", "precipitation", "temperature", "zones"].includes(layer)
+    ? layerStyle.stroke
+    : layerStyle) || {
     cap: "butt",
     color: "#333333",
     dash: "",
     opacity: 1,
     width: 0
   };
-  style.mapRenderer[layer] = ["grid", "zones"].includes(layer)
+  style.mapRenderer[layer] = ["grid", "precipitation", "temperature", "zones"].includes(layer)
     ? {...layerStyle, stroke: {...stroke, [property]: value}}
     : {...stroke, [property]: value};
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "invalidate-layer", layer}
+    })
+  );
+}
+
+function setPixiAreaFillColor(layer, color) {
+  style.mapRenderer ||= {};
+  const layerStyle = style.mapRenderer[layer] || {};
+  style.mapRenderer[layer] = {
+    ...layerStyle,
+    fill: {...layerStyle.fill, color, opacity: layerStyle.fill?.opacity ?? 1}
+  };
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer}
+    })
+  );
+}
+
+function getPixiTemperatureStyle() {
+  style.mapRenderer ||= {};
+  return style.mapRenderer.temperature || {
+    bandOpacity: 0.3,
+    labels: {color: "#000000", fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "bold", opacity: 1},
+    opacity: 1,
+    stroke: {cap: "butt", color: "#000000", dash: "", opacity: 1, width: 1.8}
+  };
+}
+
+function setPixiTemperatureStyle(patch) {
+  style.mapRenderer ||= {};
+  style.mapRenderer.temperature = {...getPixiTemperatureStyle(), ...patch};
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer: "temperature"}
     })
   );
 }

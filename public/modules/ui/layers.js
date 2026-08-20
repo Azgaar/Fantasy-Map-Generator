@@ -304,7 +304,7 @@ function toggleHeight(event) {
 }
 
 function toggleTemperature(event) {
-  if (!temperature.selectAll("*").size()) {
+  if (!layerIsOn("toggleTemperature")) {
     turnButtonOn("toggleTemperature");
     drawTemperature();
     if (event && isCtrlClick(event)) editStyle("temperature");
@@ -335,44 +335,12 @@ function togglePrecipitation(event) {
   } else {
     if (event && isCtrlClick(event)) return editStyle("prec");
     turnButtonOff("togglePrecipitation");
-    if (window.ViewportPrecipitation) {
-      window.ViewportPrecipitation.clear();
-      prec.style("display", "none");
-      return;
-    }
-    const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
-    prec.selectAll("text").attr("opacity", 1).transition(hide).attr("opacity", 0);
-    prec.selectAll("circle").transition(hide).attr("r", 0).remove();
-    prec.transition().delay(1000).style("display", "none");
   }
 }
 
 function drawPrecipitation() {
-  if (window.ViewportPrecipitation) return window.ViewportPrecipitation.draw();
   TIME && console.time("drawPrecipitation");
-
-  prec.selectAll("circle").remove();
-  const { cells, points } = grid;
-
-  const show = d3.transition().duration(800).ease(d3.easeSinIn);
-  prec.selectAll("text").attr("opacity", 0).transition(show).attr("opacity", 1);
-
-  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
-  const data = cells.i.filter(i => cells.h[i] >= 20 && cells.prec[i]);
-  const getRadius = prec => rn(Math.sqrt(prec / 4) / cellsNumberModifier, 2);
-
-  prec
-    .style("display", "block")
-    .selectAll("circle")
-    .data(data)
-    .enter()
-    .append("circle")
-    .attr("cx", d => points[d][0])
-    .attr("cy", d => points[d][1])
-    .attr("r", 0)
-    .transition(show)
-    .attr("r", d => getRadius(cells.prec[d]));
-
+  redrawPixiLayer("precipitation", "prec");
   TIME && console.timeEnd("drawPrecipitation");
 }
 

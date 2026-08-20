@@ -42,7 +42,6 @@ export const Controllers = createRegistry({
   MarketsOverview: () => import("@/controllers/markets-overview").then(m => m.MarketsOverview),
   MeasurersEditor: () => import("@/controllers/measurers-editor").then(m => m.MeasurersEditor),
   MilitaryOverview: () => import("@/controllers/military-overview").then(m => m.MilitaryOverview),
-  Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
   NamesbaseEditor: () => import("@/controllers/namesbase-editor").then(m => m.NamesbaseEditor),
   NotesEditor: () => import("@/controllers/notes-editor").then(m => m.NotesEditor),
   ProductionChains: () => import("@/controllers/production-chains").then(m => m.ProductionChains),

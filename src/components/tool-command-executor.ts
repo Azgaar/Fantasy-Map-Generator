@@ -24,7 +24,6 @@ const TOOL_COMMAND_HANDLERS = {
   editTradeAnimationButton: () => Controllers.TradeAnimationEditor.open(),
   editUnitsButton: () => Controllers.UnitsEditor.open(),
   editZonesButton: () => Controllers.ZonesEditor.open(),
-  openMinimapButton: () => Controllers.Minimap.open(),
   openSubmapTool: () => Controllers.SubmapTool.open(),
   openTransformTool: () => Controllers.TransformTool.open(),
   overviewBurgsButton: () => Controllers.BurgsOverview.open(),

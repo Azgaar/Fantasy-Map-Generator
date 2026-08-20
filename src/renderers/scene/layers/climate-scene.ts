@@ -1,5 +1,4 @@
 import { convertTemperature } from "@/utils/unitUtils";
-import type { ClimateRenderGrid } from "../render-world";
 import type {
   CircleBatchPrimitive,
   LabelBatchPrimitive,
@@ -9,6 +8,7 @@ import type {
   SceneBounds,
   SceneRevision
 } from "../primitives";
+import type { ClimateRenderGrid } from "../render-world";
 
 export interface ClimateSceneBounds {
   height: number;
@@ -23,10 +23,7 @@ export interface TemperatureScene {
   step: number;
 }
 
-export function buildPrecipitationScene(
-  climate: ClimateRenderGrid,
-  revision: SceneRevision = 0
-): CircleBatchPrimitive {
+export function buildPrecipitationScene(climate: ClimateRenderGrid, revision: SceneRevision = 0): CircleBatchPrimitive {
   const modifier = (Math.max(1, climate.requestedCells) / 10_000) ** 0.25;
   const circles: Array<{ domainId: number; radius: number; x: number; y: number }> = [];
   for (const cellId of climate.cells.i) {

@@ -12,6 +12,7 @@ import rendererLoader from "./pixi-renderer-loader.ts?raw";
 
 const createController = (): PixiRendererControllerApi => ({
   clear: vi.fn(async () => undefined),
+  createOverview: vi.fn(() => null),
   getCanvas: vi.fn(() => null),
   getSnapshot: vi.fn(() => null),
   invalidateLayer: vi.fn(),

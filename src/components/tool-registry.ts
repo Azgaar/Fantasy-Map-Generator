@@ -324,14 +324,6 @@ export const TOOL_COMMANDS: readonly ToolCommand[] = [
     searchTerms: ["statistics", "graphs", "data"]
   }),
   controllerCommand({
-    id: "analysis.minimap",
-    controlId: "openMinimapButton",
-    label: "Minimap",
-    description: "Open a navigable map overview",
-    group: "analysis",
-    searchTerms: ["overview", "navigate", "viewport"]
-  }),
-  controllerCommand({
     id: "analysis.notes",
     controlId: "editNotesButton",
     label: "Notes",

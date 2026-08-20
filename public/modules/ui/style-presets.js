@@ -167,9 +167,11 @@ function syncPixiCellStylePreset(presetJson) {
     cells: "#cells",
     cultures: "#cults",
     grid: "#gridOverlay",
+    precipitation: "#prec",
     provinces: "#provs",
     religions: "#relig",
     states: "#statesBody",
+    temperature: "#temperature",
     zones: "#zones"
   };
   style.mapRenderer ||= {};
@@ -179,24 +181,34 @@ function syncPixiCellStylePreset(presetJson) {
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
       ...current,
-      ...(["cells", "grid", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
+      ...(["cells", "grid", "precipitation", "temperature", "zones"].includes(layer)
+        ? {}
+        : {fallbackColor: current.fallbackColor || "#888888"}),
       opacity: Number(opacity)
     };
   }
-  for (const [layer, selector] of Object.entries({cells: "#cells", grid: "#gridOverlay", zones: "#zones"})) {
+  for (const [layer, selector] of Object.entries({
+    cells: "#cells",
+    grid: "#gridOverlay",
+    precipitation: "#prec",
+    temperature: "#temperature",
+    zones: "#zones"
+  })) {
     const preset = presetJson[selector];
     if (!preset) continue;
     const layerStyle = style.mapRenderer[layer] || {};
-    const stroke = (["grid", "zones"].includes(layer) ? layerStyle.stroke : layerStyle) || {};
+    const stroke = (["grid", "precipitation", "temperature", "zones"].includes(layer)
+      ? layerStyle.stroke
+      : layerStyle) || {};
     const updatedStroke = {
       ...stroke,
       cap: preset["stroke-linecap"] || stroke.cap || "butt",
       color: preset.stroke || stroke.color || "#333333",
       dash: preset["stroke-dasharray"] || "",
-      opacity: Number(preset.opacity ?? stroke.opacity ?? 1),
+      opacity: layer === "cells" ? Number(preset.opacity ?? stroke.opacity ?? 1) : Number(stroke.opacity ?? 1),
       width: Number(preset["stroke-width"] || 0)
     };
-    style.mapRenderer[layer] = ["grid", "zones"].includes(layer)
+    style.mapRenderer[layer] = ["grid", "precipitation", "temperature", "zones"].includes(layer)
       ? {...layerStyle, stroke: updatedStroke}
       : updatedStroke;
   }
@@ -208,6 +220,32 @@ function syncPixiCellStylePreset(presetJson) {
       dy: Number(gridPreset.dy || 0),
       scale: Number(gridPreset.scale || 1),
       type: gridPreset.type || "pointyHex"
+    };
+  }
+  const precipitationPreset = presetJson["#prec"];
+  if (precipitationPreset) {
+    style.mapRenderer.precipitation = {
+      ...style.mapRenderer.precipitation,
+      fill: {
+        ...style.mapRenderer.precipitation.fill,
+        color: precipitationPreset.fill || style.mapRenderer.precipitation.fill?.color || "#003dff",
+        opacity: style.mapRenderer.precipitation.fill?.opacity ?? 1
+      }
+    };
+  }
+  const temperaturePreset = presetJson["#temperature"];
+  if (temperaturePreset) {
+    style.mapRenderer.temperature = {
+      ...style.mapRenderer.temperature,
+      bandOpacity: Number(temperaturePreset["fill-opacity"] ?? 0.3),
+      labels: {
+        ...style.mapRenderer.temperature.labels,
+        color: temperaturePreset.fill || style.mapRenderer.temperature.labels?.color || "#000000",
+        fontFamily: temperaturePreset["font-family"] || "Arial, sans-serif",
+        fontSize: Number.parseFloat(temperaturePreset["font-size"] || "8") || 8,
+        fontWeight: "bold",
+        opacity: style.mapRenderer.temperature.labels?.opacity ?? 1
+      }
     };
   }
   window.dispatchEvent(
