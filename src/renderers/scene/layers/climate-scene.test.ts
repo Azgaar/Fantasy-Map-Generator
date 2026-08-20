@@ -50,7 +50,7 @@ describe("climate scenes", () => {
           [80, 60],
           [0, 60]
         ],
-        role: "10"
+        role: "base:10"
       }
     ]);
     expect(scene.labels.labels).toEqual([]);

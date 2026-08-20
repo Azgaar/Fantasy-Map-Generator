@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getMinimapViewport } from "./map-minimap";
+import { getClampedMinimapCenter, getMinimapViewport } from "./map-minimap";
 
 describe("getMinimapViewport", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -26,5 +26,24 @@ describe("getMinimapViewport", () => {
     vi.stubGlobal("viewY", -900);
 
     expect(getMinimapViewport()).toEqual({ height: 50, width: 50, x: 950, y: 450 });
+  });
+
+  it("keeps corner navigation inside the world at maximum zoom", () => {
+    vi.stubGlobal("graphWidth", 1000);
+    vi.stubGlobal("graphHeight", 500);
+    vi.stubGlobal("svgWidth", 500);
+    vi.stubGlobal("svgHeight", 250);
+
+    expect(getClampedMinimapCenter(0, 0, 20)).toEqual([12.5, 6.25]);
+    expect(getClampedMinimapCenter(1000, 500, 20)).toEqual([987.5, 493.75]);
+  });
+
+  it("centers an oversized viewport instead of allowing an invalid boundary", () => {
+    vi.stubGlobal("graphWidth", 1000);
+    vi.stubGlobal("graphHeight", 500);
+    vi.stubGlobal("svgWidth", 500);
+    vi.stubGlobal("svgHeight", 250);
+
+    expect(getClampedMinimapCenter(0, 0, 0.25)).toEqual([500, 250]);
   });
 });

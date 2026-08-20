@@ -1,4 +1,4 @@
-import { convertTemperature } from "@/utils/unitUtils";
+import { formatTemperature } from "@/utils/temperature";
 import type {
   CircleBatchPrimitive,
   LabelBatchPrimitive,
@@ -101,7 +101,7 @@ export function buildTemperatureScene(
         [bounds.width, bounds.height],
         [0, bounds.height]
       ],
-      role: String(minimum)
+      role: `base:${minimum}`
     },
     ...contours.map(({ points, temperature }, index) => ({
       domainId: `temperature:${temperature}:${index}`,
@@ -211,7 +211,7 @@ function addTemperatureLabels(
       anchor: point,
       domainId: `temperature-label:${temperature}:${position}:${labels.length}`,
       role: String(temperature),
-      text: convertTemperature(temperature, scale)
+      text: formatTemperature(temperature, scale)
     });
   }
 }

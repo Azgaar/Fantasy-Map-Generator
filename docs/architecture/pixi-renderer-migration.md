@@ -32,11 +32,13 @@ The former opt-in experiment is retained only as historical context in
   retained cell topology, independently update attributes and opacity, and render in canonical order. Zones use
   ordered per-zone polygon batches because memberships can overlap and cannot be represented by one assignment value
   per cell. The classic isoline/zone-path draw branches and synchronous SVG/Pixi ownership-request bridge are deleted.
-- M6 owns state/province borders, explicit cell outlines, and the procedural grid. Cell edges and all ten grid pattern
-  types are built as renderer-neutral, clipped line batches with semantic line style and persisted visibility. The
-  persistent SVG cell paths and grid pattern/rectangle renderer have been deleted; heightmap-edit cell geometry remains
-  only as a transient editing overlay. Temperature, precipitation, camera-aware grid density, and visual/performance
-  evidence remain open for this milestone.
+- M6 owns state/province borders, explicit cell outlines, the procedural grid, temperature, and precipitation. Cell
+  edges and all ten grid pattern types are renderer-neutral clipped line batches. Climate rendering receives the
+  high-resolution generation grid through an explicit render-world snapshot; temperature emits ordered contour bands
+  and labels, while precipitation emits one batched circle scene. Their semantic style and visibility are persisted.
+  The persistent SVG cell, grid, temperature, and precipitation renderers have been deleted; heightmap-edit cell
+  geometry remains only as a transient editing overlay. Camera-aware grid density, zoom-stable strokes, contour visual
+  acceptance, dense-layer performance, and shared picking geometry remain open for this milestone.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.
@@ -45,7 +47,7 @@ The former opt-in experiment is retained only as historical context in
   destroy/remount unit coverage. Relief textures use a reference-counted, concurrent-load-deduplicating LRU cache with
   a byte budget; retained geometry and cached textures have lifecycle tests proving that clear returns accounting to
   baseline. Browser-verified reconstruction and GPU/heap memory evidence remain open.
-- M2 scene contracts now define renderer-neutral polygon, line, sprite, label, hit-region, and mask primitives. State
+- M2 scene contracts now define renderer-neutral polygon, line, circle, sprite, label, hit-region, and mask primitives. State
   and biome fills build polygon batches from retained topology, relief builds a pure sprite-instance batch, and Pixi
   consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds and are drawn directly with
   Pixi graphics. World/topology/layer revision tokens advance from typed invalidations.

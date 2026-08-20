@@ -1,4 +1,4 @@
-import type { TemperatureScale } from "@/utils/unitUtils";
+import type { TemperatureScale } from "@/utils/temperature";
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";

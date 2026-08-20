@@ -24,6 +24,20 @@ export function getMinimapViewport(): MinimapViewport {
   return { height: Math.max(0, bottom - y), width: Math.max(0, right - x), x, y };
 }
 
+export function getClampedMinimapCenter(x: number, y: number, zoomScale = scale): [number, number] {
+  const viewportWidth = svgWidth / zoomScale;
+  const viewportHeight = svgHeight / zoomScale;
+  const clampedX = clampCenter(x, viewportWidth, graphWidth);
+  const clampedY = clampCenter(y, viewportHeight, graphHeight);
+  return [clampedX, clampedY];
+}
+
+function clampCenter(value: number, viewportSize: number, worldSize: number): number {
+  if (viewportSize >= worldSize) return worldSize / 2;
+  const halfViewport = viewportSize / 2;
+  return Math.min(worldSize - halfViewport, Math.max(halfViewport, value));
+}
+
 export function MapMinimap(): React.JSX.Element {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -76,7 +90,7 @@ export function MapMinimap(): React.JSX.Element {
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - bounds.left) / bounds.width) * graphWidth;
     const y = ((event.clientY - bounds.top) / bounds.height) * graphHeight;
-    zoomTo(Math.min(graphWidth, Math.max(0, x)), Math.min(graphHeight, Math.max(0, y)), scale, 450);
+    zoomTo(...getClampedMinimapCenter(x, y), scale, 450);
   };
 
   return (

@@ -1,4 +1,5 @@
-import { color, interpolateSpectral } from "d3";
+import { color } from "d3-color";
+import { interpolateSpectral } from "d3-scale-chromatic";
 import {
   Application,
   Assets,
@@ -537,10 +538,13 @@ export class PixiMapRenderer implements MapRenderer {
       this.sceneRevisions.getLayerRevision("temperature")
     );
     const bands = this.buildPolygonContainer("temperature", scene.bands.polygons, role => {
-      const fillColor = getTemperatureColor(Number(role));
+      const isBase = role.startsWith("base:");
+      const fillColor = getTemperatureColor(Number(isBase ? role.slice(5) : role));
       return {
         fill: { color: fillColor, opacity: style.bandOpacity },
-        stroke: { ...style.stroke, color: color(fillColor)?.darker(0.2).toString() ?? fillColor }
+        stroke: isBase
+          ? { ...style.stroke, opacity: 0, width: 0 }
+          : { ...style.stroke, color: color(fillColor)?.darker(0.2).toString() ?? fillColor }
       };
     });
     container.addChild(...bands.removeChildren());

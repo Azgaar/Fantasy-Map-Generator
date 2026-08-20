@@ -1,6 +1,6 @@
 import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";
-import type { TemperatureScale } from "@/utils/unitUtils";
+import type { TemperatureScale } from "@/utils/temperature";
 
 export interface ClimateRenderGrid {
   cells: Grid["cells"];
