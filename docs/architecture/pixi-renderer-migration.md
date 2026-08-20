@@ -39,6 +39,13 @@ The former opt-in experiment is retained only as historical context in
   The persistent SVG cell, grid, temperature, and precipitation renderers have been deleted; heightmap-edit cell
   geometry remains only as a transient editing overlay. Camera-aware grid density, zoom-stable strokes, contour visual
   acceptance, dense-layer performance, and shared picking geometry remain open for this milestone.
+- The first M7 line slice gives rivers and routes renderer-neutral scenes and Pixi ownership. Rivers are deterministic
+  variable-width polygons; routes are Catmull-Rom line paths grouped by semantic route role, including Pixi-side dash
+  rendering. Their classic persistent draw branches are deleted. River and route editors now accept domain IDs and
+  place only the active edit path and control handles in the transient `#debug` overlay; creators and overviews no
+  longer create, locate, style, or measure paths through `#rivers` or `#routes`. Direct Pixi picking and hover/basin
+  highlighting remain M9 work, so controls that depended on persistent path nodes are not retained as compatibility
+  shims.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.

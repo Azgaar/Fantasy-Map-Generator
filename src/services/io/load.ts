@@ -509,7 +509,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("grid", "toggleGrid", Boolean(hasChildren(select("#gridOverlay"))));
       if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
       if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
-      if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
+      turnOnPixiLayer("rivers", "toggleRivers", pack.rivers.length > 0);
       turnOnPixiLayer("relief", "toggleRelief", Boolean(isVisible(select("#terrain"))));
       turnOnPixiLayer("religions", "toggleReligions", Boolean(hasChildren(select("#relig"))));
       turnOnPixiLayer("cultures", "toggleCultures", Boolean(hasChildren(select("#cults"))));
@@ -521,7 +521,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         "toggleBorders",
         Boolean(isVisible(select("#borders")) && hasChild(select("#borders"), "path"))
       );
-      if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
+      turnOnPixiLayer("routes", "toggleRoutes", pack.routes.length > 0);
       turnOnPixiLayer("temperature", "toggleTemperature", Boolean(hasChildren(select("#temperature"))));
       if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
       if (isVisible(select("#ice"))) turnOn("toggleIce");

@@ -32,7 +32,7 @@ export function applyDefaultViewboxEvents(): void {
 type Opener = (target: SVGElement, parent: SVGElement) => void;
 
 const PARENT_EDITORS: Record<string, Opener> = {
-  rivers: target => Controllers.RiverEditor.open(target.id),
+  rivers: target => Controllers.RiverEditor.open(Number(target.dataset.id ?? target.id.slice(5))),
   ice: target => Controllers.IceEditor.open(target),
   terrain: target => Controllers.ReliefEditor.open(target),
   goodsCells: () => Controllers.GoodsEditor.open()
@@ -40,7 +40,7 @@ const PARENT_EDITORS: Record<string, Opener> = {
 
 const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
-  routes: target => Controllers.RouteEditor.open(target.id),
+  routes: target => Controllers.RouteEditor.open(Number(target.dataset.id ?? target.id.slice(5))),
   burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),

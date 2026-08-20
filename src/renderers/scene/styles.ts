@@ -63,6 +63,11 @@ export interface TemperatureLayerStyle {
   stroke: SemanticLineStyle;
 }
 
+export interface RiverLayerStyle {
+  fill: SemanticFillStyle;
+  opacity: number;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
@@ -80,6 +85,8 @@ export interface MapStyle {
   provinces: CellLayerStyle;
   relief: { opacity: number };
   religions: CellLayerStyle;
+  rivers: RiverLayerStyle;
+  routes: SemanticRoleStyles<SemanticLineStyle>;
   states: CellLayerStyle;
   temperature: TemperatureLayerStyle;
   zones: ZoneLayerStyle;
@@ -152,6 +159,15 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   provinces: { fallbackColor: "#888888", opacity: 0.7 },
   relief: { opacity: 1 },
   religions: { fallbackColor: "#888888", opacity: 0.7 },
+  rivers: { fill: { color: "#5d97bb", opacity: 1 }, opacity: 1 },
+  routes: {
+    default: { cap: "butt", color: "#d06324", dash: "2", opacity: 0.9, width: 0.7 },
+    roles: {
+      roads: { cap: "butt", color: "#d06324", dash: "2", opacity: 0.9, width: 0.7 },
+      searoutes: { cap: "round", color: "#ffffff", dash: "1 2", opacity: 0.9, width: 0.35 },
+      trails: { cap: "butt", color: "#d06324", dash: ".8 1.6", opacity: 0.9, width: 0.25 }
+    }
+  },
   states: { fallbackColor: "#888888", opacity: 0.4 },
   temperature: {
     bandOpacity: 0.3,

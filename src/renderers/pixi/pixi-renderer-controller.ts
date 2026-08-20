@@ -37,6 +37,7 @@ const OWNED_SVG_SELECTORS = [
   "#biomes",
   "#cells",
   "#gridOverlay",
+  "#rivers",
   "#terrain",
   "#relig",
   "#cults",
@@ -47,6 +48,7 @@ const OWNED_SVG_SELECTORS = [
   "#zones",
   "#stateBorders",
   "#provinceBorders",
+  "#routes",
   "#temperature",
   "#coastline",
   "#prec"
@@ -91,6 +93,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
   renderer.setLayerVisibility("cells", layerIsOn("toggleCells"));
   renderer.setLayerVisibility("grid", layerIsOn("toggleGrid"));
+  renderer.setLayerVisibility("rivers", layerIsOn("toggleRivers"));
   renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
   renderer.setLayerVisibility("religions", layerIsOn("toggleReligions"));
   renderer.setLayerVisibility("cultures", layerIsOn("toggleCultures"));
@@ -98,6 +101,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("provinces", layerIsOn("toggleProvinces"));
   renderer.setLayerVisibility("zones", layerIsOn("toggleZones"));
   renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
+  renderer.setLayerVisibility("routes", layerIsOn("toggleRoutes"));
   renderer.setLayerVisibility("temperature", layerIsOn("toggleTemperature"));
   renderer.setLayerVisibility("coastline", true);
   renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));

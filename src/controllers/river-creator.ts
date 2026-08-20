@@ -5,6 +5,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
@@ -153,15 +154,8 @@ function addRiver(): void {
     name,
     type: "River"
   });
-  const id = `river${riverId}`;
-
-  select("#viewbox")
-    .select("#rivers")
-    .append("path")
-    .attr("id", id)
-    .attr("d", Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth));
-
-  void Controllers.RiverEditor.open(id);
+  invalidatePixiRendererLayer("rivers");
+  void Controllers.RiverEditor.open(riverId);
 }
 
 function closeRiverCreator(): void {

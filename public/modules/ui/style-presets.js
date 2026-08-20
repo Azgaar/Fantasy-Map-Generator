@@ -170,6 +170,7 @@ function syncPixiCellStylePreset(presetJson) {
     precipitation: "#prec",
     provinces: "#provs",
     religions: "#relig",
+    rivers: "#rivers",
     states: "#statesBody",
     temperature: "#temperature",
     zones: "#zones"
@@ -181,7 +182,7 @@ function syncPixiCellStylePreset(presetJson) {
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
       ...current,
-      ...(["cells", "grid", "precipitation", "temperature", "zones"].includes(layer)
+      ...(["cells", "grid", "precipitation", "rivers", "temperature", "zones"].includes(layer)
         ? {}
         : {fallbackColor: current.fallbackColor || "#888888"}),
       opacity: Number(opacity)
@@ -248,6 +249,36 @@ function syncPixiCellStylePreset(presetJson) {
       }
     };
   }
+  const riversPreset = presetJson["#rivers"];
+  if (riversPreset) {
+    style.mapRenderer.rivers = {
+      ...style.mapRenderer.rivers,
+      fill: {
+        ...style.mapRenderer.rivers.fill,
+        color: riversPreset.fill || style.mapRenderer.rivers.fill?.color || "#5d97bb",
+        opacity: style.mapRenderer.rivers.fill?.opacity ?? 1
+      }
+    };
+  }
+  const routeRoles = {...(style.mapRenderer.routes?.roles || {})};
+  for (const group of ["roads", "trails", "searoutes"]) {
+    const preset = presetJson[`#${group}`];
+    if (!preset) continue;
+    const current = routeRoles[group] || style.mapRenderer.routes?.default || {};
+    routeRoles[group] = {
+      ...current,
+      cap: preset["stroke-linecap"] || current.cap || "butt",
+      color: preset.stroke || current.color || "#d06324",
+      dash: String(preset["stroke-dasharray"] || ""),
+      opacity: Number(preset.opacity ?? current.opacity ?? 1),
+      width: Number(preset["stroke-width"] || 0)
+    };
+  }
+  style.mapRenderer.routes = {
+    ...(style.mapRenderer.routes || {}),
+    default: style.mapRenderer.routes?.default || routeRoles.roads,
+    roles: routeRoles
+  };
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "queue-rebuild"}

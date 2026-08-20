@@ -17,6 +17,7 @@ describe("Pixi renderer ownership", () => {
       "biomes",
       "cells",
       "grid",
+      "rivers",
       "relief",
       "religions",
       "cultures",
@@ -24,6 +25,7 @@ describe("Pixi renderer ownership", () => {
       "provinces",
       "zones",
       "borders",
+      "routes",
       "temperature",
       "coastline",
       "precipitation"

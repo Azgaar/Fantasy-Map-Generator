@@ -83,11 +83,17 @@ styleElementSelect.addEventListener("change", selectStyleElement);
 function selectStyleElement() {
   const styleElement = styleElementSelect.value;
   let el = d3.select("#" + styleElement);
+  const routeGroups = styleElement === "routes" ? getPixiRouteGroups() : [];
+  const requestedRouteGroup = styleGroupSelect.value;
+  const routeGroup = routeGroups.includes(requestedRouteGroup) ? requestedRouteGroup : routeGroups[0];
 
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
   // show alert line if layer is not visible
-  const isLayerOff = styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
+  const isLayerOff =
+    styleElement === "routes"
+      ? !layerIsOn("toggleRoutes")
+      : styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element
@@ -97,7 +103,7 @@ function selectStyleElement() {
     if (styleElement === "labels") {
       const selected = group && el.select(`[data-group="${CSS.escape(group)}"]`);
       el = selected && selected.size() ? selected : el.select(defaultGroupSelector);
-    } else {
+    } else if (styleElement !== "routes") {
       el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
     }
   }
@@ -109,7 +115,7 @@ function selectStyleElement() {
   }
 
   // filter
-  if (!["landmass", "legend", "regions", "scaleBar"].includes(styleElement)) {
+  if (!["landmass", "legend", "regions", "routes", "scaleBar"].includes(styleElement)) {
     styleFilter.style.display = "block";
     styleFilterInput.value = el.attr("filter") || "";
   }
@@ -175,7 +181,6 @@ function selectStyleElement() {
       "gridOverlay",
       "population",
       "prec",
-      "routes",
       "temperature",
       "terrain",
       "texture",
@@ -404,6 +409,15 @@ function selectStyleElement() {
     styleMarketsIcon.innerHTML = el.attr("data-icon") || "⚖️";
   }
 
+  if (styleElement === "routes") {
+    const routeStyle = getPixiRouteLineStyle(routeGroup);
+    styleOpacityInput.value = routeStyle.opacity;
+    styleStrokeInput.value = styleStrokeOutput.value = routeStyle.color;
+    styleStrokeWidthInput.value = routeStyle.width;
+    styleStrokeDasharrayInput.value = routeStyle.dash;
+    styleStrokeLinecapInput.value = routeStyle.cap;
+  }
+
   // update group options
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
@@ -414,6 +428,12 @@ function selectStyleElement() {
         styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
       });
       styleGroupSelect.value = el.attr("data-group");
+    } else if (styleElement === "routes") {
+      for (const group of routeGroups) {
+        const count = pack.routes.filter(route => route.group === group).length;
+        styleGroupSelect.options.add(new Option(`${group} (${count})`, group, false, group === routeGroup));
+      }
+      styleGroupSelect.value = routeGroup;
     } else {
       const groups = ensureEl(styleElement).querySelectorAll("g");
       groups.forEach(el => {
@@ -474,6 +494,7 @@ styleGroupSelect.addEventListener("change", selectStyleElement);
 function getEl() {
   const el = styleElementSelect.value;
   const g = styleGroupSelect.value;
+  if (el === "routes") return d3.select(null);
   if (g === el || g === "") return svg.select("#" + el);
   if (el === "labels") return svg.select("#labels").select(`[data-group="${CSS.escape(g)}"]`);
   else return svg.select("#" + el).select("#" + g);
@@ -498,7 +519,8 @@ styleFillInput.addEventListener("input", function () {
   getEl().attr("fill", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.fill = this.value;
-  if (styleElementSelect.value === "prec") setPixiAreaFillColor("precipitation", this.value);
+  const pixiFillLayer = {prec: "precipitation", rivers: "rivers"}[styleElementSelect.value];
+  if (pixiFillLayer) setPixiAreaFillColor(pixiFillLayer, this.value);
 });
 
 styleStrokeInput.addEventListener("input", function () {
@@ -510,6 +532,9 @@ styleStrokeInput.addEventListener("input", function () {
   const pixiStrokeLayer = {cells: "cells", prec: "precipitation", zones: "zones"}[styleElementSelect.value];
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "color", this.value);
+  }
+  if (styleElementSelect.value === "routes") {
+    setPixiRouteLineStyle(styleGroupSelect.value || "roads", "color", this.value);
   }
 });
 
@@ -532,6 +557,9 @@ styleStrokeWidthInput.addEventListener("input", e => {
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "width", Number(e.target.value));
   }
+  if (styleElementSelect.value === "routes") {
+    setPixiRouteLineStyle(styleGroupSelect.value || "roads", "width", Number(e.target.value));
+  }
   redrawMeasurersOnStyleChange();
 });
 
@@ -548,6 +576,9 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "dash", this.value);
   }
+  if (styleElementSelect.value === "routes") {
+    setPixiRouteLineStyle(styleGroupSelect.value || "roads", "dash", this.value);
+  }
   redrawMeasurersOnStyleChange();
 });
 
@@ -557,6 +588,9 @@ styleStrokeLinecapInput.addEventListener("change", function () {
   const pixiStrokeLayer = {cells: "cells", temperature: "temperature", zones: "zones"}[styleElementSelect.value];
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "cap", this.value);
+  }
+  if (styleElementSelect.value === "routes") {
+    setPixiRouteLineStyle(styleGroupSelect.value || "roads", "cap", this.value);
   }
 });
 
@@ -574,10 +608,14 @@ styleOpacityInput.addEventListener("input", e => {
     prec: "precipitation",
     provs: "provinces",
     relig: "religions",
+    rivers: "rivers",
     temperature: "temperature",
     zones: "zones"
   }[styleElementSelect.value];
   if (pixiLayer) setPixiLayerOpacity(pixiLayer, e.target.value);
+  if (styleElementSelect.value === "routes") {
+    setPixiRouteLineStyle(styleGroupSelect.value || "roads", "opacity", Number(e.target.value));
+  }
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.opacity = e.target.value;
 });
@@ -1058,7 +1096,7 @@ function setPixiLayerOpacity(layer, opacity) {
   const current = style.mapRenderer[layer] || {};
   style.mapRenderer[layer] = {
     ...current,
-    ...(["cells", "grid", "precipitation", "temperature", "zones"].includes(layer)
+    ...(["cells", "grid", "precipitation", "rivers", "temperature", "zones"].includes(layer)
       ? {}
       : {fallbackColor: current.fallbackColor || "#888888"}),
     opacity: Number(opacity)
@@ -1104,6 +1142,38 @@ function setPixiAreaFillColor(layer, color) {
       detail: {command: "invalidate-layer", layer}
     })
   );
+}
+
+function setPixiRouteLineStyle(group, property, value) {
+  style.mapRenderer ||= {};
+  const routesStyle = style.mapRenderer.routes || {default: {}, roles: {}};
+  const roles = routesStyle.roles || {};
+  const lineStyle = getPixiRouteLineStyle(group);
+  style.mapRenderer.routes = {
+    ...routesStyle,
+    roles: {...roles, [group]: {...lineStyle, [property]: value}}
+  };
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer: "routes"}
+    })
+  );
+}
+
+function getPixiRouteGroups() {
+  const roles = style.mapRenderer?.routes?.roles || {};
+  return [...new Set(["roads", "trails", "searoutes", ...Object.keys(roles), ...pack.routes.map(route => route.group)])];
+}
+
+function getPixiRouteLineStyle(group = "roads") {
+  const defaults = {
+    roads: {cap: "butt", color: "#d06324", dash: "2", opacity: 0.9, width: 0.7},
+    trails: {cap: "butt", color: "#d06324", dash: ".8 1.6", opacity: 0.9, width: 0.25},
+    searoutes: {cap: "round", color: "#ffffff", dash: "1 2", opacity: 0.9, width: 0.35}
+  };
+  const routesStyle = style.mapRenderer?.routes || {};
+  const base = defaults[group] || defaults.roads;
+  return {...base, ...(routesStyle.default || {}), ...(routesStyle.roles?.[group] || {})};
 }
 
 function getPixiTemperatureStyle() {

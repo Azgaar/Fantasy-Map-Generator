@@ -1,7 +1,7 @@
 import Alea from "alea";
-import { curveBasis, curveCatmullRom, line, mean, min, select, sum } from "d3";
+import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import { each, rn, round, rw } from "../utils";
-import { meander, projectToNearestEdge } from "../utils/pathUtils";
+import { meander, projectToNearestEdge } from "../utils/meander";
 import type { Label } from "./labels-generator";
 import type { Point } from "./voronoi";
 
@@ -620,9 +620,6 @@ class RiverModule {
   remove(id: number) {
     const cells = pack.cells;
     const riversToRemove = pack.rivers.filter(r => r.i === id || r.parent === id || r.basin === id).map(r => r.i);
-    riversToRemove.forEach(r => {
-      select("#rivers").select(`#river${r}`).remove();
-    });
     cells.r.forEach((r, i) => {
       if (!r || !riversToRemove.includes(r)) return;
       cells.r[i] = 0;
@@ -630,6 +627,7 @@ class RiverModule {
       cells.conf[i] = 0;
     });
     pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
+    if (typeof layerIsOn === "function" && layerIsOn("toggleRivers")) drawRivers();
   }
 
   getParent(r: number): number {

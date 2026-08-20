@@ -712,31 +712,17 @@ function toggleRivers(event) {
     if (event && isCtrlClick(event)) editStyle("rivers");
   } else {
     if (event && isCtrlClick(event)) return editStyle("rivers");
-    rivers.selectAll("*").remove();
     turnButtonOff("toggleRivers");
   }
 }
 
 function drawRivers() {
   TIME && console.time("drawRivers");
-  rivers.selectAll("*").remove();
-
-  const riverPaths = pack.rivers.map(({ cells, points, i, widthFactor, sourceWidth }) => {
-    if (!cells || cells.length < 2) return;
-
-    if (points && points.length !== cells.length) {
-      console.error(
-        `River ${i} has ${cells.length} cells, but only ${points.length} points defined. Resetting points data`
-      );
-      points = undefined;
-    }
-
-    const meanderedPoints = Rivers.addMeandering(cells, points);
-    const path = Rivers.getRiverPath(meanderedPoints, widthFactor, sourceWidth);
-    return `<path id="river${i}" d="${path}"/>`;
-  });
-  rivers.html(riverPaths.join(""));
-
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer: "rivers"}
+    })
+  );
   TIME && console.timeEnd("drawRivers");
 }
 
@@ -747,36 +733,22 @@ function toggleRoutes(event) {
     if (event && isCtrlClick(event)) editStyle("routes");
   } else {
     if (event && isCtrlClick(event)) return editStyle("routes");
-    routes.selectAll("path").remove();
     turnButtonOff("toggleRoutes");
   }
 }
 
 function drawRoutes() {
   TIME && console.time("drawRoutes");
-  const routePaths = {};
-
-  for (const route of pack.routes) {
-    const { i, group, points } = route;
-    if (!points || points.length < 2) continue;
-    if (!routePaths[group]) routePaths[group] = [];
-    routePaths[group].push(`<path id="route${i}" d="${Routes.getPath(route)}"/>`);
-  }
-
-  routes.attr("fill", "none").selectAll("path").remove();
-  for (const group in routePaths) {
-    routes.select("#" + group).html(routePaths[group].join(""));
-  }
-
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer: "routes"}
+    })
+  );
   TIME && console.timeEnd("drawRoutes");
 }
 
 function drawRoute(route) {
-  routes
-    .select("#" + route.group)
-    .append("path")
-    .attr("d", Routes.getPath(route))
-    .attr("id", "route" + route.i);
+  drawRoutes();
 }
 
 function toggleMilitary(event) {

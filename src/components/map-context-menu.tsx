@@ -190,9 +190,9 @@ function editEntity(entity: MapContextEntity): unknown {
     case "relief":
       return Controllers.ReliefEditor.open(element!);
     case "river":
-      return Controllers.RiverEditor.open(element?.id || `river${id}`);
+      return Controllers.RiverEditor.open(id!);
     case "route":
-      return Controllers.RouteEditor.open(element?.id || `route${id}`);
+      return Controllers.RouteEditor.open(id!);
     case "zone":
       return Controllers.ZonesEditor.open();
   }

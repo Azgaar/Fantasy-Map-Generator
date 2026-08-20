@@ -48,12 +48,9 @@ function createOverlappingHit(): Element {
     dataset: { id: "2", labelType: "burg" },
     textContent: "West|watch"
   } as unknown as SVGTextElement;
-  const route = { id: "route7" } as SVGElement;
-
   return {
     closest: (selector: string) => {
       if (selector === "#labels text[data-label-type][data-id]") return label;
-      if (selector === "#routes [id^='route']") return route;
       return null;
     }
   } as unknown as Element;
@@ -61,12 +58,14 @@ function createOverlappingHit(): Element {
 
 describe("buildMapContext", () => {
   test("collects and de-duplicates overlapping objects at a cell", () => {
+    const pack = createPack();
+    pack.cells.routes = [{ 1: 7 }];
     const context = buildMapContext({
       cellId: 0,
       clientX: 400,
       clientY: 300,
       elements: [createOverlappingHit()],
-      pack: createPack(),
+      pack,
       point: [120.25, 84.5]
     });
 

@@ -6,33 +6,50 @@ import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rand, rn } from "../utils";
 
-let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let selectedRiver: Selection<SVGPathElement, unknown, HTMLElement, unknown>;
+let selectedRiverId = 0;
 
-function open(id: string): void {
+function open(riverId: number): void {
   if (customization) return;
-  if (findEl("riverEditor") && id === selectedRiver.attr("id")) return;
+  if (findEl("riverEditor") && riverId === selectedRiverId) return;
   closeDialogs(".stable");
   if (!layerIsOn("toggleRivers")) toggleRivers();
 
   ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
   if (!layerIsOn("toggleCells")) toggleCells();
 
-  selectedRiver = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
+  const river = pack.rivers.find(candidate => candidate.i === riverId);
+  if (!river) return;
+  selectedRiverId = riverId;
 
   tip(
     "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
     true
   );
   select("#debug").append("g").attr("id", "controlCells");
-  select("#debug").append("g").attr("id", "controlPoints");
+  const controlPoints = select<SVGGElement, unknown>("#debug")
+    .append("g")
+    .attr("id", "controlPoints")
+    .attr("data-renderer-overlay", "transient");
+  const anchors = river.points?.length === river.cells.length ? river.points : undefined;
+  const meanderedPoints = Rivers.addMeandering(river.cells, anchors);
+  selectedRiver = controlPoints
+    .append("path")
+    .attr("class", "active-editor-path")
+    .attr("data-domain-kind", "river")
+    .attr("data-domain-id", riverId)
+    .attr("d", Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth))
+    .style("fill", "transparent")
+    .style("pointer-events", "all")
+    .on("click", addControlPoint);
 
   renderDialog();
   updateRiverData();
 
-  const river = getRiver();
   const { cells, points } = river;
   const riverPoints = Rivers.getRiverPoints(cells, points ?? null);
   drawControlPoints(riverPoints);
@@ -128,8 +145,7 @@ function openRiverStyle(): void {
 }
 
 function getRiver(): River {
-  const riverId = +selectedRiver.attr("id").slice(5);
-  return pack.rivers.find((r: River) => r.i === riverId) as River;
+  return pack.rivers.find((river: River) => river.i === selectedRiverId) as River;
 }
 
 function updateRiverData(): void {
@@ -157,7 +173,9 @@ function updateRiverData(): void {
 }
 
 function updateRiverLength(river: River): void {
-  river.length = rn((selectedRiver.node() as SVGGeometryElement).getTotalLength() / 2, 2);
+  const anchors = river.points?.length === river.cells.length ? river.points : undefined;
+  const meanderedPoints = Rivers.addMeandering(river.cells, anchors);
+  river.length = Rivers.getApproximateLength(meanderedPoints.map(([x, y]) => [x, y]));
   const lengthUI = `${rn(river.length * distanceScale)} ${distanceUnitInput.value}`;
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
@@ -236,12 +254,13 @@ function dragControlPoint(event: any): void {
 
 function redrawRiver(): void {
   const river = getRiver();
-  river.points = select("#controlPoints").selectAll("*").data() as Point[];
+  river.points = select("#controlPoints").selectAll("circle").data() as Point[];
   river.cells = river.points.map(([x, y]) => findCell(x, y)!);
 
   const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
   const path = Rivers.getRiverPath(meanderedPoints, river.widthFactor, river.sourceWidth);
   selectedRiver.attr("d", path);
+  invalidatePixiRendererLayer("rivers");
 
   updateRiverLength(river);
   drawLabels();
@@ -253,7 +272,7 @@ function addControlPoint(this: any, event: any): void {
   const point: Point = [rn(x, 1), rn(y, 1)];
 
   const river = getRiver();
-  if (!river.points) river.points = select("#controlPoints").selectAll("*").data() as Point[];
+  if (!river.points) river.points = select("#controlPoints").selectAll("circle").data() as Point[];
 
   const index = getSegmentId(river.points, point, 2);
   river.points.splice(index, 0, point);
@@ -309,16 +328,15 @@ function changeWidthFactor(this: HTMLInputElement): void {
 }
 
 function showRiverElevationProfile(): void {
-  const points = (select("#controlPoints").selectAll("*").data() as Point[]).map(([x, y]) => findCell(x, y)!);
+  const points = (select("#controlPoints").selectAll("circle").data() as Point[]).map(([x, y]) => findCell(x, y)!);
   const river = getRiver();
   const riverLen = rn(river.length * distanceScale);
   void Controllers.ElevationProfile.open(points, riverLen, true);
 }
 
 function editRiverLegend(): void {
-  const id = selectedRiver.attr("id");
   const river = getRiver();
-  void Controllers.NotesEditor.open(id, `${river.name} ${river.type}`);
+  void Controllers.NotesEditor.open(`river${river.i}`, `${river.name} ${river.type}`);
 }
 
 function removeRiver(): void {
@@ -326,8 +344,7 @@ function removeRiver(): void {
     confirm: "Remove",
     message: "Are you sure you want to remove the river and all its tributaries",
     onConfirm: () => {
-      const river = +selectedRiver.attr("id").slice(5);
-      Rivers.remove(river);
+      Rivers.remove(selectedRiverId);
       selectedRiver.remove();
       destroyDialog("riverEditor");
     },
@@ -340,6 +357,7 @@ function closeRiverEditor(): void {
   select("#controlCells").remove();
 
   selectedRiver.on("click", null);
+  selectedRiverId = 0;
   clearMainTip();
 
   const forced = +ensureEl("toggleCells").dataset.forced!;

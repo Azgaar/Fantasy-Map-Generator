@@ -1,4 +1,4 @@
-import { mean, select } from "d3";
+import { mean } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -13,7 +13,6 @@ import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -171,8 +170,6 @@ function renderRoutesPage(view: TableView<Route>): void {
   ensureEl("routesFooterLength").innerHTML = `${averageLength * distanceScale} ${distanceUnitInput.value}`;
 
   // add listeners
-  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", routeHighlightOn));
-  body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", routeHighlightOff));
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRoute));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRouteEditor));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
@@ -183,29 +180,11 @@ function renderRoutesPage(view: TableView<Route>): void {
   renderEditorPagination(ensureEl("routesFooter"), view, routesTable.goto);
 }
 
-function routeHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
-  const routeId = +(event.target as HTMLElement).dataset.id!;
-  select("#routes")
-    .select(`#route${routeId}`)
-    .attr("stroke", "red")
-    .attr("stroke-width", 2)
-    .attr("stroke-dasharray", "none");
-}
-
-function routeHighlightOff(e: Event): void {
-  const routeId = +(e.target as HTMLElement).dataset.id!;
-  select("#routes")
-    .select(`#route${routeId}`)
-    .attr("stroke", null)
-    .attr("stroke-width", null)
-    .attr("stroke-dasharray", null);
-}
-
 function zoomToRoute(this: HTMLElement): void {
-  const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const route = select("#routes").select(`#route${routeId}`).node() as Element;
-  highlightElement(route, 3);
+  const routeId = Number((this.closest(".states") as HTMLElement).dataset.id);
+  const route = pack.routes.find((candidate: Route) => candidate.i === routeId);
+  if (!route) return;
+  zoomTo(mean(route.points, point => point[0])!, mean(route.points, point => point[1])!, 3, 1600);
 }
 
 function downloadRoutesData(): void {
@@ -223,7 +202,7 @@ function downloadRoutesData(): void {
 }
 
 function openRouteEditor(this: HTMLElement): void {
-  const routeId = `route${(this.closest(".states") as HTMLElement).dataset.id}`;
+  const routeId = Number((this.closest(".states") as HTMLElement).dataset.id);
   void Controllers.RouteEditor.open(routeId);
 }
 

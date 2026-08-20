@@ -12,6 +12,8 @@ export const PIXI_LAYER_CONTROL_IDS = {
   provinces: "toggleProvinces",
   relief: "toggleRelief",
   religions: "toggleReligions",
+  rivers: "toggleRivers",
+  routes: "toggleRoutes",
   states: "toggleStates",
   temperature: "toggleTemperature",
   zones: "toggleZones"

@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import layersSource from "../../../public/modules/ui/layers.js?raw";
 import styleUiSource from "../../../public/modules/ui/style.js?raw";
 import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
+import riverCreatorSource from "../../controllers/river-creator.ts?raw";
+import riverEditorSource from "../../controllers/river-editor.ts?raw";
+import riversOverviewSource from "../../controllers/rivers-overview.ts?raw";
+import routeCreatorSource from "../../controllers/route-creator.ts?raw";
+import routeEditorSource from "../../controllers/route-editor.ts?raw";
+import routeGroupsEditorSource from "../../controllers/route-groups-editor.ts?raw";
+import routesOverviewSource from "../../controllers/routes-overview.ts?raw";
+import riverGeneratorSource from "../../generators/river-generator.ts?raw";
+import routesGeneratorSource from "../../generators/routes-generator.ts?raw";
 import exportSource from "../../services/io/export.ts?raw";
 import loadSource from "../../services/io/load.ts?raw";
 import saveSource from "../../services/io/save.ts?raw";
@@ -37,6 +46,8 @@ describe("Pixi hard cutover", () => {
     expect(layersSource.includes('redrawPixiLayer("cells", "cells")')).toBe(true);
     expect(layersSource.includes('redrawPixiLayer("grid", "gridOverlay")')).toBe(true);
     expect(layersSource.includes('redrawPixiLayer("precipitation", "prec")')).toBe(true);
+    expect(layersSource.includes('detail: {command: "invalidate-layer", layer: "rivers"}')).toBe(true);
+    expect(layersSource.includes('detail: {command: "invalidate-layer", layer: "routes"}')).toBe(true);
     expect(layersSource.includes('"#pattern_"')).toBe(false);
     expect(layersSource.includes("getGappedFillPaths")).toBe(false);
     expect([layersSource, drawBiomesSource, drawBordersSource].join("\n").includes("ownership-request")).toBe(false);
@@ -45,6 +56,8 @@ describe("Pixi hard cutover", () => {
     expect(drawTemperatureSource.includes('invalidatePixiRendererLayer("temperature")')).toBe(true);
     expect(drawTemperatureSource.includes("connectVertices")).toBe(false);
     expect(layersSource.includes("ViewportPrecipitation")).toBe(false);
+    expect(layersSource.includes("Rivers.getRiverPath")).toBe(false);
+    expect(layersSource.includes("Routes.getPath(route)")).toBe(false);
   });
 
   it("persists migrated visibility and semantic opacity instead of deriving them from SVG paths", () => {
@@ -52,6 +65,28 @@ describe("Pixi hard cutover", () => {
     expect(loadSource.includes("getStoredPixiLayerVisibility(style, layer)")).toBe(true);
     expect(styleUiSource.includes("setPixiLayerOpacity")).toBe(true);
     expect(stylePresetsSource.includes("syncPixiCellStylePreset(presetJson)")).toBe(true);
+  });
+
+  it("keeps river and route editing out of the removed persistent SVG layer groups", () => {
+    const editorSources = [
+      riverCreatorSource,
+      riverEditorSource,
+      riversOverviewSource,
+      routeCreatorSource,
+      routeEditorSource,
+      routeGroupsEditorSource,
+      routesOverviewSource
+    ].join("\n");
+    expect(editorSources.includes('select("#rivers")')).toBe(false);
+    expect(editorSources.includes('select("#routes")')).toBe(false);
+    expect(riverEditorSource.includes('data-renderer-overlay", "transient"')).toBe(true);
+    expect(routeEditorSource.includes('data-renderer-overlay", "transient"')).toBe(true);
+    expect(routeCreatorSource.includes('data-renderer-overlay", "transient"')).toBe(true);
+    expect(riverEditorSource.includes("getTotalLength")).toBe(false);
+    expect(routeEditorSource.includes('selectedRoute.attr("id")')).toBe(false);
+    expect(riverEditorSource.includes('selectedRiver.attr("id")')).toBe(false);
+    expect(riverGeneratorSource.includes('select("#rivers")')).toBe(false);
+    expect(routesGeneratorSource.includes('select("#viewbox").select(`#route')).toBe(false);
   });
 
   it("uses Pixi as the authoritative base for viewport raster exports", () => {

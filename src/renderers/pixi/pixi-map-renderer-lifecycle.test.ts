@@ -307,6 +307,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "biomes",
       "cells",
       "grid",
+      "rivers",
       "relief",
       "religions",
       "cultures",
@@ -314,6 +315,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "provinces",
       "zones",
       "borders",
+      "routes",
       "temperature",
       "coastline",
       "precipitation"

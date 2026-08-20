@@ -6,6 +6,8 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import type { Point } from "@/types/global";
 import { ensureEl, getPackPolygon, getPointer, rn } from "../utils";
 
@@ -29,13 +31,13 @@ function open(defaultGroup?: string): void {
   renderDialog();
 
   // update route groups
-  ensureEl("routeCreatorGroupSelect").innerHTML = select("#routes")
-    .selectAll<SVGGElement, unknown>("g")
-    .nodes()
-    .map(el => {
-      const selected = defaultGroup || "roads";
-      return `<option value="${el.id}" ${el.id === selected ? "selected" : ""}>${el.id}</option>`;
-    })
+  const groups = new Set([
+    ...Object.keys(getMapRendererStyle(style).routes.roles),
+    ...pack.routes.map((route: Route) => route.group)
+  ]);
+  const selected = defaultGroup || "roads";
+  ensureEl("routeCreatorGroupSelect").innerHTML = [...groups]
+    .map(group => `<option value="${group}" ${group === selected ? "selected" : ""}>${group}</option>`)
     .join("");
 
   showDomDialog({
@@ -147,12 +149,12 @@ function drawRoute(points: number[][]): void {
 
   const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
 
-  select("#routes").select("#routeTemp").remove();
-  select("#routes")
-    .select(`#${group}`)
+  select("#controlPoints").select("#routeTemp").remove();
+  select("#controlPoints")
     .append("path")
     .attr("d", Routes.getPath({ group, points }))
-    .attr("id", "routeTemp");
+    .attr("id", "routeTemp")
+    .attr("data-renderer-overlay", "transient");
 }
 
 function completeCreation(): void {
@@ -185,14 +187,14 @@ function completeCreation(): void {
     }
   }
 
-  select("#routes").select("#routeTemp").attr("id", `route${routeId}`);
-  void Controllers.RouteEditor.open(`route${routeId}`);
+  select("#controlPoints").select("#routeTemp").remove();
+  invalidatePixiRendererLayer("routes");
+  void Controllers.RouteEditor.open(routeId);
 }
 
 function closeRouteCreator(): void {
   select("#debug").select("#controlCells").remove();
   select("#debug").select("#controlPoints").remove();
-  select("#routes").select("#routeTemp").remove();
 
   applyDefaultViewboxEvents();
   clearMainTip();

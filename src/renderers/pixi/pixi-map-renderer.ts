@@ -31,6 +31,7 @@ import { buildPrecipitationScene, buildTemperatureScene } from "../scene/layers/
 import { buildGridScene } from "../scene/layers/grid-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
+import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
 import { buildZoneScene } from "../scene/layers/zone-scene";
 import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
 import type { MapRenderWorld } from "../scene/render-world";
@@ -164,6 +165,7 @@ export class PixiMapRenderer implements MapRenderer {
     const biomeContainer = this.buildFillContainer("biomes");
     const cellsContainer = this.buildCellsContainer();
     const gridContainer = this.buildGridContainer();
+    const riverContainer = this.buildRiversContainer();
     const reliefContainer = await this.buildReliefContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     const religionContainer = this.buildFillContainer("religions");
@@ -172,6 +174,7 @@ export class PixiMapRenderer implements MapRenderer {
     const provinceContainer = this.buildFillContainer("provinces");
     const zoneContainer = this.buildZonesContainer();
     const borderContainer = this.buildBordersContainer();
+    const routeContainer = this.buildRoutesContainer();
     const temperatureContainer = this.buildTemperatureContainer();
     const precipitationContainer = this.buildPrecipitationContainer();
     this.app.stage.addChild(
@@ -181,6 +184,7 @@ export class PixiMapRenderer implements MapRenderer {
       biomeContainer,
       cellsContainer,
       gridContainer,
+      riverContainer,
       reliefContainer,
       religionContainer,
       cultureContainer,
@@ -188,6 +192,7 @@ export class PixiMapRenderer implements MapRenderer {
       provinceContainer,
       zoneContainer,
       borderContainer,
+      routeContainer,
       temperatureContainer,
       geography.coastline,
       precipitationContainer
@@ -460,7 +465,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildPolygonContainer(
-    layer: "lakes" | "landmass" | "temperature",
+    layer: "lakes" | "landmass" | "rivers" | "temperature",
     polygons: readonly PolygonPathPrimitive[],
     getStyle: (role: string) => SemanticAreaStyle
   ): Container {
@@ -476,7 +481,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildLineContainer(
-    layer: "cells" | "coastline" | "grid",
+    layer: "cells" | "coastline" | "grid" | "routes",
     paths: readonly LinePathPrimitive[],
     getStyle: (role: string) => SemanticLineStyle
   ): Container {
@@ -506,6 +511,30 @@ export class PixiMapRenderer implements MapRenderer {
     const container = this.buildLineContainer("grid", scene.paths, () => gridStyle.stroke);
     container.alpha = gridStyle.opacity;
     return container;
+  }
+
+  private buildRiversContainer(): Container {
+    const style = this.semanticStyle.rivers;
+    const scene = buildRiverScene(
+      this.getWorld(),
+      getWorldBounds(this.getWorld()),
+      this.sceneRevisions.getLayerRevision("rivers")
+    );
+    const container = this.buildPolygonContainer("rivers", scene.polygons, () => ({
+      fill: style.fill,
+      stroke: { cap: "butt", color: style.fill.color, dash: "", opacity: 0, width: 0 }
+    }));
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private buildRoutesContainer(): Container {
+    const scene = buildRouteScene(this.getWorld(), this.sceneRevisions.getLayerRevision("routes"));
+    return this.buildLineContainer(
+      "routes",
+      scene.paths,
+      role => this.semanticStyle.routes.roles[role] ?? this.semanticStyle.routes.default
+    );
   }
 
   private buildBordersContainer(): Container {
@@ -801,17 +830,62 @@ function createPolygonGraphic(polygons: readonly PolygonPathPrimitive[], style: 
 
 function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticLineStyle): Graphics {
   const context = new GraphicsContext();
-  for (const path of paths) {
-    const [first, ...rest] = path.points;
-    if (!first) continue;
-    context.moveTo(first[0], first[1]);
-    for (const point of rest) context.lineTo(point[0], point[1]);
-    if (path.closed) context.closePath();
-  }
+  for (const path of paths) traceLinePath(context, path, style.dash);
   if (style.width > 0 && style.opacity > 0) {
     context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, width: style.width });
   }
   return new Graphics(context);
+}
+
+function traceLinePath(context: GraphicsContext, path: LinePathPrimitive, dash: string): void {
+  const [first] = path.points;
+  if (!first) return;
+  const points = path.closed ? [...path.points, first] : path.points;
+  const dashPattern = parseDashPattern(dash);
+  context.moveTo(first[0], first[1]);
+  if (!dashPattern.length) {
+    for (const point of points.slice(1)) context.lineTo(point[0], point[1]);
+    if (path.closed) context.closePath();
+    return;
+  }
+
+  let patternIndex = 0;
+  let patternRemaining = dashPattern[0];
+  let drawing = true;
+  let currentX = first[0];
+  let currentY = first[1];
+  for (const [targetX, targetY] of points.slice(1)) {
+    let remainingX = targetX - currentX;
+    let remainingY = targetY - currentY;
+    let remainingLength = Math.hypot(remainingX, remainingY);
+    while (remainingLength > 1e-6) {
+      const step = Math.min(patternRemaining, remainingLength);
+      const ratio = step / remainingLength;
+      const nextX = currentX + remainingX * ratio;
+      const nextY = currentY + remainingY * ratio;
+      if (drawing) context.lineTo(nextX, nextY);
+      else context.moveTo(nextX, nextY);
+      currentX = nextX;
+      currentY = nextY;
+      remainingX = targetX - currentX;
+      remainingY = targetY - currentY;
+      remainingLength = Math.hypot(remainingX, remainingY);
+      patternRemaining -= step;
+      if (patternRemaining <= 1e-6) {
+        patternIndex = (patternIndex + 1) % dashPattern.length;
+        patternRemaining = dashPattern[patternIndex];
+        drawing = !drawing;
+      }
+    }
+  }
+}
+
+function parseDashPattern(dash: string): number[] {
+  const values = dash
+    .split(/[ ,]+/)
+    .map(Number)
+    .filter(value => Number.isFinite(value) && value > 0);
+  return values.length % 2 === 1 ? [...values, ...values] : values;
 }
 
 function getRenderableColor(color: string, fallbackColor: string): string {

@@ -5,28 +5,45 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { speak } from "@/utils";
 import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
 
-let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let selectedRoute: Selection<SVGPathElement, unknown, HTMLElement, unknown>;
+let selectedRouteId = 0;
 
-function open(id: string): void {
+function open(routeId: number): void {
   if (customization) return;
-  if (findEl("routeEditor") && id === selectedRoute.attr("id")) return;
+  if (findEl("routeEditor") && routeId === selectedRouteId) return;
   closeDialogs(".stable");
 
   if (!layerIsOn("toggleRoutes")) toggleRoutes();
   ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
   if (!layerIsOn("toggleCells")) toggleCells();
 
-  selectedRoute = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
+  const route = pack.routes.find(candidate => candidate.i === routeId);
+  if (!route) return;
+  selectedRouteId = routeId;
 
   tip(
     "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
     true
   );
   select("#debug").append("g").attr("id", "controlCells");
-  select("#debug").append("g").attr("id", "controlPoints");
+  const controlPoints = select<SVGGElement, unknown>("#debug")
+    .append("g")
+    .attr("id", "controlPoints")
+    .attr("data-renderer-overlay", "transient");
+  selectedRoute = controlPoints
+    .append("path")
+    .attr("class", "active-editor-path")
+    .attr("data-domain-kind", "route")
+    .attr("data-domain-id", routeId)
+    .attr("d", Routes.getPath(route))
+    .style("fill", "transparent")
+    .style("pointer-events", "all")
+    .on("click", addControlPoint);
 
   renderDialog();
 
@@ -103,8 +120,7 @@ function openRouteGroupsEditor(): void {
 }
 
 function getRoute(): Route {
-  const routeId = +selectedRoute.attr("id").slice(5);
-  return pack.routes.find((route: Route) => route.i === routeId) as Route;
+  return pack.routes.find((route: Route) => route.i === selectedRouteId) as Route;
 }
 
 function updateRouteData(route: Route): void {
@@ -113,11 +129,11 @@ function updateRouteData(route: Route): void {
 
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
   routeGroup.options.length = 0;
-  select("#routes")
-    .selectAll<HTMLElement, unknown>("g")
-    .each(function () {
-      routeGroup.options.add(new Option(this.id, this.id, false, this.id === route.group));
-    });
+  const groups = new Set([
+    ...Object.keys(getMapRendererStyle(style).routes.roles),
+    ...pack.routes.map((candidate: Route) => candidate.group)
+  ]);
+  for (const group of groups) routeGroup.options.add(new Option(group, group, false, group === route.group));
 
   updateRouteLength(route);
 
@@ -189,6 +205,7 @@ function dragControlPoint(event: any): void {
 
 function redrawRoute(route: Route): void {
   selectedRoute.attr("d", Routes.getPath(route));
+  invalidatePixiRendererLayer("routes");
   updateRouteLength(route);
   if (findEl("elevationProfile")) showRouteElevationProfile();
   drawLabels();
@@ -263,11 +280,7 @@ function handleControlPointClick(this: any): void {
       if (nextPoint) addConnection(cellId, nextPoint[2], newRoute.i);
     }
 
-    select("#routes")
-      .select(`#${newRoute.group}`)
-      .append("path")
-      .attr("d", Routes.getPath(newRoute))
-      .attr("id", `route${newRoute.i}`);
+    invalidatePixiRendererLayer("routes");
 
     ensureEl("routeSplit").classList.remove("pressed");
   }
@@ -406,8 +419,8 @@ function changeName(this: HTMLInputElement): void {
 
 function changeGroup(this: HTMLInputElement): void {
   const group = this.value;
-  ensureEl(group).appendChild(selectedRoute.node()!);
   getRoute().group = group;
+  invalidatePixiRendererLayer("routes");
 }
 
 function generateName(): void {
@@ -426,9 +439,8 @@ function showRouteElevationProfile(): void {
 }
 
 function editRouteLegend(): void {
-  const id = selectedRoute.attr("id");
   const route = getRoute();
-  void Controllers.NotesEditor.open(id, route.name!);
+  void Controllers.NotesEditor.open(`route${route.i}`, route.name!);
 }
 
 function editRouteGroupStyle(): void {
@@ -460,6 +472,7 @@ function removeRoute(): void {
     confirm: "Remove",
     onConfirm: () => {
       Routes.remove(getRoute());
+      selectedRoute.remove();
       destroyDialog("routeEditor");
     }
   });
@@ -470,6 +483,7 @@ function closeRouteEditor(): void {
   select("#controlCells").remove();
 
   selectedRoute.on("click", null);
+  selectedRouteId = 0;
   clearMainTip();
 
   const forced = +ensureEl("toggleCells").dataset.forced!;

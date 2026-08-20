@@ -22,6 +22,8 @@ describe("Pixi layer visibility state", () => {
       "provinces",
       "relief",
       "religions",
+      "rivers",
+      "routes",
       "states",
       "temperature",
       "zones"

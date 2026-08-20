@@ -1,8 +1,9 @@
 import Alea from "alea";
-import { curveCatmullRom, line, select } from "d3";
+import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import { distanceSquared, findClosestCell, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
-import { meander } from "../utils/pathUtils";
+import { sampleCatmullRom } from "../utils/curve";
+import { meander } from "../utils/meander";
 import type { Burg } from "./burgs-generator";
 import type { Label } from "./labels-generator";
 import type { River } from "./river-generator";
@@ -825,7 +826,7 @@ class RoutesModule {
     }
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
-    select("#viewbox").select(`#route${route.i}`).remove();
+    if (typeof layerIsOn === "function" && layerIsOn("toggleRoutes")) drawRoutes();
   }
 
   getConnectivityRate(cellId: number): number {
@@ -889,8 +890,20 @@ class RoutesModule {
   }
 
   getLength(routeId: number): number {
-    const path = select("#routes").select(`#route${routeId}`).node() as SVGPathElement;
-    return path.getTotalLength();
+    const route = pack.routes.find(candidate => candidate.i === routeId);
+    if (!route?.points || route.points.length < 2) return 0;
+    const points = sampleCatmullRom(
+      route.points.map(([x, y]) => [x, y]),
+      route.group === "searoutes" ? 0.5 : 0.1
+    );
+    return rn(
+      points.reduce(
+        (length, point, index) =>
+          index ? length + Math.hypot(point[0] - points[index - 1][0], point[1] - points[index - 1][1]) : length,
+        0
+      ),
+      2
+    );
   }
 
   // run on map load to restore connections based on routes data

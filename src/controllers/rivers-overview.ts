@@ -1,4 +1,4 @@
-import { mean, select } from "d3";
+import { mean } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -13,7 +13,6 @@ import {
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -132,18 +131,16 @@ function renderDialog(): void {
       <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
       <button id="addNewRiver" data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="riverCreateNew" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
-      <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
       <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
       <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   bindColumnSorting(dialogId, riversTable.reset);
-  applyLineHighlighting(dialogId, ({ target, cellId }) => {
+  applyLineHighlighting(dialogId, ({ cellId }) => {
     const riverId = pack.cells.r[cellId];
     if (riverId) return riverId;
-    const river = target.closest<SVGElement>("#rivers [id^='river']");
-    return river && /^river\d+$/.test(river.id) ? Number(river.id.slice(5)) : undefined;
+    return undefined;
   });
 
   ensureEl("riversOverviewRefresh").addEventListener("click", riversTable.refresh);
@@ -154,7 +151,6 @@ function renderDialog(): void {
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").addEventListener("click", createNewRiver);
-  ensureEl("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   ensureEl("riversExport").addEventListener("click", downloadRiversData);
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", riversTable.reset);
@@ -217,12 +213,6 @@ function renderRiversPage(view: TableView<River>): void {
   ensureEl("riversFooterWidth").innerHTML = `${rn(averageWidth * distanceScale, 3)} ${unit}`;
 
   // add listeners
-  body
-    .querySelectorAll("div.states")
-    .forEach(el => void el.addEventListener("mouseenter", (ev: Event) => riverHighlightOn(ev)));
-  body
-    .querySelectorAll("div.states")
-    .forEach(el => void el.addEventListener("mouseleave", (ev: Event) => riverHighlightOff(ev)));
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRiver));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRiverEditor));
   body
@@ -232,52 +222,12 @@ function renderRiversPage(view: TableView<River>): void {
   renderEditorPagination(ensureEl("riversFooter"), view, riversTable.goto);
 }
 
-function riverHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleRivers")) toggleRivers();
-  const r = +(event.target as HTMLElement).dataset.id!;
-  select("#rivers").select(`#river${r}`).attr("stroke", "red").attr("stroke-width", 1);
-}
-
-function riverHighlightOff(e: Event): void {
-  const r = +(e.target as HTMLElement).dataset.id!;
-  select("#rivers").select(`#river${r}`).attr("stroke", null).attr("stroke-width", null);
-}
-
 function zoomToRiver(this: HTMLElement): void {
-  const r = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const river = select("#rivers").select(`#river${r}`).node() as Element;
-  highlightElement(river, 3);
-}
-
-function toggleBasinsHightlight(): void {
-  if (select("#rivers").attr("data-basin") === "hightlighted") {
-    select("#rivers").selectAll("*").attr("fill", null);
-    select("#rivers").attr("data-basin", null);
-  } else {
-    select("#rivers").attr("data-basin", "hightlighted");
-    const basins = [...new Set(pack.rivers.map((r: River) => r.basin))];
-    const colors = [
-      "#1f77b4",
-      "#ff7f0e",
-      "#2ca02c",
-      "#d62728",
-      "#9467bd",
-      "#8c564b",
-      "#e377c2",
-      "#7f7f7f",
-      "#bcbd22",
-      "#17becf"
-    ];
-
-    basins.forEach((b, i) => {
-      const color = colors[i % colors.length];
-      pack.rivers
-        .filter((r: River) => r.basin === b)
-        .forEach((r: River) => {
-          select("#rivers").select(`#river${r.i}`).attr("fill", color);
-        });
-    });
-  }
+  const riverId = Number((this.closest(".states") as HTMLElement).dataset.id);
+  const river = pack.rivers.find((candidate: River) => candidate.i === riverId);
+  if (!river) return;
+  const points = Rivers.getRiverPoints(river.cells, river.points ?? null);
+  zoomTo(mean(points, point => point[0])!, mean(points, point => point[1])!, 3, 1600);
 }
 
 function downloadRiversData(): void {
@@ -299,7 +249,7 @@ function downloadRiversData(): void {
 }
 
 function openRiverEditor(this: HTMLElement): void {
-  const id = `river${(this.closest(".states") as HTMLElement).dataset.id}`;
+  const id = Number((this.closest(".states") as HTMLElement).dataset.id);
   void Controllers.RiverEditor.open(id);
 }
 
@@ -328,7 +278,7 @@ function triggerAllRiversRemove(): void {
 function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
-  select("#rivers").selectAll("*").remove();
+  if (layerIsOn("toggleRivers")) drawRivers();
   riversTable.refresh();
 }
 

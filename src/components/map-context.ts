@@ -60,6 +60,10 @@ const capitalize = (value: string): string => value.charAt(0).toUpperCase() + va
 
 export function buildMapContext({ cellId, clientX, clientY, elements, pack, point }: MapContextInput): MapContext {
   const entities = collectEntities(elements, pack);
+  const riverId = pack.cells.r?.[cellId];
+  if (riverId) addEntity(entities, getRiverEntity(riverId, pack));
+  const routeIds = Object.values(pack.cells.routes?.[cellId] || {});
+  for (const routeId of new Set(routeIds)) addEntity(entities, getRouteEntity(routeId, pack));
   const cellBurgId = pack.cells.burg[cellId];
   if (cellBurgId) addEntity(entities, getBurgEntity(cellBurgId, pack));
 
@@ -82,14 +86,6 @@ function collectEntities(elements: Element[], pack: PackedGraph): MapContextEnti
 
     const emblem = element.closest<SVGElement>("#emblems use[data-i]");
     if (emblem) addEmblemEntities(entities, emblem, pack);
-
-    const river = element.closest<SVGElement>("#rivers [id^='river']");
-    if (river && /^river\d+$/.test(river.id))
-      addEntity(entities, getRiverEntity(Number(river.id.slice(5)), pack, river));
-
-    const route = element.closest<SVGElement>("#routes [id^='route']");
-    if (route && /^route\d+$/.test(route.id))
-      addEntity(entities, getRouteEntity(Number(route.id.slice(5)), pack, route));
 
     const marker = element.closest<SVGElement>("#markers [data-id]");
     if (marker) addEntity(entities, getMarkerEntity(Number(marker.dataset.id), pack, marker));
