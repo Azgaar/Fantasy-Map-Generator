@@ -50,6 +50,9 @@ The former opt-in experiment is retained only as historical context in
   Checked-in reference measurements still require browser execution on the documented profiles.
 - P-001 was retired by the hard-cutover decision. Save no longer materializes Pixi-owned SVG layers, and legacy SVG
   export is allowed to omit migrated content until M11 replaces it with scene/Pixi export.
+- The first M11 raster slice is implemented for viewport PNG/JPEG: export requires the live Pixi renderer, draws its
+  canvas as the authoritative base, then composites only not-yet-migrated SVG overlays. Offscreen full-map rendering,
+  maximum-texture detection, and Pixi-backed tile export remain open.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 
@@ -214,11 +217,12 @@ Exit gate: repeatable numbers can distinguish generator, geometry, paint, and ca
 
 - Add a renderer ownership decision at the layer dispatcher.
 - Skip live SVG creation for Pixi-owned layers.
-- Generate SVG lazily for save/export while those paths still depend on it.
 - Extract border geometry from SVG mutation code.
-- Verify disabling Pixi restores a complete SVG map.
+- Make missing Pixi ownership or startup fail explicitly instead of restoring legacy rendering.
+- Allow vector output to omit migrated layers until it is replaced by a renderer-neutral exporter.
 
-Exit gate: the live DOM does not contain duplicate states, biomes, relief, or borders, and save/export still work.
+Exit gate: the live DOM does not contain duplicate migrated layers, there is no disable/fallback path, and raster
+export consumes the Pixi output rather than reconstructing SVG geometry.
 
 ### Phase 2: viewport-native canvas and camera
 

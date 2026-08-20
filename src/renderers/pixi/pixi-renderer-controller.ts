@@ -7,6 +7,7 @@ import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
+  getCanvas: () => CanvasImageSource | null;
   getSnapshot: () => PixiRendererSnapshot | null;
   invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
   ownsLayer: (layer: PixiOwnedLayer) => boolean;
@@ -89,6 +90,7 @@ const getCamera = (): MapCamera => {
 
 const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),
+  getCanvas: () => instance?.getCanvas() ?? null,
   getSnapshot: () => instance?.getSnapshot() ?? null,
   invalidateLayer: (layer, cellIds) => {
     if (!instance) return;
@@ -117,6 +119,7 @@ const api: PixiRendererControllerApi = {
 };
 
 export const clearPixiRenderer = api.clear;
+export const getPixiRendererCanvas = api.getCanvas;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
 export const pixiRendererOwnsLayer = api.ownsLayer;
 export const queuePixiRendererRebuild = api.queueRebuild;

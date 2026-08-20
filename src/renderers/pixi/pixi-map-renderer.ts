@@ -261,6 +261,10 @@ export class PixiMapRenderer implements MapRenderer {
     };
   }
 
+  getCanvas(): CanvasImageSource | null {
+    return (this.app?.canvas as unknown as CanvasImageSource | undefined) ?? null;
+  }
+
   private async initializeApplication(): Promise<void> {
     if (this.app) return;
     if (!this.surface) throw new Error("Cannot initialize an unmounted Pixi renderer");

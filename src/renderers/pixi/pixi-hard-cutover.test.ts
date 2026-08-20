@@ -22,6 +22,15 @@ describe("Pixi hard cutover", () => {
     expect(saveSource.includes("Pixi-owned layers are intentionally absent")).toBe(true);
   });
 
+  it("uses Pixi as the authoritative base for viewport raster exports", () => {
+    expect(controllerSource.includes("getCanvas:")).toBe(true);
+    expect(exportSource.includes("getPixiRendererCanvas()")).toBe(true);
+    expect(exportSource.indexOf("context.drawImage(pixiCanvas")).toBeLessThan(
+      exportSource.indexOf("context.drawImage(overlay")
+    );
+    expect(exportSource.includes('throw new Error("Pixi renderer is not ready for raster export")')).toBe(true);
+  });
+
   it("uses the production surface and contains no prototype identifiers", () => {
     const productionSources = [controllerSource, loaderSource, renderersIndex, saveSource, exportSource].join("\n");
     expect(controllerSource.includes('"pixi-map-renderer"')).toBe(true);

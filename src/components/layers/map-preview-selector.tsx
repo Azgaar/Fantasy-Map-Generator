@@ -1,4 +1,4 @@
-import { Button, Icon, Menu, MenuDivider, MenuItem, Popover } from "@patkepa/kantzen-ui/primitives";
+import { Icon } from "@patkepa/kantzen-ui/icons";
 import { useEffect, useRef, useState } from "react";
 import {
   type LayerControlsSnapshot,
@@ -19,6 +19,8 @@ export function MapPreviewSelector({
   const [snapshot, setSnapshot] = useState(() => initialSnapshot ?? controls.getSnapshot());
   const [disabled, setDisabled] = useState(false);
   const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const legacySelect = useRef<HTMLSelectElement>(null);
   const presetOptions = snapshot.presetOptions.filter(
     option => !option.hidden || option.value === snapshot.selectedPreset
@@ -43,13 +45,31 @@ export function MapPreviewSelector({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
   const applyPreset = (preset: string) => {
     setOpen(false);
     controls.applyPreset(preset);
   };
 
   return (
-    <>
+    <div className="fmg-map-preview" ref={root}>
       <select
         aria-hidden="true"
         className="fmg-map-preview__legacy-select"
@@ -65,50 +85,52 @@ export function MapPreviewSelector({
           </option>
         ))}
       </select>
-      <Popover
-        arrow={false}
-        content={
-          <Menu aria-label="Map views" className="fmg-map-preview__menu">
-            <MenuDivider title="Map view" />
-            {presetOptions.map(option => (
-              <MenuItem
-                active={option.value === snapshot.selectedPreset}
-                key={option.value}
-                labelElement={
-                  option.value === snapshot.selectedPreset ? <Icon icon="tick" size={12} /> : undefined
-                }
-                onClick={() => applyPreset(option.value)}
-                text={option.label}
-              />
-            ))}
-          </Menu>
-        }
+      <button
+        aria-controls="mapPreviewDropdown"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Map view: ${selectedPreset?.label ?? "Custom map"}`}
+        className="fmg-map-preview__trigger"
+        data-tip="Choose how the map is presented"
         disabled={disabled}
-        isOpen={open}
-        minimal
-        onInteraction={setOpen}
-        placement="bottom-end"
-        popoverClassName="fmg-map-preview__popover"
+        id="mapPreviewTrigger"
+        onClick={() => setOpen(current => !current)}
+        ref={trigger}
+        type="button"
       >
-        <Button
-          active={open}
-          aria-expanded={open}
-          aria-haspopup="menu"
-          aria-label={`Map view: ${selectedPreset?.label ?? "Custom map"}`}
-          className="fmg-map-preview__trigger"
-          data-tip="Choose how the map is presented"
-          disabled={disabled}
-          icon={
-            <span className="fmg-map-preview__glyph" aria-hidden="true">
-              <Icon icon="layers" size={18} />
-              <Icon className="fmg-map-preview__glyph-chevron" icon="chevron-down" size={8} />
-            </span>
-          }
-          id="mapPreviewTrigger"
-          small
-          title={selectedPreset?.label ?? "Custom map"}
+        <span className="fmg-map-preview__icon" aria-hidden="true">
+          <Icon icon="layers" size={17} />
+        </span>
+        <span className="fmg-map-preview__value">{selectedPreset?.label ?? "Custom map"}</span>
+        <Icon
+          aria-hidden="true"
+          className="fmg-map-preview__chevron"
+          icon="chevron-down"
+          size={12}
         />
-      </Popover>
-    </>
+      </button>
+      {open ? (
+        <div aria-label="Map views" className="fmg-map-preview__dropdown" id="mapPreviewDropdown" role="menu">
+          <div className="fmg-map-preview__dropdown-title">Map view</div>
+          {presetOptions.map(option => {
+            const selected = option.value === snapshot.selectedPreset;
+            return (
+              <button
+                aria-checked={selected}
+                className="fmg-map-preview__option"
+                data-active={selected || undefined}
+                key={option.value}
+                onClick={() => applyPreset(option.value)}
+                role="menuitemradio"
+                type="button"
+              >
+                <span>{option.label}</span>
+                {selected ? <Icon aria-hidden="true" icon="tick" size={13} /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }

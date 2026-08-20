@@ -2,6 +2,7 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
+import { getPixiRendererCanvas } from "@/renderers/pixi/pixi-renderer-controller";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -57,26 +58,9 @@ async function exportToSvg(): Promise<void> {
 async function exportToPng(): Promise<void> {
   TIME && console.time("exportToPng");
   try {
-    const url = await getMapURL("png");
     const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
     const link = document.createElement("a");
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d")!;
-    canvas.width = svgWidth * resolution;
-    canvas.height = svgHeight * resolution;
-
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob => {
-          if (!blob) return reject(new Error("Cannot render PNG image"));
-          resolve(blob);
-        }, "image/png");
-      };
-      img.onerror = () => reject(new Error("Cannot load map image for PNG export"));
-      img.src = url;
-    });
+    const { blob, canvas } = await renderViewportRaster("image/png", resolution);
 
     link.download = `${getFileName()}.png`;
     link.href = window.URL.createObjectURL(blob);
@@ -99,43 +83,71 @@ async function exportToPng(): Promise<void> {
 async function exportToJpeg(): Promise<void> {
   TIME && console.time("exportToJpeg");
   try {
-    const url = await getMapURL("png");
     const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d")!;
-    canvas.width = svgWidth * resolution;
-    canvas.height = svgHeight * resolution;
-
     const quality = Math.min(rn(1 - resolution / 20, 2), 0.92);
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(
-          blob => {
-            if (!blob) return reject(new Error("Cannot render JPEG image"));
-            resolve(blob);
-          },
-          "image/jpeg",
-          quality
-        );
-      };
-      img.onerror = () => reject(new Error("Cannot load map image for JPEG export"));
-      img.src = url;
-    });
+    const { blob, canvas } = await renderViewportRaster("image/jpeg", resolution, quality);
 
     const link = document.createElement("a");
     link.download = `${getFileName()}.jpeg`;
     link.href = window.URL.createObjectURL(blob);
     link.click();
     tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
-    window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
+    window.setTimeout(() => {
+      canvas.remove();
+      window.URL.revokeObjectURL(link.href);
+    }, 5000);
   } catch (error) {
     ERROR && console.error(error);
     tip(`JPEG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
   } finally {
     TIME && console.timeEnd("exportToJpeg");
   }
+}
+
+async function renderViewportRaster(
+  mimeType: "image/jpeg" | "image/png",
+  resolution: number,
+  qualityArgument = 1
+): Promise<{ blob: Blob; canvas: HTMLCanvasElement }> {
+  const pixiCanvas = getPixiRendererCanvas();
+  if (!pixiCanvas) throw new Error("Pixi renderer is not ready for raster export");
+
+  // Pixi is the authoritative base renderer. The SVG image contains only layers
+  // that have not migrated yet, so it is composited as a temporary overlay.
+  const overlayUrl = await getMapURL("png");
+  const overlay = await loadRasterImage(overlayUrl);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Cannot initialize raster export canvas");
+
+  canvas.width = svgWidth * resolution;
+  canvas.height = svgHeight * resolution;
+  context.drawImage(pixiCanvas, 0, 0, canvas.width, canvas.height);
+  context.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+
+  return { blob: await canvasToBlob(canvas, mimeType, qualityArgument), canvas };
+}
+
+function loadRasterImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Cannot load SVG overlay for raster export"));
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, qualityArgument = 1): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      blob => {
+        if (blob) resolve(blob);
+        else reject(new Error(`Cannot render ${mimeType} image`));
+      },
+      mimeType,
+      qualityArgument
+    );
+  });
 }
 
 async function exportToPngTiles(): Promise<void> {
@@ -227,19 +239,6 @@ async function exportToPngTiles(): Promise<void> {
     });
   }
 
-  // promisified canvas.toBlob
-  function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, qualityArgument = 1) {
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        blob => {
-          if (blob) resolve(blob);
-          else reject(new Error("Canvas toBlob() error"));
-        },
-        mimeType,
-        qualityArgument
-      );
-    });
-  }
 }
 
 // parse map svg to object url

@@ -31,9 +31,11 @@ describe("MapPreviewSelector", () => {
     );
 
     expect(markup.includes('id="layersPreset"')).toBe(true);
+    expect(markup.includes('class="fmg-map-preview"')).toBe(true);
     expect(markup.includes('id="mapPreviewTrigger"')).toBe(true);
     expect(markup.includes('aria-haspopup="menu"')).toBe(true);
-    expect(markup.includes("Political map")).toBe(true);
+    expect(markup.includes('aria-expanded="false"')).toBe(true);
+    expect(markup.includes('aria-label="Map view: Religions map"')).toBe(true);
     expect(markup.includes('<option value="political">Political map</option>')).toBe(true);
     expect(markup.includes('<option value="religions" selected="">Religions map</option>')).toBe(true);
     expect(markup.includes('value="custom"')).toBe(false);
