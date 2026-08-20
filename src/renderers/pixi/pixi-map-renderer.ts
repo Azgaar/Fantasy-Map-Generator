@@ -212,7 +212,9 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.cameraScale = normalized.scale;
     this.stats.viewportHeight = normalized.height;
     this.stats.viewportWidth = normalized.width;
-    if (this.stats.enabled) this.scheduler?.invalidate({ kind: "camera" });
+    // The editor already coalesces zoom events into an animation frame. Render here so the canvas and SVG overlay
+    // commit the same camera in the same frame instead of introducing a second-frame delay through the scheduler.
+    if (this.stats.enabled) this.applyCamera();
   }
 
   private applyCamera(): void {

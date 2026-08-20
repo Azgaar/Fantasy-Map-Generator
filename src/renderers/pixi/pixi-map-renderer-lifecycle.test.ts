@@ -5,8 +5,10 @@ const applicationState = vi.hoisted(() => ({
   assetUnload: vi.fn(async () => undefined),
   destroy: vi.fn(),
   init: vi.fn(),
+  positionSet: vi.fn(),
   render: vi.fn(),
-  resize: vi.fn()
+  resize: vi.fn(),
+  scaleSet: vi.fn()
 }));
 
 vi.mock("pixi.js", () => {
@@ -36,7 +38,10 @@ vi.mock("pixi.js", () => {
       constructor: { name: "MockRenderer" },
       resize: applicationState.resize
     };
-    stage = Object.assign(new Container(), { position: { set: vi.fn() }, scale: { set: vi.fn() } });
+    stage = Object.assign(new Container(), {
+      position: { set: applicationState.positionSet },
+      scale: { set: applicationState.scaleSet }
+    });
     destroy = applicationState.destroy;
     init = applicationState.init;
     render = applicationState.render;
@@ -96,6 +101,7 @@ vi.mock("pixi.js", () => {
 });
 
 import type { PackedGraph } from "@/types/PackedGraph";
+import { STATIC_VIEWER_WORLD } from "@/viewer/static-map-fixture";
 import { coalesceInvalidations } from "../core/invalidation";
 import { DEFAULT_PIXI_MAP_STYLE } from "../scene/styles";
 import { PixiMapRenderer } from "./pixi-map-renderer";
@@ -116,8 +122,10 @@ describe("PixiMapRenderer lifecycle", () => {
     applicationState.assetLoad.mockClear();
     applicationState.assetUnload.mockClear();
     applicationState.init.mockClear();
+    applicationState.positionSet.mockClear();
     applicationState.render.mockClear();
     applicationState.resize.mockClear();
+    applicationState.scaleSet.mockClear();
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -169,6 +177,24 @@ describe("PixiMapRenderer lifecycle", () => {
     renderer.resize({ height: 600, width: 800 });
     expect(applicationState.resize).toHaveBeenLastCalledWith(800, 600, 1);
     expect(renderer.getSnapshot().resolution).toBe(1);
+    renderer.destroy();
+  });
+
+  it("applies camera changes immediately to stay aligned with the SVG overlay", async () => {
+    const requestFrame = vi.fn(() => 7);
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    const renderer = new PixiMapRenderer();
+    await renderer.mount(createSurface());
+    applicationState.positionSet.mockClear();
+    applicationState.render.mockClear();
+    applicationState.scaleSet.mockClear();
+
+    renderer.setCamera({ height: 600, scale: 2, width: 800, x: 10, y: 20 });
+
+    expect(applicationState.positionSet).toHaveBeenCalledWith(10, 20);
+    expect(applicationState.scaleSet).toHaveBeenCalledWith(2);
+    expect(applicationState.render).toHaveBeenCalledOnce();
+    expect(requestFrame).not.toHaveBeenCalled();
     renderer.destroy();
   });
 
@@ -227,6 +253,20 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
     expect(applicationState.assetUnload).toHaveBeenCalledOnce();
     renderer.destroy();
+  });
+
+  it("renders the editor-independent static viewer fixture through the production lifecycle", async () => {
+    const renderer = new PixiMapRenderer();
+    await renderer.mount(createSurface());
+    await renderer.render(
+      STATIC_VIEWER_WORLD,
+      structuredClone(DEFAULT_PIXI_MAP_STYLE),
+      coalesceInvalidations([{ kind: "world" }])
+    );
+
+    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 3 });
+    renderer.destroy();
+    expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
   });
 });
 

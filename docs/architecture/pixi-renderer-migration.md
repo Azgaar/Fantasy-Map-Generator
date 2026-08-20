@@ -41,6 +41,10 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
   paths, and ordered include/exclude land and water masks. Feature shaping and boundary clipping are renderer-neutral,
   and the legacy SVG feature renderer consumes the same extracted shape builder. Pixi consumption, depth bands,
   patterns, and visual parity remain part of M4.
+- V-001 now has an editor-free mount/update/destroy API, a static typed world fixture, and a separate production build.
+  The first build proves that the production renderer can be lazy-loaded without the classic scripts and records its
+  bundle and asset assumptions in [pixi-viewer-spike.md](pixi-viewer-spike.md). Browser startup and embed proof remain
+  open.
 - Q-001 now has deterministic 10k/50k/100k seed recipes, a checked-in legacy fixture, fixed reference profiles, a
   versioned report contract, separate scene-build/GPU-submit instrumentation, and a two-run SVG/Pixi benchmark command.
   Checked-in reference measurements still require browser execution on the documented profiles.
