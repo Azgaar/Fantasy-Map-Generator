@@ -17,7 +17,7 @@
 
 import { tip } from "@/components/tooltips";
 
-export const VERSION = "1.145.3";
+export const VERSION = "1.146.0";
 
 const latestPublicChanges = [
   "Relief icons: improved performance",

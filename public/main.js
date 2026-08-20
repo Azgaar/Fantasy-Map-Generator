@@ -1019,7 +1019,7 @@ function rankCells() {
       if (cells.r[i]) score += scoreMap.estuary;
       const feature = features[cells.f[cells.haven[i]]];
       if (feature.type === "lake") {
-        score += scoreMap[feature.group] || 0;
+        score += scoreMap[feature.subtype] || 0;
       } else {
         score += scoreMap.ocean_coast;
         if (cells.harbor[i] === 1) score += scoreMap.save_harbor;

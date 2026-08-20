@@ -1129,7 +1129,7 @@ class CulturesGenerator {
       if (
         (this.cells.harbor[i] && f.type !== "lake" && P(0.1)) ||
         (this.cells.harbor[i] === 1 && P(0.6)) ||
-        (pack.features[this.cells.f[i]].group === "isle" && P(0.4))
+        (pack.features[this.cells.f[i]].subtype === "isle" && P(0.4))
       )
         return "Naval"; // low water cross penalty and high for non-along-coastline growth
       if (this.cells.r[i] && this.cells.fl[i] > 100) return "River"; // no River cross penalty, penalty for non-River growth

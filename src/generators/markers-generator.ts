@@ -1017,7 +1017,9 @@ class MarkersModule {
 
   private listLakeMonsters({ features }: PackedGraph) {
     return features
-      .filter(feature => feature.type === "lake" && feature.group === "freshwater" && !this.occupied[feature.firstCell])
+      .filter(
+        feature => feature.type === "lake" && feature.subtype === "freshwater" && !this.occupied[feature.firstCell]
+      )
       .map(feature => feature.firstCell);
   }
 

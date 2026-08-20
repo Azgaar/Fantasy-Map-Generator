@@ -99,4 +99,44 @@ test.describe("Lakes layer", () => {
     });
     expect(newOrder.lakes).toBeLessThan(newOrder.terrs);
   });
+
+  test("a lake moved to a custom group keeps its subtype and stays there after a redraw", async ({
+    page,
+  }) => {
+    const moved = await page.evaluate(async () => {
+      const win = window as any;
+      const use = document.querySelector("#lakes use") as SVGUseElement;
+      const featureId = Number(use.dataset.f);
+      const subtypeBefore = win.pack.features[featureId].subtype;
+
+      await win.Controllers.LakesEditor.open(use);
+
+      // create a custom group for the lake, as the editor's "+" flow does
+      const nameInput = document.getElementById("lakeGroupName") as HTMLInputElement;
+      nameInput.value = "my_lakes";
+      nameInput.dispatchEvent(new Event("change"));
+
+      const feature = win.pack.features[featureId];
+      return {
+        featureId,
+        subtypeBefore,
+        subtypeAfter: feature.subtype,
+        group: feature.group,
+        parentAfterMove: use.parentElement?.id,
+      };
+    });
+
+    expect(moved.group).toBe("my_lakes");
+    expect(moved.subtypeAfter).toBe(moved.subtypeBefore); // the lake subtype is not overwritten by the group
+    expect(moved.parentAfterMove).toBe("my_lakes");
+
+    // the placement has to survive a redraw of the layer, which is what happens on load
+    const parentAfterRedraw = await page.evaluate(featureId => {
+      const win = window as any;
+      win.Layers.draw("lakes");
+      return document.querySelector(`#lakes use[data-f="${featureId}"]`)?.parentElement?.id;
+    }, moved.featureId);
+
+    expect(parentAfterRedraw).toBe("my_lakes");
+  });
 });

@@ -1069,7 +1069,7 @@ export class GoodsModule {
       shore: (...rings: number[]) => rings.includes(pack.cells.t[cellId]),
       type: (...types: string[]) => {
         const feature = pack.features[pack.cells.f[cellId]];
-        return types.includes(feature.group || feature.type);
+        return types.includes(feature.subtype || feature.type);
       },
       river: () => pack.cells.r[cellId]
     };

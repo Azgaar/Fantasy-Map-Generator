@@ -109,7 +109,7 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoReligion", getNamedInfo(pack.religions, cells.religion[cellId], "name"));
   set("infoPopulation", getFriendlyPopulation(cellId));
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
-  set("infoFeature", featureId ? `${feature.group || feature.type} (${featureId})` : "n/a");
+  set("infoFeature", featureId ? `${feature.subtype || feature.type} (${featureId})` : "n/a");
   set("infoBiome", pack.biomes[cells.biome[cellId]].name);
   set("infoGood", getNamedInfo(pack.goods, cells.good[cellId], "name"));
   set("infoMarket", getMarketInfo(cells.market?.[cellId]));

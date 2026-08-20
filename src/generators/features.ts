@@ -29,7 +29,8 @@ export interface Feature {
   area: number;
   shoreline: number[];
   height: number;
-  group: string;
+  subtype: string; // classification within the type: continent/island/isle, ocean/sea/gulf, freshwater/salt/...
+  group: string; // svg group the feature is drawn in
   temp: number;
   flux: number;
   evaporation: number;
@@ -334,7 +335,7 @@ class FeatureModule {
     const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
     const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
 
-    const defineIslandGroup = (feature: Feature) => {
+    const defineIslandSubtype = (feature: Feature) => {
       const prevFeature = pack.features[pack.cells.f[feature.firstCell - 1]];
       if (prevFeature && prevFeature.type === "lake") return "lake_island";
       if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
@@ -342,13 +343,13 @@ class FeatureModule {
       return "isle";
     };
 
-    const defineOceanGroup = (feature: Feature) => {
+    const defineOceanSubtype = (feature: Feature) => {
       if (feature.cells > OCEAN_MIN_SIZE) return "ocean";
       if (feature.cells > SEA_MIN_SIZE) return "sea";
       return "gulf";
     };
 
-    const defineLakeGroup = (feature: Feature) => {
+    const defineLakeSubtype = (feature: Feature) => {
       if (feature.temp < -3) return "frozen";
       if (feature.height > 60 && feature.cells < 10 && feature.firstCell % 10 === 0) return "lava";
 
@@ -362,10 +363,10 @@ class FeatureModule {
       return "freshwater";
     };
 
-    const defineGroup = (feature: Feature) => {
-      if (feature.type === "island") return defineIslandGroup(feature);
-      if (feature.type === "ocean") return defineOceanGroup(feature);
-      if (feature.type === "lake") return defineLakeGroup(feature);
+    const defineSubtype = (feature: Feature) => {
+      if (feature.type === "island") return defineIslandSubtype(feature);
+      if (feature.type === "ocean") return defineOceanSubtype(feature);
+      if (feature.type === "lake") return defineLakeSubtype(feature);
       throw new Error(`Markup: unknown feature type ${feature.type}`);
     };
 
@@ -373,8 +374,14 @@ class FeatureModule {
       if (!feature || feature.type === "ocean") continue;
 
       if (feature.type === "lake") feature.height = Lakes.getHeight(feature);
-      feature.group = defineGroup(feature);
+      feature.subtype = defineSubtype(feature);
+      feature.group = this.getDefaultGroup(feature);
     }
+  }
+
+  getDefaultGroup(feature: Feature): string {
+    if (feature.type === "lake") return feature.subtype || "freshwater";
+    return feature.subtype === "lake_island" ? "lake_island" : "sea_island";
   }
 }
 
