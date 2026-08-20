@@ -1,4 +1,5 @@
 import type { MapStyle } from "@/renderers/scene/styles";
+import type { MapLayerId } from "@/renderers/core/layer-registry";
 import type { ReliefSet } from "@/types/relief";
 
 export interface Style {
@@ -6,6 +7,7 @@ export interface Style {
   burgIcons: { [key: string]: { [key: string]: string } };
   anchors: { [key: string]: { [key: string]: string } };
   labels: { groups: Record<string, LabelGroupStyle> };
+  mapLayerVisibility?: Partial<Record<MapLayerId, boolean>>;
   mapRenderer?: MapStyle;
   relief: ReliefStyle;
 }

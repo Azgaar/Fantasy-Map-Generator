@@ -263,7 +263,7 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 7, textureCacheEntries: 1 });
+    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 16, textureCacheEntries: 1 });
     expect(applicationState.assetLoad).toHaveBeenCalledOnce();
 
     renderer.clear();
@@ -281,14 +281,17 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 6 });
+    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 15 });
     expect(applicationState.stage?.children.map(child => child.label)).toEqual([
       "ocean",
       "landmass",
       "lakes",
       "biomes",
       "relief",
+      "religions",
+      "cultures",
       "states",
+      "provinces",
       "borders",
       "coastline"
     ]);

@@ -21,4 +21,18 @@ describe("map renderer style state", () => {
     expect(getMapRendererStyle(appStyle).ocean.color).toBe("#123456");
     expect(resetMapRendererStyle(appStyle).ocean.color).toBe(DEFAULT_PIXI_MAP_STYLE.ocean.color);
   });
+
+  it("hydrates newly introduced semantic layers in an older partial renderer style", () => {
+    const appStyle = {
+      mapRenderer: { states: { fallbackColor: "#123456", opacity: 0.25 } } as Style["mapRenderer"]
+    };
+
+    const hydrated = getMapRendererStyle(appStyle);
+
+    expect(hydrated.states).toEqual({ fallbackColor: "#123456", opacity: 0.25 });
+    expect(hydrated.cultures).toEqual(DEFAULT_PIXI_MAP_STYLE.cultures);
+    expect(hydrated.religions).toEqual(DEFAULT_PIXI_MAP_STYLE.religions);
+    expect(hydrated.provinces).toEqual(DEFAULT_PIXI_MAP_STYLE.provinces);
+    expect(appStyle.mapRenderer).toEqual(hydrated);
+  });
 });

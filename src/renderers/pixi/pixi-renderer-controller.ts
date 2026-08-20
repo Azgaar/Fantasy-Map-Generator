@@ -26,9 +26,12 @@ const OWNED_SVG_SELECTORS = [
   "#lakes",
   "#biomes",
   "#terrain",
+  "#relig",
+  "#cults",
   "#statesBody",
   "#statesHalo",
   "#statePaths",
+  "#provs",
   "#stateBorders",
   "#provinceBorders",
   "#coastline"
@@ -71,7 +74,10 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("lakes", layerIsOn("toggleLakes"));
   renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
   renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
+  renderer.setLayerVisibility("religions", layerIsOn("toggleReligions"));
+  renderer.setLayerVisibility("cultures", layerIsOn("toggleCultures"));
   renderer.setLayerVisibility("states", layerIsOn("toggleStates"));
+  renderer.setLayerVisibility("provinces", layerIsOn("toggleProvinces"));
   renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
   renderer.setLayerVisibility("coastline", true);
 };
@@ -97,7 +103,9 @@ const api: PixiRendererControllerApi = {
     instance.queueRender(
       pack,
       getMapRendererStyle(style),
-      layer === "states" || layer === "biomes" ? { cellIds, kind: "assignment", layer } : { kind: "geometry", layer }
+      ["biomes", "cultures", "provinces", "religions", "states"].includes(layer)
+        ? { cellIds, kind: "assignment", layer }
+        : { kind: "geometry", layer }
     );
   },
   ownsLayer: layer => pixiOwnsLayer(layer),

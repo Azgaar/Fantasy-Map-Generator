@@ -33,10 +33,13 @@ export interface MapStyle {
     state: SemanticLineStyle;
   };
   coastline: SemanticRoleStyles<SemanticLineStyle>;
+  cultures: CellLayerStyle;
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
   ocean: SemanticFillStyle;
+  provinces: CellLayerStyle;
   relief: { opacity: number };
+  religions: CellLayerStyle;
   states: CellLayerStyle;
 }
 
@@ -55,6 +58,7 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
       sea_island: { cap: "round", color: "#1f3846", dash: "", opacity: 0.5, width: 0.5 }
     }
   },
+  cultures: { fallbackColor: "#888888", opacity: 0.6 },
   lakes: {
     default: {
       fill: { color: "#a6c1fd", opacity: 0.5 },
@@ -89,8 +93,10 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   },
   landmass: { color: "#eef6fb", opacity: 1 },
   ocean: { color: "#466eab", opacity: 1 },
+  provinces: { fallbackColor: "#888888", opacity: 0.7 },
   relief: { opacity: 1 },
-  states: { fallbackColor: "#888888", opacity: 1 }
+  religions: { fallbackColor: "#888888", opacity: 0.7 },
+  states: { fallbackColor: "#888888", opacity: 0.4 }
 };
 
 export const normalizeOpacity = (value: number): number =>

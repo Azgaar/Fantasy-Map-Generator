@@ -47,7 +47,9 @@ export interface PixiRendererSnapshot {
   viewportWidth: number;
 }
 
-type CellFillLayer = "biomes" | "states";
+type CellFillLayer = "biomes" | "cultures" | "provinces" | "religions" | "states";
+
+const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cultures", "states", "provinces"];
 
 export interface PixiMapRendererOptions {
   deviceMemoryGb?: number;
@@ -145,7 +147,10 @@ export class PixiMapRenderer implements MapRenderer {
     const biomeContainer = this.buildFillContainer("biomes");
     const reliefContainer = await this.buildReliefContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
+    const religionContainer = this.buildFillContainer("religions");
+    const cultureContainer = this.buildFillContainer("cultures");
     const stateContainer = this.buildFillContainer("states");
+    const provinceContainer = this.buildFillContainer("provinces");
     const borderContainer = this.buildBordersContainer();
     this.app.stage.addChild(
       geography.ocean,
@@ -153,7 +158,10 @@ export class PixiMapRenderer implements MapRenderer {
       geography.lakes,
       biomeContainer,
       reliefContainer,
+      religionContainer,
+      cultureContainer,
       stateContainer,
+      provinceContainer,
       borderContainer,
       geography.coastline
     );
@@ -326,17 +334,13 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildFillContainer(layer: CellFillLayer): Container {
-    const world = this.getWorld();
-    const groups = layer === "states" ? world.cells.state : world.cells.biome;
-    const colors = layer === "states" ? world.states : world.biomes;
     const style = this.semanticStyle[layer];
     const retained = new RetainedCellMesh(
       this.getCellTopology(),
       {
-        assignments: groups,
-        colors,
+        ...this.getCellFillSource(layer),
         fallbackColor: style.fallbackColor,
-        heights: world.cells.h
+        heights: this.getWorld().cells.h
       },
       layer,
       this.resources
@@ -518,7 +522,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.sceneRevisions.apply(batch.invalidations);
     const assignments = batch.invalidations.filter(
       (invalidation): invalidation is Extract<RenderInvalidation, { kind: "assignment" }> =>
-        invalidation.kind === "assignment" && (invalidation.layer === "states" || invalidation.layer === "biomes")
+        invalidation.kind === "assignment" && CELL_FILL_LAYERS.includes(invalidation.layer as CellFillLayer)
     );
     if (assignments.length && assignments.length === batch.invalidations.length && this.updateCellMeshes(assignments)) {
       return;
@@ -540,8 +544,7 @@ export class PixiMapRenderer implements MapRenderer {
       const layerInvalidations = assignments.filter(invalidation => invalidation.layer === layer);
       target.retained.update(
         {
-          assignments: layer === "states" ? world.cells.state : world.cells.biome,
-          colors: layer === "states" ? world.states : world.biomes,
+          ...this.getCellFillSource(layer),
           fallbackColor: style.fallbackColor,
           heights: world.cells.h
         },
@@ -553,6 +556,25 @@ export class PixiMapRenderer implements MapRenderer {
     }
     this.app.render();
     return true;
+  }
+
+  private getCellFillSource(layer: CellFillLayer): {
+    assignments: ArrayLike<number>;
+    colors: readonly { color?: string }[];
+  } {
+    const world = this.getWorld();
+    switch (layer) {
+      case "biomes":
+        return { assignments: world.cells.biome, colors: world.biomes };
+      case "cultures":
+        return { assignments: world.cells.culture, colors: world.cultures };
+      case "provinces":
+        return { assignments: world.cells.province, colors: world.provinces };
+      case "religions":
+        return { assignments: world.cells.religion, colors: world.religions };
+      case "states":
+        return { assignments: world.cells.state, colors: world.states };
+    }
   }
 
   private getWorld(): PackedGraph {

@@ -238,7 +238,6 @@ async function exportToPngTiles(): Promise<void> {
       img.onerror = err => reject(err);
     });
   }
-
 }
 
 // parse map svg to object url

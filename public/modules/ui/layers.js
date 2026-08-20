@@ -486,9 +486,7 @@ function toggleIce(event) {
 }
 
 function toggleCultures(event) {
-  const cultures = pack.cultures.filter(c => c.i && !c.removed);
-  const empty = !cults.selectAll("path").size();
-  if (empty && cultures.length) {
+  if (!layerIsOn("toggleCultures")) {
     turnButtonOn("toggleCultures");
     drawCultures();
     if (event && isCtrlClick(event)) editStyle("cults");
@@ -501,23 +499,12 @@ function toggleCultures(event) {
 
 function drawCultures() {
   TIME && console.time("drawCultures");
-  const { cells, cultures } = pack;
-
-  const bodyPaths = new Array(cultures.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.culture[cellId], { fill: true, waterGap: true });
-  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
-    const color = cultures[index].color;
-    bodyPaths.push(getGappedFillPaths("culture", fill, waterGap, color, index));
-  });
-
-  ensureEl("cults").innerHTML = bodyPaths.join("");
-
+  redrawPixiCellLayer("cultures", "cults");
   TIME && console.timeEnd("drawCultures");
 }
 
 function toggleReligions(event) {
-  const religions = pack.religions.filter(r => r.i && !r.removed);
-  if (!relig.selectAll("path").size() && religions.length) {
+  if (!layerIsOn("toggleReligions")) {
     turnButtonOn("toggleReligions");
     drawReligions();
     if (event && isCtrlClick(event)) editStyle("relig");
@@ -530,17 +517,7 @@ function toggleReligions(event) {
 
 function drawReligions() {
   TIME && console.time("drawReligions");
-  const { cells, religions } = pack;
-
-  const bodyPaths = new Array(religions.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.religion[cellId], { fill: true, waterGap: true });
-  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
-    const color = religions[index].color;
-    bodyPaths.push(getGappedFillPaths("religion", fill, waterGap, color, index));
-  });
-
-  ensureEl("relig").innerHTML = bodyPaths.join("");
-
+  redrawPixiCellLayer("religions", "relig");
   TIME && console.timeEnd("drawReligions");
 }
 
@@ -558,46 +535,7 @@ function toggleStates(event) {
 
 function drawStates() {
   TIME && console.time("drawStates");
-  const ownershipRequest = {layer: "states", owner: "svg"};
-  window.dispatchEvent(new CustomEvent("map:pixi-renderer:ownership-request", {detail: ownershipRequest}));
-  if (ownershipRequest.owner === "pixi") {
-    ensureEl("statesBody").replaceChildren();
-    ensureEl("statesHalo").replaceChildren();
-    ensureEl("statePaths").replaceChildren();
-    window.dispatchEvent(
-      new CustomEvent("map:pixi-renderer:command", {
-        detail: {command: "invalidate-layer", layer: "states"}
-      })
-    );
-    TIME && console.timeEnd("drawStates");
-    return;
-  }
-  const { cells, states } = pack;
-
-  const maxLength = states.length - 1;
-  const bodyPaths = new Array(maxLength);
-  const clipPaths = new Array(maxLength);
-  const haloPaths = new Array(maxLength);
-
-  const renderHalo = shapeRendering.value === "geometricPrecision";
-  const isolines = getIsolines(pack, cellId => cells.state[cellId], { fill: true, waterGap: true, halo: renderHalo });
-  Object.entries(isolines).forEach(([index, { fill, waterGap, halo }]) => {
-    const color = states[index].color;
-    bodyPaths.push(getGappedFillPaths("state", fill, waterGap, color, index));
-
-    if (renderHalo) {
-      const haloColor = d3.color(color)?.darker().hex() || "#666666";
-      clipPaths.push(/* html */ `<clipPath id="state-clip${index}"><use href="#state${index}"/></clipPath>`);
-      haloPaths.push(
-        /* html */ `<path id="state-border${index}" d="${halo}" clip-path="url(#state-clip${index})" stroke="${haloColor}"/>`
-      );
-    }
-  });
-
-  ensureEl("statesBody").innerHTML = bodyPaths.join("");
-  ensureEl("statePaths").innerHTML = renderHalo ? clipPaths.join("") : "";
-  ensureEl("statesHalo").innerHTML = renderHalo ? haloPaths.join("") : "";
-
+  redrawPixiCellLayer("states", "statesBody", "statesHalo", "statePaths");
   TIME && console.timeEnd("drawStates");
 }
 
@@ -627,19 +565,7 @@ function toggleProvinces(event) {
 
 function drawProvinces() {
   TIME && console.time("drawProvinces");
-  const { cells, provinces } = pack;
-
-  const bodyPaths = new Array(provinces.length - 1);
-  const isolines = getIsolines(pack, cellId => cells.province[cellId], { fill: true, waterGap: true });
-  Object.entries(isolines).forEach(([index, { fill, waterGap }]) => {
-    const color = provinces[index].color;
-    bodyPaths.push(getGappedFillPaths("province", fill, waterGap, color, index));
-  });
-
-  ensureEl("provs").innerHTML = /* html */ `
-    <g id='provincesBody'>${bodyPaths.join("")}</g>
-  `;
-
+  redrawPixiCellLayer("provinces", "provs");
   TIME && console.timeEnd("drawProvinces");
 }
 
@@ -1033,12 +959,13 @@ function toggleVignette(event) {
   }
 }
 
-function getGappedFillPaths(elementName, fill, waterGap, color, index) {
-  let html = "";
-  if (fill) html += /* html */ `<path d="${fill}" fill="${color}" id="${elementName}${index}" />`;
-  if (waterGap)
-    html += /* html */ `<path d="${waterGap}" fill="none" stroke="${color}" stroke-width="3" id="${elementName}-gap${index}" />`;
-  return html;
+function redrawPixiCellLayer(layer, ...svgLayerIds) {
+  for (const id of svgLayerIds) ensureEl(id).replaceChildren();
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {
+      detail: {command: "invalidate-layer", layer}
+    })
+  );
 }
 
 function layerIsOn(el) {
