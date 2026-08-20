@@ -282,7 +282,9 @@ function drawLayers() {
     // vignette
   };
   const result = window.MapPerformance ? window.MapPerformance.measure("render:total", drawActiveLayers) : drawActiveLayers();
-  window.PixiMapPrototype?.queueRebuild();
+  window.dispatchEvent(
+    new CustomEvent("map:pixi-renderer:command", {detail: {command: "queue-rebuild"}})
+  );
   return result;
 }
 
@@ -556,11 +558,17 @@ function toggleStates(event) {
 
 function drawStates() {
   TIME && console.time("drawStates");
-  if (window.PixiMapPrototype?.ownsLayer("states")) {
+  const ownershipRequest = {layer: "states", owner: "svg"};
+  window.dispatchEvent(new CustomEvent("map:pixi-renderer:ownership-request", {detail: ownershipRequest}));
+  if (ownershipRequest.owner === "pixi") {
     ensureEl("statesBody").replaceChildren();
     ensureEl("statesHalo").replaceChildren();
     ensureEl("statePaths").replaceChildren();
-    window.PixiMapPrototype.invalidateLayer("states");
+    window.dispatchEvent(
+      new CustomEvent("map:pixi-renderer:command", {
+        detail: {command: "invalidate-layer", layer: "states"}
+      })
+    );
     TIME && console.timeEnd("drawStates");
     return;
   }

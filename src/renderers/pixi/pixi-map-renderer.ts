@@ -146,8 +146,12 @@ export class PixiMapRenderer implements MapRenderer {
       this.app.stage.addChild(baseContainer, fillContainer);
     }
 
-    this.applyVisibility();
+    this.recordPerformance("pixi:scene-build", performance.now() - started);
+
+    this.applyVisibility(false);
+    const gpuSubmitStarted = performance.now();
     this.app.render();
+    this.recordPerformance("pixi:gpu-submit", performance.now() - gpuSubmitStarted);
 
     const buildDuration = performance.now() - started;
     this.stats = {
@@ -168,7 +172,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.applyVisibility();
   }
 
-  private applyVisibility(): void {
+  private applyVisibility(render = true): void {
     if (!this.app || !this.stats.enabled) return;
     const [, reliefOrFills, fillsOrUndefined, borders] = this.app.stage.children;
     if (this.stats.theme === "states") {
@@ -178,7 +182,7 @@ export class PixiMapRenderer implements MapRenderer {
       if (fills) fills.visible = this.layerVisibility.get("states") ?? true;
       if (borders) borders.visible = this.layerVisibility.get("borders") ?? true;
     } else if (reliefOrFills) reliefOrFills.visible = this.layerVisibility.get("biomes") ?? true;
-    this.app.render();
+    if (render) this.app.render();
   }
 
   pick(_point: ScreenPoint): MapHit | null {

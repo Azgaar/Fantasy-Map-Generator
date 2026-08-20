@@ -21,9 +21,10 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
   to SVG resizing, and enables culling on suitable display objects.
 - S-002 retained cell topology is implemented: stable typed positions and indices, per-cell triangle ranges and bounds,
   and revision-aware CPU reuse are available without DOM or Pixi dependencies.
-- R-001 through R-003 foundations now include the typed renderer contract, camera state, canonical layer registry,
-  one-owner coordinator, typed invalidation coalescing, and an on-demand scheduler. The compatibility global still
-  wraps lifecycle operations and must be removed before R-001 is complete.
+- R-001 through R-003 now include the typed renderer contract, camera state, canonical layer registry, one-owner
+  coordinator, typed invalidation coalescing, and an on-demand scheduler. Classic application scripts dispatch typed
+  bridge events and no longer call `window.PixiMapPrototype`; that global remains only as a development console shim
+  scheduled for removal with the other prototype bridges in M13.
 - S-001 and L-001 are implemented for the prototype's state and biome fills: legacy presentation is adapted at the
   compatibility boundary, scene construction no longer reads DOM styles, both modes use retained indexed meshes, and
   assignment changes update color attributes without rebuilding topology.
@@ -34,6 +35,12 @@ The opt-in experiment is described in [pixi-renderer-prototype.md](pixi-renderer
   and biome fills build polygon batches from retained topology, relief builds a pure sprite-instance batch, and Pixi
   consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds, while the SVG path is now
   a derived compatibility representation. World/topology/layer revision tokens advance from typed invalidations.
+- Q-001 now has deterministic 10k/50k/100k seed recipes, a checked-in legacy fixture, fixed reference profiles, a
+  versioned report contract, separate scene-build/GPU-submit instrumentation, and a two-run SVG/Pixi benchmark command.
+  Checked-in reference measurements still require browser execution on the documented profiles.
+- P-001 now has an idempotent lazy SVG materializer with exact-content restoration and failure cleanup tests. Save and
+  export release the compatibility window deterministically; full browser round trips and hidden-layer export evidence
+  are still open.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 

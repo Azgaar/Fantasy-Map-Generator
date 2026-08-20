@@ -22,7 +22,7 @@ Pixi-owned layers are no longer rendered into the live SVG first. The prototype 
 borders in `states` mode, and biomes in `biomes` mode. It temporarily materializes those SVG layers only while saving,
 exporting, switching themes, or disabling Pixi.
 
-The prototype is also available from the browser console:
+The prototype is also available from the browser console as a temporary development-only comparison shim:
 
 ```js
 await PixiMapPrototype.enable("states");

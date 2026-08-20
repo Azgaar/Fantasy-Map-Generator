@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "benchmark:renderer": "playwright test --config=playwright.benchmark.config.ts",
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",

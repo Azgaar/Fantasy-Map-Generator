@@ -6,10 +6,12 @@ import {
   setPendingPixiTheme,
   syncPixiRendererVisibility
 } from "./pixi-renderer-controller";
+import { registerPixiRendererEventBridge } from "./pixi-renderer-events";
 
 export type { PixiMapPrototypeApi } from "./pixi-renderer-controller";
 
 window.PixiMapPrototype = pixiRendererController;
+registerPixiRendererEventBridge(pixiRendererController);
 
 const scheduleEnable = (): void => {
   const theme = getPendingPixiTheme();

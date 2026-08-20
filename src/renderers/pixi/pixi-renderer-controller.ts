@@ -3,8 +3,9 @@ import { coalesceInvalidations } from "../core/invalidation";
 import { readLegacyPixiMapStyle, readLegacyReliefSvgDataUri } from "./legacy-pixi-style-adapter";
 import type { PixiMapRenderer, PixiMapTheme, PixiPrototypeSnapshot } from "./pixi-map-renderer";
 import { type PixiOwnedLayer, pixiOwnsLayer, setPixiRendererTheme } from "./pixi-renderer-ownership";
+import { materializeSvgCompatibilityLayers } from "./svg-fallback-materializer";
 
-export interface PixiMapPrototypeApi {
+export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
   disable: () => Promise<void>;
   enable: (theme?: PixiMapTheme) => Promise<void>;
@@ -16,6 +17,9 @@ export interface PixiMapPrototypeApi {
   rebuild: () => Promise<void>;
   syncCamera: () => void;
 }
+
+/** @deprecated Temporary console compatibility alias. */
+export type PixiMapPrototypeApi = PixiRendererControllerApi;
 
 let instancePromise: Promise<PixiMapRenderer> | null = null;
 let instance: PixiMapRenderer | null = null;
@@ -96,7 +100,7 @@ const getLegacyCamera = (): MapCamera => {
   };
 };
 
-const api: PixiMapPrototypeApi = {
+const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),
   disable: async () => {
     if (pendingTheme) renderSvgFallback(pendingTheme);
@@ -136,24 +140,18 @@ const api: PixiMapPrototypeApi = {
   materializeSvgFallback: () => {
     const theme = pendingTheme;
     if (!theme) return () => undefined;
-
-    const snapshots = getFallbackSelectors(theme).map(selector => {
-      const element = document.querySelector(selector);
-      return { element, html: element?.innerHTML ?? "" };
+    return materializeSvgCompatibilityLayers({
+      afterRestore: theme === "states" ? () => window.drawRelief() : undefined,
+      beforeMaterialize: () => {
+        materializingSvgFallback = true;
+      },
+      draw: () => drawSvgFallback(theme),
+      root: document,
+      selectors: getFallbackSelectors(theme),
+      stopMaterializing: () => {
+        materializingSvgFallback = false;
+      }
     });
-    materializingSvgFallback = true;
-    try {
-      drawSvgFallback(theme);
-    } catch (error) {
-      materializingSvgFallback = false;
-      throw error;
-    }
-
-    return () => {
-      for (const { element, html } of snapshots) if (element) element.innerHTML = html;
-      materializingSvgFallback = false;
-      if (theme === "states") window.drawRelief();
-    };
   },
   ownsLayer: layer => !materializingSvgFallback && pendingTheme !== null && pixiOwnsLayer(layer),
   queueRebuild: () => {

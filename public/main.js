@@ -1164,7 +1164,7 @@ const regenerateMap = debounce(async function (config) {
 // clear the map
 function undraw() {
   window.ViewportLayers?.clearAll();
-  void window.PixiMapPrototype?.clear();
+  window.dispatchEvent(new CustomEvent("map:pixi-renderer:command", {detail: {command: "clear"}}));
   viewbox
     .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
     .remove();

@@ -4,6 +4,11 @@ import type { PixiMapTheme } from "./pixi-map-renderer";
 
 export type PixiOwnedLayer = "biomes" | "borders" | "relief" | "states";
 
+const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = ["biomes", "borders", "relief", "states"];
+
+export const isPixiOwnedLayer = (layer: string): layer is PixiOwnedLayer =>
+  PIXI_OWNED_LAYER_IDS.includes(layer as PixiOwnedLayer);
+
 const OWNED_LAYERS: Record<PixiMapTheme, readonly PixiOwnedLayer[]> = {
   biomes: ["biomes"],
   states: ["states", "relief", "borders"]
