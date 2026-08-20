@@ -17,6 +17,7 @@ import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
+import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
 import {
   DEFAULT_PIXI_MAP_STYLE,
   type MapStyle,
@@ -27,7 +28,6 @@ import {
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
 import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
-import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
 
 export interface PixiRendererSnapshot {
   batches: number;
@@ -356,11 +356,7 @@ export class PixiMapRenderer implements MapRenderer {
   } {
     const world = this.getWorld();
     const bounds = getWorldBounds(world);
-    const scene = buildBaseGeographyScene(
-      world,
-      bounds,
-      this.sceneRevisions.getLayerRevision("landmass")
-    );
+    const scene = buildBaseGeographyScene(world, bounds, this.sceneRevisions.getLayerRevision("landmass"));
     return {
       coastline: this.buildLineContainer(
         "coastline",
@@ -520,11 +516,7 @@ export class PixiMapRenderer implements MapRenderer {
       (invalidation): invalidation is Extract<RenderInvalidation, { kind: "assignment" }> =>
         invalidation.kind === "assignment" && (invalidation.layer === "states" || invalidation.layer === "biomes")
     );
-    if (
-      assignments.length &&
-      assignments.length === batch.invalidations.length &&
-      this.updateCellMeshes(assignments)
-    ) {
+    if (assignments.length && assignments.length === batch.invalidations.length && this.updateCellMeshes(assignments)) {
       return;
     }
     if (batch.requiresSceneBuild) {

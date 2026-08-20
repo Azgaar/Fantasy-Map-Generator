@@ -12,9 +12,8 @@ const createRenderer = (): PixiViewerRenderer =>
     render: vi.fn(async () => undefined),
     resize: vi.fn(),
     setCamera: vi.fn(),
-    setLayerVisibility: vi.fn(),
-    setTheme: vi.fn()
-  }) satisfies MapRenderer & { setTheme: (theme: "biomes" | "states") => void };
+    setLayerVisibility: vi.fn()
+  }) satisfies MapRenderer;
 
 describe("Pixi map viewer", () => {
   it("mounts and updates the production renderer contract without editor globals", async () => {
@@ -30,11 +29,9 @@ describe("Pixi map viewer", () => {
       layerVisibility: { borders: false, lakes: true },
       style,
       surface,
-      theme: "biomes",
       world
     });
 
-    expect(renderer.setTheme).toHaveBeenCalledWith("biomes");
     expect(renderer.setCamera).toHaveBeenCalledWith(camera);
     expect(renderer.mount).toHaveBeenCalledWith(surface);
     expect(renderer.setLayerVisibility).toHaveBeenCalledWith("borders", false);

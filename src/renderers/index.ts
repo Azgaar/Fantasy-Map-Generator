@@ -24,4 +24,4 @@ import "./emblems";
 import "./overlays/brush-circle";
 import "./overlays/fogging";
 import "./overlays/highlight";
-import "./pixi/pixi-map-prototype-loader";
+import "./pixi/pixi-renderer-loader";

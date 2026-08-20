@@ -12,14 +12,11 @@ import {
 
 const createController = (): PixiRendererControllerApi => ({
   clear: vi.fn(async () => undefined),
-  disable: vi.fn(async () => undefined),
-  enable: vi.fn(async () => undefined),
   getSnapshot: vi.fn(() => null),
   invalidateLayer: vi.fn(),
-  materializeSvgFallback: vi.fn(() => () => undefined),
   ownsLayer: vi.fn(layer => layer === "states"),
   queueRebuild: vi.fn(),
-  rebuild: vi.fn(async () => undefined),
+  start: vi.fn(async () => undefined),
   syncCamera: vi.fn()
 });
 

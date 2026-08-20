@@ -5,7 +5,7 @@ import type { MapLayerId } from "../renderers/core/layer-registry";
 import type { MapRenderer } from "../renderers/core/map-renderer";
 import type { MapStyle } from "../renderers/scene/styles";
 
-export type PixiViewerRenderer = MapRenderer & { setTheme?: (theme: "biomes" | "states") => void };
+export type PixiViewerRenderer = MapRenderer;
 
 export interface PixiMapViewerOptions {
   camera: MapCamera;
@@ -13,7 +13,6 @@ export interface PixiMapViewerOptions {
   layerVisibility?: Readonly<Partial<Record<MapLayerId, boolean>>>;
   style: MapStyle;
   surface: HTMLElement;
-  theme?: "biomes" | "states";
   world: PackedGraph;
 }
 
@@ -27,7 +26,6 @@ export interface PixiMapViewerHandle {
 
 export async function mountPixiMapViewer(options: PixiMapViewerOptions): Promise<PixiMapViewerHandle> {
   const renderer = await (options.createRenderer ?? createProductionRenderer)();
-  renderer.setTheme?.(options.theme ?? "states");
   renderer.setCamera(options.camera);
   await renderer.mount(options.surface);
   for (const [layer, visible] of Object.entries(options.layerVisibility ?? {})) {

@@ -63,7 +63,6 @@ declare global {
     ViewportPopulation: { draw: () => void; clear: () => void };
     ViewportPrecipitation: { draw: () => void; clear: () => void };
     ViewportCells: { draw: () => void; clear: () => void };
-    PixiMapPrototype: import("../renderers/pixi/pixi-map-prototype-loader").PixiMapPrototypeApi;
     GridGeneration: typeof import("../generators/grid-generation").GridGeneration;
     drawStateLabels: (ids?: number[]) => void;
     drawBurgLabels: () => void;

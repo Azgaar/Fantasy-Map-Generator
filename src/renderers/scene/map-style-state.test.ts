@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Style } from "@/types/style";
-import { DEFAULT_PIXI_MAP_STYLE } from "./styles";
 import { getMapRendererStyle, resetMapRendererStyle } from "./map-style-state";
+import { DEFAULT_PIXI_MAP_STYLE } from "./styles";
 
 describe("map renderer style state", () => {
   it("initializes serialized application state without sharing mutable defaults", () => {

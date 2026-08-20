@@ -41,10 +41,11 @@ const controls: LegacyLayerControls = {
 };
 
 describe("LayersPanel", () => {
-  test("renders presets, accessible layer state, ordering controls, and view modes", () => {
+  test("renders preset management, accessible layer state, ordering controls, and view modes", () => {
     const markup = renderToStaticMarkup(<LayersPanel controls={controls} initialSnapshot={snapshot} />);
 
-    expect(markup.includes('id="layersPreset"')).toBe(true);
+    expect(markup.includes('id="layersPreset"')).toBe(false);
+    expect(markup.includes('id="savePresetButton"')).toBe(true);
     expect(markup.includes('id="mapLayers"')).toBe(true);
     expect(markup.includes('id="toggleRivers"')).toBe(true);
     expect(markup.includes('aria-pressed="true"')).toBe(true);

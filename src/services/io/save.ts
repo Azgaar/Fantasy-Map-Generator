@@ -2,7 +2,6 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { materializePixiSvgFallback } from "@/renderers/pixi/pixi-renderer-controller";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
@@ -77,13 +76,8 @@ function prepareMapData(): string {
   const measurers = JSON.stringify(pack.measurers ?? []);
   const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
 
-  // save svg
-  const releaseSvgFallback = materializePixiSvgFallback();
-  let serializedSVG: string;
-  try {
-    const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
-    cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
-    cloneEl.querySelector("#pixi-map-prototype")?.remove();
+  // The SVG slot is retained temporarily for unmigrated overlay data. Pixi-owned layers are intentionally absent.
+  const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
     // reset transform values to default
     cloneEl.setAttribute("width", String(graphWidth));
@@ -100,10 +94,7 @@ function prepareMapData(): string {
     const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
     if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
 
-    serializedSVG = new XMLSerializer().serializeToString(cloneEl);
-  } finally {
-    releaseSvgFallback?.();
-  }
+  const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
   const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });

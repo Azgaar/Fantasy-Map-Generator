@@ -2,7 +2,6 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { materializePixiSvgFallback } from "@/renderers/pixi/pixi-renderer-controller";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -254,17 +253,9 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     noVignette = false,
     fullMap = false
   } = options;
-  const releaseSvgFallback = materializePixiSvgFallback();
-  let cloneEl!: SVGSVGElement;
-  try {
-    cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
-    cloneEl.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
-    cloneEl.querySelector("#pixi-map-prototype")?.remove();
-    cloneEl.id = "fantasyMap";
-    document.body.appendChild(cloneEl);
-  } finally {
-    releaseSvgFallback?.();
-  }
+  const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  cloneEl.id = "fantasyMap";
+  document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
   if (!debug) clone.select("#debug").remove();
 

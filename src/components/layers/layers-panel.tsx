@@ -4,7 +4,7 @@ import { Button } from "@patkepa/kantzen-ui/primitives";
 import { useEffect, useRef, useState } from "react";
 import { WorkspaceDialog } from "../ui/dialog";
 import { WorkspaceNotice } from "../ui/feedback";
-import { WorkspaceSelectField, WorkspaceTextField } from "../ui/form-field";
+import { WorkspaceTextField } from "../ui/form-field";
 import {
   getLayerNeighbors,
   type LayerControlsSnapshot,
@@ -193,10 +193,6 @@ export function LayersPanel({ controls = window.LayerControls, initialSnapshot }
   const searchInput = useRef<HTMLInputElement>(null);
   const query = search.trim().toLocaleLowerCase();
   const hasResults = snapshot.layers.some(layer => matchesLayer(layer, query));
-  const presetOptions = snapshot.presetOptions
-    .filter(option => !option.hidden || option.value === snapshot.selectedPreset)
-    .map(option => ({ label: option.label, value: option.value }));
-
   useEffect(() => {
     const handleControlsChange = (event: Event) => {
       setSnapshot((event as CustomEvent<LayerControlsSnapshot>).detail);
@@ -251,15 +247,8 @@ export function LayersPanel({ controls = window.LayerControls, initialSnapshot }
 
   return (
     <WorkspacePanel className="fmg-layers-panel">
-      <WorkspacePanelSection description="Apply a saved combination of visible layers" title="Preset">
+      <WorkspacePanelSection description="Save or remove your own combinations of visible layers" title="Custom views">
         <div className="fmg-layer-preset">
-          <WorkspaceSelectField
-            id="layersPreset"
-            label="Layer preset"
-            onChange={event => controls.applyPreset(event.currentTarget.value)}
-            options={presetOptions}
-            value={snapshot.selectedPreset}
-          />
           <div className="fmg-layer-preset__actions">
             <Button
               disabled={!snapshot.canSavePreset}

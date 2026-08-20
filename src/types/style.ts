@@ -1,5 +1,5 @@
-import type { ReliefSet } from "@/types/relief";
 import type { MapStyle } from "@/renderers/scene/styles";
+import type { ReliefSet } from "@/types/relief";
 
 export interface Style {
   // TODO: style = {burgs: { icons, anchors }, labels } is more semantic

@@ -2,6 +2,7 @@ import { select } from "d3";
 import type { Feature } from "../generators/features";
 import { round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
+import { pixiOwnsLayer } from "./pixi/pixi-renderer-ownership";
 import { buildFeatureShape } from "./scene/layers/feature-shapes";
 
 declare global {
@@ -27,6 +28,8 @@ const featuresRenderer = (): void => {
     coastline: {},
     lakes: {}
   };
+  const renderSvgLakes = !pixiOwnsLayer("lakes");
+  const renderSvgCoastline = !pixiOwnsLayer("coastline");
 
   for (const feature of pack.features) {
     if (!feature || feature.type === "ocean") continue;
@@ -39,16 +42,20 @@ const featuresRenderer = (): void => {
       html.landMask.push(`<use href="#feature_${feature.i}" data-f="${feature.i}" fill="black"></use>`);
       html.waterMask.push(`<use href="#feature_${feature.i}" data-f="${feature.i}" fill="white"></use>`);
 
-      const lakeGroup = feature.group || "freshwater";
-      if (!html.lakes[lakeGroup]) html.lakes[lakeGroup] = [];
-      html.lakes[lakeGroup].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);
+      if (renderSvgLakes) {
+        const lakeGroup = feature.group || "freshwater";
+        if (!html.lakes[lakeGroup]) html.lakes[lakeGroup] = [];
+        html.lakes[lakeGroup].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);
+      }
     } else {
       html.landMask.push(`<use href="#feature_${feature.i}" data-f="${feature.i}" fill="white"></use>`);
       html.waterMask.push(`<use href="#feature_${feature.i}" data-f="${feature.i}" fill="black"></use>`);
 
-      const coastlineGroup = feature.group === "lake_island" ? "lake_island" : "sea_island";
-      if (!html.coastline[coastlineGroup]) html.coastline[coastlineGroup] = [];
-      html.coastline[coastlineGroup].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);
+      if (renderSvgCoastline) {
+        const coastlineGroup = feature.group === "lake_island" ? "lake_island" : "sea_island";
+        if (!html.coastline[coastlineGroup]) html.coastline[coastlineGroup] = [];
+        html.coastline[coastlineGroup].push(`<use href="#feature_${feature.i}" data-f="${feature.i}"></use>`);
+      }
     }
   }
 

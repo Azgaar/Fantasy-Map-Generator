@@ -119,14 +119,10 @@ function start() {
       },
       {
         element: "#layersPreset",
-        onHighlightStarted: () => {
-          ensureEl("layersTab")?.click();
-        },
         popover: {
-          title: "Layer Presets",
-          description:
-            "Choose a preset to instantly show or hide common layer combinations: Political, Physical, Religions, and more.",
-          side: "bottom"
+          title: "Map Views",
+          description: "Choose how the map is presented: Political, Physical, Religions, Biomes, and more.",
+          side: "left"
         }
       },
       {

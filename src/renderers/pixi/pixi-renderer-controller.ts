@@ -1,57 +1,40 @@
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
-import { readLegacyPixiMapStyle, readLegacyReliefSvgDataUri } from "./legacy-pixi-style-adapter";
-import type { PixiMapRenderer, PixiMapTheme, PixiPrototypeSnapshot } from "./pixi-map-renderer";
-import { type PixiOwnedLayer, pixiOwnsLayer, setPixiRendererTheme } from "./pixi-renderer-ownership";
-import { materializeSvgCompatibilityLayers } from "./svg-fallback-materializer";
+import { getMapRendererStyle } from "../scene/map-style-state";
+import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
+import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
+import { type PixiOwnedLayer, pixiOwnsLayer } from "./pixi-renderer-ownership";
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
-  disable: () => Promise<void>;
-  enable: (theme?: PixiMapTheme) => Promise<void>;
-  getSnapshot: () => PixiPrototypeSnapshot | null;
+  getSnapshot: () => PixiRendererSnapshot | null;
   invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
-  materializeSvgFallback: () => () => void;
   ownsLayer: (layer: PixiOwnedLayer) => boolean;
   queueRebuild: () => void;
-  rebuild: () => Promise<void>;
+  start: () => Promise<void>;
   syncCamera: () => void;
 }
 
-/** @deprecated Temporary console compatibility alias. */
-export type PixiMapPrototypeApi = PixiRendererControllerApi;
-
 let instancePromise: Promise<PixiMapRenderer> | null = null;
 let instance: PixiMapRenderer | null = null;
-let pendingTheme: PixiMapTheme | null = null;
-let materializingSvgFallback = false;
 
-const getFallbackSelectors = (theme: PixiMapTheme): string[] =>
-  theme === "states"
-    ? ["#statesBody", "#statesHalo", "#statePaths", "#stateBorders", "#provinceBorders", "#terrain"]
-    : ["#biomes"];
+const OWNED_SVG_SELECTORS = [
+  "#oceanLayers",
+  "#oceanPattern",
+  "#landmass",
+  "#lakes",
+  "#biomes",
+  "#terrain",
+  "#statesBody",
+  "#statesHalo",
+  "#statePaths",
+  "#stateBorders",
+  "#provinceBorders",
+  "#coastline"
+] as const;
 
-const clearOwnedSvgLayers = (theme: PixiMapTheme): void => {
-  for (const selector of getFallbackSelectors(theme)) document.querySelector(selector)?.replaceChildren();
-};
-
-const drawSvgFallback = (theme: PixiMapTheme): void => {
-  if (theme === "states") {
-    window.drawStates();
-    window.drawRelief();
-    window.drawBorders();
-  } else {
-    window.drawBiomes();
-  }
-};
-
-const renderSvgFallback = (theme: PixiMapTheme): void => {
-  materializingSvgFallback = true;
-  try {
-    drawSvgFallback(theme);
-  } finally {
-    materializingSvgFallback = false;
-  }
+const clearOwnedSvgLayers = (): void => {
+  for (const selector of OWNED_SVG_SELECTORS) document.querySelector(selector)?.replaceChildren();
 };
 
 const getInstance = async (): Promise<PixiMapRenderer> => {
@@ -59,7 +42,7 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
     instance = new PixiMapRenderer({
       deviceMemoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
       recordPerformance: (name, duration) => window.MapPerformance?.record(name, duration),
-      resolveReliefIcon: readLegacyReliefSvgDataUri
+      resolveReliefIcon: readReliefSvgDataUri
     });
     return instance;
   });
@@ -69,8 +52,8 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
 const prepareSurface = (): HTMLElement => {
   const map = document.getElementById("map");
   if (!map) throw new Error("Cannot mount the Pixi renderer without #map");
-  const surface = document.getElementById("pixi-map-prototype") ?? document.createElement("div");
-  surface.id = "pixi-map-prototype";
+  const surface = document.getElementById("pixi-map-renderer") ?? document.createElement("div");
+  surface.id = "pixi-map-renderer";
   surface.style.pointerEvents = "none";
   const bounds = map.getBoundingClientRect();
   surface.style.height = `${Math.max(1, Math.round(bounds.height || svgHeight))}px`;
@@ -81,14 +64,18 @@ const prepareSurface = (): HTMLElement => {
   return surface;
 };
 
-const syncLegacyVisibility = (renderer: PixiMapRenderer): void => {
+const syncVisibility = (renderer: PixiMapRenderer): void => {
+  renderer.setLayerVisibility("ocean", true);
+  renderer.setLayerVisibility("landmass", true);
+  renderer.setLayerVisibility("lakes", layerIsOn("toggleLakes"));
   renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
-  renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
   renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
   renderer.setLayerVisibility("states", layerIsOn("toggleStates"));
+  renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
+  renderer.setLayerVisibility("coastline", true);
 };
 
-const getLegacyCamera = (): MapCamera => {
+const getCamera = (): MapCamera => {
   const map = document.getElementById("map");
   const bounds = map?.getBoundingClientRect();
   return {
@@ -102,81 +89,42 @@ const getLegacyCamera = (): MapCamera => {
 
 const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),
-  disable: async () => {
-    if (pendingTheme) renderSvgFallback(pendingTheme);
-    pendingTheme = null;
-    setPixiRendererTheme(null);
-    instance?.destroy();
-    instance = null;
-    instancePromise = null;
-    document.getElementById("pixi-map-prototype")?.remove();
-    document.getElementById("map")?.classList.remove("pixi-prototype-states", "pixi-prototype-biomes");
-  },
-  enable: async (theme = "states") => {
-    if (pendingTheme && pendingTheme !== theme) renderSvgFallback(pendingTheme);
-    if (theme === "states" && !pack.relief?.length) Relief.generate();
-    pendingTheme = theme;
-    setPixiRendererTheme(theme);
-    clearOwnedSvgLayers(theme);
-    if (theme === "states") window.drawRelief();
-    const renderer = await getInstance();
-    renderer.setTheme(theme);
-    renderer.setCamera(getLegacyCamera());
-    await renderer.mount(prepareSurface());
-    syncLegacyVisibility(renderer);
-    await renderer.render(pack, readLegacyPixiMapStyle(), coalesceInvalidations([{ kind: "world" }]));
-    document.getElementById("map")?.classList.toggle("pixi-prototype-states", theme === "states");
-    document.getElementById("map")?.classList.toggle("pixi-prototype-biomes", theme === "biomes");
-  },
   getSnapshot: () => instance?.getSnapshot() ?? null,
   invalidateLayer: (layer, cellIds) => {
     if (!instance) return;
     instance.queueRender(
       pack,
-      readLegacyPixiMapStyle(),
+      getMapRendererStyle(style),
       layer === "states" || layer === "biomes" ? { cellIds, kind: "assignment", layer } : { kind: "geometry", layer }
     );
   },
-  materializeSvgFallback: () => {
-    const theme = pendingTheme;
-    if (!theme) return () => undefined;
-    return materializeSvgCompatibilityLayers({
-      afterRestore: theme === "states" ? () => window.drawRelief() : undefined,
-      beforeMaterialize: () => {
-        materializingSvgFallback = true;
-      },
-      draw: () => drawSvgFallback(theme),
-      root: document,
-      selectors: getFallbackSelectors(theme),
-      stopMaterializing: () => {
-        materializingSvgFallback = false;
-      }
-    });
-  },
-  ownsLayer: layer => !materializingSvgFallback && pendingTheme !== null && pixiOwnsLayer(layer),
+  ownsLayer: layer => pixiOwnsLayer(layer),
   queueRebuild: () => {
-    void instancePromise?.then(instance => instance.queueRender(pack, readLegacyPixiMapStyle(), { kind: "world" }));
+    void instancePromise?.then(renderer =>
+      renderer.queueRender(pack, getMapRendererStyle(style), { kind: "world" })
+    );
   },
-  rebuild: async () => {
+  start: async () => {
+    if (!pack?.cells?.i?.length) return;
+    if (!pack.relief?.length) Relief.generate();
+    clearOwnedSvgLayers();
     const renderer = await getInstance();
+    renderer.setCamera(getCamera());
     await renderer.mount(prepareSurface());
-    await renderer.render(pack, readLegacyPixiMapStyle(), coalesceInvalidations([{ kind: "world" }]));
+    syncVisibility(renderer);
+    await renderer.render(pack, getMapRendererStyle(style), coalesceInvalidations([{ kind: "world" }]));
+    document.getElementById("map")?.classList.add("pixi-renderer-active");
   },
-  syncCamera: () => instance?.setCamera(getLegacyCamera())
+  syncCamera: () => instance?.setCamera(getCamera())
 };
 
 export const clearPixiRenderer = api.clear;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
-export const materializePixiSvgFallback = api.materializeSvgFallback;
 export const pixiRendererOwnsLayer = api.ownsLayer;
 export const queuePixiRendererRebuild = api.queueRebuild;
+export const startPixiRenderer = api.start;
 export const syncPixiRendererCamera = api.syncCamera;
 export const pixiRendererController = api;
-export const getPendingPixiTheme = (): PixiMapTheme | null => pendingTheme;
-export const setPendingPixiTheme = (theme: PixiMapTheme | null): void => {
-  pendingTheme = theme;
-  setPixiRendererTheme(theme);
-};
 export const syncPixiRendererVisibility = (): void => {
-  void instancePromise?.then(syncLegacyVisibility);
+  void instancePromise?.then(syncVisibility);
 };

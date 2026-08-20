@@ -4,6 +4,7 @@ import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LayersPanel } from "./layers/layers-panel";
+import { MapPreviewSelector } from "./layers/map-preview-selector";
 import {
   getToolCommands,
   type ToolCommand,
@@ -481,9 +482,11 @@ const headerRoot = document.getElementById("workspacePanelHeaderRoot");
 const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
 const canvasControlsRoot = document.getElementById("canvasControlsRoot");
+const mapPreviewRoot = document.getElementById("mapPreviewRoot");
 
 if (navigationRoot) createRoot(navigationRoot).render(<WorkspaceNavigation />);
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
 if (canvasControlsRoot) createRoot(canvasControlsRoot).render(<CanvasControls />);
+if (mapPreviewRoot) createRoot(mapPreviewRoot).render(<MapPreviewSelector />);
