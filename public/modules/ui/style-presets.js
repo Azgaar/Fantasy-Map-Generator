@@ -167,7 +167,8 @@ function syncPixiCellStylePreset(presetJson) {
     cultures: "#cults",
     provinces: "#provs",
     religions: "#relig",
-    states: "#statesBody"
+    states: "#statesBody",
+    zones: "#zones"
   };
   style.mapRenderer ||= {};
   for (const [layer, selector] of Object.entries(layerSelectors)) {
@@ -175,7 +176,8 @@ function syncPixiCellStylePreset(presetJson) {
     const opacity = presetJson[selector].opacity ?? 1;
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
-      fallbackColor: current.fallbackColor || "#888888",
+      ...current,
+      ...(layer === "zones" ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
       opacity: Number(opacity)
     };
   }

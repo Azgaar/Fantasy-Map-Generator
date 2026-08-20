@@ -26,6 +26,12 @@ export interface SemanticRoleStyles<T> {
   roles: Record<string, T>;
 }
 
+export interface ZoneLayerStyle {
+  filterType: string | null;
+  opacity: number;
+  stroke: SemanticLineStyle;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
@@ -41,6 +47,7 @@ export interface MapStyle {
   relief: { opacity: number };
   religions: CellLayerStyle;
   states: CellLayerStyle;
+  zones: ZoneLayerStyle;
 }
 
 export type PixiMapSemanticStyle = MapStyle;
@@ -96,7 +103,12 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   provinces: { fallbackColor: "#888888", opacity: 0.7 },
   relief: { opacity: 1 },
   religions: { fallbackColor: "#888888", opacity: 0.7 },
-  states: { fallbackColor: "#888888", opacity: 0.4 }
+  states: { fallbackColor: "#888888", opacity: 0.4 },
+  zones: {
+    filterType: null,
+    opacity: 0.6,
+    stroke: { cap: "butt", color: "#333333", dash: "", opacity: 1, width: 0 }
+  }
 };
 
 export const normalizeOpacity = (value: number): number =>

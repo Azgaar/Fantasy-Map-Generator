@@ -17,6 +17,7 @@ import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
+import { buildZoneScene } from "../scene/layers/zone-scene";
 import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
 import {
   DEFAULT_PIXI_MAP_STYLE,
@@ -151,6 +152,7 @@ export class PixiMapRenderer implements MapRenderer {
     const cultureContainer = this.buildFillContainer("cultures");
     const stateContainer = this.buildFillContainer("states");
     const provinceContainer = this.buildFillContainer("provinces");
+    const zoneContainer = this.buildZonesContainer();
     const borderContainer = this.buildBordersContainer();
     this.app.stage.addChild(
       geography.ocean,
@@ -162,6 +164,7 @@ export class PixiMapRenderer implements MapRenderer {
       cultureContainer,
       stateContainer,
       provinceContainer,
+      zoneContainer,
       borderContainer,
       geography.coastline
     );
@@ -439,6 +442,24 @@ export class PixiMapRenderer implements MapRenderer {
       if (!batch.paths.length) continue;
       const graphic = createLineGraphic(batch.paths, style);
       graphic.label = groupId;
+      container.addChild(graphic);
+    }
+    return container;
+  }
+
+  private buildZonesContainer(): Container {
+    const container = new Container();
+    container.label = "zones";
+    container.alpha = this.semanticStyle.zones.opacity;
+    const scene = buildZoneScene(this.getWorld(), this.sceneRevisions.getLayerRevision("zones"), {
+      filterType: this.semanticStyle.zones.filterType
+    });
+    for (const zone of scene.zones) {
+      const graphic = createPolygonGraphic(zone.polygons, {
+        fill: { color: zone.color, opacity: 1 },
+        stroke: this.semanticStyle.zones.stroke
+      });
+      graphic.label = `zone:${zone.zoneId}`;
       container.addChild(graphic);
     }
     return container;

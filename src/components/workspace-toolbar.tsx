@@ -1,10 +1,7 @@
 import { Icon } from "@patkepa/kantzen-ui/icons";
-import { Menu, MenuDivider, MenuItem } from "@patkepa/kantzen-ui/primitives";
+import { Menu, MenuItem } from "@patkepa/kantzen-ui/primitives";
 import { useEffect, useRef, useState } from "react";
-import {
-  type LayerControlsSnapshot,
-  type LegacyLayerControls
-} from "./layers/layer-controls";
+import { type LayerControlsSnapshot, type LegacyLayerControls } from "./layers/layer-controls";
 import { MapPreviewSelector } from "./layers/map-preview-selector";
 import { getToolCommands, TOOL_GROUPS } from "./tool-registry";
 import "./workspace-toolbar.css";
@@ -17,7 +14,7 @@ interface WorkspaceToolbarProps {
 
 const EDIT_GROUPS = TOOL_GROUPS.filter(group => ["world", "politics", "settlements", "geography"].includes(group.id));
 
-function WorkspaceOptionsMenu(): React.JSX.Element {
+function WorkspaceEditMenu(): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -48,13 +45,15 @@ function WorkspaceOptionsMenu(): React.JSX.Element {
   };
 
   return (
-    <div className="fmg-workspace-options" ref={root}>
+    <div className="fmg-workspace-edit" ref={root}>
       <button
-        aria-controls="workspaceOptionsMenu"
+        aria-controls="workspaceEditMenu"
         aria-expanded={open}
         aria-haspopup="menu"
-        className="fmg-workspace-options__trigger"
-        id="workspaceOptionsTrigger"
+        aria-label="Edit map"
+        className="fmg-workspace-edit__trigger"
+        data-tip="Edit map features"
+        id="workspaceEditTrigger"
         onClick={() => setOpen(current => !current)}
         ref={trigger}
         type="button"
@@ -62,18 +61,24 @@ function WorkspaceOptionsMenu(): React.JSX.Element {
         <span className="fmg-workspace-toolbar__icon" aria-hidden="true">
           <Icon icon="build" size={17} />
         </span>
-        <span className="fmg-workspace-options__label">Options</span>
-        <Icon aria-hidden="true" className="fmg-workspace-options__chevron" icon="chevron-down" size={12} />
+        <span className="fmg-workspace-edit__label">Edit</span>
+        <Icon
+          aria-hidden="true"
+          className="fmg-workspace-edit__chevron"
+          icon="chevron-down"
+          size={12}
+        />
       </button>
       {open ? (
-        <Menu aria-label="Options" className="fmg-workspace-options__menu" id="workspaceOptionsMenu">
-          <MenuDivider title="Edit" />
+        <Menu aria-label="Edit map" className="fmg-workspace-edit__menu" id="workspaceEditMenu">
           {EDIT_GROUPS.map(group => (
             <MenuItem icon={group.icon} key={group.id} text={group.label}>
               {getToolCommands(group.id).map(command => (
                 <MenuItem
                   key={command.id}
-                  labelElement={command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined}
+                  labelElement={
+                    command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined
+                  }
                   onClick={() => invoke(command)}
                   text={command.label}
                 />
@@ -93,21 +98,19 @@ export function WorkspaceToolbar({
 }: WorkspaceToolbarProps): React.JSX.Element {
   return (
     <div className="fmg-workspace-toolbar">
-      <WorkspaceOptionsMenu />
-      <div className="fmg-workspace-toolbar__map-controls">
-        <MapPreviewSelector controls={mapControls} initialSnapshot={initialMapSnapshot} />
-        <button
-          aria-label="Preferences"
-          className="fmg-workspace-toolbar__preferences"
-          data-tip="Open Preferences"
-          id="workspacePreferencesTrigger"
-          onClick={onOpenPreferences}
-          title="Preferences"
-          type="button"
-        >
-          <Icon aria-hidden="true" icon="settings" size={17} />
-        </button>
-      </div>
+      <WorkspaceEditMenu />
+      <MapPreviewSelector controls={mapControls} initialSnapshot={initialMapSnapshot} />
+      <button
+        aria-label="Preferences"
+        className="fmg-workspace-toolbar__preferences"
+        data-tip="Open Preferences"
+        id="workspacePreferencesTrigger"
+        onClick={onOpenPreferences}
+        title="Preferences"
+        type="button"
+      >
+        <Icon aria-hidden="true" icon="settings" size={17} />
+      </button>
     </div>
   );
 }

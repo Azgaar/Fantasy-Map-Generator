@@ -20,6 +20,7 @@ describe("Pixi renderer ownership", () => {
       "cultures",
       "states",
       "provinces",
+      "zones",
       "borders",
       "coastline"
     ]);

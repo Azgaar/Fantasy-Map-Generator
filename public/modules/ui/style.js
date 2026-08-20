@@ -544,10 +544,10 @@ styleDisplayInput.addEventListener("change", function () {
 
 styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
-  const pixiCellLayer = {biomes: "biomes", cults: "cultures", provs: "provinces", relig: "religions"}[
+  const pixiLayer = {biomes: "biomes", cults: "cultures", provs: "provinces", relig: "religions", zones: "zones"}[
     styleElementSelect.value
   ];
-  if (pixiCellLayer) setPixiCellLayerOpacity(pixiCellLayer, e.target.value);
+  if (pixiLayer) setPixiLayerOpacity(pixiLayer, e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.opacity = e.target.value;
 });
@@ -1017,14 +1017,15 @@ styleFontShiftY.addEventListener("input", e => {
 
 styleStatesBodyOpacity.addEventListener("input", e => {
   statesBody.attr("opacity", e.target.value);
-  setPixiCellLayerOpacity("states", e.target.value);
+  setPixiLayerOpacity("states", e.target.value);
 });
 
-function setPixiCellLayerOpacity(layer, opacity) {
+function setPixiLayerOpacity(layer, opacity) {
   style.mapRenderer ||= {};
   const current = style.mapRenderer[layer] || {};
   style.mapRenderer[layer] = {
-    fallbackColor: current.fallbackColor || "#888888",
+    ...current,
+    ...(layer === "zones" ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
     opacity: Number(opacity)
   };
   window.dispatchEvent(

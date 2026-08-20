@@ -499,7 +499,7 @@ function toggleCultures(event) {
 
 function drawCultures() {
   TIME && console.time("drawCultures");
-  redrawPixiCellLayer("cultures", "cults");
+  redrawPixiLayer("cultures", "cults");
   TIME && console.timeEnd("drawCultures");
 }
 
@@ -517,7 +517,7 @@ function toggleReligions(event) {
 
 function drawReligions() {
   TIME && console.time("drawReligions");
-  redrawPixiCellLayer("religions", "relig");
+  redrawPixiLayer("religions", "relig");
   TIME && console.timeEnd("drawReligions");
 }
 
@@ -535,7 +535,7 @@ function toggleStates(event) {
 
 function drawStates() {
   TIME && console.time("drawStates");
-  redrawPixiCellLayer("states", "statesBody", "statesHalo", "statePaths");
+  redrawPixiLayer("states", "statesBody", "statesHalo", "statePaths");
   TIME && console.timeEnd("drawStates");
 }
 
@@ -565,7 +565,7 @@ function toggleProvinces(event) {
 
 function drawProvinces() {
   TIME && console.time("drawProvinces");
-  redrawPixiCellLayer("provinces", "provs");
+  redrawPixiLayer("provinces", "provs");
   TIME && console.timeEnd("drawProvinces");
 }
 
@@ -921,16 +921,14 @@ function toggleZones(event) {
 
 function drawZones() {
   const filterBy = document.getElementById("zonesFilterType")?.value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(
-    ({ hidden, cells, type }) => !hidden && cells.length && (!isFiltered || type === filterBy)
-  );
-  zones.html(visibleZones.map(drawZone).join(""));
-}
-
-function drawZone({ i, cells, type, color }) {
-  const path = getVertexPath(cells);
-  return `<path id="zone${i}" data-id="${i}" data-type="${type}" d="${path}" fill="${color}" />`;
+  style.mapRenderer ||= {};
+  const current = style.mapRenderer.zones || {};
+  style.mapRenderer.zones = {
+    ...current,
+    filterType: filterBy && filterBy !== "all" ? filterBy : null,
+    opacity: current.opacity ?? Number(zones.attr("opacity") || 1)
+  };
+  redrawPixiLayer("zones", "zones");
 }
 
 function toggleEmblems(event) {
@@ -959,7 +957,7 @@ function toggleVignette(event) {
   }
 }
 
-function redrawPixiCellLayer(layer, ...svgLayerIds) {
+function redrawPixiLayer(layer, ...svgLayerIds) {
   for (const id of svgLayerIds) ensureEl(id).replaceChildren();
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {

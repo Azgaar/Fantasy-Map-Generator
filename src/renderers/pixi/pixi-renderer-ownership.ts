@@ -12,7 +12,8 @@ export type PixiOwnedLayer =
   | "provinces"
   | "relief"
   | "religions"
-  | "states";
+  | "states"
+  | "zones";
 
 export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "ocean",
@@ -24,6 +25,7 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "cultures",
   "states",
   "provinces",
+  "zones",
   "borders",
   "coastline"
 ];

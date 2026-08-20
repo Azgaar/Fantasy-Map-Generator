@@ -16,25 +16,17 @@
 .fmg-workspace-toolbar {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.fmg-workspace-toolbar__map-controls {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   pointer-events: auto;
 }
 
-.fmg-workspace-options {
+.fmg-workspace-edit {
   position: relative;
   flex: 0 0 auto;
-  pointer-events: auto;
 }
 
-.fmg-workspace-options__trigger,
+.fmg-workspace-edit__trigger,
 .fmg-workspace-toolbar__preferences {
   box-sizing: border-box;
   height: 40px;
@@ -51,9 +43,9 @@
     box-shadow 120ms ease;
 }
 
-.fmg-workspace-options__trigger {
+.fmg-workspace-edit__trigger {
   display: grid;
-  width: 126px;
+  width: 110px;
   grid-template-columns: 24px minmax(0, 1fr) 12px;
   gap: 9px;
   align-items: center;
@@ -67,9 +59,9 @@
   place-items: center;
 }
 
-.fmg-workspace-options__trigger:hover,
-.fmg-workspace-options__trigger:focus-visible,
-.fmg-workspace-options__trigger[aria-expanded="true"],
+.fmg-workspace-edit__trigger:hover,
+.fmg-workspace-edit__trigger:focus-visible,
+.fmg-workspace-edit__trigger[aria-expanded="true"],
 .fmg-workspace-toolbar__preferences:hover,
 .fmg-workspace-toolbar__preferences:focus-visible {
   border-color: var(--kui-line-strong);
@@ -79,7 +71,7 @@
   color: var(--kui-text);
 }
 
-.fmg-workspace-options__trigger:focus-visible,
+.fmg-workspace-edit__trigger:focus-visible,
 .fmg-workspace-toolbar__preferences:focus-visible {
   outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
@@ -96,26 +88,26 @@
   pointer-events: none;
 }
 
-.fmg-workspace-options__label {
+.fmg-workspace-edit__label {
   color: var(--kui-text);
   font: 600 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   text-align: left;
 }
 
-.fmg-workspace-options__chevron {
+.fmg-workspace-edit__chevron {
   color: var(--kui-text-muted);
   pointer-events: none;
   transition: transform 120ms ease;
 }
 
-.fmg-workspace-options__trigger[aria-expanded="true"] .fmg-workspace-options__chevron {
+.fmg-workspace-edit__trigger[aria-expanded="true"] .fmg-workspace-edit__chevron {
   transform: rotate(180deg);
 }
 
-.fmg-workspace-options__menu.kui-menu {
+.fmg-workspace-edit__menu.kui-menu {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  right: 0;
   width: 204px;
   padding: 6px;
   border: 1px solid var(--kui-line);
@@ -125,20 +117,7 @@
   animation: fmg-workspace-menu-in 100ms ease-out;
 }
 
-.fmg-workspace-options__menu .kui-menu-header {
-  padding: 5px 8px 7px;
-  list-style: none;
-}
-
-.fmg-workspace-options__menu .kui-menu-header h6 {
-  margin: 0;
-  color: var(--kui-text-muted);
-  font: 700 10px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.fmg-workspace-options__menu .kui-menu-item {
+.fmg-workspace-edit__menu .kui-menu-item {
   min-height: 34px;
   padding: 7px 8px;
   border-radius: 5px;
@@ -147,15 +126,15 @@
   font: 500 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.fmg-workspace-options__menu .kui-menu-item:hover,
-.fmg-workspace-options__menu .kui-menu-item:focus-visible,
-.fmg-workspace-options__menu .bp6-submenu:hover > .kui-menu-item,
-.fmg-workspace-options__menu .bp6-submenu:focus-within > .kui-menu-item {
+.fmg-workspace-edit__menu .kui-menu-item:hover,
+.fmg-workspace-edit__menu .kui-menu-item:focus-visible,
+.fmg-workspace-edit__menu .bp6-submenu:hover > .kui-menu-item,
+.fmg-workspace-edit__menu .bp6-submenu:focus-within > .kui-menu-item {
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-workspace-options__menu .bp6-menu-item-label {
+.fmg-workspace-edit__menu .bp6-menu-item-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -163,13 +142,13 @@
   color: var(--kui-text-muted);
 }
 
-.fmg-workspace-options__menu kbd {
+.fmg-workspace-edit__menu kbd {
   color: var(--kui-text-muted);
   font: 10px/1.2 "SF Mono", Consolas, monospace;
   white-space: nowrap;
 }
 
-.fmg-workspace-options__menu .kui-submenu {
+.fmg-workspace-edit__menu .kui-submenu {
   position: absolute;
   z-index: 2;
   top: -6px;
@@ -183,8 +162,8 @@
   box-shadow: 0 14px 36px rgb(0 0 0 / 0.38);
 }
 
-.fmg-workspace-options__menu .bp6-submenu:hover > .kui-submenu,
-.fmg-workspace-options__menu .bp6-submenu:focus-within > .kui-submenu {
+.fmg-workspace-edit__menu .bp6-submenu:hover > .kui-submenu,
+.fmg-workspace-edit__menu .bp6-submenu:focus-within > .kui-submenu {
   display: block;
 }
 
@@ -212,35 +191,40 @@
     gap: 8px;
   }
 
-  .fmg-workspace-options__trigger {
+  .fmg-workspace-edit__trigger {
     width: 40px;
     grid-template-columns: 1fr;
     padding: 0 7px;
   }
 
-  .fmg-workspace-options__label,
-  .fmg-workspace-options__chevron {
+  .fmg-workspace-edit__label,
+  .fmg-workspace-edit__chevron {
     display: none;
   }
 
-  .fmg-workspace-options__menu.kui-menu,
-  .fmg-workspace-options__menu .kui-submenu {
+  .fmg-workspace-edit__menu.kui-menu,
+  .fmg-workspace-edit__menu .kui-submenu {
     width: 145px;
   }
 
-  .fmg-workspace-options__menu .kui-submenu {
+  .fmg-workspace-edit__menu.kui-menu {
+    right: auto;
+    left: 0;
+  }
+
+  .fmg-workspace-edit__menu .kui-submenu {
     left: calc(100% - 12px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fmg-workspace-options__trigger,
-  .fmg-workspace-options__chevron,
+  .fmg-workspace-edit__trigger,
+  .fmg-workspace-edit__chevron,
   .fmg-workspace-toolbar__preferences {
     transition: none;
   }
 
-  .fmg-workspace-options__menu.kui-menu {
+  .fmg-workspace-edit__menu.kui-menu {
     animation: none;
   }
 }

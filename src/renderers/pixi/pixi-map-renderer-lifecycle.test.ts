@@ -292,6 +292,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "cultures",
       "states",
       "provinces",
+      "zones",
       "borders",
       "coastline"
     ]);

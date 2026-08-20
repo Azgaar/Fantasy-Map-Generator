@@ -19,7 +19,8 @@ describe("Pixi layer visibility state", () => {
       "provinces",
       "relief",
       "religions",
-      "states"
+      "states",
+      "zones"
     ]);
     expect(appStyle.mapLayerVisibility).toMatchObject({
       labels: false,

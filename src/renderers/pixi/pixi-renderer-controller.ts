@@ -31,6 +31,7 @@ const OWNED_SVG_SELECTORS = [
   "#statesHalo",
   "#statePaths",
   "#provs",
+  "#zones",
   "#stateBorders",
   "#provinceBorders",
   "#coastline"
@@ -77,6 +78,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("cultures", layerIsOn("toggleCultures"));
   renderer.setLayerVisibility("states", layerIsOn("toggleStates"));
   renderer.setLayerVisibility("provinces", layerIsOn("toggleProvinces"));
+  renderer.setLayerVisibility("zones", layerIsOn("toggleZones"));
   renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
   renderer.setLayerVisibility("coastline", true);
 };

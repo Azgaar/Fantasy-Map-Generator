@@ -121,6 +121,11 @@ const NAV_GROUPS: NavGroup[] = [
   }
 ];
 
+const COLLAPSED_NAV_GROUPS = NAV_GROUPS.map(group => ({
+  ...group,
+  items: group.items.map(item => ({ ...item, label: "" }))
+}));
+
 const OPTIONS_SECTIONS = new Set<WorkspaceSection>(["world-setup", "preferences"]);
 
 function isToolWorkspaceSection(section: WorkspaceSection): section is ToolWorkspaceSection {
@@ -227,7 +232,7 @@ function WorkspaceNavigation(): React.JSX.Element {
   const [collapsed, setCollapsed] = useState(() =>
     window.innerWidth < 720 || localStorage.getItem("fmg_workspace_sidebar_collapsed") === "true"
   );
-  const [currentPath, setCurrentPath] = useState(WORKSPACE_SECTIONS.layers.route);
+  const [currentPath, setCurrentPath] = useState("");
 
   useEffect(() => {
     document.body.classList.toggle("workspace-sidebar-collapsed", collapsed);
@@ -240,15 +245,10 @@ function WorkspaceNavigation(): React.JSX.Element {
       const section = normalizeWorkspaceSection(detail.section);
       setCurrentPath(section ? WORKSPACE_SECTIONS[section].route : "");
     };
-    const openDefaultPanel = () => openWorkspaceSection("layers");
-
     window.addEventListener("workspace-panel-change", handlePanelChange);
-    if (document.readyState === "complete") openDefaultPanel();
-    else window.addEventListener("load", openDefaultPanel, { once: true });
 
     return () => {
       window.removeEventListener("workspace-panel-change", handlePanelChange);
-      window.removeEventListener("load", openDefaultPanel);
     };
   }, []);
 
@@ -265,7 +265,7 @@ function WorkspaceNavigation(): React.JSX.Element {
       productName="Fantasy Map Generator"
       collapsedProductName="FM"
       currentPath={currentPath}
-      navGroups={NAV_GROUPS}
+      navGroups={collapsed ? COLLAPSED_NAV_GROUPS : NAV_GROUPS}
       onExpandSidebar={() => setCollapsed(value => !value)}
       onNavigate={navigate}
       navigationFooter={<SidebarActions />}

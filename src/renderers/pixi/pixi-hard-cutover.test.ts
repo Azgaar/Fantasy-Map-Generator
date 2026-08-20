@@ -29,9 +29,10 @@ describe("Pixi hard cutover", () => {
   });
 
   it("routes migrated thematic fills to Pixi without isoline or ownership fallback branches", () => {
-    expect(layersSource.includes('redrawPixiCellLayer("cultures", "cults")')).toBe(true);
-    expect(layersSource.includes('redrawPixiCellLayer("religions", "relig")')).toBe(true);
-    expect(layersSource.includes('redrawPixiCellLayer("provinces", "provs")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("cultures", "cults")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("religions", "relig")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("provinces", "provs")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("zones", "zones")')).toBe(true);
     expect(layersSource.includes("getGappedFillPaths")).toBe(false);
     expect([layersSource, drawBiomesSource, drawBordersSource].join("\n").includes("ownership-request")).toBe(false);
     expect(drawBiomesSource.includes("getIsolines")).toBe(false);
@@ -41,7 +42,7 @@ describe("Pixi hard cutover", () => {
   it("persists migrated visibility and semantic opacity instead of deriving them from SVG paths", () => {
     expect(saveSource.includes("capturePixiLayerVisibility(style")).toBe(true);
     expect(loadSource.includes("getStoredPixiLayerVisibility(style, layer)")).toBe(true);
-    expect(styleUiSource.includes("setPixiCellLayerOpacity")).toBe(true);
+    expect(styleUiSource.includes("setPixiLayerOpacity")).toBe(true);
     expect(stylePresetsSource.includes("syncPixiCellStylePreset(presetJson)")).toBe(true);
   });
 

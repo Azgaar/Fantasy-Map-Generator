@@ -9,7 +9,8 @@ export const PIXI_LAYER_CONTROL_IDS = {
   provinces: "toggleProvinces",
   relief: "toggleRelief",
   religions: "toggleReligions",
-  states: "toggleStates"
+  states: "toggleStates",
+  zones: "toggleZones"
 } as const satisfies Partial<Record<PixiOwnedLayer, string>>;
 
 export type ToggleablePixiLayer = keyof typeof PIXI_LAYER_CONTROL_IDS;

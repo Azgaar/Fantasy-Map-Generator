@@ -101,7 +101,7 @@ function start() {
         popover: {
           title: "Workspace Sidebar",
           description:
-            "Create and edit map features, control the map view, inspect data, and keep generation actions separate from app preferences.",
+            "Create and inspect map features, control map layers and style, and keep generation actions close at hand.",
           side: "right",
           onNextClick: () => {
             openWorkspacePanel("layers");
@@ -123,7 +123,7 @@ function start() {
         }
       },
       {
-        element: "#layersPreset",
+        element: "#mapPreviewTrigger",
         popover: {
           title: "Map Views",
           description: "Choose how the map is presented: Political, Physical, Religions, Biomes, and more.",
@@ -243,14 +243,15 @@ function start() {
 
       // ── Edit panel ───────────────────────────────────────────────────────────
       {
-        element: "#workspaceOptionsTrigger",
+        element: "#workspaceEditTrigger",
         onHighlightStarted: () => {
-          ensureEl("workspaceOptionsTrigger").click();
+          const trigger = ensureEl("workspaceEditTrigger");
+          if (trigger.getAttribute("aria-expanded") !== "true") trigger.click();
         },
         popover: {
           title: "Edit",
           description:
-            "Open Options, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
+            "Open Edit, then hover over World, Politics, Settlements, or Geography to reach each map editor.",
           side: "right"
         }
       },

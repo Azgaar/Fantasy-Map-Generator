@@ -129,10 +129,6 @@
   display: none;
 }
 
-body:has(#workspaceNavigationRoot .collapsed [data-sidebar-nav-item="true"]:hover) > .bp6-portal:has(.bp6-tooltip) {
-  display: none;
-}
-
 .fmg-sidebar-actions {
   margin: auto 10px 6px;
   padding-top: 9px;
