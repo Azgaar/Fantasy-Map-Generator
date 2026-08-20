@@ -290,6 +290,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       options.latitude ??= 50;
       options.prec ??= 100;
       options.labels ??= Labels.getDefaultOptions();
+      options.emblems ??= { showAll: false };
+      options.emblems.showAll ??= false;
       options.burgs ??= { groups: Burgs.getDefaultGroups() };
       // setting 16 and 17 (temperature) are part of options now, kept as "" in newer versions for compatibility
       if (settings[16]) options.temperatureEquator = +settings[16];

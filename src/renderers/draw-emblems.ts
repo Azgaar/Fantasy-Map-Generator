@@ -1,4 +1,5 @@
 import { forceCollide, forceSimulation, type SimulationNodeDatum, timeout } from "d3";
+import { Layers } from "@/components/layers";
 import type { Province } from "@/generators/provinces-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
@@ -170,6 +171,8 @@ export async function renderEmblemDefinitions(root: ParentNode): Promise<void> {
 }
 
 function reconcileEmblems(context: ViewportRenderContext): void {
+  if (!Layers.isOn("emblems")) return; // the layer keeps its content when off, but must not render into it
+
   for (const type of TYPES) {
     const group = context.root.querySelector<SVGGElement>(`#${GROUPS[type]}`);
     if (!group) continue;
@@ -294,9 +297,8 @@ function isVisible({ x, y, shift }: EmblemData, { bounds }: ViewportRenderContex
 }
 
 function isGroupHidden(type: EmblemType, scale: number): boolean {
-  const hideSmall = document.querySelector<HTMLInputElement>("#hideEmblems")?.checked;
   const screenSize = sizes[type] * scale;
-  return Boolean(hideSmall && (screenSize < 25 || screenSize > 300));
+  return !options.emblems.showAll && (screenSize < 25 || screenSize > 300);
 }
 
 function getId(type: EmblemType, i: number): string {

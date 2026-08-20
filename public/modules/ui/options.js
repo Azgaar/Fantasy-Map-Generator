@@ -359,9 +359,7 @@ function changeEmblemShape(emblemShape) {
     pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
 
   const rerenderCOA = (id, coa) => {
-    const coaEl = ensureEl(id);
-    if (!coaEl) return; // not rendered
-    coaEl.remove();
+    if (!findEl(id)) return; // emblems outside of the viewport are not rendered yet
     EmblemRenderer.trigger(id, coa);
   };
 

@@ -15,8 +15,11 @@ const mocks = vi.hoisted(() => ({
   emblemRenderer: {
     remove: vi.fn((id: string) => document.getElementById(id)?.remove()),
     trigger: vi.fn()
-  }
+  },
+  layerOn: true
 }));
+
+vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: mocks.emblemRenderer }));
 vi.mock("@/renderers/viewport/viewport-renderer", async importOriginal => {
@@ -53,7 +56,6 @@ function renderViewport(): void {
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `
-    <input id="hideEmblems" type="checkbox" />
     <svg>
       <g id="emblems">
         <g id="burgEmblems" data-size="1"></g>
@@ -84,13 +86,15 @@ beforeEach(() => {
         { i: 2, center: 2, coa: { shield: "heater", t1: "azure" } }
       ]
     },
+    options: { emblems: { showAll: false } },
     EmblemRenderer: mocks.emblemRenderer
   });
-  Object.assign(mocks.bounds, { scale: 1, x0: 0, y0: 0, x1: 100, y1: 100 });
+  Object.assign(mocks.bounds, { scale: 2, x0: 0, y0: 0, x1: 100, y1: 100 });
   mocks.deferredTimeouts.length = 0;
   mocks.deferTimeout = false;
   mocks.emblemRenderer.remove.mockClear();
   mocks.emblemRenderer.trigger.mockClear();
+  mocks.layerOn = true;
 });
 
 describe("viewport emblem rendering", () => {
@@ -125,6 +129,20 @@ describe("viewport emblem rendering", () => {
     expect(pannedUses).toHaveLength(1);
     expect(pannedUses[0].dataset.i).toBe("2");
     expect(mocks.emblemRenderer.trigger).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows out-of-range emblem groups only when showAll is enabled", () => {
+    drawEmblems();
+
+    mocks.bounds.scale = 0.1;
+    renderViewport();
+    expect(document.getElementById("stateEmblems")?.classList).toContain("hidden");
+    expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(0);
+
+    options.emblems.showAll = true;
+    renderViewport();
+    expect(document.getElementById("stateEmblems")?.classList).not.toContain("hidden");
+    expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(1);
   });
 
   it("keeps an edited emblem scene and DOM in sync", () => {
@@ -275,5 +293,20 @@ describe("viewport emblem rendering", () => {
     renderViewport();
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")?.getAttribute("width")).toBe("2.5em");
+  });
+  it("renders nothing while the layer is off, so a hidden layer never materializes emblems", () => {
+    drawEmblems();
+    expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(1);
+
+    // the layer keeps its content when turned off, but a viewport render must not write into it
+    document.getElementById("stateEmblems")!.replaceChildren();
+    mocks.layerOn = false;
+    renderViewport();
+
+    expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(0);
+
+    mocks.layerOn = true;
+    renderViewport();
+    expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(1);
   });
 });

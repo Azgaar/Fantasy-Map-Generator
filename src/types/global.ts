@@ -199,6 +199,7 @@ type Options = {
   trade: {
     animation: ReturnType<typeof TradeAnimation.getDefaultOptions>;
   };
+  emblems: { showAll: boolean };
   coastline: CoastlineSettings;
   threeD: ThreeDOptions;
 };
