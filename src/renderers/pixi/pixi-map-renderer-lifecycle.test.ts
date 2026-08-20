@@ -64,6 +64,9 @@ vi.mock("pixi.js", () => {
   }
 
   class GraphicsContext {
+    circle() {
+      return this;
+    }
     closePath() {
       return this;
     }
@@ -101,6 +104,11 @@ vi.mock("pixi.js", () => {
 
   class Sprite extends DisplayObject {}
 
+  class Text extends DisplayObject {
+    anchor = { set: vi.fn() };
+    position = { set: vi.fn() };
+  }
+
   return {
     Application,
     Assets: { load: applicationState.assetLoad, unload: applicationState.assetUnload },
@@ -112,7 +120,8 @@ vi.mock("pixi.js", () => {
     GraphicsContext,
     Mesh,
     Shader,
-    Sprite
+    Sprite,
+    Text
   };
 });
 
@@ -296,7 +305,9 @@ describe("PixiMapRenderer lifecycle", () => {
       "provinces",
       "zones",
       "borders",
-      "coastline"
+      "temperature",
+      "coastline",
+      "precipitation"
     ]);
     renderer.setLayerVisibility("biomes", false);
     expect(applicationState.stage?.children.find(child => child.label === "biomes")?.visible).toBe(false);

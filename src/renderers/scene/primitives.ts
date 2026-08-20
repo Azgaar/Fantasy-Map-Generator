@@ -48,6 +48,19 @@ export interface LineBatchPrimitive extends ScenePrimitiveBase {
   paths: readonly LinePathPrimitive[];
 }
 
+export interface CircleInstancePrimitive {
+  domainId: SceneDomainId;
+  radius: number;
+  role?: string;
+  x: number;
+  y: number;
+}
+
+export interface CircleBatchPrimitive extends ScenePrimitiveBase {
+  circles: readonly CircleInstancePrimitive[];
+  kind: "circle-batch";
+}
+
 export interface SpriteInstancePrimitive {
   domainId: SceneDomainId;
   height: number;
@@ -96,6 +109,7 @@ export type ScenePrimitive =
   | PolygonBatchPrimitive
   | PolygonPathBatchPrimitive
   | LineBatchPrimitive
+  | CircleBatchPrimitive
   | SpriteBatchPrimitive
   | LabelBatchPrimitive
   | HitRegionPrimitive

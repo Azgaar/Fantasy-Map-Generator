@@ -42,6 +42,27 @@ export interface GridLayerStyle {
   type: GridPatternType;
 }
 
+export interface LabelLayerStyle {
+  color: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: "bold" | "normal";
+  opacity: number;
+}
+
+export interface PrecipitationLayerStyle {
+  fill: SemanticFillStyle;
+  opacity: number;
+  stroke: SemanticLineStyle;
+}
+
+export interface TemperatureLayerStyle {
+  bandOpacity: number;
+  labels: LabelLayerStyle;
+  opacity: number;
+  stroke: SemanticLineStyle;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
@@ -55,10 +76,12 @@ export interface MapStyle {
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
   ocean: SemanticFillStyle;
+  precipitation: PrecipitationLayerStyle;
   provinces: CellLayerStyle;
   relief: { opacity: number };
   religions: CellLayerStyle;
   states: CellLayerStyle;
+  temperature: TemperatureLayerStyle;
   zones: ZoneLayerStyle;
 }
 
@@ -121,10 +144,21 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   },
   landmass: { color: "#eef6fb", opacity: 1 },
   ocean: { color: "#466eab", opacity: 1 },
+  precipitation: {
+    fill: { color: "#003dff", opacity: 1 },
+    opacity: 1,
+    stroke: { cap: "butt", color: "#000000", dash: "", opacity: 1, width: 0 }
+  },
   provinces: { fallbackColor: "#888888", opacity: 0.7 },
   relief: { opacity: 1 },
   religions: { fallbackColor: "#888888", opacity: 0.7 },
   states: { fallbackColor: "#888888", opacity: 0.4 },
+  temperature: {
+    bandOpacity: 0.3,
+    labels: { color: "#000000", fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "bold", opacity: 1 },
+    opacity: 1,
+    stroke: { cap: "butt", color: "#000000", dash: "", opacity: 1, width: 1.8 }
+  },
   zones: {
     fallbackColor: "#888888",
     filterType: null,

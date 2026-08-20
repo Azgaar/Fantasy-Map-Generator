@@ -1,4 +1,5 @@
 import type { MapCamera } from "../core/camera";
+import type { TemperatureScale } from "@/utils/unitUtils";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
@@ -104,7 +105,7 @@ const getWorld = () =>
   createMapRenderWorld(pack, {
     grid,
     requestedCells: Number(pointsInput.dataset.cells) || grid.cells.i.length,
-    temperatureScale: temperatureScale.value
+    temperatureScale: temperatureScale.value as TemperatureScale
   });
 
 const api: PixiRendererControllerApi = {

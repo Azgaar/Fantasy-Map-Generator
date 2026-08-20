@@ -1,4 +1,5 @@
-import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, type Texture } from "pixi.js";
+import { color, interpolateSpectral } from "d3";
+import { Application, Assets, Container, Graphics, GraphicsContext, Sprite, Text, type Texture } from "pixi.js";
 import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type ViewportSize } from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
@@ -15,6 +16,7 @@ import { RendererResourceCache, type RendererResourceHandle } from "../core/reso
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
+import { buildPrecipitationScene, buildTemperatureScene } from "../scene/layers/climate-scene";
 import { buildGridScene } from "../scene/layers/grid-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
@@ -158,6 +160,8 @@ export class PixiMapRenderer implements MapRenderer {
     const provinceContainer = this.buildFillContainer("provinces");
     const zoneContainer = this.buildZonesContainer();
     const borderContainer = this.buildBordersContainer();
+    const temperatureContainer = this.buildTemperatureContainer();
+    const precipitationContainer = this.buildPrecipitationContainer();
     this.app.stage.addChild(
       geography.ocean,
       geography.landmass,
@@ -172,7 +176,9 @@ export class PixiMapRenderer implements MapRenderer {
       provinceContainer,
       zoneContainer,
       borderContainer,
-      geography.coastline
+      temperatureContainer,
+      geography.coastline,
+      precipitationContainer
     );
     const reliefSprites = reliefContainer.children.length;
     const batches = this.app.stage.children.reduce((total, child) => total + Math.max(1, child.children.length), 0);
@@ -405,7 +411,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildPolygonContainer(
-    layer: "lakes" | "landmass",
+    layer: "lakes" | "landmass" | "temperature",
     polygons: readonly PolygonPathPrimitive[],
     getStyle: (role: string) => SemanticAreaStyle
   ): Container {
@@ -467,6 +473,71 @@ export class PixiMapRenderer implements MapRenderer {
       graphic.label = groupId;
       container.addChild(graphic);
     }
+    return container;
+  }
+
+  private buildTemperatureContainer(): Container {
+    const container = new Container();
+    container.label = "temperature";
+    const climate = this.getWorld().climate;
+    if (!climate) return container;
+
+    const style = this.semanticStyle.temperature;
+    const scene = buildTemperatureScene(
+      climate,
+      getWorldBounds(this.getWorld()),
+      this.sceneRevisions.getLayerRevision("temperature")
+    );
+    const bands = this.buildPolygonContainer("temperature", scene.bands.polygons, role => {
+      const fillColor = getTemperatureColor(Number(role));
+      return {
+        fill: { color: fillColor, opacity: style.bandOpacity },
+        stroke: { ...style.stroke, color: color(fillColor)?.darker(0.2).toString() ?? fillColor }
+      };
+    });
+    container.addChild(...bands.removeChildren());
+    for (const label of scene.labels.labels) {
+      const text = new Text({
+        style: {
+          fill: style.labels.color,
+          fontFamily: style.labels.fontFamily,
+          fontSize: style.labels.fontSize,
+          fontWeight: style.labels.fontWeight
+        },
+        text: label.text
+      });
+      text.alpha = style.labels.opacity;
+      text.anchor.set(0.5);
+      text.label = String(label.domainId);
+      text.position.set(label.anchor[0], label.anchor[1]);
+      container.addChild(text);
+    }
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private buildPrecipitationContainer(): Container {
+    const container = new Container();
+    container.label = "precipitation";
+    const climate = this.getWorld().climate;
+    if (!climate) return container;
+    const scene = buildPrecipitationScene(climate, this.sceneRevisions.getLayerRevision("precipitation"));
+    const context = new GraphicsContext();
+    for (const circle of scene.circles) context.circle(circle.x, circle.y, circle.radius);
+    const style = this.semanticStyle.precipitation;
+    if (scene.circles.length && style.fill.opacity > 0) {
+      context.fill({ alpha: style.fill.opacity, color: style.fill.color });
+    }
+    if (scene.circles.length && style.stroke.width > 0 && style.stroke.opacity > 0) {
+      context.stroke({
+        alpha: style.stroke.opacity,
+        cap: style.stroke.cap,
+        color: style.stroke.color,
+        width: style.stroke.width
+      });
+    }
+    if (scene.circles.length) container.addChild(new Graphics(context));
+    container.alpha = style.opacity;
     return container;
   }
 
@@ -543,7 +614,7 @@ export class PixiMapRenderer implements MapRenderer {
     const inputs = { cellVertices: world.cells.v, vertexPoints: world.vertices.p };
     if (
       this.topologyInputs?.cellVertices !== inputs.cellVertices ||
-      this.topologyInputs.vertexPoints !== inputs.vertexPoints
+      this.topologyInputs?.vertexPoints !== inputs.vertexPoints
     ) {
       this.topologyInputs = inputs;
       this.topologyRevision++;
@@ -621,7 +692,7 @@ export class PixiMapRenderer implements MapRenderer {
     }
   }
 
-  private getWorld(): PackedGraph {
+  private getWorld(): MapRenderWorld {
     if (!this.world) throw new Error("Cannot render before world data is provided");
     return this.world;
   }
@@ -692,6 +763,10 @@ function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticL
 
 function getRenderableColor(color: string, fallbackColor: string): string {
   return color.startsWith("url(") ? fallbackColor : color;
+}
+
+function getTemperatureColor(temperature: number): string {
+  return interpolateSpectral(1 - (temperature + 50) / 100);
 }
 
 function getWorldBounds(world: Pick<MapRenderWorld, "vertices">): { height: number; width: number } {
