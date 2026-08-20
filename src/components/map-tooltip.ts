@@ -40,7 +40,7 @@ export function showNotes(event: Event): void {
   const parent = target.parentNode as HTMLElement;
   const grand = parent?.parentNode as HTMLElement;
 
-  const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
+  const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id]");
   const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
 
   const note = notes.find(note => note.id === id);
@@ -110,7 +110,7 @@ interface TipContext {
  */
 function getElementTip({ group, subgroup, target, event, path, cellId }: TipContext): string | undefined {
   const parent = target.parentNode as SVGElement;
-  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
+  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id]");
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];

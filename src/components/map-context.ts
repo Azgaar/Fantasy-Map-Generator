@@ -81,14 +81,8 @@ function collectEntities(elements: Element[], pack: PackedGraph): MapContextEnti
     const label = element.closest<SVGTextElement>("#labels text[data-label-type][data-id]");
     if (label) addLabelEntities(entities, label, pack);
 
-    const burg = element.closest<SVGElement>("#burgIcons [data-id]");
-    if (burg) addEntity(entities, getBurgEntity(Number(burg.dataset.id), pack, burg));
-
     const emblem = element.closest<SVGElement>("#emblems use[data-i]");
     if (emblem) addEmblemEntities(entities, emblem, pack);
-
-    const marker = element.closest<SVGElement>("#markers [data-id]");
-    if (marker) addEntity(entities, getMarkerEntity(Number(marker.dataset.id), pack, marker));
 
     const lake = element.closest<SVGElement>("#lakes [data-f]");
     if (lake) addEntity(entities, getLakeEntity(Number(lake.dataset.f), pack, lake));
@@ -176,12 +170,6 @@ function getRiverEntity(id: number, pack: PackedGraph, element?: SVGElement): Ma
 function getRouteEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const route = pack.routes.find(item => item.i === id);
   return { element, id, key: `route:${id}`, kind: "route", label: route?.name || `Route ${id}` };
-}
-
-function getMarkerEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
-  const marker = pack.markers.find(item => item.i === id);
-  const label = marker?.type ? `${capitalize(marker.type)} marker` : `Marker ${id}`;
-  return { element, id, key: `marker:${id}`, kind: "marker", label };
 }
 
 function getLakeEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {

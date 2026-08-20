@@ -5,12 +5,11 @@ import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { invalidateBurgSymbols, invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
-import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
@@ -623,7 +622,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       markerElements.forEach(el => {
         el.remove();
       });
-      if (layerIsOn("markers")) drawMarkers();
+      if (layerIsOn("markers")) invalidateMarkerSymbols();
     }
   }
 
@@ -1012,7 +1011,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
 
   if (isOlderThan("1.107.0")) {
     // v1.107.0 allowed custom images for markers and regiments
-    if (layerIsOn("toggleMarkers")) drawMarkers();
+    if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
     if (layerIsOn("toggleMilitary")) drawMilitary();
   }
 
@@ -1093,7 +1092,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       }
     });
 
-    layerIsOn("toggleBurgIcons") && drawBurgIcons();
+    layerIsOn("toggleBurgIcons") && invalidateBurgSymbols();
     const opts = options as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;

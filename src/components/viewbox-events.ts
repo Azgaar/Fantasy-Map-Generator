@@ -41,8 +41,6 @@ const PARENT_EDITORS: Record<string, Opener> = {
 const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(Number(target.dataset.id ?? target.id.slice(5))),
-  burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
-  markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   goodsIcons: () => Controllers.GoodsEditor.open(),
   goodsBurgs: (_target, parent) => Controllers.ProductionOverview.open(Number(parent.dataset.id)),
@@ -54,7 +52,6 @@ const GRAND_EDITORS: Record<string, Opener> = {
 };
 
 const GREAT_EDITORS: Record<string, Opener> = {
-  markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`)
 };

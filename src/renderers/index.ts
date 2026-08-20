@@ -1,14 +1,12 @@
 import "./coastline-fractal";
 import "./draw-borders";
 import "./draw-biomes";
-import "./draw-burg-icons";
 import "./labels/labels-renderer";
 import "./draw-emblems";
 import "./draw-features";
 import "./draw-heightmap";
 import "./draw-ice";
 import "./draw-legend";
-import "./draw-markers";
 import "./draw-military";
 import "./draw-relief-icons";
 import "./draw-measurers";

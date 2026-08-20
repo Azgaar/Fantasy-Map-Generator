@@ -1,6 +1,5 @@
 import type { ZoomBehavior } from "d3";
 import { renderGroupCOAs } from "@/renderers/draw-emblems";
-import { rescaleVisibleMarkers } from "@/renderers/draw-markers";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { syncPixiRendererCamera } from "@/renderers/pixi/pixi-renderer-controller";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -150,7 +149,6 @@ function invokeActiveZooming(): void {
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  rescaleVisibleMarkers();
 }
 
 /** Zoom to a specific point */

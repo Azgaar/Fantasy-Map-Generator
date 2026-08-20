@@ -68,18 +68,41 @@ export interface RiverLayerStyle {
   opacity: number;
 }
 
+export interface PointSymbolStyle {
+  fill: string;
+  fillOpacity: number;
+  icon: string;
+  opacity: number;
+  size: number;
+  stroke: string;
+  strokeWidth: number;
+}
+
+export interface BurgLayerStyle {
+  anchors: SemanticRoleStyles<PointSymbolStyle>;
+  icons: SemanticRoleStyles<PointSymbolStyle>;
+  opacity: number;
+}
+
+export interface MarkerLayerStyle {
+  opacity: number;
+  rescale: boolean;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
     province: SemanticLineStyle;
     state: SemanticLineStyle;
   };
+  burgIcons: BurgLayerStyle;
   coastline: SemanticRoleStyles<SemanticLineStyle>;
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
   grid: GridLayerStyle;
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
+  markers: MarkerLayerStyle;
   ocean: SemanticFillStyle;
   precipitation: PrecipitationLayerStyle;
   provinces: CellLayerStyle;
@@ -99,6 +122,125 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   borders: {
     province: { cap: "butt", color: "#777777", dash: "", opacity: 1, width: 0.5 },
     state: { cap: "butt", color: "#555555", dash: "", opacity: 1, width: 1 }
+  },
+  burgIcons: {
+    anchors: {
+      default: {
+        fill: "#ffffff",
+        fillOpacity: 1,
+        icon: "anchor",
+        opacity: 1,
+        size: 1,
+        stroke: "#3e3e4b",
+        strokeWidth: 1.2
+      },
+      roles: {
+        capital: {
+          fill: "#ffffff",
+          fillOpacity: 1,
+          icon: "anchor",
+          opacity: 1,
+          size: 1.9,
+          stroke: "#3e3e4b",
+          strokeWidth: 1.2
+        },
+        city: {
+          fill: "#ffffff",
+          fillOpacity: 1,
+          icon: "anchor",
+          opacity: 1,
+          size: 1.5,
+          stroke: "#3e3e4b",
+          strokeWidth: 1.2
+        }
+      }
+    },
+    icons: {
+      default: {
+        fill: "#ffffff",
+        fillOpacity: 0.7,
+        icon: "circle",
+        opacity: 1,
+        size: 1,
+        stroke: "#3e3e4b",
+        strokeWidth: 1.2
+      },
+      roles: {
+        capital: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "square",
+          opacity: 1,
+          size: 2,
+          stroke: "#3e3e4b",
+          strokeWidth: 1
+        },
+        caravanserai: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "triangle",
+          opacity: 1,
+          size: 0.7,
+          stroke: "#3e3e4b",
+          strokeWidth: 1
+        },
+        city: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "circle",
+          opacity: 1,
+          size: 1.5,
+          stroke: "#3e3e4b",
+          strokeWidth: 1
+        },
+        fort: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "square",
+          opacity: 1,
+          size: 0.7,
+          stroke: "#3e3e4b",
+          strokeWidth: 1
+        },
+        hamlet: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "circle",
+          opacity: 1,
+          size: 0.5,
+          stroke: "#3e3e4b",
+          strokeWidth: 1.2
+        },
+        monastery: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "cross",
+          opacity: 1,
+          size: 0.7,
+          stroke: "#3e3e4b",
+          strokeWidth: 1
+        },
+        trading_post: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "triangle",
+          opacity: 1,
+          size: 0.7,
+          stroke: "#3e3e4b",
+          strokeWidth: 1
+        },
+        village: {
+          fill: "#ffffff",
+          fillOpacity: 0.7,
+          icon: "circle",
+          opacity: 1,
+          size: 0.7,
+          stroke: "#3e3e4b",
+          strokeWidth: 1.2
+        }
+      }
+    },
+    opacity: 1
   },
   coastline: {
     default: { cap: "round", color: "#1f3846", dash: "", opacity: 0.5, width: 0.5 },
@@ -150,6 +292,7 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     }
   },
   landmass: { color: "#eef6fb", opacity: 1 },
+  markers: { opacity: 1, rescale: true },
   ocean: { color: "#466eab", opacity: 1 },
   precipitation: {
     fill: { color: "#003dff", opacity: 1 },

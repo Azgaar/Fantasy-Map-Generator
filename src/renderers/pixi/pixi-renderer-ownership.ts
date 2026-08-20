@@ -4,12 +4,14 @@ import { RendererCoordinator } from "../core/renderer-coordinator";
 export type PixiOwnedLayer =
   | "biomes"
   | "borders"
+  | "burgIcons"
   | "cells"
   | "coastline"
   | "cultures"
   | "grid"
   | "lakes"
   | "landmass"
+  | "markers"
   | "ocean"
   | "precipitation"
   | "provinces"
@@ -39,7 +41,9 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "routes",
   "temperature",
   "coastline",
-  "precipitation"
+  "precipitation",
+  "burgIcons",
+  "markers"
 ];
 
 export const isPixiOwnedLayer = (layer: string): layer is PixiOwnedLayer =>

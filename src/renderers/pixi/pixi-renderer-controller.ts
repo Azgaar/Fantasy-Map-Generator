@@ -1,4 +1,5 @@
 import type { TemperatureScale } from "@/utils/temperature";
+import { getMarkerRenderState } from "../marker-render-state";
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
 import { getMapRendererStyle } from "../scene/map-style-state";
@@ -51,7 +52,10 @@ const OWNED_SVG_SELECTORS = [
   "#routes",
   "#temperature",
   "#coastline",
-  "#prec"
+  "#prec",
+  "#burgIcons",
+  "#anchors",
+  "#markers"
 ] as const;
 
 const clearOwnedSvgLayers = (): void => {
@@ -105,6 +109,8 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("temperature", layerIsOn("toggleTemperature"));
   renderer.setLayerVisibility("coastline", true);
   renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));
+  renderer.setLayerVisibility("burgIcons", layerIsOn("toggleBurgIcons"));
+  renderer.setLayerVisibility("markers", layerIsOn("toggleMarkers"));
 };
 
 const getCamera = (): MapCamera => {
@@ -124,7 +130,7 @@ const getWorld = () =>
     grid,
     requestedCells: Number(pointsInput.dataset.cells) || grid.cells.i.length,
     temperatureScale: temperatureScale.value as TemperatureScale
-  });
+  }, getMarkerRenderState());
 
 const api: PixiRendererControllerApi = {
   clear: async () => instance?.clear(),

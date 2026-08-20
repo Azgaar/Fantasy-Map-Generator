@@ -29,11 +29,12 @@ import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
 import { buildPrecipitationScene, buildTemperatureScene } from "../scene/layers/climate-scene";
 import { buildGridScene } from "../scene/layers/grid-scene";
+import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
 import { buildZoneScene } from "../scene/layers/zone-scene";
-import type { LinePathPrimitive, PolygonPathPrimitive } from "../scene/primitives";
+import type { LinePathPrimitive, PointSymbolInstancePrimitive, PolygonPathPrimitive } from "../scene/primitives";
 import type { MapRenderWorld } from "../scene/render-world";
 import {
   DEFAULT_PIXI_MAP_STYLE,
@@ -54,6 +55,8 @@ export interface PixiRendererSnapshot {
   contextLost: boolean;
   diagnostics: RenderDiagnosticsSnapshot;
   enabled: boolean;
+  burgSymbols: number;
+  markerSymbols: number;
   reliefSprites: number;
   resolution: number;
   resourceBytes: number;
@@ -85,6 +88,8 @@ export class PixiMapRenderer implements MapRenderer {
   private diagnostics = new RenderDiagnostics();
   private cellMeshes = new Map<CellFillLayer, { container: Container; retained: RetainedCellMesh }>();
   private layerVisibility = new Map<MapLayerId, boolean>();
+  private markerDisplays = new Map<number, { container: Container; baseSize: number; rescale: boolean }>();
+  private pointTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
   private reliefTextureHandles = new Set<RendererResourceHandle<Texture>>();
@@ -108,6 +113,8 @@ export class PixiMapRenderer implements MapRenderer {
     contextLost: false,
     diagnostics: {},
     enabled: false,
+    burgSymbols: 0,
+    markerSymbols: 0,
     reliefSprites: 0,
     resolution: 1,
     resourceBytes: 0,
@@ -177,6 +184,9 @@ export class PixiMapRenderer implements MapRenderer {
     const routeContainer = this.buildRoutesContainer();
     const temperatureContainer = this.buildTemperatureContainer();
     const precipitationContainer = this.buildPrecipitationContainer();
+    const burgContainer = this.buildBurgIconsContainer();
+    const markerContainer = await this.buildMarkersContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     this.app.stage.addChild(
       geography.ocean,
       geography.landmass,
@@ -195,8 +205,12 @@ export class PixiMapRenderer implements MapRenderer {
       routeContainer,
       temperatureContainer,
       geography.coastline,
-      precipitationContainer
+      precipitationContainer,
+      burgContainer,
+      markerContainer
     );
+    const burgSymbols = this.getWorld().burgs.filter(burg => burg.i && !burg.removed && burg.group).length;
+    const markerSymbols = markerContainer.children.length;
     const reliefSprites = reliefContainer.children.length;
     const batches = this.app.stage.children.reduce((total, child) => total + Math.max(1, child.children.length), 0);
 
@@ -212,8 +226,10 @@ export class PixiMapRenderer implements MapRenderer {
       ...this.stats,
       batches,
       buildDuration,
+      burgSymbols,
       cells: world.cells.i.length,
       enabled: true,
+      markerSymbols,
       reliefSprites,
       renderer: this.app.renderer.constructor.name
     };
@@ -259,6 +275,7 @@ export class PixiMapRenderer implements MapRenderer {
     const started = performance.now();
     this.app.stage.position.set(this.camera.x, this.camera.y);
     this.app.stage.scale.set(this.camera.scale);
+    this.updateMarkerScales();
     this.app.render();
     this.recordPerformance("pixi:camera", performance.now() - started);
   }
@@ -292,7 +309,15 @@ export class PixiMapRenderer implements MapRenderer {
     this.topologyInputs = null;
     this.sceneRevisions.reset();
     this.diagnostics.clear();
-    this.stats = { ...this.stats, batches: 0, enabled: false, reliefSprites: 0, renderer: null };
+    this.stats = {
+      ...this.stats,
+      batches: 0,
+      burgSymbols: 0,
+      enabled: false,
+      markerSymbols: 0,
+      reliefSprites: 0,
+      renderer: null
+    };
   }
 
   getSnapshot(): PixiRendererSnapshot {
@@ -680,14 +705,89 @@ export class PixiMapRenderer implements MapRenderer {
     return container;
   }
 
+  private buildBurgIconsContainer(): Container {
+    const container = new Container();
+    container.label = "burgIcons";
+    container.alpha = this.semanticStyle.burgIcons.opacity;
+    const scene = buildBurgPointSymbolScene(
+      this.getWorld().burgs,
+      this.semanticStyle.burgIcons,
+      this.sceneRevisions.getLayerRevision("burgIcons")
+    );
+    for (const [kind, instances] of [
+      ["icons", scene.icons.instances],
+      ["anchors", scene.anchors.instances]
+    ] as const) {
+      for (const symbols of groupPointSymbols(instances).values()) {
+        const graphic = createBurgSymbolGraphic(symbols);
+        graphic.label = `burgIcons:${kind}:${symbols[0]?.role ?? "default"}`;
+        container.addChild(graphic);
+      }
+    }
+    return container;
+  }
+
+  private async buildMarkersContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "markers";
+    const world = this.getWorld();
+    const scene = buildMarkerPointSymbolScene(
+      world.markers ?? [],
+      this.semanticStyle.markers,
+      world.markerRenderState ?? { pinnedOnly: false, visibleIds: null },
+      this.sceneRevisions.getLayerRevision("markers")
+    );
+    const externalSources = new Set(
+      scene.instances.map(({ icon }) => icon).filter((icon): icon is string => Boolean(icon && isExternalImage(icon)))
+    );
+    const textures = new Map<string, RendererResourceHandle<Texture>>();
+    await Promise.all(
+      [...externalSources].map(async source => {
+        try {
+          textures.set(source, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+        } catch {
+          // A missing or CORS-blocked marker image is rendered as an explicit placeholder below.
+        }
+      })
+    );
+    if (sequence !== this.rebuildSequence) {
+      for (const handle of textures.values()) handle.release();
+      return container;
+    }
+
+    for (const symbol of scene.instances) {
+      const marker = createMarkerDisplay(symbol, symbol.icon ? textures.get(symbol.icon)?.value : undefined);
+      marker.label = `marker:${symbol.domainId}`;
+      container.addChild(marker);
+      this.markerDisplays.set(Number(symbol.domainId), {
+        baseSize: symbol.size,
+        container: marker,
+        rescale: symbol.rescale
+      });
+    }
+    for (const handle of textures.values()) this.pointTextureHandles.add(handle);
+    this.updateMarkerScales();
+    return container;
+  }
+
+  private updateMarkerScales(): void {
+    for (const { baseSize, container, rescale } of this.markerDisplays.values()) {
+      const renderedSize = rescale ? Math.max(baseSize / 5 + 24 / this.camera.scale, 1) : baseSize;
+      container.scale.set(renderedSize / 30);
+    }
+  }
+
   private clearStage(): void {
     if (!this.app) return;
     for (const retained of this.retainedCellMeshes) retained.destroy();
     this.retainedCellMeshes.clear();
     this.cellMeshes.clear();
+    this.markerDisplays.clear();
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
     for (const handle of this.reliefTextureHandles) handle.release();
     this.reliefTextureHandles.clear();
+    for (const handle of this.pointTextureHandles) handle.release();
+    this.pointTextureHandles.clear();
   }
 
   private getCellTopology(): RetainedCellTopology {
@@ -835,6 +935,200 @@ function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticL
     context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, width: style.width });
   }
   return new Graphics(context);
+}
+
+function groupPointSymbols(
+  instances: readonly PointSymbolInstancePrimitive[]
+): Map<string, PointSymbolInstancePrimitive[]> {
+  const groups = new Map<string, PointSymbolInstancePrimitive[]>();
+  for (const symbol of instances) {
+    const key = [
+      symbol.role,
+      symbol.shape,
+      symbol.size,
+      symbol.fill,
+      symbol.fillOpacity,
+      symbol.stroke,
+      symbol.strokeWidth,
+      symbol.opacity
+    ].join(":");
+    const group = groups.get(key);
+    if (group) group.push(symbol);
+    else groups.set(key, [symbol]);
+  }
+  return groups;
+}
+
+function createBurgSymbolGraphic(symbols: readonly PointSymbolInstancePrimitive[]): Graphics {
+  const context = new GraphicsContext();
+  for (const symbol of symbols) traceBurgSymbol(context, symbol);
+  const first = symbols[0];
+  if (first) {
+    if (first.fillOpacity > 0) context.fill({ alpha: first.fillOpacity * first.opacity, color: first.fill });
+    if (first.strokeWidth > 0) {
+      context.stroke({ alpha: first.opacity, color: first.stroke, width: first.strokeWidth });
+    }
+  }
+  return new Graphics(context);
+}
+
+function traceBurgSymbol(context: GraphicsContext, symbol: PointSymbolInstancePrimitive): void {
+  const { shape, size, x, y } = symbol;
+  const radius = size / 2;
+  if (shape === "circle" || shape === "circled") return void context.circle(x, y, radius);
+  if (shape === "square" || shape === "squared") return void context.rect(x - radius, y - radius, size, size);
+  if (shape === "triangle") {
+    context.poly([x, y - radius, x + radius, y + radius, x - radius, y + radius], true);
+    return;
+  }
+  if (shape === "cross") {
+    const arm = size * 0.15;
+    context.poly(
+      [
+        x - arm,
+        y - radius,
+        x + arm,
+        y - radius,
+        x + arm,
+        y - arm,
+        x + radius,
+        y - arm,
+        x + radius,
+        y + arm,
+        x + arm,
+        y + arm,
+        x + arm,
+        y + radius,
+        x - arm,
+        y + radius,
+        x - arm,
+        y + arm,
+        x - radius,
+        y + arm,
+        x - radius,
+        y - arm,
+        x - arm,
+        y - arm
+      ],
+      true
+    );
+    return;
+  }
+  if (shape === "anchor") {
+    context.circle(x, y - radius * 0.55, radius * 0.18);
+    context.moveTo(x, y - radius * 0.35).lineTo(x, y + radius * 0.7);
+    context.moveTo(x - radius * 0.55, y).lineTo(x + radius * 0.55, y);
+    context.arc(x, y + radius * 0.15, radius * 0.65, 0.15, Math.PI - 0.15);
+    return;
+  }
+  if (shape.includes("star")) {
+    const points: number[] = [];
+    for (let index = 0; index < 10; index++) {
+      const angle = -Math.PI / 2 + (index * Math.PI) / 5;
+      const pointRadius = index % 2 ? radius * 0.42 : radius;
+      points.push(x + Math.cos(angle) * pointRadius, y + Math.sin(angle) * pointRadius);
+    }
+    context.poly(points, true);
+    return;
+  }
+  // Unknown custom symbols remain visible as a deterministic missing-asset diamond.
+  context.poly([x, y - radius, x + radius, y, x, y + radius, x - radius, y], true);
+  context.moveTo(x - radius * 0.45, y - radius * 0.45).lineTo(x + radius * 0.45, y + radius * 0.45);
+  context.moveTo(x + radius * 0.45, y - radius * 0.45).lineTo(x - radius * 0.45, y + radius * 0.45);
+}
+
+function createMarkerDisplay(symbol: PointSymbolInstancePrimitive, texture?: Texture): Container {
+  const container = new Container();
+  container.position.set(symbol.x, symbol.y);
+  container.pivot.set(15, 30);
+  container.cullable = true;
+  container.cullArea = new Rectangle(0, 0, 30, 30);
+  container.eventMode = "none";
+
+  const pin = createMarkerPinGraphic(symbol);
+  pin.alpha = symbol.opacity;
+  container.addChild(pin);
+
+  const iconX = symbol.iconOffsetX * 30;
+  const iconY = symbol.iconOffsetY * 30;
+  if (symbol.icon && isExternalImage(symbol.icon) && texture) {
+    const sprite = new Sprite({ texture });
+    sprite.anchor.set(0.5);
+    sprite.height = symbol.iconSize;
+    sprite.width = symbol.iconSize;
+    sprite.position.set(iconX, iconY);
+    container.addChild(sprite);
+  } else if (symbol.icon && !isExternalImage(symbol.icon)) {
+    const icon = new Text({
+      style: { align: "center", fontFamily: "sans-serif", fontSize: symbol.iconSize },
+      text: symbol.icon
+    });
+    icon.anchor.set(0.5);
+    icon.position.set(iconX, iconY);
+    container.addChild(icon);
+  } else if (symbol.icon) {
+    const missing = new GraphicsContext()
+      .rect(iconX - symbol.iconSize / 2, iconY - symbol.iconSize / 2, symbol.iconSize, symbol.iconSize)
+      .moveTo(iconX - symbol.iconSize / 2, iconY - symbol.iconSize / 2)
+      .lineTo(iconX + symbol.iconSize / 2, iconY + symbol.iconSize / 2)
+      .moveTo(iconX + symbol.iconSize / 2, iconY - symbol.iconSize / 2)
+      .lineTo(iconX - symbol.iconSize / 2, iconY + symbol.iconSize / 2)
+      .stroke({ color: "#c13119", width: 1 });
+    container.addChild(new Graphics(missing));
+  }
+  return container;
+}
+
+function createMarkerPinGraphic(symbol: PointSymbolInstancePrimitive): Graphics {
+  const context = new GraphicsContext();
+  traceMarkerPin(context, symbol.shape);
+  if (symbol.shape !== "no") {
+    context.fill({ alpha: symbol.fillOpacity, color: symbol.fill });
+    if (symbol.strokeWidth > 0) context.stroke({ color: symbol.stroke, width: symbol.strokeWidth });
+  }
+  return new Graphics(context);
+}
+
+function traceMarkerPin(context: GraphicsContext, shape: string): void {
+  if (shape === "no") return;
+  if (shape === "bubble") {
+    context.poly([6, 19, 15, 29, 24, 19], true);
+    context.circle(15, 15, 10);
+    return;
+  }
+  if (shape === "pin") {
+    context
+      .moveTo(15, 3)
+      .bezierCurveTo(9.5, 3, 5.3, 7.09, 5.3, 12.3)
+      .bezierCurveTo(5.3, 19.1, 15, 29.3, 15, 29.3)
+      .bezierCurveTo(15, 29.3, 24.7, 19.1, 24.7, 12.3)
+      .bezierCurveTo(24.7, 7.09, 20.5, 3, 15, 3)
+      .closePath();
+    return;
+  }
+  if (shape === "square") return void context.poly([5, 5, 25, 5, 25, 25, 20, 25, 15, 29, 10, 25, 5, 25], true);
+  if (shape === "squarish") return void context.poly([5, 5, 25, 5, 25, 25, 19, 25, 15, 29, 11, 25, 5, 25], true);
+  if (shape === "diamond") return void context.poly([15, 1, 28, 15, 15, 29, 2, 15], true);
+  if (shape === "hex") return void context.poly([15, 3, 25.4, 9, 25.4, 21, 15, 29, 4.6, 21, 4.6, 9], true);
+  if (shape === "hexy") return void context.poly([15, 4, 25, 8, 24, 21, 15, 29, 6, 21, 5, 8], true);
+  if (shape === "shieldy") return void context.poly([6, 7, 15, 4, 24, 7, 24, 21, 15, 29, 6, 21], true);
+  if (shape === "shield") {
+    context
+      .moveTo(4.6, 5.2)
+      .lineTo(25, 5.2)
+      .lineTo(25, 11.9)
+      .bezierCurveTo(25, 20, 20, 26, 15, 29)
+      .bezierCurveTo(10, 26, 4.6, 20, 4.6, 11.9)
+      .closePath();
+    return;
+  }
+  if (shape === "pentagon") return void context.poly([9, 4, 21, 4, 26, 16, 15, 29, 4, 16], true);
+  if (shape === "heptagon") return void context.poly([10, 4, 20, 4, 26, 12, 24, 22, 15, 29, 6, 22, 4, 12], true);
+  context.circle(15, 15, 11);
+}
+
+function isExternalImage(icon: string): boolean {
+  return /^https?:\/\//.test(icon) || icon.startsWith("data:image");
 }
 
 function traceLinePath(context: GraphicsContext, path: LinePathPrimitive, dash: string): void {

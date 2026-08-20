@@ -1,7 +1,7 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
-import { drawMarkers } from "@/renderers/draw-markers";
+import { invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { ensureEl } from "@/utils";
 
 const DIALOG_ID = "markersSettings";
@@ -36,7 +36,7 @@ function open(): void {
 function regenerateMarkers(): void {
   applyChanges();
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
   refreshEditors();
   drawConfigTable();
 }

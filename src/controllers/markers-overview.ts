@@ -13,8 +13,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
-import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { filterMarkerSymbols, invalidateMarkerSymbols, showOnlyPinnedMarkers } from "@/renderers/point-symbols";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { ensureEl } from "../utils";
 
@@ -179,7 +178,7 @@ function closeMarkersOverview(): void {
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
   populateFilters();
   markersTable.refresh();
 }
@@ -302,8 +301,7 @@ function syncMapToFilter(filteredMarkers: Marker[], anyFilterActive: boolean): v
   if (signature === lastFilterSignature) return;
   lastFilterSignature = signature;
 
-  setMarkersFilter(ids);
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleMarkers")) filterMarkerSymbols(ids);
 }
 
 function invertPin(): void {
@@ -317,8 +315,7 @@ function invertPin(): void {
     } else delete marker.pinned;
   });
 
-  ensureEl("markers").setAttribute("pinned", anyPinned ? "1" : "");
-  drawMarkers();
+  showOnlyPinnedMarkers(anyPinned);
   markersTable.refresh();
 }
 
@@ -337,26 +334,24 @@ function openEditor(i: number): void {
 }
 
 function highlightMarker(i: number): void {
-  const marker = document.getElementById(`marker${i}`);
-  if (!marker) return;
-  highlightElement(marker, 2);
+  const marker = pack.markers.find(marker => marker.i === i);
+  if (marker) zoomTo(marker.x, marker.y, Math.max(scale, 8), 350);
 }
 
 function pinMarker(el: HTMLElement, i: number): void {
   const marker = pack.markers.find(marker => marker.i === i);
   if (!marker) return;
 
-  const markerGroup = ensureEl("markers");
   if (marker.pinned) {
     delete marker.pinned;
     const anyPinned = pack.markers.some(marker => marker.pinned);
-    if (!anyPinned) markerGroup.removeAttribute("pinned");
+    showOnlyPinnedMarkers(anyPinned);
   } else {
     marker.pinned = true;
-    markerGroup.setAttribute("pinned", "1");
+    showOnlyPinnedMarkers(true);
   }
   el.classList.toggle("inactive");
-  drawMarkers();
+  invalidateMarkerSymbols();
 }
 
 function toggleLockStatus(el: HTMLElement, i: number): void {

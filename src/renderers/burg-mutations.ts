@@ -1,13 +1,13 @@
 import type { BurgAdded, BurgRemoved } from "@/generators/burgs-generator";
-import { drawBurgIcon, removeBurgIcon } from "./draw-burg-icons";
+import { invalidateBurgSymbols } from "./point-symbols";
 
 export function renderBurgAdded({ burg, route }: BurgAdded): void {
   if (route && layerIsOn("toggleRoutes")) drawRoute(route);
-  drawBurgIcon(burg);
+  invalidateBurgSymbols();
 }
 
 export function renderBurgChanged(burg: BurgAdded["burg"]): void {
-  drawBurgIcon(burg);
+  invalidateBurgSymbols();
 }
 
 export function renderBurgRemoved({ burgId, hadEmblem }: BurgRemoved): void {
@@ -15,5 +15,5 @@ export function renderBurgRemoved({ burgId, hadEmblem }: BurgRemoved): void {
     document.getElementById(`burgCOA${burgId}`)?.remove();
     document.querySelector(`#emblems #burgEmblems > use[data-i='${burgId}']`)?.remove();
   }
-  removeBurgIcon(burgId);
+  invalidateBurgSymbols();
 }

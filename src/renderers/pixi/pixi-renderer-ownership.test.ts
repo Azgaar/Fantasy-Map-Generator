@@ -28,7 +28,9 @@ describe("Pixi renderer ownership", () => {
       "routes",
       "temperature",
       "coastline",
-      "precipitation"
+      "precipitation",
+      "burgIcons",
+      "markers"
     ]);
     for (const layer of PIXI_OWNED_LAYER_IDS) {
       expect(pixiOwnsLayer(layer)).toBe(true);

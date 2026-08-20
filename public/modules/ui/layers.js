@@ -274,9 +274,9 @@ function drawLayers() {
     if (layerIsOn("toggleMarketsLayer")) measureLayer("markets", drawMarketsLayer);
     if (layerIsOn("toggleEmblems")) measureLayer("emblems", drawEmblems);
     measureLayer("labels", drawLabels);
-    if (layerIsOn("toggleBurgIcons")) measureLayer("burg-icons", drawBurgIcons);
+    if (layerIsOn("toggleBurgIcons")) measureLayer("burg-icons", () => redrawPixiLayer("burgIcons", "burgIcons", "anchors"));
     if (layerIsOn("toggleMilitary")) measureLayer("military", drawMilitary);
-    if (layerIsOn("toggleMarkers")) measureLayer("markers", drawMarkers);
+    if (layerIsOn("toggleMarkers")) measureLayer("markers", () => redrawPixiLayer("markers", "markers"));
     if (layerIsOn("toggleRulers")) measureLayer("rulers", drawMeasurers);
     // scale bar
     // vignette
@@ -766,10 +766,10 @@ function toggleMilitary(event) {
 function toggleMarkers(event) {
   if (!layerIsOn("toggleMarkers")) {
     turnButtonOn("toggleMarkers");
-    drawMarkers();
-    if (event && isCtrlClick(event)) editStyle("markers");
+    redrawPixiLayer("markers", "markers");
+    if (event && isCtrlClick(event)) tip("Markers now use semantic Pixi styles", false, "warn");
   } else {
-    if (event && isCtrlClick(event)) return editStyle("markers");
+    if (event && isCtrlClick(event)) return tip("Markers now use semantic Pixi styles", false, "warn");
     markers.html("");
     turnButtonOff("toggleMarkers");
   }
@@ -803,12 +803,13 @@ function toggleLabels(event) {
 function toggleBurgIcons(event) {
   if (!layerIsOn("toggleBurgIcons")) {
     turnButtonOn("toggleBurgIcons");
-    drawBurgIcons();
-    if (event && isCtrlClick(event)) editStyle("burgIcons");
+    redrawPixiLayer("burgIcons", "burgIcons", "anchors");
+    if (event && isCtrlClick(event)) tip("Burg symbols now use semantic Pixi styles", false, "warn");
   } else {
-    if (event && isCtrlClick(event)) return editStyle("burgIcons");
+    if (event && isCtrlClick(event)) return tip("Burg symbols now use semantic Pixi styles", false, "warn");
     turnButtonOff("toggleBurgIcons");
-    icons.selectAll("circle, use").remove();
+    burgIcons.html("");
+    anchors.html("");
   }
 }
 

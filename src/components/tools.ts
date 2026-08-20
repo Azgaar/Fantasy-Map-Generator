@@ -3,11 +3,10 @@ import { tip } from "@/components/tooltips";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { Population } from "@/generators/population-generator";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { invalidateBurgSymbols, invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawIce } from "@/renderers/draw-ice";
-import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawMilitary } from "@/renderers/draw-military";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
@@ -134,7 +133,7 @@ function regenerateStates(): void {
   if (layerIsOn("toggleBorders")) drawBorders();
   if (layerIsOn("toggleProvinces")) drawProvinces();
   drawLabels();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  if (layerIsOn("toggleBurgIcons")) invalidateBurgSymbols();
   if (layerIsOn("toggleMilitary")) drawMilitary();
   if (layerIsOn("toggleGoods")) drawGoods();
   if (layerIsOn("toggleEmblems")) {
@@ -157,7 +156,7 @@ function regenerateProvinces(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  if (layerIsOn("toggleBurgIcons")) invalidateBurgSymbols();
   drawLabels();
   if (layerIsOn("toggleRoutes")) drawRoutes();
   if (layerIsOn("togglePopulation")) drawPopulation();
@@ -224,7 +223,7 @@ function regenerateIce(): void {
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
 }
 
 function regenerateZones(event: MouseEvent): void {

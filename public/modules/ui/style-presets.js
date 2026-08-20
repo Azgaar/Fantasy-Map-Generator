@@ -279,11 +279,51 @@ function syncPixiCellStylePreset(presetJson) {
     default: style.mapRenderer.routes?.default || routeRoles.roads,
     roles: routeRoles
   };
+  const burgIconRoles = {};
+  const burgAnchorRoles = {};
+  for (const {name} of options.burgs.groups) {
+    const iconPreset = presetJson[`#burgIcons > g#${name}`];
+    if (iconPreset) burgIconRoles[name] = pointSymbolStyle(iconPreset, "circle");
+    const anchorPreset = presetJson[`#anchors > g#${name}`];
+    if (anchorPreset) burgAnchorRoles[name] = pointSymbolStyle(anchorPreset, "anchor");
+  }
+  if (Object.keys(burgIconRoles).length || Object.keys(burgAnchorRoles).length) {
+    style.mapRenderer.burgIcons = {
+      anchors: {
+        default: burgAnchorRoles.town || Object.values(burgAnchorRoles)[0] || pointSymbolStyle({}, "anchor"),
+        roles: burgAnchorRoles
+      },
+      icons: {
+        default: burgIconRoles.town || Object.values(burgIconRoles)[0] || pointSymbolStyle({}, "circle"),
+        roles: burgIconRoles
+      },
+      opacity: 1
+    };
+  }
+  const markerPreset = presetJson["#markers"];
+  if (markerPreset) {
+    style.mapRenderer.markers = {
+      opacity: Number(markerPreset.opacity ?? 1),
+      rescale: Boolean(Number(markerPreset.rescale ?? 1))
+    };
+  }
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "queue-rebuild"}
     })
   );
+
+  function pointSymbolStyle(preset, fallbackIcon) {
+    return {
+      fill: preset.fill || "#ffffff",
+      fillOpacity: Number(preset["fill-opacity"] ?? 1),
+      icon: String(preset["data-icon"] || fallbackIcon).replace(/^#?icon-/, ""),
+      opacity: Number(preset.opacity ?? 1),
+      size: Number(preset["font-size"] || 1),
+      stroke: preset.stroke || "#3e3e4b",
+      strokeWidth: Number(preset["stroke-width"] || 0)
+    };
+  }
 }
 
 function requestStylePresetChange(preset) {
@@ -325,7 +365,7 @@ function applyStyleWithUiRefresh(style) {
   OceanLayers();
   if (layerIsOn("toggleRulers")) drawMeasurers();
   drawRelief();
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  if (layerIsOn("toggleBurgIcons")) redrawPixiLayer("burgIcons", "burgIcons", "anchors");
   drawLabels();
 
   invokeActiveZooming();

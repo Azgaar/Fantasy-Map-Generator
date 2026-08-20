@@ -3,7 +3,7 @@ import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/d
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
-import { drawMarkers } from "@/renderers/draw-markers";
+import { invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
@@ -1316,7 +1316,7 @@ function applyResults(): void {
     // append battlefield marker
     const marker: Marker = { i, x: b.x, y: b.y, cell: b.cell, icon: "⚔️", type: "battlefields", dy: 52 };
     pack.markers.push(marker);
-    drawMarkers();
+    invalidateMarkerSymbols();
   }
 
   const getSide = (regs: Regiment[], n: number): string =>

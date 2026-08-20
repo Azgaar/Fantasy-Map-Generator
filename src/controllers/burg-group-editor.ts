@@ -2,7 +2,7 @@ import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from 
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { invalidateBurgSymbols } from "@/renderers/point-symbols";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import type { BurgGroup } from "@/types/burg-groups";
 import { ensureEl } from "../utils";
@@ -449,7 +449,7 @@ function submitForm(event: Event): void {
   const populations = validBurgs.map(b => b.population!).sort((a, b) => a - b);
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
 
-  if (layerIsOn("toggleBurgIcons")) drawBurgIcons();
+  if (layerIsOn("toggleBurgIcons")) invalidateBurgSymbols();
   drawLabels();
   refreshEditors();
 

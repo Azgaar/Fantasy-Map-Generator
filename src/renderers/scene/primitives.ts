@@ -76,6 +76,32 @@ export interface SpriteBatchPrimitive extends ScenePrimitiveBase {
   kind: "sprite-batch";
 }
 
+export interface PointSymbolInstancePrimitive {
+  anchorX: number;
+  anchorY: number;
+  domainId: SceneDomainId;
+  fill: string;
+  fillOpacity: number;
+  icon: string | null;
+  iconOffsetX: number;
+  iconOffsetY: number;
+  iconSize: number;
+  opacity: number;
+  rescale: boolean;
+  role?: string;
+  shape: string;
+  size: number;
+  stroke: string;
+  strokeWidth: number;
+  x: number;
+  y: number;
+}
+
+export interface PointSymbolBatchPrimitive extends ScenePrimitiveBase {
+  instances: readonly PointSymbolInstancePrimitive[];
+  kind: "point-symbol-batch";
+}
+
 export interface LabelRunPrimitive {
   anchor: ScenePoint;
   domainId: SceneDomainId;
@@ -111,6 +137,7 @@ export type ScenePrimitive =
   | LineBatchPrimitive
   | CircleBatchPrimitive
   | SpriteBatchPrimitive
+  | PointSymbolBatchPrimitive
   | LabelBatchPrimitive
   | HitRegionPrimitive
   | MaskPrimitive;

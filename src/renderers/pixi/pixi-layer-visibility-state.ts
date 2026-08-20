@@ -4,10 +4,12 @@ import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
 export const PIXI_LAYER_CONTROL_IDS = {
   biomes: "toggleBiomes",
   borders: "toggleBorders",
+  burgIcons: "toggleBurgIcons",
   cells: "toggleCells",
   cultures: "toggleCultures",
   grid: "toggleGrid",
   lakes: "toggleLakes",
+  markers: "toggleMarkers",
   precipitation: "togglePrecipitation",
   provinces: "toggleProvinces",
   relief: "toggleRelief",
