@@ -34,6 +34,8 @@ describe("Pixi hard cutover", () => {
     expect(layersSource.includes('redrawPixiLayer("provinces", "provs")')).toBe(true);
     expect(layersSource.includes('redrawPixiLayer("zones", "zones")')).toBe(true);
     expect(layersSource.includes('redrawPixiLayer("cells", "cells")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("grid", "gridOverlay")')).toBe(true);
+    expect(layersSource.includes('"#pattern_"')).toBe(false);
     expect(layersSource.includes("getGappedFillPaths")).toBe(false);
     expect([layersSource, drawBiomesSource, drawBordersSource].join("\n").includes("ownership-request")).toBe(false);
     expect(drawBiomesSource.includes("getIsolines")).toBe(false);

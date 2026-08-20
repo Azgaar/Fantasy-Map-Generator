@@ -443,7 +443,11 @@ export class PixiMapRenderer implements MapRenderer {
 
   private buildGridContainer(): Container {
     const gridStyle = this.semanticStyle.grid;
-    const scene = buildGridScene(getWorldBounds(this.getWorld()), gridStyle, this.sceneRevisions.getLayerRevision("grid"));
+    const scene = buildGridScene(
+      getWorldBounds(this.getWorld()),
+      gridStyle,
+      this.sceneRevisions.getLayerRevision("grid")
+    );
     const container = this.buildLineContainer("grid", scene.paths, () => gridStyle.stroke);
     container.alpha = gridStyle.opacity;
     return container;

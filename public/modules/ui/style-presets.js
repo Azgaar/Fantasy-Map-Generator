@@ -166,6 +166,7 @@ function syncPixiCellStylePreset(presetJson) {
     biomes: "#biomes",
     cells: "#cells",
     cultures: "#cults",
+    grid: "#gridOverlay",
     provinces: "#provs",
     religions: "#relig",
     states: "#statesBody",
@@ -178,15 +179,15 @@ function syncPixiCellStylePreset(presetJson) {
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
       ...current,
-      ...(["cells", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
+      ...(["cells", "grid", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
       opacity: Number(opacity)
     };
   }
-  for (const [layer, selector] of Object.entries({cells: "#cells", zones: "#zones"})) {
+  for (const [layer, selector] of Object.entries({cells: "#cells", grid: "#gridOverlay", zones: "#zones"})) {
     const preset = presetJson[selector];
     if (!preset) continue;
     const layerStyle = style.mapRenderer[layer] || {};
-    const stroke = (layer === "zones" ? layerStyle.stroke : layerStyle) || {};
+    const stroke = (["grid", "zones"].includes(layer) ? layerStyle.stroke : layerStyle) || {};
     const updatedStroke = {
       ...stroke,
       cap: preset["stroke-linecap"] || stroke.cap || "butt",
@@ -195,7 +196,19 @@ function syncPixiCellStylePreset(presetJson) {
       opacity: Number(preset.opacity ?? stroke.opacity ?? 1),
       width: Number(preset["stroke-width"] || 0)
     };
-    style.mapRenderer[layer] = layer === "zones" ? {...layerStyle, stroke: updatedStroke} : updatedStroke;
+    style.mapRenderer[layer] = ["grid", "zones"].includes(layer)
+      ? {...layerStyle, stroke: updatedStroke}
+      : updatedStroke;
+  }
+  const gridPreset = presetJson["#gridOverlay"];
+  if (gridPreset) {
+    style.mapRenderer.grid = {
+      ...style.mapRenderer.grid,
+      dx: Number(gridPreset.dx || 0),
+      dy: Number(gridPreset.dy || 0),
+      scale: Number(gridPreset.scale || 1),
+      type: gridPreset.type || "pointyHex"
+    };
   }
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {

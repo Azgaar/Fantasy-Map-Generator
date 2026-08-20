@@ -505,7 +505,7 @@ styleStrokeInput.addEventListener("input", function () {
   getEl().attr("stroke", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") drawGrid();
   if (["cells", "zones"].includes(styleElementSelect.value)) {
     setPixiLineStyle(styleElementSelect.value, "color", this.value);
   }
@@ -520,7 +520,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") drawGrid();
   if (["cells", "zones"].includes(styleElementSelect.value)) {
     setPixiLineStyle(styleElementSelect.value, "width", Number(e.target.value));
   }
@@ -535,7 +535,7 @@ styleLetterSpacingInput.addEventListener("input", e => {
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") drawGrid();
   if (["cells", "zones"].includes(styleElementSelect.value)) {
     setPixiLineStyle(styleElementSelect.value, "dash", this.value);
   }
@@ -544,7 +544,7 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
 
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
-  if (styleElementSelect.value === "gridOverlay" && layerIsOn("toggleGrid")) drawGrid();
+  if (styleElementSelect.value === "gridOverlay") drawGrid();
   if (["cells", "zones"].includes(styleElementSelect.value)) {
     setPixiLineStyle(styleElementSelect.value, "cap", this.value);
   }
@@ -560,6 +560,7 @@ styleOpacityInput.addEventListener("input", e => {
     biomes: "biomes",
     cells: "cells",
     cults: "cultures",
+    gridOverlay: "grid",
     provs: "provinces",
     relig: "religions",
     zones: "zones"
@@ -620,13 +621,13 @@ styleClippingInput.addEventListener("change", function () {
 
 styleGridType.addEventListener("change", function () {
   getEl().attr("type", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  drawGrid();
   calculateFriendlyGridSize();
 });
 
 styleGridScale.addEventListener("input", function () {
   getEl().attr("scale", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  drawGrid();
   calculateFriendlyGridSize();
 });
 
@@ -638,12 +639,12 @@ function calculateFriendlyGridSize() {
 
 styleGridShiftX.addEventListener("input", function () {
   getEl().attr("dx", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  drawGrid();
 });
 
 styleGridShiftY.addEventListener("input", function () {
   getEl().attr("dy", this.value);
-  if (layerIsOn("toggleGrid")) drawGrid();
+  drawGrid();
 });
 
 styleRescaleMarkers.addEventListener("change", function () {
@@ -1042,7 +1043,7 @@ function setPixiLayerOpacity(layer, opacity) {
   const current = style.mapRenderer[layer] || {};
   style.mapRenderer[layer] = {
     ...current,
-    ...(["cells", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
+    ...(["cells", "grid", "zones"].includes(layer) ? {} : {fallbackColor: current.fallbackColor || "#888888"}),
     opacity: Number(opacity)
   };
   window.dispatchEvent(
@@ -1055,15 +1056,16 @@ function setPixiLayerOpacity(layer, opacity) {
 function setPixiLineStyle(layer, property, value) {
   style.mapRenderer ||= {};
   const layerStyle = style.mapRenderer[layer] || {};
-  const stroke = (layer === "zones" ? layerStyle.stroke : layerStyle) || {
+  const stroke = (["grid", "zones"].includes(layer) ? layerStyle.stroke : layerStyle) || {
     cap: "butt",
     color: "#333333",
     dash: "",
     opacity: 1,
     width: 0
   };
-  style.mapRenderer[layer] =
-    layer === "zones" ? {...layerStyle, stroke: {...stroke, [property]: value}} : {...stroke, [property]: value};
+  style.mapRenderer[layer] = ["grid", "zones"].includes(layer)
+    ? {...layerStyle, stroke: {...stroke, [property]: value}}
+    : {...stroke, [property]: value};
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "invalidate-layer", layer}

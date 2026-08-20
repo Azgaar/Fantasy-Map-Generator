@@ -229,6 +229,7 @@ function ViewsMenu({
           <MenuItem icon="layers" text={selectedPreset?.label ?? "Custom map"}>
             {presetOptions.map(option => (
               <MenuItem
+                active={option.value === snapshot.selectedPreset}
                 icon={option.value === snapshot.selectedPreset ? "tick" : "blank"}
                 key={option.value}
                 onClick={() => {

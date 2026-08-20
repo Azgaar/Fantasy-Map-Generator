@@ -568,7 +568,7 @@ function drawProvinces() {
 }
 
 function toggleGrid(event) {
-  if (!gridOverlay.selectAll("*").size()) {
+  if (!layerIsOn("toggleGrid")) {
     turnButtonOn("toggleGrid");
     drawGrid();
     calculateFriendlyGridSize();
@@ -576,37 +576,30 @@ function toggleGrid(event) {
   } else {
     if (event && isCtrlClick(event)) return editStyle("gridOverlay");
     turnButtonOff("toggleGrid");
-    gridOverlay.selectAll("*").remove();
   }
 }
 
 function drawGrid() {
-  gridOverlay.selectAll("*").remove();
-  const pattern = "#pattern_" + (gridOverlay.attr("type") || "pointyHex");
-  const stroke = gridOverlay.attr("stroke") || "#808080";
-  const width = gridOverlay.attr("stroke-width") || 0.5;
-  const dasharray = gridOverlay.attr("stroke-dasharray") || null;
-  const linecap = gridOverlay.attr("stroke-linecap") || null;
-  const scale = gridOverlay.attr("scale") || 1;
-  const dx = gridOverlay.attr("dx") || 0;
-  const dy = gridOverlay.attr("dy") || 0;
-  const tr = `scale(${scale}) translate(${dx} ${dy})`;
-
-  const maxWidth = Math.max(+mapWidthInput.value, graphWidth);
-  const maxHeight = Math.max(+mapHeightInput.value, graphHeight);
-
-  d3.select(pattern)
-    .attr("stroke", stroke)
-    .attr("stroke-width", width)
-    .attr("stroke-dasharray", dasharray)
-    .attr("stroke-linecap", linecap)
-    .attr("patternTransform", tr);
-  gridOverlay
-    .append("rect")
-    .attr("width", maxWidth)
-    .attr("height", maxHeight)
-    .attr("fill", "url(" + pattern + ")")
-    .attr("stroke", "none");
+  style.mapRenderer ||= {};
+  const current = style.mapRenderer.grid || {};
+  const currentStroke = current.stroke || {};
+  style.mapRenderer.grid = {
+    ...current,
+    dx: Number(gridOverlay.attr("dx") || 0),
+    dy: Number(gridOverlay.attr("dy") || 0),
+    opacity: Number(gridOverlay.attr("opacity") ?? 1),
+    scale: Number(gridOverlay.attr("scale") || 1),
+    stroke: {
+      ...currentStroke,
+      cap: gridOverlay.attr("stroke-linecap") || currentStroke.cap || "butt",
+      color: gridOverlay.attr("stroke") || currentStroke.color || "#777777",
+      dash: gridOverlay.attr("stroke-dasharray") || "",
+      opacity: 1,
+      width: Number(gridOverlay.attr("stroke-width") || 0.5)
+    },
+    type: gridOverlay.attr("type") || "pointyHex"
+  };
+  redrawPixiLayer("grid", "gridOverlay");
 }
 
 function toggleCoordinates(event) {
