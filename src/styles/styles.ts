@@ -58,9 +58,9 @@ export const stylesSchema = z
     ocean: z
       .object({
         attrs: z.object({ filter }).strict(),
-        options: z.object({ outline: z.string() }).strict(),
-        base: attrs({ fill: color }),
-        pattern: node({ opacity }, { href: z.string() })
+        // pattern/patternOpacity style #oceanicPattern, a defs resource the renderer owns
+        options: z.object({ outline: z.string(), pattern: z.string(), patternOpacity: z.number() }).strict(),
+        base: attrs({ fill: color })
       })
       .strict(),
     landmass: attrs({ opacity, fill: color, filter }),
@@ -175,20 +175,11 @@ export const stylesSchema = z
       })
       .strict(),
     fogging: attrs({ opacity, fill: color, mask }),
-    vignette: z
-      .object({
-        attrs: z.object({ opacity, fill: color, mask }).strict(),
-        rect: attrs({
-          x: cssLength,
-          y: cssLength,
-          width: cssLength,
-          height: cssLength,
-          rx: cssLength,
-          ry: cssLength,
-          filter
-        })
-      })
-      .strict()
+    // the geometry options shape #vignette-rect, the mask rect in defs the renderer owns
+    vignette: node(
+      { opacity, fill: color, mask },
+      { x: cssLength, y: cssLength, width: cssLength, height: cssLength, rx: cssLength, ry: cssLength, filter }
+    )
   })
   .strict();
 
