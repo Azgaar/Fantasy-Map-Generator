@@ -9,7 +9,7 @@
       "@/*": ["src/*"]
     },
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "node"],
+    "types": ["vite/client"],
     "skipLibCheck": true,
     "isolatedModules": true,
 
