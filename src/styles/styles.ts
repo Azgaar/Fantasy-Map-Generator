@@ -47,7 +47,7 @@ const labelGroup = node(
   { dx: z.number(), dy: z.number() }
 );
 const burgGroup = node(
-  { opacity, ...fillAttrs, ...strokeAttrs, "stroke-linejoin": linecap },
+  { opacity, ...fillAttrs, ...strokeAttrs, "stroke-linejoin": linecap, filter },
   { size: z.number(), icon: z.string() }
 );
 const emblemGroup = z.object({ options: z.object({ size: z.number() }).strict() }).strict();
