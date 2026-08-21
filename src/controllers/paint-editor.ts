@@ -5,7 +5,14 @@ import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { ensureEl, findAllCellsInRadius, getPackPolygon, getPointer } from "@/utils";
+import {
+  openPaintOverlay,
+  type PaintOverlayCell,
+  removePaintOverlay,
+  removePaintOverlayCells,
+  updatePaintOverlay
+} from "@/renderers/overlays/paint-overlay";
+import { ensureEl, findAllCellsInRadius, getPointer } from "@/utils";
 
 export interface PaintEditorItem {
   id: number;
@@ -38,19 +45,18 @@ interface MultiplePaintEditorOptions extends CommonPaintEditorOptions {
 
 type OpenPaintEditorOptions = PaintEditorOptions | MultiplePaintEditorOptions;
 type PaintChanges = Map<number, readonly number[]>;
-type PaintPolygon = { cell: number; value: number | null; key: string };
+type PaintHistoryEntry = Map<number, readonly number[] | undefined>;
 
 interface PaintEditorState {
   options: OpenPaintEditorOptions;
   itemsById: ReadonlyMap<number, PaintEditorItem>;
   changes: PaintChanges;
-  history: PaintChanges[];
+  history: PaintHistoryEntry[];
   selectedId: number | undefined;
   finalized: boolean;
 }
 
 const dialogId = "paintEditor" as const;
-const overlayId = "paintEditorOverlay" as const;
 const historyLimit = 100;
 const customizationMode = 2;
 const defaultBrushRadius = 12;
@@ -77,7 +83,7 @@ function open(options: OpenPaintEditorOptions): void {
   try {
     renderDialog(options, items);
     renderItems(items);
-    renderOverlay();
+    openPaintOverlay();
     addListeners();
 
     $(ensureEl(dialogId)).dialog({
@@ -137,28 +143,19 @@ function renderItems(items: readonly PaintEditorItem[]): void {
   }
 }
 
-function renderOverlay(): void {
-  select(`#${overlayId}`).remove();
-  select("#debug").append("g").attr("id", overlayId).style("fill-opacity", 0.7);
-}
-
-function renderChanges(): void {
+function updatePreview(cells: readonly number[]): void {
   const { changes, itemsById } = getState();
-  const polygons = [...changes].flatMap<PaintPolygon>(([cell, values]) =>
-    values.length
-      ? values.map((value, index) => ({ cell, value, key: `${cell}-${value}-${index}` }))
-      : [{ cell, value: null, key: `${cell}-empty` }]
-  );
+  const updates: PaintOverlayCell[] = [];
+  const revertedCells: number[] = [];
 
-  select<SVGGElement, unknown>(`#${overlayId}`)
-    .selectAll<SVGPolygonElement, PaintPolygon>("polygon")
-    .data(polygons, ({ key }) => key)
-    .join("polygon")
-    .attr("data-cell", ({ cell }) => cell)
-    .attr("data-value", ({ value }) => value ?? "")
-    .attr("points", ({ cell }) => getPackPolygon(cell, pack).join(" "))
-    .attr("fill", ({ value }) => (value === null ? "#ffffff" : (itemsById.get(value)?.color ?? "#ffffff")))
-    .attr("stroke", ({ value }) => (value === null ? "#555555" : (itemsById.get(value)?.color ?? "#ffffff")));
+  for (const cell of cells) {
+    const values = changes.get(cell);
+    if (values === undefined) revertedCells.push(cell);
+    else updates.push({ cell, values: values.map(id => ({ id, color: itemsById.get(id)?.color ?? "#ffffff" })) });
+  }
+
+  updatePaintOverlay(pack, updates);
+  removePaintOverlayCells(revertedCells);
 }
 
 function addListeners(): void {
@@ -187,9 +184,8 @@ function handleMapClick(this: SVGElement, event: MouseEvent): void {
 }
 
 function handleDragStart(this: SVGElement, event: D3DragEvent<SVGElement, unknown, unknown>): void {
-  const { changes } = getState();
   const radius = getRadius();
-  const snapshot = new Map(changes);
+  const historyEntry: PaintHistoryEntry = new Map();
   let recorded = false;
 
   event.on("drag", (dragEvent: D3DragEvent<SVGElement, unknown, unknown>) => {
@@ -201,9 +197,9 @@ function handleDragStart(this: SVGElement, event: D3DragEvent<SVGElement, unknow
     const found = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)];
     const cells = found.filter((cell): cell is number => cell !== undefined);
     const selectedId = getState().selectedId;
-    if (!cells.length || selectedId === undefined || !paintCells(cells, selectedId) || recorded) return;
+    if (!cells.length || selectedId === undefined || !paintCells(cells, selectedId, historyEntry) || recorded) return;
 
-    recordHistory(snapshot);
+    recordHistory(historyEntry);
     recorded = true;
   });
 }
@@ -247,13 +243,14 @@ function getCurrentValues(cell: number): readonly number[] {
   return getState().changes.get(cell) ?? getBaseValues(cell);
 }
 
-function paintCells(cells: readonly number[], nextValue: number): boolean {
+function paintCells(cells: readonly number[], nextValue: number, historyEntry: PaintHistoryEntry): boolean {
   const { options, changes } = getState();
   const isErase = options.mode === "multiple" && nextValue === eraseAllValue;
   const landOnly = options.landOnlyControl && ensureEl<HTMLInputElement>("paintEditorLandOnly").checked;
   const dontOverride =
     options.dontOverrideControl && ensureEl<HTMLInputElement>("paintEditorDontOverride").checked && !isErase;
   let changed = false;
+  const changedCells: number[] = [];
 
   for (const cell of cells) {
     const currentValues = getCurrentValues(cell);
@@ -263,12 +260,14 @@ function paintCells(cells: readonly number[], nextValue: number): boolean {
     const nextValues = getNextValues(options, cell, currentValues, nextValue);
     if (!nextValues || arraysEqual(nextValues, currentValues)) continue;
 
+    if (!historyEntry.has(cell)) historyEntry.set(cell, changes.get(cell));
     if (arraysEqual(nextValues, getBaseValues(cell))) changes.delete(cell);
     else changes.set(cell, nextValues);
     changed = true;
+    changedCells.push(cell);
   }
 
-  if (changed) renderChanges();
+  if (changed) updatePreview(changedCells);
   return changed;
 }
 
@@ -292,21 +291,23 @@ function arraysEqual(a: readonly number[], b: readonly number[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
-function recordHistory(snapshot: PaintChanges): void {
+function recordHistory(entry: PaintHistoryEntry): void {
   const activeState = getState();
-  activeState.history.push(snapshot);
+  activeState.history.push(entry);
   if (activeState.history.length > historyLimit) activeState.history.shift();
   ensureEl<HTMLButtonElement>("paintEditorUndo").disabled = false;
 }
 
 function undo(): void {
   const activeState = getState();
-  const snapshot = activeState.history.pop();
-  if (!snapshot) return;
+  const entry = activeState.history.pop();
+  if (!entry) return;
 
-  activeState.changes.clear();
-  for (const [cell, values] of snapshot) activeState.changes.set(cell, values);
-  renderChanges();
+  for (const [cell, values] of entry) {
+    if (values === undefined) activeState.changes.delete(cell);
+    else activeState.changes.set(cell, values);
+  }
+  updatePreview([...entry.keys()]);
   ensureEl<HTMLButtonElement>("paintEditorUndo").disabled = !activeState.history.length;
 }
 
@@ -337,7 +338,7 @@ function finish(shouldApply: boolean): void {
 function cleanup(): void {
   state = null;
   destroyDialog(dialogId);
-  select(`#${overlayId}`).remove();
+  removePaintOverlay();
   removeCircle();
   applyDefaultViewboxEvents();
   clearMainTip();
