@@ -92,7 +92,6 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "7") setMapZoom(7);
   else if (key === "8") setMapZoom(8);
   else if (key === "9") setMapZoom(9);
-  else if (ctrl) findEl("paintEditorErase")?.classList.toggle("pressed");
 }
 
 function allowHotkeys(): boolean {

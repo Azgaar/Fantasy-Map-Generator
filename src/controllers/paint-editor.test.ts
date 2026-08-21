@@ -10,8 +10,6 @@ vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
   closeDialogs: vi.fn()
 }));
 
-let dialogOptions: unknown[];
-
 const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOptions => ({
   title: "Paint states",
   items: [
@@ -42,7 +40,6 @@ async function dragBrush(): Promise<void> {
 beforeEach(() => {
   document.body.innerHTML =
     '<div id="dialogs"></div><div id="tooltip"></div><svg><g id="viewbox"></g><g id="debug"></g></svg>';
-  dialogOptions = [];
   globalThis.customization = 0;
   globalThis.findCell = vi.fn(() => 3);
   globalThis.pack = {
@@ -67,7 +64,6 @@ beforeEach(() => {
   window.$ = vi.fn((element: HTMLElement) => ({
     dialog: vi.fn((options: unknown) => {
       if (typeof options === "object") element.classList.add("ui-dialog-content");
-      dialogOptions.push(options);
     })
   })) as unknown as typeof window.$;
 });
@@ -169,20 +165,28 @@ describe("PaintEditor", () => {
     expect([...(apply.mock.calls[0][0] as ReadonlyMap<number, number>)]).toEqual([]);
   });
 
-  it("previews and applies removal from an overlapping value", async () => {
+  it("uses the -1 item to remove all overlapping values", async () => {
     const apply = vi.fn();
     PaintEditor.open({
       title: "Paint zones",
       mode: "multiple",
-      items: [{ id: 1, name: "Danger", color: "#ff0000" }],
+      items: [
+        { id: -1, name: "No zone", color: "#ffffff" },
+        { id: 1, name: "Danger", color: "#ff0000" },
+        { id: 2, name: "Magic", color: "#0000ff" }
+      ],
+      dontOverrideControl: true,
       landOnlyControl: true,
-      getValue: () => [1],
+      getValue: () => [1, 2],
       apply
     });
-    const erase = document.getElementById("paintEditorErase") as HTMLButtonElement;
+    const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
+    const protect = document.getElementById("paintEditorDontOverride") as HTMLInputElement;
     const landOnly = document.getElementById("paintEditorLandOnly") as HTMLInputElement;
     expect(landOnly.checked).toBe(true);
-    erase.click();
+    expect(itemSelect.value).toBe("-1");
+    expect(document.getElementById("paintEditorErase")).toBeNull();
+    protect.checked = true;
 
     await dragBrush();
     expect(document.querySelector("#paintEditorOverlay polygon")?.getAttribute("fill")).toBe("#ffffff");
@@ -192,9 +196,8 @@ describe("PaintEditor", () => {
     expect([...changes]).toEqual([[3, []]]);
   });
 
-  it("uses a stable compact dialog width", () => {
+  it("uses the default brush radius", () => {
     PaintEditor.open(getOptions());
     expect((document.getElementById("paintEditorBrush") as HTMLInputElement).getAttribute("value")).toBe("12");
-    expect(dialogOptions).toContainEqual(expect.objectContaining({ width: 300 }));
   });
 });

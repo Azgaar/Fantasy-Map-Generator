@@ -268,10 +268,12 @@ function openPaintEditor(): void {
   void Controllers.PaintEditor.open({
     title: "Paint Zones",
     mode: "multiple",
-    items: visibleZones
-      .map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
-    dontOverrideControl: true,
+    items: [
+      { id: -1, name: "No zone", color: "#ffffff" },
+      ...visibleZones
+        .map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    ],
     landOnlyControl: true,
     getValue: cell => zonesByCell.get(cell) ?? [],
     apply: changes => applyZonePaint(visibleZones, changes)

@@ -50,6 +50,7 @@ const overlayId = "paintEditorOverlay" as const;
 const historyLimit = 100;
 const customizationMode = 2;
 const defaultBrushRadius = 12;
+const eraseAllValue = -1;
 
 let state: PaintEditorState | null = null;
 
@@ -72,7 +73,7 @@ function open(options: OpenPaintEditorOptions): void {
     renderDialog(options);
     renderItems(options.items);
     renderOverlay();
-    addListeners(options);
+    addListeners();
 
     $(ensureEl(dialogId)).dialog({
       title: options.title,
@@ -97,17 +98,12 @@ function renderDialog(options: OpenPaintEditorOptions): void {
   const landOnlyControl = options.landOnlyControl
     ? `<label style="display: flex; align-items: center"><input id="paintEditorLandOnly" class="checkbox native" type="checkbox" checked> Change land only</label>`
     : "";
-  const eraseControl =
-    options.mode === "multiple"
-      ? `<button id="paintEditorErase" type="button" class="icon-eraser" aria-label="Erase" data-tip="Toggle removal mode. Shortcut: Ctrl"></button>`
-      : "";
-
   const html = /* html */ `<div id="${dialogId}" class="dialog">
     <div style="display: grid; gap: 0.5em; padding: 0.5em">
       <label style="display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.4em">Paint: <select id="paintEditorSelect"></select></label>
       <slider-input id="paintEditorBrush" min="1" max="100" value="${defaultBrushRadius}">Brush size:</slider-input>
     </div>
-    <div id="paintEditorControls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.4em;">${dontOverrideControl}${landOnlyControl}${eraseControl}</div>
+    <div id="paintEditorControls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.4em;">${dontOverrideControl}${landOnlyControl}</div>
     <div style="display: flex; gap: 0.4em; justify-content: flex-end; padding: 0 0.5em 0.5em">
       <button id="paintEditorUndo" aria-label="Undo" data-tip="Undo last brush stroke" class="icon-ccw" disabled></button>
       <button id="paintEditorApply" aria-label="Apply" data-tip="Apply painted changes" class="icon-check"></button>
@@ -152,13 +148,11 @@ function renderChanges(): void {
     .attr("stroke", ({ value }) => (value === null ? "#555555" : (itemsById.get(value)?.color ?? "#ffffff")));
 }
 
-function addListeners(options: OpenPaintEditorOptions): void {
+function addListeners(): void {
   ensureEl<HTMLSelectElement>("paintEditorSelect").addEventListener("change", handleItemChange);
   ensureEl("paintEditorUndo").addEventListener("click", undo);
   ensureEl("paintEditorApply").addEventListener("click", apply);
   ensureEl("paintEditorCancel").addEventListener("click", cancel);
-  if (options.mode === "multiple") ensureEl("paintEditorErase").addEventListener("click", toggleErase);
-
   select<SVGElement, unknown>("#viewbox")
     .style("cursor", "crosshair")
     .on("click", handleMapClick)
@@ -168,10 +162,6 @@ function addListeners(options: OpenPaintEditorOptions): void {
 
 function handleItemChange(event: Event): void {
   selectItem(+(event.currentTarget as HTMLSelectElement).value);
-}
-
-function toggleErase(event: Event): void {
-  (event.currentTarget as HTMLElement).classList.toggle("pressed");
 }
 
 function handleMapClick(this: SVGElement, event: MouseEvent): void {
@@ -244,7 +234,7 @@ function getCurrentValues(cell: number): readonly number[] {
 
 function paintCells(cells: readonly number[], nextValue: number): boolean {
   const { options, changes } = getState();
-  const isErase = options.mode === "multiple" && ensureEl("paintEditorErase").classList.contains("pressed");
+  const isErase = options.mode === "multiple" && nextValue === eraseAllValue;
   const landOnly = options.landOnlyControl && ensureEl<HTMLInputElement>("paintEditorLandOnly").checked;
   const dontOverride =
     options.dontOverrideControl && ensureEl<HTMLInputElement>("paintEditorDontOverride").checked && !isErase;
@@ -255,7 +245,7 @@ function paintCells(cells: readonly number[], nextValue: number): boolean {
     if (landOnly && pack.cells.h[cell] < 20) continue;
     if (dontOverride && currentValues.some(value => value !== 0)) continue;
 
-    const nextValues = getNextValues(options, cell, currentValues, nextValue, isErase);
+    const nextValues = getNextValues(options, cell, currentValues, nextValue);
     if (!nextValues || arraysEqual(nextValues, currentValues)) continue;
 
     if (arraysEqual(nextValues, getBaseValues(cell))) changes.delete(cell);
@@ -271,12 +261,11 @@ function getNextValues(
   options: OpenPaintEditorOptions,
   cell: number,
   currentValues: readonly number[],
-  nextValue: number,
-  isErase: boolean
+  nextValue: number
 ): readonly number[] | null {
   if (options.mode === "multiple") {
     if (options.filterCell && !options.filterCell(cell, currentValues, nextValue)) return null;
-    if (isErase) return currentValues.filter(value => value !== nextValue);
+    if (nextValue === eraseAllValue) return [];
     return currentValues.includes(nextValue) ? currentValues : [...currentValues, nextValue];
   }
 

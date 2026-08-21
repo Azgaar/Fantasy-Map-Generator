@@ -1258,6 +1258,7 @@ function exitRegenerationMenu(): void {
 
 function openPaintEditor(): void {
   Layers.show("states");
+  const adjustLabels = ensureEl<HTMLInputElement>("adjustLabels").checked;
 
   void Controllers.PaintEditor.open({
     title: "Paint States",
@@ -1268,11 +1269,11 @@ function openPaintEditor(): void {
     dontOverrideControl: true,
     getValue: cell => pack.cells.state[cell],
     filterCell: (cell, currentState) => isLand(cell, pack) && cell !== pack.states[currentState].center,
-    apply: applyStatesPaint
+    apply: changes => applyStatesPaint(changes, adjustLabels)
   });
 }
 
-function applyStatesPaint(changes: ReadonlyMap<number, number>): void {
+function applyStatesPaint(changes: ReadonlyMap<number, number>, adjustLabels: boolean): void {
   const { cells } = pack;
   const affectedStates: number[] = [];
   const affectedProvinces: number[] = [];
@@ -1289,7 +1290,7 @@ function applyStatesPaint(changes: ReadonlyMap<number, number>): void {
     adjustProvinces([...new Set(affectedProvinces)]);
     Layers.draw("states", "borders", "provinces");
 
-    if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
+    if (adjustLabels) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
         if (pack.states[stateId].label) delete pack.states[stateId].label;
