@@ -820,7 +820,7 @@ function openPaintEditor(): void {
       .filter(religion => !religion.removed && (!religion.i || religion.cells))
       .map(religion => ({ id: religion.i, name: religion.name, color: religion.color || "#ffffff" }))
       .sort((a, b) => (a.id ? (b.id ? a.name.localeCompare(b.name) : 1) : -1)),
-    dontOverrideCotrol: true,
+    dontOverrideControl: true,
     getValue: cell => pack.cells.religion[cell],
     filterCell: cell => isLand(cell, pack),
     apply: applyReligionPaint

@@ -1073,7 +1073,7 @@ function openPaintEditor(): void {
       tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
       return false;
     },
-    dontOverrideCotrol: true,
+    dontOverrideControl: true,
     apply: applyProvincePaint
   });
 }

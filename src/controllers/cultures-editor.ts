@@ -870,7 +870,7 @@ function openPaintEditor(): void {
       .filter(culture => !culture.removed)
       .map(culture => ({ id: culture.i, name: culture.name, color: culture.color || "#ffffff" }))
       .sort((a, b) => (a.id ? (b.id ? a.name.localeCompare(b.name) : 1) : -1)),
-    dontOverrideCotrol: true,
+    dontOverrideControl: true,
     getValue: cell => pack.cells.culture[cell],
     filterCell: cell => isLand(cell, pack),
     apply: applyCulturePaint

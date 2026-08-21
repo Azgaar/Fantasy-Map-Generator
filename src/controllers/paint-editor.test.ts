@@ -5,6 +5,10 @@ import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
 
 vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
+vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+  closeDialogs: vi.fn()
+}));
 
 let dialogOptions: unknown[];
 
@@ -151,7 +155,7 @@ describe("PaintEditor", () => {
 
   it("enforces the universal zero-only protection toggle", async () => {
     const apply = vi.fn();
-    PaintEditor.open(getOptions({ dontOverrideCotrol: true, getValue: () => 1, apply }));
+    PaintEditor.open(getOptions({ dontOverrideControl: true, getValue: () => 1, apply }));
     const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
     itemSelect.value = "2";
     itemSelect.dispatchEvent(new Event("change"));

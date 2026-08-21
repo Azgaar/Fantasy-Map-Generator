@@ -1265,7 +1265,7 @@ function openPaintEditor(): void {
       .filter(state => !state.removed)
       .map(state => ({ id: state.i, name: state.fullName || state.name, color: state.color || "#ffffff" }))
       .sort((a, b) => (a.id ? (b.id ? a.name.localeCompare(b.name) : 1) : -1)),
-    dontOverrideCotrol: true,
+    dontOverrideControl: true,
     getValue: cell => pack.cells.state[cell],
     filterCell: (cell, currentState) => isLand(cell, pack) && cell !== pack.states[currentState].center,
     apply: applyStatesPaint

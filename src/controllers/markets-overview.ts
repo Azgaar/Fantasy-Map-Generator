@@ -237,7 +237,7 @@ function openPaintEditor(): void {
         .map(row => ({ id: row.market.i, name: row.name, color: row.market.color }))
         .sort((a, b) => a.name.localeCompare(b.name))
     ],
-    dontOverrideCotrol: true,
+    dontOverrideControl: true,
     getValue: cell => pack.cells.market[cell],
     filterCell: (_cell, _currentMarket, nextMarket) => nextMarket === 0 || Boolean(Markets.get(nextMarket)),
     apply: applyMarketPaint
