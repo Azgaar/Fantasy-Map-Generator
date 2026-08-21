@@ -17,9 +17,10 @@
 
 import { tip } from "@/components/tooltips";
 
-export const VERSION = "1.146.0";
+export const VERSION = "1.147.0";
 
 const latestPublicChanges = [
+  "Paint Area dialogs rework",
   "Relief icons: improved performance",
   "Configurable table columns",
   "Labels: improved performance",
