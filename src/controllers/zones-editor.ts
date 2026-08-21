@@ -270,9 +270,7 @@ function openPaintEditor(): void {
     mode: "multiple",
     items: [
       { id: -1, name: "No zone", color: "#ffffff" },
-      ...visibleZones
-        .map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
-        .sort((a, b) => a.name.localeCompare(b.name))
+      ...visibleZones.map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
     ],
     landOnlyControl: true,
     getValue: cell => zonesByCell.get(cell) ?? [],

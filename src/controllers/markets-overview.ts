@@ -233,9 +233,7 @@ function openPaintEditor(): void {
     title: "Paint Market Cells",
     items: [
       { id: 0, name: "No market", color: "#ffffff" },
-      ...getMarketsData()
-        .map(row => ({ id: row.market.i, name: row.name, color: row.market.color }))
-        .sort((a, b) => a.name.localeCompare(b.name))
+      ...getMarketsData().map(row => ({ id: row.market.i, name: row.name, color: row.market.color }))
     ],
     dontOverrideControl: true,
     getValue: cell => pack.cells.market[cell],

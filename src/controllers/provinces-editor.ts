@@ -1063,8 +1063,7 @@ function openPaintEditor(): void {
         id: province.i,
         name: `${pack.states[province.state]?.name ?? ""}: ${province.name}`,
         color: province.color || "#ffffff"
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+      })),
     getValue: cell => pack.cells.province[cell],
     filterCell: (cell, currentProvince, nextProvince) => {
       if (!isLand(cell, pack) || !pack.cells.state[cell]) return false;

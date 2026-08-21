@@ -13,9 +13,9 @@ vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
 const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOptions => ({
   title: "Paint states",
   items: [
-    { id: 1, name: "North", color: "#ff0000" },
     { id: 2, name: "South", color: "#0000ff" },
-    { id: 0, name: "Neutral", color: "#ffffff" }
+    { id: 3, name: "West", color: "#ffffff" },
+    { id: 1, name: "North", color: "#ff0000" }
   ],
   getValue: vi.fn(() => 0),
   apply: vi.fn(),
@@ -92,6 +92,21 @@ describe("PaintEditor", () => {
 
     expect(itemSelect.value).toBe("2");
     expect(fillBox.fill).toBe("#0000ff");
+  });
+
+  it("sorts items alphabetically while keeping a leading special item pinned", () => {
+    PaintEditor.open(
+      getOptions({
+        items: [
+          { id: 0, name: "Neutral", color: "#ffffff" },
+          { id: 2, name: "South", color: "#0000ff" },
+          { id: 1, name: "North", color: "#ff0000" }
+        ]
+      })
+    );
+
+    const options = [...document.querySelectorAll<HTMLOptionElement>("#paintEditorSelect option")];
+    expect(options.map(option => option.textContent)).toEqual(["Neutral", "North", "South"]);
   });
 
   it("shows the hovered item from the value getter", () => {

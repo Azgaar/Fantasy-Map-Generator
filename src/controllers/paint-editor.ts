@@ -61,19 +61,21 @@ function open(options: OpenPaintEditorOptions): void {
   cleanup();
   closeDialogs();
 
+  const items = sortItems(options.items);
+
   customization = customizationMode;
   state = {
     options,
-    itemsById: new Map(options.items.map(item => [item.id, item])),
+    itemsById: new Map(items.map(item => [item.id, item])),
     changes: new Map(),
     history: [],
-    selectedId: options.items[0]?.id,
+    selectedId: items[0]?.id,
     finalized: false
   };
 
   try {
-    renderDialog(options);
-    renderItems(options.items);
+    renderDialog(options, items);
+    renderItems(items);
     renderOverlay();
     addListeners();
 
@@ -91,10 +93,16 @@ function open(options: OpenPaintEditorOptions): void {
   }
 }
 
-function renderDialog(options: OpenPaintEditorOptions): void {
+function sortItems(items: readonly PaintEditorItem[]): PaintEditorItem[] {
+  const pinned = items[0]?.id <= 0 ? items.slice(0, 1) : [];
+  const sortable = items.slice(pinned.length).sort((a, b) => a.name.localeCompare(b.name));
+  return [...pinned, ...sortable];
+}
+
+function renderDialog(options: OpenPaintEditorOptions, items: readonly PaintEditorItem[]): void {
   destroyDialog(dialogId);
 
-  const selectedColor = options.items[0]?.color ?? "#ffffff";
+  const selectedColor = items[0]?.color ?? "#ffffff";
 
   const dontOverrideControl = options.dontOverrideControl
     ? `<label data-tip="Only paint cells whose current value is 0" style="display: flex; align-items: center"><input id="paintEditorDontOverride" class="checkbox native" type="checkbox">Do not override existing</label>`

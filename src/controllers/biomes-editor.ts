@@ -465,9 +465,7 @@ function openPaintEditor(): void {
     title: "Paint Biomes",
     items: pack.biomes
       .filter(biome => biome.i && !biome.removed)
-      .map(biome => ({ id: biome.i, name: biome.name, color: biome.color }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
-    dontOverrideControl: true,
+      .map(biome => ({ id: biome.i, name: biome.name, color: biome.color })),
     getValue: cell => pack.cells.biome[cell],
     filterCell: cell => isLand(cell, pack),
     apply: applyBiomesChange
