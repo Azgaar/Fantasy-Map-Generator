@@ -231,9 +231,9 @@ function selectStyleElement() {
 
   if (styleElement === "terrain") {
     styleRelief.style.display = "block";
-    styleReliefSize.value = style.relief.size;
-    styleReliefDensity.value = style.relief.density;
-    styleReliefSet.value = style.relief.set;
+    styleReliefSize.value = styles.relief.options.size;
+    styleReliefDensity.value = styles.relief.options.density;
+    styleReliefSet.value = styles.relief.options.set;
   }
 
   if (styleElement === "population") {
@@ -800,15 +800,15 @@ styleHeightmapCurve.addEventListener("change", e => {
 });
 
 styleReliefSet.addEventListener("change", e => {
-  style.relief.set = e.target.value;
+  styles.relief.options.set = e.target.value;
   Relief.changeSet(e.target.value);
   Layers.draw("relief");
 });
 
 styleReliefSize.addEventListener("change", e => {
   const newSize = +e.target.value;
-  const ratio = newSize / style.relief.size;
-  style.relief.size = newSize;
+  const ratio = newSize / styles.relief.options.size;
+  styles.relief.options.size = newSize;
   if (ratio === 1) return;
 
   Relief.changeSize(ratio);
@@ -817,7 +817,7 @@ styleReliefSize.addEventListener("change", e => {
 
 // density defines the placement, so it cannot be applied without regenerating the icons
 styleReliefDensity.addEventListener("change", e => {
-  style.relief.density = +e.target.value;
+  styles.relief.options.density = +e.target.value;
   Relief.generate();
   Layers.draw("relief");
 });

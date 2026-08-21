@@ -12,7 +12,7 @@ Today styling lives in four places: the legacy `style` JS object (`labels.groups
 
 - *labels.groups* → `styles.labels.groups` — readers (`label-groups`, `label-arc`, `fit-state-label`, `label-spread`, 3d renderer, groups editor) and writers (preset routing, editor, submap) retarget.
 - *burgIcons + anchors* → `styles.burgIcons.{burgIcons,anchors}.groups` — the draw-time DOM harvest in `createIconGroups` retargets; it keeps existing until the editor writes through `styles` (step 6).
-- *relief* → `styles.relief` — `set`/`size` as options; `density` moves to app options (it regenerates data, so it is not style — the code already says so).
+- *relief* → `styles.relief.options` — `set`/`size`/`density` relocate as they are; moving `density` to app options (it regenerates data, so it is arguably not style) is its own later step-5-shaped PR, not smuggled into the relocation.
 
 One bridge: the map file's legacy style record keeps being written, projected from `styles`, so files stay loadable on master in both directions; load converts it into `styles`. Dies at step 4. `src/types/style.ts` shrinks as each domain leaves.
 
