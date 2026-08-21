@@ -1,7 +1,13 @@
 import { test, expect } from "@playwright/test";
 
-// software WebGL (SwiftShader) requires an explicit opt-in in recent Chromium
-test.use({ launchOptions: { args: ["--enable-unsafe-swiftshader"] } });
+// software WebGL (SwiftShader) requires an explicit opt-in in recent Chromium. Overriding
+// launchOptions replaces the config's, so the CHROMIUM_PATH escape hatch has to ride along here too
+test.use({
+  launchOptions: {
+    args: ["--enable-unsafe-swiftshader"],
+    ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
+  }
+});
 
 test.describe("3D view with eroded terrain", () => {
   // map generation + 3D view + software-WebGL bake can be slow under full-suite load
