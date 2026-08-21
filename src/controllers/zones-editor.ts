@@ -268,6 +268,7 @@ function openPaintEditor(): void {
   void Controllers.PaintEditor.open({
     title: "Paint Zones",
     parentDialogId: dialogId,
+    onClose: open,
     mode: "multiple",
     items: [
       { id: -1, name: "No zone", color: "#ffffff" },
@@ -275,7 +276,7 @@ function openPaintEditor(): void {
     ],
     landOnlyControl: true,
     getValue: cell => zonesByCell.get(cell) ?? [],
-    apply: changes => applyZonePaint(visibleZones, changes)
+    onApply: changes => applyZonePaint(visibleZones, changes)
   });
 }
 

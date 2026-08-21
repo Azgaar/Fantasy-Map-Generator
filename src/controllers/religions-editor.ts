@@ -817,13 +817,14 @@ function openPaintEditor(): void {
   void Controllers.PaintEditor.open({
     title: "Paint Religions",
     parentDialogId: dialogId,
+    onClose: open,
     items: pack.religions
       .filter(religion => !religion.removed && (!religion.i || religion.cells))
       .map(religion => ({ id: religion.i, name: religion.name, color: religion.color || "#ffffff" })),
     dontOverrideControl: true,
     getValue: cell => pack.cells.religion[cell],
     filterCell: cell => isLand(cell, pack),
-    apply: applyReligionPaint
+    onApply: applyReligionPaint
   });
 }
 

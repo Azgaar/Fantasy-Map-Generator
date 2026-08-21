@@ -867,13 +867,14 @@ function openPaintEditor(): void {
   void Controllers.PaintEditor.open({
     title: "Paint Cultures",
     parentDialogId: dialogId,
+    onClose: open,
     items: pack.cultures
       .filter(culture => !culture.removed)
       .map(culture => ({ id: culture.i, name: culture.name, color: culture.color || "#ffffff" })),
     dontOverrideControl: true,
     getValue: cell => pack.cells.culture[cell],
     filterCell: cell => isLand(cell, pack),
-    apply: applyCulturePaint
+    onApply: applyCulturePaint
   });
 }
 

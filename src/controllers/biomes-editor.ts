@@ -464,12 +464,13 @@ function openPaintEditor(): void {
   void Controllers.PaintEditor.open({
     title: "Paint Biomes",
     parentDialogId: dialogId,
+    onClose: open,
     items: pack.biomes
       .filter(biome => biome.i && !biome.removed)
       .map(biome => ({ id: biome.i, name: biome.name, color: biome.color })),
     getValue: cell => pack.cells.biome[cell],
     filterCell: cell => isLand(cell, pack),
-    apply: applyBiomesChange
+    onApply: applyBiomesChange
   });
 }
 

@@ -16,6 +16,7 @@ export interface PaintEditorItem {
 interface CommonPaintEditorOptions {
   title: string;
   parentDialogId: string;
+  onClose: () => void;
   items: readonly PaintEditorItem[];
   dontOverrideControl?: boolean;
   landOnlyControl?: boolean;
@@ -25,14 +26,14 @@ export interface PaintEditorOptions extends CommonPaintEditorOptions {
   mode?: "single";
   getValue: (cell: number) => number;
   filterCell?: (cell: number, currentValue: number, nextValue: number) => boolean;
-  apply: (changes: ReadonlyMap<number, number>) => void;
+  onApply: (changes: ReadonlyMap<number, number>) => void;
 }
 
 interface MultiplePaintEditorOptions extends CommonPaintEditorOptions {
   mode: "multiple";
   getValue: (cell: number) => readonly number[];
   filterCell?: (cell: number, currentValues: readonly number[], nextValue: number) => boolean;
-  apply: (changes: ReadonlyMap<number, readonly number[]>) => void;
+  onApply: (changes: ReadonlyMap<number, readonly number[]>) => void;
 }
 
 type OpenPaintEditorOptions = PaintEditorOptions | MultiplePaintEditorOptions;
@@ -88,7 +89,7 @@ function open(options: OpenPaintEditorOptions): void {
 
     tip("Click to select, drag to paint", true);
   } catch (error) {
-    cleanup();
+    close(options.onClose);
     throw error;
   }
 }
@@ -325,16 +326,15 @@ function finish(shouldApply: boolean): void {
   try {
     if (shouldApply) {
       const { options, changes } = activeState;
-      if (options.mode === "multiple") options.apply(new Map(changes));
-      else options.apply(new Map([...changes].map(([cell, values]) => [cell, values[0]])));
+      if (options.mode === "multiple") options.onApply(new Map(changes));
+      else options.onApply(new Map([...changes].map(([cell, values]) => [cell, values[0]])));
     }
   } finally {
-    cleanup();
+    close(activeState.options.onClose);
   }
 }
 
 function cleanup(): void {
-  const parentDialogId = state?.options.parentDialogId;
   state = null;
   destroyDialog(dialogId);
   select(`#${overlayId}`).remove();
@@ -342,8 +342,14 @@ function cleanup(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
   if (customization === customizationMode) customization = 0;
+}
 
-  $(`#${parentDialogId}`).dialog("open");
+function close(onClose: () => void): void {
+  try {
+    cleanup();
+  } finally {
+    onClose();
+  }
 }
 
 function getState(): PaintEditorState {

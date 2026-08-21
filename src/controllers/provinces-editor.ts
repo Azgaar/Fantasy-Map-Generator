@@ -1058,6 +1058,7 @@ function openPaintEditor(): void {
   void Controllers.PaintEditor.open({
     title: "Paint Provinces",
     parentDialogId: dialogId,
+    onClose: open,
     items: pack.provinces
       .filter(province => province.i && !province.removed)
       .map(province => ({
@@ -1074,7 +1075,7 @@ function openPaintEditor(): void {
       return false;
     },
     dontOverrideControl: true,
-    apply: applyProvincePaint
+    onApply: applyProvincePaint
   });
 }
 

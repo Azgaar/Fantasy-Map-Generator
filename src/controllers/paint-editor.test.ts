@@ -13,13 +13,14 @@ vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
 const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOptions => ({
   title: "Paint states",
   parentDialogId: "parentDialog",
+  onClose: vi.fn(),
   items: [
     { id: 2, name: "South", color: "#0000ff" },
     { id: 3, name: "West", color: "#ffffff" },
     { id: 1, name: "North", color: "#ff0000" }
   ],
   getValue: vi.fn(() => 0),
-  apply: vi.fn(),
+  onApply: vi.fn(),
   ...overrides
 });
 
@@ -63,8 +64,10 @@ beforeEach(() => {
     }
   } as unknown as typeof pack;
   const dialogOptions = new WeakMap<HTMLElement, Record<string, unknown>>();
-  window.$ = vi.fn((element: HTMLElement) => {
+  window.$ = vi.fn((target: string | HTMLElement) => {
+    const element = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
     const dialog = vi.fn((command: unknown, key?: string, value?: unknown) => {
+      if (!element) return;
       const options = dialogOptions.get(element) ?? {};
       if (typeof command === "object") {
         dialogOptions.set(element, { ...options, ...command });
@@ -78,21 +81,24 @@ beforeEach(() => {
     });
     return { dialog };
   }) as unknown as typeof window.$;
-  $(document.getElementById("parentDialog")!).dialog({ close: vi.fn() });
+  const parentDialog = document.getElementById("parentDialog")!;
+  $(parentDialog).dialog({ close: () => parentDialog.remove() });
 });
 
 describe("PaintEditor", () => {
-  it("closes its parent without destroying it and reopens it when finished", () => {
-    const parentDialog = document.getElementById("parentDialog")!;
-    const closeParent = vi.fn();
-    $(parentDialog).dialog("option", "close", closeParent);
-    PaintEditor.open(getOptions());
+  it("reopens its destroyed parent through the close callback", () => {
+    const onClose = vi.fn(() => {
+      document
+        .getElementById("dialogs")!
+        .insertAdjacentHTML("beforeend", '<div id="parentDialog" class="dialog"></div>');
+    });
+    PaintEditor.open(getOptions({ onClose }));
 
-    expect(parentDialog.style.display).toBe("none");
-    expect(closeParent).not.toHaveBeenCalled();
+    expect(document.getElementById("parentDialog")).toBeNull();
     document.getElementById("paintEditorCancel")?.click();
 
-    expect(parentDialog.style.display).toBe("");
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(document.getElementById("parentDialog")).not.toBeNull();
   });
 
   it("owns customization and clears it when cancelled", () => {
@@ -145,20 +151,25 @@ describe("PaintEditor", () => {
   });
 
   it("owns working changes and commits them through one apply callback", async () => {
-    const apply = vi.fn();
-    PaintEditor.open(getOptions({ apply }));
+    const calls: string[] = [];
+    const onApply = vi.fn((_changes: ReadonlyMap<number, number>) => {
+      calls.push("apply");
+    });
+    const onClose = vi.fn(() => calls.push("close"));
+    PaintEditor.open(getOptions({ onApply, onClose }));
 
     await dragBrush();
     document.getElementById("paintEditorApply")?.click();
 
-    const changes = apply.mock.calls[0][0] as ReadonlyMap<number, number>;
+    const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, number>;
     expect([...changes]).toEqual([[3, 1]]);
+    expect(calls).toEqual(["apply", "close"]);
     expect(globalThis.customization).toBe(0);
   });
 
   it("owns stroke history", async () => {
-    const apply = vi.fn();
-    PaintEditor.open(getOptions({ apply }));
+    const onApply = vi.fn();
+    PaintEditor.open(getOptions({ onApply }));
     await dragBrush();
 
     const undo = document.getElementById("paintEditorUndo") as HTMLButtonElement;
@@ -167,21 +178,22 @@ describe("PaintEditor", () => {
     expect(undo.disabled).toBe(true);
     document.getElementById("paintEditorApply")?.click();
 
-    expect([...(apply.mock.calls[0][0] as ReadonlyMap<number, number>)]).toEqual([]);
+    expect([...(onApply.mock.calls[0][0] as ReadonlyMap<number, number>)]).toEqual([]);
   });
 
   it("supports overlapping values without delegating state management", async () => {
-    const apply = vi.fn();
+    const onApply = vi.fn();
     PaintEditor.open({
       title: "Paint zones",
       parentDialogId: "parentDialog",
+      onClose: vi.fn(),
       mode: "multiple",
       items: [
         { id: 1, name: "Danger", color: "#ff0000" },
         { id: 2, name: "Magic", color: "#0000ff" }
       ],
       getValue: () => [1],
-      apply
+      onApply
     });
     const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
     itemSelect.value = "2";
@@ -190,13 +202,13 @@ describe("PaintEditor", () => {
     await dragBrush();
     document.getElementById("paintEditorApply")?.click();
 
-    const changes = apply.mock.calls[0][0] as ReadonlyMap<number, readonly number[]>;
+    const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, readonly number[]>;
     expect([...changes]).toEqual([[3, [1, 2]]]);
   });
 
   it("enforces the universal zero-only protection toggle", async () => {
-    const apply = vi.fn();
-    PaintEditor.open(getOptions({ dontOverrideControl: true, getValue: () => 1, apply }));
+    const onApply = vi.fn();
+    PaintEditor.open(getOptions({ dontOverrideControl: true, getValue: () => 1, onApply }));
     const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
     itemSelect.value = "2";
     itemSelect.dispatchEvent(new Event("change"));
@@ -207,14 +219,15 @@ describe("PaintEditor", () => {
     await dragBrush();
     document.getElementById("paintEditorApply")?.click();
 
-    expect([...(apply.mock.calls[0][0] as ReadonlyMap<number, number>)]).toEqual([]);
+    expect([...(onApply.mock.calls[0][0] as ReadonlyMap<number, number>)]).toEqual([]);
   });
 
   it("uses the -1 item to remove all overlapping values", async () => {
-    const apply = vi.fn();
+    const onApply = vi.fn();
     PaintEditor.open({
       title: "Paint zones",
       parentDialogId: "parentDialog",
+      onClose: vi.fn(),
       mode: "multiple",
       items: [
         { id: -1, name: "No zone", color: "#ffffff" },
@@ -224,7 +237,7 @@ describe("PaintEditor", () => {
       dontOverrideControl: true,
       landOnlyControl: true,
       getValue: () => [1, 2],
-      apply
+      onApply
     });
     const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
     const protect = document.getElementById("paintEditorDontOverride") as HTMLInputElement;
@@ -238,7 +251,7 @@ describe("PaintEditor", () => {
     expect(document.querySelector("#paintEditorOverlay polygon")?.getAttribute("fill")).toBe("#ffffff");
     document.getElementById("paintEditorApply")?.click();
 
-    const changes = apply.mock.calls[0][0] as ReadonlyMap<number, readonly number[]>;
+    const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, readonly number[]>;
     expect([...changes]).toEqual([[3, []]]);
   });
 
