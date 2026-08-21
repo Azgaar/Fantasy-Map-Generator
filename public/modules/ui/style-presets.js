@@ -114,7 +114,7 @@ function applyStylePreset(presetJson) {
 
     for (const attribute in presetJson[selector]) {
       if (attribute === "id") continue;
-      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in style.relief
+      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in styles.relief.options
       const value = presetJson[selector][attribute];
 
       if (value === "null" || value === null) {

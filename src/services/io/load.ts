@@ -8,9 +8,8 @@ import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
-import { burgGroupsFromLegacy, labelGroupsFromLegacy, reliefFromLegacy } from "@/styles/legacy";
-import { styles } from "@/styles/styles";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
+import { stylesFromLegacy } from "@/styles/legacy";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -430,14 +429,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    if (data[48]) {
-      style = JSON.parse(data[48]);
-      // the legacy record is the persisted shape; the label groups live in `styles`
-      if (style.labels?.groups) styles.labels.groups = labelGroupsFromLegacy(style.labels.groups);
-      if (style.burgIcons) styles.burgIcons.burgIcons.groups = burgGroupsFromLegacy(style.burgIcons);
-      if (style.anchors) styles.burgIcons.anchors.groups = burgGroupsFromLegacy(style.anchors);
-      if (style.relief) styles.relief.options = reliefFromLegacy(style.relief);
-    }
+    if (data[48]) stylesFromLegacy(JSON.parse(data[48]));
 
     {
       const { resolveVersionConflicts } = await import("./auto-update");
