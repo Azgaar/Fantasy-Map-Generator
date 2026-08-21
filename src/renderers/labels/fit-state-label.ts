@@ -22,8 +22,8 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   if (!cellsNumber) return { pathPoints: [], text: mode === "short" ? state.name : fullName, fontSize: 100 };
 
   const groupStyle = getGroupStyle({ name: group, type: "state" });
-  const baseFontSize = Number.parseFloat(String(groupStyle["font-size"])) || 22;
-  const letterSpacing = Number(groupStyle["letter-spacing"]) || 0;
+  const baseFontSize = Number.parseFloat(groupStyle.attrs["font-size"]) || 22;
+  const letterSpacing = groupStyle.attrs["letter-spacing"] || 0;
   const basePath = getRegionLabelPath(state.i, pack.cells.state, pole, cellsNumber, 0);
 
   const fitLines = (lines: string[], fixedFontSize?: number) => {

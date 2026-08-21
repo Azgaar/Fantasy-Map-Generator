@@ -89,6 +89,8 @@ declare global {
 
   var notes: any[]; // TODO: correct type
   var style: Style;
+  var styles: import("@/styles/styles").Styles;
+  var stylesLegacy: typeof import("@/styles/legacy");
 
   // IO / loading helpers defined in classic public/ scripts
   var ldb: {

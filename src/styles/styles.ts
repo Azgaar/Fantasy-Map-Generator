@@ -190,9 +190,12 @@ export type StyleLayerId = keyof Styles & (LayerId | "map");
 // The active styles. Read and write directly: styles.labels.groups[id].attrs.opacity.
 // Replaces the legacy `style` global when that retires.
 export let styles: Styles = DEFAULT_STYLES;
+// src imports the live binding; classic public/ scripts read the global
+globalThis.styles = styles;
 
 export function setStyles(data: Styles): void {
   styles = data;
+  globalThis.styles = styles;
 }
 
 // New format only; legacy selector-keyed presets are converted by migration code, not here.
