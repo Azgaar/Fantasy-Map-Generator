@@ -17,7 +17,7 @@
 
 import { tip } from "@/components/tooltips";
 
-export const VERSION = "1.147.0";
+export const VERSION = "1.147.1";
 
 const latestPublicChanges = [
   "Paint Area dialogs rework",
