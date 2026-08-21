@@ -8,13 +8,13 @@ Today styling lives in four places: the legacy `style` JS object (`labels.groups
 
 **1. The library + the addressing contract.** *(done — this branch)* `src/styles/` lands dormant: nothing imports it, zod ships zero bundle bytes. The live half is the addressing contract: the registry stamps `data-layer`/`data-group` on layer groups and declared children, renderers stamp the elements they create. Saved maps carry the inert attributes from here on — harmless everywhere.
 
-**2. Absorb the JS `style` object.** The domains that already made the jump to JS move into `styles`, so there is one JS store from day one. Per-domain commits, each green alone:
+**2. Absorb the JS `style` object.** *(done — this branch)* The domains that already made the jump to JS move into `styles`, so there is one JS store from day one. Per-domain commits, each green alone:
 
 - *labels.groups* → `styles.labels.groups` — readers (`label-groups`, `label-arc`, `fit-state-label`, `label-spread`, 3d renderer, groups editor) and writers (preset routing, editor, submap) retarget.
 - *burgIcons + anchors* → `styles.burgIcons.{burgIcons,anchors}.groups` — the draw-time DOM harvest in `createIconGroups` retargets; it keeps existing until the editor writes through `styles` (step 6).
 - *relief* → `styles.relief.options` — `set`/`size`/`density` relocate as they are; moving `density` to app options (it regenerates data, so it is arguably not style) is its own later step-5-shaped PR, not smuggled into the relocation.
 
-One bridge: the map file's legacy style record keeps being written, projected from `styles`, so files stay loadable on master in both directions; load converts it into `styles`. Dies at step 4. `src/types/style.ts` shrinks as each domain leaves.
+One bridge: the map file's legacy style record keeps being written (`stylesToLegacy`), so files stay loadable on master in both directions; load converts it into `styles` (`stylesFromLegacy`). Dies at step 4. The legacy `style` global, its `Style` interface and its initializer are gone; classic `public/` scripts reach the store as the `styles` global and convert legacy shapes through `stylesLegacy`.
 
 **3. The preset pipeline swap.** The 12 preset JSONs convert to the new format by script; applying a preset becomes `setStyles(parseStyles(json))` + `applyStyles(...)` instead of selector-keyed DOM writes. Custom localStorage presets and uploads keep working through the legacy upgrader — a separate function (`parseStyles` never sees old formats), permanent because users upload old presets forever. Renderers are untouched: the applier writes the same attributes they already read, so DOM output is identical.
 
