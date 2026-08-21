@@ -71,13 +71,13 @@ function createIconGroups(): void {
     Object.entries(iconStyles).forEach(([key, value]) => {
       burgGroup.attr(key, value);
     });
-    burgGroup.attr("id", name);
+    burgGroup.attr("id", name).attr("data-group", name);
 
     const anchorGroup = select("#anchors").append("g");
     const anchorStyles = style.anchors[name] || defaultAnchorStyle;
     Object.entries(anchorStyles).forEach(([key, value]) => {
       anchorGroup.attr(key, value);
     });
-    anchorGroup.attr("id", name);
+    anchorGroup.attr("id", name).attr("data-group", name);
   }
 }

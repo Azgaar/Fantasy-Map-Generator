@@ -56,6 +56,20 @@ describe("applyStyles", () => {
     expect(() => applyStyles("labels")).not.toThrow();
   });
 
+  test("burg icon and anchor groups are addressed through their containers", () => {
+    const el = mount("burgIcons", ["burgIcons", "anchors"]);
+    for (const container of el.children) {
+      const g = document.createElementNS(SVG, "g");
+      g.setAttribute("data-group", "capital");
+      container.append(g);
+    }
+    styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#111111";
+    styles.burgIcons.anchors.groups.capital.attrs.fill = "#222222";
+    applyStyles("burgIcons");
+    expect(el.querySelector('[data-group="burgIcons"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#111111");
+    expect(el.querySelector('[data-group="anchors"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#222222");
+  });
+
   test("a missing layer element is a no-op, the rest still apply", () => {
     const el = mount("rivers");
     styles.rivers.attrs.fill = "#654321";
