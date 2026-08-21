@@ -1,0 +1,50 @@
+import { describe, expect, test, vi } from "vitest";
+import { DEFAULT_STYLES } from "./defaults";
+import { parseStyles, stylesSchema } from "./styles";
+
+describe("stylesSchema", () => {
+  test("the default styles are valid — defaults and schema cannot drift", () => {
+    expect(stylesSchema.safeParse(DEFAULT_STYLES).success).toBe(true);
+  });
+
+  test("unknown keys are rejected by the strict schemas", () => {
+    const routes = structuredClone(DEFAULT_STYLES.routes) as Record<string, unknown>;
+    routes.bogus = {};
+    expect(stylesSchema.shape.routes.safeParse(routes).success).toBe(false);
+  });
+});
+
+describe("parseStyles", () => {
+  test("a valid document round-trips unchanged", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(parseStyles(structuredClone(DEFAULT_STYLES))).toEqual(DEFAULT_STYLES);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test("an invalid layer falls back to the default with one warning; the rest survive", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doc = structuredClone(DEFAULT_STYLES);
+    doc.rivers.attrs.fill = "#123456";
+    (doc as Record<string, unknown>).markers = { attrs: { opacity: "not a number" } };
+    const parsed = parseStyles(doc);
+    expect(parsed.rivers.attrs.fill).toBe("#123456");
+    expect(parsed.markers).toEqual(DEFAULT_STYLES.markers);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
+  test("garbage input yields the complete defaults", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const parsed = parseStyles("nonsense");
+    expect(parsed).toEqual(DEFAULT_STYLES);
+    expect(Object.keys(parsed).sort()).toEqual(Object.keys(stylesSchema.shape).sort());
+    warn.mockRestore();
+  });
+
+  test("null survives — it means the attribute is not set", () => {
+    const doc = structuredClone(DEFAULT_STYLES);
+    doc.rivers.attrs.filter = null;
+    expect(parseStyles(doc).rivers.attrs.filter).toBeNull();
+  });
+});
