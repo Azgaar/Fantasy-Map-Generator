@@ -66,7 +66,7 @@ function createIconGroups(): void {
     const burgGroup = select("#burgIcons").append("g");
     const iconStyle = burgIcons.groups[name] || defaultIconStyle;
     if (iconStyle) {
-      Object.entries(iconStyle.attrs).forEach(([key, value]) => burgGroup.attr(key, value));
+      for (const [key, value] of Object.entries(iconStyle.attrs)) burgGroup.attr(key, value);
       burgGroup.attr("font-size", iconStyle.options.size).attr("data-icon", iconStyle.options.icon);
     }
     burgGroup.attr("id", name).attr("data-group", name);
@@ -74,7 +74,7 @@ function createIconGroups(): void {
     const anchorGroup = select("#anchors").append("g");
     const anchorStyle = anchors.groups[name] || defaultAnchorStyle;
     if (anchorStyle) {
-      Object.entries(anchorStyle.attrs).forEach(([key, value]) => anchorGroup.attr(key, value));
+      for (const [key, value] of Object.entries(anchorStyle.attrs)) anchorGroup.attr(key, value);
       anchorGroup.attr("font-size", anchorStyle.options.size);
     }
     anchorGroup.attr("id", name).attr("data-group", name);

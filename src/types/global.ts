@@ -5,7 +5,6 @@ import type { MarketsModule } from "../generators/markets-generator";
 import type { ProductionModule } from "../generators/production-generator";
 import type { BurgGroup } from "./burg-groups";
 import type { PackedGraph } from "./PackedGraph";
-import type { Style } from "./style";
 
 declare global {
   var MOBILE: boolean;
@@ -87,7 +86,6 @@ declare global {
   var svgHeight: number;
 
   var notes: any[]; // TODO: correct type
-  var style: Style;
   var styles: import("@/styles/styles").Styles;
   var stylesLegacy: typeof import("@/styles/legacy");
 

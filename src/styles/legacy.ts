@@ -1,7 +1,7 @@
 // Conversions between the legacy `style` object shapes and the styles store. Only migration
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
-import type { Styles } from "./styles";
+import { type Styles, styles } from "./styles";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
@@ -110,6 +110,25 @@ export function reliefFromLegacy(legacy: object): Styles["relief"]["options"] {
   };
 }
 
+// the map file's style record keeps the legacy shape until persistence migrates, so files
+// stay loadable on master in both directions
+export function stylesToLegacy(): Record<string, unknown> {
+  return {
+    labels: { groups: labelGroupsToLegacy(styles.labels.groups) },
+    burgIcons: burgGroupsToLegacy(styles.burgIcons.burgIcons.groups, true),
+    anchors: burgGroupsToLegacy(styles.burgIcons.anchors.groups, false),
+    relief: { ...styles.relief.options }
+  };
+}
+
+export function stylesFromLegacy(json: unknown): void {
+  const legacy = (typeof json === "object" && json !== null ? json : {}) as Record<string, any>;
+  if (legacy.labels?.groups) styles.labels.groups = labelGroupsFromLegacy(legacy.labels.groups);
+  if (legacy.burgIcons) styles.burgIcons.burgIcons.groups = burgGroupsFromLegacy(legacy.burgIcons);
+  if (legacy.anchors) styles.burgIcons.anchors.groups = burgGroupsFromLegacy(legacy.anchors);
+  if (legacy.relief) styles.relief.options = reliefFromLegacy(legacy.relief);
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   labelGroupFromLegacy,
@@ -121,5 +140,7 @@ globalThis.stylesLegacy = {
   burgGroupToLegacy,
   burgGroupsFromLegacy,
   burgGroupsToLegacy,
-  reliefFromLegacy
+  reliefFromLegacy,
+  stylesToLegacy,
+  stylesFromLegacy
 };

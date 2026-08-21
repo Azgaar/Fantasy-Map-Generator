@@ -7,11 +7,10 @@ import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
+import { compareVersions } from "@/services/versioning";
 import { labelGroupFromLegacy } from "@/styles/legacy";
 import { styles } from "@/styles/styles";
-import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import type { LabelGroupStyle } from "@/types/style";
 import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
@@ -1304,7 +1303,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
       options.labels.groups.push({ name, type: "burg", zoom });
-      styles.labels.groups[name] = migratedBurgStyle ? structuredClone(migratedBurgStyle) : getGroupStyle({ name, type: "burg" });
+      styles.labels.groups[name] = migratedBurgStyle
+        ? structuredClone(migratedBurgStyle)
+        : getGroupStyle({ name, type: "burg" });
     }
 
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
@@ -1406,10 +1407,9 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
     }
 
-    delete (style as any).burgLabels; // migrated to style.labels.groups
     delete (options as any).stateLabelsMode; // migrated to group settings
 
-    function deriveLabelsStyle(groupEl: SVGGElement): LabelGroupStyle {
+    function deriveLabelsStyle(groupEl: SVGGElement): Record<string, string | number | null> {
       return {
         opacity: groupEl.hasAttribute("opacity") ? Number(groupEl.getAttribute("opacity")) : 1,
         fill: groupEl.getAttribute("fill") || "#000000",
@@ -1485,7 +1485,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
     const terrainEl = document.getElementById("terrain");
     if (terrainEl) {
-      // v1.142.0 moved the relief style from the #terrain attributes to style.relief
+      // v1.142.0 moved the relief style from the #terrain attributes to the style store
       const set = terrainEl.getAttribute("set");
       styles.relief.options = {
         set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
