@@ -1,4 +1,6 @@
 import { select } from "d3";
+import { burgGroupFromElement } from "@/styles/legacy";
+import { styles } from "@/styles/styles";
 
 export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");
@@ -44,40 +46,37 @@ export const removeBurgIcon = (burgId: number): void => {
 };
 
 function createIconGroups(): void {
-  // save existing styles and remove all groups
+  // save existing styles (the style editor edits the DOM) and remove all groups
+  const { burgIcons, anchors } = styles.burgIcons;
   document.querySelectorAll("g#burgIcons > g").forEach(group => {
-    style.burgIcons[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
+    burgIcons.groups[group.id] = burgGroupFromElement(group);
     group.remove();
   });
 
   document.querySelectorAll("g#anchors > g").forEach(group => {
-    style.anchors[group.id] = Array.from(group.attributes).reduce((acc: { [key: string]: string }, attribute) => {
-      acc[attribute.name] = attribute.value;
-      return acc;
-    }, {});
+    anchors.groups[group.id] = burgGroupFromElement(group);
     group.remove();
   });
 
   // create groups for each burg group and apply stored or default style
-  const defaultIconStyle = style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
-  const defaultAnchorStyle = style.anchors.town || Object.values(style.anchors)[0] || {};
+  const defaultIconStyle = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
+  const defaultAnchorStyle = anchors.groups.town || Object.values(anchors.groups)[0];
   const sortedGroups = [...options.burgs.groups].sort((a, b) => a.order - b.order);
   for (const { name } of sortedGroups) {
     const burgGroup = select("#burgIcons").append("g");
-    const iconStyles = style.burgIcons[name] || defaultIconStyle;
-    Object.entries(iconStyles).forEach(([key, value]) => {
-      burgGroup.attr(key, value);
-    });
+    const iconStyle = burgIcons.groups[name] || defaultIconStyle;
+    if (iconStyle) {
+      Object.entries(iconStyle.attrs).forEach(([key, value]) => burgGroup.attr(key, value));
+      burgGroup.attr("font-size", iconStyle.options.size).attr("data-icon", iconStyle.options.icon);
+    }
     burgGroup.attr("id", name).attr("data-group", name);
 
     const anchorGroup = select("#anchors").append("g");
-    const anchorStyles = style.anchors[name] || defaultAnchorStyle;
-    Object.entries(anchorStyles).forEach(([key, value]) => {
-      anchorGroup.attr(key, value);
-    });
+    const anchorStyle = anchors.groups[name] || defaultAnchorStyle;
+    if (anchorStyle) {
+      Object.entries(anchorStyle.attrs).forEach(([key, value]) => anchorGroup.attr(key, value));
+      anchorGroup.attr("font-size", anchorStyle.options.size);
+    }
     anchorGroup.attr("id", name).attr("data-group", name);
   }
 }

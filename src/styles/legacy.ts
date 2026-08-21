@@ -55,5 +55,61 @@ export function labelGroupsToLegacy(groups: Record<string, LabelGroupStyle>): Re
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, labelGroupToLegacy(group)]));
 }
 
+type BurgGroupStyle = Styles["burgIcons"]["burgIcons"]["groups"][string];
+
+// legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
+// size and icon are required by the renderer (anchors ignore icon - they always draw #icon-anchor)
+export function burgGroupFromLegacy(legacy: object): BurgGroupStyle {
+  const bag = legacy as Record<string, unknown>;
+  return {
+    attrs: {
+      opacity: numOr(bag.opacity, null),
+      fill: strOr(bag.fill, null),
+      "fill-opacity": numOr(bag["fill-opacity"], null),
+      stroke: strOr(bag.stroke, null),
+      "stroke-width": numOr(bag["stroke-width"], null),
+      "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
+      "stroke-linecap": strOr(bag["stroke-linecap"], null),
+      "stroke-linejoin": strOr(bag["stroke-linejoin"], null),
+      filter: strOr(bag.filter, null)
+    },
+    options: {
+      size: toNumber(bag["font-size"], 1),
+      icon: strOr(bag["data-icon"], null) ?? "#icon-circle"
+    }
+  };
+}
+
+// the style editor edits burg groups on the DOM; drawing harvests them back into the store
+export function burgGroupFromElement(el: Element): BurgGroupStyle {
+  const bag: Record<string, string> = {};
+  for (const { name, value } of Array.from(el.attributes)) bag[name] = value;
+  return burgGroupFromLegacy(bag);
+}
+
+export function burgGroupToLegacy(group: BurgGroupStyle, withIcon = true): Record<string, unknown> {
+  const legacy: Record<string, unknown> = { ...group.attrs, "font-size": group.options.size };
+  if (withIcon) legacy["data-icon"] = group.options.icon;
+  return legacy;
+}
+
+export function burgGroupsFromLegacy(groups: Record<string, object>): Record<string, BurgGroupStyle> {
+  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupFromLegacy(group)]));
+}
+
+export function burgGroupsToLegacy(groups: Record<string, BurgGroupStyle>, withIcon: boolean): Record<string, object> {
+  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupToLegacy(group, withIcon)]));
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
-globalThis.stylesLegacy = { labelGroupFromLegacy, labelGroupToLegacy, labelGroupsFromLegacy, labelGroupsToLegacy };
+globalThis.stylesLegacy = {
+  labelGroupFromLegacy,
+  labelGroupToLegacy,
+  labelGroupsFromLegacy,
+  labelGroupsToLegacy,
+  burgGroupFromLegacy,
+  burgGroupFromElement,
+  burgGroupToLegacy,
+  burgGroupsFromLegacy,
+  burgGroupsToLegacy
+};

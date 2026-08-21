@@ -745,7 +745,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 2,
@@ -761,7 +762,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 1.5,
@@ -777,7 +779,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 0.7,
@@ -793,7 +796,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 0.7,
@@ -809,7 +813,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 0.7,
@@ -825,7 +830,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 0.7,
@@ -841,7 +847,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 0.7,
@@ -857,7 +864,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 0.5,
@@ -873,7 +881,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": "butt",
-            "stroke-linejoin": "round"
+            "stroke-linejoin": "round",
+            filter: null
           },
           options: {
             size: 1,
@@ -893,7 +902,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 1.9,
@@ -909,7 +919,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 1.5,
@@ -925,7 +936,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 0.7,
@@ -941,7 +953,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 0.7,
@@ -957,7 +970,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 0.7,
@@ -973,7 +987,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 0.7,
@@ -989,7 +1004,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 0.7,
@@ -1005,7 +1021,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 0.5,
@@ -1021,7 +1038,8 @@ export const DEFAULT_STYLES: Styles = {
             "stroke-width": 1.2,
             "stroke-dasharray": null,
             "stroke-linecap": null,
-            "stroke-linejoin": null
+            "stroke-linejoin": null,
+            filter: null
           },
           options: {
             size: 1,

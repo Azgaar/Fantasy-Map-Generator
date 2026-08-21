@@ -82,12 +82,12 @@ function applyStylePreset(presetJson) {
 
     if (selector.startsWith("#burgIcons")) {
       const group = selector.split("#").pop();
-      style.burgIcons[group] = presetJson[selector];
+      styles.burgIcons.burgIcons.groups[group] = stylesLegacy.burgGroupFromLegacy(presetJson[selector]);
     }
 
     if (selector.startsWith("#anchors")) {
       const group = selector.split("#").pop();
-      style.anchors[group] = presetJson[selector];
+      styles.burgIcons.anchors.groups[group] = stylesLegacy.burgGroupFromLegacy(presetJson[selector]);
     }
 
     if (selector === "#terrain") {

@@ -6,7 +6,7 @@ import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
-import { labelGroupsToLegacy } from "@/styles/legacy";
+import { burgGroupsToLegacy, labelGroupsToLegacy } from "@/styles/legacy";
 import { styles } from "@/styles/styles";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
@@ -128,7 +128,12 @@ function prepareMapData(): string {
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
   // the label groups live in `styles` now; project them into the legacy record so the file loads on master
-  const styleData = JSON.stringify({ ...style, labels: { groups: labelGroupsToLegacy(styles.labels.groups) } });
+  const styleData = JSON.stringify({
+    ...style,
+    labels: { groups: labelGroupsToLegacy(styles.labels.groups) },
+    burgIcons: burgGroupsToLegacy(styles.burgIcons.burgIcons.groups, true),
+    anchors: burgGroupsToLegacy(styles.burgIcons.anchors.groups, false)
+  });
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
