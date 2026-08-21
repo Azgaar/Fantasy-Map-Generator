@@ -1,4 +1,4 @@
-import { drag, select, sum } from "d3";
+import { select, sum } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import {
@@ -7,26 +7,17 @@ import {
   initEditorTable,
   renderEditorHeader,
   renderEditorPagination,
-  setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
-
-interface ZoneCellDatum {
-  cell: number;
-  zoneId: number;
-  fill: string;
-}
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -88,26 +79,6 @@ function renderDialog(): void {
           class="icon-percent"
         ></button>
         <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
-        <div id="zonesManuallyButtons" style="display: none">
-          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
-            Brush size:
-            <slider-input id="zonesBrush" min="1" max="100" value="8"></slider-input>
-          </div>
-          <div>
-            <input id="zonesBrushLandOnly" class="checkbox" type="checkbox" checked />
-            <label for="zonesBrushLandOnly" class="checkbox-label"><i>Change land only</i></label>
-          </div>
-          <div style="margin-top: 0.3em">
-            <button id="zonesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-            <button id="zonesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-            <button
-              id="zonesRemove"
-              data-tip="Click to toggle the removal mode on brush dragging"
-              data-shortcut="Ctrl"
-              class="icon-eraser"
-            ></button>
-          </div>
-        </div>
         <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
         <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
         <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">
@@ -134,27 +105,15 @@ function renderDialog(): void {
   ensureEl("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
   ensureEl("zonesPercentage").addEventListener("click", togglePercentageMode);
-  ensureEl("zonesManually").addEventListener("click", enterZonesManualAssignent);
-  ensureEl("zonesManuallyApply").addEventListener("click", applyZonesManualAssignent);
-  ensureEl("zonesManuallyCancel").addEventListener("click", cancelZonesManualAssignent);
+  ensureEl("zonesManually").addEventListener("click", openPaintEditor);
   ensureEl("zonesAdd").addEventListener("click", addZonesLayer);
   ensureEl("zonesExport").addEventListener("click", downloadZonesData);
-  ensureEl("zonesRemove").addEventListener("click", (e: Event) =>
-    (e.target as HTMLElement).classList.toggle("pressed")
-  );
 
   body.addEventListener("click", (ev: Event) => {
     const line = (ev.target as HTMLElement).closest<HTMLElement>("div.states");
     if (!line) return;
     const zone = pack.zones.find(z => z.i === +line.dataset.id!);
     if (!zone) return;
-
-    if (customization) {
-      if (zone.hidden) return;
-      body.querySelector("div.selected")?.classList.remove("selected");
-      line.classList.add("selected");
-      return;
-    }
 
     const target = ev.target as HTMLElement;
     const fillBox = target.closest("fill-box");
@@ -186,7 +145,6 @@ function renderDialog(): void {
 }
 
 function closeZonesEditor(): void {
-  exitZonesManualAssignment("close");
   $("#zonesEditor").dialog("destroy");
   ensureEl("zonesEditor").remove();
 }
@@ -291,157 +249,45 @@ function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): 
   Layers.draw("zones");
 }
 
-function enterZonesManualAssignent(): void {
+function openPaintEditor(): void {
   Layers.show("zones");
-  customization = 10;
-  const body = ensureEl("zonesBodySection");
 
-  document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
-    el.style.display = "none";
-  });
-  ensureEl("zonesManuallyButtons").style.display = "inline-block";
-  setModeHiddenColumns(dialogId, ["cells", "area", "population", "actions"]);
-  ensureEl("zonesFooter").style.display = "none";
-  body.querySelectorAll<HTMLElement>("div > input, select, svg").forEach(e => {
-    e.style.pointerEvents = "none";
-  });
-  $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
+  const visibleZones = getZonesData()
+    .map(row => row.zone)
+    .filter(zone => !zone.hidden);
 
-  tip("Click to select a zone, drag to paint a zone", true);
-  select<SVGElement, unknown>("#viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectZoneOnMapClick)
-    .call(drag<SVGElement, unknown>().on("start", dragZoneBrush))
-    .on("touchmove mousemove", moveZoneBrush);
-
-  body.querySelector("div")?.classList.add("selected");
-
-  // draw zones as individual cells
-  select<SVGGElement, unknown>("#zones").selectAll("*").remove();
-
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  const data = visibleZones.flatMap(({ i, cells, color }) => cells.map(cell => ({ cell, zoneId: i, fill: color })));
-  select<SVGGElement, unknown>("#zones")
-    .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-    .data(data, d => `${d.zoneId}-${d.cell}`)
-    .enter()
-    .append("polygon")
-    .attr("points", d => getPackPolygon(d.cell, pack))
-    .attr("fill", d => d.fill)
-    .attr("data-zone", d => d.zoneId)
-    .attr("data-cell", d => d.cell);
-}
-
-function selectZoneOnMapClick(event: any): void {
-  const target = event.target as HTMLElement;
-  if ((target.parentElement as HTMLElement).id !== "zones") return;
-  const zoneId = target.dataset.zone;
-  const el = ensureEl("zonesBodySection").querySelector(`div[data-id='${zoneId}']`);
-
-  ensureEl("zonesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  el?.classList.add("selected");
-}
-
-function dragZoneBrush(this: SVGElement, event: any): void {
-  const radius = +ensureEl<HTMLInputElement>("zonesBrush").value;
-  const eraseMode = ensureEl("zonesRemove").classList.contains("pressed");
-  const landOnly = ensureEl<HTMLInputElement>("zonesBrushLandOnly").checked;
-
-  event.on("drag", (dragEvent: any) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = getPointer(dragEvent, this);
-    moveCircle(x, y, radius);
-
-    let selection = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)!];
-    if (landOnly) selection = selection.filter(i => pack.cells.h[i] >= 20);
-    if (!selection.length) return;
-
-    const zoneId = +ensureEl("zonesBodySection").querySelector<HTMLElement>("div.selected")!.dataset.id!;
-    const zone = pack.zones.find(z => z.i === zoneId);
-    if (!zone) return;
-
-    if (eraseMode) {
-      const data = select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data()
-        .filter(d => !(d.zoneId === zoneId && selection.includes(d.cell)));
-      select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data(data, d => `${d.zoneId}-${d.cell}`)
-        .exit()
-        .remove();
-    } else {
-      const data: ZoneCellDatum[] = selection.map(cell => ({ cell, zoneId, fill: zone.color }));
-      select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data(data, d => `${d.zoneId}-${d.cell}`)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d.cell, pack))
-        .attr("fill", d => d.fill)
-        .attr("data-zone", d => d.zoneId)
-        .attr("data-cell", d => d.cell);
+  const zonesByCell = new Map<number, number[]>();
+  for (const zone of visibleZones) {
+    for (const cell of zone.cells) {
+      const zoneIds = zonesByCell.get(cell);
+      if (zoneIds) zoneIds.push(zone.i);
+      else zonesByCell.set(cell, [zone.i]);
     }
+  }
+
+  void Controllers.PaintEditor.open({
+    title: "Paint Zones",
+    mode: "multiple",
+    items: visibleZones
+      .map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    dontOverrideCotrol: true,
+    landOnlyControl: true,
+    getValue: cell => zonesByCell.get(cell) ?? [],
+    apply: changes => applyZonePaint(visibleZones, changes)
   });
 }
 
-function moveZoneBrush(this: SVGElement, event: any): void {
-  showMainTip();
-  const [x, y] = getPointer(event, this);
-  const radius = +ensureEl<HTMLInputElement>("zonesBrush").value;
-  moveCircle(x, y, radius);
-}
-
-function applyZonesManualAssignent(): void {
-  const data = select<SVGGElement, unknown>("#zones").selectAll<SVGPolygonElement, ZoneCellDatum>("polygon").data();
-  const zoneCells = data.reduce<Record<number, number[]>>((acc, d) => {
-    if (!acc[d.zoneId]) acc[d.zoneId] = [];
-    acc[d.zoneId].push(d.cell);
-    return acc;
-  }, {});
-
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  visibleZones.forEach(zone => {
-    zone.cells = zoneCells[zone.i] || [];
-  });
+function applyZonePaint(zones: readonly Zone[], changes: ReadonlyMap<number, readonly number[]>): void {
+  const cellsByZone = new Map(zones.map(zone => [zone.i, new Set(zone.cells)]));
+  for (const [cell, zoneIds] of changes) {
+    for (const cells of cellsByZone.values()) cells.delete(cell);
+    for (const zoneId of zoneIds) cellsByZone.get(zoneId)?.add(cell);
+  }
+  for (const zone of zones) zone.cells = [...cellsByZone.get(zone.i)!];
 
   Layers.draw("zones");
-  zonesTable.refresh();
-  exitZonesManualAssignment();
-}
-
-function cancelZonesManualAssignent(): void {
-  Layers.draw("zones");
-  exitZonesManualAssignment();
-}
-
-function exitZonesManualAssignment(close?: string): void {
-  customization = 0;
-  removeCircle();
-  document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  ensureEl("zonesManuallyButtons").style.display = "none";
-
-  setModeHiddenColumns(dialogId, []);
-  ensureEl("zonesFooter").style.display = "";
-  ensureEl("zonesBodySection")
-    .querySelectorAll<HTMLElement>("div > input, select, svg")
-    .forEach(e => {
-      e.style.removeProperty("pointer-events");
-    });
-  if (!close)
-    $("#zonesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
-
-  applyDefaultViewboxEvents();
-  clearMainTip();
-
-  const selected = ensureEl("zonesBodySection").querySelector("div.selected");
-  if (selected) selected.classList.remove("selected");
+  if (document.getElementById(dialogId)) zonesTable.refresh();
 }
 
 function changeFill(fillBox: FillBoxElement, zone: Zone): void {
