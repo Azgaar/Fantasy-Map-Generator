@@ -223,7 +223,21 @@ export const findGridAll = (x: number, y: number, radius: number, grid: any): nu
   return found;
 };
 
-const quadtreeCache = new WeakMap<object, ReturnType<typeof quadtree<[number, number, number]>>>();
+type PackPoint = [number, number, number];
+type PackPointTree = ReturnType<typeof quadtree<PackPoint>>;
+
+const quadtreeCache = new WeakMap<object, PackPointTree>();
+
+function getPackQuadtree(pack: { cells: { p: [number, number][] } }): PackPointTree {
+  if (!pack.cells?.p) throw new Error("Pack cells not found");
+
+  let qTree = quadtreeCache.get(pack.cells.p);
+  if (!qTree) {
+    qTree = quadtree(pack.cells.p.map(([x, y], cell) => [x, y, cell] as PackPoint));
+    quadtreeCache.set(pack.cells.p, qTree);
+  }
+  return qTree;
+}
 
 /**
  * Returns the index of the packed cell containing the given x and y coordinates
@@ -238,14 +252,7 @@ export const findClosestCell = (
   radius = Infinity,
   pack: { cells: { p: [number, number][] } }
 ): number | undefined => {
-  if (!pack.cells?.p) throw new Error("Pack cells not found");
-  let qTree = quadtreeCache.get(pack.cells.p);
-  if (!qTree) {
-    qTree = quadtree(pack.cells.p.map(([px, py], i) => [px, py, i]));
-    if (!qTree) throw new Error("Failed to create quadtree");
-    quadtreeCache.set(pack.cells.p, qTree);
-  }
-  const found = qTree.find(x, y, radius);
+  const found = getPackQuadtree(pack).find(x, y, radius);
   return found ? found[2] : undefined;
 };
 
@@ -369,10 +376,7 @@ export const findAllInQuadtree = (x: number, y: number, radius: number, quadtree
  * @returns {number[]} - An array of cell indexes within the radius
  */
 export const findAllCellsInRadius = (x: number, y: number, radius: number, packedGraph: any): number[] => {
-  const q = quadtree<[number, number, number]>(
-    packedGraph.cells.p.map(([px, py]: [number, number], i: number) => [px, py, i] as [number, number, number])
-  );
-  const found = findAllInQuadtree(x, y, radius, q);
+  const found = findAllInQuadtree(x, y, radius, getPackQuadtree(packedGraph));
   return found.map((r: any) => r[2]);
 };
 

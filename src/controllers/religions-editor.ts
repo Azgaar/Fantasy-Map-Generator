@@ -8,32 +8,17 @@ import {
   initEditorTable,
   renderEditorHeader,
   renderEditorPagination,
-  setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
-import {
-  abbreviate,
-  debounce,
-  ensureEl,
-  findAllCellsInRadius,
-  getPackPolygon,
-  getPointer,
-  isLand,
-  parseTransform,
-  rn,
-  si
-} from "../utils";
-
-let selectedReligionId: number | null = null;
+import { abbreviate, debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "religionsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -171,17 +156,6 @@ function renderDialog(): void {
       <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-eye-off"></button>
 
       <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
-      <div id="religionsManuallyButtons" class="editorToolbarPanel" style="display: none">
-        <div data-tip="Change brush size. Shortcuts: + or ] to increase; - or [ to decrease" style="margin-block: 0.3em;">
-          <slider-input id="religionsBrush" min="1" max="100" value="15">Brush size:</slider-input>
-        </div>
-        <button id="religionsManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-        <button id="religionsManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-        <div data-tip="When enabled, only cells without religion can be painted" style="display: inline-block">
-          <input id="religionsManuallyProtect" class="checkbox" type="checkbox" />
-          <label for="religionsManuallyProtect" class="checkbox-label"><i>do not overwrite existing</i></label>
-        </div>
-      </div>
       <button id="religionsAdd" data-tip="Add a new religion. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
       <button id="religionsRecalculate" data-tip="Recalculate religions based on current values of growth-related attributes" class="icon-retweet"></button>
@@ -210,9 +184,7 @@ function renderDialog(): void {
   ensureEl("religionsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("religionsHeirarchy").addEventListener("click", showHierarchy);
   ensureEl("religionsExtinct").addEventListener("click", toggleExtinct);
-  ensureEl("religionsManually").addEventListener("click", enterReligionsManualAssignent);
-  ensureEl("religionsManuallyApply").addEventListener("click", applyReligionsManualAssignent);
-  ensureEl("religionsManuallyCancel").addEventListener("click", () => exitReligionsManualAssignment());
+  ensureEl("religionsManually").addEventListener("click", openPaintEditor);
   ensureEl("religionsAdd").addEventListener("click", enterAddReligionMode);
   ensureEl("religionsExport").addEventListener("click", downloadReligionsCsv);
   ensureEl("religionsRecalculate").addEventListener("click", () => recalculateReligions(true));
@@ -356,9 +328,6 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     row.remove();
   });
   body.insertAdjacentHTML("beforeend", lines);
-  if (customization === 7 && selectedReligionId !== null) {
-    ensureEl("religionsBody").querySelector(`div[data-id='${selectedReligionId}']`)?.classList.add("selected");
-  }
 
   // update footer
   const validReligions = pack.religions.filter(r => r.i && !r.removed);
@@ -379,7 +348,6 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     .forEach($line => {
       $line.addEventListener("mouseenter", religionHighlightOn);
       $line.addEventListener("mouseleave", religionHighlightOff);
-      $line.addEventListener("click", selectReligionOnLineClick);
     });
   ensureEl("religionsBody")
     .querySelectorAll("fill-box")
@@ -843,152 +811,30 @@ function toggleExtinct(): void {
   drawReligionCenters();
 }
 
-function enterReligionsManualAssignent(): void {
+function openPaintEditor(): void {
   Layers.show("religions");
-  customization = 7;
-  select("#relig").append("g").attr("id", "temp");
-  document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
-    el.style.display = "none";
-  });
-  ensureEl("religionsManuallyButtons").style.display = "inline-block";
-  select("#debug").select("#religionCenters").style("display", "none");
 
-  setModeHiddenColumns(
-    dialogId,
-    columns.filter(column => !column.permanent).map(column => column.key)
-  );
-  ensureEl("religionsFooter").style.display = "none";
-  ensureEl("religionsBody")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.pointerEvents = "none";
-    });
-  $(`#${dialogId}`).dialog({ position });
-
-  tip("Click on religion to select, drag the circle to change religion", true);
-  select<SVGElement, unknown>("#viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectReligionOnMapClick)
-    .call(drag<SVGElement, unknown>().on("start", dragReligionBrush))
-    .on("touchmove mousemove", moveReligionBrush);
-
-  const firstLine = ensureEl("religionsBody").querySelector<HTMLElement>(".states");
-  if (firstLine) {
-    firstLine.classList.add("selected");
-    selectedReligionId = +firstLine.dataset.id!;
-  }
-}
-
-function selectReligionOnLineClick(this: HTMLElement): void {
-  if (customization !== 7) return;
-  const prev = ensureEl("religionsBody").querySelector("div.selected");
-  if (prev) prev.classList.remove("selected");
-  this.classList.add("selected");
-  selectedReligionId = +this.dataset.id!;
-}
-
-function selectReligionOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
-  if (pack.cells.h[i!] < 20) return;
-
-  const assigned = select("#relig").select("#temp").select(`polygon[data-cell='${i}']`);
-  const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i!];
-
-  ensureEl("religionsBody").querySelector("div.selected")?.classList.remove("selected");
-  selectedReligionId = religion;
-  // row may be on another page; the class re-applies on render if/when that page is shown
-  ensureEl("religionsBody").querySelector(`div[data-id='${religion}']`)?.classList.add("selected");
-}
-
-function dragReligionBrush(this: any, event: any): void {
-  const radius = +ensureEl<HTMLInputElement>("religionsBrush").value;
-
-  event.on("drag", (dragEvent: any) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = getPointer(dragEvent, this);
-    moveCircle(x, y, radius);
-
-    const found = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y, radius)];
-    const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeReligionForSelection(selection);
+  void Controllers.PaintEditor.open({
+    title: "Paint Religions",
+    parentDialogId: dialogId,
+    onClose: open,
+    items: pack.religions
+      .filter(religion => !religion.removed && (!religion.i || religion.cells))
+      .map(religion => ({ id: religion.i, name: religion.name, color: religion.color || "#ffffff" })),
+    dontOverrideControl: true,
+    getValue: cell => pack.cells.religion[cell],
+    filterCell: cell => isLand(cell, pack),
+    onApply: applyReligionPaint
   });
 }
 
-// change religion within selection
-function changeReligionForSelection(selection: number[]): void {
-  if (selectedReligionId === null) return;
-
-  const temp = select("#relig").select("#temp");
-  const religionNew = selectedReligionId;
-  const color = pack.religions[religionNew].color || "#ffffff";
-  const preventOverwrite = (document.getElementById("religionsManuallyProtect") as HTMLInputElement | null)?.checked;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const religionOld = exists.size() ? +exists.attr("data-religion") : pack.cells.religion[i];
-    if (religionNew === religionOld) return;
-    if (preventOverwrite && religionOld) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-religion", religionNew).attr("fill", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-religion", religionNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color);
-  });
-}
-
-function moveReligionBrush(this: any, event: any): void {
-  showMainTip();
-  const [x, y] = getPointer(event, this);
-  const radius = +ensureEl<HTMLInputElement>("religionsBrush").value;
-  moveCircle(x, y, radius);
-}
-
-function applyReligionsManualAssignent(): void {
-  const changed = select("#relig").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
-  changed.each(function () {
-    const i = +this.dataset.cell!;
-    const r = +this.dataset.religion!;
-    pack.cells.religion[i] = r;
-  });
-
-  if (changed.size()) {
+function applyReligionPaint(changes: ReadonlyMap<number, number>): void {
+  for (const [cell, religion] of changes) pack.cells.religion[cell] = religion;
+  if (changes.size) {
     Layers.draw("religions");
-    refreshReligionsEditor();
+    if (document.getElementById(dialogId)) refreshReligionsEditor();
     drawReligionCenters();
   }
-  exitReligionsManualAssignment();
-}
-
-function exitReligionsManualAssignment(close?: string): void {
-  customization = 0;
-  select("#relig").select("#temp").remove();
-  removeCircle();
-  document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  ensureEl("religionsManuallyButtons").style.display = "none";
-
-  setModeHiddenColumns(dialogId, []);
-  ensureEl("religionsFooter").style.display = "block";
-  ensureEl("religionsBody")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.removeProperty("pointer-events");
-    });
-  if (!close) $(`#${dialogId}`).dialog({ position });
-
-  select("#debug").select("#religionCenters").style("display", null);
-  applyDefaultViewboxEvents();
-  clearMainTip();
-  const $selected = ensureEl("religionsBody").querySelector("div.selected");
-  if ($selected) $selected.classList.remove("selected");
-  selectedReligionId = null;
 }
 
 function enterAddReligionMode(this: HTMLElement): void {
@@ -1105,8 +951,7 @@ function recalculateReligions(must?: boolean): void {
 
 function closeReligionsEditor(): void {
   select("#debug").select("#religionCenters").remove();
-  exitReligionsManualAssignment("close");
-  exitAddReligionMode();
+  if (customization === 8) exitAddReligionMode();
   $("#religionsEditor").dialog("destroy");
   ensureEl("religionsEditor").remove();
 }

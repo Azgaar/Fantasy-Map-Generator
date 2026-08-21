@@ -1,4 +1,4 @@
-import { drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
+import { interpolateString, max, pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -8,12 +8,11 @@ import {
   initEditorTable,
   renderEditorHeader,
   renderEditorPagination,
-  setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
@@ -22,17 +21,14 @@ import type { State } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   ensureEl,
-  findAllCellsInRadius,
   formatPrice,
   getAdjective,
   getMixedColor,
-  getPackPolygon,
   getPointer,
   getRandomColor,
   isLand,
@@ -42,8 +38,6 @@ import {
   rn,
   si
 } from "../utils";
-
-let statesManualHistory: string[] = [];
 
 const dialogId = "statesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -206,18 +200,6 @@ function renderDialog(): void {
       </div>
 
       <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
-      <div id="statesManuallyButtons" style="display: none">
-        <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="margin-block: 0.3em;">
-          <slider-input id="statesBrush" min="1" max="100" value="15">Brush size:</slider-input>
-        </div>
-        <button id="statesManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
-        <button id="statesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-        <button id="statesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-        <div data-tip="When enabled, only neutral cells can be painted" style="display: inline-block">
-          <input id="statesManuallyProtect" class="checkbox" type="checkbox" />
-          <label for="statesManuallyProtect" class="checkbox-label"><i>do not overwrite existing</i></label>
-        </div>
-      </div>
 
       <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="statesMerge" data-tip="Merge several states into one" class="icon-layer-group"></button>
@@ -244,10 +226,7 @@ function renderDialog(): void {
   ensureEl("statesRecalculate").addEventListener("click", () => recalculateStates(true));
   ensureEl("statesRandomize").addEventListener("click", randomizeStatesExpansion);
   ensureEl("statesGrowthRate").addEventListener("input", () => recalculateStates(false));
-  ensureEl("statesManually").addEventListener("click", enterStatesManualAssignent);
-  ensureEl("statesManuallyUndo").addEventListener("click", undoStatesManualAssignment);
-  ensureEl("statesManuallyApply").addEventListener("click", applyStatesManualAssignent);
-  ensureEl("statesManuallyCancel").addEventListener("click", () => exitStatesManualAssignment(false));
+  ensureEl("statesManually").addEventListener("click", openPaintEditor);
   ensureEl("statesAdd").addEventListener("click", enterAddStateMode);
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
   ensureEl("statesExport").addEventListener("click", downloadStatesCsv);
@@ -287,7 +266,6 @@ function renderDialog(): void {
 }
 
 function closeStatesEditor(): void {
-  if (customization === 2) exitStatesManualAssignment(true);
   if (customization === 3) exitAddStateMode();
   select("#debug").selectAll(".highlight").remove();
   destroyDialog(dialogId);
@@ -468,7 +446,6 @@ function renderStatesPage(view: TableView<State>): void {
     .forEach($line => {
       $line.addEventListener("mouseenter", stateHighlightOn);
       $line.addEventListener("mouseleave", stateHighlightOff);
-      $line.addEventListener("click", selectStateOnLineClick);
     });
 
   if (ensureEl("statesBodySection").dataset.type === "percentage") {
@@ -1278,132 +1255,42 @@ function exitRegenerationMenu(): void {
   $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
 }
 
-function enterStatesManualAssignent(): void {
+function openPaintEditor(): void {
   Layers.show("states");
-  customization = 2;
-  select("#statesBody").append("g").attr("id", "temp");
-  document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
-    el.style.display = "none";
-  });
-  ensureEl("statesManuallyButtons").style.display = "inline-block";
-  ensureEl("statesHalo").style.display = "none";
+  const adjustLabels = ensureEl<HTMLInputElement>("adjustLabels").checked;
 
-  setModeHiddenColumns(
-    dialogId,
-    columns.filter(column => !column.permanent).map(column => column.key)
-  );
-  ensureEl("statesFooter").style.display = "none";
-  ensureEl("statesBodySection")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.pointerEvents = "none";
-    });
-  $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
-
-  tip("Click on state to select, drag the circle to change state", true);
-  select<SVGElement, unknown>("#viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectStateOnMapClick)
-    .call(drag<SVGElement, unknown>().on("start", dragStateBrush))
-    .on("touchmove mousemove", moveStateBrush);
-
-  ensureEl("statesBodySection").querySelector(".states")?.classList.add("selected");
-  statesManualHistory = [];
-}
-
-function selectStateOnLineClick(this: HTMLElement): void {
-  if (customization !== 2) return;
-  if ((this.parentNode as HTMLElement).id !== "statesBodySection") return;
-  ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  this.classList.add("selected");
-}
-
-function selectStateOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
-  if (pack.cells.h[i!] < 20) return;
-
-  const assigned = select("#statesBody").select("#temp").select(`polygon[data-cell='${i}']`);
-  const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
-
-  ensureEl("statesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  ensureEl("statesBodySection").querySelector(`div[data-id='${state}']`)?.classList.add("selected");
-}
-
-function dragStateBrush(this: any, event: any): void {
-  const r = +ensureEl<HTMLInputElement>("statesBrush").value;
-  saveStatesManualSnapshot();
-
-  event.on("drag", (dragEvent: any) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
-
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])];
-    const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeStateForSelection(selection);
+  void Controllers.PaintEditor.open({
+    title: "Paint States",
+    parentDialogId: dialogId,
+    onClose: open,
+    items: pack.states
+      .filter(state => !state.removed)
+      .map(state => ({ id: state.i, name: state.fullName || state.name, color: state.color || "#ffffff" })),
+    dontOverrideControl: true,
+    getValue: cell => pack.cells.state[cell],
+    filterCell: (cell, currentState) => isLand(cell, pack) && cell !== pack.states[currentState].center,
+    onApply: changes => applyStatesPaint(changes, adjustLabels)
   });
 }
 
-// change state within selection
-function changeStateForSelection(selection: number[]): void {
-  const temp = select("#statesBody").select("#temp");
-
-  const $selected = ensureEl("statesBodySection").querySelector<HTMLElement>("div.selected")!;
-  const stateNew = +$selected.dataset.id!;
-  const color = pack.states[stateNew].color || "#ffffff";
-  const preventOverwrite = (document.getElementById("statesManuallyProtect") as HTMLInputElement | null)?.checked;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const stateOld = exists.size() ? +exists.attr("data-state") : pack.cells.state[i];
-    if (stateNew === stateOld) return;
-    if (preventOverwrite && stateOld) return;
-    if (i === pack.states[stateOld].center) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-state", stateNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-state", stateNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
-  });
-}
-
-function moveStateBrush(this: any, event: any): void {
-  showMainTip();
-  const point = getPointer(event, this);
-  const radius = +ensureEl<HTMLInputElement>("statesBrush").value;
-  moveCircle(point[0], point[1], radius);
-}
-
-function applyStatesManualAssignent(): void {
-  const { cells } = pack as any;
+function applyStatesPaint(changes: ReadonlyMap<number, number>, adjustLabels: boolean): void {
+  const { cells } = pack;
   const affectedStates: number[] = [];
   const affectedProvinces: number[] = [];
 
-  select("#statesBody")
-    .select("#temp")
-    .selectAll<SVGPolygonElement, unknown>("polygon")
-    .each(function () {
-      const i = +this.dataset.cell!;
-      const c = +this.dataset.state!;
-      affectedStates.push(cells.state[i], c);
-      affectedProvinces.push(cells.province[i]);
-      cells.state[i] = c;
-      if (cells.burg[i]) pack.burgs[cells.burg[i]].state = c;
-    });
+  for (const [cell, state] of changes) {
+    affectedStates.push(cells.state[cell], state);
+    affectedProvinces.push(cells.province[cell]);
+    cells.state[cell] = state;
+    if (cells.burg[cell]) pack.burgs[cells.burg[cell]].state = state;
+  }
 
   if (affectedStates.length) {
     States.getPoles();
     adjustProvinces([...new Set(affectedProvinces)]);
     Layers.draw("states", "borders", "provinces");
 
-    if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
+    if (adjustLabels) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
         if (pack.states[stateId].label) delete pack.states[stateId].label;
@@ -1411,10 +1298,8 @@ function applyStatesManualAssignent(): void {
       Layers.draw("labels");
     }
 
-    refreshStatesEditor();
+    if (document.getElementById(dialogId)) refreshStatesEditor();
   }
-
-  exitStatesManualAssignment(false);
 }
 
 function adjustProvinces(affectedProvinces: number[]): void {
@@ -1567,48 +1452,6 @@ function adjustProvinces(affectedProvinces: number[]): void {
         .find((province: number) => province && province !== provinceId);
     return closesProvince;
   }
-}
-
-function exitStatesManualAssignment(close: boolean): void {
-  customization = 0;
-  statesManualHistory = [];
-  select("#statesBody").select("#temp").remove();
-  removeCircle();
-  document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  ensureEl("statesManuallyButtons").style.display = "none";
-  ensureEl("statesHalo").style.display = "block";
-
-  setModeHiddenColumns(dialogId, []);
-  ensureEl("statesFooter").style.display = "block";
-  ensureEl("statesBodySection")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.removeProperty("pointer-events");
-    });
-  if (!close)
-    $("#statesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
-
-  applyDefaultViewboxEvents();
-  clearMainTip();
-  const selected = ensureEl("statesBodySection").querySelector("div.selected");
-  if (selected) selected.classList.remove("selected");
-}
-
-function saveStatesManualSnapshot(): void {
-  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp) return;
-
-  statesManualHistory.push(temp.innerHTML);
-  if (statesManualHistory.length > 100) statesManualHistory.shift();
-}
-
-function undoStatesManualAssignment(): void {
-  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp || !statesManualHistory.length) return;
-
-  temp.innerHTML = statesManualHistory.pop()!;
 }
 
 function enterAddStateMode(this: HTMLElement): void {
