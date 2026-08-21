@@ -171,7 +171,7 @@ export async function renderEmblemDefinitions(root: ParentNode): Promise<void> {
 }
 
 function reconcileEmblems(context: ViewportRenderContext): void {
-  if (!Layers.isOn("emblems")) return; // the layer keeps its content when off, but must not render into it
+  if (!Layers.isOn("emblems")) return;
 
   for (const type of TYPES) {
     const group = context.root.querySelector<SVGGElement>(`#${GROUPS[type]}`);

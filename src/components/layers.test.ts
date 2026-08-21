@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The registry is tested against fake layers: ordering, activation and restore are guaranteed without a real map.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Layer, LayersRegistry, type LayersState } from "./layers";
+import { Layer, LayersRegistry, type LayersState, Layers as MapLayers } from "./layers";
 
 let Layers: LayersRegistry;
 
@@ -182,6 +182,21 @@ describe("show and hide", () => {
 });
 
 describe("erase", () => {
+  it("clears emblem content while preserving its parent groups", () => {
+    registry(MapLayers.get("emblems"));
+    Layers.restore({ order: ["emblems"], active: ["emblems"] });
+    document.getElementById("stateEmblems")!.innerHTML = /* html */ `<use data-i="1" />`;
+
+    Layers.hide("emblems");
+
+    expect(Array.from(document.getElementById("emblems")!.children, node => node.id)).toEqual([
+      "burgEmblems",
+      "provinceEmblems",
+      "stateEmblems"
+    ]);
+    expect(document.querySelector("#stateEmblems > use")).toBeNull();
+  });
+
   it("clears declared children and removes everything else by default", () => {
     registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", children: [{ id: "kept", tag: "g" }] }));
     Layers.show("a");

@@ -34,7 +34,19 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
+import {
+  ensureEl,
+  findEl,
+  getPackPolygon,
+  getPointer,
+  getRandomColor,
+  isLand,
+  P,
+  rand,
+  rn,
+  si,
+  unique
+} from "../utils";
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -469,7 +481,7 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const { cell: center, culture } = burgs[burgId];
   const color = getRandomColor();
   const coa = province.coa;
-  const coaEl = ensureEl(`provinceCOA${provinceId}`);
+  const coaEl = findEl(`provinceCOA${provinceId}`); // not rendered unless the emblem was in the viewport
   if (coaEl) coaEl.id = `stateCOA${newStateId}`;
   removeEmblem("province", provinceId);
 

@@ -294,11 +294,11 @@ describe("viewport emblem rendering", () => {
 
     expect(document.querySelector("#stateEmblems use[data-i='1']")?.getAttribute("width")).toBe("2.5em");
   });
-  it("renders nothing while the layer is off, so a hidden layer never materializes emblems", () => {
+  it("does not rematerialize emblems while the layer is off", () => {
     drawEmblems();
     expect(document.querySelectorAll("#stateEmblems > use")).toHaveLength(1);
 
-    // the layer keeps its content when turned off, but a viewport render must not write into it
+    // Layers.hide clears the declared parent groups before the next viewport render
     document.getElementById("stateEmblems")!.replaceChildren();
     mocks.layerOn = false;
     renderViewport();

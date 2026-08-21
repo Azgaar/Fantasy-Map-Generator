@@ -357,7 +357,6 @@ const mapLayers = [
     id: "emblems",
     parent: "viewbox",
     children: ["burgEmblems", "provinceEmblems", "stateEmblems"].map(id => ({ id, tag: "g" })),
-    keepContent: true,
     draw: drawEmblems
   }),
   new Layer({
