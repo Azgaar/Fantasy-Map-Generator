@@ -2,6 +2,7 @@ import { extent, polygonContains } from "d3";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
 import type { ReliefSet, ReliefTypeIcons } from "@/types/relief";
 import { getPackPolygon, minmax, poissonDiscSampler, ra, rn } from "@/utils";
+import { styles } from "@/styles/styles";
 
 declare global {
   var Relief: ReliefModule;
@@ -19,7 +20,8 @@ class ReliefModule {
     TIME && console.time("generateRelief");
 
     const cells = pack.cells;
-    const { set, size, density } = style.relief;
+    const { size, density } = styles.relief.options;
+    const set = styles.relief.options.set as ReliefSet;
     const iconSize = 2 * size;
     const sizeModifier = 0.2 * iconSize;
 

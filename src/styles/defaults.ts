@@ -252,7 +252,8 @@ export const DEFAULT_STYLES: Styles = {
     },
     options: {
       set: "simple",
-      size: 1
+      size: 1,
+      density: 0.4
     }
   },
   religions: {

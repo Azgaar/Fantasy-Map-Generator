@@ -8,7 +8,7 @@ import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
-import { burgGroupsFromLegacy, labelGroupsFromLegacy } from "@/styles/legacy";
+import { burgGroupsFromLegacy, labelGroupsFromLegacy, reliefFromLegacy } from "@/styles/legacy";
 import { styles } from "@/styles/styles";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
@@ -436,6 +436,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (style.labels?.groups) styles.labels.groups = labelGroupsFromLegacy(style.labels.groups);
       if (style.burgIcons) styles.burgIcons.burgIcons.groups = burgGroupsFromLegacy(style.burgIcons);
       if (style.anchors) styles.burgIcons.anchors.groups = burgGroupsFromLegacy(style.anchors);
+      if (style.relief) styles.relief.options = reliefFromLegacy(style.relief);
     }
 
     {

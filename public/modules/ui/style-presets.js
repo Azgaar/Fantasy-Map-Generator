@@ -94,17 +94,17 @@ function applyStylePreset(presetJson) {
       const { set, size, density } = presetJson[selector];
 
       if (size) {
-        const ratio = size / style.relief.size;
-        style.relief.size = size;
+        const ratio = size / styles.relief.options.size;
+        styles.relief.options.size = size;
         if (ratio !== 1) Relief.changeSize(size);
       }
 
       if (set) {
-        style.relief.set = set;
+        styles.relief.options.set = set;
         Relief.changeSet(set);
       }
 
-      if (density) style.relief.density = density; // no model change as it would require regeneration
+      if (density) styles.relief.options.density = density; // no model change as it would require regeneration
     }
 
     const el = labelGroup
@@ -434,7 +434,7 @@ function addStylePreset() {
       }
     }
 
-    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
+    if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], styles.relief.options);
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));

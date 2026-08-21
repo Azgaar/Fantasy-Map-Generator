@@ -89,7 +89,8 @@ export const stylesSchema = z
         lake_island: attrs({ opacity, ...strokeAttrs, filter })
       })
       .strict(),
-    relief: node({ opacity, filter, mask }, { set: z.string(), size: z.number() }),
+    // density defines icon placement: changing it regenerates the icons, not just restyles them
+    relief: node({ opacity, filter, mask }, { set: z.string(), size: z.number(), density: z.number() }),
     religions: attrs({ opacity, ...strokeAttrs, filter }),
     cultures: attrs({ opacity, ...strokeAttrs, filter }),
     states: z

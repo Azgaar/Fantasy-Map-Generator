@@ -1490,7 +1490,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (terrainEl) {
       // v1.142.0 moved the relief style from the #terrain attributes to style.relief
       const set = terrainEl.getAttribute("set");
-      style.relief = {
+      styles.relief.options = {
         set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
         size: Number(terrainEl.getAttribute("size")) || 1,
         density: Number(terrainEl.getAttribute("density")) || 0.4

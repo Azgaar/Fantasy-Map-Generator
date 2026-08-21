@@ -101,6 +101,15 @@ export function burgGroupsToLegacy(groups: Record<string, BurgGroupStyle>, withI
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupToLegacy(group, withIcon)]));
 }
 
+export function reliefFromLegacy(legacy: object): Styles["relief"]["options"] {
+  const bag = legacy as Record<string, unknown>;
+  return {
+    set: strOr(bag.set, null) ?? "simple",
+    size: toNumber(bag.size, 1),
+    density: toNumber(bag.density, 0.4)
+  };
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   labelGroupFromLegacy,
@@ -111,5 +120,6 @@ globalThis.stylesLegacy = {
   burgGroupFromElement,
   burgGroupToLegacy,
   burgGroupsFromLegacy,
-  burgGroupsToLegacy
+  burgGroupsToLegacy,
+  reliefFromLegacy
 };

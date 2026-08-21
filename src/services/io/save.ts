@@ -137,7 +137,8 @@ function prepareMapData(): string {
     ...style,
     labels: { groups: labelGroupsToLegacy(styles.labels.groups) },
     burgIcons: burgGroupsToLegacy(styles.burgIcons.burgIcons.groups, true),
-    anchors: burgGroupsToLegacy(styles.burgIcons.anchors.groups, false)
+    anchors: burgGroupsToLegacy(styles.burgIcons.anchors.groups, false),
+    relief: { ...styles.relief.options }
   });
 
   // store custom good icons
