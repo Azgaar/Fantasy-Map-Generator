@@ -72,6 +72,7 @@ export function drawScaleBar(parent?: SVGSVGElement, scaleLevel = scale, width =
 
   const scaleBarBack = scaleBar.select<SVGRectElement>("#scaleBarBack");
   if (scaleBarBack.size()) {
+    scaleBarBack.attr("data-group", "back");
     const bbox = (content.node() as SVGGElement).getBBox();
     const paddingTop = +scaleBarBack.attr("data-top") || 0;
     const paddingLeft = +scaleBarBack.attr("data-left") || 0;

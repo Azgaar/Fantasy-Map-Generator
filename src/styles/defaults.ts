@@ -141,7 +141,7 @@ export const DEFAULT_STYLES: Styles = {
       mask: "url(#water)",
       "shape-rendering": "optimizespeed"
     },
-    use: {
+    compassRose: {
       attrs: {
         transform: "translate(80 80) scale(0.25)"
       }
@@ -740,297 +740,299 @@ export const DEFAULT_STYLES: Styles = {
     }
   },
   burgIcons: {
-    groups: {
-      capital: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+    burgIcons: {
+      groups: {
+        capital: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 2,
+            icon: "#icon-square"
+          }
         },
-        options: {
-          size: 2,
-          icon: "#icon-square"
-        }
-      },
-      city: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        city: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 1.5,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 1.5,
-          icon: "#icon-circle"
-        }
-      },
-      fort: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        fort: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-square"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-square"
-        }
-      },
-      monastery: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        monastery: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-cross"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-cross"
-        }
-      },
-      caravanserai: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        caravanserai: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-triangle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-triangle"
-        }
-      },
-      trading_post: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        trading_post: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-triangle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-triangle"
-        }
-      },
-      village: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        village: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-circle"
-        }
-      },
-      hamlet: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
+        hamlet: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 0.5,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.5,
-          icon: "#icon-circle"
-        }
-      },
-      town: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": 0.7,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": "butt",
-          "stroke-linejoin": "round"
-        },
-        options: {
-          size: 1,
-          icon: "#icon-circle"
+        town: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": 0.7,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "round"
+          },
+          options: {
+            size: 1,
+            icon: "#icon-circle"
+          }
         }
       }
-    }
-  },
-  anchors: {
-    groups: {
-      capital: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+    },
+    anchors: {
+      groups: {
+        capital: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 1.9,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 1.9,
-          icon: "#icon-circle"
-        }
-      },
-      city: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        city: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 1.5,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 1.5,
-          icon: "#icon-circle"
-        }
-      },
-      fort: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        fort: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-circle"
-        }
-      },
-      monastery: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        monastery: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-circle"
-        }
-      },
-      caravanserai: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        caravanserai: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-circle"
-        }
-      },
-      trading_post: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        trading_post: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-circle"
-        }
-      },
-      village: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        village: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 0.7,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.7,
-          icon: "#icon-circle"
-        }
-      },
-      hamlet: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
+        hamlet: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 0.5,
+            icon: "#icon-circle"
+          }
         },
-        options: {
-          size: 0.5,
-          icon: "#icon-circle"
-        }
-      },
-      town: {
-        attrs: {
-          opacity: 1,
-          fill: "#ffffff",
-          "fill-opacity": null,
-          stroke: "#3e3e4b",
-          "stroke-width": 1.2,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null
-        },
-        options: {
-          size: 1,
-          icon: "#icon-circle"
+        town: {
+          attrs: {
+            opacity: 1,
+            fill: "#ffffff",
+            "fill-opacity": null,
+            stroke: "#3e3e4b",
+            "stroke-width": 1.2,
+            "stroke-dasharray": null,
+            "stroke-linecap": null,
+            "stroke-linejoin": null
+          },
+          options: {
+            size: 1,
+            icon: "#icon-circle"
+          }
         }
       }
     }

@@ -161,7 +161,7 @@
   </head>
   <body>
     <svg
-      id="map"
+      id="map" data-layer="map"
       width="100%"
       height="100%"
       version="1.1"
@@ -324,11 +324,11 @@
           </mask>
         </g>
         <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-          <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
+          <image id="oceanicPattern" data-group="pattern" href="./images/pattern1.png" opacity="0.2"></image>
         </pattern>
         <mask id="vignette-mask">
           <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
-          <rect id="vignette-rect" fill="black"></rect>
+          <rect id="vignette-rect" data-group="rect" fill="black"></rect>
         </mask>
       </defs>
       <g id="viewbox"></g>

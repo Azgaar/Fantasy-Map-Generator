@@ -78,7 +78,7 @@ export const stylesSchema = z
         attrs: z
           .object({ opacity, transform: z.string().nullable(), filter, mask, "shape-rendering": z.string().nullable() })
           .strict(),
-        use: attrs({ transform: z.string().nullable() })
+        compassRose: attrs({ transform: z.string().nullable() })
       })
       .strict(),
     rivers: attrs({ opacity, fill: color, filter }),
@@ -133,8 +133,12 @@ export const stylesSchema = z
         groups: z.record(z.string(), labelGroup)
       })
       .strict(),
-    burgIcons: z.object({ groups: z.record(z.string(), burgGroup) }).strict(),
-    anchors: z.object({ groups: z.record(z.string(), burgGroup) }).strict(),
+    burgIcons: z
+      .object({
+        burgIcons: z.object({ groups: z.record(z.string(), burgGroup) }).strict(),
+        anchors: z.object({ groups: z.record(z.string(), burgGroup) }).strict()
+      })
+      .strict(),
     goods: z
       .object({
         goodsCells: attrs({ opacity, filter }),
