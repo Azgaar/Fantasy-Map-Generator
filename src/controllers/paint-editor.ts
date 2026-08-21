@@ -1,5 +1,7 @@
 import { type D3DragEvent, drag, select } from "d3";
+import "@/components/fill-box";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -92,6 +94,8 @@ function open(options: OpenPaintEditorOptions): void {
 function renderDialog(options: OpenPaintEditorOptions): void {
   destroyDialog(dialogId);
 
+  const selectedColor = options.items[0]?.color ?? "#ffffff";
+
   const dontOverrideControl = options.dontOverrideControl
     ? `<label data-tip="Only paint cells whose current value is 0" style="display: flex; align-items: center"><input id="paintEditorDontOverride" class="checkbox native" type="checkbox">Do not override existing</label>`
     : "";
@@ -100,7 +104,7 @@ function renderDialog(options: OpenPaintEditorOptions): void {
     : "";
   const html = /* html */ `<div id="${dialogId}" class="dialog" style="display: flex; flex-direction: column; gap: 0.6em">
     <div style="display: grid; gap: 0.5em;">
-      <label style="display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.4em">Paint: <select id="paintEditorSelect"></select></label>
+      <label style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.4em">Paint: <select id="paintEditorSelect"></select><fill-box id="paintEditorFill" fill="${selectedColor}" size="1.4em" data-tip="Selected paint color" disabled></fill-box></label>
       <slider-input id="paintEditorBrush" min="1" max="100" value="${defaultBrushRadius}">Brush size:</slider-input>
     </div>
     <div id="paintEditorControls" style="display: flex; flex-direction: column; align-items: center; gap: 0.4em;">${dontOverrideControl}${landOnlyControl}</div>
@@ -211,10 +215,12 @@ function handlePointerMove(this: SVGElement, event: MouseEvent | TouchEvent): vo
 
 function selectItem(id: number): boolean {
   const activeState = getState();
-  if (!activeState.itemsById.has(id)) return false;
+  const item = activeState.itemsById.get(id);
+  if (!item) return false;
 
   activeState.selectedId = id;
   ensureEl<HTMLSelectElement>("paintEditorSelect").value = String(id);
+  ensureEl<FillBoxElement>("paintEditorFill").fill = item.color;
   return true;
 }
 

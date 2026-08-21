@@ -83,12 +83,15 @@ describe("PaintEditor", () => {
   it("owns selection independently of the calling editor", () => {
     PaintEditor.open(getOptions());
     const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
+    const fillBox = document.getElementById("paintEditorFill") as HTMLElement & { fill: string };
 
     expect(itemSelect.value).toBe("1");
+    expect(fillBox.fill).toBe("#ff0000");
     itemSelect.value = "2";
     itemSelect.dispatchEvent(new Event("change"));
 
     expect(itemSelect.value).toBe("2");
+    expect(fillBox.fill).toBe("#0000ff");
   });
 
   it("shows the hovered item from the value getter", () => {
