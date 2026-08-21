@@ -16,19 +16,13 @@ export const DEFAULT_STYLES: Styles = {
       filter: null
     },
     options: {
-      outline: "-6,-3,-1"
+      outline: "-6,-3,-1",
+      pattern: "./images/pattern1.png",
+      patternOpacity: 0.2
     },
     base: {
       attrs: {
         fill: "#466eab"
-      }
-    },
-    pattern: {
-      attrs: {
-        opacity: 0.2
-      },
-      options: {
-        href: "./images/pattern1.png"
       }
     }
   },
@@ -1185,16 +1179,14 @@ export const DEFAULT_STYLES: Styles = {
       fill: "#000000",
       mask: "url(#vignette-mask)"
     },
-    rect: {
-      attrs: {
-        x: "0.3%",
-        y: "0.4%",
-        width: "99.6%",
-        height: "99.2%",
-        rx: "5%",
-        ry: "5%",
-        filter: "blur(20px)"
-      }
+    options: {
+      x: "0.3%",
+      y: "0.4%",
+      width: "99.6%",
+      height: "99.2%",
+      rx: "5%",
+      ry: "5%",
+      filter: "blur(20px)"
     }
   }
 };
