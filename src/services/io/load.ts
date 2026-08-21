@@ -433,6 +433,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
     if (data[50]) Layers.restore(JSON.parse(data[50]));
 
+    {
+      const { healLayerStyles } = await import("./heal-layer-styles");
+      await healLayerStyles(mapVersion!);
+    }
+
     Goods.sync();
     Markets.sync();
     Routes.sync();
