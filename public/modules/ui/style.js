@@ -490,7 +490,7 @@ function getEl() {
 }
 
 function updateLabelGroupInlineStyle(group) {
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
   if (!groupStyle) return;
 
   const inlineStyle = group.node().style;
@@ -499,37 +499,36 @@ function updateLabelGroupInlineStyle(group) {
     .map(property => `${property}: ${inlineStyle.getPropertyValue(property)}`)
     .join("; ");
 
-  if (value) groupStyle.style = value;
-  else delete groupStyle.style;
+  groupStyle.attrs.style = value || null;
 }
 
 styleFillInput.addEventListener("input", function () {
   styleFillOutput.value = this.value;
   getEl().attr("fill", this.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.fill = this.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs.fill = this.value;
 });
 
 styleStrokeInput.addEventListener("input", function () {
   styleStrokeOutput.value = this.value;
   getEl().attr("stroke", this.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.stroke = this.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs.stroke = this.value;
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
 });
 
 styleStrokeWidthInput.addEventListener("input", e => {
   getEl().attr("stroke-width", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["stroke-width"] = e.target.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs["stroke-width"] = +e.target.value;
   if (styleElementSelect.value === "gridOverlay") Layers.draw("grid");
   if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 });
 
 styleLetterSpacingInput.addEventListener("input", e => {
   getEl().attr("letter-spacing", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["letter-spacing"] = e.target.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs["letter-spacing"] = +e.target.value;
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
@@ -549,18 +548,15 @@ styleDisplayInput.addEventListener("change", function () {
 
 styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.opacity = e.target.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs.opacity = +e.target.value;
 });
 
 styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return d3.select("#oceanLayers").attr("filter", this.value);
   getEl().attr("filter", this.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) {
-    if (this.value) groupStyle.filter = this.value;
-    else delete groupStyle.filter;
-  }
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs.filter = this.value || null;
 });
 
 styleTextureInput.addEventListener("change", function () {
@@ -892,8 +888,8 @@ styleSelectFont.addEventListener("change", changeFont);
 function changeFont() {
   const family = styleSelectFont.value;
   getEl().attr("font-family", family);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["font-family"] = family;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.attrs["font-family"] = family;
 
   if (styleElementSelect.value === "legend") Layers.draw("legend");
 }
@@ -961,13 +957,10 @@ styleFontMinus.addEventListener("click", function () {
 function changeFontSize(el, size) {
   styleFontSize.value = size;
 
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
   if (styleElementSelect.value === "labels") {
     el.attr("font-size", `${size}%`).attr("data-size", null);
-    if (groupStyle) {
-      delete groupStyle["data-size"];
-      groupStyle["font-size"] = `${size}%`;
-    }
+    if (groupStyle) groupStyle.attrs["font-size"] = `${size}%`;
     return;
   }
 
@@ -980,8 +973,8 @@ function changeFontSize(el, size) {
 
 styleFontShiftX.addEventListener("input", e => {
   const group = getEl().attr("data-dx", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["data-dx"] = e.target.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.options.dx = +e.target.value || 0;
   const dx = e.target.value || 0;
   const dy = group.attr("data-dy") || 0;
   group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
@@ -989,8 +982,8 @@ styleFontShiftX.addEventListener("input", e => {
 
 styleFontShiftY.addEventListener("input", e => {
   const group = getEl().attr("data-dy", e.target.value);
-  const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle["data-dy"] = e.target.value;
+  const groupStyle = styles.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.options.dy = +e.target.value || 0;
   const dx = group.attr("data-dx") || 0;
   const dy = e.target.value || 0;
   group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);

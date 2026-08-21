@@ -77,7 +77,7 @@ function applyStylePreset(presetJson) {
     let labelGroup = null;
     if (selector.startsWith("#labels > #")) {
       labelGroup = selector.split("#").pop();
-      style.labels.groups[labelGroup] = getStyleAttributes(presetJson[selector]);
+      styles.labels.groups[labelGroup] = stylesLegacy.labelGroupFromLegacy(getStyleAttributes(presetJson[selector]));
     }
 
     if (selector.startsWith("#burgIcons")) {
@@ -149,9 +149,9 @@ function applyStylePreset(presetJson) {
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
   for (const group of options.labels.groups) {
-    if (style.labels.groups[group.name]) continue;
-    const defaultGroupStyle = style.labels.groups[Labels.getFallbackGroup(group.type).name];
-    if (defaultGroupStyle) style.labels.groups[group.name] = { ...defaultGroupStyle };
+    if (styles.labels.groups[group.name]) continue;
+    const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
+    if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
   }
 
   function getStyleAttributes(attributes) {
@@ -436,8 +436,8 @@ function addStylePreset() {
 
     if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
 
-    for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
-      addStoredLabelStyle(`#labels > #${group}`, groupStyle);
+    for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
+      addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));
     }
 
     function addStoredLabelStyle(selector, groupStyle) {

@@ -7,6 +7,8 @@ import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
+import { labelGroupFromLegacy } from "@/styles/legacy";
+import { styles } from "@/styles/styles";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -1277,11 +1279,11 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     const autoVisibility = settings[21] ? Boolean(Number(settings[21])) : true;
     const resizeOnZoom = settings[23] ? Boolean(Number(settings[23])) : true;
     options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
-    style.labels.groups = {};
+    styles.labels.groups = {};
 
     for (const type of ["river", "route"] as const) {
       options.labels.groups.push(Labels.getFallbackGroup(type));
-      style.labels.groups[type] = getGroupStyle({ name: type, type });
+      styles.labels.groups[type] = getGroupStyle({ name: type, type });
     }
 
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
@@ -1292,17 +1294,17 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
-      style.labels.groups[name] = oldStyle;
+      styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
     }
 
-    const migratedBurgStyle = burgGroups.length ? style.labels.groups[burgGroups[0].id] : undefined;
+    const migratedBurgStyle = burgGroups.length ? styles.labels.groups[burgGroups[0].id] : undefined;
     for (const { name } of options.burgs.groups) {
       if (options.labels.groups.some(group => group.name === name)) continue;
 
       const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
       options.labels.groups.push({ name, type: "burg", zoom });
-      style.labels.groups[name] = migratedBurgStyle ? { ...migratedBurgStyle } : getGroupStyle({ name, type: "burg" });
+      styles.labels.groups[name] = migratedBurgStyle ? structuredClone(migratedBurgStyle) : getGroupStyle({ name, type: "burg" });
     }
 
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
@@ -1336,10 +1338,10 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         layerDependency: "provinces",
         active: false
       });
-      style.labels.groups.province = oldStyle;
+      styles.labels.groups.province = labelGroupFromLegacy(oldStyle);
     } else {
       options.labels.groups.push(Labels.getFallbackGroup("province"));
-      style.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
+      styles.labels.groups.province = getGroupStyle({ name: "province", type: "province" });
     }
 
     pack.addedLabels = [];
@@ -1358,7 +1360,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         isDefault: name === "added",
         zoom: deriveZoomExtent(fontSize)
       });
-      style.labels.groups[name] = oldStyle;
+      styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
 
       for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
         const note = notes.find(note => note.id === textEl.id);
@@ -1389,10 +1391,10 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
         zoom: deriveZoomExtent(fontSize),
         mode: stateMode
       });
-      style.labels.groups.state = oldStyle;
+      styles.labels.groups.state = labelGroupFromLegacy(oldStyle);
     } else {
       options.labels.groups.push({ ...Labels.getFallbackGroup("state"), mode: stateMode });
-      style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
+      styles.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
     for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {

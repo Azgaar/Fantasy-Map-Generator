@@ -1,5 +1,6 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { styles } from "@/styles/styles";
 import { Resample } from "@/generators/resample";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
@@ -128,12 +129,12 @@ function rescaleBurgStyles(scale: number): void {
   );
 
   for (const groupName of burgLabelGroups) {
-    const groupStyle = style.labels.groups[groupName];
+    const groupStyle = styles.labels.groups[groupName];
     if (!groupStyle) continue;
 
-    const size = Number.parseFloat(groupStyle["font-size"]) || 0;
+    const size = Number.parseFloat(groupStyle.attrs["font-size"]) || 0;
     const rescaledSize = Math.max(rn((size + size / scale) / 2, 2), 1) * scale;
-    groupStyle["font-size"] = `${rn(rescaledSize, 2)}%`;
+    groupStyle.attrs["font-size"] = `${rn(rescaledSize, 2)}%`;
   }
 }
 

@@ -6,6 +6,8 @@ import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
+import { labelGroupsToLegacy } from "@/styles/legacy";
+import { styles } from "@/styles/styles";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
@@ -125,7 +127,8 @@ function prepareMapData(): string {
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
-  const styleData = JSON.stringify(style);
+  // the label groups live in `styles` now; project them into the legacy record so the file loads on master
+  const styleData = JSON.stringify({ ...style, labels: { groups: labelGroupsToLegacy(styles.labels.groups) } });
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
