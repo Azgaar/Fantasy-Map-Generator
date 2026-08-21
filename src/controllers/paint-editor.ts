@@ -1,6 +1,6 @@
 import { type D3DragEvent, drag, select } from "d3";
 import "@/components/fill-box";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import type { FillBoxElement } from "@/components/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -15,6 +15,7 @@ export interface PaintEditorItem {
 
 interface CommonPaintEditorOptions {
   title: string;
+  parentDialogId: string;
   items: readonly PaintEditorItem[];
   dontOverrideControl?: boolean;
   landOnlyControl?: boolean;
@@ -58,12 +59,11 @@ let state: PaintEditorState | null = null;
 
 function open(options: OpenPaintEditorOptions): void {
   if (customization) return;
-  cleanup();
-  closeDialogs();
+
+  $(`#${options.parentDialogId}`).dialog("close");
+  customization = customizationMode;
 
   const items = sortItems(options.items);
-
-  customization = customizationMode;
   state = {
     options,
     itemsById: new Map(items.map(item => [item.id, item])),
@@ -105,7 +105,7 @@ function renderDialog(options: OpenPaintEditorOptions, items: readonly PaintEdit
   const selectedColor = items[0]?.color ?? "#ffffff";
 
   const dontOverrideControl = options.dontOverrideControl
-    ? `<label data-tip="Only paint cells whose current value is 0" style="display: flex; align-items: center"><input id="paintEditorDontOverride" class="checkbox native" type="checkbox">Do not override existing</label>`
+    ? `<label data-tip="Only paint cells whose current value is 0 (neutral)" style="display: flex; align-items: center"><input id="paintEditorDontOverride" class="checkbox native" type="checkbox">Do not override existing</label>`
     : "";
   const landOnlyControl = options.landOnlyControl
     ? `<label style="display: flex; align-items: center"><input id="paintEditorLandOnly" class="checkbox native" type="checkbox" checked> Change land only</label>`
@@ -334,14 +334,16 @@ function finish(shouldApply: boolean): void {
 }
 
 function cleanup(): void {
-  const hadSession = state !== null;
+  const parentDialogId = state?.options.parentDialogId;
   state = null;
   destroyDialog(dialogId);
   select(`#${overlayId}`).remove();
   removeCircle();
-  if (hadSession && document.getElementById("viewbox")) applyDefaultViewboxEvents();
-  if (hadSession) clearMainTip();
+  applyDefaultViewboxEvents();
+  clearMainTip();
   if (customization === customizationMode) customization = 0;
+
+  $(`#${parentDialogId}`).dialog("open");
 }
 
 function getState(): PaintEditorState {

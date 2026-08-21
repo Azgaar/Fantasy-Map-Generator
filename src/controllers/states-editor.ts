@@ -1262,6 +1262,7 @@ function openPaintEditor(): void {
 
   void Controllers.PaintEditor.open({
     title: "Paint States",
+    parentDialogId: dialogId,
     items: pack.states
       .filter(state => !state.removed)
       .map(state => ({ id: state.i, name: state.fullName || state.name, color: state.color || "#ffffff" })),

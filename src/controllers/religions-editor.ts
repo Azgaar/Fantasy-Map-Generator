@@ -816,6 +816,7 @@ function openPaintEditor(): void {
 
   void Controllers.PaintEditor.open({
     title: "Paint Religions",
+    parentDialogId: dialogId,
     items: pack.religions
       .filter(religion => !religion.removed && (!religion.i || religion.cells))
       .map(religion => ({ id: religion.i, name: religion.name, color: religion.color || "#ffffff" })),

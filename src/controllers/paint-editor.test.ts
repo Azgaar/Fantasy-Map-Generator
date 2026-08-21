@@ -12,6 +12,7 @@ vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
 
 const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOptions => ({
   title: "Paint states",
+  parentDialogId: "parentDialog",
   items: [
     { id: 2, name: "South", color: "#0000ff" },
     { id: 3, name: "West", color: "#ffffff" },
@@ -39,7 +40,7 @@ async function dragBrush(): Promise<void> {
 
 beforeEach(() => {
   document.body.innerHTML =
-    '<div id="dialogs"></div><div id="tooltip"></div><svg><g id="viewbox"></g><g id="debug"></g></svg>';
+    '<div id="dialogs"><div id="parentDialog" class="dialog"></div></div><div id="tooltip"></div><svg><g id="viewbox"></g><g id="debug"></g></svg>';
   globalThis.customization = 0;
   globalThis.findCell = vi.fn(() => 3);
   globalThis.pack = {
@@ -61,14 +62,39 @@ beforeEach(() => {
       ]
     }
   } as unknown as typeof pack;
-  window.$ = vi.fn((element: HTMLElement) => ({
-    dialog: vi.fn((options: unknown) => {
-      if (typeof options === "object") element.classList.add("ui-dialog-content");
-    })
-  })) as unknown as typeof window.$;
+  const dialogOptions = new WeakMap<HTMLElement, Record<string, unknown>>();
+  window.$ = vi.fn((element: HTMLElement) => {
+    const dialog = vi.fn((command: unknown, key?: string, value?: unknown) => {
+      const options = dialogOptions.get(element) ?? {};
+      if (typeof command === "object") {
+        dialogOptions.set(element, { ...options, ...command });
+        element.classList.add("ui-dialog-content");
+      } else if (command === "option" && value === undefined) return options[key!];
+      else if (command === "option") dialogOptions.set(element, { ...options, [key!]: value });
+      else if (command === "close") {
+        element.style.display = "none";
+        if (typeof options.close === "function") options.close();
+      } else if (command === "open") element.style.removeProperty("display");
+    });
+    return { dialog };
+  }) as unknown as typeof window.$;
+  $(document.getElementById("parentDialog")!).dialog({ close: vi.fn() });
 });
 
 describe("PaintEditor", () => {
+  it("closes its parent without destroying it and reopens it when finished", () => {
+    const parentDialog = document.getElementById("parentDialog")!;
+    const closeParent = vi.fn();
+    $(parentDialog).dialog("option", "close", closeParent);
+    PaintEditor.open(getOptions());
+
+    expect(parentDialog.style.display).toBe("none");
+    expect(closeParent).not.toHaveBeenCalled();
+    document.getElementById("paintEditorCancel")?.click();
+
+    expect(parentDialog.style.display).toBe("");
+  });
+
   it("owns customization and clears it when cancelled", () => {
     PaintEditor.open(getOptions());
     expect(globalThis.customization).toBe(2);
@@ -148,6 +174,7 @@ describe("PaintEditor", () => {
     const apply = vi.fn();
     PaintEditor.open({
       title: "Paint zones",
+      parentDialogId: "parentDialog",
       mode: "multiple",
       items: [
         { id: 1, name: "Danger", color: "#ff0000" },
@@ -187,6 +214,7 @@ describe("PaintEditor", () => {
     const apply = vi.fn();
     PaintEditor.open({
       title: "Paint zones",
+      parentDialogId: "parentDialog",
       mode: "multiple",
       items: [
         { id: -1, name: "No zone", color: "#ffffff" },

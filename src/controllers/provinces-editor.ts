@@ -1057,6 +1057,7 @@ function openPaintEditor(): void {
 
   void Controllers.PaintEditor.open({
     title: "Paint Provinces",
+    parentDialogId: dialogId,
     items: pack.provinces
       .filter(province => province.i && !province.removed)
       .map(province => ({

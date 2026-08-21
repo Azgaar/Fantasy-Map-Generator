@@ -866,6 +866,7 @@ function openPaintEditor(): void {
 
   void Controllers.PaintEditor.open({
     title: "Paint Cultures",
+    parentDialogId: dialogId,
     items: pack.cultures
       .filter(culture => !culture.removed)
       .map(culture => ({ id: culture.i, name: culture.name, color: culture.color || "#ffffff" })),

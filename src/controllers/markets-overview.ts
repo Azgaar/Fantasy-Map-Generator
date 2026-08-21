@@ -231,6 +231,7 @@ function openPaintEditor(): void {
 
   void Controllers.PaintEditor.open({
     title: "Paint Market Cells",
+    parentDialogId: dialogId,
     items: [
       { id: 0, name: "No market", color: "#ffffff" },
       ...getMarketsData().map(row => ({ id: row.market.i, name: row.name, color: row.market.color }))

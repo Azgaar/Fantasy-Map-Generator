@@ -267,6 +267,7 @@ function openPaintEditor(): void {
 
   void Controllers.PaintEditor.open({
     title: "Paint Zones",
+    parentDialogId: dialogId,
     mode: "multiple",
     items: [
       { id: -1, name: "No zone", color: "#ffffff" },
