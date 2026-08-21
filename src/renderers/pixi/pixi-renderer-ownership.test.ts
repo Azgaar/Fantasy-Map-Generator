@@ -28,6 +28,9 @@ describe("Pixi renderer ownership", () => {
       "routes",
       "temperature",
       "coastline",
+      "ice",
+      "goods",
+      "markets",
       "precipitation",
       "burgIcons",
       "markers"

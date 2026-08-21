@@ -89,6 +89,52 @@ export interface MarkerLayerStyle {
   rescale: boolean;
 }
 
+export interface GoodsLayerStyle {
+  burgs: {
+    fill: string;
+    fillOpacity: number;
+    iconSize: number;
+    opacity: number;
+    stroke: string;
+    strokeWidth: number;
+    textColor: string;
+  };
+  cells: { opacity: number };
+  icons: {
+    circle: boolean;
+    opacity: number;
+    size: number;
+    strokeWidth: number;
+  };
+  opacity: number;
+}
+
+export interface MarketLayerStyle {
+  areaOpacity: number;
+  borderOpacity: number;
+  borderWidth: number;
+  icon: string;
+  iconSize: number;
+  opacity: number;
+  radius: number;
+}
+
+export interface PopulationLayerStyle {
+  opacity: number;
+  rural: SemanticLineStyle;
+  urban: SemanticLineStyle;
+}
+
+export interface MilitaryLayerStyle {
+  boxSize: number;
+  fillOpacity: number;
+  fontFamily: string;
+  opacity: number;
+  stroke: string;
+  strokeWidth: number;
+  textColor: string;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
@@ -99,12 +145,17 @@ export interface MapStyle {
   coastline: SemanticRoleStyles<SemanticLineStyle>;
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
+  goods: GoodsLayerStyle;
   grid: GridLayerStyle;
+  ice: SemanticRoleStyles<SemanticAreaStyle> & { opacity: number };
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
   markers: MarkerLayerStyle;
+  markets: MarketLayerStyle;
+  military: MilitaryLayerStyle;
   ocean: SemanticFillStyle;
   precipitation: PrecipitationLayerStyle;
+  population: PopulationLayerStyle;
   provinces: CellLayerStyle;
   relief: { opacity: number };
   religions: CellLayerStyle;
@@ -251,6 +302,20 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   },
   cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
   cultures: { fallbackColor: "#888888", opacity: 0.6 },
+  goods: {
+    burgs: {
+      fill: "#f5f5f5",
+      fillOpacity: 1,
+      iconSize: 3,
+      opacity: 1,
+      stroke: "#41414f",
+      strokeWidth: 0.2,
+      textColor: "#28282f"
+    },
+    cells: { opacity: 1 },
+    icons: { circle: true, opacity: 1, size: 6, strokeWidth: 0.3 },
+    opacity: 1
+  },
   grid: {
     dx: 0,
     dy: 0,
@@ -291,13 +356,53 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
       }
     }
   },
+  ice: {
+    default: {
+      fill: { color: "#f1f8fe", opacity: 0.9 },
+      stroke: { cap: "round", color: "#e8f0f6", dash: "", opacity: 1, width: 0.5 }
+    },
+    opacity: 1,
+    roles: {
+      glacier: {
+        fill: { color: "#f1f8fe", opacity: 0.9 },
+        stroke: { cap: "round", color: "#e8f0f6", dash: "", opacity: 1, width: 0.5 }
+      },
+      iceberg: {
+        fill: { color: "#f1f8fe", opacity: 0.9 },
+        stroke: { cap: "round", color: "#e8f0f6", dash: "", opacity: 1, width: 0.5 }
+      }
+    }
+  },
   landmass: { color: "#eef6fb", opacity: 1 },
   markers: { opacity: 1, rescale: true },
+  markets: {
+    areaOpacity: 0.03,
+    borderOpacity: 0.8,
+    borderWidth: 1,
+    icon: "⚖️",
+    iconSize: 5,
+    opacity: 1,
+    radius: 3
+  },
+  military: {
+    boxSize: 3,
+    fillOpacity: 1,
+    fontFamily: "Helvetica, Arial, sans-serif",
+    opacity: 1,
+    stroke: "#000000",
+    strokeWidth: 0.3,
+    textColor: "#ffffff"
+  },
   ocean: { color: "#466eab", opacity: 1 },
   precipitation: {
     fill: { color: "#003dff", opacity: 1 },
     opacity: 1,
     stroke: { cap: "butt", color: "#000000", dash: "", opacity: 1, width: 0 }
+  },
+  population: {
+    opacity: 1,
+    rural: { cap: "butt", color: "#0000ff", dash: "", opacity: 1, width: 1.6 },
+    urban: { cap: "butt", color: "#ff0000", dash: "", opacity: 1, width: 1.6 }
   },
   provinces: { fallbackColor: "#888888", opacity: 0.7 },
   relief: { opacity: 1 },

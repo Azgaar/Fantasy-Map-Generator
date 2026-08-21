@@ -181,19 +181,8 @@ a {
 #lakes,
 #coastline,
 #armies,
-#ice,
-#emblems,
-#goodsCells,
-#goodsIcons,
-#goodsBurgs,
-#markets {
+#emblems {
   cursor: pointer;
-}
-
-#markets > g > path,
-#markets > g > text {
-  user-select: none;
-  pointer-events: none;
 }
 
 #temperature {

@@ -363,10 +363,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     emblems = viewbox.select<SVGElement>("#emblems");
     labels = viewbox.select<SVGGElement>("#labels");
     icons = viewbox.select<SVGGElement>("#icons");
-    burgIcons = icons.select<SVGGElement>("#burgIcons");
-    anchors = icons.select<SVGGElement>("#anchors");
     armies = viewbox.select<SVGGElement>("#armies");
-    markers = viewbox.select<SVGGElement>("#markers");
     tradeAnimation = viewbox.select<SVGGElement>("#tradeAnimation");
     ruler = viewbox.select<SVGGElement>("#ruler");
     fogging = viewbox.select<SVGGElement>("#fogging");
@@ -524,16 +521,24 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("routes", "toggleRoutes", pack.routes.length > 0);
       turnOnPixiLayer("temperature", "toggleTemperature", Boolean(hasChildren(select("#temperature"))));
       if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
-      if (isVisible(select("#ice"))) turnOn("toggleIce");
+      turnOnPixiLayer("ice", "toggleIce", Boolean(pack.ice.length));
       turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
       if (hasChildren(select("#labels"))) turnOn("toggleLabels");
-      if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
+      turnOnPixiLayer(
+        "burgIcons",
+        "toggleBurgIcons",
+        pack.burgs.some(burg => burg.i && !burg.removed)
+      );
       if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
-      if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
+      turnOnPixiLayer("markers", "toggleMarkers", Boolean(pack.markers.length));
       if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
-      if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
-      if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
+      turnOnPixiLayer(
+        "goods",
+        "toggleGoods",
+        pack.goods.some(good => good.visible)
+      );
+      turnOnPixiLayer("markets", "toggleMarketsLayer", Boolean(pack.markets.length));
       if (isVisible(select("#ruler"))) turnOn("toggleRulers");
       if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl<SVGGElement>("vignette"))) turnOn("toggleVignette");

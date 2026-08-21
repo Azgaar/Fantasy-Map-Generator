@@ -370,19 +370,6 @@ function getDisplayedBurgIconBounds(): Map<number, LabelBounds> {
   return boundsByBurg;
 }
 
-/**
- * The icons layer can lag behind the world state, and then a `data-id` still resolves to an icon
- * left over from an earlier map. Anchoring a name to one of those throws it clear across the map,
- * so an icon only counts as a Burg's own when it is actually drawn on that Burg. The tolerance
- * leaves room for symbols whose artwork hangs off the point they are placed at.
- */
-function isDrawnOn(bounds: LabelBounds, x: number, y: number): boolean {
-  const tolerance = Math.max(bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
-  return (
-    x >= bounds.x1 - tolerance && x <= bounds.x2 + tolerance && y >= bounds.y1 - tolerance && y <= bounds.y2 + tolerance
-  );
-}
-
 function getBurgIconObstacles(boundsByBurg: Map<number, LabelBounds>): LabelPlacementItem[] {
   return [...boundsByBurg].map(([id, bounds]) => ({
     id: `labelSpreadBurgIcon${id}`,
@@ -1000,7 +987,6 @@ function nextFrame(): Promise<void> {
 /** Internal seam for focused geometry tests. Production callers use calculateLabelSpread. */
 export const labelSpreadInternals = {
   getBurgLabelCandidates,
-  isDrawnOn,
   getPathStartOffsetCandidates,
   getPathStartOffsetPreference,
   isPathTextUpright,

@@ -9,15 +9,20 @@ const applicationState = vi.hoisted(() => ({
   render: vi.fn(),
   resize: vi.fn(),
   scaleSet: vi.fn(),
-  stage: undefined as { children: Array<{ label: string; visible: boolean }> } | undefined
+  stage: undefined as { children: Array<{ children: unknown[]; label: string; visible: boolean }> } | undefined
 }));
 
 vi.mock("pixi.js", () => {
   class DisplayObject {
     alpha = 1;
     children: DisplayObject[] = [];
+    cullArea: unknown;
+    cullable = false;
     eventMode = "auto";
     label = "";
+    pivot = { set: vi.fn() };
+    position = { set: vi.fn() };
+    scale = { set: vi.fn() };
     visible = true;
     addChild(...children: DisplayObject[]) {
       this.children.push(...children);
@@ -64,6 +69,12 @@ vi.mock("pixi.js", () => {
   }
 
   class GraphicsContext {
+    arc() {
+      return this;
+    }
+    bezierCurveTo() {
+      return this;
+    }
     circle() {
       return this;
     }
@@ -80,6 +91,9 @@ vi.mock("pixi.js", () => {
       return this;
     }
     poly() {
+      return this;
+    }
+    rect() {
       return this;
     }
     stroke() {
@@ -102,12 +116,15 @@ vi.mock("pixi.js", () => {
     destroy() {}
   }
 
-  class Sprite extends DisplayObject {}
+  class Sprite extends DisplayObject {
+    anchor = { set: vi.fn() };
+  }
 
   class Text extends DisplayObject {
     anchor = { set: vi.fn() };
-    position = { set: vi.fn() };
   }
+
+  class Rectangle {}
 
   return {
     Application,
@@ -119,6 +136,7 @@ vi.mock("pixi.js", () => {
     Graphics,
     GraphicsContext,
     Mesh,
+    Rectangle,
     Shader,
     Sprite,
     Text
@@ -318,13 +336,75 @@ describe("PixiMapRenderer lifecycle", () => {
       "routes",
       "temperature",
       "coastline",
-      "precipitation"
+      "ice",
+      "goods",
+      "markets",
+      "precipitation",
+      "burgIcons",
+      "markers"
     ]);
     renderer.setLayerVisibility("biomes", false);
     expect(applicationState.stage?.children.find(child => child.label === "biomes")?.visible).toBe(false);
     expect(applicationState.stage?.children.find(child => child.label === "states")?.visible).toBe(true);
     renderer.destroy();
     expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
+  });
+
+  it("builds Pixi-owned burg and marker layers from domain entities", async () => {
+    const renderer = new PixiMapRenderer();
+    const world = createWorld();
+    world.burgs = [0 as never, { cell: 0, group: "capital", i: 1, port: 2, x: 2, y: 2 }];
+    world.markers = [{ cell: 0, i: 4, icon: "data:image/png;base64,marker", type: "battle", x: 3, y: 3 }];
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    expect(renderer.getSnapshot()).toMatchObject({ burgSymbols: 1, markerSymbols: 1, textureCacheEntries: 1 });
+    expect(applicationState.stage?.children.find(child => child.label === "burgIcons")?.children.length).toBe(2);
+    expect(applicationState.stage?.children.find(child => child.label === "markers")?.children.length).toBe(1);
+    renderer.clear();
+    expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
+  });
+
+  it("builds Pixi-owned ice, goods, and market layers from domain entities", async () => {
+    const renderer = new PixiMapRenderer({ resolveSymbolIcon: icon => `data:image/svg+xml,${icon}` });
+    const world = createWorld() as PackedGraph & {
+      goodsProduction: {
+        getBurgProduction: () => Record<number, number>;
+        getCellProduction: () => Record<number, number>;
+      };
+    };
+    world.goods = [
+      { color: "#996633", i: 1, icon: "good-wood", name: "Wood", tags: [], unit: "pile", value: 1, visible: true }
+    ];
+    world.cells.good = Uint16Array.from([1]);
+    world.cells.market = Uint16Array.from([1]);
+    world.burgs = [0 as never, { cell: 0, i: 1, production: [] as never[], x: 2, y: 2 }];
+    world.goodsProduction = { getBurgProduction: () => ({ 1: 4 }), getCellProduction: () => ({ 1: 2 }) };
+    world.ice = [
+      {
+        i: 1,
+        points: [
+          [0, 0],
+          [4, 0],
+          [0, 4]
+        ],
+        type: "glacier"
+      }
+    ];
+    world.markets = [{ centerBurgId: 1, color: "#dababf", goods: {}, i: 1 }];
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    expect(applicationState.stage?.children.find(child => child.label === "ice")?.children.length).toBeGreaterThan(0);
+    expect(applicationState.stage?.children.find(child => child.label === "goods")?.children.length).toBeGreaterThan(0);
+    expect(applicationState.stage?.children.find(child => child.label === "markets")?.children.length).toBeGreaterThan(
+      0
+    );
+    expect(renderer.getSnapshot().textureCacheEntries).toBe(1);
+    renderer.clear();
+    expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
   });
 });
 

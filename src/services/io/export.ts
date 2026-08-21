@@ -276,7 +276,6 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (noLabels) {
     clone.selectAll("#labels [data-label-type]").remove();
     clone.selectAll("#textPaths [data-label-type]").remove();
-    clone.select("#icons #burgIcons").remove();
   }
   if (noWater) {
     clone.select("#oceanBase").attr("opacity", 0);
@@ -381,54 +380,6 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (cloneEl.getElementById("compass")) {
     const rose = svgDefs.getElementById("defs-compass-rose");
     if (rose) cloneDefs.appendChild(rose.cloneNode(true));
-  }
-
-  // add burs icons
-  if (cloneEl.getElementById("burgIcons")) {
-    const groups = cloneEl.getElementById("burgIcons")!.querySelectorAll("g");
-    for (const group of Array.from(groups)) {
-      const icon = group.dataset.icon && svgDefs.querySelector(group.dataset.icon);
-      if (icon) cloneDefs.appendChild(icon.cloneNode(true));
-    }
-  }
-
-  // add goods icons
-  if (cloneEl.getElementById("goodsIcons") || cloneEl.getElementById("goodsBurgs")) {
-    const uniqueIcons = new Set<string>();
-    const goodsUseElements = cloneEl.querySelectorAll("#goodsIcons use, #goodsBurgs use");
-    for (const el of goodsUseElements) {
-      const href = el.getAttribute("href") || el.getAttribute("xlink:href");
-      if (href) uniqueIcons.add(href);
-    }
-    const goodsIconsDefs = svgDefs.getElementById("good-icons");
-    for (const href of uniqueIcons) {
-      const element = goodsIconsDefs?.querySelector(href);
-      if (element) cloneDefs.appendChild(element.cloneNode(true));
-    }
-  }
-
-  // add port icon
-  if (cloneEl.getElementById("anchors")) {
-    const anchor = svgDefs.getElementById("icon-anchor");
-    if (anchor) cloneDefs.appendChild(anchor.cloneNode(true));
-  }
-
-  {
-    // replace external marker icons
-    const externalMarkerImages = cloneEl.querySelectorAll<SVGImageElement>('#markers image[href]:not([href=""])');
-    const imageHrefs = Array.from(externalMarkerImages).map(img => img.getAttribute("href"));
-
-    for (const url of imageHrefs) {
-      if (!url) continue;
-      await new Promise<void>(resolve => {
-        getBase64(url, base64 => {
-          externalMarkerImages.forEach(img => {
-            if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
-          });
-          resolve();
-        });
-      });
-    }
   }
 
   {

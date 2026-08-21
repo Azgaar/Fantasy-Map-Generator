@@ -96,6 +96,7 @@ function addIcebergOnClick(event: PointerEvent): void {
   const size = +ensureEl<HTMLInputElement>("iceSize").value || 1;
 
   Ice.addIceberg(i, size);
+  redrawIceberg(pack.ice.at(-1)?.i ?? -1);
 
   if (event.shiftKey === false) toggleAdd();
 }
@@ -107,6 +108,7 @@ function removeIce(): void {
     message: `Are you sure you want to remove the ${type}?`,
     onConfirm: () => {
       Ice.removeIce(+selectedIce.attr("data-id"));
+      redrawIceberg(+selectedIce.attr("data-id"));
       destroyDialog("iceEditor");
     },
     title: `Remove ${type}`

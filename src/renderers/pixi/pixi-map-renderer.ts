@@ -28,8 +28,19 @@ import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
 import { buildPrecipitationScene, buildTemperatureScene } from "../scene/layers/climate-scene";
+import {
+  buildGoodsScene,
+  buildIceScene,
+  buildMarketScene,
+  type GoodsBurgSceneItem
+} from "../scene/layers/economic-ice-scene";
 import { buildGridScene } from "../scene/layers/grid-scene";
 import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
+import {
+  buildMilitaryScene,
+  buildPopulationScene,
+  type MilitarySceneItem
+} from "../scene/layers/population-military-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
@@ -38,7 +49,9 @@ import type { LinePathPrimitive, PointSymbolInstancePrimitive, PolygonPathPrimit
 import type { MapRenderWorld } from "../scene/render-world";
 import {
   DEFAULT_PIXI_MAP_STYLE,
+  type GoodsLayerStyle,
   type MapStyle,
+  type MilitaryLayerStyle,
   type SemanticAreaStyle,
   type SemanticFillStyle,
   type SemanticLineStyle
@@ -78,6 +91,7 @@ export interface PixiMapRendererOptions {
   recordPerformance?: (name: string, duration: number) => void;
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
+  resolveSymbolIcon?: (icon: string) => string | null;
   textureBudgetBytes?: number;
 }
 
@@ -183,8 +197,15 @@ export class PixiMapRenderer implements MapRenderer {
     const borderContainer = this.buildBordersContainer();
     const routeContainer = this.buildRoutesContainer();
     const temperatureContainer = this.buildTemperatureContainer();
+    const iceContainer = this.buildIceContainer();
+    const goodsContainer = await this.buildGoodsContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
+    const marketsContainer = this.buildMarketsContainer();
     const precipitationContainer = this.buildPrecipitationContainer();
+    const populationContainer = this.buildPopulationContainer();
     const burgContainer = this.buildBurgIconsContainer();
+    const militaryContainer = await this.buildMilitaryContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const markerContainer = await this.buildMarkersContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     this.app.stage.addChild(
@@ -205,8 +226,13 @@ export class PixiMapRenderer implements MapRenderer {
       routeContainer,
       temperatureContainer,
       geography.coastline,
+      iceContainer,
+      goodsContainer,
+      marketsContainer,
       precipitationContainer,
+      populationContainer,
       burgContainer,
+      militaryContainer,
       markerContainer
     );
     const burgSymbols = this.getWorld().burgs.filter(burg => burg.i && !burg.removed && burg.group).length;
@@ -490,7 +516,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildPolygonContainer(
-    layer: "lakes" | "landmass" | "rivers" | "temperature",
+    layer: "ice" | "lakes" | "landmass" | "rivers" | "temperature",
     polygons: readonly PolygonPathPrimitive[],
     getStyle: (role: string) => SemanticAreaStyle
   ): Container {
@@ -506,7 +532,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildLineContainer(
-    layer: "cells" | "coastline" | "grid" | "routes",
+    layer: "cells" | "coastline" | "grid" | "population" | "routes",
     paths: readonly LinePathPrimitive[],
     getStyle: (role: string) => SemanticLineStyle
   ): Container {
@@ -643,6 +669,177 @@ export class PixiMapRenderer implements MapRenderer {
       });
     }
     if (scene.circles.length) container.addChild(new Graphics(context));
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private buildIceContainer(): Container {
+    const style = this.semanticStyle.ice;
+    const scene = buildIceScene(this.getWorld(), this.sceneRevisions.getLayerRevision("ice"));
+    const container = this.buildPolygonContainer("ice", scene.polygons, role => style.roles[role] ?? style.default);
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private async buildGoodsContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "goods";
+    const world = this.getWorld();
+    const style = this.semanticStyle.goods;
+    const scene = buildGoodsScene(world, world.goodsProduction, this.sceneRevisions.getLayerRevision("goods"));
+    const iconSources = new Map<string, string>();
+    for (const icon of new Set([...scene.icons, ...scene.burgs.flatMap(burg => burg.entries)].map(item => item.icon))) {
+      const source = this.rendererOptions.resolveSymbolIcon?.(icon);
+      if (source) iconSources.set(icon, source);
+    }
+    const textures = new Map<string, RendererResourceHandle<Texture>>();
+    await Promise.all(
+      [...iconSources].map(async ([icon, source]) => {
+        try {
+          textures.set(icon, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+        } catch {
+          // Missing goods assets receive a deterministic placeholder below.
+        }
+      })
+    );
+    if (sequence !== this.rebuildSequence) {
+      for (const handle of textures.values()) handle.release();
+      return container;
+    }
+
+    const cells = new GraphicsContext();
+    for (const cell of scene.cells) {
+      cells.poly(cell.points.flat(), true).fill({ alpha: cell.opacity, color: cell.color });
+    }
+    if (scene.cells.length) {
+      const graphic = new Graphics(cells);
+      graphic.alpha = style.cells.opacity;
+      graphic.label = "goods:cells";
+      container.addChild(graphic);
+    }
+
+    for (const item of scene.icons) {
+      const display = new Container();
+      display.cullable = true;
+      display.label = `goods:cell:${item.cellId}`;
+      display.position.set(item.x, item.y);
+      if (style.icons.circle) {
+        const background = new GraphicsContext()
+          .circle(0, 0, style.icons.size / 2)
+          .fill({ color: item.color })
+          .stroke({ color: item.stroke, width: style.icons.strokeWidth });
+        display.addChild(new Graphics(background));
+      }
+      display.addChild(createSymbolSprite(textures.get(item.icon)?.value, style.icons.size));
+      display.alpha = style.icons.opacity;
+      container.addChild(display);
+    }
+
+    for (const burg of scene.burgs) {
+      const plate = createGoodsBurgPlate(burg, style.burgs, textures);
+      plate.label = `goods:burg:${burg.burgId}`;
+      plate.position.set(burg.x, burg.y);
+      plate.cullable = true;
+      container.addChild(plate);
+    }
+    for (const handle of textures.values()) this.pointTextureHandles.add(handle);
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private buildMarketsContainer(): Container {
+    const container = new Container();
+    container.label = "markets";
+    const style = this.semanticStyle.markets;
+    const scene = buildMarketScene(this.getWorld(), this.sceneRevisions.getLayerRevision("markets"));
+    for (const market of scene.markets) {
+      if (market.polygons.length) {
+        const fill = createPolygonGraphic(market.polygons, {
+          fill: { color: market.color, opacity: style.areaOpacity },
+          stroke: { cap: "butt", color: market.stroke, dash: "", opacity: 0, width: 0 }
+        });
+        fill.label = `market:${market.marketId}:area`;
+        container.addChild(fill);
+      }
+      if (market.borders.length) {
+        const borders = createLineGraphic(market.borders, {
+          cap: "butt",
+          color: market.stroke,
+          dash: "",
+          opacity: style.borderOpacity,
+          width: style.borderWidth
+        });
+        borders.label = `market:${market.marketId}:border`;
+        container.addChild(borders);
+      }
+      if (market.center) {
+        const center = new Container();
+        center.cullable = true;
+        center.label = `market:${market.marketId}:center`;
+        center.position.set(market.center.x, market.center.y);
+        const marker = new GraphicsContext()
+          .circle(0, 0, style.radius)
+          .fill({ color: market.color })
+          .stroke({ color: market.stroke, width: Math.max(style.radius / 8, 0) });
+        center.addChild(new Graphics(marker));
+        const icon = new Text({ style: { fontSize: style.iconSize }, text: style.icon });
+        icon.anchor.set(0.5);
+        center.addChild(icon);
+        container.addChild(center);
+      }
+    }
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private buildPopulationContainer(): Container {
+    const style = this.semanticStyle.population;
+    const scene = buildPopulationScene(
+      this.getWorld(),
+      this.getWorld().urbanization ?? 1,
+      this.sceneRevisions.getLayerRevision("population")
+    );
+    const container = this.buildLineContainer(
+      "population",
+      scene.paths,
+      role => (role === "urban" ? style.urban : style.rural)
+    );
+    container.alpha = style.opacity;
+    return container;
+  }
+
+  private async buildMilitaryContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "military";
+    const style = this.semanticStyle.military;
+    const scene = buildMilitaryScene(this.getWorld(), this.sceneRevisions.getLayerRevision("military"));
+    const externalSources = new Set(
+      scene.regiments.map(({ icon }) => icon).filter(icon => isExternalImage(icon))
+    );
+    const textures = new Map<string, RendererResourceHandle<Texture>>();
+    await Promise.all(
+      [...externalSources].map(async source => {
+        try {
+          textures.set(source, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+        } catch {
+          // Missing or blocked regiment images receive a deterministic placeholder below.
+        }
+      })
+    );
+    if (sequence !== this.rebuildSequence) {
+      for (const handle of textures.values()) handle.release();
+      return container;
+    }
+
+    for (const regiment of scene.regiments) {
+      const display = createRegimentDisplay(regiment, style, textures.get(regiment.icon)?.value);
+      display.cullable = true;
+      display.label = `regiment:${regiment.domainId}`;
+      display.position.set(regiment.x, regiment.y);
+      display.rotation = (regiment.angle * Math.PI) / 180;
+      container.addChild(display);
+    }
+    for (const handle of textures.values()) this.pointTextureHandles.add(handle);
     container.alpha = style.opacity;
     return container;
   }
@@ -935,6 +1132,108 @@ function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticL
     context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, width: style.width });
   }
   return new Graphics(context);
+}
+
+function createGoodsBurgPlate(
+  burg: GoodsBurgSceneItem,
+  style: GoodsLayerStyle["burgs"],
+  textures: ReadonlyMap<string, RendererResourceHandle<Texture>>
+): Container {
+  const container = new Container();
+  const fontSize = style.iconSize * (3.5 / 3);
+  const gap = style.iconSize * 0.2;
+  const entryGap = style.iconSize * (0.8 / 3);
+  const entryWidths = burg.entries.map(entry => style.iconSize + gap + String(entry.value).length * fontSize * 0.62);
+  const width =
+    entryWidths.reduce((total, entryWidth) => total + entryWidth, 0) + entryGap * (burg.entries.length - 1) + 2;
+  const height = style.iconSize + 1.2;
+  const background = new GraphicsContext()
+    .rect(-width / 2, 0, width, height)
+    .fill({ alpha: style.fillOpacity, color: style.fill });
+  if (style.strokeWidth > 0) background.stroke({ color: style.stroke, width: style.strokeWidth });
+  container.addChild(new Graphics(background));
+
+  let offset = -width / 2 + 1;
+  for (let index = 0; index < burg.entries.length; index++) {
+    const entry = burg.entries[index];
+    const icon = new Container();
+    icon.position.set(offset + style.iconSize / 2, 0.6 + style.iconSize / 2);
+    icon.addChild(
+      new Graphics(
+        new GraphicsContext()
+          .circle(0, 0, style.iconSize / 2)
+          .fill({ color: entry.color })
+          .stroke({ color: entry.stroke, width: style.strokeWidth })
+      ),
+      createSymbolSprite(textures.get(entry.icon)?.value, style.iconSize)
+    );
+    container.addChild(icon);
+    const text = new Text({
+      style: { fill: style.textColor, fontSize },
+      text: String(entry.value)
+    });
+    text.anchor.set(0, 0.5);
+    text.position.set(offset + style.iconSize + gap, height / 2);
+    container.addChild(text);
+    offset += entryWidths[index] + entryGap;
+  }
+  container.alpha = style.opacity;
+  return container;
+}
+
+function createSymbolSprite(texture: Texture | undefined, size: number): Sprite | Graphics {
+  if (texture) {
+    const sprite = new Sprite({ height: size, texture, width: size });
+    sprite.anchor.set(0.5);
+    return sprite;
+  }
+  return new Graphics(
+    new GraphicsContext()
+      .poly([0, -size / 2, size / 2, 0, 0, size / 2, -size / 2, 0], true)
+      .stroke({ color: "#c13119", width: Math.max(0.2, size / 12) })
+  );
+}
+
+function createRegimentDisplay(
+  regiment: MilitarySceneItem,
+  style: MilitaryLayerStyle,
+  texture: Texture | undefined
+): Container {
+  const container = new Container();
+  const height = style.boxSize * 2;
+  const width = style.boxSize * (regiment.naval ? 4 : 6);
+  const body = new GraphicsContext()
+    .rect(-width / 2, -height / 2, width, height)
+    .fill({ alpha: style.fillOpacity, color: regiment.color })
+    .stroke({ color: style.stroke, width: style.strokeWidth })
+    .rect(-width / 2 - height, -height / 2, height, height)
+    .fill({ alpha: style.fillOpacity, color: regiment.iconColor })
+    .stroke({ color: style.stroke, width: style.strokeWidth });
+  container.addChild(new Graphics(body));
+
+  const total = new Text({
+    style: {
+      fill: style.textColor,
+      fontFamily: style.fontFamily,
+      fontSize: height
+    },
+    text: regiment.text
+  });
+  total.anchor.set(0.5);
+  container.addChild(total);
+
+  const iconX = -width / 2 - height / 2;
+  if (isExternalImage(regiment.icon)) {
+    const icon = createSymbolSprite(texture, height);
+    icon.position.set(iconX, 0);
+    container.addChild(icon);
+  } else {
+    const icon = new Text({ style: { fontSize: height * 0.8 }, text: regiment.icon });
+    icon.anchor.set(0.5);
+    icon.position.set(iconX, 0);
+    container.addChild(icon);
+  }
+  return container;
 }
 
 function groupPointSymbols(

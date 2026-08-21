@@ -86,7 +86,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
     Zones.generate();
-    if (!select("#markers").selectAll("*").size()) {
+    if (!pack.markers?.length) {
       Markers.generate();
       turnButtonOn("toggleMarkers");
     }

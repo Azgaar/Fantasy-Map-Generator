@@ -267,16 +267,16 @@ function drawLayers() {
     if (layerIsOn("toggleBorders")) measureLayer("borders", drawBorders);
     if (layerIsOn("toggleRoutes")) measureLayer("routes", drawRoutes);
     if (layerIsOn("toggleTemperature")) measureLayer("temperature", drawTemperature);
-    if (layerIsOn("togglePopulation")) measureLayer("population", drawPopulation);
-    if (layerIsOn("toggleIce")) measureLayer("ice", drawIce);
+    if (layerIsOn("togglePopulation")) measureLayer("population", () => redrawPixiLayer("population"));
+    if (layerIsOn("toggleIce")) measureLayer("ice", () => redrawPixiLayer("ice"));
     if (layerIsOn("togglePrecipitation")) measureLayer("precipitation", drawPrecipitation);
-    if (layerIsOn("toggleGoods")) measureLayer("goods", drawGoods);
-    if (layerIsOn("toggleMarketsLayer")) measureLayer("markets", drawMarketsLayer);
+    if (layerIsOn("toggleGoods")) measureLayer("goods", () => redrawPixiLayer("goods"));
+    if (layerIsOn("toggleMarketsLayer")) measureLayer("markets", () => redrawPixiLayer("markets"));
     if (layerIsOn("toggleEmblems")) measureLayer("emblems", drawEmblems);
     measureLayer("labels", drawLabels);
-    if (layerIsOn("toggleBurgIcons")) measureLayer("burg-icons", () => redrawPixiLayer("burgIcons", "burgIcons", "anchors"));
-    if (layerIsOn("toggleMilitary")) measureLayer("military", drawMilitary);
-    if (layerIsOn("toggleMarkers")) measureLayer("markers", () => redrawPixiLayer("markers", "markers"));
+    if (layerIsOn("toggleBurgIcons")) measureLayer("burg-icons", () => redrawPixiLayer("burgIcons"));
+    if (layerIsOn("toggleMilitary")) measureLayer("military", () => redrawPixiLayer("military"));
+    if (layerIsOn("toggleMarkers")) measureLayer("markers", () => redrawPixiLayer("markers"));
     if (layerIsOn("toggleRulers")) measureLayer("rulers", drawMeasurers);
     // scale bar
     // vignette
@@ -352,71 +352,11 @@ function togglePopulation(event) {
   } else {
     if (event && isCtrlClick(event)) return editStyle("population");
     turnButtonOff("togglePopulation");
-    if (window.ViewportPopulation) return window.ViewportPopulation.clear();
-
-    const isD3data = population.select("line").datum();
-    if (!isD3data) {
-      // just remove
-      population.selectAll("line").remove();
-    } else {
-      // remove with animation
-      const hide = d3.transition().duration(1000).ease(d3.easeSinIn);
-      population
-        .select("#rural")
-        .selectAll("line")
-        .transition(hide)
-        .attr("y2", d => d[1])
-        .remove();
-      population
-        .select("#urban")
-        .selectAll("line")
-        .transition(hide)
-        .delay(1000)
-        .attr("y2", d => d[1])
-        .remove();
-    }
   }
 }
 
 function drawPopulation() {
-  if (window.ViewportPopulation) return window.ViewportPopulation.draw();
-  population.selectAll("line").remove();
-
-  const { cells, burgs } = pack;
-  const show = d3.transition().duration(2000).ease(d3.easeSinIn);
-
-  const rural = Array.from(
-    cells.i.filter(i => cells.pop[i] > 0),
-    i => [...cells.p[i], cells.p[i][1] - cells.pop[i] / 5]
-  );
-
-  population
-    .select("#rural")
-    .selectAll("line")
-    .data(rural)
-    .enter()
-    .append("line")
-    .attr("x1", d => d[0])
-    .attr("y1", d => d[1])
-    .attr("x2", d => d[0])
-    .attr("y2", d => d[1])
-    .transition(show)
-    .attr("y2", d => d[2]);
-
-  const urban = burgs.filter(b => b.i && !b.removed).map(b => [b.x, b.y, b.y - (b.population / 5) * urbanization]);
-  population
-    .select("#urban")
-    .selectAll("line")
-    .data(urban)
-    .enter()
-    .append("line")
-    .attr("x1", d => d[0])
-    .attr("y1", d => d[1])
-    .attr("x2", d => d[0])
-    .attr("y2", d => d[1])
-    .transition(show)
-    .delay(500)
-    .attr("y2", d => d[2]);
+  redrawPixiLayer("population");
 }
 
 function toggleCells(event) {
@@ -441,12 +381,10 @@ function drawCells() {
 function toggleIce(event) {
   if (!layerIsOn("toggleIce")) {
     turnButtonOn("toggleIce");
-    ensureEl("ice").style.display = "";
-    if (!ice.selectAll("*").size()) drawIce();
+    redrawPixiLayer("ice");
     if (event && isCtrlClick(event)) editStyle("ice");
   } else {
     if (event && isCtrlClick(event)) return editStyle("ice");
-    ensureEl("ice").style.display = "none";
     turnButtonOff("toggleIce");
   }
 }
@@ -754,11 +692,10 @@ function drawRoute(route) {
 function toggleMilitary(event) {
   if (!layerIsOn("toggleMilitary")) {
     turnButtonOn("toggleMilitary");
-    drawMilitary();
+    redrawPixiLayer("military");
     if (event && isCtrlClick(event)) editStyle("armies");
   } else {
     if (event && isCtrlClick(event)) return editStyle("armies");
-    armies.selectAll("g").remove();
     turnButtonOff("toggleMilitary");
   }
 }
@@ -766,11 +703,10 @@ function toggleMilitary(event) {
 function toggleMarkers(event) {
   if (!layerIsOn("toggleMarkers")) {
     turnButtonOn("toggleMarkers");
-    redrawPixiLayer("markers", "markers");
+    redrawPixiLayer("markers");
     if (event && isCtrlClick(event)) tip("Markers now use semantic Pixi styles", false, "warn");
   } else {
     if (event && isCtrlClick(event)) return tip("Markers now use semantic Pixi styles", false, "warn");
-    markers.html("");
     turnButtonOff("toggleMarkers");
   }
 }
@@ -803,13 +739,11 @@ function toggleLabels(event) {
 function toggleBurgIcons(event) {
   if (!layerIsOn("toggleBurgIcons")) {
     turnButtonOn("toggleBurgIcons");
-    redrawPixiLayer("burgIcons", "burgIcons", "anchors");
+    redrawPixiLayer("burgIcons");
     if (event && isCtrlClick(event)) tip("Burg symbols now use semantic Pixi styles", false, "warn");
   } else {
     if (event && isCtrlClick(event)) return tip("Burg symbols now use semantic Pixi styles", false, "warn");
     turnButtonOff("toggleBurgIcons");
-    burgIcons.html("");
-    anchors.html("");
   }
 }
 
@@ -890,7 +824,7 @@ function toggleVignette(event) {
 }
 
 function redrawPixiLayer(layer, ...svgLayerIds) {
-  for (const id of svgLayerIds) ensureEl(id).replaceChildren();
+  for (const id of svgLayerIds) document.getElementById(id)?.replaceChildren();
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "invalidate-layer", layer}
@@ -906,12 +840,14 @@ function turnButtonOff(el) {
   ensureEl(el).classList.add("buttonoff");
   getCurrentPreset();
   ViewportLayers.invalidateAll();
+  notifyLayerControlsChanged();
 }
 
 function turnButtonOn(el) {
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
   ViewportLayers.invalidateAll();
+  notifyLayerControlsChanged();
 }
 
 // move layers on mapLayers dragging

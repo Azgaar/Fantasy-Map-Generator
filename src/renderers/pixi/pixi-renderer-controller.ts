@@ -6,7 +6,7 @@ import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
 import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
 import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
-import { readReliefSvgDataUri } from "./relief-icon-svg-adapter";
+import { readReliefSvgDataUri, readSvgSymbolDataUri } from "./relief-icon-svg-adapter";
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
@@ -52,14 +52,29 @@ const OWNED_SVG_SELECTORS = [
   "#routes",
   "#temperature",
   "#coastline",
-  "#prec",
+  "#prec"
+] as const;
+
+// Serialized legacy maps may still contain these groups. They are import input only and are removed before Pixi paints.
+const REMOVED_SVG_SELECTORS = [
   "#burgIcons",
   "#anchors",
-  "#markers"
+  "#markers",
+  "#ice",
+  "#goods",
+  "#goodsCells",
+  "#goodsIcons",
+  "#goodsBurgs",
+  "#markets",
+  "#population",
+  "#rural",
+  "#urban",
+  "#armies"
 ] as const;
 
 const clearOwnedSvgLayers = (): void => {
   for (const selector of OWNED_SVG_SELECTORS) document.querySelector(selector)?.replaceChildren();
+  for (const selector of REMOVED_SVG_SELECTORS) document.querySelector(selector)?.remove();
 };
 
 const getInstance = async (): Promise<PixiMapRenderer> => {
@@ -68,7 +83,8 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
       deviceMemoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
       onSceneChange: () => window.dispatchEvent(new Event(PIXI_RENDERER_SCENE_CHANGE_EVENT)),
       recordPerformance: (name, duration) => window.MapPerformance?.record(name, duration),
-      resolveReliefIcon: readReliefSvgDataUri
+      resolveReliefIcon: readReliefSvgDataUri,
+      resolveSymbolIcon: readSvgSymbolDataUri
     });
     return instance;
   });
@@ -108,8 +124,13 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("routes", layerIsOn("toggleRoutes"));
   renderer.setLayerVisibility("temperature", layerIsOn("toggleTemperature"));
   renderer.setLayerVisibility("coastline", true);
+  renderer.setLayerVisibility("ice", layerIsOn("toggleIce"));
+  renderer.setLayerVisibility("goods", layerIsOn("toggleGoods"));
+  renderer.setLayerVisibility("markets", layerIsOn("toggleMarketsLayer"));
   renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));
+  renderer.setLayerVisibility("population", layerIsOn("togglePopulation"));
   renderer.setLayerVisibility("burgIcons", layerIsOn("toggleBurgIcons"));
+  renderer.setLayerVisibility("military", layerIsOn("toggleMilitary"));
   renderer.setLayerVisibility("markers", layerIsOn("toggleMarkers"));
 };
 
@@ -133,7 +154,9 @@ const getWorld = () =>
       requestedCells: Number(pointsInput.dataset.cells) || grid.cells.i.length,
       temperatureScale: temperatureScale.value as TemperatureScale
     },
-    getMarkerRenderState()
+    getMarkerRenderState(),
+    Production,
+    urbanization
   );
 
 const api: PixiRendererControllerApi = {

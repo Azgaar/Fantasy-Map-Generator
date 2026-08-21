@@ -19,8 +19,6 @@ declare global {
    */
   interface Window {
     LayerControls: import("../components/layers/layer-controls").LegacyLayerControls;
-    redrawGlacier: typeof import("../renderers/draw-ice").redrawGlacier;
-    redrawIceberg: typeof import("../renderers/draw-ice").redrawIceberg;
     tip: typeof import("../components/tooltips").tip;
     clearMainTip: typeof import("../components/tooltips").clearMainTip;
     showDataTip: typeof import("../components/tooltips").showDataTip;
@@ -60,7 +58,6 @@ declare global {
     setMapZoom: typeof import("../components/zoom").setMapZoom;
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
     MapPerformance: typeof import("../services/performance-monitor").MapPerformance;
-    ViewportPopulation: { draw: () => void; clear: () => void };
     ViewportCells: { draw: () => void; clear: () => void };
     GridGeneration: typeof import("../generators/grid-generation").GridGeneration;
     drawStateLabels: (ids?: number[]) => void;
@@ -115,11 +112,8 @@ declare global {
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
   var ice: Selection<SVGGElement, unknown, null, undefined>;
   var labels: Selection<SVGGElement, unknown, null, undefined>;
-  var burgIcons: Selection<SVGGElement, unknown, null, undefined>;
-  var anchors: Selection<SVGGElement, unknown, null, undefined>;
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
-  var markers: Selection<SVGGElement, unknown, null, undefined>;
   var tradeAnimation: Selection<SVGGElement, unknown, null, undefined>;
   var defs: Selection<SVGDefsElement, unknown, null, undefined>;
   var coastline: Selection<SVGGElement, unknown, null, undefined>;

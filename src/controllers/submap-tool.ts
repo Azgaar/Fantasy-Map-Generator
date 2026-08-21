@@ -106,12 +106,14 @@ function recalculateMapSize(x0: number, y0: number): void {
 }
 
 function rescaleBurgStyles(scale: number): void {
-  const burgStyles = getMapRendererStyle(style).burgIcons;
+  const rendererStyle = getMapRendererStyle(style);
+  const burgStyles = rendererStyle.burgIcons;
   for (const symbols of [burgStyles.icons, burgStyles.anchors]) {
     for (const symbol of [symbols.default, ...Object.values(symbols.roles)]) {
       symbol.size = rn(minmax(symbol.size * scale, 0.2, 10), 2);
     }
   }
+  style.mapRenderer = rendererStyle;
 
   const burgLabelGroups = new Set(
     pack.burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.label?.group || burg.group || "burg")

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import mainSource from "../../../public/main.js?raw";
 import layersSource from "../../../public/modules/ui/layers.js?raw";
 import styleUiSource from "../../../public/modules/ui/style.js?raw";
 import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
+import burgEditorSource from "../../controllers/burg-editor.ts?raw";
+import markerEditorSource from "../../controllers/markers-editor.ts?raw";
 import riverCreatorSource from "../../controllers/river-creator.ts?raw";
 import riverEditorSource from "../../controllers/river-editor.ts?raw";
 import riversOverviewSource from "../../controllers/rivers-overview.ts?raw";
@@ -16,8 +19,13 @@ import loadSource from "../../services/io/load.ts?raw";
 import saveSource from "../../services/io/save.ts?raw";
 import drawBiomesSource from "../draw-biomes.ts?raw";
 import drawBordersSource from "../draw-borders.ts?raw";
+import drawGoodsSource from "../draw-goods.ts?raw";
+import drawIceSource from "../draw-ice.ts?raw";
+import drawMarketsSource from "../draw-markets.ts?raw";
 import drawTemperatureSource from "../draw-temperature.ts?raw";
 import renderersIndex from "../index.ts?raw";
+import pointSymbolsSource from "../point-symbols.ts?raw";
+import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
 import loaderSource from "./pixi-renderer-loader.ts?raw";
 
@@ -87,6 +95,44 @@ describe("Pixi hard cutover", () => {
     expect(riverEditorSource.includes('selectedRiver.attr("id")')).toBe(false);
     expect(riverGeneratorSource.includes('select("#rivers")')).toBe(false);
     expect(routesGeneratorSource.includes('select("#viewbox").select(`#route')).toBe(false);
+  });
+
+  it("renders burgs and markers only through renderer-neutral Pixi point symbols", () => {
+    expect(layersSource.includes('redrawPixiLayer("burgIcons")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("markers")')).toBe(true);
+    expect(renderersIndex.includes("draw-burg-icons")).toBe(false);
+    expect(renderersIndex.includes("draw-markers")).toBe(false);
+    expect(pointSymbolsSource.includes('invalidatePixiRendererLayer("burgIcons")')).toBe(true);
+    expect(pointSymbolsSource.includes('invalidatePixiRendererLayer("markers")')).toBe(true);
+    expect(pointSymbolSceneSource.includes("buildBurgPointSymbolScene")).toBe(true);
+    expect(pointSymbolSceneSource.includes("buildMarkerPointSymbolScene")).toBe(true);
+    expect(burgEditorSource.includes('select("#burgIcons")')).toBe(false);
+    expect(burgEditorSource.includes('select("#anchors")')).toBe(false);
+    expect(markerEditorSource.includes('select("#markers")')).toBe(false);
+    expect(markerEditorSource.includes('select<SVGGElement, unknown>("#debug")')).toBe(true);
+    expect(mainSource.includes('attr("id", "burgIcons")')).toBe(false);
+    expect(mainSource.includes('attr("id", "anchors")')).toBe(false);
+    expect(mainSource.includes('attr("id", "markers")')).toBe(false);
+    expect(controllerSource.includes('"#burgIcons"')).toBe(true);
+    expect(controllerSource.includes('"#anchors"')).toBe(true);
+    expect(controllerSource.includes('"#markers"')).toBe(true);
+    expect(controllerSource.includes("document.querySelector(selector)?.remove()")).toBe(true);
+  });
+
+  it("renders ice, goods, and markets only through renderer-neutral Pixi scenes", () => {
+    expect(layersSource.includes('redrawPixiLayer("ice")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("goods")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("markets")')).toBe(true);
+    expect([drawGoodsSource, drawIceSource, drawMarketsSource].join("\n").includes('from "d3"')).toBe(false);
+    expect(drawGoodsSource.includes('invalidatePixiRendererLayer("goods")')).toBe(true);
+    expect(drawIceSource.includes('invalidatePixiRendererLayer("ice")')).toBe(true);
+    expect(drawMarketsSource.includes('invalidatePixiRendererLayer("markets")')).toBe(true);
+    expect(mainSource.includes('append("g").attr("id", "ice")')).toBe(false);
+    expect(mainSource.includes('append("g").attr("id", "goods")')).toBe(false);
+    expect(mainSource.includes('append("g").attr("id", "markets")')).toBe(false);
+    for (const selector of ['"#ice"', '"#goods"', '"#goodsCells"', '"#goodsIcons"', '"#goodsBurgs"', '"#markets"']) {
+      expect(controllerSource.includes(selector)).toBe(true);
+    }
   });
 
   it("uses Pixi as the authoritative base for viewport raster exports", () => {

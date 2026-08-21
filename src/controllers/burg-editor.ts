@@ -6,10 +6,12 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { renderBurgChanged, renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { invalidateBurgSymbols } from "@/renderers/point-symbols";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
-import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
+import { convertTemperature, ensureEl, findEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -509,11 +511,80 @@ function editBurgLabel(): void {
 }
 
 function editGroupIconStyle(): void {
-  tip("Burg symbols now use semantic Pixi styles; the legacy SVG group style editor is unavailable", false, "warn");
+  openBurgSymbolStyle("icons");
 }
 
 function editGroupAnchorStyle(): void {
-  tip("Port anchors now use semantic Pixi styles; the legacy SVG group style editor is unavailable", false, "warn");
+  openBurgSymbolStyle("anchors");
+}
+
+function openBurgSymbolStyle(kind: "anchors" | "icons"): void {
+  const burg = pack.burgs[getSelectedId()];
+  const group = burg.group || "town";
+  const rendererStyle = getMapRendererStyle(style);
+  style.mapRenderer = rendererStyle;
+  const groupStyles = rendererStyle.burgIcons[kind];
+  let symbolStyle = groupStyles.roles[group];
+  if (!symbolStyle) {
+    symbolStyle = structuredClone(groupStyles.default);
+    groupStyles.roles[group] = symbolStyle;
+  }
+  destroyDialog("burgSymbolStyleEditor");
+  const shapeControl =
+    kind === "icons"
+      ? `<div><div class="label">Shape:</div><select id="burgSymbolShape" style="width:10em">
+          ${["circle", "square", "triangle", "cross", "star", "circled", "squared", "star-circled"]
+            .map(shape => `<option value="${shape}" ${shape === symbolStyle.icon ? "selected" : ""}>${shape}</option>`)
+            .join("")}
+        </select></div>`
+      : "";
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    `<div id="burgSymbolStyleEditor" class="dialog">
+      <div style="padding:.4em; display:grid; gap:.35em">
+        <strong>${group} ${kind === "icons" ? "burg symbol" : "port anchor"}</strong>
+        ${shapeControl}
+        <div><div class="label">Size:</div><input id="burgSymbolSize" type="number" min=".1" max="20" step=".1" value="${symbolStyle.size}" /></div>
+        <div><div class="label">Opacity:</div><input id="burgSymbolOpacity" type="number" min="0" max="1" step=".05" value="${symbolStyle.opacity}" /></div>
+        <div><div class="label">Fill:</div><input id="burgSymbolFill" type="color" value="${symbolStyle.fill}" /></div>
+        <div><div class="label">Fill opacity:</div><input id="burgSymbolFillOpacity" type="number" min="0" max="1" step=".05" value="${symbolStyle.fillOpacity}" /></div>
+        <div><div class="label">Stroke:</div><input id="burgSymbolStroke" type="color" value="${symbolStyle.stroke}" /></div>
+        <div><div class="label">Stroke width:</div><input id="burgSymbolStrokeWidth" type="number" min="0" max="10" step=".1" value="${symbolStyle.strokeWidth}" /></div>
+      </div>
+    </div>`
+  );
+
+  const updateNumber = (id: string, property: "fillOpacity" | "opacity" | "size" | "strokeWidth") => {
+    ensureEl<HTMLInputElement>(id).addEventListener("input", event => {
+      symbolStyle[property] = Number((event.target as HTMLInputElement).value);
+      invalidateBurgSymbols();
+    });
+  };
+  updateNumber("burgSymbolSize", "size");
+  updateNumber("burgSymbolOpacity", "opacity");
+  updateNumber("burgSymbolFillOpacity", "fillOpacity");
+  updateNumber("burgSymbolStrokeWidth", "strokeWidth");
+  for (const [id, property] of [
+    ["burgSymbolFill", "fill"],
+    ["burgSymbolStroke", "stroke"]
+  ] as const) {
+    ensureEl<HTMLInputElement>(id).addEventListener("input", event => {
+      symbolStyle[property] = (event.target as HTMLInputElement).value;
+      invalidateBurgSymbols();
+    });
+  }
+  findEl<HTMLSelectElement>("burgSymbolShape")?.addEventListener("change", event => {
+    symbolStyle.icon = (event.target as HTMLSelectElement).value;
+    invalidateBurgSymbols();
+  });
+
+  showDomDialog({
+    content: ensureEl("burgSymbolStyleEditor"),
+    placement: "top-right",
+    placementTarget: ensureEl("burgEditor"),
+    resizable: false,
+    title: "Pixi symbol style"
+  });
 }
 
 function getPreviewViewport(): { width: number; height: number } {

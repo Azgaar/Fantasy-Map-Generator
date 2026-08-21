@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { labelSpreadInternals } from "@/controllers/label-spread";
 
-const { getBurgLabelCandidates, isDrawnOn, optimizeLabelPlacements } = labelSpreadInternals;
+const { getBurgLabelCandidates, optimizeLabelPlacements } = labelSpreadInternals;
 type LabelPlacementCandidate = Parameters<typeof optimizeLabelPlacements>[0][number]["candidates"][number];
 
 function current(bounds = { x1: 40, y1: 40, x2: 60, y2: 44 }): LabelPlacementCandidate {
@@ -102,15 +102,6 @@ describe("label spread Burg candidates", () => {
     expect(solution.initialOverlaps).toBe(1);
     expect(solution.remainingOverlaps).toBe(0);
     expect(solution.selected.get("name")).not.toBe(burgCandidates[0]);
-  });
-
-  test("only accepts an icon that is drawn on its own Burg", () => {
-    const icon = { x1: 45, y1: 45, x2: 55, y2: 55 };
-
-    expect(isDrawnOn(icon, 50, 50)).toBe(true); // on the point it is placed at
-    expect(isDrawnOn(icon, 58, 62)).toBe(true); // artwork hanging off the point still counts
-    expect(isDrawnOn(icon, 700, 50)).toBe(false); // left over from an earlier map
-    expect(isDrawnOn(icon, 50, 700)).toBe(false);
   });
 
   test("keeps a collision-free current placement", () => {

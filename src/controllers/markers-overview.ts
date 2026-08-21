@@ -301,7 +301,7 @@ function syncMapToFilter(filteredMarkers: Marker[], anyFilterActive: boolean): v
   if (signature === lastFilterSignature) return;
   lastFilterSignature = signature;
 
-  if (layerIsOn("toggleMarkers")) filterMarkerSymbols(ids);
+  filterMarkerSymbols(ids);
 }
 
 function invertPin(): void {
@@ -351,7 +351,6 @@ function pinMarker(el: HTMLElement, i: number): void {
     showOnlyPinnedMarkers(true);
   }
   el.classList.toggle("inactive");
-  invalidateMarkerSymbols();
 }
 
 function toggleLockStatus(el: HTMLElement, i: number): void {

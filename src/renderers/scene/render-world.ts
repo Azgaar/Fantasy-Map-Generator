@@ -1,6 +1,7 @@
 import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";
 import type { TemperatureScale } from "@/utils/temperature";
+import type { GoodsProductionSource } from "./layers/economic-ice-scene";
 import type { MarkerRenderState } from "./layers/point-symbol-scene";
 
 export interface ClimateRenderGrid {
@@ -13,13 +14,17 @@ export interface ClimateRenderGrid {
 
 export interface MapRenderWorld extends PackedGraph {
   climate?: ClimateRenderGrid;
+  goodsProduction?: GoodsProductionSource;
   markerRenderState?: MarkerRenderState;
+  urbanization?: number;
 }
 
 export function createMapRenderWorld(
   packed: PackedGraph,
   climate: { grid: Grid; requestedCells: number; temperatureScale: TemperatureScale },
-  markerRenderState?: MarkerRenderState
+  markerRenderState?: MarkerRenderState,
+  goodsProduction?: GoodsProductionSource,
+  urbanization?: number
 ): MapRenderWorld {
   return {
     ...packed,
@@ -30,6 +35,8 @@ export function createMapRenderWorld(
       temperatureScale: climate.temperatureScale,
       vertices: climate.grid.vertices
     },
-    markerRenderState
+    goodsProduction,
+    markerRenderState,
+    urbanization
   };
 }

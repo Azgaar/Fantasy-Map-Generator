@@ -58,19 +58,17 @@ let trails = routes.append("g").attr("id", "trails");
 let searoutes = routes.append("g").attr("id", "searoutes");
 let temperature = viewbox.append("g").attr("id", "temperature");
 let coastline = viewbox.append("g").attr("id", "coastline");
-let ice = viewbox.append("g").attr("id", "ice");
-let goods = viewbox.append("g").attr("id", "goods").style("display", "none");
-let markets = viewbox.append("g").attr("id", "markets");
+// Pixi-owned entity layers have no live SVG groups. These selections only receive imported legacy groups during load.
+let ice = viewbox.select("#ice");
+let goods = viewbox.select("#goods");
+let markets = viewbox.select("#markets");
 let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
-let population = viewbox.append("g").attr("id", "population");
+let population = viewbox.select("#population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
 let icons = viewbox.append("g").attr("id", "icons");
 let labels = viewbox.append("g").attr("id", "labels").attr("font-size", "100px");
-let burgIcons = icons.append("g").attr("id", "burgIcons");
-let anchors = icons.append("g").attr("id", "anchors");
-let armies = viewbox.append("g").attr("id", "armies");
-let markers = viewbox.append("g").attr("id", "markers");
+let armies = viewbox.select("#armies");
 let fogging = viewbox
   .append("g")
   .attr("id", "fogging-cont")
@@ -93,15 +91,6 @@ coastline.append("g").attr("id", "lake_island");
 
 terrs.append("g").attr("id", "oceanHeights");
 terrs.append("g").attr("id", "landHeights");
-
-// population groups
-population.append("g").attr("id", "rural");
-population.append("g").attr("id", "urban");
-
-// goods groups
-goods.append("g").attr("id", "goodsCells");
-goods.append("g").attr("id", "goodsIcons");
-goods.append("g").attr("id", "goodsBurgs");
 
 // emblem groups
 emblems.append("g").attr("id", "burgEmblems");
@@ -165,8 +154,6 @@ let options = {
 // global style object; in v2.0 to be used for all map styles and render settings
 let style = {
   labels: {groups: {}},
-  burgIcons: {},
-  anchors: {},
   relief: {set: "simple", size: 1, density: 0.4}
 };
 

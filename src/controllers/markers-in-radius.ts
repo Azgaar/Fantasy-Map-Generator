@@ -4,7 +4,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
-import { filterMarkerSymbols, invalidateMarkerSymbols, showOnlyPinnedMarkers } from "@/renderers/point-symbols";
+import { filterMarkerSymbols, showOnlyPinnedMarkers } from "@/renderers/point-symbols";
 import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
 
 let center: Marker | null = null;
@@ -90,7 +90,7 @@ function applyRadius(distance: number): void {
   drawMarkerRadius(center.x, center.y, radiusPx);
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
-  if (layerIsOn("toggleMarkers")) filterMarkerSymbols(inRange.map(marker => marker.i));
+  filterMarkerSymbols(inRange.map(marker => marker.i));
   renderMarkersList(inRange);
 }
 
@@ -148,7 +148,6 @@ function togglePin(marker: Marker, el: HTMLElement): void {
     showOnlyPinnedMarkers(true);
   }
   el.classList.toggle("inactive");
-  invalidateMarkerSymbols();
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {
@@ -203,7 +202,7 @@ function locateCenter(): void {
 
 function closeMarkersInRadius(): void {
   clearMarkerRadius();
-  if (layerIsOn("toggleMarkers")) filterMarkerSymbols(null);
+  filterMarkerSymbols(null);
   inRangeMarkers = [];
   center = null;
   clearMainTip();

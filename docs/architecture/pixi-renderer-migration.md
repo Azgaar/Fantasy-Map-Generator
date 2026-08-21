@@ -46,6 +46,22 @@ The former opt-in experiment is retained only as historical context in
   longer create, locate, style, or measure paths through `#rivers` or `#routes`. Direct Pixi picking and hover/basin
   highlighting remain M9 work, so controls that depended on persistent path nodes are not retained as compatibility
   shims.
+- The next M7 point-symbol slice moves burg icons, port anchors, and markers to one-way Pixi ownership. Their persistent
+  SVG renderers and globals are deleted, generation/load redraws now issue typed invalidations, and marker filters and
+  pinned-only display state are transient renderer inputs rather than attributes on `#markers`. Burg symbols are
+  grouped into semantic vector batches; marker pins use cullable domain-ID containers with zoom-aware sizing, emoji
+  text, reference-counted external-image textures, and an explicit missing-image placeholder. Burg relocation and
+  marker dragging update domain entities and use only transient `#debug` controls. Saved presets translate burg and
+  marker styling into the serialized `mapRenderer` subtree. Texture-atlas packing, direct Pixi picking, and visual
+  acceptance across presets remain open for M7/M9.
+- The M7 economic/ice slice moves ice polygons, visible-good production cells and resource symbols, burg production
+  plates, market territories, borders, and centers into renderer-neutral scenes with stable domain IDs. Pixi owns the
+  three layers in canonical order and reference-counts goods symbol textures through the shared cache. Their semantic
+  styles and visibility now round-trip through application style state and preset adapters. The live `#ice`, `#goods`,
+  `#goodsCells`, `#goodsIcons`, `#goodsBurgs`, and `#markets` creation/render paths are removed; old serialized groups
+  are import input only and are purged before Pixi paints. Direct hover highlighting and the ice/goods/market editing
+  gestures that formerly selected persistent SVG nodes intentionally await M9/M10 rather than receiving compatibility
+  shims.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.

@@ -80,16 +80,6 @@ function applyStylePreset(presetJson) {
       style.labels.groups[labelGroup] = getStyleAttributes(presetJson[selector]);
     }
 
-    if (selector.startsWith("#burgIcons")) {
-      const group = selector.split("#").pop();
-      style.burgIcons[group] = presetJson[selector];
-    }
-
-    if (selector.startsWith("#anchors")) {
-      const group = selector.split("#").pop();
-      style.anchors[group] = presetJson[selector];
-    }
-
     if (selector === "#terrain") {
       const { set, size, density } = presetJson[selector];
 
@@ -307,6 +297,62 @@ function syncPixiCellStylePreset(presetJson) {
       rescale: Boolean(Number(markerPreset.rescale ?? 1))
     };
   }
+  const icePreset = presetJson["#ice"];
+  if (icePreset) {
+    const current = style.mapRenderer.ice || {};
+    const area = {
+      fill: {
+        color: icePreset.fill || current.default?.fill?.color || "#f1f8fe",
+        opacity: Number(icePreset.opacity ?? current.default?.fill?.opacity ?? 0.9)
+      },
+      stroke: {
+        cap: icePreset["stroke-linecap"] || current.default?.stroke?.cap || "round",
+        color: icePreset.stroke || current.default?.stroke?.color || "#e8f0f6",
+        dash: String(icePreset["stroke-dasharray"] || ""),
+        opacity: 1,
+        width: Number(icePreset["stroke-width"] ?? current.default?.stroke?.width ?? 0.5)
+      }
+    };
+    style.mapRenderer.ice = {default: area, opacity: 1, roles: {glacier: area, iceberg: area}};
+  }
+  const goodsCellsPreset = presetJson["#goodsCells"];
+  const goodsIconsPreset = presetJson["#goodsIcons"];
+  const goodsBurgsPreset = presetJson["#goodsBurgs"];
+  if (goodsCellsPreset || goodsIconsPreset || goodsBurgsPreset) {
+    const current = style.mapRenderer.goods || {};
+    style.mapRenderer.goods = {
+      ...current,
+      burgs: {
+        ...(current.burgs || {}),
+        iconSize: Number(goodsBurgsPreset?.["data-size"] ?? current.burgs?.iconSize ?? 3),
+        opacity: Number(goodsBurgsPreset?.opacity ?? current.burgs?.opacity ?? 1),
+        stroke: goodsBurgsPreset?.stroke || current.burgs?.stroke || "#41414f",
+        strokeWidth: Number(goodsBurgsPreset?.["stroke-width"] ?? current.burgs?.strokeWidth ?? 0.2)
+      },
+      cells: {opacity: Number(goodsCellsPreset?.opacity ?? current.cells?.opacity ?? 1)},
+      icons: {
+        ...(current.icons || {}),
+        circle: Boolean(Number(goodsIconsPreset?.["data-circle"] ?? current.icons?.circle ?? 1)),
+        opacity: Number(goodsIconsPreset?.opacity ?? current.icons?.opacity ?? 1),
+        size: Number(goodsIconsPreset?.["data-size"] ?? current.icons?.size ?? 6),
+        strokeWidth: Number(goodsIconsPreset?.["stroke-width"] ?? current.icons?.strokeWidth ?? 0.3)
+      },
+      opacity: 1
+    };
+  }
+  const marketsPreset = presetJson["#markets"];
+  if (marketsPreset) {
+    style.mapRenderer.markets = {
+      ...(style.mapRenderer.markets || {}),
+      areaOpacity: Number(marketsPreset["fill-opacity"] ?? 0.03),
+      borderOpacity: Number(marketsPreset["stroke-opacity"] ?? 0.8),
+      borderWidth: Number(marketsPreset["stroke-width"] ?? 1),
+      icon: marketsPreset["data-icon"] || "⚖️",
+      iconSize: Number(marketsPreset["font-size"] ?? 5),
+      opacity: Number(marketsPreset.opacity ?? 1),
+      radius: Number(marketsPreset["data-size"] ?? 3)
+    };
+  }
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "queue-rebuild"}
@@ -365,7 +411,7 @@ function applyStyleWithUiRefresh(style) {
   OceanLayers();
   if (layerIsOn("toggleRulers")) drawMeasurers();
   drawRelief();
-  if (layerIsOn("toggleBurgIcons")) redrawPixiLayer("burgIcons", "burgIcons", "anchors");
+  if (layerIsOn("toggleBurgIcons")) redrawPixiLayer("burgIcons");
   drawLabels();
 
   invokeActiveZooming();
@@ -584,24 +630,8 @@ function addStylePreset() {
       "data-dx",
       "data-dy"
     ];
-    const burgIconsAttributes = [
-      "opacity",
-      "data-icon",
-      "font-size",
-      "fill",
-      "fill-opacity",
-      "stroke",
-      "stroke-width",
-      "stroke-dasharray",
-      "stroke-linecap",
-      "stroke-linejoin",
-      "filter"
-    ];
-    const anchorsAttributes = ["opacity", "fill", "font-size", "stroke", "stroke-width", "filter"];
     options.burgs.groups.forEach(({ name }) => {
       attributes[`#labels > #${name}`] = burgLabelsAttributes;
-      attributes[`#burgIcons > g#${name}`] = burgIconsAttributes;
-      attributes[`#anchors > g#${name}`] = anchorsAttributes;
     });
 
     for (const selector in attributes) {
@@ -617,7 +647,74 @@ function addStylePreset() {
       }
     }
 
+    const burgStyles = style.mapRenderer?.burgIcons;
+    if (burgStyles) {
+      for (const {name} of options.burgs.groups) {
+        const icon = burgStyles.icons.roles[name] || burgStyles.icons.default;
+        const anchor = burgStyles.anchors.roles[name] || burgStyles.anchors.default;
+        presetStyle[`#burgIcons > g#${name}`] = serializePointSymbol(icon, true);
+        presetStyle[`#anchors > g#${name}`] = serializePointSymbol(anchor, false);
+      }
+    }
+    const markerStyle = style.mapRenderer?.markers;
+    if (markerStyle) {
+      presetStyle["#markers"] = {opacity: markerStyle.opacity, rescale: Number(markerStyle.rescale), filter: null};
+    }
+    const iceStyle = style.mapRenderer?.ice;
+    if (iceStyle) {
+      presetStyle["#ice"] = {
+        opacity: iceStyle.default.fill.opacity,
+        fill: iceStyle.default.fill.color,
+        stroke: iceStyle.default.stroke.color,
+        "stroke-width": iceStyle.default.stroke.width,
+        filter: null
+      };
+    }
+    const goodsStyle = style.mapRenderer?.goods;
+    if (goodsStyle) {
+      presetStyle["#goodsCells"] = {opacity: goodsStyle.cells.opacity, filter: null};
+      presetStyle["#goodsIcons"] = {
+        opacity: goodsStyle.icons.opacity,
+        "stroke-width": goodsStyle.icons.strokeWidth,
+        "data-circle": Number(goodsStyle.icons.circle),
+        "data-size": goodsStyle.icons.size,
+        filter: null
+      };
+      presetStyle["#goodsBurgs"] = {
+        opacity: goodsStyle.burgs.opacity,
+        stroke: goodsStyle.burgs.stroke,
+        "stroke-width": goodsStyle.burgs.strokeWidth,
+        "data-size": goodsStyle.burgs.iconSize,
+        filter: null
+      };
+    }
+    const marketsStyle = style.mapRenderer?.markets;
+    if (marketsStyle) {
+      presetStyle["#markets"] = {
+        opacity: marketsStyle.opacity,
+        "stroke-width": marketsStyle.borderWidth,
+        "fill-opacity": marketsStyle.areaOpacity,
+        "stroke-opacity": marketsStyle.borderOpacity,
+        "data-size": marketsStyle.radius,
+        "font-size": marketsStyle.iconSize,
+        "data-icon": marketsStyle.icon,
+        filter: null
+      };
+    }
+
     if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
+
+    function serializePointSymbol(symbol, includeIcon) {
+      return {
+        ...(includeIcon ? {"data-icon": `#icon-${symbol.icon}`} : {}),
+        opacity: symbol.opacity,
+        fill: symbol.fill,
+        "fill-opacity": symbol.fillOpacity,
+        "font-size": symbol.size,
+        stroke: symbol.stroke,
+        "stroke-width": symbol.strokeWidth
+      };
+    }
 
     for (const [group, groupStyle] of Object.entries(style.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, groupStyle);
