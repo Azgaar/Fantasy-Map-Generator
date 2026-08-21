@@ -1,14 +1,4 @@
-import {
-  color as d3Color,
-  drag,
-  easeSinIn,
-  interpolate,
-  interpolateString,
-  select,
-  stratify,
-  transition,
-  treemap
-} from "d3";
+import { color as d3Color, easeSinIn, interpolate, interpolateString, select, stratify, transition, treemap } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -18,20 +8,18 @@ import {
   initEditorTable,
   renderEditorHeader,
   renderEditorPagination,
-  setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
+import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
+import { ensureEl, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -150,14 +138,6 @@ function renderDialog(): void {
           class="icon-download"
         ></button>
         <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
-        <div id="provincesManuallyButtons" style="display: none">
-          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
-            Brush size:
-            <slider-input id="provincesBrush" min="1" max="100" value="8"></slider-input>
-          </div>
-          <button id="provincesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-          <button id="provincesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-        </div>
         <button
           id="provincesRelease"
           data-tip="Release all provinces. It will make all provinces with burgs independent"
@@ -194,9 +174,7 @@ function renderDialog(): void {
   ensureEl("provincesChart").addEventListener("click", showChart);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
   ensureEl("provincesRemoveAll").addEventListener("click", removeAllProvinces);
-  ensureEl("provincesManually").addEventListener("click", enterProvincesManualAssignent);
-  ensureEl("provincesManuallyApply").addEventListener("click", applyProvincesManualAssignent);
-  ensureEl("provincesManuallyCancel").addEventListener("click", () => exitProvincesManualAssignment());
+  ensureEl("provincesManually").addEventListener("click", openPaintEditor);
   ensureEl("provincesRelease").addEventListener("click", triggerProvincesRelease);
   ensureEl("provincesAdd").addEventListener("click", enterAddProvinceMode);
   ensureEl("provincesMerge").addEventListener("click", openProvinceMergeDialog);
@@ -350,7 +328,6 @@ function renderProvincesPage(view: TableView<Province>): void {
   renderEditorPagination(ensureEl("provincesFooter"), view, provincesTable.goto);
 
   body.querySelectorAll("div.states").forEach(el => {
-    el.addEventListener("click", selectProvinceOnLineClick);
     el.addEventListener("mouseenter", provinceHighlightOn);
     el.addEventListener("mouseleave", provinceHighlightOff);
   });
@@ -1075,193 +1052,41 @@ function triggerProvincesRelease(): void {
   });
 }
 
-function enterProvincesManualAssignent(): void {
+function openPaintEditor(): void {
   Layers.show("provinces", "borders");
 
-  // make province and state borders more visible
-  select<SVGGElement, unknown>("#provinceBorders").select("path").attr("stroke", "#000").attr("stroke-width", 0.5);
-  select<SVGGElement, unknown>("#stateBorders").select("path").attr("stroke", "#000").attr("stroke-width", 1.2);
-
-  customization = 11;
-  select<SVGGElement, unknown>("#provs")
-    .select("g#provincesBody")
-    .append("g")
-    .attr("id", "temp")
-    .attr("stroke-width", 0.3);
-  select<SVGGElement, unknown>("#provs")
-    .select("g#provincesBody")
-    .append("g")
-    .attr("id", "centers")
-    .attr("fill", "none")
-    .attr("stroke", "#ff0000")
-    .attr("stroke-width", 1);
-
-  document.querySelectorAll<HTMLElement>("#provincesBottom > *").forEach(el => {
-    el.style.display = "none";
-  });
-  ensureEl("provincesManuallyButtons").style.display = "inline-block";
-
-  setModeHiddenColumns(dialogId, [...columns.filter(column => !column.permanent).map(column => column.key), "actions"]);
-  ensureEl("provincesFooter").style.display = "none";
-  ensureEl("provincesBodySection")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.pointerEvents = "none";
-    });
-  $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
-
-  tip("Click on a province to select, drag the circle to change province", true);
-  select<SVGElement, unknown>("#viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectProvinceOnMapClick)
-    .call(drag<SVGElement, unknown>().on("start", dragBrush))
-    .on("touchmove mousemove", moveBrush);
-
-  const firstLine = ensureEl("provincesBodySection").querySelector<HTMLElement>(":scope > .states");
-  firstLine?.classList.add("selected");
-  if (firstLine) selectProvince(+firstLine.dataset.id!);
-}
-
-function selectProvinceOnLineClick(this: HTMLElement): void {
-  if ((this.parentNode as HTMLElement).id !== "provincesBodySection") return;
-  if (customization === 11) {
-    ensureEl("provincesBodySection").querySelector("div.selected")?.classList.remove("selected");
-    this.classList.add("selected");
-    selectProvince(+this.dataset.id!);
-  }
-}
-
-function selectProvinceOnMapClick(this: SVGElement, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1])!;
-  if (pack.cells.h[i] < 20 || !pack.cells.state[i]) return;
-
-  const assigned = select<SVGGElement, unknown>("#provs").select("g#temp").select(`polygon[data-cell='${i}']`);
-  const province = assigned.size() ? +assigned.attr("data-province") : pack.cells.province[i];
-
-  const editorLine = ensureEl("provincesBodySection").querySelector(`div[data-id='${province}']`);
-  if (!editorLine) {
-    tip("You cannot select a province if it is not in the Editor list", false, "error");
-    return;
-  }
-
-  ensureEl("provincesBodySection").querySelector("div.selected")?.classList.remove("selected");
-  editorLine.classList.add("selected");
-  selectProvince(province);
-}
-
-function selectProvince(p: number): void {
-  select("#debug").selectAll("path.selected").remove();
-  const path = select<SVGGElement, unknown>("#provs").select(`#province${p}`).attr("d");
-  select("#debug").append("path").attr("class", "selected").attr("d", path);
-}
-
-function dragBrush(this: SVGElement, event: any): void {
-  const r = +ensureEl<HTMLInputElement>("provincesBrush").value;
-
-  event.on("drag", (dragEvent: any) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
-
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
-    const selection = found.filter(i => isLand(i, pack));
-    if (selection) changeForSelection(selection);
-  });
-}
-
-// change province within selection
-function changeForSelection(selection: number[]): void {
-  const temp = select<SVGGElement, unknown>("#provs").select("#temp");
-  const centers = select<SVGGElement, unknown>("#provs").select("#centers");
-  const selected = ensureEl("provincesBodySection").querySelector<HTMLElement>("div.selected")!;
-
-  const provinceNew = +selected.dataset.id!;
-  const state = pack.provinces[provinceNew].state;
-  const fill = pack.provinces[provinceNew].color || "#ffffff";
-
-  selection.forEach(i => {
-    if (!pack.cells.state[i] || pack.cells.state[i] !== state) return;
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const provinceOld = exists.size() ? +exists.attr("data-province") : pack.cells.province[i];
-    if (provinceNew === provinceOld) return;
-    if (i === pack.provinces[provinceOld].center) {
-      const center = centers.select(`polygon[data-center='${i}']`);
-      if (!center.size()) centers.append("polygon").attr("data-center", i).attr("points", getPackPolygon(i, pack));
+  void Controllers.PaintEditor.open({
+    title: "Paint Provinces",
+    parentDialogId: dialogId,
+    onClose: open,
+    items: pack.provinces
+      .filter(province => province.i && !province.removed)
+      .map(province => ({
+        id: province.i,
+        name: `${pack.states[province.state]?.name ?? ""}: ${province.name}`,
+        color: province.color || "#ffffff"
+      })),
+    getValue: cell => pack.cells.province[cell],
+    filterCell: (cell, currentProvince, nextProvince) => {
+      if (!isLand(cell, pack) || !pack.cells.state[cell]) return false;
+      if (pack.cells.state[cell] !== pack.provinces[nextProvince].state) return false;
+      if (!currentProvince || cell !== pack.provinces[currentProvince].center) return true;
       tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
-      return;
-    }
-
-    // change or append new element
-    if (exists.size()) {
-      if (pack.cells.province[i] === provinceNew) exists.remove();
-      else exists.attr("data-province", provinceNew).attr("fill", fill);
-    } else {
-      temp
-        .append("polygon")
-        .attr("points", getPackPolygon(i, pack))
-        .attr("data-cell", i)
-        .attr("data-province", provinceNew)
-        .attr("fill", fill)
-        .attr("stroke", "#555");
-    }
+      return false;
+    },
+    dontOverrideControl: true,
+    onApply: applyProvincePaint
   });
 }
 
-function moveBrush(this: SVGElement, event: any): void {
-  showMainTip();
-  const point = getPointer(event, this);
-  const radius = +ensureEl<HTMLInputElement>("provincesBrush").value;
-  moveCircle(point[0], point[1], radius);
-}
-
-function applyProvincesManualAssignent(): void {
-  select<SVGGElement, unknown>("#provs")
-    .select("#temp")
-    .selectAll<SVGPolygonElement, unknown>("polygon")
-    .each(function () {
-      const i = +this.dataset.cell!;
-      pack.cells.province[i] = +this.dataset.province!;
-    });
+function applyProvincePaint(changes: ReadonlyMap<number, number>): void {
+  for (const [cell, province] of changes) pack.cells.province[cell] = province;
 
   Provinces.getPoles();
   Layers.draw("borders", "provinces");
   Layers.draw("labels");
 
-  exitProvincesManualAssignment();
-  refreshProvincesEditor();
-}
-
-function exitProvincesManualAssignment(close?: string): void {
-  customization = 0;
-  select<SVGGElement, unknown>("#provs").select("#temp").remove();
-  select<SVGGElement, unknown>("#provs").select("#centers").remove();
-  removeCircle();
-
-  // restore borders style
-  select<SVGGElement, unknown>("#provinceBorders").select("path").attr("stroke", null).attr("stroke-width", null);
-  select<SVGGElement, unknown>("#stateBorders").select("path").attr("stroke", null).attr("stroke-width", null);
-  select("#debug").selectAll("path.selected").remove();
-
-  document.querySelectorAll<HTMLElement>("#provincesBottom > *").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  ensureEl("provincesManuallyButtons").style.display = "none";
-
-  setModeHiddenColumns(dialogId, []);
-  ensureEl("provincesFooter").style.display = "";
-  ensureEl("provincesBodySection")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.removeProperty("pointer-events");
-    });
-  if (!close)
-    $("#provincesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" } });
-
-  applyDefaultViewboxEvents();
-  clearMainTip();
-  const selected = ensureEl("provincesBodySection").querySelector("div.selected");
-  if (selected) selected.classList.remove("selected");
+  if (document.getElementById(dialogId)) refreshProvincesEditor();
 }
 
 function enterAddProvinceMode(this: HTMLElement): void {
@@ -1418,7 +1243,6 @@ function removeAllProvinces(): void {
 }
 
 function closeProvincesEditor(): void {
-  if (customization === 11) exitProvincesManualAssignment("close");
   if (customization === 12) exitAddProvinceMode();
   $("#provincesEditor").dialog("destroy");
   ensureEl("provincesEditor").remove();

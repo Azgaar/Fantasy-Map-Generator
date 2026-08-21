@@ -92,7 +92,6 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "7") setMapZoom(7);
   else if (key === "8") setMapZoom(8);
   else if (key === "9") setMapZoom(9);
-  else if (ctrl) findEl("zonesRemove")?.classList.toggle("pressed");
 }
 
 function allowHotkeys(): boolean {
@@ -109,17 +108,7 @@ function allowHotkeys(): boolean {
 function handleSizeChange(key: string): void {
   let brush: HTMLInputElement | null = null;
 
-  const brushIds = [
-    "heightmapBrushRadius",
-    "heightmapBrushPower",
-    "heightmapLinePower",
-    "biomesBrush",
-    "culturesBrush",
-    "statesBrush",
-    "provincesBrush",
-    "religionsBrush",
-    "zonesBrush"
-  ];
+  const brushIds = ["heightmapBrushRadius", "heightmapBrushPower", "heightmapLinePower", "paintEditorBrush"];
   brush = brushIds.map(id => findEl<HTMLInputElement>(id)).find(element => element?.offsetParent) ?? null;
 
   if (brush) {
@@ -142,12 +131,7 @@ function handleBracketSizeChange(code: string): boolean {
     findEl("heightmapBrushRadius")?.offsetParent ||
     findEl("heightmapBrushPower")?.offsetParent ||
     findEl("heightmapLinePower")?.offsetParent ||
-    findEl("biomesBrush")?.offsetParent ||
-    findEl("culturesBrush")?.offsetParent ||
-    findEl("statesBrush")?.offsetParent ||
-    findEl("provincesBrush")?.offsetParent ||
-    findEl("religionsBrush")?.offsetParent ||
-    findEl("zonesBrush")?.offsetParent;
+    findEl("paintEditorBrush")?.offsetParent;
 
   if (!hasActiveBrush) return false;
 

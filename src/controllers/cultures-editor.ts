@@ -13,31 +13,14 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
+import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
-import {
-  abbreviate,
-  capitalize,
-  debounce,
-  ensureEl,
-  findAllCellsInRadius,
-  getPackPolygon,
-  getPointer,
-  isLand,
-  parseTransform,
-  ra,
-  rn,
-  si
-} from "../utils";
-
-let culturesManualHistory: string[] = [];
-let selectedCultureId: number | null = null;
+import { abbreviate, capitalize, debounce, ensureEl, getPointer, isLand, parseTransform, ra, rn, si } from "../utils";
 
 const dialogId = "culturesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -157,14 +140,6 @@ function renderDialog(): void {
       <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
       <button id="culturesHeirarchy" data-tip="Show cultures hierarchy tree" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="Manually re-assign cultures" class="icon-brush"></button>
-      <div id="culturesManuallyButtons" class="editorToolbarPanel" style="display: none">
-        <div data-tip="Change brush size. Shortcuts: + / ] to increase; - / [ to decrease" style="margin-block: 0.3em;">
-          <slider-input id="culturesBrush" min="1" max="100" value="15">Brush size:</slider-input>
-        </div>
-        <button id="culturesManuallyUndo" data-tip="Undo last brush stroke" class="icon-ccw"></button>
-        <button id="culturesManuallyApply" data-tip="Apply assignment" class="icon-check"></button>
-        <button id="culturesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-      </div>
       <button id="culturesEditNamesBase" data-tip="Edit a database used for names generation" class="icon-font"></button>
       <button id="culturesAdd" data-tip="Add a new culture. Hold Shift to add multiple" class="icon-plus"></button>
       <button id="culturesExport" data-tip="Download cultures-related data" class="icon-download"></button>
@@ -196,10 +171,7 @@ function renderDialog(): void {
   ensureEl("culturesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("culturesHeirarchy").addEventListener("click", showHierarchy);
   ensureEl("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
-  ensureEl("culturesManually").addEventListener("click", enterCultureManualAssignent);
-  ensureEl("culturesManuallyUndo").addEventListener("click", undoCulturesManualAssignment);
-  ensureEl("culturesManuallyApply").addEventListener("click", applyCultureManualAssignent);
-  ensureEl("culturesManuallyCancel").addEventListener("click", () => exitCulturesManualAssignment());
+  ensureEl("culturesManually").addEventListener("click", openPaintEditor);
   ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
   ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
   ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
@@ -365,10 +337,6 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     row.remove();
   });
   body.insertAdjacentHTML("beforeend", lines);
-  if (customization === 4 && selectedCultureId !== null) {
-    body.querySelector(`div[data-id='${selectedCultureId}']`)?.classList.add("selected");
-  }
-
   // update footer
   ensureEl("culturesFooterCultures").innerHTML = String(pack.cultures.filter(c => c.i && !c.removed).length);
   ensureEl("culturesFooterCells").innerHTML = String((pack.cells.h as unknown as number[]).filter(h => h >= 20).length);
@@ -385,7 +353,6 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     .forEach($line => {
       $line.addEventListener("mouseenter", cultureHighlightOn);
       $line.addEventListener("mouseleave", cultureHighlightOff);
-      $line.addEventListener("click", selectCultureOnLineClick);
     });
   ensureEl("culturesBody")
     .querySelectorAll("fill-box")
@@ -427,14 +394,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     .querySelectorAll("div > span.icon-lock-open")
     .forEach($el => void $el.addEventListener("click", updateLockStatus));
 
-  setModeHiddenColumns(
-    dialogId,
-    customization === 4
-      ? columns.filter(column => !column.permanent).map(column => column.key)
-      : selectShape
-        ? []
-        : ["emblems"]
-  );
+  setModeHiddenColumns(dialogId, selectShape ? [] : ["emblems"]);
 
   if (ensureEl("culturesBody").dataset.type === "percentage") {
     ensureEl("culturesBody").dataset.type = "absolute";
@@ -901,173 +861,37 @@ function recalculateCultures(force?: boolean): void {
   }
 }
 
-function enterCultureManualAssignent(): void {
+function openPaintEditor(): void {
   Layers.show("cultures");
-  customization = 4;
-  select("#cults").append("g").attr("id", "temp");
-  document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
-    el.style.display = "none";
+
+  void Controllers.PaintEditor.open({
+    title: "Paint Cultures",
+    parentDialogId: dialogId,
+    onClose: open,
+    items: pack.cultures
+      .filter(culture => !culture.removed)
+      .map(culture => ({ id: culture.i, name: culture.name, color: culture.color || "#ffffff" })),
+    dontOverrideControl: true,
+    getValue: cell => pack.cells.culture[cell],
+    filterCell: cell => isLand(cell, pack),
+    onApply: applyCulturePaint
   });
-  ensureEl("culturesManuallyButtons").style.display = "inline-block";
-  select("#debug").select("#cultureCenters").style("display", "none");
+}
 
-  setModeHiddenColumns(
-    dialogId,
-    columns.filter(column => !column.permanent).map(column => column.key)
-  );
-  ensureEl("culturesFooter").style.display = "none";
-  ensureEl("culturesBody")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.pointerEvents = "none";
-    });
-  $(`#${dialogId}`).dialog({ position });
-
-  tip("Click on culture to select, drag the circle to change culture", true);
-  select<SVGElement, unknown>("#viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectCultureOnMapClick)
-    .call(drag<SVGElement, unknown>().on("start", dragCultureBrush))
-    .on("touchmove mousemove", moveCultureBrush);
-
-  const firstLine = ensureEl("culturesBody").querySelector<HTMLElement>(":scope > div.states");
-  if (firstLine) {
-    firstLine.classList.add("selected");
-    selectedCultureId = +firstLine.dataset.id!;
+function applyCulturePaint(changes: ReadonlyMap<number, number>): void {
+  for (const [cell, culture] of changes) {
+    pack.cells.culture[cell] = culture;
+    if (pack.cells.burg[cell]) pack.burgs[pack.cells.burg[cell]].culture = culture;
   }
-  culturesManualHistory = [];
-}
-
-function selectCultureOnLineClick(this: HTMLElement): void {
-  if (customization !== 4) return;
-  const previous = ensureEl("culturesBody").querySelector("div.selected");
-  if (previous) previous.classList.remove("selected");
-  this.classList.add("selected");
-  selectedCultureId = +this.dataset.id!;
-}
-
-function selectCultureOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
-  if (pack.cells.h[i!] < 20) return;
-
-  const assigned = select("#cults").select("#temp").select(`polygon[data-cell='${i}']`);
-  const culture = assigned.size() ? +assigned.attr("data-culture") : pack.cells.culture[i!];
-
-  ensureEl("culturesBody").querySelector("div.selected")?.classList.remove("selected");
-  selectedCultureId = culture;
-  // row may be on another page; the class re-applies on render if/when that page is shown
-  ensureEl("culturesBody").querySelector(`div[data-id='${culture}']`)?.classList.add("selected");
-}
-
-function dragCultureBrush(this: any, event: any): void {
-  const radius = +ensureEl<HTMLInputElement>("culturesBrush").value;
-  saveCulturesManualSnapshot();
-
-  event.on("drag", (dragEvent: any) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], radius);
-
-    const found = radius > 5 ? findAllCellsInRadius(p[0], p[1], radius, pack) : [findCell(p[0], p[1], radius)];
-    const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeCultureForSelection(selection);
-  });
-}
-
-function changeCultureForSelection(selection: number[]): void {
-  if (selectedCultureId === null) return;
-
-  const temp = select("#cults").select("#temp");
-  const cultureNew = selectedCultureId;
-  const color = pack.cultures[cultureNew].color || "#ffffff";
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const cultureOld = exists.size() ? +exists.attr("data-culture") : pack.cells.culture[i];
-    if (cultureNew === cultureOld) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-culture", cultureNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-culture", cultureNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
-  });
-}
-
-function moveCultureBrush(this: any, event: any): void {
-  showMainTip();
-  const point = getPointer(event, this);
-  const radius = +ensureEl<HTMLInputElement>("culturesBrush").value;
-  moveCircle(point[0], point[1], radius);
-}
-
-function applyCultureManualAssignent(): void {
-  const changed = select("#cults").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
-  changed.each(function () {
-    const i = +this.dataset.cell!;
-    const c = +this.dataset.culture!;
-    pack.cells.culture[i] = c;
-    if (pack.cells.burg[i]) pack.burgs[pack.cells.burg[i]].culture = c;
-  });
-
-  if (changed.size()) {
+  if (changes.size) {
     Layers.draw("cultures");
-    refreshCulturesEditor();
+    if (document.getElementById(dialogId)) refreshCulturesEditor();
   }
-  exitCulturesManualAssignment();
-}
-
-function exitCulturesManualAssignment(close?: string): void {
-  customization = 0;
-  culturesManualHistory = [];
-  select("#cults").select("#temp").remove();
-  removeCircle();
-  document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  ensureEl("culturesManuallyButtons").style.display = "none";
-
-  setModeHiddenColumns(dialogId, canSelectCultureEmblemShape() ? [] : ["emblems"]);
-  ensureEl("culturesFooter").style.display = "block";
-  ensureEl("culturesBody")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.removeProperty("pointer-events");
-    });
-  if (!close) $(`#${dialogId}`).dialog({ position });
-
-  select("#debug").select("#cultureCenters").style("display", null);
-  applyDefaultViewboxEvents();
-  clearMainTip();
-  const selected = ensureEl("culturesBody").querySelector("div.selected");
-  if (selected) selected.classList.remove("selected");
-  selectedCultureId = null;
 }
 
 function canSelectCultureEmblemShape(): boolean {
   const group = ensureEl<HTMLSelectElement>("emblemShape").selectedOptions[0]?.parentElement?.getAttribute("label");
   return group === "Diversiform";
-}
-
-function saveCulturesManualSnapshot(): void {
-  const temp = select("#cults").select("#temp").node() as HTMLElement | null;
-  if (!temp) return;
-
-  culturesManualHistory.push(temp.innerHTML);
-  if (culturesManualHistory.length > 100) culturesManualHistory.shift();
-}
-
-function undoCulturesManualAssignment(): void {
-  const temp = select("#cults").select("#temp").node() as HTMLElement | null;
-  if (!temp || !culturesManualHistory.length) return;
-
-  temp.innerHTML = culturesManualHistory.pop()!;
 }
 
 function enterAddCulturesMode(this: HTMLElement): void {
@@ -1156,8 +980,7 @@ function downloadCulturesCsv(): void {
 
 function closeCulturesEditor(): void {
   select("#debug #cultureCenters").remove();
-  exitCulturesManualAssignment("close");
-  exitAddCultureMode();
+  if (customization === 9) exitAddCultureMode();
   $("#culturesEditor").dialog("destroy");
   ensureEl("culturesEditor").remove();
 }

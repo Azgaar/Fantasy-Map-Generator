@@ -1,4 +1,4 @@
-import { drag, easeSinIn, select, sum, transition } from "d3";
+import { easeSinIn, select, sum, transition } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -8,21 +8,18 @@ import {
   initEditorTable,
   renderEditorHeader,
   renderEditorPagination,
-  setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, rn, si } from "../utils";
+import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
+import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -126,14 +123,6 @@ function renderDialog(): void {
           data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern"
           class="icon-brush"
         ></button>
-        <div id="biomesManuallyButtons" style="display: none">
-          <div data-tip="Change brush size. Shortcut: + to increase; – to decrease" style="margin-block: 0.3em">
-            Brush size:
-            <slider-input id="biomesBrush" min="1" max="100" value="15"></slider-input>
-          </div>
-          <button id="biomesManuallyApply" data-tip="Apply current assignment" class="icon-check"></button>
-          <button id="biomesManuallyCancel" data-tip="Cancel assignment" class="icon-cancel"></button>
-        </div>
         <button id="biomesAdd" data-tip="Add a custom biome" class="icon-plus"></button>
         <button
           id="biomesRestore"
@@ -158,9 +147,7 @@ function renderDialog(): void {
   ensureEl("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
   ensureEl("biomesLegend").addEventListener("click", toggleLegend);
   ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
-  ensureEl("biomesManually").addEventListener("click", enterBiomesCustomizationMode);
-  ensureEl("biomesManuallyApply").addEventListener("click", applyBiomesChange);
-  ensureEl("biomesManuallyCancel").addEventListener("click", () => exitBiomesCustomizationMode());
+  ensureEl("biomesManually").addEventListener("click", openPaintEditor);
   ensureEl("biomesRestore").addEventListener("click", restoreInitialBiomes);
   ensureEl("biomesAdd").addEventListener("click", addCustomBiome);
   ensureEl("biomesExport").addEventListener("click", downloadBiomesData);
@@ -174,10 +161,6 @@ function renderDialog(): void {
     if (el.tagName === "FILL-BOX") biomeChangeColor(el as FillBoxElement);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
-    if (customization === 6) {
-      const line = el.closest<HTMLElement>(".biomes");
-      if (line) selectBiomeOnLineClick(line);
-    }
   });
 
   ensureEl("biomesBody").addEventListener("change", ev => {
@@ -476,154 +459,27 @@ function downloadBiomesData(): void {
   downloadFile(data, name);
 }
 
-function enterBiomesCustomizationMode(): void {
+function openPaintEditor(): void {
   Layers.show("biomes");
-  customization = 6;
-  setModeHiddenColumns(dialogId, ["habitability", "cells", "area", "population", "actions"]);
-  select("#biomes").append("g").attr("id", "temp");
-
-  document.querySelectorAll<HTMLElement>("#biomesBottom > button").forEach(el => {
-    el.style.display = "none";
-  });
-  document.querySelectorAll<HTMLElement>("#biomesBottom > div").forEach(el => {
-    el.style.display = "block";
-  });
-  ensureEl("biomesBody").querySelector("div.biomes")!.classList.add("selected");
-
-  ensureEl("biomesEditor")
-    .querySelectorAll(".hide")
-    .forEach(el => {
-      el.classList.add("hidden");
-    });
-  ensureEl("biomesBody")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.pointerEvents = "none";
-    });
-  ensureEl("biomesFooter").style.display = "none";
-  $("#biomesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
-
-  tip("Click on biome to select, drag the circle to change biome", true);
-  select<SVGElement, unknown>("#viewbox")
-    .style("cursor", "crosshair")
-    .on("click", selectBiomeOnMapClick)
-    .call(drag<SVGElement, unknown>().on("start", dragBiomeBrush))
-    .on("touchmove mousemove", moveBiomeBrush);
-}
-
-function selectBiomeOnLineClick(line: HTMLElement): void {
-  const selected = ensureEl("biomesBody").querySelector("div.selected");
-  if (selected) selected.classList.remove("selected");
-  line.classList.add("selected");
-}
-
-function selectBiomeOnMapClick(this: SVGElement, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1])!;
-  if (pack.cells.h[i] < 20) {
-    tip("You cannot reassign water via biomes. Please edit the Heightmap to change water", false, "error");
-    return;
-  }
-
-  const assigned = select("#biomes").select("#temp").select(`polygon[data-cell='${i}']`);
-  const biome = assigned.size() ? +assigned.attr("data-biome") : pack.cells.biome[i];
-
-  ensureEl("biomesBody").querySelector("div.selected")?.classList.remove("selected");
-  ensureEl("biomesBody").querySelector(`div[data-id='${biome}']`)!.classList.add("selected");
-}
-
-function dragBiomeBrush(this: SVGElement, event: any): void {
-  const r = +ensureEl<HTMLInputElement>("biomesBrush").value;
-
-  event.on("drag", (dragEvent: any) => {
-    if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
-
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
-    const selection = found.filter(i => isLand(i, pack));
-    if (selection) changeBiomeForSelection(selection);
+  void Controllers.PaintEditor.open({
+    title: "Paint Biomes",
+    parentDialogId: dialogId,
+    onClose: open,
+    items: pack.biomes
+      .filter(biome => biome.i && !biome.removed)
+      .map(biome => ({ id: biome.i, name: biome.name, color: biome.color })),
+    getValue: cell => pack.cells.biome[cell],
+    filterCell: cell => isLand(cell, pack),
+    onApply: applyBiomesChange
   });
 }
 
-// change region within selection
-function changeBiomeForSelection(selection: number[]): void {
-  const temp = select("#biomes").select("#temp");
-  const selected = ensureEl("biomesBody").querySelector<HTMLElement>("div.selected")!;
-
-  const biomeNew = selected.dataset.id!;
-  const color = pack.biomes[+biomeNew].color;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const biomeOld = exists.size() ? exists.attr("data-biome") : String(pack.cells.biome[i]);
-    if (biomeNew === biomeOld) return;
-
-    // change or append new element
-    if (exists.size()) exists.attr("data-biome", biomeNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-biome", biomeNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
-  });
-}
-
-function moveBiomeBrush(this: SVGElement, event: any): void {
-  showMainTip();
-  const point = getPointer(event, this);
-  const radius = +ensureEl<HTMLInputElement>("biomesBrush").value;
-  moveCircle(point[0], point[1], radius);
-}
-
-function applyBiomesChange(): void {
-  const changed = select("#biomes").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
-  changed.each(function () {
-    const i = +this.dataset.cell!;
-    const b = +this.dataset.biome!;
-    pack.cells.biome[i] = b;
-  });
-
-  if (changed.size()) {
+function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
+  for (const [cell, biome] of changes) pack.cells.biome[cell] = biome;
+  if (changes.size) {
     Layers.draw("biomes");
-    refreshBiomesEditor();
+    if (document.getElementById(dialogId)) refreshBiomesEditor();
   }
-  exitBiomesCustomizationMode();
-}
-
-function exitBiomesCustomizationMode(close?: boolean): void {
-  customization = 0;
-  setModeHiddenColumns(dialogId, []);
-  select("#biomes").select("#temp").remove();
-  removeCircle();
-
-  document.querySelectorAll<HTMLElement>("#biomesBottom > button").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  document.querySelectorAll<HTMLElement>("#biomesBottom > div").forEach(el => {
-    el.style.display = "none";
-  });
-
-  ensureEl("biomesBody")
-    .querySelectorAll<HTMLElement>("div > input, select, span, svg")
-    .forEach(e => {
-      e.style.removeProperty("pointer-events");
-    });
-  ensureEl("biomesEditor")
-    .querySelectorAll(".hide")
-    .forEach(el => {
-      el.classList.remove("hidden");
-    });
-  ensureEl("biomesFooter").style.display = "block";
-  if (!close) $("#biomesEditor").dialog({ position: { my: "right top", at: "right-10 top+10", of: "svg" } });
-
-  applyDefaultViewboxEvents();
-  clearMainTip();
-  const selected = document.querySelector("#biomesBody > div.selected");
-  if (selected) selected.classList.remove("selected");
 }
 
 function restoreInitialBiomes(): void {
@@ -635,7 +491,6 @@ function restoreInitialBiomes(): void {
 }
 
 function closeBiomesEditor(): void {
-  exitBiomesCustomizationMode(true);
   $("#biomesEditor").dialog("destroy");
   ensureEl("biomesEditor").remove();
 }
