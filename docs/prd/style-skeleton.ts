@@ -1,107 +1,84 @@
 // Style store, round 3 — the whole library in one sketch.
-// One runtime table is the single source: per-layer allowed attrs (strict, layer-specific)
-// and typed options. TS types derive from it; validation walks it; no schema library.
+// The typed data IS the API: `styles.labels.groups[id].attrs.opacity` is a number|null by
+// inference. Zod schemas are the single declaration; a style is complete by construction
+// (parseStyle merges over DEFAULT_STYLE); three plain functions do the rest. No class.
 
-// every attribute's value type, declared once
-interface AttrTypes {
-  opacity: number;
-  fill: string;
-  "fill-opacity": number;
-  stroke: string;
-  "stroke-width": number;
-  "stroke-dasharray": string;
-  "stroke-linecap": string;
-  "stroke-linejoin": string;
-  "stroke-opacity": number;
-  filter: string;
-  mask: string;
-  "font-size": number;
-  "font-family": string;
-  "letter-spacing": number;
-  transform: string;
-  "shape-rendering": string;
-  "background-color": string;
-}
+import { z } from "zod";
 
-// shared key sets — composition happens here, not in the type system
-const paint = ["opacity", "filter", "mask"] as const;
-const stroke = ["stroke", "stroke-width", "stroke-dasharray", "stroke-linecap"] as const;
-const fill = ["fill", "fill-opacity"] as const;
-const text = ["font-size", "font-family", "letter-spacing"] as const;
+// semantic attribute schemas, shared vocabulary — null = remove / not set
+const opacitySchema = z.number().nullable();
+const fillSchema = z.string();
+const strokeSchema = z.string();
+const strokeWidthSchema = z.number();
+const dasharraySchema = z.string().nullable();
+const filterSchema = z.string().nullable();
+const maskSchema = z.string().nullable();
+const fontSizePxSchema = z.number();
+const fontSizePercentageSchema = z.string(); // "6%"
 
-// the table: what each layer and child may carry. This IS the strict typing —
-// routes children take stroke attrs and nothing else; fogging takes paint+fill and nothing else.
-const LAYERS = defineLayers({
-  routes: { attrs: paint, children: { roads: [...stroke, ...paint], trails: stroke, searoutes: stroke } },
-  rivers: { attrs: [...paint, ...fill] },
-  coordinates: { attrs: [...paint, ...stroke], options: {} as { fontSize?: number } },
-  markers: { attrs: paint, options: {} as { rescale?: number } },
-  heightmap: {
-    attrs: paint,
-    children: { landHeights: paint, oceanHeights: paint },
-    childOptions: {} as { scheme?: string; terracing?: number; skip?: number; relax?: number; curve?: string; render?: boolean },
-  },
-  states: { attrs: paint, children: { statesBody: paint, statesHalo: [...paint, "stroke-width"] } },
-  labels: { attrs: [...paint, ...text], groups: [...paint, ...fill, ...stroke, ...text], groupOptions: {} as { fontSize?: number; dx?: number; dy?: number } },
-  burgIcons: { groups: [...paint, ...fill, ...stroke], groupOptions: {} as { size?: number; icon?: string } },
-  anchors: { groups: [...paint, ...fill, ...stroke], groupOptions: {} as { size?: number } },
-  fogging: { attrs: [...paint, ...fill] },
-  // ...one line per remaining layer; ~35 lines total when complete
-});
+// one strict schema per layer — attrs are written to the DOM, options are renderer inputs
+const routeGroupSchema = z.object({
+  attrs: z.object({ opacity: opacitySchema, stroke: strokeSchema, "stroke-width": strokeWidthSchema, "stroke-dasharray": dasharraySchema, filter: filterSchema }).strict(),
+}).strict();
 
-// derived types — the only type-level machinery in the library
-type Layers = typeof LAYERS;
-type LayerId = keyof Layers;
-type AttrsOf<Keys extends readonly (keyof AttrTypes)[]> = { [K in Keys[number]]?: AttrTypes[K] | null }; // null = remove
-type ChildId<Id extends LayerId> = Layers[Id] extends { children: infer C } ? keyof C & string : never;
+const labelGroupSchema = z.object({
+  attrs: z.object({ opacity: opacitySchema, fill: fillSchema, stroke: strokeSchema, "stroke-width": strokeWidthSchema, "letter-spacing": z.number(), "font-size": fontSizePercentageSchema, "font-family": z.string(), style: z.string().nullable(), filter: filterSchema }).strict(),
+  options: z.object({ dx: z.number(), dy: z.number() }).strict(),
+}).strict();
 
-// the serialized shape: plain nested objects, exactly what a preset file contains
-type StyleData = {
-  [Id in LayerId]?: {
-    attrs?: Record<string, unknown>;
-    options?: Record<string, unknown>;
-    children?: Record<string, { attrs?: Record<string, unknown>; options?: Record<string, unknown> }>;
-  };
-};
+const burgGroupSchema = z.object({
+  attrs: z.object({ opacity: opacitySchema, fill: fillSchema, "fill-opacity": z.number(), stroke: strokeSchema, "stroke-width": strokeWidthSchema }).strict(),
+  options: z.object({ size: z.number(), icon: z.string() }).strict(),
+}).strict();
 
-class Style {
-  private data: StyleData;
+const heightsGroupSchema = z.object({
+  attrs: z.object({ opacity: opacitySchema, filter: filterSchema, mask: maskSchema }).strict(),
+  options: z.object({ scheme: z.string(), terracing: z.number(), skip: z.number(), relax: z.number(), curve: z.string(), render: z.boolean() }).strict(),
+}).strict();
 
-  // new format only. Legacy presets are someone else's problem: see legacy.ts, used solely by
-  // migration call sites. Unknown layers/attrs/options are dropped with one console.warn each.
-  static fromJSON(json: unknown): Style {
-    return new Style(validate(json)); // validate: ~30 lines, walks LAYERS, checks typeof against AttrTypes
-  }
+const stylesSchema = z.object({
+  routes: z.object({
+    attrs: z.object({ opacity: opacitySchema, mask: maskSchema }).strict(),
+    roads: routeGroupSchema, trails: routeGroupSchema, searoutes: routeGroupSchema,
+  }).strict(),
+  rivers: z.object({ attrs: z.object({ opacity: opacitySchema, fill: fillSchema, filter: filterSchema }).strict() }).strict(),
+  coordinates: z.object({
+    attrs: z.object({ opacity: opacitySchema, stroke: strokeSchema, "stroke-width": strokeWidthSchema, "stroke-dasharray": dasharraySchema, filter: filterSchema }).strict(),
+    options: z.object({ fontSize: fontSizePxSchema }).strict(),
+  }).strict(),
+  heightmap: z.object({ landHeights: heightsGroupSchema, oceanHeights: heightsGroupSchema }).strict(),
+  labels: z.object({
+    attrs: z.object({ "font-size": fontSizePxSchema }).strict(),
+    groups: z.record(z.string(), labelGroupSchema),
+  }).strict(),
+  burgIcons: z.object({ groups: z.record(z.string(), burgGroupSchema) }).strict(),
+  anchors: z.object({ groups: z.record(z.string(), burgGroupSchema) }).strict(),
+  // ...every remaining layer, ~35 entries. All required: styles are complete by construction.
+}).strict();
 
-  toJSON(): StyleData {
-    return structuredClone(this.data);
-  }
+import type { LayerId } from "@/components/layers";
 
-  // write attrs onto layer.getEl() and its children; null removes; never creates elements.
-  // The two dom quirks live here and nowhere else: label groups are id="labels-<name>",
-  // burg/anchor groups live inside #icons > #burgIcons / #anchors.
-  applyTo(layer: Layer): void { /* ~30 lines */ }
+export type Styles = z.infer<typeof stylesSchema>;
+export type StyleLayerId = keyof Styles & LayerId; // registry owns layer identity; a schema key
+type _styledLayersAreRegistryLayers = keyof Styles extends LayerId ? true : never; // outside it is a compile error
 
-  options<Id extends LayerId>(id: Id): OptionsOf<Id> { /* one lookup */ }
-  attrs<Id extends LayerId>(id: Id, child?: ChildId<Id>): AttrsFor<Id> { /* one lookup */ }
+// the complete default — the single place defaults exist in the whole app
+const DEFAULT_STYLES: Styles = /* the default preset, satisfies stylesSchema */;
 
-  setAttr<Id extends LayerId, K extends AttrKeyFor<Id>>(id: Id, name: K, value: AttrTypes[K] | null): void;
-  setAttr<Id extends LayerId, C extends ChildId<Id>, K extends AttrKeyFor<Id, C>>(id: Id, child: C, name: K, value: AttrTypes[K] | null): void;
-  setAttr(...args: unknown[]): void { /* write + schedule(id) */ }
+// the active styles — read and write directly: styles.labels.groups[id].attrs.opacity
+export let styles: Styles;
 
-  setOptions<Id extends LayerId>(id: Id, patch: Partial<OptionsOf<Id>>): void { /* merge + schedule(id) */ }
-}
+// New format only (legacy conversion lives in legacy.ts, used only by migration code).
+// Per layer: safeParse; an invalid or missing layer falls back to the default with one warn.
+// Result always satisfies stylesSchema, so nothing downstream ever checks for absence.
+export function parseStyles(json: unknown): Styles { /* ~20 lines */ }
 
-// redraw scheduling: a Set and one rAF. Nothing more.
-const pending = new Set<LayerId>();
-function schedule(id: LayerId) {
-  if (pending.size === 0 && typeof requestAnimationFrame !== "undefined")
-    requestAnimationFrame(() => { const ids = [...pending]; pending.clear(); Layers.draw(...ids); });
-  pending.add(id);
-}
+export function setStyles(data: Styles): void { styles = data; }
 
-// module state: the active instance. Named for what it is; replaces the legacy `style` global
-// when that retires.
-let active: Style | undefined;
-export const activeStyle = () => active;
-export const setActiveStyle = (s: Style) => { active = s; };
+// Write a layer's attrs onto the DOM and redraw it. No ids, no nesting knowledge: the registry
+// stamps data-layer on layer groups and data-group on subgroups, so addressing is
+// [data-layer="routes"] and, inside it, [data-group="roads"]. Options are never written —
+// renderers read them from `styles` directly. Callers mutate, then call this.
+export function applyStyles(...ids: StyleLayerId[]): void { /* ~25 lines, ends with Layers.draw(...ids) */ }
+
+// serialization is JSON.stringify(styles) — there is nothing else to it
