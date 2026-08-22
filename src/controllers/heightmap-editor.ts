@@ -515,7 +515,6 @@ async function regenerateErasedData(): Promise<void> {
   });
 
   await derived.runFrom("markupGrid");
-  Layers.draw("ocean"); // idempotent projection of the now-settled grid/pack state
 
   TIME && console.timeEnd("regenerateErasedData");
   INFO && console.groupEnd();
