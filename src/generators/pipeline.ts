@@ -4,7 +4,7 @@
 // Registration order is the execution order (same rule as `mapLayers`/`Layers`) — this is just the
 // existing generate() call order, named and centrally declared, not a dependency graph.
 import type { PackedGraph } from "@/types/PackedGraph";
-import { createPipeline, type PipelineStep } from "@/utils/pipeline";
+import { Pipeline as PipelineClass, type PipelineStep } from "@/utils/pipeline";
 
 const pipelineSteps = [
   {
@@ -79,7 +79,7 @@ const pipelineSteps = [
 ] as const satisfies readonly PipelineStep[];
 
 export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
-export const Pipeline = createPipeline<PipelineStepId>(pipelineSteps);
+export const Pipeline = new PipelineClass<PipelineStepId>(pipelineSteps);
 
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS

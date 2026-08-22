@@ -9,39 +9,69 @@ export interface PipelineStep<Id extends string = string> {
   run: () => void | Promise<void>;
 }
 
-export interface Pipeline<Id extends string = string> {
-  readonly ids: readonly Id[]; // registration order = execution order
-  has(id: string): id is Id;
-
-  run(): Promise<void>; // every step, in registration order
-  runFrom(id: Id, opts?: { assume?: readonly Id[] }): Promise<void>; // id and everything after it, minus assume
+export interface PipelineOverrides<Id extends string = string> {
+  replace?: Partial<Record<Id, () => void | Promise<void>>>; // swap a step's run(), same id/position
+  omit?: readonly Id[]; // drop steps entirely; everything else keeps its relative order
 }
 
-export function createPipeline<Id extends string = string>(steps: readonly PipelineStep<Id>[]): Pipeline<Id> {
-  const ids = steps.map(step => step.id);
-  const indexById = new Map<Id, number>();
-  for (const id of ids) {
-    if (indexById.has(id)) throw new Error(`Pipeline: duplicate step id "${id}"`);
-    indexById.set(id, indexById.size);
+export class Pipeline<Id extends string = string> {
+  readonly ids: readonly Id[]; // registration order = execution order
+  private readonly steps: readonly PipelineStep<Id>[];
+  private readonly stepById: ReadonlyMap<Id, PipelineStep<Id>>;
+  private readonly indexById: ReadonlyMap<Id, number>;
+
+  constructor(steps: readonly PipelineStep<Id>[]) {
+    const indexById = new Map<Id, number>();
+    for (const step of steps) {
+      if (indexById.has(step.id)) {
+        throw new Error(`Pipeline: duplicate step id "${step.id}"`);
+      }
+      indexById.set(step.id, indexById.size);
+    }
+
+    this.steps = steps;
+    this.ids = steps.map(step => step.id);
+    this.stepById = new Map(steps.map(step => [step.id, step]));
+    this.indexById = indexById;
   }
 
-  const stepById = new Map<Id, PipelineStep<Id>>(steps.map(step => [step.id, step]));
-  const has = (id: string): id is Id => indexById.has(id as Id);
+  // Construction from an existing pipeline: same steps, minus `omit`, with `replace` swapped in.
+  static derive<Id extends string>(base: Pipeline<Id>, overrides: PipelineOverrides<Id>): Pipeline<Id> {
+    const omit = new Set(overrides.omit ?? []);
+    const steps = base.steps
+      .filter(step => !omit.has(step.id))
+      .map((step): PipelineStep<Id> => {
+        const run = overrides.replace?.[step.id];
+        return run ? { id: step.id, run } : step;
+      });
+    return new Pipeline(steps);
+  }
 
-  const runSteps = async (idsToRun: readonly Id[]): Promise<void> => {
-    for (const id of idsToRun) await stepById.get(id)!.run();
-  };
+  // Convenience instance form of the static factory above, so a consumer holding only the base
+  // instance (not the class) can derive from it — see e.g. src/generators/pipeline.ts's `Pipeline`.
+  derive(overrides: PipelineOverrides<Id>): Pipeline<Id> {
+    return Pipeline.derive(this, overrides);
+  }
 
-  return {
-    ids,
-    has,
-    run: () => runSteps(ids),
-    runFrom: async (id, opts) => {
-      const startIndex = indexById.get(id);
-      if (startIndex === undefined) throw new Error(`Pipeline: unknown step "${id}"`);
+  has(id: string): id is Id {
+    return this.indexById.has(id as Id);
+  }
 
-      const assume = new Set(opts?.assume ?? []);
-      return runSteps(ids.slice(startIndex).filter(stepId => !assume.has(stepId)));
+  async run(): Promise<void> {
+    await this.runSteps(this.ids);
+  }
+
+  async runFrom(id: Id, opts?: { assume?: readonly Id[] }): Promise<void> {
+    const startIndex = this.indexById.get(id);
+    if (startIndex === undefined) {
+      throw new Error(`Pipeline: unknown step "${id}"`);
     }
-  };
+
+    const assume = new Set(opts?.assume ?? []);
+    await this.runSteps(this.ids.slice(startIndex).filter(stepId => !assume.has(stepId)));
+  }
+
+  private async runSteps(idsToRun: readonly Id[]): Promise<void> {
+    for (const id of idsToRun) await this.stepById.get(id)!.run();
+  }
 }
