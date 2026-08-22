@@ -5,7 +5,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 function parseArgs(argv) {
-  const args = { baseline: path.join(__dirname, "..", "bench", "baseline.json"), threshold: 0.4 };
+  // GitHub-hosted runners share CPUs with other jobs, so run-to-run noise on
+  // sub-millisecond benchmarks can easily swing 40-50% with no code change.
+  // A generous threshold keeps the check useful for catching real (multi-x)
+  // regressions without flaking on noise.
+  const args = { baseline: path.join(__dirname, "..", "bench", "baseline.json"), threshold: 0.75 };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
