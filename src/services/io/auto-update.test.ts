@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@/generators/added-labels";
 import "@/generators/features"; // migrations call the Features module through its global
+import "@/generators/labels-generator";
 import { resolveVersionConflicts, restoreLayerStyles } from "./auto-update";
 
 beforeEach(() => {
@@ -417,5 +419,59 @@ describe("restoreLayerStyles", () => {
 
       expect(document.getElementById("cults")!.getAttribute("stroke")).toBe("#777777");
     });
+  });
+});
+
+describe("v1.140 label group migration", () => {
+  // a legacy burg group can be named like a group the migration creates by a fixed name
+  const LEGACY_BURG_GROUPS = [
+    { id: "towns", size: 3 },
+    { id: "river", size: 50 }
+  ];
+
+  function setupLegacyMap() {
+    const burgGroups = LEGACY_BURG_GROUPS.map(
+      ({ id, size }) => `<g id="${id}" data-size="${size}" fill="#3e3e4b"></g>`
+    ).join("");
+
+    document.body.innerHTML = /* html */ `<svg id="map">
+      <defs id="deftemp"></defs>
+      <g id="viewbox">
+        <g id="labels">
+          <g id="burgLabels">${burgGroups}</g>
+          <g id="addedLabels" data-size="120"></g>
+          <g id="states" data-size="70"></g>
+        </g>
+      </g>
+    </svg>`;
+
+    globalThis.options = {
+      labels: { groups: [] },
+      burgs: { groups: LEGACY_BURG_GROUPS.map(({ id }) => ({ name: id })) }
+    } as unknown as typeof globalThis.options;
+    globalThis.style = { labels: { groups: {} } } as unknown as typeof globalThis.style;
+    globalThis.pack = {
+      features: [],
+      burgs: [0, { i: 1, group: "river" }],
+      addedLabels: []
+    } as unknown as typeof globalThis.pack;
+    globalThis.notes = [];
+  }
+
+  // the Label Groups editor renders the bounds into <input type="number" min="0.01">, so a bound
+  // below that leaves the form invalid and Apply does nothing until every such row is hand-edited
+  it("derives zoom bounds the Label Groups editor accepts", () => {
+    setupLegacyMap();
+
+    resolveVersionConflicts("1.139.0", []);
+
+    const outOfRange = options.labels.groups
+      .filter(({ zoom }) => (zoom.min !== null && zoom.min < 0.01) || (zoom.max !== null && zoom.max < 0.01))
+      .map(({ name, zoom }) => `${name}[${zoom.min}, ${zoom.max}]`);
+    expect(outOfRange).toEqual([]);
+
+    // a group already larger than 12px at any zoom has no lower bound
+    expect(options.labels.groups.find(({ name }) => name === "state")?.zoom).toEqual({ min: null, max: 2.4 });
+    expect(options.labels.groups.find(({ name }) => name === "towns")?.zoom).toEqual({ min: 7, max: 79 });
   });
 });
