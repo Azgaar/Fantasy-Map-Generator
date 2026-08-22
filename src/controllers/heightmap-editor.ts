@@ -5,7 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { GenerationPipeline } from "@/generators/generation-pipeline";
+import { createErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -486,35 +486,7 @@ async function regenerateErasedData(): Promise<void> {
 
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
 
-  // the canonical sequence from markupGrid onward, with the heightmap-edit-specific differences:
-  // map bounds and the default ruler don't change, so those steps are dropped; rivers and biomes
-  // need parameterized/alternate behavior instead of their generate()-from-scratch defaults; ice
-  // keeps its canonical position (between featureGroups and goods) rather than being special-cased.
-  const derived = GenerationPipeline.derive({
-    omit: [
-      "mapCoordinates",
-      "defaultRuler",
-      "addedLabels",
-      "mapName",
-      ...(erosionAllowed ? [] : (["addLakesInDeepDepressions", "openNearSeaLakes"] as const))
-    ],
-    replace: {
-      rivers: () => {
-        Rivers.generate(erosionAllowed);
-        if (!erosionAllowed) {
-          for (const i of pack.cells.i) {
-            const g = pack.cells.g[i];
-            if (pack.cells.h[i] !== grid.cells.h[g] && pack.cells.h[i] >= 20 === grid.cells.h[g] >= 20) {
-              pack.cells.h[i] = grid.cells.h[g];
-            }
-          }
-        }
-      },
-      biomes: () => Biomes.define() // recompute cell biomes against the existing catalog, don't reset it
-    }
-  });
-
-  await derived.runFrom("markupGrid");
+  await createErasePipeline(erosionAllowed).runFrom("markupGrid");
 
   TIME && console.timeEnd("regenerateErasedData");
   INFO && console.groupEnd();
