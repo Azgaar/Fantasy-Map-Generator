@@ -350,7 +350,7 @@ function updateEmblemData(): void {
     emblemShapeSelector.value = el.coa.shield ?? "heater";
   }
 
-  const size = el.coa.size || 1;
+  const size = el.coa.size ?? 1;
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 }

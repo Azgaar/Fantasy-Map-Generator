@@ -62,4 +62,24 @@ test.describe("emblems viewport rendering", () => {
 
     expect(report).toEqual({ uses: allStates, missing: 0 });
   });
+
+  test("keeps a hidden emblem's zero size when it is reselected in the editor", async ({ page }) => {
+    await page.evaluate(() => (window as Win).Controllers.EmblemsEditor.openDefault());
+    await expect(page.locator("#emblemEditor")).toBeVisible();
+
+    const states = page.locator("#emblemStates");
+    const first = await states.inputValue();
+    const values = await states.locator("option").evaluateAll(options =>
+      options.map(option => (option as HTMLOptionElement).value)
+    );
+    const second = values.find(value => value !== "0" && value !== first);
+    if (!second) throw new Error("The generated map has fewer than two states");
+
+    await page.locator("#emblemSizeNumber").fill("0");
+    await states.selectOption(second);
+    await states.selectOption(first);
+
+    await expect(page.locator("#emblemSizeNumber")).toHaveValue("0");
+    await expect(page.locator(`#stateEmblems > use[data-i="${first}"]`)).toHaveCount(0);
+  });
 });
