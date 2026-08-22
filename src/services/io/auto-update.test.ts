@@ -474,4 +474,18 @@ describe("v1.140 label group migration", () => {
     expect(options.labels.groups.find(({ name }) => name === "state")?.zoom).toEqual({ min: null, max: 2.4 });
     expect(options.labels.groups.find(({ name }) => name === "towns")?.zoom).toEqual({ min: 7, max: 79 });
   });
+
+  // group styles and the rendered <g> ids are keyed by name alone, so a duplicate name means one
+  // group's style silently replaces the other's
+  it("renames a legacy group that claims a name the migration reserves", () => {
+    setupLegacyMap();
+
+    resolveVersionConflicts("1.139.0", []);
+
+    const names = options.labels.groups.map(({ name }) => name);
+    expect(names).toHaveLength(new Set(names).size);
+    expect(options.labels.groups.find(({ name }) => name === "river")?.type).toBe("river");
+    expect(options.labels.groups.find(({ name }) => name === "river2")?.type).toBe("burg");
+    expect(pack.burgs[1].label?.group).toBe("river2"); // burgs of the renamed group follow it
+  });
 });

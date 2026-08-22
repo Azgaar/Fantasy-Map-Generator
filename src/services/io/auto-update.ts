@@ -1282,6 +1282,18 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     options.labels = { resizeOnZoom, showAll: !autoVisibility, groups: [] };
     style.labels.groups = {};
 
+    // styles and the rendered <g> ids are keyed by group name, so names have to stay unique: the
+    // groups this migration creates by a fixed name keep it, a legacy group claiming one is renamed
+    const takenNames = new Set(["river", "route", "province", "state", "added"]);
+    const renamedGroups = new Map<string, string>();
+    function claimName(name: string) {
+      let claimed = name;
+      for (let i = 2; takenNames.has(claimed); i++) claimed = `${name}${i}`;
+      takenNames.add(claimed);
+      if (claimed !== name) renamedGroups.set(name, claimed);
+      return claimed;
+    }
+
     for (const type of ["river", "route"] as const) {
       options.labels.groups.push(Labels.getFallbackGroup(type));
       style.labels.groups[type] = getGroupStyle({ name: type, type });
@@ -1289,26 +1301,39 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
-      const name = burgGroup.id;
+      const name = claimName(burgGroup.id);
       const oldStyle = deriveLabelsStyle(burgGroup);
       const zoom = deriveZoomExtent(Number.parseFloat(oldStyle["font-size"] as string));
 
-      options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
+      options.labels.groups.push({ name, type: "burg", isDefault: burgGroup.id === "towns", zoom });
       style.labels.groups[name] = oldStyle;
     }
 
     const migratedBurgStyle = burgGroups.length ? style.labels.groups[burgGroups[0].id] : undefined;
-    for (const { name } of options.burgs.groups) {
-      if (options.labels.groups.some(group => group.name === name)) continue;
+    const migratedBurgGroupIds = new Set(burgGroups.map(burgGroup => burgGroup.id));
+    for (const burgGroup of options.burgs.groups) {
+      if (migratedBurgGroupIds.has(burgGroup.name)) continue;
 
-      const defaultGroup = Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === name);
+      const defaultGroup = Labels.getDefaultGroups().find(
+        group => group.type === "burg" && group.name === burgGroup.name
+      );
       const { zoom } = defaultGroup ?? Labels.getFallbackGroup("burg");
+      const name = claimName(burgGroup.name);
       options.labels.groups.push({ name, type: "burg", zoom });
       style.labels.groups[name] = migratedBurgStyle ? { ...migratedBurgStyle } : getGroupStyle({ name, type: "burg" });
     }
 
     if (options.labels.groups.every(group => !group.isDefault) && options.labels.groups[0])
       options.labels.groups[0].isDefault = true;
+
+    // a burg label takes its group from the burg, so a renamed group has to be repointed
+    if (renamedGroups.size) {
+      for (const burg of pack.burgs) {
+        if (!burg?.i) continue;
+        const renamed = burg.group && renamedGroups.get(burg.group);
+        if (renamed) burg.label = { ...burg.label, group: renamed };
+      }
+    }
 
     // migrate manually shifted burg labels to pack.burgs[burgId].label
     for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
@@ -1347,9 +1372,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     pack.addedLabels = [];
     const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
     for (const addedGroup of addedGroups) {
-      let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
-      const isExisting = options.labels.groups.find(group => group.name === name);
-      if (isExisting) name += options.labels.groups.length;
+      const isDefaultGroup = addedGroup.id === "addedLabels";
+      const name = isDefaultGroup ? "added" : claimName(addedGroup.id);
 
       const oldStyle = deriveLabelsStyle(addedGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
@@ -1357,7 +1381,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       options.labels.groups.push({
         name,
         type: "added",
-        isDefault: name === "added",
+        isDefault: isDefaultGroup,
         zoom: deriveZoomExtent(fontSize)
       });
       style.labels.groups[name] = oldStyle;
