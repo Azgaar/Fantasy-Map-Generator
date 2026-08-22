@@ -37,7 +37,6 @@ function createRenderer(overscanPixels: number, guardPixels: number) {
     id: "labels",
     render: context => {
       const { x0, y0, x1, y1 } = context.bounds;
-      // biome-ignore lint: representative filter pass, result intentionally discarded
       labels.filter(label => label.x >= x0 && label.x <= x1 && label.y >= y0 && label.y <= y1);
     }
   });
