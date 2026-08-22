@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { Emblems } from "@/generators/emblems-generator";
 import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 declare global {
@@ -37,8 +38,8 @@ class CulturesGenerator {
   cells: any;
 
   getRandomShield() {
-    const type = rw(COA.shields.types);
-    return rw(COA.shields[type]);
+    const type = rw(Emblems.shields.types);
+    return rw(Emblems.shields[type]);
   }
 
   getDefault(count: number = 0): Omit<Culture, "i" | "type">[] {
@@ -1099,7 +1100,7 @@ class CulturesGenerator {
     pack.cultures = cultures;
     const centers = quadtree<number>();
     const colors = getColors(count);
-    const emblemShape = (ensureEl("emblemShape") as HTMLInputElement).value;
+    const emblemShape = Emblems.shape;
 
     const codes: string[] = [];
 
@@ -1226,9 +1227,6 @@ class CulturesGenerator {
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    // define emblem shape
-    const emblemShape = (document.getElementById("emblemShape") as HTMLInputElement).value;
-
     pack.cultures.push({
       name,
       color,
@@ -1243,7 +1241,7 @@ class CulturesGenerator {
       urban: 0,
       origins: [pack.cells.culture[center]],
       code,
-      shield: emblemShape === "random" ? this.getRandomShield() : ""
+      shield: Emblems.shape === "random" ? this.getRandomShield() : ""
     });
   }
 

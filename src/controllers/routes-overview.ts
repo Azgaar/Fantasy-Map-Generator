@@ -1,6 +1,7 @@
 import { mean, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,6 +20,8 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { search: string };
+
 const columns: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
@@ -47,7 +50,7 @@ const columns: EditorColumn<Route>[] = [
 ];
 
 function getFilteredRoutes(): Route[] {
-  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
+  const searchText = filterState.search.toLowerCase().trim();
   const routes = pack.routes.filter((route: Route) => Boolean(route.points) && route.points.length >= 2);
 
   for (const route of routes) {
@@ -71,6 +74,7 @@ const routesTable = initEditorTable<Route>({
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("routes");
 
@@ -107,6 +111,7 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl<HTMLInputElement>("routesSearch").value = filterState.search;
   bindColumnSorting(dialogId, routesTable.reset);
 
   // add listeners — dropped together with the dialog HTML on close
@@ -120,7 +125,11 @@ function renderDialog(): void {
   ensureEl("routesExport").addEventListener("click", downloadRoutesData);
   ensureEl("routesLockAll").addEventListener("click", toggleLockAll);
   ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").addEventListener("input", routesTable.reset);
+  ensureEl("routesSearch").addEventListener("input", event => {
+    filterState.search = (event.target as HTMLInputElement).value;
+    dialogState.set(dialogId, "filters", filterState);
+    routesTable.reset();
+  });
 }
 
 function closeRoutesOverview(): void {
@@ -262,6 +271,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route);
+      Layers.draw("labels");
       routesTable.refresh();
     }
   });
@@ -303,6 +313,7 @@ function triggerAllRoutesRemove(): void {
           Routes.remove(route);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
+        Layers.draw("labels");
         routesTable.refresh();
         $(this).dialog("close");
       },

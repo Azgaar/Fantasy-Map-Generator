@@ -3,6 +3,7 @@ import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
+import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
@@ -407,7 +408,7 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
-    COA.regenerate();
+    Emblems.regenerate();
     ensureEl("emblems").style.display = "";
 
     // v1.5 changed releif icons data
@@ -1567,9 +1568,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     data[50] = JSON.stringify(recoverLayersState());
     if (findEl("fog") && findEl("fogging")) unfog();
 
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
-
     function recoverLayersState(): LayersState {
       const foggingContainer = findEl("fogging-cont");
       const fogging = findEl("fogging");
@@ -1773,6 +1771,53 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       }
 
       return ids.filter(vertexId => vertexId === null).length;
+    }
+  }
+
+  if (isOlderThan("1.148.0")) {
+    const DEFTEMP = /* html */ `<g id="deftemp">
+      <g id="featurePaths"></g>
+      <g id="textPaths"></g>
+      <g id="statePaths"></g>
+      <g id="defs-emblems"></g>
+        <mask id="land"></mask>
+        <mask id="water"></mask>
+        <mask id="fog" style="stroke-width: 10; stroke: black; stroke-linejoin: round; stroke-opacity: 0.1">
+          <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
+        </mask>
+      </g>
+      <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
+        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
+      </pattern>
+      <mask id="vignette-mask">
+        <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
+        <rect id="vignette-rect" fill="black" x="0.3%" y="0.4%" width="99.4%" height="99.2%" rx="5%" ry="5%" filter="blur(20px)"></rect>
+      </mask>
+    `;
+
+    restoreMissingDefTemp();
+
+    function restoreMissingDefTemp(): void {
+      const defs = document.querySelector<SVGDefsElement>("#map defs");
+      if (!defs) return;
+      const template = new DOMParser().parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg">${DEFTEMP}</svg>`,
+        "image/svg+xml"
+      ).documentElement;
+
+      const restored: string[] = [];
+      const restore = (node: Element, parent: Element) => {
+        const existing = findEl(node.id);
+        if (!existing) {
+          parent.append(node.cloneNode(true));
+          restored.push(node.id);
+          return;
+        }
+        for (const child of Array.from(node.children)) if (child.id) restore(child, existing);
+      };
+
+      for (const node of Array.from(template.children)) restore(node, defs);
+      if (restored.length) WARN && console.warn("[Auto-update] Restored missing svg defs:", restored.join(", "));
     }
   }
 }

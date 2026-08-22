@@ -66,6 +66,7 @@ let options = {
     groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
   },
   labels: JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions(),
+  emblems: { showAll: false },
   trade: {
     animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
   },

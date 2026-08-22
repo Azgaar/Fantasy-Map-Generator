@@ -1,6 +1,7 @@
 import { select, sum } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -21,6 +22,8 @@ import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { type: string };
+
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
   { key: "description", label: "Description", width: "13em", permanent: true },
@@ -33,6 +36,7 @@ const columns: EditorColumn<ZoneRow>[] = [
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
 function open(): void {
+  filterState = dialogState.get(dialogId, "filters", () => ({ type: "all" }));
   closeDialogs("#zonesEditor, .stable");
   Layers.show("zones");
 
@@ -153,18 +157,18 @@ function closeZonesEditor(): void {
 function updateFilters(): void {
   const filterSelect = ensureEl<HTMLSelectElement>("zonesFilterType");
   const types = unique(pack.zones.map(zone => zone.type));
-  const typeToFilterBy = types.includes(filterSelect.value) ? filterSelect.value : "all";
+  if (!types.includes(filterState.type)) filterState.type = "all";
 
   filterSelect.innerHTML = `<option value='all'>all</option>${types
     .map(type => `<option value="${type}">${type}</option>`)
     .join("")}`;
-  filterSelect.value = typeToFilterBy;
+  filterSelect.value = filterState.type;
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 // add line for each zone
 function getZonesData(): ZoneRow[] {
-  const type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const zones = type === "all" ? pack.zones : pack.zones.filter(zone => zone.type === type);
+  const zones = filterState.type === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterState.type);
   return zones.map(zone => {
     const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
     const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * populationRate;
@@ -230,6 +234,8 @@ function zoneHighlightOff(this: HTMLElement): void {
 }
 
 function filterZonesByType(): void {
+  filterState.type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
+  dialogState.set(dialogId, "filters", filterState);
   Layers.draw("zones");
   zonesTable.reset();
 }
@@ -330,7 +336,7 @@ function toggleLegend(): void {
     return;
   } // hide legend
 
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
+  const filterBy = filterState.type;
   const isFiltered = filterBy && filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);

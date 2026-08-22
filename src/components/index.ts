@@ -1,4 +1,3 @@
-// Reusable UI building blocks and the persistent map chrome.
 import "./app-info";
 import "./tooltips";
 import "./map-tooltip";

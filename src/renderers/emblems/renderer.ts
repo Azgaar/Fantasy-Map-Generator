@@ -1,5 +1,4 @@
-import { select } from "d3";
-import { Layers } from "@/components/layers";
+import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -10,44 +9,14 @@ import { shieldSize } from "./size";
 import { templates } from "./templates";
 
 declare global {
-  var COArenderer: EmblemRenderModule;
+  interface Window {
+    EmblemRenderer: EmblemRendererModule;
+  }
 }
-interface Division {
-  division: string;
-  line?: string;
-  t: string;
-}
+class EmblemRendererModule {
+  private versions = new Map<string, number>();
+  private pending = new Map<string, { coa: string; promise: Promise<unknown> }>();
 
-interface Ordinary {
-  ordinary: string;
-  line?: string;
-  t: string;
-  divided?: "field" | "division" | "counter";
-  above?: boolean;
-}
-
-interface Charge {
-  stroke: string;
-  charge: string;
-  t: string;
-  size?: number;
-  sinister?: boolean;
-  reversed?: boolean;
-  line?: string;
-  divided?: "field" | "division" | "counter";
-  p: number[]; // position on shield from 1 to 9
-}
-
-interface Emblem {
-  shield: string;
-  t1: string;
-  division?: Division;
-  ordinaries?: Ordinary[];
-  charges?: Charge[];
-  custom?: boolean; // if true, coa will not be rendered
-}
-
-class EmblemRenderModule {
   get shieldPaths() {
     return shieldPaths;
   }
@@ -87,7 +56,7 @@ class EmblemRenderModule {
     return fetched;
   }
 
-  private async getCharges(coa: Emblem, id: string, shieldPath: string) {
+  private async getCharges(coa: HeraldicEmblem, id: string, shieldPath: string) {
     const charges = coa.charges ? coa.charges.map(charge => charge.charge) : []; // add charges
     if (this.semy(coa.t1)) charges.push(this.semy(coa.t1) as string); // add field semy charge
     if (this.semy(coa.division?.t)) charges.push(this.semy(coa.division?.t) as string); // add division semy charge
@@ -117,7 +86,7 @@ class EmblemRenderModule {
     return 1;
   }
 
-  private getPatterns(coa: Emblem, id: string) {
+  private getPatterns(coa: HeraldicEmblem, id: string) {
     const isPattern = (string: string) => string.includes("-");
     const patternsToAdd = [];
     if (coa.t1.includes("-")) patternsToAdd.push(coa.t1); // add field pattern
@@ -153,7 +122,7 @@ class EmblemRenderModule {
       .join("");
   }
 
-  private async draw(id: string, coa: Emblem) {
+  private async draw(id: string, coa: HeraldicEmblem, version: number) {
     const { shield = "heater", division, ordinaries = [], charges = [] } = coa;
 
     const ordinariesRegular = ordinaries.filter(o => !o.above);
@@ -179,7 +148,7 @@ class EmblemRenderModule {
     </style>`;
 
     const templateCharge = (
-      charge: Charge,
+      charge: EmblemCharge,
       tincture: string,
       secondaryTincture?: string,
       tertiaryTincture?: string
@@ -200,7 +169,7 @@ class EmblemRenderModule {
       }
       return `${svg}</g>`;
 
-      function getElTransform(c: Charge, p: string | number) {
+      function getElTransform(c: EmblemCharge, p: string | number) {
         const s = (c.size || 1) * sizeModifier;
         const sx = c.sinister ? -s : s;
         const sy = c.reversed ? -s : s;
@@ -212,7 +181,7 @@ class EmblemRenderModule {
       }
     };
 
-    const templateOrdinary = (ordinary: Ordinary, tincture: string) => {
+    const templateOrdinary = (ordinary: EmblemOrdinary, tincture: string) => {
       const fill = this.clr(tincture);
       let svg = `<g fill="${fill}" stroke="none">`;
       if (ordinary.ordinary === "bordure")
@@ -298,8 +267,11 @@ class EmblemRenderModule {
         <g clip-path="url(#${shield}_${id})">${field}${divisionGroup}${templateAboveAll()}</g>
         ${overlay}</svg>`;
 
+    if (this.versions.get(id) !== version) return false;
+
     // insert coa svg to defs
     const coas = document.getElementById("coas")!;
+    document.getElementById(id)?.remove();
     coas.insertAdjacentHTML("beforeend", svg);
     // the cache key travels with the rendered shield, so clearing #coas clears the cache with it
     (coas.lastElementChild as SVGElement).dataset.coa = JSON.stringify(coa);
@@ -307,27 +279,39 @@ class EmblemRenderModule {
   }
 
   /** render the coa unless the rendered one is already up to date: a reassigned coa replaces its shield */
-  async trigger(id: string, coa: Emblem) {
+  async trigger(id: string, coa: Emblem | undefined) {
     if (!coa) return console.warn(`Emblem ${id} is undefined`);
     if (coa.custom) return console.warn("Cannot render custom emblem", coa);
 
+    const serialized = JSON.stringify(coa);
     const rendered = document.getElementById(id);
-    if (rendered?.dataset.coa === JSON.stringify(coa)) return;
+    const pending = this.pending.get(id);
+    if (rendered?.dataset.coa === serialized) {
+      if (pending) this.invalidate(id);
+      return;
+    }
 
-    rendered?.remove(); // the entity kept its id but got new arms, e.g. on a states regeneration
-    return this.draw(id, coa);
+    if (pending?.coa === serialized) return pending.promise;
+
+    const version = (this.versions.get(id) || 0) + 1;
+    this.versions.set(id, version);
+    const promise = this.draw(id, coa, version).finally(() => {
+      if (this.pending.get(id)?.promise === promise) this.pending.delete(id);
+    });
+    this.pending.set(id, { coa: serialized, promise });
+    return promise;
   }
 
-  async add(type: string, i: number, coa: Emblem, x: number, y: number) {
-    const id = `${type}COA${i}`;
-    const g: HTMLElement = document.getElementById(`${type}Emblems`) as HTMLElement;
+  remove(id: string): void {
+    this.invalidate(id);
+    document.getElementById(id)?.remove();
+  }
 
-    if (select("#emblems").selectAll("use").size()) {
-      const size = parseFloat(g.getAttribute("font-size") || "50");
-      const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
-      g.insertAdjacentHTML("beforeend", use);
-    }
-    if (Layers.isOn("emblems")) this.trigger(id, coa);
+  private invalidate(id: string): void {
+    this.versions.set(id, (this.versions.get(id) || 0) + 1);
+    this.pending.delete(id);
   }
 }
-window.COArenderer = new EmblemRenderModule();
+
+export const EmblemRenderer = new EmblemRendererModule();
+window.EmblemRenderer = EmblemRenderer;

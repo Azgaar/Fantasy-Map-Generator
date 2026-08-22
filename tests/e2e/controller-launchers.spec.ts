@@ -56,7 +56,9 @@ test.describe("controller launchers", () => {
     expect(reliefIconIndex).toBeGreaterThanOrEqual(0);
     const reliefIcon = page.locator("#terrain > use").nth(reliefIconIndex);
     await expect(reliefIcon).toBeAttached();
-    await reliefIcon.click({force: true});
+    // Chromium does not reliably hit-test sparse SVG <use> instances by coordinates in headless mode.
+    // Dispatching the bubbling click exercises the same delegated #viewbox launcher path.
+    await reliefIcon.dispatchEvent("click");
 
     await expect(page.locator("#reliefEditor")).toBeVisible();
   });

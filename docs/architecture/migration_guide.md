@@ -53,26 +53,12 @@ and **never** use module-local `declare const` or `as any` to paper over one.
 1. **It lives in `src/` (migrated)** → **import it** — never call it through its `window.*`
    global; that bridge exists for classic `public/` code, not for bundled modules. The one
    exception is direction: imports may only point **down** the stack
-   (components/controllers/services → renderers → generators → utils). A generator or renderer
-   that needs `tip` keeps the bridge with a comment, because importing UI upward is the worse
-   bug. See [architecture.md](./architecture.md#imports-point-down-never-up). Utils
-   (`src/utils`, e.g. `getPackPolygon`, `isLand`, `generateGrid`, `formatPrice`)
-   and generators that self-register a global type (`Names`, `Cultures`, `States`,
-   `COA`, …) are already typed; import the util, or use the global directly.
-   Watch the signature: the `window.X` wrapper is often re-bound to fewer args
-   than the underlying export — call the **real** util with its full arg list
-   (`getPackPolygon(i, pack)`, not the 1-arg `window.getPackPolygon`). A global
-   only declared on `interface Window` (e.g. `NamesbaseEditor`) is reached as
-   `window.NamesbaseEditor`, not bare.
+   (components/controllers/services → renderers → generators → utils).
+
 2. **It lives only in classic `public/` code** → **declare it once in
    [`src/types/global.ts`](../../src/types/global.ts)** as `var X: …`, beside the
    existing ones. Do not redeclare a name `global.ts` (or a generator/util
-   module) already types — duplicate `var` declarations are a compile error.
-
-   The reverse case — a function **you just migrated** that classic code still calls — goes in
-   the `interface Window` block instead, so bundled callers are forced to import it. Add the
-   entry only if a `public/**/*.js` file actually calls it; grep before you write it. If nothing
-   classic calls it, the module needs no `window.X = X` line at all.
+   module) already types.
 
 3. **It's a DOM element** (an `id`'d node the browser exposes as a global) →
    **don't declare it at all.** Use `ensureEl<HTMLInputElement>("brushSize")` (or

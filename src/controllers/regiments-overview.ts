@@ -1,6 +1,7 @@
 import { select, sum } from "d3";
 import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -21,17 +22,21 @@ import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
 const dialogId = "regimentsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { stateId: number };
+
 type RegimentRow = { state: State; regiment: Regiment };
 let columns: EditorColumn<RegimentRow>[] = [];
 const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData, onUpdate: renderRegimentsPage });
 
-function open(state = -1): void {
+function open(state?: number): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: -1 }));
   closeDialogs(".stable");
   Layers.show("military");
 
+  if (state !== undefined) filterState.stateId = state;
   renderDialog();
-  updateFilter(state);
+  updateFilter();
   regimentsTable.reset();
 
   $("#regimentsOverview").dialog({
@@ -84,7 +89,11 @@ function renderDialog(): void {
   ensureEl("regimentsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("regimentsAddNew").addEventListener("click", toggleAdd);
   ensureEl("regimentsExport").addEventListener("click", downloadRegimentsData);
-  ensureEl("regimentsFilter").addEventListener("change", regimentsTable.reset);
+  ensureEl("regimentsFilter").addEventListener("change", event => {
+    filterState.stateId = +(event.target as HTMLSelectElement).value;
+    dialogState.set(dialogId, "filters", filterState);
+    regimentsTable.reset();
+  });
 
   body.addEventListener("click", async event => {
     const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
@@ -144,17 +153,17 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
 }
 
 function getRegimentsData(): RegimentRow[] {
-  const stateId = +ensureEl<HTMLSelectElement>("regimentsFilter").value;
   const rows: RegimentRow[] = [];
   for (const state of pack.states) {
     if (!state.i || state.removed || !state.military?.length) continue;
-    if (stateId !== -1 && state.i !== stateId) continue;
+    if (filterState.stateId !== -1 && state.i !== filterState.stateId) continue;
     for (const regiment of state.military) rows.push({ state, regiment });
   }
   return sortDataByColumns(dialogId, rows, columns);
 }
 
 function refreshRegimentsOverview(): void {
+  updateFilter();
   regimentsTable.refresh();
 }
 
@@ -210,14 +219,18 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
   updateDialog(dialogId, { width: "fit-content", position });
 }
 
-function updateFilter(state: number): void {
+function updateFilter(): void {
+  if (filterState.stateId !== -1 && !pack.states.some(s => s.i === filterState.stateId && !s.removed)) {
+    filterState.stateId = -1;
+  }
   const filter = ensureEl<HTMLSelectElement>("regimentsFilter");
   filter.options.length = 0; // remove all options
-  filter.options.add(new Option("all", "-1", false, state === -1));
+  filter.options.add(new Option("all", "-1", false, filterState.stateId === -1));
   const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name! > b.name! ? 1 : -1));
   statesSorted.forEach(s => {
-    filter.options.add(new Option(s.name, String(s.i), false, s.i === state));
+    filter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function regimentHighlightOn(event: Event): void {
@@ -263,7 +276,7 @@ function toggleAdd(): void {
 }
 
 function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
-  const state = +ensureEl<HTMLSelectElement>("regimentsFilter").value;
+  const state = filterState.stateId;
   if (state === -1) {
     tip("Please select state from the list", false, "error");
     return;

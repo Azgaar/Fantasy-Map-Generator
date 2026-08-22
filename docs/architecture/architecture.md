@@ -360,15 +360,12 @@ Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they ge
 
 ## Cross-layer subsystems
 
-Most folders are flat. A tightly-coupled subsystem that genuinely spans layers appears as
-a **same-named subfolder inside each layer it touches**, rather than one mixed folder.
-Heraldry is the current example:
+Most folders are flat. When a feature spans layers, each part stays under the folder for
+its role. Heraldry is the current example:
 
-- `src/generators/emblems/` — emblem generation + heraldry data (registers `window.COA`)
-- `src/renderers/emblems/` — SVG drawing of emblems (registers `window.COArenderer`)
-
-This keeps each half under the correct layer (generation vs view) while the shared
-`emblems/` name signals they form one feature.
+- `src/data/emblems/` — static heraldry catalogs
+- `src/generators/emblems-generator.ts` — emblem generation (registers `window.Emblems`)
+- `src/renderers/emblems/` — SVG drawing of emblems (registers `window.EmblemRenderer`)
 
 ## Why no `core/`
 

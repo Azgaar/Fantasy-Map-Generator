@@ -1,5 +1,6 @@
 import { updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -15,7 +16,9 @@ import type { Deal } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let activeMarketId = 0;
-let activeFilter: "all" | "local" | "global" = "all";
+type FilterState = { scope: "all" | "local" | "global" };
+let filterState: FilterState;
+
 const dialogId = "marketDeals" as const;
 const position = { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" };
 const columns: EditorColumn<Deal>[] = [
@@ -69,11 +72,13 @@ function open(marketId: number): void {
     return;
   }
 
+  filterState = dialogState.get(dialogId, "filters", (): FilterState => ({ scope: "all" }));
+  if (!(["all", "local", "global"] as string[]).includes(filterState.scope)) filterState.scope = "all";
+  dialogState.set(dialogId, "filters", filterState);
   activeMarketId = marketId;
-  activeFilter = "all";
 
   renderDialog();
-  (ensureEl("marketDealsFilter") as HTMLSelectElement).value = "all";
+  ensureEl<HTMLSelectElement>("marketDealsFilter").value = filterState.scope;
   marketDealsTable.reset();
 
   $(`#${dialogId}`).dialog({
@@ -126,7 +131,8 @@ function renderDialog(): void {
     if (party) zoomTo(party.x, party.y, 8, 2000);
   });
   ensureEl("marketDealsFilter").addEventListener("change", ev => {
-    activeFilter = (ev.target as HTMLSelectElement).value as typeof activeFilter;
+    filterState.scope = (ev.target as HTMLSelectElement).value as typeof filterState.scope;
+    dialogState.set(dialogId, "filters", filterState);
     marketDealsTable.reset();
   });
 }
@@ -145,9 +151,9 @@ function getFilteredMarketDeals(): Deal[] {
 
   const allDeals = getMarketDeals(pack.deals, activeMarketId);
   const deals = allDeals.filter(deal => {
-    if (activeFilter === "all") return true;
+    if (filterState.scope === "all") return true;
     const counterparty = getCounterparty(deal, activeMarketId);
-    return activeFilter === "local" ? counterparty.type === "burg" : counterparty.type === "market";
+    return filterState.scope === "local" ? counterparty.type === "burg" : counterparty.type === "market";
   });
 
   return sortDataByColumns(dialogId, deals, columns);

@@ -2,7 +2,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
-vi.mock("@/renderers/draw-emblems", () => ({ redrawEmblemGroup: vi.fn() }));
 vi.mock("@/renderers/viewport/viewport-renderer", () => ({
   ViewportLayers: { schedule: vi.fn(), renderNow: vi.fn() }
 }));

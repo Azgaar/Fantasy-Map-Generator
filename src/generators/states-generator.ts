@@ -1,4 +1,6 @@
 import { mean, median, quadtree, sum } from "d3";
+import { Emblems } from "@/generators/emblems-generator";
+import type { Emblem } from "@/types/emblems";
 import {
   each,
   ensureEl,
@@ -31,7 +33,7 @@ export interface State {
   type: string;
   center: number;
   culture: number;
-  coa: any;
+  coa: Emblem;
   lock?: boolean;
   removed?: boolean;
   pole?: [number, number];
@@ -182,8 +184,8 @@ class StatesModule {
           ? "Generic"
           : pack.cultures[culture].type;
       const expansionism = rn(Math.random() * ensureEl<HTMLInputElement>("sizeVariety").valueAsNumber + 1, 1);
-      const coa = COA.generate(capital.coa, 0.3, null, pack.cultures[culture].type);
-      coa.shield = capital.coa.shield;
+      const coa = Emblems.generate(capital.coa, 0.3, null, pack.cultures[culture].type);
+      coa.shield = capital.coa?.shield;
       newStates.push({
         i: stateId,
         name,
@@ -214,8 +216,8 @@ class StatesModule {
       const basename = burg.name!.length < 9 && each5th(burg.cell) ? burg.name! : Names.getCultureShort(burg.culture!);
       const name = Names.getState(basename, burg.culture!);
       const type = pack.cultures[burg.culture!].type;
-      const coa = COA.generate(null, null, null, type);
-      coa.shield = COA.getShield(burg.culture!);
+      const coa = Emblems.generate(null, null, null, type);
+      coa.shield = Emblems.getShield(burg.culture!);
       states.push({
         i: burg.i,
         name,

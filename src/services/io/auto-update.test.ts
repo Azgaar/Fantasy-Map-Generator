@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
+import { VERSION } from "@/services/versioning";
 import { resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
@@ -285,5 +287,83 @@ describe("v1.146 rendering groups", () => {
     resolveVersionConflicts("1.146.0", []);
 
     expect(pack.features.slice(1).every(feature => !feature.subtype)).toBe(true);
+  });
+});
+
+// the .map file carries the whole #map svg, so its defs are only what the file was saved with
+describe("missing svg defs", () => {
+  const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
+
+  it("recreates the defs an old saved svg never had", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
+
+    resolveVersionConflicts("1.147.0", []);
+
+    expect(getDeftempIds()).toEqual([
+      "featurePaths",
+      "textPaths",
+      "statePaths",
+      "defs-emblems",
+      "land",
+      "water",
+      "fog"
+    ]);
+    expect(document.querySelector("#fog rect")).not.toBeNull();
+    expect(document.getElementById("oceanicPattern")).not.toBeNull();
+    expect(document.getElementById("vignette-rect")).not.toBeNull();
+  });
+
+  // a pre-v1.104 svg: the feature geometry is inlined into the masks and #featurePaths is absent
+  it("adds only what is missing, leaving the existing defs alone", () => {
+    document.body.innerHTML = /* html */ `<svg id="map">
+      <defs>
+        <g id="deftemp">
+          <mask id="land"><path id="land_2"></path></mask>
+          <mask id="water"><path id="water_2"></path></mask>
+          <g id="textPaths"><path id="textPath_1"></path></g>
+          <g id="statePaths"></g>
+          <mask id="fog"><rect></rect></mask>
+        </g>
+      </defs>
+      <g id="viewbox"></g>
+    </svg>`;
+
+    resolveVersionConflicts("1.147.0", []);
+
+    expect(getDeftempIds()).toEqual([
+      "land",
+      "water",
+      "textPaths",
+      "statePaths",
+      "fog",
+      "featurePaths",
+      "defs-emblems"
+    ]);
+    expect(document.querySelectorAll("#textPaths path")).toHaveLength(1); // existing content is left alone
+    expect(document.getElementById("vignette-rect")).not.toBeNull();
+  });
+
+  it("leaves current maps alone", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
+
+    resolveVersionConflicts(VERSION, []);
+
+    expect(document.getElementById("deftemp")).toBeNull();
+  });
+
+  // the migration carries its own copy of the markup, so it drifts the moment index.html gains a
+  // defs element it does not know about. #filters is out of scope: it is large, static and old maps have it
+  it("restores every defs element index.html declares", () => {
+    const defs = indexHtml.slice(
+      indexHtml.indexOf("<defs>", indexHtml.indexOf('id="map"')),
+      indexHtml.indexOf("</defs>")
+    );
+    const declared = Array.from(defs.replace(/<g id="filters">[\s\S]*?<\/g>/, "").matchAll(/\bid="([^"]+)"/g));
+
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
+    resolveVersionConflicts("1.147.0", []);
+
+    const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
+    expect(restored).toEqual(declared.map(([, id]) => id));
   });
 });
