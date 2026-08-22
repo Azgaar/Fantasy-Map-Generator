@@ -38,7 +38,7 @@ The codebase has three places that re-run a large slice of the canonical pipelin
 
 ### 1. Heightmap edit exit — full settlement regeneration
 
-**File:** [`public/modules/ui/heightmap-editor.js`](../../public/modules/ui/heightmap-editor.js) → `regenerateErasedData()`
+**File:** [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()`
 
 Runs when the user exits the heightmap editor without preserving downstream data. It clears all settlement state (`pack.cultures`, `pack.burgs`, `pack.states`, `pack.provinces`, `pack.religions`) and walks phases **3 → 15** of the canonical pipeline. This is effectively a "second generate" — every global generator that runs in `generate()` after `reGraph()` must also run here.
 
@@ -46,7 +46,7 @@ Note: `Ice.generate()` here is called after `Provinces.getPoles()` rather than a
 
 ### 2. Heightmap edit exit — preserved settlement data
 
-**File:** [`public/modules/ui/heightmap-editor.js`](../../public/modules/ui/heightmap-editor.js) → `restoreRiskedData()`
+**File:** [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `restoreRiskedData()`
 
 Runs when the user exits the heightmap editor with "keep data" enabled. Settlement entities (cultures, burgs, states, provinces, religions, zones) are remapped onto the new pack rather than regenerated. This path:
 
@@ -88,15 +88,15 @@ These are partial regenerations triggered from the UI and do **not** replicate t
 
 - Generator modules own their corresponding `regenerate` interfaces. [`src/components/tools.ts`](../../src/components/tools.ts) contains only Tools-tab event handlers that compose generator, renderer, and controller interfaces.
 - [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts): version-bump migrations (e.g. the `1.124.0` block that introduced goods/markets/production/taxes).
-- [`public/modules/ui/world-configurator.js`](../../public/modules/ui/world-configurator.js) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
+- [`src/controllers/world-configurator.ts`](../../src/controllers/world-configurator.ts) → `updateWorld`: climate-only refresh; does not touch the settlement / economy layers.
 
 When extending the pipeline, audit each of these for whether their scope reaches the new phase.
 
 ## Adding a new global generation step — checklist
 
 1. Add the call in `public/main.js` `generate()` at the correct phase boundary.
-2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.js` `regenerateErasedData()` at the matching boundary.
-3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.js` `restoreRiskedData()`.
+2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.ts` `regenerateErasedData()` at the matching boundary.
+3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.ts` `restoreRiskedData()`.
 4. For `src/generators/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.
-5. Add or update the version-bump migration block in `public/modules/dynamic/auto-update.js` so older saves gain the new fields on load.
+5. Add or update the version-bump migration block in [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts) so older saves gain the new fields on load.
 6. Update the canonical sequence table at the top of this file.
