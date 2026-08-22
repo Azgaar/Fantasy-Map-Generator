@@ -5,8 +5,12 @@ on:
 
   workflow_dispatch:
 
+# No write permissions here on purpose: this workflow runs the (untrusted)
+# PR's own code, so fork PRs would only get GITHUB_TOKEN read access anyway.
+# Posting the PR comment happens in bench-comment.yml, which runs in the base
+# repo's context and can safely have write access.
 permissions:
-  pull-requests: write
+  contents: read
 
 jobs:
   bench:
@@ -33,12 +37,19 @@ jobs:
           path: bench/current.json
           if-no-files-found: ignore
 
-      - name: Comment benchmark results on PR
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('bench/comment.md') != ''
-        uses: marocchino/sticky-pull-request-comment@v2
+      - name: Save PR number
+        if: always() && github.event_name == 'pull_request'
+        run: echo "${{ github.event.pull_request.number }}" > bench/pr-number.txt
+
+      - name: Upload benchmark comment artifact
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
         with:
-          header: benchmark-results
-          path: bench/comment.md
+          name: bench-comment
+          path: |
+            bench/comment.md
+            bench/pr-number.txt
+          if-no-files-found: ignore
 
       - name: Fail job on performance regression
         if: steps.bench.outcome == 'failure'
