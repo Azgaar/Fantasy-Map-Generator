@@ -101,10 +101,7 @@ function prepareMapData(): string {
   const cloneTerrain = cloneEl.querySelector("#terrain");
   if (cloneTerrain) cloneTerrain.innerHTML = "";
 
-  // emblems are stored on the entities, the layer and its defs hold only what the current view has needed
   for (const group of Array.from(cloneEl.querySelectorAll("#emblems > g"))) group.innerHTML = "";
-  const cloneCoas = cloneEl.querySelector("#coas");
-  if (cloneCoas) cloneCoas.innerHTML = "";
 
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers

@@ -226,6 +226,35 @@ describe("viewport emblem rendering", () => {
     expect(document.getElementById("provinceCOA1")).toBeNull();
   });
 
+  it("frees the shields panning left behind, sparing the ones still on screen", () => {
+    drawEmblems();
+    const coas = document.getElementById("coas")!;
+    // shields rendered for emblems the view has since left behind, plus the two that are still referenced
+    for (let i = 0; i < 250; i++) coas.insertAdjacentHTML("beforeend", `<g id="burgCOA${i}"></g>`);
+    coas.insertAdjacentHTML("beforeend", '<g id="stateCOA1"></g><g id="stateCOA2"></g>');
+    // stateCOA2 sits outside the viewport, so only an open dialog keeps it alive
+    document.body.insertAdjacentHTML("beforeend", '<svg id="dialog"><use href="#stateCOA2"></use></svg>');
+
+    renderViewport();
+
+    expect(document.getElementById("stateCOA1")).not.toBeNull(); // the map shows it
+    expect(document.getElementById("stateCOA2")).not.toBeNull(); // the dialog shows it
+    expect(coas.children).toHaveLength(2);
+  });
+
+  it("keeps the shields on hand while the view is showing them", () => {
+    drawEmblems();
+    const coas = document.getElementById("coas")!;
+    for (let i = 0; i < 250; i++) {
+      coas.insertAdjacentHTML("beforeend", `<g id="burgCOA${i}"></g>`);
+      document.getElementById("burgEmblems")!.insertAdjacentHTML("beforeend", `<use href="#burgCOA${i}"></use>`);
+    }
+
+    renderViewport();
+
+    expect(coas.children).toHaveLength(250);
+  });
+
   it("removes definitions for entities omitted by a full redraw", () => {
     document.querySelector("#coas")!.innerHTML = '<g id="stateCOA1"></g><g id="stateCOA2"></g>';
     drawEmblems();

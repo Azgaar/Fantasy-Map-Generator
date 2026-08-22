@@ -54,6 +54,8 @@ const scenes: Record<EmblemType, Scene<EmblemData>> = {
 const layer = ViewportLayers.register({ id: "emblems", render: reconcileEmblems });
 const sizes: Record<EmblemType, number> = { burg: 0, province: 0, state: 0 };
 const reconcileListeners = new Set<() => void>();
+// unreferenced shields tolerated before a sweep is worth scanning the document for
+const DEFINITION_SLACK = 200;
 let drawVersion = 0;
 let isDrawPending = false;
 let needsFullRedraw = false;
@@ -184,6 +186,7 @@ export function invalidateEmblems(): void {
 export function removeEmblems(): void {
   invalidateEmblems();
   for (const type of TYPES) document.getElementById(GROUPS[type])?.replaceChildren();
+  evictUnreferencedDefinitions(); // the layer holds nothing now, so only open dialogs keep a shield alive
 }
 
 export function subscribeToEmblemReconciliation(listener: () => void): () => void {
@@ -228,6 +231,7 @@ function releaseTransientDefinitions(ids: string[]): void {
 
 function reconcileEmblems(context: ViewportRenderContext): void {
   if (!Layers.isOn("emblems")) return;
+  let shown = 0;
 
   for (const type of TYPES) {
     const group = context.root.querySelector<SVGGElement>(`#${GROUPS[type]}`);
@@ -267,9 +271,39 @@ function reconcileEmblems(context: ViewportRenderContext): void {
     }
     for (const use of materialized.values()) use.remove();
     group.append(additions);
+    shown += visible.length;
   }
 
-  if (context.root === document) for (const listener of reconcileListeners) listener();
+  if (context.root === document) {
+    evictDefinitionSlack(shown);
+    for (const listener of reconcileListeners) listener();
+  }
+}
+
+/**
+ * A shield stays in the defs after its emblem scrolls out of view, so panning across the map ends up
+ * holding every emblem it has ever shown. Sweeping means scanning the document for live references, so it
+ * waits until the shields on hand clearly outnumber the ones the view is showing.
+ */
+function evictDefinitionSlack(shown: number): void {
+  const coas = findEl("coas");
+  if (coas && coas.childElementCount > Math.max(DEFINITION_SLACK, shown * 2)) evictUnreferencedDefinitions();
+}
+
+/** Drop every rendered shield nothing references any more: not the map layer, nor a dialog, nor an export */
+function evictUnreferencedDefinitions(): void {
+  const coas = findEl("coas");
+  if (!coas) return;
+
+  const referenced = new Set<string>();
+  for (const use of document.querySelectorAll<SVGUseElement>("use")) {
+    const href = use.getAttribute("href") || use.getAttribute("xlink:href");
+    if (href?.startsWith("#")) referenced.add(href.slice(1));
+  }
+
+  for (const definition of Array.from(coas.children)) {
+    if (!referenced.has(definition.id)) EmblemRenderer.remove(definition.id);
+  }
 }
 
 function materialize(

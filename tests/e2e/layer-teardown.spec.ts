@@ -222,10 +222,11 @@ test.describe("layer teardown keeps user data", () => {
     expect(await page.locator("#coas > #stateCOA1").count()).toBe(1); // replaced, not duplicated
 
     // the same holds when the arms change while the layer is off: the old code skipped the purge
-    // entirely in that case, so showing the layer brought the stale shield back
+    // entirely in that case, so showing the layer brought the stale shield back. The teardown now frees
+    // the shield outright, since with the layer down nothing references it any more
     await page.evaluate(() => (window as any).Layers.hide("emblems"));
     await setArms("swiss"); // the draw is a no-op while the layer is off
-    expect(await renderedShield()).toBe("polish");
+    expect(await renderedShield()).toBeNull();
 
     await page.evaluate(() => (window as any).Layers.show("emblems"));
     await expect.poll(renderedShield).toBe("swiss");
