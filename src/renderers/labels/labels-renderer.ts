@@ -1,7 +1,7 @@
 import type { Burg } from "@/generators/burgs-generator";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
-import { ViewportLayers, type ViewportBounds } from "@/renderers/viewport/viewport-renderer";
+import { type ViewportBounds, ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getLabelsData } from "./label-data";
 import type { LabelData } from "./labels";
 

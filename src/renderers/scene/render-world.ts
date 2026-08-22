@@ -2,8 +2,8 @@ import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";
 import type { TemperatureScale } from "@/utils/temperature";
 import type { GoodsProductionSource } from "./layers/economic-ice-scene";
-import type { MarkerRenderState } from "./layers/point-symbol-scene";
 import type { LabelRenderState } from "./layers/label-scene";
+import type { MarkerRenderState } from "./layers/point-symbol-scene";
 
 export interface ClimateRenderGrid {
   cells: Grid["cells"];

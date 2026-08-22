@@ -167,7 +167,8 @@ export function layoutCurvedGlyphs(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const characters = [...lines[lineIndex]];
     const widths = characters.map(character => Math.max(estimateTextWidth(character) * fontSize, fontSize * 0.2));
-    const textLength = widths.reduce((sum, width) => sum + width, 0) + Math.max(characters.length - 1, 0) * letterSpacing;
+    const textLength =
+      widths.reduce((sum, width) => sum + width, 0) + Math.max(characters.length - 1, 0) * letterSpacing;
     let distance = (pathLength * startOffset) / 100 - textLength / 2;
     const normalOffset = (lineIndex - (lines.length - 1) / 2) * fontSize;
     for (let index = 0; index < characters.length; index++) {
@@ -198,8 +199,16 @@ function sampleCurve(points: readonly (readonly [number, number])[]): [number, n
       const t2 = t * t;
       const t3 = t2 * t;
       sampled.push([
-        0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
-        0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
+        0.5 *
+          (2 * p1[0] +
+            (-p0[0] + p2[0]) * t +
+            (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
+            (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+        0.5 *
+          (2 * p1[1] +
+            (-p0[1] + p2[1]) * t +
+            (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
+            (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
       ]);
     }
   }
