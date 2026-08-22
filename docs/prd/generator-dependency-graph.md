@@ -38,16 +38,30 @@ This costs real, documented maintenance burden, not hypothetical:
 
 ## Solution
 
-A single **pipeline registry** — `src/generators/pipeline.ts` — where each existing generator call
-becomes a named `PipelineStep` with an explicit `dependsOn` list. The registry topologically orders
-the steps once; `Pipeline.run()` replaces the linear body of `generate()`, and
-`Pipeline.runFrom(id, { assume })` runs a step and everything transitively downstream of it, treating
-the ids in `assume` as already satisfied (their data was restored, not regenerated) rather than
-running them. That single method expresses what `regenerateErasedData`, `restoreRiskedData`, and
-`Resampler.process()` each do today by manually copying and editing a slice of the phase list.
+A generic **pipeline** mechanism — `createPipeline` in `src/utils/pipeline.ts` — mirroring how
+`createRegistry` in `src/utils/registry.ts` is a layer-agnostic factory that `Controllers`/`Services`
+are just configuration over. `createPipeline` knows nothing about generators, `pack`, or `grid`; it
+takes an ordered array of `PipelineStep`s and returns an object that can run them.
 
-This is deliberately narrow: it makes **call order and dependency edges** explicit and centrally
-declared. It does not change how a generator reads or writes data — every step's `run()` still calls
+The first version keeps the mechanism deliberately simple: **registration order is the execution
+order**, the same rule `mapLayers`/`Layers` already uses for z-order. There is no computed topological
+sort. Each step may still declare `dependsOn`, but that list is only *validated* at construction (every
+named dependency must already be an earlier entry in the array) and used to compute `descendantsOf`
+for `runFrom` — it does not decide *where* a step runs. Ordering is exactly what a contributor reads in
+the array, top to bottom, same as `generate()` today.
+
+`src/generators/pipeline.ts` is the configuration: the concrete `pipelineSteps` array — one entry per
+existing generator call, in the same order `generate()` calls them today — plus the exported `Pipeline`
+instance and its derived `PipelineStepId` type. `Pipeline.run()` replaces the linear body of
+`generate()`, and `Pipeline.runFrom(id, { assume })` runs a step and everything transitively downstream
+of it (per the declared `dependsOn` edges), treating the ids in `assume` as already satisfied (their
+data was restored, not regenerated) rather than running them. That single method expresses what
+`regenerateErasedData`, `restoreRiskedData`, and `Resampler.process()` each do today by manually
+copying and editing a slice of the phase list.
+
+This is deliberately narrow: it makes **call order** explicit and centrally declared, and gives
+`dependsOn` just enough teeth to catch a step registered before what it needs and to answer "what runs
+after X". It does not change how a generator reads or writes data — every step's `run()` still calls
 straight into the existing `Cultures.generate()`, `Markets.generate()`, etc., which still read and
 write the shared `pack`/`grid` globals exactly as they do today. Turning generators into modules with
 explicit typed inputs/outputs (the "self-contained package" vision in full) is a separate, larger
@@ -58,12 +72,13 @@ migration this PRD sets the ground for but does not attempt — see Out of Scope
 1. As a contributor adding a new generation step, I want to declare it once — its id, what it depends
    on, and its `run()` — in one file, so that I don't have to hand-edit `main.js`,
    `heightmap-editor.ts`, and `resample.ts` separately and hope I found every site.
-2. As a contributor, I want an attempt to register a step whose declared dependency doesn't exist, or
-   a cycle between two steps, to throw at startup, so that a broken graph is a load-time error instead
-   of a silent ordering bug discovered later on a specific map.
-3. As a contributor, I want `Pipeline.run()` to execute every step in a valid topological order derived
-   from the declared edges, so that `generate()` in `main.js` stops being the one place that encodes
-   the whole sequence by hand.
+2. As a contributor, I want registering a step whose declared dependency doesn't exist yet, or names an
+   id that comes later in the array, to throw at startup, so that a step declared before what it needs
+   is a load-time error instead of a silent ordering bug discovered later on a specific map.
+3. As a contributor, I want `Pipeline.run()` to execute every step in the order it is registered, so
+   that `generate()` in `main.js` stops being the one place that encodes the whole sequence by hand, and
+   so that the execution order is exactly what's written in `pipelineSteps`, with nothing computed or
+   reordered behind it.
 4. As a maintainer of `heightmap-editor.ts`, I want `Pipeline.runFrom("hydrologyBase", { assume: [...] })`
    to run exactly the steps downstream of the heightmap edit, so that `regenerateErasedData()` stops
    being a hand-copied, independently-maintained slice of `generate()`.
@@ -88,50 +103,77 @@ migration this PRD sets the ground for but does not attempt — see Out of Scope
 10. As a contributor, I want to ask the registry what depends on a given step (its transitive
     descendants), so that I can answer "if I change how biomes are assigned, what else needs to
     rerun?" without grepping call sites.
-11. As a maintainer, I want `docs/domain/generation_pipeline.md` rewritten to describe the registry and
+11. As a maintainer, I want `docs/domain/generation_pipeline.md` rewritten to describe the pipeline and
     its three `runFrom` call sites instead of a hand-maintained phase table, so that the documentation
     and the code cannot drift the way the old table already had (it still names the pre-migration path
     `public/modules/ui/heightmap-editor.js`, which moved to `src/controllers/heightmap-editor.ts`).
-12. As a maintainer, I want the pipeline registry unit-tested against fake steps, so that topological
-    ordering, `assume`-set behavior, and cycle/missing-dependency detection are guaranteed without
-    exercising real `pack`/`grid` generation.
+12. As a maintainer, I want `createPipeline` unit-tested against fake steps, so that registration-order
+    execution, `assume`-set behavior, and out-of-order/missing-dependency detection are guaranteed
+    without exercising real `pack`/`grid` generation.
 13. As a contributor, I want async steps (only `heightmap`, via `HeightmapGenerator.generate(grid)`,
     today) to work the same as sync ones, so that the executor doesn't force every generator to become
     async for uniformity.
 14. As a maintainer, I want registering a step to not require touching every existing generator file at
     once, so that the migration can land incrementally, one call site's worth of steps at a time,
     consistent with how the rest of the codebase migrates.
+15. As a maintainer, I want the ordering/dispatch mechanism itself to know nothing about generators,
+    `pack`, or `grid` — the same split as `createRegistry` and `Controllers`/`Services` — so that
+    `src/generators/pipeline.ts` is plain configuration and the mechanism in `src/utils/pipeline.ts`
+    could back an unrelated ordered-steps use case later without being extracted out of `generators/`
+    first.
 
 ## Implementation Decisions
 
-### Step and registry shape
+### Step and pipeline shape
 
 ```ts
-// src/generators/pipeline.ts
-interface PipelineStep<Id extends string = string> {
+// src/utils/pipeline.ts — generic, no knowledge of generators/pack/grid, mirrors registry.ts
+export interface PipelineStep<Id extends string = string> {
   id: Id;
-  dependsOn: Id[]; // ids of steps that must run first
-  run: () => void | Promise<void>; // wraps an existing generator call, unchanged
+  dependsOn?: Id[]; // ids of earlier-registered steps this one is documented to need
+  run: () => void | Promise<void>;
 }
 
-class PipelineGraph<Id extends string = string> {
-  constructor(private steps: PipelineStep<Id>[]); // validates at construction
+export interface Pipeline<Id extends string = string> {
+  readonly ids: readonly Id[]; // registration order = execution order
+  has(id: string): id is Id;
+  descendantsOf(id: Id): Id[]; // steps that (transitively) declare id as a dependency, in registration order
 
-  get order(): readonly Id[]; // cached topological order
-  descendantsOf(id: Id): Id[]; // transitive downstream ids, in topological order
-
-  run(): Promise<void>; // every step, in order
-  runFrom(id: Id, opts?: {assume?: Id[]}): Promise<void>; // id + descendants, minus assume
+  run(): Promise<void>; // every step, in registration order
+  runFrom(id: Id, opts?: {assume?: Id[]}): Promise<void>; // id + descendants, minus assume, in order
 }
 
-export const Pipeline = new PipelineGraph(pipelineSteps);
+export function createPipeline<Id extends string = string>(steps: PipelineStep<Id>[]): Pipeline<Id>; // validates at construction
+```
+
+```ts
+// src/generators/pipeline.ts — configuration only
+import { createPipeline } from "@/utils/pipeline";
+
+const pipelineSteps = [
+  {id: "grid", run: () => { grid = shouldRegenerateGrid(...) ? generateGrid() : grid; }},
+  {id: "heightmap", dependsOn: ["grid"], run: () => HeightmapGenerator.generate(grid)},
+  // ...one entry per existing generate() call, in the same order generate() calls them today
+  {id: "cultures", dependsOn: ["rankCells"], run: () => Cultures.generate()}
+] as const satisfies PipelineStep[];
+
+export const Pipeline = createPipeline(pipelineSteps);
 export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
 ```
 
-- **Validation happens once, at construction.** Building the topological order (Kahn's algorithm) both
-  produces `order` and detects a cycle or a `dependsOn` id that names no registered step; either throws
-  immediately. This is a startup-time contract check, not a per-call one — once built, `order` and
-  `descendantsOf` are pure lookups.
+- **Registration order is the execution order — no computed ordering.** `run()` just iterates `steps`
+  in array order, the same rule already established for `mapLayers`/`Layers` ("registration order is
+  the z-order, the init order and the draw order"). There is no topological sort, so there is no notion
+  of a schedule separate from what's written in the file: the array *is* the pipeline, read top to
+  bottom, same as `generate()` is today.
+- **`dependsOn` is validated, not scheduled.** At construction, `createPipeline` walks the array once;
+  for each step, every id in `dependsOn` must already be a preceding entry. An id that isn't registered
+  at all, or is registered later in the array, throws immediately. This is a much smaller check than a
+  general cycle detector — it can't be a cycle, because "must appear earlier" is the whole rule — but it
+  catches the same real mistake: a step declared before what it needs.
+- **`descendantsOf(id)` is a plain forward scan**, not a topological-sort artifact: walk the array after
+  `id`, collecting steps whose `dependsOn` includes `id` or (transitively) includes a step already
+  collected. It exists for `runFrom`; nothing else in this design needs it.
 - **Granularity matches individual generator calls, not the doc's 16 phases.** The phase table
   compresses ~40 calls into 16 rows, which is exactly why the three replication sites still need local
   judgment calls today (the Ice-ordering exception lives *inside* a phase). Steps are one per existing
@@ -142,19 +184,25 @@ export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
   `stateForms`, `provinces`, `provincePoles`, `riversSpecify`, `lakeNames`, `markets`, `production`,
   `taxes`, `military`, `markers`, `zones`, `addedLabels`, `mapName` — so an `assume` set can name
   exactly the artifacts a replication site restores instead of a whole phase.
-- **Seed/sizing (`setSeed`, `applyGraphSize`, `randomizeOptions`) stays outside the graph.** These are
+- **Seed/sizing (`setSeed`, `applyGraphSize`, `randomizeOptions`) stays outside the pipeline.** These are
   one-time setup for a from-scratch generation, not steps any other step or replication site depends
   on individually; `main.js` calls them before `Pipeline.run()`.
-- **Edges are seeded from the existing call order in `generation_pipeline.md`, then verified against
-  each generator's actual reads/writes as part of implementation.** The doc's order is a reasonable
-  first draft of the dependency graph, but it encodes *an* order that works, not necessarily the
-  *minimal* one — e.g. nothing found so far shows `biomes` actually reading river data despite sitting
-  in the same historical phase as `rivers`. Each edge should be justified by a real field read before
-  being written into `pipelineSteps`, not copied wholesale.
+- **`dependsOn` is seeded from the existing call order in `generation_pipeline.md`, then verified against
+  each generator's actual reads/writes as part of implementation.** Because array position — not
+  `dependsOn` — decides where a step runs, an inaccurate edge can't misorder execution; it can only
+  make `descendantsOf` (and so a `runFrom` `assume` set) too narrow or too wide. Still worth getting
+  right, but the failure mode is strictly less severe than in a scheduler that trusts the edges to order
+  things: e.g. nothing found so far shows `biomes` actually reading river data despite sitting in the
+  same historical phase as `rivers` in the doc.
 - **`run()` bodies are thin wrappers, unchanged internals.** `{id: "cultures", dependsOn: ["rankCells"], run: () => Cultures.generate()}` — no generator's method signature or global read/write pattern changes.
 - **`assume` only affects the executed set, not validation.** `runFrom` computes `descendantsOf(id)`,
-  unions `{id}`, subtracts `assume`, and runs the rest in topological order. It does not check that the
+  unions `{id}`, subtracts `assume`, and runs the rest in registration order. It does not check that the
   assumed steps' data is actually present — that responsibility stays with the caller, same as today.
+- **The generic/config split mirrors `registry.ts`.** `createPipeline` is the one place that knows how
+  to validate and iterate a step array — the unit under test — while `src/generators/pipeline.ts`'s
+  `pipelineSteps` is just data, exactly as `Controllers`/`Services` are data passed to `createRegistry`.
+  No second consumer of `createPipeline` is planned as part of this work; the split exists so generator
+  concepts never leak into the mechanism, not because another use case is queued up.
 
 ### Replication sites
 
@@ -164,10 +212,14 @@ export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
   option `Pipeline` has no vocabulary for).
 - **`heightmap-editor.ts` `regenerateErasedData()`**: becomes
   `Pipeline.runFrom("markupGrid")` (erosion-conditional calls stay inside the `markupGrid`/`rivers`
-  steps' own `run()`, parametrized the same way they are today), with the `Ice.generate()` reordering
-  either accepted as the graph's canonical order (recommended — verify visually that it does not matter,
-  since `Ice` only depends on temperature/features per the existing doc note) or preserved by making
-  `ice` depend on `taxes` **in this call graph specifically**. This needs a product decision during
+  steps' own `run()`, parametrized the same way they are today). The `Ice.generate()` reordering doesn't
+  survive the registration-order simplification for free: `pipelineSteps` is one shared array, so
+  `ice`'s position is the same for every caller of `runFrom` — there is no per-call-site `dependsOn`
+  override anymore (that only worked when edges drove a computed order). The choice is therefore binary:
+  either accept the graph's single canonical position for `ice` everywhere, including here (recommended
+  — verify visually that it does not matter, since `Ice` only depends on temperature/features per the
+  existing doc note), or keep this one call site's `Ice.generate()` as an explicit call outside
+  `runFrom`, the same way seed/sizing stays outside the pipeline. This needs a decision during
   implementation, flagged here rather than assumed.
 - **`heightmap-editor.ts` `restoreRiskedData()`**: becomes
   `Pipeline.runFrom("markupGrid", { assume: ["cultures", "burgs", "states", "provinces", "religions"] })`
@@ -191,17 +243,20 @@ site instead of re-deriving a whole call sequence.
 
 ## Testing Decisions
 
-- **What makes a good test here:** assert external behavior of `PipelineGraph` against fake steps —
-  the computed order respects every declared edge, `runFrom` executes exactly `descendants ∪ {id} \ assume`
-  in a valid order, a cycle or an unknown `dependsOn` id throws at construction. Do not assert internal
-  Kahn-algorithm bookkeeping.
-- **Module under test:** `PipelineGraph` in isolation (`src/generators/pipeline.test.ts`), built over
-  fake steps with `run: vi.fn()` — no real `pack`/`grid`, matching how `layers.test.ts` tests
-  `LayersRegistry` over fake layers rather than real renderers.
-- **Representative cases:** a linear chain runs in declared order; a diamond dependency (`a` depended on
-  by both `b` and `c`, both depended on by `d`) runs `d` last regardless of `b`/`c` registration order; a
-  cycle throws at construction; a `dependsOn` naming an unregistered id throws at construction;
-  `runFrom` on a mid-graph id runs only that id and its descendants; an `assume` entry removes a
+- **What makes a good test here:** assert external behavior of `createPipeline` against fake steps —
+  `run()` executes in exactly registration order regardless of `dependsOn`, `runFrom` executes exactly
+  `descendants ∪ {id} \ assume` in registration order, and a `dependsOn` id that is unregistered or
+  registered later in the array throws at construction. Do not assert internal scan/traversal
+  bookkeeping.
+- **Module under test:** `createPipeline` in isolation (`src/utils/pipeline.test.ts`, alongside
+  `registry.test.ts`), built over fake steps with `run: vi.fn()` — no real `pack`/`grid`. The concrete
+  `pipelineSteps` array in `src/generators/pipeline.ts` is configuration, like `Controllers`/`Services`,
+  and is not separately unit-tested.
+- **Representative cases:** steps run in the order they're passed to `createPipeline`, not in
+  `dependsOn` order (a step listed first whose `dependsOn` names a later step must fail construction,
+  not silently run first); a `dependsOn` naming an unregistered id, or an id registered later in the
+  array, throws at construction; `descendantsOf` returns transitive dependents in registration order;
+  `runFrom` on a mid-array id runs only that id and its descendants; an `assume` entry removes a
   descendant from the executed set while steps depending on it still run; an async `run()` is awaited
   before the next step starts.
 - **Real pipeline wiring is integration-level and not re-tested here.** The individual generators
