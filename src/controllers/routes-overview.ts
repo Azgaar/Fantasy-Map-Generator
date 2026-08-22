@@ -268,6 +268,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route);
+      Layers.draw("labels");
       routesTable.refresh();
     }
   });
@@ -309,6 +310,7 @@ function triggerAllRoutesRemove(): void {
           Routes.remove(route);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
+        Layers.draw("labels");
         routesTable.refresh();
         $(this).dialog("close");
       },

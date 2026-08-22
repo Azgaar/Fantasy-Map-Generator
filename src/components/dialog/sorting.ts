@@ -1,13 +1,16 @@
-// Sorting of editor lines by clicking a column header — shared by every table-shaped editor
-
 import { ensureEl } from "@/utils";
 import type { EditorColumn } from "./table";
+
+type SortState = { sortby: string; alphabetically: boolean; direction: -1 | 1 };
+type SortAccessors<T> = Record<string, (item: T) => string | number>;
+const sortStates = new Map<string, SortState>();
 
 /** Make every .sortable header in the container sort the lines below it */
 export function applySortingByHeader(headerContainerId: string): void {
   const container = document.getElementById(headerContainerId);
   if (!container) return;
 
+  restoreSortState(container);
   for (const header of Array.from(container.querySelectorAll<HTMLElement>(".sortable"))) {
     header.addEventListener("click", () => sortLines(header));
   }
@@ -26,6 +29,7 @@ function toggleSortIcon(header: HTMLElement): void {
     }
   }
   header.classList.add(`icon-sort-${type}${order}`);
+  saveSortState(headers);
 }
 
 /** Toggle the sorting order of the clicked header and re-sort the lines */
@@ -58,9 +62,6 @@ export function applySorting(headers: HTMLElement): void {
     });
 }
 
-type SortState = { sortby: string; alphabetically: boolean; direction: -1 | 1 };
-type SortAccessors<T> = Record<string, (item: T) => string | number>;
-
 function getActiveSort(headers: HTMLElement): SortState | null {
   const header = headers.querySelector<HTMLElement>("div[class*='icon-sort']");
   if (!header) return null;
@@ -69,6 +70,34 @@ function getActiveSort(headers: HTMLElement): SortState | null {
     alphabetically: header.classList.contains("alphabetically"),
     direction: header.className.includes("-down") ? -1 : 1
   };
+}
+
+function saveSortState(headers: HTMLElement): void {
+  const sort = getActiveSort(headers);
+  if (headers.id && sort) sortStates.set(headers.id, sort);
+}
+
+function restoreSortState(headers: HTMLElement): void {
+  const sort = sortStates.get(headers.id);
+  if (!sort) return;
+
+  const header = Array.from(headers.querySelectorAll<HTMLElement>(".sortable")).find(
+    cell => cell.dataset.sortby === sort.sortby
+  );
+  if (!header) {
+    sortStates.delete(headers.id);
+    return;
+  }
+
+  for (const sortable of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
+    for (const className of Array.from(sortable.classList)) {
+      if (className.includes("icon-sort")) sortable.classList.remove(className);
+    }
+  }
+
+  const type = header.classList.contains("alphabetically") ? "name" : "number";
+  const order = sort.direction === -1 ? "down" : "up";
+  header.classList.add(`icon-sort-${type}-${order}`);
 }
 
 export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors<T>): T[] {
@@ -88,6 +117,7 @@ export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors
 
 export function bindColumnSorting(dialogId: string, onSort: () => void): void {
   const headers = ensureEl(`${dialogId}Header`);
+  restoreSortState(headers);
   for (const cell of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
     cell.addEventListener("click", () => {
       toggleSortIcon(cell);

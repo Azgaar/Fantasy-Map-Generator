@@ -1,11 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { sortData } from "./sorting";
+// @ts-expect-error jsdom does not bundle TypeScript declarations
+import { JSDOM } from "jsdom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { applySortingByHeader, bindColumnSorting, sortData } from "./sorting";
 
 const rows = () => [
   { name: "Bree", pop: 300 },
   { name: "Anor", pop: 1000 },
   { name: "Cair", pop: 50 }
 ];
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("sortData", () => {
   it("sorts alphabetically ascending and descending", () => {
@@ -25,5 +29,50 @@ describe("sortData", () => {
   it("returns data untouched for an unknown sort key", () => {
     const data = rows();
     expect(sortData(data, { sortby: "nope", alphabetically: true, direction: 1 }, {})).toBe(data);
+  });
+});
+
+describe("sorting state", () => {
+  it("restores column sorting when a controller header is rebuilt", () => {
+    const dom = new JSDOM(`<div id="peopleHeader">
+      <div class="sortable alphabetically" data-sortby="name"></div>
+      <div class="sortable icon-sort-number-down" data-sortby="pop"></div>
+    </div>`);
+    vi.stubGlobal("document", dom.window.document);
+
+    bindColumnSorting("people", () => {});
+    dom.window.document.querySelector<HTMLElement>('[data-sortby="name"]')!.click();
+
+    dom.window.document.body.innerHTML = `<div id="peopleHeader">
+      <div class="sortable alphabetically" data-sortby="name"></div>
+      <div class="sortable icon-sort-number-down" data-sortby="pop"></div>
+    </div>`;
+    bindColumnSorting("people", () => {});
+
+    expect(dom.window.document.querySelector('[data-sortby="name"]')!.classList.contains("icon-sort-name-up")).toBe(
+      true
+    );
+    expect(dom.window.document.querySelector('[data-sortby="pop"]')!.className.includes("icon-sort")).toBe(false);
+  });
+
+  it("restores sorting for legacy DOM-sorted tables", () => {
+    const dom = new JSDOM(`<div id="legacyHeader">
+      <div class="sortable alphabetically" data-sortby="name"></div>
+      <div class="sortable icon-sort-number-up" data-sortby="pop"></div>
+    </div><div><div data-name="Bree" data-pop="300"></div><div data-name="Anor" data-pop="1000"></div></div>`);
+    vi.stubGlobal("document", dom.window.document);
+
+    applySortingByHeader("legacyHeader");
+    dom.window.document.querySelector<HTMLElement>('[data-sortby="name"]')!.click();
+
+    dom.window.document.body.innerHTML = `<div id="legacyHeader">
+      <div class="sortable alphabetically" data-sortby="name"></div>
+      <div class="sortable icon-sort-number-up" data-sortby="pop"></div>
+    </div><div></div>`;
+    applySortingByHeader("legacyHeader");
+
+    expect(dom.window.document.querySelector('[data-sortby="name"]')!.classList.contains("icon-sort-name-up")).toBe(
+      true
+    );
   });
 });

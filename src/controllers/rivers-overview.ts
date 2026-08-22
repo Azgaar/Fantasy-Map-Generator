@@ -318,6 +318,7 @@ function triggerRiverRemove(this: HTMLElement): void {
     buttons: {
       Remove: function (this: any) {
         Rivers.remove(river);
+        Layers.draw("labels");
         riversTable.refresh();
         $(this).dialog("close");
       },
@@ -349,6 +350,7 @@ function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
   select("#rivers").selectAll("*").remove();
+  Layers.draw("labels");
   riversTable.refresh();
 }
 

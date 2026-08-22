@@ -332,6 +332,7 @@ function removeRiver(): void {
         const river = +selectedRiver.attr("id").slice(5);
         Rivers.remove(river);
         selectedRiver.remove();
+        Layers.draw("labels");
         $("#riverEditor").dialog("close");
       },
       Cancel: function (this: any) {
