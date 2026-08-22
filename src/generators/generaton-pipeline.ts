@@ -1,7 +1,7 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
 // See docs/prd/generator-dependency-graph.md and docs/domain/generation_pipeline.md.
 import type { PackedGraph } from "@/types/PackedGraph";
-import { Pipeline as PipelineClass, type PipelineStep } from "@/utils/pipeline";
+import { Pipeline, type PipelineStep } from "@/utils/pipeline";
 
 const pipelineSteps = [
   {
@@ -76,10 +76,10 @@ const pipelineSteps = [
 ] as const satisfies readonly PipelineStep[];
 
 export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
-export const Pipeline = new PipelineClass<PipelineStepId>(pipelineSteps);
+export const GenerationPipeline = new Pipeline<PipelineStepId>(pipelineSteps);
 
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var Pipeline: import("@/utils/pipeline").Pipeline<PipelineStepId>;
+  var GenerationPipeline: import("@/utils/pipeline").Pipeline<PipelineStepId>;
 }
-window.Pipeline = Pipeline;
+window.GenerationPipeline = GenerationPipeline;

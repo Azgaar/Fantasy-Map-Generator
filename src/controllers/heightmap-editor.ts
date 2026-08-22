@@ -5,8 +5,8 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { GenerationPipeline } from "@/generators/generaton-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
-import { Pipeline } from "@/generators/pipeline";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
@@ -490,7 +490,7 @@ async function regenerateErasedData(): Promise<void> {
   // map bounds and the default ruler don't change, so those steps are dropped; rivers and biomes
   // need parameterized/alternate behavior instead of their generate()-from-scratch defaults; ice
   // keeps its canonical position (between featureGroups and goods) rather than being special-cased.
-  const derived = Pipeline.derive({
+  const derived = GenerationPipeline.derive({
     omit: [
       "mapCoordinates",
       "defaultRuler",
