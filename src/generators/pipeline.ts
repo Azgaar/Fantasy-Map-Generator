@@ -1,0 +1,88 @@
+// Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
+// See docs/prd/generator-dependency-graph.md and docs/domain/generation_pipeline.md.
+//
+// Registration order is the execution order (same rule as `mapLayers`/`Layers`) — this is just the
+// existing generate() call order, named and centrally declared, not a dependency graph.
+import type { PackedGraph } from "@/types/PackedGraph";
+import { createPipeline, type PipelineStep } from "@/utils/pipeline";
+
+const pipelineSteps = [
+  {
+    id: "heightmap",
+    run: async () => {
+      grid.cells.h = await HeightmapGenerator.generate(grid);
+      pack = {} as PackedGraph;
+    }
+  },
+  { id: "markupGrid", run: () => Features.markupGrid() },
+  { id: "addLakesInDeepDepressions", run: () => addLakesInDeepDepressions() },
+  { id: "openNearSeaLakes", run: () => openNearSeaLakes() },
+  {
+    id: "mapCoordinates",
+    run: () => {
+      defineMapSize();
+      calculateMapCoordinates();
+    }
+  },
+  { id: "temperatures", run: () => calculateTemperatures() },
+  { id: "precipitation", run: () => generatePrecipitation() },
+  {
+    id: "repack",
+    run: () => {
+      reGraph();
+      Features.markupPack();
+    }
+  },
+  { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },
+  { id: "rivers", run: () => Rivers.generate() },
+  { id: "biomes", run: () => Biomes.generate() },
+  { id: "featureGroups", run: () => Features.defineGroups() },
+  { id: "ice", run: () => Ice.generate() },
+  { id: "goods", run: () => Goods.generate() },
+  { id: "rankCells", run: () => rankCells() },
+  { id: "cultures", run: () => Cultures.generate() },
+  { id: "culturesExpand", run: () => Cultures.expand() },
+  {
+    id: "burgs",
+    run: () => {
+      Burgs.generate();
+    }
+  },
+  { id: "states", run: () => States.generate() },
+  { id: "routes", run: () => Routes.generate() },
+  { id: "religions", run: () => Religions.generate() },
+  { id: "burgsSpecify", run: () => Burgs.specify() },
+  { id: "stateStatistics", run: () => States.collectStatistics() },
+  { id: "stateForms", run: () => States.defineStateForms() },
+  { id: "provinces", run: () => Provinces.generate() },
+  { id: "provincePoles", run: () => Provinces.getPoles() },
+  { id: "riversSpecify", run: () => Rivers.specify() },
+  { id: "lakeNames", run: () => Lakes.defineNames() },
+  {
+    id: "markets",
+    run: () => {
+      Markets.generate();
+    }
+  },
+  { id: "production", run: () => Production.produce() },
+  { id: "taxes", run: () => States.collectTaxes() },
+  { id: "military", run: () => Military.generate() },
+  { id: "markers", run: () => Markers.generate() },
+  { id: "zones", run: () => Zones.generate() },
+  { id: "addedLabels", run: () => AddedLabels.initiate() },
+  {
+    id: "mapName",
+    run: () => {
+      Names.getMapName(false); // no-arg call in generate() passes undefined, which is equally falsy
+    }
+  }
+] as const satisfies readonly PipelineStep[];
+
+export type PipelineStepId = (typeof pipelineSteps)[number]["id"];
+export const Pipeline = createPipeline<PipelineStepId>(pipelineSteps);
+
+declare global {
+  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
+  var Pipeline: import("@/utils/pipeline").Pipeline<PipelineStepId>;
+}
+window.Pipeline = Pipeline;
