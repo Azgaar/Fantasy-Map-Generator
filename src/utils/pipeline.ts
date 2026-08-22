@@ -9,14 +9,8 @@ export interface PipelineStep<Id extends string = string> {
   run: () => void | Promise<void>;
 }
 
-export interface PipelineOverrides<Id extends string = string> {
-  replace?: Partial<Record<Id, () => void | Promise<void>>>; // swap a step's run(), same id/position
-  omit?: readonly Id[]; // drop steps entirely; everything else keeps its relative order
-}
-
 export class Pipeline<Id extends string = string> {
   readonly ids: readonly Id[];
-  private readonly steps: readonly PipelineStep<Id>[];
   private readonly stepById: ReadonlyMap<Id, PipelineStep<Id>>;
   private readonly indexById: ReadonlyMap<Id, number>;
 
@@ -29,25 +23,9 @@ export class Pipeline<Id extends string = string> {
       indexById.set(step.id, indexById.size);
     }
 
-    this.steps = steps;
     this.ids = steps.map(step => step.id);
     this.stepById = new Map(steps.map(step => [step.id, step]));
     this.indexById = indexById;
-  }
-
-  static derive<Id extends string>(base: Pipeline<Id>, overrides: PipelineOverrides<Id>): Pipeline<Id> {
-    const omit = new Set(overrides.omit ?? []);
-    const steps = base.steps
-      .filter(step => !omit.has(step.id))
-      .map((step): PipelineStep<Id> => {
-        const run = overrides.replace?.[step.id];
-        return run ? { id: step.id, run } : step;
-      });
-    return new Pipeline(steps);
-  }
-
-  derive(overrides: PipelineOverrides<Id>): Pipeline<Id> {
-    return Pipeline.derive(this, overrides);
   }
 
   has(id: string): id is Id {
