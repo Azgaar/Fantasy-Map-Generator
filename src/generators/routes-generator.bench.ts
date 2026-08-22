@@ -145,7 +145,13 @@ async function setupModule() {
   (globalThis as any).FlatQueue = BenchFlatQueue;
   globalThis.grid = { cells: { temp: [20] } } as any;
   globalThis.seed = "bench-seed";
-  globalThis.pack = { cells: { p: [], h: [], biome: [], g: [], c: [], burg: [], routes: {} }, burgs: [], biomes: [], rivers: [], routes: [] } as any;
+  globalThis.pack = {
+    cells: { p: [], h: [], biome: [], g: [], c: [], burg: [], routes: {} },
+    burgs: [],
+    biomes: [],
+    rivers: [],
+    routes: []
+  } as any;
   const module = await import("./routes-generator");
   return module;
 }

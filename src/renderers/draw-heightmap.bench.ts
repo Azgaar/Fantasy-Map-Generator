@@ -46,7 +46,8 @@ async function setupModule() {
   globalThis.TIME = false;
   globalThis.ERROR = false;
   globalThis.customization = 0;
-  globalThis.getColorScheme = () => (t: number) => `rgb(${Math.round(t * 255)},${Math.round(t * 255)},${Math.round(t * 255)})`;
+  globalThis.getColorScheme = () => (t: number) =>
+    `rgb(${Math.round(t * 255)},${Math.round(t * 255)},${Math.round(t * 255)})`;
   globalThis.getColor = (heightValue: number, scheme: (t: number) => string) => scheme(heightValue / 100);
   const { drawHeightmap } = await import("./draw-heightmap");
   return drawHeightmap;

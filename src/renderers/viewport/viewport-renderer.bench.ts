@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { bench, describe } from "vitest";
 import { ViewportRenderer } from "./viewport-renderer";
 
@@ -19,7 +20,7 @@ function makeLabels(count: number) {
 }
 
 function createRenderer(overscanPixels: number, guardPixels: number) {
-  let scale = 1;
+  const scale = 1;
   let x = 0;
   let y = 0;
   const width = 1000;

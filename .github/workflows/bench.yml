@@ -26,7 +26,7 @@ jobs:
         run: npm run bench:check
 
       - name: Comment benchmark results on PR
-        if: always()
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('bench/comment.md') != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: benchmark-results
