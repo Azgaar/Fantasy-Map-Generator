@@ -72,9 +72,9 @@ function open(marketId: number): void {
     return;
   }
 
-  filterState = dialogState.getFilters(dialogId, (): FilterState => ({ scope: "all" }));
+  filterState = dialogState.get(dialogId, "filters", (): FilterState => ({ scope: "all" }));
   if (!(["all", "local", "global"] as string[]).includes(filterState.scope)) filterState.scope = "all";
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   activeMarketId = marketId;
 
   renderDialog();
@@ -132,7 +132,7 @@ function renderDialog(): void {
   });
   ensureEl("marketDealsFilter").addEventListener("change", ev => {
     filterState.scope = (ev.target as HTMLSelectElement).value as typeof filterState.scope;
-    dialogState.setFilters(dialogId, filterState);
+    dialogState.set(dialogId, "filters", filterState);
     marketDealsTable.reset();
   });
 }

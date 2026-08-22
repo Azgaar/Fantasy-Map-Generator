@@ -30,7 +30,7 @@ const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData,
 
 function open(state?: number): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ stateId: -1 }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: -1 }));
   closeDialogs(".stable");
   Layers.show("military");
 
@@ -91,7 +91,7 @@ function renderDialog(): void {
   ensureEl("regimentsExport").addEventListener("click", downloadRegimentsData);
   ensureEl("regimentsFilter").addEventListener("change", event => {
     filterState.stateId = +(event.target as HTMLSelectElement).value;
-    dialogState.setFilters(dialogId, filterState);
+    dialogState.set(dialogId, "filters", filterState);
     regimentsTable.reset();
   });
 
@@ -230,7 +230,7 @@ function updateFilter(): void {
   statesSorted.forEach(s => {
     filter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function regimentHighlightOn(event: Event): void {

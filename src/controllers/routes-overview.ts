@@ -74,7 +74,7 @@ const routesTable = initEditorTable<Route>({
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ search: "" }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("routes");
 
@@ -127,7 +127,7 @@ function renderDialog(): void {
   ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
   ensureEl("routesSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
-    dialogState.setFilters(dialogId, filterState);
+    dialogState.set(dialogId, "filters", filterState);
     routesTable.reset();
   });
 }

@@ -481,6 +481,43 @@ test.describe("Map loading", () => {
     expect(savedLayers.active).toContain("labels");
   });
 
+  // 1.143.1.map carries a pre-v1.104 defs skeleton under a modern version stamp: the shared feature
+  // geometry is inlined into the masks and #featurePaths is absent, so every layer referencing
+  // #feature_N by id renders nothing. The repair is structural, not version-gated
+  test("a map without featurePaths should get its defs and feature geometry back", async ({ page }) => {
+    const mapFilePath = path.join(__dirname, "../fixtures/1.143.1.map");
+    await page.locator("#mapToLoad").setInputFiles(mapFilePath);
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const restored = await page.evaluate(() => {
+      const features = (window as any).pack.features.filter((f: any) => f && f.type !== "ocean");
+      const hrefs = (selector: string) =>
+        Array.from(document.querySelectorAll(`${selector} use`), use => use.getAttribute("href"));
+      const resolves = (href: string | null) => Boolean(href && document.querySelector(`#featurePaths ${href}`));
+
+      return {
+        featurePaths: document.querySelectorAll("#featurePaths > path").length,
+        expected: features.length,
+        legacyMaskPaths: document.querySelectorAll("#land path, #water path").length,
+        landRefs: hrefs("#land").every(resolves),
+        coastlineRefs: hrefs("#coastline").every(resolves),
+        coastline: document.querySelectorAll("#coastline use").length,
+        lakes: document.querySelectorAll("#lakes use").length,
+        defsEmblems: Boolean(document.getElementById("defs-emblems")),
+        vignetteMask: Boolean(document.getElementById("vignette-rect"))
+      };
+    });
+
+    expect(restored.featurePaths).toBe(restored.expected);
+    expect(restored.legacyMaskPaths).toBe(0);
+    expect(restored.landRefs).toBe(true);
+    expect(restored.coastlineRefs).toBe(true);
+    expect(restored.coastline).toBeGreaterThan(0);
+    expect(restored.lakes).toBeGreaterThan(0);
+    expect(restored.defsEmblems).toBe(true);
+    expect(restored.vignetteMask).toBe(true);
+  });
+
   test("loaded map should preserve burg data", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", error => {

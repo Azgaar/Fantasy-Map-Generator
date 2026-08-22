@@ -63,14 +63,14 @@ const labelsTable = initEditorTable<LabelData>({
 
 function open(group: string = ALL): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ group: ALL, type: ALL, search: ALL }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ group: ALL, type: ALL, search: ALL }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("labels");
 
   isBulkMode = false;
   resetSpreadPreview();
   if (group) filterState.group = group;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 
   renderDialog();
   populateGroupFilter();
@@ -174,7 +174,7 @@ let searchTimeout = 0;
 function onSearchInput(): void {
   clearTimeout(searchTimeout);
   filterState.search = ensureEl<HTMLInputElement>("labelsSearch").value;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   searchTimeout = window.setTimeout(labelsTable.reset, SEARCH_DELAY);
 }
 
@@ -182,7 +182,7 @@ function onFilterChange(): void {
   filterState.type = ensureEl<HTMLSelectElement>("labelsFilterType").value;
   filterState.group = ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
   filterState.search = ensureEl<HTMLInputElement>("labelsSearch").value;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   labelsTable.reset();
 }
 

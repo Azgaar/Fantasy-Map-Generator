@@ -81,7 +81,7 @@ const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: rend
 
 function open() {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ visibleTags: [] as string[] }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
 
   Layers.show("goods");
@@ -471,14 +471,14 @@ function openTagsVisibilityDialog() {
       },
       "Clear filter": function () {
         filterState.visibleTags = [];
-        dialogState.setFilters(dialogId, filterState);
+        dialogState.set(dialogId, "filters", filterState);
         applyTagVisibilityFilter();
         $(this).dialog("close");
       },
       Apply: function () {
         const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
         filterState.visibleTags = checks.map(check => check.value);
-        dialogState.setFilters(dialogId, filterState);
+        dialogState.set(dialogId, "filters", filterState);
         applyTagVisibilityFilter();
         $(this).dialog("close");
       }

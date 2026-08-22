@@ -1773,8 +1773,4 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       return ids.filter(vertexId => vertexId === null).length;
     }
   }
-
-  if (isOlderThan("1.148.0")) {
-    // some old .map don't have featurePaths
-  }
 }

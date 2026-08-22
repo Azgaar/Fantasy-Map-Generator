@@ -1,46 +1,41 @@
-export interface DialogSort {
+export type DialogSort = {
   sortBy: string;
   alphabetically: boolean;
   direction: -1 | 1;
-}
+};
 
-type DialogFilters = Record<string, unknown>;
-type DialogEntry = { filters?: unknown; sorting?: unknown };
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type DialogStateKey = "filters" | "sorting" | "columns";
+type DialogEntry = Partial<Record<DialogStateKey, JsonValue>>;
 
-const STORAGE_KEY = "fmgDialogState";
+const STORAGE_KEY = "fmg-dialog-state";
 let entries = load();
 
 export const dialogState = {
-  getFilters<Filters extends DialogFilters>(dialogId: string, defaults: () => Filters): Filters {
+  get<Value extends JsonValue>(dialogId: string, key: DialogStateKey, defaults: () => Value): Value {
     const entry = getEntry(dialogId);
-    const filters = restoreFilters(entry.filters, defaults());
-    entry.filters = filters;
-    return filters;
+    const value = restoreValue(entry[key], defaults());
+    entry[key] = value;
+    return value;
   },
 
-  setFilters<Filters extends DialogFilters>(dialogId: string, filters: Filters): void {
-    getEntry(dialogId).filters = filters;
+  set<Value extends JsonValue>(dialogId: string, key: DialogStateKey, value: Value): void {
+    getEntry(dialogId)[key] = value;
     save();
   },
 
-  getSorting(dialogId: string, defaults?: () => DialogSort | null): DialogSort | undefined {
+  remove(dialogId: string, key: DialogStateKey): void {
     const entry = getEntry(dialogId);
-    if (isDialogSort(entry.sorting)) return entry.sorting;
-
-    const sorting = defaults?.() || undefined;
-    entry.sorting = sorting;
-    if (sorting) save();
-    return sorting;
-  },
-
-  setSorting(dialogId: string, sorting: DialogSort | null): void {
-    getEntry(dialogId).sorting = sorting || undefined;
+    delete entry[key];
+    if (!Object.keys(entry).length) delete entries[dialogId];
     save();
   },
 
   clear(): void {
     entries = {};
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
   }
 };
 
@@ -67,26 +62,22 @@ function save(): void {
   } catch {}
 }
 
-function restoreFilters<Filters extends DialogFilters>(stored: unknown, defaults: Filters): Filters {
-  if (!isRecord(stored)) return defaults;
+function restoreValue<Value extends JsonValue>(stored: JsonValue | undefined, fallback: Value): Value {
+  if (stored === undefined) return fallback;
+  if (fallback === null) return stored as Value;
+  if (Array.isArray(fallback)) return (Array.isArray(stored) ? stored : fallback) as Value;
+  if (!isRecord(fallback)) return (typeof stored === typeof fallback ? stored : fallback) as Value;
+  if (!isRecord(stored)) return fallback;
+
   return Object.fromEntries(
-    Object.entries(defaults).map(([key, fallback]) => {
+    Object.entries(fallback).map(([key, defaultValue]) => {
       const value = stored[key];
-      const valid = Array.isArray(fallback) ? Array.isArray(value) : typeof value === typeof fallback;
-      return [key, valid ? value : fallback];
+      const valid = Array.isArray(defaultValue) ? Array.isArray(value) : typeof value === typeof defaultValue;
+      return [key, valid ? value : defaultValue];
     })
-  ) as Filters;
+  ) as Value;
 }
 
-function isDialogSort(value: unknown): value is DialogSort {
-  return (
-    isRecord(value) &&
-    typeof value.sortBy === "string" &&
-    typeof value.alphabetically === "boolean" &&
-    (value.direction === -1 || value.direction === 1)
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is Record<string, JsonValue> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }

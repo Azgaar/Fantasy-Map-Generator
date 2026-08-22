@@ -35,9 +35,9 @@ const dialogId = "heightmapEditor";
 let filterState: FilterState;
 
 function open(options?: { mode?: string; tool?: string }): void {
-  filterState = dialogState.getFilters(dialogId, (): FilterState => ({ cellType: "all" }));
+  filterState = dialogState.get(dialogId, "filters", (): FilterState => ({ cellType: "all" }));
   if (!(["all", "land", "water"] as string[]).includes(filterState.cellType)) filterState.cellType = "all";
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   const { mode, tool } = options || {};
   restartHistory();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
@@ -349,7 +349,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   }
   const cellTypeFilterEl = findEl<HTMLSelectElement>("cellTypeFilter");
   if (cellTypeFilterEl) cellTypeFilterEl.value = filterState.cellType;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 
   // show convert and template buttons for Erase mode only
   ensureEl("applyTemplate").style.display = mode === "erase" ? "inline-block" : "none";
@@ -1387,7 +1387,7 @@ function cellTypeFilterChange(): void {
     cellTypeFilter.value = "all";
   }
   filterState.cellType = cellTypeFilter.value as typeof filterState.cellType;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function rescale(v: number): void {

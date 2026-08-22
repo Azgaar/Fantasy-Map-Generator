@@ -88,7 +88,7 @@ const provincesTable = initEditorTable<Province>({ getData: getProvincesData, on
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ stateId: 1 }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: 1 }));
   closeDialogs("#provincesEditor, .stable");
   Layers.show("provinces", "borders");
   Layers.hide("states", "cultures");
@@ -178,7 +178,7 @@ function renderDialog(): void {
   ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
   ensureEl("provincesFilterState").addEventListener("change", event => {
     filterState.stateId = +(event.target as HTMLSelectElement).value;
-    dialogState.setFilters(dialogId, filterState);
+    dialogState.set(dialogId, "filters", filterState);
     provincesTable.reset();
   });
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
@@ -269,7 +269,7 @@ function updateFilter(): void {
   statesSorted.forEach(s => {
     stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function getProvincesData(): Province[] {
@@ -1167,7 +1167,7 @@ function addProvince(this: SVGElement, event: any): void {
 
   collectStatistics();
   filterState.stateId = state;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   ensureEl<HTMLSelectElement>("provincesFilterState").value = String(filterState.stateId);
   provincesTable.reset();
 }

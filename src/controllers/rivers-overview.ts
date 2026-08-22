@@ -100,7 +100,7 @@ const riversTable = initEditorTable<River>({
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ search: "" }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("rivers");
 
@@ -162,7 +162,7 @@ function renderDialog(): void {
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
-    dialogState.setFilters(dialogId, filterState);
+    dialogState.set(dialogId, "filters", filterState);
     riversTable.reset();
   });
 }

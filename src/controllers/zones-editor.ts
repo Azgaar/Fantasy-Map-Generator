@@ -36,7 +36,7 @@ const columns: EditorColumn<ZoneRow>[] = [
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
 function open(): void {
-  filterState = dialogState.getFilters(dialogId, () => ({ type: "all" }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ type: "all" }));
   closeDialogs("#zonesEditor, .stable");
   Layers.show("zones");
 
@@ -163,7 +163,7 @@ function updateFilters(): void {
     .map(type => `<option value="${type}">${type}</option>`)
     .join("")}`;
   filterSelect.value = filterState.type;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 // add line for each zone
@@ -235,7 +235,7 @@ function zoneHighlightOff(this: HTMLElement): void {
 
 function filterZonesByType(): void {
   filterState.type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   Layers.draw("zones");
   zonesTable.reset();
 }

@@ -119,7 +119,7 @@ const burgsTable = initEditorTable<Burg>({
 
 function open(filters: Filters = {}): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ search: "", stateId: -1, cultureId: -1 }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "", stateId: -1, cultureId: -1 }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("burgIcons", "labels");
 
@@ -263,14 +263,14 @@ function updateFilter(): void {
   culturesSorted.forEach(
     c => void cultureFilter.options.add(new Option(c.name, String(c.i), false, c.i === filterState.cultureId))
   );
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function onFilterChange(): void {
   filterState.search = ensureEl<HTMLInputElement>("burgsSearch").value;
   filterState.stateId = +ensureEl<HTMLSelectElement>("burgsFilterState").value;
   filterState.cultureId = +ensureEl<HTMLSelectElement>("burgsFilterCulture").value;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   burgsTable.reset();
 }
 

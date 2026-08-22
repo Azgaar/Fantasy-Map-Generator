@@ -74,18 +74,18 @@ function getActiveSort(headers: HTMLElement): DialogSort | null {
 
 function saveSortState(dialogId: string, headers: HTMLElement): void {
   const sort = getActiveSort(headers);
-  if (sort) dialogState.setSorting(dialogId, sort);
+  if (sort) dialogState.set(dialogId, "sorting", sort);
 }
 
 function restoreSortState(dialogId: string, headers: HTMLElement): void {
-  const sort = dialogState.getSorting(dialogId, () => getActiveSort(headers));
+  const sort = dialogState.get(dialogId, "sorting", () => getActiveSort(headers));
   if (!sort) return;
 
   const header = Array.from(headers.querySelectorAll<HTMLElement>(".sortable")).find(
     cell => cell.dataset.sortby === sort.sortBy
   );
   if (!header) {
-    dialogState.setSorting(dialogId, null);
+    dialogState.remove(dialogId, "sorting");
     return;
   }
 

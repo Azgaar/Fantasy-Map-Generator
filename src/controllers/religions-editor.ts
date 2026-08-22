@@ -103,7 +103,7 @@ const religionsTable = initEditorTable<Religion>({
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ showExtinct: false }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ showExtinct: false }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("religions");
   Layers.hide("states", "biomes");
@@ -809,7 +809,7 @@ async function showHierarchy(): Promise<void> {
 
 function toggleExtinct(): void {
   filterState.showExtinct = !filterState.showExtinct;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   syncFilterControls();
   religionsTable.reset();
   drawReligionCenters();

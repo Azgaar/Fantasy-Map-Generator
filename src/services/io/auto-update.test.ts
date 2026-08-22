@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import "@/generators/features"; // migrations call the Features module through its global
+import { VERSION } from "@/services/versioning";
 import { resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
@@ -285,5 +286,65 @@ describe("v1.146 rendering groups", () => {
     resolveVersionConflicts("1.146.0", []);
 
     expect(pack.features.slice(1).every(feature => !feature.subtype)).toBe(true);
+  });
+});
+
+// the .map file carries the whole #map svg, so its defs are only what the file was saved with
+describe("missing svg defs", () => {
+  const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
+
+  it("recreates the defs a saved svg never had", () => {
+    resolveVersionConflicts("1.147.0", []);
+
+    expect(getDeftempIds()).toEqual([
+      "featurePaths",
+      "textPaths",
+      "statePaths",
+      "defs-emblems",
+      "land",
+      "water",
+      "fog"
+    ]);
+    expect(document.querySelector("#fog rect")).not.toBeNull();
+    expect(document.getElementById("oceanicPattern")).not.toBeNull();
+    expect(document.getElementById("vignette-rect")).not.toBeNull();
+  });
+
+  // the version stamp is not a reliable signal: files show up with a modern version and an ancient svg
+  it("restores the group a current-version map is missing without touching the rest", () => {
+    document.body.innerHTML = /* html */ `<svg id="map">
+      <defs>
+        <g id="deftemp">
+          <mask id="land"><path id="land_2"></path></mask>
+          <mask id="water"><path id="water_2"></path></mask>
+          <g id="textPaths"><path id="textPath_1"></path></g>
+          <g id="statePaths"></g>
+          <mask id="fog"><rect></rect></mask>
+        </g>
+      </defs>
+      <g id="viewbox"></g>
+    </svg>`;
+
+    resolveVersionConflicts(VERSION, []);
+
+    expect(getDeftempIds()).toEqual([
+      "land",
+      "water",
+      "textPaths",
+      "statePaths",
+      "fog",
+      "featurePaths",
+      "defs-emblems"
+    ]);
+    expect(document.querySelectorAll("#textPaths path")).toHaveLength(1); // existing content is left alone
+    expect(document.getElementById("vignette-rect")).not.toBeNull();
+  });
+
+  it("is idempotent", () => {
+    resolveVersionConflicts("1.147.0", []);
+    resolveVersionConflicts("1.147.0", []);
+
+    expect(getDeftempIds()).toHaveLength(7);
+    expect(document.querySelectorAll("#map > defs")).toHaveLength(1);
   });
 });

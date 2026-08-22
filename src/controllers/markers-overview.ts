@@ -33,7 +33,7 @@ const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUp
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.getFilters(dialogId, () => ({ search: "", state: "", culture: "", type: "" }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "", state: "", culture: "", type: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("markers");
 
@@ -158,7 +158,7 @@ function populateFilters(): void {
   filterState.type = fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types, filterState.type);
 
   ensureEl<HTMLInputElement>("markersSearch").value = filterState.search;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function closeMarkersOverview(): void {
@@ -245,7 +245,7 @@ function onFilterChange(): void {
   filterState.state = ensureEl<HTMLSelectElement>("markersFilterState").value;
   filterState.culture = ensureEl<HTMLSelectElement>("markersFilterCulture").value;
   filterState.type = ensureEl<HTMLSelectElement>("markersFilterType").value;
-  dialogState.setFilters(dialogId, filterState);
+  dialogState.set(dialogId, "filters", filterState);
   markersTable.reset();
 }
 
