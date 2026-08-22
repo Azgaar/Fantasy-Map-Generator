@@ -1,8 +1,5 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
 // See docs/prd/generator-dependency-graph.md and docs/domain/generation_pipeline.md.
-//
-// Registration order is the execution order (same rule as `mapLayers`/`Layers`) — this is just the
-// existing generate() call order, named and centrally declared, not a dependency graph.
 import type { PackedGraph } from "@/types/PackedGraph";
 import { Pipeline as PipelineClass, type PipelineStep } from "@/utils/pipeline";
 

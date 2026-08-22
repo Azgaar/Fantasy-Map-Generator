@@ -15,7 +15,7 @@ export interface PipelineOverrides<Id extends string = string> {
 }
 
 export class Pipeline<Id extends string = string> {
-  readonly ids: readonly Id[]; // registration order = execution order
+  readonly ids: readonly Id[];
   private readonly steps: readonly PipelineStep<Id>[];
   private readonly stepById: ReadonlyMap<Id, PipelineStep<Id>>;
   private readonly indexById: ReadonlyMap<Id, number>;
@@ -35,7 +35,6 @@ export class Pipeline<Id extends string = string> {
     this.indexById = indexById;
   }
 
-  // Construction from an existing pipeline: same steps, minus `omit`, with `replace` swapped in.
   static derive<Id extends string>(base: Pipeline<Id>, overrides: PipelineOverrides<Id>): Pipeline<Id> {
     const omit = new Set(overrides.omit ?? []);
     const steps = base.steps
@@ -47,8 +46,6 @@ export class Pipeline<Id extends string = string> {
     return new Pipeline(steps);
   }
 
-  // Convenience instance form of the static factory above, so a consumer holding only the base
-  // instance (not the class) can derive from it — see e.g. src/generators/pipeline.ts's `Pipeline`.
   derive(overrides: PipelineOverrides<Id>): Pipeline<Id> {
     return Pipeline.derive(this, overrides);
   }
