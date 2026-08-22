@@ -1652,12 +1652,17 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
       groupsById.set(group.id, sameId);
     }
 
+    const declared = new Set<string>();
+    for (const layer of Layers.all) {
+      declared.add(layer.elementId);
+      for (const child of layer.children) declared.add(child.id);
+    }
+
     const isEmpty = (group: SVGGElement) => group.childElementCount === 0;
     for (const sameId of groupsById.values()) {
-      const nonEmpty = sameId.filter(group => !isEmpty(group));
-      const keep = nonEmpty[0];
+      const keep = sameId.find(group => !isEmpty(group)) ?? (declared.has(sameId[0].id) ? sameId[0] : undefined);
       for (const group of sameId) {
-        if (isEmpty(group) || (keep && group !== keep)) group.remove();
+        if (group !== keep) group.remove();
       }
     }
   }

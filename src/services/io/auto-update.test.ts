@@ -106,6 +106,37 @@ describe("v1.145 svg layer cleanup", () => {
     expect(document.querySelector("#routes > #empty")).toBeNull();
   });
 
+  it("keeps an empty layer group that is the only one with its id", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="cults" opacity="0.6" stroke="#777777" stroke-width="0.5" style="display: none;"></g>
+      <g id="texture" data-href="./images/textures/marble-big.jpg" mask="url(#land)" style="display: none;"></g>
+    </g></svg>`;
+
+    resolveVersionConflicts("1.144.0", []);
+
+    const cults = document.querySelector("#cults");
+    expect(cults).not.toBeNull();
+    expect(cults?.getAttribute("stroke")).toBe("#777777");
+    expect(cults?.getAttribute("stroke-width")).toBe("0.5");
+    expect(document.querySelector("#texture")?.getAttribute("data-href")).toBe("./images/textures/marble-big.jpg");
+  });
+
+  it("keeps an empty declared child group that is the only one with its id", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+      <g id="routes">
+        <g id="roads" stroke="#d06324" stroke-width="0.35"><path id="road1"></path></g>
+        <g id="searoutes" stroke="#ffffff" stroke-width="0.35" stroke-dasharray="1 2"></g>
+      </g>
+    </g></svg>`;
+
+    resolveVersionConflicts("1.144.0", []);
+
+    const searoutes = document.querySelector("#routes > #searoutes");
+    expect(searoutes).not.toBeNull();
+    expect(searoutes?.getAttribute("stroke")).toBe("#ffffff");
+    expect(searoutes?.getAttribute("stroke-width")).toBe("0.35");
+  });
+
   it("does not clean current maps", () => {
     document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
       <g id="routes"><g id="empty"></g></g>
