@@ -1,0 +1,37 @@
+name: Update Benchmark Baseline
+on:
+  push:
+    branches: [master]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-baseline:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenerate baseline
+        run: npm run bench:baseline
+
+      - name: Commit updated baseline
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bench/baseline.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update benchmark baseline"
+            git push
+          else
+            echo "Baseline unchanged, skipping commit."
+          fi

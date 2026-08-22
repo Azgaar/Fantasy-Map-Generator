@@ -4,6 +4,8 @@ name: Deploy static content to Pages
 on:
   push:
     branches: ["master"]
+    paths-ignore:
+      - "bench/baseline.json"
 
   # Also run after the version bump workflow completes successfully
   workflow_run:

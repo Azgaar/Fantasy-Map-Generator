@@ -1,0 +1,37 @@
+name: Performance Benchmarks
+on:
+  pull_request:
+    branches: [master]
+
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+
+jobs:
+  bench:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run benchmarks
+        id: bench
+        continue-on-error: true
+        run: npm run bench:check
+
+      - name: Comment benchmark results on PR
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: benchmark-results
+          path: bench/comment.md
+
+      - name: Fail job on performance regression
+        if: steps.bench.outcome == 'failure'
+        run: exit 1

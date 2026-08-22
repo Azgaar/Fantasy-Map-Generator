@@ -18,6 +18,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "bench": "vitest bench",
+    "bench:baseline": "vitest bench --run --outputJson ../bench/baseline.json",
+    "bench:check": "vitest bench --run --outputJson ../bench/current.json && node scripts/bench-check.js bench/current.json --markdown-out bench/comment.md",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
     "prepare": "simple-git-hooks"
