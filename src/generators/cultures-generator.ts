@@ -1100,7 +1100,7 @@ class CulturesGenerator {
     pack.cultures = cultures;
     const centers = quadtree<number>();
     const colors = getColors(count);
-    const emblemShape = (ensureEl("emblemShape") as HTMLInputElement).value;
+    const emblemShape = Emblems.shape;
 
     const codes: string[] = [];
 
@@ -1227,9 +1227,6 @@ class CulturesGenerator {
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    // define emblem shape
-    const emblemShape = (document.getElementById("emblemShape") as HTMLInputElement).value;
-
     pack.cultures.push({
       name,
       color,
@@ -1244,7 +1241,7 @@ class CulturesGenerator {
       urban: 0,
       origins: [pack.cells.culture[center]],
       code,
-      shield: emblemShape === "random" ? this.getRandomShield() : ""
+      shield: Emblems.shape === "random" ? this.getRandomShield() : ""
     });
   }
 

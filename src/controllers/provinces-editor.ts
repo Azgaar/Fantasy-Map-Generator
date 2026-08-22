@@ -17,7 +17,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
-import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
+import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -523,10 +523,7 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.defineStateForms(newStates);
   Layers.draw("labels");
 
-  // redraw emblems
-  allStates.forEach(stateId => {
-    redrawEmblem("state", stateId);
-  });
+  redrawEmblems(allStates.map(stateId => ["state", stateId] as const));
 
   Layers.hide("provinces");
   Layers.show("states", "borders");
@@ -1151,8 +1148,6 @@ function addProvince(this: SVGElement, event: any): void {
   const type = Burgs.getType(center, port);
   const coa = Emblems.generate(parent, kinship, +P(0.1), type);
   coa.shield = Emblems.getShield(c, state);
-  coa.x = point[0];
-  coa.y = point[1];
   provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa } as Province);
   redrawEmblem("province", province);
 

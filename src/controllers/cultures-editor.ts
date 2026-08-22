@@ -211,8 +211,6 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   let totalArea = 0;
   let totalPopulation = 0;
 
-  const selectShape = canSelectCultureEmblemShape();
-
   // totals span the full filtered set, not just the current page
   for (const c of view.all) {
     totalArea += getArea(c.area ?? 0);
@@ -271,7 +269,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
             <span data-tip="${populationTip}" class="icon-male"></span>
             <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
           </div>
-          <div data-col="emblems">${getShapeOptions(selectShape, c.shield)}</div>
+          <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
           <div data-col="actions"></div>
         </div>`;
       continue;
@@ -327,7 +325,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <span data-tip="${populationTip}" class="icon-male"></span>
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
-        <div data-col="emblems">${getShapeOptions(selectShape, c.shield)}</div>
+        <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
         <div data-col="actions">
           <span data-tip="Locate the culture" class="icon-target"></span>
           <span data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
@@ -397,7 +395,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     .querySelectorAll("div > span.icon-lock-open")
     .forEach($el => void $el.addEventListener("click", updateLockStatus));
 
-  setModeHiddenColumns(dialogId, selectShape ? [] : ["emblems"]);
+  setModeHiddenColumns(dialogId, Emblems.isDiversiform ? [] : ["emblems"]);
 
   if (ensureEl("culturesBody").dataset.type === "percentage") {
     ensureEl("culturesBody").dataset.type = "absolute";
@@ -423,8 +421,8 @@ function getBaseOptions(base: number): string {
   return options;
 }
 
-function getShapeOptions(selectShape: boolean, selected: string): string {
-  if (!selectShape) return "";
+function getShapeOptions(isDiversiform: boolean, selected: string): string {
+  if (!isDiversiform) return "";
 
   const shapes = Object.keys(Emblems.shields.types).flatMap(type => Object.keys(Emblems.shields[type]));
   const options = shapes.map(
@@ -890,11 +888,6 @@ function applyCulturePaint(changes: ReadonlyMap<number, number>): void {
     Layers.draw("cultures");
     if (document.getElementById(dialogId)) refreshCulturesEditor();
   }
-}
-
-function canSelectCultureEmblemShape(): boolean {
-  const group = ensureEl<HTMLSelectElement>("emblemShape").selectedOptions[0]?.parentElement?.getAttribute("label");
-  return group === "Diversiform";
 }
 
 function enterAddCulturesMode(this: HTMLElement): void {

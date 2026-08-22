@@ -18,7 +18,7 @@ import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
-import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
+import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -1304,6 +1304,7 @@ function applyStatesPaint(changes: ReadonlyMap<number, number>, adjustLabels: bo
 
 function adjustProvinces(affectedProvinces: number[]): void {
   const { cells, provinces, states, burgs } = pack as any;
+  const createdProvinces: number[] = [];
 
   affectedProvinces.forEach(provinceId => {
     if (!provinces[provinceId]) return; // lands without province captured => do nothing
@@ -1321,6 +1322,8 @@ function adjustProvinces(affectedProvinces: number[]): void {
     // province is captured partially => split province
     splitProvince(provinceId, provStates, provCells);
   });
+
+  redrawEmblems(createdProvinces.map(provinceId => ["province", provinceId] as const));
 
   function changeProvinceOwner(provinceId: number, newOwnerId: number, provinceCells: number[]) {
     const province = provinces[provinceId];
@@ -1435,7 +1438,7 @@ function adjustProvinces(affectedProvinces: number[]): void {
     });
 
     states[stateId].provinces.push(newProvinceId);
-    redrawEmblem("province", newProvinceId);
+    createdProvinces.push(newProvinceId);
   }
 
   function findClosestProvince(provinceId: number, stateId: number, sourceCells: number[]) {

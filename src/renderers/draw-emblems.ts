@@ -4,7 +4,7 @@ import type { Province } from "@/generators/provinces-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
-import { ensureEl, minmax, rn } from "@/utils";
+import { ensureEl, findEl, minmax, rn } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { State } from "../generators/states-generator";
 
@@ -131,23 +131,36 @@ export function drawEmblems(): void {
 
 /** Reconcile an edited or newly-created emblem without rebuilding the collision scene. */
 export function redrawEmblem(type: EmblemType, i: number): void {
-  // a draw in flight holds a snapshot taken before this edit, so let it restart instead of racing it
+  redrawEmblems([[type, i]]);
+}
+
+/**
+ * Reconcile a batch of edited entities in a single pass. Reconciling walks the whole scene, so an editor
+ * touching entities in a loop hands them over together instead of paying for that walk per entity.
+ */
+export function redrawEmblems(entities: Iterable<readonly [EmblemType, number]>): void {
+  // a draw in flight holds a snapshot taken before these edits, so let it restart instead of racing it
   if (isDrawPending) {
     needsFullRedraw = true;
     return;
   }
 
-  const scene = scenes[type];
-  if (!scene.valid) return; // nothing is materialized yet: the next draw picks the edit up
+  let changed = false;
+  for (const [type, i] of entities) {
+    const scene = scenes[type];
+    if (!scene.valid) continue; // nothing is materialized yet: the next draw picks the edit up
 
-  const entity = getEntity(type, i);
-  if (entity && isMapped(entity)) scene.set(getNode(type, entity));
-  else {
-    const id = getId(type, i);
-    scene.remove(id);
-    releaseDefinition(type, i, id);
+    const entity = getEntity(type, i);
+    if (entity && isMapped(entity)) scene.set(getNode(type, entity));
+    else {
+      const id = getId(type, i);
+      scene.remove(id);
+      releaseDefinition(type, i, id);
+    }
+    changed = true;
   }
-  layer.render();
+
+  if (changed) layer.render();
 }
 
 /** Remove an entity from the viewport scene and its materialized output. */
@@ -159,12 +172,18 @@ export function removeEmblem(type: EmblemType, i: number): void {
   EmblemRenderer.remove(id);
 }
 
+/**
+ * Drop the scenes without touching the markup: a loaded map brings its own svg, and reconciling the
+ * previous map's nodes against the new data would materialize emblems at stale positions.
+ */
+export function invalidateEmblems(): void {
+  for (const type of TYPES) scenes[type].invalidate();
+}
+
 /** Layer teardown: drop the scenes so the next draw rebuilds them from the current data. */
 export function removeEmblems(): void {
-  for (const type of TYPES) {
-    scenes[type].invalidate();
-    document.getElementById(GROUPS[type])?.replaceChildren();
-  }
+  invalidateEmblems();
+  for (const type of TYPES) document.getElementById(GROUPS[type])?.replaceChildren();
 }
 
 export function subscribeToEmblemReconciliation(listener: () => void): () => void {
@@ -172,9 +191,15 @@ export function subscribeToEmblemReconciliation(listener: () => void): () => voi
   return () => void reconcileListeners.delete(listener);
 }
 
-/** Ensure definitions referenced by a live or exported emblem layer exist before it is serialized. */
-export async function renderEmblemDefinitions(root: ParentNode): Promise<void> {
+/**
+ * Ensure definitions referenced by a live or exported emblem layer exist before it is serialized.
+ * Returns a disposer dropping the shields only the export needed: a whole-map render would otherwise
+ * leave the live defs holding every emblem on the map, and the next save would serialize them all.
+ */
+export async function renderEmblemDefinitions(root: ParentNode): Promise<() => void> {
   const uses = Array.from(root.querySelectorAll<SVGUseElement>("#emblems use[data-i]"));
+  const transient: string[] = [];
+
   await Promise.allSettled(
     uses.map(use => {
       const type = getType(use.parentElement?.id);
@@ -183,9 +208,22 @@ export async function renderEmblemDefinitions(root: ParentNode): Promise<void> {
       const id = getId(type, i);
       const sceneItem = scenes[type].get(id);
       const entity = getEntity(type, i);
+      if (!findEl(id)) transient.push(id); // not rendered yet, so nothing on screen depends on it
       return renderDefinition(id, sceneItem?.coa ?? entity?.coa);
     })
   );
+
+  return () => releaseTransientDefinitions(transient);
+}
+
+/** Free the rendered shields, except the ones the live layer has materialized in the meantime */
+function releaseTransientDefinitions(ids: string[]): void {
+  if (!ids.length) return;
+
+  const materialized = new Set(
+    Array.from(document.querySelectorAll<SVGUseElement>("#emblems use[data-i]"), use => use.getAttribute("href"))
+  );
+  for (const id of ids) if (!materialized.has(`#${id}`)) EmblemRenderer.remove(id);
 }
 
 function reconcileEmblems(context: ViewportRenderContext): void {

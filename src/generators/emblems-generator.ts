@@ -17,6 +17,9 @@ declare global {
   }
 }
 
+// shapes that resolve per entity rather than fixing one shield for the whole map (the "Diversiform" option group)
+const DIVERSIFORM_SHAPES = ["culture", "random", "state"];
+
 function createTinctures() {
   return {
     field: { ...tinctures.field, stains: +P(tinctures.field.stains) },
@@ -31,10 +34,6 @@ function createTinctures() {
 
 export class EmblemsGenerator {
   private emblemShape = "culture";
-
-  setShape(shape: string): void {
-    this.emblemShape = shape;
-  }
 
   generate(
     parent: Emblem | null | undefined,
@@ -254,6 +253,19 @@ export class EmblemsGenerator {
     return emblem;
   }
 
+  setShape(shape: string): void {
+    this.emblemShape = shape;
+  }
+
+  get shape(): string {
+    return this.emblemShape;
+  }
+
+  /** The shape is picked per culture or state instead of being fixed for the whole map */
+  get isDiversiform(): boolean {
+    return DIVERSIFORM_SHAPES.includes(this.emblemShape);
+  }
+
   private selectCharge(set?: Record<string, number>): string {
     const type = set ? rw(set) : rw(charges.types);
     return type === "inescutcheon"
@@ -415,11 +427,19 @@ export class EmblemsGenerator {
     return 0.7; // 1, 2
   }
 
+  /** Carry the map placement over a regeneration: the size and position are the user's, not the generator's */
+  private keepPlacement(previous: Emblem | undefined, emblem: HeraldicEmblem): HeraldicEmblem {
+    if (previous?.size !== undefined) emblem.size = previous.size;
+    if (previous?.x !== undefined) emblem.x = previous.x;
+    if (previous?.y !== undefined) emblem.y = previous.y;
+    return emblem;
+  }
+
   regenerate(): void {
     pack.states.forEach(state => {
       if (!state.i || state.removed) return;
       const cultureType = pack.cultures[state.culture].type;
-      state.coa = this.generate(null, null, null, cultureType);
+      state.coa = this.keepPlacement(state.coa, this.generate(null, null, null, cultureType));
       state.coa.shield = this.getShield(state.culture);
     });
 
@@ -430,7 +450,7 @@ export class EmblemsGenerator {
       if (burg.capital) kinship += 0.1;
       else if (burg.port) kinship -= 0.1;
       if (state && burg.culture !== state.culture) kinship -= 0.25;
-      burg.coa = this.generate(state ? state.coa : null, kinship, null, burg.type);
+      burg.coa = this.keepPlacement(burg.coa, this.generate(state ? state.coa : null, kinship, null, burg.type));
       burg.coa.shield = this.getShield(burg.culture ?? 0, state ? burg.state : 0);
     });
 
@@ -452,13 +472,13 @@ export class EmblemsGenerator {
       const culture = pack.cells.culture[province.center];
       const port = province.burg ? pack.burgs[province.burg].port : undefined;
       const type = Burgs.getType(province.center, port);
-      province.coa = this.generate(parent.coa, kinship, Number(dominion), type);
+      province.coa = this.keepPlacement(province.coa, this.generate(parent.coa, kinship, Number(dominion), type));
       province.coa.shield = this.getShield(culture, province.state);
     });
   }
 
   getShield(culture: number, state?: number, emblemShape = this.emblemShape): string {
-    if (!["culture", "random", "state"].includes(emblemShape)) return emblemShape;
+    if (!DIVERSIFORM_SHAPES.includes(emblemShape)) return emblemShape;
 
     if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;

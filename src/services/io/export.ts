@@ -320,7 +320,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   // viewport layers only keep visible emblems live; full-map rendering materializes all of them into the clone
   const cloneEmblems = cloneEl.getElementById("emblems")?.querySelectorAll("use") ?? [];
   if (Layers.isOn("emblems") && cloneEmblems.length) {
-    await renderEmblemDefinitions(cloneEl);
+    const releaseDefinitions = await renderEmblemDefinitions(cloneEl);
     cloneEmblems.forEach(el => {
       const href = el.getAttribute("href") || el.getAttribute("xlink:href");
       if (!href) return;
@@ -330,6 +330,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
       cloneEl.getElementById(id)?.remove();
       cloneDefs.append(emblem.cloneNode(true));
     });
+    releaseDefinitions(); // the clone owns its copies now, so the map keeps only the emblems it shows
   } else {
     cloneDefs.querySelector("#defs-emblems")?.remove();
   }
