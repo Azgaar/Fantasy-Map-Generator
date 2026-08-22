@@ -6,6 +6,7 @@ export const PIXI_LAYER_CONTROL_IDS = {
   borders: "toggleBorders",
   burgIcons: "toggleBurgIcons",
   cells: "toggleCells",
+  compass: "toggleCompass",
   cultures: "toggleCultures",
   goods: "toggleGoods",
   grid: "toggleGrid",
@@ -23,6 +24,7 @@ export const PIXI_LAYER_CONTROL_IDS = {
   routes: "toggleRoutes",
   states: "toggleStates",
   temperature: "toggleTemperature",
+  trade: "toggleTrade",
   zones: "toggleZones"
 } as const satisfies Partial<Record<PixiOwnedLayer, string>>;
 

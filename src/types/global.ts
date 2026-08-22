@@ -114,7 +114,6 @@ declare global {
   var labels: Selection<SVGGElement, unknown, null, undefined>;
   var terrs: Selection<SVGGElement, unknown, null, undefined>;
   var temperature: Selection<SVGGElement, unknown, null, undefined>;
-  var tradeAnimation: Selection<SVGGElement, unknown, null, undefined>;
   var defs: Selection<SVGDefsElement, unknown, null, undefined>;
   var coastline: Selection<SVGGElement, unknown, null, undefined>;
   var lakes: Selection<SVGGElement, unknown, null, undefined>;
@@ -136,7 +135,6 @@ declare global {
   var cells: Selection<SVGGElement, unknown, null, undefined>;
   var gridOverlay: Selection<SVGGElement, unknown, null, undefined>;
   var coordinates: Selection<SVGGElement, unknown, null, undefined>;
-  var compass: Selection<SVGGElement, unknown, null, undefined>;
   var terrain: Selection<SVGGElement, unknown, null, undefined>;
   var zones: Selection<SVGGElement, unknown, null, undefined>;
   var borders: Selection<SVGGElement, unknown, null, undefined>;

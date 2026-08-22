@@ -91,14 +91,18 @@ function selectStyleElement() {
 
   // show alert line if layer is not visible
   const semanticControl = {
+    armies: "toggleMilitary",
     burgIcons: "toggleBurgIcons",
+    compass: "toggleCompass",
     goodsBurgs: "toggleGoods",
     goodsCells: "toggleGoods",
     goodsIcons: "toggleGoods",
     ice: "toggleIce",
     markers: "toggleMarkers",
     markets: "toggleMarketsLayer",
-    routes: "toggleRoutes"
+    population: "togglePopulation",
+    routes: "toggleRoutes",
+    tradeAnimation: "toggleTrade"
   }[styleElement];
   const isLayerOff = semanticControl
     ? !layerIsOn(semanticControl)
@@ -129,13 +133,17 @@ function selectStyleElement() {
       "goodsBurgs",
       "goodsCells",
       "goodsIcons",
+      "armies",
+      "compass",
       "ice",
       "landmass",
       "legend",
       "markers",
       "markets",
+      "population",
       "regions",
       "routes",
+      "tradeAnimation",
       "scaleBar"
     ].includes(styleElement)
   ) {
@@ -199,7 +207,6 @@ function selectStyleElement() {
     [
       "biomes",
       "cells",
-      "compass",
       "coordinates",
       "gridOverlay",
       "population",
@@ -259,10 +266,15 @@ function selectStyleElement() {
 
   if (styleElement === "compass") {
     styleCompass.style.display = "block";
-    const tr = parseTransform(compass.select("use").attr("transform"));
-    styleCompassShiftX.value = tr[0];
-    styleCompassShiftY.value = tr[1];
-    styleCompassSizeInput.value = tr[2];
+    const compassStyle = style.mapRenderer?.compass;
+    styleOpacityInput.value = compassStyle?.opacity ?? 0.8;
+    styleCompassShiftX.value = compassStyle?.x ?? 80;
+    styleCompassShiftY.value = compassStyle?.y ?? 80;
+    styleCompassSizeInput.value = compassStyle?.scale ?? 0.25;
+  }
+
+  if (styleElement === "tradeAnimation") {
+    styleOpacityInput.value = style.mapRenderer?.trade?.opacity ?? 1;
   }
 
   if (styleElement === "terrain") {
@@ -273,15 +285,17 @@ function selectStyleElement() {
   }
 
   if (styleElement === "population") {
+    const populationStyle = style.mapRenderer?.population;
     stylePopulation.style.display = "block";
-    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value = population
-      .select("#rural")
-      .attr("stroke");
-    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value = population
-      .select("#urban")
-      .attr("stroke");
+    styleOpacityInput.value = populationStyle?.opacity ?? 1;
+    stylePopulationRuralStrokeInput.value = stylePopulationRuralStrokeOutput.value =
+      populationStyle?.rural?.color ?? "#0000ff";
+    stylePopulationUrbanStrokeInput.value = stylePopulationUrbanStrokeOutput.value =
+      populationStyle?.urban?.color ?? "#ff0000";
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
+    styleStrokeWidthInput.value = populationStyle?.rural?.width ?? 1.6;
+    styleStrokeDasharrayInput.value = populationStyle?.rural?.dash ?? "";
+    styleStrokeLinecapInput.value = populationStyle?.rural?.cap ?? "butt";
   }
 
   if (styleElement === "regions") {
@@ -400,9 +414,13 @@ function selectStyleElement() {
   }
 
   if (styleElement === "armies") {
+    const militaryStyle = style.mapRenderer?.military;
     styleArmies.style.display = "block";
-    styleArmiesFillOpacity.value = el.attr("fill-opacity");
-    styleArmiesSize.value = el.attr("box-size");
+    styleOpacityInput.value = militaryStyle?.opacity ?? 1;
+    styleArmiesFillOpacity.value = militaryStyle?.fillOpacity ?? 1;
+    styleArmiesSize.value = militaryStyle?.boxSize ?? 3;
+    styleStrokeInput.value = styleStrokeOutput.value = militaryStyle?.stroke ?? "#000000";
+    styleStrokeWidthInput.value = militaryStyle?.strokeWidth ?? 0.3;
   }
 
   if (styleElement === "emblems") {
@@ -576,6 +594,7 @@ styleStrokeInput.addEventListener("input", function () {
   }
   if (styleElementSelect.value === "ice") setPixiIceStyle("stroke", "color", this.value);
   if (styleElementSelect.value === "goodsBurgs") setPixiGoodsStyle("burgs", "stroke", this.value);
+  if (styleElementSelect.value === "armies") setPixiMilitaryStyle("stroke", this.value);
   if (styleElementSelect.value === "routes") {
     setPixiRouteLineStyle(styleGroupSelect.value || "roads", "color", this.value);
   }
@@ -606,6 +625,11 @@ styleStrokeWidthInput.addEventListener("input", e => {
   if (styleElementSelect.value === "goodsBurgs")
     setPixiGoodsStyle("burgs", "strokeWidth", Number(e.target.value));
   if (styleElementSelect.value === "markets") setPixiMarketStyle("borderWidth", Number(e.target.value));
+  if (styleElementSelect.value === "population") {
+    setPixiPopulationLineStyle("rural", "width", Number(e.target.value));
+    setPixiPopulationLineStyle("urban", "width", Number(e.target.value));
+  }
+  if (styleElementSelect.value === "armies") setPixiMilitaryStyle("strokeWidth", Number(e.target.value));
   if (styleElementSelect.value === "routes") {
     setPixiRouteLineStyle(styleGroupSelect.value || "roads", "width", Number(e.target.value));
   }
@@ -628,6 +652,10 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
   if (styleElementSelect.value === "routes") {
     setPixiRouteLineStyle(styleGroupSelect.value || "roads", "dash", this.value);
   }
+  if (styleElementSelect.value === "population") {
+    setPixiPopulationLineStyle("rural", "dash", this.value);
+    setPixiPopulationLineStyle("urban", "dash", this.value);
+  }
   redrawMeasurersOnStyleChange();
 });
 
@@ -641,6 +669,10 @@ styleStrokeLinecapInput.addEventListener("change", function () {
   if (styleElementSelect.value === "routes") {
     setPixiRouteLineStyle(styleGroupSelect.value || "roads", "cap", this.value);
   }
+  if (styleElementSelect.value === "population") {
+    setPixiPopulationLineStyle("rural", "cap", this.value);
+    setPixiPopulationLineStyle("urban", "cap", this.value);
+  }
 });
 
 styleDisplayInput.addEventListener("change", function () {
@@ -650,17 +682,21 @@ styleDisplayInput.addEventListener("change", function () {
 styleOpacityInput.addEventListener("input", e => {
   getEl().attr("opacity", e.target.value);
   const pixiLayer = {
+    armies: "military",
     biomes: "biomes",
     cells: "cells",
+    compass: "compass",
     cults: "cultures",
     gridOverlay: "grid",
     ice: "ice",
     markers: "markers",
     prec: "precipitation",
+    population: "population",
     provs: "provinces",
     relig: "religions",
     rivers: "rivers",
     temperature: "temperature",
+    tradeAnimation: "trade",
     zones: "zones"
   }[styleElementSelect.value];
   if (pixiLayer) setPixiLayerOpacity(pixiLayer, e.target.value);
@@ -978,12 +1014,12 @@ styleTemperatureFillInput.addEventListener("input", e => {
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
-  population.select("#rural").attr("stroke", e.target.value);
+  setPixiPopulationLineStyle("rural", "color", e.target.value);
   stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
 stylePopulationUrbanStrokeInput.addEventListener("input", e => {
-  population.select("#urban").attr("stroke", e.target.value);
+  setPixiPopulationLineStyle("urban", "color", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
@@ -1008,8 +1044,14 @@ styleCompassShiftX.addEventListener("input", shiftCompass);
 styleCompassShiftY.addEventListener("input", shiftCompass);
 
 function shiftCompass() {
-  const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
-  compass.select("use").attr("transform", tr);
+  style.mapRenderer ||= {};
+  style.mapRenderer.compass = {
+    ...(style.mapRenderer.compass || {}),
+    scale: Number(styleCompassSizeInput.value),
+    x: Number(styleCompassShiftX.value),
+    y: Number(styleCompassShiftY.value)
+  };
+  invalidateSemanticLayer("compass");
 }
 
 styleLegendColItems.addEventListener("input", e => {
@@ -1156,7 +1198,10 @@ function setPixiLayerOpacity(layer, opacity) {
   const current = style.mapRenderer[layer] || {};
   style.mapRenderer[layer] = {
     ...current,
-    ...(["cells", "grid", "ice", "markers", "precipitation", "rivers", "temperature", "zones"].includes(layer)
+    ...(
+      ["cells", "compass", "grid", "ice", "markers", "military", "population", "precipitation", "rivers", "temperature", "trade", "zones"].includes(
+        layer
+      )
       ? {}
       : {fallbackColor: current.fallbackColor || "#888888"}),
     opacity: Number(opacity)
@@ -1203,6 +1248,19 @@ function setPixiMarketStyle(property, value) {
   style.mapRenderer ||= {};
   style.mapRenderer.markets = {...(style.mapRenderer.markets || {}), [property]: value};
   invalidateSemanticLayer("markets");
+}
+
+function setPixiPopulationLineStyle(role, property, value) {
+  style.mapRenderer ||= {};
+  const current = style.mapRenderer.population || {};
+  style.mapRenderer.population = {...current, [role]: {...(current[role] || {}), [property]: value}};
+  invalidateSemanticLayer("population");
+}
+
+function setPixiMilitaryStyle(property, value) {
+  style.mapRenderer ||= {};
+  style.mapRenderer.military = {...(style.mapRenderer.military || {}), [property]: value};
+  invalidateSemanticLayer("military");
 }
 
 function setPixiLineStyle(layer, property, value) {
@@ -1313,18 +1371,12 @@ styleStatesHaloBlur.addEventListener("input", e => {
 });
 
 styleArmiesFillOpacity.addEventListener("input", e => {
-  armies.attr("fill-opacity", e.target.value);
+  setPixiMilitaryStyle("fillOpacity", Number(e.target.value));
 });
 
 styleArmiesSize.addEventListener("input", e => {
   const value = Number(e.target.value);
-  armies.attr("box-size", value).attr("font-size", value * 2);
-
-  armies.selectAll("g").remove(); // clear armies layer
-  pack.states.forEach(s => {
-    if (!s.i || s.removed || !s.military.length) return;
-    drawRegiments(s.military, s.i);
-  });
+  setPixiMilitaryStyle("boxSize", value);
 });
 
 emblemsStateSizeInput.addEventListener("change", e => {

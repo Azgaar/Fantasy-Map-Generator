@@ -6,7 +6,7 @@ import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
 import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
 import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
-import { readReliefSvgDataUri, readSvgSymbolDataUri } from "./relief-icon-svg-adapter";
+import { readReliefSvgDataUri, readSvgElementDataUri, readSvgSymbolDataUri } from "./relief-icon-svg-adapter";
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
@@ -69,7 +69,9 @@ const REMOVED_SVG_SELECTORS = [
   "#population",
   "#rural",
   "#urban",
-  "#armies"
+  "#armies",
+  "#compass",
+  "#tradeAnimation"
 ] as const;
 
 const clearOwnedSvgLayers = (): void => {
@@ -84,6 +86,7 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
       onSceneChange: () => window.dispatchEvent(new Event(PIXI_RENDERER_SCENE_CHANGE_EVENT)),
       recordPerformance: (name, duration) => window.MapPerformance?.record(name, duration),
       resolveReliefIcon: readReliefSvgDataUri,
+      resolveCompassIcon: () => readSvgElementDataUri("defs-compass-rose", "-220 -220 440 440"),
       resolveSymbolIcon: readSvgSymbolDataUri
     });
     return instance;
@@ -113,12 +116,14 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
   renderer.setLayerVisibility("cells", layerIsOn("toggleCells"));
   renderer.setLayerVisibility("grid", layerIsOn("toggleGrid"));
+  renderer.setLayerVisibility("compass", layerIsOn("toggleCompass"));
   renderer.setLayerVisibility("rivers", layerIsOn("toggleRivers"));
   renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
   renderer.setLayerVisibility("religions", layerIsOn("toggleReligions"));
   renderer.setLayerVisibility("cultures", layerIsOn("toggleCultures"));
   renderer.setLayerVisibility("states", layerIsOn("toggleStates"));
   renderer.setLayerVisibility("provinces", layerIsOn("toggleProvinces"));
+  renderer.setLayerVisibility("trade", layerIsOn("toggleTrade"));
   renderer.setLayerVisibility("zones", layerIsOn("toggleZones"));
   renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
   renderer.setLayerVisibility("routes", layerIsOn("toggleRoutes"));

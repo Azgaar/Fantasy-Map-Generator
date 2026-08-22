@@ -7,6 +7,7 @@ export type PixiOwnedLayer =
   | "burgIcons"
   | "cells"
   | "coastline"
+  | "compass"
   | "cultures"
   | "grid"
   | "goods"
@@ -26,6 +27,7 @@ export type PixiOwnedLayer =
   | "routes"
   | "states"
   | "temperature"
+  | "trade"
   | "zones";
 
 export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
@@ -35,12 +37,14 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "biomes",
   "cells",
   "grid",
+  "compass",
   "rivers",
   "relief",
   "religions",
   "cultures",
   "states",
   "provinces",
+  "trade",
   "zones",
   "borders",
   "routes",

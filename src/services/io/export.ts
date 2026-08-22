@@ -376,41 +376,9 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     }
   }
 
-  // add wind rose
-  if (cloneEl.getElementById("compass")) {
-    const rose = svgDefs.getElementById("defs-compass-rose");
-    if (rose) cloneDefs.appendChild(rose.cloneNode(true));
-  }
-
-  {
-    // replace external regiment icons
-    const externalRegimentImages = cloneEl.querySelectorAll<SVGImageElement>('#armies image[href]:not([href=""])');
-    const imageHrefs = Array.from(externalRegimentImages).map(img => img.getAttribute("href"));
-
-    for (const url of imageHrefs) {
-      if (!url) continue;
-      await new Promise<void>(resolve => {
-        getBase64(url, base64 => {
-          externalRegimentImages.forEach(img => {
-            if (typeof base64 === "string" && img.getAttribute("href") === url) img.setAttribute("href", base64);
-          });
-          resolve();
-        });
-      });
-    }
-  }
-
   if (!cloneEl.getElementById("fogging-cont")) cloneEl.getElementById("fog")?.remove(); // remove unused fog
   if (!cloneEl.getElementById("regions")) cloneEl.getElementById("statePaths")?.remove(); // removed unused statePaths
   if (!cloneEl.getElementById("labels")) cloneEl.getElementById("textPaths")?.remove(); // removed unused textPaths
-
-  // add armies style
-  if (cloneEl.getElementById("armies")) {
-    cloneEl.insertAdjacentHTML(
-      "afterbegin",
-      "<style>#armies text {stroke: none; fill: #fff; text-shadow: 0 0 4px #000; dominant-baseline: central; text-anchor: middle; font-family: Helvetica; fill-opacity: 1;}#armies text.regimentIcon {font-size: .8em;}</style>"
-    );
-  }
 
   // add xlink: for href to support svg 1.1
   if (type === "svg") {

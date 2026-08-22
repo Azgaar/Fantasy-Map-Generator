@@ -24,6 +24,13 @@ import {
 } from "../core/resolution";
 import { DEFAULT_RENDERER_RESOURCE_BUDGET, RendererResourceTracker } from "../core/resource-budget";
 import { RendererResourceCache, type RendererResourceHandle } from "../core/resource-cache";
+import {
+  clear as clearTradeAnimation,
+  subscribeTradeAnimation,
+  type TradeAnimationMarker,
+  type TradeAnimationSnapshot,
+  type TradeMarkerType
+} from "../draw-trade-animation";
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
@@ -44,6 +51,7 @@ import {
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { type RetainedCellTopology, RetainedCellTopologyCache } from "../scene/layers/retained-cell-topology";
 import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
+import { buildCompassScene } from "../scene/layers/static-overlay-scene";
 import { buildZoneScene } from "../scene/layers/zone-scene";
 import type { LinePathPrimitive, PointSymbolInstancePrimitive, PolygonPathPrimitive } from "../scene/primitives";
 import type { MapRenderWorld } from "../scene/render-world";
@@ -92,6 +100,7 @@ export interface PixiMapRendererOptions {
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
   resolveSymbolIcon?: (icon: string) => string | null;
+  resolveCompassIcon?: () => string | null;
   textureBudgetBytes?: number;
 }
 
@@ -117,6 +126,11 @@ export class PixiMapRenderer implements MapRenderer {
   private topologyCache = new RetainedCellTopologyCache();
   private topologyInputs: { cellVertices: number[][]; vertexPoints: [number, number][] } | null = null;
   private topologyRevision = 0;
+  private tradeContainer: Container | null = null;
+  private tradeDisplays = new Map<number, Container>();
+  private tradeSnapshot: TradeAnimationSnapshot = { highlight: null, markers: [] };
+  private tradeTextures = new Map<TradeMarkerType, Texture>();
+  private tradeSubscriptionRelease: (() => void) | null = null;
   private textureCache: RendererResourceCache<Texture>;
   private world: MapRenderWorld | null = null;
   private stats: PixiRendererSnapshot = {
@@ -186,6 +200,8 @@ export class PixiMapRenderer implements MapRenderer {
     const biomeContainer = this.buildFillContainer("biomes");
     const cellsContainer = this.buildCellsContainer();
     const gridContainer = this.buildGridContainer();
+    const compassContainer = await this.buildCompassContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const riverContainer = this.buildRiversContainer();
     const reliefContainer = await this.buildReliefContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
@@ -193,6 +209,8 @@ export class PixiMapRenderer implements MapRenderer {
     const cultureContainer = this.buildFillContainer("cultures");
     const stateContainer = this.buildFillContainer("states");
     const provinceContainer = this.buildFillContainer("provinces");
+    const tradeContainer = await this.buildTradeContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const zoneContainer = this.buildZonesContainer();
     const borderContainer = this.buildBordersContainer();
     const routeContainer = this.buildRoutesContainer();
@@ -215,12 +233,14 @@ export class PixiMapRenderer implements MapRenderer {
       biomeContainer,
       cellsContainer,
       gridContainer,
+      compassContainer,
       riverContainer,
       reliefContainer,
       religionContainer,
       cultureContainer,
       stateContainer,
       provinceContainer,
+      tradeContainer,
       zoneContainer,
       borderContainer,
       routeContainer,
@@ -266,6 +286,7 @@ export class PixiMapRenderer implements MapRenderer {
   setLayerVisibility(layer: MapLayerId, visible: boolean): void {
     if (this.layerVisibility.get(layer) === visible) return;
     this.layerVisibility.set(layer, visible);
+    if (layer === "trade" && !visible) clearTradeAnimation();
     this.applyVisibility();
   }
 
@@ -326,6 +347,8 @@ export class PixiMapRenderer implements MapRenderer {
     this.contextRecoveryRelease = null;
     this.scheduler?.destroy();
     this.scheduler = null;
+    this.tradeSubscriptionRelease?.();
+    this.tradeSubscriptionRelease = null;
     this.clearStage();
     this.textureCache.clear();
     this.app?.destroy({ removeView: true }, { children: true });
@@ -426,6 +449,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.resizeObserver = new ResizeObserver(() => this.queueResize());
     this.resizeObserver.observe(this.surface);
     this.scheduler = this.createScheduler();
+    this.tradeSubscriptionRelease = subscribeTradeAnimation(snapshot => this.renderTradeSnapshot(snapshot));
     this.resize(viewport);
   }
 
@@ -561,6 +585,70 @@ export class PixiMapRenderer implements MapRenderer {
     );
     const container = this.buildLineContainer("grid", scene.paths, () => gridStyle.stroke);
     container.alpha = gridStyle.opacity;
+    return container;
+  }
+
+  private async buildCompassContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "compass";
+    const scene = buildCompassScene(this.semanticStyle.compass, this.sceneRevisions.getLayerRevision("compass"));
+    const source = this.rendererOptions.resolveCompassIcon?.();
+    if (!source) {
+      const graphic = createCompassGraphic();
+      graphic.label = scene.domainId;
+      graphic.position.set(scene.x, scene.y);
+      graphic.scale.set(scene.scale);
+      graphic.alpha = scene.opacity;
+      container.addChild(graphic);
+      return container;
+    }
+    let handle: RendererResourceHandle<Texture> | null = null;
+    try {
+      handle = await this.textureCache.acquire(source, () => Assets.load<Texture>(source));
+    } catch {
+      return container;
+    }
+    if (sequence !== this.rebuildSequence) {
+      handle.release();
+      return container;
+    }
+    const sprite = new Sprite({ texture: handle.value });
+    sprite.anchor.set(0.5);
+    sprite.label = scene.domainId;
+    sprite.position.set(scene.x, scene.y);
+    sprite.scale.set(scene.scale);
+    sprite.alpha = scene.opacity;
+    container.addChild(sprite);
+    this.pointTextureHandles.add(handle);
+    return container;
+  }
+
+  private async buildTradeContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "trade";
+    container.alpha = this.semanticStyle.trade.opacity;
+    const sources = new Map<TradeMarkerType, string>([
+      ["land", "./images/markers/wagon.svg"],
+      ["water", "./images/markers/ship.svg"]
+    ]);
+    const handles = new Map<TradeMarkerType, RendererResourceHandle<Texture>>();
+    await Promise.all(
+      [...sources].map(async ([type, source]) => {
+        try {
+          handles.set(type, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+        } catch {
+          // Missing trade marker assets receive a deterministic placeholder.
+        }
+      })
+    );
+    if (sequence !== this.rebuildSequence) {
+      for (const handle of handles.values()) handle.release();
+      return container;
+    }
+    this.tradeContainer = container;
+    this.tradeTextures = new Map([...handles].map(([type, handle]) => [type, handle.value]));
+    for (const handle of handles.values()) this.pointTextureHandles.add(handle);
+    this.syncTradeDisplays(this.tradeSnapshot);
     return container;
   }
 
@@ -799,10 +887,8 @@ export class PixiMapRenderer implements MapRenderer {
       this.getWorld().urbanization ?? 1,
       this.sceneRevisions.getLayerRevision("population")
     );
-    const container = this.buildLineContainer(
-      "population",
-      scene.paths,
-      role => (role === "urban" ? style.urban : style.rural)
+    const container = this.buildLineContainer("population", scene.paths, role =>
+      role === "urban" ? style.urban : style.rural
     );
     container.alpha = style.opacity;
     return container;
@@ -813,9 +899,7 @@ export class PixiMapRenderer implements MapRenderer {
     container.label = "military";
     const style = this.semanticStyle.military;
     const scene = buildMilitaryScene(this.getWorld(), this.sceneRevisions.getLayerRevision("military"));
-    const externalSources = new Set(
-      scene.regiments.map(({ icon }) => icon).filter(icon => isExternalImage(icon))
-    );
+    const externalSources = new Set(scene.regiments.map(({ icon }) => icon).filter(icon => isExternalImage(icon)));
     const textures = new Map<string, RendererResourceHandle<Texture>>();
     await Promise.all(
       [...externalSources].map(async source => {
@@ -980,11 +1064,63 @@ export class PixiMapRenderer implements MapRenderer {
     this.retainedCellMeshes.clear();
     this.cellMeshes.clear();
     this.markerDisplays.clear();
+    this.tradeContainer = null;
+    this.tradeDisplays.clear();
+    this.tradeTextures.clear();
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
     for (const handle of this.reliefTextureHandles) handle.release();
     this.reliefTextureHandles.clear();
     for (const handle of this.pointTextureHandles) handle.release();
     this.pointTextureHandles.clear();
+  }
+
+  private renderTradeSnapshot(snapshot: TradeAnimationSnapshot): void {
+    this.tradeSnapshot = snapshot;
+    if (!this.app || !this.tradeContainer || !this.stats.enabled) return;
+    this.syncTradeDisplays(snapshot);
+    if (this.layerVisibility.get("trade") ?? true) {
+      this.app.render();
+      this.rendererOptions.onSceneChange?.();
+    }
+  }
+
+  private syncTradeDisplays(snapshot: TradeAnimationSnapshot): void {
+    const container = this.tradeContainer;
+    if (!container) return;
+    const activeIds = new Set(snapshot.markers.map(marker => marker.id));
+    for (const [id, display] of this.tradeDisplays) {
+      if (activeIds.has(id)) continue;
+      display.removeFromParent();
+      display.destroy({ children: true });
+      this.tradeDisplays.delete(id);
+    }
+    for (const marker of snapshot.markers) this.syncTradeMarker(container, marker);
+
+    const previousHighlight = container.children.find(child => child.label === "trade:highlight");
+    previousHighlight?.removeFromParent();
+    previousHighlight?.destroy();
+    if (snapshot.highlight && snapshot.highlight.length > 1) {
+      const highlight = createLineGraphic(
+        [{ domainId: "trade-highlight", points: [...snapshot.highlight], role: "highlight" }],
+        this.semanticStyle.trade.highlight
+      );
+      highlight.label = "trade:highlight";
+      container.addChildAt(highlight, 0);
+    }
+  }
+
+  private syncTradeMarker(container: Container, marker: TradeAnimationMarker): void {
+    let display = this.tradeDisplays.get(marker.id);
+    if (!display) {
+      display = new Container();
+      display.label = `trade:${marker.id}`;
+      const size = marker.type === "land" ? marker.size / 1.6 : marker.size;
+      display.addChild(createSymbolSprite(this.tradeTextures.get(marker.type), size));
+      container.addChild(display);
+      this.tradeDisplays.set(marker.id, display);
+    }
+    display.position.set(marker.x, marker.y);
+    display.rotation = marker.angle;
   }
 
   private getCellTopology(): RetainedCellTopology {
@@ -1192,6 +1328,29 @@ function createSymbolSprite(texture: Texture | undefined, size: number): Sprite 
       .poly([0, -size / 2, size / 2, 0, 0, size / 2, -size / 2, 0], true)
       .stroke({ color: "#c13119", width: Math.max(0.2, size / 12) })
   );
+}
+
+function createCompassGraphic(): Graphics {
+  const context = new GraphicsContext()
+    .circle(0, 0, 212)
+    .stroke({ color: "#1b1b1b", width: 8 })
+    .circle(0, 0, 164)
+    .stroke({ color: "#1b1b1b", width: 2 })
+    .circle(0, 0, 94)
+    .stroke({ color: "#1b1b1b", width: 2 })
+    .circle(0, 0, 9)
+    .fill({ color: "#1b1b1b" });
+  for (let index = 0; index < 8; index++) {
+    const angle = (index * Math.PI) / 4;
+    const side = angle + Math.PI / 2;
+    const tip = [Math.cos(angle) * 202, Math.sin(angle) * 202];
+    const left = [Math.cos(side) * 24, Math.sin(side) * 24];
+    context
+      .poly([0, 0, tip[0], tip[1], left[0], left[1]], true)
+      .fill({ color: index % 2 ? "#47a3d1" : "#c2390f" })
+      .stroke({ color: "#1b1b1b", width: 2 });
+  }
+  return new Graphics(context);
 }
 
 function createRegimentDisplay(

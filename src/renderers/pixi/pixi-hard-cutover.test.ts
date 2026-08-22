@@ -22,10 +22,15 @@ import drawBordersSource from "../draw-borders.ts?raw";
 import drawGoodsSource from "../draw-goods.ts?raw";
 import drawIceSource from "../draw-ice.ts?raw";
 import drawMarketsSource from "../draw-markets.ts?raw";
+import drawMilitarySource from "../draw-military.ts?raw";
 import drawTemperatureSource from "../draw-temperature.ts?raw";
+import drawTradeSource from "../draw-trade-animation.ts?raw";
 import renderersIndex from "../index.ts?raw";
 import pointSymbolsSource from "../point-symbols.ts?raw";
 import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
+import populationMilitarySceneSource from "../scene/layers/population-military-scene.ts?raw";
+import staticOverlaySceneSource from "../scene/layers/static-overlay-scene.ts?raw";
+import denseOverlaysSource from "../viewport/dense-overlays.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
 import loaderSource from "./pixi-renderer-loader.ts?raw";
 
@@ -133,6 +138,39 @@ describe("Pixi hard cutover", () => {
     for (const selector of ['"#ice"', '"#goods"', '"#goodsCells"', '"#goodsIcons"', '"#goodsBurgs"', '"#markets"']) {
       expect(controllerSource.includes(selector)).toBe(true);
     }
+  });
+
+  it("renders population and military only through renderer-neutral Pixi scenes", () => {
+    expect(layersSource.includes('redrawPixiLayer("population")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("military")')).toBe(true);
+    expect(drawMilitarySource.includes('from "d3"')).toBe(false);
+    expect(drawMilitarySource.includes('invalidatePixiRendererLayer("military")')).toBe(true);
+    expect(populationMilitarySceneSource.includes("buildPopulationScene")).toBe(true);
+    expect(populationMilitarySceneSource.includes("buildMilitaryScene")).toBe(true);
+    expect(denseOverlaysSource.includes("ViewportPopulation")).toBe(false);
+    expect(mainSource.includes('append("g").attr("id", "population")')).toBe(false);
+    expect(mainSource.includes('append("g").attr("id", "armies")')).toBe(false);
+    expect(mainSource.includes('attr("id", "rural")')).toBe(false);
+    expect(mainSource.includes('attr("id", "urban")')).toBe(false);
+    for (const selector of ['"#population"', '"#rural"', '"#urban"', '"#armies"']) {
+      expect(controllerSource.includes(selector)).toBe(true);
+    }
+    expect(exportSource.includes("#armies image")).toBe(false);
+  });
+
+  it("renders compass and trade through Pixi without live SVG transitions", () => {
+    expect(layersSource.includes('redrawPixiLayer("compass")')).toBe(true);
+    expect(layersSource.includes('redrawPixiLayer("trade")')).toBe(true);
+    expect(staticOverlaySceneSource.includes("buildCompassScene")).toBe(true);
+    expect(drawTradeSource.includes("requestAnimationFrame")).toBe(true);
+    expect(drawTradeSource.includes('from "d3"')).toBe(false);
+    expect(drawTradeSource.includes("document.createElementNS")).toBe(false);
+    expect(mainSource.includes('append("g").attr("id", "compass")')).toBe(false);
+    expect(mainSource.includes('append("g").attr("id", "tradeAnimation")')).toBe(false);
+    expect(controllerSource.includes('"#compass"')).toBe(true);
+    expect(controllerSource.includes('"#tradeAnimation"')).toBe(true);
+    expect(exportSource.includes("add wind rose")).toBe(false);
+    expect(saveSource.includes("cloneTradeAnimation")).toBe(false);
   });
 
   it("uses Pixi as the authoritative base for viewport raster exports", () => {

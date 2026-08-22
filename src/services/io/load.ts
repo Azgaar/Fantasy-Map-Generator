@@ -337,7 +337,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     cells = viewbox.select<SVGGElement>("#cells");
     gridOverlay = viewbox.select<SVGGElement>("#gridOverlay");
     coordinates = viewbox.select<SVGGElement>("#coordinates");
-    compass = viewbox.select<SVGGElement>("#compass");
     rivers = viewbox.select<SVGElement>("#rivers");
     terrain = viewbox.select<SVGGElement>("#terrain");
     relig = viewbox.select<SVGGElement>("#relig");
@@ -364,7 +363,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     labels = viewbox.select<SVGGElement>("#labels");
     icons = viewbox.select<SVGGElement>("#icons");
     armies = viewbox.select<SVGGElement>("#armies");
-    tradeAnimation = viewbox.select<SVGGElement>("#tradeAnimation");
     ruler = viewbox.select<SVGGElement>("#ruler");
     fogging = viewbox.select<SVGGElement>("#fogging");
     debug = viewbox.select<SVGElement>("#debug");
@@ -505,7 +503,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("cells", "toggleCells", Boolean(hasChildren(select("#cells"))));
       turnOnPixiLayer("grid", "toggleGrid", Boolean(hasChildren(select("#gridOverlay"))));
       if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
-      if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
+      turnOnPixiLayer(
+        "compass",
+        "toggleCompass",
+        Boolean(isVisible(select("#compass")) && hasChild(select("#compass"), "use"))
+      );
       turnOnPixiLayer("rivers", "toggleRivers", pack.rivers.length > 0);
       turnOnPixiLayer("relief", "toggleRelief", Boolean(isVisible(select("#terrain"))));
       turnOnPixiLayer("religions", "toggleReligions", Boolean(hasChildren(select("#relig"))));
@@ -520,7 +522,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       );
       turnOnPixiLayer("routes", "toggleRoutes", pack.routes.length > 0);
       turnOnPixiLayer("temperature", "toggleTemperature", Boolean(hasChildren(select("#temperature"))));
-      if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
+      turnOnPixiLayer(
+        "population",
+        "togglePopulation",
+        pack.cells.i.some(cellId => pack.cells.pop[cellId] > 0) ||
+          pack.burgs.some(burg => Boolean(burg.i && !burg.removed && burg.population))
+      );
       turnOnPixiLayer("ice", "toggleIce", Boolean(pack.ice.length));
       turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
@@ -530,9 +537,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         "toggleBurgIcons",
         pack.burgs.some(burg => burg.i && !burg.removed)
       );
-      if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
+      turnOnPixiLayer(
+        "military",
+        "toggleMilitary",
+        pack.states.some(state => Boolean(state.i && !state.removed && state.military?.length))
+      );
       turnOnPixiLayer("markers", "toggleMarkers", Boolean(pack.markers.length));
-      if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
+      turnOnPixiLayer("trade", "toggleTrade", Boolean(isVisible(select("#tradeAnimation"))));
       turnOnPixiLayer(
         "goods",
         "toggleGoods",

@@ -45,7 +45,10 @@ export function buildPopulationScene(
     if (!burg.i || burg.removed || !burg.population) continue;
     paths.push({
       domainId: `urban:${burg.i}`,
-      points: [[burg.x, burg.y], [burg.x, burg.y - (burg.population / 5) * urbanization]],
+      points: [
+        [burg.x, burg.y],
+        [burg.x, burg.y - (burg.population / 5) * urbanization]
+      ],
       role: "urban"
     });
   }

@@ -881,18 +881,6 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     });
   }
 
-  if (isOlderThan("1.98.0")) {
-    // v1.98.00 changed compass layer and rose element id
-    const rose = select("#compass").select("use");
-    rose.attr("xlink:href", "#defs-compass-rose");
-
-    if (!select("#compass").selectAll("*").size()) {
-      select("#compass").style("display", "none");
-      select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
-      shiftCompass();
-    }
-  }
-
   if (isOlderThan("1.99.0")) {
     // v1.99.00 changed routes generation algorithm and data format
     select("#routes").attr("display", null).attr("style", null);
@@ -1189,8 +1177,6 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     select("#goods").append("g").attr("id", "goodsIcons").attr("data-circle", "1");
     select("#goods").append("g").attr("id", "goodsBurgs");
     markets = viewbox.insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
-    tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
-
     options.trade = { animation: TradeAnimation.getDefaultOptions() };
 
     for (const state of pack.states) {

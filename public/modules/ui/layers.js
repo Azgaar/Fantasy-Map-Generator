@@ -251,10 +251,7 @@ function drawLayers() {
     if (layerIsOn("toggleGrid")) measureLayer("grid", drawGrid);
     if (layerIsOn("toggleCoordinates")) measureLayer("coordinates", drawCoordinates);
     if (layerIsOn("toggleCompass")) {
-      measureLayer("compass", () => {
-        if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
-        compass.style("display", "block");
-      });
+      measureLayer("compass", () => redrawPixiLayer("compass"));
     }
     if (layerIsOn("toggleRivers")) measureLayer("rivers", drawRivers);
     measureLayer("relief", drawRelief);
@@ -583,12 +580,10 @@ function drawCoordinates() {
 function toggleCompass(event) {
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
-    if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
-    ensureEl("compass").style.display = "";
+    redrawPixiLayer("compass");
     if (event && isCtrlClick(event)) editStyle("compass");
   } else {
     if (event && isCtrlClick(event)) return editStyle("compass");
-    ensureEl("compass").style.display = "none";
     turnButtonOff("toggleCompass");
   }
 }
@@ -714,12 +709,11 @@ function toggleMarkers(event) {
 function toggleTrade(event) {
   if (!layerIsOn("toggleTrade")) {
     turnButtonOn("toggleTrade");
-    tradeAnimation.style("display", null);
+    redrawPixiLayer("trade");
     TradeAnimation.start();
     if (event && isCtrlClick(event)) editStyle("tradeAnimation");
   } else {
     if (event && isCtrlClick(event)) return editStyle("tradeAnimation");
-    tradeAnimation.style("display", "none");
     TradeAnimation.stop();
     turnButtonOff("toggleTrade");
   }

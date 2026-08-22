@@ -14,6 +14,7 @@ import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
+import { drawMilitary } from "@/renderers/draw-military";
 import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 

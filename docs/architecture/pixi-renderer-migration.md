@@ -62,6 +62,20 @@ The former opt-in experiment is retained only as historical context in
   are import input only and are purged before Pixi paints. Direct hover highlighting and the ice/goods/market editing
   gestures that formerly selected persistent SVG nodes intentionally await M9/M10 rather than receiving compatibility
   shims.
+- The following M7 entity slice moves rural/urban population bars and military regiment badges into renderer-neutral
+  scenes. Population emits stable cell/burg line IDs; regiment badges retain state/regiment IDs, rotations, totals,
+  state colors, emoji, and reference-counted external icon textures with missing-asset placeholders. Both layers now
+  use semantic style and persisted visibility, render in canonical Pixi order, and invalidate from domain mutations.
+  The viewport population reconciler, live `#population`/`#rural`/`#urban` groups, live `#armies` renderer, regiment
+  SVG transitions, and their SVG export fixups are removed. Regiment selection, hover, attack/attach targeting, and
+  editor handles remain explicit M9/M10 work rather than compatibility branches.
+- The final M7 overlay slice moves the compass rose and trade markers to Pixi. Compass placement, scale, opacity, and
+  preset import now use semantic style; its historical defs element is read once as a texture source and no live
+  `#compass` group is created. Trade retains its renderer-neutral route pathfinder and uses a requestAnimationFrame
+  scheduler only while visible markers exist, with deterministic stop/destroy cleanup, Pixi wagon/ship textures, and
+  a Pixi path highlight. The live `#tradeAnimation` group, D3 transitions, SVG marker-symbol loader, and compass/trade
+  save/export fixups are deleted. Marker picking and draggable compass placement remain M9/M10 work rather than
+  compatibility shims.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.

@@ -299,12 +299,12 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 16, textureCacheEntries: 1 });
-    expect(applicationState.assetLoad).toHaveBeenCalledOnce();
+    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 18, textureCacheEntries: 3 });
+    expect(applicationState.assetLoad).toHaveBeenCalledTimes(3);
 
     renderer.clear();
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
-    expect(applicationState.assetUnload).toHaveBeenCalledOnce();
+    expect(applicationState.assetUnload).toHaveBeenCalledTimes(3);
     renderer.destroy();
   });
 
@@ -317,7 +317,7 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 15 });
+    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 17 });
     expect(applicationState.stage?.children.map(child => child.label)).toEqual([
       "ocean",
       "landmass",
@@ -325,12 +325,14 @@ describe("PixiMapRenderer lifecycle", () => {
       "biomes",
       "cells",
       "grid",
+      "compass",
       "rivers",
       "relief",
       "religions",
       "cultures",
       "states",
       "provinces",
+      "trade",
       "zones",
       "borders",
       "routes",
@@ -340,7 +342,9 @@ describe("PixiMapRenderer lifecycle", () => {
       "goods",
       "markets",
       "precipitation",
+      "population",
       "burgIcons",
+      "military",
       "markers"
     ]);
     renderer.setLayerVisibility("biomes", false);
@@ -358,7 +362,7 @@ describe("PixiMapRenderer lifecycle", () => {
     await renderer.mount(createSurface());
     await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
 
-    expect(renderer.getSnapshot()).toMatchObject({ burgSymbols: 1, markerSymbols: 1, textureCacheEntries: 1 });
+    expect(renderer.getSnapshot()).toMatchObject({ burgSymbols: 1, markerSymbols: 1, textureCacheEntries: 3 });
     expect(applicationState.stage?.children.find(child => child.label === "burgIcons")?.children.length).toBe(2);
     expect(applicationState.stage?.children.find(child => child.label === "markers")?.children.length).toBe(1);
     renderer.clear();
@@ -401,7 +405,48 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.find(child => child.label === "markets")?.children.length).toBeGreaterThan(
       0
     );
-    expect(renderer.getSnapshot().textureCacheEntries).toBe(1);
+    expect(renderer.getSnapshot().textureCacheEntries).toBe(3);
+    renderer.clear();
+    expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
+  });
+
+  it("builds Pixi-owned population and military layers from domain entities", async () => {
+    const renderer = new PixiMapRenderer();
+    const world = createWorld();
+    world.cells.pop = Uint8Array.from([10]);
+    world.states = [
+      {} as never,
+      {
+        color: "#6699cc",
+        i: 1,
+        military: [
+          {
+            a: 100,
+            bx: 2,
+            by: 2,
+            cell: 0,
+            i: 3,
+            icon: "data:image/png;base64,regiment",
+            n: 0,
+            name: "Regiment",
+            s: 0,
+            state: 1,
+            t: 100,
+            type: "melee",
+            u: {},
+            x: 2,
+            y: 2
+          }
+        ]
+      } as never
+    ];
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    expect(applicationState.stage?.children.find(child => child.label === "population")?.children.length).toBe(1);
+    expect(applicationState.stage?.children.find(child => child.label === "military")?.children.length).toBe(1);
+    expect(renderer.getSnapshot().textureCacheEntries).toBe(3);
     renderer.clear();
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
     renderer.destroy();

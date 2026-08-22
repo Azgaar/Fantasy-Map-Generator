@@ -353,6 +353,60 @@ function syncPixiCellStylePreset(presetJson) {
       radius: Number(marketsPreset["data-size"] ?? 3)
     };
   }
+  const populationPreset = presetJson["#population"];
+  const ruralPreset = presetJson["#rural"];
+  const urbanPreset = presetJson["#urban"];
+  if (populationPreset || ruralPreset || urbanPreset) {
+    const current = style.mapRenderer.population || {};
+    const line = (role, preset, fallbackColor) => ({
+      ...(current[role] || {}),
+      cap: populationPreset?.["stroke-linecap"] || current[role]?.cap || "butt",
+      color: preset?.stroke || current[role]?.color || fallbackColor,
+      dash: String(populationPreset?.["stroke-dasharray"] || ""),
+      opacity: current[role]?.opacity ?? 1,
+      width: Number(populationPreset?.["stroke-width"] ?? current[role]?.width ?? 1.6)
+    });
+    style.mapRenderer.population = {
+      ...current,
+      opacity: Number(populationPreset?.opacity ?? current.opacity ?? 1),
+      rural: line("rural", ruralPreset, "#0000ff"),
+      urban: line("urban", urbanPreset, "#ff0000")
+    };
+  }
+  const armiesPreset = presetJson["#armies"];
+  if (armiesPreset) {
+    style.mapRenderer.military = {
+      ...(style.mapRenderer.military || {}),
+      boxSize: Number(armiesPreset["box-size"] ?? 3),
+      fillOpacity: Number(armiesPreset["fill-opacity"] ?? 1),
+      fontFamily: style.mapRenderer.military?.fontFamily || "Helvetica, Arial, sans-serif",
+      opacity: Number(armiesPreset.opacity ?? 1),
+      stroke: armiesPreset.stroke || "#000000",
+      strokeWidth: Number(armiesPreset["stroke-width"] ?? 0.3),
+      textColor: style.mapRenderer.military?.textColor || "#ffffff"
+    };
+  }
+  const compassPreset = presetJson["#compass"];
+  const compassUsePreset = presetJson["#compass > use"];
+  if (compassPreset || compassUsePreset) {
+    const transform = String(compassUsePreset?.transform || "");
+    const translate = transform.match(/translate\(\s*([-+.\d]+)[ ,]+([-+.\d]+)/);
+    const scale = transform.match(/scale\(\s*([-+.\d]+)/);
+    style.mapRenderer.compass = {
+      ...(style.mapRenderer.compass || {}),
+      opacity: Number(compassPreset?.opacity ?? 0.8),
+      scale: Number(scale?.[1] ?? 0.25),
+      x: Number(translate?.[1] ?? 80),
+      y: Number(translate?.[2] ?? 80)
+    };
+  }
+  const tradePreset = presetJson["#tradeAnimation"];
+  if (tradePreset) {
+    style.mapRenderer.trade = {
+      ...(style.mapRenderer.trade || {}),
+      opacity: Number(tradePreset.opacity ?? 1)
+    };
+  }
   window.dispatchEvent(
     new CustomEvent("map:pixi-renderer:command", {
       detail: {command: "queue-rebuild"}
@@ -701,6 +755,39 @@ function addStylePreset() {
         filter: null
       };
     }
+    const populationStyle = style.mapRenderer?.population;
+    if (populationStyle) {
+      presetStyle["#population"] = {
+        opacity: populationStyle.opacity,
+        "stroke-width": populationStyle.rural.width,
+        "stroke-dasharray": populationStyle.rural.dash,
+        "stroke-linecap": populationStyle.rural.cap,
+        filter: null
+      };
+      presetStyle["#rural"] = {stroke: populationStyle.rural.color};
+      presetStyle["#urban"] = {stroke: populationStyle.urban.color};
+    }
+    const militaryStyle = style.mapRenderer?.military;
+    if (militaryStyle) {
+      presetStyle["#armies"] = {
+        opacity: militaryStyle.opacity,
+        "font-size": militaryStyle.boxSize * 2,
+        "box-size": militaryStyle.boxSize,
+        stroke: militaryStyle.stroke,
+        "stroke-width": militaryStyle.strokeWidth,
+        "fill-opacity": militaryStyle.fillOpacity,
+        filter: null
+      };
+    }
+    const compassStyle = style.mapRenderer?.compass;
+    if (compassStyle) {
+      presetStyle["#compass"] = {opacity: compassStyle.opacity, filter: null, mask: null};
+      presetStyle["#compass > use"] = {
+        transform: `translate(${compassStyle.x} ${compassStyle.y}) scale(${compassStyle.scale})`
+      };
+    }
+    const tradeStyle = style.mapRenderer?.trade;
+    if (tradeStyle) presetStyle["#tradeAnimation"] = {opacity: tradeStyle.opacity, filter: null};
 
     if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], style.relief);
 

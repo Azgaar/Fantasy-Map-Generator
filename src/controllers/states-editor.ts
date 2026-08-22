@@ -25,6 +25,7 @@ import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawMilitary } from "@/renderers/draw-military";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";

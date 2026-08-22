@@ -92,9 +92,6 @@ function prepareMapData(): string {
 
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
-  const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");
-  if (cloneTradeAnimation) cloneTradeAnimation.innerHTML = ""; // always remove transient trade animations
-
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;

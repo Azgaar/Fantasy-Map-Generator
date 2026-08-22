@@ -135,6 +135,18 @@ export interface MilitaryLayerStyle {
   textColor: string;
 }
 
+export interface CompassLayerStyle {
+  opacity: number;
+  scale: number;
+  x: number;
+  y: number;
+}
+
+export interface TradeLayerStyle {
+  highlight: SemanticLineStyle;
+  opacity: number;
+}
+
 export interface MapStyle {
   biomes: CellLayerStyle;
   borders: {
@@ -143,6 +155,7 @@ export interface MapStyle {
   };
   burgIcons: BurgLayerStyle;
   coastline: SemanticRoleStyles<SemanticLineStyle>;
+  compass: CompassLayerStyle;
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
   goods: GoodsLayerStyle;
@@ -163,6 +176,7 @@ export interface MapStyle {
   routes: SemanticRoleStyles<SemanticLineStyle>;
   states: CellLayerStyle;
   temperature: TemperatureLayerStyle;
+  trade: TradeLayerStyle;
   zones: ZoneLayerStyle;
 }
 
@@ -300,6 +314,7 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
       sea_island: { cap: "round", color: "#1f3846", dash: "", opacity: 0.5, width: 0.5 }
     }
   },
+  compass: { opacity: 0.8, scale: 0.25, x: 80, y: 80 },
   cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
   cultures: { fallbackColor: "#888888", opacity: 0.6 },
   goods: {
@@ -422,6 +437,10 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     labels: { color: "#000000", fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "bold", opacity: 1 },
     opacity: 1,
     stroke: { cap: "butt", color: "#000000", dash: "", opacity: 1, width: 1.8 }
+  },
+  trade: {
+    highlight: { cap: "round", color: "#cc1111", dash: "", opacity: 0.7, width: 0.5 },
+    opacity: 1
   },
   zones: {
     fallbackColor: "#888888",

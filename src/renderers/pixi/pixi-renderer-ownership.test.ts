@@ -17,12 +17,14 @@ describe("Pixi renderer ownership", () => {
       "biomes",
       "cells",
       "grid",
+      "compass",
       "rivers",
       "relief",
       "religions",
       "cultures",
       "states",
       "provinces",
+      "trade",
       "zones",
       "borders",
       "routes",
@@ -32,7 +34,9 @@ describe("Pixi renderer ownership", () => {
       "goods",
       "markets",
       "precipitation",
+      "population",
       "burgIcons",
+      "military",
       "markers"
     ]);
     for (const layer of PIXI_OWNED_LAYER_IDS) {

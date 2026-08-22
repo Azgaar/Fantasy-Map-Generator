@@ -39,7 +39,6 @@ let biomes = viewbox.append("g").attr("id", "biomes");
 let cells = viewbox.append("g").attr("id", "cells");
 let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
 let coordinates = viewbox.append("g").attr("id", "coordinates");
-let compass = viewbox.append("g").attr("id", "compass").style("display", "none");
 let rivers = viewbox.append("g").attr("id", "rivers");
 let terrain = viewbox.append("g").attr("id", "terrain").style("display", "none");
 let relig = viewbox.append("g").attr("id", "relig");
@@ -62,7 +61,6 @@ let coastline = viewbox.append("g").attr("id", "coastline");
 let ice = viewbox.select("#ice");
 let goods = viewbox.select("#goods");
 let markets = viewbox.select("#markets");
-let tradeAnimation = viewbox.append("g").attr("id", "tradeAnimation").style("display", "none");
 let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
 let population = viewbox.select("#population");
 let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
@@ -96,9 +94,6 @@ terrs.append("g").attr("id", "landHeights");
 emblems.append("g").attr("id", "burgEmblems");
 emblems.append("g").attr("id", "provinceEmblems");
 emblems.append("g").attr("id", "stateEmblems");
-
-// compass
-compass.append("use").attr("xlink:href", "#defs-compass-rose");
 
 // fogging
 fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");

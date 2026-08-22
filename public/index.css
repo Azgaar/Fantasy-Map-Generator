@@ -163,7 +163,6 @@ a {
   user-select: none;
 }
 
-#population,
 #cells,
 #compass {
   fill: none;
@@ -180,7 +179,6 @@ a {
 
 #lakes,
 #coastline,
-#armies,
 #emblems {
   cursor: pointer;
 }
@@ -219,22 +217,6 @@ t,
 #gridOverlay,
 #fogging {
   pointer-events: none;
-}
-
-#armies text {
-  pointer-events: none;
-  user-select: none;
-  stroke: none;
-  fill: #fff;
-  text-shadow: 0 0 4px #000;
-  dominant-baseline: central;
-  text-anchor: middle;
-  font-family: var(--sans-serif);
-  fill-opacity: 1;
-}
-
-#armies text.regimentIcon {
-  font-size: 0.8em;
 }
 
 #statesHalo {

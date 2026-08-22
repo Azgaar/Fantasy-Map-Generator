@@ -16,6 +16,7 @@ describe("Pixi layer visibility state", () => {
       "borders",
       "burgIcons",
       "cells",
+      "compass",
       "cultures",
       "goods",
       "grid",
@@ -23,7 +24,9 @@ describe("Pixi layer visibility state", () => {
       "lakes",
       "markers",
       "markets",
+      "military",
       "precipitation",
+      "population",
       "provinces",
       "relief",
       "religions",
@@ -31,6 +34,7 @@ describe("Pixi layer visibility state", () => {
       "routes",
       "states",
       "temperature",
+      "trade",
       "zones"
     ]);
     expect(appStyle.mapLayerVisibility).toMatchObject({
