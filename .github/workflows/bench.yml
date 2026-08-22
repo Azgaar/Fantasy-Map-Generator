@@ -25,6 +25,14 @@ jobs:
         continue-on-error: true
         run: npm run bench:check
 
+      - name: Upload current benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-current
+          path: bench/current.json
+          if-no-files-found: ignore
+
       - name: Comment benchmark results on PR
         if: always() && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('bench/comment.md') != ''
         uses: marocchino/sticky-pull-request-comment@v2

@@ -107,8 +107,12 @@ describe("zoom pan gesture reconcile cost", () => {
       runPanGesture(labels);
     },
     {
-      setup: () => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] }),
-      teardown: () => vi.useRealTimers()
+      setup: () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      },
+      teardown: () => {
+        vi.useRealTimers();
+      }
     }
   );
 });
