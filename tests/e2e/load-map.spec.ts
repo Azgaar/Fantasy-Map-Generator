@@ -481,9 +481,9 @@ test.describe("Map loading", () => {
     expect(savedLayers.active).toContain("labels");
   });
 
-  // 1.143.1.map carries a pre-v1.104 defs skeleton under a modern version stamp: the shared feature
-  // geometry is inlined into the masks and #featurePaths is absent, so every layer referencing
-  // #feature_N by id renders nothing. The repair is structural, not version-gated
+  // 1.143.1.map carries a pre-v1.104 defs skeleton: the shared feature geometry is inlined into the
+  // masks and #featurePaths is absent, so drawLandmass has nothing to write the geometry into and
+  // the load fails outright. The v1.148.0 migration puts the missing defs back
   test("a map without featurePaths should get its defs and feature geometry back", async ({ page }) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.143.1.map");
     await page.locator("#mapToLoad").setInputFiles(mapFilePath);

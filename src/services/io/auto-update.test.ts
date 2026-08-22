@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
 import { VERSION } from "@/services/versioning";
 import { resolveVersionConflicts } from "./auto-update";
@@ -293,7 +294,9 @@ describe("v1.146 rendering groups", () => {
 describe("missing svg defs", () => {
   const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
 
-  it("recreates the defs a saved svg never had", () => {
+  it("recreates the defs an old saved svg never had", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
+
     resolveVersionConflicts("1.147.0", []);
 
     expect(getDeftempIds()).toEqual([
@@ -310,8 +313,8 @@ describe("missing svg defs", () => {
     expect(document.getElementById("vignette-rect")).not.toBeNull();
   });
 
-  // the version stamp is not a reliable signal: files show up with a modern version and an ancient svg
-  it("restores the group a current-version map is missing without touching the rest", () => {
+  // a pre-v1.104 svg: the feature geometry is inlined into the masks and #featurePaths is absent
+  it("adds only what is missing, leaving the existing defs alone", () => {
     document.body.innerHTML = /* html */ `<svg id="map">
       <defs>
         <g id="deftemp">
@@ -325,7 +328,7 @@ describe("missing svg defs", () => {
       <g id="viewbox"></g>
     </svg>`;
 
-    resolveVersionConflicts(VERSION, []);
+    resolveVersionConflicts("1.147.0", []);
 
     expect(getDeftempIds()).toEqual([
       "land",
@@ -340,11 +343,27 @@ describe("missing svg defs", () => {
     expect(document.getElementById("vignette-rect")).not.toBeNull();
   });
 
-  it("is idempotent", () => {
-    resolveVersionConflicts("1.147.0", []);
+  it("leaves current maps alone", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
+
+    resolveVersionConflicts(VERSION, []);
+
+    expect(document.getElementById("deftemp")).toBeNull();
+  });
+
+  // the migration carries its own copy of the markup, so it drifts the moment index.html gains a
+  // defs element it does not know about. #filters is out of scope: it is large, static and old maps have it
+  it("restores every defs element index.html declares", () => {
+    const defs = indexHtml.slice(
+      indexHtml.indexOf("<defs>", indexHtml.indexOf('id="map"')),
+      indexHtml.indexOf("</defs>")
+    );
+    const declared = Array.from(defs.replace(/<g id="filters">[\s\S]*?<\/g>/, "").matchAll(/\bid="([^"]+)"/g));
+
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
     resolveVersionConflicts("1.147.0", []);
 
-    expect(getDeftempIds()).toHaveLength(7);
-    expect(document.querySelectorAll("#map > defs")).toHaveLength(1);
+    const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
+    expect(restored).toEqual(declared.map(([, id]) => id));
   });
 });
