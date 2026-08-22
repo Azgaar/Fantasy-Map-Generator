@@ -2,6 +2,7 @@ import { pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,10 +20,11 @@ import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, upload
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
+type FilterState = { search: string; stateId: number; cultureId: number };
 
 const dialogId = "burgsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { search: "", stateId: -1, cultureId: -1 };
+let filterState: FilterState;
 
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
@@ -117,6 +119,7 @@ const burgsTable = initEditorTable<Burg>({
 
 function open(filters: Filters = {}): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ search: "", stateId: -1, cultureId: -1 }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("burgIcons", "labels");
 
@@ -260,12 +263,14 @@ function updateFilter(): void {
   culturesSorted.forEach(
     c => void cultureFilter.options.add(new Option(c.name, String(c.i), false, c.i === filterState.cultureId))
   );
+  dialogState.setFilters(dialogId, filterState);
 }
 
 function onFilterChange(): void {
   filterState.search = ensureEl<HTMLInputElement>("burgsSearch").value;
   filterState.stateId = +ensureEl<HTMLSelectElement>("burgsFilterState").value;
   filterState.cultureId = +ensureEl<HTMLSelectElement>("burgsFilterCulture").value;
+  dialogState.setFilters(dialogId, filterState);
   burgsTable.reset();
 }
 

@@ -1,6 +1,7 @@
 import { mean, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,7 +20,7 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { search: "" };
+let filterState: { search: string };
 
 const columns: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
@@ -73,6 +74,7 @@ const routesTable = initEditorTable<Route>({
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("routes");
 
@@ -125,6 +127,7 @@ function renderDialog(): void {
   ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
   ensureEl("routesSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
+    dialogState.setFilters(dialogId, filterState);
     routesTable.reset();
   });
 }

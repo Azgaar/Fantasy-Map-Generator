@@ -1,5 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -21,7 +22,7 @@ import { ensureEl, findEl } from "@/utils";
 const dialogId = "labelsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 const ALL = "";
-const filterState = { group: ALL, type: ALL, search: ALL };
+let filterState: { group: string; type: string; search: string };
 
 const columns: EditorColumn<LabelData>[] = [
   { key: "selection", width: "1.5em", permanent: true },
@@ -62,12 +63,14 @@ const labelsTable = initEditorTable<LabelData>({
 
 function open(group: string = ALL): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ group: ALL, type: ALL, search: ALL }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("labels");
 
   isBulkMode = false;
   resetSpreadPreview();
   if (group) filterState.group = group;
+  dialogState.setFilters(dialogId, filterState);
 
   renderDialog();
   populateGroupFilter();
@@ -171,6 +174,7 @@ let searchTimeout = 0;
 function onSearchInput(): void {
   clearTimeout(searchTimeout);
   filterState.search = ensureEl<HTMLInputElement>("labelsSearch").value;
+  dialogState.setFilters(dialogId, filterState);
   searchTimeout = window.setTimeout(labelsTable.reset, SEARCH_DELAY);
 }
 
@@ -178,6 +182,7 @@ function onFilterChange(): void {
   filterState.type = ensureEl<HTMLSelectElement>("labelsFilterType").value;
   filterState.group = ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
   filterState.search = ensureEl<HTMLInputElement>("labelsSearch").value;
+  dialogState.setFilters(dialogId, filterState);
   labelsTable.reset();
 }
 

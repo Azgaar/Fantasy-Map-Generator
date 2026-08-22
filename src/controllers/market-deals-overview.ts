@@ -1,5 +1,6 @@
 import { updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -15,7 +16,8 @@ import type { Deal } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
 let activeMarketId = 0;
-const filterState: { scope: "all" | "local" | "global" } = { scope: "all" };
+type FilterState = { scope: "all" | "local" | "global" };
+let filterState: FilterState;
 
 const dialogId = "marketDeals" as const;
 const position = { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" };
@@ -70,6 +72,9 @@ function open(marketId: number): void {
     return;
   }
 
+  filterState = dialogState.getFilters(dialogId, (): FilterState => ({ scope: "all" }));
+  if (!(["all", "local", "global"] as string[]).includes(filterState.scope)) filterState.scope = "all";
+  dialogState.setFilters(dialogId, filterState);
   activeMarketId = marketId;
 
   renderDialog();
@@ -127,6 +132,7 @@ function renderDialog(): void {
   });
   ensureEl("marketDealsFilter").addEventListener("change", ev => {
     filterState.scope = (ev.target as HTMLSelectElement).value as typeof filterState.scope;
+    dialogState.setFilters(dialogId, filterState);
     marketDealsTable.reset();
   });
 }

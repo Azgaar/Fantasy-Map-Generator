@@ -2,6 +2,7 @@ import { mean, select } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,7 +20,7 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "riversOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { search: "" };
+let filterState: { search: string };
 
 const columns: EditorColumn<River>[] = [
   { key: "locate", width: "1.4em", permanent: true },
@@ -99,6 +100,7 @@ const riversTable = initEditorTable<River>({
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("rivers");
 
@@ -160,6 +162,7 @@ function renderDialog(): void {
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
+    dialogState.setFilters(dialogId, filterState);
     riversTable.reset();
   });
 }

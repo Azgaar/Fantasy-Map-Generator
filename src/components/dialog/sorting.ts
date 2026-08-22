@@ -1,22 +1,22 @@
 import { ensureEl } from "@/utils";
+import { type DialogSort, dialogState } from "./state";
 import type { EditorColumn } from "./table";
 
-type SortState = { sortby: string; alphabetically: boolean; direction: -1 | 1 };
 type SortAccessors<T> = Record<string, (item: T) => string | number>;
-const sortStates = new Map<string, SortState>();
 
 /** Make every .sortable header in the container sort the lines below it */
-export function applySortingByHeader(headerContainerId: string): void {
+export function applySortingByHeader(dialogId: string, headerContainerId = `${dialogId}Header`): void {
   const container = document.getElementById(headerContainerId);
   if (!container) return;
 
-  restoreSortState(container);
+  restoreSortState(dialogId, container);
+  applySorting(container);
   for (const header of Array.from(container.querySelectorAll<HTMLElement>(".sortable"))) {
-    header.addEventListener("click", () => sortLines(header));
+    header.addEventListener("click", () => sortLines(dialogId, header));
   }
 }
 
-function toggleSortIcon(header: HTMLElement): void {
+function toggleSortIcon(dialogId: string, header: HTMLElement): void {
   const type = header.classList.contains("alphabetically") ? "name" : "number";
   const isSorted = header.className.includes("icon-sort");
   let order = header.className.includes("-down") ? "-up" : "-down";
@@ -29,12 +29,12 @@ function toggleSortIcon(header: HTMLElement): void {
     }
   }
   header.classList.add(`icon-sort-${type}${order}`);
-  saveSortState(headers);
+  saveSortState(dialogId, headers);
 }
 
 /** Toggle the sorting order of the clicked header and re-sort the lines */
-export function sortLines(header: HTMLElement): void {
-  toggleSortIcon(header);
+export function sortLines(dialogId: string, header: HTMLElement): void {
+  toggleSortIcon(dialogId, header);
   applySorting(header.parentNode as HTMLElement);
 }
 
@@ -62,30 +62,30 @@ export function applySorting(headers: HTMLElement): void {
     });
 }
 
-function getActiveSort(headers: HTMLElement): SortState | null {
+function getActiveSort(headers: HTMLElement): DialogSort | null {
   const header = headers.querySelector<HTMLElement>("div[class*='icon-sort']");
   if (!header) return null;
   return {
-    sortby: header.dataset.sortby as string,
+    sortBy: header.dataset.sortby as string,
     alphabetically: header.classList.contains("alphabetically"),
     direction: header.className.includes("-down") ? -1 : 1
   };
 }
 
-function saveSortState(headers: HTMLElement): void {
+function saveSortState(dialogId: string, headers: HTMLElement): void {
   const sort = getActiveSort(headers);
-  if (headers.id && sort) sortStates.set(headers.id, sort);
+  if (sort) dialogState.setSorting(dialogId, sort);
 }
 
-function restoreSortState(headers: HTMLElement): void {
-  const sort = sortStates.get(headers.id);
+function restoreSortState(dialogId: string, headers: HTMLElement): void {
+  const sort = dialogState.getSorting(dialogId, () => getActiveSort(headers));
   if (!sort) return;
 
   const header = Array.from(headers.querySelectorAll<HTMLElement>(".sortable")).find(
-    cell => cell.dataset.sortby === sort.sortby
+    cell => cell.dataset.sortby === sort.sortBy
   );
   if (!header) {
-    sortStates.delete(headers.id);
+    dialogState.setSorting(dialogId, null);
     return;
   }
 
@@ -100,8 +100,8 @@ function restoreSortState(headers: HTMLElement): void {
   header.classList.add(`icon-sort-${type}-${order}`);
 }
 
-export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors<T>): T[] {
-  const get = accessors[sort.sortby];
+export function sortData<T>(data: T[], sort: DialogSort, accessors: SortAccessors<T>): T[] {
+  const get = accessors[sort.sortBy];
   if (!get) return data;
   return data.sort((a, b) => {
     const aValue = get(a);
@@ -117,10 +117,10 @@ export function sortData<T>(data: T[], sort: SortState, accessors: SortAccessors
 
 export function bindColumnSorting(dialogId: string, onSort: () => void): void {
   const headers = ensureEl(`${dialogId}Header`);
-  restoreSortState(headers);
+  restoreSortState(dialogId, headers);
   for (const cell of Array.from(headers.querySelectorAll<HTMLElement>(".sortable"))) {
     cell.addEventListener("click", () => {
-      toggleSortIcon(cell);
+      toggleSortIcon(dialogId, cell);
       onSort();
     });
   }

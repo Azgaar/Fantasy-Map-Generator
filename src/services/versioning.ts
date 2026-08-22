@@ -15,12 +15,14 @@
  * For the changes that may be interesting to end users, update the `latestPublicChanges` array below (new changes on top).
  */
 
+import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 
 export const VERSION = "1.148.0";
 
 const latestPublicChanges = [
   "Emblems rendering optimization",
+  "Dialogs state preserved between sessions",
   "Paint Area dialogs rework",
   "Relief icons: improved performance",
   "Configurable table columns",
@@ -35,12 +37,7 @@ const latestPublicChanges = [
   "Jagged coastlines",
   "Heightmap Editor: Fill brush",
   "Editors: undo button",
-  "Minimap",
-  "Search input in Overview dialogs",
-  "Custom burg grouping and icon selection",
-  "Ability to set custom image as Marker or Regiment icon",
-  "Submap and Transform tools rework",
-  "Azgaar Bot to answer questions and provide help"
+  "Minimap"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -102,6 +99,7 @@ export async function clearCache(): Promise<void> {
 
 export async function cleanupData(): Promise<void> {
   localStorage.clear();
+  dialogState.clear();
   localStorage.setItem("version", VERSION);
   localStorage.setItem("disable_click_arrow_tooltip", "true");
   await clearCache();

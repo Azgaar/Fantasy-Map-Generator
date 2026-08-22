@@ -2,6 +2,7 @@ import { drag, easeSinIn, select, transition } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -22,7 +23,7 @@ import { abbreviate, debounce, ensureEl, getPointer, isLand, parseTransform, rn,
 
 const dialogId = "religionsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { showExtinct: false };
+let filterState: { showExtinct: boolean };
 
 const columns: EditorColumn<Religion>[] = [
   { key: "color", width: "1.2em", permanent: true },
@@ -102,6 +103,7 @@ const religionsTable = initEditorTable<Religion>({
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ showExtinct: false }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("religions");
   Layers.hide("states", "biomes");
@@ -807,6 +809,7 @@ async function showHierarchy(): Promise<void> {
 
 function toggleExtinct(): void {
   filterState.showExtinct = !filterState.showExtinct;
+  dialogState.setFilters(dialogId, filterState);
   syncFilterControls();
   religionsTable.reset();
   drawReligionCenters();

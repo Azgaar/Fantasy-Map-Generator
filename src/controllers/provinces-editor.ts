@@ -2,6 +2,7 @@ import { color as d3Color, easeSinIn, interpolate, interpolateString, select, st
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -26,7 +27,7 @@ import { ensureEl, findEl, getPointer, getRandomColor, isLand, P, rand, rn, si, 
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { stateId: 1 };
+let filterState: { stateId: number };
 
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
@@ -87,6 +88,7 @@ const provincesTable = initEditorTable<Province>({ getData: getProvincesData, on
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ stateId: 1 }));
   closeDialogs("#provincesEditor, .stable");
   Layers.show("provinces", "borders");
   Layers.hide("states", "cultures");
@@ -176,6 +178,7 @@ function renderDialog(): void {
   ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
   ensureEl("provincesFilterState").addEventListener("change", event => {
     filterState.stateId = +(event.target as HTMLSelectElement).value;
+    dialogState.setFilters(dialogId, filterState);
     provincesTable.reset();
   });
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
@@ -266,6 +269,7 @@ function updateFilter(): void {
   statesSorted.forEach(s => {
     stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
+  dialogState.setFilters(dialogId, filterState);
 }
 
 function getProvincesData(): Province[] {
@@ -1163,6 +1167,7 @@ function addProvince(this: SVGElement, event: any): void {
 
   collectStatistics();
   filterState.stateId = state;
+  dialogState.setFilters(dialogId, filterState);
   ensureEl<HTMLSelectElement>("provincesFilterState").value = String(filterState.stateId);
   provincesTable.reset();
 }

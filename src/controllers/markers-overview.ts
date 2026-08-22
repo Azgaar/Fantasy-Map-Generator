@@ -1,5 +1,6 @@
 import { closeDialogs, confirmationDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -20,7 +21,7 @@ import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { search: "", state: "", culture: "", type: "" };
+let filterState: { search: string; state: string; culture: string; type: string };
 
 const columns: EditorColumn<Marker>[] = [
   { key: "type", label: "Type", width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
@@ -32,6 +33,7 @@ const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUp
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ search: "", state: "", culture: "", type: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("markers");
 
@@ -156,6 +158,7 @@ function populateFilters(): void {
   filterState.type = fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types, filterState.type);
 
   ensureEl<HTMLInputElement>("markersSearch").value = filterState.search;
+  dialogState.setFilters(dialogId, filterState);
 }
 
 function closeMarkersOverview(): void {
@@ -242,6 +245,7 @@ function onFilterChange(): void {
   filterState.state = ensureEl<HTMLSelectElement>("markersFilterState").value;
   filterState.culture = ensureEl<HTMLSelectElement>("markersFilterCulture").value;
   filterState.type = ensureEl<HTMLSelectElement>("markersFilterType").value;
+  dialogState.setFilters(dialogId, filterState);
   markersTable.reset();
 }
 

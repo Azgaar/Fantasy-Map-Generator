@@ -1,5 +1,6 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -29,9 +30,14 @@ import type { PromptOptions } from "../utils/commonUtils";
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
-const filterState: { cellType: "all" | "land" | "water" } = { cellType: "all" };
+type FilterState = { cellType: "all" | "land" | "water" };
+const dialogId = "heightmapEditor";
+let filterState: FilterState;
 
 function open(options?: { mode?: string; tool?: string }): void {
+  filterState = dialogState.getFilters(dialogId, (): FilterState => ({ cellType: "all" }));
+  if (!(["all", "land", "water"] as string[]).includes(filterState.cellType)) filterState.cellType = "all";
+  dialogState.setFilters(dialogId, filterState);
   const { mode, tool } = options || {};
   restartHistory();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
@@ -343,6 +349,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   }
   const cellTypeFilterEl = findEl<HTMLSelectElement>("cellTypeFilter");
   if (cellTypeFilterEl) cellTypeFilterEl.value = filterState.cellType;
+  dialogState.setFilters(dialogId, filterState);
 
   // show convert and template buttons for Erase mode only
   ensureEl("applyTemplate").style.display = mode === "erase" ? "inline-block" : "none";
@@ -1380,6 +1387,7 @@ function cellTypeFilterChange(): void {
     cellTypeFilter.value = "all";
   }
   filterState.cellType = cellTypeFilter.value as typeof filterState.cellType;
+  dialogState.setFilters(dialogId, filterState);
 }
 
 function rescale(v: number): void {

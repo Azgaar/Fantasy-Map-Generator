@@ -1,6 +1,7 @@
 import { select, sum } from "d3";
 import { closeDialogs, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -21,7 +22,7 @@ import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
 const dialogId = "regimentsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { stateId: -1 };
+let filterState: { stateId: number };
 
 type RegimentRow = { state: State; regiment: Regiment };
 let columns: EditorColumn<RegimentRow>[] = [];
@@ -29,6 +30,7 @@ const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData,
 
 function open(state?: number): void {
   if (customization) return;
+  filterState = dialogState.getFilters(dialogId, () => ({ stateId: -1 }));
   closeDialogs(".stable");
   Layers.show("military");
 
@@ -89,6 +91,7 @@ function renderDialog(): void {
   ensureEl("regimentsExport").addEventListener("click", downloadRegimentsData);
   ensureEl("regimentsFilter").addEventListener("change", event => {
     filterState.stateId = +(event.target as HTMLSelectElement).value;
+    dialogState.setFilters(dialogId, filterState);
     regimentsTable.reset();
   });
 
@@ -227,6 +230,7 @@ function updateFilter(): void {
   statesSorted.forEach(s => {
     filter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
+  dialogState.setFilters(dialogId, filterState);
 }
 
 function regimentHighlightOn(event: Event): void {

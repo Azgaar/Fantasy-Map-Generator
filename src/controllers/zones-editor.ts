@@ -1,6 +1,7 @@
 import { select, sum } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -21,7 +22,7 @@ import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-const filterState = { type: "all" };
+let filterState: { type: string };
 
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
@@ -35,6 +36,7 @@ const columns: EditorColumn<ZoneRow>[] = [
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
 function open(): void {
+  filterState = dialogState.getFilters(dialogId, () => ({ type: "all" }));
   closeDialogs("#zonesEditor, .stable");
   Layers.show("zones");
 
@@ -161,6 +163,7 @@ function updateFilters(): void {
     .map(type => `<option value="${type}">${type}</option>`)
     .join("")}`;
   filterSelect.value = filterState.type;
+  dialogState.setFilters(dialogId, filterState);
 }
 
 // add line for each zone
@@ -232,6 +235,7 @@ function zoneHighlightOff(this: HTMLElement): void {
 
 function filterZonesByType(): void {
   filterState.type = ensureEl<HTMLSelectElement>("zonesFilterType").value;
+  dialogState.setFilters(dialogId, filterState);
   Layers.draw("zones");
   zonesTable.reset();
 }
