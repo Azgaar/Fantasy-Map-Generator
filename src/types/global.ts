@@ -127,6 +127,7 @@ declare global {
   var changeFont: () => void;
   var addLakesInDeepDepressions: () => void;
   var openNearSeaLakes: () => void;
+  var defineMapSize: () => void;
   var calculateMapCoordinates: () => void;
   var calculateTemperatures: () => void;
   var reGraph: () => void;

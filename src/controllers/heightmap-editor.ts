@@ -5,6 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { createErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -292,7 +293,10 @@ function showModeDialog(tool?: string): void {
     <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
     <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
     <p>Please <span class="pseudoLink" onclick="window.Services.Save.saveMap('machine')">save the map</span> before editing the heightmap!</p>
-    <p style="margin-bottom: 0">Check out ${link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")} for guidance.</p>`;
+    <p style="margin-bottom: 0">Check out ${link(
+      "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization",
+      "wiki"
+    )} for guidance.</p>`;
 
   $("#alert").dialog({
     resizable: false,
@@ -426,7 +430,7 @@ function getFriendlyHeight(h: number): string {
 }
 
 // Exit customization mode
-function finalizeHeightmap(): void {
+async function finalizeHeightmap(): Promise<void> {
   if (select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").size() < 200) {
     tip("Insufficient land area. There should be at least 200 land cells!", false, "error");
     return;
@@ -441,8 +445,9 @@ function finalizeHeightmap(): void {
 
   customization = 0;
   ensureEl("customizationMenu").style.display = "none";
-  if (ensureEl("options").querySelector<HTMLElement>(".tab > button.active")!.id === "toolsTab")
+  if (ensureEl("options").querySelector<HTMLElement>(".tab > button.active")!.id === "toolsTab") {
     ensureEl("toolsContent").style.display = "block";
+  }
   ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
   ensureEl("exitCustomization").style.display = "none"; // hide finalize button
 
@@ -452,10 +457,12 @@ function finalizeHeightmap(): void {
   resetZoom();
 
   document.getElementById("preview")?.remove();
-  if (document.getElementById("canvas3d")) void Controllers.View3d.enterStandard();
+  if (document.getElementById("canvas3d")) {
+    void Controllers.View3d.enterStandard();
+  }
 
   const mode = ensureEl("heightmapEditMode").innerHTML;
-  if (mode === "erase") regenerateErasedData();
+  if (mode === "erase") await regenerateErasedData();
   else if (mode === "keep") restoreKeptData();
   else if (mode === "risk") restoreRiskedData();
 
@@ -466,7 +473,7 @@ function finalizeHeightmap(): void {
   Layers.set(storedLayers);
 }
 
-function regenerateErasedData(): void {
+async function regenerateErasedData(): Promise<void> {
   INFO && console.group("Edit Heightmap");
   TIME && console.time("regenerateErasedData");
 
@@ -478,60 +485,9 @@ function regenerateErasedData(): void {
   pack.religions = [];
 
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
-  Features.markupGrid();
-  if (erosionAllowed) {
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
-  }
-  Layers.draw("ocean");
-  calculateTemperatures();
-  generatePrecipitation();
-  reGraph();
-  Features.markupPack();
 
-  Rivers.generate(erosionAllowed);
+  await createErasePipeline(erosionAllowed).runFrom("markupGrid");
 
-  if (!erosionAllowed) {
-    for (const i of pack.cells.i) {
-      const g = pack.cells.g[i];
-      if (pack.cells.h[i] !== grid.cells.h[g] && pack.cells.h[i] >= 20 === grid.cells.h[g] >= 20)
-        pack.cells.h[i] = grid.cells.h[g];
-    }
-  }
-
-  Biomes.define();
-  Features.defineGroups();
-
-  Goods.generate();
-
-  rankCells();
-  Cultures.generate();
-  Cultures.expand();
-
-  Burgs.generate();
-  States.generate();
-  Routes.generate();
-  Religions.generate();
-
-  Burgs.specify();
-  States.collectStatistics();
-  States.defineStateForms();
-
-  Provinces.generate();
-  Provinces.getPoles();
-
-  Rivers.specify();
-  Lakes.defineNames();
-
-  Markets.generate();
-  Production.produce();
-  States.collectTaxes();
-
-  Ice.generate();
-
-  Military.generate();
-  Markers.generate();
-  Zones.generate();
   TIME && console.timeEnd("regenerateErasedData");
   INFO && console.groupEnd();
 }
@@ -723,14 +679,17 @@ function restoreRiskedData(): void {
     if (!provCells.length) {
       const state = p.state;
       const stateProvs = pack.states[state].provinces!;
-      if (stateProvs.includes(p.i)) pack.states[state].provinces!.splice(stateProvs.indexOf(p.i), 1);
+      if (stateProvs.includes(p.i)) {
+        pack.states[state].provinces!.splice(stateProvs.indexOf(p.i), 1);
+      }
 
       p.removed = true;
       continue;
     }
 
-    if (p.burg && !pack.burgs[p.burg].removed) p.center = pack.burgs[p.burg].cell;
-    else {
+    if (p.burg && !pack.burgs[p.burg].removed) {
+      p.center = pack.burgs[p.burg].cell;
+    } else {
       p.center = provCells[0];
       p.burg = pack.cells.burg[p.center];
     }
@@ -850,12 +809,13 @@ function mockHeightmapSelection(selection: number[]): void {
       return;
     }
 
-    if (!cell.size())
+    if (!cell.size()) {
       cell = select<SVGElement, unknown>("#viewbox")
         .select("#heights")
         .append("polygon")
         .attr("points", getGridPolygon(i, grid))
         .attr("id", `cell${i}`);
+    }
     cell.attr("fill", getColor(grid.cells.h[i]));
   });
 }
@@ -1108,7 +1068,9 @@ function toggleBrushMode(event: Event): void {
   exitBrushMode();
   button.classList.add("pressed");
   const radiusRow = ensureEl("heightmapBrushRadius").parentElement;
-  if (radiusRow) radiusRow.style.display = button.id === "brushFill" ? "none" : "";
+  if (radiusRow) {
+    radiusRow.style.display = button.id === "brushFill" ? "none" : "";
+  }
 
   if (button.id === "brushLine") {
     ensureEl("lineSlider").style.display = "block";
@@ -1305,8 +1267,11 @@ function dragBrush(this: SVGElement, event: any): void {
     const inRadius = findGridAll(p[0], p[1], r, grid);
     let selection = inRadius;
     const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
-    if (cellTypeFilter === "land") selection = inRadius.filter((i: number) => grid.cells.h[i] >= 20);
-    else if (cellTypeFilter === "water") selection = inRadius.filter((i: number) => grid.cells.h[i] < 20);
+    if (cellTypeFilter === "land") {
+      selection = inRadius.filter((i: number) => grid.cells.h[i] >= 20);
+    } else if (cellTypeFilter === "water") {
+      selection = inRadius.filter((i: number) => grid.cells.h[i] < 20);
+    }
     if (selection?.length) changeHeightForSelection(selection, start);
   };
 
@@ -1325,27 +1290,27 @@ function changeHeightForSelection(selection: number[], start: number): void {
   const heights = grid.cells.h;
 
   const brush = document.querySelector<HTMLElement>("#brushesButtons > button.pressed")!.id;
-  if (brush === "brushRaise")
+  if (brush === "brushRaise") {
     selection.forEach(i => {
       heights[i] = !ocean && heights[i] < 20 ? 20 : limit(heights[i] + power);
     });
-  else if (brush === "brushElevate")
+  } else if (brush === "brushElevate") {
     selection.forEach((i, d) => {
       heights[i] = limit(heights[i] + interpolate(d / Math.max(selection.length - 1, 1)));
     });
-  else if (brush === "brushLower")
+  } else if (brush === "brushLower") {
     selection.forEach(i => {
       heights[i] = limit(heights[i] - power);
     });
-  else if (brush === "brushDepress")
+  } else if (brush === "brushDepress") {
     selection.forEach((i, d) => {
       heights[i] = limit(heights[i] - interpolate(d / Math.max(selection.length - 1, 1)));
     });
-  else if (brush === "brushAlign")
+  } else if (brush === "brushAlign") {
     selection.forEach(i => {
       heights[i] = limit(heights[start]);
     });
-  else if (brush === "brushSmooth")
+  } else if (brush === "brushSmooth") {
     selection.forEach(i => {
       heights[i] = rn(
         ((mean(
@@ -1359,10 +1324,11 @@ function changeHeightForSelection(selection: number[], start: number): void {
         1
       );
     });
-  else if (brush === "brushDisrupt")
+  } else if (brush === "brushDisrupt") {
     selection.forEach(i => {
       heights[i] = heights[i] < 15 ? heights[i] : limit(heights[i] + power / 1.6 - Math.random() * power);
     });
+  }
 
   mockHeightmapSelection(selection);
 }
@@ -1389,7 +1355,9 @@ function rescale(v: number): void {
 }
 
 function rescaleWithCondition(): void {
-  const range = `${ensureEl<HTMLInputElement>("rescaleLower").value}-${ensureEl<HTMLInputElement>("rescaleHigher").value}`;
+  const range = `${ensureEl<HTMLInputElement>("rescaleLower").value}-${
+    ensureEl<HTMLInputElement>("rescaleHigher").value
+  }`;
   const operator = ensureEl<HTMLSelectElement>("conditionSign").value;
   const operand = ensureEl<HTMLInputElement>("rescaleModifier").valueAsNumber;
   if (Number.isNaN(operand)) {
@@ -1404,10 +1372,15 @@ function rescaleWithCondition(): void {
   HeightmapGenerator.setGraph(grid);
 
   if (operator === "multiply") HeightmapGenerator.modify(range, 0, operand, 0);
-  else if (operator === "divide") HeightmapGenerator.modify(range, 0, 1 / operand, 0);
-  else if (operator === "add") HeightmapGenerator.modify(range, operand, 1, 0);
-  else if (operator === "subtract") HeightmapGenerator.modify(range, -1 * operand, 1, 0);
-  else if (operator === "exponent") HeightmapGenerator.modify(range, 0, 1, operand);
+  else if (operator === "divide") {
+    HeightmapGenerator.modify(range, 0, 1 / operand, 0);
+  } else if (operator === "add") {
+    HeightmapGenerator.modify(range, operand, 1, 0);
+  } else if (operator === "subtract") {
+    HeightmapGenerator.modify(range, -1 * operand, 1, 0);
+  } else if (operator === "exponent") {
+    HeightmapGenerator.modify(range, 0, 1, operand);
+  }
 
   grid.cells.h = HeightmapGenerator.getHeights();
   updateHeightmap();
@@ -1500,25 +1473,34 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
   const common = /* html */ `<div data-type="${type}">${Hide}<div style="width:4em">${type}</div>${Trash}${Reorder}`;
 
   const TempY = /* html */ `<span>y:
-      <input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${arg5 || "20-80"} />
+      <input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${
+        arg5 || "20-80"
+      } />
     </span>`;
 
   const TempX = /* html */ `<span>x:
-      <input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${arg4 || "15-85"} />
+      <input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${
+        arg4 || "15-85"
+      } />
     </span>`;
 
   const Height = /* html */ `<span>h:
-      <input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${arg3 || "40-50"} />
+      <input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${
+        arg3 || "40-50"
+      } />
     </span>`;
 
   const Count = /* html */ `<span>n:
-      <input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${count || "1-2"} />
+      <input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${
+        count || "1-2"
+      } />
     </span>`;
 
-  if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough")
+  if (type === "Hill" || type === "Pit" || type === "Range" || type === "Trough") {
     return /* html */ `${common}${TempY}${TempX}${Height}${Count}</div>`;
+  }
 
-  if (type === "Strait")
+  if (type === "Strait") {
     return /* html */ `${common}
       <span>d:
         <select class="templateDist" data-tip="Strait direction">
@@ -1527,11 +1509,14 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
         </select>
       </span>
       <span>w:
-        <input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${count || "2-7"} />
+        <input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${
+          count || "2-7"
+        } />
       </span>
     </div>`;
+  }
 
-  if (type === "Invert")
+  if (type === "Invert") {
     return /* html */ `${common}
       <span>by:
         <select class="templateDist" data-tip="Mirror heightmap along axis" style="width: 7.8em">
@@ -1544,8 +1529,9 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
         <input class="templateCount" data-tip="Probability of inversion, range 0-1" value=${count || "0.5"} />
       </span>
     </div>`;
+  }
 
-  if (type === "Mask")
+  if (type === "Mask") {
     return /* html */ `${common}
       <span>f:
         <input class="templateCount"
@@ -1553,8 +1539,9 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
           type="number" min=-10 max=10 value=${count || 1} />
       </span>
     </div>`;
+  }
 
-  if (type === "Add")
+  if (type === "Add") {
     return /* html */ `${common}
       <span>to:
         <select class="templateDist" data-tip="Change only land or all cells">
@@ -1568,8 +1555,9 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
         type="number" value=${count || -10} min=-100 max=100 step=1 />
       </span>
     </div>`;
+  }
 
-  if (type === "Multiply")
+  if (type === "Multiply") {
     return /* html */ `${common}
       <span>to:
         <select class="templateDist" data-tip="Change only land or all cells">
@@ -1583,14 +1571,16 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
           value=${count || 1.1} min=0 max=10 step=.1 />
       </span>
     </div>`;
+  }
 
-  if (type === "Smooth")
+  if (type === "Smooth") {
     return /* html */ `${common}
       <span>f:
         <input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc."
           type="number" min=1 max=10 step=1 value=${count || 2} />
       </span>
     </div>`;
+  }
 
   return "";
 }
@@ -1599,12 +1589,18 @@ function setRange(event: Event): void {
   const target = event.target as HTMLSelectElement;
   if (target.value !== "interval") return;
 
-  prompt("Set a height interval. Avoid space, use hyphen as a separator", { default: "17-20" }, v => {
-    const opt = document.createElement("option");
-    opt.value = opt.innerHTML = String(v);
-    target.add(opt);
-    target.value = String(v);
-  });
+  prompt(
+    "Set a height interval. Avoid space, use hyphen as a separator",
+    {
+      default: "17-20"
+    },
+    v => {
+      const opt = document.createElement("option");
+      opt.value = opt.innerHTML = String(v);
+      target.add(opt);
+      target.value = String(v);
+    }
+  );
 }
 
 function selectTemplate(e: Event): void {
@@ -1677,8 +1673,9 @@ function executeTemplate(): void {
     if (type === "Hill") HeightmapGenerator.addHill(count, height, x, y);
     else if (type === "Pit") HeightmapGenerator.addPit(count, height, x, y);
     else if (type === "Range") HeightmapGenerator.addRange(count, height, x, y);
-    else if (type === "Trough") HeightmapGenerator.addTrough(count, height, x, y);
-    else if (type === "Strait") HeightmapGenerator.addStrait(count, dist);
+    else if (type === "Trough") {
+      HeightmapGenerator.addTrough(count, height, x, y);
+    } else if (type === "Strait") HeightmapGenerator.addStrait(count, dist);
     else if (type === "Mask") HeightmapGenerator.mask(+count);
     else if (type === "Invert") HeightmapGenerator.invert(+count, dist);
     else if (type === "Add") HeightmapGenerator.modify(dist, +count, 1);
@@ -1982,7 +1979,12 @@ function autoAssing(type: string): void {
 function setConvertColorsNumber(): void {
   prompt(
     `Please set maximum number of colors. <br>An actual number is usually lower and depends on color scheme`,
-    { default: +ensureEl<HTMLInputElement>("convertColors").value, step: 1, min: 3, max: 255 },
+    {
+      default: +ensureEl<HTMLInputElement>("convertColors").value,
+      step: 1,
+      min: 3,
+      max: 255
+    },
     number => {
       ensureEl<HTMLInputElement>("convertColors").value = String(number);
       heightsFromImage(+number);
