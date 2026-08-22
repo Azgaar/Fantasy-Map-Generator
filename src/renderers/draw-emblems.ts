@@ -284,7 +284,7 @@ function getPole(type: EmblemType, entity: Burg | Province | State): [number, nu
 
 function getEntity(type: EmblemType, i: number): Burg | Province | State | undefined {
   if (type === "burg") return pack.burgs[i];
-  if (type === "province") return pack.provinces[i] as Province | undefined;
+  if (type === "province") return pack.provinces[i];
   return pack.states[i];
 }
 

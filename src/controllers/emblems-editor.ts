@@ -425,6 +425,7 @@ function regenerate(): void {
   emblemShapeSelector.disabled = false;
   emblemShapeSelector.value = el.coa.shield ?? "heater";
 
+  EmblemRenderer.trigger(currentId, el.coa);
   redrawEmblem(currentType, currentEl.i);
 }
 

@@ -1058,13 +1058,11 @@ function openPaintEditor(): void {
     title: "Paint Provinces",
     parentDialogId: dialogId,
     onClose: open,
-    items: pack.provinces
-      .filter(province => province.i && !province.removed)
-      .map(province => ({
-        id: province.i,
-        name: `${pack.states[province.state]?.name ?? ""}: ${province.name}`,
-        color: province.color || "#ffffff"
-      })),
+    items: getProvincesData().map(province => ({
+      id: province.i,
+      name: province.name,
+      color: province.color || "#ffffff"
+    })),
     getValue: cell => pack.cells.province[cell],
     filterCell: (cell, currentProvince, nextProvince) => {
       if (!isLand(cell, pack) || !pack.cells.state[cell]) return false;
