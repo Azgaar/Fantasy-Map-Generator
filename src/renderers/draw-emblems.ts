@@ -55,6 +55,7 @@ const layer = ViewportLayers.register({ id: "emblems", render: reconcileEmblems 
 const sizes: Record<EmblemType, number> = { burg: 0, province: 0, state: 0 };
 const reconcileListeners = new Set<() => void>();
 let drawVersion = 0;
+let isDrawPending = false;
 let needsFullRedraw = false;
 
 // emblems shrink as their number grows, so that a crowded map does not turn into a wall of shields
@@ -69,13 +70,14 @@ function getEmblemSize(type: EmblemType, count: number): number {
 export function drawEmblems(): void {
   TIME && console.time("drawEmblems");
   const version = ++drawVersion;
+  isDrawPending = true;
   needsFullRedraw = false;
   const { states, provinces, burgs } = pack;
 
   const valid = {
-    burg: burgs.filter(isValidEmblem),
-    province: (provinces as Province[]).filter(isValidEmblem),
-    state: states.filter(isValidEmblem)
+    burg: burgs.filter(isMapped),
+    province: (provinces as Province[]).filter(isMapped),
+    state: states.filter(isMapped)
   };
 
   for (const type of TYPES) sizes[type] = getEmblemSize(type, valid[type].length);
@@ -99,6 +101,15 @@ export function drawEmblems(): void {
   // the collision pass is heavy, so it is deferred to the next frame
   timeout(() => {
     if (version !== drawVersion) return;
+    isDrawPending = false;
+
+    if (needsFullRedraw) {
+      // the snapshot was taken before an edit landed: rebuild it from the current data
+      needsFullRedraw = false;
+      TIME && console.timeEnd("drawEmblems");
+      drawEmblems();
+      return;
+    }
 
     const ticks = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
     for (let i = 0; i < ticks; i++) simulation.tick();
@@ -109,14 +120,9 @@ export function drawEmblems(): void {
       const scene = scenes[type];
       const nextIds = new Set(next.map(node => node.id));
       for (const item of scene.values()) {
-        if (!nextIds.has(item.id)) EmblemRenderer.remove(item.id);
+        if (!nextIds.has(item.id)) releaseDefinition(type, item.i, item.id);
       }
       scene.replace(next);
-    }
-    if (needsFullRedraw) {
-      needsFullRedraw = false;
-      drawEmblems();
-      return;
     }
     layer.render();
     TIME && console.timeEnd("drawEmblems");
@@ -125,17 +131,21 @@ export function drawEmblems(): void {
 
 /** Reconcile an edited or newly-created emblem without rebuilding the collision scene. */
 export function redrawEmblem(type: EmblemType, i: number): void {
-  const scene = scenes[type];
-  if (!scene.valid) {
+  // a draw in flight holds a snapshot taken before this edit, so let it restart instead of racing it
+  if (isDrawPending) {
     needsFullRedraw = true;
     return;
   }
+
+  const scene = scenes[type];
+  if (!scene.valid) return; // nothing is materialized yet: the next draw picks the edit up
+
   const entity = getEntity(type, i);
-  if (entity && isValidEmblem(entity)) scene.set(getNode(type, entity));
+  if (entity && isMapped(entity)) scene.set(getNode(type, entity));
   else {
     const id = getId(type, i);
     scene.remove(id);
-    EmblemRenderer.remove(id);
+    releaseDefinition(type, i, id);
   }
   layer.render();
 }
@@ -143,10 +153,18 @@ export function redrawEmblem(type: EmblemType, i: number): void {
 /** Remove an entity from the viewport scene and its materialized output. */
 export function removeEmblem(type: EmblemType, i: number): void {
   const id = getId(type, i);
-  if (!scenes[type].valid) needsFullRedraw = true;
+  if (isDrawPending) needsFullRedraw = true;
   scenes[type].remove(id);
   document.querySelector(`#${GROUPS[type]} > use[data-i="${i}"]`)?.remove();
   EmblemRenderer.remove(id);
+}
+
+/** Layer teardown: drop the scenes so the next draw rebuilds them from the current data. */
+export function removeEmblems(): void {
+  for (const type of TYPES) {
+    scenes[type].invalidate();
+    document.getElementById(GROUPS[type])?.replaceChildren();
+  }
 }
 
 export function subscribeToEmblemReconciliation(listener: () => void): () => void {
@@ -189,9 +207,9 @@ function reconcileEmblems(context: ViewportRenderContext): void {
     const visible: EmblemData[] = [];
     for (const stored of scene.values()) {
       const entity = getEntity(type, stored.i);
-      if (!entity || !isValidEmblem(entity)) {
+      if (!entity || !isMapped(entity)) {
         scene.remove(stored.id);
-        EmblemRenderer.remove(stored.id);
+        releaseDefinition(type, stored.i, stored.id);
         continue;
       }
 
@@ -288,8 +306,20 @@ function getEntity(type: EmblemType, i: number): Burg | Province | State | undef
   return pack.states[i];
 }
 
-function isValidEmblem(entity: Burg | Province | State): boolean {
-  return Boolean(entity.i && !entity.removed && entity.coa && entity.coa.size !== 0);
+/** The entity still owns a coat of arms, so its rendered shield may be on screen in a dialog. */
+function hasEmblem(entity: Burg | Province | State): boolean {
+  return Boolean(entity.i && !entity.removed && entity.coa);
+}
+
+/** The emblem belongs on the map. A zero size hides it there without disowning the coat of arms. */
+function isMapped(entity: Burg | Province | State): boolean {
+  return hasEmblem(entity) && entity.coa!.size !== 0;
+}
+
+/** Free a shield the map no longer shows */
+function releaseDefinition(type: EmblemType, i: number, id: string): void {
+  const entity = getEntity(type, i);
+  if (!entity || !hasEmblem(entity)) EmblemRenderer.remove(id);
 }
 
 function isVisible({ x, y, shift }: EmblemData, { bounds }: ViewportRenderContext): boolean {

@@ -20,27 +20,15 @@ import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const filterState = { search: "", state: "", culture: "", type: "" };
+
 const columns: EditorColumn<Marker>[] = [
-  {
-    key: "type",
-    label: "Type",
-    width: "12em",
-    permanent: true,
-    sortBy: marker => marker.type,
-    sortType: "alpha"
-  },
-  {
-    key: "pin",
-    label: "Pin",
-    width: "1.5em"
-  },
-  {
-    key: "lock",
-    label: "Lock",
-    width: "1.5em"
-  },
+  { key: "type", label: "Type", width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
+  { key: "pin", label: "Pin", width: "1.5em" },
+  { key: "lock", label: "Lock", width: "1.5em" },
   { key: "actions", width: "3em", permanent: true, align: "right" }
 ];
+const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUpdate: renderMarkersPage });
 
 function open(): void {
   if (customization) return;
@@ -116,22 +104,14 @@ function renderDialog(): void {
   ensureEl("markersGenerationConfig").addEventListener("click", () => void Controllers.MarkersSettings.open());
   ensureEl("markersRemoveAll").addEventListener("click", triggerRemoveAll);
   ensureEl("markersExport").addEventListener("click", exportMarkers);
-  ensureEl("markersSearch").addEventListener("input", markersTable.reset);
-  ensureEl("markersFilterState").addEventListener("change", markersTable.reset);
-  ensureEl("markersFilterCulture").addEventListener("change", markersTable.reset);
-  ensureEl("markersFilterType").addEventListener("change", markersTable.reset);
+  ensureEl("markersSearch").addEventListener("input", onFilterChange);
+  ensureEl("markersFilterState").addEventListener("change", onFilterChange);
+  ensureEl("markersFilterCulture").addEventListener("change", onFilterChange);
+  ensureEl("markersFilterType").addEventListener("change", onFilterChange);
 
   populateMarkerTypeMenu();
   populateFilters();
 }
-
-// remembered filter selections, kept out of the DOM so they survive the dialog being rebuilt on each open
-const filterState = { search: "", state: "", culture: "", type: "" };
-
-const markersTable = initEditorTable<Marker>({
-  getData: getFilteredMarkers,
-  onUpdate: renderMarkersPage
-});
 
 // fill a <select> with a leading placeholder option, restoring `selected` when that option still exists
 function fillSelect(
@@ -139,11 +119,13 @@ function fillSelect(
   placeholder: string,
   options: { value: string; label: string }[],
   selected = ""
-): void {
+): string {
   select.innerHTML = "";
   select.add(new Option(placeholder, ""));
   for (const { value, label } of options) select.add(new Option(label, value));
-  if (selected && options.some(option => option.value === selected)) select.value = selected;
+  const restored = selected && options.some(option => option.value === selected) ? selected : "";
+  select.value = restored;
+  return restored;
 }
 
 // populate the state / culture / type filter dropdowns from current pack data
@@ -151,17 +133,27 @@ function populateFilters(): void {
   const states = pack.states
     .filter(state => !state.removed)
     .map(state => ({ value: String(state.i), label: state.fullName || state.name }));
-  fillSelect(ensureEl<HTMLSelectElement>("markersFilterState"), "All states", states, filterState.state);
+  filterState.state = fillSelect(
+    ensureEl<HTMLSelectElement>("markersFilterState"),
+    "All states",
+    states,
+    filterState.state
+  );
 
   const cultures = pack.cultures
     .filter(culture => !culture.removed)
     .map(culture => ({ value: String(culture.i), label: culture.name }));
-  fillSelect(ensureEl<HTMLSelectElement>("markersFilterCulture"), "All cultures", cultures, filterState.culture);
+  filterState.culture = fillSelect(
+    ensureEl<HTMLSelectElement>("markersFilterCulture"),
+    "All cultures",
+    cultures,
+    filterState.culture
+  );
 
   const types = [...new Set(pack.markers.map(marker => marker.type))]
     .sort()
     .map(type => ({ value: type, label: type }));
-  fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types, filterState.type);
+  filterState.type = fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types, filterState.type);
 
   ensureEl<HTMLInputElement>("markersSearch").value = filterState.search;
 }
@@ -216,18 +208,7 @@ function handleLineClick(ev: MouseEvent): void {
 function getFilteredMarkers(): Marker[] {
   let markers: Marker[] = [...pack.markers];
 
-  const searchRaw = ensureEl<HTMLInputElement>("markersSearch").value;
-  const stateFilter = ensureEl<HTMLSelectElement>("markersFilterState").value;
-  const cultureFilter = ensureEl<HTMLSelectElement>("markersFilterCulture").value;
-  const typeFilter = ensureEl<HTMLSelectElement>("markersFilterType").value;
-
-  // remember selections so they persist across dialog close/reopen until the user changes them
-  filterState.search = searchRaw;
-  filterState.state = stateFilter;
-  filterState.culture = cultureFilter;
-  filterState.type = typeFilter;
-
-  const searchText = searchRaw.toLowerCase().trim();
+  const searchText = filterState.search.toLowerCase().trim();
   if (searchText) {
     markers = markers.filter(marker => {
       const type = (marker.type || "").toLowerCase();
@@ -235,24 +216,33 @@ function getFilteredMarkers(): Marker[] {
     });
   }
 
-  if (stateFilter !== "") {
-    const stateId = +stateFilter;
+  if (filterState.state !== "") {
+    const stateId = +filterState.state;
     markers = markers.filter(marker => pack.cells.state[marker.cell] === stateId);
   }
 
-  if (cultureFilter !== "") {
-    const cultureId = +cultureFilter;
+  if (filterState.culture !== "") {
+    const cultureId = +filterState.culture;
     markers = markers.filter(marker => pack.cells.culture[marker.cell] === cultureId);
   }
 
-  if (typeFilter !== "") {
-    markers = markers.filter(marker => marker.type === typeFilter);
+  if (filterState.type !== "") {
+    markers = markers.filter(marker => marker.type === filterState.type);
   }
 
-  const anyFilterActive = Boolean(searchText) || stateFilter !== "" || cultureFilter !== "" || typeFilter !== "";
+  const anyFilterActive =
+    Boolean(searchText) || filterState.state !== "" || filterState.culture !== "" || filterState.type !== "";
   syncMapToFilter(markers, anyFilterActive);
 
   return sortDataByColumns(dialogId, markers, columns);
+}
+
+function onFilterChange(): void {
+  filterState.search = ensureEl<HTMLInputElement>("markersSearch").value;
+  filterState.state = ensureEl<HTMLSelectElement>("markersFilterState").value;
+  filterState.culture = ensureEl<HTMLSelectElement>("markersFilterCulture").value;
+  filterState.type = ensureEl<HTMLSelectElement>("markersFilterType").value;
+  markersTable.reset();
 }
 
 function renderMarkersPage(view: TableView<Marker>): void {

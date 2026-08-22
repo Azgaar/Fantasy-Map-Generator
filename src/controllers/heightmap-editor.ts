@@ -28,7 +28,8 @@ import type { PromptOptions } from "../utils/commonUtils";
 
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
-let defaultCellTypeFilter: "all" | "land" | "water" = "all";
+
+const filterState: { cellType: "all" | "land" | "water" } = { cellType: "all" };
 
 function open(options?: { mode?: string; tool?: string }): void {
   const { mode, tool } = options || {};
@@ -330,18 +331,18 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
 
   if (mode === "erase") {
     undraw();
-    defaultCellTypeFilter = "all";
+    filterState.cellType = "all";
   } else if (mode === "keep") {
     Layers.get("landmass").getEl().replaceChildren();
-    defaultCellTypeFilter = "land";
+    filterState.cellType = "land";
   } else if (mode === "risk") {
     select<SVGElement, unknown>("#deftemp").selectAll("#land, #water").selectAll("path").remove();
     select<SVGElement, unknown>("#deftemp").select("#featurePaths").selectAll("path").remove();
     select<SVGElement, unknown>("#viewbox").selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
-    defaultCellTypeFilter = "all";
+    filterState.cellType = "all";
   }
   const cellTypeFilterEl = findEl<HTMLSelectElement>("cellTypeFilter");
-  if (cellTypeFilterEl) cellTypeFilterEl.value = defaultCellTypeFilter;
+  if (cellTypeFilterEl) cellTypeFilterEl.value = filterState.cellType;
 
   // show convert and template buttons for Erase mode only
   ensureEl("applyTemplate").style.display = mode === "erase" ? "inline-block" : "none";
@@ -805,7 +806,7 @@ function updateHeightmap(): void {
   tip(`Cells changed: ${changed}`);
   if (!changed) return;
 
-  const cellTypeFilter = findEl<HTMLSelectElement>("cellTypeFilter")?.value ?? defaultCellTypeFilter;
+  const cellTypeFilter = findEl<HTMLSelectElement>("cellTypeFilter")?.value ?? filterState.cellType;
   // check ocean cells are not changed if only land edit is allowed
   if (cellTypeFilter === "land") {
     for (const i of grid.cells.i) {
@@ -1010,9 +1011,9 @@ function renderBrushesPanel(): void {
     <div data-tip="Restrict brush to specific cell types" style="margin-bottom: 0.6em">
       <label for="cellTypeFilter"><i>Cells to change:</i></label>
       <select id="cellTypeFilter">
-        <option value="all" ${defaultCellTypeFilter === "all" ? "selected" : ""}>all cells</option>
-        <option value="land" ${defaultCellTypeFilter === "land" ? "selected" : ""}>only land cells</option>
-        <option value="water" ${defaultCellTypeFilter === "water" ? "selected" : ""}>only water cells</option>
+        <option value="all" ${filterState.cellType === "all" ? "selected" : ""}>all cells</option>
+        <option value="land" ${filterState.cellType === "land" ? "selected" : ""}>only land cells</option>
+        <option value="water" ${filterState.cellType === "water" ? "selected" : ""}>only water cells</option>
       </select>
     </div>
     <div id="modifyButtons">
@@ -1378,6 +1379,7 @@ function cellTypeFilterChange(): void {
     tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
     cellTypeFilter.value = "all";
   }
+  filterState.cellType = cellTypeFilter.value as typeof filterState.cellType;
 }
 
 function rescale(v: number): void {

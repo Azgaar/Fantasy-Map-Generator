@@ -1568,9 +1568,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     data[50] = JSON.stringify(recoverLayersState());
     if (findEl("fog") && findEl("fogging")) unfog();
 
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
-
     function recoverLayersState(): LayersState {
       const foggingContainer = findEl("fogging-cont");
       const fogging = findEl("fogging");

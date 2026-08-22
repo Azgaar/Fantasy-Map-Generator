@@ -6,7 +6,7 @@ import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
 import { drawCultures } from "@/renderers/draw-cultures";
-import { drawEmblems } from "@/renderers/draw-emblems";
+import { drawEmblems, removeEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawGrid } from "@/renderers/draw-grid";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
@@ -357,7 +357,8 @@ const mapLayers = [
     id: "emblems",
     parent: "viewbox",
     children: ["burgEmblems", "provinceEmblems", "stateEmblems"].map(id => ({ id, tag: "g" })),
-    draw: drawEmblems
+    draw: drawEmblems,
+    erase: removeEmblems
   }),
   new Layer({
     id: "burgIcons",

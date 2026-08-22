@@ -22,6 +22,8 @@ type Filters = { stateId?: number | null; cultureId?: number | null };
 
 const dialogId = "burgsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const filterState = { search: "", stateId: -1, cultureId: -1 };
+
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
   {
@@ -113,13 +115,15 @@ const burgsTable = initEditorTable<Burg>({
   onUpdate: renderBurgsPage
 });
 
-function open(filters: Filters = { stateId: null, cultureId: null }): void {
+function open(filters: Filters = {}): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("burgIcons", "labels");
 
+  if (filters.stateId != null) filterState.stateId = filters.stateId;
+  if (filters.cultureId != null) filterState.cultureId = filters.cultureId;
   renderDialog();
-  updateFilter(filters);
+  updateFilter();
   updateLockAllIcon();
   burgsTable.reset();
 
@@ -191,6 +195,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
+  ensureEl<HTMLInputElement>("burgsSearch").value = filterState.search;
   bindColumnSorting(dialogId, burgsTable.reset);
   applyLineHighlighting(dialogId, ({ target, cellId }) => {
     const burgId = pack.cells.burg[cellId];
@@ -208,9 +213,9 @@ function renderDialog(): void {
   ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
   ensureEl("burgsGroupsEditorButton").addEventListener("click", () => Controllers.BurgGroupEditor.open());
   ensureEl("burgsChart").addEventListener("click", showBurgsChart);
-  ensureEl("burgsFilterState").addEventListener("change", burgsTable.reset);
-  ensureEl("burgsFilterCulture").addEventListener("change", burgsTable.reset);
-  ensureEl("burgsSearch").addEventListener("input", burgsTable.reset);
+  ensureEl("burgsFilterState").addEventListener("change", onFilterChange);
+  ensureEl("burgsFilterCulture").addEventListener("change", onFilterChange);
+  ensureEl("burgsSearch").addEventListener("input", onFilterChange);
   ensureEl("regenerateBurgNames").addEventListener("click", regenerateNames);
   ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
@@ -233,32 +238,39 @@ function refreshBurgsEditor(): void {
   burgsTable.reset();
 }
 
-function updateFilter(filters: { stateId?: number | null; cultureId?: number | null } = {}): void {
+function updateFilter(): void {
   const stateFilter = ensureEl<HTMLSelectElement>("burgsFilterState");
-  const selectedState = filters.stateId != null ? filters.stateId : +stateFilter.value || -1;
+  const validStateIds = new Set(pack.states.filter(state => !state.removed).map(state => state.i));
+  if (!validStateIds.has(filterState.stateId)) filterState.stateId = -1;
   stateFilter.options.length = 0; // remove all options
-  stateFilter.options.add(new Option("all", "-1", false, selectedState === -1));
-  stateFilter.options.add(new Option(pack.states[0].name, "0", false, selectedState === 0));
+  stateFilter.options.add(new Option("all", "-1", false, filterState.stateId === -1));
+  stateFilter.options.add(new Option(pack.states[0].name, "0", false, filterState.stateId === 0));
   const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   statesSorted.forEach(
-    s => void stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === selectedState))
+    s => void stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId))
   );
 
   const cultureFilter = ensureEl<HTMLSelectElement>("burgsFilterCulture");
-  const selectedCulture = filters.cultureId != null ? filters.cultureId : +cultureFilter.value || -1;
+  const validCultureIds = new Set(pack.cultures.filter(culture => !culture.removed).map(culture => culture.i));
+  if (!validCultureIds.has(filterState.cultureId)) filterState.cultureId = -1;
   cultureFilter.options.length = 0; // remove all options
-  cultureFilter.options.add(new Option(`all`, "-1", false, selectedCulture === -1));
-  cultureFilter.options.add(new Option(pack.cultures[0].name, "0", false, selectedCulture === 0));
+  cultureFilter.options.add(new Option(`all`, "-1", false, filterState.cultureId === -1));
+  cultureFilter.options.add(new Option(pack.cultures[0].name, "0", false, filterState.cultureId === 0));
   const culturesSorted = pack.cultures.filter(c => c.i && !c.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   culturesSorted.forEach(
-    c => void cultureFilter.options.add(new Option(c.name, String(c.i), false, c.i === selectedCulture))
+    c => void cultureFilter.options.add(new Option(c.name, String(c.i), false, c.i === filterState.cultureId))
   );
 }
 
+function onFilterChange(): void {
+  filterState.search = ensureEl<HTMLInputElement>("burgsSearch").value;
+  filterState.stateId = +ensureEl<HTMLSelectElement>("burgsFilterState").value;
+  filterState.cultureId = +ensureEl<HTMLSelectElement>("burgsFilterCulture").value;
+  burgsTable.reset();
+}
+
 function getFilteredBurgs(): Burg[] {
-  const searchText = ensureEl<HTMLInputElement>("burgsSearch").value.toLowerCase().trim();
-  const selectedStateId = +ensureEl<HTMLSelectElement>("burgsFilterState").value;
-  const selectedCultureId = +ensureEl<HTMLSelectElement>("burgsFilterCulture").value;
+  const searchText = filterState.search.toLowerCase().trim();
 
   let filtered = pack.burgs.filter(b => b.i && !b.removed);
 
@@ -279,8 +291,8 @@ function getFilteredBurgs(): Burg[] {
       );
     });
   }
-  if (selectedStateId !== -1) filtered = filtered.filter(b => b.state === selectedStateId); // filtered by state
-  if (selectedCultureId !== -1) filtered = filtered.filter(b => b.culture === selectedCultureId); // filtered by culture
+  if (filterState.stateId !== -1) filtered = filtered.filter(b => b.state === filterState.stateId); // filtered by state
+  if (filterState.cultureId !== -1) filtered = filtered.filter(b => b.culture === filterState.cultureId); // filtered by culture
   return filtered;
 }
 

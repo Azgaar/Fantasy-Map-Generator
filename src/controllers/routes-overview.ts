@@ -19,6 +19,8 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const filterState = { search: "" };
+
 const columns: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
@@ -47,7 +49,7 @@ const columns: EditorColumn<Route>[] = [
 ];
 
 function getFilteredRoutes(): Route[] {
-  const searchText = ensureEl<HTMLInputElement>("routesSearch").value.toLowerCase().trim();
+  const searchText = filterState.search.toLowerCase().trim();
   const routes = pack.routes.filter((route: Route) => Boolean(route.points) && route.points.length >= 2);
 
   for (const route of routes) {
@@ -107,6 +109,7 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl<HTMLInputElement>("routesSearch").value = filterState.search;
   bindColumnSorting(dialogId, routesTable.reset);
 
   // add listeners — dropped together with the dialog HTML on close
@@ -120,7 +123,10 @@ function renderDialog(): void {
   ensureEl("routesExport").addEventListener("click", downloadRoutesData);
   ensureEl("routesLockAll").addEventListener("click", toggleLockAll);
   ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
-  ensureEl("routesSearch").addEventListener("input", routesTable.reset);
+  ensureEl("routesSearch").addEventListener("input", event => {
+    filterState.search = (event.target as HTMLInputElement).value;
+    routesTable.reset();
+  });
 }
 
 function closeRoutesOverview(): void {

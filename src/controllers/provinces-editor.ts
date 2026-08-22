@@ -26,6 +26,8 @@ import { ensureEl, findEl, getPointer, getRandomColor, isLand, P, rand, rn, si, 
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const filterState = { stateId: 1 };
+
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
   rn(province.rural! * populationRate + province.urban! * populationRate * urbanization);
@@ -172,7 +174,10 @@ function renderDialog(): void {
 
   ensureEl("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
-  ensureEl("provincesFilterState").addEventListener("change", provincesTable.reset);
+  ensureEl("provincesFilterState").addEventListener("change", event => {
+    filterState.stateId = +(event.target as HTMLSelectElement).value;
+    provincesTable.reset();
+  });
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
@@ -252,19 +257,21 @@ function collectStatistics(): void {
 
 function updateFilter(): void {
   const stateFilter = ensureEl<HTMLSelectElement>("provincesFilterState");
-  const selectedState = stateFilter.value || "1";
+  if (filterState.stateId !== -1 && !pack.states.some(s => s.i === filterState.stateId && !s.removed)) {
+    filterState.stateId = -1;
+  }
   stateFilter.options.length = 0; // remove all options
-  stateFilter.options.add(new Option(`all`, "-1", false, selectedState === "-1"));
+  stateFilter.options.add(new Option(`all`, "-1", false, filterState.stateId === -1));
   const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   statesSorted.forEach(s => {
-    stateFilter.options.add(new Option(s.name, String(s.i), false, String(s.i) === selectedState));
+    stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
 }
 
 function getProvincesData(): Province[] {
-  const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
   const provinces = pack.provinces.filter(province => province.i && !province.removed);
-  const filtered = selectedState === -1 ? provinces : provinces.filter(province => province.state === selectedState);
+  const filtered =
+    filterState.stateId === -1 ? provinces : provinces.filter(province => province.state === filterState.stateId);
   return sortDataByColumns(dialogId, filtered, columns);
 }
 
@@ -1160,7 +1167,8 @@ function addProvince(this: SVGElement, event: any): void {
   Layers.draw("labels");
 
   collectStatistics();
-  ensureEl<HTMLSelectElement>("provincesFilterState").value = String(state);
+  filterState.stateId = state;
+  ensureEl<HTMLSelectElement>("provincesFilterState").value = String(filterState.stateId);
   provincesTable.reset();
 }
 
@@ -1178,7 +1186,7 @@ function exitAddProvinceMode(): void {
 }
 
 function recolorProvinces(): void {
-  const state = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
+  const state = filterState.stateId;
 
   pack.provinces.forEach(p => {
     if (!p || p.removed) return;
@@ -1247,7 +1255,7 @@ function closeProvincesEditor(): void {
 }
 
 function openProvinceMergeDialog(): void {
-  const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
+  const selectedState = filterState.stateId;
   if (selectedState === -1) {
     alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
     $("#alert").dialog({

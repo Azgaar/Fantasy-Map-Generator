@@ -156,6 +156,32 @@ describe("viewport emblem rendering", () => {
     expect(document.querySelector("#stateEmblems use[data-i='1']")).toBeNull();
   });
 
+  it("keeps the definition of an emblem hidden by a zero size, as the editors render the same one", () => {
+    drawEmblems();
+
+    pack.states[1].coa.size = 0;
+    redrawEmblem("state", 1);
+    expect(mocks.emblemRenderer.remove).not.toHaveBeenCalled();
+
+    // a later reconcile and a full redraw must not free it either
+    renderViewport();
+    drawEmblems();
+    expect(mocks.emblemRenderer.remove).not.toHaveBeenCalled();
+
+    pack.states[1].coa.size = 1;
+    redrawEmblem("state", 1);
+    expect(document.querySelector("#stateEmblems use[data-i='1']")).not.toBeNull();
+  });
+
+  it("frees the definition once the entity itself loses its coat of arms", () => {
+    drawEmblems();
+
+    pack.states[1] = { i: 1, removed: true } as unknown as (typeof pack.states)[number];
+    renderViewport();
+
+    expect(mocks.emblemRenderer.remove).toHaveBeenCalledWith("stateCOA1");
+  });
+
   it("materializes an emblem added after the scene was built", () => {
     drawEmblems();
 
