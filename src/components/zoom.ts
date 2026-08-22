@@ -15,6 +15,7 @@ export function applyZoomBehavior(): void {
 let frameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
+let viewChangedInGesture = false;
 
 function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   const { k, x, y } = event.transform;
@@ -26,6 +27,7 @@ function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   scale = k;
   viewX = x;
   viewY = y;
+  viewChangedInGesture = true;
 
   // Coalesce a burst of zoom events into one paint: the globals already hold the latest transform,
   // so keep OR-ing the change flags until the scheduled frame consumes them.
@@ -50,7 +52,6 @@ function handleZoomPerFrame(): void {
   ensureEl<SVGGElement>("viewbox").setAttribute("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
   window.updateMinimap?.();
   redrawTracedImage();
-  ViewportLayers.schedule();
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
@@ -72,6 +73,11 @@ function handleZoomEnd(): void {
     cancelAnimationFrame(frameId);
     frameId = null;
     handleZoomPerFrame();
+  }
+
+  // never on a zero-movement click: re-rendering between mousedown and click dispatch would swallow the click
+  if (viewChangedInGesture) {
+    viewChangedInGesture = false;
     ViewportLayers.renderNow();
   }
 
