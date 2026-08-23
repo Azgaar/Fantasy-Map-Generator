@@ -113,7 +113,7 @@ const median = values => {
 };
 
 function toMarkdown(rows, threshold, hasRegression) {
-  const emoji = status => (status === "REGRESSION" ? "🔴" : "🟢");
+  const emoji = status => (status === "REGRESSION" ? "🔴" : status === "ok" ? "🟢" : "⚪");
   const header = "| Metric | Change (median) | Spread across rounds | |\n|---|---|---|---|";
   const body = rows.map(r => `| ${r.metric} | ${r.change} | ${r.spread} | ${emoji(r.status)} |`).join("\n");
   const summary = hasRegression
@@ -132,6 +132,7 @@ const headDir = prepareWorktree(head, "head");
 let baseServer;
 let headServer;
 const ratios = new Map();
+const baseValues = new Map();
 
 try {
   baseServer = await buildAndServe(baseDir, BASE_PORT, "base");
@@ -153,6 +154,8 @@ try {
       if (headValue === undefined || !baseValue) continue;
       if (!ratios.has(name)) ratios.set(name, []);
       ratios.get(name).push(headValue / baseValue);
+      if (!baseValues.has(name)) baseValues.set(name, []);
+      baseValues.get(name).push(baseValue);
     }
     console.error(`round ${round}/${rounds} done`);
   }
@@ -163,17 +166,25 @@ try {
   }
 }
 
+// Sub-millisecond stages are dominated by JIT/GC jitter, not signal: a stage that takes ~0.3ms can
+// easily read +50% between two runs of the exact same code. Still report them (useful context,
+// e.g. spotting a stage that suddenly costs 10x more in absolute terms), just don't let them gate
+// the check the way `total` and `gesture` (both in the tens/hundreds of ms) meaningfully can.
+const MIN_MEASURABLE_MS = 2;
+
 const rows = [];
 let regressed = false;
 for (const [name, samples] of ratios) {
   const change = median(samples) - 1;
   const spread = Math.max(...samples) - Math.min(...samples);
-  if (change > threshold) regressed = true;
+  const measurable = median(baseValues.get(name)) >= MIN_MEASURABLE_MS;
+  const isRegression = measurable && change > threshold;
+  if (isRegression) regressed = true;
   rows.push({
     metric: name,
     change: `${change >= 0 ? "+" : ""}${(change * 100).toFixed(1)}%`,
     spread: `${(spread * 100).toFixed(1)}%`,
-    status: change > threshold ? "REGRESSION" : "ok"
+    status: isRegression ? "REGRESSION" : measurable ? "ok" : "info (<2ms)"
   });
 }
 
