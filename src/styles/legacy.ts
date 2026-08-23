@@ -349,6 +349,45 @@ export function presetFromLegacy(
   return parseStyles(built);
 }
 
+// bag[legacyKey] = node.options[optionKey], the inverse of applyPresetBag's option overlay;
+// bools re-spell as 0/1 (matching every other bool-attribute writer in this codebase, not "true"/"false")
+function bagFromNode(node: any, route: PresetRoute): Record<string, string | number | null> {
+  const bag: Record<string, string | number | null> = { ...(node.attrs ?? {}) };
+  for (const [legacyKey, optionKey] of Object.entries(route.options ?? {})) {
+    const value = node.options?.[optionKey];
+    bag[legacyKey] = route.bools?.includes(optionKey) ? Number(value) : value;
+  }
+  return bag;
+}
+
+// the inverse of presetFromLegacy: store shape -> legacy selector-keyed bags, reusing
+// PRESET_ROUTES/routeFor as the single source of truth for selectors and option renames
+export function presetToLegacy(styles: Styles): Record<string, Record<string, string | number | null>> {
+  const legacy: Record<string, Record<string, string | number | null>> = {};
+
+  for (const [selector, route] of Object.entries(PRESET_ROUTES)) {
+    const node = getPath(styles, route.path);
+    if (node) legacy[selector] = bagFromNode(node, route);
+  }
+
+  for (const [name, group] of Object.entries(styles.labels.groups)) {
+    legacy[`#labels > #${name}`] = labelGroupToLegacy(group) as Record<string, string | number | null>;
+  }
+  for (const [name, group] of Object.entries(styles.burgIcons.burgIcons.groups)) {
+    legacy[`#burgIcons > g#${name}`] = burgGroupToLegacy(group, true) as Record<string, string | number | null>;
+  }
+  for (const [name, group] of Object.entries(styles.burgIcons.anchors.groups)) {
+    legacy[`#anchors > g#${name}`] = burgGroupToLegacy(group, false) as Record<string, string | number | null>;
+  }
+  for (const name of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
+    const selector = `#emblems > #${name}`;
+    const route = routeFor(selector) as PresetRoute;
+    legacy[selector] = bagFromNode(getPath(styles, route.path), route);
+  }
+
+  return legacy;
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   labelGroupFromLegacy,
@@ -364,5 +403,6 @@ globalThis.stylesLegacy = {
   stylesToLegacy,
   stylesFromLegacy,
   presetFromLegacy,
+  presetToLegacy,
   isLegacyPreset
 };

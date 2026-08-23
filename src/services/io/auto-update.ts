@@ -12,7 +12,7 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import { labelGroupFromLegacy } from "@/styles/legacy";
-import { styles } from "@/styles/styles";
+import { parseStyles, styles } from "@/styles/styles";
 import type { ReliefSet } from "@/types/relief";
 import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
@@ -1824,7 +1824,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     await restoreLayerStyles();
 
     async function restoreLayerStyles(): Promise<void> {
-      const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
+      const [, raw] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
+      const preset = stylesLegacy.isLegacyPreset(raw) ? raw : stylesLegacy.presetToLegacy(parseStyles(raw));
 
       for (const layer of Layers.all) {
         restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);

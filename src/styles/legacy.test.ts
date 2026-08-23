@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { DEFAULT_STYLES } from "./defaults";
-import { isLegacyPreset, presetFromLegacy } from "./legacy";
+import { isLegacyPreset, presetFromLegacy, presetToLegacy } from "./legacy";
 import fixture from "./legacy-default.fixture.json";
 import { parseStyles } from "./styles";
 
@@ -76,4 +76,15 @@ test("all 12 shipped presets parse as the new format with zero warnings", () => 
 test("the shipped default preset is exactly the converted fixture", () => {
   const shipped = JSON.parse(fs.readFileSync(path.join(presetDir, "default.json"), "utf8"));
   expect(presetFromLegacy(fixture as any)).toEqual(shipped);
+});
+
+test("R8: presetToLegacy round-trips every fixture key/value (superset is fine)", () => {
+  const roundTripped = presetToLegacy(presetFromLegacy(fixture as any));
+  for (const [selector, bag] of Object.entries(fixture as Record<string, Record<string, unknown>>)) {
+    for (const [key, value] of Object.entries(bag)) {
+      if (selector === "#provs" && key === "data-size") continue; // R7: dead cargo, dropped on the way in
+      const expected = value === "null" ? null : value;
+      expect(roundTripped[selector]?.[key], `${selector} ${key}`).toEqual(expected);
+    }
+  }
 });
