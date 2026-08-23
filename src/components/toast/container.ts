@@ -23,6 +23,13 @@ styleElement.innerHTML = style;
 document.head.appendChild(styleElement);
 
 class ToastContainer extends HTMLElement {
+  // Custom element constructors must not add attributes; set these once connected instead.
+  connectedCallback() {
+    this.setAttribute("aria-live", "polite");
+    this.setAttribute("aria-atomic", "true");
+    this.setAttribute("role", "status");
+  }
+
   show(message: string, type: ToastType = "info", duration = 4000): void {
     const item = document.createElement("toast-item") as ToastItemElement;
     item.type = type;

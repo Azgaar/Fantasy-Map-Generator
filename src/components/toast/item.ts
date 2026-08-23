@@ -106,12 +106,17 @@ template.innerHTML = /* html */ `
 class ToastItem extends HTMLElement {
   private pendingMessage = "";
   private timebarAnimation?: Animation;
+  private built = false;
 
   // Custom element constructors must not add children (document.createElement throws
-  // a NotSupportedError otherwise); build the template once connected instead.
+  // a NotSupportedError otherwise); build the template once connected instead. Guard against
+  // building twice: connectedCallback re-runs if the element is ever disconnected and reattached.
   connectedCallback() {
+    if (this.built) return;
+    this.built = true;
+
     this.appendChild(template.content.cloneNode(true));
-    this.querySelector(".toast-message")!.innerHTML = this.pendingMessage;
+    this.querySelector(".toast-message")!.textContent = this.pendingMessage;
     this.querySelector(".toast-close")?.addEventListener("click", () => this.dismiss());
     this.addEventListener("mouseenter", () => this.timebarAnimation?.pause());
     this.addEventListener("mouseleave", () => this.timebarAnimation?.play());
@@ -125,7 +130,7 @@ class ToastItem extends HTMLElement {
   set message(message: string) {
     this.pendingMessage = message;
     const messageEl = this.querySelector(".toast-message");
-    if (messageEl) messageEl.innerHTML = message;
+    if (messageEl) messageEl.textContent = message;
   }
 
   set type(type: ToastType) {
@@ -151,12 +156,22 @@ class ToastItem extends HTMLElement {
   dismiss() {
     this.timebarAnimation?.cancel();
     this.classList.remove("shown");
+
+    let removed = false;
+    const removeOnce = () => {
+      if (removed) return;
+      removed = true;
+      this.remove();
+    };
     const onTransitionEnd = (event: TransitionEvent) => {
       if (event.target !== this) return;
       this.removeEventListener("transitionend", onTransitionEnd);
-      this.remove();
+      removeOnce();
     };
     this.addEventListener("transitionend", onTransitionEnd);
+    // Fallback in case transitionend never fires (e.g. reduced-motion overrides or the
+    // element is disconnected before the transition can run).
+    setTimeout(removeOnce, 300);
   }
 }
 

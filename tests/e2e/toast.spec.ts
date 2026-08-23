@@ -49,6 +49,18 @@ test.describe("toast notifications", () => {
     await expect(page.locator("toast-item")).toHaveCount(0);
   });
 
+  test("renders message content as text, not HTML", async ({ page }) => {
+    await page.evaluate(() => (window as any).toast("<b>bold</b> & <script>x</script>", "error", 0));
+
+    const messageEl = page.locator("toast-item .toast-message");
+    await expect(messageEl).toHaveText("<b>bold</b> & <script>x</script>");
+    expect(await messageEl.locator("b, script").count()).toBe(0);
+  });
+
+  test("container is an aria-live region so screen readers announce new toasts", async ({ page }) => {
+    await expect(page.locator("toast-container")).toHaveAttribute("aria-live", "polite");
+  });
+
   test("hovering pauses the auto-dismiss timer", async ({ page }) => {
     await page.evaluate(() => (window as any).toast("Pause me", "info", 1000));
 

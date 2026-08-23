@@ -1,7 +1,8 @@
-// Pure, side-effect-free entry point for showing toasts. Deliberately kept separate from
-// ./container so importing this function doesn't trigger that module's
-// customElements.define/document.createElement side effects (e.g. in Node-env tests).
-// The custom elements themselves are registered via "@/components" (see components/index.ts).
+// Entry point for showing toasts. Deliberately kept separate from ./container so importing
+// this function doesn't trigger that module's customElements.define/document.createElement
+// calls (which throw in Node-env tests without a real DOM). The custom elements themselves are
+// registered via "@/components" (see components/index.ts). The only side effect here is
+// registering the window.toast bridge below, for legacy public/ scripts outside the module graph.
 import type { ToastContainerElement } from "./container";
 import type { ToastType } from "./item";
 

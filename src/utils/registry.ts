@@ -7,7 +7,9 @@ type DispatchFn = (...args: unknown[]) => unknown;
 let pendingLoads = 0;
 function trackLoad<T>(promise: Promise<T>): Promise<T> {
   pendingLoads++;
-  window.toast("Loading…", "info");
+  // A pinned main tip, not a toast: a toast would auto-expire while a load is still pending,
+  // and each concurrent load would stack its own toast instead of sharing one status line.
+  window.tip("Loading…", true);
   return promise.finally(() => {
     if (--pendingLoads <= 0) {
       pendingLoads = 0;
