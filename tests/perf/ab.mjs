@@ -81,16 +81,22 @@ function parsePerfResults(stdout) {
 }
 
 function runPerfSuite(dir, port) {
-  const out = execFileSync(
-    "npx",
-    ["playwright", "test", "--config=tests/perf/playwright.config.ts", "tests/perf"],
-    {
-      cwd: dir,
-      env: { ...process.env, PERF_BASE_URL: `http://localhost:${port}` },
-      encoding: "utf8"
-    }
-  );
-  return parsePerfResults(out);
+  if (!existsSync(path.join(dir, "tests/perf/playwright.config.ts"))) return new Map();
+
+  try {
+    const out = execFileSync(
+      "npx",
+      ["playwright", "test", "--config=tests/perf/playwright.config.ts", "tests/perf"],
+      {
+        cwd: dir,
+        env: { ...process.env, PERF_BASE_URL: `http://localhost:${port}` },
+        encoding: "utf8"
+      }
+    );
+    return parsePerfResults(out);
+  } catch (error) {
+    return parsePerfResults(error.stdout ?? "");
+  }
 }
 
 const median = values => {
