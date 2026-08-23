@@ -18,8 +18,6 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "bench": "vitest bench",
-    "bench:ab": "node scripts/bench-ab.mjs",
     "test:e2e": "playwright test",
     "lint": "biome check --write",
     "prepare": "simple-git-hooks"
