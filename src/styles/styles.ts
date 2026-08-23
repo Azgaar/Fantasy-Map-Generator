@@ -197,6 +197,7 @@ export type StyleLayerId = keyof Styles & (LayerId | "map");
 export let styles: Styles = DEFAULT_STYLES;
 // src imports the live binding; classic public/ scripts read the global
 globalThis.styles = styles;
+globalThis.stylesStore = { parseStyles, setStyles, writeStyles, applyStyles };
 
 export function setStyles(data: Styles): void {
   styles = data;
@@ -220,15 +221,20 @@ export function parseStyles(json: unknown): Styles {
   return result as Styles;
 }
 
-// Write the layers' attrs onto the DOM and redraw them. Addressing is data-layer/data-group,
-// stamped by the registry — no element ids, no nesting knowledge. Options are never written;
-// renderers read them from `styles` directly. Mutate `styles`, then call this.
-export function applyStyles(...ids: StyleLayerId[]): void {
+// Write the layers' attrs onto the DOM. Addressing is data-layer/data-group, stamped by the
+// registry — no element ids, no nesting knowledge. Options are never written; renderers read
+// them from `styles` directly. Does not redraw; callers that need a redraw use `applyStyles`.
+export function writeStyles(...ids: StyleLayerId[]): void {
   for (const id of ids) {
     const root = document.querySelector(`[data-layer="${id}"]`);
     if (!root) continue;
     writeNode(root, styles[id]);
   }
+}
+
+// Mutate `styles`, then call this: writes the layers' attrs onto the DOM and redraws them.
+export function applyStyles(...ids: StyleLayerId[]): void {
+  writeStyles(...ids);
   Layers.draw(...ids.filter((id): id is StyleLayerId & LayerId => id !== "map"));
 }
 

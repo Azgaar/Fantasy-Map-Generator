@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 
 import { Layers } from "@/components/layers";
-import { applyStyles, styles } from "./styles";
+import { applyStyles, styles, writeStyles } from "./styles";
 
 const SVG = "http://www.w3.org/2000/svg";
 
@@ -75,5 +75,13 @@ describe("applyStyles", () => {
     styles.rivers.attrs.fill = "#654321";
     expect(() => applyStyles("compass", "rivers")).not.toThrow();
     expect(el.getAttribute("fill")).toBe("#654321");
+  });
+
+  test("writeStyles writes attrs without drawing", () => {
+    const el = mount("rivers");
+    styles.rivers.attrs.fill = "hotpink";
+    writeStyles("rivers");
+    expect(el.getAttribute("fill")).toBe("hotpink");
+    expect(Layers.draw).not.toHaveBeenCalled();
   });
 });
