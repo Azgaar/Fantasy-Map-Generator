@@ -235,6 +235,9 @@ export const DEFAULT_STYLES: Styles = {
         "stroke-dasharray": null,
         "stroke-linecap": null,
         filter: null
+      },
+      options: {
+        autoFilter: 1
       }
     },
     lake_island: {
@@ -1193,14 +1196,16 @@ export const DEFAULT_STYLES: Styles = {
     attrs: {
       opacity: 0.98,
       fill: "#30426f",
-      mask: "url(#fog)"
+      mask: "url(#fog)",
+      filter: null
     }
   },
   vignette: {
     attrs: {
       opacity: 0.3,
       fill: "#000000",
-      mask: "url(#vignette-mask)"
+      mask: "url(#vignette-mask)",
+      filter: null
     },
     options: {
       x: "0.3%",

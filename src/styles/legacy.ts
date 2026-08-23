@@ -1,7 +1,8 @@
 // Conversions between the legacy `style` object shapes and the styles store. Only migration
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
-import { type Styles, styles } from "./styles";
+import { DEFAULT_STYLES } from "./defaults";
+import { parseStyles, type Styles, styles } from "./styles";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
@@ -129,6 +130,217 @@ export function stylesFromLegacy(json: unknown): void {
   if (legacy.relief) styles.relief.options = reliefFromLegacy(legacy.relief);
 }
 
+// selector -> store path, plus the legacy-key -> option-name renames for that node. Attrs need
+// no listing: any bag key left after options are pulled out is overlaid onto the path's attrs
+// by name, so an unrecognized key is what "unknown legacy attribute" catches.
+type PresetRoute = { path: string[]; options?: Record<string, string>; bools?: string[]; kind?: "label" | "burg" };
+
+const SELECTOR_ALIASES: Record<string, string> = {
+  "#terrs #landHeights": "#terrs > #landHeights",
+  "#terrs #oceanHeights": "#terrs > #oceanHeights"
+};
+
+const PRESET_ROUTES: Record<string, PresetRoute> = {
+  "#map": { path: ["map"], options: { "data-filter": "dataFilter" } },
+  "#armies": { path: ["military"], options: { "font-size": "fontSize", "box-size": "boxSize" } },
+  "#biomes": { path: ["biomes"] },
+  "#cells": { path: ["cells"] },
+  "#gridOverlay": { path: ["grid"], options: { type: "type", scale: "scale", dx: "dx", dy: "dy" } },
+  "#coordinates": { path: ["coordinates"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
+  "#compass": { path: ["compass"] },
+  "#compass > use": { path: ["compass", "compassRose"] },
+  "#rivers": { path: ["rivers"] },
+  "#freshwater": { path: ["lakes", "freshwater"] },
+  "#salt": { path: ["lakes", "salt"] },
+  "#sinkhole": { path: ["lakes", "sinkhole"] },
+  "#frozen": { path: ["lakes", "frozen"] },
+  "#lava": { path: ["lakes", "lava"] },
+  "#dry": { path: ["lakes", "dry"] },
+  "#sea_island": { path: ["coastline", "sea_island"], options: { "auto-filter": "autoFilter" } },
+  "#lake_island": { path: ["coastline", "lake_island"] },
+  "#terrs > #landHeights": {
+    path: ["heightmap", "landHeights"],
+    options: {
+      scheme: "scheme",
+      terracing: "terracing",
+      skip: "skip",
+      relax: "relax",
+      curve: "curve",
+      "data-render": "render"
+    },
+    bools: ["render"]
+  },
+  "#terrs > #oceanHeights": {
+    path: ["heightmap", "oceanHeights"],
+    options: {
+      scheme: "scheme",
+      terracing: "terracing",
+      skip: "skip",
+      relax: "relax",
+      curve: "curve",
+      "data-render": "render"
+    },
+    bools: ["render"]
+  },
+  "#terrain": { path: ["relief"], options: { set: "set", size: "size", density: "density" } },
+  "#relig": { path: ["religions"] },
+  "#cults": { path: ["cultures"] },
+  "#statesBody": { path: ["states", "statesBody"] },
+  "#statesHalo": { path: ["states", "statesHalo"], options: { "data-width": "width" } },
+  "#provs": { path: ["provinces"] },
+  "#zones": { path: ["zones"] },
+  "#stateBorders": { path: ["borders", "stateBorders"] },
+  "#provinceBorders": { path: ["borders", "provinceBorders"] },
+  "#roads": { path: ["routes", "roads"] },
+  "#trails": { path: ["routes", "trails"] },
+  "#searoutes": { path: ["routes", "searoutes"] },
+  "#temperature": { path: ["temperature"] },
+  "#ice": { path: ["ice"] },
+  "#prec": { path: ["precipitation"] },
+  "#population": { path: ["population"] },
+  "#rural": { path: ["population", "rural"] },
+  "#urban": { path: ["population", "urban"] },
+  "#emblems": { path: ["emblems"] },
+  "#texture": { path: ["texture"], options: { "data-href": "href", "data-x": "x", "data-y": "y" } },
+  "#goodsCells": { path: ["goods", "goodsCells"] },
+  "#goodsIcons": {
+    path: ["goods", "goodsIcons"],
+    options: { "data-size": "size", "data-circle": "circle" },
+    bools: ["circle"]
+  },
+  "#goodsBurgs": { path: ["goods", "goodsBurgs"], options: { "data-size": "size" } },
+  "#markets": { path: ["markets"], options: { "data-size": "size", "font-size": "fontSize", "data-icon": "icon" } },
+  "#tradeAnimation": { path: ["trade"] },
+  "#markers": { path: ["markers"], options: { rescale: "rescale" } },
+  "#ruler": { path: ["rulers"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
+  "#scaleBar": {
+    path: ["scaleBar"],
+    options: { "data-bar-size": "barSize", "data-x": "x", "data-y": "y", "data-label": "label" }
+  },
+  "#scaleBarBack": {
+    path: ["scaleBar", "back"],
+    options: { "data-top": "top", "data-right": "right", "data-bottom": "bottom", "data-left": "left" }
+  },
+  "#legend": {
+    path: ["legend"],
+    options: {
+      "data-size": "fontSize",
+      "font-size": "fontSize",
+      "data-x": "x",
+      "data-y": "y",
+      "data-columns": "columns"
+    }
+  },
+  "#legendBox": { path: ["legend", "box"] },
+  "#fogging": { path: ["fogging"] },
+  "#vignette": { path: ["vignette"] },
+  "#vignette-rect": {
+    path: ["vignette"],
+    options: { x: "x", y: "y", width: "width", height: "height", rx: "rx", ry: "ry", filter: "filter" }
+  },
+  "#oceanLayers": { path: ["ocean", "oceanLayers"], options: { layers: "outline" } },
+  "#oceanBase": { path: ["ocean", "base"] },
+  "#oceanicPattern": { path: ["ocean"], options: { href: "pattern", opacity: "patternOpacity" } },
+  "#landmass": { path: ["landmass"] }
+};
+
+function routeFor(selector: string): PresetRoute | undefined {
+  if (selector in PRESET_ROUTES) return PRESET_ROUTES[selector];
+  const label = selector.match(/^#labels > #(.+)$/);
+  if (label) return { path: ["labels", "groups", label[1]], kind: "label" };
+  const burg = selector.match(/^#burgIcons > g#(.+)$/);
+  if (burg) return { path: ["burgIcons", "burgIcons", "groups", burg[1]], kind: "burg" };
+  const anchor = selector.match(/^#anchors > g#(.+)$/);
+  if (anchor) return { path: ["burgIcons", "anchors", "groups", anchor[1]], kind: "burg" };
+  const emblem = selector.match(/^#emblems > #(.+)$/);
+  if (emblem) return { path: ["emblems", emblem[1]], options: { "data-size": "size" } };
+  return undefined;
+}
+
+const getPath = (obj: any, path: string[]): any => path.reduce((o, k) => (o == null ? undefined : o[k]), obj);
+const coerce = (v: unknown): unknown => (v === "null" ? null : v);
+
+function fail(onUnknown: "throw" | "skip", message: string): void {
+  if (onUnknown === "skip") console.warn(message);
+  else throw new Error(message);
+}
+
+// overlays a legacy bag onto a node already seeded with its DEFAULT_STYLES value: an absent
+// key leaves the default in place (legacy left it alone), an explicit null clears it.
+function applyPresetBag(
+  node: any,
+  bag: Record<string, unknown>,
+  route: PresetRoute,
+  selector: string,
+  onUnknown: "throw" | "skip"
+): void {
+  const rest: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(bag)) if (key !== "id") rest[key] = value;
+
+  const seen: Record<string, unknown> = {};
+  for (const [legacyKey, optionKey] of Object.entries(route.options ?? {})) {
+    if (!(legacyKey in rest)) continue;
+    const value = coerce(rest[legacyKey]);
+    delete rest[legacyKey];
+    if (optionKey in seen && seen[optionKey] !== value) {
+      fail(onUnknown, `unknown legacy attribute "${legacyKey}" on "${selector}" conflicts for option "${optionKey}"`);
+      continue;
+    }
+    seen[optionKey] = value;
+    node.options[optionKey] = route.bools?.includes(optionKey) ? Boolean(Number(value)) : value;
+  }
+
+  if (node.attrs) {
+    for (const key of Object.keys(rest)) {
+      if (key in node.attrs) {
+        node.attrs[key] = coerce(rest[key]);
+        delete rest[key];
+      }
+    }
+  }
+
+  for (const key of Object.keys(rest)) fail(onUnknown, `unknown legacy attribute "${key}" on "${selector}"`);
+}
+
+export function isLegacyPreset(json: object): boolean {
+  return Object.keys(json).some(key => key.startsWith("#"));
+}
+
+export function presetFromLegacy(
+  legacy: Record<string, Record<string, unknown>>,
+  opts: { onUnknown?: "throw" | "skip" } = {}
+): Styles {
+  const onUnknown = opts.onUnknown ?? "throw";
+  const built = structuredClone(DEFAULT_STYLES) as any;
+
+  for (const [rawSelector, bag] of Object.entries(legacy)) {
+    const selector = SELECTOR_ALIASES[rawSelector] ?? rawSelector;
+    const route = routeFor(selector);
+    if (!route) {
+      fail(onUnknown, `unknown legacy selector "${selector}"`);
+      continue;
+    }
+    if (route.kind) {
+      const parent = getPath(built, route.path.slice(0, -1));
+      if (!parent) {
+        fail(onUnknown, `unknown legacy selector "${selector}"`);
+        continue;
+      }
+      parent[route.path.at(-1) as string] =
+        route.kind === "label" ? labelGroupFromLegacy(bag) : burgGroupFromLegacy(bag);
+      continue;
+    }
+    const node = getPath(built, route.path);
+    if (!node) {
+      fail(onUnknown, `unknown legacy selector "${selector}"`);
+      continue;
+    }
+    applyPresetBag(node, bag, route, selector, onUnknown);
+  }
+
+  return parseStyles(built);
+}
+
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
   labelGroupFromLegacy,
@@ -142,5 +354,7 @@ globalThis.stylesLegacy = {
   burgGroupsToLegacy,
   reliefFromLegacy,
   stylesToLegacy,
-  stylesFromLegacy
+  stylesFromLegacy,
+  presetFromLegacy,
+  isLegacyPreset
 };

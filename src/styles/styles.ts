@@ -85,7 +85,8 @@ export const stylesSchema = z
     lakes: z.object({ freshwater: lake, salt: lake, sinkhole: lake, frozen: lake, lava: lake, dry: lake }).strict(),
     coastline: z
       .object({
-        sea_island: attrs({ opacity, ...strokeAttrs, filter }),
+        // autoFilter is FMG's own zoom-driven filter pick, not a stored attribute
+        sea_island: node({ opacity, ...strokeAttrs, filter }, { autoFilter: z.number() }),
         lake_island: attrs({ opacity, ...strokeAttrs, filter })
       })
       .strict(),
@@ -175,10 +176,10 @@ export const stylesSchema = z
         box: attrs({ ...fillAttrs })
       })
       .strict(),
-    fogging: attrs({ opacity, fill: color, mask }),
+    fogging: attrs({ opacity, fill: color, mask, filter }),
     // the geometry options shape #vignette-rect, the mask rect in defs the renderer owns
     vignette: node(
-      { opacity, fill: color, mask },
+      { opacity, fill: color, mask, filter },
       { x: cssLength, y: cssLength, width: cssLength, height: cssLength, rx: cssLength, ry: cssLength, filter }
     )
   })
