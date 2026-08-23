@@ -1,4 +1,4 @@
-import { clipPoly } from "@/utils";
+import { clipPoly, timeEnd, timeStart } from "@/utils";
 
 /**
  * Ocean outlines: closed rings traced around the coast at a given distance from it. `t` is the
@@ -19,7 +19,7 @@ class OceanModule {
 
   /** trace the ocean rings for the requested distances, clipped to the map */
   generate(limits: number[]): OceanOutline[] {
-    TIME && console.time("generateOcean");
+    TIME && timeStart("generateOcean");
 
     const { cells, vertices } = grid;
     const pointsN = cells.i.length;
@@ -50,7 +50,7 @@ class OceanModule {
       outlines.get(t)!.push(ring);
     }
 
-    TIME && console.timeEnd("generateOcean");
+    TIME && timeEnd("generateOcean");
 
     // in limits order, so the renderer stacks the rings from the coast outwards
     return limits.map(t => ({ t, rings: outlines.get(t)! }));

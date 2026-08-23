@@ -1,6 +1,6 @@
 import { curveBasisClosed, line } from "d3";
 import { Ocean } from "@/generators/ocean-generator";
-import { ensureEl, rn, round } from "@/utils";
+import { ensureEl, rn, round, timeEnd, timeStart } from "@/utils";
 
 /** the ocean outline rings, stacked from the coast outwards so the overlap deepens the shade */
 export function drawOcean(): void {
@@ -10,7 +10,7 @@ export function drawOcean(): void {
   const limits = Ocean.getLimits(oceanLayers.getAttribute("layers") ?? "");
   if (!limits.length) return;
 
-  TIME && console.time("drawOcean");
+  TIME && timeStart("drawOcean");
 
   const opacity = rn(0.4 / limits.length, 2);
   const lineGen = line().curve(curveBasisClosed);
@@ -21,7 +21,7 @@ export function drawOcean(): void {
 
   oceanLayers.insertAdjacentHTML("beforeend", paths.join(""));
 
-  TIME && console.timeEnd("drawOcean");
+  TIME && timeEnd("drawOcean");
 }
 
 /** drop the rings, keeping #oceanBase: the base rect is created once, at startup */

@@ -1,9 +1,9 @@
 import { select } from "d3";
 import type { Route } from "@/generators/routes-generator";
-import { ensureEl } from "@/utils";
+import { ensureEl, timeEnd, timeStart } from "@/utils";
 
 export function drawRoutes(): void {
-  TIME && console.time("drawRoutes");
+  TIME && timeStart("drawRoutes");
   const routePaths: Record<string, string[]> = {};
 
   for (const route of pack.routes) {
@@ -19,7 +19,7 @@ export function drawRoutes(): void {
     routes.select(`#${group}`).html(routePaths[group].join(""));
   }
 
-  TIME && console.timeEnd("drawRoutes");
+  TIME && timeEnd("drawRoutes");
 }
 
 /** drop the paths, keeping the route groups: they are user data carrying the group styles */

@@ -1,7 +1,8 @@
 import { select } from "d3";
+import { timeEnd, timeStart } from "@/utils";
 
 export const drawBurgIcons = (): void => {
-  TIME && console.time("drawBurgIcons");
+  TIME && timeStart("drawBurgIcons");
   createIconGroups();
 
   for (const { name } of options.burgs.groups) {
@@ -27,7 +28,7 @@ export const drawBurgIcons = (): void => {
       .join("");
   }
 
-  TIME && console.timeEnd("drawBurgIcons");
+  TIME && timeEnd("drawBurgIcons");
 };
 
 /** drop the icons, keeping the burg groups: they carry the styles edited in the Style editor */

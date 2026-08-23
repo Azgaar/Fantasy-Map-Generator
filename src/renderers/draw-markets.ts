@@ -1,12 +1,12 @@
 import { color, curveBasisClosed, line, select } from "d3";
-import { rn } from "../utils";
+import { rn, timeEnd, timeStart } from "../utils";
 import { getIsolines } from "../utils/pathUtils";
 
 export function drawMarkets() {
-  TIME && console.time("drawMarkets");
+  TIME && timeStart("drawMarkets");
   select("#markets").html(buildMarketsContent());
   highlightMarketsOnHover();
-  TIME && console.timeEnd("drawMarkets");
+  TIME && timeEnd("drawMarkets");
 }
 
 const MARKET_RADIUS = 3;

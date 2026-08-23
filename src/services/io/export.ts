@@ -18,6 +18,8 @@ import {
   getFriendlyHeight,
   getGridPolygon,
   rn,
+  timeEnd,
+  timeStart,
   unique
 } from "@/utils";
 
@@ -38,7 +40,7 @@ export interface GetMapURLOptions {
 }
 
 async function exportToSvg(): Promise<void> {
-  TIME && console.time("exportToSvg");
+  TIME && timeStart("exportToSvg");
   try {
     const url = await getMapURL("svg", { fullMap: true });
     const link = document.createElement("a");
@@ -52,12 +54,12 @@ async function exportToSvg(): Promise<void> {
     ERROR && console.error(error);
     tip(`SVG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
   } finally {
-    TIME && console.timeEnd("exportToSvg");
+    TIME && timeEnd("exportToSvg");
   }
 }
 
 async function exportToPng(): Promise<void> {
-  TIME && console.time("exportToPng");
+  TIME && timeStart("exportToPng");
   try {
     const url = await getMapURL("png");
     const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
@@ -94,12 +96,12 @@ async function exportToPng(): Promise<void> {
     ERROR && console.error(error);
     tip(`PNG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
   } finally {
-    TIME && console.timeEnd("exportToPng");
+    TIME && timeEnd("exportToPng");
   }
 }
 
 async function exportToJpeg(): Promise<void> {
-  TIME && console.time("exportToJpeg");
+  TIME && timeStart("exportToJpeg");
   try {
     const url = await getMapURL("png");
     const resolution = ensureEl<HTMLInputElement>("pngResolutionInput").valueAsNumber;
@@ -136,7 +138,7 @@ async function exportToJpeg(): Promise<void> {
     ERROR && console.error(error);
     tip(`JPEG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
   } finally {
-    TIME && console.timeEnd("exportToJpeg");
+    TIME && timeEnd("exportToJpeg");
   }
 }
 

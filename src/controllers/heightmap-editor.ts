@@ -9,7 +9,7 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { GraphOverride } from "@/generators/graph-override";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { downloadFile, getFileName, uploadFile } from "@/utils";
+import { downloadFile, getFileName, timeEnd, timeStart, uploadFile } from "@/utils";
 import {
   ensureEl,
   findEl,
@@ -477,7 +477,7 @@ function finalizeHeightmap(): void {
 
 function regenerateErasedData(): void {
   INFO && console.group("Edit Heightmap");
-  TIME && console.time("regenerateErasedData");
+  TIME && timeStart("regenerateErasedData");
 
   // remove data
   pack.cultures = [];
@@ -541,7 +541,7 @@ function regenerateErasedData(): void {
   Military.generate();
   Markers.generate();
   Zones.generate();
-  TIME && console.timeEnd("regenerateErasedData");
+  TIME && timeEnd("regenerateErasedData");
   INFO && console.groupEnd();
 }
 
@@ -577,7 +577,7 @@ export const createAvailableLandCellFinder = (cells: {
 
 function restoreRiskedData(): void {
   INFO && console.group("Edit Heightmap");
-  TIME && console.time("restoreRiskedData");
+  TIME && timeStart("restoreRiskedData");
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
 
   // assign pack data to grid cells
@@ -802,7 +802,7 @@ function restoreRiskedData(): void {
   Ice.generate();
   select("#ice").selectAll("*").remove();
 
-  TIME && console.timeEnd("restoreRiskedData");
+  TIME && timeEnd("restoreRiskedData");
   INFO && console.groupEnd();
 }
 

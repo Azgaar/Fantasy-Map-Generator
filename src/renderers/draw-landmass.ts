@@ -1,13 +1,13 @@
 import type { Layer } from "@/components/layers";
 import { Coastline } from "@/generators/coastline-generator";
-import { ensureEl } from "@/utils";
+import { ensureEl, timeEnd, timeStart } from "@/utils";
 
 /**
  * The landmass is a plain rect shown through the land mask. The layer also owns the shared feature
  * geometry in defs: the coastline and lakes layers reference it, so it is drawn before both of them
  */
 export function drawLandmass(layer: Layer): void {
-  TIME && console.time("drawLandmass");
+  TIME && timeStart("drawLandmass");
 
   const paths: string[] = [];
   const landMask: string[] = [];
@@ -34,5 +34,5 @@ export function drawLandmass(layer: Layer): void {
 
   layer.getEl().innerHTML = /* html */ `<rect x="0" y="0" width="${graphWidth}" height="${graphHeight}" />`;
 
-  TIME && console.timeEnd("drawLandmass");
+  TIME && timeEnd("drawLandmass");
 }

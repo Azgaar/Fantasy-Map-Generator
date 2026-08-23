@@ -1,7 +1,18 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { createTypedArray, ensureEl, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
+import {
+  createTypedArray,
+  ensureEl,
+  findGridCell,
+  getNumberInRange,
+  lim,
+  minmax,
+  P,
+  rand,
+  timeEnd,
+  timeStart
+} from "../utils";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -547,13 +558,13 @@ class HeightmapModule {
   }
 
   async generate(graph: any): Promise<Uint8Array> {
-    TIME && console.time("defineHeightmap");
+    TIME && timeStart("defineHeightmap");
     const id = (ensureEl("templateInput")! as HTMLInputElement).value;
     Math.random = Alea(seed);
     const isTemplate = id in heightmapTemplates;
 
     const heights = isTemplate ? this.fromTemplate(graph, id) : await this.fromPrecreated(graph, id);
-    TIME && console.timeEnd("defineHeightmap");
+    TIME && timeEnd("defineHeightmap");
 
     this.clearData();
     return heights as Uint8Array;

@@ -42,6 +42,7 @@ import {
 } from "./graphUtils";
 import { applyOption, ensureEl, findEl, getComposedPath, getNextId, getPointer } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
+import { timeEnd, timeStart } from "./perfEvents";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
 import { capitalize, isValidJSON, parseTransform, round, safeParseJSON, sanitizeId, splitInTwo } from "./stringUtils";
 import {
@@ -78,6 +79,9 @@ window.rw = rw;
 window.generateSeed = generateSeed;
 
 window.toHEX = toHEX;
+
+window.timeStart = timeStart;
+window.timeEnd = timeEnd;
 
 window.ensureEl = ensureEl;
 window.findEl = findEl;
@@ -237,6 +241,8 @@ export {
   splitInTwo,
   TYPED_ARRAY_MAX,
   throttle,
+  timeEnd,
+  timeStart,
   toHEX,
   trimVowels,
   unique,

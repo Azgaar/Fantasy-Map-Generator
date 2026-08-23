@@ -6,6 +6,7 @@ import type { PackedGraph } from "../types/PackedGraph";
 import { createTypedArray } from "./arrayUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
+import { timeEnd, timeStart } from "./perfEvents";
 
 /**
  * Get boundary points on a regular square grid
@@ -77,7 +78,7 @@ const placePoints = (
   cellsX: number;
   cellsY: number;
 } => {
-  TIME && console.time("placePoints");
+  TIME && timeStart("placePoints");
   const cellsDesired = +(ensureEl("pointsInput").dataset.cells || 0);
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
 
@@ -85,7 +86,7 @@ const placePoints = (
   const points = getJitteredGrid(graphWidth, graphHeight, spacing); // points of jittered square grid
   const cellCountX = Math.floor((graphWidth + 0.5 * spacing - 1e-10) / spacing); // number of cells in x direction
   const cellCountY = Math.floor((graphHeight + 0.5 * spacing - 1e-10) / spacing); // number of cells in y direction
-  TIME && console.timeEnd("placePoints");
+  TIME && timeEnd("placePoints");
 
   return {
     spacing,
@@ -157,12 +158,12 @@ export const generateGrid = (seed: string, graphWidth: number, graphHeight: numb
  * @returns {Object} - An object containing Voronoi cells and vertices
  */
 export const calculateVoronoi = (points: Point[], boundary: Point[]): { cells: Cells; vertices: Vertices } => {
-  TIME && console.time("calculateDelaunay");
+  TIME && timeStart("calculateDelaunay");
   const allPoints = points.concat(boundary);
   const delaunay = Delaunator.from(allPoints);
-  TIME && console.timeEnd("calculateDelaunay");
+  TIME && timeEnd("calculateDelaunay");
 
-  TIME && console.time("calculateVoronoi");
+  TIME && timeStart("calculateVoronoi");
   const voronoi = new Voronoi(delaunay, allPoints, points.length);
 
   const cells = voronoi.cells;
@@ -171,7 +172,7 @@ export const calculateVoronoi = (points: Point[], boundary: Point[]): { cells: C
     length: points.length
   }).map((_, i) => i) as Uint32Array; // array of indexes
   const vertices = voronoi.vertices;
-  TIME && console.timeEnd("calculateVoronoi");
+  TIME && timeEnd("calculateVoronoi");
 
   return { cells, vertices };
 };

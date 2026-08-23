@@ -1,8 +1,8 @@
 import { easeSinIn, select, transition } from "d3";
-import { ensureEl, rn } from "@/utils";
+import { ensureEl, rn, timeEnd, timeStart } from "@/utils";
 
 export function drawPrecipitation(): void {
-  TIME && console.time("drawPrecipitation");
+  TIME && timeStart("drawPrecipitation");
   const { cells, points } = grid;
 
   const prec = select(ensureEl<SVGGElement>("prec"));
@@ -26,7 +26,7 @@ export function drawPrecipitation(): void {
     .transition(show)
     .attr("r", cellId => getRadius(cells.prec[cellId]));
 
-  TIME && console.timeEnd("drawPrecipitation");
+  TIME && timeEnd("drawPrecipitation");
 }
 
 /** drop the circles, keeping #wind: the wind direction arrows are written once, at map generation */

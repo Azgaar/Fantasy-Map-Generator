@@ -1,8 +1,9 @@
 import { select } from "d3";
 import type { Ice } from "@/generators/ice-generator";
+import { timeEnd, timeStart } from "@/utils";
 
 export const drawIce = (): void => {
-  TIME && console.time("drawIce");
+  TIME && timeStart("drawIce");
 
   select("#ice").selectAll("*").remove();
   let html = "";
@@ -17,7 +18,7 @@ export const drawIce = (): void => {
 
   select("#ice").html(html);
 
-  TIME && console.timeEnd("drawIce");
+  TIME && timeEnd("drawIce");
 };
 
 export const redrawIceberg = (id: number): void => {
