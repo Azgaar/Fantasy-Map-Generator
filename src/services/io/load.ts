@@ -432,7 +432,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     {
       const { resolveVersionConflicts } = await import("./auto-update");
-      resolveVersionConflicts(mapVersion!, data);
+      await resolveVersionConflicts(mapVersion!, data);
     }
 
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));

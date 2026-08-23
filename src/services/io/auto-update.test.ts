@@ -10,6 +10,10 @@ beforeEach(() => {
   localStorage.clear();
   globalThis.options = { labels: { groups: [] } } as unknown as typeof globalThis.options;
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
+  (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
+    "default",
+    {}
+  ];
 });
 
 describe("v1.144 layer id migration", () => {

@@ -17,7 +17,7 @@ import type { LabelGroupStyle } from "@/types/style";
 import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
 
-export function resolveVersionConflicts(mapVersion: string, data: string[]): void {
+export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
 
   if (isOlderThan("1.139.0")) {
@@ -1796,7 +1796,6 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
     `;
 
     restoreMissingDefTemp();
-
     function restoreMissingDefTemp(): void {
       const defs = document.querySelector<SVGDefsElement>("#map defs");
       if (!defs) return;
@@ -1818,6 +1817,42 @@ export function resolveVersionConflicts(mapVersion: string, data: string[]): voi
 
       for (const node of Array.from(template.children)) restore(node, defs);
       if (restored.length) WARN && console.warn("[Auto-update] Restored missing svg defs:", restored.join(", "));
+    }
+
+    // v1.145-1.147 stripped the layer style from saved maps
+    await restoreLayerStyles();
+
+    async function restoreLayerStyles(): Promise<void> {
+      const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
+
+      for (const layer of Layers.all) {
+        restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
+
+        for (const child of layer.children) {
+          const style = preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`];
+          restoreGroupStyle(child.id, style, child.attrs);
+        }
+      }
+    }
+
+    function restoreGroupStyle(
+      id: string,
+      style: Record<string, string | number | null> | undefined,
+      declared?: Record<string, string>
+    ): void {
+      const group = document.getElementById(id);
+      if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
+
+      for (const [name, value] of Object.entries(style)) {
+        if (value === null || value === "null") continue;
+        if (id === "terrain" && ["set", "size", "density"].includes(name)) continue;
+        group.setAttribute(name, String(value));
+      }
+    }
+
+    function isBareGroup(group: Element, declared: Record<string, string> = {}): boolean {
+      const ignored = new Set(["id", "style", ...Object.keys(declared)]);
+      return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
     }
   }
 }

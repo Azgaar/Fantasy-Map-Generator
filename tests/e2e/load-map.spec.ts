@@ -481,10 +481,9 @@ test.describe("Map loading", () => {
     expect(savedLayers.active).toContain("labels");
   });
 
-  // 1.143.1.map carries a pre-v1.104 defs skeleton: the shared feature geometry is inlined into the
-  // masks and #featurePaths is absent, so drawLandmass has nothing to write the geometry into and
-  // the load fails outright. The v1.148.0 migration puts the missing defs back
-  test("a map without featurePaths should get its defs and feature geometry back", async ({ page }) => {
+  // 1.143.1.map carries both a pre-v1.104 defs skeleton and layer groups stripped of their styles.
+  // The v1.148.0 migration repairs both before the loaded map is rendered.
+  test("an old map fixture should get its defs, geometry and layer styles back", async ({ page }) => {
     const mapFilePath = path.join(__dirname, "../fixtures/1.143.1.map");
     await page.locator("#mapToLoad").setInputFiles(mapFilePath);
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
@@ -504,7 +503,11 @@ test.describe("Map loading", () => {
         coastline: document.querySelectorAll("#coastline use").length,
         lakes: document.querySelectorAll("#lakes use").length,
         defsEmblems: Boolean(document.getElementById("defs-emblems")),
-        vignetteMask: Boolean(document.getElementById("vignette-rect"))
+        vignetteMask: Boolean(document.getElementById("vignette-rect")),
+        fogging: {
+          opacity: document.getElementById("fogging")?.getAttribute("opacity"),
+          fill: document.getElementById("fogging")?.getAttribute("fill")
+        }
       };
     });
 
@@ -516,6 +519,7 @@ test.describe("Map loading", () => {
     expect(restored.lakes).toBeGreaterThan(0);
     expect(restored.defsEmblems).toBe(true);
     expect(restored.vignetteMask).toBe(true);
+    expect(restored.fogging).toEqual({ opacity: "0.98", fill: "#30426f" });
   });
 
   test("loaded map should preserve burg data", async ({ page }) => {
