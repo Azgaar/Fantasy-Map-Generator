@@ -19,6 +19,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "perf:ab": "node tests/perf/ab.mjs",
     "lint": "biome check --write",
     "prepare": "simple-git-hooks"
   },
