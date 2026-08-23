@@ -349,8 +349,9 @@ function changeCultureSet() {
 }
 
 function changeEmblemShape(emblemShape) {
+  Emblems.setShape(emblemShape);
   const image = ensureEl("emblemShapeImage");
-  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
+  const shapePath = window.EmblemRenderer && EmblemRenderer.shieldPaths[emblemShape];
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
   const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
@@ -358,15 +359,13 @@ function changeEmblemShape(emblemShape) {
     pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
 
   const rerenderCOA = (id, coa) => {
-    const coaEl = ensureEl(id);
-    if (!coaEl) return; // not rendered
-    coaEl.remove();
-    COArenderer.trigger(id, coa);
+    if (!findEl(id)) return; // emblems outside of the viewport are not rendered yet
+    EmblemRenderer.trigger(id, coa);
   };
 
   pack.states.forEach(state => {
     if (!state.i || state.removed || !state.coa || state.coa.custom) return;
-    const newShield = specificShape || COA.getShield(state.culture, null);
+    const newShield = specificShape || Emblems.getShield(state.culture, null);
     if (newShield === state.coa.shield) return;
     state.coa.shield = newShield;
     rerenderCOA("stateCOA" + state.i, state.coa);
@@ -375,7 +374,7 @@ function changeEmblemShape(emblemShape) {
   pack.provinces.forEach(province => {
     if (!province.i || province.removed || !province.coa || province.coa.custom) return;
     const culture = pack.cells.culture[province.center];
-    const newShield = specificShape || COA.getShield(culture, province.state);
+    const newShield = specificShape || Emblems.getShield(culture, province.state);
     if (newShield === province.coa.shield) return;
     province.coa.shield = newShield;
     rerenderCOA("provinceCOA" + province.i, province.coa);
@@ -383,7 +382,7 @@ function changeEmblemShape(emblemShape) {
 
   pack.burgs.forEach(burg => {
     if (!burg.i || burg.removed || !burg.coa || burg.coa.custom) return;
-    const newShield = specificShape || COA.getShield(burg.culture, burg.state);
+    const newShield = specificShape || Emblems.getShield(burg.culture, burg.state);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
     rerenderCOA("burgCOA" + burg.i, burg.coa);
@@ -557,6 +556,8 @@ function applyStoredOptions() {
     // add saved style presets to options
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
+
+  Emblems.setShape(emblemShape.value);
 
   if (stored("winds")) options.winds = stored("winds").split(",").map(Number);
   if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");

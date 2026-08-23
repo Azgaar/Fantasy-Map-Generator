@@ -2,6 +2,7 @@ import { color as d3Color, easeSinIn, interpolate, interpolateString, select, st
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -15,14 +16,19 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
+import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
-import { ensureEl, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
+import { ensureEl, findEl, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { stateId: number };
+
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
   rn(province.rural! * populationRate + province.urban! * populationRate * urbanization);
@@ -82,6 +88,7 @@ const provincesTable = initEditorTable<Province>({ getData: getProvincesData, on
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: 1 }));
   closeDialogs("#provincesEditor, .stable");
   Layers.show("provinces", "borders");
   Layers.hide("states", "cultures");
@@ -169,7 +176,11 @@ function renderDialog(): void {
 
   ensureEl("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
   ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
-  ensureEl("provincesFilterState").addEventListener("change", provincesTable.reset);
+  ensureEl("provincesFilterState").addEventListener("change", event => {
+    filterState.stateId = +(event.target as HTMLSelectElement).value;
+    dialogState.set(dialogId, "filters", filterState);
+    provincesTable.reset();
+  });
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
@@ -249,19 +260,22 @@ function collectStatistics(): void {
 
 function updateFilter(): void {
   const stateFilter = ensureEl<HTMLSelectElement>("provincesFilterState");
-  const selectedState = stateFilter.value || "1";
+  if (filterState.stateId !== -1 && !pack.states.some(s => s.i === filterState.stateId && !s.removed)) {
+    filterState.stateId = -1;
+  }
   stateFilter.options.length = 0; // remove all options
-  stateFilter.options.add(new Option(`all`, "-1", false, selectedState === "-1"));
+  stateFilter.options.add(new Option(`all`, "-1", false, filterState.stateId === -1));
   const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   statesSorted.forEach(s => {
-    stateFilter.options.add(new Option(s.name, String(s.i), false, String(s.i) === selectedState));
+    stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
   });
+  dialogState.set(dialogId, "filters", filterState);
 }
 
 function getProvincesData(): Province[] {
-  const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
   const provinces = pack.provinces.filter(province => province.i && !province.removed);
-  const filtered = selectedState === -1 ? provinces : provinces.filter(province => province.state === selectedState);
+  const filtered =
+    filterState.stateId === -1 ? provinces : provinces.filter(province => province.state === filterState.stateId);
   return sortDataByColumns(dialogId, filtered, columns);
 }
 
@@ -287,7 +301,7 @@ function renderProvincesPage(view: TableView<Province>): void {
       const stateName = pack.states[p.state].name;
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
-      COArenderer.trigger(`provinceCOA${p.i}`, p.coa);
+      EmblemRenderer.trigger(`provinceCOA${p.i}`, p.coa);
       return /* html */ `<div class="states" data-id=${p.i}>
       <fill-box data-col="color" fill="${p.color}"></fill-box>
       <input data-col="name" data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
@@ -443,9 +457,9 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const { cell: center, culture } = burgs[burgId];
   const color = getRandomColor();
   const coa = province.coa;
-  const coaEl = ensureEl(`provinceCOA${provinceId}`);
+  const coaEl = findEl(`provinceCOA${provinceId}`); // not rendered unless the emblem was in the viewport
   if (coaEl) coaEl.id = `stateCOA${newStateId}`;
-  select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
+  removeEmblem("province", provinceId);
 
   // update cells
   cells.i
@@ -513,12 +527,7 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
   States.defineStateForms(newStates);
   Layers.draw("labels");
 
-  // redraw emblems
-  allStates.forEach(stateId => {
-    select<SVGElement, unknown>("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
-    const { coa, pole } = pack.states[stateId];
-    COArenderer.add("state", stateId, coa, pole![0], pole![1]);
-  });
+  redrawEmblems(allStates.map(stateId => ["state", stateId] as const));
 
   Layers.hide("provinces");
   Layers.show("states", "borders");
@@ -631,9 +640,7 @@ function removeProvince(p: number): void {
 
         unfog(`focusProvince${p}`);
 
-        const coaEl = document.getElementById(`provinceCOA${p}`);
-        if (coaEl) coaEl.remove();
-        select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
+        removeEmblem("province", p);
         pack.provinces[p] = { i: p, removed: true } as Province;
 
         const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
@@ -1059,13 +1066,11 @@ function openPaintEditor(): void {
     title: "Paint Provinces",
     parentDialogId: dialogId,
     onClose: open,
-    items: pack.provinces
-      .filter(province => province.i && !province.removed)
-      .map(province => ({
-        id: province.i,
-        name: `${pack.states[province.state]?.name ?? ""}: ${province.name}`,
-        color: province.color || "#ffffff"
-      })),
+    items: getProvincesData().map(province => ({
+      id: province.i,
+      name: province.name,
+      color: province.color || "#ffffff"
+    })),
     getValue: cell => pack.cells.province[cell],
     filterCell: (cell, currentProvince, nextProvince) => {
       if (!isLand(cell, pack) || !pack.cells.state[cell]) return false;
@@ -1142,13 +1147,13 @@ function addProvince(this: SVGElement, event: any): void {
 
   // generate emblem
   const kinship = burg ? 0.8 : 0.4;
-  const parent: any = burg ? pack.burgs[burg].coa : pack.states[state].coa;
-  const type = Burgs.getType(center, parent.port);
-  const coa = COA.generate(parent, kinship, +P(0.1), type);
-  coa.shield = COA.getShield(c, state);
-  COArenderer.add("province", province, coa as any, point[0], point[1]);
-
+  const parent = burg ? pack.burgs[burg].coa : pack.states[state].coa;
+  const port = burg ? pack.burgs[burg].port : undefined;
+  const type = Burgs.getType(center, port);
+  const coa = Emblems.generate(parent, kinship, +P(0.1), type);
+  coa.shield = Emblems.getShield(c, state);
   provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa } as Province);
+  redrawEmblem("province", province);
 
   cells.province[center] = province;
   cells.c[center].forEach(nc => {
@@ -1161,7 +1166,9 @@ function addProvince(this: SVGElement, event: any): void {
   Layers.draw("labels");
 
   collectStatistics();
-  ensureEl<HTMLSelectElement>("provincesFilterState").value = String(state);
+  filterState.stateId = state;
+  dialogState.set(dialogId, "filters", filterState);
+  ensureEl<HTMLSelectElement>("provincesFilterState").value = String(filterState.stateId);
   provincesTable.reset();
 }
 
@@ -1179,7 +1186,7 @@ function exitAddProvinceMode(): void {
 }
 
 function recolorProvinces(): void {
-  const state = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
+  const state = filterState.stateId;
 
   pack.provinces.forEach(p => {
     if (!p || p.removed) return;
@@ -1215,10 +1222,9 @@ function removeAllProvinces(): void {
         $(this).dialog("close");
 
         // remove emblems
-        document.querySelectorAll("[id^='provinceCOA']").forEach(el => {
-          el.remove();
+        pack.provinces.forEach(province => {
+          if (province.i) removeEmblem("province", province.i);
         });
-        select<SVGElement, unknown>("#emblems").select("#provinceEmblems").selectAll("*").remove();
 
         // remove data
         pack.provinces = [0] as unknown as Province[];
@@ -1249,7 +1255,7 @@ function closeProvincesEditor(): void {
 }
 
 function openProvinceMergeDialog(): void {
-  const selectedState = +ensureEl<HTMLSelectElement>("provincesFilterState").value;
+  const selectedState = filterState.stateId;
   if (selectedState === -1) {
     alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
     $("#alert").dialog({
@@ -1386,9 +1392,7 @@ function cleanupMergedProvince(provinceId: number): void {
   // Clean up UI artifacts for a province being merged (similar to removeProvince cleanup)
   unfog(`focusProvince${provinceId}`);
 
-  const coaEl = document.getElementById(`provinceCOA${provinceId}`);
-  if (coaEl) coaEl.remove();
-  select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
+  removeEmblem("province", provinceId);
 }
 
 function mergeProvinces(ids: number[], primary: number): void {

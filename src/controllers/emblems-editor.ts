@@ -1,17 +1,33 @@
-import { drag, select } from "d3";
+import { type D3DragEvent, drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
+import type { Burg } from "@/generators/burgs-generator";
+import { Emblems } from "@/generators/emblems-generator";
+import type { Province } from "@/generators/provinces-generator";
+import type { State } from "@/generators/states-generator";
+import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "@/renderers/draw-emblems";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
+import type { Emblem } from "@/types/emblems";
 import { downloadFile, getFileName, openURL } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
-// el is a State | Province | Burg; coa is the untyped Armoria structure — kept loose here as
-// this is a legacy interop boundary shared with classic callers.
-type EmblemEl = any;
+type EmblemEntity = State | Province | Burg;
 
-let currentType: string;
+interface EmblemEl {
+  i: number;
+  coa: Emblem;
+  cell?: number;
+  culture?: number;
+  fullName?: string;
+  name?: string;
+  state?: number;
+}
+
+let currentType: EmblemType;
 let currentId: string;
 let currentEl: EmblemEl;
+let unsubscribeFromReconciliation: (() => void) | undefined;
 
 async function openDefault(): Promise<void> {
   const firstState = pack.states.find(state => state.i && !state.removed && state.coa);
@@ -24,25 +40,25 @@ async function openDefault(): Promise<void> {
   }
 
   const id = `${type}COA${element.i}`;
-  await COArenderer.trigger(id, element.coa);
+  await EmblemRenderer.trigger(id, element.coa);
   open(type, id, element);
 }
 
-function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): void {
+function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGElement): void {
   if (customization) return;
   if (!id && target) defineEmblemData(target);
   else {
-    currentType = type!;
-    currentId = id!;
-    currentEl = el;
+    if (!type || !id || !el?.coa) return;
+    currentType = type;
+    currentId = id;
+    currentEl = el as EmblemEl;
   }
 
   renderDialog();
 
-  select<SVGElement, unknown>("#emblems")
-    .selectAll<SVGUseElement, unknown>("use")
-    .call(drag<SVGUseElement, unknown>().on("drag", dragEmblem))
-    .classed("draggable", true);
+  makeEmblemsDraggable();
+  unsubscribeFromReconciliation?.();
+  unsubscribeFromReconciliation = subscribeToEmblemReconciliation(makeEmblemsDraggable);
 
   updateElementSelectors();
 
@@ -252,16 +268,14 @@ function renderDialog(): void {
 
 function defineEmblemData(target: SVGElement): void {
   const parent = target.parentNode as SVGElement;
-  const [g, t] =
-    parent.id === "burgEmblems"
-      ? [pack.burgs, "burg"]
-      : parent.id === "provinceEmblems"
-        ? [pack.provinces, "province"]
-        : [pack.states, "state"];
+  const type: EmblemType =
+    parent.id === "burgEmblems" ? "burg" : parent.id === "provinceEmblems" ? "province" : "state";
   const i = +target.dataset.i!;
-  currentType = t as string;
+  const entity = getEmblemEntity(type, i);
+  if (!entity) throw new Error(`Cannot edit ${type} emblem ${i}`);
+  currentType = type;
   currentId = `${currentType}COA${i}`;
-  currentEl = (g as EmblemEl[])[i];
+  currentEl = entity;
 }
 
 function updateElementSelectors(): void {
@@ -284,11 +298,11 @@ function updateElementSelectors(): void {
   if (type === "state") state = el.i;
   else if (type === "province") {
     province = el.i;
-    state = pack.states[el.state].i;
+    state = pack.states[el.state!].i;
   } else {
     burg = el.i;
-    province = pack.cells.province[el.cell] ? pack.provinces[pack.cells.province[el.cell]].i : 0;
-    state = el.state;
+    province = pack.cells.province[el.cell!] ? pack.provinces[pack.cells.province[el.cell!]].i : 0;
+    state = el.state ?? 0;
   }
 
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed && b.coa);
@@ -317,7 +331,7 @@ function updateElementSelectors(): void {
   });
   emblemBurgs.options[0].disabled = true;
 
-  COArenderer.trigger(currentId, el.coa);
+  EmblemRenderer.trigger(currentId, el.coa);
   updateEmblemData();
 }
 
@@ -327,33 +341,29 @@ function updateEmblemData(): void {
   ensureEl("emblemImage").setAttribute("href", `#${currentId}`);
   let name = el.fullName || el.name;
   if (currentType === "burg") name = `Burg of ${name}`;
-  ensureEl("emblemArmiger").innerText = name;
+  ensureEl("emblemArmiger").innerText = name ?? "";
 
   const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
   if (el.coa.custom) emblemShapeSelector.disabled = true;
   else {
     emblemShapeSelector.disabled = false;
-    emblemShapeSelector.value = el.coa.shield;
+    emblemShapeSelector.value = el.coa.shield ?? "heater";
   }
 
-  const size = el.coa.size || 1;
-  ensureEl<HTMLInputElement>("emblemSizeSlider").value = size;
-  ensureEl<HTMLInputElement>("emblemSizeNumber").value = size;
+  const size = el.coa.size ?? 1;
+  ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
+  ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 }
 
 function selectState(): void {
   const state = +ensureEl<HTMLSelectElement>("emblemStates").value;
   if (state) {
-    currentType = "state";
-    currentEl = pack.states[state];
-    currentId = `stateCOA${state}`;
+    if (!setCurrentEmblem("state", state)) return;
   } else {
     // select neutral burg if state is changed to Neutrals
     const neutralBurgs = pack.burgs.filter(b => b.i && !b.removed && !b.state);
     if (!neutralBurgs.length) return;
-    currentType = "burg";
-    currentEl = neutralBurgs[0];
-    currentId = `burgCOA${neutralBurgs[0].i}`;
+    if (!setCurrentEmblem("burg", neutralBurgs[0].i)) return;
   }
   updateElementSelectors();
 }
@@ -362,15 +372,11 @@ function selectProvince(): void {
   const province = +ensureEl<HTMLSelectElement>("emblemProvinces").value;
 
   if (province) {
-    currentType = "province";
-    currentEl = pack.provinces[province];
-    currentId = `provinceCOA${province}`;
+    if (!setCurrentEmblem("province", province)) return;
   } else {
     // select state if province is changed to null value
     const state = +ensureEl<HTMLSelectElement>("emblemStates").value;
-    currentType = "state";
-    currentEl = pack.states[state];
-    currentId = `stateCOA${state}`;
+    if (!setCurrentEmblem("state", state)) return;
   }
 
   updateElementSelectors();
@@ -378,9 +384,7 @@ function selectProvince(): void {
 
 function selectBurg(): void {
   const burg = +ensureEl<HTMLSelectElement>("emblemBurgs").value;
-  currentType = "burg";
-  currentEl = pack.burgs[burg];
-  currentId = `burgCOA${burg}`;
+  if (!setCurrentEmblem("burg", burg)) return;
   updateElementSelectors();
 }
 
@@ -388,7 +392,7 @@ function changeShape(): void {
   currentEl.coa.shield = ensureEl<HTMLSelectElement>("emblemShapeSelector").value;
   const coaEl = document.getElementById(currentId);
   if (coaEl) coaEl.remove();
-  COArenderer.trigger(currentId, currentEl.coa);
+  EmblemRenderer.trigger(currentId, currentEl.coa);
 }
 
 function showArea(): void {
@@ -397,49 +401,32 @@ function showArea(): void {
 
 function changeSize(ev: Event): void {
   const size = +(ev.currentTarget as HTMLInputElement).value;
-  currentEl.coa.size = size;
 
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 
-  const g = select<SVGElement, unknown>("#emblems").select(`#${currentType}Emblems`);
-  g.select(`[data-i='${currentEl.i}']`).remove();
-  if (!size) return;
-
-  // re-append use element
-  const categotySize = +g.attr("font-size");
-  const shift = (categotySize * size) / 2;
-  const x = currentEl.coa.x || currentEl.x || currentEl.pole[0];
-  const y = currentEl.coa.y || currentEl.y || currentEl.pole[1];
-
-  g.append("use")
-    .attr("data-i", currentEl.i)
-    .attr("x", rn(x - shift, 2))
-    .attr("y", rn(y - shift, 2))
-    .attr("width", `${size}em`)
-    .attr("height", `${size}em`)
-    .attr("href", `#${currentId}`);
+  currentEl.coa.size = size;
+  redrawEmblem(currentType, currentEl.i);
 }
 
 function regenerate(): void {
   const el = currentEl;
-  let parent: EmblemEl = null;
-  if (currentType === "province") parent = pack.states[el.state];
+  let parent: EmblemEl | undefined;
+  if (currentType === "province") parent = pack.states[el.state!];
   else if (currentType === "burg") {
-    const province = pack.cells.province[el.cell];
-    parent = province ? pack.provinces[province] : pack.states[el.state];
+    const province = pack.cells.province[el.cell!];
+    parent = province ? pack.provinces[province] : pack.states[el.state!];
   }
 
-  const shield = el.coa.shield || COA.getShield(el.culture || parent?.culture || 0, el.state);
-  el.coa = COA.generate(parent ? parent.coa : null, 0.3, 0.1, undefined);
-  el.coa.shield = shield;
+  const shield = el.coa.shield || Emblems.getShield(el.culture || parent?.culture || 0, el.state);
+  const { size, x, y } = el.coa;
+  el.coa = { ...Emblems.generate(parent ? parent.coa : null, 0.3, 0.1, undefined), shield, size, x, y };
   const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
   emblemShapeSelector.disabled = false;
-  emblemShapeSelector.value = el.coa.shield;
+  emblemShapeSelector.value = el.coa.shield ?? "heater";
 
-  const coaEl = document.getElementById(currentId);
-  if (coaEl) coaEl.remove();
-  COArenderer.trigger(currentId, el.coa);
+  EmblemRenderer.trigger(currentId, el.coa);
+  redrawEmblem(currentType, currentEl.i);
 }
 
 function openInArmoria(): void {
@@ -473,7 +460,6 @@ function upload(type: "image" | "svg"): void {
   reader.onload = readerEvent => {
     const result = readerEvent.target!.result as string;
     const defsEmblems = ensureEl("defs-emblems");
-    const oldEmblem = document.getElementById(currentId);
 
     let href = result; // raster images
     if (type === "svg") {
@@ -500,15 +486,15 @@ function upload(type: "image" | "svg"): void {
     }
 
     const svg = `<svg id="${currentId}" viewBox="0 0 200 200"><image width="200" height="200" href="${href}"/></svg>`;
+    EmblemRenderer.remove(currentId);
     defsEmblems.insertAdjacentHTML("beforeend", svg);
 
-    if (oldEmblem) oldEmblem.remove();
-
-    const customCoa: { custom: true; size?: number; x?: number; y?: number } = { custom: true };
-    if (el.coa.size) customCoa.size = el.coa.size;
-    if (el.coa.x) customCoa.x = el.coa.x;
-    if (el.coa.y) customCoa.y = el.coa.y;
+    const customCoa: Emblem = { custom: true };
+    if (el.coa.size !== undefined) customCoa.size = el.coa.size;
+    if (el.coa.x !== undefined) customCoa.x = el.coa.x;
+    if (el.coa.y !== undefined) customCoa.y = el.coa.y;
     el.coa = customCoa;
+    redrawEmblem(currentType, currentEl.i);
 
     ensureEl<HTMLSelectElement>("emblemShapeSelector").disabled = true;
   };
@@ -680,41 +666,79 @@ async function downloadGallery(): Promise<void> {
   downloadFile(html, `${name}.html`, "text/plain");
 }
 
-async function renderAllEmblems(states: EmblemEl[], provinces: EmblemEl[], burgs: EmblemEl[]): Promise<void> {
+async function renderAllEmblems(states: State[], provinces: Province[], burgs: Burg[]): Promise<void> {
   tip("Preparing for download...", true, "warn");
 
-  const statePromises = states.map(state => COArenderer.trigger(`stateCOA${state.i}`, state.coa));
-  const provincePromises = provinces.map(province => COArenderer.trigger(`provinceCOA${province.i}`, province.coa));
-  const burgPromises = burgs.map(burg => COArenderer.trigger(`burgCOA${burg.i}`, burg.coa));
+  const statePromises = states.map(state => EmblemRenderer.trigger(`stateCOA${state.i}`, state.coa));
+  const provincePromises = provinces.map(province => EmblemRenderer.trigger(`provinceCOA${province.i}`, province.coa));
+  const burgPromises = burgs.map(burg => EmblemRenderer.trigger(`burgCOA${burg.i}`, burg.coa));
   const promises = [...statePromises, ...provincePromises, ...burgPromises];
 
   await Promise.allSettled(promises);
   clearMainTip();
 }
 
-function dragEmblem(this: SVGUseElement, event: any): void {
+type EmblemDragEvent = D3DragEvent<SVGUseElement, unknown, unknown>;
+
+function dragEmblem(this: SVGUseElement, event: EmblemDragEvent): void {
   const x = Number(this.getAttribute("x")) - event.x;
   const y = Number(this.getAttribute("y")) - event.y;
 
-  event.on("drag", function (this: SVGUseElement, dragEvent: any) {
+  event.on("drag", function (this: SVGUseElement, dragEvent: EmblemDragEvent) {
     this.setAttribute("x", String(x + dragEvent.x));
     this.setAttribute("y", String(y + dragEvent.y));
   });
 
-  event.on("end", function (this: SVGUseElement, endEvent: any) {
+  event.on("end", function (this: SVGUseElement, endEvent: EmblemDragEvent) {
     const categotySize = Number((this.parentNode as SVGElement).getAttribute("font-size"));
-    const size = currentEl.coa.size || 1;
+    const size = Number.parseFloat(this.getAttribute("width") || "1");
     const shift = (categotySize * size) / 2;
 
-    currentEl.coa.x = rn(x + endEvent.x + shift, 2);
-    currentEl.coa.y = rn(y + endEvent.y + shift, 2);
+    const type = getEmblemType(this.parentElement?.id);
+    const i = Number(this.dataset.i);
+    const entity = type && Number.isInteger(i) ? getEmblemEntity(type, i) : undefined;
+    if (!type || !entity) return;
+
+    entity.coa.x = rn(x + endEvent.x + shift, 2);
+    entity.coa.y = rn(y + endEvent.y + shift, 2);
+    redrawEmblem(type, i);
   });
 }
 
-function closeEmblemEditor(): void {
+function getEmblemType(groupId: string | undefined): EmblemType | undefined {
+  if (groupId === "burgEmblems") return "burg";
+  if (groupId === "provinceEmblems") return "province";
+  if (groupId === "stateEmblems") return "state";
+  return undefined;
+}
+
+function getEmblemEntity(type: EmblemType, i: number): EmblemEl | undefined {
+  const entity = type === "burg" ? pack.burgs[i] : type === "province" ? pack.provinces[i] : pack.states[i];
+  return entity?.coa ? (entity as EmblemEl) : undefined;
+}
+
+function setCurrentEmblem(type: EmblemType, i: number): boolean {
+  const entity = getEmblemEntity(type, i);
+  if (!entity) return false;
+  currentType = type;
+  currentId = `${type}COA${i}`;
+  currentEl = entity;
+  return true;
+}
+
+function makeEmblemsDraggable(): void {
   select<SVGElement, unknown>("#emblems")
     .selectAll<SVGUseElement, unknown>("use")
-    .call(drag<SVGUseElement, unknown>().on("drag", null))
+    .call(drag<SVGUseElement, unknown>().on("drag", dragEmblem))
+    .classed("draggable", true);
+}
+
+function closeEmblemEditor(): void {
+  unsubscribeFromReconciliation?.();
+  unsubscribeFromReconciliation = undefined;
+  select<SVGElement, unknown>("#emblems")
+    .selectAll<SVGUseElement, unknown>("use")
+    .on(".drag", null)
     .attr("class", null);
   $("#emblemEditor").dialog("destroy");
   ensureEl("emblemEditor").remove();

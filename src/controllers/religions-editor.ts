@@ -2,6 +2,7 @@ import { drag, easeSinIn, select, transition } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -22,6 +23,8 @@ import { abbreviate, debounce, ensureEl, getPointer, isLand, parseTransform, rn,
 
 const dialogId = "religionsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { showExtinct: boolean };
+
 const columns: EditorColumn<Religion>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -90,9 +93,7 @@ const columns: EditorColumn<Religion>[] = [
 ];
 
 function getFilteredReligions(): Religion[] {
-  return pack.religions.filter(
-    r => !r.removed && !(r.i && !r.cells && ensureEl("religionsBody").dataset.extinct !== "show")
-  );
+  return pack.religions.filter(r => !r.removed && !(r.i && !r.cells && !filterState.showExtinct));
 }
 
 const religionsTable = initEditorTable<Religion>({
@@ -102,6 +103,7 @@ const religionsTable = initEditorTable<Religion>({
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ showExtinct: false }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("religions");
   Layers.hide("states", "biomes");
@@ -170,6 +172,7 @@ function renderDialog(): void {
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  syncFilterControls();
   bindColumnSorting(dialogId, religionsTable.reset);
   applyLineHighlighting(dialogId, ({ cellId }) => pack.cells.religion[cellId]);
 
@@ -257,8 +260,8 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         </select>
         <input data-tip="Religion form" class="religionForm placeholder" value="" autocorrect="off" spellcheck="false" data-col="form" />
         <div data-col="deity">
-          <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw placeholder"></span>
-          <input data-tip="Religion supreme deity" class="religionDeity placeholder" value="" autocorrect="off" spellcheck="false" />
+          <span class="icon-arrows-cw placeholder"></span>
+          <input class="religionDeity placeholder" value="" autocorrect="off" spellcheck="false" />
         </div>
         <div data-col="area">
           <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o"></span>
@@ -303,7 +306,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
       <input data-tip="Religion form" class="religionForm"
         value="${r.form}" autocorrect="off" spellcheck="false" data-col="form" />
       <div data-col="deity">
-        <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw"></span>
+        <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw pointer"></span>
         <input data-tip="Religion supreme deity" class="religionDeity"
           value="${r.deity || ""}" autocorrect="off" spellcheck="false" />
       </div>
@@ -690,8 +693,7 @@ function drawReligionCenters(): void {
     .style("cursor", "move");
 
   let data = pack.religions.filter(r => r.i && r.center && !r.removed);
-  const showExtinct = ensureEl("religionsBody").dataset.extinct === "show";
-  if (!showExtinct) data = data.filter(r => (r.cells ?? 0) > 0);
+  if (!filterState.showExtinct) data = data.filter(r => (r.cells ?? 0) > 0);
 
   religionCenters
     .selectAll("circle")
@@ -806,9 +808,16 @@ async function showHierarchy(): Promise<void> {
 }
 
 function toggleExtinct(): void {
-  ensureEl("religionsBody").dataset.extinct = ensureEl("religionsBody").dataset.extinct !== "show" ? "show" : "hide";
+  filterState.showExtinct = !filterState.showExtinct;
+  dialogState.set(dialogId, "filters", filterState);
+  syncFilterControls();
   religionsTable.reset();
   drawReligionCenters();
+}
+
+function syncFilterControls(): void {
+  ensureEl("religionsBody").dataset.extinct = filterState.showExtinct ? "show" : "hide";
+  ensureEl("religionsExtinct").classList.toggle("active", filterState.showExtinct);
 }
 
 function openPaintEditor(): void {

@@ -30,31 +30,6 @@ export class Scene<T extends { id: string }> {
     this.valid = true;
   }
 
-  replaceWhere(match: (item: T) => boolean, replacements: T[]): string[] {
-    const next = new Map(replacements.map(item => [item.id, item]));
-    const changed = new Set<string>();
-
-    for (const [id, item] of this.items) {
-      if (!match(item)) continue;
-      changed.add(id);
-      const replacement = next.get(id);
-      if (replacement) {
-        this.items.set(id, replacement);
-        next.delete(id);
-      } else {
-        this.items.delete(id);
-      }
-    }
-
-    for (const [id, item] of next) {
-      changed.add(id);
-      this.items.set(id, item);
-    }
-
-    this.valid = true;
-    return [...changed];
-  }
-
   set(item: T): void {
     this.items.set(item.id, item);
   }

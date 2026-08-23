@@ -101,6 +101,8 @@ function prepareMapData(): string {
   const cloneTerrain = cloneEl.querySelector("#terrain");
   if (cloneTerrain) cloneTerrain.innerHTML = "";
 
+  for (const group of Array.from(cloneEl.querySelectorAll("#emblems > g"))) group.innerHTML = "";
+
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
   const cloneTradeAnimation = cloneEl.querySelector("#tradeAnimation");

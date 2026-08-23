@@ -1,5 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -20,6 +21,9 @@ import { ensureEl, findEl } from "@/utils";
 
 const dialogId = "labelsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const ALL = "";
+let filterState: { group: string; type: string; search: string };
+
 const columns: EditorColumn<LabelData>[] = [
   { key: "selection", width: "1.5em", permanent: true },
   {
@@ -47,8 +51,6 @@ const columns: EditorColumn<LabelData>[] = [
   { key: "actions", width: "3.4em", permanent: true, align: "right" }
 ];
 
-const ALL = ""; // filter value meaning "all"
-const filters = { group: ALL, type: ALL, search: "" };
 const listedLabels = new Map<string, LabelData>(); // currently listed labels, keyed by line id
 let isBulkMode = false;
 const spreadPreview: SpreadPreviewState = { phase: "idle", run: 0, snapshot: null };
@@ -61,17 +63,19 @@ const labelsTable = initEditorTable<LabelData>({
 
 function open(group: string = ALL): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ group: ALL, type: ALL, search: ALL }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("labels");
 
   isBulkMode = false;
   resetSpreadPreview();
-  if (group) filters.group = group;
+  if (group) filterState.group = group;
+  dialogState.set(dialogId, "filters", filterState);
 
   renderDialog();
   populateGroupFilter();
   populateTypeFilter();
-  ensureEl<HTMLInputElement>("labelsSearch").value = filters.search;
+  ensureEl<HTMLInputElement>("labelsSearch").value = filterState.search;
   labelsTable.reset();
 
   $(`#${dialogId}`).dialog({
@@ -169,13 +173,16 @@ let searchTimeout = 0;
 
 function onSearchInput(): void {
   clearTimeout(searchTimeout);
-  searchTimeout = window.setTimeout(onFilterChange, SEARCH_DELAY);
+  filterState.search = ensureEl<HTMLInputElement>("labelsSearch").value;
+  dialogState.set(dialogId, "filters", filterState);
+  searchTimeout = window.setTimeout(labelsTable.reset, SEARCH_DELAY);
 }
 
 function onFilterChange(): void {
-  filters.type = ensureEl<HTMLSelectElement>("labelsFilterType").value;
-  filters.group = ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
-  filters.search = ensureEl<HTMLInputElement>("labelsSearch").value;
+  filterState.type = ensureEl<HTMLSelectElement>("labelsFilterType").value;
+  filterState.group = ensureEl<HTMLSelectElement>("labelsFilterGroup").value;
+  filterState.search = ensureEl<HTMLInputElement>("labelsSearch").value;
+  dialogState.set(dialogId, "filters", filterState);
   labelsTable.reset();
 }
 
@@ -184,7 +191,7 @@ function populateTypeFilter(): void {
   select.options.length = 0;
   select.add(new Option("all", ALL));
   for (const type of LABEL_TYPES) select.add(new Option(type, type));
-  select.value = filters.type;
+  select.value = filterState.type;
 }
 
 function populateGroupFilter(): void {
@@ -194,10 +201,10 @@ function populateGroupFilter(): void {
   select.options.length = 0;
   select.add(new Option("all", ALL));
   for (const name of groups) select.add(new Option(name, name));
-  if (filters.group !== ALL && !groups.includes(filters.group))
-    select.add(new Option(`${filters.group} (missing)`, filters.group));
+  if (filterState.group !== ALL && !groups.includes(filterState.group))
+    select.add(new Option(`${filterState.group} (missing)`, filterState.group));
 
-  select.value = filters.group;
+  select.value = filterState.group;
 
   // keep the bulk target selected across refreshes, it resets to none if that group is gone
   const bulkSelect = ensureEl<HTMLSelectElement>("labelsBulkGroup");
@@ -212,9 +219,9 @@ function getFilteredLabels(): LabelData[] {
   const allLabels = getLabelsData();
   totalLabels = allLabels.length;
   let labels = allLabels;
-  if (filters.group !== ALL) labels = labels.filter(({ group }) => group === filters.group);
-  if (filters.type !== ALL) labels = labels.filter(({ type }) => type === filters.type);
-  const search = filters.search.trim().toLowerCase();
+  if (filterState.group !== ALL) labels = labels.filter(({ group }) => group === filterState.group);
+  if (filterState.type !== ALL) labels = labels.filter(({ type }) => type === filterState.type);
+  const search = filterState.search.trim().toLowerCase();
   if (search) labels = labels.filter(({ text }) => text.replaceAll("|", "").toLowerCase().includes(search));
 
   return sortDataByColumns(dialogId, labels, columns);

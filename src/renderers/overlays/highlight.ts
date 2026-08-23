@@ -70,7 +70,9 @@ export function highlightEmblemElement(type: string, element: { i: number; [key:
 
   const [x, y] = element.pole || cells.p[element.center];
   const owner = type === "state" ? cells.state : cells.province;
-  const borderCells = cells.i.filter(id => owner[id] === element.i && cells.c[id].some(n => owner[n] !== element.i));
+  const borderCells = Array.from(cells.i).filter(
+    id => owner[id] === element.i && cells.c[id].some(n => owner[n] !== element.i)
+  );
   const rays = borderCells
     .filter((_cellId, index) => !(index % 2))
     .map(cellId => cells.p[cellId])

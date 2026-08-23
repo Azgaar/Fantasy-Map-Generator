@@ -7,6 +7,7 @@ import {
   updateDialog
 } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -25,12 +26,13 @@ import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { ensureEl, getPointer, unique } from "../utils";
 
-const visibleTags = new Set<string>();
 let production: ReturnType<typeof getProduction> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
 
 const dialogId = "goodsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { visibleTags: string[] };
+
 const columns: EditorColumn<Good>[] = [
   { key: "display", width: "1.6em" },
   { key: "name", label: "Name", width: "10em", permanent: true, sortBy: good => good.name, sortType: "alpha" },
@@ -75,11 +77,11 @@ const columns: EditorColumn<Good>[] = [
   },
   { key: "actions", width: "2em", permanent: true, align: "right" }
 ];
-
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
 function open() {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
 
   Layers.show("goods");
@@ -135,6 +137,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
     type="checkbox" data-tip="Show or hide all goods on the Goods map" class="native" id="goodsDisplayAll"
     style="margin: 0; width: 1.2em;" />`;
@@ -173,8 +176,10 @@ function renderDialog(): void {
 function getGoodsData(): Good[] {
   production = getProduction();
   stockData = getAllStockData();
-  const hasFilter = visibleTags.size > 0;
-  const goods = hasFilter ? pack.goods.filter(good => good.tags?.some(tag => visibleTags.has(tag))) : [...pack.goods];
+  const hasFilter = filterState.visibleTags.length > 0;
+  const goods = hasFilter
+    ? pack.goods.filter(good => good.tags?.some(tag => filterState.visibleTags.includes(tag)))
+    : [...pack.goods];
   return sortDataByColumns(dialogId, goods, columns);
 }
 
@@ -450,7 +455,7 @@ function getProduction() {
 function openTagsVisibilityDialog() {
   const tags = unique(pack.goods.flatMap(good => good.tags));
   const renderTag = (tag: string) =>
-    `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${visibleTags.has(tag) ? "checked" : ""} /> ${tag}</label>`;
+    `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${filterState.visibleTags.includes(tag) ? "checked" : ""} /> ${tag}</label>`;
   const tagsMarkup = tags.length ? tags.map(renderTag).join("") : '<div style="color:#666">No tags available</div>';
 
   alertMessage.innerHTML = `
@@ -465,14 +470,15 @@ function openTagsVisibilityDialog() {
         $(this).dialog("close");
       },
       "Clear filter": function () {
-        visibleTags.clear();
+        filterState.visibleTags = [];
+        dialogState.set(dialogId, "filters", filterState);
         applyTagVisibilityFilter();
         $(this).dialog("close");
       },
       Apply: function () {
         const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
-        visibleTags.clear();
-        checks.forEach(check => void visibleTags.add(check.value));
+        filterState.visibleTags = checks.map(check => check.value);
+        dialogState.set(dialogId, "filters", filterState);
         applyTagVisibilityFilter();
         $(this).dialog("close");
       }
@@ -481,7 +487,7 @@ function openTagsVisibilityDialog() {
 }
 
 function applyTagVisibilityFilter() {
-  const hasFilter = visibleTags.size > 0;
+  const hasFilter = filterState.visibleTags.length > 0;
   ensureEl("goodsTagsFilter").classList.toggle("active", hasFilter);
   goodsTable.reset();
 }

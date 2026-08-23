@@ -385,6 +385,7 @@ function selectStyleElement() {
     emblemsStateSizeInput.value = d3.select("#emblems").select("#stateEmblems").attr("data-size") || 1;
     emblemsProvinceSizeInput.value = d3.select("#emblems").select("#provinceEmblems").attr("data-size") || 1;
     emblemsBurgSizeInput.value = d3.select("#emblems").select("#burgEmblems").attr("data-size") || 1;
+    showAllEmblems.checked = options.emblems.showAll;
   }
 
   if (styleElement === "goodsIcons") {
@@ -1046,6 +1047,11 @@ emblemsProvinceSizeInput.addEventListener("change", e => {
 emblemsBurgSizeInput.addEventListener("change", e => {
   d3.select("#emblems").select("#burgEmblems").attr("data-size", e.target.value);
   Layers.draw("emblems");
+});
+
+showAllEmblems.addEventListener("change", e => {
+  options.emblems.showAll = e.target.checked;
+  invokeActiveZooming();
 });
 
 styleGoodsCircle.addEventListener("change", function () {

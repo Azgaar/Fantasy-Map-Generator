@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-// Emblems keep their content when turned off (`keepContent`), which used to be paired with a bespoke
-// "draw only when the group is empty" guard in the layer list. The guard is gone, so the layer re-renders
-// on every show like every other layer. Ice is the counterpart: it erases and redraws from pack.ice.
+// Emblems and ice both clear their rendered content when hidden and rebuild it from world state when shown.
+// Emblems retain their declared category groups, but the viewport-rendered <use> elements are rematerialized.
 test.describe("layer content on hide and show", () => {
   test.beforeEach(async ({ context, page }) => {
     await context.clearCookies();
@@ -37,15 +36,10 @@ test.describe("layer content on hide and show", () => {
       .poll(async () => page.locator("#emblems use[href]").count(), { timeout: 10000 })
       .toBeGreaterThan(0);
 
-    // keepContent: the markup survives the layer being turned off
+    // no keepContent: hiding clears the viewport-rendered uses
     await page.evaluate(() => (window as any).Layers.hide("emblems"));
     await expect(emblems).toBeHidden();
-    expect(await uses.count()).toBe(drawn);
-
-    // drop one emblem while the layer is off. The old guard skipped the draw whenever the group still
-    // held a <use>, so it would leave the gap; a plain redraw fills it back in
-    await page.evaluate(() => document.querySelector("#emblems use")?.remove());
-    expect(await uses.count()).toBe(drawn - 1);
+    await expect(uses).toHaveCount(0);
 
     await page.evaluate(() => (window as any).Layers.show("emblems"));
     await expect(emblems).toBeVisible();
