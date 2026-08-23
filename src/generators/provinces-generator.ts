@@ -3,10 +3,6 @@ import { max } from "d3";
 import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
 
-declare global {
-  var Provinces: ProvinceModule;
-}
-
 export interface Province {
   i: number;
   removed?: boolean;
@@ -28,7 +24,7 @@ export interface Province {
   burgs?: number[];
 }
 
-class ProvinceModule {
+export class ProvinceModule {
   forms: Record<string, Record<string, number>> = {
     Monarchy: {
       County: 22,
@@ -340,4 +336,5 @@ class ProvinceModule {
   }
 }
 
-window.Provinces = new ProvinceModule();
+export const Provinces = new ProvinceModule();
+window.Provinces = Provinces;

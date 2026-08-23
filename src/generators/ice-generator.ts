@@ -4,10 +4,6 @@ import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
 import { clipPoly, getGridPolygon, getIsolines, lerp, minmax, normalize, P, ra, rand, rn } from "../utils";
 import type { Point } from "./voronoi";
 
-declare global {
-  var Ice: IceModule;
-}
-
 export type Ice = Glacier | Iceberg;
 
 interface Glacier {
@@ -26,7 +22,7 @@ interface Iceberg {
   offset?: Point;
 }
 
-class IceModule {
+export class IceModule {
   public regenerate(): void {
     this.generate();
   }
@@ -155,4 +151,5 @@ class IceModule {
   }
 }
 
-window.Ice = new IceModule();
+export const Ice = new IceModule();
+window.Ice = Ice;

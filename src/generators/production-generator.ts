@@ -858,8 +858,5 @@ export type LocalRecord = { goodId: number; units: number };
 
 export type ProductionRecord = DealRecord | MfgRecord | LocalRecord;
 
-declare global {
-  var Production: ProductionModule;
-}
-
-window.Production = new ProductionModule();
+export const Production = new ProductionModule();
+window.Production = Production;

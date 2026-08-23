@@ -3,15 +3,11 @@ import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { stored, unlock } from "@/utils/preferences";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
-declare global {
-  var Names: NamesGenerator;
-}
-
 // Markov chain lookup table: key is a letter (or empty string for word start), value is array of possible next syllables
 // Note: Uses array with string keys (sparse array) to match original JS behavior
 type MarkovChain = string[][] & Record<string, string[]>;
 
-class NamesGenerator {
+export class NamesGenerator {
   nameBases: NameBase[] = this.getNameBases();
   chains: (MarkovChain | null)[] = []; // Markov chains for namebases
 
@@ -292,4 +288,5 @@ class NamesGenerator {
   }
 }
 
-window.Names = new NamesGenerator();
+export const Names = new NamesGenerator();
+window.Names = Names;

@@ -14,10 +14,6 @@ import {
   trimVowels
 } from "../utils";
 
-declare global {
-  var Religions: ReligionsModule;
-}
-
 export interface Religion extends NamedReligion {
   i: number;
   code?: string;
@@ -614,7 +610,7 @@ const expansionismMap: Record<string, () => number> = {
   Heresy: () => gauss(1, 0.5, 0, 5, 1)
 };
 
-class ReligionsModule {
+export class ReligionsModule {
   regenerate(): void {
     this.generate();
   }
@@ -1346,4 +1342,5 @@ class ReligionsModule {
   }
 }
 
-window.Religions = new ReligionsModule();
+export const Religions = new ReligionsModule();
+window.Religions = Religions;

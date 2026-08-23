@@ -15,10 +15,6 @@ import {
   rw
 } from "../utils";
 
-declare global {
-  var Markers: MarkersModule;
-}
-
 export interface Marker {
   i: number;
   type: string;
@@ -55,7 +51,7 @@ type MarkerConfig = {
   add: (id: string, cell: number) => void;
 };
 
-class MarkersModule {
+export class MarkersModule {
   private config: MarkerConfig[];
   private occupied: boolean[];
 
@@ -1721,4 +1717,5 @@ class MarkersModule {
   }
 }
 
-window.Markers = new MarkersModule();
+export const Markers = new MarkersModule();
+window.Markers = Markers;

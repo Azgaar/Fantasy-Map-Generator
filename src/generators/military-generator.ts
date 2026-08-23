@@ -2,10 +2,6 @@ import { quadtree, sum } from "d3";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
 
-declare global {
-  var Military: MilitaryModule;
-}
-
 export interface Regiment {
   i: number;
   t: number; // total troops
@@ -43,7 +39,7 @@ interface Platoon {
   children?: Platoon[]; // merged platoons
 }
 
-class MilitaryModule {
+export class MilitaryModule {
   regenerate(): void {
     this.generate();
   }
@@ -587,4 +583,5 @@ class MilitaryModule {
   }
 }
 
-window.Military = new MilitaryModule();
+export const Military = new MilitaryModule();
+window.Military = Military;

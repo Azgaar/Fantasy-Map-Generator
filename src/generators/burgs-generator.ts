@@ -49,7 +49,7 @@ type PortCandidate = {
   preferred: boolean; // safe harbour, capital harbour, or river port — promoted unconditionally
 };
 
-class BurgModule {
+export class BurgModule {
   generate() {
     TIME && console.time("generateBurgs");
     const { cells } = pack;
@@ -886,8 +886,5 @@ class BurgModule {
   }
 }
 
-declare global {
-  var Burgs: BurgModule;
-}
-
-window.Burgs = new BurgModule();
+export const Burgs = new BurgModule();
+window.Burgs = Burgs;

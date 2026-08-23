@@ -3,13 +3,9 @@ import { range as d3Range, leastIndex, mean } from "d3";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { createTypedArray, ensureEl, findGridCell, getNumberInRange, lim, minmax, P, rand } from "../utils";
 
-declare global {
-  var HeightmapGenerator: HeightmapModule;
-}
-
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
 
-class HeightmapModule {
+export class HeightmapModule {
   grid: any = null;
   heights: Uint8Array | null = null;
   blobPower: number = 0;
@@ -617,4 +613,5 @@ class HeightmapModule {
   }
 }
 
-window.HeightmapGenerator = new HeightmapModule();
+export const HeightmapGenerator = new HeightmapModule();
+window.HeightmapGenerator = HeightmapGenerator;

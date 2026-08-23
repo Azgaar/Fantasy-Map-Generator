@@ -11,10 +11,6 @@ import {
   TYPED_ARRAY_MAX
 } from "../utils";
 
-declare global {
-  var Features: FeatureModule;
-}
-
 type FeatureType = "ocean" | "lake" | "island";
 
 /* Pack features interface */
@@ -54,7 +50,7 @@ export interface GridFeature {
 
 export const NON_NAVIGABLE_LAKE_GROUPS = new Set(["dry", "frozen", "lava"]);
 
-class FeatureModule {
+export class FeatureModule {
   private DEEPER_LAND = 3;
   private LANDLOCKED = 2;
   private LAND_COAST = 1;
@@ -385,4 +381,5 @@ class FeatureModule {
   }
 }
 
-window.Features = new FeatureModule();
+export const Features = new FeatureModule();
+window.Features = Features;

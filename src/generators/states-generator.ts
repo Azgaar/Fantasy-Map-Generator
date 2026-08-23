@@ -19,10 +19,6 @@ import {
 import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
 
-declare global {
-  var States: StatesModule;
-}
-
 export interface State {
   i: number;
   name: string;
@@ -76,7 +72,7 @@ const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
 };
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
-class StatesModule {
+export class StatesModule {
   regenerate(): { warning?: string; error?: string } {
     const { warning, error, states } = this.recreate();
     if (error || !states) return { warning, error };
@@ -896,4 +892,5 @@ class StatesModule {
   }
 }
 
-window.States = new StatesModule();
+export const States = new StatesModule();
+window.States = States;

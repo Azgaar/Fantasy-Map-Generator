@@ -1,9 +1,5 @@
 import type { Label } from "./labels-generator";
 
-declare global {
-  var AddedLabels: AddedLabelsModule;
-}
-
 // A free-standing map object that exists only to carry a label
 export interface AddedLabel {
   i: number;
@@ -34,4 +30,5 @@ export class AddedLabelsModule {
   }
 }
 
-window.AddedLabels = new AddedLabelsModule();
+export const AddedLabels = new AddedLabelsModule();
+window.AddedLabels = AddedLabels;

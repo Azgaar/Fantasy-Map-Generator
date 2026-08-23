@@ -25,3 +25,4 @@ import "./goods-generator";
 import "./production-generator";
 import "./markets-generator";
 import "./resample";
+import "./generate-map";

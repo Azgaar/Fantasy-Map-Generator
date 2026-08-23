@@ -194,7 +194,7 @@ type RiverRun = {
   firstCanonicalIndexInRiver: number; // river.cells index of the run's source-most cell
 };
 
-class RoutesModule {
+export class RoutesModule {
   private connections: Map<string, boolean> = new Map();
   private riverEdges: Map<number, Map<number, RiverEdge>> = new Map();
   private riversById: Map<number, River> = new Map();
@@ -908,8 +908,5 @@ class RoutesModule {
   }
 }
 
-declare global {
-  var Routes: RoutesModule;
-}
-
-window.Routes = new RoutesModule();
+export const Routes = new RoutesModule();
+window.Routes = Routes;

@@ -25,7 +25,7 @@ export interface River {
   label?: Label;
 }
 
-class RiverModule {
+export class RiverModule {
   private FLUX_FACTOR = 500;
   private MAX_FLUX_WIDTH = 1;
   private LENGTH_FACTOR = 200;
@@ -702,8 +702,5 @@ class RiverModule {
   }
 }
 
-declare global {
-  var Rivers: RiverModule;
-}
-
-window.Rivers = new RiverModule();
+export const Rivers = new RiverModule();
+window.Rivers = Rivers;

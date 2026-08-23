@@ -2,10 +2,6 @@ import { mean, min } from "d3";
 import { ensureEl, isLand, rn, unique } from "../utils";
 import type { Feature } from "./features";
 
-declare global {
-  var Lakes: LakesModule;
-}
-
 export class LakesModule {
   private LAKE_ELEVATION_DELTA = 0.1;
 
@@ -132,4 +128,5 @@ export class LakesModule {
   }
 }
 
-window.Lakes = new LakesModule();
+export const Lakes = new LakesModule();
+window.Lakes = Lakes;

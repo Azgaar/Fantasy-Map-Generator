@@ -1122,8 +1122,5 @@ export class GoodsModule {
   });
 }
 
-declare global {
-  var Goods: GoodsModule;
-}
-
-window.Goods = new GoodsModule();
+export const Goods = new GoodsModule();
+window.Goods = Goods;

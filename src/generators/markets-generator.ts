@@ -614,8 +614,5 @@ export class MarketsModule {
   }
 }
 
-declare global {
-  var Markets: MarketsModule;
-}
-
-window.Markets = new MarketsModule();
+export const Markets = new MarketsModule();
+window.Markets = Markets;

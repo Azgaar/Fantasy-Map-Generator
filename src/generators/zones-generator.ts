@@ -1,10 +1,6 @@
 import { max, mean } from "d3";
 import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
 
-declare global {
-  var Zones: ZonesModule;
-}
-
 export interface Zone {
   i: number;
   name: string;
@@ -21,7 +17,7 @@ interface ZoneConfig {
   generate: ZoneGenerator;
 }
 
-class ZonesModule {
+export class ZonesModule {
   private config: Record<string, ZoneConfig>;
 
   constructor() {
@@ -630,4 +626,5 @@ class ZonesModule {
   }
 }
 
-window.Zones = new ZonesModule();
+export const Zones = new ZonesModule();
+window.Zones = Zones;
