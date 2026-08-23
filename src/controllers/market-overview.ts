@@ -13,6 +13,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
@@ -198,7 +199,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   const center = pack.burgs[market.centerBurgId];
   const state = pack.states[center?.state || 0];
   const coaId = `stateCOA${state.i}`;
-  if (state) COArenderer.trigger(coaId, state.coa);
+  if (state) EmblemRenderer.trigger(coaId, state.coa);
 
   ensureEl("marketOverviewInfo").innerHTML =
     `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>Owner:</b> ${state.fullName || state.name}`;

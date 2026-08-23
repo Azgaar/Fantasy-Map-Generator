@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { dialogState } from "./state";
 import {
   buildTracks,
   type EditorColumn,
@@ -91,6 +92,7 @@ describe("hidden columns persistence", () => {
       setItem: (k: string, v: string) => void store.set(k, v),
       removeItem: (k: string) => void store.delete(k)
     };
+    dialogState.clear();
   });
 
   it("round-trips the hidden set", () => {
@@ -107,10 +109,11 @@ describe("hidden columns persistence", () => {
     expect(loadHiddenColumns("burgsOverview", columns)).toEqual(new Set(["type"]));
   });
 
-  it("applies newly hidden defaults over legacy stored visibility", () => {
-    localStorage.setItem("columnsHidden:statesEditor", "[]");
+  it("ignores legacy stored visibility", () => {
+    localStorage.setItem("columnsHidden:statesEditor", '["population"]');
     const columns = [...COLUMNS, { key: "type", label: "Type", hidden: true }];
     expect(loadHiddenColumns("statesEditor", columns)).toEqual(new Set(["type"]));
+    expect(localStorage.getItem("columnsHidden:statesEditor")).toBe('["population"]');
   });
 
   it("drops unknown and permanent keys on load", () => {
@@ -118,7 +121,7 @@ describe("hidden columns persistence", () => {
     expect(loadHiddenColumns("burgsOverview", COLUMNS)).toEqual(new Set(["population"]));
   });
 
-  it("survives corrupted storage", () => {
+  it("ignores corrupted legacy storage", () => {
     localStorage.setItem("columnsHidden:burgsOverview", "{not json");
     expect(loadHiddenColumns("burgsOverview", COLUMNS).size).toBe(0);
   });

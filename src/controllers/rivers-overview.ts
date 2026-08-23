@@ -2,6 +2,7 @@ import { mean, select } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,6 +20,8 @@ import { ensureEl, rn } from "../utils";
 
 const dialogId = "riversOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { search: string };
+
 const columns: EditorColumn<River>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
@@ -74,7 +77,7 @@ function getRiversById(): Map<number, River> {
 }
 
 function getFilteredRivers(riversById: Map<number, River>): River[] {
-  const searchText = ensureEl<HTMLInputElement>("riversSearch").value.toLowerCase().trim();
+  const searchText = filterState.search.toLowerCase().trim();
   if (!searchText) return pack.rivers.slice();
 
   return pack.rivers.filter((r: River) => {
@@ -97,6 +100,7 @@ const riversTable = initEditorTable<River>({
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("rivers");
 
@@ -136,6 +140,7 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  ensureEl<HTMLInputElement>("riversSearch").value = filterState.search;
   bindColumnSorting(dialogId, riversTable.reset);
   applyLineHighlighting(dialogId, ({ target, cellId }) => {
     const riverId = pack.cells.r[cellId];
@@ -155,7 +160,11 @@ function renderDialog(): void {
   ensureEl("riversBasinHighlight").addEventListener("click", toggleBasinsHightlight);
   ensureEl("riversExport").addEventListener("click", downloadRiversData);
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
-  ensureEl("riversSearch").addEventListener("input", riversTable.reset);
+  ensureEl("riversSearch").addEventListener("input", event => {
+    filterState.search = (event.target as HTMLInputElement).value;
+    dialogState.set(dialogId, "filters", filterState);
+    riversTable.reset();
+  });
 }
 
 function closeRiversOverview(): void {

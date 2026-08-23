@@ -1,4 +1,5 @@
 import { capitalize, findEl } from "@/utils";
+import { dialogState } from "./state";
 
 const EDITOR_PAGE_SIZE = 100;
 const EDITOR_PAGE_SIZE_MOBILE = 20;
@@ -153,34 +154,20 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
   return `<div id="${dialogId}Header" class="header">${cells.join("")}</div>`;
 }
 
-const columnsStorageKey = (dialogId: string) => `columnsHidden:${dialogId}`;
+type ColumnVisibilityState = { hidden: string[]; shown: string[] };
 
 export function loadHiddenColumns(dialogId: string, columns: EditorColumn[]): Set<string> {
   const configurable = new Set(columns.filter(column => !column.permanent).map(column => column.key));
   const defaults = columns.filter(column => column.hidden).map(column => column.key);
-  const stored = localStorage.getItem(columnsStorageKey(dialogId));
-  if (stored === null) {
+  const saved = dialogState.get<ColumnVisibilityState | null>(dialogId, "columns", () => null);
+  if (saved === null) {
     const mobile = typeof MOBILE !== "undefined" && MOBILE;
     if (mobile) defaults.push(...columns.filter(column => column.mobileHidden).map(column => column.key));
   }
 
-  let saved: unknown;
-  try {
-    saved = JSON.parse(stored ?? "[]");
-  } catch {
-    saved = [];
-  }
-
   const hidden = new Set(defaults.filter(key => configurable.has(key)));
-  if (Array.isArray(saved)) {
-    for (const key of saved) if (configurable.has(key)) hidden.add(key);
-    return hidden;
-  }
-
-  if (!saved || typeof saved !== "object") return hidden;
-  const { hidden: savedHidden, shown: savedShown } = saved as { hidden?: unknown; shown?: unknown };
-  if (Array.isArray(savedHidden)) for (const key of savedHidden) if (configurable.has(key)) hidden.add(key);
-  if (Array.isArray(savedShown)) for (const key of savedShown) hidden.delete(key);
+  for (const key of saved?.hidden ?? []) if (configurable.has(key)) hidden.add(key);
+  for (const key of saved?.shown ?? []) hidden.delete(key);
   return hidden;
 }
 
@@ -190,11 +177,11 @@ export function saveHiddenColumns(dialogId: string, hidden: Set<string>, columns
     hidden: configurable.filter(key => hidden.has(key)),
     shown: configurable.filter(key => !hidden.has(key))
   };
-  localStorage.setItem(columnsStorageKey(dialogId), JSON.stringify(saved));
+  dialogState.set(dialogId, "columns", saved);
 }
 
 export function restoreDefaultColumnVisibility(dialogId: string, columns: EditorColumn[]): Set<string> {
-  localStorage.removeItem(columnsStorageKey(dialogId));
+  dialogState.remove(dialogId, "columns");
   return loadHiddenColumns(dialogId, columns);
 }
 

@@ -1,6 +1,7 @@
-import { select } from "d3";
 import { quadtree } from "d3-quadtree";
+import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
+import type { Emblem } from "@/types/emblems";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
@@ -24,7 +25,7 @@ export interface Burg {
   removed?: boolean;
   population?: number;
   type?: CultureType;
-  coa?: any;
+  coa?: Emblem;
   citadel?: number;
   plaza?: number;
   walls?: number;
@@ -382,8 +383,8 @@ class BurgModule {
     if (burg.culture !== state.culture) kinship -= 0.25;
 
     const type = burg.capital && P(0.2) ? "Capital" : burg.type === "Generic" ? "City" : burg.type;
-    burg.coa = COA.generate(stateCOA, kinship, null, type);
-    burg.coa.shield = COA.getShield(burg.culture!, burg.state!);
+    burg.coa = Emblems.generate(stateCOA, kinship, null, type);
+    burg.coa.shield = Emblems.getShield(burg.culture!, burg.state!);
   }
 
   private defineFeatures(burg: Burg) {
@@ -732,7 +733,6 @@ class BurgModule {
     };
     this.definePopulation(burg);
     this.defineEmblem(burg);
-    COArenderer.add("burg", burgId, burg.coa, x, y);
     this.defineFeatures(burg);
 
     const populations = pack.burgs
@@ -878,9 +878,6 @@ class BurgModule {
     if (noteId !== -1) notes.splice(noteId, 1);
 
     if (burg.coa) {
-      // TODO: should be handled by emblems renderer
-      document.getElementById(`burgCOA${burgId}`)?.remove();
-      select("#emblems").select(`#burgEmblems > use[data-i='${burgId}']`).remove();
       delete burg.coa;
     }
   }

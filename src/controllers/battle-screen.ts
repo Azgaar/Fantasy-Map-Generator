@@ -416,7 +416,7 @@ function renderDialog(): void {
       <div id="regimentSelectorBody" class="table"></div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  applySortingByHeader("regimentSelectorHeader");
+  applySortingByHeader("battleScreen", "regimentSelectorHeader");
 
   ensureEl("battleType").addEventListener("click", event => toggleChange(event));
   ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));

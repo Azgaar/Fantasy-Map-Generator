@@ -1,6 +1,5 @@
 import { type D3ZoomEvent, select, zoom, zoomIdentity } from "d3";
 import { Layers } from "@/components/layers";
-import { redrawEmblemGroup } from "@/renderers/draw-emblems";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
@@ -72,7 +71,6 @@ function handleZoomEnd(): void {
     cancelAnimationFrame(frameId);
     frameId = null;
     handleZoomPerFrame();
-    ViewportLayers.renderNow();
   }
 
   invokeActiveZooming();
@@ -96,17 +94,7 @@ function redrawTracedImage(): void {
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
 
-  const emblems = select<SVGGElement, unknown>("#emblems");
-  if (emblems.style("display") !== "none") {
-    const hideSmallEmblems = ensureEl<HTMLInputElement>("hideEmblems").checked;
-    for (const group of emblems.selectAll<SVGGElement, unknown>("g").nodes()) {
-      const size = Number(group.getAttribute("font-size")) * scale;
-      const hidden = hideSmallEmblems && (size < 25 || size > 300);
-      group.classList.toggle("hidden", hidden);
-      const emblem = group.children[0];
-      if (!hidden && window.COArenderer && emblem && !emblem.getAttribute("href")) redrawEmblemGroup(group);
-    }
-  }
+  ViewportLayers.renderNow();
 
   if (!customization && !isOptimized) {
     const statesHalo = select("#statesHalo");

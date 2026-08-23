@@ -14,6 +14,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { downloadFile, getFileName } from "@/utils";
 import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
 
@@ -204,7 +205,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
   const selectedId = selectedDiplomacyId;
   const selectedName = states[selectedId].name;
 
-  COArenderer.trigger(`stateCOA${selectedId}`, states[selectedId].coa);
+  EmblemRenderer.trigger(`stateCOA${selectedId}`, states[selectedId].coa);
   let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
     <div data-col="name"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg><span>${states[selectedId].fullName}</span></div>
     <div data-col="relations"></div>
@@ -220,7 +221,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
     const tipChange = `Click to change relations. ${tipText}`;
 
     const name = state.fullName!.length < 23 ? state.fullName : state.name;
-    COArenderer.trigger(`stateCOA${state.i}`, state.coa);
+    EmblemRenderer.trigger(`stateCOA${state.i}`, state.coa);
 
     lines += /* html */ `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
       <div data-col="name" data-tip="${tipSelect}"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg><span>${name}</span></div>

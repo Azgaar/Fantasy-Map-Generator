@@ -3,6 +3,7 @@ import { color, min, select } from "d3";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
+import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
@@ -407,7 +408,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
-    COA.regenerate();
+    Emblems.regenerate();
     ensureEl("emblems").style.display = "";
 
     // v1.5 changed releif icons data
@@ -1567,9 +1568,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     data[50] = JSON.stringify(recoverLayersState());
     if (findEl("fog") && findEl("fogging")) unfog();
 
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
-
     function recoverLayersState(): LayersState {
       const foggingContainer = findEl("fogging-cont");
       const fogging = findEl("fogging");
@@ -1777,40 +1775,84 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.148.0")) {
-    // v1.145-1.147 erase/cleanup bugs stripped the layer style from saved maps (#1594)
+    const DEFTEMP = /* html */ `<g id="deftemp">
+      <g id="featurePaths"></g>
+      <g id="textPaths"></g>
+      <g id="statePaths"></g>
+      <g id="defs-emblems"></g>
+        <mask id="land"></mask>
+        <mask id="water"></mask>
+        <mask id="fog" style="stroke-width: 10; stroke: black; stroke-linejoin: round; stroke-opacity: 0.1">
+          <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
+        </mask>
+      </g>
+      <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
+        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
+      </pattern>
+      <mask id="vignette-mask">
+        <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
+        <rect id="vignette-rect" fill="black" x="0.3%" y="0.4%" width="99.4%" height="99.2%" rx="5%" ry="5%" filter="blur(20px)"></rect>
+      </mask>
+    `;
+
+    restoreMissingDefTemp();
+    function restoreMissingDefTemp(): void {
+      const defs = document.querySelector<SVGDefsElement>("#map defs");
+      if (!defs) return;
+      const template = new DOMParser().parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg">${DEFTEMP}</svg>`,
+        "image/svg+xml"
+      ).documentElement;
+
+      const restored: string[] = [];
+      const restore = (node: Element, parent: Element) => {
+        const existing = findEl(node.id);
+        if (!existing) {
+          parent.append(node.cloneNode(true));
+          restored.push(node.id);
+          return;
+        }
+        for (const child of Array.from(node.children)) if (child.id) restore(child, existing);
+      };
+
+      for (const node of Array.from(template.children)) restore(node, defs);
+      if (restored.length) WARN && console.warn("[Auto-update] Restored missing svg defs:", restored.join(", "));
+    }
+
+    // v1.145-1.147 stripped the layer style from saved maps
     await restoreLayerStyles();
-  }
-}
 
-const RELIEF_OPTIONS = ["set", "size", "density"]; // stored in style.relief
+    async function restoreLayerStyles(): Promise<void> {
+      const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
 
-type PresetStyle = Record<string, string | number | null>;
+      for (const layer of Layers.all) {
+        restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
 
-export async function restoreLayerStyles(): Promise<void> {
-  const [, preset] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
+        for (const child of layer.children) {
+          const style = preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`];
+          restoreGroupStyle(child.id, style, child.attrs);
+        }
+      }
+    }
 
-  for (const layer of Layers.all) {
-    restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);
+    function restoreGroupStyle(
+      id: string,
+      style: Record<string, string | number | null> | undefined,
+      declared?: Record<string, string>
+    ): void {
+      const group = document.getElementById(id);
+      if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
 
-    for (const child of layer.children) {
-      const style = preset[`#${child.id}`] || preset[`#${layer.elementId} > #${child.id}`];
-      restoreGroupStyle(child.id, style, child.attrs);
+      for (const [name, value] of Object.entries(style)) {
+        if (value === null || value === "null") continue;
+        if (id === "terrain" && ["set", "size", "density"].includes(name)) continue;
+        group.setAttribute(name, String(value));
+      }
+    }
+
+    function isBareGroup(group: Element, declared: Record<string, string> = {}): boolean {
+      const ignored = new Set(["id", "style", ...Object.keys(declared)]);
+      return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
     }
   }
-}
-
-function restoreGroupStyle(id: string, style: PresetStyle | undefined, declared?: Record<string, string>): void {
-  const group = document.getElementById(id);
-  if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
-
-  for (const [name, value] of Object.entries(style)) {
-    if (value === null || value === "null") continue;
-    if (id === "terrain" && RELIEF_OPTIONS.includes(name)) continue;
-    group.setAttribute(name, String(value));
-  }
-}
-
-function isBareGroup(group: Element, declared: Record<string, string> = {}): boolean {
-  const ignored = new Set(["id", "style", ...Object.keys(declared)]);
-  return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
 }

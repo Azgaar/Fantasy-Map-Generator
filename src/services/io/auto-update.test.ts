@@ -1,13 +1,19 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import indexHtml from "@/index.html?raw";
 import "@/generators/features"; // migrations call the Features module through its global
-import { resolveVersionConflicts, restoreLayerStyles } from "./auto-update";
+import { VERSION } from "@/services/versioning";
+import { resolveVersionConflicts } from "./auto-update";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
   localStorage.clear();
   globalThis.options = { labels: { groups: [] } } as unknown as typeof globalThis.options;
   globalThis.pack = { features: [] } as unknown as typeof globalThis.pack; // migrations run against a loaded map
+  (globalThis as typeof globalThis & { getStylePreset: () => Promise<[string, object]> }).getStylePreset = async () => [
+    "default",
+    {}
+  ];
 });
 
 describe("v1.144 layer id migration", () => {
@@ -288,134 +294,80 @@ describe("v1.146 rendering groups", () => {
   });
 });
 
-const PRESET = {
-  "#cults": { opacity: 0.6, stroke: "#777777", "stroke-width": 0.5, filter: null },
-  "#searoutes": { opacity: 0.9, stroke: "#ffffff", "stroke-width": 0.35, mask: null },
-  "#terrain": { opacity: 0.8, set: "simple", size: 1, density: 0.4 },
-  "#fogging": { opacity: 0.98, fill: "#30426f" },
-  "#terrs > #landHeights": { opacity: 1, scheme: "bright", mask: "url(#land)" }
-};
+// the .map file carries the whole #map svg, so its defs are only what the file was saved with
+describe("missing svg defs", () => {
+  const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
 
-const viewbox = (html: string) => {
-  document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">${html}</g></svg>`;
-};
+  it("recreates the defs an old saved svg never had", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
 
-const attrs = (id: string) => {
-  const el = document.getElementById(id)!;
-  return Object.fromEntries(Array.from(el.attributes, a => [a.name, a.value]));
-};
+    resolveVersionConflicts("1.147.0", []);
 
-beforeEach(() => {
-  viewbox("");
-  localStorage.clear();
-  (globalThis as { getStylePreset?: unknown }).getStylePreset = vi.fn(async () => ["default", PRESET]);
-});
-
-describe("restoreLayerStyles", () => {
-  it("restores the preset style of a bare layer group", async () => {
-    viewbox(/* html */ `<g id="cults" style="display: none;"></g>`);
-
-    await restoreLayerStyles();
-
-    expect(attrs("cults")).toMatchObject({ opacity: "0.6", stroke: "#777777", "stroke-width": "0.5" });
+    expect(getDeftempIds()).toEqual([
+      "featurePaths",
+      "textPaths",
+      "statePaths",
+      "defs-emblems",
+      "land",
+      "water",
+      "fog"
+    ]);
+    expect(document.querySelector("#fog rect")).not.toBeNull();
+    expect(document.getElementById("oceanicPattern")).not.toBeNull();
+    expect(document.getElementById("vignette-rect")).not.toBeNull();
   });
 
-  it("restores the preset style of a bare declared child group", async () => {
-    viewbox(/* html */ `<g id="routes"><g id="searoutes"></g></g>`);
+  // a pre-v1.104 svg: the feature geometry is inlined into the masks and #featurePaths is absent
+  it("adds only what is missing, leaving the existing defs alone", () => {
+    document.body.innerHTML = /* html */ `<svg id="map">
+      <defs>
+        <g id="deftemp">
+          <mask id="land"><path id="land_2"></path></mask>
+          <mask id="water"><path id="water_2"></path></mask>
+          <g id="textPaths"><path id="textPath_1"></path></g>
+          <g id="statePaths"></g>
+          <mask id="fog"><rect></rect></mask>
+        </g>
+      </defs>
+      <g id="viewbox"></g>
+    </svg>`;
 
-    await restoreLayerStyles();
+    resolveVersionConflicts("1.147.0", []);
 
-    expect(attrs("searoutes")).toMatchObject({ opacity: "0.9", stroke: "#ffffff", "stroke-width": "0.35" });
+    expect(getDeftempIds()).toEqual([
+      "land",
+      "water",
+      "textPaths",
+      "statePaths",
+      "fog",
+      "featurePaths",
+      "defs-emblems"
+    ]);
+    expect(document.querySelectorAll("#textPaths path")).toHaveLength(1); // existing content is left alone
+    expect(document.getElementById("vignette-rect")).not.toBeNull();
   });
 
-  it("resolves a child group through its parent selector", async () => {
-    viewbox(/* html */ `<g id="terrs"><g id="landHeights"></g></g>`);
+  it("leaves current maps alone", () => {
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
 
-    await restoreLayerStyles();
+    resolveVersionConflicts(VERSION, []);
 
-    expect(attrs("landHeights")).toMatchObject({ scheme: "bright", mask: "url(#land)" });
+    expect(document.getElementById("deftemp")).toBeNull();
   });
 
-  it("skips the attributes the preset nulls out", async () => {
-    viewbox(/* html */ `<g id="cults"></g>`);
+  // the migration carries its own copy of the markup, so it drifts the moment index.html gains a
+  // defs element it does not know about. #filters is out of scope: it is large, static and old maps have it
+  it("restores every defs element index.html declares", () => {
+    const defs = indexHtml.slice(
+      indexHtml.indexOf("<defs>", indexHtml.indexOf('id="map"')),
+      indexHtml.indexOf("</defs>")
+    );
+    const declared = Array.from(defs.replace(/<g id="filters">[\s\S]*?<\/g>/, "").matchAll(/\bid="([^"]+)"/g));
 
-    await restoreLayerStyles();
+    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
+    resolveVersionConflicts("1.147.0", []);
 
-    expect(document.getElementById("cults")!.hasAttribute("filter")).toBe(false);
-  });
-
-  it("leaves a group that still has any style attribute alone", async () => {
-    viewbox(/* html */ `<g id="cults" stroke="#123456"></g>`);
-
-    await restoreLayerStyles();
-
-    expect(attrs("cults")).toEqual({ id: "cults", stroke: "#123456" });
-  });
-
-  it("heals a group whose only attributes are the ones the registry declares", async () => {
-    viewbox(/* html */ `<g id="fogging" mask="url(#fog)"></g>`);
-
-    await restoreLayerStyles();
-
-    expect(attrs("fogging")).toMatchObject({ opacity: "0.98", fill: "#30426f" });
-  });
-
-  it("does not write the relief options onto the terrain group", async () => {
-    viewbox(/* html */ `<g id="terrain"></g>`);
-
-    await restoreLayerStyles();
-
-    expect(attrs("terrain")).toEqual({ id: "terrain", opacity: "0.8" });
-  });
-
-  it("leaves a bare group the preset says nothing about alone", async () => {
-    viewbox(/* html */ `<g id="debug"></g>`);
-
-    await restoreLayerStyles();
-
-    expect(attrs("debug")).toEqual({ id: "debug" });
-  });
-
-  it("ignores an element that is not a group", async () => {
-    viewbox(/* html */ `<rect id="cults"></rect>`);
-
-    await restoreLayerStyles();
-
-    expect(attrs("cults")).toEqual({ id: "cults" });
-  });
-
-  it("uses the preset the user last selected", async () => {
-    localStorage.setItem("presetStyle", "ancient");
-    viewbox(/* html */ `<g id="cults"></g>`);
-
-    await restoreLayerStyles();
-
-    expect((globalThis as unknown as { getStylePreset: unknown }).getStylePreset).toHaveBeenCalledWith("ancient");
-  });
-
-  describe("wound detection", () => {
-    it("does not run for maps saved at or after the version that shipped it", async () => {
-      viewbox(/* html */ `<g id="cults"></g>`);
-
-      await resolveVersionConflicts("1.148.0", []);
-
-      expect(attrs("cults")).toEqual({ id: "cults" });
-    });
-
-    it("runs as a standard migration for older maps", async () => {
-      viewbox(/* html */ `<g id="cults"></g>`);
-
-      await resolveVersionConflicts("1.147.1", []);
-
-      expect(attrs("cults")).toMatchObject({ opacity: "0.6" });
-    });
-
-    it("heals the first version that could be damaged", async () => {
-      viewbox(/* html */ `<g id="cults"></g>`);
-
-      await restoreLayerStyles();
-
-      expect(document.getElementById("cults")!.getAttribute("stroke")).toBe("#777777");
-    });
+    const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
+    expect(restored).toEqual(declared.map(([, id]) => id));
   });
 });

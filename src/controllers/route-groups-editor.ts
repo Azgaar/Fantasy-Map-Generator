@@ -108,6 +108,7 @@ function removeGroup(group: string): void {
     onConfirm: () => {
       pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
       if (!DEFAULT_GROUPS.includes(group)) select("#routes").select(`#${group}`).remove();
+      Layers.draw("labels");
       addLines();
     }
   });

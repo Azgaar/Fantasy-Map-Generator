@@ -454,6 +454,7 @@ function removeRoute(): void {
     confirm: "Remove",
     onConfirm: () => {
       Routes.remove(getRoute());
+      Layers.draw("labels");
       $("#routeEditor").dialog("close");
     }
   });
