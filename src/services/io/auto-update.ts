@@ -11,7 +11,7 @@ import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
-import { labelGroupFromLegacy } from "@/styles/legacy";
+import { isLegacyPreset, labelGroupFromLegacy, presetToLegacy } from "@/styles/legacy";
 import { parseStyles, styles } from "@/styles/styles";
 import type { ReliefSet } from "@/types/relief";
 import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
@@ -1825,7 +1825,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     async function restoreLayerStyles(): Promise<void> {
       const [, raw] = await (window as any).getStylePreset(localStorage.getItem("presetStyle") || "default");
-      const preset = stylesLegacy.isLegacyPreset(raw) ? raw : stylesLegacy.presetToLegacy(parseStyles(raw));
+      const preset = isLegacyPreset(raw) ? raw : presetToLegacy(parseStyles(raw));
 
       for (const layer of Layers.all) {
         restoreGroupStyle(layer.elementId, preset[`#${layer.elementId}`], layer.params.attrs);

@@ -88,3 +88,11 @@ test("R8: presetToLegacy round-trips every fixture key/value (superset is fine)"
     }
   }
 });
+
+test("R8: the heal-consumed #terrs > #landHeights bag carries no keys beyond the fixture's", () => {
+  const roundTripped = presetToLegacy(presetFromLegacy(fixture as any));
+  const selector = "#terrs > #landHeights";
+  const fixtureKeys = Object.keys((fixture as Record<string, Record<string, unknown>>)[selector]);
+  expect(Object.keys(roundTripped[selector])).toEqual(expect.arrayContaining(fixtureKeys));
+  expect(Object.keys(roundTripped[selector])).toHaveLength(fixtureKeys.length);
+});
