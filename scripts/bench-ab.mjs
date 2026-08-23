@@ -7,7 +7,7 @@
 // meet the same neighbours, so the ratio survives what the raw numbers do not.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -24,6 +24,11 @@ const parseArgs = argv => {
     else if (argv[i] === "--markdown-out") args.markdownOut = next();
   }
   return args;
+};
+
+const writeOutput = (filePath, contents) => {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, contents);
 };
 
 const run = (cmd, cmdArgs, cwd) =>
@@ -134,7 +139,7 @@ rows.sort((a, b) => Number.parseFloat(b.change) - Number.parseFloat(a.change));
 if (rows.length === 0) {
   console.error(`No comparable benchmarks between ${base} and ${head} (one of the refs predates this bench suite).`);
   if (markdownOut) {
-    writeFileSync(
+    writeOutput(
       markdownOut,
       `### Benchmark results (A/B vs \`master\`)\n\nNo comparable benchmarks yet — \`${base}\` predates this benchmark suite.\n`
     );
@@ -144,8 +149,8 @@ if (rows.length === 0) {
 
 console.table(rows);
 
-if (jsonOut) writeFileSync(jsonOut, JSON.stringify(rows, null, 2));
-if (markdownOut) writeFileSync(markdownOut, toMarkdown(rows, threshold, regressed));
+if (jsonOut) writeOutput(jsonOut, JSON.stringify(rows, null, 2));
+if (markdownOut) writeOutput(markdownOut, toMarkdown(rows, threshold, regressed));
 
 if (regressed) {
   console.error(`\nRegression: a benchmark is more than ${(threshold * 100).toFixed(0)}% slower than ${base}.`);
