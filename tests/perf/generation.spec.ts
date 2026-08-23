@@ -1,8 +1,5 @@
 import { test } from "@playwright/test";
 
-// Fixed seeds so base and head generate the exact same map (Math.random is reseeded via
-// aleaPRNG(seed) in setSeed()): a mismatch here would mean generation itself diverged between
-// the two refs, which is worth surfacing on its own rather than just comparing timings.
 const SEEDS = ["100000000", "200000000"];
 
 const STAGE_TIME_RE = /^([\w.]+): ([\d.]+) ?ms$/;
@@ -24,8 +21,6 @@ for (const seed of SEEDS) {
       if (totalMatch) totalMs = Number(totalMatch[1]) * 1000;
     });
 
-    // map:generated fires (in showStatistics(), at the very end of generate()) before Playwright
-    // could otherwise observe it, so register the listener via an init script ahead of navigation.
     await page.addInitScript(() => {
       window.addEventListener("map:generated", event => {
         (window as unknown as { __mapGenerated: unknown }).__mapGenerated = (event as CustomEvent).detail;

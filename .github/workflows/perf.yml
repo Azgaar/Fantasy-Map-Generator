@@ -5,9 +5,6 @@ on:
 
   workflow_dispatch:
 
-# No write permissions here on purpose: this workflow runs the (untrusted) PR's own code, so fork
-# PRs would only get GITHUB_TOKEN read access anyway. Posting the PR comment happens in
-# perf-comment.yml, which runs in the base repo's trusted context.
 permissions:
   contents: read
 
@@ -40,10 +37,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      # Alternates base (master) and head (this PR) on the same runner across several rounds and
-      # compares median per-metric ratios, so a busy neighbour on the shared runner cancels out
-      # instead of needing a threshold wide enough to hide it. Measures real map generation
-      # (fixed seeds) and a scripted zoom/pan gesture over a real fixture map, not synthetic data.
       - name: Run A/B perf benchmarks against master
         id: perf
         continue-on-error: true

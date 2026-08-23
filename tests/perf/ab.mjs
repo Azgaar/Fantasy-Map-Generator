@@ -1,15 +1,4 @@
 #!/usr/bin/env node
-// Compare two git refs on real generation + interaction, alternating which ref runs first across
-// several rounds and reporting the median per-metric ratio.
-//
-// Absolute timings on a shared CI runner are worthless on their own: a busy neighbour moves every
-// result by tens of percent. Alternating means both refs meet the same neighbours, so the ratio
-// survives what the raw numbers do not (see scripts history on PR #1601 for the failed
-// stored-baseline attempt this replaces).
-//
-// Each ref is built and served exactly once (not once per round): only the Playwright run itself
-// repeats, so 3 rounds cost ~3x a single comparison, not ~3x a full build+comparison.
-
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -55,9 +44,7 @@ async function waitForServer(url, timeoutMs = 60_000) {
     try {
       const res = await fetch(url);
       if (res.ok || res.status === 404) return;
-    } catch {
-      // not up yet
-    }
+    } catch {}
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   throw new Error(`Server at ${url} did not become ready within ${timeoutMs}ms`);
@@ -139,7 +126,6 @@ try {
   headServer = await buildAndServe(headDir, HEAD_PORT, "head");
 
   for (let round = 1; round <= rounds; round++) {
-    // order flips each round so a drifting machine cannot favour one ref
     const first = round % 2 ? ["base", "head"] : ["head", "base"];
     const results = new Map();
     for (const which of first) {
@@ -166,10 +152,6 @@ try {
   }
 }
 
-// Sub-millisecond stages are dominated by JIT/GC jitter, not signal: a stage that takes ~0.3ms can
-// easily read +50% between two runs of the exact same code. Still report them (useful context,
-// e.g. spotting a stage that suddenly costs 10x more in absolute terms), just don't let them gate
-// the check the way `total` and `gesture` (both in the tens/hundreds of ms) meaningfully can.
 const MIN_MEASURABLE_MS = 2;
 
 const rows = [];
