@@ -18,28 +18,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
       - name: Install dependencies
         run: npm ci
 
-      - name: Run benchmarks
+      # Alternates base (master) and head (this PR) on the same runner across
+      # several rounds and compares median per-benchmark ratios, so a busy
+      # neighbour on the shared runner cancels out instead of needing a
+      # generous/noisy threshold against a baseline captured on another run.
+      - name: Run A/B benchmarks against master
         id: bench
         continue-on-error: true
-        run: npm run bench:check
-
-      - name: Upload current benchmark results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-current
-          path: bench/current.json
-          if-no-files-found: ignore
+        run: npm run bench:ab -- --base origin/master --head HEAD --rounds 3 --threshold 0.25 --markdown-out bench/comment.md
 
       - name: Save PR number
         if: always() && github.event_name == 'pull_request'
-        run: echo "${{ github.event.pull_request.number }}" > bench/pr-number.txt
+        run: |
+          mkdir -p bench
+          echo "${{ github.event.pull_request.number }}" > bench/pr-number.txt
 
       - name: Upload benchmark comment artifact
         if: always() && github.event_name == 'pull_request'

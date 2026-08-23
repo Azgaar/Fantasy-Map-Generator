@@ -5,8 +5,8 @@
 */node_modules
 /dist
 /coverage
-/bench/current.json
 /bench/comment.md
+/bench/*.json
 /playwright-report
 /test-results
 /_bmad
