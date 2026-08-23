@@ -102,11 +102,18 @@
     "filter": "url(#dropShadow01)",
     "style": "display: none;"
   },
-  "#goodsCells": {},
+  "#goodsCells": {
+    "opacity": "1"
+  },
   "#goodsIcons": {
     "data-circle": "1"
   },
-  "#goodsBurgs": {},
+  "#goodsBurgs": {
+    "opacity": "1",
+    "stroke": "#41414f",
+    "stroke-width": "0.2",
+    "data-size": "3"
+  },
   "#gridOverlay": {
     "opacity": "0.8",
     "stroke": "#808080",
@@ -278,6 +285,10 @@
     "stroke-linecap": "round"
   },
   "#ruler": {
+    "stroke-width": "2",
+    "stroke-dasharray": "10",
+    "font-size": "20",
+    "data-size": "20",
     "style": "display: none;"
   },
   "#scaleBar": {
