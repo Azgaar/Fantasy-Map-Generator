@@ -1,0 +1,4 @@
+[Main Page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki) | [Quick Start Tutorial](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial) | [Q&A](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A) | [Shortcuts](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys) | [URL parameters](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/URL-parameters) | [Changelog](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog)
+
+---
+_These pages are maintained in the [main repository](https://github.com/Azgaar/Fantasy-Map-Generator/tree/master/docs/wiki) and synced automatically. Edits made here will be overwritten — please open a pull request instead._
