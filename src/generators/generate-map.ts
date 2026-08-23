@@ -1,4 +1,3 @@
-import type { PackedGraph } from "@/types/PackedGraph";
 import { AddedLabels } from "./added-labels";
 import { Biomes } from "./biomes-generator";
 import { Burgs } from "./burgs-generator";
@@ -20,15 +19,9 @@ import { Routes } from "./routes-generator";
 import { States } from "./states-generator";
 import { Zones } from "./zones-generator";
 
-/**
- * The single source of truth for map generation order. Each stage below reads state a prior
- * stage wrote to `grid`/`pack` — the imports above are the real dependency graph; the call
- * order is a stand-in for a proper DAG until one exists. Do not reorder without checking what
- * the moved stage reads and who reads what it writes.
- */
-export async function generateMap(grid: any): Promise<void> {
+export async function generateMap(): Promise<void> {
   grid.cells.h = await HeightmapGenerator.generate(grid);
-  pack = {} as PackedGraph;
+  pack = {} as typeof pack;
 
   Features.markupGrid();
   addLakesInDeepDepressions();

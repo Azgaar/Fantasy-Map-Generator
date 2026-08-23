@@ -137,7 +137,7 @@ declare global {
   var fitMapToScreen: () => void;
   var regenerateMap: (reason?: string) => void;
   var defineMapSize: () => void;
-  var generateMap: (grid: any) => Promise<void>;
+  var generateMap: () => Promise<void>;
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
   var updateTextureSelectValue: (href: string) => void;
