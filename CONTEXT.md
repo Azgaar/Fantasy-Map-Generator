@@ -19,7 +19,7 @@
 - `src/types/`: Shared TypeScript interfaces and domain models.
 - `src/utils/`: Generic helper functions.
 - `public/`: Static assets and NON-MIGRATED JS Code in `public/modules`. `public/libs/` holds vendored third-party scripts for legacy code only — new `src/` code imports deps from npm (no `src/libs/`).
-- `docs/`: Domain and architectural documentation. See `docs/architecture/architecture.md` "Project Structure" for the full layout and a "where does my file go?" guide.
+- `docs/`: Domain, architectural documentation and user-facing wiki.
 - `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.
 - `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing.
 

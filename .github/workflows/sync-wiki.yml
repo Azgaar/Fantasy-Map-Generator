@@ -1,0 +1,39 @@
+name: Sync wiki
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/wiki/**"
+      - "scripts/sync-wiki.js"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# The wiki is a single mirror target, so never publish two versions at once
+concurrency:
+  group: "wiki"
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+
+      - name: Mirror docs/wiki to the wiki repository
+        env:
+          # GITHUB_TOKEN should cover the wiki repo; set the WIKI_TOKEN secret
+          # to a PAT with repo scope if pushes come back 403.
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+        run: node scripts/sync-wiki.js --message "Sync wiki from ${{ github.sha }}"

@@ -28,25 +28,26 @@ We don't care what tools you use to write code, including LLMs, as long as your 
 
 Before opening a Pull Request, ensure your code meets the following technical gates:
 
-* Your code must adhere to our project formatting rules. Refer to [`biome.json`](./biome.json) for guidelines.
-* Familiarize yourself with [`docs/architecture`](./docs/architecture) before making structural edits or introducing new patterns.
-* Prioritize performance. Code that runs during page load or map creation is a hot path: avoid unnecessary work and verify that changes do not noticeably slow generation.
-* All automated tests must pass.
-* The linter must pass with zero errors/warnings.
-* The production build must complete clean with no errors.
+- Your code must adhere to our project formatting rules. Refer to [`biome.json`](./biome.json) for guidelines.
+- Familiarize yourself with [`docs/architecture`](./docs/architecture) before making structural edits or introducing new patterns.
+- Prioritize performance. Code that runs during page load or map creation is a hot path: avoid unnecessary work and verify that changes do not noticeably slow generation.
+- All automated tests must pass.
+- The linter must pass with zero errors/warnings.
+- The production build must complete clean with no errors.
+- If your change alters user-visible behaviour, update the changelog in the root.
 
 ## 4. Pull Request and Review Process
 
-* **Scope Check:** Ensure your PR addresses a single problem or feature.
-* **Maintainer Authority:** Azgaar has the final say on all code merges (Go / No-Go). To preserve maintainer bandwidth, **PRs that do not follow these guidelines may be closed with only a brief explanation.**
-* **Commit Squashing:** Note that commits may be squashed into a single clean commit upon merging into the main branch.
+- **Scope Check:** Ensure your PR addresses a single problem or feature.
+- **Maintainer Authority:** Azgaar has the final say on all code merges (Go / No-Go). To preserve maintainer bandwidth, **PRs that do not follow these guidelines may be closed with only a brief explanation.**
+- **Commit Squashing:** Note that commits may be squashed into a single clean commit upon merging into the main branch.
 
 ## 5. Contributor Recognition and Perks
 
 We value everyone who contributes to making the Fantasy Map Generator better! When your PR is merged, you will receive:
 
-* **Git History Attribution:** Your name/handle will remain permanently in the Git commit history (even if commits are squashed).
-* **GitHub Contributors Page:** You will be automatically listed on the repository's official GitHub Contributors tab.
-* **Discord Contributor Role:** You get access to an exclusive, private channel on our Discord server. *(Direct message `@azgaar.fmg` on Discord with your merged PR link to claim your role!)*
+- **Git History Attribution:** Your name/handle will remain permanently in the Git commit history (even if commits are squashed).
+- **GitHub Contributors Page:** You will be automatically listed on the repository's official GitHub Contributors tab.
+- **Discord Contributor Role:** You get access to an exclusive, private channel on our Discord server. _(Direct message `@azgaar.fmg` on Discord with your merged PR link to claim your role!)_
 
-*Thank you for contributing and helping build the best Map Generator!*
+_Thank you for contributing and helping build the best Map Generator!_
