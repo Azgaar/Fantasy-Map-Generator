@@ -7,9 +7,9 @@ const PRESETS = [
   "clean", "atlas", "darkSeas", "cyberpunk", "night", "monochrome"
 ];
 
-function oceanBaseFill(preset: string): string {
+function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} {
   const json = JSON.parse(fs.readFileSync(path.join(__dirname, `../../public/styles/${preset}.json`), "utf8"));
-  return json.ocean.base.attrs.fill;
+  return {oceanFill: json.ocean.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
 }
 
 async function switchTo(page: Page, preset: string) {
@@ -18,13 +18,40 @@ async function switchTo(page: Page, preset: string) {
   }, preset);
 }
 
+// two independently-sourced attributes (ocean vs landmass fill) so a preset apply that silently
+// no-ops can't hide behind the previous preset's leftover value - see the collision check below
+async function readPinnedAttrs(page: Page) {
+  const oceanFill = await page.locator("#oceanBase").getAttribute("fill");
+  const landmassFill = await page.locator("#landmass").getAttribute("fill");
+  return {oceanFill, landmassFill};
+}
+
+// night and monochrome both ship ocean.base.attrs.fill = #000000 (and other adjacent pairs could
+// coincide the same way as presets evolve) - a single pinned attribute can't tell "applied" from
+// "no-op" for such a pair. Fail loudly, at spec-load time, if any adjacent switch (including the
+// revert-to-default at the end) wouldn't actually change what's pinned.
+const switchOrder = [...PRESETS, "default"];
+for (let i = 1; i < switchOrder.length; i++) {
+  const prev = pinnedAttrs(switchOrder[i - 1]);
+  const curr = pinnedAttrs(switchOrder[i]);
+  if (prev.oceanFill === curr.oceanFill && prev.landmassFill === curr.landmassFill) {
+    throw new Error(
+      `pinned attrs do not discriminate ${switchOrder[i - 1]} -> ${switchOrder[i]}: both are ${JSON.stringify(curr)}`
+    );
+  }
+}
+
 test("every shipped preset applies through the store with no console errors", async ({page}) => {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   page.on("console", (msg: ConsoleMessage) => {
-    // openwidget.min.js pulls a third-party chat widget from cdn.openwidget.com; this test
-    // environment has no route to it, so it always fails to load - unrelated to preset styling
-    if (msg.type() === "error" && !msg.text().includes("ERR_CONNECTION_REFUSED")) consoleErrors.push(msg.text());
+    // src/index.html loads Google Tag Manager unconditionally from a static <script> tag; this
+    // test sandbox has no route to it, so it always fails to load - unrelated to preset styling.
+    // Scoped to the resource's own URL (not the generic ERR_CONNECTION_REFUSED text) so a real
+    // connection failure from the style pipeline itself still fails the test.
+    if (msg.type() === "error" && !msg.location().url.includes("googletagmanager")) {
+      consoleErrors.push(msg.text());
+    }
   });
   page.on("pageerror", err => pageErrors.push(err.message));
 
@@ -40,13 +67,13 @@ test("every shipped preset applies through the store with no console errors", as
     await switchTo(page, preset);
     await page.waitForTimeout(100);
 
-    const fill = await page.locator("#oceanBase").getAttribute("fill");
-    expect(fill, preset).toBe(oceanBaseFill(preset));
+    const attrs = await readPinnedAttrs(page);
+    expect(attrs, preset).toEqual(pinnedAttrs(preset));
   }
 
   await switchTo(page, "default");
-  const revertedFill = await page.locator("#oceanBase").getAttribute("fill");
-  expect(revertedFill).toBe(oceanBaseFill("default"));
+  const reverted = await readPinnedAttrs(page);
+  expect(reverted, "revert to default").toEqual(pinnedAttrs("default"));
 
   expect(consoleErrors, "console errors during preset switching").toEqual([]);
   expect(pageErrors, "page errors during preset switching").toEqual([]);
