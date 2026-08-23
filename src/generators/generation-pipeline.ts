@@ -1,7 +1,8 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
 // See docs/prd/generator-dependency-graph.md and docs/domain/generation_pipeline.md.
+
+import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { Pipeline, type PipelineStep } from "@/utils/pipeline";
 
 const pipelineSteps = [
   {
@@ -158,6 +159,6 @@ export function createErasePipeline(erosionAllowed: boolean): Pipeline<PipelineS
 
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var GenerationPipeline: import("@/utils/pipeline").Pipeline<PipelineStepId>;
+  var GenerationPipeline: import("@/generators/pipeline").Pipeline<PipelineStepId>;
 }
 window.GenerationPipeline = GenerationPipeline;
