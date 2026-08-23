@@ -718,7 +718,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();
-    toast("Map is successfully loaded", "success", 7000);
+    // Pinned main tip, not a toast: several e2e specs wait on #tooltip's text as the
+    // "map finished loading" signal.
+    tip("Map is successfully loaded", true);
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();

@@ -22,7 +22,7 @@ import {
   range,
   select
 } from "d3";
-import { toast } from "../components/toast";
+import { tip } from "../components/tooltips";
 import { round } from "../utils";
 
 const CURVE_MAP: Record<string, CurveFactory> = {
@@ -46,7 +46,8 @@ const CURVE_MAP: Record<string, CurveFactory> = {
 };
 
 export const drawHeightmap = (): void => {
-  if (customization === 1) return void toast("The Layer control is not available in the heightmap edit mode", "error");
+  // Pinned main tip, not a toast: layer-teardown e2e specs assert on #tooltip's text here.
+  if (customization === 1) return void tip("The Layer control is not available in the heightmap edit mode");
 
   TIME && console.time("drawHeightmap");
 
