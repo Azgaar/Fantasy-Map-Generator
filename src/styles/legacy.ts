@@ -133,7 +133,13 @@ export function stylesFromLegacy(json: unknown): void {
 // selector -> store path, plus the legacy-key -> option-name renames for that node. Attrs need
 // no listing: any bag key left after options are pulled out is overlaid onto the path's attrs
 // by name, so an unrecognized key is what "unknown legacy attribute" catches.
-type PresetRoute = { path: string[]; options?: Record<string, string>; bools?: string[]; kind?: "label" | "burg" };
+type PresetRoute = {
+  path: string[];
+  options?: Record<string, string>;
+  bools?: string[];
+  kind?: "label" | "burg";
+  drop?: string[];
+};
 
 const SELECTOR_ALIASES: Record<string, string> = {
   "#terrs #landHeights": "#terrs > #landHeights",
@@ -187,7 +193,9 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#cults": { path: ["cultures"] },
   "#statesBody": { path: ["states", "statesBody"] },
   "#statesHalo": { path: ["states", "statesHalo"], options: { "data-width": "width" } },
-  "#provs": { path: ["provinces"] },
+  // data-size was never written by collectStyleData (public/modules/ui/style-presets.js:291);
+  // it's dead cargo left over next to font-size in older saves/presets
+  "#provs": { path: ["provinces"], drop: ["data-size"] },
   "#zones": { path: ["zones"] },
   "#stateBorders": { path: ["borders", "stateBorders"] },
   "#provinceBorders": { path: ["borders", "provinceBorders"] },
@@ -275,7 +283,7 @@ function applyPresetBag(
   onUnknown: "throw" | "skip"
 ): void {
   const rest: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(bag)) if (key !== "id") rest[key] = value;
+  for (const [key, value] of Object.entries(bag)) if (key !== "id" && !route.drop?.includes(key)) rest[key] = value;
 
   const seen: Record<string, unknown> = {};
   for (const [legacyKey, optionKey] of Object.entries(route.options ?? {})) {

@@ -1118,6 +1118,7 @@ export const DEFAULT_STYLES: Styles = {
   },
   military: {
     attrs: {
+      opacity: null,
       stroke: "#000",
       "stroke-width": 0.3,
       "stroke-dasharray": null,

@@ -154,7 +154,10 @@ export const stylesSchema = z
     ),
     trade: attrs({ opacity, filter }),
     markers: node({ opacity, filter }, { rescale: z.number() }),
-    military: node({ ...strokeAttrs, "fill-opacity": opacity, filter }, { fontSize: z.number(), boxSize: z.number() }),
+    military: node(
+      { opacity, ...strokeAttrs, "fill-opacity": opacity, filter },
+      { fontSize: z.number(), boxSize: z.number() }
+    ),
     rulers: node(
       { opacity, "stroke-width": width, "stroke-dasharray": dasharray, "stroke-linecap": linecap, filter },
       { fontSize: z.number() }
