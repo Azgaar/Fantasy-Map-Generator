@@ -1,0 +1,36 @@
+name: Comment Benchmark Results
+on:
+  workflow_run:
+    workflows: [Performance Benchmarks]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download benchmark comment artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: bench-comment
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: bench
+
+      - name: Read PR number
+        if: steps.download.outcome == 'success'
+        id: pr
+        run: echo "number=$(cat bench/pr-number.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Comment benchmark results on PR
+        if: steps.download.outcome == 'success'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: benchmark-results
+          path: bench/comment.md
+          number: ${{ steps.pr.outputs.number }}

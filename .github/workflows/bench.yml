@@ -1,0 +1,57 @@
+name: Performance Benchmarks
+on:
+  pull_request:
+    branches: [master]
+
+  workflow_dispatch:
+
+# No write permissions here on purpose: this workflow runs the (untrusted)
+# PR's own code, so fork PRs would only get GITHUB_TOKEN read access anyway.
+# Posting the PR comment happens in bench-comment.yml, which runs in the base
+# repo's context and can safely have write access.
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+
+      # Alternates base (master) and head (this PR) on the same runner across
+      # several rounds and compares median per-benchmark ratios, so a busy
+      # neighbour on the shared runner cancels out instead of needing a
+      # generous/noisy threshold against a baseline captured on another run.
+      - name: Run A/B benchmarks against master
+        id: bench
+        continue-on-error: true
+        run: npm run bench:ab -- --base origin/master --head HEAD --rounds 3 --threshold 0.25 --markdown-out bench/comment.md
+
+      - name: Save PR number
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          mkdir -p bench
+          echo "${{ github.event.pull_request.number }}" > bench/pr-number.txt
+
+      - name: Upload benchmark comment artifact
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-comment
+          path: |
+            bench/comment.md
+            bench/pr-number.txt
+          if-no-files-found: ignore
+
+      - name: Fail job on performance regression
+        if: steps.bench.outcome == 'failure'
+        run: exit 1
