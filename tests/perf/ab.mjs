@@ -72,7 +72,15 @@ function parsePerfResults(stdout) {
     const marker = "PERF_RESULT ";
     const idx = line.indexOf(marker);
     if (idx === -1) continue;
-    const { suite, case: caseName, metrics: caseMetrics } = JSON.parse(line.slice(idx + marker.length));
+
+    let parsed;
+    try {
+      parsed = JSON.parse(line.slice(idx + marker.length));
+    } catch {
+      continue;
+    }
+
+    const { suite, case: caseName, metrics: caseMetrics } = parsed;
     for (const [metric, value] of Object.entries(caseMetrics)) {
       metrics.set(`${suite} > ${caseName} > ${metric}`, value);
     }

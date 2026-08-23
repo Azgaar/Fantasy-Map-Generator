@@ -11,11 +11,12 @@ export function timeStart(label: string): void {
 }
 
 export function timeEnd(label: string): void {
-  console.timeEnd(label);
   const start = starts.get(label);
   if (start === undefined) return;
   starts.delete(label);
+  console.timeEnd(label);
 
+  if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent<PerfStageEventDetail>("perf:stage", { detail: { stage: label, ms: performance.now() - start } })
   );

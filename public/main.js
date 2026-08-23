@@ -1070,7 +1070,8 @@ function showStatistics(totalMs) {
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId, totalMs } }));
+  const detail = typeof totalMs === "number" ? { seed, mapId, totalMs } : { seed, mapId };
+  window.dispatchEvent(new CustomEvent("map:generated", { detail }));
 }
 
 const regenerateMap = debounce(async function (config) {
