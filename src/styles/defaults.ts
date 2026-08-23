@@ -12,17 +12,21 @@ export const DEFAULT_STYLES: Styles = {
     }
   },
   ocean: {
-    attrs: {
-      filter: null
-    },
     options: {
-      outline: "-6,-3,-1",
       pattern: "./images/pattern1.png",
       patternOpacity: 0.2
     },
     base: {
       attrs: {
         fill: "#466eab"
+      }
+    },
+    oceanLayers: {
+      attrs: {
+        filter: null
+      },
+      options: {
+        outline: "-6,-3,-1"
       }
     }
   },
@@ -449,7 +453,7 @@ export const DEFAULT_STYLES: Styles = {
   },
   labels: {
     attrs: {
-      "font-size": 100
+      "font-size": "100px"
     },
     groups: {
       capital: {

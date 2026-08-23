@@ -48,3 +48,15 @@ describe("parseStyles", () => {
     expect(parseStyles(doc).rivers.attrs.filter).toBeNull();
   });
 });
+
+describe("schema reconciliation", () => {
+  test("ocean filter and outline live under the oceanLayers subgroup", () => {
+    expect(DEFAULT_STYLES.ocean.oceanLayers.attrs.filter).toBeNull();
+    expect(DEFAULT_STYLES.ocean.oceanLayers.options.outline).toBe("-6,-3,-1");
+    expect(DEFAULT_STYLES.ocean.options).toEqual({ pattern: "./images/pattern1.png", patternOpacity: 0.2 });
+  });
+
+  test("labels base font-size is the css length the registry stamps", () => {
+    expect(DEFAULT_STYLES.labels.attrs["font-size"]).toBe("100px");
+  });
+});

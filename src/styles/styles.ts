@@ -57,10 +57,10 @@ export const stylesSchema = z
     map: node({ "background-color": color, filter }, { dataFilter: z.string().nullable() }),
     ocean: z
       .object({
-        attrs: z.object({ filter }).strict(),
         // pattern/patternOpacity style #oceanicPattern, a defs resource the renderer owns
-        options: z.object({ outline: z.string(), pattern: z.string(), patternOpacity: z.number() }).strict(),
-        base: attrs({ fill: color })
+        options: z.object({ pattern: z.string(), patternOpacity: z.number() }).strict(),
+        base: attrs({ fill: color }),
+        oceanLayers: node({ filter }, { outline: z.string() })
       })
       .strict(),
     landmass: attrs({ opacity, fill: color, filter }),
@@ -130,7 +130,7 @@ export const stylesSchema = z
       .strict(),
     labels: z
       .object({
-        attrs: z.object({ "font-size": width }).strict(),
+        attrs: z.object({ "font-size": cssLength }).strict(),
         groups: z.record(z.string(), labelGroup)
       })
       .strict(),
