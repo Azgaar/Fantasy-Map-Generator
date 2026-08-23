@@ -1,10 +1,32 @@
+import fs from "fs";
 import path from "path";
 import { test } from "@playwright/test";
 
-// Both refs load the exact same fixture, so any timing difference is down to the code, not
-// the data. Uses the most recent fixture so map-loading itself (a fixed migration cost paid
-// once per gesture) doesn't dominate the interaction being measured.
-const FIXTURE_PATH = path.join(__dirname, "../fixtures/1.143.1.map");
+// Picks the newest fixture by version rather than hardcoding a filename, so this doesn't need a
+// manual bump every time a new tests/fixtures/*.map is added. Both refs resolve this at runtime
+// against their own checked-out fixtures directory, so any timing difference is down to the code,
+// not the data (as long as the compared refs' fixture sets agree, which they should outside a PR
+// that itself adds a newer fixture).
+function findLatestFixture(): string {
+  const fixturesDir = path.join(__dirname, "../fixtures");
+  const versioned = fs
+    .readdirSync(fixturesDir)
+    .filter(name => /^\d+\.\d+\.\d+\.map$/.test(name))
+    .sort((a, b) => {
+      const toParts = (name: string) => name.replace(/\.map$/, "").split(".").map(Number);
+      const [aParts, bParts] = [toParts(a), toParts(b)];
+      for (let i = 0; i < 3; i++) {
+        if (aParts[i] !== bParts[i]) return aParts[i] - bParts[i];
+      }
+      return 0;
+    });
+
+  const latest = versioned.at(-1);
+  if (!latest) throw new Error(`No versioned .map fixture found in ${fixturesDir}`);
+  return path.join(fixturesDir, latest);
+}
+
+const FIXTURE_PATH = findLatestFixture();
 
 test("zoom and pan gesture over a loaded map", async ({ page }) => {
   await page.goto("/");
