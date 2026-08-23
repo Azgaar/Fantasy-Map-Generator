@@ -1,6 +1,7 @@
 import { drag, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
@@ -327,13 +328,13 @@ function openJoinRoutesDialog(): void {
           const selectedRouteId = +alertMessage.querySelector("select")!.value;
           const selectedRoute = pack.routes.find((r: Route) => r.i === selectedRouteId) as Route;
           joinRoutes(route, selectedRoute);
-          tip("Routes joined", false, "success", 5000);
+          toast("Routes joined", "success", 5000);
           $("#alert").dialog("close");
         }
       }
     });
   } else {
-    tip("No routes to join with. Route must start or end at current route's start or end cell", false, "error", 4000);
+    toast("No routes to join with. Route must start or end at current route's start or end cell", "error", 4000);
   }
 }
 

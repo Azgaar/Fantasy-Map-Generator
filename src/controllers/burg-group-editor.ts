@@ -1,6 +1,6 @@
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import type { BurgGroup } from "@/types/burg-groups";
 import { ensureEl } from "../utils";
@@ -207,7 +207,7 @@ function selectLimitation(
           return acc;
         }, []);
 
-        if (!selected.length) return tip("Select at least one element", false, "error");
+        if (!selected.length) return toast("Select at least one element", "error");
 
         const allAreSelected = selected.length === inputs.length;
         (el.previousElementSibling as HTMLInputElement).value = allAreSelected ? "" : selected.join(",");
@@ -297,7 +297,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
 function removeRow(row: HTMLElement): void {
   const rows = ensureEl("burgGroupsBody").children;
   if (rows.length < 2) {
-    tip("At least one group should be defined", false, "error");
+    toast("At least one group should be defined", "error");
     return;
   }
 
@@ -408,7 +408,7 @@ function submitForm(event: Event): void {
 
   const rows = Array.from(ensureEl("burgGroupsBody").children);
   if (!rows.length) {
-    tip("At least one group should be defined", false, "error");
+    toast("At least one group should be defined", "error");
     return;
   }
 

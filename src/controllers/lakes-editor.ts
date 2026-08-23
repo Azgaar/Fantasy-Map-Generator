@@ -1,6 +1,7 @@
 import { drag, mean, min, polygonLength, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -266,12 +267,12 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/[^\w\s]/gi, "");
 
   if (findEl(group)) {
-    tip("Element with this id already exists. Please provide a unique name", false, "error");
+    toast("Element with this id already exists. Please provide a unique name", "error");
     return;
   }
 
   if (Number.isFinite(+group.charAt(0))) {
-    tip("Group name should start with a letter", false, "error");
+    toast("Group name should start with a letter", "error");
     return;
   }
 
@@ -303,7 +304,7 @@ function createNewGroup(this: HTMLInputElement): void {
 function removeLakeGroup(): void {
   const group = (selectedLake.node()!.parentNode as SVGGElement).id;
   if (isLakeType(group)) {
-    tip("This is one of the default groups, it cannot be removed", false, "error");
+    toast("This is one of the default groups, it cannot be removed", "error");
     return;
   }
 

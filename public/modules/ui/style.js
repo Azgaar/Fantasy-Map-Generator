@@ -754,7 +754,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 
   function handleCreate() {
     const stops = openCreateHeightmapSchemeButton.dataset.stops;
-    if (stops in heightmapColorSchemes) return tip("This scheme already exists", false, "error");
+    if (stops in heightmapColorSchemes) return toast("This scheme already exists", "error");
 
     addCustomColorScheme(stops);
     getEl().attr("scheme", stops);
@@ -919,13 +919,13 @@ styleFontAdd.addEventListener("click", function () {
         const src = addFontURLInput.value;
         const method = addFontMethod.value;
 
-        if (!family) return tip("Please provide a font name", false, "error");
+        if (!family) return toast("Please provide a font name", "error");
 
         const existingFont =
           method === "fontURL"
             ? fonts.find(font => font.family === family && font.src === src)
             : fonts.find(font => font.family === family);
-        if (existingFont) return tip("The font is already added", false, "error");
+        if (existingFont) return toast("The font is already added", "error");
 
         if (method === "fontURL") addWebFont(family, src);
         else if (method === "googleFont") addGoogleFont(family);
@@ -1103,7 +1103,7 @@ function textureProvideURL() {
     width: "28em",
     buttons: {
       Apply: function () {
-        if (!textureURL.value) return tip("Please provide a valid URL", false, "error");
+        if (!textureURL.value) return toast("Please provide a valid URL", "error");
         changeTexture(textureURL.value);
         updateTextureSelectValue(textureURL.value);
         $(this).dialog("close");

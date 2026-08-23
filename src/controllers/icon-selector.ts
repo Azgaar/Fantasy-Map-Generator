@@ -1,5 +1,6 @@
 // The Icon Selector: pick an emoji or add an external image to use as an icon
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { ICONS, ICONS_PER_ROW } from "@/data/icons-list";
 import { ensureEl } from "@/utils";
@@ -33,8 +34,8 @@ function open(initial: string, callback: (value: string) => void): void {
   addImageButton.onclick = () => {
     const urlInput = addImageButton.previousElementSibling as HTMLInputElement;
     const url = urlInput.value;
-    if (!url) return tip("Enter image URL to add", false, "error", 4000);
-    if (!url.match(/^((http|https):\/\/)|data:image\//)) return tip("Enter valid URL", false, "error", 4000);
+    if (!url) return toast("Enter image URL to add", "error", 4000);
+    if (!url.match(/^((http|https):\/\/)|data:image\//)) return toast("Enter valid URL", "error", 4000);
 
     addImage(url, callback);
     callback(url);

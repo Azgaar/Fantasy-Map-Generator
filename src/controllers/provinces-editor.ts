@@ -13,6 +13,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -431,11 +432,11 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const { name, burg: burgId, burgs: provinceBurgs } = province;
 
   if (provinceBurgs!.some(b => burgs[b].capital)) {
-    tip("Cannot declare independence of a province having capital burg. Please change capital first", false, "error");
+    toast("Cannot declare independence of a province having capital burg. Please change capital first", "error");
     return;
   }
   if (!burgId) {
-    tip("Cannot declare independence of a province without burg", false, "error");
+    toast("Cannot declare independence of a province without burg", "error");
     return;
   }
 
@@ -541,7 +542,7 @@ function changePopulation(province: number): void {
   const p = pack.provinces[province];
   const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
   if (!cells.length) {
-    tip("Province does not have any cells, cannot change population", false, "error");
+    toast("Province does not have any cells, cannot change population", "error");
     return;
   }
   const rural = rn(p.rural! * populationRate);
@@ -1076,7 +1077,7 @@ function openPaintEditor(): void {
       if (!isLand(cell, pack) || !pack.cells.state[cell]) return false;
       if (pack.cells.state[cell] !== pack.provinces[nextProvince].state) return false;
       if (!currentProvince || cell !== pack.provinces[currentProvince].center) return true;
-      tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
+      toast("Province center cannot be assigned to a different region. Please remove the province first", "error");
       return false;
     },
     dontOverrideControl: true,
@@ -1116,19 +1117,19 @@ function addProvince(this: SVGElement, event: any): void {
   const point = getPointer(event, this);
   const center = findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
-    tip("You cannot place province into the water. Please click on a land cell", false, "error");
+    toast("You cannot place province into the water. Please click on a land cell", "error");
     return;
   }
 
   const oldProvince = cells.province[center];
   if (oldProvince && provinces[oldProvince].center === center) {
-    tip("The cell is already a center of a different province. Select other cell", false, "error");
+    toast("The cell is already a center of a different province. Select other cell", "error");
     return;
   }
 
   const state = cells.state[center];
   if (!state) {
-    tip("You cannot create a province in neutral lands. Please assign this land to a state first", false, "error");
+    toast("You cannot create a province in neutral lands. Please assign this land to a state first", "error");
     return;
   }
 
@@ -1325,7 +1326,7 @@ function openProvinceMergeDialog(): void {
         const formData = new FormData(ensureEl<HTMLFormElement>("mergeProvincesForm"));
         const primaryProvinceId = Number(formData.get("rulingProvince"));
         if (!primaryProvinceId) {
-          tip("Please select a province to merge into", false, "error");
+          toast("Please select a province to merge into", "error");
           return;
         }
 
@@ -1334,7 +1335,7 @@ function openProvinceMergeDialog(): void {
           .map(Number)
           .filter(provinceId => provinceId !== primaryProvinceId);
         if (!provincesToMergeIds.length) {
-          tip("Please select several provinces to merge", false, "error");
+          toast("Please select several provinces to merge", "error");
           return;
         }
 

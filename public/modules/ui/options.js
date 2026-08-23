@@ -177,7 +177,7 @@ function mapSizeInputChange() {
 
   if (tooWide || tooHigh) {
     const message = `Canvas size is larger than window size (${window.innerWidth} x ${window.innerHeight}). It can affect performance`;
-    tip(message, false, "warn", 4000);
+    toast(message, "warn", 4000);
   }
 }
 
@@ -266,7 +266,7 @@ function testSpeaker() {
 }
 
 function generateMapWithSeed() {
-  if (optionsSeed.value === seed) return tip("The current map already has this seed", false, "error");
+  if (optionsSeed.value === seed) return toast("The current map already has this seed", "error");
   regeneratePrompt({ seed: optionsSeed.value });
 }
 
@@ -308,10 +308,10 @@ function copyMapURL() {
   navigator.clipboard
     .writeText(location.host + location.pathname + search)
     .then(() => {
-      tip("Map URL is copied to clipboard", false, "success", 3000);
+      toast("Map URL is copied to clipboard", "success", 3000);
       //window.history.pushState({}, null, search);
     })
-    .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
+    .catch(err => toast("Could not copy URL: " + err, "error", 5000));
 }
 
 const cellsDensityMap = {
@@ -696,7 +696,7 @@ function regenerateEra() {
 function changeYear() {
   if (!yearInput.value) return;
   if (isNaN(+yearInput.value)) {
-    tip("Current year should be a number", false, "error");
+    toast("Current year should be a number", "error");
     return;
   }
   options.year = +yearInput.value;
@@ -724,7 +724,7 @@ ensureEl("sticked").addEventListener("click", function (event) {
 
 function regeneratePrompt(options) {
   if (customization)
-    return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+    return toast("New map cannot be generated when edit mode is active, please exit the mode and retry", "error");
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
   if (workingTime < 1) return regenerateMap(options);
 
@@ -765,7 +765,7 @@ function showSavePane() {
 function copyLinkToClickboard() {
   const shrableLink = ensureEl("sharableLink");
   const link = shrableLink.getAttribute("href");
-  navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
+  navigator.clipboard.writeText(link).then(() => toast("Link is copied to the clipboard", "success", 8000));
 }
 
 ensureEl("showLabels").addEventListener("change", function () {
@@ -860,7 +860,7 @@ function loadURL() {
       Load: function () {
         const value = mapURL.value;
         if (!pattern.test(value)) {
-          tip("Please provide a valid URL", false, "error");
+          toast("Please provide a valid URL", "error");
           return;
         }
         window.Services.Load.loadMapFromURL(value);

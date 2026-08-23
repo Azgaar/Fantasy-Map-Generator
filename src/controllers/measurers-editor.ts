@@ -1,6 +1,7 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
@@ -174,7 +175,7 @@ function toggleRouteOpisometerMode(this: HTMLElement): void {
     const cell = findCell(event.x, event.y)!;
     if (!Routes.isConnected(cell) && !event.sourceEvent.shiftKey) {
       exitDrawingMode();
-      tip("Must start in a cell with a route in it", false, "error");
+      toast("Must start in a cell with a route in it", "error");
       return;
     }
 

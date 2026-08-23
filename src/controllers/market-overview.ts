@@ -10,6 +10,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -59,7 +60,7 @@ function open(marketId: number): void {
 
   const market = Markets.get(marketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    toast("Invalid market. The selected market does not exist", "error", 5000);
     return;
   }
   activeMarketId = marketId;
@@ -156,13 +157,13 @@ function resetMarketName(): void {
 function getMarketGoods(): MarketGoodRow[] {
   const market = Markets.get(activeMarketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    toast("Invalid market. The selected market does not exist", "error", 5000);
     return [];
   }
 
   const centerBurg = pack.burgs[market.centerBurgId] as Burg | undefined;
   if (!centerBurg || centerBurg.removed) {
-    tip("Invalid market. The selected market has no center burg", true, "error", 5000);
+    toast("Invalid market. The selected market has no center burg", "error", 5000);
     return [];
   }
 
@@ -238,17 +239,17 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   const burgId = pack.cells.burg[cellId];
   const burg = pack.burgs[burgId] as Burg | undefined;
   if (!burgId || !burg || burg.removed) {
-    tip("No valid burg in this cell. Click on a cell with a burg", false, "error");
+    toast("No valid burg in this cell. Click on a cell with a burg", "error");
     return;
   }
 
   if (burgId === market.centerBurgId) {
-    tip("This burg is already the center of this market", false, "error");
+    toast("This burg is already the center of this market", "error");
     return;
   }
 
   if (pack.markets.some(m => m.centerBurgId === burgId)) {
-    tip("This burg is already a center of another market", false, "error");
+    toast("This burg is already a center of another market", "error");
     return;
   }
 

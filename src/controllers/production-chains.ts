@@ -1,5 +1,5 @@
 import { type Selection, select, zoom, zoomIdentity } from "d3";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import type { Good } from "../generators/goods-generator";
 import { ensureEl } from "../utils";
 import { C_12 } from "../utils/colorUtils";
@@ -117,13 +117,13 @@ const FLOW_OPACITY_MAX = 0.92;
 function open() {
   const goods = [...(pack.goods as Good[])];
   if (!goods.length) {
-    tip("No goods data available.", true, "warn");
+    toast("No goods data available.", "warn");
     return;
   }
 
   const layout = buildLayout(goods);
   if (!layout.nodes.length) {
-    tip("No production chains found: add manufactured goods with recipes first.", true, "warn");
+    toast("No production chains found: add manufactured goods with recipes first.", "warn");
     return;
   }
 

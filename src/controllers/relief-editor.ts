@@ -1,6 +1,7 @@
 import { drag, quadtree, range, select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
@@ -256,7 +257,7 @@ function moveBrush(this: SVGElement, event: any): void {
 function dragToAdd(this: SVGElement, event: any): void {
   const pressed = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed");
   if (!pressed) {
-    tip("Please select an icon", false, "error");
+    toast("Please select an icon", "error");
     return;
   }
 
@@ -325,7 +326,7 @@ function enterBulkRemoveMode(): void {
 function dragToRemove(this: SVGElement, event: any): void {
   const pressed = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed");
   if (!pressed) {
-    tip("Please select an icon", false, "error");
+    toast("Please select an icon", "error");
     return;
   }
 

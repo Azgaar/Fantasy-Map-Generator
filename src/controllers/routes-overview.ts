@@ -11,7 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -281,9 +281,9 @@ function triggerAllRoutesRemove(): void {
   const toRemove = pack.routes.filter((route: Route) => !route.lock);
   if (!toRemove.length) {
     if (!pack.routes.length) {
-      tip("There are no routes to remove", false, "error");
+      toast("There are no routes to remove", "error");
     } else {
-      tip("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first.", false, "error");
+      toast("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first.", "error");
     }
     return;
   }
@@ -302,9 +302,9 @@ function triggerAllRoutesRemove(): void {
         const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
         if (!routesToRemove.length) {
           if (!pack.routes.length) {
-            tip("There are no routes to remove", false, "error");
+            toast("There are no routes to remove", "error");
           } else {
-            tip("All routes are now locked; nothing was removed.", false, "error");
+            toast("All routes are now locked; nothing was removed.", "error");
           }
           $(this).dialog("close");
           return;

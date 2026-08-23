@@ -1,4 +1,4 @@
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { stored, unlock } from "@/utils/preferences";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
@@ -88,7 +88,7 @@ class NamesGenerator {
 
     const data = this.chains[base];
     if (!data || data[""] === undefined) {
-      tip(`Namesbase ${base} is incorrect. Please check in namesbase editor`, false, "error");
+      toast(`Namesbase ${base} is incorrect. Please check in namesbase editor`, "error");
       ERROR && console.error(`Namebase ${base} is incorrect!`);
       return "ERROR";
     }
@@ -277,7 +277,7 @@ class NamesGenerator {
     if (force && stored("mapName")) unlock("mapName");
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
-      tip("Namebase is not found", false, "error");
+      toast("Namebase is not found", "error");
       return "";
     }
     const min = this.nameBases[base].min - 1;

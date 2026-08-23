@@ -11,6 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
@@ -541,7 +542,7 @@ function militaryCustomize(): void {
           }, []);
 
           if (!selected.length) {
-            tip("Select at least one element", false, "error");
+            toast("Select at least one element", "error");
             return;
           }
 
@@ -562,7 +563,7 @@ function militaryCustomize(): void {
     const unitLines = Array.from(tableBody.querySelectorAll("tr"));
     const names = unitLines.map(r => sanitizeId(r.querySelector("input")!.value));
     if (new Set(names).size !== names.length) {
-      tip("All units should have unique names", false, "error");
+      toast("All units should have unique names", "error");
       return;
     }
 

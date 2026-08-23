@@ -16,7 +16,7 @@
  */
 
 import { dialogState } from "@/components/dialog/state";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 
 export const VERSION = "1.148.1";
 
@@ -150,7 +150,7 @@ function announceVersion(): void {
     setTimeout(() => showUpdateWindow(storedVersion), 6000);
   } else if (compareVersions(storedVersion, VERSION).isOlder) {
     localStorage.setItem("version", VERSION);
-    tip(`Updated to v${VERSION}. Reload the page if you get errors`, true, "success", 6000);
+    toast(`Updated to v${VERSION}. Reload the page if you get errors`, "success", 6000);
   }
 }
 

@@ -1,5 +1,6 @@
 // The fill picker: an SVG overlay to pick a color or a hatching pattern.
 import { type D3DragEvent, drag, hsl, rgb, select } from "d3";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { parseTransform, rn } from "@/utils";
 
@@ -297,7 +298,7 @@ function onControlDrag(
 
 function onSpaceChanged(event: Event, callback: (fill: string) => void): void {
   const input = event.currentTarget as HTMLInputElement;
-  const invalid = () => tip("You must provide a correct value", false, "error");
+  const invalid = () => toast("You must provide a correct value", "error");
   if (!input.checkValidity()) return void invalid();
 
   const space = input.dataset.space as ColorSpace;

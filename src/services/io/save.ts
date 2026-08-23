@@ -2,7 +2,7 @@
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { GraphOverride } from "@/generators/graph-override";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
@@ -13,7 +13,7 @@ import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 type SaveMethod = "storage" | "machine" | "dropbox";
 
 async function saveMap(method: SaveMethod): Promise<void> {
-  if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
+  if (customization) return toast("Map cannot be saved in EDIT mode, please complete the edit and retry", "error");
   closeDialogs("#alert");
 
   try {
@@ -213,7 +213,7 @@ function prepareMapData(): string {
 async function saveToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
-  showTip && tip("Map is saved to the browser storage", false, "success");
+  showTip && toast("Map is saved to the browser storage", "success");
 }
 
 // download map file
@@ -226,13 +226,13 @@ function saveToMachine(mapData: string, filename: string): void {
   link.href = URL;
   link.click();
 
-  tip('Map is saved to the "Downloads" folder (CTRL + J to open)', true, "success", 8000);
+  toast('Map is saved to the "Downloads" folder (CTRL + J to open)', "success", 8000);
   setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
 async function saveToDropbox(mapData: string, filename: string): Promise<void> {
   await Services.Cloud.save(filename, mapData);
-  tip("Map is saved to your Dropbox", true, "success", 8000);
+  toast("Map is saved to your Dropbox", "success", 8000);
 }
 
 export const Save = { saveMap, prepareMapData, saveToStorage };

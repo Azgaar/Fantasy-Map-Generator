@@ -12,6 +12,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -778,7 +779,7 @@ function closeStateNameEditor(): void {
 function changePopulation(stateId: number): void {
   const state = pack.states[stateId];
   if (!state.cells) {
-    tip("State does not have any cells, cannot change population", false, "error");
+    toast("State does not have any cells, cannot change population", "error");
     return;
   }
 
@@ -1065,7 +1066,7 @@ function togglePercentageMode(): void {
 function showStatesChart(): void {
   const statesData = pack.states.filter(s => !s.removed);
   if (statesData.length < 2) {
-    tip("There are no states to show", false, "error");
+    toast("There are no states to show", "error");
     return;
   }
 
@@ -1478,13 +1479,13 @@ function addState(this: SVGElement, event: MouseEvent): void {
   const point = getPointer(event, this);
   const center = findCell(point[0], point[1])!;
   if (cells.h[center] < 20) {
-    tip("You cannot place state into the water. Please click on a land cell", false, "error");
+    toast("You cannot place state into the water. Please click on a land cell", "error");
     return;
   }
 
   let burgId = cells.burg[center];
   if (burgId && burgs[burgId].capital) {
-    tip("Existing capital cannot be selected as a new state capital! Select other cell", false, "error");
+    toast("Existing capital cannot be selected as a new state capital! Select other cell", "error");
     return;
   }
 
@@ -1664,7 +1665,7 @@ function openStateMergeDialog(): void {
 
         const rulingStateId = Number(formData.get("rulingState"));
         if (!rulingStateId) {
-          tip("Please select a state to merge into", false, "error");
+          toast("Please select a state to merge into", "error");
           return;
         }
         const rullingState = pack.states[rulingStateId];
@@ -1674,7 +1675,7 @@ function openStateMergeDialog(): void {
           .map(Number)
           .filter(stateId => stateId !== rulingStateId);
         if (!statesToMerge.length) {
-          tip("Please select several states to merge", false, "error");
+          toast("Please select several states to merge", "error");
           return;
         }
 

@@ -1,3 +1,4 @@
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 
 let installButton: HTMLButtonElement | null = null;
@@ -11,7 +12,7 @@ function init(event: Event & { prompt: () => void }): void {
   deferredPrompt = event;
 
   window.addEventListener("appinstalled", () => {
-    tip("Application is installed", false, "success", 8000);
+    toast("Application is installed", "success", 8000);
     cleanup();
   });
 }

@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import type { Route } from "@/generators/routes-generator";
 import { ensureEl } from "../utils";
 
@@ -79,11 +79,11 @@ function addGroup(): void {
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (!group) return tip("Invalid group name", false, "error");
+    if (!group) return toast("Invalid group name", "error");
     if (!group.startsWith("route-")) group = `route-${group}`;
     if (document.getElementById(group))
-      return tip("Element with this name already exists. Provide a unique name", false, "error");
-    if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
+      return toast("Element with this name already exists. Provide a unique name", "error");
+    if (Number.isFinite(+group.charAt(0))) return toast("Group name should start with a letter", "error");
 
     select("#routes")
       .append("g")

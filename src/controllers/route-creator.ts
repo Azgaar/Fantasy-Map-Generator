@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { stopMapPlacement } from "@/components/map-placement";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -134,7 +135,7 @@ function drawRoute(points: number[][]): void {
 function completeCreation(): void {
   const points = creatorPoints;
   if (points.length < 2) {
-    tip("Add at least 2 points", false, "error");
+    toast("Add at least 2 points", "error");
     return;
   }
 

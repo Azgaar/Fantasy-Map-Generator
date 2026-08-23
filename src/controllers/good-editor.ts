@@ -1,6 +1,6 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
@@ -181,7 +181,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
           Goods.sync();
         }
 
-        tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
+        toast(editedGood ? "Good is updated" : "Good is added", "success", 5000);
         onUpdate?.();
         $(dialog).dialog("close");
       }
@@ -505,9 +505,8 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
   input.value = "";
 
   if (file.size > 200000) {
-    tip(
+    toast(
       `File is too big, please optimize file size up to 200kB and re-upload. Recommended size is 48x48 px and up to 10kB`,
-      true,
       "error",
       5000
     );
@@ -541,9 +540,8 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
 
       const svg = el.querySelector("svg");
       if (!svg)
-        return void tip(
+        return void toast(
           "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload raster image",
-          false,
           "error"
         );
 

@@ -1,6 +1,7 @@
 import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -267,7 +268,7 @@ function splitRegiment(): void {
   }); // halved new reg
   const a = sum(Object.values(u2)); // new reg total
   if (!a) {
-    tip("Not enough forces to split", false, "error");
+    toast("Not enough forces to split", "error");
     return;
   }
 
@@ -388,22 +389,22 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
   const newState = +regSelected.dataset.state!;
 
   if (army?.parentElement?.id !== "armies") {
-    tip("Please click on a regiment to attack", false, "error");
+    toast("Please click on a regiment to attack", "error");
     return;
   }
   if ((regSelected as Node) === (selectedRegiment as Node)) {
-    tip("Regiment cannot attack itself", false, "error");
+    toast("Regiment cannot attack itself", "error");
     return;
   }
   if (oldState === newState) {
-    tip("Cannot attack fraternal regiment", false, "error");
+    toast("Cannot attack fraternal regiment", "error");
     return;
   }
 
   const attacker = getRegiment();
   const defender = pack.states[+regSelected.dataset.state!].military!.find(r => r.i === +regSelected.dataset.id!);
   if (!attacker || !defender || !attacker.a || !defender.a) {
-    tip("Regiment has no troops to battle", false, "error");
+    toast("Regiment has no troops to battle", "error");
     return;
   }
 
@@ -460,11 +461,11 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const newState = +regSelected.dataset.state!;
 
   if (army?.parentElement?.id !== "armies") {
-    tip("Please click on a regiment", false, "error");
+    toast("Please click on a regiment", "error");
     return;
   }
   if ((regSelected as Node) === (selectedRegiment as Node)) {
-    tip("Cannot attach regiment to itself. Please click on another regiment", false, "error");
+    toast("Cannot attach regiment to itself. Please click on another regiment", "error");
     return;
   }
 

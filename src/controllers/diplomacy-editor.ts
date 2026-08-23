@@ -11,7 +11,8 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { clearMainTip, tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
+import { clearMainTip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -102,7 +103,7 @@ const getChronicle = () => pack.states[0].diplomacy as unknown as string[][];
 function open(): void {
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2) {
-    tip("There should be at least 2 states to edit the diplomacy", false, "error");
+    toast("There should be at least 2 states to edit the diplomacy", "error");
     return;
   }
   if (!selectedDiplomacyId || !pack.states[selectedDiplomacyId] || pack.states[selectedDiplomacyId].removed) {

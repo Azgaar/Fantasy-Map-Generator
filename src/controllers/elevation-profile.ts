@@ -14,6 +14,7 @@ import {
   select
 } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
@@ -33,7 +34,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
   const firstCell = cells[0];
   const lastCell = cells.at(-1);
   if (firstCell === undefined || lastCell === undefined) {
-    tip("Elevation profile: no data", true, "error");
+    toast("Elevation profile: no data", "error");
     return;
   }
 

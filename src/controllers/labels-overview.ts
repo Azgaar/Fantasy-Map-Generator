@@ -10,7 +10,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
 import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
@@ -340,7 +340,7 @@ function assignGroup(labels: LabelData[], groupName: string): void {
     for (const { type, entityId } of labels) Labels.setGroup({ type, entityId, group: groupName });
     Layers.draw("labels");
     refresh();
-    tip(`${labels.length} label(s) assigned to the "${groupName}" group`, false, "success", 4000);
+    toast(`${labels.length} label(s) assigned to the "${groupName}" group`, "success", 4000);
   };
 
   const crossTyped = labels.filter(({ type }) => type !== group.type);
@@ -400,10 +400,10 @@ function toggleSelectAll(): void {
 
 function applyBulkAssignment(): void {
   const labels = getSelectedLabels();
-  if (!labels.length) return void tip("Select at least one label", false, "error");
+  if (!labels.length) return void toast("Select at least one label", "error");
 
   const group = ensureEl<HTMLSelectElement>("labelsBulkGroup").value;
-  if (group === ALL) return void tip("Define a label group to assign the labels to", false, "error");
+  if (group === ALL) return void toast("Define a label group to assign the labels to", "error");
 
   assignGroup(labels, group);
 }

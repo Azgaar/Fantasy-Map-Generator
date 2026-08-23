@@ -11,6 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -278,7 +279,7 @@ function toggleAdd(): void {
 function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const state = filterState.stateId;
   if (state === -1) {
-    tip("Please select state from the list", false, "error");
+    toast("Please select state from the list", "error");
     return;
   }
 

@@ -22,6 +22,7 @@ declare global {
     clearMainTip: typeof import("../components/tooltips").clearMainTip;
     showDataTip: typeof import("../components/tooltips").showDataTip;
     showElementLockTip: typeof import("../components/tooltips").showElementLockTip;
+    toast: typeof import("../components/toast").toast;
     lock: typeof import("../utils/preferences").lock;
     unlock: typeof import("../utils/preferences").unlock;
     stored: typeof import("../utils/preferences").stored;

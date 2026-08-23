@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { redrawEmblem } from "@/renderers/draw-emblems";
 
 function toggle(): void {
@@ -16,7 +16,6 @@ function toggle(): void {
     "addBurgTool",
     addOnClick,
     "Click on the map to create a new burg. Hold Shift to add multiple",
-    "warn",
     unpressProxyButton
   );
   document.getElementById("addNewBurg")?.classList.add("pressed");
@@ -30,11 +29,11 @@ function addOnClick(event: MouseEvent): void {
   if (cell === undefined) return;
 
   if (pack.cells.h[cell] < 20) {
-    tip("You cannot place a burg in the water. Please click on a land cell", false, "error");
+    toast("You cannot place a burg in the water. Please click on a land cell", "error");
     return;
   }
   if (pack.cells.burg[cell]) {
-    tip("There is already a burg in this cell. Please select a free cell", false, "error");
+    toast("There is already a burg in this cell. Please select a free cell", "error");
     return;
   }
 

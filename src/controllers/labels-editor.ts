@@ -1,6 +1,7 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -394,9 +395,9 @@ function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
   label.text = input;
   applyLabelChanges();
-  if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
+  if (label.type === "state") toast("Use States Editor to change the actual state name, not just a label", "warn");
   if (label.type === "province")
-    tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
+    toast("Use Provinces Editor to change the actual province name, not just a label", "warn");
 }
 
 const nameGenerators: Record<LabelType, (label: LabelData) => string> = {

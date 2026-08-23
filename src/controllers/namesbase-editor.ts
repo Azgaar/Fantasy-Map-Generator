@@ -1,6 +1,6 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl, openURL, rn, unique } from "../utils";
 
@@ -154,7 +154,7 @@ function createBasesList(): void {
 function updateInputs(): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   if (!Names.nameBases[base]) {
-    tip(`Namesbase ${base} is not defined`, false, "error");
+    toast(`Namesbase ${base} is not defined`, "error");
     return;
   }
   (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = Names.nameBases[base].b;
@@ -184,7 +184,7 @@ function updateNamesData(): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   const input = ensureEl<HTMLTextAreaElement>("namesbaseTextarea");
   if (input.value.split(",").length < 3) {
-    tip("The names data provided is too short or incorrect", false, "error");
+    toast("The names data provided is too short or incorrect", "error");
     return;
   }
   const securedNamesData = input.value.replace(/[/|]/g, "");
@@ -204,7 +204,7 @@ function updateBaseName(rawName: string): void {
 function updateBaseMin(value: string): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   if (+value > Names.nameBases[base].max) {
-    tip("Minimal length cannot be greater than maximal", false, "error");
+    toast("Minimal length cannot be greater than maximal", "error");
     return;
   }
   Names.nameBases[base].min = +value;
@@ -213,7 +213,7 @@ function updateBaseMin(value: string): void {
 function updateBaseMax(value: string): void {
   const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   if (+value < Names.nameBases[base].min) {
-    tip("Maximal length should be greater than minimal", false, "error");
+    toast("Maximal length should be greater than minimal", "error");
     return;
   }
   Names.nameBases[base].max = +value;
@@ -229,7 +229,7 @@ function analyzeNamesbase(): void {
   const namesArray = namesSourceString.toLowerCase().split(",");
   const length = namesArray.length;
   if (!namesSourceString || !length) {
-    tip("Names data should not be empty", false, "error");
+    toast("Names data should not be empty", "error");
     return;
   }
 
@@ -358,7 +358,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
     .split("\n")
     .filter(Boolean);
   if (!lines.length) {
-    tip("Cannot load a namesbase. Please check the data format", false, "error");
+    toast("Cannot load a namesbase. Please check the data format", "error");
     return;
   }
 

@@ -18,6 +18,7 @@ import {
   sum
 } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -560,17 +561,12 @@ function addChart(event?: Event) {
   };
   const incompatible = [entity, groupBy].find(lacksTag);
   if (incompatible) {
-    tip(
-      `${plotByLabel} cannot be broken down by ${entitiesMap[incompatible].label.toLowerCase()}`,
-      false,
-      "error",
-      4000
-    );
+    toast(`${plotByLabel} cannot be broken down by ${entitiesMap[incompatible].label.toLowerCase()}`, "error", 4000);
     return;
   }
 
   if (!stackable && groupBy !== entity) {
-    tip(`Grouping is not supported for ${plotBy}`, false, "warn", 4000);
+    toast(`Grouping is not supported for ${plotBy}`, "warn", 4000);
     groupBy = entity;
   }
 

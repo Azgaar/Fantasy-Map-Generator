@@ -1,5 +1,5 @@
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { VERSION } from "@/services/versioning";
 import { getFileName } from "@/utils";
 
@@ -14,7 +14,7 @@ const typeMap = {
 
 function exportToJson(type: ExportJsonType): void {
   if (customization) {
-    tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
+    toast("Data cannot be exported when edit mode is active, please exit the mode and retry", "error");
     return;
   }
   closeDialogs("#alert");
@@ -27,7 +27,7 @@ function exportToJson(type: ExportJsonType): void {
   link.download = `${getFileName(type)}.json`;
   link.href = URL;
   link.click();
-  tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+  toast(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, "success", 7000);
   window.URL.revokeObjectURL(URL);
   TIME && console.timeEnd("exportToJson");
 }

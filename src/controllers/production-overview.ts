@@ -1,4 +1,4 @@
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import type { Burg } from "../generators/burgs-generator";
 import type { DemandCategory } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "../generators/goods-generator";
@@ -13,19 +13,19 @@ function open(burgId: number): void {
   if (customization) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {
-    tip("Invalid burg. The selected burg does not exist or was removed.", true, "error", 5000);
+    toast("Invalid burg. The selected burg does not exist or was removed.", "error", 5000);
     return;
   }
 
   const market = Markets.get(burg.market);
   if (!market) {
-    tip("No market. This burg is not connected to any market.", true, "error", 5000);
+    toast("No market. This burg is not connected to any market.", "error", 5000);
     return;
   }
 
   const data = burg.production;
   if (!data) {
-    tip("No production data for this burg.", true, "error", 5000);
+    toast("No production data for this burg.", "error", 5000);
     return;
   }
 

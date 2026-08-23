@@ -13,6 +13,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -490,7 +491,7 @@ function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
   if (!Names.nameBases[base]) {
-    tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
+    toast("Namesbase is not defined, please select a valid namesbase", "error", 5000);
     return;
   }
 
@@ -569,7 +570,7 @@ function changePopulation(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const culture = pack.cultures[cultureId];
   if (!culture.cells) {
-    tip("Culture does not have any cells, cannot change population", false, "error");
+    toast("Culture does not have any cells, cannot change population", "error");
     return;
   }
 
@@ -671,7 +672,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
   if (!Names.nameBases[base]) {
-    tip("Namesbase is not defined, please select a valid namesbase", false, "error", 5000);
+    toast("Namesbase is not defined, please select a valid namesbase", "error", 5000);
     return;
   }
 
@@ -680,7 +681,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
     b.name = Names.getCulture(cultureId);
   });
   Layers.draw("labels");
-  tip(`Names for ${cultureBurgs.length} burgs are regenerated`, false, "success");
+  toast(`Names for ${cultureBurgs.length} burgs are regenerated`, "success");
 }
 
 function removeCulture(cultureId: number): void {
@@ -925,13 +926,13 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
   const center = findCell(point[0], point[1])!;
 
   if (pack.cells.h[center] < 20) {
-    tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+    toast("You cannot place culture center into the water. Please click on a land cell", "error");
     return;
   }
 
   const occupied = pack.cultures.some(c => !c.removed && c.center === center);
   if (occupied) {
-    tip("This cell is already a culture center. Please select a different cell", false, "error");
+    toast("This cell is already a culture center. Please select a different cell", "error");
     return;
   }
 

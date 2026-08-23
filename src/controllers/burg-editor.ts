@@ -1,6 +1,7 @@
 import { type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -424,7 +425,7 @@ function togglePort(burgId: number): void {
     } else {
       portFeatureId = Rivers.resolveDrainFeature(burg.cell);
       if (!portFeatureId) {
-        tip("No navigable water body found downstream, cannot assign port", false, "warn");
+        toast("No navigable water body found downstream, cannot assign port", "warn");
         return;
       }
     }
@@ -446,13 +447,13 @@ function toggleCapital(burgId: number): void {
   const { burgs, states } = pack;
 
   if (burgs[burgId].capital) {
-    tip("To change capital please assign a capital status to another burg of this state", false, "error");
+    toast("To change capital please assign a capital status to another burg of this state", "error");
     return;
   }
 
   const stateId = burgs[burgId].state;
   if (!stateId) {
-    tip("Neutral lands cannot have a capital", false, "error");
+    toast("Neutral lands cannot have a capital", "error");
     return;
   }
 
@@ -734,18 +735,18 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const burg = pack.burgs[id];
 
   if (cells.h[cellId] < 20) {
-    tip("Cannot place burg into the water! Select a land cell", false, "error");
+    toast("Cannot place burg into the water! Select a land cell", "error");
     return;
   }
   if (cells.burg[cellId] && cells.burg[cellId] !== id) {
-    tip("There is already a burg in this cell. Please select a free cell", false, "error");
+    toast("There is already a burg in this cell. Please select a free cell", "error");
     return;
   }
 
   const newState = cells.state[cellId];
   const oldState = burg.state;
   if (newState !== oldState && burg.capital) {
-    tip("Capital cannot be relocated into another state!", false, "error");
+    toast("Capital cannot be relocated into another state!", "error");
     return;
   }
 

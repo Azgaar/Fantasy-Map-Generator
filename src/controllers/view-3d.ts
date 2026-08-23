@@ -1,3 +1,4 @@
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
@@ -471,7 +472,7 @@ function onToggleErosion(): void {
   const enabled = !options.threeD.erosion;
   ensureEl("options3dErosionSection").style.display = enabled ? "block" : "none";
   ensureEl<HTMLInputElement>("options3dSubdivide").disabled = enabled; // dense geometry: subdivision ignored
-  if (enabled) tip("Baking eroded terrain...", false, "warn", 4000);
+  if (enabled) toast("Baking eroded terrain...", "warn", 4000);
   void toggleErosion();
 }
 
@@ -492,7 +493,7 @@ function onChangeErosionRiverDepth(this: HTMLInputElement): void {
 }
 
 function onToggleSatellite(): void {
-  if (!options.threeD.satellite) tip("Baking satellite texture...", false, "warn", 4000);
+  if (!options.threeD.satellite) toast("Baking satellite texture...", "warn", 4000);
   void toggleSatellite();
 }
 

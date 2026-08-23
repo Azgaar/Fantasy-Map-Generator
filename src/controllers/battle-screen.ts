@@ -2,7 +2,7 @@ import { mean, select, sum } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
@@ -636,7 +636,7 @@ function addSide(): void {
   function selectLine(event: Event): void {
     const target = event.target as HTMLElement;
     if (target.className === "inactive") {
-      tip("Regiment is already in the battle", false, "error");
+      toast("Regiment is already in the battle", "error");
       return;
     }
     target.classList.toggle("selected");
@@ -645,7 +645,7 @@ function addSide(): void {
   function addSideClicked(side: Side): void {
     const selected = body.querySelectorAll<HTMLElement>(".selected");
     if (!selected.length) {
-      tip("Please select a regiment first", false, "error");
+      toast("Please select a regiment first", "error");
       return;
     }
 
@@ -1089,11 +1089,11 @@ function runBattle(): void {
   const b = battle!;
   // validations
   if (!b.attackers.power) {
-    tip("Attackers army destroyed", false, "warn");
+    toast("Attackers army destroyed", "warn");
     return;
   }
   if (!b.defenders.power) {
-    tip("Defenders army destroyed", false, "warn");
+    toast("Defenders army destroyed", "warn");
     return;
   }
 
@@ -1360,7 +1360,7 @@ function applyResults(): void {
 
   notes.push({ id: `marker${i}`, name: b.name, legend });
 
-  tip(`${b.name} is over. ${result}`, true, "success", 4000);
+  toast(`${b.name} is over. ${result}`, "success", 4000);
 
   closeBattleScreen();
   cleanData();

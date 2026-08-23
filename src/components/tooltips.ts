@@ -1,45 +1,26 @@
 import { debounce, ensureEl, findEl } from "@/utils";
 
-type TipType = "info" | "success" | "warn" | "error";
-
-const TIP_BACKGROUND: Record<TipType, string> = {
-  info: "linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00)",
-  success: "linear-gradient(0.1turn, #ffffff00, #127912cc, #ffffff00)",
-  warn: "linear-gradient(0.1turn, #ffffff00, #be5d08cc, #ffffff00)",
-  error: "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"
-};
-
 const getTooltip = () => ensureEl("tooltip");
 
 /**
- * Show a message in the tooltip line
+ * Show a message in the hover-tooltip line
  * @param message - text to show, may contain html
  * @param main - pin the message so it is restored after transient tips
- * @param type - defines the tooltip background color
- * @param time - if set, clear the main tip after that many ms
  */
-export function tip(message: string, main = false, type: TipType = "info", time = 0): void {
+export function tip(message: string, main = false): void {
   const tooltip = getTooltip();
   tooltip.innerHTML = message;
-  tooltip.style.background = TIP_BACKGROUND[type];
 
-  if (main) {
-    tooltip.dataset.main = message;
-    tooltip.dataset.color = tooltip.style.background;
-  }
-
-  if (time) setTimeout(clearMainTip, time);
+  if (main) tooltip.dataset.main = message;
 }
 
 export function showMainTip(): void {
   const tooltip = getTooltip();
-  tooltip.style.background = tooltip.dataset.color || "";
   tooltip.innerHTML = tooltip.dataset.main || "";
 }
 
 export function clearMainTip(): void {
   const tooltip = getTooltip();
-  tooltip.dataset.color = "";
   tooltip.dataset.main = "";
   tooltip.innerHTML = "";
 }

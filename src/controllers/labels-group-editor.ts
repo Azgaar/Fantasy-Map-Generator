@@ -1,7 +1,7 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { LAYER_TOGGLES } from "@/components/layers-tab";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData } from "@/renderers/labels/label-data";
@@ -215,7 +215,7 @@ function onBodyClick(event: Event): void {
 function removeRow(row: HTMLTableRowElement): void {
   const rows = ensureEl("labelGroupsBody").children;
   if (rows.length < 2) {
-    tip("At least one group should be defined", false, "error");
+    toast("At least one group should be defined", "error");
     return;
   }
 
@@ -263,7 +263,7 @@ function submitForm(event: Event): void {
   if (!validateForm()) return;
 
   const rows = Array.from(ensureEl("labelGroupsBody").children) as HTMLTableRowElement[];
-  if (!rows.length) return void tip("At least one group should be defined", false, "error");
+  if (!rows.length) return void toast("At least one group should be defined", "error");
 
   const newGroupNames = new Set<string>();
   rows.forEach(row => {

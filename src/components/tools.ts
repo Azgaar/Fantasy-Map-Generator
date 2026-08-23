@@ -1,6 +1,6 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import { Emblems } from "@/generators/emblems-generator";
 import { Population } from "@/generators/population-generator";
@@ -8,7 +8,7 @@ import { unfog } from "@/renderers/overlays/fogging";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 
 ensureEl("toolsContent").addEventListener("click", event => {
-  if (customization) return tip("Please exit the customization mode first", false, "error");
+  if (customization) return toast("Please exit the customization mode first", "error");
   if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
   if (!["BUTTON", "I"].includes(event.target.tagName)) return;
 
@@ -138,8 +138,8 @@ function regeneratePopulation(): void {
 
 function regenerateStates(): void {
   const { warning, error } = States.regenerate();
-  if (error) return void tip(error, false, "error");
-  if (warning) tip(warning, false, "warn");
+  if (error) return void toast(error, "error");
+  if (warning) toast(warning, "warn");
 
   unfog();
   Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods", "emblems");

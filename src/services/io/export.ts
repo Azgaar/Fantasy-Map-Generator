@@ -1,7 +1,7 @@
 import type { Selection } from "d3";
 import { select } from "d3";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -47,10 +47,10 @@ async function exportToSvg(): Promise<void> {
     link.click();
 
     const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check`;
-    tip(message, true, "success", 5000);
+    toast(message, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
-    tip(`SVG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+    toast(`SVG export failed: ${(error as Error)?.message || "Unknown error"}`, "error", 5000);
   } finally {
     TIME && console.timeEnd("exportToSvg");
   }
@@ -89,10 +89,10 @@ async function exportToPng(): Promise<void> {
     }, 1000);
 
     const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check. You can set image scale in options`;
-    tip(message, true, "success", 5000);
+    toast(message, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
-    tip(`PNG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+    toast(`PNG export failed: ${(error as Error)?.message || "Unknown error"}`, "error", 5000);
   } finally {
     TIME && console.timeEnd("exportToPng");
   }
@@ -130,11 +130,11 @@ async function exportToJpeg(): Promise<void> {
     link.download = `${getFileName()}.jpeg`;
     link.href = window.URL.createObjectURL(blob);
     link.click();
-    tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+    toast(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
   } catch (error) {
     ERROR && console.error(error);
-    tip(`JPEG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+    toast(`JPEG export failed: ${(error as Error)?.message || "Unknown error"}`, "error", 5000);
   } finally {
     TIME && console.timeEnd("exportToJpeg");
   }
@@ -218,7 +218,7 @@ async function exportToPngTiles(): Promise<void> {
     .catch((error: Error) => {
       ERROR && console.error(error);
       status.innerHTML = "Tiles export failed";
-      tip(`PNG tiles export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+      toast(`PNG tiles export failed: ${error?.message || "Unknown error"}`, "error", 5000);
     });
 
   // promisified img.onload

@@ -22,7 +22,7 @@ import {
   range,
   select
 } from "d3";
-import { tip } from "../components/tooltips";
+import { toast } from "../components/toast";
 import { round } from "../utils";
 
 const CURVE_MAP: Record<string, CurveFactory> = {
@@ -46,8 +46,7 @@ const CURVE_MAP: Record<string, CurveFactory> = {
 };
 
 export const drawHeightmap = (): void => {
-  if (customization === 1)
-    return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
+  if (customization === 1) return void toast("The Layer control is not available in the heightmap edit mode", "error");
 
   TIME && console.time("drawHeightmap");
 

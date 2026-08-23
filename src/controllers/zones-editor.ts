@@ -12,7 +12,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
@@ -385,7 +385,7 @@ function changeType(zone: Zone, value: string): void {
 function changePopulation(zone: Zone): void {
   const landCells = zone.cells.filter(i => pack.cells.h[i] >= 20);
   if (!landCells.length) {
-    tip("Zone does not have any land cells, cannot change population", false, "error");
+    toast("Zone does not have any land cells, cannot change population", "error");
     return;
   }
 

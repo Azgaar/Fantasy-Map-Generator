@@ -7,7 +7,7 @@
 //   getLink(path): get a shareable link for a file
 //   initialize(): restore access tokens from storage if possible, else authenticate
 
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 
 export interface CloudFile {
   name: string;
@@ -170,7 +170,7 @@ const dropbox: DropboxProvider = {
 
   returnError(errorDescription) {
     console.error(errorDescription);
-    tip(errorDescription.replaceAll("+", " "), true, "error", 4000);
+    toast(errorDescription.replaceAll("+", " "), "error", 4000);
   },
 
   async getLink(path) {

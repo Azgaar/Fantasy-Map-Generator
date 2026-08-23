@@ -1,4 +1,5 @@
 import { quadtree } from "d3-quadtree";
+import { toast } from "@/components/toast";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
@@ -869,7 +870,7 @@ class BurgModule {
 
   remove(burgId: number) {
     const burg = pack.burgs[burgId];
-    if (!burg) return window.tip(`Burg ${burgId} not found`, false, "error");
+    if (!burg) return toast(`Burg ${burgId} not found`, "error");
 
     pack.cells.burg[burg.cell] = 0;
     burg.removed = true;

@@ -1,5 +1,5 @@
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
 import { ensureEl } from "../utils";
@@ -145,7 +145,7 @@ function updateLegend(): void {
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
   const note = (notes as Note[]).find(note => note.id === notesSelect.value);
   if (!note) {
-    tip("Note element is not found", true, "error", 4000);
+    toast("Note element is not found", "error", 4000);
     return;
   }
 
@@ -162,7 +162,7 @@ function updateNotesBox(note: Note): void {
 function changeElement(this: HTMLSelectElement): void {
   const note = (notes as Note[]).find(note => note.id === this.value);
   if (!note) {
-    tip("Note element is not found", true, "error", 4000);
+    toast("Note element is not found", "error", 4000);
     return;
   }
 
@@ -177,7 +177,7 @@ function changeName(this: HTMLInputElement): void {
   const notesSelect = ensureEl<HTMLSelectElement>("notesSelect");
   const note = (notes as Note[]).find(note => note.id === notesSelect.value);
   if (!note) {
-    tip("Note element is not found", true, "error", 4000);
+    toast("Note element is not found", "error", 4000);
     return;
   }
 
@@ -240,7 +240,7 @@ function downloadLegends(): void {
 
 function uploadLegends(dataLoaded: string): void {
   if (!dataLoaded) {
-    tip("Cannot load the file. Please check the data format", false, "error");
+    toast("Cannot load the file. Please check the data format", "error");
     return;
   }
   notes = JSON.parse(dataLoaded);

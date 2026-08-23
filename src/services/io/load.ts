@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
@@ -15,7 +16,7 @@ async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
   else {
-    tip("No map stored. Save map to browser storage first", true, "error", 2000);
+    toast("No map stored. Save map to browser storage first", "error", 2000);
     ERROR && console.error("No map stored");
   }
 }
@@ -43,7 +44,7 @@ async function createSharableDropboxLink(): Promise<void> {
     sharableLinkContainer.style.display = "block";
   } catch (error) {
     ERROR && console.error(error);
-    return tip("Dropbox API error. Can not create link.", true, "error", 2000);
+    return toast("Dropbox API error. Can not create link.", "error", 2000);
   }
 }
 
@@ -76,7 +77,7 @@ function loadMapPrompt(blob: Blob): void {
       uploadMap(blob);
     } catch (error) {
       ERROR && console.error(error);
-      tip("Cannot load last saved map", true, "error", 2000);
+      toast("Cannot load last saved map", "error", 2000);
     }
   }
 }
@@ -717,7 +718,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();
-    tip("Map is successfully loaded", true, "success", 7000);
+    toast("Map is successfully loaded", "success", 7000);
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();

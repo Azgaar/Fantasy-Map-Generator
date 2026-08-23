@@ -2,6 +2,7 @@ import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, ra
 import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -437,11 +438,11 @@ function getFriendlyHeight(h: number): string {
 // Exit customization mode
 function finalizeHeightmap(): void {
   if (select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").size() < 200) {
-    tip("Insufficient land area. There should be at least 200 land cells!", false, "error");
+    toast("Insufficient land area. There should be at least 200 land cells!", "error");
     return;
   }
   if (findEl("imageConverter")) {
-    tip("Please exit the Image Conversion mode first", false, "error");
+    toast("Please exit the Image Conversion mode first", "error");
     return;
   }
 
@@ -1165,7 +1166,7 @@ function placeLinearFeature(this: SVGElement, event: any): void {
 
   const power = ensureEl<HTMLInputElement>("heightmapLinePower").valueAsNumber;
   if (power === 0) {
-    tip("Power should not be zero", false, "error");
+    toast("Power should not be zero", "error");
     return;
   }
 
@@ -1204,21 +1205,21 @@ function applyFillBrush(this: SVGElement, event: any): void {
 
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
   if (cellTypeFilter === "water") {
-    tip("Fill brush is not available with 'only water cells' filter", false, "error");
+    toast("Fill brush is not available with 'only water cells' filter", "error");
     return;
   }
   if (cellTypeFilter === "land" && isWaterFill) {
-    tip("Land filter is active, water areas cannot be filled", false, "error");
+    toast("Land filter is active, water areas cannot be filled", "error");
     return;
   }
 
   const { selection, reachedBorder } = collectFillSelection(start, isWaterFill, startHeight);
   if (selection.length < MIN_FILL_CELLS) {
-    tip("No enclosed area found to fill", false, "error");
+    toast("No enclosed area found to fill", "error");
     return;
   }
   if (isWaterFill && reachedBorder) {
-    tip("Selected water area is open to map border and is not enclosed", false, "error");
+    toast("Selected water area is open to map border and is not enclosed", "error");
     return;
   }
 
@@ -1383,7 +1384,7 @@ function changeHeightForSelection(selection: number[], start: number): void {
 function cellTypeFilterChange(): void {
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter");
   if (cellTypeFilter.value === "land" && ensureEl("heightmapEditMode").innerHTML === "keep") {
-    tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
+    toast("You cannot change the coastline in 'Keep' edit mode", "error");
     cellTypeFilter.value = "all";
   }
   filterState.cellType = cellTypeFilter.value as typeof filterState.cellType;
@@ -1408,11 +1409,11 @@ function rescaleWithCondition(): void {
   const operator = ensureEl<HTMLSelectElement>("conditionSign").value;
   const operand = ensureEl<HTMLInputElement>("rescaleModifier").valueAsNumber;
   if (Number.isNaN(operand)) {
-    tip("Operand should be a number", false, "error");
+    toast("Operand should be a number", "error");
     return;
   }
   if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand)) {
-    tip("Operand should be an integer", false, "error");
+    toast("Operand should be an integer", "error");
     return;
   }
 
@@ -1443,16 +1444,16 @@ function disruptAllHeights(): void {
 function startFromScratch(): void {
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
   if (cellTypeFilter === "land") {
-    tip("Not allowed when 'only land cells' filter is set", false, "error");
+    toast("Not allowed when 'only land cells' filter is set", "error");
     return;
   }
   if (cellTypeFilter === "water") {
-    tip("Not allowed when 'only water cells' filter is set", false, "error");
+    toast("Not allowed when 'only water cells' filter is set", "error");
     return;
   }
   const someHeights = grid.cells.h.some((h: number) => h);
   if (!someHeights) {
-    tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
+    toast("Heightmap is already cleared, please do not click twice if not required", "error");
     return;
   }
 
@@ -1658,7 +1659,7 @@ function changeTemplate(template: string): void {
 
   const steps = templateString.split("\n");
   if (!steps.length) {
-    tip(`Heightmap template: no steps defined`, false, "error");
+    toast(`Heightmap template: no steps defined`, "error");
     return;
   }
 
@@ -1739,7 +1740,7 @@ function downloadTemplate(): void {
 function uploadTemplate(dataLoaded: string): void {
   const steps = dataLoaded.split("\r\n");
   if (!steps.length) {
-    tip("Cannot parse the template, please check the file", false, "error");
+    toast("Cannot parse the template, please check the file", "error");
     return;
   }
   ensureEl("templateBody").innerHTML = "";
@@ -1779,7 +1780,7 @@ function openImageConverter(): void {
 
   setOverlayOpacity(0);
   clearMainTip();
-  tip("Image Converter is opened. Upload image and assign height value for each color", false, "warn"); // main tip
+  toast("Image Converter is opened. Upload image and assign height value for each color", "warn"); // main tip
 
   // remove all heights
   grid.cells.h = new Uint8Array(grid.cells.i.length);
@@ -1932,7 +1933,7 @@ function autoAssing(type: string): void {
     heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     unassigned = colorsUnassignedContainer.querySelectorAll<HTMLElement>("div");
     if (!unassigned.length) {
-      tip("No unassigned colors. Please load an image and click the button again", false, "error");
+      toast("No unassigned colors. Please load an image and click the button again", "error");
       return;
     }
   }
@@ -2013,7 +2014,7 @@ function setOverlayOpacity(v: number): void {
 
 function applyConversion(): void {
   if (ensureEl("colorsAssignedContainer").childElementCount < 3) {
-    tip("Please assign colors to heights first", false, "error");
+    toast("Please assign colors to heights first", "error");
     return;
   }
 

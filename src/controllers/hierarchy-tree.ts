@@ -1,6 +1,7 @@
 import type { D3DragEvent, D3ZoomEvent } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { capitalize } from "@/utils";
 import { ensureEl, minmax } from "../utils";
@@ -59,7 +60,7 @@ function open(props: OpenProps): void {
   dataElements = props.data;
   validElements = cleanupOrigins(dataElements);
   if (validElements.length < 3) {
-    tip(`Not enough ${props.type} to show hierarchy`, false, "error");
+    toast(`Not enough ${props.type} to show hierarchy`, "error");
     return;
   }
 
@@ -231,7 +232,7 @@ function getRoot(): any {
     oldRoot = root;
     return root;
   } catch (error) {
-    tip(`Hierarchy data issue. ${error}`, false, "error", 6000);
+    toast(`Hierarchy data issue. ${error}`, "error", 6000);
     return oldRoot;
   }
 }
@@ -409,8 +410,8 @@ function selectElement(d: any): void {
 
   ensureEl<HTMLInputElement>("hierarchyTree_selectedCode").onchange = function () {
     const input = this as HTMLInputElement;
-    if (input.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
-    if (!input.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
+    if (input.value.length > 3) return toast("Abbreviation must be 3 characters or less", "error", 3000);
+    if (!input.value.length) return toast("Abbreviation cannot be empty", "error", 3000);
 
     node.select("text").text(input.value);
     dataElement.code = input.value;

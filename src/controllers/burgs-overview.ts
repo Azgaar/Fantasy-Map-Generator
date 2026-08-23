@@ -12,6 +12,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
@@ -453,7 +454,7 @@ function openBurgEditor(this: HTMLElement): void {
 function triggerBurgRemove(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
   if (pack.burgs[burgId].capital) {
-    tip("You cannot remove the capital. Please change the state capital first", false, "error");
+    toast("You cannot remove the capital. Please change the state capital first", "error");
     return;
   }
 
@@ -513,7 +514,7 @@ function showBurgsChart(): void {
     });
   const data: any[] = (states as any[]).concat(burgs);
   if (data.length < 2) {
-    tip("No burgs to show", false, "error");
+    toast("No burgs to show", "error");
     return;
   }
 
@@ -734,7 +735,7 @@ function renameBurgsInBulk(): void {
 
 function importBurgNames(dataLoaded: string): void {
   if (!dataLoaded) {
-    tip("Cannot load the file, please check the format", false, "error");
+    toast("Cannot load the file, please check the format", "error");
     return;
   }
   const data = dataLoaded
@@ -742,7 +743,7 @@ function importBurgNames(dataLoaded: string): void {
     .split("\n")
     .filter(Boolean);
   if (!data.length) {
-    tip("Cannot parse the list, please check the file format", false, "error");
+    toast("Cannot parse the list, please check the file format", "error");
     return;
   }
 

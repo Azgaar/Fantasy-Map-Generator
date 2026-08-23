@@ -1,6 +1,7 @@
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { clearMainTip, tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
+import { clearMainTip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
@@ -179,7 +180,7 @@ function confirmRemove(marker: Marker): void {
 }
 
 function exportInRange(): void {
-  if (!inRangeMarkers.length) return void tip("No markers in range to export", false, "error");
+  if (!inRangeMarkers.length) return void toast("No markers in range to export", "error");
 
   const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude\n";
   const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;

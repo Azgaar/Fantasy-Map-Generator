@@ -9,7 +9,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
@@ -68,7 +68,7 @@ const marketDealsTable = initEditorTable<Deal>({
 function open(marketId: number): void {
   const market = Markets.get(marketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    toast("Invalid market. The selected market does not exist", "error", 5000);
     return;
   }
 
@@ -145,7 +145,7 @@ function closeMarketDeals(): void {
 function getFilteredMarketDeals(): Deal[] {
   const market = Markets.get(activeMarketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    toast("Invalid market. The selected market does not exist", "error", 5000);
     return [];
   }
 

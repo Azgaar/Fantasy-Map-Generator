@@ -823,7 +823,7 @@ fieldset {
   font-size: calc(12px + 0.5vw);
   white-space: pre-line;
   z-index: 99999;
-  background: linear-gradient(0.1turn, #ffffff00, #c71d1d66, #ffffff00);
+  background: linear-gradient(0.1turn, #ffffff00, #5e5c5c80, #ffffff00);
 }
 
 #optionsContent table {

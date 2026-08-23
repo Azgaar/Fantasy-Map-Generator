@@ -1,6 +1,7 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { clearMainTip, tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
+import { clearMainTip } from "@/components/tooltips";
 import type { Burg } from "@/generators/burgs-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Province } from "@/generators/provinces-generator";
@@ -35,7 +36,7 @@ async function openDefault(): Promise<void> {
   const type = firstState ? "state" : "burg";
   const element = firstState ?? firstBurg;
   if (!element?.coa) {
-    tip("No emblems to edit, please generate states and burgs first", false, "error");
+    toast("No emblems to edit, please generate states and burgs first", "error");
     return;
   }
 
@@ -451,7 +452,7 @@ function upload(type: "image" | "svg"): void {
   if (file.size > 500000) {
     const message =
       "File is too big, please optimize file size up to 500kB and re-upload. Recommended size is 200x200 px and up to 100kB";
-    tip(message, true, "error", 5000);
+    toast(message, "error", 5000);
     return;
   }
 
@@ -477,7 +478,7 @@ function upload(type: "image" | "svg"): void {
 
       const svgEl = wrapper.querySelector("svg");
       if (!svgEl) {
-        tip("The file is not a valid SVG. Please use Armoria or other relevant tools", false, "error");
+        toast("The file is not a valid SVG. Please use Armoria or other relevant tools", "error");
         return;
       }
 
@@ -667,7 +668,7 @@ async function downloadGallery(): Promise<void> {
 }
 
 async function renderAllEmblems(states: State[], provinces: Province[], burgs: Burg[]): Promise<void> {
-  tip("Preparing for download...", true, "warn");
+  toast("Preparing for download...", "warn");
 
   const statePromises = states.map(state => EmblemRenderer.trigger(`stateCOA${state.i}`, state.coa));
   const provincePromises = provinces.map(province => EmblemRenderer.trigger(`provinceCOA${province.i}`, province.coa));

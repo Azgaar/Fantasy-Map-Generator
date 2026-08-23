@@ -1,5 +1,5 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { openURL } from "@/utils";
 import { ensureEl } from "../utils";
 
@@ -198,7 +198,7 @@ function open(defaultPrompt: string, onApply: (result: string) => void): void {
       },
       Apply: function (this: HTMLElement) {
         const result = ensureEl<HTMLTextAreaElement>("aiGeneratorResult").value;
-        if (!result) return tip("No result to apply", true, "error", 4000);
+        if (!result) return toast("No result to apply", "error", 4000);
         onApply(result);
         $(this).dialog("close");
       },
@@ -273,20 +273,20 @@ function setInitialValues(defaultPrompt: string): void {
 
 async function generate(button: HTMLButtonElement): Promise<void> {
   const key = ensureEl<HTMLInputElement>("aiGeneratorKey").value;
-  if (!key) return tip("Please enter an API key", true, "error", 4000);
+  if (!key) return toast("Please enter an API key", "error", 4000);
 
   const model = ensureEl<HTMLSelectElement>("aiGeneratorModel").value;
-  if (!model) return tip("Please select a model", true, "error", 4000);
+  if (!model) return toast("Please select a model", "error", 4000);
   localStorage.setItem("fmg-ai-model", model);
 
   const provider = MODELS[model];
   localStorage.setItem(`fmg-ai-kl-${provider}`, key);
 
   const prompt = ensureEl<HTMLTextAreaElement>("aiGeneratorPrompt").value;
-  if (!prompt) return tip("Please enter a prompt", true, "error", 4000);
+  if (!prompt) return toast("Please enter a prompt", "error", 4000);
 
   const temperature = ensureEl<HTMLInputElement>("aiGeneratorTemperature").valueAsNumber;
-  if (Number.isNaN(temperature)) return tip("Temperature must be a number", true, "error", 4000);
+  if (Number.isNaN(temperature)) return toast("Temperature must be a number", "error", 4000);
   localStorage.setItem("fmg-ai-temperature", String(temperature));
 
   try {
@@ -301,7 +301,7 @@ async function generate(button: HTMLButtonElement): Promise<void> {
     await PROVIDERS[provider].generate({ key, model, prompt, temperature, onContent });
   } catch (error) {
     const message = (error instanceof Error && error.message) || String(error) || "Failed to generate text";
-    return tip(message, true, "error", 4000);
+    return toast(message, "error", 4000);
   } finally {
     button.disabled = false;
     ensureEl<HTMLTextAreaElement>("aiGeneratorResult").disabled = false;

@@ -1,6 +1,6 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
 
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Services } from "@/services";
 import { ensureEl, ra } from "@/utils";
 
@@ -15,17 +15,17 @@ export function initiateAutosave(): void {
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
     if (diffInMinutes < timeoutMinutes) return;
-    if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warn", 2000);
+    if (customization) return toast("Autosave: map cannot be saved in edit mode", "warn", 2000);
 
     try {
-      tip("Autosave: saving map...", false, "warn", 3000);
+      toast("Autosave: saving map...", "warn", 3000);
       await Services.Save.saveToStorage(await Services.Save.prepareMapData());
-      tip("Autosave: map is saved", false, "success", 2000);
+      toast("Autosave: map is saved", "success", 2000);
 
       lastSavedAt = Date.now();
     } catch (error) {
       ERROR && console.error(error);
-      tip(`Autosave failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 4000);
+      toast(`Autosave failed: ${(error as Error)?.message || "Unknown error"}`, "error", 4000);
     }
   }
 
@@ -52,19 +52,19 @@ function startSaveReminder(): void {
 
   reminderInterval = setInterval(() => {
     if (customization) return;
-    tip(ra(message), true, "warn", 2500);
+    toast(ra(message), "warn", 2500);
   }, interval);
   reminderActive = true;
 }
 
 export function toggleSaveReminder(): void {
   if (reminderActive) {
-    tip("Save reminder is turned off. Press CTRL+Q again to re-initiate", true, "warn", 2000);
+    toast("Save reminder is turned off. Press CTRL+Q again to re-initiate", "warn", 2000);
     clearInterval(reminderInterval);
     localStorage.setItem("noReminder", "true");
     reminderActive = false;
   } else {
-    tip("Save reminder is turned on. Press CTRL+Q to turn off", true, "warn", 2000);
+    toast("Save reminder is turned on. Press CTRL+Q to turn off", "warn", 2000);
     localStorage.removeItem("noReminder");
     startSaveReminder();
   }

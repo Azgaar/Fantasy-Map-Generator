@@ -31,6 +31,9 @@ if (typeof window.tip === "undefined") {
 if (typeof window.clearMainTip === "undefined") {
   window.clearMainTip = () => {};
 }
+if (typeof window.toast === "undefined") {
+  window.toast = () => {};
+}
 
 // Logging flags declared in public/main.js and referenced bare by bundled modules
 for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {

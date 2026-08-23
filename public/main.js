@@ -360,7 +360,7 @@ function findBurgForMFCG(params) {
   }
 
   zoomTo(b.x, b.y, 8, 1600);
-  tip("Here stands the glorious city of " + b.name, true, "success", 15000);
+  toast("Here stands the glorious city of " + b.name, "success", 15000);
 }
 
 // add drag to upload logic, pull request from @evyatron

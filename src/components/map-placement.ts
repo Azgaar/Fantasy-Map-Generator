@@ -10,7 +10,6 @@ export function toggleMapPlacement(
   buttonId: string,
   onClick: (event: MouseEvent) => void,
   message: string,
-  type?: "warn",
   onStop?: () => void
 ): boolean {
   const button = ensureEl(buttonId);
@@ -23,7 +22,7 @@ export function toggleMapPlacement(
   button.classList.add("pressed");
   cleanupActivePlacement = onStop;
   select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
-  tip(message, true, type);
+  tip(message, true);
   return true;
 }
 

@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -105,7 +106,7 @@ function addRiver(): void {
   const { rivers: packRivers, cells } = pack;
   const riverCells = creatorCells;
   if (riverCells.length < 2) {
-    tip("Add at least 2 cells", false, "error");
+    toast("Add at least 2 cells", "error");
     return;
   }
 

@@ -11,6 +11,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -298,7 +299,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   const burgId = pack.cells.burg[cellId];
   if (!burgId) {
-    tip("Click on a burg to create a new market — no burg found here", false, "error");
+    toast("Click on a burg to create a new market — no burg found here", "error");
     return;
   }
 

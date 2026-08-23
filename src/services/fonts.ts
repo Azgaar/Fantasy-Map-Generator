@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { ensureEl } from "../utils";
 
 declare global {
@@ -367,8 +367,8 @@ export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
 
 window.addGoogleFont = async (family: string) => {
   const fontRanges = await fetchGoogleFont(family);
-  if (!fontRanges) return tip("Cannot fetch Google font for this value", true, "error", 4000);
-  tip(`Google font ${family} is loading...`, true, "warn", 4000);
+  if (!fontRanges) return toast("Cannot fetch Google font for this value", "error", 4000);
+  toast(`Google font ${family} is loading...`, "warn", 4000);
 
   const promises = fontRanges.map(range => {
     const { src, unicodeRange } = range;
@@ -385,14 +385,14 @@ window.addGoogleFont = async (family: string) => {
         document.fonts.add(fontFace);
       });
       fonts.push(...fontRanges);
-      tip(`Google font ${family} is added to the list`, true, "success", 4000);
+      toast(`Google font ${family} is added to the list`, "success", 4000);
       addFontOption(family);
       const select = ensureEl<HTMLSelectElement>("styleSelectFont");
       if (select) select.value = family;
       changeFont();
     })
     .catch(err => {
-      tip(`Failed to load Google font ${family}`, true, "error", 4000);
+      toast(`Failed to load Google font ${family}`, "error", 4000);
       ERROR && console.error(err);
     });
 };
@@ -404,7 +404,7 @@ window.addLocalFont = (family: string) => {
     display: "block"
   });
   document.fonts.add(fontFace);
-  tip(`Local font ${family} is added to the fonts list`, true, "success", 4000);
+  toast(`Local font ${family} is added to the fonts list`, "success", 4000);
   addFontOption(family);
   const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
@@ -417,7 +417,7 @@ window.addWebFont = (family: string, url: string) => {
 
   const fontFace = new FontFace(family, src, { display: "block" });
   document.fonts.add(fontFace);
-  tip(`Font ${family} is added to the list`, true, "success", 4000);
+  toast(`Font ${family} is added to the list`, "success", 4000);
   addFontOption(family);
   const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;

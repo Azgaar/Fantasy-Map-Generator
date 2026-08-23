@@ -12,7 +12,7 @@ import {
 } from "@/components/dialog/table";
 import type { FillBoxElement } from "@/components/fill-box";
 import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { toast } from "@/components/toast";
 import { Controllers } from "@/controllers";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
@@ -323,7 +323,7 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
   const failed = Number.isNaN(+el.value) || +el.value < 0 || +el.value > 9999;
   if (failed) {
     el.value = String(pack.biomes[biome].habitability);
-    tip("Please provide a valid number in range 0-9999", false, "error");
+    toast("Please provide a valid number in range 0-9999", "error");
     return;
   }
   pack.biomes[biome].habitability = +el.value;
@@ -335,7 +335,7 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
 function openWiki(el: HTMLElement): void {
   const biomeName = el.closest<HTMLElement>(".biomes")?.dataset.name;
   if (biomeName === "Custom" || !biomeName) {
-    tip("Please fill in the biome name", false, "error");
+    toast("Please fill in the biome name", "error");
     return;
   }
 
@@ -428,7 +428,7 @@ export function removeCustomBiome(biomes: Biome[], cellBiomes: ArrayLike<number>
 function addCustomBiome(): void {
   const biome = createCustomBiome(pack.biomes, getRandomColor());
   if (!biome) {
-    tip("Maximum number of biomes reached (255), data cleansing is required", false, "error");
+    toast("Maximum number of biomes reached (255), data cleansing is required", "error");
     return;
   }
 

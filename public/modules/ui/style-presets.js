@@ -475,11 +475,11 @@ function addStylePreset() {
     const styleJSON = styleSaverJSON.value;
     const desiredName = styleSaverName.value;
 
-    if (!styleJSON) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!desiredName) return tip("Please provide a preset name", false, "error");
+    if (!styleJSON) return toast("Please provide a style JSON", "error");
+    if (!JSON.isValid(styleJSON)) return toast("JSON string is not valid, please check the format", "error");
+    if (!desiredName) return toast("Please provide a preset name", "error");
     if (styleSaverTip.innerHTML === "default")
-      return tip("You cannot overwrite default preset, please change the name", false, "error");
+      return toast("You cannot overwrite default preset, please change the name", "error");
 
     const presetName = customPresetPrefix + desiredName;
     applyOption(stylePreset, presetName, desiredName + " [custom]");
@@ -487,7 +487,7 @@ function addStylePreset() {
     localStorage.setItem(presetName, styleJSON);
 
     applyStyleWithUiRefresh(JSON.parse(styleJSON));
-    tip("Style preset is saved and applied", false, "success", 4000);
+    toast("Style preset is saved and applied", "success", 4000);
     $("#styleSaver").dialog("close");
   }
 
@@ -495,9 +495,9 @@ function addStylePreset() {
     const styleJSON = styleSaverJSON.value;
     const styleName = styleSaverName.value;
 
-    if (!styleJSON) return tip("Please provide a style JSON", false, "error");
-    if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!styleName) return tip("Please provide a preset name", false, "error");
+    if (!styleJSON) return toast("Please provide a style JSON", "error");
+    if (!JSON.isValid(styleJSON)) return toast("JSON string is not valid, please check the format", "error");
+    if (!styleName) return toast("Please provide a preset name", "error");
 
     downloadFile(styleJSON, styleName + ".json", "application/json");
   }
@@ -507,21 +507,21 @@ function addStylePreset() {
     uploadFile(this, styleUpload);
 
     function styleUpload(dataLoaded) {
-      if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
+      if (!dataLoaded) return toast("Cannot load the file. Please check the data format", "error");
       const isValid = JSON.isValid(dataLoaded);
-      if (!isValid) return tip("Loaded data is not a valid JSON, please check the format", false, "error");
+      if (!isValid) return toast("Loaded data is not a valid JSON, please check the format", "error");
 
       styleSaverJSON.value = JSON.stringify(JSON.parse(dataLoaded), null, 2);
       styleSaverName.value = fileName;
       checkName();
-      tip("Style preset is uploaded", false, "success", 4000);
+      toast("Style preset is uploaded", "success", 4000);
     }
   }
 }
 
 function requestRemoveStylePreset() {
   const isDefault = systemPresets.includes(stylePreset.value);
-  if (isDefault) return tip("Cannot remove system preset", false, "error");
+  if (isDefault) return toast("Cannot remove system preset", "error");
 
   confirmationDialog({
     title: "Remove style preset",

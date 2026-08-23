@@ -12,6 +12,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { toast } from "@/components/toast";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -545,7 +546,7 @@ function changePopulation(this: HTMLElement): void {
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const religion = pack.religions[religionId];
   if (!religion.cells) {
-    tip("Religion does not have any cells, cannot change population", false, "error");
+    toast("Religion does not have any cells, cannot change population", "error");
     return;
   }
 
@@ -880,13 +881,13 @@ function addReligion(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   const center = findCell(x, y)!;
   if (pack.cells.h[center] < 20) {
-    tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
+    toast("You cannot place religion center into the water. Please click on a land cell", "error");
     return;
   }
 
   const occupied = pack.religions.some(r => !r.removed && r.center === center);
   if (occupied) {
-    tip("This cell is already a religion center. Please select a different cell", false, "error");
+    toast("This cell is already a religion center. Please select a different cell", "error");
     return;
   }
 
