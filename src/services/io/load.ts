@@ -157,13 +157,8 @@ function uploadMap(file: Blob, callback?: () => void): void {
 async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | null> {
   try {
     const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
-
-    let uncompressedData: number[] = [];
-    for await (const chunk of uncompressedStream) {
-      uncompressedData = uncompressedData.concat(Array.from(chunk));
-    }
-
-    return new Uint8Array(uncompressedData);
+    const uncompressedBuffer = await new Response(uncompressedStream).arrayBuffer();
+    return new Uint8Array(uncompressedBuffer);
   } catch (error) {
     ERROR && console.error(error);
     return null;
