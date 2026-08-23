@@ -12,17 +12,34 @@ import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
-async function saveMap(method: SaveMethod): Promise<void> {
+function isCompressionSupported(): boolean {
+  return typeof CompressionStream !== "undefined";
+}
+
+async function getMapDataBlob(mapData: string, compressed: boolean): Promise<Blob> {
+  if (!compressed || !isCompressionSupported()) return new Blob([mapData], { type: "text/plain" });
+
+  const compressedStream = new Blob([mapData]).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Response(compressedStream).blob();
+}
+
+async function saveMap(method: SaveMethod, compressed = true): Promise<void> {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
 
   try {
     const mapData = prepareMapData();
     const filename = `${getFileName()}.map`;
+    const fallbackToUncompressed = compressed && !isCompressionSupported();
+    const blob = await getMapDataBlob(mapData, compressed);
 
-    if (method === "storage") await saveToStorage(mapData, true);
-    if (method === "machine") saveToMachine(mapData, filename);
-    if (method === "dropbox") await saveToDropbox(mapData, filename);
+    if (method === "storage") await saveToStorage(blob, true);
+    if (method === "machine") saveToMachine(blob, filename);
+    if (method === "dropbox") await saveToDropbox(blob, filename);
+
+    if (fallbackToUncompressed) {
+      tip("Your browser doesn't support file compression, the map is saved uncompressed", true, "warn", 8000);
+    }
   } catch (error) {
     ERROR && console.error(error);
     alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
@@ -37,7 +54,7 @@ async function saveMap(method: SaveMethod): Promise<void> {
       buttons: {
         Retry: function (this: HTMLElement) {
           $(this).dialog("close");
-          saveMap(method);
+          saveMap(method, compressed);
         },
         Close: function (this: HTMLElement) {
           $(this).dialog("close");
@@ -208,15 +225,13 @@ function prepareMapData(): string {
 }
 
 // save map file to indexedDB
-async function saveToStorage(mapData: string, showTip = false): Promise<void> {
-  const blob = new Blob([mapData], { type: "text/plain" });
+async function saveToStorage(blob: Blob, showTip = false): Promise<void> {
   await ldb.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
 // download map file
-function saveToMachine(mapData: string, filename: string): void {
-  const blob = new Blob([mapData], { type: "text/plain" });
+function saveToMachine(blob: Blob, filename: string): void {
   const URL = window.URL.createObjectURL(blob);
 
   const link = document.createElement("a");
@@ -228,8 +243,8 @@ function saveToMachine(mapData: string, filename: string): void {
   setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 }
 
-async function saveToDropbox(mapData: string, filename: string): Promise<void> {
-  await Services.Cloud.save(filename, mapData);
+async function saveToDropbox(blob: Blob, filename: string): Promise<void> {
+  await Services.Cloud.save(filename, blob);
   tip("Map is saved to your Dropbox", true, "success", 8000);
 }
 

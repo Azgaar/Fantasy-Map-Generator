@@ -31,7 +31,7 @@ interface DropboxProvider {
   call(name: string, param?: unknown): Promise<any>;
   initialize(): Promise<void>;
   connect(tokens: DropboxTokens): Promise<void>;
-  save(fileName: string, contents: string): Promise<boolean>;
+  save(fileName: string, contents: string | Blob): Promise<boolean>;
   load(path: string): Promise<Blob>;
   list(): Promise<CloudFile[]>;
   auth(): Promise<void>;
@@ -197,7 +197,7 @@ export const Cloud = { providers: { dropbox } };
 // Method facade so the registry (which dispatches method calls, not property
 // reads) can reach cloud storage uniformly as `Services.Cloud.<method>()`.
 export const CloudStorage = {
-  save: (fileName: string, contents: string) => dropbox.save(fileName, contents),
+  save: (fileName: string, contents: string | Blob) => dropbox.save(fileName, contents),
   load: (path: string) => dropbox.load(path),
   getLink: (path: string) => dropbox.getLink(path),
   list: () => dropbox.list(),

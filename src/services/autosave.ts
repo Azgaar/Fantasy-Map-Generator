@@ -19,7 +19,8 @@ export function initiateAutosave(): void {
 
     try {
       tip("Autosave: saving map...", false, "warn", 3000);
-      await Services.Save.saveToStorage(await Services.Save.prepareMapData());
+      const mapData = await Services.Save.prepareMapData();
+      await Services.Save.saveToStorage(new Blob([mapData], { type: "text/plain" }));
       tip("Autosave: map is saved", false, "success", 2000);
 
       lastSavedAt = Date.now();

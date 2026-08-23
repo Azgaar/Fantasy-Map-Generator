@@ -2433,19 +2433,31 @@
         <div style="margin-top: 0.3em">
           <strong>Save map to</strong>
           <button
-            onclick="window.Services.Save.saveMap('machine')"
+            onclick="window.Services.Save.saveMap('machine', saveMapCompressed.checked)"
             data-tip="Download map file to your local disk"
             data-shortcut="Ctrl + S"
             style="font-weight: 600"
           >
             machine
           </button>
-          <button onclick="window.Services.Save.saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button
+            onclick="window.Services.Save.saveMap('dropbox', saveMapCompressed.checked)"
+            data-tip="Save map file to your Dropbox"
+            data-shortcut="Ctrl + C"
+          >
             dropbox
           </button>
-          <button onclick="window.Services.Save.saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
+          <button
+            onclick="window.Services.Save.saveMap('storage', saveMapCompressed.checked)"
+            data-tip="Save the project to browser storage only"
+            data-shortcut="F6"
+          >
             browser
           </button>
+        </div>
+        <div style="margin-top: 0.6em" data-tip="Gzip-compress the save file to reduce its size, without losing any data">
+          <input id="saveMapCompressed" class="checkbox" type="checkbox" checked />
+          <label for="saveMapCompressed" class="checkbox-label">compress file (recommended, smaller file size)</label>
         </div>
         <p>
           Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
