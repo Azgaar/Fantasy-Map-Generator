@@ -18,7 +18,7 @@
 import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
 
-export const VERSION = "1.148.3";
+export const VERSION = "1.148.4";
 
 const latestPublicChanges = [
   "Emblems rendering optimization",
