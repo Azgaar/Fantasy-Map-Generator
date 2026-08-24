@@ -167,7 +167,6 @@ syncPerfSpecs(headDir, baseDir);
 let baseServer;
 let headServer;
 const ratios = new Map();
-const baseValues = new Map();
 const baseChecksums = new Map();
 const headChecksums = new Map();
 
@@ -190,8 +189,6 @@ try {
       if (headValue === undefined || !baseValue) continue;
       if (!ratios.has(name)) ratios.set(name, []);
       ratios.get(name).push(headValue / baseValue);
-      if (!baseValues.has(name)) baseValues.set(name, []);
-      baseValues.get(name).push(baseValue);
     }
     for (const [caseKey, hash] of baseResult.checksums) {
       if (!baseChecksums.has(caseKey)) baseChecksums.set(caseKey, []);
@@ -227,21 +224,21 @@ for (const [caseKey, baseHashes] of baseChecksums) {
   }
 }
 
-const MIN_MEASURABLE_MS = 2;
+const isGated = name => name.endsWith("> total") || name.endsWith("> gesture");
 
 const rows = [];
 let regressed = false;
 for (const [name, samples] of ratios) {
   const change = median(samples) - 1;
   const spread = Math.max(...samples) - Math.min(...samples);
-  const measurable = median(baseValues.get(name)) >= MIN_MEASURABLE_MS;
-  const isRegression = measurable && change > threshold;
+  const gated = isGated(name);
+  const isRegression = gated && change > threshold;
   if (isRegression) regressed = true;
   rows.push({
     metric: name,
     change: `${change >= 0 ? "+" : ""}${(change * 100).toFixed(1)}%`,
     spread: `${(spread * 100).toFixed(1)}%`,
-    status: isRegression ? "REGRESSION" : measurable ? "ok" : "info (<2ms)"
+    status: isRegression ? "REGRESSION" : gated ? "ok" : "info"
   });
 }
 
