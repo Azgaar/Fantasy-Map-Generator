@@ -70,3 +70,20 @@ test("syncStylesFromMap harvests burg/anchor groups present in the DOM over the 
   expect(styles.burgIcons.anchors.groups.capital.attrs.fill).toBe("#00ff00");
   expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
 });
+
+test("save sync keeps store-authoritative zoom options when the DOM lacks the attrs", () => {
+  document.body.innerHTML = `<svg id="map"><g id="markers"></g><g id="regions"><g id="statesHalo"></g></g></svg>`;
+  styles.markers.options.rescale = 0;
+  styles.states.statesHalo.options.width = 7;
+  syncStylesFromMap();
+  expect(styles.markers.options.rescale).toBe(0);
+  expect(styles.states.statesHalo.options.width).toBe(7);
+});
+
+test("save sync lets an old map's attrs win when present", () => {
+  document.body.innerHTML = `<svg id="map"><g id="markers" rescale="1"></g><g id="regions"><g id="statesHalo" data-width="13"></g></g></svg>`;
+  styles.markers.options.rescale = 0;
+  syncStylesFromMap();
+  expect(styles.markers.options.rescale).toBe(1);
+  expect(styles.states.statesHalo.options.width).toBe(13);
+});

@@ -1866,5 +1866,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   // Version-lie maps make the record's own shape the only trustworthy signal: harvest fills the store for
   // record-less maps so the next save persists correctly, while absorbed domains stay with migration-gate values
-  if (!isStoreStyles(safeParseJSON(data[48]))) syncStylesFromMap();
+  if (!isStoreStyles(safeParseJSON(data[48]))) {
+    syncStylesFromMap();
+    document.getElementById("markers")?.removeAttribute("rescale");
+    document.getElementById("statesHalo")?.removeAttribute("data-width");
+  }
 }
