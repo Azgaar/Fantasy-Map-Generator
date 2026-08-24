@@ -254,6 +254,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
+  clone.select("#mapInteractionOverlay").remove();
   if (!debug) clone.select("#debug").remove();
 
   const cloneDefs = cloneEl.getElementsByTagName("defs")[0];

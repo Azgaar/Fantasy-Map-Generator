@@ -3,6 +3,7 @@ import { clientToViewport, type MapCamera, screenToWorld } from "../core/camera"
 import { coalesceInvalidations } from "../core/invalidation";
 import type { MapHit, ScreenPoint } from "../core/map-renderer";
 import { emblemRenderer } from "../emblems/renderer";
+import { MapInteractionOverlay, type MapInteractionOverlayPatch } from "../interaction/map-interaction-overlay";
 import { getLabelRenderState } from "../labels/label-render-state";
 import { getMarkerRenderState } from "../marker-render-state";
 import { getMapRendererStyle } from "../scene/map-style-state";
@@ -13,6 +14,7 @@ import { readReliefSvgDataUri, readSvgElementDataUri, readSvgSymbolDataUri } fro
 
 export interface PixiRendererControllerApi {
   clear: () => Promise<void>;
+  clearInteraction: () => void;
   createOverview: (maxWidth: number, maxHeight: number) => PixiRendererOverview | null;
   getCanvas: () => CanvasImageSource | null;
   getSnapshot: () => PixiRendererSnapshot | null;
@@ -22,6 +24,7 @@ export interface PixiRendererControllerApi {
   start: () => Promise<void>;
   syncCamera: () => void;
   toMapPoint: (clientX: number, clientY: number) => ScreenPoint | null;
+  updateInteraction: (patch: MapInteractionOverlayPatch) => void;
 }
 
 export interface PixiRendererOverview {
@@ -34,6 +37,7 @@ export const PIXI_RENDERER_SCENE_CHANGE_EVENT = "map:pixi-renderer:scene-change"
 
 let instancePromise: Promise<PixiMapRenderer> | null = null;
 let instance: PixiMapRenderer | null = null;
+const interactionOverlay = new MapInteractionOverlay();
 
 const OWNED_SVG_SELECTORS = [
   "#oceanLayers",
@@ -193,7 +197,11 @@ const getWorld = () =>
   );
 
 const api: PixiRendererControllerApi = {
-  clear: async () => instance?.clear(),
+  clear: async () => {
+    interactionOverlay.clear();
+    await instance?.clear();
+  },
+  clearInteraction: () => interactionOverlay.clear(),
   createOverview: (maxWidth, maxHeight) => instance?.createOverview(maxWidth, maxHeight) ?? null,
   getCanvas: () => instance?.getCanvas() ?? null,
   getSnapshot: () => instance?.getSnapshot() ?? null,
@@ -220,21 +228,30 @@ const api: PixiRendererControllerApi = {
     if (!pack?.cells?.i?.length) return;
     if (!pack.relief?.length) Relief.generate();
     const renderer = await getInstance();
-    renderer.setCamera(getCamera());
+    const camera = getCamera();
+    renderer.setCamera(camera);
+    interactionOverlay.mount(document.getElementById("map") as unknown as SVGSVGElement);
+    interactionOverlay.setCamera(camera);
     await renderer.mount(prepareSurface());
     syncVisibility(renderer);
     await renderer.render(getWorld(), getMapRendererStyle(style), coalesceInvalidations([{ kind: "world" }]));
     clearOwnedSvgLayers();
     document.getElementById("map")?.classList.add("pixi-renderer-active");
   },
-  syncCamera: () => instance?.setCamera(getCamera()),
+  syncCamera: () => {
+    const camera = getCamera();
+    instance?.setCamera(camera);
+    interactionOverlay.setCamera(camera);
+  },
   toMapPoint: (clientX, clientY) => {
     const point = getRendererScreenPoint(clientX, clientY);
     return point ? screenToWorld(point, getCamera()) : null;
-  }
+  },
+  updateInteraction: patch => interactionOverlay.update(patch)
 };
 
 export const clearPixiRenderer = api.clear;
+export const clearMapInteractionOverlay = api.clearInteraction;
 export const createPixiRendererOverview = api.createOverview;
 export const getPixiRendererCanvas = api.getCanvas;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
@@ -243,6 +260,7 @@ export const pickPixiRenderer = api.pick;
 export const startPixiRenderer = api.start;
 export const syncPixiRendererCamera = api.syncCamera;
 export const getPixiMapPointAtClient = api.toMapPoint;
+export const updateMapInteractionOverlay = api.updateInteraction;
 export const pixiRendererController = api;
 export const syncPixiRendererVisibility = (): void => {
   void instancePromise?.then(syncVisibility);

@@ -12,6 +12,7 @@ import rendererLoader from "./pixi-renderer-loader.ts?raw";
 
 const createController = (): PixiRendererControllerApi => ({
   clear: vi.fn(async () => undefined),
+  clearInteraction: vi.fn(),
   createOverview: vi.fn(() => null),
   getCanvas: vi.fn(() => null),
   getSnapshot: vi.fn(() => null),
@@ -20,7 +21,8 @@ const createController = (): PixiRendererControllerApi => ({
   queueRebuild: vi.fn(),
   start: vi.fn(async () => undefined),
   syncCamera: vi.fn(),
-  toMapPoint: vi.fn(() => null)
+  toMapPoint: vi.fn(() => null),
+  updateInteraction: vi.fn()
 });
 
 describe("Pixi renderer classic event bridge", () => {

@@ -169,7 +169,15 @@ export class MapPickingIndex {
     }
 
     if (query.isLayerVisible("cells")) {
-      return { distance: 0, domainId: cellId, domainKind: "cell", kind: "area", layer: "cells", mapPoint };
+      return {
+        distance: 0,
+        domainId: cellId,
+        domainKind: "cell",
+        kind: "area",
+        layer: "cells",
+        mapPoint,
+        subPart: { cellId }
+      };
     }
     const layer = Number(world.cells.h[cellId]) >= 20 ? "landmass" : "ocean";
     if (!query.isLayerVisible(layer)) return null;
