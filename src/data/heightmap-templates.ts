@@ -39,6 +39,11 @@ const lowIsland = `Hill 1 90-99 60-80 45-55
   Multiply 0.4 20-100 0 0
   Mask 4 0 0 0`;
 
+const loneIsland = `Hill 1 55-65 48-52 48-52
+  Smooth 2 0 0 0
+  Mask 2 0 0 0
+  Multiply 0.8 land 0 0`;
+
 const continents = `Hill 1 80-85 60-80 40-60
   Hill 1 80-85 20-30 40-60
   Hill 6-7 15-30 25-75 15-85
@@ -169,7 +174,8 @@ export const heightmapTemplates: Record<string, HeightmapTemplate> = {
   shattered: { id: 10, name: "Shattered", template: shattered, probability: 7 },
   taklamakan: { id: 11, name: "Taklamakan", template: taklamakan, probability: 1 },
   oldWorld: { id: 12, name: "Old World", template: oldWorld, probability: 8 },
-  fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 }
+  fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 },
+  loneIsland: { id: 14, name: "Lone Island", template: loneIsland, probability: 0 }
 };
 
 declare global {

@@ -23,8 +23,10 @@ function open(): void {
   const applySelected = (createNewMap: boolean): void => {
     const id = getSelected();
     if (!id) return;
+    delete document.body.dataset.newMapMode;
     applyOption($templateInput, id, getName(id));
     lock("template");
+    $templateInput.dispatchEvent(new Event("change", { bubbles: true }));
     if (createNewMap) regeneratePrompt({ seed: getSeed(), graph });
     destroyDialog("heightmapSelection");
   };

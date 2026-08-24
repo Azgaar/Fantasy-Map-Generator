@@ -30,6 +30,7 @@ import drawTradeSource from "../draw-trade-animation.ts?raw";
 import renderersIndex from "../index.ts?raw";
 import labelsRendererSource from "../labels/labels-renderer.ts?raw";
 import pointSymbolsSource from "../point-symbols.ts?raw";
+import coordinateSceneSource from "../scene/layers/coordinate-scene.ts?raw";
 import emblemSceneSource from "../scene/layers/emblem-scene.ts?raw";
 import labelSceneSource from "../scene/layers/label-scene.ts?raw";
 import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
@@ -170,6 +171,15 @@ describe("Pixi hard cutover", () => {
     expect(labelSceneSource.includes("buildLabelScene")).toBe(true);
     expect(controllerSource.includes('"#labels"')).toBe(true);
     expect(controllerSource.includes('"#textPaths"')).toBe(true);
+  });
+
+  it("renders coordinates through camera-neutral scene data without live SVG graticules", () => {
+    expect(layersSource.includes('redrawPixiLayer("coordinates", "coordinates")')).toBe(true);
+    expect(layersSource.includes("geoGraticule")).toBe(false);
+    expect(layersSource.includes("DOMPoint")).toBe(false);
+    expect(coordinateSceneSource.includes("buildCoordinateScene")).toBe(true);
+    expect(coordinateSceneSource.includes("document.")).toBe(false);
+    expect(controllerSource.includes('"#coordinates"')).toBe(true);
   });
 
   it("renders emblems through cached Pixi textures without a live SVG emblem layer", () => {

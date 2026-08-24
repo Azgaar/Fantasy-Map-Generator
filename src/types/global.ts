@@ -280,7 +280,7 @@ declare global {
 
   var aleaPRNG: (seed: string | number) => () => number;
   var heightmapColorSchemes: Record<string, unknown>;
-  var regeneratePrompt: (options?: { seed?: string; graph?: any }) => void;
+  var regeneratePrompt: (options?: { fromSetup?: boolean; graph?: any; seed?: string }) => void;
 
   var cults: Selection<SVGGElement, unknown, null, undefined>;
   var relig: Selection<SVGGElement, unknown, null, undefined>;

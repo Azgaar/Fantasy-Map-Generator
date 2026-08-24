@@ -12,6 +12,7 @@ import {
 import { WorkspaceConfirmDialog } from "./ui/confirm-dialog";
 import { executeLegacyCommand } from "./ui/legacy-command";
 import { WorkspaceToolbar } from "./workspace-toolbar";
+import { WorldPresetGallery } from "./world-preset-gallery";
 import {
   WorkspacePanel,
   WorkspacePanelAction,
@@ -146,6 +147,8 @@ function openWorkspaceSection(section: WorkspaceSection): void {
   if (tab?.classList.contains("active")) dispatchWorkspacePanelChange(section);
   else tab?.click();
 }
+
+window.addEventListener("new-map:open", () => openWorkspaceSection("world-setup"));
 
 function WorkspaceHeader(): React.JSX.Element {
   const [title, setTitle] = useState(WORKSPACE_SECTIONS.layers.title);
@@ -357,6 +360,14 @@ const headerRoot = document.getElementById("workspacePanelHeaderRoot");
 const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
 const mapPreviewRoot = document.getElementById("mapPreviewRoot");
+const worldSetupSection = document.querySelector<HTMLElement>('[data-options-section="world-setup"]');
+
+if (worldSetupSection) {
+  const worldPresetGalleryRoot = document.createElement("div");
+  worldPresetGalleryRoot.id = "worldPresetGalleryRoot";
+  worldSetupSection.prepend(worldPresetGalleryRoot);
+  createRoot(worldPresetGalleryRoot).render(<WorldPresetGallery />);
+}
 
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
 if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);

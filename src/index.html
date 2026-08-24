@@ -1496,7 +1496,7 @@
         </div>
         <div id="optionsContent" class="tabcontent" data-workspace-view="preferences">
           <section class="fmg-options-section" data-options-section="world-setup">
-            <p data-tip="Map generation settings. Generate a new map to apply the settings">Map setup:</p>
+            <p data-tip="Map generation settings. Generate a new map to apply the settings">Custom settings:</p>
             <table>
             <tr
               data-tip="Set original map size on generation. It cannot be changed later. Always keep canvas size equal to your screen size or less. The best option is to use the default value. For full-globe maps use aspect ratio 2:1"
@@ -1720,6 +1720,9 @@
                 onclick="window.Controllers.WorldConfigurator.open()"
               >
                 Configure World
+              </button>
+              <button id="generateMapFromSetup" data-tip="Generate a new map from the selected world and settings">
+                Generate Map
               </button>
             </div>
           </section>

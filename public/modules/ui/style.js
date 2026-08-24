@@ -404,8 +404,15 @@ function selectStyleElement() {
   }
 
   if (styleElement === "coordinates") {
+    const coordinateStyle = style.mapRenderer?.coordinates;
     styleSize.style.display = "block";
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = coordinateStyle?.fontSize ?? 12;
+    styleOpacityInput.value = coordinateStyle?.opacity ?? 1;
+    styleStrokeInput.value = styleStrokeOutput.value = coordinateStyle?.stroke?.color ?? "#d4d4d4";
+    styleStrokeWidthInput.value = coordinateStyle?.stroke?.width ?? 1;
+    styleStrokeDasharrayInput.value = coordinateStyle?.stroke?.dash ?? "5";
+    styleStrokeLinecapInput.value = coordinateStyle?.stroke?.cap ?? "butt";
+    styleFilterInput.value = coordinateStyle?.filter || "";
   }
 
   if (styleElement === "ruler") {
@@ -600,6 +607,7 @@ styleStrokeInput.addEventListener("input", function () {
   if (groupStyle) groupStyle.stroke = this.value;
   redrawLabelsOnStyleChange();
   if (styleElementSelect.value === "gridOverlay") drawGrid();
+  if (styleElementSelect.value === "coordinates") setPixiCoordinateLineStyle("color", this.value);
   const pixiStrokeLayer = {cells: "cells", prec: "precipitation", zones: "zones"}[styleElementSelect.value];
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "color", this.value);
@@ -626,6 +634,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["stroke-width"] = e.target.value;
   if (styleElementSelect.value === "gridOverlay") drawGrid();
+  if (styleElementSelect.value === "coordinates") setPixiCoordinateLineStyle("width", Number(e.target.value));
   const pixiStrokeLayer = {
     cells: "cells",
     prec: "precipitation",
@@ -664,6 +673,7 @@ styleLetterSpacingInput.addEventListener("input", e => {
 styleStrokeDasharrayInput.addEventListener("input", function () {
   getEl().attr("stroke-dasharray", this.value);
   if (styleElementSelect.value === "gridOverlay") drawGrid();
+  if (styleElementSelect.value === "coordinates") setPixiCoordinateLineStyle("dash", this.value);
   const pixiStrokeLayer = {cells: "cells", temperature: "temperature", zones: "zones"}[styleElementSelect.value];
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "dash", this.value);
@@ -681,6 +691,7 @@ styleStrokeDasharrayInput.addEventListener("input", function () {
 styleStrokeLinecapInput.addEventListener("change", function () {
   getEl().attr("stroke-linecap", this.value);
   if (styleElementSelect.value === "gridOverlay") drawGrid();
+  if (styleElementSelect.value === "coordinates") setPixiCoordinateLineStyle("cap", this.value);
   const pixiStrokeLayer = {cells: "cells", temperature: "temperature", zones: "zones"}[styleElementSelect.value];
   if (pixiStrokeLayer) {
     setPixiLineStyle(pixiStrokeLayer, "cap", this.value);
@@ -705,6 +716,7 @@ styleOpacityInput.addEventListener("input", e => {
     biomes: "biomes",
     cells: "cells",
     compass: "compass",
+    coordinates: "coordinates",
     emblems: "emblems",
     cults: "cultures",
     gridOverlay: "grid",
@@ -736,6 +748,7 @@ styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
   getEl().attr("filter", this.value);
   if (styleElementSelect.value === "emblems") setPixiEmblemStyle("filter", this.value || null);
+  if (styleElementSelect.value === "coordinates") setPixiCoordinateStyle("filter", this.value || null);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) {
     if (this.value) groupStyle.filter = this.value;
@@ -1184,14 +1197,15 @@ function changeFontSize(el, size) {
     return;
   }
 
-  const getSizeOnScale = element => {
-    if (element === "coordinates") return rn(size / scale ** 0.8, 2);
+  if (styleElementSelect.value === "coordinates") {
+    el.attr("data-size", size).attr("font-size", size);
+    setPixiCoordinateStyle("fontSize", Number(size));
+    return;
+  }
 
-    // other has the same size
-    return size;
-  };
+  const getSizeOnScale = () => size;
 
-  const scaleSize = getSizeOnScale(styleElementSelect.value);
+  const scaleSize = getSizeOnScale();
   el.attr("data-size", size).attr("font-size", scaleSize);
 
   if (styleElementSelect.value === "legend") redrawLegend();
@@ -1229,7 +1243,7 @@ function setPixiLayerOpacity(layer, opacity) {
   style.mapRenderer[layer] = {
     ...current,
     ...(
-      ["cells", "compass", "emblems", "grid", "ice", "markers", "military", "population", "precipitation", "rivers", "temperature", "trade", "zones"].includes(
+      ["cells", "compass", "coordinates", "emblems", "grid", "ice", "markers", "military", "population", "precipitation", "rivers", "temperature", "trade", "zones"].includes(
         layer
       )
       ? {}
@@ -1297,6 +1311,19 @@ function setPixiEmblemStyle(property, value) {
   style.mapRenderer ||= {};
   style.mapRenderer.emblems = {...(style.mapRenderer.emblems || {}), [property]: value};
   invalidateSemanticLayer("emblems");
+}
+
+function setPixiCoordinateStyle(property, value) {
+  style.mapRenderer ||= {};
+  style.mapRenderer.coordinates = {...(style.mapRenderer.coordinates || {}), [property]: value};
+  invalidateSemanticLayer("coordinates");
+}
+
+function setPixiCoordinateLineStyle(property, value) {
+  style.mapRenderer ||= {};
+  const current = style.mapRenderer.coordinates || {};
+  style.mapRenderer.coordinates = {...current, stroke: {...(current.stroke || {}), [property]: value}};
+  invalidateSemanticLayer("coordinates");
 }
 
 function setPixiLineStyle(layer, property, value) {

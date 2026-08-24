@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { camerasEqual, normalizeCamera } from "./camera";
+import { clientToViewport, screenToWorld, worldToScreen } from "./camera";
 
-describe("map camera", () => {
-  it("normalizes invalid values at the renderer boundary", () => {
-    expect(normalizeCamera({ height: 0, scale: Number.NaN, width: 10.4, x: Number.NaN, y: 4 })).toEqual({
-      height: 1,
-      scale: 1,
-      width: 10,
-      x: 0,
-      y: 4
-    });
+describe("map camera transforms", () => {
+  const camera = { height: 600, scale: 2.5, width: 800, x: -120, y: 45 };
+
+  it("round-trips transformed coordinates", () => {
+    const world = { x: 73.25, y: -18.5 };
+    const screen = worldToScreen(world, camera);
+    expect(screenToWorld(screen, camera)).toEqual(world);
   });
 
-  it("compares every camera and viewport component", () => {
-    const camera = { height: 600, scale: 2, width: 800, x: 10, y: 20 };
-    expect(camerasEqual(camera, { ...camera })).toBe(true);
-    expect(camerasEqual(camera, { ...camera, scale: 3 })).toBe(false);
+  it("converts client coordinates into renderer-local screen coordinates", () => {
+    expect(clientToViewport({ x: 350, y: 275 }, { left: 100, top: 25 })).toEqual({ x: 250, y: 250 });
+  });
+
+  it("normalizes an invalid camera consistently in both directions", () => {
+    const invalid = { height: 0, scale: 0, width: 0, x: Number.NaN, y: Number.NaN };
+    expect(screenToWorld(worldToScreen({ x: 2, y: 3 }, invalid), invalid)).toEqual({ x: 2, y: 3 });
   });
 });

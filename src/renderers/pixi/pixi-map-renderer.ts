@@ -14,7 +14,14 @@ import {
   type Texture
 } from "pixi.js";
 import type { Emblem } from "@/generators/emblems/generator";
-import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type ViewportSize } from "../core/camera";
+import {
+  camerasEqual,
+  DEFAULT_MAP_CAMERA,
+  type MapCamera,
+  normalizeCamera,
+  screenToWorld,
+  type ViewportSize
+} from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
 import type { MapHit, MapRenderer, ScreenPoint } from "../core/map-renderer";
@@ -80,6 +87,7 @@ import { ensureFontFamiliesReady } from "../text/font-readiness";
 import { monitorWebGlContext } from "./context-recovery";
 import { GlyphAtlasCache, type GlyphAtlasDescriptor } from "./glyph-atlas-cache";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
+import { MapPickingIndex } from "./map-picking-index";
 
 export interface PixiRendererSnapshot {
   batches: number;
@@ -100,6 +108,7 @@ export interface PixiRendererSnapshot {
   missingEmblemAssets: readonly string[];
   missingLabelFonts: readonly string[];
   markerSymbols: number;
+  pickingEntries: number;
   reliefSprites: number;
   resolution: number;
   resourceBytes: number;
@@ -159,6 +168,7 @@ export interface PixiMapRendererOptions {
   deviceMemoryGb?: number;
   getDevicePixelRatio?: () => number;
   onSceneChange?: () => void;
+  pickTolerancePixels?: number;
   recordPerformance?: (name: string, duration: number) => void;
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
@@ -188,6 +198,7 @@ export class PixiMapRenderer implements MapRenderer {
   private glyphAtlasHandles = new Set<RendererResourceHandle<GlyphAtlasDescriptor>>();
   private markerDisplays = new Map<number, { container: Container; baseSize: number; rescale: boolean }>();
   private pointTextureHandles = new Set<RendererResourceHandle<Texture>>();
+  private pickingIndex = new MapPickingIndex();
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
   private reliefTextureHandles = new Set<RendererResourceHandle<Texture>>();
@@ -227,6 +238,7 @@ export class PixiMapRenderer implements MapRenderer {
     missingEmblemAssets: [],
     missingLabelFonts: [],
     markerSymbols: 0,
+    pickingEntries: 0,
     reliefSprites: 0,
     resolution: 1,
     resourceBytes: 0,
@@ -360,6 +372,7 @@ export class PixiMapRenderer implements MapRenderer {
     const markerSymbols = markerContainer.children.length;
     const reliefSprites = reliefContainer.children.length;
     const batches = this.app.stage.children.reduce((total, child) => total + Math.max(1, child.children.length), 0);
+    this.pickingIndex.replace(world, this.semanticStyle);
 
     this.recordPerformance("pixi:scene-build", performance.now() - started);
 
@@ -379,6 +392,7 @@ export class PixiMapRenderer implements MapRenderer {
       enabled: true,
       labelGlyphs: this.labelDisplays.reduce((total, display) => total + display.textDisplays.length, 0),
       markerSymbols,
+      pickingEntries: this.pickingIndex.getSize(),
       reliefSprites,
       renderer: this.app.renderer.constructor.name
     };
@@ -405,8 +419,15 @@ export class PixiMapRenderer implements MapRenderer {
     }
   }
 
-  pick(_point: ScreenPoint): MapHit | null {
-    return null;
+  pick(point: ScreenPoint): MapHit | null {
+    if (!this.stats.enabled || !this.world) return null;
+    const mapPoint = screenToWorld(point, this.camera);
+    const hit = this.pickingIndex.pick(mapPoint, {
+      cameraScale: this.camera.scale,
+      isLayerVisible: layer => this.layerVisibility.get(layer) ?? true,
+      tolerance: (this.rendererOptions.pickTolerancePixels ?? 8) / this.camera.scale
+    });
+    return hit ? { ...hit, screenPoint: { ...point } } : null;
   }
 
   setCamera(camera: MapCamera): void {
@@ -441,6 +462,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.clearStage();
     this.emblemSourceCache.clear();
     this.glyphAtlasCache.clear();
+    this.pickingIndex.clear();
     this.textureCache.clear();
     this.app?.render();
     this.rendererOptions.onSceneChange?.();
@@ -462,6 +484,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.clearStage();
     this.emblemSourceCache.clear();
     this.glyphAtlasCache.clear();
+    this.pickingIndex.clear();
     this.textureCache.clear();
     this.app?.destroy({ removeView: true }, { children: true });
     this.app = null;
@@ -477,6 +500,7 @@ export class PixiMapRenderer implements MapRenderer {
       emblemSymbols: 0,
       enabled: false,
       markerSymbols: 0,
+      pickingEntries: 0,
       reliefSprites: 0,
       renderer: null
     };
@@ -1422,6 +1446,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.missingCoordinateFonts = [];
     this.stats.missingEmblemAssets = [];
     this.stats.missingLabelFonts = [];
+    this.stats.pickingEntries = 0;
     this.stats.unsupportedCoordinateEffects = [];
     this.stats.unsupportedEmblemEffects = [];
     this.stats.unsupportedLabelEffects = [];

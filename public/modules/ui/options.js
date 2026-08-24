@@ -193,6 +193,7 @@ optionsContent.addEventListener("click", event => {
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "templateInputContainer") openTemplateSelectionDialog();
+  else if (id === "generateMapFromSetup") regeneratePrompt({ fromSetup: true });
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
@@ -767,19 +768,55 @@ ensureEl("sticked").addEventListener("click", function (event) {
 function regeneratePrompt(options) {
   if (customization)
     return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+  if (!options) {
+    window.dispatchEvent(new CustomEvent("new-map:open"));
+    return;
+  }
+
+  const isBlankCanvas = options.fromSetup && document.body.dataset.newMapMode === "blank";
+  const generateSelectedMap = () => {
+    if (isBlankCanvas) regenerateBlankMap(options);
+    else regenerateMap(options);
+  };
+
   const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
-  if (workingTime < 1) return regenerateMap(options);
+  if (workingTime < 1) return generateSelectedMap();
 
   confirmationDialog({
     confirm: "Generate",
-    message: /* html */ `Are you sure you want to generate a new map?<br />
+    message: /* html */ `Are you sure you want to ${isBlankCanvas ? "start a blank canvas" : "generate a new map"}?<br />
       All unsaved changes made to the current map will be lost`,
     onConfirm: () => {
       closeDialogs();
-      regenerateMap(options);
+      generateSelectedMap();
     },
     title: "Generate new map",
   });
+}
+
+let blankMapPending = false;
+function regenerateBlankMap(options) {
+  if (blankMapPending) return;
+  blankMapPending = true;
+
+  delete document.body.dataset.newMapMode;
+  const templateInput = ensureEl("templateInput");
+  applyOption(templateInput, "loneIsland", heightmapTemplates.loneIsland.name);
+  lock("template");
+  templateInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+  const openBlankEditor = () => {
+    clearTimeout(timeout);
+    blankMapPending = false;
+    setTimeout(() => window.Controllers.HeightmapEditor.openBlank(), 0);
+  };
+  const timeout = setTimeout(() => {
+    window.removeEventListener("map:generated", openBlankEditor);
+    blankMapPending = false;
+  }, 60000);
+
+  window.addEventListener("map:generated", openBlankEditor, { once: true });
+  regenerateMap(options);
 }
 
 function showSavePane() {

@@ -16,9 +16,11 @@ const createController = (): PixiRendererControllerApi => ({
   getCanvas: vi.fn(() => null),
   getSnapshot: vi.fn(() => null),
   invalidateLayer: vi.fn(),
+  pick: vi.fn(() => null),
   queueRebuild: vi.fn(),
   start: vi.fn(async () => undefined),
-  syncCamera: vi.fn()
+  syncCamera: vi.fn(),
+  toMapPoint: vi.fn(() => null)
 });
 
 describe("Pixi renderer classic event bridge", () => {

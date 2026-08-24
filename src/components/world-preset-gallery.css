@@ -1,0 +1,274 @@
+.fmg-world-presets {
+  margin: -2px 0 18px;
+  color: var(--kui-text-secondary);
+}
+
+.fmg-world-presets__heading {
+  margin-bottom: 12px;
+}
+
+#options .fmg-world-presets__heading h2 {
+  margin: 0;
+  color: var(--kui-text);
+  font: 700 17px/1.25 Georgia, serif;
+  letter-spacing: 0;
+}
+
+#options .fmg-world-presets__heading p {
+  margin: 5px 0 0;
+  color: var(--kui-text-muted);
+  font: 400 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.fmg-world-presets__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fmg-world-presets__grid--quick {
+  gap: 10px;
+}
+
+#options .fmg-world-preset-card {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--kui-line);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+#options .fmg-world-preset-card:hover {
+  border-color: var(--kui-line-strong);
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+  transform: translateY(-1px);
+}
+
+#options .fmg-world-preset-card:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+#options .fmg-world-preset-card[aria-pressed="true"] {
+  border-color: hsl(var(--accent) / 0.8);
+  box-shadow: 0 0 0 1px hsl(var(--accent) / 0.35);
+  color: var(--kui-text);
+}
+
+.fmg-world-preset-card__preview {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 8.7;
+  overflow: hidden;
+  border-bottom: 1px solid var(--kui-line-soft);
+  background: #0b0e12;
+}
+
+.fmg-world-preset-card__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.88;
+  transition:
+    opacity 120ms ease,
+    transform 180ms ease;
+}
+
+.fmg-world-preset-card:hover .fmg-world-preset-card__preview img,
+.fmg-world-preset-card[aria-pressed="true"] .fmg-world-preset-card__preview img {
+  opacity: 1;
+  transform: scale(1.025);
+}
+
+.fmg-world-preset-card__preview--blank {
+  background:
+    radial-gradient(circle at 18% 28%, rgb(255 255 255 / 0.07) 0 1px, transparent 2px),
+    linear-gradient(145deg, #101923, #080d13);
+  background-size: 15px 15px, auto;
+}
+
+.fmg-world-preset-card__blank-island {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36%;
+  aspect-ratio: 1.5;
+  border: 1px dashed rgb(255 255 255 / 0.2);
+  border-radius: 58% 42% 55% 45% / 47% 52% 48% 53%;
+  transform: translate(-50%, -50%) rotate(-7deg);
+}
+
+.fmg-world-preset-card__blank-island::before,
+.fmg-world-preset-card__blank-island::after {
+  position: absolute;
+  background: rgb(255 255 255 / 0.36);
+  content: "";
+}
+
+.fmg-world-preset-card__blank-island::before {
+  top: 50%;
+  right: 28%;
+  left: 28%;
+  height: 1px;
+}
+
+.fmg-world-preset-card__blank-island::after {
+  top: 28%;
+  bottom: 28%;
+  left: 50%;
+  width: 1px;
+}
+
+.fmg-world-preset-card__procedural {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  padding: 2px 5px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 3px;
+  background: rgb(0 0 0 / 0.62);
+  color: rgb(255 255 255 / 0.78);
+  font: 600 8px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fmg-world-preset-card__copy {
+  display: block;
+  min-width: 0;
+  padding: 8px 9px 9px;
+}
+
+.fmg-world-preset-card__copy strong,
+.fmg-world-preset-card__copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmg-world-preset-card__copy strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.fmg-world-preset-card__copy small {
+  margin-top: 3px;
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.fmg-world-preset-card__selected {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  border: 1px solid hsl(var(--accent) / 0.65);
+  border-radius: 50%;
+  background: hsl(var(--accent));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  color: hsl(var(--accent-foreground));
+  font: 700 11px/1 sans-serif;
+  place-items: center;
+}
+
+#options .fmg-world-preset-card--compact .fmg-world-preset-card__copy {
+  padding-block: 7px;
+}
+
+#options .fmg-world-preset-card--compact .fmg-world-preset-card__preview {
+  aspect-ratio: 16 / 7;
+}
+
+.fmg-world-presets__more {
+  margin-top: 12px;
+  border-top: 1px solid var(--kui-line-soft);
+  border-bottom: 1px solid var(--kui-line-soft);
+}
+
+.fmg-world-presets__more > summary {
+  padding: 10px 2px;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  list-style-position: inside;
+}
+
+.fmg-world-presets__more > summary:hover {
+  color: var(--kui-text);
+}
+
+#options .fmg-options-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+#options .fmg-options-actions > button {
+  min-height: 32px;
+  padding: 0 11px;
+  border-color: var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+#options .fmg-options-actions > button:hover {
+  border-color: var(--kui-line-strong);
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+#options .fmg-options-actions > #generateMapFromSetup {
+  margin-left: auto;
+  border-color: hsl(var(--accent) / 0.72);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+#options .fmg-options-actions > #generateMapFromSetup:hover {
+  border-color: hsl(var(--accent-hover));
+  background: hsl(var(--accent-hover));
+  color: hsl(var(--accent-foreground));
+}
+
+.fmg-world-presets__collection {
+  margin: 3px 0 14px;
+}
+
+#options .fmg-world-presets__collection h3 {
+  margin: 0 0 7px;
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 460px) {
+  .fmg-world-presets__grid {
+    grid-template-columns: 1fr;
+  }
+}

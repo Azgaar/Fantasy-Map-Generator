@@ -96,4 +96,28 @@ describe("buildMapContext", () => {
       { id: 1, kind: "biome", label: "Temperate grassland" }
     ]);
   });
+
+  test("collects Pixi hits without reading SVG event targets", () => {
+    const pack = createPack();
+    const context = buildMapContext({
+      cellId: 0,
+      clientX: 20,
+      clientY: 30,
+      hit: {
+        distance: 0,
+        domainId: "burg-label:2",
+        domainKind: "label",
+        kind: "label",
+        layer: "labels",
+        mapPoint: { x: 10, y: 15 },
+        screenPoint: { x: 20, y: 30 },
+        subPart: { entityId: 2, type: "burg" }
+      },
+      pack,
+      point: [10, 15]
+    });
+
+    expect(context.entities.map(entity => entity.key)).toEqual(["label:burg:2", "burg:2"]);
+    expect(context.title).toBe("Westwatch label");
+  });
 });

@@ -156,6 +156,7 @@ function syncPixiCellStylePreset(presetJson) {
   const layerSelectors = {
     biomes: "#biomes",
     cells: "#cells",
+    coordinates: "#coordinates",
     cultures: "#cults",
     grid: "#gridOverlay",
     precipitation: "#prec",
@@ -173,7 +174,7 @@ function syncPixiCellStylePreset(presetJson) {
     const current = style.mapRenderer[layer] || {};
     style.mapRenderer[layer] = {
       ...current,
-      ...(["cells", "grid", "precipitation", "rivers", "temperature", "zones"].includes(layer)
+      ...(["cells", "coordinates", "grid", "precipitation", "rivers", "temperature", "zones"].includes(layer)
         ? {}
         : {fallbackColor: current.fallbackColor || "#888888"}),
       opacity: Number(opacity)
@@ -181,6 +182,7 @@ function syncPixiCellStylePreset(presetJson) {
   }
   for (const [layer, selector] of Object.entries({
     cells: "#cells",
+    coordinates: "#coordinates",
     grid: "#gridOverlay",
     precipitation: "#prec",
     temperature: "#temperature",
@@ -189,7 +191,7 @@ function syncPixiCellStylePreset(presetJson) {
     const preset = presetJson[selector];
     if (!preset) continue;
     const layerStyle = style.mapRenderer[layer] || {};
-    const stroke = (["grid", "precipitation", "temperature", "zones"].includes(layer)
+    const stroke = (["coordinates", "grid", "precipitation", "temperature", "zones"].includes(layer)
       ? layerStyle.stroke
       : layerStyle) || {};
     const updatedStroke = {
@@ -200,7 +202,7 @@ function syncPixiCellStylePreset(presetJson) {
       opacity: layer === "cells" ? Number(preset.opacity ?? stroke.opacity ?? 1) : Number(stroke.opacity ?? 1),
       width: Number(preset["stroke-width"] || 0)
     };
-    style.mapRenderer[layer] = ["grid", "precipitation", "temperature", "zones"].includes(layer)
+    style.mapRenderer[layer] = ["coordinates", "grid", "precipitation", "temperature", "zones"].includes(layer)
       ? {...layerStyle, stroke: updatedStroke}
       : updatedStroke;
   }
@@ -212,6 +214,14 @@ function syncPixiCellStylePreset(presetJson) {
       dy: Number(gridPreset.dy || 0),
       scale: Number(gridPreset.scale || 1),
       type: gridPreset.type || "pointyHex"
+    };
+  }
+  const coordinatesPreset = presetJson["#coordinates"];
+  if (coordinatesPreset) {
+    style.mapRenderer.coordinates = {
+      ...style.mapRenderer.coordinates,
+      filter: coordinatesPreset.filter || null,
+      fontSize: Number(coordinatesPreset["data-size"] || coordinatesPreset["font-size"] || 12)
     };
   }
   const precipitationPreset = presetJson["#prec"];
@@ -816,6 +826,20 @@ function addStylePreset() {
       presetStyle["#compass"] = {opacity: compassStyle.opacity, filter: null, mask: null};
       presetStyle["#compass > use"] = {
         transform: `translate(${compassStyle.x} ${compassStyle.y}) scale(${compassStyle.scale})`
+      };
+    }
+    const coordinatesStyle = style.mapRenderer?.coordinates;
+    if (coordinatesStyle) {
+      presetStyle["#coordinates"] = {
+        opacity: coordinatesStyle.opacity,
+        "data-size": coordinatesStyle.fontSize,
+        "font-size": coordinatesStyle.fontSize,
+        stroke: coordinatesStyle.stroke.color,
+        "stroke-width": coordinatesStyle.stroke.width,
+        "stroke-dasharray": coordinatesStyle.stroke.dash,
+        "stroke-linecap": coordinatesStyle.stroke.cap,
+        filter: coordinatesStyle.filter,
+        mask: null
       };
     }
     const tradeStyle = style.mapRenderer?.trade;

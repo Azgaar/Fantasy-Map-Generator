@@ -1,6 +1,7 @@
 import type { TemperatureScale } from "@/utils/temperature";
-import type { MapCamera } from "../core/camera";
+import { clientToViewport, type MapCamera, screenToWorld } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
+import type { MapHit, ScreenPoint } from "../core/map-renderer";
 import { emblemRenderer } from "../emblems/renderer";
 import { getLabelRenderState } from "../labels/label-render-state";
 import { getMarkerRenderState } from "../marker-render-state";
@@ -17,8 +18,10 @@ export interface PixiRendererControllerApi {
   getSnapshot: () => PixiRendererSnapshot | null;
   invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
   queueRebuild: () => void;
+  pick: (clientX: number, clientY: number) => MapHit | null;
   start: () => Promise<void>;
   syncCamera: () => void;
+  toMapPoint: (clientX: number, clientY: number) => ScreenPoint | null;
 }
 
 export interface PixiRendererOverview {
@@ -168,6 +171,12 @@ const getCamera = (): MapCamera => {
   };
 };
 
+const getRendererScreenPoint = (clientX: number, clientY: number): ScreenPoint | null => {
+  const surface = document.getElementById("pixi-map-renderer");
+  if (!surface) return null;
+  return clientToViewport({ x: clientX, y: clientY }, surface.getBoundingClientRect());
+};
+
 const getWorld = () =>
   createMapRenderWorld(
     pack,
@@ -198,6 +207,10 @@ const api: PixiRendererControllerApi = {
         : { kind: "geometry", layer }
     );
   },
+  pick: (clientX, clientY) => {
+    const point = getRendererScreenPoint(clientX, clientY);
+    return point ? (instance?.pick(point) ?? null) : null;
+  },
   queueRebuild: () => {
     void instancePromise?.then(renderer =>
       renderer.queueRender(getWorld(), getMapRendererStyle(style), { kind: "world" })
@@ -214,7 +227,11 @@ const api: PixiRendererControllerApi = {
     clearOwnedSvgLayers();
     document.getElementById("map")?.classList.add("pixi-renderer-active");
   },
-  syncCamera: () => instance?.setCamera(getCamera())
+  syncCamera: () => instance?.setCamera(getCamera()),
+  toMapPoint: (clientX, clientY) => {
+    const point = getRendererScreenPoint(clientX, clientY);
+    return point ? screenToWorld(point, getCamera()) : null;
+  }
 };
 
 export const clearPixiRenderer = api.clear;
@@ -222,8 +239,10 @@ export const createPixiRendererOverview = api.createOverview;
 export const getPixiRendererCanvas = api.getCanvas;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
 export const queuePixiRendererRebuild = api.queueRebuild;
+export const pickPixiRenderer = api.pick;
 export const startPixiRenderer = api.start;
 export const syncPixiRendererCamera = api.syncCamera;
+export const getPixiMapPointAtClient = api.toMapPoint;
 export const pixiRendererController = api;
 export const syncPixiRendererVisibility = (): void => {
   void instancePromise?.then(syncVisibility);

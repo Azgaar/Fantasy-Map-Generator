@@ -3,6 +3,11 @@ export interface ViewportSize {
   width: number;
 }
 
+export interface CameraPoint {
+  x: number;
+  y: number;
+}
+
 export interface MapCamera extends ViewportSize {
   scale: number;
   x: number;
@@ -35,6 +40,26 @@ export function camerasEqual(left: MapCamera, right: MapCamera): boolean {
     left.x === right.x &&
     left.y === right.y
   );
+}
+
+export function screenToWorld(point: CameraPoint, camera: MapCamera): CameraPoint {
+  const normalized = normalizeCamera(camera);
+  return {
+    x: (point.x - normalized.x) / normalized.scale,
+    y: (point.y - normalized.y) / normalized.scale
+  };
+}
+
+export function worldToScreen(point: CameraPoint, camera: MapCamera): CameraPoint {
+  const normalized = normalizeCamera(camera);
+  return {
+    x: point.x * normalized.scale + normalized.x,
+    y: point.y * normalized.scale + normalized.y
+  };
+}
+
+export function clientToViewport(point: CameraPoint, bounds: Pick<DOMRect, "left" | "top">): CameraPoint {
+  return { x: point.x - bounds.left, y: point.y - bounds.top };
 }
 
 function normalizeDimension(value: number): number {

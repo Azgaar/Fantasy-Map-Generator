@@ -573,6 +573,64 @@ describe("PixiMapRenderer lifecycle", () => {
     renderer.destroy();
     expect(applicationState.bitmapFontUninstall).toHaveBeenCalledTimes(2);
   });
+
+  it("builds camera-aware coordinates with pinned bitmap labels and one visible density group", async () => {
+    const renderer = new PixiMapRenderer();
+    const world = createWorld() as ReturnType<typeof createWorld> & {
+      coordinateRenderState: NonNullable<import("../scene/render-world").MapRenderWorld["coordinateRenderState"]>;
+    };
+    world.coordinateRenderState = {
+      extent: { latN: 50, latS: 40, latT: 10, lonE: 20, lonT: 20, lonW: 0 },
+      height: 100,
+      width: 200
+    };
+    renderer.setCamera({ height: 100, scale: 4, width: 200, x: -20, y: -10 });
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    const coordinates = applicationState.stage?.children.find(child => child.label === "coordinates") as
+      | { children: Array<{ label: string; visible: boolean }> }
+      | undefined;
+    expect(coordinates?.children).toHaveLength(7);
+    expect(coordinates?.children.filter(group => group.visible).map(group => group.label)).toEqual(["coordinates:0.5"]);
+    expect(renderer.getSnapshot()).toMatchObject({
+      coordinateLabels: expect.any(Number),
+      coordinateLines: expect.any(Number),
+      glyphAtlasEntries: 1,
+      missingCoordinateFonts: ["monospace"],
+      unsupportedCoordinateEffects: []
+    });
+
+    renderer.setCamera({ height: 100, scale: 1, width: 200, x: 0, y: 0 });
+    expect(coordinates?.children.filter(group => group.visible).map(group => group.label)).toEqual(["coordinates:2"]);
+    renderer.destroy();
+  });
+
+  it("picks transformed visible entities and falls through to cell-backed areas when hidden", async () => {
+    const renderer = new PixiMapRenderer({ pickTolerancePixels: 8 });
+    const world = createWorld();
+    world.relief = [];
+    world.markers = [{ cell: 0, i: 7, type: "battle", x: 3, y: 3 } as never];
+    renderer.setCamera({ height: 100, scale: 2, width: 100, x: 10, y: 20 });
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    expect(renderer.pick({ x: 16, y: 26 })).toMatchObject({
+      distance: 0,
+      domainId: 7,
+      domainKind: "marker",
+      mapPoint: { x: 3, y: 3 },
+      screenPoint: { x: 16, y: 26 }
+    });
+    renderer.setLayerVisibility("markers", false);
+    expect(renderer.pick({ x: 16, y: 26 })).toMatchObject({
+      domainId: 1,
+      domainKind: "state",
+      kind: "area",
+      subPart: { cellId: 0 }
+    });
+    renderer.destroy();
+  });
 });
 
 function createWorld(): PackedGraph {

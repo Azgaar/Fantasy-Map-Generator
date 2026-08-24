@@ -48,6 +48,11 @@ function open(options?: { mode?: string; tool?: string }): void {
   else enterHeightmapEditMode(mode, tool);
 }
 
+function openBlank(): void {
+  open({ mode: "erase" });
+  startFromScratch();
+}
+
 addToolbarListeners();
 
 function renderTemplateEditor(): void {
@@ -60,6 +65,7 @@ function renderTemplateEditor(): void {
           <option value="volcano">Volcano</option>
           <option value="highIsland">High Island</option>
           <option value="lowIsland">Low Island</option>
+          <option value="loneIsland">Lone Island</option>
           <option value="continents">Continents</option>
           <option value="archipelago">Archipelago</option>
           <option value="atoll">Atoll</option>
@@ -2129,4 +2135,4 @@ function downloadPreview(): void {
   };
 }
 
-export const HeightmapEditor = { open };
+export const HeightmapEditor = { open, openBlank };

@@ -725,6 +725,7 @@ function defineMapSize() {
     if (template === "peninsula") return [gauss(15, 15, 5, 80), lat(), 50];
     if (template === "isthmus") return [gauss(15, 20, 3, 80), lat(), 50];
     if (template === "atoll") return [gauss(3, 2, 1, 5, 1), lat(), 50];
+    if (template === "loneIsland") return [gauss(5, 2, 2, 10, 1), lat(), 50];
 
     return [gauss(30, 20, 15, max), lat(), 50]; // Continents, Archipelago, High Island, Low Island
   }

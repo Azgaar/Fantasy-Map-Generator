@@ -79,9 +79,21 @@ The former opt-in experiment is retained only as historical context in
 - The first M8 text slice moves straight, multiline, and curved labels to Pixi ownership. Label groups retain semantic
   font, fill, stroke, shadow, opacity, offset, dependency, zoom-bound, and resize-on-zoom state; renderer startup waits
   for the referenced font families and exposes missing fonts and unsupported SVG filters in diagnostics. The live
-  `#labels` and `#textPaths` contents are now import data only and are cleared before Pixi paints. Explicit glyph-atlas
-  budgeting, visual acceptance across presets/custom fonts, label picking/editing, emblems, and other viewport
-  decoration remain M8/M9/M10 work.
+  `#labels` and `#textPaths` contents are now import data only and are cleared before Pixi paints. Straight, multiline,
+  and curved glyphs use preinstalled, DPR-aware bitmap-font atlases keyed by the exact character/style set. Atlases are
+  reference counted, byte-accounted, and evicted least-recently-used within the renderer glyph budget; a failed custom
+  font resolves deterministically to Arial and remains visible in renderer diagnostics.
+- The remaining M8 map-content slice moves state, province, and burg emblems plus coordinates to Pixi. Emblems are
+  deterministic collision-laid-out sprites backed by revision-keyed, reference-counted heraldry textures; custom
+  uploads now persist their source data instead of requiring live SVG defs. Coordinates are renderer-neutral graticule
+  batches with seven precomputed density levels. Camera changes select a level and pin bitmap labels to the viewport
+  edge without rebuilding geometry. Legacy `#emblems`, `#coas`, and `#coordinates` nodes are import/style carriers only
+  and are empty while Pixi paints.
+- Viewport decoration has an explicit ownership boundary: `scaleBar`, `legend`, and `vignette` remain SVG overlay-owned
+  because they are small, viewport-anchored presentation with selectable/accessibility-sensitive text rather than map
+  world geometry. Current SVG export owns their vector serialization; viewport PNG/JPEG export composites that overlay
+  once over the authoritative Pixi canvas. M11 tiled/full-map export must place this overlay exactly once in final-image
+  coordinates. These three groups are the intended overlay boundary, not SVG fallbacks for Pixi-owned content.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.
