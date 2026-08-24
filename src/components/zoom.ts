@@ -98,12 +98,12 @@ function invokeActiveZooming(): void {
 
   if (!customization && !isOptimized) {
     const statesHalo = select("#statesHalo");
-    const desired = Number(statesHalo.attr("data-width"));
+    const desired = styles.states.statesHalo.options.width;
     const haloSize = rn(desired / scale ** 0.8, 2);
     statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
   }
 
-  if (Number(select("#markers").attr("rescale"))) {
+  if (styles.markers.options.rescale) {
     for (const marker of pack.markers ?? []) {
       const { i, x, y, size = 30, hidden } = marker;
       const element = hidden ? null : document.getElementById(`marker${i}`);

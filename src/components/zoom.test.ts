@@ -6,6 +6,8 @@ vi.mock("@/renderers/viewport/viewport-renderer", () => ({
   ViewportLayers: { schedule: vi.fn(), renderNow: vi.fn() }
 }));
 
+import "@/generators/styles";
+import { rn } from "@/utils/numberUtils";
 import { applyZoomBehavior, setMapZoom } from "./zoom";
 
 beforeEach(() => {
@@ -51,5 +53,26 @@ describe("programmatic zoom", () => {
 
     expect(scale).toBe(4);
     expect(document.getElementById("viewbox")!.getAttribute("transform")).toBe("translate(-1500 -900) scale(4)");
+  });
+});
+
+describe("invokeActiveZooming", () => {
+  beforeEach(() => {
+    (document.getElementById("shapeRendering") as HTMLSelectElement).value = "auto";
+  });
+
+  it("derives statesHalo stroke-width from the store width", () => {
+    styles.states.statesHalo.options.width = 8;
+    (globalThis as any).scale = 2;
+    invokeActiveZooming();
+    const halo = document.getElementById("statesHalo")!;
+    expect(halo.getAttribute("stroke-width")).toBe(String(rn(8 / 2 ** 0.8, 2)));
+  });
+
+  it("resizes markers only when the store rescale option is on", () => {
+    styles.markers.options.rescale = 0;
+    expect(() => invokeActiveZooming()).not.toThrow();
+    styles.markers.options.rescale = 1;
+    expect(() => invokeActiveZooming()).not.toThrow();
   });
 });
