@@ -201,7 +201,10 @@ const api: PixiRendererControllerApi = {
     const renderer = await getInstance();
     const camera = getCamera();
     renderer.setCamera(camera);
-    interactionOverlay.mount(document.getElementById("map") as unknown as SVGSVGElement);
+    interactionOverlay.mount(document.getElementById("map") as unknown as SVGSVGElement, {
+      height: graphHeight,
+      width: graphWidth
+    });
     interactionOverlay.setCamera(camera);
     await renderer.mount(prepareSurface());
     syncVisibility(renderer);

@@ -4,6 +4,7 @@ import { Controllers } from "@/controllers";
 import type { LabelType } from "@/generators/labels-generator";
 import type { MapHit } from "@/renderers/core/map-renderer";
 import { dragLegendBox } from "@/renderers/draw-legend";
+import { ensureMapInteractionSurface } from "@/renderers/interaction/map-interaction-overlay";
 import { getPixiMapPointAtClient, pickPixiRenderer } from "@/renderers/pixi/pixi-renderer-controller";
 import { debounce, findClosestCell } from "@/utils";
 import { buildMapContext } from "./map-context";
@@ -14,6 +15,9 @@ const onMouseMove = debounce(handleMouseMove, 100);
 
 export function applyDefaultViewboxEvents(): void {
   applyZoomBehavior();
+
+  const viewbox = document.querySelector<SVGGElement>("#viewbox");
+  if (viewbox) ensureMapInteractionSurface(viewbox, graphWidth, graphHeight);
 
   select<SVGGElement, unknown>("#viewbox")
     .style("cursor", "default")

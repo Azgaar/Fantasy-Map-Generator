@@ -89,6 +89,7 @@ function prepareMapData(): string {
     .querySelector("#labels")
     ?.setAttribute("data-layer-active", String(window.LayerControls.isLayerOn("toggleLabels")));
   cloneEl.querySelector("#mapInteractionOverlay")?.remove();
+  cloneEl.querySelector("#mapInteractionSurface")?.remove();
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
   const cloneTerrain = cloneEl.querySelector("#terrain");

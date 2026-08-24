@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { MapCamera } from "../core/camera";
 import {
+  ensureMapInteractionSurface,
   getMapInteractionOverlayLayout,
+  MAP_INTERACTION_SURFACE_ID,
   nudgeMapInteractionPoint,
   resolveMapInteractionPointer
 } from "./map-interaction-overlay";
@@ -38,5 +40,44 @@ describe("map interaction overlay", () => {
       y: 15
     });
     expect(nudgeMapInteractionPoint({ x: 10, y: 20 }, "Enter", camera)).toBeNull();
+  });
+
+  it("keeps a full-world pointer target behind Pixi editor overlays", () => {
+    const attributes = new Map<string, string>();
+    const surface = {
+      dataset: {},
+      id: "",
+      setAttribute: (name: string, value: string) => attributes.set(name, value),
+      style: {}
+    } as unknown as SVGRectElement;
+    const firstChild = {} as ChildNode;
+    const insertBefore = vi.fn();
+    const querySelector = vi.fn<() => SVGRectElement | null>().mockReturnValueOnce(null).mockReturnValue(surface);
+    const viewbox = { firstChild, insertBefore, querySelector } as unknown as SVGGElement;
+    const createElementNS = document.createElementNS;
+    document.createElementNS = vi.fn(() => surface) as unknown as typeof document.createElementNS;
+
+    try {
+      expect(ensureMapInteractionSurface(viewbox, 1200, 800)).toBe(surface);
+      expect(surface.id).toBe(MAP_INTERACTION_SURFACE_ID);
+      expect(surface.dataset.rendererOverlay).toBe("input");
+      expect(surface.style.pointerEvents).toBe("all");
+      expect(Object.fromEntries(attributes)).toMatchObject({
+        "aria-hidden": "true",
+        fill: "transparent",
+        height: "800",
+        width: "1200",
+        x: "0",
+        y: "0"
+      });
+      expect(insertBefore).toHaveBeenCalledWith(surface, firstChild);
+
+      ensureMapInteractionSurface(viewbox, 1600, 900);
+      expect(attributes.get("width")).toBe("1600");
+      expect(attributes.get("height")).toBe("900");
+      expect(insertBefore).toHaveBeenCalledOnce();
+    } finally {
+      document.createElementNS = createElementNS;
+    }
   });
 });

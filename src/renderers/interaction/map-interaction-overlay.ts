@@ -3,6 +3,7 @@ import type { ScreenPoint } from "../core/map-renderer";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const HANDLE_RADIUS_PIXELS = 6;
+export const MAP_INTERACTION_SURFACE_ID = "mapInteractionSurface";
 
 export const MAP_INTERACTION_HANDLE_EVENT = "map:interaction-handle";
 
@@ -75,6 +76,25 @@ interface ActiveHandle {
   pointerType: string;
 }
 
+export function ensureMapInteractionSurface(viewbox: SVGGElement, width: number, height: number): SVGRectElement {
+  let surface = viewbox.querySelector<SVGRectElement>(`#${MAP_INTERACTION_SURFACE_ID}`);
+  if (!surface) {
+    surface = document.createElementNS(SVG_NAMESPACE, "rect");
+    viewbox.insertBefore(surface, viewbox.firstChild);
+  }
+
+  surface.id = MAP_INTERACTION_SURFACE_ID;
+  surface.dataset.rendererOverlay = "input";
+  surface.setAttribute("aria-hidden", "true");
+  surface.setAttribute("fill", "transparent");
+  surface.setAttribute("height", String(Math.max(1, height)));
+  surface.setAttribute("width", String(Math.max(1, width)));
+  surface.setAttribute("x", "0");
+  surface.setAttribute("y", "0");
+  surface.style.pointerEvents = "all";
+  return surface;
+}
+
 const EMPTY_STATE: Readonly<MapInteractionOverlayState> = {
   brush: null,
   handles: [],
@@ -89,7 +109,9 @@ export class MapInteractionOverlay {
   private state: MapInteractionOverlayState = { ...EMPTY_STATE };
   private surface: SVGSVGElement | null = null;
 
-  mount(surface: SVGSVGElement): void {
+  mount(surface: SVGSVGElement, worldSize: { height: number; width: number }): void {
+    const viewbox = surface.querySelector<SVGGElement>("#viewbox");
+    if (viewbox) ensureMapInteractionSurface(viewbox, worldSize.width, worldSize.height);
     if (this.surface === surface && this.root?.isConnected) return;
     this.destroy();
 

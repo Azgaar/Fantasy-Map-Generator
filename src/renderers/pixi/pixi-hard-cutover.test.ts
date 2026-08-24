@@ -444,7 +444,9 @@ describe("Pixi hard cutover", () => {
     expect(interactionOverlaySource.includes("screenToWorld")).toBe(true);
     expect(brushCircleSource.includes("#debug")).toBe(false);
     expect(saveSource.includes('querySelector("#mapInteractionOverlay")?.remove()')).toBe(true);
+    expect(saveSource.includes('querySelector("#mapInteractionSurface")?.remove()')).toBe(true);
     expect(exportSource.includes('select("#mapInteractionOverlay").remove()')).toBe(true);
+    expect(exportSource.includes('select("#mapInteractionSurface").remove()')).toBe(true);
   });
 
   it("uses the production surface and contains no prototype identifiers", () => {
