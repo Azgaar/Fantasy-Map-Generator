@@ -1,7 +1,7 @@
 // Browser-mode tests (vitest.browser.config.ts) for stylesFromMap/harvestAttributes: harvesting
 // legacy-shaped style bags off a live SVG, through the same PRESET_ROUTES/schema presetFromLegacy uses.
 import { expect, test } from "vitest";
-import { harvestAttributes, stylesFromMap } from "./styles-legacy";
+import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
 
 test("harvestAttributes derives from routes and schema", () => {
   const table = harvestAttributes();
@@ -33,4 +33,14 @@ test("inline style wins over the attribute; empty attribute still counts", () =>
   // (browser test mode), so we pin to that rather than the literal "#bbb" spelling
   expect(styles.rivers.attrs.fill).toBe("rgb(187, 187, 187)");
   expect(styles.scaleBar.options.label).toBe("");
+});
+
+test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains", () => {
+  document.body.innerHTML = `<svg id="map"><g id="rivers" fill="#123456"></g></svg>`;
+  styles.labels.groups.custom = structuredClone(styles.labels.groups.capital);
+  styles.relief.options.size = 0.7;
+  syncStylesFromMap();
+  expect(styles.rivers.attrs.fill).toBe("#123456");
+  expect(styles.labels.groups.custom).toBeDefined();
+  expect(styles.relief.options.size).toBe(0.7);
 });

@@ -56,10 +56,6 @@ export function labelGroupsFromLegacy(groups: Record<string, object>): Record<st
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, labelGroupFromLegacy(group)]));
 }
 
-export function labelGroupsToLegacy(groups: Record<string, LabelGroupStyle>): Record<string, object> {
-  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, labelGroupToLegacy(group)]));
-}
-
 type BurgGroupStyle = Styles["burgIcons"]["burgIcons"]["groups"][string];
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
@@ -102,27 +98,12 @@ export function burgGroupsFromLegacy(groups: Record<string, object>): Record<str
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupFromLegacy(group)]));
 }
 
-export function burgGroupsToLegacy(groups: Record<string, BurgGroupStyle>, withIcon: boolean): Record<string, object> {
-  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupToLegacy(group, withIcon)]));
-}
-
 export function reliefFromLegacy(legacy: object): Styles["relief"]["options"] {
   const bag = legacy as Record<string, unknown>;
   return {
     set: strOr(bag.set, null) ?? "simple",
     size: toNumber(bag.size, 1),
     density: toNumber(bag.density, 0.4)
-  };
-}
-
-// the map file's style record keeps the legacy shape until persistence migrates, so files
-// stay loadable on master in both directions
-export function stylesToLegacy(): Record<string, unknown> {
-  return {
-    labels: { groups: labelGroupsToLegacy(styles.labels.groups) },
-    burgIcons: burgGroupsToLegacy(styles.burgIcons.burgIcons.groups, true),
-    anchors: burgGroupsToLegacy(styles.burgIcons.anchors.groups, false),
-    relief: { ...styles.relief.options }
   };
 }
 
@@ -383,6 +364,16 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
 
+// the map's saved style record: harvest the DOM (the editor writes most layers there until the
+// absorption step), then overlay the domains the store already owns before committing
+export function syncStylesFromMap(): void {
+  const harvested = stylesFromMap();
+  harvested.labels = structuredClone(styles.labels);
+  harvested.burgIcons = structuredClone(styles.burgIcons);
+  harvested.relief = structuredClone(styles.relief);
+  Styles.set(harvested);
+}
+
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
@@ -466,18 +457,16 @@ globalThis.stylesLegacy = {
   labelGroupFromLegacy,
   labelGroupToLegacy,
   labelGroupsFromLegacy,
-  labelGroupsToLegacy,
   burgGroupFromLegacy,
   burgGroupFromElement,
   burgGroupToLegacy,
   burgGroupsFromLegacy,
-  burgGroupsToLegacy,
   reliefFromLegacy,
-  stylesToLegacy,
   stylesFromLegacy,
   presetFromLegacy,
   presetToLegacy,
   isLegacyPreset,
   harvestAttributes,
-  stylesFromMap
+  stylesFromMap,
+  syncStylesFromMap
 };
