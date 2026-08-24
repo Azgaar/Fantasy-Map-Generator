@@ -1,0 +1,34 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+label {
+  cursor: pointer;
+}
+
+input[type="checkbox"] {
+  display: none;
+}
+
+label:before {
+  content: "";
+  display: inline-block;
+  vertical-align: bottom;
+  width: 0.6em;
+  height: 0.6em;
+  padding: 0.2em;
+  margin-right: 0.2em;
+  border: 1px solid darkgrey;
+  border-radius: 15%;
+  background: white;
+  font-family: var(--monospace);
+}
+
+input[type="checkbox"]:checked + label:before {
+  line-height: 0.8em;
+  font-weight: bold;
+  content: "✓";
+  color: #333333;
+}
