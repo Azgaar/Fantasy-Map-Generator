@@ -158,7 +158,7 @@ describe("WorkspaceToolbar", () => {
     expect(closeViews).toHaveBeenCalledTimes(2);
   });
 
-  test("centers dialogs launched from Edit", () => {
+  test("docks editors launched from Edit", () => {
     const close = vi.fn();
     const heightmapCommand = getToolCommands("world")[0];
     const invoke = vi.spyOn(heightmapCommand, "invoke").mockReturnValue("executed");
@@ -169,7 +169,7 @@ describe("WorkspaceToolbar", () => {
     heightmapItem.props.onClick();
 
     expect(close).toHaveBeenCalledOnce();
-    expect(invoke).toHaveBeenCalledWith({ dialogPlacement: "center" });
+    expect(invoke).toHaveBeenCalledWith({ dialogPresentation: "panel" });
     invoke.mockRestore();
   });
 });

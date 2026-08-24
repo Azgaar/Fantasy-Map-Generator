@@ -289,7 +289,7 @@ export function EditMenuItems({ close }: { close: () => void }): React.JSX.Eleme
               labelElement={command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined}
               onClick={() => {
                 close();
-                command.invoke({ dialogPlacement: "center" });
+                command.invoke({ dialogPresentation: "panel" });
               }}
               text={command.label}
             />
