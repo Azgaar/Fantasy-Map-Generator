@@ -103,6 +103,7 @@ function subdivideEdge(
 }
 
 export interface FractalizedShape {
+  maxOffset?: number; // greatest sampled distance from the original coastline
   points: [number, number][];
   origIndices: number[]; // index in points[] where original vertex i lives
 }
@@ -218,17 +219,29 @@ export function sampleCoastlineShape(shape: FractalizedShape, tolerance = 0.025)
     ? [(last[0] + first[0]) / 2, (last[1] + first[1]) / 2]
     : [first[0], first[1]];
   const sampled: [number, number][] = [cursor];
+  let maxOffset = shape.maxOffset ?? 0;
 
   for (let originalIndex = 0; originalIndex < originalCount; originalIndex++) {
     const currentIndex = origIndices[originalIndex];
     const nextIndex = origIndices[(originalIndex + 1) % originalCount];
     const current = points[currentIndex];
+    const previousOriginal = points[origIndices[(originalIndex - 1 + originalCount) % originalCount]];
+    const nextOriginal = points[nextIndex];
 
     if (smooth[originalIndex]) {
-      const next = points[nextIndex];
-      const midpoint: [number, number] = [(current[0] + next[0]) / 2, (current[1] + next[1]) / 2];
+      const midpoint: [number, number] = [(current[0] + nextOriginal[0]) / 2, (current[1] + nextOriginal[1]) / 2];
+      const sampledFrom = sampled.length;
       if (atMidpoint) flattenQuadratic(cursor, current, midpoint, tolerance, sampled);
       else sampled.push(midpoint);
+      for (let index = sampledFrom; index < sampled.length; index++) {
+        maxOffset = Math.max(
+          maxOffset,
+          Math.min(
+            pointSegmentDistance(sampled[index], previousOriginal, current),
+            pointSegmentDistance(sampled[index], current, nextOriginal)
+          )
+        );
+      }
       cursor = midpoint;
       atMidpoint = true;
       continue;
@@ -246,14 +259,18 @@ export function sampleCoastlineShape(shape: FractalizedShape, tolerance = 0.025)
       const following = points[(pointIndex + 2) % pointCount];
       const control1: [number, number] = [a[0] + (b[0] - previous[0]) / 8, a[1] + (b[1] - previous[1]) / 8];
       const control2: [number, number] = [b[0] - (following[0] - a[0]) / 8, b[1] - (following[1] - a[1]) / 8];
+      const sampledFrom = sampled.length;
       flattenCubic(cursor, control1, control2, b, tolerance, sampled);
+      for (let index = sampledFrom; index < sampled.length; index++) {
+        maxOffset = Math.max(maxOffset, pointSegmentDistance(sampled[index], current, nextOriginal));
+      }
       cursor = b;
     }
     atMidpoint = false;
   }
 
   if (samePoint(sampled[0], sampled.at(-1))) sampled.pop();
-  return { origIndices: sampled.map((_, index) => index), points: sampled };
+  return { maxOffset, origIndices: sampled.map((_, index) => index), points: sampled };
 }
 
 function flattenQuadratic(

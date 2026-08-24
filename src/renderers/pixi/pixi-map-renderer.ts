@@ -50,6 +50,7 @@ import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
 import { buildPrecipitationScene, buildTemperatureScene } from "../scene/layers/climate-scene";
+import { buildCoastalAssignmentScene } from "../scene/layers/coastal-assignment-scene";
 import {
   buildCoordinateScene,
   type CoordinateSceneLabel,
@@ -143,6 +144,20 @@ export interface PixiRendererSnapshot {
 export type PixiSceneChangeKind = "animation" | "content";
 
 type CellFillLayer = "biomes" | "cultures" | "provinces" | "religions" | "states";
+
+interface CellFillGeography {
+  bounds: { height: number; width: number };
+  coastlineOverdrawWidth: number;
+  lakePolygons: readonly PolygonPathPrimitive[];
+  landPolygons: readonly PolygonPathPrimitive[];
+}
+
+interface CellMeshDisplay {
+  coastalFill: Container;
+  container: Container;
+  halo?: RetainedCellMesh;
+  retained: RetainedCellMesh;
+}
 
 interface LabelDisplay {
   anchorX: number;
@@ -252,10 +267,8 @@ export class PixiMapRenderer implements MapRenderer {
   private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
   private contextRecoveryRelease: (() => void) | null = null;
   private diagnostics = new RenderDiagnostics();
-  private cellMeshes = new Map<
-    CellFillLayer,
-    { container: Container; halo?: RetainedCellMesh; retained: RetainedCellMesh }
-  >();
+  private cellFillGeography: CellFillGeography | null = null;
+  private cellMeshes = new Map<CellFillLayer, CellMeshDisplay>();
   private coordinateGroupDisplays: CoordinateGroupDisplay[] = [];
   private coordinateLabelDisplays: CoordinateLabelDisplay[] = [];
   private coordinateLongitudeSpan = 0;
@@ -847,24 +860,15 @@ export class PixiMapRenderer implements MapRenderer {
 
   private buildFillContainer(layer: CellFillLayer): Container {
     const style = this.semanticStyle[layer];
-    const retained = new RetainedCellMesh(
-      this.getCellTopology(),
-      {
-        ...this.getCellFillSource(layer),
-        fallbackColor: style.fallbackColor,
-        heights: this.getWorld().cells.h
-      },
-      layer,
-      this.resources
-    );
-
-    const container = new Container();
-    container.label = layer;
     const fillSource = {
       ...this.getCellFillSource(layer),
       fallbackColor: style.fallbackColor,
       heights: this.getWorld().cells.h
     };
+    const retained = new RetainedCellMesh(this.getCellTopology(), fillSource, layer, this.resources);
+
+    const container = new Container();
+    container.label = layer;
     let halo: RetainedCellMesh | undefined;
     const stateStyle = layer === "states" ? this.semanticStyle.states : null;
     if (stateStyle && stateStyle.halo.opacity > 0 && stateStyle.halo.width > 0) {
@@ -883,10 +887,16 @@ export class PixiMapRenderer implements MapRenderer {
       this.rendererFilters.add(haloFilter);
       this.retainedCellMeshes.add(halo);
     }
+    const clippedFill = new Container();
+    clippedFill.label = `${layer}:coast-clipped-fill`;
+    const coastalFill = new Container();
+    coastalFill.label = `${layer}:coastal-overdraw`;
+    this.populateCoastalFillContainer(coastalFill, layer, fillSource);
+    clippedFill.addChild(coastalFill);
     retained.mesh.alpha = style.opacity;
     retained.mesh.label = `${layer}-retained-cells`;
     this.retainedCellMeshes.add(retained);
-    container.addChild(retained.mesh);
+    clippedFill.addChild(retained.mesh);
     if (style.stroke.width > 0 && style.stroke.opacity > 0) {
       const boundaries = buildAssignmentBoundaryScene(
         this.getWorld(),
@@ -897,11 +907,51 @@ export class PixiMapRenderer implements MapRenderer {
       const outlines = createLineGraphic(boundaries.paths, style.stroke);
       outlines.alpha = style.opacity;
       outlines.label = `${layer}-boundaries`;
-      container.addChild(outlines);
+      clippedFill.addChild(outlines);
     }
+    if (this.cellFillGeography?.landPolygons.length) {
+      applyGeographyMask(
+        clippedFill,
+        "land",
+        this.cellFillGeography.landPolygons,
+        this.cellFillGeography.lakePolygons,
+        this.cellFillGeography.bounds
+      );
+    }
+    container.addChild(clippedFill);
     if (style.filter) this.applyPhysicalFilter(container, style.filter);
-    this.cellMeshes.set(layer, { container, halo, retained });
+    this.cellMeshes.set(layer, { coastalFill, container, halo, retained });
     return container;
+  }
+
+  private populateCoastalFillContainer(
+    container: Container,
+    layer: CellFillLayer,
+    source: { assignments: ArrayLike<number>; colors: readonly { color?: string }[]; fallbackColor: string }
+  ): void {
+    for (const child of container.removeChildren()) child.destroy();
+    const geography = this.cellFillGeography;
+    if (!geography || geography.coastlineOverdrawWidth <= 0) return;
+
+    const scene = buildCoastalAssignmentScene(
+      this.getWorld(),
+      source.assignments,
+      layer,
+      this.sceneRevisions.getLayerRevision(layer)
+    );
+    for (const [role, paths] of groupByRole(scene.paths)) {
+      const assignment = Number(role);
+      const graphic = createLineGraphic(paths, {
+        cap: "round",
+        color: getRenderableColor(source.colors[assignment]?.color ?? source.fallbackColor, source.fallbackColor),
+        dash: "",
+        join: "round",
+        opacity: this.semanticStyle[layer].opacity,
+        width: geography.coastlineOverdrawWidth
+      });
+      graphic.label = `${layer}:coastal-overdraw:${role}`;
+      container.addChild(graphic);
+    }
   }
 
   private buildVisibleLayer(layer: MapLayerId, build: () => Container): Container {
@@ -947,6 +997,12 @@ export class PixiMapRenderer implements MapRenderer {
     const world = this.getWorld();
     const bounds = getWorldBounds(world);
     const scene = buildBaseGeographyScene(world, bounds, this.sceneRevisions.getLayerRevision("landmass"));
+    this.cellFillGeography = {
+      bounds,
+      coastlineOverdrawWidth: scene.coastlineOverdrawWidth,
+      lakePolygons: scene.lakes.polygons,
+      landPolygons: scene.landmass.polygons
+    };
     return {
       bounds,
       coastline: this.buildLineContainer(
@@ -1967,6 +2023,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const retained of this.retainedCellMeshes) retained.destroy();
     this.retainedCellMeshes.clear();
     this.cellMeshes.clear();
+    this.cellFillGeography = null;
     this.coordinateGroupDisplays = [];
     this.coordinateLabelDisplays = [];
     this.coordinateLongitudeSpan = 0;
@@ -2345,6 +2402,10 @@ export class PixiMapRenderer implements MapRenderer {
           : layerInvalidations.flatMap(invalidation => invalidation.cellIds ?? [])
       );
       target.retained.mesh.alpha = style.opacity;
+      this.populateCoastalFillContainer(target.coastalFill, layer, {
+        ...this.getCellFillSource(layer),
+        fallbackColor: style.fallbackColor
+      });
       target.halo?.update(
         {
           ...this.getCellFillSource(layer),
@@ -2546,13 +2607,20 @@ function applyGeographyMask(
   bounds: { height: number; width: number }
 ): void {
   const context = new GraphicsContext();
+  const seaIslands = landPolygons.filter(polygon => polygon.role !== "lake_island");
+  const lakeIslands = landPolygons.filter(polygon => polygon.role === "lake_island");
   if (maskType === "water") {
     context.rect(0, 0, bounds.width, bounds.height).fill({ color: "#ffffff" });
-    for (const polygon of landPolygons) context.poly(polygon.points.flat(), true);
-    if (landPolygons.length) context.cut();
+    for (const polygon of seaIslands) context.poly(polygon.points.flat(), true);
+    if (seaIslands.length) context.cut();
     for (const polygon of lakePolygons) context.poly(polygon.points.flat(), true).fill({ color: "#ffffff" });
+    for (const polygon of lakeIslands) context.poly(polygon.points.flat(), true);
+    if (lakeIslands.length) context.cut();
   } else {
-    for (const polygon of landPolygons) context.poly(polygon.points.flat(), true).fill({ color: "#ffffff" });
+    for (const polygon of seaIslands) context.poly(polygon.points.flat(), true).fill({ color: "#ffffff" });
+    for (const polygon of lakePolygons) context.poly(polygon.points.flat(), true);
+    if (lakePolygons.length) context.cut();
+    for (const polygon of lakeIslands) context.poly(polygon.points.flat(), true).fill({ color: "#ffffff" });
   }
   const mask = new Graphics(context);
   mask.label = `${target.label}:mask:${maskType}`;

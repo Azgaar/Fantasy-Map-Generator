@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "../utils";
 
@@ -357,7 +356,7 @@ export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
     if (groupStyle["font-family"]) usedFontFamilies.add(groupStyle["font-family"]);
   }
 
-  const provinceFont = select("#provs").attr("font-family");
+  const provinceFont = svg.querySelector("#provs")?.getAttribute("font-family");
   if (provinceFont) usedFontFamilies.add(provinceFont);
 
   const legend = svg.querySelector("#legend");

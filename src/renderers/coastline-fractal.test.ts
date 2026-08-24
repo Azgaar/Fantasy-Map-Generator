@@ -25,6 +25,7 @@ describe("coastline shaping", () => {
 
     expect(sampled.points.length).toBeGreaterThan(points.length);
     expect(sampled.origIndices).toEqual(sampled.points.map((_, index) => index));
+    expect(sampled.maxOffset).toBeGreaterThan(0);
     expect(sampled.points.at(-1)).not.toEqual(sampled.points[0]);
     expect(sampled.points.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))).toBe(true);
   });

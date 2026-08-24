@@ -417,6 +417,18 @@ describe("PixiMapRenderer lifecycle", () => {
       "military",
       "markers"
     ]);
+    const stateLayer = applicationState.stage?.children.find(child => child.label === "states") as
+      | { children: Array<{ children: Array<{ children: Array<{ label: string }>; label: string }>; label: string }> }
+      | undefined;
+    const clippedStateFill = stateLayer?.children.find(child => child.label === "states:coast-clipped-fill") as
+      | { children: Array<{ children: Array<{ label: string }>; label: string }> }
+      | undefined;
+    const coastalStateFill = clippedStateFill?.children.find(child => child.label === "states:coastal-overdraw");
+    expect(coastalStateFill?.children.map(child => child.label).sort()).toEqual([
+      "states:coastal-overdraw:1",
+      "states:coastal-overdraw:2"
+    ]);
+    expect(clippedStateFill?.children.some(child => child.label === "states:coast-clipped-fill:mask:land")).toBe(true);
     renderer.setLayerVisibility("biomes", false);
     expect(applicationState.stage?.children.find(child => child.label === "biomes")?.visible).toBe(false);
     expect(applicationState.stage?.children.find(child => child.label === "states")?.visible).toBe(true);

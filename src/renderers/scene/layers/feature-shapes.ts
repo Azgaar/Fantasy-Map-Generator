@@ -3,6 +3,7 @@ import type { Feature } from "@/generators/features";
 import type { PackedGraph } from "@/types/PackedGraph";
 
 export interface FeatureShape {
+  maxOffset?: number;
   origIndices: number[];
   points: [number, number][];
 }

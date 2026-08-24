@@ -17,6 +17,7 @@ import { buildFeatureShape, type FeatureShapeOptions, type MapBounds } from "./f
 
 export interface BaseGeographyScene {
   coastline: LineBatchPrimitive;
+  coastlineOverdrawWidth: number;
   lakes: PolygonPathBatchPrimitive;
   landMask: MaskPrimitive;
   landmass: PolygonPathBatchPrimitive;
@@ -42,6 +43,7 @@ export function buildBaseGeographyScene(
   const landPolygons: PolygonPathPrimitive[] = [];
   const lakePolygons: PolygonPathPrimitive[] = [];
   const coastlinePaths: LinePathPrimitive[] = [];
+  let coastlineMaxOffset = 0;
   const landRegions: MaskRegionPrimitive[] = [];
   const waterRegions: MaskRegionPrimitive[] = [createMapMaskRegion(mapBounds)];
 
@@ -49,6 +51,7 @@ export function buildBaseGeographyScene(
     if (!feature || feature.type === "ocean" || !Array.isArray(feature.vertices)) continue;
     const shape = buildFeatureShape(feature, source.vertices, mapBounds, resolvedShapeOptions);
     if (!shape) continue;
+    coastlineMaxOffset = Math.max(coastlineMaxOffset, shape.maxOffset ?? 0);
 
     const role = getFeatureRole(feature);
     const polygon: PolygonPathPrimitive = { domainId: feature.i, points: shape.points, role };
@@ -67,6 +70,7 @@ export function buildBaseGeographyScene(
 
   return {
     coastline: createLineBatch("coastline", coastlinePaths, sceneBounds, revision),
+    coastlineOverdrawWidth: 2 * (coastlineMaxOffset + (resolvedShapeOptions.simplifyTolerance ?? 0) + 1),
     lakes: createPolygonPathBatch("lakes", lakePolygons, sceneBounds, revision),
     landMask: createMask("landmass", landRegions, sceneBounds, revision),
     landmass: createPolygonPathBatch("landmass", landPolygons, sceneBounds, revision),

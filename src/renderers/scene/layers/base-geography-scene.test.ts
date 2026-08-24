@@ -125,6 +125,7 @@ describe("base geography scene", () => {
     const second = buildBaseGeographyScene(source, { height: 100, width: 100 });
 
     expect(first.coastline.paths[0].points.length).toBeGreaterThan(source.vertices.p.length);
+    expect(first.coastlineOverdrawWidth).toBeGreaterThan(2);
     expect(second.coastline.paths[0].points).toEqual(first.coastline.paths[0].points);
     expect(first.landmass.polygons[0].points).toEqual(first.coastline.paths[0].points);
   });
