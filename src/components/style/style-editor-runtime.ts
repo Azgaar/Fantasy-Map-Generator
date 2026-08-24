@@ -482,13 +482,14 @@ function selectStyleElement() {
     temperature: "toggleTemperature",
     terrain: "toggleRelief",
     terrs: "toggleHeight",
-    texture: "toggleTexture",
     tradeAnimation: "toggleTrade",
     zones: "toggleZones"
   }[styleElement];
-  const isLayerOff = semanticControl
-    ? !window.LayerControls.isLayerOn(semanticControl)
-    : styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size());
+  const isLayerOff =
+    styleElement !== "texture" &&
+    (semanticControl
+      ? !window.LayerControls.isLayerOn(semanticControl)
+      : styleElement !== "ocean" && (el.style("display") === "none" || !el.selectAll("*").size()));
   styleIsOff.style.display = isLayerOff ? "block" : "none";
 
   // active group element

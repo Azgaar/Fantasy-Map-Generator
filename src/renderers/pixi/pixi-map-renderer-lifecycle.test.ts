@@ -466,7 +466,9 @@ describe("PixiMapRenderer lifecycle", () => {
     await renderer.mount(createSurface());
     await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
 
-    const riverLayer = applicationState.stage?.children.find(child => child.label === "rivers");
+    const riverLayer = applicationState.stage?.children.find(child => child.label === "rivers") as
+      | { children: { label?: string }[] }
+      | undefined;
     expect(riverLayer?.children.some(child => child.label === "rivers:mask:land")).toBe(true);
     renderer.destroy();
   });

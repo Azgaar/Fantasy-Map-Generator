@@ -299,12 +299,11 @@ function bindLayerControlEvents(): void {
 }
 
 export function isLayerOn(id: string): boolean {
-  if (id === "toggleTexture") return true; // compatibility for saved label dependencies and legacy callers
-  return !ensureEl(id).classList.contains("buttonoff");
+  const control = findEl(id);
+  return Boolean(control && !control.classList.contains("buttonoff"));
 }
 
 export function setLayerButtonVisibility(id: string, visible: boolean): void {
-  if (id === "toggleTexture") return;
   ensureEl(id).classList.toggle("buttonoff", !visible);
   getCurrentPreset();
   ViewportLayers.invalidateAll();

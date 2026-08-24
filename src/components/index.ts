@@ -35,7 +35,8 @@ Object.assign(window, {
 initializeLayerControlsRuntime();
 initializeMapStyleControls();
 
-// Keep React and the workspace UI out of the map generation startup path.
+// Load the workspace as soon as the DOM is available. Waiting for `window.load`
+// can leave the map without its controls when an unrelated asset stalls.
 const loadWorkspace = () => void import("./workspace-sidebar");
 if (document.readyState === "complete") loadWorkspace();
-else window.addEventListener("load", loadWorkspace, { once: true });
+else document.addEventListener("DOMContentLoaded", loadWorkspace, { once: true });

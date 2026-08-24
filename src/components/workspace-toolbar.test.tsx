@@ -71,14 +71,6 @@ describe("WorkspaceToolbar", () => {
           visible: true
         },
         {
-          description: "Texture overlay",
-          fixed: true,
-          id: "toggleTexture",
-          label: "Texture",
-          shortcut: "X",
-          visible: true
-        },
-        {
           description: "Scale bar",
           fixed: true,
           id: "toggleScaleBar",
@@ -139,7 +131,6 @@ describe("WorkspaceToolbar", () => {
     expect(showIndex).toBeGreaterThan(-1);
     expect(layerGroupIndex).toBeGreaterThan(showIndex);
     expect(layerIndex).toBeGreaterThan(layerGroupIndex);
-    expect(viewsMarkup.includes(">Texture<")).toBe(false);
     expect(viewsMarkup.includes(">Scale Bar<")).toBe(true);
     expect(viewsMarkup.includes(">Map decorations<")).toBe(true);
     expect(viewsMarkup.includes(">Politics &amp; population<")).toBe(true);
