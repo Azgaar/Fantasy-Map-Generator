@@ -145,7 +145,7 @@ export const stylesSchema = z
       .object({
         goodsCells: attrs({ opacity, filter }),
         goodsIcons: node({ opacity, "stroke-width": width, filter }, { size: z.number(), circle: z.boolean() }),
-        goodsBurgs: node({ opacity, stroke: color, "stroke-width": width }, { size: z.number() })
+        goodsBurgs: node({ opacity, stroke: color, "stroke-width": width, filter }, { size: z.number() })
       })
       .strict(),
     markets: node(

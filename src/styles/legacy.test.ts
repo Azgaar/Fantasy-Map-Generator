@@ -2,8 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { DEFAULT_STYLES } from "./defaults";
-import { isLegacyPreset, presetFromLegacy, presetToLegacy } from "./legacy";
+import { isLegacyPreset, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./legacy";
 import fixture from "./legacy-default.fixture.json";
+import serializerFixture from "./legacy-serializer.fixture.json";
 import { parseStyles } from "./styles";
 
 test("detects the legacy selector-keyed format", () => {
@@ -56,6 +57,48 @@ test("R7: #provs' dead data-size is dropped, not routed", () => {
   const styles = presetFromLegacy({ "#provs": { "font-size": 10, "data-size": 10 } } as any);
   expect(styles.provinces.attrs["font-size"]).toBe(10);
   expect(JSON.stringify(styles).includes("data-size")).toBe(false);
+});
+
+// Pins the full custom-preset dialect: one bag per selector collectStyleData
+// (public/modules/ui/style-presets.js) could ever write, so every attribute the legacy
+// serializer could produce has a store home or a deliberate, tested drop.
+test("R9: the legacy serializer's full attribute dialect converts with no unrouted keys", () => {
+  const warn = vi.spyOn(console, "warn");
+  warn.mockClear();
+  expect(() => presetFromLegacy(serializerFixture as any)).not.toThrow();
+  expect(
+    warn,
+    "every attribute collectStyleData could write must route to a store field, not fall through with a warning"
+  ).not.toHaveBeenCalled();
+});
+
+test("R9: #provs' data-size stays a ruled-drop (dead cargo) even in the full-dialect fixture", () => {
+  const styles = presetFromLegacy(serializerFixture as any);
+  expect(
+    "data-size" in (serializerFixture as any)["#provs"],
+    "the fixture must still carry the dead data-size key to exercise the drop"
+  ).toBe(true);
+  expect(
+    styles.provinces.attrs["font-size"],
+    "#provs' data-size never came from collectStyleData - it's dead cargo left beside font-size in older saves, and presetFromLegacy must drop it rather than let it clobber font-size"
+  ).toBe((serializerFixture as any)["#provs"]["font-size"]);
+});
+
+test("R9: #terrs > #landHeights never legitimately carried data-render, so it stays out of the fixture", () => {
+  expect(
+    "data-render" in (serializerFixture as any)["#terrs #landHeights"],
+    "data-render was ruled out for landHeights (only #oceanHeights ever wrote it) - it must not appear in the dialect fixture at all, not even as a dropped key"
+  ).toBe(false);
+});
+
+test("labelGroupFromLegacy keeps font-size when data-size is absent", () => {
+  const group = labelGroupFromLegacy({ "font-size": "6%" });
+  expect(group.attrs["font-size"]).toBe("6%");
+});
+
+test("labelGroupFromLegacy prefers a numeric data-size over font-size, stringified", () => {
+  const group = labelGroupFromLegacy({ "data-size": 10, "font-size": 8.3 });
+  expect(group.attrs["font-size"]).toBe("10");
 });
 
 const presetDir = path.join(__dirname, "../../public/styles");

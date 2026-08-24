@@ -1079,7 +1079,8 @@ export const DEFAULT_STYLES: Styles = {
       attrs: {
         opacity: 1,
         stroke: "#41414f",
-        "stroke-width": 0.2
+        "stroke-width": 0.2,
+        filter: null
       },
       options: {
         size: 3

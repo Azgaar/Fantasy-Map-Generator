@@ -29,7 +29,9 @@ export function labelGroupFromLegacy(legacy: object): LabelGroupStyle {
       "stroke-dasharray": strOr(bag["stroke-dasharray"], null),
       "stroke-linecap": strOr(bag["stroke-linecap"], null),
       "letter-spacing": numOr(bag["letter-spacing"], 0),
-      "font-size": strOr(bag["font-size"], "18%") ?? "18%",
+      // legacy wrote the BASE size under data-size (font-size held the live zoom-rescaled value);
+      // prefer data-size when present, matching what the style editor's size input reads
+      "font-size": strOr(bag["data-size"], null) ?? strOr(bag["font-size"], "18%") ?? "18%",
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
       style: strOr(bag.style, null),
       filter: strOr(bag.filter, null)
