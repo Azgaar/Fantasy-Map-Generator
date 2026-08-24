@@ -2,9 +2,10 @@
 // Replaces jQuery UI's `.dialog()` widget one dialog at a time. Content passed as children
 // is distributed via the shadow root's default slot; children with slot="actions" go to the
 // button pane.
-import slottedContentStyle from "./ui-dialog-slotted-content.css?raw";
-import templateHtml from "./ui-dialog.html?raw";
+
 import style from "./ui-dialog.css?raw";
+import templateHtml from "./ui-dialog.html?raw";
+import slottedContentStyle from "./ui-dialog-slotted-content.css?raw";
 
 // Slotted content (e.g. range inputs) lives in the light DOM, outside the shadow root,
 // so its pseudo-elements can't be reached by the component's own ::slotted() rules.
