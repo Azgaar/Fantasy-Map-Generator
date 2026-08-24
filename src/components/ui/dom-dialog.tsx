@@ -1,6 +1,6 @@
 import { Button } from "@patkepa/kantzen-ui/primitives";
 import type { CSSProperties } from "react";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import {
@@ -67,6 +67,7 @@ function DomDialogView({
   positionRevision: number;
 }): React.JSX.Element {
   const contentHostRef = useRef<HTMLDivElement>(null);
+  const [panelWidth, setPanelWidth] = useState<number>();
   const actions = options.actions ?? [];
 
   useLayoutEffect(() => {
@@ -85,7 +86,46 @@ function DomDialogView({
     content.hidden = false;
     host.appendChild(content);
 
+    let measureFrame = 0;
+    const measurePanel = () => {
+      if (window.innerWidth <= 760) {
+        setPanelWidth(undefined);
+        return;
+      }
+
+      const table = content.querySelector<HTMLElement>(".table");
+      if (!table) {
+        setPanelWidth(undefined);
+        return;
+      }
+
+      const maximumWidth = window.innerWidth - 40;
+      if (table.scrollWidth <= table.clientWidth + 1) {
+        setPanelWidth(undefined);
+        return;
+      }
+
+      const expandedWidth = Math.min(Math.max(560, Math.ceil(table.scrollWidth) + 24), maximumWidth);
+      setPanelWidth(expandedWidth > 560 ? expandedWidth : undefined);
+    };
+    const scheduleMeasurement = () => {
+      window.cancelAnimationFrame(measureFrame);
+      setPanelWidth(undefined);
+      measureFrame = window.requestAnimationFrame(measurePanel);
+    };
+    const mutationObserver = new MutationObserver(scheduleMeasurement);
+    mutationObserver.observe(content, {
+      attributes: true,
+      childList: true,
+      subtree: true
+    });
+    window.addEventListener("resize", scheduleMeasurement);
+    scheduleMeasurement();
+
     return () => {
+      window.cancelAnimationFrame(measureFrame);
+      mutationObserver.disconnect();
+      window.removeEventListener("resize", scheduleMeasurement);
       if (destroyOnClose || content.parentNode !== host) return;
       content.style.display = origin.display;
       content.hidden = origin.hidden;
@@ -136,6 +176,7 @@ function DomDialogView({
         onClose={close}
         onSearch={onSearch}
         title={options.title}
+        width={panelWidth}
       >
         {content}
       </WorkspaceEditorPanel>

@@ -1,7 +1,7 @@
 import { SearchField } from "@patkepa/kantzen-ui";
 import { Icon } from "@patkepa/kantzen-ui/icons";
 import { Button } from "@patkepa/kantzen-ui/primitives";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import "./workspace-editor-panel.css";
 
@@ -12,6 +12,7 @@ interface WorkspaceEditorPanelProps {
   onClose: () => void;
   onSearch?: (query: string) => void;
   title: string;
+  width?: number;
 }
 
 let openPanelCount = 0;
@@ -22,7 +23,8 @@ export function WorkspaceEditorPanel({
   footer,
   onClose,
   onSearch,
-  title
+  title,
+  width
 }: WorkspaceEditorPanelProps): React.JSX.Element {
   const panelRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
@@ -62,12 +64,23 @@ export function WorkspaceEditorPanel({
     };
   }, []);
 
+  useEffect(() => {
+    const property = "--fmg-active-editor-panel-width";
+    const value = `${width ?? 560}px`;
+    document.body.style.setProperty(property, value);
+    window.dispatchEvent(new Event("resize"));
+    return () => {
+      if (document.body.style.getPropertyValue(property) === value) document.body.style.removeProperty(property);
+    };
+  }, [width]);
+
   return (
     <aside
       aria-labelledby={titleId}
-      className={`fmg-editor-panel${className ? ` ${className}` : ""}`}
+      className={`fmg-editor-panel${width ? " fmg-editor-panel--wide" : ""}${className ? ` ${className}` : ""}`}
       ref={panelRef}
       role="dialog"
+      style={width ? ({ width } satisfies CSSProperties) : undefined}
       tabIndex={-1}
     >
       <header className="fmg-editor-panel__header">

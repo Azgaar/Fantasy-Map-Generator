@@ -1,8 +1,15 @@
+/// <reference types="node" />
+
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import type { LayerControlsSnapshot, LegacyLayerControls } from "./layers/layer-controls";
 import { getToolCommands } from "./tool-registry";
 import { EditMenuItems, LayerMenuItems, ViewsMenuItems, WorkspaceToolbar } from "./workspace-toolbar";
+
+const dialogStyles = readFileSync(new URL("./ui/dialog.css", import.meta.url), "utf8");
+const workspacePanelStyles = readFileSync(new URL("./ui/workspace-panel.css", import.meta.url), "utf8");
+const workspaceToolbarStyles = readFileSync(new URL("./workspace-toolbar.css", import.meta.url), "utf8");
 
 const snapshot: LayerControlsSnapshot = {
   canRemovePreset: false,
@@ -32,6 +39,15 @@ const controls: LegacyLayerControls = {
 };
 
 describe("WorkspaceToolbar", () => {
+  test("stays above modal overlays", () => {
+    const toolbarZIndex = Number(workspaceToolbarStyles.match(/#mapPreviewRoot\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
+    const overlayZIndices = [dialogStyles, workspacePanelStyles].map(styles =>
+      Number(styles.match(/(?:\.fmg-dialog-overlay|\.kui-overlay)\s*\{[^}]*z-index:\s*(\d+)/s)?.[1])
+    );
+
+    expect(toolbarZIndex).toBeGreaterThan(Math.max(...overlayZIndices));
+  });
+
   test("renders the floating workspace menus in the requested order", () => {
     const markup = renderToStaticMarkup(
       <WorkspaceToolbar

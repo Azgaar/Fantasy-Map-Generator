@@ -6,6 +6,7 @@
   bottom: 20px;
   display: flex;
   width: min(560px, calc(100vw - 40px));
+  max-width: calc(100vw - 40px);
   min-width: min(460px, calc(100vw - 40px));
   flex-direction: column;
   overflow: hidden;
@@ -178,7 +179,7 @@
 }
 
 .workspace-editor-panel-open .fmg-map-minimap {
-  right: 600px;
+  right: calc(var(--fmg-active-editor-panel-width, 560px) + 40px);
 }
 
 .fmg-editor-panel .fmg-dom-dialog__content,
