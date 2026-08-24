@@ -26,7 +26,7 @@ import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { drawGoods, toggleGoods } from "../renderers/draw-goods";
+import { drawGoods } from "../renderers/draw-goods";
 import { ensureEl, unique } from "../utils";
 import { toggleCellGood } from "./editor-mutations";
 
@@ -87,7 +87,7 @@ function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
 
-  if (!layerIsOn("toggleGoods")) toggleGoods();
+  if (!window.LayerControls.isLayerOn("toggleGoods")) window.LayerControls.toggleLayer("toggleGoods");
   else drawGoods();
 
   renderDialog();
@@ -519,9 +519,9 @@ function goodsRestoreDefaults() {
       Goods.restoreDefaults();
       Goods.generate();
       Production.regenerateEconomy();
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -537,10 +537,10 @@ function enterResourceAssignMode(this: HTMLElement) {
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
   customization = 14;
   this.classList.add("pressed");
-  if (!layerIsOn("toggleGoods")) toggleGoods();
-  if (!layerIsOn("toggleCells")) {
+  if (!window.LayerControls.isLayerOn("toggleGoods")) window.LayerControls.toggleLayer("toggleGoods");
+  if (!window.LayerControls.isLayerOn("toggleCells")) {
     ensureEl<HTMLButtonElement>("toggleCells").dataset.forced = "true";
-    toggleCells();
+    window.LayerControls.toggleLayer("toggleCells");
   }
 
   setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "actions"]);
@@ -578,9 +578,9 @@ function exitResourceAssignMode(close?: string) {
   customization = 0;
   ensureEl("goodsAssign").classList.remove("pressed");
 
-  if (layerIsOn("toggleCells")) {
+  if (window.LayerControls.isLayerOn("toggleCells")) {
     const toggler = ensureEl<HTMLButtonElement>("toggleCells");
-    if (toggler.dataset.forced) toggleCells();
+    if (toggler.dataset.forced) window.LayerControls.toggleLayer("toggleCells");
     delete toggler.dataset.forced;
   }
 
@@ -661,7 +661,7 @@ function requestGoodsRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Goods.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
       refreshEditors();
     }
   });
@@ -675,8 +675,8 @@ function requestProductionRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
       refreshEditors();
     }
   });

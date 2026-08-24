@@ -16,6 +16,7 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
 import { renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { clearMapInteractionOverlay, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -117,8 +118,8 @@ const burgsTable = initEditorTable<Burg>({
 function open(filters: Filters = { stateId: null, cultureId: null }): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleBurgIcons")) window.LayerControls.toggleLayer("toggleBurgIcons");
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
   renderDialog();
   updateFilter(filters);
@@ -196,11 +197,9 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
   bindColumnSorting(dialogId, burgsTable.reset);
-  applyLineHighlighting(dialogId, ({ target, cellId }) => {
+  applyLineHighlighting(dialogId, ({ cellId }) => {
     const burgId = pack.cells.burg[cellId];
-    if (burgId) return burgId;
-    const burg = target.closest<SVGElement>("#labels [data-label-type='burg'][data-id]");
-    return burg ? Number(burg.dataset.id) : undefined;
+    return burgId || undefined;
   });
 
   initColumnVisibility({
@@ -228,6 +227,7 @@ function renderDialog(): void {
 
 function closeBurgsOverview(): void {
   if (document.getElementById("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
+  clearMapInteractionOverlay();
   destroyDialog(dialogId);
 }
 
@@ -399,13 +399,24 @@ function renderBurgsPage(view: TableView<Burg>): void {
 }
 
 function burgHighlightOn(event: Event): void {
-  const burg = +(event.target as HTMLElement).dataset.id!;
-  const label = select("#labels").select(`[data-label-type='burg'][data-id='${burg}']`);
-  if (label.size()) label.classed("drag", true);
+  const row = (event.target as Element).closest<HTMLElement>("[data-id]");
+  const burg = row ? pack.burgs[Number(row.dataset.id)] : null;
+  updateMapInteractionOverlay({
+    highlight: burg
+      ? [
+          {
+            center: { x: burg.x, y: burg.y },
+            kind: "circle",
+            radius: 5,
+            style: { fill: "none", stroke: "#c13119", strokeWidth: 2 }
+          }
+        ]
+      : null
+  });
 }
 
 function burgHighlightOff(): void {
-  select("#labels").selectAll("text[data-label-type='burg'].drag").classed("drag", false);
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function zoomIntoBurg(this: HTMLElement): void {

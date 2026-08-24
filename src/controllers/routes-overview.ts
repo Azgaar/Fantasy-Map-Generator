@@ -71,7 +71,7 @@ const routesTable = initEditorTable<Route>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  if (!window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.toggleLayer("toggleRoutes");
 
   renderDialog();
   routesTable.reset();

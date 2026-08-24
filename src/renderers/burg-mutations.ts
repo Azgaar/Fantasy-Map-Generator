@@ -1,8 +1,9 @@
 import type { BurgAdded, BurgRemoved } from "@/generators/burgs-generator";
+import { drawEmblems } from "./draw-emblems";
 import { invalidateBurgSymbols } from "./point-symbols";
 
 export function renderBurgAdded({ route }: BurgAdded): void {
-  if (route && layerIsOn("toggleRoutes")) drawRoute(route);
+  if (route && window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.redrawLayer("toggleRoutes");
   invalidateBurgSymbols();
 }
 
@@ -13,7 +14,7 @@ export function renderBurgChanged(_burg: BurgAdded["burg"]): void {
 export function renderBurgRemoved({ burgId, hadEmblem }: BurgRemoved): void {
   if (hadEmblem) {
     document.getElementById(`burgCOA${burgId}`)?.remove();
-    document.querySelector(`#emblems #burgEmblems > use[data-i='${burgId}']`)?.remove();
+    drawEmblems();
   }
   invalidateBurgSymbols();
 }

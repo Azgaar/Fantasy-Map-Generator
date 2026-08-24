@@ -6,11 +6,23 @@ const HANDLE_RADIUS_PIXELS = 6;
 
 export const MAP_INTERACTION_HANDLE_EVENT = "map:interaction-handle";
 
-export type MapInteractionGeometry =
+export interface MapInteractionGeometryStyle {
+  fill?: string;
+  fillOpacity?: number;
+  opacity?: number;
+  stroke?: string;
+  strokeOpacity?: number;
+  strokeWidth?: number;
+}
+
+type MapInteractionGeometryShape =
   | { center: ScreenPoint; kind: "circle"; radius: number }
   | { height: number; kind: "bounds"; width: number; x: number; y: number }
+  | { kind: "path"; path: string }
   | { kind: "point"; point: ScreenPoint }
   | { kind: "polygon" | "polyline"; points: readonly ScreenPoint[] };
+
+export type MapInteractionGeometry = MapInteractionGeometryShape & { style?: MapInteractionGeometryStyle };
 
 export interface MapInteractionBrush {
   center: ScreenPoint;
@@ -376,6 +388,7 @@ function renderGeometry(geometry: MapInteractionGeometry, scale: number): SVGEle
   const element = createGeometryElement(geometry, scale);
   element.dataset.overlayGeometry = geometry.kind;
   element.setAttribute("vector-effect", "non-scaling-stroke");
+  applyGeometryStyle(element, geometry.style);
   return element;
 }
 
@@ -395,6 +408,11 @@ function createGeometryElement(geometry: MapInteractionGeometry, scale: number):
     rect.setAttribute("y", String(geometry.y));
     return rect;
   }
+  if (geometry.kind === "path") {
+    const path = document.createElementNS(SVG_NAMESPACE, "path");
+    path.setAttribute("d", geometry.path);
+    return path;
+  }
   if (geometry.kind === "point") {
     const circle = document.createElementNS(SVG_NAMESPACE, "circle");
     circle.setAttribute("cx", String(geometry.point.x));
@@ -405,4 +423,18 @@ function createGeometryElement(geometry: MapInteractionGeometry, scale: number):
   const element = document.createElementNS(SVG_NAMESPACE, geometry.kind);
   element.setAttribute("points", geometry.points.map(point => `${point.x},${point.y}`).join(" "));
   return element;
+}
+
+function applyGeometryStyle(element: SVGElement, style: MapInteractionGeometryStyle | undefined): void {
+  if (!style) return;
+  for (const [attribute, value] of [
+    ["fill", style.fill],
+    ["fill-opacity", style.fillOpacity],
+    ["opacity", style.opacity],
+    ["stroke", style.stroke],
+    ["stroke-opacity", style.strokeOpacity],
+    ["stroke-width", style.strokeWidth]
+  ] as const) {
+    if (value !== undefined) element.style.setProperty(attribute, String(value));
+  }
 }

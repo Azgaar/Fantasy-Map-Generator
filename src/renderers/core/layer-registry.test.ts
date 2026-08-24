@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAP_LAYER_REGISTRY, validateLayerRegistry } from "./layer-registry";
+import { MAP_LAYER_REGISTRY, resolveMapLayerOrder, validateLayerRegistry } from "./layer-registry";
 import { RendererCoordinator } from "./renderer-coordinator";
 
 describe("map layer registry", () => {
@@ -25,6 +25,14 @@ describe("map layer registry", () => {
     expect(() =>
       validateLayerRegistry([{ dependencies: ["landmass"], id: "states", order: 1, persistent: true }])
     ).toThrow("Unknown dependency");
+  });
+
+  it("reorders controlled layers while keeping fixed registry slots", () => {
+    const order = resolveMapLayerOrder(["toggleStates", "toggleTexture", "toggleBiomes"]);
+
+    expect(order.slice(0, 7)).toEqual(["ocean", "landmass", "states", "texture", "biomes", "height", "lakes"]);
+    expect(order[21]).toBe("coastline");
+    expect(new Set(order).size).toBe(MAP_LAYER_REGISTRY.length);
   });
 });
 

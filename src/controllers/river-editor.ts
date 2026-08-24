@@ -29,10 +29,10 @@ function open(riverId: number): void {
   if (customization) return;
   if (findEl("riverEditor") && riverId === selectedRiverId) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  if (!window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.toggleLayer("toggleRivers");
 
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  ensureEl("toggleCells").dataset.forced = String(+!window.LayerControls.isLayerOn("toggleCells"));
+  if (!window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   const river = pack.rivers.find(candidate => candidate.i === riverId);
   if (!river) return;
@@ -140,7 +140,7 @@ function openRiverCreator(): void {
 }
 
 function openRiverStyle(): void {
-  editStyle("rivers");
+  window.StyleEditor.edit("rivers");
 }
 
 function getRiver(): River {
@@ -320,7 +320,7 @@ function closeRiverEditor(): void {
 
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (forced && window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   destroyDialog("riverEditor");
 }

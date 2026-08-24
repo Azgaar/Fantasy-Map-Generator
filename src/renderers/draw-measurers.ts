@@ -1,6 +1,6 @@
 import { curveCatmullRom, curveCatmullRomClosed, line, polygonArea, select } from "d3";
 import polylabel from "polylabel";
-import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { ensureMeasurerIds, type Measurer, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { getArea, getAreaUnit, last, rn, round, si } from "@/utils";
 
@@ -28,6 +28,7 @@ const getDistance = (length: number): string => `${rn(length * distanceScale)} $
 export function drawMeasurers(): void {
   select("#ruler").selectAll("*").remove();
   if (!pack.measurers) return;
+  ensureMeasurerIds(pack.measurers);
   const style = getMeasurerStyle();
   for (const measurer of pack.measurers) RENDERERS[measurer.type](measurer, style);
 }
@@ -46,7 +47,11 @@ const RENDERERS: Record<MeasurerType, (measurer: Measurer, style: MeasurerStyle)
 function renderRuler(measurer: Measurer, { strokeWidth, dasharray, fontSize }: MeasurerStyle): void {
   const points = measurer.points.join(" ");
 
-  const el = select("#ruler").append<SVGGElement>("g").attr("class", "ruler").attr("font-size", fontSize);
+  const el = select("#ruler")
+    .append<SVGGElement>("g")
+    .attr("class", "ruler")
+    .attr("data-id", measurer.i ?? null)
+    .attr("font-size", fontSize);
   el.append("polyline")
     .attr("points", points)
     .attr("class", "white")
@@ -88,7 +93,11 @@ function renderRuler(measurer: Measurer, { strokeWidth, dasharray, fontSize }: M
 function renderPathMeasurer(measurer: Measurer, { strokeWidth, dasharray, fontSize }: MeasurerStyle): void {
   const path = round(openCurveGen(measurer.points) || "");
 
-  const el = select("#ruler").append<SVGGElement>("g").attr("class", "opisometer").attr("font-size", fontSize);
+  const el = select("#ruler")
+    .append<SVGGElement>("g")
+    .attr("class", "opisometer")
+    .attr("data-id", measurer.i ?? null)
+    .attr("font-size", fontSize);
   const white = el
     .append<SVGPathElement>("path")
     .attr("d", path)
@@ -119,7 +128,11 @@ function renderPathMeasurer(measurer: Measurer, { strokeWidth, dasharray, fontSi
 function renderPlanimeter(measurer: Measurer, { strokeWidth, dasharray, fontSize }: MeasurerStyle): void {
   const path = round(closedCurveGen(measurer.points) || "");
 
-  const el = select("#ruler").append<SVGGElement>("g").attr("class", "planimeter").attr("font-size", fontSize);
+  const el = select("#ruler")
+    .append<SVGGElement>("g")
+    .attr("class", "planimeter")
+    .attr("data-id", measurer.i ?? null)
+    .attr("font-size", fontSize);
   el.append("path")
     .attr("d", path)
     .attr("class", "planimeter")

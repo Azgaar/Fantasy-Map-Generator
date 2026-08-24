@@ -433,11 +433,8 @@ class LabelMeasurementSandbox {
     this.root.setAttribute("height", String(graphHeight));
     this.root.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
     this.root.setAttribute("aria-hidden", "true");
+    this.root.setAttribute("font-size", "100px");
     this.root.style.cssText = `position:fixed;left:0;top:0;width:${graphWidth}px;height:${graphHeight}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
-    const renderedLabels = document.querySelector<SVGGElement>("#labels");
-    const fontSize =
-      renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
-    if (fontSize) this.root.setAttribute("font-size", fontSize);
     document.body.appendChild(this.root);
 
     for (const groupName of new Set(labels.map(label => label.group)))

@@ -1,9 +1,10 @@
-import { mean, select, sum } from "d3";
+import { mean, sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/components/dialog/sorting";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
-import { moveRegiment } from "@/renderers/draw-military";
+import { moveMilitaryRegiment, replaceMilitaryRegimentUnits } from "@/controllers/editor-mutations";
+import { drawMilitary } from "@/renderers/draw-military";
 import { invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
@@ -670,8 +671,9 @@ function addSide(): void {
       const shift = side === "attackers" ? attackers.length * -8 : (defenders.length - 1) * 8;
       regiment.px = regiment.x;
       regiment.py = regiment.y;
-      moveRegiment(regiment, defenders[0].x, defenders[0].y + shift);
+      moveMilitaryRegiment(regiment, { x: defenders[0].x, y: defenders[0].y + shift });
     });
+    drawMilitary();
   }
 
   function addSideClosed(): void {
@@ -1282,6 +1284,7 @@ function applyResults(): void {
   b.defenders.regiments.forEach(r => {
     applyResultForSide(r, "defenders");
   });
+  drawMilitary();
 
   function applyResultForSide(r: Regiment, side: Side): void {
     const id = `regiment${r.state}-${r.i}`;
@@ -1304,11 +1307,8 @@ function applyResults(): void {
       note.legend += legend;
     }
 
-    r.u = { ...r.survivors };
-    r.a = sum(Object.values(r.u)); // reg total
-    select<SVGGElement, unknown>("#armies").select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
-
-    moveRegiment(r, r.px!, r.py!); // move regiment back to initial position
+    replaceMilitaryRegimentUnits(r, r.survivors!);
+    moveMilitaryRegiment(r, { x: r.px!, y: r.py! }); // move regiment back to initial position
   }
 
   const i = (last(pack.markers)?.i ?? -1) + 1;
@@ -1378,11 +1378,12 @@ function applyResults(): void {
 function cancelResults(): void {
   const b = battle!;
   b.attackers.regiments.forEach(r => {
-    moveRegiment(r, r.px!, r.py!);
+    moveMilitaryRegiment(r, { x: r.px!, y: r.py! });
   });
   b.defenders.regiments.forEach(r => {
-    moveRegiment(r, r.px!, r.py!);
+    moveMilitaryRegiment(r, { x: r.px!, y: r.py! });
   });
+  drawMilitary();
 
   closeBattleScreen();
   cleanData();

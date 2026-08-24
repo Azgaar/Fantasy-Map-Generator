@@ -1,7 +1,9 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { OptionsController } from "@/components/options/options-controller";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
+import { getHeightColorScheme as getColorScheme } from "@/renderers/scene/height-color-schemes";
 import { applyOption } from "@/utils";
 import { lock } from "@/utils/preferences";
 import { drawHeights, ensureEl, generateGrid, generateSeed, shouldRegenerateGrid } from "../utils";
@@ -27,7 +29,7 @@ function open(): void {
     applyOption($templateInput, id, getName(id));
     lock("template");
     $templateInput.dispatchEvent(new Event("change", { bubbles: true }));
-    if (createNewMap) regeneratePrompt({ seed: getSeed(), graph });
+    if (createNewMap) OptionsController.regenerate({ seed: getSeed(), graph });
     destroyDialog("heightmapSelection");
   };
 

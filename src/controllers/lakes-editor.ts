@@ -27,7 +27,7 @@ let activeVertex: { initialPoint: [number, number]; vertexId: number } | null = 
 function open(lakeId: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (layerIsOn("toggleCells")) toggleCells();
+  if (window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   renderDialog();
 
@@ -325,7 +325,7 @@ function removeLakeGroup(): void {
 }
 
 function editGroupStyle(): void {
-  editStyle("lakes", getLake().group);
+  window.StyleEditor.edit("lakes", getLake().group);
 }
 
 function editLakeLegend(): void {

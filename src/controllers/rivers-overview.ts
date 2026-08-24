@@ -97,7 +97,7 @@ const riversTable = initEditorTable<River>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  if (!window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.toggleLayer("toggleRivers");
 
   renderDialog();
   riversTable.reset();
@@ -278,7 +278,7 @@ function triggerAllRiversRemove(): void {
 function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
-  if (layerIsOn("toggleRivers")) drawRivers();
+  if (window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.redrawLayer("toggleRivers");
   riversTable.refresh();
 }
 

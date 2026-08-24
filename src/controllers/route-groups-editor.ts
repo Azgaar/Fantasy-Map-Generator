@@ -11,7 +11,7 @@ declare const prompt: (text: string, options: { default: string }, callback: (va
 
 function open(): void {
   if (customization) return;
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  if (!window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.toggleLayer("toggleRoutes");
 
   renderDialog();
   addLines();
@@ -51,7 +51,7 @@ function closeRouteGroupsEditor(): void {
 function onBodyClick(ev: Event): void {
   const target = ev.target as HTMLElement;
   const group = target.closest<HTMLElement>(".states")?.dataset.id;
-  if (target.classList.contains("editStyle") && group) editStyle("routes", group);
+  if (target.classList.contains("editStyle") && group) window.StyleEditor.edit("routes", group);
   else if (target.classList.contains("removeGroup") && group) removeGroup(group);
 }
 

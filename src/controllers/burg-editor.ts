@@ -31,8 +31,8 @@ let previewLayoutLocked = false;
 function open(id: number | string): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleBurgIcons")) window.LayerControls.toggleLayer("toggleBurgIcons");
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
   selectedBurgId = Number(id);
   if (!pack.burgs[selectedBurgId]?.i || pack.burgs[selectedBurgId].removed) return;
@@ -506,7 +506,7 @@ function hideStyleSection(): void {
 function editGroupLabelStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("labels", burg.label?.group || burg.group || "burg");
+  window.StyleEditor.edit("labels", burg.label?.group || burg.group || "burg");
 }
 
 function editBurgLabel(): void {
@@ -779,16 +779,16 @@ function toggleRelocateBurg(): void {
     updateMapInteractionOverlay({
       selection: [{ center: { x: burg.x, y: burg.y }, kind: "circle", radius: 5 }]
     });
-    if (!layerIsOn("toggleCells")) {
-      toggleCells();
+    if (!window.LayerControls.isLayerOn("toggleCells")) {
+      window.LayerControls.toggleLayer("toggleCells");
       toggler.dataset.forced = "true";
     }
   } else {
     clearMapInteractionOverlay();
     clearMainTip();
     applyDefaultViewboxEvents();
-    if (layerIsOn("toggleCells") && toggler.dataset.forced) {
-      toggleCells();
+    if (window.LayerControls.isLayerOn("toggleCells") && toggler.dataset.forced) {
+      window.LayerControls.toggleLayer("toggleCells");
       toggler.dataset.forced = "false";
     }
   }

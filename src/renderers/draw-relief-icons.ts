@@ -4,7 +4,7 @@ import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-cont
 let frameId: number | null = null;
 
 export const drawRelief = (): void => {
-  const isActive = layerIsOn("toggleRelief");
+  const isActive = window.LayerControls.isLayerOn("toggleRelief");
   setReliefLayerActive(isActive);
   if (!isActive) return void removeRelief();
   TIME && console.time("drawRelief");

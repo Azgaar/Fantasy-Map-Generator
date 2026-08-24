@@ -29,7 +29,7 @@ function markerName(marker: Marker): string {
 function open(marker: Marker): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  if (!window.LayerControls.isLayerOn("toggleMarkers")) window.LayerControls.toggleLayer("toggleMarkers");
 
   center = marker;
   renderDialog();

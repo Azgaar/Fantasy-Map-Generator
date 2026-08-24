@@ -1,4 +1,4 @@
-export type RendererBenchmarkBackend = "pixi" | "svg";
+export type RendererBenchmarkBackend = "pixi";
 export type RendererBenchmarkPhase =
   | "camera-frame"
   | "first-paint"
@@ -33,8 +33,9 @@ export interface RendererBenchmarkEnvironment {
   browser: string;
   deviceMemoryGb?: number;
   devicePixelRatio: number;
+  gpuBackend: string | null;
   hardwareConcurrency: number;
-  renderer: string | null;
+  rendererVersion: string;
   userAgent: string;
   viewport: { height: number; width: number };
 }
@@ -47,6 +48,7 @@ export interface RendererBenchmarkReport {
   fixture: RendererBenchmarkFixtureDescriptor;
   generatedAt: string;
   jsHeapBytes: number | null;
+  layerSet: readonly string[];
   longTasks: readonly { duration: number; timestamp: number }[];
   observations: readonly RendererBenchmarkObservation[];
   resourceBytes: number;

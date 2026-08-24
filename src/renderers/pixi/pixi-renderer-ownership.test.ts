@@ -13,6 +13,8 @@ describe("Pixi renderer ownership", () => {
     expect(PIXI_OWNED_LAYER_IDS).toEqual([
       "ocean",
       "landmass",
+      "texture",
+      "height",
       "lakes",
       "biomes",
       "cells",

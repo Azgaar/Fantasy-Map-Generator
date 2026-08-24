@@ -30,10 +30,15 @@ export interface LayerToggleModifiers {
 
 export interface LegacyLayerControls {
   applyPreset: (preset: string) => void;
+  drawActiveLayers: () => void;
   getSnapshot: () => LayerControlsSnapshot;
+  isLayerOn: (id: string) => boolean;
   moveLayer: (id: string, previousId?: string, nextId?: string) => void;
+  redrawLayer: (id: string) => boolean;
   removePreset: () => void;
+  restoreSavedPreset: () => void;
   savePreset: (name: string) => void;
+  setLayerVisibility: (id: string, visible: boolean) => void;
   toggleLayer: (id: string, modifiers?: LayerToggleModifiers) => boolean;
 }
 

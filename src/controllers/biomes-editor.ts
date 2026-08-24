@@ -1,4 +1,4 @@
-import { drag, easeSinIn, select, sum, transition } from "d3";
+import { drag, select, sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -22,8 +22,9 @@ import { Population } from "@/generators/population-generator";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { getAssignmentOverlay } from "@/renderers/interaction/map-domain-overlay";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { getPixiMapPointAtClient } from "@/renderers/pixi/pixi-renderer-controller";
+import { getPixiMapPointAtClient, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
@@ -87,11 +88,11 @@ const biomesTable = initEditorTable<Biome>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
 
   renderDialog();
   currentBiomeStatistics = biomesCollectStatistics();
@@ -170,7 +171,7 @@ function renderDialog(): void {
   });
 
   ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
-  ensureEl("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
+  ensureEl("biomesEditStyle").addEventListener("click", () => window.StyleEditor.edit("biomes"));
   ensureEl("biomesLegend").addEventListener("click", toggleLegend);
   ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("biomesManually").addEventListener("click", enterBiomesCustomizationMode);
@@ -317,16 +318,19 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
 
 function biomeHighlightOn(event: Event): void {
   if (customization === 6) return;
-  const biome = +(event.target as HTMLElement).dataset.id!;
-  const animate = transition().duration(2000).ease(easeSinIn);
-  select(`#biomes > #biome${biome}`).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
+  const biomeId = Number((event.currentTarget as HTMLElement).dataset.id);
+  updateMapInteractionOverlay({
+    highlight: getAssignmentOverlay(pack.cells.biome, biomeId, {
+      fill: "none",
+      stroke: "#cd4c11",
+      strokeWidth: 2
+    })
+  });
 }
 
-function biomeHighlightOff(event: Event): void {
+function biomeHighlightOff(): void {
   if (customization === 6) return;
-  const biome = +(event.target as HTMLElement).dataset.id!;
-  const color = pack.biomes[biome].color;
-  select(`#biomes > #biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function biomeChangeColor(fillBox: FillBoxElement): void {
@@ -492,7 +496,7 @@ function downloadBiomesData(): void {
 }
 
 function enterBiomesCustomizationMode(): void {
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
+  if (!window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
   customization = 6;
   biomesAssignment = new TerritoryAssignmentSession("biomes", pack.cells.biome);
   setModeHiddenColumns(dialogId, ["habitability", "cells", "area", "population", "actions"]);
@@ -648,8 +652,8 @@ function closeBiomesEditor(): void {
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
 }
 
 export const BiomesEditor = { open };

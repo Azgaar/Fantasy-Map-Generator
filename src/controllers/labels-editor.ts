@@ -33,7 +33,7 @@ let activeHandle:
 function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
   const cachedLabel = getSceneLabel(type, id);
   if (!cachedLabel) return;
@@ -455,7 +455,7 @@ function generateRandomName(): void {
 }
 
 function editGroupStyle(): void {
-  editStyle("labels", label.group);
+  window.StyleEditor.edit("labels", label.group);
 }
 
 function showSizeSection(): void {

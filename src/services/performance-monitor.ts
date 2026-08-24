@@ -1,3 +1,5 @@
+import { getPixiRendererSnapshot } from "@/renderers/pixi/pixi-renderer-controller";
+
 export interface PerformanceSample {
   name: string;
   duration: number;
@@ -92,6 +94,10 @@ export class MapPerformanceMonitor {
       longTasks: [...this.longTasks],
       domNodes: document.querySelectorAll("#map *").length
     };
+  }
+
+  getRendererSnapshot() {
+    return getPixiRendererSnapshot();
   }
 }
 

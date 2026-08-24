@@ -1,21 +1,32 @@
 import { describe, expect, it } from "vitest";
-import mainSource from "../../../public/main.js?raw";
-import layersSource from "../../../public/modules/ui/layers.js?raw";
-import styleUiSource from "../../../public/modules/ui/style.js?raw";
-import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
+import mainSource from "../../application/main-runtime.ts?raw";
+import componentsIndexSource from "../../components/index.ts?raw";
+import layersSource from "../../components/layers/layer-controls-runtime.ts?raw";
 import mapTooltipSource from "../../components/map-tooltip.ts?raw";
+import styleUiSource from "../../components/style/style-editor-runtime.ts?raw";
+import stylePresetsSource from "../../components/style/style-presets-runtime.ts?raw";
 import zoomSource from "../../components/zoom.ts?raw";
 import biomesEditorSource from "../../controllers/biomes-editor.ts?raw";
 import burgEditorSource from "../../controllers/burg-editor.ts?raw";
+import burgsOverviewSource from "../../controllers/burgs-overview.ts?raw";
 import coastlineVertexEditorSource from "../../controllers/coastline-vertex-editor.ts?raw";
+import compassEditorSource from "../../controllers/compass-editor.ts?raw";
 import culturesEditorSource from "../../controllers/cultures-editor.ts?raw";
+import diplomacyEditorSource from "../../controllers/diplomacy-editor.ts?raw";
+import emblemsEditorSource from "../../controllers/emblems-editor.ts?raw";
 import goodsEditorSource from "../../controllers/goods-editor.ts?raw";
+import heightmapEditorSource from "../../controllers/heightmap-editor.ts?raw";
 import iceEditorSource from "../../controllers/ice-editor.ts?raw";
-import lakesEditorSource from "../../controllers/lakes-editor.ts?raw";
+import labelSpreadSource from "../../controllers/label-spread.ts?raw";
 import labelsEditorSource from "../../controllers/labels-editor.ts?raw";
+import lakesEditorSource from "../../controllers/lakes-editor.ts?raw";
 import markerEditorSource from "../../controllers/markers-editor.ts?raw";
 import marketsOverviewSource from "../../controllers/markets-overview.ts?raw";
+import measurersEditorSource from "../../controllers/measurers-editor.ts?raw";
+import militaryOverviewSource from "../../controllers/military-overview.ts?raw";
 import provincesEditorSource from "../../controllers/provinces-editor.ts?raw";
+import regimentEditorSource from "../../controllers/regiment-editor.ts?raw";
+import regimentsOverviewSource from "../../controllers/regiments-overview.ts?raw";
 import reliefEditorSource from "../../controllers/relief-editor.ts?raw";
 import religionsEditorSource from "../../controllers/religions-editor.ts?raw";
 import riverCreatorSource from "../../controllers/river-creator.ts?raw";
@@ -27,9 +38,11 @@ import routeGroupsEditorSource from "../../controllers/route-groups-editor.ts?ra
 import routesOverviewSource from "../../controllers/routes-overview.ts?raw";
 import statesEditorSource from "../../controllers/states-editor.ts?raw";
 import territoryEditorUtilsSource from "../../controllers/territory-editor-utils.ts?raw";
+import transformToolSource from "../../controllers/transform-tool.ts?raw";
 import zonesEditorSource from "../../controllers/zones-editor.ts?raw";
 import riverGeneratorSource from "../../generators/river-generator.ts?raw";
 import routesGeneratorSource from "../../generators/routes-generator.ts?raw";
+import indexSource from "../../index.html?raw";
 import exportSource from "../../services/io/export.ts?raw";
 import loadSource from "../../services/io/load.ts?raw";
 import saveSource from "../../services/io/save.ts?raw";
@@ -43,6 +56,7 @@ import drawMilitarySource from "../draw-military.ts?raw";
 import drawTemperatureSource from "../draw-temperature.ts?raw";
 import drawTradeSource from "../draw-trade-animation.ts?raw";
 import renderersIndex from "../index.ts?raw";
+import domainOverlaySource from "../interaction/map-domain-overlay.ts?raw";
 import interactionOverlaySource from "../interaction/map-interaction-overlay.ts?raw";
 import labelsRendererSource from "../labels/labels-renderer.ts?raw";
 import brushCircleSource from "../overlays/brush-circle.ts?raw";
@@ -54,7 +68,9 @@ import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
 import populationMilitarySceneSource from "../scene/layers/population-military-scene.ts?raw";
 import reliefSceneSource from "../scene/layers/relief-sprite-scene.ts?raw";
 import staticOverlaySceneSource from "../scene/layers/static-overlay-scene.ts?raw";
+import view3dSource from "../view-3d-renderer.ts?raw";
 import denseOverlaysSource from "../viewport/dense-overlays.ts?raw";
+import legacySvgImportSource from "./legacy-svg-import.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
 import loaderSource from "./pixi-renderer-loader.ts?raw";
 
@@ -67,6 +83,30 @@ describe("Pixi hard cutover", () => {
     expect(loaderSource.includes("PixiMapPrototype")).toBe(false);
     expect(controllerSource.includes("disable:")).toBe(false);
     expect(controllerSource.includes("setTheme")).toBe(false);
+    expect(indexSource.includes("modules/ui/layers.js")).toBe(false);
+    expect(indexSource.includes("modules/ui/style-presets.js")).toBe(false);
+    expect(indexSource.includes("main.js")).toBe(false);
+    expect(indexSource.includes("libs/d3.min.js")).toBe(false);
+    expect(indexSource.includes('src="application/main-runtime.ts"')).toBe(true);
+    expect(indexSource.includes('onclick="toggleTexture(event)"')).toBe(false);
+    expect(indexSource.includes('onclick="toggleMarketsLayer(event)"')).toBe(false);
+    expect(indexSource.includes('onchange="handleLayersPresetChange')).toBe(false);
+    expect(indexSource.includes('onchange="requestStylePresetChange')).toBe(false);
+    expect(componentsIndexSource.includes("initializeLayerControlsRuntime()")).toBe(true);
+    expect(layersSource.includes("exposeCompatibilityCommands")).toBe(false);
+    for (const operation of [
+      "drawActiveLayers",
+      "isLayerOn",
+      "redrawLayer",
+      "restoreSavedPreset",
+      "setLayerVisibility",
+      "toggleLayer"
+    ]) {
+      expect(layersSource.includes(operation)).toBe(true);
+    }
+    expect(mainSource.includes("window.LayerControls.restoreSavedPreset()")).toBe(true);
+    expect(mainSource.includes("window.LayerControls.drawActiveLayers()")).toBe(true);
+    expect(styleUiSource.includes("window.LayerControls.isLayerOn(")).toBe(true);
   });
 
   it("does not reconstruct Pixi-owned SVG during save or export", () => {
@@ -76,15 +116,19 @@ describe("Pixi hard cutover", () => {
   });
 
   it("routes migrated thematic fills to Pixi without isoline or ownership fallback branches", () => {
-    expect(layersSource.includes('redrawPixiLayer("cultures", "cults")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("religions", "relig")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("provinces", "provs")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("zones", "zones")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("cells", "cells")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("grid", "gridOverlay")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("precipitation", "prec")')).toBe(true);
-    expect(layersSource.includes('detail: {command: "invalidate-layer", layer: "rivers"}')).toBe(true);
-    expect(layersSource.includes('detail: {command: "invalidate-layer", layer: "routes"}')).toBe(true);
+    for (const ownership of [
+      'toggleCultures: "cultures"',
+      'toggleReligions: "religions"',
+      'toggleProvinces: "provinces"',
+      'toggleZones: "zones"',
+      'toggleCells: "cells"',
+      'toggleGrid: "grid"',
+      'togglePrecipitation: "precipitation"'
+    ]) {
+      expect(layersSource.includes(ownership)).toBe(true);
+    }
+    expect(layersSource.includes('invalidatePixiRendererLayer("rivers")')).toBe(true);
+    expect(layersSource.includes('invalidatePixiRendererLayer("routes")')).toBe(true);
     expect(layersSource.includes('"#pattern_"')).toBe(false);
     expect(layersSource.includes("getGappedFillPaths")).toBe(false);
     expect([layersSource, drawBiomesSource, drawBordersSource].join("\n").includes("ownership-request")).toBe(false);
@@ -100,8 +144,9 @@ describe("Pixi hard cutover", () => {
   it("persists migrated visibility and semantic opacity instead of deriving them from SVG paths", () => {
     expect(saveSource.includes("capturePixiLayerVisibility(style")).toBe(true);
     expect(loadSource.includes("getStoredPixiLayerVisibility(style, layer)")).toBe(true);
-    expect(styleUiSource.includes("setPixiLayerOpacity")).toBe(true);
-    expect(stylePresetsSource.includes("syncPixiCellStylePreset(presetJson)")).toBe(true);
+    expect(styleUiSource.includes("window.MapStyleControls.setLayerOpacity")).toBe(true);
+    expect(styleUiSource.includes("function setPixiLayerOpacity")).toBe(false);
+    expect(stylePresetsSource.includes("window.MapStyleControls.applyLegacyPreset(presetJson)")).toBe(true);
   });
 
   it("keeps river and route editing out of the removed persistent SVG layer groups", () => {
@@ -156,6 +201,33 @@ describe("Pixi hard cutover", () => {
     expect(religionsEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
   });
 
+  it("derives territory highlights and fog paths from domain assignments", () => {
+    expect(domainOverlaySource.includes("getIsolines(pack")).toBe(true);
+    expect(interactionOverlaySource.includes('geometry.kind === "path"')).toBe(true);
+    for (const source of [
+      biomesEditorSource,
+      diplomacyEditorSource,
+      statesEditorSource,
+      provincesEditorSource,
+      zonesEditorSource
+    ]) {
+      for (const legacyAccess of [
+        'select("#regions")',
+        'select("#statesBody")',
+        'select("#statesHalo")',
+        'unknown>("#provs")',
+        'unknown>("#zones")',
+        "select(`#biomes >",
+        'select("#debug")'
+      ]) {
+        expect(source.includes(legacyAccess)).toBe(false);
+      }
+    }
+    expect(statesEditorSource.includes("getAssignmentPath(pack.cells.state")).toBe(true);
+    expect(provincesEditorSource.includes("getAssignmentPath(pack.cells.province")).toBe(true);
+    expect(zonesEditorSource.includes("getCellsPath(zone.cells)")).toBe(true);
+  });
+
   it("edits feature vertices by domain ID without legacy paths or debug circles", () => {
     for (const source of [lakesEditorSource, coastlineVertexEditorSource]) {
       expect(source.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
@@ -178,14 +250,53 @@ describe("Pixi hard cutover", () => {
     expect(labelsEditorSource.includes("getSceneLabel(type, id)")).toBe(true);
     expect(labelsEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
     expect(labelsEditorSource.includes("setLabelOverride")).toBe(true);
-    expect(labelsEditorSource.includes('querySelector<SVGTextElement>(`#labels')).toBe(false);
+    expect(labelsEditorSource.includes("querySelector<SVGTextElement>(`#labels")).toBe(false);
     expect(labelsEditorSource.includes('select("#debug")')).toBe(false);
     expect(labelsEditorSource.includes("getPointer")).toBe(false);
+    expect(labelSpreadSource.includes('querySelector<SVGGElement>("#labels")')).toBe(false);
+    expect(burgsOverviewSource.includes('select("#labels")')).toBe(false);
+    expect(burgsOverviewSource.includes("updateMapInteractionOverlay")).toBe(true);
+  });
+
+  it("edits and summarizes military entities without removed SVG army nodes", () => {
+    expect(regimentEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(regimentEditorSource.includes("pickPixiRenderer")).toBe(true);
+    expect(regimentEditorSource.includes("moveMilitaryRegiment")).toBe(true);
+    for (const source of [regimentEditorSource, regimentsOverviewSource, militaryOverviewSource]) {
+      expect(source.includes("#armies")).toBe(false);
+      expect(source.includes("getPointer")).toBe(false);
+    }
+  });
+
+  it("keeps measurer lines overlay-owned while editing them through shared handles", () => {
+    expect(measurersEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(measurersEditorSource.includes("moveMeasurerPoint")).toBe(true);
+    expect(measurersEditorSource.includes("getPixiMapPointAtClient")).toBe(true);
+    expect(measurersEditorSource.includes("getScreenCTM")).toBe(false);
+    expect(measurersEditorSource.includes("measurerDrag")).toBe(false);
+    expect(measurersEditorSource.includes('select("#ruler")')).toBe(false);
+  });
+
+  it("keeps heightmap topology in a transient workspace with shared coordinates and commands", () => {
+    expect(heightmapEditorSource.includes("getPixiMapPointAtClient")).toBe(true);
+    expect(heightmapEditorSource.includes("commitHeightValues")).toBe(true);
+    expect(heightmapEditorSource.includes("linearFeatureStart")).toBe(true);
+    expect(heightmapEditorSource.includes("getPointer")).toBe(false);
+    expect(heightmapEditorSource.includes('select("#debug")')).toBe(false);
+    expect(heightmapEditorSource.includes('.attr("id", "heights")')).toBe(true);
+  });
+
+  it("edits Pixi emblems through stable scene data and the shared overlay", () => {
+    expect(emblemsEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(emblemsEditorSource.includes("buildEmblemScene")).toBe(true);
+    expect(emblemsEditorSource.includes("moveEmblem")).toBe(true);
+    expect(emblemsEditorSource.includes('select<SVGElement, unknown>("#emblems")')).toBe(false);
+    expect(emblemsEditorSource.includes("dragEmblem")).toBe(false);
   });
 
   it("renders burgs and markers only through renderer-neutral Pixi point symbols", () => {
-    expect(layersSource.includes('redrawPixiLayer("burgIcons")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("markers")')).toBe(true);
+    expect(layersSource.includes('toggleBurgIcons: "burgIcons"')).toBe(true);
+    expect(layersSource.includes('toggleMarkers: "markers"')).toBe(true);
     expect(renderersIndex.includes("draw-burg-icons")).toBe(false);
     expect(renderersIndex.includes("draw-markers")).toBe(false);
     expect(pointSymbolsSource.includes('invalidatePixiRendererLayer("burgIcons")')).toBe(true);
@@ -200,16 +311,14 @@ describe("Pixi hard cutover", () => {
     expect(mainSource.includes('attr("id", "burgIcons")')).toBe(false);
     expect(mainSource.includes('attr("id", "anchors")')).toBe(false);
     expect(mainSource.includes('attr("id", "markers")')).toBe(false);
-    expect(controllerSource.includes('"#burgIcons"')).toBe(true);
-    expect(controllerSource.includes('"#anchors"')).toBe(true);
-    expect(controllerSource.includes('"#markers"')).toBe(true);
-    expect(controllerSource.includes("document.querySelector(selector)?.remove()")).toBe(true);
+    expect(legacySvgImportSource.includes('"#viewbox > #icons"')).toBe(true);
+    expect(controllerSource.includes("removeLegacyRendererGroups()")).toBe(true);
   });
 
   it("renders ice, goods, and markets only through renderer-neutral Pixi scenes", () => {
-    expect(layersSource.includes('redrawPixiLayer("ice")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("goods")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("markets")')).toBe(true);
+    expect(layersSource.includes('toggleIce: "ice"')).toBe(true);
+    expect(layersSource.includes('toggleGoods: "goods"')).toBe(true);
+    expect(layersSource.includes('toggleMarketsLayer: "markets"')).toBe(true);
     expect([drawGoodsSource, drawIceSource, drawMarketsSource].join("\n").includes('from "d3"')).toBe(false);
     expect(drawGoodsSource.includes('invalidatePixiRendererLayer("goods")')).toBe(true);
     expect(drawIceSource.includes('invalidatePixiRendererLayer("ice")')).toBe(true);
@@ -217,8 +326,8 @@ describe("Pixi hard cutover", () => {
     expect(mainSource.includes('append("g").attr("id", "ice")')).toBe(false);
     expect(mainSource.includes('append("g").attr("id", "goods")')).toBe(false);
     expect(mainSource.includes('append("g").attr("id", "markets")')).toBe(false);
-    for (const selector of ['"#ice"', '"#goods"', '"#goodsCells"', '"#goodsIcons"', '"#goodsBurgs"', '"#markets"']) {
-      expect(controllerSource.includes(selector)).toBe(true);
+    for (const selector of ['"#viewbox > #ice"', '"#viewbox > #goods"', '"#viewbox > #markets"']) {
+      expect(legacySvgImportSource.includes(selector)).toBe(true);
     }
     expect(iceEditorSource.includes('select<SVGGElement, unknown>("#ice")')).toBe(false);
     expect(iceEditorSource.includes("getPointer")).toBe(false);
@@ -231,8 +340,8 @@ describe("Pixi hard cutover", () => {
   });
 
   it("renders population and military only through renderer-neutral Pixi scenes", () => {
-    expect(layersSource.includes('redrawPixiLayer("population")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("military")')).toBe(true);
+    expect(layersSource.includes('togglePopulation: "population"')).toBe(true);
+    expect(layersSource.includes('toggleMilitary: "military"')).toBe(true);
     expect(drawMilitarySource.includes('from "d3"')).toBe(false);
     expect(drawMilitarySource.includes('invalidatePixiRendererLayer("military")')).toBe(true);
     expect(populationMilitarySceneSource.includes("buildPopulationScene")).toBe(true);
@@ -242,53 +351,55 @@ describe("Pixi hard cutover", () => {
     expect(mainSource.includes('append("g").attr("id", "armies")')).toBe(false);
     expect(mainSource.includes('attr("id", "rural")')).toBe(false);
     expect(mainSource.includes('attr("id", "urban")')).toBe(false);
-    for (const selector of ['"#population"', '"#rural"', '"#urban"', '"#armies"']) {
-      expect(controllerSource.includes(selector)).toBe(true);
+    for (const selector of ['"#viewbox > #population"', '"#viewbox > #armies"']) {
+      expect(legacySvgImportSource.includes(selector)).toBe(true);
     }
     expect(exportSource.includes("#armies image")).toBe(false);
   });
 
   it("renders labels through renderer-neutral scenes after deterministic font readiness", () => {
-    expect(layersSource.includes("drawLabels();")).toBe(true);
+    expect(layersSource.includes('measure("labels", window.drawLabels)')).toBe(true);
     expect(labelsRendererSource.includes('invalidatePixiRendererLayer("labels")')).toBe(true);
     expect(labelsRendererSource.includes("createLabelElements")).toBe(false);
     expect(labelSceneSource.includes("buildLabelScene")).toBe(true);
-    expect(controllerSource.includes('"#labels"')).toBe(true);
-    expect(controllerSource.includes('"#textPaths"')).toBe(true);
+    expect(legacySvgImportSource.includes('"#viewbox > #labels"')).toBe(true);
   });
 
   it("renders coordinates through camera-neutral scene data without live SVG graticules", () => {
-    expect(layersSource.includes('redrawPixiLayer("coordinates", "coordinates")')).toBe(true);
+    expect(layersSource.includes('toggleCoordinates: "coordinates"')).toBe(true);
     expect(layersSource.includes("geoGraticule")).toBe(false);
     expect(layersSource.includes("DOMPoint")).toBe(false);
     expect(coordinateSceneSource.includes("buildCoordinateScene")).toBe(true);
     expect(coordinateSceneSource.includes("document.")).toBe(false);
-    expect(controllerSource.includes('"#coordinates"')).toBe(true);
+    expect(legacySvgImportSource.includes('"#viewbox > #coordinates"')).toBe(true);
   });
 
   it("renders emblems through cached Pixi textures without a live SVG emblem layer", () => {
-    expect(layersSource.includes('redrawPixiLayer("emblems", "emblems")')).toBe(true);
+    expect(layersSource.includes('toggleEmblems: "emblems"')).toBe(true);
     expect(drawEmblemsSource.includes('invalidatePixiRendererLayer("emblems")')).toBe(true);
     expect(drawEmblemsSource.includes('from "d3"')).toBe(false);
     expect(emblemSceneSource.includes("buildEmblemScene")).toBe(true);
     expect(emblemSceneSource.includes("document.")).toBe(false);
     expect(emblemSceneSource.includes("pixi.js")).toBe(false);
     expect(zoomSource.includes("renderGroupCOAs")).toBe(false);
-    expect(controllerSource.includes('"#emblems"')).toBe(true);
+    expect(legacySvgImportSource.includes('"#viewbox > #emblems"')).toBe(true);
     expect(loadSource.includes('turnOnPixiLayer(\n        "emblems"')).toBe(true);
   });
 
   it("renders compass and trade through Pixi without live SVG transitions", () => {
-    expect(layersSource.includes('redrawPixiLayer("compass")')).toBe(true);
-    expect(layersSource.includes('redrawPixiLayer("trade")')).toBe(true);
+    expect(layersSource.includes('toggleCompass: "compass"')).toBe(true);
+    expect(layersSource.includes('toggleTrade: "trade"')).toBe(true);
     expect(staticOverlaySceneSource.includes("buildCompassScene")).toBe(true);
     expect(drawTradeSource.includes("requestAnimationFrame")).toBe(true);
     expect(drawTradeSource.includes('from "d3"')).toBe(false);
     expect(drawTradeSource.includes("document.createElementNS")).toBe(false);
     expect(mainSource.includes('append("g").attr("id", "compass")')).toBe(false);
     expect(mainSource.includes('append("g").attr("id", "tradeAnimation")')).toBe(false);
-    expect(controllerSource.includes('"#compass"')).toBe(true);
-    expect(controllerSource.includes('"#tradeAnimation"')).toBe(true);
+    expect(legacySvgImportSource.includes('"#viewbox > #compass"')).toBe(true);
+    expect(compassEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(compassEditorSource.includes("updateCompassStyle")).toBe(true);
+    expect(compassEditorSource.includes("#compass")).toBe(false);
+    expect(legacySvgImportSource.includes('"#viewbox > #tradeAnimation"')).toBe(true);
     expect(exportSource.includes("add wind rose")).toBe(false);
     expect(saveSource.includes("cloneTradeAnimation")).toBe(false);
   });
@@ -300,6 +411,17 @@ describe("Pixi hard cutover", () => {
       exportSource.indexOf("context.drawImage(overlay")
     );
     expect(exportSource.includes('throw new Error("Pixi renderer is not ready for raster export")')).toBe(true);
+    expect(exportSource.includes("renderPixiRasterFrame")).toBe(true);
+    expect(exportSource.includes("createRasterExportPlan")).toBe(true);
+    expect(exportSource.includes("getPixiRasterCapabilities")).toBe(true);
+    expect(exportSource.includes("cancelPngTilesExport")).toBe(true);
+    expect(exportSource.includes("renderFullMapRaster")).toBe(true);
+    expect(transformToolSource.includes("renderFullMapRaster")).toBe(true);
+    expect(transformToolSource.includes("getMapURL")).toBe(false);
+    expect(view3dSource.includes("renderFullMapRaster")).toBe(true);
+    expect(view3dSource.includes("ExportMap.getMapURL")).toBe(false);
+    expect(indexSource.includes("ExportMap.exportToSvg")).toBe(false);
+    expect(exportSource.includes("SVG export is unavailable with the Pixi renderer")).toBe(true);
   });
 
   it("uses renderer picking and a transient accessible overlay for map inspection and brushes", () => {

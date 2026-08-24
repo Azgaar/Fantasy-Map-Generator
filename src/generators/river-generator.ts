@@ -627,7 +627,7 @@ class RiverModule {
       cells.conf[i] = 0;
     });
     pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
-    if (typeof layerIsOn === "function" && layerIsOn("toggleRivers")) drawRivers();
+    if (window.LayerControls?.isLayerOn("toggleRivers")) window.LayerControls.redrawLayer("toggleRivers");
   }
 
   getParent(r: number): number {

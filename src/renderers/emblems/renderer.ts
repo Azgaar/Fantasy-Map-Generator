@@ -1,4 +1,5 @@
 import type { Emblem, EmblemCharge, EmblemOrdinary } from "@/generators/emblems/generator";
+import { rendererCommands } from "@/renderers/core/renderer-commands";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -291,11 +292,7 @@ export class EmblemRenderModule {
   }
 
   async add(_type: string, _i: number, _coa: Emblem, _x: number, _y: number) {
-    window.dispatchEvent(
-      new CustomEvent("map:pixi-renderer:command", {
-        detail: { command: "invalidate-layer", layer: "emblems" }
-      })
-    );
+    rendererCommands.invalidateLayer("emblems");
   }
 }
 

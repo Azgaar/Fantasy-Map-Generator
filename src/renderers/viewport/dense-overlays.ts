@@ -17,7 +17,7 @@ function drawCells(): void {
 
 function reconcileCells(context: ViewportRenderContext): void {
   const cells = context.root.querySelector<SVGGElement>("#cells");
-  if (!cells || !cellsIndex.valid || !layerIsOn("toggleCells")) return;
+  if (!cells || !cellsIndex.valid || !window.LayerControls.isLayerOn("toggleCells")) return;
 
   const { x0, y0, x1, y1 } = context.bounds;
   const paths: string[] = [];

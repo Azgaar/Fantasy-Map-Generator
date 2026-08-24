@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { getViewportSurface } from "@/application/viewport-surface";
+import { fitScaleBar } from "@/renderers/draw-scalebar";
 import {
   createPixiRendererOverview,
   PIXI_RENDERER_SCENE_CHANGE_EVENT
@@ -67,7 +69,7 @@ export function MapMinimap(): React.JSX.Element {
       updateViewport();
     };
 
-    const updateScaleBarPosition = () => fitScaleBar(scaleBar, svgWidth, svgHeight);
+    const updateScaleBarPosition = () => fitScaleBar(getViewportSurface().scaleBar, svgWidth, svgHeight);
     const resizeObserver = new ResizeObserver(updateScaleBarPosition);
     if (buttonRef.current) resizeObserver.observe(buttonRef.current);
 

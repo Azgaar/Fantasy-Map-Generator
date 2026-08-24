@@ -826,7 +826,7 @@ class RoutesModule {
     }
 
     pack.routes = pack.routes.filter(r => r.i !== route.i);
-    if (typeof layerIsOn === "function" && layerIsOn("toggleRoutes")) drawRoutes();
+    if (window.LayerControls?.isLayerOn("toggleRoutes")) window.LayerControls.redrawLayer("toggleRoutes");
   }
 
   getConnectivityRate(cellId: number): number {

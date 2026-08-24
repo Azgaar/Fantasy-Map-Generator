@@ -5,13 +5,16 @@ import {
   Assets,
   BitmapFontManager,
   BitmapText,
+  ColorMatrixFilter,
   Container,
   Graphics,
   GraphicsContext,
+  VERSION as PIXI_VERSION,
   Rectangle,
   Sprite,
   Text,
-  type Texture
+  type Texture,
+  TilingSprite
 } from "pixi.js";
 import type { Emblem } from "@/generators/emblems/generator";
 import {
@@ -58,7 +61,9 @@ import {
 } from "../scene/layers/economic-ice-scene";
 import { buildEmblemScene } from "../scene/layers/emblem-scene";
 import { buildGridScene } from "../scene/layers/grid-scene";
+import { buildHeightContourScene } from "../scene/layers/height-contour-scene";
 import { buildLabelScene, type LabelSceneGroup, type ResolvedLabelGroupStyle } from "../scene/layers/label-scene";
+import { buildOceanDepthScene } from "../scene/layers/ocean-depth-scene";
 import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
 import {
   buildMilitaryScene,
@@ -107,6 +112,7 @@ export interface PixiRendererSnapshot {
   missingCoordinateFonts: readonly string[];
   missingEmblemAssets: readonly string[];
   missingLabelFonts: readonly string[];
+  missingTextureAssets: readonly string[];
   markerSymbols: number;
   pickingEntries: number;
   reliefSprites: number;
@@ -114,10 +120,14 @@ export interface PixiRendererSnapshot {
   resourceBytes: number;
   resourceCount: number;
   renderer: string | null;
+  rendererVersion: string;
   textureCacheEntries: number;
   unsupportedCoordinateEffects: readonly string[];
+  unsupportedHeightEffects: readonly string[];
+  unsupportedOceanEffects: readonly string[];
   unsupportedLabelEffects: readonly string[];
   unsupportedEmblemEffects: readonly string[];
+  unsupportedTextureEffects: readonly string[];
   viewportHeight: number;
   viewportWidth: number;
 }
@@ -169,18 +179,34 @@ export interface PixiMapRendererOptions {
   getDevicePixelRatio?: () => number;
   onSceneChange?: () => void;
   pickTolerancePixels?: number;
+  preference?: "webgl" | "webgpu";
   recordPerformance?: (name: string, duration: number) => void;
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
   resolveSymbolIcon?: (icon: string) => string | null;
+  resolveTradeMarker?: (type: TradeMarkerType) => string | null;
   resolveCompassIcon?: () => string | null;
   resolveEmblemIcon?: (id: string, coa: Emblem, strokeWidth: number) => Promise<string | null> | string | null;
+  strictAssets?: boolean;
   glyphBudgetBytes?: number;
   textureBudgetBytes?: number;
 }
 
+export interface PixiRasterCapabilities {
+  maxTextureSize: number;
+}
+
+export interface PixiRasterFrameRequest {
+  frame: { height: number; width: number; x: number; y: number };
+  fullMap: { height: number; width: number };
+  hiddenLayers?: readonly MapLayerId[];
+  resolution: number;
+  transparentBackground?: boolean;
+}
+
 export class PixiMapRenderer implements MapRenderer {
   private app: Application | null = null;
+  private backgroundTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
   private contextRecoveryRelease: (() => void) | null = null;
   private diagnostics = new RenderDiagnostics();
@@ -202,6 +228,7 @@ export class PixiMapRenderer implements MapRenderer {
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
   private reliefTextureHandles = new Set<RendererResourceHandle<Texture>>();
+  private rendererFilters = new Set<ColorMatrixFilter>();
   private resizeFrameId: number | null = null;
   private resources = new RendererResourceTracker();
   private resizeObserver: ResizeObserver | null = null;
@@ -237,6 +264,7 @@ export class PixiMapRenderer implements MapRenderer {
     missingCoordinateFonts: [],
     missingEmblemAssets: [],
     missingLabelFonts: [],
+    missingTextureAssets: [],
     markerSymbols: 0,
     pickingEntries: 0,
     reliefSprites: 0,
@@ -244,10 +272,14 @@ export class PixiMapRenderer implements MapRenderer {
     resourceBytes: 0,
     resourceCount: 0,
     renderer: null,
+    rendererVersion: PIXI_VERSION,
     textureCacheEntries: 0,
     unsupportedCoordinateEffects: [],
+    unsupportedHeightEffects: [],
+    unsupportedOceanEffects: [],
     unsupportedLabelEffects: [],
     unsupportedEmblemEffects: [],
+    unsupportedTextureEffects: [],
     viewportHeight: 0,
     viewportWidth: 0
   };
@@ -301,6 +333,16 @@ export class PixiMapRenderer implements MapRenderer {
     this.clearStage();
     if (this.surface) this.surface.style.display = "block";
     const geography = this.buildGeographyContainers();
+    await this.decorateOceanContainer(sequence, geography.ocean, geography.bounds);
+    if (sequence !== this.rebuildSequence) return;
+    const textureContainer = await this.buildTextureContainer(
+      sequence,
+      geography.landPolygons,
+      geography.lakePolygons,
+      geography.bounds
+    );
+    if (sequence !== this.rebuildSequence) return;
+    const heightContainer = this.buildHeightContainer(geography.landPolygons, geography.bounds);
     const biomeContainer = this.buildFillContainer("biomes");
     const cellsContainer = this.buildCellsContainer();
     const gridContainer = this.buildGridContainer();
@@ -339,6 +381,8 @@ export class PixiMapRenderer implements MapRenderer {
     this.app.stage.addChild(
       geography.ocean,
       geography.landmass,
+      textureContainer,
+      heightContainer,
       geography.lakes,
       biomeContainer,
       cellsContainer,
@@ -405,6 +449,21 @@ export class PixiMapRenderer implements MapRenderer {
     this.layerVisibility.set(layer, visible);
     if (layer === "trade" && !visible) clearTradeAnimation();
     this.applyVisibility();
+  }
+
+  setLayerOrder(order: readonly MapLayerId[]): void {
+    const requested = new Map(order.map((layer, index) => [layer, index]));
+    const fallbackOffset = requested.size;
+    const canonicalOrder = new Map(MAP_LAYER_REGISTRY.map((layer, index) => [layer.id, fallbackOffset + index]));
+    for (const child of this.app?.stage.children ?? []) {
+      if (!isMapLayerId(child.label)) continue;
+      child.zIndex = requested.get(child.label) ?? canonicalOrder.get(child.label) ?? Number.MAX_SAFE_INTEGER;
+    }
+    this.app?.stage.sortChildren();
+    if (this.stats.enabled) {
+      this.app?.render();
+      this.rendererOptions.onSceneChange?.();
+    }
   }
 
   private applyVisibility(render = true): void {
@@ -555,6 +614,75 @@ export class PixiMapRenderer implements MapRenderer {
     return { height: source.height, source: source as unknown as CanvasImageSource, width: source.width };
   }
 
+  getRasterCapabilities(): PixiRasterCapabilities {
+    const renderer = this.app?.renderer as unknown as { gl?: WebGLRenderingContext | WebGL2RenderingContext };
+    const gl = renderer?.gl;
+    const detected = gl ? Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) : 0;
+    return { maxTextureSize: Number.isFinite(detected) && detected > 0 ? detected : 4096 };
+  }
+
+  renderRasterFrame(request: PixiRasterFrameRequest): HTMLCanvasElement {
+    if (!this.app || !this.world) throw new Error("Pixi renderer is not ready for raster export");
+    const { frame, fullMap } = request;
+    const resolution = Number.isFinite(request.resolution) && request.resolution > 0 ? request.resolution : 1;
+    if (frame.width <= 0 || frame.height <= 0 || fullMap.width <= 0 || fullMap.height <= 0) {
+      throw new Error("Raster export frame dimensions must be positive");
+    }
+    const { maxTextureSize } = this.getRasterCapabilities();
+    const outputWidth = Math.ceil(frame.width * resolution);
+    const outputHeight = Math.ceil(frame.height * resolution);
+    if (outputWidth > maxTextureSize || outputHeight > maxTextureSize) {
+      throw new Error(
+        `Raster export frame ${outputWidth}×${outputHeight} exceeds the device texture limit of ${maxTextureSize}px`
+      );
+    }
+
+    const previousCamera = { ...this.camera };
+    const hiddenLayers = new Set(request.hiddenLayers ?? []);
+    const visibilityOverrides: Array<{ display: { visible: boolean }; visible: boolean }> = [];
+    const hide = (display: { visible: boolean }): void => {
+      visibilityOverrides.push({ display, visible: display.visible });
+      display.visible = false;
+    };
+
+    for (const child of this.app.stage.children) {
+      if (isMapLayerId(child.label) && hiddenLayers.has(child.label)) hide(child);
+      if (child.label !== "height" || !hiddenLayers.has("ocean") || !(child instanceof Container)) continue;
+      for (const heightGroup of child.children) {
+        if (heightGroup.label === "height:ocean") hide(heightGroup);
+      }
+    }
+
+    this.camera = { height: fullMap.height, scale: 1, width: fullMap.width, x: 0, y: 0 };
+    this.app.stage.position.set(0, 0);
+    this.app.stage.scale.set(1);
+    this.updateMarkerScales();
+    this.updateEmblemGroupVisibility();
+    this.updateCoordinateDisplays();
+    this.updateLabelDisplays();
+    this.updateLabelGroupVisibility();
+
+    try {
+      return this.app.renderer.extract.canvas({
+        clearColor: request.transparentBackground ? "transparent" : this.semanticStyle.ocean.color,
+        frame: new Rectangle(frame.x, frame.y, frame.width, frame.height),
+        resolution,
+        target: this.app.stage
+      }) as HTMLCanvasElement;
+    } finally {
+      for (const { display, visible } of visibilityOverrides) display.visible = visible;
+      this.camera = previousCamera;
+      this.app.stage.position.set(previousCamera.x, previousCamera.y);
+      this.app.stage.scale.set(previousCamera.scale);
+      this.updateMarkerScales();
+      this.updateEmblemGroupVisibility();
+      this.updateCoordinateDisplays();
+      this.updateLabelDisplays();
+      this.updateLabelGroupVisibility();
+      this.app.render();
+    }
+  }
+
   private async initializeApplication(): Promise<void> {
     if (this.app) return;
     if (!this.surface) throw new Error("Cannot initialize an unmounted Pixi renderer");
@@ -571,7 +699,7 @@ export class PixiMapRenderer implements MapRenderer {
       // Camera renders are one-shot, so culling must use the new stage transform in the same frame.
       culler: { updateTransform: true },
       height: viewport.height,
-      preference: "webgl",
+      preference: this.rendererOptions.preference ?? "webgl",
       resolution: this.getResolution(viewport),
       width: viewport.width
     });
@@ -641,8 +769,11 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private buildGeographyContainers(): {
+    bounds: { height: number; width: number };
     coastline: Container;
+    lakePolygons: readonly PolygonPathPrimitive[];
     lakes: Container;
+    landPolygons: readonly PolygonPathPrimitive[];
     landmass: Container;
     ocean: Container;
   } {
@@ -650,6 +781,7 @@ export class PixiMapRenderer implements MapRenderer {
     const bounds = getWorldBounds(world);
     const scene = buildBaseGeographyScene(world, bounds, this.sceneRevisions.getLayerRevision("landmass"));
     return {
+      bounds,
       coastline: this.buildLineContainer(
         "coastline",
         scene.coastline.paths,
@@ -660,12 +792,159 @@ export class PixiMapRenderer implements MapRenderer {
         scene.lakes.polygons,
         role => this.semanticStyle.lakes.roles[role] ?? this.semanticStyle.lakes.default
       ),
+      lakePolygons: scene.lakes.polygons,
+      landPolygons: scene.landmass.polygons,
       landmass: this.buildPolygonContainer("landmass", scene.landmass.polygons, () => ({
         fill: this.semanticStyle.landmass,
         stroke: { cap: "butt", color: this.semanticStyle.landmass.color, dash: "", opacity: 0, width: 0 }
       })),
       ocean: this.buildRectangleContainer("ocean", scene.ocean.positions, this.semanticStyle.ocean)
     };
+  }
+
+  private buildHeightContainer(
+    landPolygons: readonly PolygonPathPrimitive[],
+    bounds: { height: number; width: number }
+  ): Container {
+    const container = new Container();
+    container.label = "height";
+    const climate = this.getWorld().climate;
+    if (!climate) return container;
+    const scene = buildHeightContourScene(
+      climate,
+      bounds,
+      this.semanticStyle.height,
+      this.sceneRevisions.getLayerRevision("height")
+    );
+    this.stats.unsupportedHeightEffects = [];
+
+    for (const group of scene.groups) {
+      const groupContainer = new Container();
+      groupContainer.label = `height:${group.scope}`;
+      groupContainer.alpha = group.opacity;
+      let svg = "";
+      if (group.baseColor) {
+        svg += `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${group.baseColor}"/>`;
+      }
+      for (const band of group.bands) {
+        if (band.terraceColor) {
+          svg += `<path d="${band.path}" transform="translate(.7 1.4)" fill="${band.terraceColor}"/>`;
+        }
+        svg += `<path d="${band.path}" fill="${band.color}"/>`;
+      }
+      if (svg) groupContainer.addChild(new Graphics().svg(svg));
+      if (group.filter && !this.applyPhysicalFilter(groupContainer, group.filter)) {
+        this.stats.unsupportedHeightEffects = [
+          ...this.stats.unsupportedHeightEffects,
+          `${group.scope}:filter:${group.filter}`
+        ];
+      }
+      if (group.scope === "land") applyGeographyMask(groupContainer, "land", landPolygons, [], bounds);
+      container.addChild(groupContainer);
+    }
+    return container;
+  }
+
+  private async decorateOceanContainer(
+    sequence: number,
+    container: Container,
+    bounds: { height: number; width: number }
+  ): Promise<void> {
+    const climate = this.getWorld().climate;
+    if (climate) {
+      const scene = buildOceanDepthScene(
+        climate,
+        bounds,
+        this.semanticStyle.ocean,
+        this.sceneRevisions.getLayerRevision("ocean")
+      );
+      this.stats.unsupportedOceanEffects = [];
+      if (scene.bands.length) {
+        const bands = scene.bands
+          .map(band => `<path d="${band.path}" fill="${band.color}" fill-opacity="${band.opacity}"/>`)
+          .join("");
+        const graphic = new Graphics().svg(bands);
+        graphic.label = "ocean:depth-bands";
+        if (
+          this.semanticStyle.ocean.bands.filter &&
+          !this.applyPhysicalFilter(graphic, this.semanticStyle.ocean.bands.filter)
+        ) {
+          this.stats.unsupportedOceanEffects = [`bands:filter:${this.semanticStyle.ocean.bands.filter}`];
+        }
+        container.addChild(graphic);
+      }
+    }
+
+    const pattern = this.semanticStyle.ocean.pattern;
+    if (!pattern.href || pattern.opacity <= 0) return;
+    let handle: RendererResourceHandle<Texture> | null = null;
+    try {
+      handle = await this.textureCache.acquire(pattern.href, () => Assets.load<Texture>(pattern.href!));
+    } catch {
+      this.assertAssetAvailable("ocean texture", pattern.href);
+      this.stats.missingTextureAssets = [...new Set([...this.stats.missingTextureAssets, pattern.href])];
+      return;
+    }
+    if (sequence !== this.rebuildSequence) {
+      handle.release();
+      return;
+    }
+
+    const tileWidth = Math.max(1, handle.value.width);
+    const tileHeight = Math.max(1, handle.value.height);
+    const tileSize = Math.max(1, pattern.tileSize);
+    const display = new TilingSprite({
+      height: bounds.height,
+      texture: handle.value,
+      tileScale: { x: tileSize / tileWidth, y: tileSize / tileHeight },
+      width: bounds.width
+    });
+    display.alpha = pattern.opacity;
+    display.label = "ocean:pattern";
+    container.addChild(display);
+    this.backgroundTextureHandles.add(handle);
+  }
+
+  private async buildTextureContainer(
+    sequence: number,
+    landPolygons: readonly PolygonPathPrimitive[],
+    lakePolygons: readonly PolygonPathPrimitive[],
+    bounds: { height: number; width: number }
+  ): Promise<Container> {
+    const container = new Container();
+    container.label = "texture";
+    const style = this.semanticStyle.texture;
+    container.alpha = style.opacity;
+    this.stats.unsupportedTextureEffects = style.filter ? [`filter:${style.filter}`] : [];
+    if (style.filter && this.applyPhysicalFilter(container, style.filter)) this.stats.unsupportedTextureEffects = [];
+    if (!style.href) return container;
+
+    let handle: RendererResourceHandle<Texture> | null = null;
+    try {
+      handle = await this.textureCache.acquire(style.href, () => Assets.load<Texture>(style.href!));
+    } catch {
+      this.assertAssetAvailable("map texture", style.href);
+      this.stats.missingTextureAssets = [...new Set([...this.stats.missingTextureAssets, style.href])];
+      return container;
+    }
+    if (sequence !== this.rebuildSequence) {
+      handle.release();
+      return container;
+    }
+
+    const x = Number.isFinite(style.x) ? style.x : 0;
+    const y = Number.isFinite(style.y) ? style.y : 0;
+    const sprite = new Sprite({
+      height: Math.max(0, bounds.height - y),
+      position: { x, y },
+      texture: handle.value,
+      width: Math.max(0, bounds.width - x)
+    });
+    sprite.label = "texture:image";
+    container.addChild(sprite);
+    if (style.mask !== "none") applyGeographyMask(container, style.mask, landPolygons, lakePolygons, bounds);
+    this.backgroundTextureHandles.add(handle);
+    return container;
   }
 
   private buildRectangleContainer(layer: "ocean", positions: Float32Array, style: SemanticFillStyle): Container {
@@ -746,6 +1025,7 @@ export class PixiMapRenderer implements MapRenderer {
     const [fontResult] = await ensureFontFamiliesReady([this.semanticStyle.coordinates.fontFamily]);
     if (sequence !== this.rebuildSequence) return container;
     this.stats.missingCoordinateFonts = fontResult?.ready ? [] : [this.semanticStyle.coordinates.fontFamily];
+    if (!fontResult?.ready) this.assertAssetAvailable("font", this.semanticStyle.coordinates.fontFamily);
     const atlas = await this.glyphAtlasCache.acquireCharacters(
       collectCoordinateCharacters(scene.groups.flatMap(group => group.labels)),
       coordinateAtlasStyle(this.semanticStyle.coordinates),
@@ -819,9 +1099,12 @@ export class PixiMapRenderer implements MapRenderer {
             const source = await this.getEmblemSource(item.textureKey, item.svgId, item.coa);
             if (source) handle = await this.textureCache.acquire(source, () => Assets.load<Texture>(source));
           } catch {
-            // Failed or unsupported emblem assets receive a deterministic placeholder below.
+            this.assertAssetAvailable("emblem", item.domainId);
           }
-          if (!handle) missingAssets.push(item.domainId);
+          if (!handle) {
+            this.assertAssetAvailable("emblem", item.domainId);
+            missingAssets.push(item.domainId);
+          }
           return { handle, item };
         })
       );
@@ -868,6 +1151,7 @@ export class PixiMapRenderer implements MapRenderer {
     const fontResults = await ensureFontFamiliesReady(scene.groups.map(group => group.style.fontFamily));
     if (sequence !== this.rebuildSequence) return container;
     this.stats.missingLabelFonts = fontResults.filter(result => !result.ready).map(result => result.family);
+    for (const family of this.stats.missingLabelFonts) this.assertAssetAvailable("font", family);
     this.stats.unsupportedLabelEffects = [...scene.unsupportedEffects];
 
     const fontReadiness = new Map(fontResults.map(result => [result.family, result.ready]));
@@ -976,6 +1260,7 @@ export class PixiMapRenderer implements MapRenderer {
     try {
       handle = await this.textureCache.acquire(source, () => Assets.load<Texture>(source));
     } catch {
+      this.assertAssetAvailable("compass", source);
       return container;
     }
     if (sequence !== this.rebuildSequence) {
@@ -997,17 +1282,24 @@ export class PixiMapRenderer implements MapRenderer {
     const container = new Container();
     container.label = "trade";
     container.alpha = this.semanticStyle.trade.opacity;
-    const sources = new Map<TradeMarkerType, string>([
+    if (this.rendererOptions.resolveTradeMarker && !this.getWorld().deals?.length && !this.tradeSnapshot.markers.length)
+      return container;
+    const sources = new Map<TradeMarkerType, string>();
+    for (const [type, fallback] of [
       ["land", "./images/markers/wagon.svg"],
       ["water", "./images/markers/ship.svg"]
-    ]);
+    ] as const) {
+      const source = this.rendererOptions.resolveTradeMarker ? this.rendererOptions.resolveTradeMarker(type) : fallback;
+      if (source) sources.set(type, source);
+      else this.assertAssetAvailable("trade", type);
+    }
     const handles = new Map<TradeMarkerType, RendererResourceHandle<Texture>>();
     await Promise.all(
       [...sources].map(async ([type, source]) => {
         try {
           handles.set(type, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
         } catch {
-          // Missing trade marker assets receive a deterministic placeholder.
+          this.assertAssetAvailable("trade", type);
         }
       })
     );
@@ -1149,6 +1441,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const icon of new Set([...scene.icons, ...scene.burgs.flatMap(burg => burg.entries)].map(item => item.icon))) {
       const source = this.rendererOptions.resolveSymbolIcon?.(icon);
       if (source) iconSources.set(icon, source);
+      else this.assertAssetAvailable("symbol", icon);
     }
     const textures = new Map<string, RendererResourceHandle<Texture>>();
     await Promise.all(
@@ -1156,7 +1449,7 @@ export class PixiMapRenderer implements MapRenderer {
         try {
           textures.set(icon, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
         } catch {
-          // Missing goods assets receive a deterministic placeholder below.
+          this.assertAssetAvailable("symbol", icon);
         }
       })
     );
@@ -1276,7 +1569,7 @@ export class PixiMapRenderer implements MapRenderer {
         try {
           textures.set(source, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
         } catch {
-          // Missing or blocked regiment images receive a deterministic placeholder below.
+          this.assertAssetAvailable("military", source);
         }
       })
     );
@@ -1330,7 +1623,15 @@ export class PixiMapRenderer implements MapRenderer {
       await Promise.all(
         [...icons].map(async icon => {
           const source = this.rendererOptions.resolveReliefIcon?.(icon);
-          if (source) textures.set(icon, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+          if (!source) {
+            this.assertAssetAvailable("relief", icon);
+            return;
+          }
+          try {
+            textures.set(icon, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+          } catch {
+            this.assertAssetAvailable("relief", icon);
+          }
         })
       );
     } catch (error) {
@@ -1397,7 +1698,7 @@ export class PixiMapRenderer implements MapRenderer {
         try {
           textures.set(source, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
         } catch {
-          // A missing or CORS-blocked marker image is rendered as an explicit placeholder below.
+          this.assertAssetAvailable("marker", source);
         }
       })
     );
@@ -1446,17 +1747,25 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.missingCoordinateFonts = [];
     this.stats.missingEmblemAssets = [];
     this.stats.missingLabelFonts = [];
+    this.stats.missingTextureAssets = [];
     this.stats.pickingEntries = 0;
     this.stats.unsupportedCoordinateEffects = [];
+    this.stats.unsupportedHeightEffects = [];
+    this.stats.unsupportedOceanEffects = [];
     this.stats.unsupportedEmblemEffects = [];
     this.stats.unsupportedLabelEffects = [];
+    this.stats.unsupportedTextureEffects = [];
     this.markerDisplays.clear();
     this.tradeContainer = null;
     this.tradeDisplays.clear();
     this.tradeTextures.clear();
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
+    for (const filter of this.rendererFilters) filter.destroy();
+    this.rendererFilters.clear();
     for (const handle of this.glyphAtlasHandles) handle.release();
     this.glyphAtlasHandles.clear();
+    for (const handle of this.backgroundTextureHandles) handle.release();
+    this.backgroundTextureHandles.clear();
     for (const handle of this.reliefTextureHandles) handle.release();
     this.reliefTextureHandles.clear();
     for (const handle of this.emblemTextureHandles) handle.release();
@@ -1652,6 +1961,10 @@ export class PixiMapRenderer implements MapRenderer {
     return this.world;
   }
 
+  private assertAssetAvailable(kind: string, id: string): void {
+    if (this.rendererOptions.strictAssets) throw new Error(`Required renderer ${kind} asset is unavailable: ${id}`);
+  }
+
   private recordPerformance(name: string, duration: number): void {
     this.diagnostics.record(name, duration);
     this.rendererOptions.recordPerformance?.(name, duration);
@@ -1666,6 +1979,19 @@ export class PixiMapRenderer implements MapRenderer {
       },
       this.rendererOptions.resolutionPolicy ?? { ...DEFAULT_RENDERER_RESOLUTION_POLICY }
     );
+  }
+
+  private applyPhysicalFilter(target: Container, value: string): boolean {
+    const filter = new ColorMatrixFilter();
+    if (value.includes("filter-sepia")) filter.sepia(false);
+    else if (value.includes("filter-grayscale")) filter.grayscale(1, false);
+    else {
+      filter.destroy();
+      return false;
+    }
+    target.filters = [filter];
+    this.rendererFilters.add(filter);
+    return true;
   }
 }
 
@@ -1742,6 +2068,28 @@ function createPolygonGraphic(polygons: readonly PolygonPathPrimitive[], style: 
     });
   }
   return new Graphics(context);
+}
+
+function applyGeographyMask(
+  target: Container,
+  maskType: "land" | "water",
+  landPolygons: readonly PolygonPathPrimitive[],
+  lakePolygons: readonly PolygonPathPrimitive[],
+  bounds: { height: number; width: number }
+): void {
+  const context = new GraphicsContext();
+  if (maskType === "water") {
+    context.rect(0, 0, bounds.width, bounds.height).fill({ color: "#ffffff" });
+    for (const polygon of landPolygons) context.poly(polygon.points.flat(), true);
+    if (landPolygons.length) context.cut();
+    for (const polygon of lakePolygons) context.poly(polygon.points.flat(), true).fill({ color: "#ffffff" });
+  } else {
+    for (const polygon of landPolygons) context.poly(polygon.points.flat(), true).fill({ color: "#ffffff" });
+  }
+  const mask = new Graphics(context);
+  mask.label = `${target.label}:mask:${maskType}`;
+  target.addChild(mask);
+  target.mask = mask;
 }
 
 function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticLineStyle, pixelLine = false): Graphics {

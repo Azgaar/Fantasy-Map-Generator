@@ -1,4 +1,5 @@
 import { type Selection, select } from "d3";
+import { ApplicationController } from "@/application/application-controller";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
@@ -57,19 +58,19 @@ function changeDistanceUnit(this: HTMLSelectElement): void {
       this.options.add(new Option(String(custom), String(custom), false, true));
       lock("distanceUnit");
       renderScaleBar();
-      calculateFriendlyGridSize();
+      window.StyleEditor.calculateFriendlyGridSize();
     });
     return;
   }
 
   renderScaleBar();
-  calculateFriendlyGridSize();
+  window.StyleEditor.calculateFriendlyGridSize();
 }
 
 function changeDistanceScale(this: HTMLInputElement): void {
   distanceScale = +this.value;
   renderScaleBar();
-  calculateFriendlyGridSize();
+  window.StyleEditor.calculateFriendlyGridSize();
 }
 
 function changeHeightUnit(this: HTMLSelectElement): void {
@@ -82,12 +83,12 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 }
 
 function changeHeightExponent(): void {
-  calculateTemperatures();
-  if (layerIsOn("toggleTemperature")) drawTemperature();
+  ApplicationController.calculateTemperatures();
+  if (window.LayerControls.isLayerOn("toggleTemperature")) drawTemperature();
 }
 
 function changeTemperatureScale(): void {
-  if (layerIsOn("toggleTemperature")) drawTemperature();
+  if (window.LayerControls.isLayerOn("toggleTemperature")) drawTemperature();
 }
 
 function changePopulationRate(this: HTMLInputElement): void {
@@ -118,12 +119,12 @@ function restoreDefaultUnits(): void {
   localStorage.removeItem("heightUnit");
   localStorage.removeItem("temperatureScale");
   localStorage.removeItem("areaUnit");
-  calculateFriendlyGridSize();
+  window.StyleEditor.calculateFriendlyGridSize();
 
   // height exponent
   heightExponentInput.value = "1.8";
   localStorage.removeItem("heightExponent");
-  calculateTemperatures();
+  ApplicationController.calculateTemperatures();
 
   renderScaleBar();
 

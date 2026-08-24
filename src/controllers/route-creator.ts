@@ -26,10 +26,10 @@ function open(defaultGroup?: string): void {
   if (customization) return;
   stopMapPlacement();
   closeDialogs();
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  if (!window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.toggleLayer("toggleRoutes");
 
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  ensureEl("toggleCells").dataset.forced = String(+!window.LayerControls.isLayerOn("toggleCells"));
+  if (!window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   tip("Click to add route point", true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
@@ -184,7 +184,7 @@ function closeRouteCreator(): void {
 
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (forced && window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   destroyDialog("routeCreator");
 }

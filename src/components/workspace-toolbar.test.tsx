@@ -13,10 +13,15 @@ const snapshot: LayerControlsSnapshot = {
 
 const controls: LegacyLayerControls = {
   applyPreset: vi.fn(),
+  drawActiveLayers: vi.fn(),
   getSnapshot: () => snapshot,
+  isLayerOn: vi.fn(() => true),
   moveLayer: vi.fn(),
+  redrawLayer: vi.fn(() => true),
   removePreset: vi.fn(),
+  restoreSavedPreset: vi.fn(),
   savePreset: vi.fn(),
+  setLayerVisibility: vi.fn(),
   toggleLayer: vi.fn(() => true)
 };
 

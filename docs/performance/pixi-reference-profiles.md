@@ -32,7 +32,9 @@ Run the full reference matrix with:
 npm run benchmark:renderer
 ```
 
-The command runs every fixture against SVG and Pixi twice, serially, and writes
-`artifacts/renderer-benchmark-report.json`. Set `RENDERER_BENCHMARK_RUNS` to request more repetitions or
-`RENDERER_BENCHMARK_OUTPUT` to choose another report path. The GPU phase measures CPU submission of pending Pixi
-resource uploads; it does not claim hardware-completion time where the browser exposes no portable GPU timer.
+The command runs every fixture against the production Pixi renderer twice, serially, and writes
+`artifacts/renderer-benchmark-report.json`. The report records the active layer set, browser, Pixi version, selected
+GPU backend, fixture, canvas resolution, and resource accounting. Set `RENDERER_BENCHMARK_RUNS` to request more
+repetitions or `RENDERER_BENCHMARK_OUTPUT` to choose another report path. The GPU phase measures CPU submission of
+pending Pixi resource uploads; it does not claim hardware-completion time where the browser exposes no portable GPU
+timer. Historical SVG results remain comparison artifacts; the removed renderer is not reconstructed for new runs.

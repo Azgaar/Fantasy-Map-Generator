@@ -167,8 +167,18 @@ function editEntity(entity: MapContextEntity): unknown {
       return Controllers.BurgEditor.open(id!);
     case "coastline":
       return Controllers.CoastlineVertexEditor.open(id!);
+    case "compass":
+      return Controllers.CompassEditor.open();
     case "emblem":
-      return Controllers.EmblemsEditor.open(undefined, undefined, undefined, element);
+      return Controllers.EmblemsEditor.open(
+        entity.emblemType,
+        `${entity.emblemType}COA${id}`,
+        entity.emblemType === "burg"
+          ? pack.burgs[id!]
+          : entity.emblemType === "province"
+            ? pack.provinces[id!]
+            : pack.states[id!]
+      );
     case "goods":
       return Controllers.GoodsEditor.open();
     case "ice":
@@ -186,7 +196,7 @@ function editEntity(entity: MapContextEntity): unknown {
     case "production":
       return Controllers.ProductionOverview.open(id!);
     case "regiment":
-      return Controllers.RegimentEditor.open(`#${element!.id}`);
+      return Controllers.RegimentEditor.open(entity.stateId!, id!);
     case "relief":
       return Controllers.ReliefEditor.open(id!);
     case "river":
@@ -217,6 +227,7 @@ function getEntityIcon(entity: MapContextEntity): MenuIcon {
   const icons: Record<MapContextEntity["kind"], MenuIcon> = {
     burg: "home",
     coastline: "path",
+    compass: "compass",
     emblem: "shield",
     goods: "shop",
     ice: "snowflake",

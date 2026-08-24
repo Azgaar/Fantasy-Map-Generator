@@ -3,9 +3,49 @@ export interface SemanticFillStyle {
   opacity: number;
 }
 
+export interface OceanLayerStyle extends SemanticFillStyle {
+  bands: {
+    color: string;
+    filter: string | null;
+    layers: string;
+    opacity: number;
+  };
+  pattern: {
+    href: string | null;
+    opacity: number;
+    tileSize: number;
+  };
+}
+
 export interface CellLayerStyle {
   fallbackColor: string;
   opacity: number;
+}
+
+export interface HeightBandStyle {
+  curve: string;
+  filter: string | null;
+  opacity: number;
+  relax: number;
+  scheme: string;
+  skip: number;
+  terracing: number;
+}
+
+export interface HeightLayerStyle {
+  land: HeightBandStyle;
+  ocean: HeightBandStyle & { render: boolean };
+}
+
+export type TextureMask = "land" | "none" | "water";
+
+export interface TextureLayerStyle {
+  filter: string | null;
+  href: string | null;
+  mask: TextureMask;
+  opacity: number;
+  x: number;
+  y: number;
 }
 
 export interface SemanticLineStyle {
@@ -183,13 +223,14 @@ export interface MapStyle {
   emblems: EmblemLayerStyle;
   goods: GoodsLayerStyle;
   grid: GridLayerStyle;
+  height: HeightLayerStyle;
   ice: SemanticRoleStyles<SemanticAreaStyle> & { opacity: number };
   lakes: SemanticRoleStyles<SemanticAreaStyle>;
   landmass: SemanticFillStyle;
   markers: MarkerLayerStyle;
   markets: MarketLayerStyle;
   military: MilitaryLayerStyle;
-  ocean: SemanticFillStyle;
+  ocean: OceanLayerStyle;
   precipitation: PrecipitationLayerStyle;
   population: PopulationLayerStyle;
   provinces: CellLayerStyle;
@@ -199,6 +240,7 @@ export interface MapStyle {
   routes: SemanticRoleStyles<SemanticLineStyle>;
   states: CellLayerStyle;
   temperature: TemperatureLayerStyle;
+  texture: TextureLayerStyle;
   trade: TradeLayerStyle;
   zones: ZoneLayerStyle;
 }
@@ -381,6 +423,27 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     stroke: { cap: "butt", color: "#777777", dash: "", opacity: 1, width: 0.5 },
     type: "pointyHex"
   },
+  height: {
+    land: {
+      curve: "curveBasisClosed",
+      filter: null,
+      opacity: 1,
+      relax: 0,
+      scheme: "bright",
+      skip: 5,
+      terracing: 0
+    },
+    ocean: {
+      curve: "curveBasisClosed",
+      filter: null,
+      opacity: 1,
+      relax: 1,
+      render: false,
+      scheme: "bright",
+      skip: 0,
+      terracing: 0
+    }
+  },
   lakes: {
     default: {
       fill: { color: "#a6c1fd", opacity: 0.5 },
@@ -450,7 +513,12 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     strokeWidth: 0.3,
     textColor: "#ffffff"
   },
-  ocean: { color: "#466eab", opacity: 1 },
+  ocean: {
+    bands: { color: "#ecf2f9", filter: null, layers: "-6,-3,-1", opacity: 0.4 },
+    color: "#466eab",
+    opacity: 1,
+    pattern: { href: null, opacity: 0.2, tileSize: 100 }
+  },
   precipitation: {
     fill: { color: "#003dff", opacity: 1 },
     opacity: 1,
@@ -479,6 +547,14 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     labels: { color: "#000000", fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "bold", opacity: 1 },
     opacity: 1,
     stroke: { cap: "butt", color: "#000000", dash: "", opacity: 1, width: 1.8 }
+  },
+  texture: {
+    filter: null,
+    href: null,
+    mask: "land",
+    opacity: 1,
+    x: 0,
+    y: 0
   },
   trade: {
     highlight: { cap: "round", color: "#cc1111", dash: "", opacity: 0.7, width: 0.5 },

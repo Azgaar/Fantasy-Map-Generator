@@ -1,9 +1,13 @@
+import type { Emblem } from "@/generators/emblems/generator";
 import type { Label, LabelType } from "@/generators/labels-generator";
+import type { Measurer } from "@/generators/measurers-generator";
+import type { Regiment } from "@/generators/military-generator";
 import { getNextReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
 import type { River } from "@/generators/river-generator";
 import type { Route } from "@/generators/routes-generator";
 import type { Zone } from "@/generators/zones-generator";
 import type { MapLayerId } from "@/renderers/core/layer-registry";
+import type { CompassLayerStyle } from "@/renderers/scene/styles";
 import type { PackedGraph, TypedArray } from "@/types/PackedGraph";
 
 type RouteControlPoint = [number, number, number];
@@ -302,6 +306,158 @@ export function setLabelOverride(
   if (sameLabel(entity.label, label)) return unchanged("labels");
   entity.label = structuredClone(label);
   return changed("labels", [`${type}:${entity.i}`]);
+}
+
+export function moveEmblem(
+  entity: { coa?: Emblem; i: number },
+  type: "burg" | "province" | "state",
+  point: { x: number; y: number }
+): EditorMutationResult {
+  if (!entity.coa || (entity.coa.x === point.x && entity.coa.y === point.y)) return unchanged("emblems");
+  entity.coa.x = point.x;
+  entity.coa.y = point.y;
+  return changed("emblems", [`${type}:${entity.i}`]);
+}
+
+export function updateCompassStyle(
+  compass: CompassLayerStyle,
+  patch: Partial<CompassLayerStyle>
+): EditorMutationResult {
+  const next = { ...compass, ...patch };
+  if (
+    compass.x === next.x &&
+    compass.y === next.y &&
+    compass.scale === next.scale &&
+    compass.opacity === next.opacity
+  ) {
+    return unchanged("compass");
+  }
+  Object.assign(compass, next);
+  return changed("compass", ["compass"]);
+}
+
+export function insertMeasurerPoint(measurer: Measurer, index: number, point: [number, number]): EditorMutationResult {
+  if (index < 0 || index > measurer.points.length) return unchanged("rulers");
+  measurer.points.splice(index, 0, point);
+  return changed("rulers", [`measurer:${measurer.i ?? 0}`]);
+}
+
+export function moveMeasurerPoint(measurer: Measurer, index: number, point: [number, number]): EditorMutationResult {
+  const previous = measurer.points[index];
+  if (!previous || (previous[0] === point[0] && previous[1] === point[1])) return unchanged("rulers");
+  measurer.points[index] = point;
+  return changed("rulers", [`measurer:${measurer.i ?? 0}`]);
+}
+
+export function removeMeasurerPoint(measurer: Measurer, index: number, minPoints: number): EditorMutationResult {
+  if (!measurer.points[index] || measurer.points.length <= minPoints) return unchanged("rulers");
+  measurer.points.splice(index, 1);
+  return changed("rulers", [`measurer:${measurer.i ?? 0}`]);
+}
+
+export function replaceMeasurerPoints(measurer: Measurer, points: [number, number][]): EditorMutationResult {
+  if (samePoints(measurer.points, points)) return unchanged("rulers");
+  measurer.points = points.map(point => [...point]);
+  return changed("rulers", [`measurer:${measurer.i ?? 0}`]);
+}
+
+export function commitHeightValues(
+  target: Uint8Array,
+  values: ArrayLike<number>,
+  candidateCellIds?: readonly number[]
+): EditorMutationResult {
+  const affectedCellIds: number[] = [];
+  const cellIds =
+    candidateCellIds ?? Array.from({ length: Math.min(target.length, values.length) }, (_, index) => index);
+  for (const cellId of cellIds) {
+    const next = Math.max(0, Math.min(100, Math.round(values[cellId] ?? target[cellId])));
+    if (target[cellId] === next) continue;
+    target[cellId] = next;
+    affectedCellIds.push(cellId);
+  }
+  return affectedCellIds.length ? changed("height", affectedCellIds, affectedCellIds) : unchanged("height");
+}
+
+export function moveMilitaryRegiment(regiment: Regiment, point: { x: number; y: number }): EditorMutationResult {
+  if (regiment.x === point.x && regiment.y === point.y) return unchanged("military");
+  regiment.x = point.x;
+  regiment.y = point.y;
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function moveRegimentBase(regiment: Regiment, point: { x: number; y: number }): EditorMutationResult {
+  if (regiment.bx === point.x && regiment.by === point.y) return unchanged("military");
+  regiment.bx = point.x;
+  regiment.by = point.y;
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function rotateMilitaryRegiment(regiment: Regiment, angle: number): EditorMutationResult {
+  if ((regiment.angle ?? 0) === angle) return unchanged("military");
+  regiment.angle = angle;
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function setMilitaryRegimentNaval(regiment: Regiment, naval: number): EditorMutationResult {
+  if (regiment.n === naval) return unchanged("military");
+  regiment.n = naval;
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function setMilitaryRegimentName(regiment: Regiment, name: string): EditorMutationResult {
+  if (regiment.name === name) return unchanged("military");
+  regiment.name = name;
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function setMilitaryRegimentIcon(regiment: Regiment, icon: string): EditorMutationResult {
+  if (regiment.icon === icon) return unchanged("military");
+  regiment.icon = icon;
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function setMilitaryRegimentUnit(regiment: Regiment, unit: string, count: number): EditorMutationResult {
+  const normalized = Math.max(0, Math.floor(count));
+  if ((regiment.u[unit] ?? 0) === normalized) return unchanged("military");
+  regiment.u[unit] = normalized;
+  regiment.a = Object.values(regiment.u).reduce((total, value) => total + value, 0);
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function replaceMilitaryRegimentUnits(regiment: Regiment, units: Record<string, number>): EditorMutationResult {
+  if (JSON.stringify(regiment.u) === JSON.stringify(units)) return unchanged("military");
+  regiment.u = { ...units };
+  regiment.a = Object.values(regiment.u).reduce((total, value) => total + value, 0);
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function insertMilitaryRegiment(military: Regiment[], regiment: Regiment): EditorMutationResult {
+  if (military.some(candidate => candidate.i === regiment.i)) return unchanged("military");
+  military.push(regiment);
+  return changed("military", [`${regiment.state}:${regiment.i}`], [regiment.cell]);
+}
+
+export function removeMilitaryRegiment(
+  military: Regiment[],
+  stateId: number,
+  regimentId: number
+): EditorMutationResult {
+  const index = military.findIndex(candidate => candidate.i === regimentId);
+  if (index < 0) return unchanged("military");
+  const [regiment] = military.splice(index, 1);
+  return changed("military", [`${stateId}:${regimentId}`], [regiment.cell]);
+}
+
+export function mergeMilitaryRegiments(source: Regiment, target: Regiment): EditorMutationResult {
+  if (source === target) return unchanged("military");
+  for (const [unit, count] of Object.entries(source.u)) target.u[unit] = (target.u[unit] ?? 0) + count;
+  target.a = Object.values(target.u).reduce((total, count) => total + count, 0);
+  return {
+    affectedCellIds: uniqueIds([source.cell, target.cell]),
+    affectedDomainIds: [`${source.state}:${source.i}`, `${target.state}:${target.i}`],
+    changed: true,
+    layers: ["military"]
+  };
 }
 
 export function insertRoutePoint(route: Route, index: number, point: RouteControlPoint): EditorMutationResult {

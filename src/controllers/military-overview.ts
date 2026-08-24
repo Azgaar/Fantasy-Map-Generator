@@ -1,4 +1,4 @@
-import { interpolateString, select, sum } from "d3";
+import { sum } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -15,6 +15,8 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import { drawMilitary } from "@/renderers/draw-military";
+import { clearMapInteractionOverlay, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { downloadFile, getFileName } from "@/utils";
 import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
 
@@ -38,9 +40,9 @@ const militaryTable = initEditorTable<MilitaryRow>({
 function open(): void {
   if (customization) return;
   closeDialogs("#militaryOverview, .stable");
-  if (!layerIsOn("toggleStates")) toggleStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (!window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (!window.LayerControls.isLayerOn("toggleBorders")) window.LayerControls.toggleLayer("toggleBorders");
+  if (!window.LayerControls.isLayerOn("toggleMilitary")) window.LayerControls.toggleLayer("toggleMilitary");
 
   renderDialog();
   militaryTable.reset();
@@ -134,6 +136,7 @@ function renderDialog(): void {
 }
 
 function closeMilitaryOverview(): void {
+  clearMapInteractionOverlay();
   destroyDialog(dialogId);
 }
 
@@ -292,8 +295,8 @@ function changeAlert(state: number, alert: number): void {
       r.u[u] = rn(r.u[u] * dif);
     });
     r.a = sum(Object.values(r.u)); // change total
-    select<SVGGElement, unknown>(`#armies > g > g#regiment${s.i}-${r.i} > text`).text(Military.getTotal(r)); // change icon text
   });
+  drawMilitary();
 
   militaryTable.refresh();
 }
@@ -312,43 +315,22 @@ function updateFooter(view: TableView<MilitaryRow>): void {
 }
 
 function stateHighlightOn(event: Event): void {
-  const target = event.target as HTMLElement;
+  const target = event.currentTarget as HTMLElement;
   const state = +target.dataset.id!;
   if (customization || !state) return;
-  select<SVGGElement, unknown>(`#armies > g > g#army${state}`).transition().duration(2000).style("fill", "#ff0000");
-
-  if (!layerIsOn("toggleStates")) return;
-  const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
-
-  const path = select<SVGGElement, unknown>("#debug")
-    .append("path")
-    .attr("class", "highlight")
-    .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", "red")
-    .attr("stroke-width", 1)
-    .attr("opacity", 1)
-    .attr("filter", "url(#blur1)");
-
-  const l = path.node()!.getTotalLength();
-  const dur = (l + 5000) / 2;
-  const i = interpolateString(`0,${l}`, `${l},${l}`);
-  path
-    .transition()
-    .duration(dur)
-    .attrTween("stroke-dasharray", () => t => i(t));
+  const boxSize = getMapRendererStyle(style).military.boxSize;
+  updateMapInteractionOverlay({
+    highlight:
+      pack.states[state].military?.map(regiment => ({
+        center: { x: regiment.x, y: regiment.y },
+        kind: "circle" as const,
+        radius: boxSize * (regiment.n ? 3 : 4)
+      })) ?? []
+  });
 }
 
-function stateHighlightOff(event: Event): void {
-  select<SVGGElement, unknown>("#debug")
-    .selectAll(".highlight")
-    .each(function () {
-      select(this).transition().duration(1000).attr("opacity", 0).remove();
-    });
-
-  const target = event.target as HTMLElement;
-  const state = +target.dataset.id!;
-  select<SVGGElement, unknown>(`#armies > g > g#army${state}`).transition().duration(1000).style("fill", null);
+function stateHighlightOff(): void {
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function togglePercentageMode(): void {
@@ -683,7 +665,7 @@ function militaryRecalculate(): void {
       "Are you sure you want to recalculate military forces for all states?<br>Regiments for all states will be regenerated",
     onConfirm: () => {
       Military.generate();
-      if (layerIsOn("toggleMilitary")) drawMilitary();
+      if (window.LayerControls.isLayerOn("toggleMilitary")) drawMilitary();
       refreshMilitaryOverview();
     },
     title: "Recalculate military"

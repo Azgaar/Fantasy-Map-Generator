@@ -1,13 +1,21 @@
 import { select } from "d3";
+import { ApplicationController } from "@/application/application-controller";
+import { getViewportSurface } from "@/application/viewport-surface";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { ensureMeasurerIds } from "@/generators/measurers-generator";
 import { ensureReliefIconIds } from "@/generators/relief-generator";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { importLegacyRendererStyle, removeLegacyRendererGroups } from "@/renderers/pixi/legacy-svg-import";
 import { getStoredPixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
+import {
+  addCustomHeightColorScheme as addCustomColorScheme,
+  HEIGHT_COLOR_SCHEMES
+} from "@/renderers/scene/height-color-schemes";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -93,7 +101,7 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
         ? "Cannot load map from URL: request timed out"
         : (error as Error).message;
     showUploadErrorMessage(message, maplink, random);
-    if (random) generateMapOnLoad();
+    if (random) void ApplicationController.generateMapOnLoad();
   } finally {
     clearTimeout(timeoutId);
   }
@@ -314,71 +322,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    svg.remove();
+    getViewportSurface().svg.remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
-    // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
-    // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
-    // v5 global `d3.event`, breaking mouse/zoom handlers after a map load (#1508).
-    // Every layer selection below chains off `svg`, so they all inherit v5.
-    svg = (window as any).d3.select("#map") as typeof svg;
-    defs = svg.select<SVGDefsElement>("#deftemp");
-    viewbox = svg.select<SVGElement>("#viewbox");
-    scaleBar = svg.select<SVGGElement>("#scaleBar");
-    legend = svg.select("#legend");
-    ocean = viewbox.select<SVGGElement>("#ocean");
-    oceanLayers = ocean.select<SVGGElement>("#oceanLayers");
-    oceanPattern = ocean.select<SVGGElement>("#oceanPattern");
-    lakes = viewbox.select<SVGGElement>("#lakes");
-    landmass = viewbox.select<SVGGElement>("#landmass");
-    texture = viewbox.select<SVGGElement>("#texture");
-    terrs = viewbox.select<SVGGElement>("#terrs");
-    biomes = viewbox.select<SVGGElement>("#biomes");
-    ice = viewbox.select<SVGGElement>("#ice");
-    cells = viewbox.select<SVGGElement>("#cells");
-    gridOverlay = viewbox.select<SVGGElement>("#gridOverlay");
-    coordinates = viewbox.select<SVGGElement>("#coordinates");
-    rivers = viewbox.select<SVGElement>("#rivers");
-    terrain = viewbox.select<SVGGElement>("#terrain");
-    relig = viewbox.select<SVGGElement>("#relig");
-    cults = viewbox.select<SVGGElement>("#cults");
-    regions = viewbox.select<SVGGElement>("#regions");
-    statesBody = regions.select<SVGGElement>("#statesBody");
-    statesHalo = regions.select<SVGGElement>("#statesHalo");
-    provs = viewbox.select<SVGGElement>("#provs");
-    zones = viewbox.select<SVGGElement>("#zones");
-    borders = viewbox.select<SVGGElement>("#borders");
-    stateBorders = borders.select<SVGGElement>("#stateBorders");
-    provinceBorders = borders.select<SVGGElement>("#provinceBorders");
-    routes = viewbox.select<SVGElement>("#routes");
-    roads = routes.select<SVGGElement>("#roads");
-    trails = routes.select<SVGGElement>("#trails");
-    searoutes = routes.select<SVGGElement>("#searoutes");
-    temperature = viewbox.select<SVGGElement>("#temperature");
-    coastline = viewbox.select<SVGGElement>("#coastline");
-    prec = viewbox.select<SVGGElement>("#prec");
-    population = viewbox.select<SVGGElement>("#population");
-    goods = viewbox.select<SVGGElement>("#goods");
-    markets = viewbox.select<SVGGElement>("#markets");
-    emblems = viewbox.select<SVGElement>("#emblems");
-    labels = viewbox.select<SVGGElement>("#labels");
-    icons = viewbox.select<SVGGElement>("#icons");
-    armies = viewbox.select<SVGGElement>("#armies");
-    ruler = viewbox.select<SVGGElement>("#ruler");
-    fogging = viewbox.select<SVGGElement>("#fogging");
-    debug = viewbox.select<SVGElement>("#debug");
-    if (!texture.size()) {
-      texture = viewbox
-        .insert("g", "#landmass")
-        .attr("id", "texture")
-        .attr("data-href", "./images/textures/plaster.jpg");
-    }
-    if (!emblems.size()) {
-      emblems = viewbox
-        .insert("g", "#labels")
-        .attr("id", "emblems")
-        .style("display", "none") as unknown as typeof emblems;
-    }
+    // Pixi-owned groups remain import data and are queried locally by versioned migrations.
+    // Viewport overlays are queried on demand, so replacing the SVG creates no stale global selections.
 
     {
       grid = JSON.parse(data[6]);
@@ -391,7 +338,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       grid.cells.t = Int8Array.from(data[10].split(","), Number);
       grid.cells.temp = Int8Array.from(data[11].split(","), Number);
     }
-    reGraph();
+    ApplicationController.reGraph();
     Features.markupPack();
     if (data[3]?.startsWith("[")) {
       type LoadedBiome = (typeof pack.biomes)[number] & {
@@ -447,6 +394,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
+    ensureMeasurerIds(pack.measurers);
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     ensureReliefIconIds(pack.relief);
@@ -474,6 +422,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       migrateMap(mapVersion!, data);
     }
     migrateLegacyCustomEmblemData();
+    importLegacyRendererStyle(
+      style,
+      document,
+      options.burgs.groups.map(group => group.name)
+    );
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
@@ -499,8 +452,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         });
 
       // turn on active layers
-      if (hasChild(select("#texture"), "image")) turnOn("toggleTexture");
-      if (hasChildren(select("#terrs").select("#landHeights"))) turnOn("toggleHeight");
+      turnOnPixiLayer("texture", "toggleTexture", Boolean(hasChild(select("#texture"), "image")));
+      turnOnPixiLayer("height", "toggleHeight", Boolean(hasChildren(select("#terrs").select("#landHeights"))));
       turnOnPixiLayer("lakes", "toggleLakes", Boolean(isVisible(select("#lakes"))));
       turnOnPixiLayer("biomes", "toggleBiomes", Boolean(hasChildren(select("#biomes"))));
       turnOnPixiLayer("cells", "toggleCells", Boolean(hasChildren(select("#cells"))));
@@ -578,16 +531,16 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (heightmapColorSchemes) {
       const oceanHeights = document.getElementById("oceanHeights");
       const oceanScheme = oceanHeights?.getAttribute("scheme");
-      if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
+      if (oceanScheme && !(oceanScheme in HEIGHT_COLOR_SCHEMES)) addCustomColorScheme(oceanScheme);
       const landHeights = document.getElementById("landHeights");
       const landScheme = landHeights?.getAttribute("scheme");
-      if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
+      if (landScheme && !(landScheme in HEIGHT_COLOR_SCHEMES)) addCustomColorScheme(landScheme);
     }
 
     {
       // add custom texture if any
       const textureHref = select("#texture").attr("data-href");
-      if (textureHref) updateTextureSelectValue(textureHref);
+      if (textureHref) window.StyleEditor.updateTextureSelectValue(textureHref);
     }
 
     // data integrity checks
@@ -832,18 +785,18 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
+    removeLegacyRendererGroups();
     // draw data layers (not kept in svg)
-    if (layerIsOn("toggleRulers")) drawMeasurers();
-    if (layerIsOn("toggleGrid")) drawGrid();
-    if (layerIsOn("toggleLabels")) drawLabels();
-    if (layerIsOn("toggleRelief")) drawRelief();
+    if (window.LayerControls.isLayerOn("toggleRulers")) drawMeasurers();
+    if (window.LayerControls.isLayerOn("toggleGrid")) window.LayerControls.redrawLayer("toggleGrid");
+    if (window.LayerControls.isLayerOn("toggleLabels")) drawLabels();
+    if (window.LayerControls.isLayerOn("toggleRelief")) drawRelief();
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
-    focusOn(); // based on searchParams focus on point, cell or burg
-    invokeActiveZooming();
-    fitMapToScreen();
+    ApplicationController.focusOn(); // based on searchParams focus on point, cell or burg
+    window.OptionsController.fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
-    showStatistics();
+    ApplicationController.showStatistics();
     tip("Map is successfully loaded", true, "success", 7000);
     window.dispatchEvent(new CustomEvent("map:loaded", { detail: { mapVersion } }));
   } catch (error) {
@@ -857,7 +810,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       actions: [
         { close: false, label: "Clear cache", onClick: cleanupData },
         { label: "Select file", onClick: () => ensureEl("mapToLoad").click() },
-        { label: "New map", onClick: () => regenerateMap("loading error") },
+        { label: "New map", onClick: () => ApplicationController.regenerateMap("loading error") },
         { label: "Cancel" }
       ],
       id: "mapLoadingErrorDialog",

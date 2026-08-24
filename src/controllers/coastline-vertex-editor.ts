@@ -24,7 +24,7 @@ let activeVertex: { initialPoint: [number, number]; vertexId: number } | null = 
 function open(featureId: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (layerIsOn("toggleCells")) toggleCells();
+  if (window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   renderDialog();
 
@@ -250,7 +250,7 @@ function removeCoastlineGroup(): void {
 }
 
 function editGroupStyle(): void {
-  editStyle("coastline", getFeature().group);
+  window.StyleEditor.edit("coastline", getFeature().group);
 }
 
 function closeCoastlineEditor(): void {

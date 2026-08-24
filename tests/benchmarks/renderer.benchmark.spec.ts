@@ -9,7 +9,7 @@ import {
 } from "../../src/services/renderer-benchmark";
 import { RENDERER_BENCHMARK_FIXTURES, type RendererBenchmarkFixture } from "./fixtures";
 
-const BACKENDS: readonly RendererBenchmarkBackend[] = ["svg", "pixi"];
+const BACKENDS: readonly RendererBenchmarkBackend[] = ["pixi"];
 const CAMERA_SAMPLES = 30;
 const LAYER_SAMPLES = 20;
 const REQUESTED_RUNS = Number(process.env.RENDERER_BENCHMARK_RUNS ?? 2);
@@ -23,19 +23,13 @@ test.describe.configure({ mode: "serial", timeout: 10 * 60_000 });
 for (const { backend, fixture, run } of BENCHMARK_CASES) {
   test(`${fixture.id} / ${backend} / run ${run}`, async ({ page }, testInfo) => {
       const query = new URLSearchParams({ height: "720", options: "default", width: "1280" });
-      query.set("renderer", backend);
-      if (backend === "pixi") {
-        query.set("pixiTheme", "states");
-      }
       await page.goto(`/?${query}`);
       await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), { timeout: 120_000 });
 
       await loadFixture(page, fixture);
-      if (backend === "pixi") {
-        await page.waitForFunction(() => (window as any).PixiMapPrototype?.getSnapshot()?.enabled === true, {
-          timeout: 120_000
-        });
-      }
+      await page.waitForFunction(() => (window as any).MapPerformance?.getRendererSnapshot()?.enabled === true, {
+        timeout: 120_000
+      });
 
       const firstPaint = await page.evaluate(async () => {
         const started = performance.now();
@@ -74,8 +68,8 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
 
       const runtime = await page.evaluate(() => {
         const performanceSnapshot = (window as any).MapPerformance.getSnapshot();
-        const pixiSnapshot = (window as any).PixiMapPrototype?.getSnapshot() ?? null;
-        const canvas = document.querySelector<HTMLCanvasElement>("#pixi-map-prototype canvas");
+        const pixiSnapshot = (window as any).MapPerformance.getRendererSnapshot();
+        const canvas = document.querySelector<HTMLCanvasElement>("#pixi-map-renderer canvas");
         const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
         return {
           canvas: canvas
@@ -89,6 +83,7 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
           domNodes: document.querySelectorAll("#map *").length,
           hardwareConcurrency: navigator.hardwareConcurrency,
           jsHeapBytes: memory?.usedJSHeapSize ?? null,
+          layerSet: Array.from(document.querySelectorAll<HTMLElement>("#mapLayers > li:not(.buttonoff)"), layer => layer.id),
           longTasks: performanceSnapshot.longTasks,
           pixiSnapshot,
           samples: performanceSnapshot.samples,
@@ -113,8 +108,9 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
           browser: `${testInfo.project.name} ${testInfo.project.use.browserName ?? ""}`.trim(),
           deviceMemoryGb: runtime.deviceMemoryGb,
           devicePixelRatio: await page.evaluate(() => window.devicePixelRatio),
+          gpuBackend: runtime.pixiSnapshot?.renderer ?? null,
           hardwareConcurrency: runtime.hardwareConcurrency,
-          renderer: runtime.pixiSnapshot?.renderer ?? null,
+          rendererVersion: runtime.pixiSnapshot?.rendererVersion ?? "unknown",
           userAgent: runtime.userAgent,
           viewport: { height: 720, width: 1280 }
         },
@@ -124,6 +120,7 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
             : { id: fixture.id, legacyMap: fixture.mapFile },
         generatedAt: new Date().toISOString(),
         jsHeapBytes: runtime.jsHeapBytes,
+        layerSet: runtime.layerSet,
         longTasks: runtime.longTasks,
         observations,
         resourceBytes: runtime.pixiSnapshot?.resourceBytes ?? 0,
@@ -174,6 +171,5 @@ function toBenchmarkPhase(name: string, backend: RendererBenchmarkBackend): Rend
   if (name === "generation:total") return "generation";
   if (backend === "pixi" && name === "pixi:scene-build") return "scene-build";
   if (backend === "pixi" && name === "pixi:gpu-submit") return "gpu-upload";
-  if (backend === "svg" && name === "render:total") return "scene-build";
   return null;
 }

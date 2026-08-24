@@ -1,8 +1,7 @@
-import type { ZoomBehavior } from "d3";
+import { zoom as createZoom, select, type ZoomBehavior, type ZoomTransform, zoomIdentity } from "d3";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { syncPixiRendererCamera } from "@/renderers/pixi/pixi-renderer-controller";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { findEl } from "@/utils/nodeUtils";
 import { type ZoomChanges, ZoomSettler } from "./zoom-settler";
 
 // Legacy behaviour from the global d3 v5. TODO: completely migrate to d3v7
@@ -10,12 +9,14 @@ const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
 let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
 
 function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
-  zoomBehavior ??= window.d3.zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
+  zoomBehavior ??= createZoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT);
   return zoomBehavior;
 }
 
 export function applyZoomBehavior(): void {
-  svg.call(zoom().on("start", handleZoomStart).on("zoom", onZoom).on("end", handleZoomEnd));
+  select<SVGSVGElement, unknown>("#map").call(
+    zoom().on("start", handleZoomStart).on("zoom", onZoom).on("end", handleZoomEnd)
+  );
 }
 
 let frameId: number | null = null;
@@ -32,14 +33,12 @@ function handleZoomStart(): void {
   effectsFrameId = null;
   gestureScaleChanged = false;
   gesturePositionChanged = false;
-  svg.classed("map-zooming", true);
+  select<SVGSVGElement, unknown>("#map").classed("map-zooming", true);
   ViewportLayers.suspend();
 }
 
-function onZoom(): void {
-  const transform = (window.d3 as any).event.transform;
-  if (!transform) return;
-  const { k, x, y } = transform as { k: number; x: number; y: number };
+function onZoom(event: { transform: ZoomTransform }): void {
+  const { k, x, y } = event.transform;
 
   const isScaleChanged = scale !== k;
   const isPositionChanged = viewX !== x || viewY !== y;
@@ -71,7 +70,7 @@ function handleZoomPerFrame(): void {
   pendingPositionChange = false;
   if (!didScaleChange && !didPositionChange) return;
 
-  viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
+  document.getElementById("viewbox")?.setAttribute("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
   syncPixiRendererCamera();
   window.updateMinimap?.();
   redrawTracedImage();
@@ -91,25 +90,20 @@ function handleZoomEnd(): void {
 
 function handleZoomSettled({ scale: didScaleChange, position: didPositionChange }: ZoomChanges): void {
   if (didScaleChange) {
+    const scaleBar = select<SVGGElement, unknown>("#scaleBar");
     drawScaleBar(scaleBar, scale);
     fitScaleBar(scaleBar, svgWidth, svgHeight);
-
-    if (options.labels.resizeOnZoom) {
-      const fontSize = Math.max(Math.round(((100 + 100 / scale) / 2) * 100) / 100, 1);
-      const value = `${fontSize}px`;
-      if (labels.attr("font-size") !== value) labels.attr("font-size", value);
-    }
   }
 
-  if ((didScaleChange || didPositionChange) && layerIsOn("toggleCoordinates")) drawCoordinates();
+  if ((didScaleChange || didPositionChange) && window.LayerControls.isLayerOn("toggleCoordinates"))
+    window.LayerControls.redrawLayer("toggleCoordinates");
 
   ViewportLayers.resume();
-  if (didScaleChange) invokeActiveZooming();
 
   // Restore expensive paint effects only after all settled-state DOM updates are complete.
   effectsFrameId = requestAnimationFrame(() => {
     effectsFrameId = null;
-    svg.classed("map-zooming", false);
+    select<SVGSVGElement, unknown>("#map").classed("map-zooming", false);
   });
 }
 
@@ -127,45 +121,44 @@ function redrawTracedImage(): void {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-/** Rescale zoom-dependent map content to the settled scale. TODO: Legacy, to be reworked */
-function invokeActiveZooming(): void {
-  const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
-
-  if (!customization && !isOptimized) {
-    const desired = Number(statesHalo.attr("data-width"));
-    const haloSize = rn(desired / scale ** 0.8, 2);
-    statesHalo.attr("stroke-width", haloSize).style("display", haloSize > 0.1 ? "block" : "none");
-  }
-}
-
 /** Zoom to a specific point */
 function zoomTo(x: number, y: number, z = 8, duration = 2000): void {
-  const transform = window.d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(duration).call(zoom().transform, transform);
+  const transform = zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoom().transform, transform);
 }
 
 /** Reset zoom to initial */
 function resetZoom(duration = 1000): void {
-  svg.transition().duration(duration).call(zoom().transform, window.d3.zoomIdentity);
+  select<SVGSVGElement, unknown>("#map").transition().duration(duration).call(zoom().transform, zoomIdentity);
 }
 
 export function panMap(x: number, y: number): void {
-  zoom().translateBy(svg, x, y);
+  select<SVGSVGElement, unknown>("#map").call(zoom().translateBy, x, y);
 }
 
 export function setMapZoom(value: number): void {
-  zoom().scaleTo(svg, value);
+  select<SVGSVGElement, unknown>("#map").call(zoom().scaleTo, value);
 }
 
 export function changeMapZoom(factor: number): void {
-  zoom().scaleBy(svg, factor);
+  select<SVGSVGElement, unknown>("#map").call(zoom().scaleBy, factor);
 }
 
-// consumed by legacy code; a getter so the lazy behavior is created on the first read
-Object.defineProperty(window, "zoom", { get: zoom, configurable: true });
+export function setMapZoomExtent(min: number, max: number, value?: number): void {
+  zoom().scaleExtent([min, max]);
+  if (value !== undefined) setMapZoom(value);
+}
+
+export function setMapTranslateExtent(extent: [[number, number], [number, number]]): void {
+  zoom().translateExtent(extent);
+}
+
 window.zoomTo = zoomTo;
 window.resetZoom = resetZoom;
-window.invokeActiveZooming = invokeActiveZooming;
 window.panMap = panMap;
 window.setMapZoom = setMapZoom;
 window.changeMapZoom = changeMapZoom;
+window.MapZoom = {
+  setExtent: setMapZoomExtent,
+  setTranslateExtent: setMapTranslateExtent
+};

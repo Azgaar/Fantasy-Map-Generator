@@ -30,7 +30,7 @@ export class TradeAnimationModule {
   private pathCache = new Map<string, TradePath | null>();
 
   start(): void {
-    if (!layerIsOn("toggleTrade")) return;
+    if (!window.LayerControls.isLayerOn("toggleTrade")) return;
     this.stop();
     const batches = this.getDealBatches(pack.deals);
     if (!batches.length) return;
@@ -52,12 +52,12 @@ export class TradeAnimationModule {
   }
 
   sync(): void {
-    if (layerIsOn("toggleTrade")) this.start();
+    if (window.LayerControls.isLayerOn("toggleTrade")) this.start();
     else this.stop();
   }
 
   private topUp(): void {
-    if (!layerIsOn("toggleTrade") || !this.cachedBatches) return;
+    if (!window.LayerControls.isLayerOn("toggleTrade") || !this.cachedBatches) return;
     const target = options.trade.animation.concurrent ?? DEFAULT_OPTIONS.concurrent;
     while (this.activeCount < target) {
       if (!this.spawnOne(this.cachedBatches)) break;
@@ -99,7 +99,7 @@ export class TradeAnimationModule {
 
   trigger(batches: TradeBatch[]): void {
     if (!batches.length) return;
-    if (!layerIsOn("toggleTrade")) {
+    if (!window.LayerControls.isLayerOn("toggleTrade")) {
       clear();
       return;
     }

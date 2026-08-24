@@ -1,14 +1,4 @@
-import {
-  color as d3Color,
-  drag,
-  easeSinIn,
-  interpolate,
-  interpolateString,
-  select,
-  stratify,
-  transition,
-  treemap
-} from "d3";
+import { color as d3Color, drag, interpolate, select, stratify, treemap } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -30,11 +20,16 @@ import { selectTerritoryEditorRow, TerritoryAssignmentSession } from "@/controll
 import type { Province } from "@/generators/provinces-generator";
 import { renderBurgChanged } from "@/renderers/burg-mutations";
 import { drawBorders } from "@/renderers/draw-borders";
+import { drawEmblems } from "@/renderers/draw-emblems";
+import { getAssignmentOverlay, getAssignmentPath } from "@/renderers/interaction/map-domain-overlay";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { highlightElement } from "@/renderers/overlays/highlight";
-import { getPixiMapPointAtClient, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import { ensureEl, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
@@ -101,10 +96,10 @@ const provincesTable = initEditorTable<Province>({ getData: getProvincesData, on
 function open(): void {
   if (customization) return;
   closeDialogs("#provincesEditor, .stable");
-  if (!layerIsOn("toggleProvinces")) toggleProvinces();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleCultures")) toggleCultures();
+  if (!window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
+  if (!window.LayerControls.isLayerOn("toggleBorders")) window.LayerControls.toggleLayer("toggleBorders");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
 
   renderDialog();
   refreshProvincesEditor();
@@ -198,7 +193,7 @@ function renderDialog(): void {
   applyLineHighlighting("provincesEditor", ({ cellId }) => pack.cells.province[cellId]);
 
   ensureEl("provincesEditorRefresh").addEventListener("click", refreshProvincesEditor);
-  ensureEl("provincesEditStyle").addEventListener("click", () => editStyle("provs"));
+  ensureEl("provincesEditStyle").addEventListener("click", () => window.StyleEditor.edit("provs"));
   ensureEl("provincesFilterState").addEventListener("change", provincesTable.reset);
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
@@ -229,8 +224,7 @@ function renderDialog(): void {
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
     else if (cl.contains("icon-dot-circled")) void Controllers.BurgsOverview.open({ stateId });
     else if (cl.contains("culturePopulation")) changePopulation(p);
-    else if (cl.contains("icon-target"))
-      highlightElement(select<SVGGElement, unknown>("#provs").select(`#province${p}`).node() as Element, 8);
+    else if (cl.contains("icon-target")) showProvinceHighlight(p);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
     else if (cl.contains("icon-trash-empty")) removeProvince(p);
     else if (cl.contains("icon-lock") || cl.contains("icon-lock-open")) updateLockStatus(p, cl);
@@ -377,38 +371,32 @@ function getCapitalOptions(burgs: number[], capital: number): string {
 }
 
 function provinceHighlightOn(event: Event): void {
-  const province = +(event.target as HTMLElement).dataset.id!;
+  const province = Number((event.currentTarget as HTMLElement).dataset.id);
   const el = ensureEl("provincesBodySection").querySelector(`div[data-id='${province}']`);
   if (el) el.classList.add("active");
 
-  if (!layerIsOn("toggleProvinces")) return;
+  if (!window.LayerControls.isLayerOn("toggleProvinces")) return;
   if (customization) return;
-  const animate = transition().duration(2000).ease(easeSinIn);
-  select<SVGGElement, unknown>("#provs")
-    .select(`#province${province}`)
-    .raise()
-    .transition(animate)
-    .attr("stroke-width", 2.5)
-    .attr("stroke", "#d0240f");
+  showProvinceHighlight(province);
 }
 
-function provinceHighlightOff(event: Event): void {
-  const province = (event.target as HTMLElement)?.dataset?.id ? +(event.target as HTMLElement).dataset.id! : null;
+function provinceHighlightOff(event?: Event): void {
+  const province = Number((event?.currentTarget as HTMLElement | null)?.dataset.id) || null;
   if (province) {
     const el = ensureEl("provincesBodySection").querySelector(`div[data-id='${province}']`);
     if (el) el.classList.remove("active");
   }
+  updateMapInteractionOverlay({ highlight: null });
+}
 
-  if (!layerIsOn("toggleProvinces") || !province) {
-    select("#debug").selectAll(".highlight").remove();
-    return;
-  }
-  select<SVGGElement, unknown>("#provs")
-    .select(`#province${province}`)
-    .transition()
-    .attr("stroke-width", null)
-    .attr("stroke", null);
-  select("#debug").selectAll(".highlight").remove();
+function showProvinceHighlight(provinceId: number): void {
+  updateMapInteractionOverlay({
+    highlight: getAssignmentOverlay(pack.cells.province, provinceId, {
+      fill: "none",
+      stroke: "#d0240f",
+      strokeWidth: 2.5
+    })
+  });
 }
 
 function changeFill(fillBox: FillBoxElement): void {
@@ -418,7 +406,7 @@ function changeFill(fillBox: FillBoxElement): void {
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
     pack.provinces[p].color = newFill;
-    drawProvinces();
+    window.LayerControls.redrawLayer("toggleProvinces");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -478,7 +466,6 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
   const coa = province.coa;
   const coaEl = ensureEl(`provinceCOA${provinceId}`);
   if (coaEl) coaEl.id = `stateCOA${newStateId}`;
-  select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
 
   // update cells
   cells.i
@@ -537,11 +524,11 @@ function declareProvinceIndependence(provinceId: number): [number, number] | und
 function updateStatesPostRelease(oldStates: number[], newStates: number[]): void {
   const allStates = unique([...oldStates, ...newStates]);
 
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
-  if (layerIsOn("toggleStates")) drawStates();
-  else toggleStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  else toggleBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
+  else window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  else window.LayerControls.toggleLayer("toggleBorders");
 
   States.getPoles();
   States.findNeighbors();
@@ -551,16 +538,16 @@ function updateStatesPostRelease(oldStates: number[], newStates: number[]): void
 
   // redraw emblems
   allStates.forEach(stateId => {
-    select<SVGElement, unknown>("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
     const { coa, pole } = pack.states[stateId];
     COArenderer.add("state", stateId, coa, pole![0], pole![1]);
   });
+  drawEmblems();
 
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
-  if (layerIsOn("toggleStates")) drawStates();
-  else toggleStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  else toggleBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
+  else window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  else window.LayerControls.toggleLayer("toggleBorders");
 
   unfog();
   closeDialogs();
@@ -642,15 +629,14 @@ function changePopulation(province: number): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
     refreshProvincesEditor();
   }
 }
 
 function toggleFog(p: number, cl: DOMTokenList): void {
-  const path = select<SVGGElement, unknown>("#provs").select(`#province${p}`).attr("d");
   const id = `focusProvince${p}`;
-  if (cl.contains("inactive")) fog(id, path);
+  if (cl.contains("inactive")) fog(id, getAssignmentPath(pack.cells.province, p));
   else unfog(id);
   cl.toggle("inactive");
 }
@@ -670,13 +656,11 @@ function removeProvince(p: number): void {
       unfog(`focusProvince${p}`);
 
       document.getElementById(`provinceCOA${p}`)?.remove();
-      select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
       pack.provinces[p] = { i: p, removed: true } as Province;
 
-      const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
-      g.select(`#province${p}`).remove();
-      g.select(`#province-gap${p}`).remove();
-      if (layerIsOn("toggleBorders")) drawBorders();
+      if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
+      if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+      drawEmblems();
       drawLabels();
       refreshProvincesEditor();
     },
@@ -860,7 +844,7 @@ function applyNameChange(p: Province): void {
   p.name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
   p.formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
   p.fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value;
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   drawLabels();
   refreshProvincesEditor();
 }
@@ -1082,8 +1066,8 @@ function triggerProvincesRelease(): void {
 }
 
 function enterProvincesManualAssignent(): void {
-  if (!layerIsOn("toggleProvinces")) toggleProvinces();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
+  if (!window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
+  if (!window.LayerControls.isLayerOn("toggleBorders")) window.LayerControls.toggleLayer("toggleBorders");
 
   customization = 11;
   provincesAssignment = new TerritoryAssignmentSession("provinces", pack.cells.province);
@@ -1181,7 +1165,7 @@ function changeForSelection(selection: number[]): void {
   });
   const mutation = provincesAssignment?.paint(cells, provinceNew);
   if (mutation?.changed) {
-    drawProvinces();
+    window.LayerControls.redrawLayer("toggleProvinces");
     selectProvince(provinceNew);
   }
 }
@@ -1199,8 +1183,8 @@ function applyProvincesManualAssignent(): void {
   provincesAssignment = null;
 
   Provinces.getPoles();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   drawLabels();
 
   exitProvincesManualAssignment();
@@ -1212,7 +1196,7 @@ function exitProvincesManualAssignment(close?: string): void {
   if (provincesAssignment) {
     provincesAssignment.cancel();
     provincesAssignment = null;
-    drawProvinces();
+    window.LayerControls.redrawLayer("toggleProvinces");
   }
   removeCircle();
   updateMapInteractionOverlay({ highlight: null, selection: null });
@@ -1324,8 +1308,8 @@ function addProvince(this: SVGElement, event: MouseEvent): void {
     cells.province[nc] = province;
   });
 
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   drawLabels();
 
   collectStatistics();
@@ -1357,8 +1341,8 @@ function recolorProvinces(): void {
     p.color = stateColor[0] === "#" ? d3Color(interpolate(stateColor, rndColor)(0.2))!.hex() : rndColor;
   });
 
-  if (!layerIsOn("toggleProvinces")) toggleProvinces();
-  else drawProvinces();
+  if (!window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
+  else window.LayerControls.redrawLayer("toggleProvinces");
 }
 
 function downloadProvincesData(): void {
@@ -1382,8 +1366,6 @@ function removeAllProvinces(): void {
       document.querySelectorAll("[id^='provinceCOA']").forEach(el => {
         el.remove();
       });
-      select<SVGElement, unknown>("#emblems").select("#provinceEmblems").selectAll("*").remove();
-
       pack.provinces = [0] as unknown as Province[];
       pack.cells.province = new Uint16Array(pack.cells.i.length);
       pack.states.forEach(s => {
@@ -1391,9 +1373,9 @@ function removeAllProvinces(): void {
       });
 
       unfog();
-      if (layerIsOn("toggleBorders")) drawBorders();
-      select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
-      turnButtonOff("toggleProvinces");
+      if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+      window.LayerControls.setLayerVisibility("toggleProvinces", false);
+      drawEmblems();
       drawLabels();
 
       provincesTable.reset();
@@ -1405,6 +1387,7 @@ function removeAllProvinces(): void {
 function closeProvincesEditor(): void {
   if (customization === 11) exitProvincesManualAssignment("close");
   if (customization === 12) exitAddProvinceMode();
+  clearMapInteractionOverlay();
   destroyDialog(dialogId);
 }
 
@@ -1494,7 +1477,7 @@ function openProvinceMergeDialog(): void {
       { label: "Cancel" }
     ],
     content,
-    onClose: () => provinceHighlightOff(new Event("close")),
+    onClose: () => provinceHighlightOff(),
     placement: "center",
     placementTarget: document.getElementById("map"),
     title: `Merge provinces`,
@@ -1509,31 +1492,10 @@ function showMergeProvincesMessage(messageHtml: string): void {
 }
 
 function highlightProvinceOnMergeHover(event: Event): void {
-  if (!layerIsOn("toggleProvinces")) return;
+  if (!window.LayerControls.isLayerOn("toggleProvinces")) return;
   const province = +(event.currentTarget as HTMLElement).dataset.id!;
   if (!province) return;
-  const d = select<SVGGElement, unknown>("#provs").select(`#province${province}`).attr("d");
-  if (!d) return;
-
-  provinceHighlightOff(event);
-
-  const path = select("#debug")
-    .append("path")
-    .attr("class", "highlight")
-    .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", "red")
-    .attr("stroke-width", 1)
-    .attr("opacity", 1)
-    .attr("filter", "url(#blur1)");
-
-  const totalLength = (path.node() as SVGPathElement).getTotalLength();
-  const duration = (totalLength + 5000) / 2;
-  const interp = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
-  path
-    .transition()
-    .duration(duration)
-    .attrTween("stroke-dasharray", () => interp);
+  showProvinceHighlight(province);
 }
 
 function cleanupMergedProvince(provinceId: number): void {
@@ -1542,7 +1504,6 @@ function cleanupMergedProvince(provinceId: number): void {
 
   const coaEl = document.getElementById(`provinceCOA${provinceId}`);
   if (coaEl) coaEl.remove();
-  select<SVGElement, unknown>("#emblems").select(`#provinceEmblems > use[data-i='${provinceId}']`).remove();
 }
 
 function mergeProvinces(ids: number[], primary: number): void {
@@ -1589,13 +1550,14 @@ function mergeProvinces(ids: number[], primary: number): void {
   Provinces.getPoles();
 
   // redraw layers that may have changed
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  drawEmblems();
   drawLabels();
 
   // clear any fog or debug highlights
   unfog();
-  select("#debug").selectAll(".highlight").remove();
+  clearMapInteractionOverlay();
 
   refreshProvincesEditor();
 }

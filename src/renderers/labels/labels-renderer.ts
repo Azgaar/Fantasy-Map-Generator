@@ -19,7 +19,7 @@ export function getSceneLabel(type: LabelType, id: number): LabelData | undefine
 }
 
 export function getVisibleLabels(): LabelData[] {
-  if (!layerIsOn("toggleLabels")) return [];
+  if (!window.LayerControls.isLayerOn("toggleLabels")) return [];
   const bounds = ViewportLayers.getVisibleBounds();
   const visibleGroups = new Set(
     options.labels.groups.filter(group => isGroupVisible(group, bounds)).map(({ name }) => name)
@@ -33,7 +33,7 @@ function isGroupVisible(group: LabelGroup, bounds: ViewportBounds): boolean {
     if (group.zoom.min !== null && bounds.scale < group.zoom.min) return false;
     if (group.zoom.max !== null && bounds.scale > group.zoom.max) return false;
   }
-  return !group.layerDependency || layerIsOn(group.layerDependency);
+  return !group.layerDependency || window.LayerControls.isLayerOn(group.layerDependency);
 }
 
 function isLabelVisible(bounds: ViewportBounds, label: LabelData): boolean {

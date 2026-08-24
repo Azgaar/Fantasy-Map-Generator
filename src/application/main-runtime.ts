@@ -1,17 +1,69 @@
-"use strict";
 // Azgaar and contributors, 2017-2026. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
+import {
+  interpolateSpectral,
+  leastIndex,
+  max,
+  mean,
+  median,
+  min,
+  polygonArea,
+  range,
+  scaleSequential,
+  select
+} from "d3";
+import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { OptionsController, type RegenerateOptions } from "@/components/options/options-controller";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
+import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
+import type { Burg } from "@/generators/burgs-generator";
+import { clearLegend } from "@/renderers/draw-legend";
+import { drawScaleBar } from "@/renderers/draw-scalebar";
+import { drawLabels } from "@/renderers/labels/labels-renderer";
+import { unfog } from "@/renderers/overlays/fogging";
+import { tradeAnimation } from "@/renderers/trade-animation";
+import { initiateAutosave } from "@/services/autosave";
+import { cleanupData } from "@/services/versioning";
+import type { Grid } from "@/types/grid";
+import type { PackedGraph } from "@/types/PackedGraph";
+import {
+  calculateVoronoi,
+  createTypedArray,
+  debounce,
+  ensureEl,
+  findEl,
+  gauss,
+  generateSeed,
+  getPackPolygon,
+  minmax,
+  normalize,
+  P,
+  parseError,
+  rand,
+  rn,
+  shouldRegenerateGrid,
+  TYPED_ARRAY_MAX
+} from "@/utils";
+import { stored } from "@/utils/preferences";
+import { bindApplicationController } from "./application-controller";
+import { initializeApplicationState } from "./application-state";
+import { getViewportSurface, initializeViewportSurface } from "./viewport-surface";
+
 // set debug options
-const PRODUCTION = location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1";
-const DEBUG = JSON.safeParse(localStorage.getItem("debug")) || {};
+const PRODUCTION = Boolean(location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1");
+const DEBUG = JSON.safeParse(localStorage.getItem("debug") || "") || {};
 const INFO = true;
 const TIME = true;
 const WARN = true;
 const ERROR = true;
 
 // detect device
-const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
+const MOBILE =
+  window.innerWidth < 600 ||
+  Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile);
 
 if (PRODUCTION && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -19,178 +71,83 @@ if (PRODUCTION && "serviceWorker" in navigator) {
       console.error("ServiceWorker registration failed: ", err);
     });
   });
-
 }
 
-// append svg layers (in default order)
-let svg = d3.select("#map");
-let defs = svg.select("#deftemp");
-let viewbox = svg.select("#viewbox");
-let scaleBar = svg.select("#scaleBar");
-let legend = svg.append("g").attr("id", "legend");
-let ocean = viewbox.append("g").attr("id", "ocean");
-let oceanLayers = ocean.append("g").attr("id", "oceanLayers");
-let oceanPattern = ocean.append("g").attr("id", "oceanPattern");
-let landmass = viewbox.append("g").attr("id", "landmass");
-let texture = viewbox.append("g").attr("id", "texture");
-let terrs = viewbox.append("g").attr("id", "terrs");
-let lakes = viewbox.append("g").attr("id", "lakes");
-let biomes = viewbox.append("g").attr("id", "biomes");
-let cells = viewbox.append("g").attr("id", "cells");
-let gridOverlay = viewbox.append("g").attr("id", "gridOverlay");
-let coordinates = viewbox.append("g").attr("id", "coordinates");
-let rivers = viewbox.append("g").attr("id", "rivers");
-let terrain = viewbox.append("g").attr("id", "terrain").style("display", "none");
-let relig = viewbox.append("g").attr("id", "relig");
-let cults = viewbox.append("g").attr("id", "cults");
-let regions = viewbox.append("g").attr("id", "regions");
-let statesBody = regions.append("g").attr("id", "statesBody");
-let statesHalo = regions.append("g").attr("id", "statesHalo");
-let provs = viewbox.append("g").attr("id", "provs");
-let zones = viewbox.append("g").attr("id", "zones");
-let borders = viewbox.append("g").attr("id", "borders");
-let stateBorders = borders.append("g").attr("id", "stateBorders");
-let provinceBorders = borders.append("g").attr("id", "provinceBorders");
-let routes = viewbox.append("g").attr("id", "routes");
-let roads = routes.append("g").attr("id", "roads");
-let trails = routes.append("g").attr("id", "trails");
-let searoutes = routes.append("g").attr("id", "searoutes");
-let temperature = viewbox.append("g").attr("id", "temperature");
-let coastline = viewbox.append("g").attr("id", "coastline");
-// Pixi-owned entity layers have no live SVG groups. These selections only receive imported legacy groups during load.
-let ice = viewbox.select("#ice");
-let goods = viewbox.select("#goods");
-let markets = viewbox.select("#markets");
-let prec = viewbox.append("g").attr("id", "prec").style("display", "none");
-let population = viewbox.select("#population");
-let emblems = viewbox.append("g").attr("id", "emblems").style("display", "none");
-let icons = viewbox.append("g").attr("id", "icons");
-let labels = viewbox.append("g").attr("id", "labels").attr("font-size", "100px");
-let armies = viewbox.select("#armies");
-let fogging = viewbox
-  .append("g")
-  .attr("id", "fogging-cont")
-  .attr("mask", "url(#fog)")
-  .append("g")
-  .attr("id", "fogging")
-  .style("display", "none");
-let ruler = viewbox.append("g").attr("id", "ruler").style("display", "none");
-var debug = viewbox.append("g").attr("id", "debug");
-
-lakes.append("g").attr("id", "freshwater");
-lakes.append("g").attr("id", "salt");
-lakes.append("g").attr("id", "sinkhole");
-lakes.append("g").attr("id", "frozen");
-lakes.append("g").attr("id", "lava");
-lakes.append("g").attr("id", "dry");
-
-coastline.append("g").attr("id", "sea_island");
-coastline.append("g").attr("id", "lake_island");
-
-terrs.append("g").attr("id", "oceanHeights");
-terrs.append("g").attr("id", "landHeights");
-
-// emblem groups
-emblems.append("g").attr("id", "burgEmblems");
-emblems.append("g").attr("id", "provinceEmblems");
-emblems.append("g").attr("id", "stateEmblems");
-
-// fogging
-fogging.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-fogging
-  .append("rect")
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("width", "100%")
-  .attr("height", "100%")
-  .attr("fill", "#e8f0f6")
-  .attr("filter", "url(#splotch)");
+// Initialize only the intentional SVG viewport/editor overlays. Persistent map content is Pixi-owned.
+const initialViewport = initializeViewportSurface();
 
 // assign events separately as not a viewbox child
-scaleBar
+initialViewport.scaleBar
   .on("mousemove", () => tip("Click to open Units Editor"))
   .on("click", () => window.Controllers.UnitsEditor.open());
-legend
+initialViewport.legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
   .on("click", () => clearLegend());
 
-// main data variables
-var grid = {}; // initial graph based on jittered square grid and data
-var pack = {}; // packed graph and data
-var seed;
-let mapId;
-let mapHistory = [];
-let modules = {};
-let notes = [];
-let customization = 0;
+const mapWidthInput = ensureEl<HTMLInputElement>("mapWidthInput");
+const mapHeightInput = ensureEl<HTMLInputElement>("mapHeightInput");
+const initialGraphWidth = +mapWidthInput.value;
+const initialGraphHeight = +mapHeightInput.value;
+const era = ensureEl<HTMLInputElement>("eraInput").value;
 
-// global options; in v2.0 to be used for all UI settings
-let options = {
-  pinNotes: false,
-  winds: [225, 45, 225, 315, 135, 315],
-  temperatureEquator: 27,
-  temperatureNorthPole: -30,
-  temperatureSouthPole: -15,
-  mapSize: 100, // map size in % of the world
-  latitude: 50, // North-South map shift in %, 50 is centered on equator
-  longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
-  prec: 100, // precipitation modifier in %
-  showBurgPreview: true,
-  burgs: {
-    groups: JSON.safeParse(localStorage.getItem("burg-groups")) || Burgs.getDefaultGroups()
+const app = initializeApplicationState({
+  DEBUG,
+  ERROR,
+  INFO,
+  MOBILE,
+  TIME,
+  WARN,
+  color: scaleSequential(interpolateSpectral),
+  customization: 0,
+  distanceScale: +ensureEl<HTMLInputElement>("distanceScaleInput").value,
+  graphHeight: initialGraphHeight,
+  graphWidth: initialGraphWidth,
+  mapCoordinates: { latT: 0, latN: 0, latS: 0, lonT: 0, lonW: 0, lonE: 0 },
+  mapHistory: [],
+  modules: {},
+  notes: [],
+  options: {
+    year: +ensureEl<HTMLInputElement>("yearInput").value,
+    era,
+    eraShort: era
+      .split(" ")
+      .map(word => word[0])
+      .join(""),
+    pinNotes: false,
+    winds: [225, 45, 225, 315, 135, 315],
+    temperatureEquator: 27,
+    temperatureNorthPole: -30,
+    temperatureSouthPole: -15,
+    mapSize: 100, // map size in % of the world
+    latitude: 50, // North-South map shift in %, 50 is centered on equator
+    longitude: 50, // West-East map shift in %, 50 is centered on prime meridian
+    prec: 100, // precipitation modifier in %
+    showBurgPreview: true,
+    burgs: {
+      groups: JSON.safeParse(localStorage.getItem("burg-groups") || "") || Burgs.getDefaultGroups()
+    },
+    labels: JSON.safeParse(localStorage.getItem("options-labels") || "") || Labels.getDefaultOptions(),
+    military: Military.getDefaultOptions(),
+    trade: {
+      animation: JSON.safeParse(localStorage.getItem("trade-animation") || "") || tradeAnimation.getDefaultOptions()
+    },
+    threeD: { ...window.ThreeDOptions }
   },
-  labels: JSON.safeParse(localStorage.getItem("options-labels")) || Labels.getDefaultOptions(),
-  trade: {
-    animation: JSON.safeParse(localStorage.getItem("trade-animation")) || TradeAnimation.getDefaultOptions()
+  populationRate: +ensureEl<HTMLInputElement>("populationRateInput").value,
+  scale: 1,
+  style: {
+    labels: { groups: {} },
+    relief: { set: "simple", size: 1, density: 0.4 }
   },
-  threeD: { ...window.ThreeDOptions }
-};
+  svgHeight: initialGraphHeight,
+  svgWidth: initialGraphWidth,
+  urbanDensity: +ensureEl<HTMLInputElement>("urbanDensityInput").value,
+  urbanization: +ensureEl<HTMLInputElement>("urbanizationInput").value,
+  viewX: 0,
+  viewY: 0
+});
 
-// global style object; in v2.0 to be used for all map styles and render settings
-let style = {
-  labels: {groups: {}},
-  relief: {set: "simple", size: 1, density: 0.4}
-};
-
-let color = d3.scaleSequential(d3.interpolateSpectral); // default color scheme
-const lineGen = d3.line().curve(d3.curveBasis); // d3 line generator with default curve interpolation
-
-// current map view transform, written by the zoom handlers in src/components/zoom.ts
-let scale = 1;
-let viewX = 0;
-let viewY = 0;
-
-var mapCoordinates = {}; // map coordinates on globe
-let populationRate = +ensureEl("populationRateInput").value;
-let distanceScale = +ensureEl("distanceScaleInput").value;
-let urbanization = +ensureEl("urbanizationInput").value;
-let urbanDensity = +ensureEl("urbanDensityInput").value;
-
-applyStoredOptions();
-
-// voronoi graph extension, cannot be changed after generation
-var graphWidth = +mapWidthInput.value;
-var graphHeight = +mapHeightInput.value;
-
-// svg canvas resolution, can be changed
-let svgWidth = graphWidth;
-let svgHeight = graphHeight;
-
-landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-oceanPattern
-  .append("rect")
-  .attr("fill", "url(#oceanic)")
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("width", graphWidth)
-  .attr("height", graphHeight);
-oceanLayers
-  .append("rect")
-  .attr("id", "oceanBase")
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("width", graphWidth)
-  .attr("height", graphHeight);
+OptionsController.applyStoredOptions();
 
 document.addEventListener("DOMContentLoaded", async () => {
   // binds the zoom behaviour and its handlers (see src/components/viewbox-events.ts), so it has to
@@ -215,15 +172,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function hideLoading() {
-  d3.select("#loading").transition().duration(3000).style("opacity", 0);
-  d3.select("#optionsContainer").transition().duration(2000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
+  select("#loading").transition().duration(3000).style("opacity", 0);
+  select("#optionsContainer").transition().duration(2000).style("opacity", 1);
+  select("#tooltip").transition().duration(3000).style("opacity", 1);
 }
 
 function showLoading() {
-  d3.select("#loading").transition().duration(200).style("opacity", 1);
-  d3.select("#optionsContainer").transition().duration(100).style("opacity", 0);
-  d3.select("#tooltip").transition().duration(200).style("opacity", 0);
+  select("#loading").transition().duration(200).style("opacity", 1);
+  select("#optionsContainer").transition().duration(100).style("opacity", 0);
+  select("#tooltip").transition().duration(200).style("opacity", 0);
 }
 
 // decide which map should be loaded or generated on page load
@@ -234,12 +191,12 @@ async function checkLoadParameters() {
   // of there is a valid maplink, try to load .map/.gz file from URL
   if (params.get("maplink")) {
     WARN && console.warn("Load map from URL");
-    const maplink = params.get("maplink");
-    const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+    const maplink = params.get("maplink")!;
+    const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
     const valid = pattern.test(maplink);
     if (valid) {
       setTimeout(() => {
-        window.Services.Load.loadMapFromURL(maplink, 1);
+        window.Services.Load.loadMapFromURL(maplink, true);
       }, 1000);
       return;
     } else window.Services.Load.showUploadErrorMessage("Map link is not a valid URL", maplink);
@@ -253,7 +210,7 @@ async function checkLoadParameters() {
   }
 
   // check if there is a map saved to indexedDB
-  if (ensureEl("onloadBehavior").value === "lastSaved") {
+  if (ensureEl<HTMLSelectElement>("onloadBehavior").value === "lastSaved") {
     try {
       const blob = await ldb.get("lastMap");
       if (blob) {
@@ -272,11 +229,11 @@ async function checkLoadParameters() {
 }
 
 async function generateMapOnLoad() {
-  await applyStyleOnLoad(); // apply previously selected default or custom style
+  await window.StylePresets.applyOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
-  applyLayersPreset(); // apply saved layers preset and reder layers
-  drawLayers();
-  fitMapToScreen();
+  window.LayerControls.restoreSavedPreset(); // apply saved layers preset and reder layers
+  window.LayerControls.drawActiveLayers();
+  window.OptionsController.fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
 }
 
@@ -287,9 +244,9 @@ function focusOn() {
 
   const fromMGCG = params.get("from") === "MFCG" && document.referrer;
   if (fromMGCG) {
-    if (params.get("seed").length === 13) {
+    if (params.get("seed")?.length === 13) {
       // show back burg from MFCG
-      const burgSeed = params.get("seed").slice(-4);
+      const burgSeed = params.get("seed")!.slice(-4);
       params.set("burg", burgSeed);
     } else {
       // select burg for MFCG
@@ -303,17 +260,19 @@ function focusOn() {
   const burgParam = params.get("burg");
 
   if (scaleParam || cellParam || burgParam) {
-    const scale = +scaleParam || 8;
+    const scale = Number(scaleParam) || 8;
 
     if (cellParam) {
-      const cell = +params.get("cell");
-      const [x, y] = pack.cells.p[cell];
+      const cell = Number(params.get("cell"));
+      const [x, y] = app.pack.cells.p[cell];
       zoomTo(x, y, scale, 1600);
       return;
     }
 
     if (burgParam) {
-      const burg = isNaN(+burgParam) ? pack.burgs.find(burg => burg.name === burgParam) : pack.burgs[+burgParam];
+      const burg = Number.isNaN(+burgParam)
+        ? app.pack.burgs.find(burg => burg.name === burgParam)
+        : app.pack.burgs[+burgParam];
       if (!burg) return;
 
       const { x, y } = burg;
@@ -321,33 +280,33 @@ function focusOn() {
       return;
     }
 
-    const x = +params.get("x") || graphWidth / 2;
-    const y = +params.get("y") || graphHeight / 2;
+    const x = Number(params.get("x")) || app.graphWidth / 2;
+    const y = Number(params.get("y")) || app.graphHeight / 2;
     zoomTo(x, y, scale, 1600);
   }
 }
 
 // find burg for MFCG and focus on it
-function findBurgForMFCG(params) {
-  const cells = pack.cells,
-    burgs = pack.burgs;
-  if (pack.burgs.length < 2) {
+function findBurgForMFCG(params: URLSearchParams): void {
+  const cells = app.pack.cells,
+    burgs = app.pack.burgs;
+  if (app.pack.burgs.length < 2) {
     ERROR && console.error("Cannot select a burg for MFCG");
     return;
   }
 
   // used for selection
-  const size = +params.get("size");
-  const coast = +params.get("coast");
-  const port = +params.get("port");
-  const river = +params.get("river");
+  const size = Number(params.get("size"));
+  const coast = Number(params.get("coast"));
+  const port = Number(params.get("port"));
+  const river = Number(params.get("river"));
 
   let selection = defineSelection(coast, port, river);
   if (!selection.length) selection = defineSelection(coast, !port, !river);
   if (!selection.length) selection = defineSelection(!coast, 0, !river);
   if (!selection.length) selection = [burgs[1]]; // select first if nothing is found
 
-  function defineSelection(coast, port, river) {
+  function defineSelection(coast: number | boolean, port: number | boolean, river: number | boolean): Burg[] {
     if (port && river) return burgs.filter(b => b.port && cells.r[b.cell]);
     if (!port && coast && river) return burgs.filter(b => !b.port && cells.t[b.cell] === 1 && cells.r[b.cell]);
     if (!coast && !river) return burgs.filter(b => cells.t[b.cell] !== 1 && !cells.r[b.cell]);
@@ -357,8 +316,11 @@ function findBurgForMFCG(params) {
   }
 
   // select a burg with closest population from selection
-  const selected = d3.scan(selection, (a, b) => Math.abs(a.population - size) - Math.abs(b.population - size));
-  const burgId = selection[selected].i;
+  const selected = leastIndex(
+    selection,
+    (a, b) => Math.abs((a.population ?? 0) - size) - Math.abs((b.population ?? 0) - size)
+  );
+  const burgId = selected === undefined ? 0 : selection[selected].i;
   if (!burgId) {
     ERROR && console.error("Cannot select a burg for MFCG");
     return;
@@ -366,62 +328,57 @@ function findBurgForMFCG(params) {
 
   const b = burgs[burgId];
   const referrer = new URL(document.referrer);
-  for (let p of referrer.searchParams) {
+  const mutableBurg = b as unknown as Record<string, unknown>;
+  for (const p of referrer.searchParams) {
     if (p[0] === "name") b.name = p[1];
     else if (p[0] === "size") b.population = +p[1];
-    else if (p[0] === "seed") b.MFCG = +p[1];
+    else if (p[0] === "seed") mutableBurg.MFCG = +p[1];
     else if (p[0] === "shantytown") b.shanty = +p[1];
-    else b[p[0]] = +p[1]; // other parameters
+    else mutableBurg[p[0]] = +p[1]; // other parameters
   }
-  if (params.get("name") && params.get("name") != "null") b.name = params.get("name");
+  const requestedName = params.get("name");
+  if (requestedName && requestedName !== "null") b.name = requestedName;
 
-  const label = labels.select("[data-label-type='burg'][data-id='" + burgId + "']");
-  if (label.size()) {
-    label
-      .text(b.name)
-      .classed("drag", true)
-      .on("mouseover", function () {
-        d3.select(this).classed("drag", false);
-        label.on("mouseover", null);
-      });
-  }
+  if (window.LayerControls.isLayerOn("toggleLabels")) drawLabels();
 
   zoomTo(b.x, b.y, 8, 1600);
-  tip("Here stands the glorious city of " + b.name, true, "success", 15000);
+  tip(`Here stands the glorious city of ${b.name}`, true, "success", 15000);
 }
 
 // add drag to upload logic, pull request from @evyatron
 void (function addDragToUpload() {
-  document.addEventListener("dragover", function (e) {
+  document.addEventListener("dragover", e => {
     e.stopPropagation();
     e.preventDefault();
-    ensureEl("mapOverlay").style.display = null;
+    ensureEl("mapOverlay").style.display = "";
   });
 
-  document.addEventListener("dragleave", function (e) {
+  document.addEventListener("dragleave", () => {
     ensureEl("mapOverlay").style.display = "none";
   });
 
-  document.addEventListener("drop", function (e) {
+  document.addEventListener("drop", e => {
     e.stopPropagation();
     e.preventDefault();
 
     const overlay = ensureEl("mapOverlay");
     overlay.style.display = "none";
-    if (e.dataTransfer.items == null || e.dataTransfer.items.length !== 1) return; // no files or more than one
-    const file = e.dataTransfer.items[0].getAsFile();
+    const items = e.dataTransfer?.items;
+    if (!items || items.length !== 1) return; // no files or more than one
+    const file = items[0].getAsFile();
+    if (!file) return;
 
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
       window.showMessageDialog({
         id: "invalidMapFileDialog",
         messageHtml: "Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded",
-        title: "Invalid file format",
+        title: "Invalid file format"
       });
       return;
     }
 
     // all good - show uploading text and load the map
-    overlay.style.display = null;
+    overlay.style.display = "";
     overlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
     if (closeDialogs) closeDialogs();
     window.Services.Load.uploadMap(file, () => {
@@ -431,41 +388,40 @@ void (function addDragToUpload() {
   });
 })();
 
-async function generate(options) {
+async function generate(config?: string | RegenerateOptions) {
   let generationGroupOpen = false;
 
   try {
     const timeStart = performance.now();
     window.MapPerformance?.reset();
-    const measureStep = (name, action) =>
+    const measureStep = <T>(name: string, action: () => T): T =>
       window.MapPerformance ? window.MapPerformance.measure(name, action) : action();
-    const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
+    const generationOptions = typeof config === "object" ? config : undefined;
+    const { seed: precreatedSeed, graph: precreatedGraph } = generationOptions || {};
 
-    invokeActiveZooming();
     setSeed(precreatedSeed);
     if (INFO) {
-      console.group("Generated Map " + seed);
+      console.group(`Generated Map ${app.seed}`);
       generationGroupOpen = true;
     }
 
     await measureStep("generation:grid", async () => {
-      applyGraphSize();
-      randomizeOptions();
-      if (shouldRegenerateGrid(grid, precreatedSeed)) {
-        grid =
-          precreatedGraph ||
-          (await measureStep("generation:grid:voronoi", () =>
+      window.OptionsController.applyGraphSize();
+      window.OptionsController.randomize();
+      if (shouldRegenerateGrid(app.grid, precreatedSeed, app.graphWidth, app.graphHeight)) {
+        app.grid =
+          (precreatedGraph as Grid | undefined) ||
+          ((await measureStep("generation:grid:voronoi", () =>
             window.GridGeneration.generate({
-              seed,
-              graphWidth,
-              graphHeight,
-              cellsDesired: +pointsInput.dataset.cells
+              seed: app.seed,
+              graphWidth: app.graphWidth,
+              graphHeight: app.graphHeight,
+              cellsDesired: Number(pointsInput.dataset.cells)
             })
-          ));
-      }
-      else delete grid.cells.h;
-      grid.cells.h = await measureStep("generation:grid:heightmap", () => HeightmapGenerator.generate(grid));
-      pack = {}; // reset pack
+          )) as Grid);
+      } else delete (app.grid.cells as Partial<Grid["cells"]>).h;
+      app.grid.cells.h = await measureStep("generation:grid:heightmap", () => HeightmapGenerator.generate(app.grid));
+      app.pack = {} as PackedGraph;
     });
 
     measureStep("generation:climate", () => {
@@ -521,8 +477,8 @@ async function generate(options) {
       measureStep("generation:labels", () => AddedLabels.initiate());
     });
 
-    drawScaleBar(scaleBar, scale);
-    Names.getMapName();
+    drawScaleBar(getViewportSurface().scaleBar, app.scale);
+    Names.getMapName(false);
 
     const duration = performance.now() - timeStart;
     window.MapPerformance?.record("generation:total", duration);
@@ -530,7 +486,7 @@ async function generate(options) {
     showStatistics();
   } catch (error) {
     ERROR && console.error(error);
-    const parsedError = parseError(error);
+    const parsedError = parseError(error as Error);
     clearMainTip();
 
     const messageHtml = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
@@ -552,34 +508,34 @@ async function generate(options) {
 }
 
 // set map seed (string!)
-function setSeed(precreatedSeed) {
+function setSeed(precreatedSeed?: string): void {
   if (!precreatedSeed) {
-    const first = !mapHistory[0];
+    const first = !app.mapHistory[0];
     const params = new URL(window.location.href).searchParams;
     const urlSeed = params.get("seed");
-    if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
-    else if (first && urlSeed) seed = urlSeed;
-    else seed = generateSeed();
+    if (first && params.get("from") === "MFCG" && urlSeed?.length === 13) app.seed = urlSeed.slice(0, -4);
+    else if (first && urlSeed) app.seed = urlSeed;
+    else app.seed = generateSeed();
   } else {
-    seed = precreatedSeed;
+    app.seed = precreatedSeed;
   }
 
-  ensureEl("optionsSeed").value = seed;
-  Math.random = aleaPRNG(seed);
+  ensureEl<HTMLInputElement>("optionsSeed").value = app.seed;
+  Math.random = aleaPRNG(app.seed);
 }
 
 function addLakesInDeepDepressions() {
   TIME && console.time("addLakesInDeepDepressions");
-  const elevationLimit = +ensureEl("lakeElevationLimitOutput").value;
+  const elevationLimit = +ensureEl<HTMLOutputElement>("lakeElevationLimitOutput").value;
   if (elevationLimit === 80) return;
 
-  const { cells, features } = grid;
+  const { cells, features } = app.grid;
   const { c, h, b } = cells;
 
   for (const i of cells.i) {
     if (b[i] || h[i] < 20) continue;
 
-    const minHeight = d3.min(c[i].map(c => h[c]));
+    const minHeight = min(c[i].map(c => h[c])) ?? h[i];
     if (h[i] > minHeight) continue;
 
     let deep = true;
@@ -591,6 +547,7 @@ function addLakesInDeepDepressions() {
     // check if elevated cell can potentially pour to water
     while (deep && queue.length) {
       const q = queue.pop();
+      if (q === undefined) break;
 
       for (const n of c[q]) {
         if (checked[n]) continue;
@@ -612,14 +569,16 @@ function addLakesInDeepDepressions() {
     }
   }
 
-  function addLake(lakeCells) {
+  function addLake(lakeCells: number[]): void {
     const f = features.length;
 
     lakeCells.forEach(i => {
       cells.h[i] = 19;
       cells.t[i] = -1;
       cells.f[i] = f;
-      c[i].forEach(n => !lakeCells.includes(n) && (cells.t[c] = 1));
+      c[i].forEach(n => {
+        if (!lakeCells.includes(n)) cells.t[n] = 1;
+      });
     });
 
     features.push({ i: f, land: false, border: false, type: "lake" });
@@ -630,10 +589,10 @@ function addLakesInDeepDepressions() {
 
 // near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
 function openNearSeaLakes() {
-  if (ensureEl("templateInput").value === "Atoll") return; // no need for Atolls
+  if (ensureEl<HTMLInputElement>("templateInput").value === "Atoll") return; // no need for Atolls
 
-  const cells = grid.cells;
-  const features = grid.features;
+  const cells = app.grid.cells;
+  const features = app.grid.features;
   if (!features.find(f => f.type === "lake")) return; // no lakes
   TIME && console.time("openLakes");
   const LIMIT = 22; // max height that can be breached by water
@@ -654,11 +613,11 @@ function openNearSeaLakes() {
     }
   }
 
-  function removeLake(thresholdCellId, lakeFeatureId, oceanFeatureId) {
+  function removeLake(thresholdCellId: number, lakeFeatureId: number, oceanFeatureId: number): void {
     cells.h[thresholdCellId] = 19;
     cells.t[thresholdCellId] = -1;
     cells.f[thresholdCellId] = oceanFeatureId;
-    cells.c[thresholdCellId].forEach(function (c) {
+    cells.c[thresholdCellId].forEach(c => {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
 
@@ -675,12 +634,12 @@ function openNearSeaLakes() {
 function defineMapSize() {
   const [size, latitude, longitude] = getSizeAndLatitude();
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-  if (randomize || !stored("mapSize")) options.mapSize = size;
-  if (randomize || !stored("latitude")) options.latitude = latitude;
-  if (randomize || !stored("longitude")) options.longitude = longitude;
+  if (randomize || !stored("mapSize")) app.options.mapSize = size;
+  if (randomize || !stored("latitude")) app.options.latitude = latitude;
+  if (randomize || !stored("longitude")) app.options.longitude = longitude;
 
   function getSizeAndLatitude() {
-    const template = ensureEl("templateInput").value; // heightmap template
+    const template = ensureEl<HTMLInputElement>("templateInput").value; // heightmap template
 
     if (template === "africa-centric") return [45, 53, 38];
     if (template === "arabia") return [20, 35, 35];
@@ -706,7 +665,7 @@ function defineMapSize() {
     if (template === "world") return [78, 27, 40];
     if (template === "world-from-pacific") return [75, 32, 30]; // longitude doesn't fit
 
-    const part = grid.features.some(f => f.land && f.border); // if land goes over map borders
+    const part = app.grid.features.some(f => f.land && f.border); // if land goes over map borders
     const max = part ? 80 : 100; // max size
     const lat = () => gauss(P(0.5) ? 40 : 60, 20, 25, 75); // latitude shift
 
@@ -733,28 +692,28 @@ function defineMapSize() {
 
 // calculate map position on globe
 function calculateMapCoordinates() {
-  const sizeFraction = options.mapSize / 100;
-  const latShift = options.latitude / 100;
-  const lonShift = options.longitude / 100;
+  const sizeFraction = app.options.mapSize / 100;
+  const latShift = app.options.latitude / 100;
+  const lonShift = app.options.longitude / 100;
 
   const latT = rn(sizeFraction * 180, 1);
   const latN = rn(90 - (180 - latT) * latShift, 1);
   const latS = rn(latN - latT, 1);
 
-  const lonT = rn(Math.min((graphWidth / graphHeight) * latT, 360), 1);
+  const lonT = rn(Math.min((app.graphWidth / app.graphHeight) * latT, 360), 1);
   const lonE = rn(180 - (360 - lonT) * lonShift, 1);
   const lonW = rn(lonE - lonT, 1);
-  mapCoordinates = { latT, latN, latS, lonT, lonW, lonE };
+  app.mapCoordinates = { latT, latN, latS, lonT, lonW, lonE };
 }
 
 // temperature model, trying to follow real-world data
-// based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
+// based on http://www-das.uwyo.edu/~geerts/cwx/app.notes/chap16/Image64.gif
 function calculateTemperatures() {
   TIME && console.time("calculateTemperatures");
-  const cells = grid.cells;
+  const cells = app.grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
-  const { temperatureEquator, temperatureNorthPole, temperatureSouthPole } = options;
+  const { temperatureEquator, temperatureNorthPole, temperatureSouthPole } = app.options;
   const tropics = [16, -20]; // tropics zone
   const tropicalGradient = 0.15;
 
@@ -766,19 +725,19 @@ function calculateTemperatures() {
 
   const exponent = +heightExponentInput.value;
 
-  for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
-    const [, y] = grid.points[rowCellId];
-    const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
+  for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += app.grid.cellsX) {
+    const [, y] = app.grid.points[rowCellId];
+    const rowLatitude = app.mapCoordinates.latN - (y / app.graphHeight) * app.mapCoordinates.latT; // [90; -90]
     const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
     DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
 
-    for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
+    for (let cellId = rowCellId; cellId < rowCellId + app.grid.cellsX; cellId++) {
       const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
       cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
     }
   }
 
-  function calculateSeaLevelTemp(latitude) {
+  function calculateSeaLevelTemp(latitude: number): number {
     const isTropical = latitude <= 16 && latitude >= -20;
     if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
 
@@ -788,9 +747,9 @@ function calculateTemperatures() {
   }
 
   // temperature drops by 6.5°C per 1km of altitude
-  function getAltitudeTemperatureDrop(h) {
+  function getAltitudeTemperatureDrop(h: number): number {
     if (h < 20) return 0;
-    const height = Math.pow(h - 18, exponent);
+    const height = (h - 18) ** exponent;
     return rn((height / 1000) * 6.5);
   }
 
@@ -800,16 +759,16 @@ function calculateTemperatures() {
 // simplest precipitation model
 function generatePrecipitation() {
   TIME && console.time("generatePrecipitation");
-  prec.selectAll("*").remove();
-  const { cells, cellsX, cellsY } = grid;
+  const { cells, cellsX, cellsY } = app.grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
 
-  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
-  const precInputModifier = options.prec / 100;
+  const cellsNumberModifier = (Number(pointsInput.dataset.cells) / 10000) ** 0.25;
+  const precInputModifier = app.options.prec / 100;
   const modifier = cellsNumberModifier * precInputModifier;
 
-  const westerly = [];
-  const easterly = [];
+  type WindBand = [firstCell: number, precipitationModifier: number, tier: number];
+  const westerly: WindBand[] = [];
+  const easterly: WindBand[] = [];
   let southerly = 0;
   let northerly = 0;
 
@@ -826,10 +785,10 @@ function generatePrecipitation() {
   const MAX_PASSABLE_ELEVATION = 85;
 
   // define wind directions based on cells latitude and prevailing winds there
-  d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
-    const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
+  range(0, cells.i.length, cellsX).forEach((c, i) => {
+    const lat = app.mapCoordinates.latN - (i / cellsY) * app.mapCoordinates.latT;
     const latBand = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = latitudeModifier[latBand];
+    const latMod = latitudeModifier[latBand] ?? 1;
     const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
     const { isWest, isEast, isNorth, isSouth } = getWindDirections(windTier);
 
@@ -845,21 +804,21 @@ function generatePrecipitation() {
 
   const vertT = southerly + northerly;
   if (northerly) {
-    const bandN = ((Math.abs(mapCoordinates.latN) - 1) / 5) | 0;
-    const latModN = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandN];
+    const bandN = ((Math.abs(app.mapCoordinates.latN) - 1) / 5) | 0;
+    const latModN = (app.mapCoordinates.latT > 60 ? mean(latitudeModifier) : latitudeModifier[bandN]) ?? 1;
     const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
-    passWind(d3.range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
+    passWind(range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
   }
 
   if (southerly) {
-    const bandS = ((Math.abs(mapCoordinates.latS) - 1) / 5) | 0;
-    const latModS = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandS];
+    const bandS = ((Math.abs(app.mapCoordinates.latS) - 1) / 5) | 0;
+    const latModS = (app.mapCoordinates.latT > 60 ? mean(latitudeModifier) : latitudeModifier[bandS]) ?? 1;
     const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
-    passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
+    passWind(range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
   }
 
-  function getWindDirections(tier) {
-    const angle = options.winds[tier];
+  function getWindDirections(tier: number) {
+    const angle = app.options.winds[tier] ?? 0;
 
     const isWest = angle > 40 && angle < 140;
     const isEast = angle > 220 && angle < 320;
@@ -869,14 +828,12 @@ function generatePrecipitation() {
     return { isWest, isEast, isNorth, isSouth };
   }
 
-  function passWind(source, maxPrec, next, steps) {
+  function passWind(source: readonly (number | WindBand)[], maxPrec: number, next: number, steps: number): void {
     const maxPrecInit = maxPrec;
 
-    for (let first of source) {
-      if (first[0]) {
-        maxPrec = Math.min(maxPrecInit * first[1], 255);
-        first = first[0];
-      }
+    for (const sourceEntry of source) {
+      const first = typeof sourceEntry === "number" ? sourceEntry : sourceEntry[0];
+      if (typeof sourceEntry !== "number") maxPrec = Math.min(maxPrecInit * sourceEntry[1], 255);
 
       let humidity = maxPrec - cells.h[first]; // initial water amount
       if (humidity <= 0) continue; // if first cell in row is too elevated consider wind dry
@@ -905,57 +862,12 @@ function generatePrecipitation() {
     }
   }
 
-  function getPrecipitation(humidity, i, n) {
+  function getPrecipitation(humidity: number, i: number, n: number): number {
     const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
     const diff = Math.max(cells.h[i + n] - cells.h[i], 0); // difference in height
     const mod = (cells.h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
     return minmax(normalLoss + diff * mod, 1, humidity);
   }
-
-  void (function drawWindDirection() {
-    const wind = prec.append("g").attr("id", "wind");
-
-    d3.range(0, 6).forEach(function (t) {
-      if (westerly.length > 1) {
-        const west = westerly.filter(w => w[2] === t);
-        if (west && west.length > 3) {
-          const from = west[0][0],
-            to = west[west.length - 1][0];
-          const y = (grid.points[from][1] + grid.points[to][1]) / 2;
-          wind.append("text").attr("text-rendering", "optimizeSpeed").attr("x", 20).attr("y", y).text("\u21C9");
-        }
-      }
-      if (easterly.length > 1) {
-        const east = easterly.filter(w => w[2] === t);
-        if (east && east.length > 3) {
-          const from = east[0][0],
-            to = east[east.length - 1][0];
-          const y = (grid.points[from][1] + grid.points[to][1]) / 2;
-          wind
-            .append("text")
-            .attr("text-rendering", "optimizeSpeed")
-            .attr("x", graphWidth - 52)
-            .attr("y", y)
-            .text("\u21C7");
-        }
-      }
-    });
-
-    if (northerly)
-      wind
-        .append("text")
-        .attr("text-rendering", "optimizeSpeed")
-        .attr("x", graphWidth / 2)
-        .attr("y", 42)
-        .text("\u21CA");
-    if (southerly)
-      wind
-        .append("text")
-        .attr("text-rendering", "optimizeSpeed")
-        .attr("x", graphWidth / 2)
-        .attr("y", graphHeight - 20)
-        .text("\u21C8");
-  })();
 
   TIME && console.timeEnd("generatePrecipitation");
 }
@@ -963,9 +875,9 @@ function generatePrecipitation() {
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
   TIME && console.time("reGraph");
-  const { cells: gridCells, points, features } = grid;
-  const newCells = { p: [], g: [], h: [] }; // store new data
-  const spacing2 = grid.spacing ** 2;
+  const { cells: gridCells, points, features } = app.grid;
+  const newCells: { p: [number, number][]; g: number[]; h: number[] } = { p: [], g: [], h: [] };
+  const spacing2 = app.grid.spacing ** 2;
 
   for (const i of gridCells.i) {
     const height = gridCells.h[i];
@@ -980,7 +892,7 @@ function reGraph() {
     // add additional points for cells along coast
     if (type === 1 || type === -1) {
       if (gridCells.b[i]) continue; // not for near-border cells
-      gridCells.c[i].forEach(function (e) {
+      gridCells.c[i].forEach(e => {
         if (i > e) return;
         if (gridCells.t[e] === type) {
           const dist2 = (y - points[e][1]) ** 2 + (x - points[e][0]) ** 2;
@@ -993,21 +905,25 @@ function reGraph() {
     }
   }
 
-  function addNewPoint(i, x, y, height) {
+  function addNewPoint(i: number, x: number, y: number, height: number): void {
     newCells.p.push([x, y]);
     newCells.g.push(i);
     newCells.h.push(height);
   }
 
-  const { cells: packCells, vertices } = calculateVoronoi(newCells.p, grid.boundary);
-  pack.vertices = vertices;
-  pack.cells = packCells;
-  pack.cells.p = newCells.p;
-  pack.cells.g = createTypedArray({ maxValue: grid.points.length, from: newCells.g });
-  pack.cells.h = createTypedArray({ maxValue: 100, from: newCells.h });
-  pack.cells.area = createTypedArray({ maxValue: TYPED_ARRAY_MAX.UINT16, length: packCells.i.length }).map(
+  const { cells: packCells, vertices } = calculateVoronoi(newCells.p, app.grid.boundary);
+  app.pack.vertices = vertices as unknown as PackedGraph["vertices"];
+  app.pack.cells = packCells as unknown as PackedGraph["cells"];
+  app.pack.cells.p = newCells.p;
+  app.pack.cells.g = createTypedArray({
+    maxValue: app.grid.points.length,
+    length: newCells.g.length,
+    from: newCells.g
+  });
+  app.pack.cells.h = createTypedArray({ maxValue: 100, length: newCells.h.length, from: newCells.h });
+  app.pack.cells.area = createTypedArray({ maxValue: TYPED_ARRAY_MAX.UINT16, length: packCells.i.length }).map(
     (_, cellId) => {
-      const area = Math.abs(d3.polygonArea(getPackPolygon(cellId)));
+      const area = Math.abs(polygonArea(getPackPolygon(cellId, app.pack)));
       return Math.min(area, TYPED_ARRAY_MAX.UINT16);
     }
   );
@@ -1015,25 +931,19 @@ function reGraph() {
   TIME && console.timeEnd("reGraph");
 }
 
-function isWetLand(moisture, temperature, height) {
-  if (moisture > 40 && temperature > -2 && height < 25) return true; //near coast
-  if (moisture > 24 && temperature > -2 && height > 24 && height < 60) return true; //off coast
-  return false;
-}
-
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
   TIME && console.time("rankCells");
-  const { cells, features } = pack;
+  const { cells, features } = app.pack;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
 
-  const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
-  const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
-  const meanArea = d3.mean(cells.area); // to adjust population by cell area
-  const getResValue = i => (cells.good && cells.good[i] ? Goods.get(cells.good[i])?.value : 0);
+  const meanFlux = median(cells.fl.filter(f => f)) || 0;
+  const maxFlux = (max(cells.fl) ?? 0) + (max(cells.conf) ?? 0); // to normalize flux
+  const meanArea = mean(cells.area) ?? 1; // to adjust population by cell area
+  const getResValue = (i: number): number => (cells.good?.[i] ? (Goods.get(cells.good[i])?.value ?? 0) : 0);
 
-  const scoreMap = {
+  const scoreMap: Record<string, number> = {
     estuary: 15,
     ocean_coast: 5,
     save_harbor: 20,
@@ -1047,7 +957,7 @@ function rankCells() {
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue; // no population in water
-    let score = pack.biomes[cells.biome[i]].habitability; // base suitability derived from biome habitability
+    let score = app.pack.biomes[cells.biome[i]].habitability; // base suitability derived from biome habitability
     if (!score) continue; // uninhabitable biomes has 0 suitability
 
     if (meanFlux) score += normalize(cells.fl[i] + cells.conf[i], meanFlux, maxFlux) * 250; // big rivers and confluences are valued
@@ -1057,7 +967,7 @@ function rankCells() {
       if (cells.r[i]) score += scoreMap.estuary;
       const feature = features[cells.f[cells.haven[i]]];
       if (feature.type === "lake") {
-        score += scoreMap[feature.group] || 0;
+        score += scoreMap[feature.group] ?? 0;
       } else {
         score += scoreMap.ocean_coast;
         if (cells.harbor[i] === 1) score += scoreMap.save_harbor;
@@ -1068,7 +978,7 @@ function rankCells() {
     // add bonus for goods around
     if (cells.good && (cells.good[i] || cells.c[i].some(c => cells.good[c]))) {
       const cellRes = getResValue(i);
-      const neibRes = d3.mean(cells.c[i].map(c => getResValue(c)));
+      const neibRes = mean(cells.c[i].map(c => getResValue(c))) ?? 0;
       const resBonus = (cellRes ? cellRes + 10 : 0) + neibRes;
       cells.s[i] += resBonus;
     }
@@ -1081,51 +991,56 @@ function rankCells() {
 
 // show map stats on generation complete
 function showStatistics() {
-  const heightmap = ensureEl("templateInput").value;
+  const heightmap = ensureEl<HTMLInputElement>("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !stored("template") ? "random " : "";
 
-  const stats = `  Seed: ${seed}
-    Canvas size: ${graphWidth}x${graphHeight} px
+  const stats = `  Seed: ${app.seed}
+    Canvas size: ${app.graphWidth}x${app.graphHeight} px
     Heightmap: ${heightmap}
     Template: ${isRandomTemplate}${heightmapType}
-    Points: ${grid.points.length}
-    Cells: ${pack.cells.i.length}
-    Map size: ${options.mapSize}%
-    States: ${pack.states.length - 1}
-    Provinces: ${pack.provinces.length - 1}
-    Burgs: ${pack.burgs.length - 1}
-    Religions: ${pack.religions.length - 1}
+    Points: ${app.grid.points.length}
+    Cells: ${app.pack.cells.i.length}
+    Map size: ${app.options.mapSize}%
+    States: ${app.pack.states.length - 1}
+    Provinces: ${app.pack.provinces.length - 1}
+    Burgs: ${app.pack.burgs.length - 1}
+    Religions: ${app.pack.religions.length - 1}
     Culture set: ${culturesSet.value}
-    Cultures: ${pack.cultures.length - 1}`;
+    Cultures: ${app.pack.cultures.length - 1}`;
 
-  mapId = Date.now(); // unique map id is it's creation date number
-  window.mapId = mapId; // expose for test automation
-  mapHistory.push({ seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId });
+  app.mapId = Date.now(); // unique map id is it's creation date number
+  app.mapHistory.push({
+    seed: app.seed,
+    width: app.graphWidth,
+    height: app.graphHeight,
+    template: heightmap,
+    created: app.mapId
+  });
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
+  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: app.seed, mapId: app.mapId } }));
 }
 
-const regenerateMap = debounce(async function (config) {
+const regenerateMap = debounce(async (config?: string | RegenerateOptions) => {
   WARN && console.warn("Generate new random map");
 
-  const cellsDesired = +ensureEl("pointsInput").dataset.cells;
+  const cellsDesired = Number(ensureEl<HTMLInputElement>("pointsInput").dataset.cells);
   const shouldShowLoading = cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");
-  customization = 0;
+  app.customization = 0;
   resetZoom(1000);
   undraw();
   await generate(config);
-  drawLayers();
-  if (options.threeD.isOn) window.Controllers.View3d.redraw();
+  window.LayerControls.drawActiveLayers();
+  if (app.options.threeD.isOn) window.Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 
-  fitMapToScreen();
+  window.OptionsController.fitMapToScreen();
   shouldShowLoading && hideLoading();
   clearMainTip();
 }, 250);
@@ -1133,14 +1048,31 @@ const regenerateMap = debounce(async function (config) {
 // clear the map
 function undraw() {
   window.ViewportLayers?.clearAll();
-  window.dispatchEvent(new CustomEvent("map:pixi-renderer:command", {detail: {command: "clear"}}));
-  viewbox
-    .selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
+  void window.MapRendererCommands.clear();
+  getViewportSurface()
+    .viewbox.selectAll("path, circle, polygon, line, text, use, #texture > image, #zones > g, #armies > g, #ruler > g")
     .remove();
   ensureEl("deftemp")
     .querySelectorAll("path, clipPath, svg")
-    .forEach(el => el.remove());
+    .forEach(el => {
+      el.remove();
+    });
   ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
-  notes = [];
+  app.notes = [];
   unfog();
 }
+
+bindApplicationController({
+  addLakesInDeepDepressions,
+  calculateMapCoordinates,
+  calculateTemperatures,
+  focusOn,
+  generateMapOnLoad,
+  generatePrecipitation,
+  openNearSeaLakes,
+  rankCells,
+  reGraph,
+  regenerateMap,
+  showStatistics,
+  undraw
+});

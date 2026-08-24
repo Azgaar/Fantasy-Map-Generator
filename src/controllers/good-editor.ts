@@ -150,9 +150,9 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
         Goods.regeneratePlacement(editedGood.i);
         Production.regenerateEconomy();
-        if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-        if (layerIsOn("toggleGoods")) drawGoods();
-        if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+        if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+        if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+        if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
         refreshEditors();
       } else {
         Goods.sync();

@@ -120,11 +120,11 @@ const culturesTable = initEditorTable<Culture>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
+  if (window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
 
   renderDialog();
   document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editCultureCenter as EventListener);
@@ -196,7 +196,7 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  ensureEl("culturesEditStyle").addEventListener("click", () => editStyle("cults"));
+  ensureEl("culturesEditStyle").addEventListener("click", () => window.StyleEditor.edit("cults"));
   ensureEl("culturesLegend").addEventListener("click", toggleLegend);
   ensureEl("culturesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("culturesHeirarchy").addEventListener("click", showHierarchy);
@@ -478,14 +478,14 @@ function getShapeOptions(selectShape: boolean, selected: string): string {
 const cultureHighlightOn = debounce((event: any) => {
   const cultureId = Number(event.id || event.target.dataset.id);
 
-  if (!layerIsOn("toggleCultures")) return;
+  if (!window.LayerControls.isLayerOn("toggleCultures")) return;
   if (customization) return;
 
   updateCultureHighlight(cultureId);
 }, 200);
 
 function cultureHighlightOff(_event: any): void {
-  if (!layerIsOn("toggleCultures")) return;
+  if (!window.LayerControls.isLayerOn("toggleCultures")) return;
   updateMapInteractionOverlay({ highlight: null });
 }
 
@@ -496,7 +496,7 @@ function cultureChangeColor(this: FillBoxElement): void {
   const callback = (newFill: string) => {
     this.fill = newFill;
     pack.cultures[cultureId].color = newFill;
-    drawCultures();
+    window.LayerControls.redrawLayer("toggleCultures");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -694,7 +694,7 @@ function applyPopulationChange(
     });
   }
 
-  if (layerIsOn("togglePopulation")) drawPopulation();
+  if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
   refreshCulturesEditor();
 }
 
@@ -738,7 +738,7 @@ function removeCulture(cultureId: number): void {
       c.origins = (c.origins ?? []).filter((origin: number) => origin !== cultureId);
       if (!c.origins.length) c.origins = [0];
     });
-  drawCultures();
+  window.LayerControls.redrawLayer("toggleCultures");
   refreshCulturesEditor();
 }
 
@@ -888,7 +888,7 @@ async function showHierarchy(): Promise<void> {
 function recalculateCultures(force?: boolean): void {
   if (force || ensureEl<HTMLInputElement>("culturesAutoChange").checked) {
     Cultures.expand(getCultureGenerationSettings());
-    drawCultures();
+    window.LayerControls.redrawLayer("toggleCultures");
     pack.burgs.forEach(b => {
       if (!b.i || b.removed) return;
       b.culture = pack.cells.culture[b.cell];
@@ -898,7 +898,7 @@ function recalculateCultures(force?: boolean): void {
 }
 
 function enterCultureManualAssignent(): void {
-  if (!layerIsOn("toggleCultures")) toggleCultures();
+  if (!window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
   customization = 4;
   culturesAssignment = new TerritoryAssignmentSession("cultures", pack.cells.culture);
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
@@ -974,7 +974,7 @@ function changeCultureForSelection(selection: number[]): void {
   if (selectedCultureId === null) return;
 
   const mutation = culturesAssignment?.paint(selection, selectedCultureId);
-  if (mutation?.changed) drawCultures();
+  if (mutation?.changed) window.LayerControls.redrawLayer("toggleCultures");
 }
 
 function moveCultureBrush(this: SVGElement, event: MouseEvent): void {
@@ -993,7 +993,7 @@ function applyCultureManualAssignent(): void {
       const burgId = pack.cells.burg[cellId];
       if (burgId) pack.burgs[burgId].culture = pack.cells.culture[cellId];
     }
-    drawCultures();
+    window.LayerControls.redrawLayer("toggleCultures");
     refreshCulturesEditor();
   }
   exitCulturesManualAssignment();
@@ -1004,7 +1004,7 @@ function exitCulturesManualAssignment(close?: string): void {
   if (culturesAssignment) {
     culturesAssignment.cancel();
     culturesAssignment = null;
-    drawCultures();
+    window.LayerControls.redrawLayer("toggleCultures");
   }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
@@ -1035,7 +1035,7 @@ function canSelectCultureEmblemShape(): boolean {
 }
 
 function undoCulturesManualAssignment(): void {
-  if (culturesAssignment?.undo()) drawCultures();
+  if (culturesAssignment?.undo()) window.LayerControls.redrawLayer("toggleCultures");
 }
 
 function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
@@ -1225,7 +1225,7 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
       removeCulture(c.i);
     });
 
-  drawCultures();
+  window.LayerControls.redrawLayer("toggleCultures");
   refreshCulturesEditor();
 }
 

@@ -7,12 +7,16 @@ const applicationState = vi.hoisted(() => ({
   bitmapFontUninstall: vi.fn(),
   bitmapTextCreate: vi.fn(),
   destroy: vi.fn(),
+  extractCanvas: vi.fn(),
+  hiddenAtExtract: [] as string[],
   init: vi.fn(),
   positionSet: vi.fn(),
   render: vi.fn(),
   resize: vi.fn(),
   scaleSet: vi.fn(),
-  stage: undefined as { children: Array<{ children: unknown[]; label: string; visible: boolean }> } | undefined
+  stage: undefined as
+    | { children: Array<{ children: unknown[]; label: string; visible: boolean; zIndex: number }> }
+    | undefined
 }));
 
 vi.mock("pixi.js", () => {
@@ -27,6 +31,7 @@ vi.mock("pixi.js", () => {
     position = { set: vi.fn() };
     scale = { set: vi.fn() };
     visible = true;
+    zIndex = 0;
     addChild(...children: DisplayObject[]) {
       this.children.push(...children);
       return children[0];
@@ -36,15 +41,34 @@ vi.mock("pixi.js", () => {
       return this.children.splice(0);
     }
     removeFromParent() {}
+    sortChildren() {
+      this.children.sort((first, second) => first.zIndex - second.zIndex);
+    }
   }
 
   class Container extends DisplayObject {}
+
+  class ColorMatrixFilter {
+    destroy() {}
+    grayscale() {}
+    sepia() {}
+  }
 
   class Application {
     canvas = Object.assign(new EventTarget(), { style: {} });
     renderer = {
       background: { color: "" },
       constructor: { name: "MockRenderer" },
+      extract: {
+        canvas: applicationState.extractCanvas.mockImplementation((options: { target: DisplayObject }) => {
+          const visit = (display: DisplayObject): string[] => [
+            ...(display.visible || !display.label ? [] : [display.label]),
+            ...display.children.flatMap(visit)
+          ];
+          applicationState.hiddenAtExtract = visit(options.target);
+          return { height: 16, remove: vi.fn(), width: 16 };
+        })
+      },
       resize: applicationState.resize
     };
     stage = Object.assign(new Container(), {
@@ -99,6 +123,9 @@ vi.mock("pixi.js", () => {
     rect() {
       return this;
     }
+    cut() {
+      return this;
+    }
     stroke() {
       return this;
     }
@@ -122,6 +149,8 @@ vi.mock("pixi.js", () => {
   class Sprite extends DisplayObject {
     anchor = { set: vi.fn() };
   }
+
+  class TilingSprite extends DisplayObject {}
 
   class Text extends DisplayObject {
     anchor = { set: vi.fn() };
@@ -147,6 +176,7 @@ vi.mock("pixi.js", () => {
     Buffer,
     BufferUsage: { COPY_DST: 1, INDEX: 2, STATIC: 4, VERTEX: 8 },
     Container,
+    ColorMatrixFilter,
     Geometry,
     Graphics,
     GraphicsContext,
@@ -154,7 +184,9 @@ vi.mock("pixi.js", () => {
     Rectangle,
     Shader,
     Sprite,
-    Text
+    Text,
+    TilingSprite,
+    VERSION: "8.0.0-test"
   };
 });
 
@@ -177,6 +209,8 @@ const createSurface = () => {
 describe("PixiMapRenderer lifecycle", () => {
   beforeEach(() => {
     applicationState.destroy.mockClear();
+    applicationState.extractCanvas.mockClear();
+    applicationState.hiddenAtExtract = [];
     applicationState.assetLoad.mockClear();
     applicationState.assetUnload.mockClear();
     applicationState.bitmapFontInstall.mockClear();
@@ -339,6 +373,8 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.map(child => child.label)).toEqual([
       "ocean",
       "landmass",
+      "texture",
+      "height",
       "lakes",
       "biomes",
       "cells",
@@ -371,6 +407,9 @@ describe("PixiMapRenderer lifecycle", () => {
     renderer.setLayerVisibility("biomes", false);
     expect(applicationState.stage?.children.find(child => child.label === "biomes")?.visible).toBe(false);
     expect(applicationState.stage?.children.find(child => child.label === "states")?.visible).toBe(true);
+    const reversedOrder = [...(applicationState.stage?.children.map(child => child.label) ?? [])].reverse();
+    renderer.setLayerOrder(reversedOrder as Parameters<typeof renderer.setLayerOrder>[0]);
+    expect(applicationState.stage?.children.map(child => child.label)).toEqual(reversedOrder);
     renderer.destroy();
     expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
   });
@@ -388,6 +427,67 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.find(child => child.label === "markers")?.children.length).toBe(1);
     renderer.clear();
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
+  });
+
+  it("builds Pixi-owned ocean pattern, height contours, and texture presentation", async () => {
+    const renderer = new PixiMapRenderer();
+    const world = createWorld() as PackedGraph & { climate: unknown };
+    world.climate = {
+      cells: { ...world.cells, prec: Uint8Array.from([0]), temp: Int8Array.from([0]) },
+      points: [[2, 2]],
+      requestedCells: 1,
+      temperatureScale: "°C",
+      vertices: world.vertices
+    };
+    const style = structuredClone(DEFAULT_PIXI_MAP_STYLE);
+    style.ocean.pattern.href = "pattern.png";
+    style.texture.href = "texture.png";
+    style.texture.mask = "water";
+    style.height.land.filter = "url(#filter-sepia)";
+
+    await renderer.mount(createSurface());
+    await renderer.render(world as never, style, coalesceInvalidations([{ kind: "world" }]));
+
+    expect(applicationState.stage?.children.find(child => child.label === "ocean")?.children.length).toBe(2);
+    expect(applicationState.stage?.children.find(child => child.label === "texture")?.children.length).toBe(2);
+    expect(applicationState.stage?.children.find(child => child.label === "height")?.children.length).toBe(2);
+    expect(renderer.getSnapshot()).toMatchObject({
+      missingTextureAssets: [],
+      textureCacheEntries: 4,
+      unsupportedHeightEffects: [],
+      unsupportedTextureEffects: []
+    });
+
+    const raster = renderer.renderRasterFrame({
+      frame: { height: 4, width: 4, x: 0, y: 0 },
+      fullMap: { height: 4, width: 4 },
+      hiddenLayers: ["labels", "ocean"],
+      resolution: 1,
+      transparentBackground: true
+    });
+    expect(applicationState.extractCanvas).toHaveBeenCalledWith(expect.objectContaining({ clearColor: "transparent" }));
+    expect(applicationState.hiddenAtExtract).toEqual(expect.arrayContaining(["height:ocean", "labels", "ocean"]));
+    expect(applicationState.stage?.children.find(child => child.label === "ocean")?.visible).toBe(true);
+    raster.remove();
+
+    renderer.clear();
+    expect(applicationState.assetLoad).toHaveBeenCalledWith("pattern.png");
+    expect(applicationState.assetLoad).toHaveBeenCalledWith("texture.png");
+    expect(applicationState.assetUnload).toHaveBeenCalledTimes(4);
+    renderer.destroy();
+  });
+
+  it("fails explicitly for required viewer assets in strict mode", async () => {
+    applicationState.assetLoad.mockRejectedValueOnce(new Error("blocked by CORS"));
+    const renderer = new PixiMapRenderer({ strictAssets: true });
+    const style = structuredClone(DEFAULT_PIXI_MAP_STYLE);
+    style.texture.href = "https://cdn.example/private-paper.png";
+    await renderer.mount(createSurface());
+
+    await expect(renderer.render(createWorld(), style, coalesceInvalidations([{ kind: "world" }]))).rejects.toThrow(
+      "Required renderer map texture asset is unavailable: https://cdn.example/private-paper.png"
+    );
     renderer.destroy();
   });
 

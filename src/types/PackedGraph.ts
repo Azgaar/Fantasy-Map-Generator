@@ -34,7 +34,7 @@ export interface PackedGraph {
     pop: TypedArray; // cell population
     conf: TypedArray; // cell water confidence
     haven: TypedArray; // cell is a haven
-    g: number[]; // cell ground type
+    g: number[] | TypedArray; // source generation-grid cell id
     culture: TypedArray; // cell culture id
     biome: TypedArray; // cell biome id
     harbor: TypedArray; // cell harbour presence

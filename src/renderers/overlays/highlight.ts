@@ -3,7 +3,7 @@ import { parseTransform } from "@/utils";
 import type { MapInteractionGeometry } from "../interaction/map-interaction-overlay";
 import { updateMapInteractionOverlay } from "../pixi/pixi-renderer-controller";
 
-const debugLayer = () => select(debug.node() as SVGGElement);
+const debugLayer = () => select<SVGGElement, unknown>("#debug");
 
 function getBBox(element: Element): DOMRect {
   const attr = (name: string) => Number(element.getAttribute(name));

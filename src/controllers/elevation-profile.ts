@@ -16,6 +16,10 @@ import {
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import {
+  getHeightColor as getColor,
+  getHeightColorScheme as getColorScheme
+} from "@/renderers/scene/height-color-schemes";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features";

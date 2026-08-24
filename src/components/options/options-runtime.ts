@@ -1,9 +1,91 @@
 // UI module to control the options (preferences)
-"use strict";
+
+import { hsl } from "d3";
+import { ApplicationController } from "@/application/application-controller";
+import { getViewportSurface } from "@/application/viewport-surface";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { clearMainTip, tip } from "@/components/tooltips";
+import { fitLegendBox } from "@/renderers/draw-legend";
+import { fitScaleBar } from "@/renderers/draw-scalebar";
+import { applyOption, ensureEl, gauss, last, minmax, P, rand, rn, rw } from "@/utils";
+import { lock, stored, unlock } from "@/utils/preferences";
+import {
+  bindOptionsController,
+  OptionsController,
+  type OptionsControllerApi,
+  type RegenerateOptions
+} from "./options-controller";
+
+interface ValueElement extends HTMLElement {
+  max: string;
+  value: string;
+}
+
+interface GoogleTranslateApi {
+  translate: {
+    TranslateElement: {
+      new (options: { layout: unknown; pageLanguage: string }, elementId: string): unknown;
+      InlineLayout: { VERTICAL: unknown };
+    };
+  };
+}
+
+const optionsRoot = ensureEl("options");
+const optionsTrigger = ensureEl("optionsTrigger");
+const regenerate = ensureEl("regenerate");
+const collapsible = ensureEl("collapsible");
+const layersContent = ensureEl("layersContent");
+const styleContent = ensureEl("styleContent");
+const toolsContent = ensureEl("toolsContent");
+const aboutContent = ensureEl("aboutContent");
+const customizationMenu = ensureEl("customizationMenu");
+const manorsInput = ensureEl<HTMLInputElement>("manorsInput");
+const manorsOutput = ensureEl<HTMLOutputElement>("manorsOutput");
+const mapWidthInput = ensureEl<HTMLInputElement>("mapWidthInput");
+const mapHeightInput = ensureEl<HTMLInputElement>("mapHeightInput");
+const distanceScaleInput = ensureEl<HTMLInputElement>("distanceScaleInput");
+const optionsSeed = ensureEl<HTMLInputElement>("optionsSeed");
+const pointsOutputFormatted = ensureEl<HTMLOutputElement>("pointsOutputFormatted");
+const culturesOutput = ensureEl<HTMLInputElement>("culturesOutput");
+const statesNumber = ensureEl<ValueElement>("statesNumber");
+const provincesRatio = ensureEl<ValueElement>("provincesRatio");
+const sizeVariety = ensureEl<ValueElement>("sizeVariety");
+const growthRate = ensureEl<ValueElement>("growthRate");
+const uiSize = ensureEl<ValueElement>("uiSize");
+const themeHueInput = ensureEl<HTMLInputElement>("themeHueInput");
+const themeColorInput = ensureEl<HTMLInputElement>("themeColorInput");
+const transparencyInput = ensureEl<ValueElement>("transparencyInput");
+const zoomExtentMin = ensureEl<HTMLInputElement>("zoomExtentMin");
+const zoomExtentMax = ensureEl<HTMLInputElement>("zoomExtentMax");
+const shapeRendering = ensureEl<HTMLSelectElement>("shapeRendering");
+const yearInput = ensureEl<HTMLInputElement>("yearInput");
+const eraInput = ensureEl<HTMLInputElement>("eraInput");
+const tooltip = ensureEl("tooltip");
+const viewMode = ensureEl("viewMode");
 
 window.enableElementDragging({ element: ensureEl("optionsContainer"), handleSelector: ".drag-trigger" });
 window.enableElementDragging({ element: ensureEl("exitCustomization"), handleSelector: "div" });
 ensureEl("mapLayers").style.userSelect = "none";
+
+optionsTrigger.addEventListener("click", showOptions);
+regenerate.addEventListener("click", () => regeneratePrompt());
+ensureEl("optionsHide").addEventListener("click", hideOptions);
+ensureEl("generateMapFromSetup").addEventListener("click", () => regeneratePrompt({ fromSetup: true }));
+ensureEl("showSupporters").addEventListener("click", () => void showSupporters());
+ensureEl("openExportToPngTiles").addEventListener("click", openExportToPngTiles);
+ensureEl("loadMapFromUrl").addEventListener("click", loadURL);
+ensureEl("dropboxConnectButton").addEventListener("click", () => void connectToDropbox());
+ensureEl("copySharableLink").addEventListener("click", copyLinkToClickboard);
+document.querySelectorAll<HTMLButtonElement>("[data-export-json]").forEach(button => {
+  button.addEventListener("click", () => {
+    const type = button.dataset.exportJson as "Full" | "GridCells" | "Minimal" | "PackCells";
+    void exportToJson(type);
+  });
+});
+document.addEventListener("click", event => {
+  const target = (event.target as Element | null)?.closest<HTMLElement>("[data-seed-history-index]");
+  if (target) restoreSeed(Number(target.dataset.seedHistoryIndex));
+});
 
 // remove glow if tip is aknowledged
 if (stored("disable_click_arrow_tooltip")) {
@@ -12,10 +94,10 @@ if (stored("disable_click_arrow_tooltip")) {
 }
 
 // Show options pane on trigger click
-function showOptions(event) {
+function showOptions(event?: Event): void {
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
-    localStorage.setItem("disable_click_arrow_tooltip", true);
+    localStorage.setItem("disable_click_arrow_tooltip", "true");
     optionsTrigger.classList.remove("glow");
   }
 
@@ -29,7 +111,7 @@ function showOptions(event) {
 }
 
 // Hide options pane on trigger click
-function hideOptions(event) {
+function hideOptions(event?: Event): void {
   ensureEl("options").style.display = "none";
   optionsTrigger.style.display = "block";
   document.body.classList.remove("workspace-panel-open");
@@ -38,54 +120,52 @@ function hideOptions(event) {
 }
 
 // To toggle options on hotkey press
-function toggleOptions(event) {
+function toggleOptions(event?: Event): void {
   if (ensureEl("options").style.display === "none") showOptions(event);
   else hideOptions(event);
 }
 
 // Toggle "New Map!" pane on hover
-optionsTrigger.addEventListener("mouseenter", function () {
+optionsTrigger.addEventListener("mouseenter", () => {
   if (optionsTrigger.classList.contains("glow")) return;
   if (ensureEl("options").style.display === "none") regenerate.style.display = "block";
 });
 
-collapsible.addEventListener("mouseleave", function () {
+collapsible.addEventListener("mouseleave", () => {
   regenerate.style.display = "none";
 });
 
 // Activate options tab on click
-document
-  .getElementById("options")
-  .querySelector("div.tab")
-  .addEventListener("click", function (event) {
-    if (event.target.tagName !== "BUTTON") return;
-    const id = event.target.id;
-    if (id === "optionsHide") return;
-    const active = ensureEl("options").querySelector(".tab > button.active");
-    if (active && id === active.id) return; // already active tab is clicked
+optionsRoot.querySelector<HTMLElement>("div.tab")?.addEventListener("click", event => {
+  const target = event.target as HTMLElement;
+  if (target.tagName !== "BUTTON") return;
+  const id = target.id;
+  if (id === "optionsHide") return;
+  const active = ensureEl("options").querySelector(".tab > button.active");
+  if (active && id === active.id) return; // already active tab is clicked
 
-    if (active) active.classList.remove("active");
-    ensureEl(id).classList.add("active");
-    document
-      .getElementById("options")
-      .querySelectorAll(".tabcontent")
-      .forEach(e => (e.style.display = "none"));
-
-    if (id === "layersTab") {
-      layersContent.style.display = "block";
-    } else if (id === "styleTab") {
-      styleContent.style.display = "block";
-      selectStyleElement();
-    } else if (id === "optionsTab") {
-      optionsContent.style.display = "block";
-    } else if (id === "toolsTab") {
-      customization === 1 ? (customizationMenu.style.display = "block") : (toolsContent.style.display = "block");
-    } else if (id === "aboutTab") {
-      aboutContent.style.display = "block";
-    }
-
-    notifyWorkspacePanelChange(id);
+  if (active) active.classList.remove("active");
+  ensureEl(id).classList.add("active");
+  optionsRoot.querySelectorAll<HTMLElement>(".tabcontent").forEach(e => {
+    e.style.display = "none";
   });
+
+  if (id === "layersTab") {
+    layersContent.style.display = "block";
+  } else if (id === "styleTab") {
+    styleContent.style.display = "block";
+    window.StyleEditor.refresh();
+  } else if (id === "optionsTab") {
+    optionsContent.style.display = "block";
+  } else if (id === "toolsTab") {
+    if (customization === 1) customizationMenu.style.display = "block";
+    else toolsContent.style.display = "block";
+  } else if (id === "aboutTab") {
+    aboutContent.style.display = "block";
+  }
+
+  notifyWorkspacePanelChange(id);
+});
 
 const workspaceSections = {
   layersTab: "layers",
@@ -105,26 +185,28 @@ const workspaceSectionTitles = {
   about: "About"
 };
 
-function getWorkspaceSection(activeId) {
+function getWorkspaceSection(activeId?: string): string {
   if (activeId === "optionsTab") return ensureEl("optionsContent").dataset.workspaceView || "preferences";
   if (activeId === "toolsTab") return ensureEl("toolsContent").dataset.workspaceView || "edit";
-  return workspaceSections[activeId] || "layers";
+  return workspaceSections[activeId as keyof typeof workspaceSections] || "layers";
 }
 
-function notifyWorkspacePanelChange(tabId) {
-  const activeId = tabId || ensureEl("options").querySelector(".tab > button.active")?.id;
+function notifyWorkspacePanelChange(tabId?: string): void {
+  const activeId = tabId || optionsRoot.querySelector<HTMLElement>(".tab > button.active")?.id;
   const section = getWorkspaceSection(activeId);
-  const title = workspaceSectionTitles[section] || ensureEl(activeId)?.textContent?.trim() || "Layers";
+  const title =
+    workspaceSectionTitles[section as keyof typeof workspaceSectionTitles] ||
+    (activeId ? document.getElementById(activeId)?.textContent?.trim() : null) ||
+    "Layers";
   window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section, title } }));
 }
 
 // show popup with a list of Patreon supportes (updated manually)
-async function showSupporters() {
+async function showSupporters(): Promise<void> {
   const list = window.Supporters.split("\n").sort();
   const columns = window.innerWidth < 800 ? 2 : 5;
 
-  const messageHtml =
-    `<ul style='column-count: ${columns}; column-gap: 2em'>` + list.map(n => `<li>${n}</li>`).join("") + "</ul>";
+  const messageHtml = `<ul style='column-count: ${columns}; column-gap: 2em'>${list.map(n => `<li>${n}</li>`).join("")}</ul>`;
   window.showMessageDialog({
     id: "supportersDialog",
     messageHtml,
@@ -139,23 +221,27 @@ ensureEl("dialogs").addEventListener("change", storeValueIfRequired);
 ensureEl("options").addEventListener("input", updateOutputToFollowInput);
 ensureEl("dialogs").addEventListener("input", updateOutputToFollowInput);
 
-function storeValueIfRequired(ev) {
-  if (ev.target.dataset.stored) lock(ev.target.dataset.stored);
+function storeValueIfRequired(ev: Event): void {
+  const target = ev.target as HTMLInputElement;
+  if (target.dataset.stored) lock(target.dataset.stored);
 }
 
-function updateOutputToFollowInput(ev) {
-  const id = ev.target.id;
-  const value = ev.target.value;
+function updateOutputToFollowInput(ev: Event): void {
+  const target = ev.target as HTMLInputElement;
+  const { id, value } = target;
 
   // specific cases
-  if (id === "manorsInput") return (manorsOutput.value = value == 1000 ? "auto" : value);
+  if (id === "manorsInput") {
+    manorsOutput.value = value === "1000" ? "auto" : value;
+    return;
+  }
 
   // generic case
   if (id.slice(-5) === "Input") {
-    const output = document.getElementById(id.slice(0, -5) + "Output");
+    const output = document.getElementById(`${id.slice(0, -5)}Output`) as ValueElement | null;
     if (output) output.value = value;
   } else if (id.slice(-6) === "Output") {
-    const input = document.getElementById(id.slice(0, -6) + "Input");
+    const input = document.getElementById(`${id.slice(0, -6)}Input`) as ValueElement | null;
     if (input) input.value = value;
   }
 }
@@ -164,7 +250,7 @@ function updateOutputToFollowInput(ev) {
 const optionsContent = ensureEl("optionsContent");
 
 optionsContent.addEventListener("input", event => {
-  const { id, value } = event.target;
+  const { id, value } = event.target as HTMLInputElement;
   if (id === "mapWidthInput" || id === "mapHeightInput") mapSizeInputChange();
   else if (id === "pointsInput") changeCellsDensity(+value);
   else if (id === "culturesSet") changeCultureSet();
@@ -177,9 +263,9 @@ optionsContent.addEventListener("input", event => {
 });
 
 optionsContent.addEventListener("change", event => {
-  const { id, value } = event.target;
+  const { id, value } = event.target as HTMLInputElement;
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
-  else if (id === "optionsSeed") generateMapWithSeed("seed change");
+  else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSize") changeUiSize(+value);
   else if (id === "shapeRendering") setRendering(value);
   else if (id === "yearInput") changeYear();
@@ -187,23 +273,24 @@ optionsContent.addEventListener("change", event => {
 });
 
 optionsContent.addEventListener("click", event => {
-  const { id } = event.target;
+  const target = event.target as HTMLElement;
+  const { id } = target;
   if (id === "restoreDefaultCanvasSize") restoreDefaultCanvasSize();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "templateInputContainer") openTemplateSelectionDialog();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
-  else if (id === "translateExtent") toggleTranslateExtent(event.target);
+  else if (id === "translateExtent") toggleTranslateExtent(target);
   else if (id === "speakerTest") testSpeaker();
   else if (id === "themeColorRestore") restoreDefaultThemeColor();
   else if (id === "loadGoogleTranslateButton") loadGoogleTranslate();
   else if (id === "resetLanguage") resetLanguage();
 });
 
-function mapSizeInputChange() {
-  const $mapWidthInput = ensureEl("mapWidthInput");
-  const $mapHeightInput = ensureEl("mapHeightInput");
+function mapSizeInputChange(): void {
+  const $mapWidthInput = ensureEl<HTMLInputElement>("mapWidthInput");
+  const $mapHeightInput = ensureEl<HTMLInputElement>("mapHeightInput");
 
   fitMapToScreen();
   localStorage.setItem("mapWidth", $mapWidthInput.value);
@@ -218,57 +305,55 @@ function mapSizeInputChange() {
   }
 }
 
-function restoreDefaultCanvasSize() {
-  mapWidthInput.value = window.innerWidth;
-  mapHeightInput.value = window.innerHeight;
+function restoreDefaultCanvasSize(): void {
+  mapWidthInput.value = String(window.innerWidth);
+  mapHeightInput.value = String(window.innerHeight);
   localStorage.removeItem("mapHeight");
   localStorage.removeItem("mapWidth");
   fitMapToScreen();
 }
 
 // on map creation
-function applyGraphSize() {
+function applyGraphSize(): void {
   graphWidth = +mapWidthInput.value;
   graphHeight = +mapHeightInput.value;
 
-  landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
+  const { defs, fogging } = getViewportSurface();
   fogging.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
   defs.select("mask#fog > rect").attr("width", graphWidth).attr("height", graphHeight);
   defs.select("mask#water > rect").attr("width", graphWidth).attr("height", graphHeight);
 }
 
 // on generate, on load, on resize, on canvas size change
-function fitMapToScreen() {
+function fitMapToScreen(): void {
   svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
   svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
-  svg.attr("width", svgWidth).attr("height", svgHeight);
+  getViewportSurface().svg.attr("width", svgWidth).attr("height", svgHeight);
 
   const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
-  zoomExtentMin.value = zoomMin;
+  zoomExtentMin.value = String(zoomMin);
   const zoomMax = +zoomExtentMax.value;
 
-  zoom
-    .translateExtent([
-      [0, 0],
-      [graphWidth, graphHeight]
-    ])
-    .scaleExtent([zoomMin, zoomMax]);
+  window.MapZoom.setTranslateExtent([
+    [0, 0],
+    [graphWidth, graphHeight]
+  ]);
+  window.MapZoom.setExtent(zoomMin, zoomMax);
 
-  fitScaleBar(scaleBar, svgWidth, svgHeight);
-  if (window.fitLegendBox) fitLegendBox();
+  fitScaleBar(getViewportSurface().scaleBar, svgWidth, svgHeight);
+  fitLegendBox();
 }
 
-function toggleTranslateExtent(el) {
-  const on = (el.dataset.on = +!+el.dataset.on);
+function toggleTranslateExtent(el: HTMLElement): void {
+  const on = Number(!Number(el.dataset.on));
+  el.dataset.on = String(on);
   if (on) {
-    zoom.translateExtent([
+    window.MapZoom.setTranslateExtent([
       [-graphWidth / 2, -graphHeight / 2],
       [graphWidth * 1.5, graphHeight * 1.5]
     ]);
   } else {
-    zoom.translateExtent([
+    window.MapZoom.setTranslateExtent([
       [0, 0],
       [graphWidth, graphHeight]
     ]);
@@ -277,15 +362,15 @@ function toggleTranslateExtent(el) {
 
 // add voice options
 let voiceAttempts = 0;
-const voiceInterval = setInterval(function () {
+const voiceInterval = setInterval(() => {
   voiceAttempts++;
   const voices = speechSynthesis.getVoices();
   if (!voices.length) {
     if (voiceAttempts < 10) return;
 
     clearInterval(voiceInterval);
-    const select = ensureEl("speakerVoice");
-    if (select && !select.options.length) {
+    const select = ensureEl<HTMLSelectElement>("speakerVoice");
+    if (!select.options.length) {
       select.options.add(new Option("No voices available", "", false));
     }
     return;
@@ -293,34 +378,38 @@ const voiceInterval = setInterval(function () {
 
   clearInterval(voiceInterval);
 
-  const select = ensureEl("speakerVoice");
+  const select = ensureEl<HTMLSelectElement>("speakerVoice");
   voices.forEach((voice, i) => {
-    select.options.add(new Option(voice.name, i, false));
+    select.options.add(new Option(voice.name, String(i), false));
   });
-  if (stored("speakerVoice")) select.value = stored("speakerVoice");
-  else select.value = voices.findIndex(voice => voice.lang === "en-US");
+  const storedVoice = stored("speakerVoice");
+  if (storedVoice) select.value = storedVoice;
+  else select.value = String(voices.findIndex(voice => voice.lang === "en-US"));
 }, 1000);
 
-function testSpeaker() {
+function testSpeaker(): void {
   const text = `${mapName.value}, ${options.year} ${options.era}`;
   const speaker = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
   if (voices.length) {
-    const voiceId = +ensureEl("speakerVoice").value;
-    speaker.voice = voices[voiceId];
+    const voiceId = +ensureEl<HTMLSelectElement>("speakerVoice").value;
+    speaker.voice = voices[voiceId] ?? null;
   }
   speechSynthesis.speak(speaker);
 }
 
-function generateMapWithSeed() {
-  if (optionsSeed.value === seed) return tip("The current map already has this seed", false, "error");
+function generateMapWithSeed(): void {
+  if (optionsSeed.value === seed) {
+    tip("The current map already has this seed", false, "error");
+    return;
+  }
   regeneratePrompt({ seed: optionsSeed.value });
 }
 
-function showSeedHistoryDialog() {
+function showSeedHistoryDialog(): void {
   const lines = mapHistory.map((h, i) => {
     const created = new Date(h.created).toLocaleTimeString();
-    const button = `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${i})" class="icon-history optionsSeedRestore"></i>`;
+    const button = `<i data-tip="Click to generate a map with this seed" data-seed-history-index="${i}" class="icon-history optionsSeedRestore"></i>`;
     return `<li>Seed: ${h.seed} ${button}. Size: ${h.width}x${h.height}. Template: ${h.template}. Created: ${created}</li>`;
   });
   const messageHtml = /* html */ `<ol style="margin: 0; padding-left: 1.5em">
@@ -331,19 +420,24 @@ function showSeedHistoryDialog() {
 }
 
 // generate map with historical seed
-function restoreSeed(id) {
-  const { seed, width, height, template } = mapHistory[id];
-  ensureEl("optionsSeed").value = seed;
-  ensureEl("mapWidthInput").value = width;
-  ensureEl("mapHeightInput").value = height;
-  ensureEl("templateInput").value = template;
+function restoreSeed(id: number): void {
+  const { seed, width, height, template } = mapHistory[id] as unknown as {
+    seed: string;
+    width: number;
+    height: number;
+    template: string;
+  };
+  optionsSeed.value = seed;
+  mapWidthInput.value = String(width);
+  mapHeightInput.value = String(height);
+  ensureEl<HTMLInputElement>("templateInput").value = template;
 
   if (stored("template")) unlock("template");
 
   regeneratePrompt({ seed });
 }
 
-function copyMapURL() {
+function copyMapURL(): void {
   const locked = document.querySelectorAll("i.icon-lock").length; // check if some options are locked
   const search = `?seed=${optionsSeed.value}&width=${graphWidth}&height=${graphHeight}${
     locked ? "" : "&options=default"
@@ -354,7 +448,7 @@ function copyMapURL() {
       tip("Map URL is copied to clipboard", false, "success", 3000);
       //window.history.pushState({}, null, search);
     })
-    .catch(err => tip("Could not copy URL: " + err, false, "error", 5000));
+    .catch(err => tip(`Could not copy URL: ${err}`, false, "error", 5000));
 }
 
 const cellsDensityMap = {
@@ -373,35 +467,44 @@ const cellsDensityMap = {
   13: 100000
 };
 
-function changeCellsDensity(value) {
-  pointsInput.value = value;
-  const cells = cellsDensityMap[value] || pointsInput.dataset.cells;
-  pointsInput.dataset.cells = cells;
-  pointsOutputFormatted.value = cells / 1000 + "K";
+function changeCellsDensity(value: string | number): void {
+  pointsInput.value = String(value);
+  const cells = getCellsDensity(value) || Number(pointsInput.dataset.cells);
+  pointsInput.dataset.cells = String(cells);
+  pointsOutputFormatted.value = `${cells / 1000}K`;
   pointsOutputFormatted.style.color = getCellsDensityColor(cells);
 }
 
-function getCellsDensityColor(cells) {
+function getCellsDensity(value: string | number): number {
+  return cellsDensityMap[Number(value) as keyof typeof cellsDensityMap] ?? 0;
+}
+
+function getCellsDensityColor(cells: number): string {
   return cells > 50000 ? "#b12117" : cells !== 10000 ? "#dfdf12" : "#053305";
 }
 
-function changeCultureSet() {
-  const max = culturesSet.selectedOptions[0].dataset.max;
+function changeCultureSet(): void {
+  const max = culturesSet.selectedOptions[0]?.dataset.max ?? "30";
   culturesInput.max = culturesOutput.max = max;
   if (+culturesOutput.value > +max) culturesInput.value = culturesOutput.value = max;
 }
 
-function changeEmblemShape(emblemShape) {
-  const image = ensureEl("emblemShapeImage");
-  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape];
+function changeEmblemShape(emblemShape: string): void {
+  const image = ensureEl<SVGPathElement>("emblemShapeImage");
+  const shapePath = window.COArenderer && COArenderer.shieldPaths[emblemShape as keyof typeof COArenderer.shieldPaths];
   shapePath ? image.setAttribute("d", shapePath) : image.removeAttribute("d");
 
-  const specificShape = ["culture", "state", "random"].includes(emblemShape) ? null : emblemShape;
-  if (emblemShape === "random")
-    pack.cultures.filter(c => !c.removed).forEach(c => (c.shield = Cultures.getRandomShield()));
+  const specificShape = ["culture", "state", "random"].includes(emblemShape) ? undefined : emblemShape;
+  if (emblemShape === "random") {
+    pack.cultures
+      .filter(c => !c.removed)
+      .forEach(c => {
+        c.shield = Cultures.getRandomShield();
+      });
+  }
 
-  const rerenderCOA = (id, coa) => {
-    const coaEl = ensureEl(id);
+  const rerenderCOA = (id: string, coa: Parameters<typeof COArenderer.trigger>[1]) => {
+    const coaEl = document.getElementById(id);
     if (!coaEl) return; // not rendered
     coaEl.remove();
     COArenderer.trigger(id, coa);
@@ -409,83 +512,83 @@ function changeEmblemShape(emblemShape) {
 
   pack.states.forEach(state => {
     if (!state.i || state.removed || !state.coa || state.coa.custom) return;
-    const newShield = specificShape || COA.getShield(state.culture, null);
+    const newShield = specificShape || COA.getShield(state.culture, undefined);
     if (newShield === state.coa.shield) return;
     state.coa.shield = newShield;
-    rerenderCOA("stateCOA" + state.i, state.coa);
+    rerenderCOA(`stateCOA${state.i}`, state.coa);
   });
 
   pack.provinces.forEach(province => {
     if (!province.i || province.removed || !province.coa || province.coa.custom) return;
-    const culture = pack.cells.culture[province.center];
+    const culture = pack.cells.culture[province.center ?? 0];
     const newShield = specificShape || COA.getShield(culture, province.state);
     if (newShield === province.coa.shield) return;
     province.coa.shield = newShield;
-    rerenderCOA("provinceCOA" + province.i, province.coa);
+    rerenderCOA(`provinceCOA${province.i}`, province.coa);
   });
 
   pack.burgs.forEach(burg => {
     if (!burg.i || burg.removed || !burg.coa || burg.coa.custom) return;
-    const newShield = specificShape || COA.getShield(burg.culture, burg.state);
+    const newShield = specificShape || COA.getShield(burg.culture ?? 0, burg.state ?? 0);
     if (newShield === burg.coa.shield) return;
     burg.coa.shield = newShield;
-    rerenderCOA("burgCOA" + burg.i, burg.coa);
+    rerenderCOA(`burgCOA${burg.i}`, burg.coa);
   });
 }
 
-function changeStatesNumber(value) {
-  ensureEl("statesNumber").style.color = +value ? null : "#b12117";
-  const capitalSize = Math.max(rn(6 - value / 20), 3);
-  const stateSize = Math.max(rn(18 - value / 6), 4);
+function changeStatesNumber(value: string | number): void {
+  statesNumber.style.color = +value ? "" : "#b12117";
+  const numericValue = Number(value);
+  const capitalSize = Math.max(rn(6 - numericValue / 20), 3);
+  const stateSize = Math.max(rn(18 - numericValue / 6), 4);
   if (style.labels.groups.capital) style.labels.groups.capital["font-size"] = `${capitalSize}%`;
   if (style.labels.groups.states) style.labels.groups.states["font-size"] = `${stateSize}%`;
-  labels.select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  labels.select("[data-group='states']").attr("font-size", `${stateSize}%`);
+  if (window.LayerControls.isLayerOn("toggleLabels")) drawLabels();
 }
 
-function changeUiSize(value) {
-  if (isNaN(value) || value < 0.5) return;
+function changeUiSize(value: number): void {
+  if (Number.isNaN(value) || value < 0.5) return;
 
   const max = getUImaxSize();
   if (value > max) value = max;
 
-  uiSize.value = value;
-  document.getElementsByTagName("body")[0].style.fontSize = rn(value * 10, 2) + "px";
-  ensureEl("options").style.width = value * 300 + "px";
+  uiSize.value = String(value);
+  document.getElementsByTagName("body")[0].style.fontSize = `${rn(value * 10, 2)}px`;
+  ensureEl("options").style.width = `${value * 300}px`;
 }
 
-function getUImaxSize() {
+function getUImaxSize(): number {
   return rn(Math.min(window.innerHeight / 465, window.innerWidth / 302), 1);
 }
 
-function changeTooltipSize(value) {
+function changeTooltipSize(value: string | number): void {
   tooltip.style.fontSize = `calc(${value}px + 0.5vw)`;
 }
 
 const THEME_COLOR = "#997787";
-function restoreDefaultThemeColor() {
+function restoreDefaultThemeColor(): void {
   localStorage.removeItem("themeColor");
   changeDialogsTheme(THEME_COLOR, transparencyInput.value);
 }
 
-function changeThemeHue(hue) {
-  const { s, l } = d3.hsl(themeColorInput.value);
-  const newColor = d3.hsl(+hue, s, l).hex();
+function changeThemeHue(hue: string | number): void {
+  const { s, l } = hsl(themeColorInput.value);
+  const newColor = hsl(+hue, s, l).hex();
   changeDialogsTheme(newColor, transparencyInput.value);
 }
 
 // change color and transparency for modal windows
-function changeDialogsTheme(themeColor, transparency) {
-  transparencyInput.value = transparency;
+function changeDialogsTheme(themeColor: string | null, transparency: string | number): void {
+  transparencyInput.value = String(transparency);
   const alpha = (100 - +transparency) / 100;
   const alphaReduced = Math.min(alpha + 0.3, 1);
 
-  const { h, s, l } = d3.hsl(themeColor || THEME_COLOR);
+  const { h, s, l } = hsl(themeColor || THEME_COLOR);
   themeColorInput.value = themeColor || THEME_COLOR;
-  themeHueInput.value = h;
+  themeHueInput.value = String(h);
 
-  const getRGBA = (hue, saturation, lightness, alpha) => {
-    const color = d3.hsl(hue, saturation, lightness, alpha);
+  const getRGBA = (hue: number, saturation: number, lightness: number, alpha: number): string => {
+    const color = hsl(hue, saturation, lightness, alpha);
     return color.toString();
   };
 
@@ -498,27 +601,28 @@ function changeDialogsTheme(themeColor, transparency) {
     { name: "--dark-solid", h, s, l: l - 0.2, alpha: 1 },
     { name: "--header", h, s: s, l: l - 0.03, alpha: alphaReduced },
     { name: "--header-active", h, s: s, l: l - 0.09, alpha: alphaReduced },
-    { name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alphaReduced },
+    { name: "--bg-disabled", h, s: s - 0.04, l: l + 0.09, alpha: alphaReduced },
     { name: "--bg-dialogs", h: 0, s: 0, l: 0.98, alpha }
   ];
 
   const sx = document.documentElement.style;
   theme.forEach(({ name, value, h, s, l, alpha }) => {
-    if (value !== undefined) sx.setProperty(name, value);
-    else sx.setProperty(name, getRGBA(h, s, l, alpha));
+    if (value !== undefined) sx.setProperty(name, String(value));
+    else if (h !== undefined && s !== undefined && l !== undefined && alpha !== undefined)
+      sx.setProperty(name, getRGBA(h, s, l, alpha));
   });
 }
 
-function loadGoogleTranslate() {
+function loadGoogleTranslate(): void {
   const script = document.createElement("script");
-  script.src = "https://translate.google.com/translate_a/element.js?cb=initGoogleTranslate";
+  script.src = "https://translate.google.com/translate_a/element.js";
   script.onload = () => {
+    initGoogleTranslate();
     ensureEl("loadGoogleTranslateButton").remove();
 
     // replace mapLayers underline <u> with bare text to avoid translation issue
-    document
-      .getElementById("mapLayers")
-      .querySelectorAll("li")
+    ensureEl("mapLayers")
+      .querySelectorAll<HTMLElement>("li")
       .forEach(el => {
         const text = el.innerHTML.replace(/<u>(.+)<\/u>/g, "$1");
         el.innerHTML = text;
@@ -528,107 +632,124 @@ function loadGoogleTranslate() {
   document.head.appendChild(script);
 }
 
-function initGoogleTranslate() {
-  new google.translate.TranslateElement(
-    { pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL },
+function initGoogleTranslate(): void {
+  const translate = (window as typeof window & { google?: GoogleTranslateApi }).google?.translate;
+  if (!translate) return;
+  new translate.TranslateElement(
+    { pageLanguage: "en", layout: translate.TranslateElement.InlineLayout.VERTICAL },
     "google_translate_element"
   );
 }
 
-function resetLanguage() {
-  const languageSelect = document.querySelector("#google_translate_element select");
+function resetLanguage(): void {
+  const languageSelect = document.querySelector<HTMLSelectElement & { handleChange?: (event: Event) => void }>(
+    "#google_translate_element select"
+  );
+  if (!languageSelect) return;
   if (!languageSelect.value) return;
 
   languageSelect.value = "en";
-  languageSelect.handleChange(new Event("change"));
+  languageSelect.handleChange?.(new Event("change"));
 
   // do once again to actually reset the language
   languageSelect.value = "en";
-  languageSelect.handleChange(new Event("change"));
+  languageSelect.handleChange?.(new Event("change"));
 }
 
-function changeZoomExtent(value) {
+function changeZoomExtent(value: string | number): void {
   if (+zoomExtentMin.value > +zoomExtentMax.value) {
     [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
   }
   const min = Math.max(+zoomExtentMin.value, 0.01);
   const max = Math.min(+zoomExtentMax.value, 200);
-  zoomExtentMin.value = min;
-  zoomExtentMax.value = max;
-  zoom.scaleExtent([min, max]);
+  zoomExtentMin.value = String(min);
+  zoomExtentMax.value = String(max);
   const scale = minmax(+value, 0.01, 200);
-  zoom.scaleTo(svg, scale);
+  window.MapZoom.setExtent(min, max, scale);
 }
 
-function restoreDefaultZoomExtent() {
-  zoomExtentMin.value = 1;
-  zoomExtentMax.value = 20;
-  zoom.scaleExtent([1, 20]).scaleTo(svg, 1);
+function restoreDefaultZoomExtent(): void {
+  zoomExtentMin.value = "1";
+  zoomExtentMax.value = "20";
+  window.MapZoom.setExtent(1, 20, 1);
 }
 
 // restore options stored in localStorage
-function applyStoredOptions() {
+function applyStoredOptions(): void {
   if (!stored("mapWidth") || !stored("mapHeight")) {
-    mapWidthInput.value = window.innerWidth;
-    mapHeightInput.value = window.innerHeight;
+    mapWidthInput.value = String(window.innerWidth);
+    mapHeightInput.value = String(window.innerHeight);
   }
 
   const heightmapId = stored("template");
   if (heightmapId) {
     const name = heightmapTemplates[heightmapId]?.name || precreatedHeightmaps[heightmapId]?.name || heightmapId;
-    applyOption(ensureEl("templateInput"), heightmapId, name);
+    applyOption(ensureEl<HTMLInputElement>("templateInput"), heightmapId, name);
   }
 
-  if (stored("distanceUnit")) applyOption(distanceUnitInput, stored("distanceUnit"));
-  if (stored("heightUnit")) applyOption(heightUnit, stored("heightUnit"));
+  const storedDistanceUnit = stored("distanceUnit");
+  const storedHeightUnit = stored("heightUnit");
+  if (storedDistanceUnit) applyOption(distanceUnitInput, storedDistanceUnit);
+  if (storedHeightUnit) applyOption(heightUnit, storedHeightUnit);
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key === "speakerVoice") continue;
+    if (!key || key === "speakerVoice") continue;
 
-    const input = document.getElementById(key + "Input") || document.getElementById(key);
-    const output = document.getElementById(key + "Output");
+    const input = (document.getElementById(`${key}Input`) || document.getElementById(key)) as ValueElement | null;
+    const output = document.getElementById(`${key}Output`) as ValueElement | null;
 
     const value = stored(key);
-    if (input) input.value = value;
-    if (output) output.value = value;
+    if (input && value !== null) input.value = value;
+    if (output && value !== null) output.value = value;
     lock(key);
 
-    if (key === "points") changeCellsDensity(+value);
-    if (key === "distanceScale") distanceScale = +value;
+    if (key === "points" && value !== null) changeCellsDensity(+value);
+    if (key === "distanceScale" && value !== null) distanceScale = +value;
 
     // add saved style presets to options
     if (key.slice(0, 5) === "style") applyOption(stylePreset, key, key.slice(5));
   }
 
-  if (stored("winds")) options.winds = stored("winds").split(",").map(Number);
-  if (stored("temperatureEquator")) options.temperatureEquator = +stored("temperatureEquator");
-  if (stored("temperatureNorthPole")) options.temperatureNorthPole = +stored("temperatureNorthPole");
-  if (stored("temperatureSouthPole")) options.temperatureSouthPole = +stored("temperatureSouthPole");
-  if (stored("mapSize")) options.mapSize = +stored("mapSize");
-  if (stored("latitude")) options.latitude = +stored("latitude");
-  if (stored("longitude")) options.longitude = +stored("longitude");
-  if (stored("prec")) options.prec = +stored("prec");
-  if (stored("military")) options.military = JSON.parse(stored("military"));
+  const readStored = (key: string) => stored(key);
+  const storedWinds = readStored("winds");
+  if (storedWinds) options.winds = storedWinds.split(",").map(Number);
+  for (const key of [
+    "temperatureEquator",
+    "temperatureNorthPole",
+    "temperatureSouthPole",
+    "mapSize",
+    "latitude",
+    "longitude",
+    "prec"
+  ] as const) {
+    const value = readStored(key);
+    if (value) options[key] = +value;
+  }
+  const storedMilitary = readStored("military");
+  if (storedMilitary) options.military = JSON.parse(storedMilitary);
 
-  if (stored("tooltipSize")) changeTooltipSize(stored("tooltipSize"));
-  if (stored("regions")) changeStatesNumber(stored("regions"));
+  const storedTooltipSize = readStored("tooltipSize");
+  const storedRegions = readStored("regions");
+  if (storedTooltipSize) changeTooltipSize(storedTooltipSize);
+  if (storedRegions) changeStatesNumber(storedRegions);
 
-  uiSize.max = uiSize.max = getUImaxSize();
-  if (stored("uiSize")) changeUiSize(+stored("uiSize"));
-  else changeUiSize(minmax(rn(mapWidthInput.value / 1280, 1), 1, 2.5));
+  uiSize.max = String(getUImaxSize());
+  const storedUiSize = readStored("uiSize");
+  if (storedUiSize) changeUiSize(+storedUiSize);
+  else changeUiSize(minmax(rn(+mapWidthInput.value / 1280, 1), 1, 2.5));
 
   // search params overwrite stored and default options
   const params = new URL(window.location.href).searchParams;
-  const width = +params.get("width");
-  const height = +params.get("height");
-  if (width) mapWidthInput.value = width;
-  if (height) mapHeightInput.value = height;
+  const width = Number(params.get("width"));
+  const height = Number(params.get("height"));
+  if (width) mapWidthInput.value = String(width);
+  if (height) mapHeightInput.value = String(height);
 
   // a zero-sized window (hidden or headless tab) or a stored 0 would produce a degenerate grid
   if (!(+mapWidthInput.value > 0) || !(+mapHeightInput.value > 0)) {
-    mapWidthInput.value = window.innerWidth || 1280;
-    mapHeightInput.value = window.innerHeight || 800;
+    mapWidthInput.value = String(window.innerWidth || 1280);
+    mapHeightInput.value = String(window.innerHeight || 800);
   }
 
   const transparency = stored("transparency") || 5;
@@ -639,22 +760,22 @@ function applyStoredOptions() {
 }
 
 // randomize options if randomization is allowed (not locked or queryParam options='default')
-function randomizeOptions() {
+function randomizeOptions(): void {
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
 
   // 'Options' settings
   if (randomize || !stored("points")) changeCellsDensity(4); // reset to default, no need to randomize
   if (randomize || !stored("template")) randomizeHeightmapTemplate();
-  if (randomize || !stored("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
-  if (randomize || !stored("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
+  if (randomize || !stored("statesNumber")) statesNumber.value = String(gauss(18, 5, 2, 30));
+  if (randomize || !stored("provincesRatio")) provincesRatio.value = String(gauss(20, 10, 20, 100));
   if (randomize || !stored("manors")) {
-    manorsInput.value = 1000;
+    manorsInput.value = "1000";
     manorsOutput.value = "auto";
   }
-  if (randomize || !stored("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
-  if (randomize || !stored("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
-  if (randomize || !stored("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
-  if (randomize || !stored("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
+  if (randomize || !stored("religionsNumber")) religionsNumber.value = String(gauss(6, 3, 2, 10));
+  if (randomize || !stored("sizeVariety")) sizeVariety.value = String(gauss(4, 2, 0, 10, 1));
+  if (randomize || !stored("growthRate")) growthRate.value = String(rn(1 + Math.random(), 1));
+  if (randomize || !stored("cultures")) culturesInput.value = culturesOutput.value = String(gauss(12, 3, 5, 30));
   if (randomize || !stored("culturesSet")) randomizeCultureSet();
 
   // 'Configure World' settings
@@ -665,7 +786,10 @@ function randomizeOptions() {
 
   // 'Units Editor' settings
   const US = navigator.language === "en-US";
-  if (randomize || !stored("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
+  if (randomize || !stored("distanceScale")) {
+    distanceScale = gauss(3, 1, 1, 5);
+    distanceScaleInput.value = String(distanceScale);
+  }
   if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
@@ -675,18 +799,18 @@ function randomizeOptions() {
 }
 
 // select heightmap template pseudo-randomly
-function randomizeHeightmapTemplate() {
-  const templates = {};
+function randomizeHeightmapTemplate(): void {
+  const templates: Record<string, number> = {};
   for (const key in heightmapTemplates) {
     templates[key] = heightmapTemplates[key].probability || 0;
   }
   const template = rw(templates);
-  const name = heightmapTemplates[template].name;
-  applyOption(ensureEl("templateInput"), template, name);
+  const name = heightmapTemplates[template]?.name ?? template;
+  applyOption(ensureEl<HTMLInputElement>("templateInput"), template, name);
 }
 
 // select culture set pseudo-randomly
-function randomizeCultureSet() {
+function randomizeCultureSet(): void {
   const sets = {
     world: 10,
     european: 10,
@@ -701,23 +825,14 @@ function randomizeCultureSet() {
   changeCultureSet();
 }
 
-function setRendering(value) {
-  viewbox.attr("shape-rendering", value);
-
-  if (value === "optimizeSpeed") {
-    // block some styles
-    statesHalo.style("display", "none");
-  } else {
-    // remove style block
-    statesHalo.style("display", null);
-    if (pack.cells && statesHalo.selectAll("*").size() === 0) drawStates();
-  }
+function setRendering(value: string): void {
+  getViewportSurface().viewbox.attr("shape-rendering", value);
 }
 
 // generate current year and era name
-function generateEra() {
-  if (!stored("year")) yearInput.value = rand(100, 2000); // current year
-  if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length)) + " Era";
+function generateEra(): void {
+  if (!stored("year")) yearInput.value = String(rand(100, 2000)); // current year
+  if (!stored("era")) eraInput.value = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
   options.year = +yearInput.value;
   options.era = eraInput.value;
   options.eraShort = options.era
@@ -726,37 +841,37 @@ function generateEra() {
     .join(""); // short name for era
 }
 
-function regenerateEra() {
+function regenerateEra(): void {
   unlock("era");
-  options.era = eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length)) + " Era";
+  options.era = eraInput.value = `${Names.getBaseShort(P(0.7) ? 1 : rand(Names.nameBases.length))} Era`;
   options.eraShort = options.era
     .split(" ")
     .map(w => w[0].toUpperCase())
     .join("");
 }
 
-function changeYear() {
+function changeYear(): void {
   if (!yearInput.value) return;
-  if (isNaN(+yearInput.value)) {
+  if (Number.isNaN(+yearInput.value)) {
     tip("Current year should be a number", false, "error");
     return;
   }
   options.year = +yearInput.value;
 }
 
-function changeEra() {
+function changeEra(): void {
   if (!eraInput.value) return;
   lock("era");
   options.era = eraInput.value;
 }
 
-async function openTemplateSelectionDialog() {
+async function openTemplateSelectionDialog(): Promise<void> {
   window.Controllers.HeightmapSelection.open();
 }
 
 // Sticked menu Options listeners
-ensureEl("sticked").addEventListener("click", function (event) {
-  const id = event.target.id;
+ensureEl("sticked").addEventListener("click", event => {
+  const id = (event.target as HTMLElement).id;
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
   else if (id === "exportButton") showExportPane();
@@ -764,9 +879,11 @@ ensureEl("sticked").addEventListener("click", function (event) {
   else if (id === "zoomReset") resetZoom(1000);
 });
 
-function regeneratePrompt(options) {
-  if (customization)
-    return tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+function regeneratePrompt(options?: RegenerateOptions): void {
+  if (customization) {
+    tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+    return;
+  }
   if (!options) {
     window.dispatchEvent(new CustomEvent("new-map:open"));
     return;
@@ -775,12 +892,15 @@ function regeneratePrompt(options) {
   const isBlankCanvas = options.fromSetup && document.body.dataset.newMapMode === "blank";
   const generateSelectedMap = () => {
     if (isBlankCanvas) regenerateBlankMap(options);
-    else regenerateMap(options);
+    else ApplicationController.regenerateMap(options);
   };
 
   const lastGeneratedMap = last(mapHistory);
   const workingTime = lastGeneratedMap ? (Date.now() - lastGeneratedMap.created) / 60000 : Infinity; // minutes
-  if (workingTime < 1) return generateSelectedMap();
+  if (workingTime < 1) {
+    generateSelectedMap();
+    return;
+  }
 
   confirmationDialog({
     confirm: "Generate",
@@ -790,17 +910,17 @@ function regeneratePrompt(options) {
       closeDialogs();
       generateSelectedMap();
     },
-    title: "Generate new map",
+    title: "Generate new map"
   });
 }
 
 let blankMapPending = false;
-function regenerateBlankMap(options) {
+function regenerateBlankMap(options: RegenerateOptions): void {
   if (blankMapPending) return;
   blankMapPending = true;
 
   delete document.body.dataset.newMapMode;
-  const templateInput = ensureEl("templateInput");
+  const templateInput = ensureEl<HTMLInputElement>("templateInput");
   applyOption(templateInput, "loneIsland", heightmapTemplates.loneIsland.name);
   lock("template");
   templateInput.dispatchEvent(new Event("change", { bubbles: true }));
@@ -816,10 +936,10 @@ function regenerateBlankMap(options) {
   }, 60000);
 
   window.addEventListener("map:generated", openBlankEditor, { once: true });
-  regenerateMap(options);
+  ApplicationController.regenerateMap(options);
 }
 
-function showSavePane() {
+function showSavePane(): void {
   const sharableLinkContainer = ensureEl("sharableLinkContainer");
   sharableLinkContainer.style.display = "none";
 
@@ -835,19 +955,21 @@ function showSavePane() {
   });
 }
 
-function copyLinkToClickboard() {
-  const shrableLink = ensureEl("sharableLink");
+function copyLinkToClickboard(): void {
+  const shrableLink = ensureEl<HTMLAnchorElement>("sharableLink");
   const link = shrableLink.getAttribute("href");
+  if (!link) return;
   navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
 }
 
-ensureEl("showLabels").addEventListener("change", function () {
-  options.labels.showAll = Boolean(this.checked);
+ensureEl<HTMLInputElement>("showLabels").addEventListener("change", event => {
+  options.labels.showAll = (event.currentTarget as HTMLInputElement).checked;
+  localStorage.setItem("label-groups", JSON.stringify(options.labels));
   drawLabels();
 });
 
-function showExportPane() {
-  ensureEl("showLabels").checked = options.labels.showAll;
+function showExportPane(): void {
+  ensureEl<HTMLInputElement>("showLabels").checked = options.labels.showAll;
 
   window.showDomDialog({
     actions: [{ label: "Close" }],
@@ -861,11 +983,11 @@ function showExportPane() {
   });
 }
 
-async function exportToJson(type) {
+async function exportToJson(type: "Full" | "GridCells" | "Minimal" | "PackCells"): Promise<void> {
   window.Services.ExportJson.exportToJson(type);
 }
 
-async function showLoadPane() {
+async function showLoadPane(): Promise<void> {
   window.showDomDialog({
     actions: [{ label: "Close" }],
     content: ensureEl("loadMapData"),
@@ -882,7 +1004,7 @@ async function showLoadPane() {
     ensureEl("dropboxConnectButton").style.display = "none";
     ensureEl("loadFromDropboxSelect").style.display = "block";
     const loadFromDropboxButtons = ensureEl("loadFromDropboxButtons");
-    const fileSelect = ensureEl("loadFromDropboxSelect");
+    const fileSelect = ensureEl<HTMLSelectElement>("loadFromDropboxSelect");
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
     const files = await window.Services.Cloud.list();
@@ -896,7 +1018,7 @@ async function showLoadPane() {
     loadFromDropboxButtons.style.display = "block";
     fileSelect.innerHTML = "";
     files.forEach(({ name, updated, size, path }) => {
-      const sizeMB = rn(size / 1024 / 1024, 2) + " MB";
+      const sizeMB = `${rn(size / 1024 / 1024, 2)} MB`;
       const updatedOn = new Date(updated).toLocaleDateString();
       const nameFormatted = `${updatedOn}: ${name} [${sizeMB}]`;
       const option = new Option(nameFormatted, path);
@@ -912,13 +1034,13 @@ async function showLoadPane() {
   ensureEl("loadFromDropboxSelect").style.display = "none";
 }
 
-async function connectToDropbox() {
+async function connectToDropbox(): Promise<void> {
   await window.Services.Cloud.connect();
   if (await window.Services.Cloud.isConnected()) showLoadPane();
 }
 
-function loadURL() {
-  const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+function loadURL(): void {
+  const pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
   const inner = `Provide URL to map file:
     <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map">
     <br><i>Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link</i>`;
@@ -933,8 +1055,11 @@ function loadURL() {
         close: false,
         label: "Load",
         onClick: () => {
-          const value = content.querySelector("#mapURL").value;
-          if (!pattern.test(value)) return tip("Please provide a valid URL", false, "error");
+          const value = content.querySelector<HTMLInputElement>("#mapURL")?.value ?? "";
+          if (!pattern.test(value)) {
+            tip("Please provide a valid URL", false, "error");
+            return;
+          }
           window.Services.Load.loadMapFromURL(value);
           window.destroyDialog(content.id);
         }
@@ -951,20 +1076,24 @@ function loadURL() {
 }
 
 // load map
-ensureEl("mapToLoad").addEventListener("change", function () {
-  const fileToLoad = this.files[0];
-  this.value = "";
+ensureEl<HTMLInputElement>("mapToLoad").addEventListener("change", event => {
+  const input = event.currentTarget as HTMLInputElement;
+  const fileToLoad = input.files?.[0];
+  input.value = "";
+  if (!fileToLoad) return;
   closeDialogs();
   window.Services.Load.uploadMap(fileToLoad);
 });
 
-function openExportToPngTiles() {
+function openExportToPngTiles(): void {
   ensureEl("tileStatus").innerHTML = "";
   closeDialogs();
   updateTilesOptions();
 
-  const inputs = ensureEl("exportToPngTilesScreen").querySelectorAll("input");
-  inputs.forEach(input => input.addEventListener("input", updateTilesOptions));
+  const inputs = ensureEl("exportToPngTilesScreen").querySelectorAll<HTMLInputElement>("input");
+  inputs.forEach(input => {
+    input.addEventListener("input", updateTilesOptions);
+  });
 
   window.showDomDialog({
     actions: [
@@ -974,8 +1103,11 @@ function openExportToPngTiles() {
     content: ensureEl("exportToPngTilesScreen"),
     destroyOnClose: false,
     onClose: () => {
-      inputs.forEach(input => input.removeEventListener("input", updateTilesOptions));
-      debug.selectAll("*").remove();
+      window.Services.ExportMap.cancelPngTilesExport();
+      inputs.forEach(input => {
+        input.removeEventListener("input", updateTilesOptions);
+      });
+      getViewportSurface().debug.selectAll("*").remove();
     },
     placement: "center",
     placementTarget: document.getElementById("map"),
@@ -985,17 +1117,18 @@ function openExportToPngTiles() {
   });
 }
 
-function updateTilesOptions() {
-  if (this?.tagName === "INPUT") {
-    const { nextElementSibling: next, previousElementSibling: prev } = this;
-    if (next?.tagName === "INPUT") next.value = this.value;
-    if (prev?.tagName === "INPUT") prev.value = this.value;
+function updateTilesOptions(event?: Event): void {
+  const input = event?.currentTarget;
+  if (input instanceof HTMLInputElement) {
+    const { nextElementSibling: next, previousElementSibling: prev } = input;
+    if (next instanceof HTMLInputElement) next.value = input.value;
+    if (prev instanceof HTMLInputElement) prev.value = input.value;
   }
 
   const tileSize = ensureEl("tileSize");
-  const tilesX = +ensureEl("tileColsOutput").value || 2;
-  const tilesY = +ensureEl("tileRowsOutput").value || 2;
-  const scale = +ensureEl("tileScaleOutput").value || 1;
+  const tilesX = +ensureEl<HTMLInputElement>("tileColsOutput").value || 2;
+  const tilesY = +ensureEl<HTMLInputElement>("tileRowsOutput").value || 2;
+  const scale = +ensureEl<HTMLInputElement>("tileScaleOutput").value || 1;
 
   // calculate size
   const sizeX = graphWidth * scale * tilesX;
@@ -1006,13 +1139,13 @@ function updateTilesOptions() {
   tileSize.style.color = totalSize > 1e9 ? "#d00b0b" : totalSize > 1e8 ? "#9e6409" : "#1a941a";
 
   // draw tiles
-  const rects = [];
-  const labels = [];
+  const rects: string[] = [];
+  const labels: string[] = [];
   const tileW = (graphWidth / tilesX) | 0;
   const tileH = (graphHeight / tilesY) | 0;
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  function getRowLabel(row) {
+  function getRowLabel(row: number): string {
     const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
     const last = alphabet[row % alphabet.length];
     return first + last;
@@ -1025,7 +1158,7 @@ function updateTilesOptions() {
     }
   }
 
-  debug.html(`
+  getViewportSurface().debug.html(`
     <g fill='none' stroke='#000'>${rects.join("")}</g>
     <g fill='#000' stroke='none' text-anchor='middle' dominant-baseline='central' font-size='18px'>${labels.join(
       ""
@@ -1035,10 +1168,35 @@ function updateTilesOptions() {
 
 // View mode
 viewMode.addEventListener("click", changeViewMode);
-function changeViewMode(event) {
-  const button = event.target;
-  if (button.tagName !== "BUTTON") return;
+function changeViewMode(event: Event): void {
+  const button = event.target as HTMLButtonElement;
+  if (!(button instanceof HTMLButtonElement)) return;
   const pressed = button.classList.contains("pressed");
   if (!pressed && button.id !== "viewStandard") window.Controllers.View3d.open(button.id);
   else window.Controllers.View3d.enterStandard();
 }
+
+const runtime: OptionsControllerApi = {
+  applyGraphSize,
+  applyStoredOptions,
+  changeCellsDensity,
+  changeViewMode,
+  connectToDropbox,
+  copyLinkToClickboard,
+  exportToJson,
+  fitMapToScreen,
+  getCellsDensityColor,
+  getCellsDensity,
+  hide: hideOptions,
+  loadURL,
+  openExportToPngTiles,
+  randomize: randomizeOptions,
+  regenerate: regeneratePrompt,
+  restoreSeed,
+  show: showOptions,
+  showSupporters,
+  toggle: toggleOptions
+};
+
+bindOptionsController(runtime);
+window.OptionsController = OptionsController;

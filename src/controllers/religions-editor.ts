@@ -119,11 +119,11 @@ const religionsTable = initEditorTable<Religion>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
 
   renderDialog();
   document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editReligionCenter as EventListener);
@@ -211,7 +211,7 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  ensureEl("religionsEditStyle").addEventListener("click", () => editStyle("relig"));
+  ensureEl("religionsEditStyle").addEventListener("click", () => window.StyleEditor.edit("relig"));
   ensureEl("religionsLegend").addEventListener("click", toggleLegend);
   ensureEl("religionsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("religionsHeirarchy").addEventListener("click", showHierarchy);
@@ -494,7 +494,7 @@ const religionHighlightOn = debounce((event: any) => {
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.add("active");
 
-  if (!layerIsOn("toggleReligions")) return;
+  if (!window.LayerControls.isLayerOn("toggleReligions")) return;
   if (customization) return;
 
   updateReligionHighlight(religionId);
@@ -515,7 +515,7 @@ function religionChangeColor(this: HTMLElement): void {
   const callback = (newFill: string) => {
     (this as any).fill = newFill;
     pack.religions[religionId].color = newFill;
-    drawReligions();
+    window.LayerControls.redrawLayer("toggleReligions");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -649,7 +649,7 @@ function changePopulation(this: HTMLElement): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
     refreshReligionsEditor();
   }
 }
@@ -695,7 +695,7 @@ function removeReligion(religionId: number): void {
       if (!r.origins.length) r.origins = [0];
     });
 
-  drawReligions();
+  window.LayerControls.redrawLayer("toggleReligions");
   refreshReligionsEditor();
 }
 
@@ -823,7 +823,7 @@ function toggleExtinct(): void {
 }
 
 function enterReligionsManualAssignent(): void {
-  if (!layerIsOn("toggleReligions")) toggleReligions();
+  if (!window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
   customization = 7;
   religionsAssignment = new TerritoryAssignmentSession("religions", pack.cells.religion);
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
@@ -902,7 +902,7 @@ function changeReligionForSelection(selection: number[]): void {
   const preventOverwrite = (document.getElementById("religionsManuallyProtect") as HTMLInputElement | null)?.checked;
   const cells = preventOverwrite ? selection.filter(cellId => !religionsAssignment?.get(cellId)) : selection;
   const mutation = religionsAssignment?.paint(cells, selectedReligionId);
-  if (mutation?.changed) drawReligions();
+  if (mutation?.changed) window.LayerControls.redrawLayer("toggleReligions");
 }
 
 function moveReligionBrush(this: SVGElement, event: MouseEvent): void {
@@ -917,7 +917,7 @@ function applyReligionsManualAssignent(): void {
   const mutation = religionsAssignment?.commit();
   religionsAssignment = null;
   if (mutation?.changed) {
-    drawReligions();
+    window.LayerControls.redrawLayer("toggleReligions");
     refreshReligionsEditor();
     drawReligionCenters();
   }
@@ -929,7 +929,7 @@ function exitReligionsManualAssignment(close?: string): void {
   if (religionsAssignment) {
     religionsAssignment.cancel();
     religionsAssignment = null;
-    drawReligions();
+    window.LayerControls.redrawLayer("toggleReligions");
   }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
@@ -1002,7 +1002,7 @@ function addReligion(this: SVGElement, event: MouseEvent): void {
   if (event.shiftKey === false) exitAddReligionMode();
   Religions.add(center);
 
-  drawReligions();
+  window.LayerControls.redrawLayer("toggleReligions");
   refreshReligionsEditor();
   drawReligionCenters();
 }
@@ -1083,7 +1083,7 @@ function recalculateReligions(must?: boolean): void {
 
   Religions.recalculate();
 
-  drawReligions();
+  window.LayerControls.redrawLayer("toggleReligions");
   refreshReligionsEditor();
   drawReligionCenters();
 }

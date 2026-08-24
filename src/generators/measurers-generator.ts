@@ -3,14 +3,32 @@ import type { Point } from "./voronoi";
 export type MeasurerType = "Ruler" | "Opisometer" | "RouteOpisometer" | "Planimeter";
 
 export interface Measurer {
+  i?: number;
   type: MeasurerType;
   points: Point[];
 }
 
 function create(type: MeasurerType, points: Point[]): Measurer {
-  const measurer: Measurer = { type, points };
+  ensureMeasurerIds(pack.measurers);
+  const measurer: Measurer = { i: getNextMeasurerId(pack.measurers), type, points };
   pack.measurers.push(measurer);
   return measurer;
+}
+
+export function ensureMeasurerIds(measurers: Measurer[]): void {
+  const used = new Set(measurers.flatMap(measurer => (measurer.i === undefined ? [] : [measurer.i])));
+  let next = used.size ? Math.max(...used) + 1 : 0;
+  for (const measurer of measurers) {
+    if (measurer.i !== undefined) continue;
+    while (used.has(next)) next++;
+    measurer.i = next;
+    used.add(next++);
+  }
+}
+
+export function getNextMeasurerId(measurers: Measurer[]): number {
+  const ids = measurers.flatMap(measurer => (measurer.i === undefined ? [] : [measurer.i]));
+  return ids.length ? Math.max(...ids) + 1 : 0;
 }
 
 function remove(measurer: Measurer): void {

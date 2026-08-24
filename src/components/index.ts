@@ -7,7 +7,12 @@ import "./zoom";
 import "./viewbox-events";
 import "./tools";
 import "./hotkeys";
+import "./options/options-runtime";
 import { destroyDialog, updateDialog } from "./dialog/dialog-helpers";
+import { initializeLayerControlsRuntime } from "./layers/layer-controls-runtime";
+import { initializeMapStyleControls } from "./style/map-style-controls";
+import "./style/style-editor-runtime";
+import "./style/style-presets-runtime";
 import "./dialog/sorting";
 import { enableVerticalSortable } from "./dialog/vertical-sortable";
 import { enableElementDragging } from "./element-dragging";
@@ -24,6 +29,8 @@ Object.assign(window, {
     import("./ui/message-dialog").then(({ showMessageDialog }) => showMessageDialog(options)),
   updateDialog
 });
+initializeLayerControlsRuntime();
+initializeMapStyleControls();
 
 // Keep React and the workspace UI out of the map generation startup path.
 const loadWorkspace = () => void import("./workspace-sidebar");

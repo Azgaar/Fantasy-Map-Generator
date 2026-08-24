@@ -12,6 +12,7 @@ export type MapDomainKind =
   | "burg"
   | "cell"
   | "coastline"
+  | "compass"
   | "culture"
   | "emblem"
   | "good"
@@ -48,5 +49,6 @@ export interface MapRenderer {
   render(world: MapRenderWorld, style: MapStyle, invalidation: RenderInvalidationBatch): Promise<void>;
   resize(viewport: ViewportSize): void;
   setCamera(camera: MapCamera): void;
+  setLayerOrder(order: readonly MapLayerId[]): void;
   setLayerVisibility(layer: MapLayerId, visible: boolean): void;
 }

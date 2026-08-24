@@ -84,7 +84,9 @@ function prepareMapData(): string {
   cloneEl.setAttribute("width", String(graphWidth));
   cloneEl.setAttribute("height", String(graphHeight));
   cloneEl.querySelector("#viewbox")?.removeAttribute("transform");
-  cloneEl.querySelector("#labels")?.setAttribute("data-layer-active", String(layerIsOn("toggleLabels")));
+  cloneEl
+    .querySelector("#labels")
+    ?.setAttribute("data-layer-active", String(window.LayerControls.isLayerOn("toggleLabels")));
   cloneEl.querySelector("#mapInteractionOverlay")?.remove();
 
   // relief icons are stored in pack.relief, the layer holds only the currently visible ones
@@ -118,7 +120,7 @@ function prepareMapData(): string {
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
-  capturePixiLayerVisibility(style, controlId => layerIsOn(controlId));
+  capturePixiLayerVisibility(style, controlId => window.LayerControls.isLayerOn(controlId));
   const styleData = JSON.stringify(style);
 
   // store custom good icons

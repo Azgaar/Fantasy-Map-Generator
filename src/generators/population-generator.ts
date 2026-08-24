@@ -1,7 +1,8 @@
+import { ApplicationController } from "@/application/application-controller";
 import { gauss, rn } from "@/utils";
 
 function regenerate(): void {
-  rankCells();
+  ApplicationController.rankCells();
 
   pack.burgs.forEach(burg => {
     if (!burg.i || burg.removed || burg.lock) return;

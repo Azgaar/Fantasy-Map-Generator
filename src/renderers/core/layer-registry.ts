@@ -115,3 +115,20 @@ export function validateLayerRegistry(registry: readonly MapLayerDefinition[]): 
 }
 
 validateLayerRegistry(MAP_LAYER_REGISTRY);
+
+export function resolveMapLayerOrder(controlOrder: readonly string[]): MapLayerId[] {
+  const layerByControl = new Map(
+    MAP_LAYER_REGISTRY.flatMap(layer => (layer.controlId ? [[layer.controlId, layer.id] as const] : []))
+  );
+  const requested = controlOrder.flatMap(controlId => {
+    const layer = layerByControl.get(controlId);
+    return layer ? [layer] : [];
+  });
+  const requestedSet = new Set(requested);
+  const controlledOrder = [
+    ...requested,
+    ...MAP_LAYER_REGISTRY.filter(layer => layer.controlId && !requestedSet.has(layer.id)).map(layer => layer.id)
+  ];
+  let controlledIndex = 0;
+  return MAP_LAYER_REGISTRY.map(layer => (layer.controlId ? controlledOrder[controlledIndex++] : layer.id));
+}

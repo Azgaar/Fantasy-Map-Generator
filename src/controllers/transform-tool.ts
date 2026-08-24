@@ -1,4 +1,6 @@
+import { ApplicationController } from "@/application/application-controller";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { OptionsController } from "@/components/options/options-controller";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Resample } from "@/generators/resample";
 import { ensureEl, rn } from "../utils";
@@ -26,7 +28,7 @@ function renderDialog(): void {
   destroyDialog("transformTool");
 
   const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  const cells = cellsDensityMap[+pointsValue];
+  const cells = OptionsController.getCellsDensity(pointsValue);
 
   const html = /* html */ `<div id="transformTool" class="dialog">
     <div style="padding-top: 0.5em; width: 40em; font-weight: bold">
@@ -47,7 +49,7 @@ function renderDialog(): void {
       <div>Points number</div>
       <div>
         <input id="transformPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
-        <output id="transformPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
+        <output id="transformPointsFormatted" style="color: ${OptionsController.getCellsDensityColor(cells)}">${cells / 1000}K</output>
       </div>
       <div>Shift</div>
       <div>
@@ -104,26 +106,25 @@ async function loadPreview(): Promise<void> {
   ensureEl("transformPreview").style.height = `${height}px`;
 
   const options = { noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true };
-  const url = await window.Services.ExportMap.getMapURL("png", options);
   const SCALE = 4;
-
-  const img = new Image();
-  img.src = url;
-  img.onload = () => {
-    const $canvas = ensureEl<HTMLCanvasElement>("transformPreviewCanvas");
-    $canvas.style.width = `${width}px`;
-    $canvas.style.height = `${height}px`;
-    $canvas.width = width * SCALE;
-    $canvas.height = height * SCALE;
-    $canvas.getContext("2d")?.drawImage(img, 0, 0, width * SCALE, height * SCALE);
-  };
+  const raster = await window.Services.ExportMap.renderFullMapRaster(options, {
+    height: height * SCALE,
+    width: width * SCALE
+  });
+  const $canvas = ensureEl<HTMLCanvasElement>("transformPreviewCanvas");
+  $canvas.style.width = `${width}px`;
+  $canvas.style.height = `${height}px`;
+  $canvas.width = width * SCALE;
+  $canvas.height = height * SCALE;
+  $canvas.getContext("2d")?.drawImage(raster, 0, 0);
+  raster.remove();
 }
 
 function handlePointsInput(e: Event): void {
-  const cells = cellsDensityMap[+(e.target as HTMLInputElement).value];
+  const cells = OptionsController.getCellsDensity((e.target as HTMLInputElement).value);
   const output = ensureEl<HTMLOutputElement>("transformPointsFormatted");
   output.value = `${cells / 1000}K`;
-  output.style.color = getCellsDensityColor(cells);
+  output.style.color = OptionsController.getCellsDensityColor(cells);
 }
 
 function handleInput(): void {
@@ -187,17 +188,17 @@ function transformMap(): void {
 
   const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
   const globalPointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  if (transformPointsValue !== globalPointsValue) changeCellsDensity(transformPointsValue);
+  if (transformPointsValue !== globalPointsValue) OptionsController.changeCellsDensity(transformPointsValue);
 
   const [projection, inverse] = getProjection();
 
-  applyGraphSize();
-  fitMapToScreen();
+  OptionsController.applyGraphSize();
+  OptionsController.fitMapToScreen();
   resetZoom(0);
-  undraw();
+  ApplicationController.undraw();
   Resample.process({ projection, inverse, scale: 1 });
 
-  drawLayers();
+  window.LayerControls.drawActiveLayers();
 
   INFO && console.groupEnd();
 }

@@ -22,8 +22,8 @@ function toggle(): void {
   );
   document.getElementById("addNewBurg")?.classList.add("pressed");
 
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleBurgIcons")) window.LayerControls.toggleLayer("toggleBurgIcons");
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 }
 
 function addOnClick(event: MouseEvent): void {

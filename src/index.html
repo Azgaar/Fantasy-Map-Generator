@@ -349,7 +349,6 @@
           data-tip="Click to show the Menu"
           data-shortcut="Tab"
           class="options glow"
-          onclick="showOptions(event)"
         >
           ►
         </button>
@@ -357,7 +356,6 @@
           id="regenerate"
           data-tip="Click to generate a new map"
           data-shortcut="F2"
-          onclick="regeneratePrompt()"
           class="options"
           style="display: none"
         >
@@ -373,7 +371,6 @@
             data-tip="Close the current panel"
             data-shortcut="Tab or Esc"
             class="options legacy-workspace-control"
-            onclick="hideOptions(event)"
             aria-label="Close panel"
           >
             ×
@@ -390,14 +387,12 @@
             data-tip="Click to save displayed layers as a new preset"
             class="icon-plus sideButton"
             style="display: none"
-            onclick="savePreset()"
           ></button>
           <button
             id="removePresetButton"
             data-tip="Click to remove current custom preset"
             class="icon-minus sideButton"
             style="display: none"
-            onclick="removePreset()"
           ></button>
           <p>Displayed layers</p>
           <label id="layersSearch" for="layersSearchInput">
@@ -413,7 +408,6 @@
               id="toggleTexture"
               data-tip="Texture overlay: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="X"
-              onclick="toggleTexture(event)"
             >
               Te<u>x</u>ture
             </li>
@@ -421,7 +415,6 @@
               id="toggleHeight"
               data-tip="Heightmap: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="H"
-              onclick="toggleHeight(event)"
             >
               <u>H</u>eightmap
             </li>
@@ -429,7 +422,6 @@
               id="toggleLakes"
               data-tip="Lakes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Q"
-              onclick="toggleLakes(event)"
             >
               Lakes
             </li>
@@ -437,7 +429,6 @@
               id="toggleBiomes"
               data-tip="Biomes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="B"
-              onclick="toggleBiomes(event)"
             >
               <u>B</u>iomes
             </li>
@@ -445,7 +436,6 @@
               id="toggleCells"
               data-tip="Cells structure: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="E"
-              onclick="toggleCells(event)"
             >
               C<u>e</u>lls
             </li>
@@ -453,7 +443,6 @@
               id="toggleGrid"
               data-tip="Grid: click to toggle, drag to raise or lower. Ctrl + click to edit layer style and select type"
               data-shortcut="; (semicolon)"
-              onclick="toggleGrid(event)"
             >
               Grid
             </li>
@@ -461,7 +450,6 @@
               id="toggleCoordinates"
               data-tip="Coordinate grid: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="O"
-              onclick="toggleCoordinates(event)"
             >
               C<u>o</u>ordinates
             </li>
@@ -469,7 +457,6 @@
               id="toggleCompass"
               data-tip="Wind (Compass) Rose: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="W"
-              onclick="toggleCompass(event)"
             >
               <u>W</u>ind Rose
             </li>
@@ -477,7 +464,6 @@
               id="toggleRivers"
               data-tip="Rivers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="V"
-              onclick="toggleRivers(event)"
             >
               Ri<u>v</u>ers
             </li>
@@ -485,7 +471,6 @@
               id="toggleRelief"
               data-tip="Relief and biome icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="F"
-              onclick="toggleRelief(event)"
             >
               Relie<u>f</u>
             </li>
@@ -493,7 +478,6 @@
               id="toggleReligions"
               data-tip="Religions: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="R"
-              onclick="toggleReligions(event)"
             >
               <u>R</u>eligions
             </li>
@@ -501,7 +485,6 @@
               id="toggleCultures"
               data-tip="Cultures: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="C"
-              onclick="toggleCultures(event)"
             >
               <u>C</u>ultures
             </li>
@@ -509,7 +492,6 @@
               id="toggleStates"
               data-tip="States: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="S"
-              onclick="toggleStates(event)"
             >
               <u>S</u>tates
             </li>
@@ -517,7 +499,6 @@
               id="toggleProvinces"
               data-tip="Provinces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="P"
-              onclick="toggleProvinces(event)"
             >
               <u>P</u>rovinces
             </li>
@@ -525,7 +506,6 @@
               id="toggleZones"
               data-tip="Zones: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Z"
-              onclick="toggleZones(event)"
             >
               <u>Z</u>ones
             </li>
@@ -533,7 +513,6 @@
               id="toggleBorders"
               data-tip="State borders: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="D"
-              onclick="toggleBorders(event)"
             >
               Bor<u>d</u>ers
             </li>
@@ -541,7 +520,6 @@
               id="toggleRoutes"
               data-tip="Trade routes: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="U"
-              onclick="toggleRoutes(event)"
             >
               Ro<u>u</u>tes
             </li>
@@ -549,7 +527,6 @@
               id="toggleTemperature"
               data-tip="Temperature map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="T"
-              onclick="toggleTemperature(event)"
             >
               <u>T</u>emperature
             </li>
@@ -557,7 +534,6 @@
               id="toggleIce"
               data-tip="Icebergs and glaciers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="J"
-              onclick="toggleIce(event)"
             >
               Ice
             </li>
@@ -566,7 +542,6 @@
               data-tip="Goods and Production: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               class="buttonoff"
               data-shortcut="G"
-              onclick="toggleGoods(event)"
             >
               <u>G</u>oods
             </li>
@@ -574,7 +549,6 @@
               id="toggleMarketsLayer"
               data-tip="Markets: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               class="buttonoff"
-              onclick="toggleMarketsLayer(event)"
             >
               Markets
             </li>
@@ -582,7 +556,6 @@
               id="toggleTrade"
               data-tip="Trade: animated trade deal flows. Click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="` (backtick)"
-              onclick="toggleTrade(event)"
               class="buttonoff"
             >
               Trade
@@ -590,14 +563,12 @@
             <li id="togglePrecipitation"
               data-tip="Precipitation map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="A"
-              onclick="togglePrecipitation(event)"
             >
               Precipit<u>a</u>tion
             </li>
             <li id="togglePopulation"
               data-tip="Population map: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="N"
-              onclick="togglePopulation(event)"
             >
               Populatio<u>n</u>
             </li>
@@ -605,7 +576,6 @@
               id="toggleEmblems"
               data-tip="Emblems: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="Y"
-              onclick="toggleEmblems(event)"
             >
               Emblems
             </li>
@@ -613,7 +583,6 @@
               id="toggleBurgIcons"
               data-tip="Burg icons: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="I"
-              onclick="toggleBurgIcons(event)"
             >
               <u>I</u>cons
             </li>
@@ -621,7 +590,6 @@
               id="toggleLabels"
               data-tip="Labels: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="L"
-              onclick="toggleLabels(event)"
             >
               <u>L</u>abels
             </li>
@@ -629,7 +597,6 @@
               id="toggleMilitary"
               data-tip="Military forces: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="M"
-              onclick="toggleMilitary(event)"
             >
               <u>M</u>ilitary
             </li>
@@ -637,7 +604,6 @@
               id="toggleMarkers"
               data-tip="Markers: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style"
               data-shortcut="K"
-              onclick="toggleMarkers(event)"
             >
               Mar<u>k</u>ers
             </li>
@@ -645,7 +611,6 @@
               id="toggleRulers"
               data-tip="Rulers: click to toggle, drag to move, click on label to delete. Ctrl + click to edit layer style"
               data-shortcut="= (equal sign)"
-              onclick="toggleRulers(event)"
             >
               Rulers
             </li>
@@ -653,7 +618,6 @@
               id="toggleScaleBar"
               data-tip="Scale Bar: click to toggle. Ctrl + click to edit style"
               data-shortcut="/ (slash sign)"
-              onclick="toggleScaleBar(event)"
               class="solid"
             >
               Scale Bar
@@ -662,7 +626,6 @@
               id="toggleVignette"
               data-tip="Vignette (border fading): click to toggle. Ctrl + click to edit style"
               data-shortcut="[ (left square bracket)"
-              onclick="toggleVignette(event)"
               class="solid"
             >
               Vignette
@@ -694,7 +657,6 @@
           <select
             data-tip="Select a style preset"
             id="stylePreset"
-            onchange="requestStylePresetChange(this.value)"
             style="width: 45%; text-transform: capitalize"
           ></select>
           <button
@@ -702,14 +664,12 @@
             data-tip="Click to save current style as a new preset"
             class="icon-plus sideButton"
             style="display: inline-block"
-            onclick="addStylePreset()"
           ></button>
           <button
             id="removeStyleButton"
             data-tip="Click to remove current custom style preset"
             class="icon-minus sideButton"
             style="display: none"
-            onclick="requestRemoveStylePreset()"
           ></button>
           <p data-tip="Select an element to edit its style" style="display: inline-block">Select element:</p>
           <select
@@ -909,9 +869,9 @@
                     <option value="./images/textures/spain-small.jpg">Spain small</option>
                   </select>
                   <button
+                    id="styleTextureUrlButton"
                     data-tip="Click and provide a URL to image to be set as a texture"
                     class="icon-plus sideButton"
-                    onclick="textureProvideURL()"
                   ></button>
                 </td>
               </tr>
@@ -1725,7 +1685,6 @@
                 id="generateMapFromSetup"
                 type="button"
                 data-tip="Generate a new map from the selected world and settings"
-                onclick="regeneratePrompt({fromSetup: true})"
               >
                 Generate Map
               </button>
@@ -2307,7 +2266,7 @@
           </div>
           <p>
             Special thanks to
-            <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!
+            <a id="showSupporters" data-tip="Click to see list of supporters">all supporters</a> on Patreon!
           </p>
           <div style="display: flex; justify-content: center; padding: 0.8em 0.4em 0.4em; font-family: cursive">
             <a href="https://u24.gov.ua/" style="width: 80%" data-tip="Support Ukraine" target="_blank">
@@ -2377,7 +2336,7 @@
       </div>
     </div>
     <div id="mapPreviewRoot">
-      <select data-tip="Choose how the map is presented" id="layersPreset" onchange="handleLayersPresetChange(this.value)">
+      <select data-tip="Choose how the map is presented" id="layersPreset">
         <option value="political" selected>Political map</option>
         <option value="cultural">Cultural map</option>
         <option value="religions">Religions map</option>
@@ -2591,12 +2550,6 @@
       <div id="exportMapData" style="display: none" class="dialog">
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
-          <button
-            onclick="window.Services.ExportMap.exportToSvg()"
-            data-tip="Download the map as vector image (open directly in browser or Inkscape)"
-          >
-            .svg
-          </button>
           <button onclick="window.Services.ExportMap.exportToPng()" data-tip="Download visible part of the map as .png (lossless compressed)">
             .png
           </button>
@@ -2607,7 +2560,7 @@
             .jpeg
           </button>
           <button
-            onclick="openExportToPngTiles()"
+            id="openExportToPngTiles"
             data-tip="Split map into smaller png tiles and download as zip archive"
           >
             tiles
@@ -2617,11 +2570,6 @@
               id="showLabels"
               class="checkbox"
               type="checkbox"
-              onchange="
-                options.labels.showAll = this.checked;
-                localStorage.setItem('label-groups', JSON.stringify(options.labels));
-                invokeActiveZooming();
-              "
             />
             <label for="showLabels" class="checkbox-label">Show all labels</label>
           </span>
@@ -2658,12 +2606,12 @@
         </p>
         <div style="margin: 1em 0 0.3em; font-weight: bold">Export To JSON</div>
         <div>
-          <button onclick="exportToJson('Full')" data-tip="Download full data in JSON">full</button>
-          <button onclick="exportToJson('Minimal')" data-tip="Download minimal data in JSON">minimal</button>
-          <button onclick="exportToJson('PackCells')" data-tip="Download map metadata and pack cells data in JSON">
+          <button data-export-json="Full" data-tip="Download full data in JSON">full</button>
+          <button data-export-json="Minimal" data-tip="Download minimal data in JSON">minimal</button>
+          <button data-export-json="PackCells" data-tip="Download map metadata and pack cells data in JSON">
             pack cells
           </button>
-          <button onclick="exportToJson('GridCells')" data-tip="Download map metadata and grid cells data in JSON">
+          <button data-export-json="GridCells" data-tip="Download map metadata and grid cells data in JSON">
             grid cells
           </button>
         </div>
@@ -2699,7 +2647,7 @@
             machine
           </button>
           <button
-            onclick="loadURL()"
+            id="loadMapFromUrl"
             data-tip="Load map file (.map or .gz) file from URL. Note that the server should allow CORS"
           >
             URL
@@ -2712,7 +2660,6 @@
             Or load from your Dropbox account
             <button
               id="dropboxConnectButton"
-              onclick="connectToDropbox()"
               data-tip="Connect your Dropbox account to be able to load maps from it"
             >
               Connect
@@ -2731,7 +2678,7 @@
           <div style="margin-top: 0.3em">
             <div id="sharableLinkContainer" style="display: none">
               <a id="sharableLink" target="_blank"></a>
-              <i data-tip="Copy link to the clipboard" onclick="copyLinkToClickboard()" class="icon-clone pointer"></i>
+              <i id="copySharableLink" data-tip="Copy link to the clipboard" class="icon-clone pointer"></i>
             </div>
           </div>
         </div>
@@ -5323,7 +5270,6 @@
         <g id="trade-markers"></g>
       </defs>
     </svg>
-    <script src="libs/d3.min.js"></script>
     <script src="libs/flatqueue.js"></script>
     <script src="libs/indexedDB.js?v=1.99.00"></script>
     <script type="module" src="components/index.ts"></script>
@@ -5338,11 +5284,7 @@
     <script type="module" src="services/index.ts"></script>
     <script defer src="libs/alea.min.js?v1.105.0"></script>
     <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="modules/ui/layers.js?v=1.143.2"></script>
-    <script defer src="modules/ui/style-presets.js?v=1.142.0"></script>
-    <script defer src="modules/ui/options.js?v=1.143.2"></script>
-    <script defer src="main.js?v=1.143.2"></script>
-    <script defer src="modules/ui/style.js?v=1.142.0"></script>
+    <script type="module" src="application/main-runtime.ts"></script>
     <script defer src="libs/rgbquant.min.js"></script>
   </body>
 </html>

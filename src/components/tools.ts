@@ -109,18 +109,18 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  if (layerIsOn("toggleRoutes")) drawRoutes();
+  if (window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.redrawLayer("toggleRoutes");
 }
 
 function regenerateRivers(): void {
   Rivers.regenerate();
-  if (layerIsOn("toggleRivers")) drawRivers();
+  if (window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.redrawLayer("toggleRivers");
 }
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
 }
 
 function regenerateStates(): void {
@@ -129,14 +129,14 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   unfog();
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   drawLabels();
-  if (layerIsOn("toggleBurgIcons")) invalidateBurgSymbols();
-  if (layerIsOn("toggleMilitary")) drawMilitary();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleEmblems")) {
+  if (window.LayerControls.isLayerOn("toggleBurgIcons")) invalidateBurgSymbols();
+  if (window.LayerControls.isLayerOn("toggleMilitary")) drawMilitary();
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleEmblems")) {
     clearEmblems(["state", "province"]);
     drawEmblems();
   }
@@ -145,10 +145,10 @@ function regenerateStates(): void {
 function regenerateProvinces(): void {
   Provinces.regenerate();
   unfog();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   drawLabels();
-  if (layerIsOn("toggleEmblems")) {
+  if (window.LayerControls.isLayerOn("toggleEmblems")) {
     clearEmblems(["province"]);
     drawEmblems();
   }
@@ -156,12 +156,12 @@ function regenerateProvinces(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  if (layerIsOn("toggleBurgIcons")) invalidateBurgSymbols();
+  if (window.LayerControls.isLayerOn("toggleBurgIcons")) invalidateBurgSymbols();
   drawLabels();
-  if (layerIsOn("toggleRoutes")) drawRoutes();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleEmblems")) {
+  if (window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.redrawLayer("toggleRoutes");
+  if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleEmblems")) {
     clearEmblems(["burg"]);
     drawEmblems();
   }
@@ -169,69 +169,69 @@ function regenerateBurgs(): void {
 
 function regenerateGoods(): void {
   Goods.regenerate();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
 }
 
 function regenerateMarkets(): void {
   Markets.regenerate();
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+  if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
 }
 
 function regenerateEconomy(): void {
   Production.regenerateEconomy();
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+  if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
 }
 
 function regenerateProduction(): void {
   Production.regenerate();
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
 }
 
 function regenerateEmblems(): void {
   COA.regenerate();
-  if (!layerIsOn("toggleEmblems")) return;
+  if (!window.LayerControls.isLayerOn("toggleEmblems")) return;
   clearEmblems(["state", "province", "burg"]);
   drawEmblems();
 }
 
 function regenerateReligions(): void {
   Religions.regenerate();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.redrawLayer("toggleReligions");
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
 }
 
 function regenerateCultures(): void {
   Cultures.regenerate();
-  if (layerIsOn("toggleCultures")) drawCultures();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.redrawLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
 }
 
 function regenerateMilitary(): void {
   Military.regenerate();
-  if (layerIsOn("toggleMilitary")) drawMilitary();
+  if (window.LayerControls.isLayerOn("toggleMilitary")) drawMilitary();
 }
 
 function regenerateIce(): void {
   Ice.regenerate();
-  if (layerIsOn("toggleIce")) drawIce();
+  if (window.LayerControls.isLayerOn("toggleIce")) drawIce();
 }
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
+  if (window.LayerControls.isLayerOn("toggleMarkers")) invalidateMarkerSymbols();
 }
 
 function regenerateZones(event: MouseEvent): void {
   function applyZonesRegeneration(multiplier: number): void {
     Zones.regenerate(multiplier);
     refreshEditors();
-    if (layerIsOn("toggleZones")) drawZones();
-    if (layerIsOn("toggleGoods")) drawGoods();
+    if (window.LayerControls.isLayerOn("toggleZones")) window.LayerControls.redrawLayer("toggleZones");
+    if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
   }
 
   if (!isCtrlClick(event)) {

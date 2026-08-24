@@ -62,7 +62,7 @@ const setIconsHtml = (set: ReliefSet): string =>
 function open(reliefId: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  if (!window.LayerControls.isLayerOn("toggleRelief")) window.LayerControls.toggleLayer("toggleRelief");
 
   ensureReliefIconIds(pack.relief);
   selectedIcon = pack.relief.find(icon => icon.i === reliefId) ?? null;
@@ -165,7 +165,7 @@ ${iconsHtml()}
       el.addEventListener("click", changeIcon);
     });
 
-  ensureEl("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
+  ensureEl("reliefEditStyle").addEventListener("click", () => window.StyleEditor.edit("terrain"));
   ensureEl("reliefCopy").addEventListener("click", copyIcon);
   ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
   ensureEl("reliefMoveBack").addEventListener("click", () => moveIcon("back"));

@@ -15,6 +15,7 @@ export const Controllers = createRegistry({
   CoastlineVertexEditor: () => import("@/controllers/coastline-vertex-editor").then(m => m.CoastlineVertexEditor),
   ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
+  CompassEditor: () => import("@/controllers/compass-editor").then(m => m.CompassEditor),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
   DistributionEditor: () => import("@/controllers/goods-distribution-editor").then(m => m.DistributionEditor),

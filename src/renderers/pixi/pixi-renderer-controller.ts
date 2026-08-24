@@ -1,6 +1,7 @@
 import type { TemperatureScale } from "@/utils/temperature";
 import { clientToViewport, type MapCamera, screenToWorld } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
+import type { MapLayerId } from "../core/layer-registry";
 import type { MapHit, ScreenPoint } from "../core/map-renderer";
 import { emblemRenderer } from "../emblems/renderer";
 import { MapInteractionOverlay, type MapInteractionOverlayPatch } from "../interaction/map-interaction-overlay";
@@ -8,7 +9,14 @@ import { getLabelRenderState } from "../labels/label-render-state";
 import { getMarkerRenderState } from "../marker-render-state";
 import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
-import type { PixiMapRenderer, PixiRendererSnapshot } from "./pixi-map-renderer";
+import { hydrateLegacyPhysicalStyle } from "./legacy-physical-style-adapter";
+import { removeLegacyRendererGroups } from "./legacy-svg-import";
+import type {
+  PixiMapRenderer,
+  PixiRasterCapabilities,
+  PixiRasterFrameRequest,
+  PixiRendererSnapshot
+} from "./pixi-map-renderer";
 import type { PixiOwnedLayer } from "./pixi-renderer-ownership";
 import { readReliefSvgDataUri, readSvgElementDataUri, readSvgSymbolDataUri } from "./relief-icon-svg-adapter";
 
@@ -17,11 +25,14 @@ export interface PixiRendererControllerApi {
   clearInteraction: () => void;
   createOverview: (maxWidth: number, maxHeight: number) => PixiRendererOverview | null;
   getCanvas: () => CanvasImageSource | null;
+  getRasterCapabilities: () => PixiRasterCapabilities | null;
   getSnapshot: () => PixiRendererSnapshot | null;
   invalidateLayer: (layer: PixiOwnedLayer, cellIds?: readonly number[]) => void;
   queueRebuild: () => void;
   pick: (clientX: number, clientY: number) => MapHit | null;
   start: () => Promise<void>;
+  renderRasterFrame: (request: PixiRasterFrameRequest) => HTMLCanvasElement;
+  setLayerOrder: (order: readonly MapLayerId[]) => void;
   syncCamera: () => void;
   toMapPoint: (clientX: number, clientY: number) => ScreenPoint | null;
   updateInteraction: (patch: MapInteractionOverlayPatch) => void;
@@ -38,60 +49,6 @@ export const PIXI_RENDERER_SCENE_CHANGE_EVENT = "map:pixi-renderer:scene-change"
 let instancePromise: Promise<PixiMapRenderer> | null = null;
 let instance: PixiMapRenderer | null = null;
 const interactionOverlay = new MapInteractionOverlay();
-
-const OWNED_SVG_SELECTORS = [
-  "#oceanLayers",
-  "#oceanPattern",
-  "#landmass",
-  "#lakes",
-  "#biomes",
-  "#cells",
-  "#gridOverlay",
-  "#coordinates",
-  "#rivers",
-  "#terrain",
-  "#relig",
-  "#cults",
-  "#statesBody",
-  "#statesHalo",
-  "#statePaths",
-  "#provs",
-  "#zones",
-  "#stateBorders",
-  "#provinceBorders",
-  "#routes",
-  "#temperature",
-  "#coastline",
-  "#prec",
-  "#emblems",
-  "#labels",
-  "#textPaths"
-] as const;
-
-// Serialized legacy maps may still contain these groups. They are import input only and are removed before Pixi paints.
-const REMOVED_SVG_SELECTORS = [
-  "#burgIcons",
-  "#anchors",
-  "#markers",
-  "#ice",
-  "#goods",
-  "#goodsCells",
-  "#goodsIcons",
-  "#goodsBurgs",
-  "#markets",
-  "#population",
-  "#rural",
-  "#urban",
-  "#armies",
-  "#compass",
-  "#tradeAnimation"
-] as const;
-
-const clearOwnedSvgLayers = (): void => {
-  for (const selector of OWNED_SVG_SELECTORS) document.querySelector(selector)?.replaceChildren();
-  for (const selector of REMOVED_SVG_SELECTORS) document.querySelector(selector)?.remove();
-  document.querySelector("#coas")?.replaceChildren();
-};
 
 const getInstance = async (): Promise<PixiMapRenderer> => {
   instancePromise ??= import("./pixi-map-renderer").then(({ PixiMapRenderer }) => {
@@ -133,34 +90,36 @@ const prepareSurface = (): HTMLElement => {
 const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("ocean", true);
   renderer.setLayerVisibility("landmass", true);
-  renderer.setLayerVisibility("lakes", layerIsOn("toggleLakes"));
-  renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
-  renderer.setLayerVisibility("cells", layerIsOn("toggleCells"));
-  renderer.setLayerVisibility("grid", layerIsOn("toggleGrid"));
-  renderer.setLayerVisibility("coordinates", layerIsOn("toggleCoordinates"));
-  renderer.setLayerVisibility("compass", layerIsOn("toggleCompass"));
-  renderer.setLayerVisibility("rivers", layerIsOn("toggleRivers"));
-  renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
-  renderer.setLayerVisibility("religions", layerIsOn("toggleReligions"));
-  renderer.setLayerVisibility("cultures", layerIsOn("toggleCultures"));
-  renderer.setLayerVisibility("states", layerIsOn("toggleStates"));
-  renderer.setLayerVisibility("provinces", layerIsOn("toggleProvinces"));
-  renderer.setLayerVisibility("trade", layerIsOn("toggleTrade"));
-  renderer.setLayerVisibility("zones", layerIsOn("toggleZones"));
-  renderer.setLayerVisibility("borders", layerIsOn("toggleBorders"));
-  renderer.setLayerVisibility("routes", layerIsOn("toggleRoutes"));
-  renderer.setLayerVisibility("temperature", layerIsOn("toggleTemperature"));
+  renderer.setLayerVisibility("texture", window.LayerControls.isLayerOn("toggleTexture"));
+  renderer.setLayerVisibility("height", window.LayerControls.isLayerOn("toggleHeight"));
+  renderer.setLayerVisibility("lakes", window.LayerControls.isLayerOn("toggleLakes"));
+  renderer.setLayerVisibility("biomes", window.LayerControls.isLayerOn("toggleBiomes"));
+  renderer.setLayerVisibility("cells", window.LayerControls.isLayerOn("toggleCells"));
+  renderer.setLayerVisibility("grid", window.LayerControls.isLayerOn("toggleGrid"));
+  renderer.setLayerVisibility("coordinates", window.LayerControls.isLayerOn("toggleCoordinates"));
+  renderer.setLayerVisibility("compass", window.LayerControls.isLayerOn("toggleCompass"));
+  renderer.setLayerVisibility("rivers", window.LayerControls.isLayerOn("toggleRivers"));
+  renderer.setLayerVisibility("relief", window.LayerControls.isLayerOn("toggleRelief"));
+  renderer.setLayerVisibility("religions", window.LayerControls.isLayerOn("toggleReligions"));
+  renderer.setLayerVisibility("cultures", window.LayerControls.isLayerOn("toggleCultures"));
+  renderer.setLayerVisibility("states", window.LayerControls.isLayerOn("toggleStates"));
+  renderer.setLayerVisibility("provinces", window.LayerControls.isLayerOn("toggleProvinces"));
+  renderer.setLayerVisibility("trade", window.LayerControls.isLayerOn("toggleTrade"));
+  renderer.setLayerVisibility("zones", window.LayerControls.isLayerOn("toggleZones"));
+  renderer.setLayerVisibility("borders", window.LayerControls.isLayerOn("toggleBorders"));
+  renderer.setLayerVisibility("routes", window.LayerControls.isLayerOn("toggleRoutes"));
+  renderer.setLayerVisibility("temperature", window.LayerControls.isLayerOn("toggleTemperature"));
   renderer.setLayerVisibility("coastline", true);
-  renderer.setLayerVisibility("ice", layerIsOn("toggleIce"));
-  renderer.setLayerVisibility("goods", layerIsOn("toggleGoods"));
-  renderer.setLayerVisibility("markets", layerIsOn("toggleMarketsLayer"));
-  renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));
-  renderer.setLayerVisibility("population", layerIsOn("togglePopulation"));
-  renderer.setLayerVisibility("emblems", layerIsOn("toggleEmblems"));
-  renderer.setLayerVisibility("labels", layerIsOn("toggleLabels"));
-  renderer.setLayerVisibility("burgIcons", layerIsOn("toggleBurgIcons"));
-  renderer.setLayerVisibility("military", layerIsOn("toggleMilitary"));
-  renderer.setLayerVisibility("markers", layerIsOn("toggleMarkers"));
+  renderer.setLayerVisibility("ice", window.LayerControls.isLayerOn("toggleIce"));
+  renderer.setLayerVisibility("goods", window.LayerControls.isLayerOn("toggleGoods"));
+  renderer.setLayerVisibility("markets", window.LayerControls.isLayerOn("toggleMarketsLayer"));
+  renderer.setLayerVisibility("precipitation", window.LayerControls.isLayerOn("togglePrecipitation"));
+  renderer.setLayerVisibility("population", window.LayerControls.isLayerOn("togglePopulation"));
+  renderer.setLayerVisibility("emblems", window.LayerControls.isLayerOn("toggleEmblems"));
+  renderer.setLayerVisibility("labels", window.LayerControls.isLayerOn("toggleLabels"));
+  renderer.setLayerVisibility("burgIcons", window.LayerControls.isLayerOn("toggleBurgIcons"));
+  renderer.setLayerVisibility("military", window.LayerControls.isLayerOn("toggleMilitary"));
+  renderer.setLayerVisibility("markers", window.LayerControls.isLayerOn("toggleMarkers"));
 };
 
 const getCamera = (): MapCamera => {
@@ -204,6 +163,7 @@ const api: PixiRendererControllerApi = {
   clearInteraction: () => interactionOverlay.clear(),
   createOverview: (maxWidth, maxHeight) => instance?.createOverview(maxWidth, maxHeight) ?? null,
   getCanvas: () => instance?.getCanvas() ?? null,
+  getRasterCapabilities: () => instance?.getRasterCapabilities() ?? null,
   getSnapshot: () => instance?.getSnapshot() ?? null,
   invalidateLayer: (layer, cellIds) => {
     if (!instance) return;
@@ -219,6 +179,13 @@ const api: PixiRendererControllerApi = {
     const point = getRendererScreenPoint(clientX, clientY);
     return point ? (instance?.pick(point) ?? null) : null;
   },
+  renderRasterFrame: request => {
+    if (!instance) throw new Error("Pixi renderer is not ready for raster export");
+    return instance.renderRasterFrame(request);
+  },
+  setLayerOrder: order => {
+    instance?.setLayerOrder(order);
+  },
   queueRebuild: () => {
     void instancePromise?.then(renderer =>
       renderer.queueRender(getWorld(), getMapRendererStyle(style), { kind: "world" })
@@ -226,6 +193,7 @@ const api: PixiRendererControllerApi = {
   },
   start: async () => {
     if (!pack?.cells?.i?.length) return;
+    hydrateLegacyPhysicalStyle(style);
     if (!pack.relief?.length) Relief.generate();
     const renderer = await getInstance();
     const camera = getCamera();
@@ -235,7 +203,7 @@ const api: PixiRendererControllerApi = {
     await renderer.mount(prepareSurface());
     syncVisibility(renderer);
     await renderer.render(getWorld(), getMapRendererStyle(style), coalesceInvalidations([{ kind: "world" }]));
-    clearOwnedSvgLayers();
+    removeLegacyRendererGroups();
     document.getElementById("map")?.classList.add("pixi-renderer-active");
   },
   syncCamera: () => {
@@ -254,9 +222,13 @@ export const clearPixiRenderer = api.clear;
 export const clearMapInteractionOverlay = api.clearInteraction;
 export const createPixiRendererOverview = api.createOverview;
 export const getPixiRendererCanvas = api.getCanvas;
+export const getPixiRasterCapabilities = api.getRasterCapabilities;
+export const getPixiRendererSnapshot = api.getSnapshot;
 export const invalidatePixiRendererLayer = api.invalidateLayer;
 export const queuePixiRendererRebuild = api.queueRebuild;
 export const pickPixiRenderer = api.pick;
+export const renderPixiRasterFrame = api.renderRasterFrame;
+export const setPixiRendererLayerOrder = api.setLayerOrder;
 export const startPixiRenderer = api.start;
 export const syncPixiRendererCamera = api.syncCamera;
 export const getPixiMapPointAtClient = api.toMapPoint;

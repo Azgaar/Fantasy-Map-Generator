@@ -1,31 +1,44 @@
 import { describe, expect, it } from "vitest";
 import type { PackedGraph } from "@/types/PackedGraph";
 import {
+  commitHeightValues,
   commitMarketAssignments,
   commitTerritoryAssignments,
+  insertMeasurerPoint,
+  insertMilitaryRegiment,
   insertReliefIcon,
   insertRiverPoint,
   insertRoutePoint,
+  mergeMilitaryRegiments,
+  moveEmblem,
   moveFeatureVertex,
   moveIce,
   moveMarker,
+  moveMeasurerPoint,
+  moveMilitaryRegiment,
+  moveRegimentBase,
   moveReliefIcon,
   moveRiverPoint,
   moveRoutePoint,
   moveTerritoryCenter,
   paintMarketAssignments,
   paintTerritoryAssignments,
+  removeMeasurerPoint,
+  removeMilitaryRegiment,
   removeReliefIcons,
   removeRiverPoint,
   removeRoutePoint,
   reorderReliefIcon,
+  replaceMeasurerPoints,
   replaceRoutePoints,
   resizeReliefIcon,
+  rotateMilitaryRegiment,
   setFeatureGroup,
   setLabelOverride,
   setReliefIconType,
   setZoneCells,
-  toggleCellGood
+  toggleCellGood,
+  updateCompassStyle
 } from "./editor-mutations";
 
 const createGraph = () =>
@@ -244,5 +257,107 @@ describe("editor mutations", () => {
       layers: ["labels"]
     });
     expect(entity).toEqual({ i: 4, label: { dx: 2, dy: 3, text: "North" } });
+  });
+
+  it("moves emblems through their stable owner identity", () => {
+    const entity = { coa: { shield: "heater" }, i: 6 } as Parameters<typeof moveEmblem>[0];
+    expect(moveEmblem(entity, "state", { x: 12, y: 14 })).toMatchObject({
+      affectedDomainIds: ["state:6"],
+      changed: true,
+      layers: ["emblems"]
+    });
+    expect(entity.coa).toMatchObject({ x: 12, y: 14 });
+  });
+
+  it("updates semantic compass placement without a rendered node", () => {
+    const compass = { opacity: 0.8, scale: 0.25, x: 80, y: 80 };
+    expect(updateCompassStyle(compass, { x: 120, y: 90 })).toMatchObject({
+      affectedDomainIds: ["compass"],
+      changed: true,
+      layers: ["compass"]
+    });
+    expect(compass).toEqual({ opacity: 0.8, scale: 0.25, x: 120, y: 90 });
+  });
+
+  it("edits measurer control points through renderer-neutral commands", () => {
+    const measurer = {
+      i: 5,
+      points: [
+        [0, 0],
+        [10, 0]
+      ],
+      type: "Ruler"
+    } as Parameters<typeof moveMeasurerPoint>[0];
+    insertMeasurerPoint(measurer, 1, [5, 2]);
+    moveMeasurerPoint(measurer, 1, [5, 3]);
+    expect(removeMeasurerPoint(measurer, 1, 2)).toMatchObject({
+      affectedDomainIds: ["measurer:5"],
+      changed: true,
+      layers: ["rulers"]
+    });
+    replaceMeasurerPoints(measurer, [
+      [1, 1],
+      [9, 1]
+    ]);
+    expect(measurer.points).toEqual([
+      [1, 1],
+      [9, 1]
+    ]);
+  });
+
+  it("commits height working values with explicit affected cells", () => {
+    const heights = new Uint8Array([10, 20, 30]);
+    expect(commitHeightValues(heights, new Uint8Array([12, 20, 35]), [0, 2])).toMatchObject({
+      affectedCellIds: [0, 2],
+      affectedDomainIds: [0, 2],
+      changed: true,
+      layers: ["height"]
+    });
+    expect(Array.from(heights)).toEqual([12, 20, 35]);
+  });
+
+  it("mutates military entities through stable state and regiment IDs", () => {
+    const source = {
+      a: 3,
+      bx: 1,
+      by: 2,
+      cell: 4,
+      i: 7,
+      n: 0,
+      state: 2,
+      u: { archers: 3 },
+      x: 3,
+      y: 4
+    } as unknown as Parameters<typeof moveMilitaryRegiment>[0];
+    const target = {
+      ...source,
+      a: 5,
+      cell: 8,
+      i: 9,
+      state: 3,
+      u: { archers: 2, cavalry: 3 }
+    };
+
+    expect(moveMilitaryRegiment(source, { x: 10, y: 11 })).toMatchObject({
+      affectedDomainIds: ["2:7"],
+      changed: true,
+      layers: ["military"]
+    });
+    moveRegimentBase(source, { x: 6, y: 7 });
+    rotateMilitaryRegiment(source, 45);
+    expect(source).toMatchObject({ angle: 45, bx: 6, by: 7, x: 10, y: 11 });
+
+    expect(mergeMilitaryRegiments(source, target)).toMatchObject({
+      affectedCellIds: [4, 8],
+      affectedDomainIds: ["2:7", "3:9"],
+      changed: true
+    });
+    expect(target).toMatchObject({ a: 8, u: { archers: 5, cavalry: 3 } });
+
+    const military = [source];
+    const inserted = { ...target, i: 10 };
+    expect(insertMilitaryRegiment(military, inserted).changed).toBe(true);
+    expect(removeMilitaryRegiment(military, 2, 7)).toMatchObject({ affectedDomainIds: ["2:7"], changed: true });
+    expect(military).toEqual([inserted]);
   });
 });

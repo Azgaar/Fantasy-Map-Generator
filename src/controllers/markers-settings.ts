@@ -36,7 +36,7 @@ function open(): void {
 function regenerateMarkers(): void {
   applyChanges();
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
+  if (window.LayerControls.isLayerOn("toggleMarkers")) invalidateMarkerSymbols();
   refreshEditors();
   drawConfigTable();
 }

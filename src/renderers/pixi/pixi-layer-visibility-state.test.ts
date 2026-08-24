@@ -22,6 +22,7 @@ describe("Pixi layer visibility state", () => {
       "emblems",
       "goods",
       "grid",
+      "height",
       "ice",
       "lakes",
       "labels",
@@ -37,6 +38,7 @@ describe("Pixi layer visibility state", () => {
       "routes",
       "states",
       "temperature",
+      "texture",
       "trade",
       "zones"
     ]);

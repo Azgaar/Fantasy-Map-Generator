@@ -91,6 +91,28 @@ describe("MapPickingIndex", () => {
       index.pick({ x: 11, y: 5 }, { cameraScale: 1, isLayerVisible: visible(["rivers"]), tolerance: 2 })
     ).toBeNull();
   });
+
+  it("picks a semantic compass box without a live SVG element", () => {
+    const index = new MapPickingIndex();
+    index.replaceEntries([
+      {
+        domainId: "compass",
+        domainKind: "compass",
+        height: 40,
+        kind: "point",
+        layer: "compass",
+        shape: "box",
+        width: 40,
+        x: 80,
+        y: 80
+      }
+    ]);
+    expect(index.pick({ x: 90, y: 70 }, { cameraScale: 1, isLayerVisible: visible(), tolerance: 1 })).toMatchObject({
+      domainId: "compass",
+      domainKind: "compass",
+      layer: "compass"
+    });
+  });
 });
 
 function point(

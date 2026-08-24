@@ -392,7 +392,7 @@ window.addGoogleFont = async (family: string) => {
       addFontOption(family);
       const select = ensureEl<HTMLSelectElement>("styleSelectFont");
       if (select) select.value = family;
-      changeFont();
+      window.StyleEditor.changeFont();
     })
     .catch(err => {
       tip(`Failed to load Google font ${family}`, true, "error", 4000);
@@ -411,7 +411,7 @@ window.addLocalFont = (family: string) => {
   addFontOption(family);
   const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
-  changeFont();
+  window.StyleEditor.changeFont();
 };
 
 window.addWebFont = (family: string, url: string) => {
@@ -424,5 +424,5 @@ window.addWebFont = (family: string, url: string) => {
   addFontOption(family);
   const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
-  changeFont();
+  window.StyleEditor.changeFont();
 };

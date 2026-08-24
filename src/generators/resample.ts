@@ -1,5 +1,6 @@
 import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
+import { ApplicationController } from "@/application/application-controller";
 import { Measurers } from "@/generators/measurers-generator";
 import type { PackedGraph } from "../types/PackedGraph";
 import {
@@ -438,14 +439,14 @@ class Resampler {
     this.resamplePrimaryGridData(parentMap, inverse, scale);
 
     Features.markupGrid();
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
+    ApplicationController.addLakesInDeepDepressions();
+    ApplicationController.openNearSeaLakes();
 
     OceanLayers();
-    calculateMapCoordinates();
-    calculateTemperatures();
+    ApplicationController.calculateMapCoordinates();
+    ApplicationController.calculateTemperatures();
 
-    reGraph();
+    ApplicationController.reGraph();
     Features.markupPack();
     Ice.generate();
     Measurers.createDefaultRuler();
@@ -475,7 +476,7 @@ class Resampler {
       };
     });
 
-    showStatistics();
+    ApplicationController.showStatistics();
   }
 }
 

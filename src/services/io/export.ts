@@ -2,7 +2,15 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
-import { getPixiRendererCanvas } from "@/renderers/pixi/pixi-renderer-controller";
+import {
+  getPixiRasterCapabilities,
+  getPixiRendererCanvas,
+  renderPixiRasterFrame
+} from "@/renderers/pixi/pixi-renderer-controller";
+import {
+  getHeightColor as getColor,
+  getHeightColorScheme as getColorScheme
+} from "@/renderers/scene/height-color-schemes";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -18,6 +26,7 @@ import {
   rn,
   unique
 } from "@/utils";
+import { createRasterExportPlan, throwIfRasterExportAborted } from "./raster-export";
 
 type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -35,23 +44,14 @@ export interface GetMapURLOptions {
   noViewbox?: boolean; // accepted by some callers (view-3d); currently unused here
 }
 
-async function exportToSvg(): Promise<void> {
-  TIME && console.time("exportToSvg");
-  try {
-    const url = await getMapURL("svg", { fullMap: true });
-    const link = document.createElement("a");
-    link.download = `${getFileName()}.svg`;
-    link.href = url;
-    link.click();
+export interface FullMapRasterRequest {
+  height?: number;
+  overlayType?: "mesh" | "png";
+  width?: number;
+}
 
-    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check`;
-    tip(message, true, "success", 5000);
-  } catch (error) {
-    ERROR && console.error(error);
-    tip(`SVG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
-  } finally {
-    TIME && console.timeEnd("exportToSvg");
-  }
+function exportToSvg(): void {
+  tip("SVG export is unavailable with the Pixi renderer. Use PNG or PNG tiles instead.", true, "error", 7000);
 }
 
 async function exportToPng(): Promise<void> {
@@ -127,6 +127,47 @@ async function renderViewportRaster(
   return { blob: await canvasToBlob(canvas, mimeType, qualityArgument), canvas };
 }
 
+async function renderFullMapRaster(
+  options: GetMapURLOptions = {},
+  request: FullMapRasterRequest = {}
+): Promise<HTMLCanvasElement> {
+  if (graphWidth <= 0 || graphHeight <= 0) throw new Error("Map dimensions must be positive for raster export");
+
+  const width = Math.max(1, Math.round(request.width ?? graphWidth));
+  const height = Math.max(1, Math.round(request.height ?? graphHeight));
+  const maxTextureSize = getPixiRasterCapabilities()?.maxTextureSize ?? 4096;
+  const requestedResolution = Math.max(width / graphWidth, height / graphHeight);
+  const resolution = Math.min(requestedResolution, maxTextureSize / graphWidth, maxTextureSize / graphHeight);
+  const hiddenLayers: Array<"ice" | "labels" | "ocean"> = [];
+  if (options.noIce) hiddenLayers.push("ice");
+  if (options.noLabels) hiddenLayers.push("labels");
+  if (options.noWater) hiddenLayers.push("ocean");
+
+  const base = renderPixiRasterFrame({
+    frame: { height: graphHeight, width: graphWidth, x: 0, y: 0 },
+    fullMap: { height: graphHeight, width: graphWidth },
+    hiddenLayers,
+    resolution,
+    transparentBackground: options.noWater
+  });
+
+  try {
+    const overlayUrl = await getMapURL(request.overlayType ?? "png", { ...options, fullMap: true });
+    const overlay = await loadRasterImage(overlayUrl);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Cannot initialize full-map raster canvas");
+
+    canvas.width = width;
+    canvas.height = height;
+    context.drawImage(base, 0, 0, width, height);
+    context.drawImage(overlay, 0, 0, width, height);
+    return canvas;
+  } finally {
+    base.remove();
+  }
+}
+
 function loadRasterImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -149,94 +190,138 @@ function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, qualityArgume
   });
 }
 
+let tileExportController: AbortController | null = null;
+
 async function exportToPngTiles(): Promise<void> {
+  tileExportController?.abort(new DOMException("Superseded by a new tile export", "AbortError"));
+  const controller = new AbortController();
+  tileExportController = controller;
+  const { signal } = controller;
   const status = ensureEl("tileStatus");
   status.innerHTML = "Preparing files...";
-
-  const urlSchema = await getMapURL("tiles", { debug: true, fullMap: true });
-  await loadScript("libs/jszip.min.js");
-  const zip = new window.JSZip();
-
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d")!;
-  canvas.width = graphWidth;
-  canvas.height = graphHeight;
+  const context = canvas.getContext("2d");
+  const extractedCanvases = new Set<HTMLCanvasElement>();
 
-  const imgSchema = new Image();
-  imgSchema.src = urlSchema;
-  await loadImage(imgSchema);
+  try {
+    if (!context) throw new Error("Cannot initialize tile export canvas");
+    await loadScript("libs/jszip.min.js");
+    throwIfRasterExportAborted(signal);
+    const zip = new window.JSZip();
+    const maxTextureSize = getPixiRasterCapabilities()?.maxTextureSize ?? 4096;
+    const requestedColumns = +ensureEl<HTMLInputElement>("tileColsOutput").value || 2;
+    const requestedRows = +ensureEl<HTMLInputElement>("tileRowsOutput").value || 2;
+    const resolution = +ensureEl<HTMLInputElement>("tileScaleOutput").value || 1;
+    const plan = createRasterExportPlan({
+      columns: requestedColumns,
+      height: graphHeight,
+      maxTextureSize,
+      rows: requestedRows,
+      scale: resolution,
+      width: graphWidth
+    });
 
-  status.innerHTML = "Rendering schema...";
-  ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
-  const blob = await canvasToBlob(canvas, "image/png");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  zip.file("schema.png", blob);
+    status.innerHTML = "Rendering schema...";
+    const schemaResolution = Math.min(1, maxTextureSize / graphWidth, maxTextureSize / graphHeight);
+    const schemaBase = renderPixiRasterFrame({
+      frame: { height: graphHeight, width: graphWidth, x: 0, y: 0 },
+      fullMap: { height: graphHeight, width: graphWidth },
+      resolution: schemaResolution
+    });
+    extractedCanvases.add(schemaBase);
+    const schemaOverlay = await loadRasterImage(await getMapURL("tiles", { debug: true, fullMap: true }));
+    throwIfRasterExportAborted(signal);
+    canvas.width = schemaBase.width;
+    canvas.height = schemaBase.height;
+    context.drawImage(schemaBase, 0, 0);
+    context.drawImage(schemaOverlay, 0, 0, canvas.width, canvas.height);
+    zip.file("schema.png", await canvasToBlob(canvas, "image/png"));
+    schemaBase.remove();
+    extractedCanvases.delete(schemaBase);
 
-  // download tiles
-  const url = await getMapURL("tiles", { fullMap: true });
-  const tilesX = +ensureEl<HTMLInputElement>("tileColsOutput").value || 2;
-  const tilesY = +ensureEl<HTMLInputElement>("tileRowsOutput").value || 2;
-  const scale = +ensureEl<HTMLInputElement>("tileScaleOutput").value || 1;
-  const tolesTotal = tilesX * tilesY;
-
-  const tileW = (graphWidth / tilesX) | 0;
-  const tileH = (graphHeight / tilesY) | 0;
-
-  const width = graphWidth * scale;
-  const height = width * (tileH / tileW);
-  canvas.width = width;
-  canvas.height = height;
-
-  const img = new Image();
-  img.src = url;
-  await loadImage(img);
-
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  function getRowLabel(row: number) {
-    const first = row >= alphabet.length ? alphabet[Math.floor(row / alphabet.length) - 1] : "";
-    const last = alphabet[row % alphabet.length];
-    return first + last;
-  }
-
-  for (let y = 0, row = 0, id = 1; y + tileH <= graphHeight; y += tileH, row++) {
-    const rowName = getRowLabel(row);
-
-    for (let x = 0, cell = 1; x + tileW <= graphWidth; x += tileW, cell++, id++) {
-      status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
-      ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
-      const blob = await canvasToBlob(canvas, "image/png");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      zip.file(`${rowName}${cell}.png`, blob);
+    const overlay = await loadRasterImage(await getMapURL("tiles", { fullMap: true }));
+    throwIfRasterExportAborted(signal);
+    for (const tile of plan.tiles) {
+      throwIfRasterExportAborted(signal);
+      const rowName = getTileRowLabel(tile.row);
+      const tileName = `${rowName}${tile.column + 1}`;
+      status.innerHTML = `Rendering tile ${tileName} (${tile.id} of ${plan.tiles.length})...`;
+      const pixiFrame = renderPixiRasterFrame({
+        frame: tile.frame,
+        fullMap: { height: graphHeight, width: graphWidth },
+        resolution
+      });
+      extractedCanvases.add(pixiFrame);
+      canvas.width = tile.width;
+      canvas.height = tile.height;
+      context.drawImage(
+        pixiFrame,
+        tile.crop.x,
+        tile.crop.y,
+        tile.crop.width,
+        tile.crop.height,
+        0,
+        0,
+        tile.width,
+        tile.height
+      );
+      pixiFrame.remove();
+      extractedCanvases.delete(pixiFrame);
+      context.drawImage(
+        overlay,
+        tile.content.x,
+        tile.content.y,
+        tile.content.width,
+        tile.content.height,
+        0,
+        0,
+        tile.width,
+        tile.height
+      );
+      zip.file(`${tileName}.png`, await canvasToBlob(canvas, "image/png"));
     }
-  }
 
-  status.innerHTML = "Zipping files...";
-  zip
-    .generateAsync({ type: "blob" })
-    .then((blob: Blob) => {
-      status.innerHTML = "Downloading the archive...";
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `${getFileName()}.zip`;
-      link.click();
-      link.remove();
-
-      status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
-      setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-    })
-    .catch((error: Error) => {
-      ERROR && console.error(error);
-      status.innerHTML = "Tiles export failed";
-      tip(`PNG tiles export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+    status.innerHTML = "Zipping files...";
+    const blob = await zip.generateAsync({ type: "blob" }, ({ percent }: { percent: number }) => {
+      status.innerHTML = `Zipping files... ${Math.round(percent)}%`;
     });
-
-  // promisified img.onload
-  function loadImage(img: HTMLImageElement) {
-    return new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = err => reject(err);
-    });
+    throwIfRasterExportAborted(signal);
+    status.innerHTML = "Downloading the archive...";
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${getFileName()}.zip`;
+    link.click();
+    link.remove();
+    status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") {
+      status.innerHTML = "Tile export canceled";
+      return;
+    }
+    ERROR && console.error(error);
+    status.innerHTML = "Tiles export failed";
+    tip(`PNG tiles export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+  } finally {
+    for (const extractedCanvas of extractedCanvases) extractedCanvas.remove();
+    canvas.remove();
+    if (tileExportController === controller) tileExportController = null;
   }
+}
+
+function cancelPngTilesExport(): void {
+  tileExportController?.abort(new DOMException("Export canceled", "AbortError"));
+}
+
+function getTileRowLabel(row: number): string {
+  let value = row + 1;
+  let label = "";
+  while (value > 0) {
+    value--;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  }
+  return label;
 }
 
 // parse map svg to object url
@@ -414,7 +499,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
 
 // remove hidden g elements and g elements without children to make downloaded svg smaller in size
 function removeUnusedElements(clone: MapSelection): void {
-  if (!terrain.selectAll("use").size()) clone.select("#defs-relief").remove();
+  if (!pack.relief?.length) clone.select("#defs-relief").remove();
 
   for (let empty = 1; empty; ) {
     empty = 0;
@@ -713,7 +798,8 @@ export const ExportMap = {
   exportToPng,
   exportToJpeg,
   exportToPngTiles,
-  getMapURL,
+  cancelPngTilesExport,
+  renderFullMapRaster,
   saveGeoJsonCells,
   saveGeoJsonRoutes,
   saveGeoJsonRivers,

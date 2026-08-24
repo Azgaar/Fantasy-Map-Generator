@@ -100,6 +100,7 @@ function getMapHitTip(hit: MapHit | null, event: Event, cellId: number): string 
   const id = Number(hit.domainId);
 
   if (hit.domainKind === "burg") return getBurgTip(id);
+  if (hit.domainKind === "compass") return "Wind rose. Click to move or resize";
   if (hit.domainKind === "label") return getLabelTip(hit);
   if (hit.domainKind === "regiment") {
     const stateId = Number(hit.subPart?.stateId);
@@ -230,29 +231,32 @@ function getClientPoint(event: MouseEvent | TouchEvent): { x: number; y: number 
 function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: boolean): void {
   const { cells } = pack;
 
-  if (layerIsOn("togglePrecipitation") && isLand) {
+  if (window.LayerControls.isLayerOn("togglePrecipitation") && isLand) {
     return void tip(`Annual Precipitation: ${getFriendlyPrecipitation(cellId, pack, grid)}`);
   }
 
-  if (layerIsOn("togglePopulation")) return void tip(getPopulationTip(cellId));
+  if (window.LayerControls.isLayerOn("togglePopulation")) return void tip(getPopulationTip(cellId));
 
-  if (layerIsOn("toggleTemperature")) {
+  if (window.LayerControls.isLayerOn("toggleTemperature")) {
     return void tip(`Temperature: ${convertTemperature(grid.cells.temp[gridCellId])}`);
   }
 
-  if (layerIsOn("toggleBiomes") && cells.biome[cellId]) {
+  if (window.LayerControls.isLayerOn("toggleBiomes") && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
     return void tip(`Biome: ${pack.biomes[biomeId].name}`);
   }
 
-  if (layerIsOn("toggleReligions") && cells.religion[cellId]) {
+  if (window.LayerControls.isLayerOn("toggleReligions") && cells.religion[cellId]) {
     const religionId = cells.religion[cellId];
     const religion = pack.religions[religionId];
     const type = religion.type === "Cult" || religion.type === "Heresy" ? religion.type : `${religion.type} religion`;
     return void tip(`${type}: ${religion.name}`);
   }
 
-  if (cells.state[cellId] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
+  if (
+    cells.state[cellId] &&
+    (window.LayerControls.isLayerOn("toggleProvinces") || window.LayerControls.isLayerOn("toggleStates"))
+  ) {
     const stateId = cells.state[cellId];
     const provinceId = cells.province[cellId];
     const province = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";
@@ -260,10 +264,11 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     return void tip(province + pack.states[stateId].fullName);
   }
 
-  if (layerIsOn("toggleCultures") && cells.culture[cellId]) {
+  if (window.LayerControls.isLayerOn("toggleCultures") && cells.culture[cellId]) {
     const cultureId = cells.culture[cellId];
     return void tip(`Culture: ${pack.cultures[cultureId].name}`);
   }
 
-  if (layerIsOn("toggleHeight")) return void tip(`Height: ${getFriendlyHeight(point, pack, grid)}`);
+  if (window.LayerControls.isLayerOn("toggleHeight"))
+    return void tip(`Height: ${getFriendlyHeight(point, pack, grid)}`);
 }

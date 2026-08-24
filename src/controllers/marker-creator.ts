@@ -22,7 +22,7 @@ function toggle(baseMarker?: Marker): void {
   );
   document.getElementById("markersAddFromOverview")?.classList.add("pressed");
   document.getElementById("markerAdd")?.classList.add("pressed");
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  if (!window.LayerControls.isLayerOn("toggleMarkers")) window.LayerControls.toggleLayer("toggleMarkers");
 }
 
 function addOnClick(event: MouseEvent, baseMarker?: Marker): void {

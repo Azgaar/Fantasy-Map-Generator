@@ -19,9 +19,10 @@ import { Controllers } from "@/controllers";
 import { ZoneAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { getCellsOverlay, getCellsPath } from "@/renderers/interaction/map-domain-overlay";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { getPixiMapPointAtClient } from "@/renderers/pixi/pixi-renderer-controller";
+import { getPixiMapPointAtClient, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
 import { ensureEl, rn, si, unique } from "../utils";
 
@@ -41,7 +42,7 @@ const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: r
 
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
-  if (!layerIsOn("toggleZones")) toggleZones();
+  if (!window.LayerControls.isLayerOn("toggleZones")) window.LayerControls.toggleLayer("toggleZones");
 
   renderDialog();
   updateFilters();
@@ -122,16 +123,15 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  applyLineHighlighting("zonesEditor", ({ target }) => {
-    const zone = target.closest<SVGElement>("#zones [id^='zone']");
-    return zone && /^zone\d+$/.test(zone.id) ? Number(zone.id.slice(4)) : undefined;
-  });
+  applyLineHighlighting("zonesEditor", ({ cellId }) =>
+    cellId === undefined ? undefined : pack.zones.findLast(zone => zone.cells.includes(cellId))?.i
+  );
 
   const body = ensureEl("zonesBodySection");
   ensureEl("zonesFilterType").addEventListener("click", updateFilters);
   ensureEl("zonesFilterType").addEventListener("change", filterZonesByType);
   ensureEl("zonesEditorRefresh").addEventListener("click", zonesTable.refresh);
-  ensureEl("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
+  ensureEl("zonesEditStyle").addEventListener("click", () => window.StyleEditor.edit("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
   ensureEl("zonesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("zonesManually").addEventListener("click", enterZonesManualAssignent);
@@ -260,17 +260,18 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
 }
 
 function zoneHighlightOn(this: HTMLElement): void {
-  const zoneId = this.dataset.id;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zoneId}`).style("outline", "1px solid red");
+  const zone = pack.zones.find(zone => zone.i === Number(this.dataset.id));
+  updateMapInteractionOverlay({
+    highlight: zone ? getCellsOverlay(zone.cells, { fill: "none", stroke: "red", strokeWidth: 1 }) : null
+  });
 }
 
-function zoneHighlightOff(this: HTMLElement): void {
-  const zoneId = this.dataset.id;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zoneId}`).style("outline", null);
+function zoneHighlightOff(): void {
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function filterZonesByType(): void {
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
   zonesTable.reset();
 }
 
@@ -285,11 +286,11 @@ function moveZone(item: HTMLElement): void {
   const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
   const newIndex = nextIndex >= 0 ? nextIndex : previousIndex >= 0 ? previousIndex + 1 : pack.zones.length;
   pack.zones.splice(newIndex, 0, zone);
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
 }
 
 function enterZonesManualAssignent(): void {
-  if (!layerIsOn("toggleZones")) toggleZones();
+  if (!window.LayerControls.isLayerOn("toggleZones")) window.LayerControls.toggleLayer("toggleZones");
   customization = 10;
   const visibleZones = getVisibleZones();
   zonesAssignment = new ZoneAssignmentSession(
@@ -350,7 +351,7 @@ function dragZoneBrush(this: SVGElement, event: any): void {
 
     const zoneId = +ensureEl("zonesBodySection").querySelector<HTMLElement>("div.selected")!.dataset.id!;
     const mutation = zonesAssignment?.paint(zoneId, selection, eraseMode);
-    if (mutation?.changed) drawZones();
+    if (mutation?.changed) window.LayerControls.redrawLayer("toggleZones");
   });
 }
 
@@ -365,7 +366,7 @@ function moveZoneBrush(this: SVGElement, event: MouseEvent): void {
 function applyZonesManualAssignent(): void {
   zonesAssignment?.commit();
   zonesAssignment = null;
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
   zonesTable.refresh();
   exitZonesManualAssignment();
 }
@@ -373,7 +374,7 @@ function applyZonesManualAssignent(): void {
 function cancelZonesManualAssignent(): void {
   zonesAssignment?.cancel();
   zonesAssignment = null;
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
   exitZonesManualAssignment();
 }
 
@@ -382,7 +383,7 @@ function exitZonesManualAssignment(close?: string): void {
   if (zonesAssignment) {
     zonesAssignment.cancel();
     zonesAssignment = null;
-    drawZones();
+    window.LayerControls.redrawLayer("toggleZones");
   }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
@@ -426,7 +427,7 @@ function changeFill(fillBox: FillBoxElement, zone: Zone): void {
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
     zone.color = newFill;
-    drawZones();
+    window.LayerControls.redrawLayer("toggleZones");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -436,7 +437,7 @@ function toggleVisibility(zone: Zone): void {
   if (zone.hidden) delete zone.hidden;
   else zone.hidden = true;
 
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
   zonesTable.refresh();
 }
 
@@ -445,8 +446,7 @@ function toggleFog(zone: Zone, cl: DOMTokenList): void {
   cl.toggle("inactive");
 
   if (inactive) {
-    const path = select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("d");
-    fog(`focusZone${zone.i}`, path);
+    fog(`focusZone${zone.i}`, getCellsPath(zone.cells));
   } else {
     unfog(`focusZone${zone.i}`);
   }
@@ -479,7 +479,7 @@ function addZonesLayer(): void {
   pack.zones.push({ i: zoneId, name, type, color, cells: [] });
 
   zonesTable.refresh();
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
 }
 
 function downloadZonesData(): void {
@@ -496,12 +496,10 @@ function downloadZonesData(): void {
 
 function changeDescription(zone: Zone, value: string): void {
   zone.name = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", value);
 }
 
 function changeType(zone: Zone, value: string): void {
   zone.type = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", value);
 }
 
 function changePopulation(zone: Zone): void {
@@ -582,7 +580,7 @@ function changePopulation(zone: Zone): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
     zonesTable.refresh();
   }
 }
@@ -594,8 +592,8 @@ function zoneRemove(zone: Zone): void {
     confirm: "Remove",
     onConfirm: () => {
       pack.zones = pack.zones.filter(z => z.i !== zone.i);
-      select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
       unfog(`focusZone${zone.i}`);
+      window.LayerControls.redrawLayer("toggleZones");
       zonesTable.refresh();
     }
   });

@@ -11,6 +11,7 @@ import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene
 import { buildMilitaryScene, buildPopulationScene } from "../scene/layers/population-military-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
+import { buildCompassScene } from "../scene/layers/static-overlay-scene";
 import { buildZoneScene } from "../scene/layers/zone-scene";
 import type { MapRenderWorld } from "../scene/render-world";
 import type { MapStyle } from "../scene/styles";
@@ -198,6 +199,22 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
   if (!bounds) return [];
   const mapBounds = { height: bounds.maxY - bounds.minY, width: bounds.maxX - bounds.minX };
   const entries: MapPickEntry[] = [];
+
+  if (style.compass.opacity > 0 && style.compass.scale > 0) {
+    const compass = buildCompassScene(style.compass, 0);
+    const size = 440 * compass.scale;
+    entries.push({
+      domainId: compass.domainId,
+      domainKind: "compass",
+      height: size,
+      kind: "point",
+      layer: "compass",
+      shape: "box",
+      width: size,
+      x: compass.x,
+      y: compass.y
+    });
+  }
 
   const geography = buildBaseGeographyScene(world, mapBounds);
   for (const polygon of geography.lakes.polygons) {

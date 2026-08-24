@@ -44,7 +44,7 @@ const columns: EditorColumn<Marker>[] = [
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  if (!window.LayerControls.isLayerOn("toggleMarkers")) window.LayerControls.toggleLayer("toggleMarkers");
 
   renderDialog();
   markersTable.reset();
@@ -178,7 +178,7 @@ function closeMarkersOverview(): void {
 
 function regenerateMarkers(): void {
   Markers.regenerate();
-  if (layerIsOn("toggleMarkers")) invalidateMarkerSymbols();
+  if (window.LayerControls.isLayerOn("toggleMarkers")) invalidateMarkerSymbols();
   populateFilters();
   markersTable.refresh();
 }

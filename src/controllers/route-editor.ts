@@ -30,9 +30,9 @@ function open(routeId: number): void {
   if (findEl("routeEditor") && routeId === selectedRouteId) return;
   closeDialogs(".stable");
 
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  if (!window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.toggleLayer("toggleRoutes");
+  ensureEl("toggleCells").dataset.forced = String(+!window.LayerControls.isLayerOn("toggleCells"));
+  if (!window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   const route = pack.routes.find(candidate => candidate.i === routeId);
   if (!route) return;
@@ -399,7 +399,7 @@ function editRouteLegend(): void {
 
 function editRouteGroupStyle(): void {
   const { group } = getRoute();
-  editStyle("routes", group);
+  window.StyleEditor.edit("routes", group);
 }
 
 function toggleLockButton(): void {
@@ -442,7 +442,7 @@ function closeRouteEditor(): void {
 
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (forced && window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   destroyDialog("routeEditor");
 }

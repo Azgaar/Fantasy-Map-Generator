@@ -42,6 +42,7 @@ function makePack(
 // ─── shared setup ───────────────────────────────────────────────────────────
 
 let ta: TradeAnimationModule;
+const isLayerOn = vi.fn(() => true);
 
 // Minimal FlatQueue polyfill (correct, not optimised — tests only).
 class TestFlatQueue {
@@ -68,7 +69,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   ta = new TradeAnimationModule();
   globalThis.pack = makePack() as any;
-  globalThis.layerIsOn = vi.fn(() => true);
+  isLayerOn.mockReturnValue(true);
+  vi.stubGlobal("window", { FlatQueue: TestFlatQueue, LayerControls: { isLayerOn } });
   (globalThis as any).FlatQueue = TestFlatQueue;
   globalThis.Markets = {
     get: vi.fn((id: number) => {
@@ -235,7 +237,7 @@ describe("trigger", () => {
   });
 
   it("clears animations and returns when the layer is disabled", () => {
-    vi.mocked(globalThis.layerIsOn).mockReturnValue(false);
+    isLayerOn.mockReturnValue(false);
     ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" }]);
     expect(drawTrade.clear).toHaveBeenCalled();
     expect(drawTrade.draw).not.toHaveBeenCalled();

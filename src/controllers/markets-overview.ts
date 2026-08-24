@@ -22,7 +22,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawGoods } from "@/renderers/draw-goods";
-import { drawMarkets, toggleMarketsLayer } from "@/renderers/draw-markets";
+import { drawMarkets } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { getPixiMapPointAtClient, pickPixiRenderer } from "@/renderers/pixi/pixi-renderer-controller";
 import { tradeAnimation } from "@/renderers/trade-animation";
@@ -77,7 +77,7 @@ const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpd
 function open(): void {
   if (customization) return;
   closeDialogs("#marketsOverview, .stable");
-  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  if (!window.LayerControls.isLayerOn("toggleMarketsLayer")) window.LayerControls.toggleLayer("toggleMarketsLayer");
 
   renderDialog();
   marketsTable.reset();
@@ -263,7 +263,7 @@ function renderMarketRow(
 }
 
 function enterMarketsManualAssignment(): void {
-  if (!layerIsOn("toggleMarketsLayer")) toggleMarketsLayer();
+  if (!window.LayerControls.isLayerOn("toggleMarketsLayer")) window.LayerControls.toggleLayer("toggleMarketsLayer");
   customization = 15;
   marketsManualHistory = [];
 
@@ -452,7 +452,7 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   if (!ev.shiftKey) exitAddMarketMode();
 
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+  if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
   marketsTable.refresh();
 }
 
@@ -475,7 +475,7 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: "Remove",
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+      if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
       marketsTable.refresh();
     }
   });
@@ -584,9 +584,9 @@ function regenerateMarkets() {
       if (regenProduction) {
         Production.regenerate();
       }
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -600,8 +600,8 @@ function regenerateProduction() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
       refreshEditors();
     }
   });

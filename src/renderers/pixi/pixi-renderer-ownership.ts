@@ -12,6 +12,7 @@ export type PixiOwnedLayer =
   | "cultures"
   | "emblems"
   | "grid"
+  | "height"
   | "goods"
   | "ice"
   | "lakes"
@@ -30,12 +31,15 @@ export type PixiOwnedLayer =
   | "routes"
   | "states"
   | "temperature"
+  | "texture"
   | "trade"
   | "zones";
 
 export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "ocean",
   "landmass",
+  "texture",
+  "height",
   "lakes",
   "biomes",
   "cells",

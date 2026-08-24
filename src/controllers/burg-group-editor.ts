@@ -449,7 +449,7 @@ function submitForm(event: Event): void {
   const populations = validBurgs.map(b => b.population!).sort((a, b) => a - b);
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
 
-  if (layerIsOn("toggleBurgIcons")) invalidateBurgSymbols();
+  if (window.LayerControls.isLayerOn("toggleBurgIcons")) invalidateBurgSymbols();
   drawLabels();
   refreshEditors();
 

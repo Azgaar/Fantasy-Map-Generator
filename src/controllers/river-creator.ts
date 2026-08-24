@@ -22,10 +22,10 @@ let creatorCells: number[] = [];
 function open(): void {
   if (customization) return;
   closeDialogs();
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  if (!window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.toggleLayer("toggleRivers");
 
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  ensureEl("toggleCells").dataset.forced = String(+!window.LayerControls.isLayerOn("toggleCells"));
+  if (!window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   tip("Click to add river point, click again to remove", true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onCellClick);
@@ -181,7 +181,7 @@ function closeRiverCreator(): void {
 
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (forced && window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   destroyDialog("riverCreator");
 }

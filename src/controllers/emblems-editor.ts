@@ -1,9 +1,16 @@
-import { drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import { moveEmblem } from "@/controllers/editor-mutations";
 import { drawEmblems } from "@/renderers/draw-emblems";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
+import { clearMapInteractionOverlay, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
+import { buildEmblemScene, type EmblemDomainType } from "@/renderers/scene/layers/emblem-scene";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { downloadFile, getFileName, openURL } from "@/utils";
 import { ensureEl, rn } from "../utils";
 
@@ -11,9 +18,10 @@ import { ensureEl, rn } from "../utils";
 // this is a legacy interop boundary shared with classic callers.
 type EmblemEl = any;
 
-let currentType: string;
+let currentType: EmblemDomainType;
 let currentId: string;
 let currentEl: EmblemEl;
+let initialEmblemPoint: { x: number; y: number } | null = null;
 
 async function openDefault(): Promise<void> {
   const firstState = pack.states.find(state => state.i && !state.removed && state.coa);
@@ -34,19 +42,15 @@ function open(type?: string, id?: string, el?: EmblemEl, target?: SVGElement): v
   if (customization) return;
   if (!id && target) defineEmblemData(target);
   else {
-    currentType = type!;
+    currentType = type as EmblemDomainType;
     currentId = id!;
     currentEl = el;
   }
 
   renderDialog();
 
-  select<SVGElement, unknown>("#emblems")
-    .selectAll<SVGUseElement, unknown>("use")
-    .call(drag<SVGUseElement, unknown>().on("drag", dragEmblem))
-    .classed("draggable", true);
-
   updateElementSelectors();
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editEmblemHandle as EventListener);
 
   showDomDialog({
     content: ensureEl("emblemEditor"),
@@ -263,7 +267,7 @@ function defineEmblemData(target: SVGElement): void {
         ? [pack.provinces, "province"]
         : [pack.states, "state"];
   const i = +target.dataset.i!;
-  currentType = t as string;
+  currentType = t as EmblemDomainType;
   currentId = `${currentType}COA${i}`;
   currentEl = (g as EmblemEl[])[i];
 }
@@ -323,6 +327,7 @@ function updateElementSelectors(): void {
 
   COArenderer.trigger(currentId, el.coa);
   updateEmblemData();
+  renderEmblemOverlay();
 }
 
 function updateEmblemData(): void {
@@ -394,6 +399,7 @@ function changeShape(): void {
   if (coaEl) coaEl.remove();
   COArenderer.trigger(currentId, currentEl.coa);
   drawEmblems();
+  renderEmblemOverlay();
 }
 
 function showArea(): void {
@@ -408,6 +414,7 @@ function changeSize(ev: Event): void {
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 
   drawEmblems();
+  renderEmblemOverlay();
 }
 
 function regenerate(): void {
@@ -430,6 +437,7 @@ function regenerate(): void {
   if (coaEl) coaEl.remove();
   COArenderer.trigger(currentId, el.coa);
   drawEmblems();
+  renderEmblemOverlay();
 }
 
 function openInArmoria(): void {
@@ -505,6 +513,7 @@ function upload(type: "image" | "svg"): void {
 
     ensureEl<HTMLSelectElement>("emblemShapeSelector").disabled = true;
     drawEmblems();
+    renderEmblemOverlay();
   };
 
   if (type === "image") reader.readAsDataURL(file);
@@ -686,30 +695,67 @@ async function renderAllEmblems(states: EmblemEl[], provinces: EmblemEl[], burgs
   clearMainTip();
 }
 
-function dragEmblem(this: SVGUseElement, event: any): void {
-  const x = Number(this.getAttribute("x")) - event.x;
-  const y = Number(this.getAttribute("y")) - event.y;
+function editEmblemHandle(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  if (event.detail.handleId !== "emblem:position") return;
+  const item = getCurrentEmblemSceneItem();
+  if (!item) return;
+  if (event.detail.phase === "start") {
+    initialEmblemPoint = { x: item.x, y: item.y };
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (initialEmblemPoint && moveEmblem(currentEl, currentType, initialEmblemPoint).changed) drawEmblems();
+    initialEmblemPoint = null;
+    renderEmblemOverlay();
+    return;
+  }
+  if (event.detail.phase === "move") {
+    const point = { x: rn(event.detail.worldPoint.x, 2), y: rn(event.detail.worldPoint.y, 2) };
+    if (moveEmblem(currentEl, currentType, point).changed) drawEmblems();
+    return;
+  }
+  if (event.detail.phase !== "end") return;
+  initialEmblemPoint = null;
+  renderEmblemOverlay();
+}
 
-  event.on("drag", function (this: SVGUseElement, dragEvent: any) {
-    this.setAttribute("x", String(x + dragEvent.x));
-    this.setAttribute("y", String(y + dragEvent.y));
-  });
-
-  event.on("end", function (this: SVGUseElement, endEvent: any) {
-    const categotySize = Number((this.parentNode as SVGElement).getAttribute("font-size"));
-    const size = currentEl.coa.size || 1;
-    const shift = (categotySize * size) / 2;
-
-    currentEl.coa.x = rn(x + endEvent.x + shift, 2);
-    currentEl.coa.y = rn(y + endEvent.y + shift, 2);
+function renderEmblemOverlay(): void {
+  const item = getCurrentEmblemSceneItem();
+  if (!item) return;
+  updateMapInteractionOverlay({
+    handles: [
+      {
+        id: "emblem:position",
+        label: `Move ${currentEl.fullName || currentEl.name || currentType} emblem`,
+        point: { x: item.x, y: item.y }
+      }
+    ],
+    selection: [
+      {
+        height: item.size,
+        kind: "bounds",
+        width: item.size,
+        x: item.x - item.size / 2,
+        y: item.y - item.size / 2
+      }
+    ]
   });
 }
 
+function getCurrentEmblemSceneItem() {
+  const scene = buildEmblemScene(
+    pack,
+    { height: graphHeight, width: graphWidth },
+    getMapRendererStyle(style).emblems,
+    "emblem-editor"
+  );
+  return scene.groups.flatMap(group => group.items).find(item => item.domainId === `${currentType}:${currentEl.i}`);
+}
+
 function closeEmblemEditor(): void {
-  select<SVGElement, unknown>("#emblems")
-    .selectAll<SVGUseElement, unknown>("use")
-    .call(drag<SVGUseElement, unknown>().on("drag", null))
-    .attr("class", null);
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editEmblemHandle as EventListener);
+  initialEmblemPoint = null;
+  clearMapInteractionOverlay();
   destroyDialog("emblemEditor");
 }
 

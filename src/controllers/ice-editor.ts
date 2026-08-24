@@ -27,7 +27,7 @@ function open(target: number | SVGElement): void {
   if (!iceElement) return;
 
   closeDialogs(".stable");
-  if (!layerIsOn("toggleIce")) toggleIce();
+  if (!window.LayerControls.isLayerOn("toggleIce")) window.LayerControls.toggleLayer("toggleIce");
 
   selectedIceId = id;
   const isGlacier = iceElement.type === "glacier";
@@ -67,7 +67,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("iceEditStyle").addEventListener("click", () => editStyle("ice"));
+  ensureEl("iceEditStyle").addEventListener("click", () => window.StyleEditor.edit("ice"));
   ensureEl("iceRandomize").addEventListener("click", randomizeShape);
   ensureEl<HTMLInputElement>("iceSize").addEventListener("input", changeSize);
   ensureEl("iceNew").addEventListener("click", toggleAdd);

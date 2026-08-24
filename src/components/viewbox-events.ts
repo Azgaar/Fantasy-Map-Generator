@@ -55,7 +55,7 @@ const GRAND_EDITORS: Record<string, Opener> = {
 
 const GREAT_EDITORS: Record<string, Opener> = {
   ruler: () => Controllers.MeasurersEditor.open(),
-  armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`)
+  armies: (_target, parent) => Controllers.RegimentEditor.open(Number(parent.dataset.state), Number(parent.dataset.id))
 };
 
 /** Handle a click on the map: open the editor for the clicked element */
@@ -100,12 +100,15 @@ function openMapHit(hit: MapHit): boolean {
     return true;
   }
   if (hit.domainKind === "burg") Controllers.BurgEditor.open(id);
+  else if (hit.domainKind === "compass") Controllers.CompassEditor.open();
   else if (hit.domainKind === "ice") Controllers.IceEditor.open(id);
   else if (hit.domainKind === "marker") Controllers.MarkersEditor.open(id);
   else if (hit.domainKind === "river") Controllers.RiverEditor.open(id);
   else if (hit.domainKind === "route") Controllers.RouteEditor.open(id);
   else if (hit.domainKind === "market") Controllers.MarketOverview.open(id);
-  else if (hit.domainKind === "emblem") {
+  else if (hit.domainKind === "regiment") {
+    Controllers.RegimentEditor.open(Number(hit.subPart?.stateId), Number(hit.subPart?.regimentId));
+  } else if (hit.domainKind === "emblem") {
     const type = String(hit.subPart?.type || "state") as "burg" | "province" | "state";
     const entity = type === "burg" ? pack.burgs[id] : type === "province" ? pack.provinces[id] : pack.states[id];
     Controllers.EmblemsEditor.open(type, `${type}COA${id}`, entity);

@@ -42,10 +42,8 @@ The former opt-in experiment is retained only as historical context in
 - The first M7 line slice gives rivers and routes renderer-neutral scenes and Pixi ownership. Rivers are deterministic
   variable-width polygons; routes are Catmull-Rom line paths grouped by semantic route role, including Pixi-side dash
   rendering. Their classic persistent draw branches are deleted. River and route editors now accept domain IDs and
-  place only the active edit path and control handles in the transient `#debug` overlay; creators and overviews no
-  longer create, locate, style, or measure paths through `#rivers` or `#routes`. Direct Pixi picking and hover/basin
-  highlighting remain M9 work, so controls that depended on persistent path nodes are not retained as compatibility
-  shims.
+  use direct Pixi picking plus shared interaction-overlay paths and handles; creators and overviews no longer create,
+  locate, style, or measure paths through `#rivers` or `#routes`.
 - The next M7 point-symbol slice moves burg icons, port anchors, and markers to one-way Pixi ownership. Their persistent
   SVG renderers and globals are deleted, generation/load redraws now issue typed invalidations, and marker filters and
   pinned-only display state are transient renderer inputs rather than attributes on `#markers`. Burg symbols are
@@ -59,23 +57,22 @@ The former opt-in experiment is retained only as historical context in
   three layers in canonical order and reference-counts goods symbol textures through the shared cache. Their semantic
   styles and visibility now round-trip through application style state and preset adapters. The live `#ice`, `#goods`,
   `#goodsCells`, `#goodsIcons`, `#goodsBurgs`, and `#markets` creation/render paths are removed; old serialized groups
-  are import input only and are purged before Pixi paints. Direct hover highlighting and the ice/goods/market editing
-  gestures that formerly selected persistent SVG nodes intentionally await M9/M10 rather than receiving compatibility
-  shims.
+  are import input only and are purged before Pixi paints. Hover highlighting and the ice/goods/market editing gestures
+  use stable domain IDs, Pixi coordinates, and the shared interaction overlay.
 - The following M7 entity slice moves rural/urban population bars and military regiment badges into renderer-neutral
   scenes. Population emits stable cell/burg line IDs; regiment badges retain state/regiment IDs, rotations, totals,
   state colors, emoji, and reference-counted external icon textures with missing-asset placeholders. Both layers now
   use semantic style and persisted visibility, render in canonical Pixi order, and invalidate from domain mutations.
   The viewport population reconciler, live `#population`/`#rural`/`#urban` groups, live `#armies` renderer, regiment
   SVG transitions, and their SVG export fixups are removed. Regiment selection, hover, attack/attach targeting, and
-  editor handles remain explicit M9/M10 work rather than compatibility branches.
+  editor handles use stable state/regiment IDs, Pixi picking, and shared overlay handles.
 - The final M7 overlay slice moves the compass rose and trade markers to Pixi. Compass placement, scale, opacity, and
   preset import now use semantic style; its historical defs element is read once as a texture source and no live
   `#compass` group is created. Trade retains its renderer-neutral route pathfinder and uses a requestAnimationFrame
   scheduler only while visible markers exist, with deterministic stop/destroy cleanup, Pixi wagon/ship textures, and
   a Pixi path highlight. The live `#tradeAnimation` group, D3 transitions, SVG marker-symbol loader, and compass/trade
-  save/export fixups are deleted. Marker picking and draggable compass placement remain M9/M10 work rather than
-  compatibility shims.
+  save/export fixups are deleted. Compass placement is edited through a shared overlay handle and typed semantic-style
+  mutation.
 - The first M8 text slice moves straight, multiline, and curved labels to Pixi ownership. Label groups retain semantic
   font, fill, stroke, shadow, opacity, offset, dependency, zoom-bound, and resize-on-zoom state; renderer startup waits
   for the referenced font families and exposes missing fonts and unsupported SVG filters in diagnostics. The live
@@ -91,9 +88,9 @@ The former opt-in experiment is retained only as historical context in
   and are empty while Pixi paints.
 - Viewport decoration has an explicit ownership boundary: `scaleBar`, `legend`, and `vignette` remain SVG overlay-owned
   because they are small, viewport-anchored presentation with selectable/accessibility-sensitive text rather than map
-  world geometry. Current SVG export owns their vector serialization; viewport PNG/JPEG export composites that overlay
-  once over the authoritative Pixi canvas. M11 tiled/full-map export must place this overlay exactly once in final-image
-  coordinates. These three groups are the intended overlay boundary, not SVG fallbacks for Pixi-owned content.
+  world geometry. Viewport and tiled PNG/JPEG export composites that overlay once over the authoritative Pixi canvas,
+  including full-map final-image coordinates. These three groups are the intended overlay boundary, not SVG fallbacks
+  for Pixi-owned content. Incomplete legacy SVG download is no longer offered.
 - M9 provides one normalized screen/client/world transform for Pixi, context menus, hover inspection, and editing
   overlays. A bounds-bucket spatial index resolves visible point, line, polygon, label, goods, market, population, and
   military hits with canonical layer precedence and zoom-normalized tolerance, then falls back to cell/Voronoi area
@@ -102,6 +99,12 @@ The former opt-in experiment is retained only as historical context in
   overlay owns transient selection/highlight/brush geometry and accessible handles; handles use Pointer Events,
   pointer capture, touch-safe input, keyboard nudging, and the same camera transform as Pixi. Existing brush tools and
   emblem highlighting now use this API, and save/export explicitly remove the overlay.
+- M10 is complete for the core editor set. Point, line, territory, topology, label, emblem, military, compass, ruler,
+  and measurer tools select stable domain entities, use Pixi map transforms/picking, publish typed invalidations, and
+  place transient geometry in the shared interaction overlay. Territory highlights and fog paths are derived directly
+  from cell assignments rather than copied from rendered paths. Heightmap topology remains an explicitly transient
+  `#heights` workspace; measurer lines and viewport decorations remain intentionally overlay-owned. No controller
+  reads or mutates a Pixi-owned persistent SVG feature group.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.
@@ -114,22 +117,32 @@ The former opt-in experiment is retained only as historical context in
   and biome fills build polygon batches from retained topology, relief builds a pure sprite-instance batch, and Pixi
   consumes both scene outputs. Borders emit stable line batches with domain IDs and bounds and are drawn directly with
   Pixi graphics. World/topology/layer revision tokens advance from typed invalidations.
-- S-003 now has a pure base-geography builder for the ocean rectangle, grouped land and lake polygon paths, coastline
-  paths, and ordered include/exclude land and water masks. Feature shaping and boundary clipping are renderer-neutral,
-  and Pixi consumes the ocean, landmass, lake, and coastline outputs in canonical order. Depth bands, patterns, and
-  visual parity remain part of M4.
-- V-001 now has an editor-free mount/update/destroy API, a static typed world fixture, and a separate production build.
-  The first build proves that the production renderer can be lazy-loaded without the classic scripts and records its
-  bundle and asset assumptions in [pixi-viewer-spike.md](pixi-viewer-spike.md). Browser startup and embed proof remain
-  open.
-- Q-001 now has deterministic 10k/50k/100k seed recipes, a checked-in legacy fixture, fixed reference profiles, a
-  versioned report contract, separate scene-build/GPU-submit instrumentation, and a two-run SVG/Pixi benchmark command.
-  Checked-in reference measurements still require browser execution on the documented profiles.
-- P-001 was retired by the hard-cutover decision. Save no longer materializes Pixi-owned SVG layers, and legacy SVG
-  export is allowed to omit migrated content until M11 replaces it with scene/Pixi export.
-- The first M11 raster slice is implemented for viewport PNG/JPEG: export requires the live Pixi renderer, draws its
-  canvas as the authoritative base, then composites only not-yet-migrated SVG overlays. Offscreen full-map rendering,
-  maximum-texture detection, and Pixi-backed tile export remain open.
+- M4/S-003 now owns the full physical foundation: pure builders emit ocean/land/lake/coastline geometry, ordered land
+  and water masks, ocean depth bands, and land/ocean height contours. Pixi consumes those scenes plus cached repeated
+  ocean patterns and masked map textures in canonical order. Semantic physical style is serialized; a one-time adapter
+  imports old SVG attributes and the carrier children are then removed. Missing textures and unsupported physical
+  filters are explicit diagnostics. Reference-preset browser screenshots remain an environment gate.
+- M12/V-001 now has a versioned immutable snapshot, editor-free direct-module API, origin-checked iframe bridge,
+  pointer/pinch/wheel interaction, managed fonts, asset URL/CORS/credential policy, strict missing-asset errors, worker
+  configuration for custom factories, renderer/resolution preferences, reduced motion, hidden-tab restoration, and a
+  separate strict-CSP-compatible production build. Multi-instance, lifecycle, embed messaging, and asset policy unit
+  tests pass; browser visual/startup proof remains an environment gate.
+- Q-001 now has deterministic 10k/50k/100k seed recipes, a checked-in legacy-load fixture, fixed reference profiles, a
+  versioned report contract, separate scene-build/GPU-submit instrumentation, and repeated production-Pixi runs. New
+  runs do not reconstruct the removed SVG renderer. Checked-in reference measurements still require browser execution
+  on the documented profiles.
+- P-001 was retired by the hard-cutover decision. Save no longer materializes Pixi-owned SVG layers. Vector download is
+  explicitly unavailable until a separate exporter can consume renderer-neutral scenes without cloning the overlay.
+- M11 now has immutable `WorldSnapshot`/`RenderSnapshot` inputs, serialized semantic style and layer visibility,
+  Pixi-first viewport PNG/JPEG, capability-aware full-map extraction, overlap-safe tiled PNG export, progress,
+  cancellation, and deterministic temporary-canvas cleanup. The shared full-map compositor also supplies transform
+  previews and 3D mesh/globe textures. The small documented SVG viewport overlay is composited once; no migrated
+  feature geometry is reconstructed.
+- M13 remains the principal implementation phase after renderer cutover. `public/modules/ui/layers.js`, `style.js`,
+  `style-presets.js`, `options.js`, and `public/main.js` still provide classic UI/bootstrap globals and empty SVG
+  style/import carriers. They no longer persistently render migrated feature geometry, but their state and call sites
+  must move to typed modules before the scripts and global D3 selections can be deleted. This is not a renderer
+  fallback, but it still prevents the classic-runtime exit gate from being claimed.
 - The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
   WebGL context-loss recovery are verified.
 
@@ -440,8 +453,8 @@ behavior are suitable; do not make the migration depend on it.
 
 ## Immediate backlog
 
-The ordered, executable backlog is defined in [First execution tickets](#first-execution-tickets). The next technical
-milestone is retained cell geometry and semantic style inputs, not another direct translation of an SVG draw function.
+The historical execution tickets remain below for traceability. The active technical milestone is M13 classic runtime
+removal: move UI/bootstrap state behind typed modules, update call sites, and then delete each obsolete script/global.
 
 ## Scope and completion boundary
 
@@ -453,7 +466,7 @@ The migration is complete only when all of the following are true:
 - Controllers mutate world or style state and publish invalidations; they do not query or rewrite rendered paths.
 - Picking returns domain IDs and geometry information without exposing Pixi display objects to tools.
 - Save and load serialize domain data and semantic styles, never Pixi resources.
-- SVG export is generated from renderer-neutral scene data instead of cloning the live map DOM.
+- Vector export, if reintroduced, is generated from renderer-neutral scene data instead of cloning the live map DOM.
 - Raster export can render maps larger than the GPU maximum texture size using tiled output.
 - A read-only viewer can be imported without the editor shell, classic globals, or D3 v5.
 - The prototype globals, layer-ownership bridge, and classic draw dispatcher are removed.
@@ -910,13 +923,13 @@ layers.
 ## Final definition of done
 
 - [ ] Every persistent layer in the canonical inventory has a Pixi owner and parity evidence.
-- [ ] No hidden or background full SVG map is rendered during normal editor or viewer use.
+- [x] No hidden or background full SVG map is rendered during normal editor or viewer use.
 - [ ] Camera, styles, visibility, ordering, selection, and invalidation are typed state.
-- [ ] All core editors work through domain mutations, `MapHit`, and transient overlays.
-- [ ] Current-format save/load round trips preserve domain and semantic renderer state.
+- [x] All core editors work through domain mutations, `MapHit`, and transient overlays.
+- [x] Current-format save/load round trips preserve domain and semantic renderer state.
 - [ ] Pixi tiled raster export is independent of the live DOM; any retained vector exporter uses neutral scenes.
-- [ ] The standalone viewer passes embedding, lifecycle, CSP, and multi-instance tests.
+- [x] The standalone viewer passes embedding, lifecycle, CSP, and multi-instance tests.
 - [ ] Performance, memory, context recovery, visual, and browser gates pass.
 - [ ] Classic layer/style rendering globals and prototype bridges are removed.
 - [ ] Remaining SVG usage is limited to small documented UI/interaction overlays.
-- [ ] Architecture and contributor documentation describe the new ownership model.
+- [x] Architecture and contributor documentation describe the new ownership model.

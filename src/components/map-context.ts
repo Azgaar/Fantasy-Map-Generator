@@ -6,6 +6,7 @@ import type { PackedGraph } from "@/types/PackedGraph";
 export type MapContextEntityKind =
   | "burg"
   | "coastline"
+  | "compass"
   | "emblem"
   | "goods"
   | "ice"
@@ -23,11 +24,13 @@ export type MapContextEntityKind =
 
 export interface MapContextEntity {
   element?: SVGElement;
+  emblemType?: "burg" | "province" | "state";
   id?: number;
   key: string;
   kind: MapContextEntityKind;
   label: string;
   labelType?: LabelType;
+  stateId?: number;
 }
 
 export type MapContextAreaKind = "biome" | "culture" | "province" | "religion" | "state";
@@ -96,6 +99,10 @@ function addHitEntity(entities: MapContextEntity[], hit: MapHit, pack: PackedGra
       addEntity(entities, getCoastlineEntity(id, pack));
       return;
     }
+    case "compass": {
+      addEntity(entities, { key: "compass", kind: "compass", label: "Wind rose" });
+      return;
+    }
     case "emblem": {
       const type = String(hit.subPart?.type || "state") as "burg" | "province" | "state";
       const ownerName =
@@ -104,7 +111,13 @@ function addHitEntity(entities: MapContextEntity[], hit: MapHit, pack: PackedGra
           : type === "province"
             ? pack.provinces[id]?.fullName || pack.provinces[id]?.name
             : pack.states[id]?.fullName || pack.states[id]?.name;
-      addEntity(entities, { id, key: `emblem:${type}:${id}`, kind: "emblem", label: `${ownerName || type} emblem` });
+      addEntity(entities, {
+        emblemType: type,
+        id,
+        key: `emblem:${type}:${id}`,
+        kind: "emblem",
+        label: `${ownerName || type} emblem`
+      });
       if (type === "burg") addEntity(entities, getBurgEntity(id, pack));
       return;
     }
@@ -260,6 +273,7 @@ function addEmblemEntities(entities: MapContextEntity[], element: SVGElement, pa
         ? pack.provinces[id]?.fullName || pack.provinces[id]?.name
         : pack.states[id]?.fullName || pack.states[id]?.name;
   addEntity(entities, {
+    emblemType: type,
     element,
     id,
     key: `emblem:${type}:${id}`,
@@ -312,7 +326,8 @@ function getRegimentEntityById(stateId: number, id: number, pack: PackedGraph, e
     id,
     key: `regiment:${stateId}:${id}`,
     kind: "regiment",
-    label: regiment?.name || element?.dataset.name || `Regiment ${id}`
+    label: regiment?.name || element?.dataset.name || `Regiment ${id}`,
+    stateId
   };
 }
 
