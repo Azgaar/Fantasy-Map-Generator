@@ -94,6 +94,7 @@ const createLayerPriority = (order: readonly MapLayerId[]): Map<MapLayerId, numb
 
 export class MapPickingIndex {
   private layerPriority = createLayerPriority(MAP_LAYER_REGISTRY.map(layer => layer.id));
+  private maxRescaledExtent = 0;
   private readonly spatial = new BoundsSpatialIndex<MapPickEntry>();
   private world: MapRenderWorld | null = null;
   private worldBounds: Bounds | null = null;
@@ -105,12 +106,20 @@ export class MapPickingIndex {
   replaceEntries(entries: readonly MapPickEntry[], areaWorld: MapRenderWorld | null = null): void {
     this.world = areaWorld;
     this.worldBounds = areaWorld ? getWorldBounds(areaWorld) : null;
+    this.maxRescaledExtent = entries.reduce(
+      (maximum, entry) =>
+        (entry.shape === "point" || entry.shape === "box") && entry.rescale
+          ? Math.max(maximum, getEntryRescaledExtent(entry))
+          : maximum,
+      0
+    );
     this.spatial.replace(entries, getEntryBounds);
   }
 
   clear(): void {
     this.world = null;
     this.worldBounds = null;
+    this.maxRescaledExtent = 0;
     this.spatial.clear();
   }
 
@@ -124,7 +133,8 @@ export class MapPickingIndex {
 
   pick(mapPoint: ScreenPoint, query: MapPickingQuery): IndexedMapHit | null {
     const cameraScale = Math.max(query.cameraScale, 0.01);
-    const searchRadius = query.tolerance + 24 / cameraScale;
+    const displayScale = Math.max((1 + 1 / cameraScale) / 2, 0.01);
+    const searchRadius = query.tolerance + 24 / cameraScale + this.maxRescaledExtent * Math.max(0, displayScale - 1);
     const candidates = this.spatial
       .query({
         maxX: mapPoint.x + searchRadius,
@@ -555,6 +565,16 @@ function getEntryBounds(entry: MapPickEntry): Bounds {
   }
   if (entry.shape === "box") return getBoxBounds(entry, 1);
   return getPointsBounds(entry.points);
+}
+
+function getEntryRescaledExtent(entry: MapPickEntry): number {
+  if (entry.shape === "point") {
+    return Math.hypot(entry.offsetX ?? 0, entry.offsetY ?? 0) + entry.radius;
+  }
+  if (entry.shape === "box") {
+    return Math.hypot(entry.offsetX ?? 0, entry.offsetY ?? 0) + Math.max(entry.width, entry.height);
+  }
+  return 0;
 }
 
 function getBoxBounds(entry: BoxPickEntry, scale: number): Bounds {

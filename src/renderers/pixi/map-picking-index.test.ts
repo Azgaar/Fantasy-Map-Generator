@@ -64,6 +64,29 @@ describe("MapPickingIndex", () => {
     expect(index.pick({ x: 20, y: 19 }, { cameraScale: 1, isLayerVisible: visible(), tolerance: 0 })).toBeNull();
   });
 
+  it("keeps zoom-rescaled offset labels inside the spatial search", () => {
+    const index = new MapPickingIndex();
+    index.replaceEntries([
+      {
+        domainId: "state:1",
+        domainKind: "label",
+        height: 20,
+        kind: "label",
+        layer: "labels",
+        offsetX: 80,
+        rescale: true,
+        shape: "box",
+        width: 120,
+        x: 0,
+        y: 0
+      }
+    ]);
+
+    expect(index.pick({ x: 440, y: 0 }, { cameraScale: 0.1, isLayerVisible: visible(), tolerance: 0 })).toMatchObject({
+      domainId: "state:1"
+    });
+  });
+
   it("excludes invisible layers and respects dependency visibility", () => {
     const index = new MapPickingIndex();
     index.replaceEntries([
