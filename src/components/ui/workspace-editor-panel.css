@@ -221,6 +221,7 @@
 
 .fmg-editor-panel .editorDialog .header,
 .fmg-editor-panel .editorDialog .states {
+  box-sizing: border-box;
   width: max-content;
   min-width: 100%;
   column-gap: 10px;
