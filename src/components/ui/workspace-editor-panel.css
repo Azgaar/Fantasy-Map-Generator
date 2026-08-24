@@ -209,6 +209,7 @@
 }
 
 .fmg-editor-panel .editorDialog > .table {
+  box-sizing: border-box;
   width: 100%;
   max-width: none;
   max-height: none;
