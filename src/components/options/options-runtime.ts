@@ -4,6 +4,7 @@ import { hsl } from "d3";
 import { ApplicationController } from "@/application/application-controller";
 import { getViewportSurface } from "@/application/viewport-surface";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { enableElementDragging } from "@/components/element-dragging";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { fitScaleBar } from "@/renderers/draw-scalebar";
@@ -63,8 +64,8 @@ const eraInput = ensureEl<HTMLInputElement>("eraInput");
 const tooltip = ensureEl("tooltip");
 const viewMode = ensureEl("viewMode");
 
-window.enableElementDragging({ element: ensureEl("optionsContainer"), handleSelector: ".drag-trigger" });
-window.enableElementDragging({ element: ensureEl("exitCustomization"), handleSelector: "div" });
+enableElementDragging({ element: ensureEl("optionsContainer"), handleSelector: ".drag-trigger" });
+enableElementDragging({ element: ensureEl("exitCustomization"), handleSelector: "div" });
 ensureEl("mapLayers").style.userSelect = "none";
 
 optionsTrigger.addEventListener("click", showOptions);
