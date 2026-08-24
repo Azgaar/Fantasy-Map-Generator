@@ -66,7 +66,9 @@ export const Controllers = createRegistry({
   TradeAnimationEditor: () => import("@/controllers/trade-animation-editor").then(m => m.TradeAnimationEditor),
   TradeDetails: () => import("@/controllers/trade-details").then(m => m.TradeDetails),
   TransformTool: () => import("@/controllers/transform-tool").then(m => m.TransformTool),
-  UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
+  // Lives in components/ (a web component owns its dialog + logic), not controllers/;
+  // registered here too so existing Controllers.UnitsEditor.open() call sites keep working.
+  UnitsEditor: () => import("@/components/units-editor-dialog/units-editor-dialog").then(m => m.UnitsEditor),
   View3d: () => import("@/controllers/view-3d").then(m => m.View3d),
   WorldConfigurator: () => import("@/controllers/world-configurator").then(m => m.WorldConfigurator),
   ZonesEditor: () => import("@/controllers/zones-editor").then(m => m.ZonesEditor)

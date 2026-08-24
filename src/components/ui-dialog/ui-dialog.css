@@ -1,0 +1,127 @@
+:host {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  max-width: 93vw;
+  width: max-content;
+  outline: 0;
+  background-color: var(--bg-dialogs, #ffffff);
+  border: 1px solid var(--dark-solid, #999999);
+  font-family: var(--sans-serif);
+  color: #333333;
+  user-select: none;
+}
+
+:host([open]) {
+  display: block;
+}
+
+:host([minimized]) .ui-dialog-content {
+  display: none;
+}
+
+.ui-dialog-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3em 0.8em;
+  min-width: 150px;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ffffff;
+  background: var(--header, #997787);
+  border-bottom: 1px solid var(--dark-solid, #666666);
+  cursor: move;
+}
+
+.ui-dialog-title {
+  white-space: nowrap;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-dialog-titlebar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  margin-left: 5px;
+  width: 19px;
+  height: 18px;
+  line-height: 1;
+  color: #ffffff;
+  background: none;
+  border: 1px solid #c5c5c5;
+  cursor: pointer;
+}
+
+.ui-dialog-titlebar button:active {
+  border: 1px solid #5d4651;
+}
+
+@media (max-width: 600px) {
+  .ui-dialog-title {
+    font-size: 1.6em;
+  }
+
+  .ui-dialog-titlebar button {
+    margin-left: 10px;
+    width: 40px;
+    height: 32px;
+  }
+}
+
+.ui-dialog-content {
+  position: relative;
+  padding: 0.5em 1em;
+  max-height: 80vh;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.ui-dialog-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: transparent;
+}
+
+.ui-dialog-content::-webkit-scrollbar-thumb {
+  background-color: #aaaaaa;
+  border-radius: 6px;
+}
+
+.ui-dialog-content::-webkit-scrollbar-thumb:hover {
+  background-color: #666666;
+}
+
+.ui-dialog-buttonpane {
+  display: none;
+  text-align: left;
+  margin-top: 0.5em;
+  padding: 0.3em 1em 0.5em 0.4em;
+  border-top: 1px solid var(--dark-solid, #cccccc);
+}
+
+:host(.has-actions) .ui-dialog-buttonpane {
+  display: block;
+}
+
+.ui-dialog-buttonset {
+  float: right;
+}
+
+::slotted(button) {
+  margin: 0.5em 0.4em 0.5em 0;
+  padding: 0.3em 0.8em;
+  color: #333333;
+  background: #f0f0f0;
+  border: 1px solid #c5c5c5;
+  cursor: pointer;
+}
+
+::slotted(button:hover) {
+  background: #e0e0e0;
+}

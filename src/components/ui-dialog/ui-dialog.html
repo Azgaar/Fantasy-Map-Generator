@@ -1,0 +1,13 @@
+<div class="ui-dialog-titlebar">
+  <span class="ui-dialog-title"></span>
+  <button type="button" class="ui-dialog-titlebar-collapse" data-tip="Minimize / maximize">_</button>
+  <button type="button" class="ui-dialog-titlebar-close" data-tip="Close">✕</button>
+</div>
+<div class="ui-dialog-content">
+  <slot></slot>
+</div>
+<div class="ui-dialog-buttonpane">
+  <div class="ui-dialog-buttonset">
+    <slot name="actions"></slot>
+  </div>
+</div>
