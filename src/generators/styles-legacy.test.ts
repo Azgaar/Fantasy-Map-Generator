@@ -149,3 +149,11 @@ test("R8: the heal-consumed #terrs > #landHeights bag carries no keys beyond the
   expect(Object.keys(roundTripped[selector])).toEqual(expect.arrayContaining(fixtureKeys));
   expect(Object.keys(roundTripped[selector])).toHaveLength(fixtureKeys.length);
 });
+
+test("save.ts's master-compat shim: a top-level anchors:{} still parses clean", () => {
+  const warn = vi.spyOn(console, "warn");
+  const record = JSON.parse(JSON.stringify({ ...DEFAULT_STYLES, anchors: {} }));
+  const parsed = Styles.parse(record);
+  expect(parsed).toEqual(DEFAULT_STYLES);
+  expect(warn).not.toHaveBeenCalled();
+});

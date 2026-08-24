@@ -2,6 +2,7 @@
 // legacy-shaped style bags off a live SVG, through the same PRESET_ROUTES/schema presetFromLegacy uses.
 import { expect, test } from "vitest";
 import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
+import { DEFAULT_STYLES } from "./styles-schema";
 
 test("harvestAttributes derives from routes and schema", () => {
   const table = harvestAttributes();
@@ -43,4 +44,32 @@ test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains",
   expect(styles.rivers.attrs.fill).toBe("#123456");
   expect(styles.labels.groups.custom).toBeDefined();
   expect(styles.relief.options.size).toBe(0.7);
+});
+
+test("a schema attr the element omits harvests as an explicit null, not the seeded default", () => {
+  document.body.innerHTML = `<svg id="map"><g id="rivers" opacity="0.9"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(DEFAULT_STYLES.rivers.attrs.fill).not.toBeNull();
+  expect(result.rivers.attrs.fill).toBeNull();
+  expect(result.rivers.attrs.opacity).toBe(0.9);
+});
+
+test("an omitted option still defaults, unlike a schema attr", () => {
+  document.body.innerHTML = `<svg id="map"><g id="gridOverlay" stroke="#777"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(result.grid.options.type).toBe(DEFAULT_STYLES.grid.options.type);
+});
+
+test("syncStylesFromMap harvests burg/anchor groups present in the DOM over the live store", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="capital" fill="#00ff00" font-size="3"></g></g>
+    <g id="anchors"><g id="capital" fill="#00ff00" font-size="3"></g></g>
+  </svg>`;
+  styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#000000";
+  styles.burgIcons.burgIcons.groups.town = structuredClone(styles.burgIcons.burgIcons.groups.capital);
+  syncStylesFromMap();
+  expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#00ff00");
+  expect(styles.burgIcons.anchors.groups.capital.attrs.fill).toBe("#00ff00");
+  // groups the DOM doesn't carry keep the live store value untouched
+  expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
 });

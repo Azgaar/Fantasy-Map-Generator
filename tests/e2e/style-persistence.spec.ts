@@ -3,9 +3,11 @@ import path from "path";
 import { expect, test, type Page } from "@playwright/test";
 
 // Step 4 of the style-migration doc: styles.ts is now its own record (data[48]) in the map file.
-// These three tests pin the round trips the doc promises: a store-format save/reload survives a
-// preset switch and a DOM-only editor write, and an old, record-less map gets harvested into the
-// store on load and then produces a store-format record of its own on the next save.
+// These tests pin the round trips the doc promises: a store-format save/reload survives a preset
+// switch and a DOM-only editor write, an old, record-less map gets harvested into the store on
+// load and then produces a store-format record of its own on the next save, a preset-nulled attr
+// stays absent rather than getting backfilled from DEFAULT_STYLES, and a DOM-only #terrain write
+// survives because the relief overlay no longer clobbers it.
 
 declare const changeStyle: (preset: string) => Promise<void>;
 declare const d3: { select: (selector: string) => { attr: (name: string, value: string) => unknown } };
@@ -145,5 +147,66 @@ test.describe("style persistence round trips", () => {
     });
     const parsed = JSON.parse(record48);
     expect(parsed).toHaveProperty("map");
+  });
+
+  test("preset-nulled attr stays absent: a preset switch survives a save and load with no backfill", async ({
+    page,
+    context
+  }) => {
+    await context.clearCookies();
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    await page.goto("/?seed=style-persistence-null-preset&width=1280&height=720");
+    await waitForMap(page);
+
+    await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
+    await page.evaluate(() => changeStyle("clean"));
+
+    expect(await page.locator("#statesHalo").getAttribute("filter")).toBeNull();
+
+    const buffer = await saveAsDownload(page);
+    await reload(page, buffer, "style-persistence-null-preset-reloaded");
+
+    const after = await page.evaluate(() => ({
+      store: styles.states.statesHalo.attrs.filter,
+      dom: document.getElementById("statesHalo")?.getAttribute("filter")
+    }));
+
+    expect(after.store).toBeNull();
+    expect(after.dom).toBeNull();
+  });
+
+  test("relief attrs persistence: a DOM-only #terrain write survives a save and load", async ({ page, context }) => {
+    await context.clearCookies();
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    await page.goto("/?seed=style-persistence-relief&width=1280&height=720");
+    await waitForMap(page);
+
+    // #terrain attrs are DOM-authoritative until step 6; the style editor writes them by DOM,
+    // not through the store (public/modules/ui/style.js:551-552)
+    await page.evaluate(() => {
+      d3.select("#terrain").attr("opacity", "0.42");
+    });
+    expect(await page.locator("#terrain").getAttribute("opacity")).toBe("0.42");
+
+    const buffer = await saveAsDownload(page);
+    await reload(page, buffer, "style-persistence-relief-reloaded");
+
+    const after = await page.evaluate(() => ({
+      store: styles.relief.attrs.opacity,
+      dom: document.getElementById("terrain")?.getAttribute("opacity")
+    }));
+
+    expect(String(after.store)).toBe("0.42");
+    expect(after.dom).toBe("0.42");
   });
 });
