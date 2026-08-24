@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-// Covers <ui-dialog> chrome (title bar, minimize, close, resize, focus handling) via the
-// Units Editor, the first dialog migrated off jQuery UI's .dialog() onto the component.
 test.describe("<ui-dialog> via Units Editor", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-ui-dialog&width=1280&height=720");
@@ -90,9 +88,6 @@ test.describe("<ui-dialog> via Units Editor", () => {
     await page.mouse.move(handleCenter.x - 120, handleCenter.y, { steps: 10 });
     await page.mouse.up();
 
-    // Shrinking width alone should not force content to wrap onto more lines and
-    // inflate the dialog's height — that would indicate content is reflowing/squishing
-    // instead of staying at its natural size and scrolling horizontally.
     const heightAfter = await dialog.evaluate(el => el.getBoundingClientRect().height);
     expect(heightAfter).toBe(heightBefore);
   });
@@ -124,9 +119,6 @@ test.describe("<ui-dialog> via Units Editor", () => {
   });
 
   test("closing restores focus to whatever had it before the dialog opened", async ({ page }) => {
-    // Use a synthetic opener rather than the real toolbar button: #editUnitsButton's
-    // panel auto-collapses after the click, which would make it unfocusable regardless
-    // of whether <ui-dialog> restores focus correctly - this isolates the behavior under test.
     await page.evaluate(() => {
       const opener = document.createElement("button");
       opener.id = "test-opener";

@@ -1,8 +1,3 @@
-/* Styles for content slotted into <ui-dialog> (light DOM children of the host).
-   These can't live in ui-dialog.css: ::slotted() can't be followed by another
-   pseudo-element (e.g. ::slotted(input)::-webkit-slider-thumb is invalid), so this
-   sheet is injected into the document instead of the component's shadow root. */
-
 ui-dialog input[type="range"] {
   padding: 0;
   height: 2px;

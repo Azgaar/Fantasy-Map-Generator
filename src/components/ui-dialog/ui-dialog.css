@@ -94,9 +94,6 @@
   overflow-y: auto;
 }
 
-/* Keep slotted content at its natural size when the dialog is shrunk narrower than it,
-   so it scrolls horizontally instead of its rows wrapping/squishing to fit. Matches
-   jQuery UI dialogs, which never forced content to shrink below its own layout. */
 ::slotted(*) {
   min-width: max-content;
 }
@@ -146,8 +143,6 @@
   background: #e0e0e0;
 }
 
-/* Resize handles have no visible affordance, matching jQuery UI's resizable
-   defaults — just an invisible hit area with a resize cursor. */
 .ui-resizable-handle {
   position: absolute;
 }
