@@ -466,7 +466,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         });
 
       // turn on active layers
-      turnOnPixiLayer("texture", "toggleTexture", Boolean(hasChild(select("#texture"), "image")));
       turnOnPixiLayer("height", "toggleHeight", Boolean(hasChildren(select("#terrs").select("#landHeights"))));
       turnOnPixiLayer("lakes", "toggleLakes", Boolean(isVisible(select("#lakes"))));
       turnOnPixiLayer("biomes", "toggleBiomes", Boolean(hasChildren(select("#biomes"))));

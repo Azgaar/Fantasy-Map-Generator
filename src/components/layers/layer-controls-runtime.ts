@@ -170,7 +170,6 @@ const PIXI_LAYER_BY_TOGGLE = {
   toggleRoutes: "routes",
   toggleStates: "states",
   toggleTemperature: "temperature",
-  toggleTexture: "texture",
   toggleTrade: "trade",
   toggleZones: "zones"
 } as const satisfies Record<string, PixiOwnedLayer>;
@@ -202,7 +201,6 @@ const STYLE_TARGET_BY_TOGGLE: Partial<Record<LayerToggleId, string>> = {
   toggleScaleBar: "scaleBar",
   toggleStates: "regions",
   toggleTemperature: "temperature",
-  toggleTexture: "texture",
   toggleTrade: "tradeAnimation",
   toggleVignette: "vignette",
   toggleZones: "zones"
@@ -232,7 +230,6 @@ const SVG_LAYER_BY_TOGGLE: Partial<Record<LayerToggleId, string>> = {
   toggleRulers: "ruler",
   toggleStates: "regions",
   toggleTemperature: "temperature",
-  toggleTexture: "texture",
   toggleTrade: "tradeAnimation",
   toggleZones: "zones"
 };
@@ -302,10 +299,12 @@ function bindLayerControlEvents(): void {
 }
 
 export function isLayerOn(id: string): boolean {
+  if (id === "toggleTexture") return true; // compatibility for saved label dependencies and legacy callers
   return !ensureEl(id).classList.contains("buttonoff");
 }
 
 export function setLayerButtonVisibility(id: string, visible: boolean): void {
+  if (id === "toggleTexture") return;
   ensureEl(id).classList.toggle("buttonoff", !visible);
   getCurrentPreset();
   ViewportLayers.invalidateAll();

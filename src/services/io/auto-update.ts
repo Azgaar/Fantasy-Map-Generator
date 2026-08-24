@@ -17,6 +17,7 @@ import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { invalidateBurgSymbols, invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
@@ -760,7 +761,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       select("#texture").attr("data-href", href).attr("data-x", x).attr("data-y", y);
       // recreate image in expected format
       textureImage.remove();
-      window.LayerControls.redrawLayer("toggleTexture");
+      invalidatePixiRendererLayer("texture");
     }
   }
 

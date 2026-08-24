@@ -106,7 +106,7 @@ const prepareSurface = (): HTMLElement => {
 const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("ocean", true);
   renderer.setLayerVisibility("landmass", true);
-  renderer.setLayerVisibility("texture", window.LayerControls.isLayerOn("toggleTexture"));
+  renderer.setLayerVisibility("texture", true);
   renderer.setLayerVisibility("height", window.LayerControls.isLayerOn("toggleHeight"));
   renderer.setLayerVisibility("lakes", window.LayerControls.isLayerOn("toggleLakes"));
   renderer.setLayerVisibility("biomes", window.LayerControls.isLayerOn("toggleBiomes"));

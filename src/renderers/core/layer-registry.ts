@@ -60,7 +60,7 @@ const defineLayer = (
 export const MAP_LAYER_REGISTRY: readonly MapLayerDefinition[] = [
   defineLayer("ocean", 0),
   defineLayer("landmass", 10),
-  defineLayer("texture", 20, "toggleTexture", ["landmass"]),
+  defineLayer("texture", 20, undefined, ["landmass"]),
   defineLayer("height", 30, "toggleHeight", ["landmass"]),
   defineLayer("lakes", 40, "toggleLakes", ["landmass"]),
   defineLayer("biomes", 50, "toggleBiomes", ["landmass"]),

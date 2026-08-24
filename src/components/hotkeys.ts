@@ -73,7 +73,6 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "#") Controllers.MarkerCreator.toggle();
   else if (key === "$") Controllers.RiverAutoCreator.toggle();
   else if (key === "%") Controllers.RouteCreator.open();
-  else if (code === "KeyX") window.LayerControls.toggleLayer("toggleTexture");
   else if (code === "KeyH") window.LayerControls.toggleLayer("toggleHeight");
   else if (code === "KeyQ") window.LayerControls.toggleLayer("toggleLakes");
   else if (code === "KeyB") window.LayerControls.toggleLayer("toggleBiomes");

@@ -8,7 +8,7 @@ import {
 
 describe("Pixi layer visibility state", () => {
   it("captures every toggleable owned layer without discarding future visibility entries", () => {
-    const appStyle = { mapLayerVisibility: { vignette: false } } as Pick<Style, "mapLayerVisibility">;
+    const appStyle = { mapLayerVisibility: { texture: false, vignette: false } } as Pick<Style, "mapLayerVisibility">;
     capturePixiLayerVisibility(appStyle, controlId => controlId !== "toggleReligions");
 
     expect(Object.keys(PIXI_LAYER_CONTROL_IDS)).toEqual([
@@ -38,7 +38,6 @@ describe("Pixi layer visibility state", () => {
       "routes",
       "states",
       "temperature",
-      "texture",
       "trade",
       "zones"
     ]);
@@ -50,6 +49,7 @@ describe("Pixi layer visibility state", () => {
       states: true,
       vignette: false
     });
+    expect(appStyle.mapLayerVisibility).not.toHaveProperty("texture");
   });
 
   it("distinguishes an absent value from an explicitly hidden layer", () => {

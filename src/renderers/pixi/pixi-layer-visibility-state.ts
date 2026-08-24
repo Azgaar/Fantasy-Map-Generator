@@ -28,7 +28,6 @@ export const PIXI_LAYER_CONTROL_IDS = {
   routes: "toggleRoutes",
   states: "toggleStates",
   temperature: "toggleTemperature",
-  texture: "toggleTexture",
   trade: "toggleTrade",
   zones: "toggleZones"
 } as const satisfies Partial<Record<PixiOwnedLayer, string>>;
@@ -40,6 +39,7 @@ export function capturePixiLayerVisibility(
   isControlOn: (controlId: string) => boolean
 ): void {
   const visibility = { ...appStyle.mapLayerVisibility };
+  delete visibility.texture;
   for (const [layer, controlId] of Object.entries(PIXI_LAYER_CONTROL_IDS) as [ToggleablePixiLayer, string][]) {
     visibility[layer] = isControlOn(controlId);
   }

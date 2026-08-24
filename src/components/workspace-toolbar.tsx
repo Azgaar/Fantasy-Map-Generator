@@ -61,7 +61,6 @@ const MAP_LAYER_MENU_GROUPS: readonly MapLayerMenuGroup[] = [
     label: "Terrain & climate",
     icon: "mountain",
     ids: [
-      "toggleTexture",
       "toggleHeight",
       "toggleLakes",
       "toggleBiomes",
@@ -321,6 +320,7 @@ export function LayerMenuItems({
   const groupedLayers = MAP_LAYER_MENU_GROUPS.map((): LayerView[] => []);
   const otherLayers: LayerView[] = [];
   for (const layer of snapshot.layers) {
+    if (layer.id === "toggleTexture") continue;
     const groupIndex = MAP_LAYER_GROUP_INDEX.get(layer.id);
     if (groupIndex === undefined) otherLayers.push(layer);
     else groupedLayers[groupIndex]?.push(layer);

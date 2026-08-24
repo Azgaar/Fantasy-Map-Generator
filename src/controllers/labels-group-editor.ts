@@ -35,7 +35,6 @@ const LAYER_TOGGLES: { id: string; label: string }[] = [
   { id: "toggleRoutes", label: "Routes" },
   { id: "toggleRulers", label: "Rulers" },
   { id: "toggleScaleBar", label: "Scale Bar" },
-  { id: "toggleTexture", label: "Texture" },
   { id: "toggleTemperature", label: "Temperature" },
   { id: "toggleTrade", label: "Trade" },
   { id: "toggleVignette", label: "Vignette" },

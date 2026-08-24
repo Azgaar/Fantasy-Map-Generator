@@ -32,10 +32,10 @@ describe("map layer registry", () => {
     ).toThrow("Unknown dependency");
   });
 
-  it("reorders controlled layers while keeping fixed registry slots", () => {
-    const order = resolveMapLayerOrder(["toggleStates", "toggleTexture", "toggleBiomes"]);
+  it("reorders controlled layers while keeping always-visible registry slots fixed", () => {
+    const order = resolveMapLayerOrder(["toggleStates", "toggleBiomes"]);
 
-    expect(order.slice(0, 7)).toEqual(["ocean", "landmass", "states", "texture", "biomes", "height", "lakes"]);
+    expect(order.slice(0, 7)).toEqual(["ocean", "landmass", "texture", "states", "biomes", "height", "lakes"]);
     expect(order[17]).toBe("coastline");
     expect(new Set(order).size).toBe(MAP_LAYER_REGISTRY.length);
   });
