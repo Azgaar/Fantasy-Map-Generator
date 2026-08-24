@@ -21,6 +21,7 @@ export type ToolbarWorkspaceSection =
   | "preferences";
 
 interface WorkspaceToolbarProps {
+  initialMapName?: string;
   initialMapSnapshot?: LayerControlsSnapshot;
   mapControls?: LegacyLayerControls;
   onOpenSection: (section: ToolbarWorkspaceSection) => void;
@@ -244,6 +245,7 @@ function ViewsMenu({
             {presetOptions.map(option => (
               <MenuItem
                 active={option.value === snapshot.selectedPreset}
+                disabled={snapshot.presetSelectionDisabled}
                 icon={option.value === snapshot.selectedPreset ? "tick" : "blank"}
                 key={option.value}
                 onClick={() => {
@@ -274,6 +276,40 @@ function ViewsMenu({
         </>
       )}
     </FloatingMenu>
+  );
+}
+
+function getCurrentMapName(fallback?: string): string {
+  if (typeof document === "undefined") return fallback?.trim() || "Untitled map";
+  return document.querySelector<HTMLInputElement>("#mapName")?.value.trim() || fallback?.trim() || "Untitled map";
+}
+
+function MapIdentity({ initialMapName }: Pick<WorkspaceToolbarProps, "initialMapName">): React.JSX.Element {
+  const [mapName, setMapName] = useState(() => getCurrentMapName(initialMapName));
+
+  useEffect(() => {
+    const input = document.querySelector<HTMLInputElement>("#mapName");
+    const updateMapName = () => setMapName(getCurrentMapName(initialMapName));
+    input?.addEventListener("input", updateMapName);
+    input?.addEventListener("change", updateMapName);
+    window.addEventListener("map:generated", updateMapName);
+    window.addEventListener("map:loaded", updateMapName);
+    updateMapName();
+    return () => {
+      input?.removeEventListener("input", updateMapName);
+      input?.removeEventListener("change", updateMapName);
+      window.removeEventListener("map:generated", updateMapName);
+      window.removeEventListener("map:loaded", updateMapName);
+    };
+  }, [initialMapName]);
+
+  return (
+    <div aria-label={`Current map: ${mapName}`} className="fmg-fantasia" data-tip="Current map name">
+      <span className="fmg-fantasia__mark" aria-hidden="true">
+        {mapName.charAt(0).toLocaleUpperCase() || "M"}
+      </span>
+      <span className="fmg-fantasia__label">{mapName}</span>
+    </div>
   );
 }
 
@@ -335,16 +371,7 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
   return (
     <nav aria-label="Map workspace" className="fmg-workspace-toolbar">
       <div className="fmg-workspace-toolbar__group">
-        <div
-          aria-label="Fantasia, country information placeholder"
-          className="fmg-fantasia"
-          data-tip="Country information will appear here"
-        >
-          <span className="fmg-fantasia__mark" aria-hidden="true">
-            F
-          </span>
-          <span className="fmg-fantasia__label">Fantasia</span>
-        </div>
+        <MapIdentity initialMapName={props.initialMapName} />
         <ProjectMenu onOpenSection={props.onOpenSection} />
         <ToolMenu
           groupId="analysis"

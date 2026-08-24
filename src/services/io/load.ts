@@ -2,8 +2,10 @@ import { select } from "d3";
 import { ApplicationController } from "@/application/application-controller";
 import { getViewportSurface } from "@/application/viewport-surface";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { LayerControls } from "@/components/layers/layer-controls";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Controllers } from "@/controllers";
 import { ensureMeasurerIds } from "@/generators/measurers-generator";
 import { ensureReliefIconIds } from "@/generators/relief-generator";
 import { WorldGenerationController } from "@/generators/world-generation-controller";
@@ -11,7 +13,11 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { importLegacyRendererStyle, removeLegacyRendererGroups } from "@/renderers/pixi/legacy-svg-import";
+import {
+  getLegacyRendererLayerVisibility,
+  importLegacyRendererStyle,
+  removeLegacyRendererGroups
+} from "@/renderers/pixi/legacy-svg-import";
 import { getStoredPixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import {
   addCustomHeightColorScheme as addCustomColorScheme,
@@ -236,10 +242,12 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
   let loadGroupOpen = false;
+  const sessionThreeDOptions = options.threeD;
 
   try {
     // exit customization
     if (typeof window.closeDialogs === "function") closeDialogs();
+    if (document.getElementById("canvas3d")) await Controllers.View3d.enterStandard();
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
@@ -279,6 +287,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         urbanization = +settings[13];
       }
       if (settings[19]) options = JSON.parse(settings[19]);
+      options.threeD = sessionThreeDOptions;
       // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
       if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
       if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
@@ -422,12 +431,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const { migrateMap } = await import("./map-migrations");
       migrateMap(mapVersion!, data);
     }
+    options.threeD = sessionThreeDOptions;
     migrateLegacyCustomEmblemData();
     importLegacyRendererStyle(
       style,
       document,
       options.burgs.groups.map(group => group.name)
     );
+    if (style.mapLayerOrder) LayerControls.setLayerOrder(style.mapLayerOrder);
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
@@ -465,7 +476,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         "toggleCompass",
         Boolean(isVisible(select("#compass")) && hasChild(select("#compass"), "use"))
       );
-      turnOnPixiLayer("rivers", "toggleRivers", pack.rivers.length > 0);
+      turnOnPixiLayer("rivers", "toggleRivers", getLegacyRendererLayerVisibility(document, "rivers"));
       turnOnPixiLayer("relief", "toggleRelief", Boolean(isVisible(select("#terrain"))));
       turnOnPixiLayer("religions", "toggleReligions", Boolean(hasChildren(select("#relig"))));
       turnOnPixiLayer("cultures", "toggleCultures", Boolean(hasChildren(select("#cults"))));
@@ -477,15 +488,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         "toggleBorders",
         Boolean(isVisible(select("#borders")) && hasChild(select("#borders"), "path"))
       );
-      turnOnPixiLayer("routes", "toggleRoutes", pack.routes.length > 0);
+      turnOnPixiLayer("routes", "toggleRoutes", getLegacyRendererLayerVisibility(document, "routes"));
       turnOnPixiLayer("temperature", "toggleTemperature", Boolean(hasChildren(select("#temperature"))));
-      turnOnPixiLayer(
-        "population",
-        "togglePopulation",
-        pack.cells.i.some(cellId => pack.cells.pop[cellId] > 0) ||
-          pack.burgs.some(burg => Boolean(burg.i && !burg.removed && burg.population))
-      );
-      turnOnPixiLayer("ice", "toggleIce", Boolean(pack.ice.length));
+      turnOnPixiLayer("population", "togglePopulation", getLegacyRendererLayerVisibility(document, "population"));
+      turnOnPixiLayer("ice", "toggleIce", getLegacyRendererLayerVisibility(document, "ice"));
       turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
       turnOnPixiLayer(
         "emblems",
@@ -493,29 +499,17 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         Boolean(isVisible(select("#emblems")) && hasChild(select("#emblems"), "use"))
       );
       turnOnPixiLayer("labels", "toggleLabels", Boolean(hasChildren(select("#labels"))));
-      turnOnPixiLayer(
-        "burgIcons",
-        "toggleBurgIcons",
-        pack.burgs.some(burg => burg.i && !burg.removed)
-      );
-      turnOnPixiLayer(
-        "military",
-        "toggleMilitary",
-        pack.states.some(state => Boolean(state.i && !state.removed && state.military?.length))
-      );
-      turnOnPixiLayer("markers", "toggleMarkers", Boolean(pack.markers.length));
+      turnOnPixiLayer("burgIcons", "toggleBurgIcons", getLegacyRendererLayerVisibility(document, "burgIcons"));
+      turnOnPixiLayer("military", "toggleMilitary", getLegacyRendererLayerVisibility(document, "military"));
+      turnOnPixiLayer("markers", "toggleMarkers", getLegacyRendererLayerVisibility(document, "markers"));
       turnOnPixiLayer("trade", "toggleTrade", Boolean(isVisible(select("#tradeAnimation"))));
-      turnOnPixiLayer(
-        "goods",
-        "toggleGoods",
-        pack.goods.some(good => good.visible)
-      );
-      turnOnPixiLayer("markets", "toggleMarketsLayer", Boolean(pack.markets.length));
+      turnOnPixiLayer("goods", "toggleGoods", getLegacyRendererLayerVisibility(document, "goods"));
+      turnOnPixiLayer("markets", "toggleMarketsLayer", getLegacyRendererLayerVisibility(document, "markets"));
       if (isVisible(select("#ruler"))) turnOn("toggleRulers");
       if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl<SVGGElement>("vignette"))) turnOn("toggleVignette");
 
-      getCurrentPreset();
+      LayerControls.syncPreset(false);
       Goods.sync();
       Markets.sync();
       Routes.sync();

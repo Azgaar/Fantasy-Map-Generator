@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getClampedMinimapCenter, getMinimapViewport } from "./map-minimap";
+import { getClampedMinimapCenter, getMinimapViewBox, getMinimapViewport } from "./map-minimap";
+
+describe("getMinimapViewBox", () => {
+  it("uses the current map dimensions", () => {
+    expect(getMinimapViewBox(1600, 900)).toBe("0 0 1600 900");
+  });
+});
 
 describe("getMinimapViewport", () => {
   afterEach(() => vi.unstubAllGlobals());

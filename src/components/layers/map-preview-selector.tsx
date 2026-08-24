@@ -17,11 +17,9 @@ export function MapPreviewSelector({
   initialSnapshot
 }: MapPreviewSelectorProps): React.JSX.Element {
   const [snapshot, setSnapshot] = useState(() => initialSnapshot ?? controls.getSnapshot());
-  const [disabled, setDisabled] = useState(false);
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const legacySelect = useRef<HTMLSelectElement>(null);
   const presetOptions = snapshot.presetOptions.filter(
     option => !option.hidden || option.value === snapshot.selectedPreset
   );
@@ -33,16 +31,6 @@ export function MapPreviewSelector({
     };
     window.addEventListener(LAYER_CONTROLS_CHANGE_EVENT, handleControlsChange);
     return () => window.removeEventListener(LAYER_CONTROLS_CHANGE_EVENT, handleControlsChange);
-  }, []);
-
-  useEffect(() => {
-    const select = legacySelect.current;
-    if (!select) return;
-    const updateDisabled = () => setDisabled(select.disabled);
-    const observer = new MutationObserver(updateDisabled);
-    observer.observe(select, { attributeFilter: ["disabled"], attributes: true });
-    updateDisabled();
-    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -70,21 +58,6 @@ export function MapPreviewSelector({
 
   return (
     <div className="fmg-map-preview" ref={root}>
-      <select
-        aria-hidden="true"
-        className="fmg-map-preview__legacy-select"
-        id="layersPreset"
-        onChange={event => applyPreset(event.currentTarget.value)}
-        ref={legacySelect}
-        tabIndex={-1}
-        value={snapshot.selectedPreset}
-      >
-        {presetOptions.map(option => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
       <button
         aria-controls="mapPreviewDropdown"
         aria-expanded={open}
@@ -92,7 +65,7 @@ export function MapPreviewSelector({
         aria-label={`Map view: ${selectedPreset?.label ?? "Custom map"}`}
         className="fmg-map-preview__trigger"
         data-tip="Choose how the map is presented"
-        disabled={disabled}
+        disabled={snapshot.presetSelectionDisabled}
         id="mapPreviewTrigger"
         onClick={() => setOpen(current => !current)}
         ref={trigger}

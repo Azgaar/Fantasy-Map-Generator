@@ -116,6 +116,16 @@ export function validateLayerRegistry(registry: readonly MapLayerDefinition[]): 
 
 validateLayerRegistry(MAP_LAYER_REGISTRY);
 
+const MAP_LAYER_IDS = new Set<MapLayerId>(MAP_LAYER_REGISTRY.map(layer => layer.id));
+
+export function normalizeMapLayerOrder(order: readonly string[]): MapLayerId[] {
+  const requested = order.filter(
+    (layer, index): layer is MapLayerId => MAP_LAYER_IDS.has(layer as MapLayerId) && order.indexOf(layer) === index
+  );
+  const requestedSet = new Set(requested);
+  return [...requested, ...MAP_LAYER_REGISTRY.filter(layer => !requestedSet.has(layer.id)).map(layer => layer.id)];
+}
+
 export function resolveMapLayerOrder(controlOrder: readonly string[]): MapLayerId[] {
   const layerByControl = new Map(
     MAP_LAYER_REGISTRY.flatMap(layer => (layer.controlId ? [[layer.controlId, layer.id] as const] : []))

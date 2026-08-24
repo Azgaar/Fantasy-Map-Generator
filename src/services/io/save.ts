@@ -1,6 +1,7 @@
 // Save the whole .map project to storage, machine or cloud
 
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { LayerControls } from "@/components/layers/layer-controls";
 import { tip } from "@/components/tooltips";
 import { capturePixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { Services } from "@/services";
@@ -63,7 +64,7 @@ function prepareMapData(): string {
     "", // previously used for temperatureEquatorOutput.value
     "", // previously used for tempNorthOutput.value
     "", // previously used for precOutput.value, part of options now
-    JSON.stringify(options),
+    JSON.stringify({ ...options, threeD: undefined }),
     mapName.value,
     "", // previously used for hideLabels
     stylePreset.value,
@@ -121,6 +122,7 @@ function prepareMapData(): string {
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
   capturePixiLayerVisibility(style, controlId => window.LayerControls.isLayerOn(controlId));
+  style.mapLayerOrder = LayerControls.getLayerOrder();
   const styleData = JSON.stringify(style);
 
   // store custom good icons

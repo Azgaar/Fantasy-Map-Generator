@@ -1,5 +1,6 @@
 import { tip } from "@/components/tooltips";
-import { resolveMapLayerOrder } from "@/renderers/core/layer-registry";
+import type { MapLayerId } from "@/renderers/core/layer-registry";
+import { MAP_LAYER_REGISTRY, normalizeMapLayerOrder, resolveMapLayerOrder } from "@/renderers/core/layer-registry";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawMarkets } from "@/renderers/draw-markets";
 import {
@@ -9,13 +10,14 @@ import {
 } from "@/renderers/pixi/pixi-renderer-controller";
 import type { PixiOwnedLayer } from "@/renderers/pixi/pixi-renderer-ownership";
 import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
-import { ensureEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 import { enableVerticalSortable } from "../dialog/vertical-sortable";
 import {
   bindLayerControls,
   LAYER_CONTROLS_CHANGE_EVENT,
   LayerControls,
   type LayerControlsSnapshot,
+  type LayerPresetOption,
   type LegacyLayerControls
 } from "./layer-controls";
 
@@ -238,12 +240,17 @@ const SVG_LAYER_BY_TOGGLE: Partial<Record<LayerToggleId, string>> = {
 let presets: LayerPresetMap = cloneDefaultPresets();
 let initialized = false;
 let layerOrder: LayerToggleId[] = [];
+let presetOptions: LayerPresetOption[] = [];
+let presetSelectionDisabled = false;
+let selectedPreset = "political";
 
 export function initializeLayerControlsRuntime(): void {
   if (initialized) return;
   initialized = true;
+  initializePresetStateFromDom();
   restoreCustomPresets();
   syncLayerOrderFromDom();
+  syncRendererLayerOrder();
   enableVerticalSortable({
     container: ensureEl("mapLayers"),
     handleSelector: ".fmg-layer-row__handle",
@@ -260,6 +267,7 @@ export function initializeLayerControlsRuntime(): void {
   const controls: LegacyLayerControls = {
     applyPreset: handleLayersPresetChange,
     drawActiveLayers,
+    getLayerOrder: getMapLayerOrder,
     getSnapshot: getLayerControlsSnapshot,
     isLayerOn,
     moveLayer: moveLayerById,
@@ -267,7 +275,10 @@ export function initializeLayerControlsRuntime(): void {
     removePreset,
     restoreSavedPreset: applySavedPreset,
     savePreset: savePresetByName,
+    setLayerOrder: restoreMapLayerOrder,
+    setPresetState,
     setLayerVisibility: setLayerButtonVisibility,
+    syncPreset,
     toggleLayer(id, modifiers = {}) {
       if (!isLayerToggleId(id)) return false;
       return toggleLayer(id, new MouseEvent("click", modifiers));
@@ -475,7 +486,7 @@ const drawRoutes = (): void => invalidatePixiRendererLayer("routes");
 const drawStates = (): void => invalidatePixiRendererLayer("states");
 
 function applySavedPreset(): void {
-  let preset = localStorage.getItem("preset") || ensureEl<HTMLSelectElement>("layersPreset").value;
+  let preset = localStorage.getItem("preset") || selectedPreset;
   if (!presets[preset]) preset = "political";
   setLayersPreset(preset);
   const visible = new Set(presets[preset]);
@@ -486,7 +497,7 @@ function applySavedPreset(): void {
 }
 
 function handleLayersPresetChange(preset: string): void {
-  if (!presets[preset]) return;
+  if (presetSelectionDisabled || !presets[preset]) return;
   setLayersPreset(preset);
   const visible = new Set(presets[preset]);
   for (const layer of ensureEl("mapLayers").querySelectorAll("li")) {
@@ -500,12 +511,9 @@ function handleLayersPresetChange(preset: string): void {
 }
 
 function setLayersPreset(preset: string): void {
-  ensureEl<HTMLSelectElement>("layersPreset").value = preset;
+  selectedPreset = preset;
+  syncLegacyPresetControl();
   localStorage.setItem("preset", preset);
-  ensureEl("removePresetButton").style.display = DEFAULT_PRESETS[preset as keyof typeof DEFAULT_PRESETS]
-    ? "none"
-    : "inline-block";
-  ensureEl("savePresetButton").style.display = "none";
 }
 
 function savePresetByName(name: string): void {
@@ -516,27 +524,23 @@ function savePresetByName(name: string): void {
     .filter(isLayerToggleId)
     .sort();
 
-  const select = ensureEl<HTMLSelectElement>("layersPreset");
-  const existing = [...select.options].find(option => option.value === preset);
-  if (existing) select.value = preset;
-  else select.add(new Option(preset, preset, false, true));
+  selectedPreset = preset;
+  if (!presetOptions.some(option => option.value === preset)) {
+    presetOptions.push({ hidden: false, label: preset, value: preset });
+  }
+  syncLegacyPresetControl();
   localStorage.setItem("presets", JSON.stringify(presets));
   localStorage.setItem("preset", preset);
-  ensureEl("removePresetButton").style.display = "inline-block";
-  ensureEl("savePresetButton").style.display = "none";
   notifyLayerControlsChanged();
 }
 
 function removePreset(): void {
-  const select = ensureEl<HTMLSelectElement>("layersPreset");
-  const preset = select.value;
-  if (DEFAULT_PRESETS[preset as keyof typeof DEFAULT_PRESETS]) return;
+  const preset = selectedPreset;
+  if (preset === "custom" || DEFAULT_PRESETS[preset as keyof typeof DEFAULT_PRESETS]) return;
   delete presets[preset];
-  const index = [...select.options].findIndex(option => option.value === preset);
-  if (index >= 0) select.options.remove(index);
-  select.value = "custom";
-  ensureEl("removePresetButton").style.display = "none";
-  ensureEl("savePresetButton").style.display = "inline-block";
+  presetOptions = presetOptions.filter(option => option.value !== preset);
+  selectedPreset = "custom";
+  syncLegacyPresetControl();
   localStorage.setItem("presets", JSON.stringify(presets));
   localStorage.removeItem("preset");
   notifyLayerControlsChanged();
@@ -557,18 +561,21 @@ function getCurrentPreset(): void {
     .filter(isLayerToggleId)
     .sort();
   const match = Object.entries(presets).find(([, layers]) => arraysEqual([...layers].sort(), visible));
-  const select = ensureEl<HTMLSelectElement>("layersPreset");
-  if (match) {
-    select.value = match[0];
-    ensureEl("removePresetButton").style.display = DEFAULT_PRESETS[match[0] as keyof typeof DEFAULT_PRESETS]
-      ? "none"
-      : "inline-block";
-    ensureEl("savePresetButton").style.display = "none";
-  } else {
-    select.value = "custom";
-    ensureEl("removePresetButton").style.display = "none";
-    ensureEl("savePresetButton").style.display = "inline-block";
-  }
+  selectedPreset = match?.[0] ?? "custom";
+  syncLegacyPresetControl();
+}
+
+function setPresetState(preset: string, disabled: boolean): void {
+  selectedPreset = preset;
+  presetSelectionDisabled = disabled;
+  syncLegacyPresetControl();
+  notifyLayerControlsChanged();
+}
+
+function syncPreset(disabled = presetSelectionDisabled): void {
+  presetSelectionDisabled = disabled;
+  getCurrentPreset();
+  notifyLayerControlsChanged();
 }
 
 function restoreCustomPresets(): void {
@@ -580,13 +587,30 @@ function restoreCustomPresets(): void {
     localStorage.removeItem("presets");
   }
   if (!stored) return;
-  const select = ensureEl<HTMLSelectElement>("layersPreset");
   for (const preset of Object.keys(stored)) {
-    if (!presets[preset] && ![...select.options].some(option => option.value === preset)) {
-      select.add(new Option(preset, preset));
+    if (!presets[preset] && !presetOptions.some(option => option.value === preset)) {
+      presetOptions.push({ hidden: false, label: preset, value: preset });
     }
   }
   presets = stored;
+}
+
+function initializePresetStateFromDom(): void {
+  const select = ensureEl<HTMLSelectElement>("layersPreset");
+  selectedPreset = select.value;
+  presetSelectionDisabled = select.disabled;
+  presetOptions = [...select.options].map(option => ({
+    hidden: option.hidden,
+    label: option.textContent,
+    value: option.value
+  }));
+}
+
+function syncLegacyPresetControl(): void {
+  const select = findEl<HTMLSelectElement>("layersPreset");
+  if (!select) return;
+  select.value = selectedPreset;
+  select.disabled = presetSelectionDisabled;
 }
 
 function getLayerControlsSnapshot(): LayerControlsSnapshot {
@@ -607,17 +631,12 @@ function getLayerControlsSnapshot(): LayerControlsSnapshot {
       }
     ];
   });
-  const select = ensureEl<HTMLSelectElement>("layersPreset");
-  const selectedPreset = select.value;
   return {
     canRemovePreset: selectedPreset !== "custom" && !DEFAULT_PRESETS[selectedPreset as keyof typeof DEFAULT_PRESETS],
     canSavePreset: selectedPreset === "custom",
     layers,
-    presetOptions: [...select.options].map(option => ({
-      hidden: option.hidden,
-      label: option.textContent,
-      value: option.value
-    })),
+    presetOptions: presetOptions.map(option => ({ ...option })),
+    presetSelectionDisabled,
     selectedPreset
   };
 }
@@ -655,7 +674,31 @@ function syncLayerOrderFromDom(): void {
 }
 
 function syncRendererLayerOrder(): void {
-  setPixiRendererLayerOrder(resolveMapLayerOrder(layerOrder));
+  setPixiRendererLayerOrder(getMapLayerOrder());
+}
+
+function getMapLayerOrder(): MapLayerId[] {
+  return resolveMapLayerOrder(layerOrder);
+}
+
+function restoreMapLayerOrder(order: readonly MapLayerId[]): void {
+  const controlByLayer = new Map(
+    MAP_LAYER_REGISTRY.flatMap(layer => (layer.controlId ? [[layer.id, layer.controlId] as const] : []))
+  );
+  const requested = normalizeMapLayerOrder(order).flatMap(layer => {
+    const controlId = controlByLayer.get(layer);
+    return controlId && isLayerToggleId(controlId) ? [controlId] : [];
+  });
+  const requestedSet = new Set(requested);
+  layerOrder = [...requested, ...layerOrder.filter(controlId => !requestedSet.has(controlId))];
+
+  const container = ensureEl("mapLayers");
+  for (const controlId of layerOrder) {
+    const element = document.getElementById(controlId);
+    if (element?.parentElement === container) container.appendChild(element);
+  }
+  syncRendererLayerOrder();
+  notifyLayerControlsChanged();
 }
 
 function getSvgLayer(id: string): Element | null {

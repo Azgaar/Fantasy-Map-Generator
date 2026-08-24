@@ -1,7 +1,7 @@
 import type { TemperatureScale } from "@/utils/temperature";
 import { clientToViewport, type MapCamera, screenToWorld } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
-import type { MapLayerId } from "../core/layer-registry";
+import { MAP_LAYER_REGISTRY, type MapLayerId, normalizeMapLayerOrder } from "../core/layer-registry";
 import type { MapHit, ScreenPoint } from "../core/map-renderer";
 import { emblemRenderer } from "../emblems/renderer";
 import { MapInteractionOverlay, type MapInteractionOverlayPatch } from "../interaction/map-interaction-overlay";
@@ -48,6 +48,7 @@ export const PIXI_RENDERER_SCENE_CHANGE_EVENT = "map:pixi-renderer:scene-change"
 
 let instancePromise: Promise<PixiMapRenderer> | null = null;
 let instance: PixiMapRenderer | null = null;
+let layerOrder = MAP_LAYER_REGISTRY.map(layer => layer.id);
 const interactionOverlay = new MapInteractionOverlay();
 
 const getInstance = async (): Promise<PixiMapRenderer> => {
@@ -65,8 +66,9 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
         }
         return emblemRenderer.renderDataUri(id, coa, { strokeWidth });
       },
-      resolveSymbolIcon: readSvgSymbolDataUri
+      resolveSymbolIcon: (icon, presentation) => readSvgSymbolDataUri(icon, document, presentation)
     });
+    instance.setLayerOrder(layerOrder);
     return instance;
   });
   return instancePromise;
@@ -184,7 +186,8 @@ const api: PixiRendererControllerApi = {
     return instance.renderRasterFrame(request);
   },
   setLayerOrder: order => {
-    instance?.setLayerOrder(order);
+    layerOrder = normalizeMapLayerOrder(order);
+    instance?.setLayerOrder(layerOrder);
   },
   queueRebuild: () => {
     void instancePromise?.then(renderer =>

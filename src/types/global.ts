@@ -114,8 +114,6 @@ declare global {
   var viewX: number;
   var viewY: number;
 
-  var getColorScheme: (scheme: string | null) => (t: number) => string;
-  var getColor: (height: number, scheme: (t: number) => string) => string;
   var svgWidth: number;
   var svgHeight: number;
   var notes: Note[];
@@ -131,8 +129,6 @@ declare global {
   var Dropbox: any; // dropbox-sdk global, loaded on demand from libs/dropbox-sdk.min.js
   var mapHistory: MapHistoryEntry[];
 
-  var getCurrentPreset: () => void;
-  var addCustomColorScheme: (scheme: string) => void;
   // heightmap editor globals
   var color: (value: number) => string;
   var resetZoom: (duration?: number) => void;

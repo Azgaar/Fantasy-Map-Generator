@@ -26,7 +26,7 @@ import {
   type ViewportSize
 } from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
-import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
+import { MAP_LAYER_REGISTRY, type MapLayerId, normalizeMapLayerOrder } from "../core/layer-registry";
 import type { MapHit, MapRenderer, ScreenPoint } from "../core/map-renderer";
 import { RenderDiagnostics, type RenderDiagnosticsSnapshot } from "../core/render-diagnostics";
 import { RenderScheduler } from "../core/render-scheduler";
@@ -183,13 +183,21 @@ export interface PixiMapRendererOptions {
   recordPerformance?: (name: string, duration: number) => void;
   resolutionPolicy?: RendererResolutionPolicy;
   resolveReliefIcon?: (icon: string) => string | null;
-  resolveSymbolIcon?: (icon: string) => string | null;
+  resolveSymbolIcon?: (icon: string, presentation?: SvgSymbolPresentation) => string | null;
   resolveTradeMarker?: (type: TradeMarkerType) => string | null;
   resolveCompassIcon?: () => string | null;
   resolveEmblemIcon?: (id: string, coa: Emblem, strokeWidth: number) => Promise<string | null> | string | null;
   strictAssets?: boolean;
   glyphBudgetBytes?: number;
   textureBudgetBytes?: number;
+}
+
+export interface SvgSymbolPresentation {
+  fill: string;
+  fillOpacity: number;
+  stroke: string;
+  strokeWidth: number;
+  viewBox?: string;
 }
 
 export interface PixiRasterCapabilities {
@@ -214,6 +222,7 @@ export class PixiMapRenderer implements MapRenderer {
   private coordinateGroupDisplays: CoordinateGroupDisplay[] = [];
   private coordinateLabelDisplays: CoordinateLabelDisplay[] = [];
   private coordinateLongitudeSpan = 0;
+  private layerOrder = MAP_LAYER_REGISTRY.map(layer => layer.id);
   private layerVisibility = new Map<MapLayerId, boolean>();
   private labelDisplays: LabelDisplay[] = [];
   private labelGroupDisplays: LabelGroupDisplay[] = [];
@@ -373,7 +382,8 @@ export class PixiMapRenderer implements MapRenderer {
     if (sequence !== this.rebuildSequence) return;
     const labelsContainer = await this.buildLabelsContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
-    const burgContainer = this.buildBurgIconsContainer();
+    const burgContainer = await this.buildBurgIconsContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const militaryContainer = await this.buildMilitaryContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     const markerContainer = await this.buildMarkersContainer(sequence);
@@ -412,6 +422,7 @@ export class PixiMapRenderer implements MapRenderer {
       militaryContainer,
       markerContainer
     );
+    this.applyLayerOrder();
     const burgSymbols = this.getWorld().burgs.filter(burg => burg.i && !burg.removed && burg.group).length;
     const markerSymbols = markerContainer.children.length;
     const reliefSprites = reliefContainer.children.length;
@@ -452,18 +463,22 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   setLayerOrder(order: readonly MapLayerId[]): void {
-    const requested = new Map(order.map((layer, index) => [layer, index]));
-    const fallbackOffset = requested.size;
-    const canonicalOrder = new Map(MAP_LAYER_REGISTRY.map((layer, index) => [layer.id, fallbackOffset + index]));
-    for (const child of this.app?.stage.children ?? []) {
-      if (!isMapLayerId(child.label)) continue;
-      child.zIndex = requested.get(child.label) ?? canonicalOrder.get(child.label) ?? Number.MAX_SAFE_INTEGER;
-    }
-    this.app?.stage.sortChildren();
+    this.layerOrder = normalizeMapLayerOrder(order);
+    this.pickingIndex.setLayerOrder(this.layerOrder);
+    this.applyLayerOrder();
     if (this.stats.enabled) {
       this.app?.render();
       this.rendererOptions.onSceneChange?.();
     }
+  }
+
+  private applyLayerOrder(): void {
+    const requested = new Map(this.layerOrder.map((layer, index) => [layer, index]));
+    for (const child of this.app?.stage.children ?? []) {
+      if (!isMapLayerId(child.label)) continue;
+      child.zIndex = requested.get(child.label) ?? Number.MAX_SAFE_INTEGER;
+    }
+    this.app?.stage.sortChildren();
   }
 
   private applyVisibility(render = true): void {
@@ -1657,7 +1672,7 @@ export class PixiMapRenderer implements MapRenderer {
     return container;
   }
 
-  private buildBurgIconsContainer(): Container {
+  private async buildBurgIconsContainer(sequence: number): Promise<Container> {
     const container = new Container();
     container.label = "burgIcons";
     container.alpha = this.semanticStyle.burgIcons.opacity;
@@ -1666,16 +1681,61 @@ export class PixiMapRenderer implements MapRenderer {
       this.semanticStyle.burgIcons,
       this.sceneRevisions.getLayerRevision("burgIcons")
     );
+    const allInstances = [...scene.icons.instances, ...scene.anchors.instances];
+    const customSymbols = new Map(
+      allInstances
+        .filter(symbol => !isNativeBurgSymbol(symbol.shape))
+        .map(symbol => [getBurgSymbolTextureKey(symbol), symbol])
+    );
+    const textures = new Map<string, RendererResourceHandle<Texture>>();
+    try {
+      for (const [key, symbol] of customSymbols) {
+        const icon = symbol.icon ?? `icon-${symbol.shape}`;
+        const source = this.rendererOptions.resolveSymbolIcon?.(icon, {
+          fill: symbol.fill,
+          fillOpacity: symbol.fillOpacity,
+          stroke: symbol.stroke,
+          strokeWidth: symbol.strokeWidth,
+          viewBox: symbol.shape.startsWith("watabou-") ? undefined : "-5 -5 10 10"
+        });
+        if (!source) {
+          this.assertAssetAvailable("burg symbol", icon);
+          continue;
+        }
+        try {
+          textures.set(key, await this.textureCache.acquire(source, () => Assets.load<Texture>(source)));
+        } catch {
+          this.assertAssetAvailable("burg symbol", icon);
+        }
+      }
+    } catch (error) {
+      for (const handle of textures.values()) handle.release();
+      if (sequence !== this.rebuildSequence) return container;
+      throw error;
+    }
+    if (sequence !== this.rebuildSequence) {
+      for (const handle of textures.values()) handle.release();
+      return container;
+    }
+
     for (const [kind, instances] of [
       ["icons", scene.icons.instances],
       ["anchors", scene.anchors.instances]
     ] as const) {
-      for (const symbols of groupPointSymbols(instances).values()) {
+      const native = instances.filter(symbol => isNativeBurgSymbol(symbol.shape));
+      for (const symbols of groupPointSymbols(native).values()) {
         const graphic = createBurgSymbolGraphic(symbols);
         graphic.label = `burgIcons:${kind}:${symbols[0]?.role ?? "default"}`;
         container.addChild(graphic);
       }
+      for (const symbol of instances.filter(symbol => !isNativeBurgSymbol(symbol.shape))) {
+        const handle = textures.get(getBurgSymbolTextureKey(symbol));
+        const display = handle ? createBurgSymbolSprite(symbol, handle.value) : createBurgSymbolGraphic([symbol]);
+        display.label = `burgIcons:${kind}:${symbol.role ?? "default"}:${symbol.domainId}`;
+        container.addChild(display);
+      }
     }
+    for (const handle of textures.values()) this.pointTextureHandles.add(handle);
     return container;
   }
 
@@ -2283,6 +2343,26 @@ function groupPointSymbols(
   return groups;
 }
 
+const NATIVE_BURG_SYMBOLS = new Set(["anchor", "circle", "cross", "square", "star", "triangle"]);
+
+function isNativeBurgSymbol(shape: string): boolean {
+  return NATIVE_BURG_SYMBOLS.has(shape);
+}
+
+function getBurgSymbolTextureKey(symbol: PointSymbolInstancePrimitive): string {
+  return [symbol.icon, symbol.fill, symbol.fillOpacity, symbol.stroke, symbol.strokeWidth].join(":");
+}
+
+function createBurgSymbolSprite(symbol: PointSymbolInstancePrimitive, texture: Texture): Sprite {
+  const sprite = new Sprite({ height: symbol.size, texture, width: symbol.size });
+  sprite.alpha = symbol.opacity;
+  sprite.anchor.set(0.5);
+  sprite.cullable = true;
+  sprite.eventMode = "none";
+  sprite.position.set(symbol.x, symbol.y);
+  return sprite;
+}
+
 function createBurgSymbolGraphic(symbols: readonly PointSymbolInstancePrimitive[]): Graphics {
   const context = new GraphicsContext();
   for (const symbol of symbols) traceBurgSymbol(context, symbol);
@@ -2299,8 +2379,8 @@ function createBurgSymbolGraphic(symbols: readonly PointSymbolInstancePrimitive[
 function traceBurgSymbol(context: GraphicsContext, symbol: PointSymbolInstancePrimitive): void {
   const { shape, size, x, y } = symbol;
   const radius = size / 2;
-  if (shape === "circle" || shape === "circled") return void context.circle(x, y, radius);
-  if (shape === "square" || shape === "squared") return void context.rect(x - radius, y - radius, size, size);
+  if (shape === "circle") return void context.circle(x, y, radius);
+  if (shape === "square") return void context.rect(x - radius, y - radius, size, size);
   if (shape === "triangle") {
     context.poly([x, y - radius, x + radius, y + radius, x - radius, y + radius], true);
     return;
@@ -2345,7 +2425,7 @@ function traceBurgSymbol(context: GraphicsContext, symbol: PointSymbolInstancePr
     context.arc(x, y + radius * 0.15, radius * 0.65, 0.15, Math.PI - 0.15);
     return;
   }
-  if (shape.includes("star")) {
+  if (shape === "star") {
     const points: number[] = [];
     for (let index = 0; index < 10; index++) {
       const angle = -Math.PI / 2 + (index * Math.PI) / 5;

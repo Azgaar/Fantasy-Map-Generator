@@ -68,7 +68,7 @@ function createBurgSymbol(
     domainId: burg.i,
     fill: style.fill,
     fillOpacity: style.fillOpacity,
-    icon: null,
+    icon: `icon-${normalizeSymbolName(shape)}`,
     iconOffsetX: 0.5,
     iconOffsetY: 0.5,
     iconSize: 0,
@@ -138,5 +138,5 @@ function getPointSymbolBounds(instances: readonly PointSymbolInstancePrimitive[]
 }
 
 function normalizeSymbolName(icon: string): string {
-  return icon.replace(/^#?icon-/, "").replace(/-empty$/, "");
+  return icon.replace(/^#?icon-/, "");
 }

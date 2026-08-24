@@ -17,6 +17,10 @@ export interface MinimapViewport {
   y: number;
 }
 
+export function getMinimapViewBox(width = graphWidth, height = graphHeight): string {
+  return `0 0 ${width} ${height}`;
+}
+
 export function getMinimapViewport(): MinimapViewport {
   const inverseScale = scale ? 1 / scale : 1;
   const x = Math.max(0, -viewX * inverseScale);
@@ -43,9 +47,12 @@ function clampCenter(value: number, viewportSize: number, worldSize: number): nu
 export function MapMinimap(): React.JSX.Element {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const viewportRef = useRef<SVGRectElement>(null);
 
   useEffect(() => {
+    const syncDimensions = () => svgRef.current?.setAttribute("viewBox", getMinimapViewBox());
+
     const updateViewport = () => {
       const viewport = viewportRef.current;
       if (!viewport) return;
@@ -57,6 +64,7 @@ export function MapMinimap(): React.JSX.Element {
     };
 
     const updateOverview = () => {
+      syncDimensions();
       const button = buttonRef.current;
       const canvas = canvasRef.current;
       const overview = createPixiRendererOverview(MAX_OVERVIEW_WIDTH, MAX_OVERVIEW_HEIGHT);
@@ -70,11 +78,19 @@ export function MapMinimap(): React.JSX.Element {
     };
 
     const updateScaleBarPosition = () => fitScaleBar(getViewportSurface().scaleBar, svgWidth, svgHeight);
+    const updateMap = () => {
+      syncDimensions();
+      updateOverview();
+      updateViewport();
+      updateScaleBarPosition();
+    };
     const resizeObserver = new ResizeObserver(updateScaleBarPosition);
     if (buttonRef.current) resizeObserver.observe(buttonRef.current);
 
     window.updateMinimap = updateViewport;
     window.addEventListener(PIXI_RENDERER_SCENE_CHANGE_EVENT, updateOverview);
+    window.addEventListener("map:generated", updateMap);
+    window.addEventListener("map:loaded", updateMap);
     window.addEventListener("resize", updateScaleBarPosition);
     updateOverview();
     updateViewport();
@@ -84,6 +100,8 @@ export function MapMinimap(): React.JSX.Element {
       if (window.updateMinimap === updateViewport) delete window.updateMinimap;
       resizeObserver.disconnect();
       window.removeEventListener(PIXI_RENDERER_SCENE_CHANGE_EVENT, updateOverview);
+      window.removeEventListener("map:generated", updateMap);
+      window.removeEventListener("map:loaded", updateMap);
       window.removeEventListener("resize", updateScaleBarPosition);
     };
   }, []);
@@ -105,7 +123,7 @@ export function MapMinimap(): React.JSX.Element {
       type="button"
     >
       <canvas aria-hidden="true" ref={canvasRef} />
-      <svg aria-hidden="true" preserveAspectRatio="none" viewBox={`0 0 ${graphWidth} ${graphHeight}`}>
+      <svg aria-hidden="true" preserveAspectRatio="none" ref={svgRef} viewBox={getMinimapViewBox()}>
         <rect className="fmg-map-minimap__viewport" ref={viewportRef} />
       </svg>
     </button>

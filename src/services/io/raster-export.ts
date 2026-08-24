@@ -1,3 +1,5 @@
+import type { MapLayerId } from "@/renderers/core/layer-registry";
+
 export interface RasterExportSize {
   height: number;
   width: number;
@@ -40,6 +42,20 @@ export interface RasterExportPlanOptions {
   rows: number;
   scale: number;
   width: number;
+}
+
+export interface RasterExportLayerOptions {
+  noIce?: boolean;
+  noLabels?: boolean;
+  noWater?: boolean;
+}
+
+export function getRasterExportHiddenLayers(options: RasterExportLayerOptions): MapLayerId[] {
+  const hiddenLayers: MapLayerId[] = [];
+  if (options.noIce) hiddenLayers.push("ice");
+  if (options.noLabels) hiddenLayers.push("labels", "burgIcons");
+  if (options.noWater) hiddenLayers.push("ocean");
+  return hiddenLayers;
 }
 
 /**

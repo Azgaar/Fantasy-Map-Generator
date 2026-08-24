@@ -2,6 +2,7 @@ import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, ra
 import { ApplicationController } from "@/application/application-controller";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { enableVerticalSortable } from "@/components/dialog/vertical-sortable";
+import { LayerControls } from "@/components/layers/layer-controls";
 import { OptionsController } from "@/components/options/options-controller";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
@@ -25,6 +26,7 @@ import {
   getPixiMapPointAtClient,
   updateMapInteractionOverlay
 } from "@/renderers/pixi/pixi-renderer-controller";
+import { getHeightColorScheme as getColorScheme } from "@/renderers/scene/height-color-schemes";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
@@ -406,10 +408,8 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("transform", "scale(1)");
   } else exitCustomization.style.display = "block";
 
-  window.LayerControls.setLayerVisibility("toggleHeight", true);
-  const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
-  layersPreset.value = "heightmap";
-  layersPreset.disabled = true;
+  LayerControls.setLayerVisibility("toggleHeight", true);
+  LayerControls.setPresetState("heightmap", true);
   mockHeightmap();
 
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
@@ -485,7 +485,6 @@ function finalizeHeightmap(): void {
   ensureEl("customizationMenu").style.display = "none";
   if (ensureEl("options").querySelector<HTMLElement>(".tab > button.active")!.id === "toolsTab")
     ensureEl("toolsContent").style.display = "block";
-  ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
   ensureEl("exitCustomization").style.display = "none"; // hide finalize button
 
   applyDefaultViewboxEvents();
@@ -506,15 +505,14 @@ function finalizeHeightmap(): void {
   drawFeatures();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
-  window.LayerControls.setLayerVisibility("toggleHeight", false);
+  LayerControls.setLayerVisibility("toggleHeight", false);
   ensureEl("mapLayers")
     .querySelectorAll<HTMLElement>("li")
     .forEach(e => {
       const wasOn = storedLayers.includes(e.id);
-      if ((wasOn && !window.LayerControls.isLayerOn(e.id)) || (!wasOn && window.LayerControls.isLayerOn(e.id)))
-        e.click();
+      if ((wasOn && !LayerControls.isLayerOn(e.id)) || (!wasOn && LayerControls.isLayerOn(e.id))) e.click();
     });
-  getCurrentPreset();
+  LayerControls.syncPreset(false);
 }
 
 function regenerateErasedData(): void {

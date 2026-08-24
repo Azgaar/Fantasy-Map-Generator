@@ -4,6 +4,7 @@ import type { ReliefSet } from "@/types/relief";
 
 export interface Style {
   labels: { groups: Record<string, LabelGroupStyle> };
+  mapLayerOrder?: MapLayerId[];
   mapLayerVisibility?: Partial<Record<MapLayerId, boolean>>;
   mapRenderer?: MapStyle;
   relief: ReliefStyle;

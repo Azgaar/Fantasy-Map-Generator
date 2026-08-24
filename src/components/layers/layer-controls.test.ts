@@ -40,6 +40,7 @@ describe("layer controls facade", () => {
     const runtime = {
       applyPreset: vi.fn(),
       drawActiveLayers: vi.fn(),
+      getLayerOrder: vi.fn(() => []),
       getSnapshot: vi.fn(),
       isLayerOn: vi.fn(() => true),
       moveLayer: vi.fn(),
@@ -47,16 +48,21 @@ describe("layer controls facade", () => {
       removePreset: vi.fn(),
       restoreSavedPreset: vi.fn(),
       savePreset: vi.fn(),
+      setLayerOrder: vi.fn(),
+      setPresetState: vi.fn(),
       setLayerVisibility: vi.fn(),
+      syncPreset: vi.fn(),
       toggleLayer: vi.fn(() => true)
     };
     const release = bindLayerControls(runtime);
 
     expect(LayerControls.isLayerOn("toggleLabels")).toBe(true);
     LayerControls.drawActiveLayers();
+    LayerControls.syncPreset(false);
 
     expect(runtime.isLayerOn).toHaveBeenCalledWith("toggleLabels");
     expect(runtime.drawActiveLayers).toHaveBeenCalledOnce();
+    expect(runtime.syncPreset).toHaveBeenCalledWith(false);
     release();
   });
 });

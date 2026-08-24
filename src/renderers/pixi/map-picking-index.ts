@@ -1,6 +1,5 @@
 import { findClosestCell } from "@/utils/graphUtils";
-import type { MapLayerId } from "../core/layer-registry";
-import { MAP_LAYER_REGISTRY } from "../core/layer-registry";
+import { MAP_LAYER_REGISTRY, type MapLayerId, normalizeMapLayerOrder } from "../core/layer-registry";
 import type { MapDomainKind, MapHitKind, ScreenPoint } from "../core/map-renderer";
 import { estimateTextWidth } from "../labels/fit-state-label";
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
@@ -25,11 +24,13 @@ interface PickEntryBase {
   layer: MapLayerId;
   maxScale?: number | null;
   minScale?: number | null;
-  priority?: number;
+  priorityOffset?: number;
   subPart?: Readonly<Record<string, boolean | number | string>>;
 }
 
 export interface PointPickEntry extends PickEntryBase {
+  offsetX?: number;
+  offsetY?: number;
   radius: number;
   rescale?: boolean;
   shape: "point";
@@ -51,7 +52,11 @@ export interface PolygonPickEntry extends PickEntryBase {
 }
 
 export interface BoxPickEntry extends PickEntryBase {
+  anchorX?: number;
+  anchorY?: number;
   height: number;
+  offsetX?: number;
+  offsetY?: number;
   rescale?: boolean;
   shape: "box";
   width: number;
@@ -84,9 +89,11 @@ interface Bounds {
   minY: number;
 }
 
-const LAYER_PRIORITY = new Map(MAP_LAYER_REGISTRY.map(layer => [layer.id, layer.order]));
+const createLayerPriority = (order: readonly MapLayerId[]): Map<MapLayerId, number> =>
+  new Map(normalizeMapLayerOrder(order).map((layer, index) => [layer, index * 10]));
 
 export class MapPickingIndex {
+  private layerPriority = createLayerPriority(MAP_LAYER_REGISTRY.map(layer => layer.id));
   private readonly spatial = new BoundsSpatialIndex<MapPickEntry>();
   private world: MapRenderWorld | null = null;
   private worldBounds: Bounds | null = null;
@@ -111,6 +118,10 @@ export class MapPickingIndex {
     return this.spatial.size;
   }
 
+  setLayerOrder(order: readonly MapLayerId[]): void {
+    this.layerPriority = createLayerPriority(order);
+  }
+
   pick(mapPoint: ScreenPoint, query: MapPickingQuery): IndexedMapHit | null {
     const cameraScale = Math.max(query.cameraScale, 0.01);
     const searchRadius = query.tolerance + 24 / cameraScale;
@@ -124,7 +135,7 @@ export class MapPickingIndex {
       .filter(entry => isEntryVisible(entry, query, cameraScale))
       .map(entry => ({ distance: distanceToEntry(mapPoint, entry, cameraScale), entry }))
       .filter(candidate => Number.isFinite(candidate.distance) && candidate.distance <= query.tolerance)
-      .sort(compareCandidates);
+      .sort((left, right) => compareCandidates(left, right, this.layerPriority));
     const candidate = candidates[0];
     if (candidate) {
       const { entry, distance } = candidate;
@@ -148,13 +159,16 @@ export class MapPickingIndex {
     const cellId = findClosestCell(mapPoint.x, mapPoint.y, undefined, world);
     if (cellId === undefined) return null;
 
-    for (const [layer, domainKind, assignments] of [
+    const areaLayers = [
       ["provinces", "province", world.cells.province],
       ["states", "state", world.cells.state],
       ["cultures", "culture", world.cells.culture],
       ["religions", "religion", world.cells.religion],
       ["biomes", "biome", world.cells.biome]
-    ] as const) {
+    ] as const;
+    for (const [layer, domainKind, assignments] of [...areaLayers].sort(
+      (left, right) => this.getLayerPriority(right[0]) - this.getLayerPriority(left[0])
+    )) {
       const domainId = Number(assignments[cellId]);
       if (domainId && query.isLayerVisible(layer)) {
         return {
@@ -191,6 +205,10 @@ export class MapPickingIndex {
       mapPoint,
       subPart: { featureId: Number(world.cells.f[cellId]) || 0 }
     };
+  }
+
+  private getLayerPriority(layer: MapLayerId): number {
+    return this.layerPriority.get(layer) ?? 0;
   }
 }
 
@@ -330,7 +348,7 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
           market.center.y,
           Math.max(style.markets.iconSize / 2, style.markets.radius)
         ),
-        priority: (LAYER_PRIORITY.get("markets") ?? 0) + 1,
+        priorityOffset: 1,
         subPart: { burgId: market.center.burgId, type: "center" }
       });
     }
@@ -388,15 +406,28 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
           rescale: labels.resizeOnZoom,
           subPart: { entityId: label.entityId, type: label.type }
         };
+        const offsetX = group.style.offsetXEm * group.style.fontSize;
+        const offsetY = group.style.offsetYEm * group.style.fontSize;
         if (label.curvedGlyphs?.length) {
           for (const glyph of label.curvedGlyphs) {
-            entries.push({ ...common, radius: label.fontSize / 2, shape: "point", x: glyph.x, y: glyph.y });
+            entries.push({
+              ...common,
+              offsetX,
+              offsetY,
+              radius: label.fontSize / 2,
+              shape: "point",
+              x: glyph.x,
+              y: glyph.y
+            });
           }
         } else {
           const lines = label.text.split("\n");
           entries.push({
             ...common,
+            anchorY: label.type === "burg" ? 1 : 0.5,
             height: lines.length * label.fontSize,
+            offsetX,
+            offsetY,
             shape: "box",
             width: Math.max(...lines.map(line => estimateTextWidth(line) * label.fontSize)),
             x: label.anchorX,
@@ -477,9 +508,10 @@ function isEntryVisible(entry: MapPickEntry, query: MapPickingQuery, cameraScale
 
 function compareCandidates(
   left: { distance: number; entry: MapPickEntry },
-  right: { distance: number; entry: MapPickEntry }
+  right: { distance: number; entry: MapPickEntry },
+  layerPriority: ReadonlyMap<MapLayerId, number>
 ): number {
-  const priority = getPriority(right.entry) - getPriority(left.entry);
+  const priority = getPriority(right.entry, layerPriority) - getPriority(left.entry, layerPriority);
   if (priority) return priority;
   const distance = left.distance - right.distance;
   if (distance) return distance;
@@ -488,23 +520,21 @@ function compareCandidates(
   );
 }
 
-function getPriority(entry: MapPickEntry): number {
-  return entry.priority ?? LAYER_PRIORITY.get(entry.layer) ?? 0;
+function getPriority(entry: MapPickEntry, layerPriority: ReadonlyMap<MapLayerId, number>): number {
+  return (layerPriority.get(entry.layer) ?? 0) + (entry.priorityOffset ?? 0);
 }
 
 function distanceToEntry(point: ScreenPoint, entry: MapPickEntry, cameraScale: number): number {
   if (entry.shape === "point") {
     const radius = entry.rescale ? Math.max((entry.radius * 2) / 5 + 24 / cameraScale, 1) / 2 : entry.radius;
-    return Math.max(0, Math.hypot(point.x - entry.x, point.y - entry.y) - radius);
+    const offsetScale = entry.rescale ? Math.max((1 + 1 / cameraScale) / 2, 0.01) : 1;
+    const x = entry.x + (entry.offsetX ?? 0) * offsetScale;
+    const y = entry.y + (entry.offsetY ?? 0) * offsetScale;
+    return Math.max(0, Math.hypot(point.x - x, point.y - y) - radius);
   }
   if (entry.shape === "box") {
     const scale = entry.rescale ? Math.max((1 + 1 / cameraScale) / 2, 0.01) : 1;
-    return distanceToBox(point, {
-      maxX: entry.x + (entry.width * scale) / 2,
-      maxY: entry.y + (entry.height * scale) / 2,
-      minX: entry.x - (entry.width * scale) / 2,
-      minY: entry.y - (entry.height * scale) / 2
-    });
+    return distanceToBox(point, getBoxBounds(entry, scale));
   }
   if (entry.shape === "line") return Math.max(0, distanceToPolyline(point, entry.points, false) - entry.hitWidth / 2);
   if (pointInPolygon(point, entry.points)) return 0;
@@ -514,22 +544,30 @@ function distanceToEntry(point: ScreenPoint, entry: MapPickEntry, cameraScale: n
 
 function getEntryBounds(entry: MapPickEntry): Bounds {
   if (entry.shape === "point") {
+    const x = entry.x + (entry.offsetX ?? 0);
+    const y = entry.y + (entry.offsetY ?? 0);
     return {
-      maxX: entry.x + entry.radius,
-      maxY: entry.y + entry.radius,
-      minX: entry.x - entry.radius,
-      minY: entry.y - entry.radius
+      maxX: x + entry.radius,
+      maxY: y + entry.radius,
+      minX: x - entry.radius,
+      minY: y - entry.radius
     };
   }
-  if (entry.shape === "box") {
-    return {
-      maxX: entry.x + entry.width / 2,
-      maxY: entry.y + entry.height / 2,
-      minX: entry.x - entry.width / 2,
-      minY: entry.y - entry.height / 2
-    };
-  }
+  if (entry.shape === "box") return getBoxBounds(entry, 1);
   return getPointsBounds(entry.points);
+}
+
+function getBoxBounds(entry: BoxPickEntry, scale: number): Bounds {
+  const anchorX = entry.anchorX ?? 0.5;
+  const anchorY = entry.anchorY ?? 0.5;
+  const x = entry.x + (entry.offsetX ?? 0) * scale;
+  const y = entry.y + (entry.offsetY ?? 0) * scale;
+  return {
+    maxX: x + entry.width * scale * (1 - anchorX),
+    maxY: y + entry.height * scale * (1 - anchorY),
+    minX: x - entry.width * scale * anchorX,
+    minY: y - entry.height * scale * anchorY
+  };
 }
 
 function distanceToBox(point: ScreenPoint, bounds: Bounds): number {

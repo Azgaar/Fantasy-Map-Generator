@@ -26,7 +26,7 @@ import {
   rn,
   unique
 } from "@/utils";
-import { createRasterExportPlan, throwIfRasterExportAborted } from "./raster-export";
+import { createRasterExportPlan, getRasterExportHiddenLayers, throwIfRasterExportAborted } from "./raster-export";
 
 type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -138,10 +138,7 @@ async function renderFullMapRaster(
   const maxTextureSize = getPixiRasterCapabilities()?.maxTextureSize ?? 4096;
   const requestedResolution = Math.max(width / graphWidth, height / graphHeight);
   const resolution = Math.min(requestedResolution, maxTextureSize / graphWidth, maxTextureSize / graphHeight);
-  const hiddenLayers: Array<"ice" | "labels" | "ocean"> = [];
-  if (options.noIce) hiddenLayers.push("ice");
-  if (options.noLabels) hiddenLayers.push("labels");
-  if (options.noWater) hiddenLayers.push("ocean");
+  const hiddenLayers = getRasterExportHiddenLayers(options);
 
   const base = renderPixiRasterFrame({
     frame: { height: graphHeight, width: graphWidth, x: 0, y: 0 },

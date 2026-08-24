@@ -1,3 +1,5 @@
+import type { MapLayerId } from "@/renderers/core/layer-registry";
+
 export const LAYER_CONTROLS_CHANGE_EVENT = "fmg-layer-controls-change";
 
 export interface LayerView {
@@ -19,6 +21,7 @@ export interface LayerControlsSnapshot {
   canRemovePreset: boolean;
   canSavePreset: boolean;
   layers: LayerView[];
+  presetSelectionDisabled: boolean;
   presetOptions: LayerPresetOption[];
   selectedPreset: string;
 }
@@ -31,6 +34,7 @@ export interface LayerToggleModifiers {
 export interface LegacyLayerControls {
   applyPreset: (preset: string) => void;
   drawActiveLayers: () => void;
+  getLayerOrder: () => MapLayerId[];
   getSnapshot: () => LayerControlsSnapshot;
   isLayerOn: (id: string) => boolean;
   moveLayer: (id: string, previousId?: string, nextId?: string) => void;
@@ -38,7 +42,10 @@ export interface LegacyLayerControls {
   removePreset: () => void;
   restoreSavedPreset: () => void;
   savePreset: (name: string) => void;
+  setLayerOrder: (order: readonly MapLayerId[]) => void;
+  setPresetState: (preset: string, disabled: boolean) => void;
   setLayerVisibility: (id: string, visible: boolean) => void;
+  syncPreset: (disabled?: boolean) => void;
   toggleLayer: (id: string, modifiers?: LayerToggleModifiers) => boolean;
 }
 
@@ -63,6 +70,7 @@ export function bindLayerControls(nextTarget: LegacyLayerControls): () => void {
 export const LayerControls: LegacyLayerControls = {
   applyPreset: preset => getTarget().applyPreset(preset),
   drawActiveLayers: () => getTarget().drawActiveLayers(),
+  getLayerOrder: () => getTarget().getLayerOrder(),
   getSnapshot: () => getTarget().getSnapshot(),
   isLayerOn: id => getTarget().isLayerOn(id),
   moveLayer: (id, previousId, nextId) => getTarget().moveLayer(id, previousId, nextId),
@@ -70,7 +78,10 @@ export const LayerControls: LegacyLayerControls = {
   removePreset: () => getTarget().removePreset(),
   restoreSavedPreset: () => getTarget().restoreSavedPreset(),
   savePreset: name => getTarget().savePreset(name),
+  setLayerOrder: order => getTarget().setLayerOrder(order),
+  setPresetState: (preset, disabled) => getTarget().setPresetState(preset, disabled),
   setLayerVisibility: (id, visible) => getTarget().setLayerVisibility(id, visible),
+  syncPreset: disabled => getTarget().syncPreset(disabled),
   toggleLayer: (id, modifiers) => getTarget().toggleLayer(id, modifiers)
 };
 

@@ -6,6 +6,7 @@ import { LayersPanel } from "./layers-panel";
 const snapshot: LayerControlsSnapshot = {
   canRemovePreset: false,
   canSavePreset: true,
+  presetSelectionDisabled: false,
   layers: [
     {
       id: "toggleRivers",
@@ -34,6 +35,7 @@ const snapshot: LayerControlsSnapshot = {
 const controls: LegacyLayerControls = {
   applyPreset: vi.fn(),
   drawActiveLayers: vi.fn(),
+  getLayerOrder: vi.fn(() => []),
   getSnapshot: () => snapshot,
   isLayerOn: vi.fn(() => true),
   moveLayer: vi.fn(),
@@ -41,7 +43,10 @@ const controls: LegacyLayerControls = {
   removePreset: vi.fn(),
   restoreSavedPreset: vi.fn(),
   savePreset: vi.fn(),
+  setLayerOrder: vi.fn(),
+  setPresetState: vi.fn(),
   setLayerVisibility: vi.fn(),
+  syncPreset: vi.fn(),
   toggleLayer: vi.fn(() => true)
 };
 
