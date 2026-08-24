@@ -23,7 +23,7 @@ declare global {
     LayerControls: import("../components/layers/layer-controls").LegacyLayerControls;
     MapStyleControls: import("../components/style/map-style-controls").MapStyleControlsApi;
     StyleEditor: import("../components/style/style-editor-runtime").StyleEditorApi;
-    StylePresets: import("../components/style/style-presets-runtime").StylePresetsApi;
+    StylePresets: import("../components/style/style-presets-controller").StylePresetsApi;
     tip: typeof import("../components/tooltips").tip;
     clearMainTip: typeof import("../components/tooltips").clearMainTip;
     showDataTip: typeof import("../components/tooltips").showDataTip;

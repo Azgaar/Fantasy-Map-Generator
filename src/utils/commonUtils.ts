@@ -359,7 +359,7 @@ declare global {
     isCtrlClick: typeof isCtrlClick;
   }
 
-  // Global variables defined in main.js
+  // Transitional application-state accessor initialized by the typed bootstrap.
   var mapCoordinates: {
     latT?: number;
     latN?: number;

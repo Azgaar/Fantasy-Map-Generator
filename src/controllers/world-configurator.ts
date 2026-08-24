@@ -1,8 +1,8 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
-import { ApplicationController } from "@/application/application-controller";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawTemperature } from "@/renderers/draw-temperature";
 import { stored } from "@/utils/preferences";
@@ -365,8 +365,8 @@ function updateInputValues(): void {
 function updateWorld(): void {
   updateGlobeTemperature();
   updateGlobePosition();
-  ApplicationController.calculateTemperatures();
-  ApplicationController.generatePrecipitation();
+  WorldGenerationController.calculateTemperatures();
+  WorldGenerationController.generatePrecipitation();
   const heights = new Uint8Array(pack.cells.h);
   Rivers.generate();
   Rivers.specify();
@@ -386,7 +386,7 @@ function updateWorld(): void {
 function updateGlobePosition(): void {
   const eqD = ((graphHeight / 2) * 100) / options.mapSize;
 
-  ApplicationController.calculateMapCoordinates();
+  WorldGenerationController.calculateMapCoordinates();
   const mc = mapCoordinates;
   const unit = distanceUnitInput.value;
   const meridian = toKilometer(eqD * 2 * distanceScale);

@@ -20,13 +20,7 @@ import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
 import { applyOption, downloadFile, ensureEl, uploadFile } from "@/utils";
 import { CUSTOM_STYLE_PRESET_PREFIX } from "./style-preset-constants";
-
-export interface StylePresetsApi {
-  add: () => void;
-  applyOnLoad: () => Promise<void>;
-  requestChange: (preset: string) => void;
-  requestRemove: () => void;
-}
+import { bindStylePresets, StylePresets, type StylePresetsApi } from "./style-presets-controller";
 
 const systemPresets = [
   "default",
@@ -63,12 +57,14 @@ const removeStyleButton = ensureEl("removeStyleButton");
   ensureEl("stylePreset").innerHTML = options;
 }
 
-window.StylePresets = {
+const stylePresetsRuntime: StylePresetsApi = {
   add: addStylePreset,
   applyOnLoad: applyStyleOnLoad,
   requestChange: requestStylePresetChange,
   requestRemove: requestRemoveStylePreset
 };
+bindStylePresets(stylePresetsRuntime);
+window.StylePresets = StylePresets;
 stylePreset.addEventListener("change", () => requestStylePresetChange(stylePreset.value));
 ensureEl("addStyleButton").addEventListener("click", addStylePreset);
 removeStyleButton.addEventListener("click", requestRemoveStylePreset);

@@ -11,7 +11,13 @@ import type { PixiOwnedLayer } from "@/renderers/pixi/pixi-renderer-ownership";
 import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { ensureEl } from "@/utils";
 import { enableVerticalSortable } from "../dialog/vertical-sortable";
-import { LAYER_CONTROLS_CHANGE_EVENT, type LayerControlsSnapshot, type LegacyLayerControls } from "./layer-controls";
+import {
+  bindLayerControls,
+  LayerControls,
+  LAYER_CONTROLS_CHANGE_EVENT,
+  type LayerControlsSnapshot,
+  type LegacyLayerControls
+} from "./layer-controls";
 
 type LayerToggleId = keyof typeof PIXI_LAYER_BY_TOGGLE | "toggleRulers" | "toggleScaleBar" | "toggleVignette";
 type LayerPresetMap = Record<string, LayerToggleId[]>;
@@ -267,7 +273,8 @@ export function initializeLayerControlsRuntime(): void {
       return toggleLayer(id, new MouseEvent("click", modifiers));
     }
   };
-  window.LayerControls = controls;
+  bindLayerControls(controls);
+  window.LayerControls = LayerControls;
 }
 
 function bindLayerControlEvents(): void {

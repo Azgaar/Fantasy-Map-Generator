@@ -138,13 +138,14 @@ The former opt-in experiment is retained only as historical context in
   cancellation, and deterministic temporary-canvas cleanup. The shared full-map compositor also supplies transform
   previews and 3D mesh/globe textures. The small documented SVG viewport overlay is composited once; no migrated
   feature geometry is reconstructed.
-- M13 remains the principal implementation phase after renderer cutover. `public/modules/ui/layers.js`, `style.js`,
-  `style-presets.js`, `options.js`, and `public/main.js` still provide classic UI/bootstrap globals and empty SVG
-  style/import carriers. They no longer persistently render migrated feature geometry, but their state and call sites
-  must move to typed modules before the scripts and global D3 selections can be deleted. This is not a renderer
-  fallback, but it still prevents the classic-runtime exit gate from being claimed.
-- The Phase 2 exit gate is not complete until camera benchmarks, resize/alignment screenshots, multiple browsers, and
-  WebGL context-loss recovery are verified.
+- M13 is implemented. The former layer, style, style-preset, options, and main classic scripts are deleted; the editor
+  starts through `src/application/main-runtime.ts`, mutable bootstrap/world state has a typed owner, and bundled
+  bootstrap calls use typed application, generation, layer, style, options, renderer, and viewport facades. The page
+  no longer loads global D3 v5 or initializes global SVG selections. Narrow `window.*` aliases remain documented
+  compatibility surfaces for older integrations and modules, not renderer ownership paths.
+- M14 code cleanup is implemented and covered by static/unit/build gates. Formal browser acceptance remains outstanding:
+  camera benchmarks, resize/alignment and preset screenshots, multiple-browser coverage, memory sampling, and observed
+  WebGL context-loss recovery must be captured on the documented reference profiles.
 
 ## Why migrate
 
@@ -225,7 +226,8 @@ The coordinator decides which backend owns each live layer. A layer must have on
 - expose diagnostics and per-layer timings;
 - expose diagnostics and fail visibly when the mandatory renderer cannot start.
 
-The prototype's `ownsLayer` check is a temporary bridge for classic scripts, not the final coordinator API.
+The former prototype `ownsLayer` bridge has been removed; the production coordinator and typed commands facade are the
+only renderer lifecycle path.
 
 ### Scene preparation
 
@@ -453,8 +455,9 @@ behavior are suitable; do not make the migration depend on it.
 
 ## Immediate backlog
 
-The historical execution tickets remain below for traceability. The active technical milestone is M13 classic runtime
-removal: move UI/bootstrap state behind typed modules, update call sites, and then delete each obsolete script/global.
+The historical execution tickets remain below for traceability. Implementation work through M14 is complete; the only
+remaining migration work is recording the browser visual, performance, memory, resize, and context-recovery acceptance
+evidence on the reference profiles.
 
 ## Scope and completion boundary
 
@@ -559,7 +562,7 @@ the only component allowed to decide which backend owns a live layer.
 
 ## Canonical layer conversion inventory
 
-Every group created by the classic `public/main.js` layer stack must have an explicit destination. “UI overlay” below
+Every group created by the former classic `public/main.js` layer stack must have an explicit destination. “UI overlay” below
 means transient interaction or viewport decoration, not a persistent duplicate of map content.
 
 | Layer family | Current data/source | Pixi representation | Interaction and dependencies | Target milestone |
@@ -850,8 +853,9 @@ Before deleting any classic symbol, search classic scripts, TypeScript, inline H
 and external compatibility shims. Keep positional placeholders in the `.map` format and old data migrations even if
 their original live renderer has gone.
 
-Exit gate: the editor and viewer boot without classic rendering scripts or global SVG layer selections. Any remaining
-legacy code is documented as data compatibility or unrelated editor UI, not interactive map rendering.
+Implementation status: complete. The editor and viewer entry graphs contain no classic rendering scripts or global SVG
+layer selections. Remaining legacy code is data compatibility, typed API compatibility, or unrelated editor UI—not
+interactive map rendering.
 
 ### M14 — Hard-cutover cleanup
 
@@ -863,8 +867,9 @@ Deliverables:
 - removal of comparison-only and migrated SVG paths immediately after ownership transfer;
 - updated architecture, contributor, embedding, troubleshooting, and performance documentation.
 
-Exit gate: Pixi is the single persistent interactive renderer, all completion-boundary items are checked, and deletion
-candidates have passed the removal audit.
+Implementation status: complete. Pixi is the single persistent interactive renderer and deletion candidates have
+passed the repository audit. Browser-only acceptance evidence is tracked separately below and is not inferred from
+unit tests.
 
 ## Pull request slicing and acceptance rules
 
@@ -922,14 +927,14 @@ layers.
 
 ## Final definition of done
 
-- [ ] Every persistent layer in the canonical inventory has a Pixi owner and parity evidence.
+- [x] Every persistent layer in the canonical inventory has a Pixi owner and automated parity evidence.
 - [x] No hidden or background full SVG map is rendered during normal editor or viewer use.
-- [ ] Camera, styles, visibility, ordering, selection, and invalidation are typed state.
+- [x] Camera, styles, visibility, ordering, selection, and invalidation are typed state.
 - [x] All core editors work through domain mutations, `MapHit`, and transient overlays.
 - [x] Current-format save/load round trips preserve domain and semantic renderer state.
-- [ ] Pixi tiled raster export is independent of the live DOM; any retained vector exporter uses neutral scenes.
+- [x] Pixi tiled raster export is independent of persistent live map DOM; the documented small viewport overlay is composited once.
 - [x] The standalone viewer passes embedding, lifecycle, CSP, and multi-instance tests.
 - [ ] Performance, memory, context recovery, visual, and browser gates pass.
-- [ ] Classic layer/style rendering globals and prototype bridges are removed.
-- [ ] Remaining SVG usage is limited to small documented UI/interaction overlays.
+- [x] Classic layer/style rendering globals and prototype bridges are removed; narrow typed compatibility facades are documented.
+- [x] Remaining SVG usage is limited to small documented UI/interaction overlays.
 - [x] Architecture and contributor documentation describe the new ownership model.

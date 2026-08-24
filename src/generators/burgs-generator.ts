@@ -1,5 +1,4 @@
 import { quadtree } from "d3-quadtree";
-import { ApplicationController } from "@/application/application-controller";
 import type { BurgGroup } from "@/types/burg-groups";
 import { each, ensureEl, findClosestCell, gauss, minmax, normalize, P, rn } from "../utils";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -8,6 +7,7 @@ import type { Label } from "./labels-generator";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
+import { WorldGenerationController } from "./world-generation-controller";
 
 export interface Burg {
   cell: number;
@@ -753,7 +753,7 @@ class BurgModule {
 
   regenerate(): void {
     const { cells, burgs, states, provinces } = pack;
-    ApplicationController.rankCells();
+    WorldGenerationController.rankCells();
 
     notes = notes.filter(note => {
       if (!note.id.startsWith("burg")) return true;

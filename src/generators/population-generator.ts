@@ -1,8 +1,8 @@
-import { ApplicationController } from "@/application/application-controller";
 import { gauss, rn } from "@/utils";
+import { WorldGenerationController } from "./world-generation-controller";
 
 function regenerate(): void {
-  ApplicationController.rankCells();
+  WorldGenerationController.rankCells();
 
   pack.burgs.forEach(burg => {
     if (!burg.i || burg.removed || burg.lock) return;

@@ -108,7 +108,7 @@ No deduction from any burg or rural source — the money simply appears, matchin
 
 ## `States.collectTaxes()`
 
-A new method on `StatesModule`, invoked from `public/main.js` after `Production.produce()`. Single post-cycle pass:
+A new method on `StatesModule`, invoked from `src/application/main-runtime.ts` after `Production.produce()`. Single post-cycle pass:
 
 1. For each state with `i > 0`: reset `treasury = 0`.
 2. Walk `pack.deals`:
@@ -169,7 +169,7 @@ This rebalances pre-existing saves to the new model; users keep their world but 
 - `src/generators/markets-generator.ts` — `runGlobalTrade` adds exporter tax to landed cost; populates `deal.tax` for market deals.
 - `src/generators/production-generator.ts` — populates `deal.tax` for burg sells (already computes the value, just persist it).
 - `src/generators/markets-generator.ts` (Deal type) — add optional `tax` field.
-- `public/main.js` — call `States.collectTaxes()` after `Production.produce()`.
+- `src/application/main-runtime.ts` — call `States.collectTaxes()` after `Production.produce()`.
 - `public/modules/dynamic/auto-update.js` — migrate `salesTax`, `pollTax`, `treasury`.
 - States Editor (location TBD — likely `public/modules/dynamic/editors/states-editor.js`) — add Treasury column + dialog.
 - `src/controllers/markets-overview.ts` — update tax computation for market→market deals to read `deal.tax` rather than re-deriving from burg rate.

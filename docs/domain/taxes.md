@@ -31,7 +31,7 @@ Anarchy collapses to exactly 0. Neutrals (state 0) always have rates 0 and treas
 
 ## Collection (`States.collectTaxes`)
 
-Called from `public/main.js` after `Production.produce()` and `Markets.runGlobalTrade()`:
+Called from `src/application/main-runtime.ts` after `Production.produce()` and `Markets.runGlobalTrade()`:
 
 1. Reset every non-neutral state's `treasury` to 0.
 2. For each `deal` with a `tax` field, look up the seller state (burg's state for burg sellers; the market's center burg's state for market sellers) and credit `state.treasury += deal.tax`.

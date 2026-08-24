@@ -91,8 +91,7 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
   ```ts
   import { type Selection, select, scaleLinear, max } from "d3";
   ```
-  The page still loads a legacy global D3 (v5) via `<script src="libs/d3.min.js">`
-  for the old classic code; bundled TS must not depend on it.
+  The application no longer loads a global D3 build; every caller must use the npm module.
 - **Two v5→v7 breaks to fix while porting:**
   1. Selection `.on(type, listener)` now passes `(event, datum)` — the datum is
      the **second** arg (v5 passed it first): rewrite
@@ -103,19 +102,10 @@ The project depends on **d3 `^7.9.0`** with `@types/d3`. Migrate to it.
 - **`d3.event` is gone in v7.** Old drag/zoom handlers that read `d3.event`
   must move to the event-arg style: take `event` as the listener's first
   param, use `event.transform`, `event.x/y`, and `pointer(event)`.
-- **Don't use the legacy global d3 selections.** Always create selections from the imported v7 `select` function and work with them explicitly, global selections use d3 v5 and can lead to bugs.
-  - **Never attach a v7 behaviour (`drag`, `zoom`) through a v5 selection.** When
-    you `.call(drag(...))` on a selection that descends from a global v5 selection
-    (e.g. `debug`, `viewbox`, `svg` created in `public/main.js`), the v5 selection
-    registers the v7 handlers but dispatches them with the **v5 calling convention**
-    (datum-first: `handler(d, i, nodes)`). The v7 drag internals expect the event
-    first (`handler(event, d)`), so they receive the bound datum instead of the DOM
-    event and the gesture silently never starts — the elements look draggable but
-    don't move. Fix: reselect the container with the bundled v7 `select` before
-    binding data and calling the behaviour, e.g.
+- **Create selections locally.** Always create selections from the imported v7 `select`
+  function instead of relying on ambient shared selections. This makes ownership and event
+  semantics explicit. For example:
     `select<SVGGElement, unknown>("#controlPoints").selectAll("circle").data(...).join("circle").call(drag()…)`
-    instead of `debug.select("#controlPoints")…`. This was the river/route control-point
-    drag bug (`river-editor.ts`, `route-editor.ts`).
 
 ## File structure & exports
 
@@ -134,9 +124,11 @@ plain exported functions that take their inputs as arguments (so a unit test can
 without the app), then add a thin `window` bridge at the bottom that wires those functions
 to the ambient globals classic callers expect. The bridge is a temporary interop
 concession — keep it to a few lines and delete it once every caller is TypeScript. Globals
-referenced bare (`pack`, `grid`, `seed`, `TIME`, `customization`, `$`, `layerIsOn`, …) come
-from `main.js`/legacy and are typed in [`src/types/global.ts`](../../src/types/global.ts) or
-by the owning module — import or declare, never `as any`.
+Transitional state referenced bare (`pack`, `grid`, `seed`, `TIME`, `customization`, …) is
+owned by [`src/application/application-state.ts`](../../src/application/application-state.ts)
+and exposed through typed compatibility accessors in
+[`src/types/global.ts`](../../src/types/global.ts). New application code should use the state
+or controller module directly — import or declare, never `as any`.
 
 ### Generator
 
@@ -283,13 +275,11 @@ export const Something = { init };
 
 ## The eval-order gotcha (read this)
 
-`<script type="module" src="controllers/index.ts">` evaluates **before** the
-deferred `main.js`, where `let mapId` and many globals are declared. So a
-bundled module must **not read a mutable/late global at module top level** —
-that throws `ReferenceError` and your `window.X` registration silently never
-runs. Read such globals lazily _inside_ the function, and gate run DOM
-setup. (A `import { … } from "d3"` at top level
-is safe — it's part of the module graph, not a runtime global.)
+Some module entry points evaluate before `application/main-runtime.ts` initializes the typed
+application state. A bundled module must therefore **not read a mutable application-state
+compatibility accessor at module top level**. Read it lazily inside the function, or accept
+state as an explicit parameter. Static imports are safe because they are part of the module
+graph rather than a late runtime global.
 
 ## Finish the port
 

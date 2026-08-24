@@ -12,6 +12,7 @@ import { commitHeightValues } from "@/controllers/editor-mutations";
 import { HeightmapHistory } from "@/controllers/heightmap-history";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawGoods } from "@/renderers/draw-goods";
@@ -530,13 +531,13 @@ function regenerateErasedData(): void {
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
   Features.markupGrid();
   if (erosionAllowed) {
-    ApplicationController.addLakesInDeepDepressions();
-    ApplicationController.openNearSeaLakes();
+    WorldGenerationController.addLakesInDeepDepressions();
+    WorldGenerationController.openNearSeaLakes();
   }
   OceanLayers();
-  ApplicationController.calculateTemperatures();
-  ApplicationController.generatePrecipitation();
-  ApplicationController.reGraph();
+  WorldGenerationController.calculateTemperatures();
+  WorldGenerationController.generatePrecipitation();
+  WorldGenerationController.reGraph();
   Features.markupPack();
 
   Rivers.generate(erosionAllowed);
@@ -554,7 +555,7 @@ function regenerateErasedData(): void {
 
   Goods.generate();
 
-  ApplicationController.rankCells();
+  WorldGenerationController.rankCells();
   Cultures.generate();
   Cultures.expand(getCultureGenerationSettings());
 
@@ -684,11 +685,11 @@ function restoreRiskedData(): void {
   }
 
   Features.markupGrid();
-  if (erosionAllowed) ApplicationController.addLakesInDeepDepressions();
+  if (erosionAllowed) WorldGenerationController.addLakesInDeepDepressions();
   OceanLayers();
-  ApplicationController.calculateTemperatures();
-  ApplicationController.generatePrecipitation();
-  ApplicationController.reGraph();
+  WorldGenerationController.calculateTemperatures();
+  WorldGenerationController.generatePrecipitation();
+  WorldGenerationController.reGraph();
   Features.markupPack();
 
   if (erosionAllowed) {

@@ -14,7 +14,9 @@ import {
   select
 } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { LayerControls } from "@/components/layers/layer-controls";
 import { OptionsController, type RegenerateOptions } from "@/components/options/options-controller";
+import { StylePresets } from "@/components/style/style-presets-controller";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
@@ -29,6 +31,7 @@ import { initiateAutosave } from "@/services/autosave";
 import { cleanupData } from "@/services/versioning";
 import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { bindWorldGenerationController } from "@/generators/world-generation-controller";
 import {
   calculateVoronoi,
   createTypedArray,
@@ -148,6 +151,10 @@ const app = initializeApplicationState({
 });
 
 OptionsController.applyStoredOptions();
+app.graphWidth = +mapWidthInput.value;
+app.graphHeight = +mapHeightInput.value;
+app.svgWidth = app.graphWidth;
+app.svgHeight = app.graphHeight;
 
 document.addEventListener("DOMContentLoaded", async () => {
   // binds the zoom behaviour and its handlers (see src/components/viewbox-events.ts), so it has to
@@ -229,11 +236,11 @@ async function checkLoadParameters() {
 }
 
 async function generateMapOnLoad() {
-  await window.StylePresets.applyOnLoad(); // apply previously selected default or custom style
+  await StylePresets.applyOnLoad(); // apply previously selected default or custom style
   await generate(); // generate map
-  window.LayerControls.restoreSavedPreset(); // apply saved layers preset and reder layers
-  window.LayerControls.drawActiveLayers();
-  window.OptionsController.fitMapToScreen();
+  LayerControls.restoreSavedPreset(); // apply saved layers preset and render layers
+  LayerControls.drawActiveLayers();
+  OptionsController.fitMapToScreen();
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
 }
 
@@ -339,7 +346,7 @@ function findBurgForMFCG(params: URLSearchParams): void {
   const requestedName = params.get("name");
   if (requestedName && requestedName !== "null") b.name = requestedName;
 
-  if (window.LayerControls.isLayerOn("toggleLabels")) drawLabels();
+  if (LayerControls.isLayerOn("toggleLabels")) drawLabels();
 
   zoomTo(b.x, b.y, 8, 1600);
   tip(`Here stands the glorious city of ${b.name}`, true, "success", 15000);
@@ -406,8 +413,8 @@ async function generate(config?: string | RegenerateOptions) {
     }
 
     await measureStep("generation:grid", async () => {
-      window.OptionsController.applyGraphSize();
-      window.OptionsController.randomize();
+      OptionsController.applyGraphSize();
+      OptionsController.randomize();
       if (shouldRegenerateGrid(app.grid, precreatedSeed, app.graphWidth, app.graphHeight)) {
         app.grid =
           (precreatedGraph as Grid | undefined) ||
@@ -1036,11 +1043,11 @@ const regenerateMap = debounce(async (config?: string | RegenerateOptions) => {
   resetZoom(1000);
   undraw();
   await generate(config);
-  window.LayerControls.drawActiveLayers();
+  LayerControls.drawActiveLayers();
   if (app.options.threeD.isOn) window.Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 
-  window.OptionsController.fitMapToScreen();
+  OptionsController.fitMapToScreen();
   shouldShowLoading && hideLoading();
   clearMainTip();
 }, 250);
@@ -1063,16 +1070,18 @@ function undraw() {
 }
 
 bindApplicationController({
+  focusOn,
+  generateMapOnLoad,
+  regenerateMap,
+  undraw
+});
+bindWorldGenerationController({
   addLakesInDeepDepressions,
   calculateMapCoordinates,
   calculateTemperatures,
-  focusOn,
-  generateMapOnLoad,
   generatePrecipitation,
   openNearSeaLakes,
   rankCells,
   reGraph,
-  regenerateMap,
-  showStatistics,
-  undraw
+  showStatistics
 });

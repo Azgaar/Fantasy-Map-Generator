@@ -149,7 +149,7 @@ function renderPlanimeter(measurer: Measurer, { strokeWidth, dasharray, fontSize
     .text(`${si(getArea(area))} ${getAreaUnit()}`);
 }
 
-// Legacy seam — classic layers.js draws the layer via a global
+// Compatibility seam for older integrations; bundled layer controls import the implementation.
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
   var drawMeasurers: () => void;

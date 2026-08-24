@@ -1,7 +1,7 @@
 import { type Selection, select } from "d3";
-import { ApplicationController } from "@/application/application-controller";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { drawTemperature } from "@/renderers/draw-temperature";
 import { lock, unlock } from "@/utils/preferences";
@@ -83,7 +83,7 @@ function changeHeightUnit(this: HTMLSelectElement): void {
 }
 
 function changeHeightExponent(): void {
-  ApplicationController.calculateTemperatures();
+  WorldGenerationController.calculateTemperatures();
   if (window.LayerControls.isLayerOn("toggleTemperature")) drawTemperature();
 }
 
@@ -124,7 +124,7 @@ function restoreDefaultUnits(): void {
   // height exponent
   heightExponentInput.value = "1.8";
   localStorage.removeItem("heightExponent");
-  ApplicationController.calculateTemperatures();
+  WorldGenerationController.calculateTemperatures();
 
   renderScaleBar();
 

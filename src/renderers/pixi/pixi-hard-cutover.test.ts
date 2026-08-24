@@ -104,8 +104,15 @@ describe("Pixi hard cutover", () => {
     ]) {
       expect(layersSource.includes(operation)).toBe(true);
     }
-    expect(mainSource.includes("window.LayerControls.restoreSavedPreset()")).toBe(true);
-    expect(mainSource.includes("window.LayerControls.drawActiveLayers()")).toBe(true);
+    expect(mainSource.includes("LayerControls.restoreSavedPreset()")).toBe(true);
+    expect(mainSource.includes("LayerControls.drawActiveLayers()")).toBe(true);
+    expect(mainSource.includes("window.LayerControls")).toBe(false);
+    expect(mainSource.includes("window.StylePresets")).toBe(false);
+    expect(mainSource.includes("window.OptionsController")).toBe(false);
+    expect(mainSource.includes("initializeApplicationState(")).toBe(true);
+    expect(mainSource.includes("initializeViewportSurface()")).toBe(true);
+    expect(mainSource.includes("bindApplicationController({")).toBe(true);
+    expect(mainSource.includes("bindWorldGenerationController({")).toBe(true);
     expect(styleUiSource.includes("window.LayerControls.isLayerOn(")).toBe(true);
   });
 

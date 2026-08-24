@@ -4,7 +4,7 @@ import { syncPixiRendererCamera } from "@/renderers/pixi/pixi-renderer-controlle
 import { findEl } from "@/utils/nodeUtils";
 import { type ZoomChanges, ZoomSettler } from "./zoom-settler";
 
-// Legacy behaviour from the global d3 v5. TODO: completely migrate to d3v7
+// One imported D3 v7 behavior owns the SVG input surface and publishes the same camera to Pixi.
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
 let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
 

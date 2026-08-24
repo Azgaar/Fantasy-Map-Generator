@@ -42,6 +42,38 @@ export interface LegacyLayerControls {
   toggleLayer: (id: string, modifiers?: LayerToggleModifiers) => boolean;
 }
 
+let target: LegacyLayerControls | null = null;
+
+function getTarget(): LegacyLayerControls {
+  if (!target) throw new Error("Layer controls runtime is not initialized");
+  return target;
+}
+
+export function bindLayerControls(nextTarget: LegacyLayerControls): () => void {
+  target = nextTarget;
+  return () => {
+    if (target === nextTarget) target = null;
+  };
+}
+
+/**
+ * Stable typed entry point for bundled callers. `window.LayerControls` remains a
+ * compatibility alias until the remaining legacy-oriented modules import this facade.
+ */
+export const LayerControls: LegacyLayerControls = {
+  applyPreset: preset => getTarget().applyPreset(preset),
+  drawActiveLayers: () => getTarget().drawActiveLayers(),
+  getSnapshot: () => getTarget().getSnapshot(),
+  isLayerOn: id => getTarget().isLayerOn(id),
+  moveLayer: (id, previousId, nextId) => getTarget().moveLayer(id, previousId, nextId),
+  redrawLayer: id => getTarget().redrawLayer(id),
+  removePreset: () => getTarget().removePreset(),
+  restoreSavedPreset: () => getTarget().restoreSavedPreset(),
+  savePreset: name => getTarget().savePreset(name),
+  setLayerVisibility: (id, visible) => getTarget().setLayerVisibility(id, visible),
+  toggleLayer: (id, modifiers) => getTarget().toggleLayer(id, modifiers)
+};
+
 export type LayerMoveDirection = -1 | 1;
 
 export function moveLayerByDirection(

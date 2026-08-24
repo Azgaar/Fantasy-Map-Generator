@@ -6,6 +6,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { ensureMeasurerIds } from "@/generators/measurers-generator";
 import { ensureReliefIconIds } from "@/generators/relief-generator";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";
@@ -338,7 +339,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       grid.cells.t = Int8Array.from(data[10].split(","), Number);
       grid.cells.temp = Int8Array.from(data[11].split(","), Number);
     }
-    ApplicationController.reGraph();
+    WorldGenerationController.reGraph();
     Features.markupPack();
     if (data[3]?.startsWith("[")) {
       type LoadedBiome = (typeof pack.biomes)[number] & {
@@ -796,7 +797,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     window.OptionsController.fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
-    ApplicationController.showStatistics();
+    WorldGenerationController.showStatistics();
     tip("Map is successfully loaded", true, "success", 7000);
     window.dispatchEvent(new CustomEvent("map:loaded", { detail: { mapVersion } }));
   } catch (error) {
