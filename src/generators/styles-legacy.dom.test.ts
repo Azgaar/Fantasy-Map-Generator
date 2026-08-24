@@ -1,5 +1,3 @@
-// Browser-mode tests (vitest.browser.config.ts) for stylesFromMap/harvestAttributes: harvesting
-// legacy-shaped style bags off a live SVG, through the same PRESET_ROUTES/schema presetFromLegacy uses.
 import { expect, test } from "vitest";
 import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
 import { DEFAULT_STYLES } from "./styles-schema";
@@ -70,6 +68,5 @@ test("syncStylesFromMap harvests burg/anchor groups present in the DOM over the 
   syncStylesFromMap();
   expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#00ff00");
   expect(styles.burgIcons.anchors.groups.capital.attrs.fill).toBe("#00ff00");
-  // groups the DOM doesn't carry keep the live store value untouched
   expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
 });

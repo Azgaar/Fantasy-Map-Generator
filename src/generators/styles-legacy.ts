@@ -300,8 +300,6 @@ function attrKeysAt(path: string[]): string[] {
   return node?.attrs ? Object.keys(node.attrs) : [];
 }
 
-// selector -> harvestable attribute names: schema attrs at the route's path (none for
-// ownAttrs === false, which only ever contributes its options/drops) plus its option keys and drops
 export function harvestAttributes(): Record<string, string[]> {
   const table: Record<string, string[]> = {};
   for (const [selector, route] of Object.entries(PRESET_ROUTES)) {
@@ -311,17 +309,14 @@ export function harvestAttributes(): Record<string, string[]> {
   return table;
 }
 
-// mirrors public/modules/ui/style-presets.js's parseValue: "" stays "", a numeric string becomes
-// a number, everything else stays a string
 function harvestValue(value: string): string | number {
   if (value === "") return "";
   const n = Number(value);
   return Number.isNaN(n) ? value : n;
 }
 
-// schemaAttrs backfills an explicit null for an attribute the element carries neither inline
-// nor as an attribute, so a preset-nulled attr round-trips as null instead of the seeded
-// DEFAULT_STYLES value; options (not passed in schemaAttrs) keep omit-means-default semantics
+// a schema attr the element does not carry becomes an explicit null, so a preset-nulled
+// attr round-trips as null instead of the seeded default; options keep omit-means-default
 function harvestBag(
   el: Element,
   attrs: string[],
@@ -342,8 +337,6 @@ const LABEL_ATTRS = [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"];
 const BURG_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs);
 const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "data-icon"];
 
-// builds legacy-shaped selector-keyed bags off the live SVG (old maps only ever carry the
-// dynamic label/burg/anchor groups in the DOM) and routes them through presetFromLegacy
 export function stylesFromMap(root: ParentNode = document): Styles {
   const bags: Record<string, Record<string, unknown>> = {};
 
@@ -368,10 +361,8 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
 
-// the map's saved style record: harvest the DOM (the editor writes most layers there until the
-// absorption step), then overlay the domains the store already owns before committing. Runs on
-// both edges - save, and migrating a record-less old map's harvest on load - so every overlay
-// here must stay store-authoritative on both, not just the save path.
+// runs on both edges (save, and record-less old-map migration on load): harvest the
+// DOM-authoritative layers, overlay the domains the store owns
 export function syncStylesFromMap(): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
