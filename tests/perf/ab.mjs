@@ -70,13 +70,22 @@ async function buildAndServe(dir, port, label) {
   console.error(`[${label}] starting preview server on :${port}...`);
   const child = spawn("npm", ["run", "preview", "--", "--port", String(port), "--strictPort"], {
     cwd: dir,
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true
   });
   child.stdout?.on("data", () => {});
   child.stderr?.on("data", () => {});
+  child.unref();
 
   await waitForServer(`http://localhost:${port}/`);
   return child;
+}
+
+function killServer(child) {
+  if (!child?.pid) return;
+  try {
+    process.kill(-child.pid, "SIGTERM");
+  } catch {}
 }
 
 function parsePerfResults(stdout) {
@@ -195,7 +204,7 @@ try {
     console.error(`round ${round}/${rounds} done`);
   }
 } finally {
-  for (const server of [baseServer, headServer]) server?.kill();
+  for (const server of [baseServer, headServer]) killServer(server);
   for (const dir of [baseDir, headDir]) {
     run("git", ["worktree", "remove", "--force", dir], repoRoot);
   }
@@ -265,3 +274,4 @@ if (regressed) {
   process.exit(1);
 }
 console.error(`\nNo regression beyond ${(threshold * 100).toFixed(0)}% vs ${base}.`);
+process.exit(0);
