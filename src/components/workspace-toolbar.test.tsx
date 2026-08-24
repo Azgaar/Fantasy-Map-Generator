@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import type { LayerControlsSnapshot, LegacyLayerControls } from "./layers/layer-controls";
+import { getToolCommands } from "./tool-registry";
 import { EditMenuItems, LayerMenuItems, ViewsMenuItems, WorkspaceToolbar } from "./workspace-toolbar";
 
 const snapshot: LayerControlsSnapshot = {
@@ -155,5 +156,20 @@ describe("WorkspaceToolbar", () => {
     viewsItems.props.children[7][2].props.onClick();
     expect(onChangeViewMode).toHaveBeenCalledWith("viewGlobe");
     expect(closeViews).toHaveBeenCalledTimes(2);
+  });
+
+  test("centers dialogs launched from Edit", () => {
+    const close = vi.fn();
+    const heightmapCommand = getToolCommands("world")[0];
+    const invoke = vi.spyOn(heightmapCommand, "invoke").mockReturnValue("executed");
+    const editItems = EditMenuItems({ close });
+    const worldGroup = editItems.props.children[0];
+    const heightmapItem = worldGroup.props.children[0];
+
+    heightmapItem.props.onClick();
+
+    expect(close).toHaveBeenCalledOnce();
+    expect(invoke).toHaveBeenCalledWith({ dialogPlacement: "center" });
+    invoke.mockRestore();
   });
 });

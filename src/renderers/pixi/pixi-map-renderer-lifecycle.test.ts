@@ -394,7 +394,6 @@ describe("PixiMapRenderer lifecycle", () => {
       "grid",
       "coordinates",
       "compass",
-      "rivers",
       "relief",
       "religions",
       "cultures",
@@ -402,10 +401,11 @@ describe("PixiMapRenderer lifecycle", () => {
       "provinces",
       "trade",
       "zones",
+      "coastline",
       "borders",
+      "rivers",
       "routes",
       "temperature",
-      "coastline",
       "ice",
       "goods",
       "markets",
@@ -439,6 +439,36 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.map(child => child.label)).toEqual(reversedOrder);
     renderer.destroy();
     expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
+  });
+
+  it("clips river polygons to the rendered land shape", async () => {
+    const renderer = new PixiMapRenderer();
+    const world = structuredClone(STATIC_VIEWER_WORLD);
+    world.cells.fl = Uint8Array.from([40, 120]);
+    world.rivers = [
+      {
+        basin: 7,
+        cells: [0, 1],
+        discharge: 120,
+        i: 7,
+        length: 30,
+        mouth: 1,
+        name: "Test River",
+        parent: 7,
+        source: 0,
+        sourceWidth: 0.2,
+        type: "River",
+        width: 1,
+        widthFactor: 1
+      }
+    ];
+
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    const riverLayer = applicationState.stage?.children.find(child => child.label === "rivers");
+    expect(riverLayer?.children.some(child => child.label === "rivers:mask:land")).toBe(true);
+    renderer.destroy();
   });
 
   it("builds Pixi-owned burg and marker layers from domain entities", async () => {

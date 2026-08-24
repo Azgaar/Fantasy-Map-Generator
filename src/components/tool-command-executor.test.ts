@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   openBiomes: vi.fn(),
-  tip: vi.fn()
+  tip: vi.fn(),
+  withDomDialogPlacement: vi.fn((_placement: string, openDialog: () => unknown) => openDialog())
 }));
 
 vi.mock("@/controllers", () => ({
@@ -10,6 +11,7 @@ vi.mock("@/controllers", () => ({
 }));
 
 vi.mock("./tooltips", () => ({ tip: mocks.tip }));
+vi.mock("./ui/dialog-placement-context", () => ({ withDomDialogPlacement: mocks.withDomDialogPlacement }));
 
 import { invokeToolControllerCommand } from "./tool-command-executor";
 
@@ -21,6 +23,12 @@ describe("invokeToolControllerCommand", () => {
 
   test("invokes a controller without a legacy control click", () => {
     expect(invokeToolControllerCommand("editBiomesButton")).toBe("executed");
+    expect(mocks.openBiomes).toHaveBeenCalledOnce();
+  });
+
+  test("applies a requested dialog placement while the controller opens", () => {
+    expect(invokeToolControllerCommand("editBiomesButton", "center")).toBe("executed");
+    expect(mocks.withDomDialogPlacement).toHaveBeenCalledWith("center", expect.any(Function));
     expect(mocks.openBiomes).toHaveBeenCalledOnce();
   });
 

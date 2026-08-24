@@ -4,6 +4,7 @@ import {
   type ToolCommandResult,
   type ToolControllerCommandId
 } from "./tool-command-executor";
+import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 import { dispatchRegenerationCommand, type RegenerationCommandTarget } from "./ui/regeneration-command";
 
 export type ToolGroupId = "world" | "politics" | "settlements" | "geography" | "analysis" | "create" | "regenerate";
@@ -17,6 +18,7 @@ export interface ToolGroup {
 
 export interface ToolCommandContext {
   ctrlKey?: boolean;
+  dialogPlacement?: WorkspaceDialogPlacement;
   metaKey?: boolean;
   regenerationTarget?: RegenerationCommandTarget;
 }
@@ -79,7 +81,10 @@ function controllerCommand(options: ControllerCommandOptions): ToolCommand {
   return {
     ...options,
     icon: GROUPS_BY_ID[options.group].icon,
-    invoke: () => invokeToolControllerCommand(options.controlId),
+    invoke: context =>
+      context?.dialogPlacement
+        ? invokeToolControllerCommand(options.controlId, context.dialogPlacement)
+        : invokeToolControllerCommand(options.controlId),
     searchTerms: options.searchTerms ?? []
   };
 }

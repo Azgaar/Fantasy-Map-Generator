@@ -88,6 +88,7 @@ describe("Pixi hard cutover", () => {
     expect(indexSource.includes("main.js")).toBe(false);
     expect(indexSource.includes("libs/d3.min.js")).toBe(false);
     expect(indexSource.includes('src="application/main-runtime.ts"')).toBe(true);
+    expect(indexSource.indexOf('id="toggleRivers"')).toBeGreaterThan(indexSource.indexOf('id="toggleBorders"'));
     expect(indexSource.includes('onclick="toggleTexture(event)"')).toBe(false);
     expect(indexSource.includes('onclick="toggleMarketsLayer(event)"')).toBe(false);
     expect(indexSource.includes('onchange="handleLayersPresetChange')).toBe(false);

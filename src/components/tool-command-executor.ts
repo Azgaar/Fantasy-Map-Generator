@@ -1,5 +1,7 @@
 import { Controllers } from "@/controllers";
 import { tip } from "./tooltips";
+import { withDomDialogPlacement } from "./ui/dialog-placement-context";
+import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 
 const TOOL_COMMAND_HANDLERS = {
   addBurgTool: () => Controllers.BurgCreator.toggle(),
@@ -46,12 +48,16 @@ export function toolsAreAvailable(): boolean {
   return false;
 }
 
-export function invokeToolControllerCommand(commandId: string): ToolCommandResult {
+export function invokeToolControllerCommand(
+  commandId: string,
+  dialogPlacement?: WorkspaceDialogPlacement
+): ToolCommandResult {
   if (!toolsAreAvailable()) return "blocked";
 
   const handler = TOOL_COMMAND_HANDLERS[commandId as ToolControllerCommandId];
   if (!handler) return "missing";
 
-  void handler();
+  if (dialogPlacement) void withDomDialogPlacement(dialogPlacement, handler);
+  else void handler();
   return "executed";
 }

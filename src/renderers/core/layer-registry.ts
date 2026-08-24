@@ -56,7 +56,7 @@ const defineLayer = (
   persistent = true
 ): MapLayerDefinition => ({ controlId, dependencies, id, order, persistent });
 
-/** Canonical order mirrors the classic `#viewbox` stack until renderer-independent ordering becomes serialized. */
+/** Canonical default order. User-controlled layers can still be rearranged and serialized. */
 export const MAP_LAYER_REGISTRY: readonly MapLayerDefinition[] = [
   defineLayer("ocean", 0),
   defineLayer("landmass", 10),
@@ -68,18 +68,18 @@ export const MAP_LAYER_REGISTRY: readonly MapLayerDefinition[] = [
   defineLayer("grid", 70, "toggleGrid"),
   defineLayer("coordinates", 80, "toggleCoordinates"),
   defineLayer("compass", 90, "toggleCompass"),
-  defineLayer("rivers", 100, "toggleRivers", ["landmass"]),
-  defineLayer("relief", 110, "toggleRelief", ["landmass"]),
-  defineLayer("religions", 120, "toggleReligions", ["landmass"]),
-  defineLayer("cultures", 130, "toggleCultures", ["landmass"]),
-  defineLayer("states", 140, "toggleStates", ["landmass"]),
-  defineLayer("provinces", 150, "toggleProvinces", ["landmass"]),
-  defineLayer("trade", 160, "toggleTrade"),
-  defineLayer("zones", 170, "toggleZones"),
+  defineLayer("relief", 100, "toggleRelief", ["landmass"]),
+  defineLayer("religions", 110, "toggleReligions", ["landmass"]),
+  defineLayer("cultures", 120, "toggleCultures", ["landmass"]),
+  defineLayer("states", 130, "toggleStates", ["landmass"]),
+  defineLayer("provinces", 140, "toggleProvinces", ["landmass"]),
+  defineLayer("trade", 150, "toggleTrade"),
+  defineLayer("zones", 160, "toggleZones"),
+  defineLayer("coastline", 170, undefined, ["landmass"]),
   defineLayer("borders", 180, "toggleBorders"),
-  defineLayer("routes", 190, "toggleRoutes"),
-  defineLayer("temperature", 200, "toggleTemperature"),
-  defineLayer("coastline", 210, undefined, ["landmass"]),
+  defineLayer("rivers", 190, "toggleRivers", ["landmass"]),
+  defineLayer("routes", 200, "toggleRoutes"),
+  defineLayer("temperature", 210, "toggleTemperature"),
   defineLayer("ice", 220, "toggleIce"),
   defineLayer("goods", 230, "toggleGoods"),
   defineLayer("markets", 240, "toggleMarketsLayer"),

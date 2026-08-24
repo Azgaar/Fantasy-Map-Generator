@@ -1564,6 +1564,10 @@ export class PixiMapRenderer implements MapRenderer {
       fill: style.fill,
       stroke: { cap: "butt", color: style.fill.color, dash: "", opacity: 0, width: 0 }
     }));
+    const geography = this.cellFillGeography;
+    if (geography?.landPolygons.length) {
+      applyGeographyMask(container, "land", geography.landPolygons, geography.lakePolygons, geography.bounds);
+    }
     container.alpha = style.opacity;
     return container;
   }

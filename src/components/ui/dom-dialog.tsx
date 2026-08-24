@@ -8,6 +8,7 @@ import {
   registerManagedDialog
 } from "@/components/dialog/dialog-helpers";
 import { WorkspaceDialog } from "./dialog";
+import { getDialogPlacementOverride } from "./dialog-placement-context";
 import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-position";
 
 export interface DomDialogOptions {
@@ -135,6 +136,8 @@ function DomDialogView({
 }
 
 export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle {
+  const placementOverride = getDialogPlacementOverride();
+  initialOptions = placementOverride ? { ...initialOptions, placement: placementOverride } : initialOptions;
   const id = initialOptions.content.id;
   if (!id) throw new Error("A managed DOM dialog requires content with an id");
   const activeDialog = activeDialogs.get(id);
@@ -142,6 +145,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
     activeDialog.update({
       height: initialOptions.height,
       maxHeight: initialOptions.maxHeight,
+      placement: initialOptions.placement,
       resizable: initialOptions.resizable,
       title: initialOptions.title,
       width: initialOptions.width
@@ -182,6 +186,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
         ...options,
         height: params.height ?? options.height,
         maxHeight: params.maxHeight ?? options.maxHeight,
+        placement: params.placement ?? options.placement,
         resizable: params.resizable ?? options.resizable,
         title: params.title ?? options.title,
         width: params.width ?? options.width

@@ -1,9 +1,11 @@
 // Building blocks shared by every editor dialog
+import type { WorkspaceDialogPlacement } from "@/components/ui/dialog-position";
 import { findEl } from "@/utils";
 
 export type DialogParams = {
   height?: number | string;
   maxHeight?: number | string;
+  placement?: WorkspaceDialogPlacement;
   position?: { my: string; at: string; of: string; collision: string };
   resizable?: boolean;
   title?: string;

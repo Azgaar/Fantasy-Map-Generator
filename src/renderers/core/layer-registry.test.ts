@@ -36,8 +36,15 @@ describe("map layer registry", () => {
     const order = resolveMapLayerOrder(["toggleStates", "toggleTexture", "toggleBiomes"]);
 
     expect(order.slice(0, 7)).toEqual(["ocean", "landmass", "states", "texture", "biomes", "height", "lakes"]);
-    expect(order[21]).toBe("coastline");
+    expect(order[17]).toBe("coastline");
     expect(new Set(order).size).toBe(MAP_LAYER_REGISTRY.length);
+  });
+
+  it("places rivers above borders and the coastline by default", () => {
+    const order = MAP_LAYER_REGISTRY.map(layer => layer.id);
+
+    expect(order.indexOf("rivers")).toBeGreaterThan(order.indexOf("borders"));
+    expect(order.indexOf("rivers")).toBeGreaterThan(order.indexOf("coastline"));
   });
 
   it("normalizes serialized order by dropping invalid duplicates and appending missing layers", () => {
