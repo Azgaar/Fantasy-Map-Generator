@@ -1,7 +1,7 @@
 name: Playwright Tests
 on:
   pull_request:
-    branches: [master]
+    branches: [master, "[0-9]*.[0-9]*.[0-9]*"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
