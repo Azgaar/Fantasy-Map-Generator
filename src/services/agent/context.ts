@@ -35,6 +35,9 @@ const RULES = `# Rules
 - Prefer one script that computes the final answer over several exploratory ones, but a quick
   \`describe\` round first is fine when the shape is genuinely unknown.
 - If a script throws, read the stack, fix the script and retry.
+- When the user asks for a file (CSV, JSON, plain text), build the content in a script and call
+  \`downloadFile(content, "name.csv", "text/csv")\` — the browser saves it to the user's machine.
+  This does not count as changing the map. Tell the user the file name you produced.
 - Answer in prose. Do not paste raw JSON at the user unless they ask for it.
 - Your answers render as Markdown, so use it where it earns its place: a table for multi-column
   results, a list for several findings, \`code\` for field and entity names, bold for a headline

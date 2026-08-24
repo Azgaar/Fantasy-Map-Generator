@@ -57,12 +57,89 @@ export interface Completion {
   usage: Usage;
 }
 
-export const MODELS = ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5"];
-export const DEFAULT_MODEL = "claude-sonnet-5";
-export const KEY_STORAGE = "fmg-ai-kl-anthropic";
-export const KEY_LINK = "https://console.anthropic.com/account/keys";
+export interface ProviderSpec {
+  id: "anthropic" | "openai" | "mistral" | "qwen" | "deepseek" | "local";
+  label: string;
+  models: string[];
+  keyLink: string;
+  baseUrl?: string; // OpenAI-compatible endpoints only; absent for the native Anthropic adapter
+}
 
-export async function complete({
+export const PROVIDERS: ProviderSpec[] = [
+  {
+    id: "anthropic",
+    label: "Anthropic",
+    models: ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5"],
+    keyLink: "https://console.anthropic.com/account/keys"
+  },
+  {
+    id: "openai",
+    label: "OpenAI",
+    models: ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5-mini"],
+    keyLink: "https://platform.openai.com/account/api-keys",
+    baseUrl: "https://api.openai.com/v1"
+  },
+  {
+    id: "mistral",
+    label: "Mistral",
+    models: ["mistral-small-latest", "mistral-medium-latest"],
+    keyLink: "https://console.mistral.ai/api-keys",
+    baseUrl: "https://api.mistral.ai/v1"
+  },
+  {
+    id: "qwen",
+    label: "Qwen",
+    models: ["qwen-flash", "qwen-plus"],
+    keyLink: "https://modelstudio.console.alibabacloud.com/?tab=playground#/api-key",
+    baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+  },
+  {
+    id: "deepseek",
+    label: "DeepSeek",
+    models: ["deepseek-chat"],
+    keyLink: "https://platform.deepseek.com/api_keys",
+    baseUrl: "https://api.deepseek.com/v1"
+  },
+  {
+    id: "local",
+    label: "Local",
+    models: ["local"],
+    keyLink: "https://ollama.com"
+  }
+];
+
+export const DEFAULT_MODEL = "claude-sonnet-5";
+
+// Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio…). The dropdown holds one
+// sentinel entry; the endpoint and model name are the user's own and live in storage.
+export const LOCAL_MODEL = "local";
+export const LOCAL_URL_STORAGE = "fmg-ai-local-url";
+export const LOCAL_MODEL_STORAGE = "fmg-ai-local-model";
+export const DEFAULT_LOCAL_URL = "http://localhost:11434/v1";
+
+export function providerOf(model: string): ProviderSpec {
+  const provider = PROVIDERS.find(candidate => candidate.models.includes(model));
+  if (!provider) throw new Error(`Unknown model: ${model}`);
+  return provider;
+}
+
+export const keyStorageFor = (model: string): string => `fmg-ai-kl-${providerOf(model).id}`;
+
+export async function complete(request: CompletionRequest): Promise<Completion> {
+  const provider = providerOf(request.model);
+  if (provider.id === "local") {
+    const baseUrl = (localStorage.getItem(LOCAL_URL_STORAGE) || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
+    const model = localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "";
+    if (!model) throw new Error("Enter a local model name (e.g. llama3.2)");
+    const { completeOpenAI } = await import("./providers-openai");
+    return completeOpenAI(baseUrl, { ...request, model });
+  }
+  if (!provider.baseUrl) return completeAnthropic(request);
+  const { completeOpenAI } = await import("./providers-openai");
+  return completeOpenAI(provider.baseUrl, request);
+}
+
+async function completeAnthropic({
   key,
   model,
   system,
