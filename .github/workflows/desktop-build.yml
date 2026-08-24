@@ -1,0 +1,114 @@
+name: Build desktop app
+
+on:
+  # Tagging a release (e.g. v1.149) builds installers and attaches them to a draft GitHub release
+  push:
+    tags: ["v*"]
+
+  # Cheap guard: make sure the desktop app still compiles when its own files change
+  pull_request:
+    branches: [master]
+    paths:
+      - "electron/**"
+      - "electron-builder.yml"
+      - "scripts/electron.mjs"
+      - "package.json"
+
+  # Allows building the app from the Actions tab without tagging
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    env:
+      # Compiling needs no Electron binary, only its type definitions
+      ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile main process and renderer
+        run: npm run electron build
+
+  build:
+    needs: compile
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-latest
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The builds are unsigned: skip the certificate lookup instead of failing on it
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run electron -- dist --publish onTagOrDraft
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: fantasy-map-generator-${{ matrix.platform }}
+          if-no-files-found: error
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+
+  # electron-builder leaves the draft release empty: give it download instructions to publish with
+  notes:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Fill in the draft release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          BODY=$(gh release view "$TAG" --json body -q .body || echo "")
+
+          if [ -n "$BODY" ]; then
+            echo "$TAG already has release notes, leaving them alone"
+          else
+            gh release edit "$TAG" --notes-file .github/release-notes.md
+            echo "Added download instructions to $TAG"
+          fi

@@ -1,6 +1,8 @@
 // Browser-level behaviours of the app window: resizing, navigating away and mobile input quirks
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { findEl } from "@/utils";
 import { stored } from "@/utils/preferences";
+import { isElectron } from "./platform";
 
 const isLocalhost = () => location.hostname === "localhost" || location.hostname === "127.0.0.1";
 
@@ -46,7 +48,11 @@ function initialize(): void {
   window.addEventListener("vite:preloadError", onChunkLoadError);
   document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
 
-  if (!isLocalhost()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
+  // Electron silently cancels the close on `onbeforeunload` instead of prompting, it asks natively instead
+  if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
+
+  // the desktop app has no use for a button offering the desktop app
+  if (isElectron()) findEl("getAppButton")?.remove();
 }
 
 initialize();

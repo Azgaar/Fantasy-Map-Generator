@@ -6,6 +6,10 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  # Electron is only needed to package the desktop app, skip its ~100 MB binary here
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
 jobs:
   test:
     timeout-minutes: 60
