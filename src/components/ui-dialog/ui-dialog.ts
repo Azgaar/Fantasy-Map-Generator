@@ -1,14 +1,7 @@
-// <ui-dialog> — dialog chrome (title bar, minimize, close, actions) shared by app dialogs.
-// Replaces jQuery UI's `.dialog()` widget one dialog at a time. Content passed as children
-// is distributed via the shadow root's default slot; children with slot="actions" go to the
-// button pane.
-
 import style from "./ui-dialog.css?raw";
 import templateHtml from "./ui-dialog.html?raw";
 import slottedContentStyle from "./ui-dialog-slotted-content.css?raw";
 
-// Slotted content (e.g. range inputs) lives in the light DOM, outside the shadow root,
-// so its pseudo-elements can't be reached by the component's own ::slotted() rules.
 const slottedContentStyleElement = document.createElement("style");
 slottedContentStyleElement.textContent = slottedContentStyle;
 document.head.appendChild(slottedContentStyleElement);
@@ -28,8 +21,6 @@ function parseAnchor(token: string): Anchor {
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-/** The true focused element, resolved through any nested open shadow roots
- * (document.activeElement stops at the outermost shadow host). */
 function getDeepActiveElement(): Element | null {
   let active = document.activeElement;
   while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
@@ -81,15 +72,14 @@ class UiDialog extends HTMLElement {
     this.addEventListener("keydown", this.handleKeydown.bind(this));
   }
 
-  /** Every focusable element inside the dialog, in visual order: title bar
-   * buttons (shadow DOM) first, then the slotted content and action buttons. */
   private getFocusableElements(): HTMLElement[] {
     const shadowFocusable = Array.from(this.shadowRoot!.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
     const lightFocusable = Array.from(this.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-    return [...shadowFocusable, ...lightFocusable].filter(el => !el.hasAttribute("disabled") && el.offsetParent !== null);
+    return [...shadowFocusable, ...lightFocusable].filter(
+      el => !el.hasAttribute("disabled") && el.offsetParent !== null
+    );
   }
 
-  /** Trap Tab/Shift+Tab inside the dialog while it's open, matching jQuery UI dialogs. */
   private handleKeydown(event: KeyboardEvent) {
     if (event.key !== "Tab") return;
 
@@ -133,9 +123,6 @@ class UiDialog extends HTMLElement {
     window.addEventListener("pointerup", handleUp);
   }
 
-  /** Resize from any of the 8 handles, jQuery UI resizable-style: dragging from the
-   * top or left edge/corner keeps the opposite edge anchored by adjusting left/top
-   * as the size changes, instead of only growing away from a fixed origin. */
   private handleResizeStart(event: PointerEvent, direction: string) {
     event.preventDefault();
     event.stopPropagation();
@@ -189,7 +176,6 @@ class UiDialog extends HTMLElement {
     this.style.zIndex = String(topZIndex);
   }
 
-  /** Position the dialog relative to a target element, jQuery UI `.position()`-style. */
   positionRelativeTo(target: Element, my: string, at: string) {
     const [myH, myV] = my.split(" ");
     const [atH, atV] = at.split(" ");
@@ -242,8 +228,6 @@ class UiDialog extends HTMLElement {
     const shouldMinimize = force ?? !this.hasAttribute("minimized");
     this.toggleAttribute("minimized", shouldMinimize);
 
-    // A manually resized height would otherwise persist as an inline style, leaving an
-    // empty box the size of the resized dialog instead of collapsing to the title bar.
     if (shouldMinimize) {
       this.resizedHeight = this.style.height || null;
       this.style.height = "";

@@ -1,7 +1,3 @@
-// <units-editor-dialog> — Units Editor content and behavior, wrapped in <ui-dialog> chrome.
-// The inputs inside (distanceUnitInput, heightUnit, temperatureScale, …) are app-wide
-// settings read as globals across the codebase (by id), so moving them into this
-// component's template doesn't change how the rest of the app looks them up.
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import "@/components/ui-dialog/ui-dialog";
@@ -17,7 +13,6 @@ declare const prompt: (text: string, options: PromptOptions, callback: (value: s
 const template = document.createElement("template");
 template.innerHTML = templateHtml;
 
-// Listeners are wired once behind this flag, the first time the dialog is opened.
 let initialized = false; // TODO: refactor to eliminate initialization arc
 
 function changeDistanceUnit(this: HTMLSelectElement): void {
@@ -153,5 +148,4 @@ customElements.define("units-editor-dialog", UnitsEditorDialog);
 
 export type UnitsEditorDialogElement = InstanceType<typeof UnitsEditorDialog>;
 
-// Compatibility facade for the existing Controllers.UnitsEditor.open() call sites.
 export const UnitsEditor = { open: () => ensureEl<UnitsEditorDialogElement>("unitsEditor").open() };
