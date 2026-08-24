@@ -1,5 +1,6 @@
 // Building blocks shared by every editor dialog
 import { ensureEl, findEl } from "@/utils";
+import type { UiDialogElement } from "@/components/ui-dialog/ui-dialog";
 
 /** Close all open dialogs except the stated one */
 export function closeDialogs(except = "#except"): void {
@@ -12,6 +13,11 @@ export function closeDialogs(except = "#except"): void {
         // uninitialized or mid-teardown dialog; skip it so the rest still close
       }
     });
+
+  document.querySelectorAll<UiDialogElement>("ui-dialog[open]").forEach(dialog => {
+    if (dialog.closest(except)) return;
+    dialog.close();
+  });
 }
 
 interface ConfirmationOptions {

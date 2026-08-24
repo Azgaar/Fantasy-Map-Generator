@@ -46,7 +46,9 @@ export function clearMainTip(): void {
 
 /** Show the data-tip of the hovered element, appending its shortcut on desktop */
 export function showDataTip(event: Event): void {
-  const target = event.target as HTMLElement | null;
+  // composedPath()[0] is the true innermost element even across shadow boundaries;
+  // event.target would be retargeted to the shadow host for elements inside one.
+  const target = (event.composedPath()[0] ?? event.target) as HTMLElement | null;
   if (!target) return;
 
   const parent = target.parentNode as HTMLElement | null;

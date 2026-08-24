@@ -1,40 +1,24 @@
+// <units-editor-dialog> — Units Editor content and behavior, wrapped in <ui-dialog> chrome.
+// The inputs inside (distanceUnitInput, heightUnit, temperatureScale, …) are app-wide
+// settings read as globals across the codebase (by id), so moving them into this
+// component's template doesn't change how the rest of the app looks them up.
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import "@/components/ui-dialog/ui-dialog";
+import type { UiDialogElement } from "@/components/ui-dialog/ui-dialog";
+import { ensureEl } from "@/utils";
+import type { PromptOptions } from "@/utils/commonUtils";
 import { lock, unlock } from "@/utils/preferences";
-import { ensureEl } from "../utils";
-import type { PromptOptions } from "../utils/commonUtils";
+import templateHtml from "./units-editor-dialog.html?raw";
 
 // Custom app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor).
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
-// The #unitsEditor inputs (distanceUnitInput, heightUnit, temperatureScale, …) are app-wide
-// settings cached as globals at load and read across the codebase, so this module does NOT
-// own that markup — it stays in index.html. Listeners are wired once behind this flag.
+const template = document.createElement("template");
+template.innerHTML = templateHtml;
+
+// Listeners are wired once behind this flag, the first time the dialog is opened.
 let initialized = false; // TODO: refactor to eliminate initialization arc
-
-function open(): void {
-  closeDialogs("#unitsEditor, .stable");
-
-  $("#unitsEditor").dialog({
-    title: "Units Editor",
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
-  });
-
-  if (initialized) return;
-  initialized = true;
-
-  ensureEl("distanceUnitInput").addEventListener("change", changeDistanceUnit);
-  ensureEl("distanceScaleInput").addEventListener("change", changeDistanceScale);
-  ensureEl("heightUnit").addEventListener("change", changeHeightUnit);
-  ensureEl("heightExponentInput").addEventListener("input", changeHeightExponent);
-  ensureEl("temperatureScale").addEventListener("change", changeTemperatureScale);
-
-  ensureEl("populationRateInput").addEventListener("change", changePopulationRate);
-  ensureEl("urbanizationInput").addEventListener("change", changeUrbanizationRate);
-  ensureEl("urbanDensityInput").addEventListener("change", changeUrbanDensity);
-
-  ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
-}
 
 function changeDistanceUnit(this: HTMLSelectElement): void {
   if (this.value === "custom_name") {
@@ -124,4 +108,50 @@ function restoreDefaultUnits(): void {
   localStorage.removeItem("urbanDensity");
 }
 
-export const UnitsEditor = { open };
+class UnitsEditorDialog extends HTMLElement {
+  connectedCallback() {
+    if (this.childElementCount) return;
+    this.appendChild(template.content.cloneNode(true));
+  }
+
+  private get dialog(): UiDialogElement {
+    return this.querySelector("ui-dialog")!;
+  }
+
+  open() {
+    closeDialogs("#unitsEditor, .stable");
+
+    this.dialog.open();
+    this.dialog.positionRelativeTo(document.querySelector("svg")!, "right top", "right-10 top+10");
+
+    if (initialized) return;
+    initialized = true;
+
+    ensureEl("distanceUnitInput").addEventListener("change", changeDistanceUnit);
+    ensureEl("distanceScaleInput").addEventListener("change", changeDistanceScale);
+    ensureEl("heightUnit").addEventListener("change", changeHeightUnit);
+    ensureEl("heightExponentInput").addEventListener("input", changeHeightExponent);
+    ensureEl("temperatureScale").addEventListener("change", changeTemperatureScale);
+
+    ensureEl("populationRateInput").addEventListener("change", changePopulationRate);
+    ensureEl("urbanizationInput").addEventListener("change", changeUrbanizationRate);
+    ensureEl("urbanDensityInput").addEventListener("change", changeUrbanDensity);
+
+    ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
+  }
+
+  close() {
+    this.dialog.close();
+  }
+
+  positionRelativeTo(target: Element, my: string, at: string) {
+    this.dialog.positionRelativeTo(target, my, at);
+  }
+}
+
+customElements.define("units-editor-dialog", UnitsEditorDialog);
+
+export type UnitsEditorDialogElement = InstanceType<typeof UnitsEditorDialog>;
+
+// Compatibility facade for the existing Controllers.UnitsEditor.open() call sites.
+export const UnitsEditor = { open: () => ensureEl<UnitsEditorDialogElement>("unitsEditor").open() };
