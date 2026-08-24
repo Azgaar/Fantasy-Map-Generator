@@ -14,6 +14,7 @@ export function applyZoomBehavior(): void {
 let frameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
+let isViewChanged = false;
 
 function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   const { k, x, y } = event.transform;
@@ -21,13 +22,12 @@ function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   const isScaleChanged = scale !== k;
   const isPositionChanged = viewX !== x || viewY !== y;
   if (!isScaleChanged && !isPositionChanged) return;
+  isViewChanged = true;
 
   scale = k;
   viewX = x;
   viewY = y;
 
-  // Coalesce a burst of zoom events into one paint: the globals already hold the latest transform,
-  // so keep OR-ing the change flags until the scheduled frame consumes them.
   pendingScaleChange = pendingScaleChange || isScaleChanged;
   pendingPositionChange = pendingPositionChange || isPositionChanged;
   if (frameId !== null) return;
@@ -47,9 +47,6 @@ function handleZoomPerFrame(): void {
   if (!didScaleChange && !didPositionChange) return;
 
   ensureEl<SVGGElement>("viewbox").setAttribute("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-  window.updateMinimap?.();
-  redrawTracedImage();
-  ViewportLayers.schedule();
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
@@ -60,13 +57,18 @@ function handleZoomPerFrame(): void {
     }
   }
 
-  if (didPositionChange) {
-    Layers.draw("coordinates");
-  }
+  if (didPositionChange) Layers.draw("coordinates");
+
+  window.updateMinimap?.();
+  redrawTracedImage();
+  ViewportLayers.schedule();
 }
 
-/** Rewrite map content once the gesture settles */
+/** Rewrite map content once zoom gesture settles */
 function handleZoomEnd(): void {
+  if (!isViewChanged) return;
+  isViewChanged = false;
+
   if (frameId !== null) {
     cancelAnimationFrame(frameId);
     frameId = null;
