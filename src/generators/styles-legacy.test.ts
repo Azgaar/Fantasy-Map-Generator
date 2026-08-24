@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { Styles } from "./styles";
-import { isLegacyPreset, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
+import { isLegacyPreset, isStoreStyles, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
 import { DEFAULT_STYLES } from "./styles-schema";
@@ -10,6 +10,12 @@ import { DEFAULT_STYLES } from "./styles-schema";
 test("detects the legacy selector-keyed format", () => {
   expect(isLegacyPreset(fixture)).toBe(true);
   expect(isLegacyPreset({ labels: {} })).toBe(false);
+});
+
+test("isStoreStyles tells the two record shapes apart", () => {
+  expect(isStoreStyles(DEFAULT_STYLES)).toBe(true);
+  expect(isStoreStyles({ labels: { groups: {} }, burgIcons: {}, anchors: {}, relief: {} })).toBe(false);
+  expect(isStoreStyles(null)).toBe(false);
 });
 
 test("converts the frozen default preset without warnings", () => {

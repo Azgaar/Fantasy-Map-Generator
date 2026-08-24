@@ -378,6 +378,10 @@ export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
 
+export function isStoreStyles(json: unknown): boolean {
+  return typeof json === "object" && json !== null && "map" in json;
+}
+
 export function presetFromLegacy(
   legacy: Record<string, Record<string, unknown>>,
   opts: { onUnknown?: "throw" | "skip" } = {}
@@ -466,6 +470,7 @@ globalThis.stylesLegacy = {
   presetFromLegacy,
   presetToLegacy,
   isLegacyPreset,
+  isStoreStyles,
   harvestAttributes,
   stylesFromMap,
   syncStylesFromMap
