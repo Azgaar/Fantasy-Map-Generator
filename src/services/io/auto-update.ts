@@ -8,7 +8,13 @@ import type { GraphOverrides } from "@/generators/graph-override";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 
-import { isLegacyPreset, labelGroupFromLegacy, presetToLegacy } from "@/generators/styles-legacy";
+import {
+  isLegacyPreset,
+  isStoreStyles,
+  labelGroupFromLegacy,
+  presetToLegacy,
+  syncStylesFromMap
+} from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
@@ -1857,4 +1863,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
     }
   }
+
+  // Version-lie maps make the record's own shape the only trustworthy signal: harvest fills the store for
+  // record-less maps so the next save persists correctly, while absorbed domains stay with migration-gate values
+  if (!isStoreStyles(safeParseJSON(data[48]))) syncStylesFromMap();
 }
