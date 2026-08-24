@@ -1,0 +1,9 @@
+:host {
+  display: inline-block;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--sans-serif);
+}
