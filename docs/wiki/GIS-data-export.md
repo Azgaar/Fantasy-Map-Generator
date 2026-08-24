@@ -27,10 +27,12 @@ Download and installation instructions can be found [here](https://qgis.org). Th
 You are not, of course, limited to only QGIS. Data exported can also be used in other GIS tools, such as [GRASS](https://grass.osgeo.org/), [ArcGIS](https://www.arcgis.com) and others.
 
 # Loading into QGIS
-Fantasy Map Generator allows to export some data in GIS-compatible format. 
+Fantasy Map Generator allows you to export some data in a GIS-compatible format. Open the _Export_ dialog from the _Tools_ tab; its _Export to GeoJSON_ section has buttons for **cells**, **routes**, **rivers**, **markers** and **zones**. The separate _Export to JSON_ section (full, minimal, pack cells, grid cells) is plain JSON, not GeoJSON, and is not meant for GIS tools.
+
+Coordinates in the GeoJSON files are geographic (longitude / latitude) and follow the map coordinates set in _Options → Configure world_.
 
 ## Cell Data
-In the Save... menu of the Generator there is an option _.json_ to save the cell data into as a GeoJSON file. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._
+The cells file is a polygon layer with one feature per cell. Each feature carries these properties: `id`, `height`, `biome`, `type` (feature type, e.g. island or lake), `population`, `state`, `province`, `culture`, `religion` and `neighbors`. Import it into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._.
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_vectorlayer.png)
 
@@ -38,13 +40,13 @@ Choose the saved .geojson file. It should be set up correctly as well, but doesn
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_vectorlayer2.png)
 
-There is additional cell information such as population, height (for a heightmap), but also states, provinces, culture, etc. exported, all of which can be used in QGIS to render this information.
+All of the properties listed above can be used in QGIS to render thematic maps — population density, elevation, political, cultural or religious maps.
 
 Unfortunately, there are sometimes gaps or overlaps in the cell export data. You can find them in QGIS with _Vector -> Geometry Tools... -> Check Validity_. They are easy to fix by hand, if you need to (only needed if you want to do further processing with the data).
 
 
 ## Burg Data
-Burg data can be downloaded as _.csv_ file using the button in the _Burgs Editor_ . The downloaded file contains position information (longitude, latitude and height) for burgs. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
+Burg data can be downloaded as a _.csv_ file from the _Burgs Overview_. The downloaded file contains the burg id, name, province, state, culture, religion, group, population, map coordinates, latitude, longitude, elevation, temperature, the capital / port / citadel / walls / plaza / temple / shanty town flags, the emblem and a preview link. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_csv.png)
 
@@ -53,7 +55,7 @@ Choose the exported .csv file. It should all be set up correctly automatically, 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_csv2.png)
 
 ## Marker Data
-Points-of-Interest (markers) also contain location information and can be exported and imported in the same way as Burgs data.
+Points of interest (markers) also carry location information. They can be exported as GeoJSON from the _Export_ dialog, or as a _.csv_ file from the _Markers Overview_ (id, type, icon, name, note, state, culture, coordinates, latitude and longitude) and imported the same way as burg data.
 
 
 # Processing in QGIS

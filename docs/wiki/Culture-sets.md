@@ -1,19 +1,25 @@
 ## Culture Sets
-A culture set is a collection of cultures to be displayed in the same map.
-* All-world: A group of 32 cultures from around the globe.
-* European: A list of 15 cultures from Europe.
-* Oriental: A list of 13 cultures from Asia.
-* English: A group of 10 cultures all with English culture.
-* Antique: A list of 15 cultures from ancient europe.
-* High fantasy: A list of 13 fictional and 4 human cultures for fantasy settings.
-* Dark fantasy: A list of 6 english, 5 european, 14 ethnic, and 9 fictional cultures for human ruled fantasies.
+A culture set is the pool of cultures a map can draw from. It is picked in the _Options_ tab under _Map settings_ → _Cultures set_. The number of cultures actually placed is `min(Cultures number option, set maximum)`, and it is lowered further on small maps that cannot host that many cultures.
+
+| Set | Cultures defined | Maximum used |
+| --- | --- | --- |
+| All-world | 33 | 32 |
+| European | 15 | 15 |
+| Oriental | 13 | 13 |
+| English | 10 | 10 |
+| Antique | 16 | 10 |
+| High Fantasy | 17 | 17 |
+| Dark Fantasy | 34 | 18 |
+| Random | generated on the fly | 100 |
+
+Every culture in a set has an *odd* — a chance to be included at all — and a *sort* function that scores cells to pick the culture center. That is why two maps with the same set rarely get the same cultures, and why e.g. Inuk tends to appear in cold regions and Maui on tropical islands.
 
 ### All-world
 * Shwazen: It represents proto-Germanic and Germanic peoples of different times and places. Namesbase: German. [More info about Germanic culture](https://en.wikipedia.org/wiki/Germanic_culture).
 * Angshire: It encompasses cultures of England. Namesbase: English. [More info about Angshire culture](https://en.wikipedia.org/wiki/Culture_of_England).
 * Luari: Represents a culture of France. Namesbase: French.  [More info about French culture](https://en.wikipedia.org/wiki/Culture_of_France).
 * Tallian: A culture in Italy after the fall of the roman empire. It can be imagined as venetian or any other italian culture. Namesbase: Italian. [More info about Italian culture](https://en.wikipedia.org/wiki/Culture_of_Italy).
-* Astellian: A culture in Spain after the fall of the roman empire. Can be [House of Trastámara](https://en.wikipedia.org/wiki/House_of_Trastámara), maybe [Habsburg Spain](https://en.wikipedia.org/wiki/Habsburg_Spain) or any other time period of Spain. Namesbase: Spanish. [More info about Spanish culture](https://en.wikipedia.org/wiki/Culture_of_Spain).
+* Astellian: A culture in Spain after the fall of the roman empire. Can be [House of Trastámara](https://en.wikipedia.org/wiki/House_of_Trastámara), maybe [Habsburg Spain](https://en.wikipedia.org/wiki/Habsburg_Spain) or any other time period of Spain. Namesbase: Castillian. [More info about Spanish culture](https://en.wikipedia.org/wiki/Culture_of_Spain).
 * Slovan: A culture that can be any slavic culture. Maybe the [Kievan Rus'](https://en.wikipedia.org/wiki/Kievan_Rus%27), maybe some proto-slavic tribe, maybe the west, east or south slavs in a different time. Namesbase: Ruthenian. [More info about Slavic culture](https://en.wikipedia.org/wiki/List_of_Slavic_cultures).
 * Norse: A culture that represents Iceland, Norway, Sweden, and Viking culture. Namesbase: Nordic. [More info about Vikings](https://en.wikipedia.org/wiki/Vikings).
 * Elladan: A culture that can represent ancient or modern Greece. Namesbase: Greek. [More info about Culture of Greece](https://en.wikipedia.org/wiki/Culture_of_Greece).
@@ -41,6 +47,7 @@ A culture set is a collection of cultures to be displayed in the same map.
 * Vietic: Represents a [group of ethnicities](https://en.wikipedia.org/wiki/Vietic_peoples) from Southeast Asia. Namesbase: Vietnamese. [More info about Vietnamese culture](https://en.wikipedia.org/wiki/Culture_of_Vietnam).
 * Guantzu: Inspired by [Cantonese people](https://en.wikipedia.org/wiki/Cantonese_people). Useful as an additional culture in China. Namesbase: Cantonese. [More info about Cantonese culture](https://en.wikipedia.org/wiki/Lingnan_culture).
 * Ulus: Inspired by the [Mongolic peoples](https://en.wikipedia.org/wiki/Mongolic_peoples) like the [Mongols](https://en.wikipedia.org/wiki/Mongols). Ulus translates to "state" or "nation" in a political way. Namesbase: Mongolian. [More info about Mongolian culture](https://en.wikipedia.org/wiki/Culture_of_Mongolia).
+* Levent: Represents the peoples of the [Levant](https://en.wikipedia.org/wiki/Levant), the eastern Mediterranean coast. Namesbase: Levantine. [More info about the Levant](https://en.wikipedia.org/wiki/Levant).
 
 ### European
 * Shwazen
@@ -75,27 +82,27 @@ A culture set is a collection of cultures to be displayed in the same map.
 * Ulus
 
 ### English
-This contains a pool of ten cultures all of english culture. Useful for making maps with the same culture.
+Ten cultures that all use the English namesbase, with randomly generated names and different shield styles. Useful for making a map with a single, uniform culture.
 
 ### Antique
-* Roman
-* Roman
-* Roman
-* Roman
-* Hellenic: Namesbase: Greek.
-* Hellenic Namesbase: Greek.
-* Macedonian Namesbase: Greek.
-* Celtic 
-* Germanic
-* Persian: Namesbase: Persian.
-* Scythian Namesbase: Persian.
-* Cantabrian: Namesbase: Basque.
-* Estian: Namesbase: Finnic.
-* Carthaginian: Namesbase: Berber.
-* Mesopotamian
+Sixteen cultures are defined, but at most 10 are placed on a map, so the selection differs between maps.
+* Roman (×4 entries, so Roman culture is likely to appear several times). Namesbase: Roman.
+* Hellenic (×2 entries). Namesbase: Greek.
+* Macedonian. Namesbase: Greek.
+* Celtic. Namesbase: Celtic.
+* Germanic. Namesbase: German.
+* Persian. Namesbase: Iranian.
+* Scythian. Namesbase: Iranian.
+* Cantabrian. Namesbase: Basque.
+* Estian. Namesbase: Finnic.
+* Carthaginian. Namesbase: Levantine.
+* Hebrew. Namesbase: Levantine.
+* Mesopotamian. Namesbase: Mesopotamian.
 
-### High fantasy
-* // fantasy races
+### High Fantasy
+Thirteen fictional races plus four human cultures.
+
+**Fantasy races**
 * Quenian (Elfish): Elves of fantasy.
 * Eldar (Elfish): Another elven culture.
 * Trow (Dark Elfish): Dark elfs of the underdark.
@@ -109,27 +116,32 @@ This contains a pool of ten cultures all of english culture. Useful for making m
 * Rake (Drakonic): Draconic creatures.
 * Arago (Arachnid): Big spiders.
 * Aj'Snaga (Serpents): Loves rainforest and tropical seasonal forests.
-* // fantasy human
+
+**Fantasy humans**
 * Anor (Human): Generic human culture.
 * Dail (Human): Another generic human culture.
 * Rohand (Human): Turkish human culture.
 * Dulandir (Human): Mongolian human culture.
 
-### Dark fantasy
-* // common real-world English
+### Dark Fantasy
+Thirty-four cultures are defined, but at most 18 are placed on a map. Real-world cultures dominate and fantasy races are rarer.
+
+**Common real-world English**
 * Angshire
 * Enlandic
 * Westen
 * Nortumbic
 * Mercian
 * Kentian
-* // rare real-world western
+
+**Rare real-world western**
 * Norse
 * Schwarzen: German.
 * Luarian: French.
 * Hetallian: Italian.
-* Astellian: Spanish.
-* // rare real-world exotic
+* Astellian: Castillian.
+
+**Rare real-world exotic**
 * Kiswaili
 * Yoruba
 * Koryo
@@ -144,7 +156,8 @@ This contains a pool of ten cultures all of english culture. Useful for making m
 * Keltan
 * Elladan
 * Romian
-* // fantasy races
+
+**Fantasy races**
 * Eldar
 * Trow
 * Durinn
@@ -156,4 +169,4 @@ This contains a pool of ten cultures all of english culture. Useful for making m
 * Aj'Snaga
 
 ### Random
-This culture set picks a random list of cultures from the total.
+This set does not use a predefined list. For each culture it picks a random namesbase and generates the culture name from it, so the result is different every time. Up to 100 cultures can be requested.
