@@ -59,5 +59,8 @@ describe("tool registry", () => {
       { ctrlKey: true, metaKey: false },
       regenerationTarget
     );
+
+    TOOL_COMMANDS.find(command => command.id === "politics.states")?.invoke({ dialogPresentation: "panel" });
+    expect(mocks.invokeController).toHaveBeenCalledWith("editStatesButton", undefined, "panel");
   });
 });

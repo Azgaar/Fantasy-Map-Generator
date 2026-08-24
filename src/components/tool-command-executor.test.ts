@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   openBiomes: vi.fn(),
   tip: vi.fn(),
-  withDomDialogPlacement: vi.fn((_placement: string, openDialog: () => unknown) => openDialog())
+  withDomDialogPlacement: vi.fn((_placement: string, openDialog: () => unknown) => openDialog()),
+  withDomDialogPresentation: vi.fn((_presentation: string, openDialog: () => unknown) => openDialog())
 }));
 
 vi.mock("@/controllers", () => ({
@@ -11,7 +12,10 @@ vi.mock("@/controllers", () => ({
 }));
 
 vi.mock("./tooltips", () => ({ tip: mocks.tip }));
-vi.mock("./ui/dialog-placement-context", () => ({ withDomDialogPlacement: mocks.withDomDialogPlacement }));
+vi.mock("./ui/dialog-placement-context", () => ({
+  withDomDialogPlacement: mocks.withDomDialogPlacement,
+  withDomDialogPresentation: mocks.withDomDialogPresentation
+}));
 
 import { invokeToolControllerCommand } from "./tool-command-executor";
 
@@ -29,6 +33,12 @@ describe("invokeToolControllerCommand", () => {
   test("applies a requested dialog placement while the controller opens", () => {
     expect(invokeToolControllerCommand("editBiomesButton", "center")).toBe("executed");
     expect(mocks.withDomDialogPlacement).toHaveBeenCalledWith("center", expect.any(Function));
+    expect(mocks.openBiomes).toHaveBeenCalledOnce();
+  });
+
+  test("applies a requested panel presentation while the controller opens", () => {
+    expect(invokeToolControllerCommand("editBiomesButton", undefined, "panel")).toBe("executed");
+    expect(mocks.withDomDialogPresentation).toHaveBeenCalledWith("panel", expect.any(Function));
     expect(mocks.openBiomes).toHaveBeenCalledOnce();
   });
 

@@ -168,15 +168,20 @@ function WorkspaceHeader(): React.JSX.Element {
 
 function ToolButton({
   command,
+  dockEditor,
   onRegenerate
 }: {
   command: ToolCommand;
+  dockEditor: boolean;
   onRegenerate?: (command: ToolCommand, event: MouseEvent) => void;
 }): React.JSX.Element {
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (onRegenerate) onRegenerate(command, event.nativeEvent);
-    else command.invoke();
+    else {
+      const result = command.invoke(dockEditor ? { dialogPresentation: "panel" } : undefined);
+      if (dockEditor && result === "executed") executeLegacyCommand("optionsHide");
+    }
   };
 
   return (
@@ -205,11 +210,13 @@ function ToolButton({
 }
 
 function ToolSection({
+  dockEditor,
   group,
   hidden,
   onRegenerate,
   query
 }: {
+  dockEditor: boolean;
   group: ToolGroup;
   hidden: boolean;
   onRegenerate: (command: ToolCommand, event: MouseEvent) => void;
@@ -234,6 +241,7 @@ function ToolSection({
         {commands.map(command => (
           <ToolButton
             command={command}
+            dockEditor={dockEditor}
             key={command.id}
             onRegenerate={command.destructive ? onRegenerate : undefined}
           />
@@ -323,6 +331,7 @@ function ToolsPanel(): React.JSX.Element {
         <div className="fmg-tools-layout">
           {TOOL_GROUPS.map(group => (
             <ToolSection
+              dockEditor={section === "edit"}
               group={group}
               hidden={!groupIds.includes(group.id)}
               key={group.id}

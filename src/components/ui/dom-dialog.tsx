@@ -8,8 +8,13 @@ import {
   registerManagedDialog
 } from "@/components/dialog/dialog-helpers";
 import { WorkspaceDialog } from "./dialog";
-import { getDialogPlacementOverride } from "./dialog-placement-context";
+import {
+  type DomDialogPresentation,
+  getDialogPlacementOverride,
+  getDialogPresentationOverride
+} from "./dialog-placement-context";
 import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-position";
+import { WorkspaceEditorPanel } from "./workspace-editor-panel";
 
 export interface DomDialogOptions {
   actions?: DomDialogAction[];
@@ -25,6 +30,7 @@ export interface DomDialogOptions {
   placementOffset?: WorkspaceDialogOffset;
   placement?: WorkspaceDialogPlacement;
   placementTarget?: Element | null;
+  presentation?: DomDialogPresentation;
   resizable?: boolean;
   title: string;
   width?: CSSProperties["width"];
@@ -91,36 +97,60 @@ function DomDialogView({
     };
   }, [options.content, options.destroyOnClose]);
 
+  const close = () => {
+    if (options.beforeClose?.() === false) return;
+    activeDialogs.get(options.content.id)?.close();
+  };
+  const footer = actions.length ? (
+    <>
+      {actions.map((action, index) => (
+        <Button
+          data-autofocus={index === actions.length - 1 || undefined}
+          data-tip={action.tip}
+          key={`${action.label}-${index}`}
+          onClick={event => {
+            action.onClick?.(event.currentTarget);
+            if (action.close !== false) activeDialogs.get(options.content.id)?.close();
+          }}
+        >
+          {action.label}
+        </Button>
+      ))}
+    </>
+  ) : undefined;
+  const content = <div className="fmg-dom-dialog__content" ref={contentHostRef} />;
+
+  if (options.presentation === "panel") {
+    const onSearch = options.content.classList.contains("editorDialog")
+      ? (query: string) => {
+          const normalizedQuery = query.trim().toLocaleLowerCase();
+          for (const row of options.content.querySelectorAll<HTMLElement>(".states")) {
+            row.hidden = Boolean(normalizedQuery && !row.textContent?.toLocaleLowerCase().includes(normalizedQuery));
+          }
+        }
+      : undefined;
+    return (
+      <WorkspaceEditorPanel
+        className={options.className}
+        footer={footer}
+        onClose={close}
+        onSearch={onSearch}
+        title={options.title}
+      >
+        {content}
+      </WorkspaceEditorPanel>
+    );
+  }
+
   return (
     <WorkspaceDialog
       className={options.className}
-      footer={
-        actions.length ? (
-          <>
-            {actions.map((action, index) => (
-              <Button
-                data-autofocus={index === actions.length - 1 || undefined}
-                data-tip={action.tip}
-                key={`${action.label}-${index}`}
-                onClick={event => {
-                  action.onClick?.(event.currentTarget);
-                  if (action.close !== false) activeDialogs.get(options.content.id)?.close();
-                }}
-              >
-                {action.label}
-              </Button>
-            ))}
-          </>
-        ) : undefined
-      }
+      footer={footer}
       isModal={options.isModal ?? false}
       isOpen
       height={options.height}
       maxHeight={options.maxHeight}
-      onClose={() => {
-        if (options.beforeClose?.() === false) return;
-        activeDialogs.get(options.content.id)?.close();
-      }}
+      onClose={close}
       onResizeEnd={options.onResizeEnd}
       placement={options.placement}
       placementOffset={options.placementOffset}
@@ -130,14 +160,19 @@ function DomDialogView({
       title={options.title}
       width={options.width ?? "fit-content"}
     >
-      <div className="fmg-dom-dialog__content" ref={contentHostRef} />
+      {content}
     </WorkspaceDialog>
   );
 }
 
 export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle {
   const placementOverride = getDialogPlacementOverride();
-  initialOptions = placementOverride ? { ...initialOptions, placement: placementOverride } : initialOptions;
+  const presentationOverride = getDialogPresentationOverride();
+  initialOptions = {
+    ...initialOptions,
+    placement: placementOverride ?? initialOptions.placement,
+    presentation: presentationOverride ?? initialOptions.presentation
+  };
   const id = initialOptions.content.id;
   if (!id) throw new Error("A managed DOM dialog requires content with an id");
   const activeDialog = activeDialogs.get(id);
@@ -146,6 +181,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
       height: initialOptions.height,
       maxHeight: initialOptions.maxHeight,
       placement: initialOptions.placement,
+      presentation: initialOptions.presentation,
       resizable: initialOptions.resizable,
       title: initialOptions.title,
       width: initialOptions.width
@@ -187,6 +223,7 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
         height: params.height ?? options.height,
         maxHeight: params.maxHeight ?? options.maxHeight,
         placement: params.placement ?? options.placement,
+        presentation: params.presentation ?? options.presentation,
         resizable: params.resizable ?? options.resizable,
         title: params.title ?? options.title,
         width: params.width ?? options.width

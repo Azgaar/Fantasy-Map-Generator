@@ -4,6 +4,7 @@ import {
   type ToolCommandResult,
   type ToolControllerCommandId
 } from "./tool-command-executor";
+import type { DomDialogPresentation } from "./ui/dialog-placement-context";
 import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 import { dispatchRegenerationCommand, type RegenerationCommandTarget } from "./ui/regeneration-command";
 
@@ -19,6 +20,7 @@ export interface ToolGroup {
 export interface ToolCommandContext {
   ctrlKey?: boolean;
   dialogPlacement?: WorkspaceDialogPlacement;
+  dialogPresentation?: DomDialogPresentation;
   metaKey?: boolean;
   regenerationTarget?: RegenerationCommandTarget;
 }
@@ -82,8 +84,8 @@ function controllerCommand(options: ControllerCommandOptions): ToolCommand {
     ...options,
     icon: GROUPS_BY_ID[options.group].icon,
     invoke: context =>
-      context?.dialogPlacement
-        ? invokeToolControllerCommand(options.controlId, context.dialogPlacement)
+      context?.dialogPlacement || context?.dialogPresentation
+        ? invokeToolControllerCommand(options.controlId, context.dialogPlacement, context.dialogPresentation)
         : invokeToolControllerCommand(options.controlId),
     searchTerms: options.searchTerms ?? []
   };

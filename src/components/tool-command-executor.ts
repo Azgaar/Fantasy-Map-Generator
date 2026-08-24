@@ -1,6 +1,10 @@
 import { Controllers } from "@/controllers";
 import { tip } from "./tooltips";
-import { withDomDialogPlacement } from "./ui/dialog-placement-context";
+import {
+  type DomDialogPresentation,
+  withDomDialogPlacement,
+  withDomDialogPresentation
+} from "./ui/dialog-placement-context";
 import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 
 const TOOL_COMMAND_HANDLERS = {
@@ -50,14 +54,16 @@ export function toolsAreAvailable(): boolean {
 
 export function invokeToolControllerCommand(
   commandId: string,
-  dialogPlacement?: WorkspaceDialogPlacement
+  dialogPlacement?: WorkspaceDialogPlacement,
+  dialogPresentation?: DomDialogPresentation
 ): ToolCommandResult {
   if (!toolsAreAvailable()) return "blocked";
 
   const handler = TOOL_COMMAND_HANDLERS[commandId as ToolControllerCommandId];
   if (!handler) return "missing";
 
-  if (dialogPlacement) void withDomDialogPlacement(dialogPlacement, handler);
-  else void handler();
+  const openDialog = () => (dialogPlacement ? withDomDialogPlacement(dialogPlacement, handler) : handler());
+  if (dialogPresentation) void withDomDialogPresentation(dialogPresentation, openDialog);
+  else void openDialog();
   return "executed";
 }
