@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// Real-control regression for the two zoom-family editor handlers: the markers rescale checkbox
-// (public/modules/ui/style.js:631-634) and the states halo width slider-input (style.js:1002-1006).
+// Real-control regression for the two zoom-family editor handlers: the styleRescaleMarkers change
+// handler and the styleStatesHaloWidth input handler (public/modules/ui/style.js).
 // Both now read/write the store (src/styles/styles.ts) instead of DOM attributes on #markers /
 // #statesHalo, and invokeActiveZooming() re-derives the rendered value from the store on every
 // zoom settle. Each case drives the actual control with a real DOM event and checks: (1) the
@@ -11,10 +11,7 @@ import { test, expect, type Page } from "@playwright/test";
 const waitForMap = (page: Page) =>
   page.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
-const rn = (v: number, d = 0): number => {
-  const m = 10 ** d;
-  return Math.round(v * m) / m;
-};
+const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
 async function openStyleElement(page: Page, element: "markers" | "regions"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());

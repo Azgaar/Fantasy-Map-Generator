@@ -17,7 +17,7 @@ beforeEach(() => {
       <g id="labels"></g>
       <g id="emblems" style="display: none"></g>
       <g id="statesHalo"></g>
-      <g id="markers"></g>
+      <g id="markers"><image id="marker0" width="30" height="30" x="185" y="170"></image></g>
     </svg>
     <select id="shapeRendering"><option value="optimizeSpeed" selected></option></select>
   `;
@@ -36,7 +36,7 @@ beforeEach(() => {
     svgHeight: 600,
     customization: 0,
     options: { labels: { resizeOnZoom: false } },
-    pack: { markers: [] }
+    pack: { markers: [{ i: 0, x: 200, y: 200, size: 30, hidden: false }] }
   });
 
   vi.stubGlobal(
@@ -70,9 +70,30 @@ describe("invokeActiveZooming", () => {
   });
 
   it("resizes markers only when the store rescale option is on", () => {
+    const marker = document.getElementById("marker0")!;
+    const before = {
+      width: marker.getAttribute("width"),
+      height: marker.getAttribute("height"),
+      x: marker.getAttribute("x"),
+      y: marker.getAttribute("y")
+    };
+
     styles.markers.options.rescale = 0;
-    expect(() => invokeActiveZooming()).not.toThrow();
+    invokeActiveZooming();
+    expect({
+      width: marker.getAttribute("width"),
+      height: marker.getAttribute("height"),
+      x: marker.getAttribute("x"),
+      y: marker.getAttribute("y")
+    }).toEqual(before);
+
+    (globalThis as any).scale = 2;
     styles.markers.options.rescale = 1;
-    expect(() => invokeActiveZooming()).not.toThrow();
+    invokeActiveZooming();
+    const expectedSize = String(rn(30 / 5 + 24 / 2, 2));
+    expect(marker.getAttribute("width")).toBe(expectedSize);
+    expect(marker.getAttribute("height")).toBe(expectedSize);
+    expect(marker.getAttribute("x")).toBe(String(rn(200 - Number(expectedSize) / 2, 1)));
+    expect(marker.getAttribute("y")).toBe(String(rn(200 - Number(expectedSize), 1)));
   });
 });

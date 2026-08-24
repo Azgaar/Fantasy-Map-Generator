@@ -1868,7 +1868,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   // record-less maps so the next save persists correctly, while absorbed domains stay with migration-gate values
   if (!isStoreStyles(safeParseJSON(data[48]))) {
     syncStylesFromMap();
-    document.getElementById("markers")?.removeAttribute("rescale");
-    document.getElementById("statesHalo")?.removeAttribute("data-width");
   }
+
+  // unconditional: step-4-era saves carry these attrs beside a store record too, and the
+  // authority rule in syncStylesFromMap would let them clobber the record's values forever
+  document.getElementById("markers")?.removeAttribute("rescale");
+  document.getElementById("statesHalo")?.removeAttribute("data-width");
 }
