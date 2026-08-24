@@ -14,6 +14,7 @@ const applicationState = vi.hoisted(() => ({
   render: vi.fn(),
   resize: vi.fn(),
   scaleSet: vi.fn(),
+  svgCreate: vi.fn(),
   stage: undefined as
     | { children: Array<{ children: unknown[]; label: string; visible: boolean; zIndex: number }> }
     | undefined
@@ -132,7 +133,8 @@ vi.mock("pixi.js", () => {
   }
 
   class Graphics extends DisplayObject {
-    svg() {
+    svg(source: string) {
+      applicationState.svgCreate(source);
       return this;
     }
   }
@@ -221,6 +223,7 @@ describe("PixiMapRenderer lifecycle", () => {
     applicationState.render.mockClear();
     applicationState.resize.mockClear();
     applicationState.scaleSet.mockClear();
+    applicationState.svgCreate.mockClear();
     applicationState.stage = undefined;
     vi.stubGlobal(
       "ResizeObserver",
@@ -452,6 +455,10 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.find(child => child.label === "ocean")?.children.length).toBe(2);
     expect(applicationState.stage?.children.find(child => child.label === "texture")?.children.length).toBe(2);
     expect(applicationState.stage?.children.find(child => child.label === "height")?.children.length).toBe(2);
+    expect(applicationState.svgCreate).toHaveBeenCalled();
+    for (const [source] of applicationState.svgCreate.mock.calls) {
+      expect(source).toMatch(/^<svg\b[^>]*>[\s\S]*<\/svg>$/);
+    }
     expect(renderer.getSnapshot()).toMatchObject({
       missingTextureAssets: [],
       textureCacheEntries: 4,

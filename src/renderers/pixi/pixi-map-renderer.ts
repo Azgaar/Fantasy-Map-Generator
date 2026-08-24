@@ -832,7 +832,7 @@ export class PixiMapRenderer implements MapRenderer {
         }
         svg += `<path d="${band.path}" fill="${band.color}"/>`;
       }
-      if (svg) groupContainer.addChild(new Graphics().svg(svg));
+      if (svg) groupContainer.addChild(new Graphics().svg(wrapSvgFragment(svg)));
       if (group.filter && !this.applyPhysicalFilter(groupContainer, group.filter)) {
         this.stats.unsupportedHeightEffects = [
           ...this.stats.unsupportedHeightEffects,
@@ -863,7 +863,7 @@ export class PixiMapRenderer implements MapRenderer {
         const bands = scene.bands
           .map(band => `<path d="${band.path}" fill="${band.color}" fill-opacity="${band.opacity}"/>`)
           .join("");
-        const graphic = new Graphics().svg(bands);
+        const graphic = new Graphics().svg(wrapSvgFragment(bands));
         graphic.label = "ocean:depth-bands";
         if (
           this.semanticStyle.ocean.bands.filter &&
@@ -1996,6 +1996,10 @@ export class PixiMapRenderer implements MapRenderer {
 }
 
 const MAP_LAYER_IDS = new Set(MAP_LAYER_REGISTRY.map(layer => layer.id));
+
+function wrapSvgFragment(fragment: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg">${fragment}</svg>`;
+}
 
 function isMapLayerId(label: unknown): label is MapLayerId {
   return typeof label === "string" && MAP_LAYER_IDS.has(label as MapLayerId);

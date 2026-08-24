@@ -62,3 +62,11 @@ describe("river labels with off-map cells", () => {
     expect(getLabelsData().find(label => label.type === "river")).toBeUndefined();
   });
 });
+
+describe("labels before map generation", () => {
+  it("returns no labels while the pack is still empty", () => {
+    globalThis.pack = {} as any;
+
+    expect(getLabelsData()).toEqual([]);
+  });
+});

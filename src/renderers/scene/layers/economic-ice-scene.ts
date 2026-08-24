@@ -115,23 +115,21 @@ export function buildGoodsScene(
     const points = getCellPolygon(world, cellId);
     return produced.map(({ good }) => ({ cellId, color: good.color, goodId: good.i, opacity, points }));
   });
-  const icons = world.cells.i.flatMap<GoodsIconSceneItem>(cellId => {
+  const icons: GoodsIconSceneItem[] = [];
+  for (const cellId of world.cells.i) {
     const good = visibleGoods.get(world.cells.good[cellId]);
     const point = world.cells.p[cellId];
-    return good && point
-      ? [
-          {
-            cellId,
-            color: good.color,
-            goodId: good.i,
-            icon: good.icon,
-            stroke: darken(good.color),
-            x: point[0],
-            y: point[1]
-          }
-        ]
-      : [];
-  });
+    if (!good || !point) continue;
+    icons.push({
+      cellId,
+      color: good.color,
+      goodId: good.i,
+      icon: good.icon,
+      stroke: darken(good.color),
+      x: point[0],
+      y: point[1]
+    });
+  }
   const burgs = world.burgs.flatMap<GoodsBurgSceneItem>(burg => {
     if (!burg.i || burg.removed || !burg.production) return [];
     const entries = Object.entries(production.getBurgProduction(burg))

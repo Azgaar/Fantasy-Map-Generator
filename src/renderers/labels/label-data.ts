@@ -21,9 +21,12 @@ export function getLabelsData(): LabelData[] {
   return Object.values(byType).flat();
 }
 
-function collect<T extends { i: number }>(entities: T[], build: (entity: T) => LabelData | undefined): LabelData[] {
+function collect<T extends { i: number }>(
+  entities: readonly T[] | undefined,
+  build: (entity: T) => LabelData | undefined
+): LabelData[] {
   const labels: LabelData[] = [];
-  for (const entity of entities) {
+  for (const entity of entities ?? []) {
     if (!entity.i) continue; // index 0 is a placeholder in every entity array
     const label = build(entity);
     if (label) labels.push(label);

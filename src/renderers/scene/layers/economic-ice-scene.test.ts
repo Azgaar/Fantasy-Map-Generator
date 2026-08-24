@@ -43,6 +43,7 @@ describe("economic and ice scenes", () => {
       { color: "#cccccc", i: 2, icon: "good-stone", name: "Stone", tags: [], unit: "pile", value: 1 }
     ];
     world.cells.good = Uint16Array.from([1, 2]);
+    world.cells.i = Uint16Array.from([0, 1]) as never;
     world.burgs = [0 as never, { cell: 0, i: 1, production: [] as never[], x: 20, y: 10 }];
     const production: GoodsProductionSource = {
       getBurgProduction: () => ({ 1: 4, 2: 20 }),
