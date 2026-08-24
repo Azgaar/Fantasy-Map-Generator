@@ -26,10 +26,6 @@
   display: none;
 }
 
-:host([minimized]) .ui-dialog-resize-handle {
-  display: none;
-}
-
 :host(.resized) .ui-dialog-content {
   flex: 1 1 auto;
   max-height: none;
@@ -98,6 +94,13 @@
   overflow-y: auto;
 }
 
+/* Keep slotted content at its natural size when the dialog is shrunk narrower than it,
+   so it scrolls horizontally instead of its rows wrapping/squishing to fit. Matches
+   jQuery UI dialogs, which never forced content to shrink below its own layout. */
+::slotted(*) {
+  min-width: max-content;
+}
+
 .ui-dialog-content::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -143,22 +146,80 @@
   background: #e0e0e0;
 }
 
-.ui-dialog-resize-handle {
+/* Resize handles have no visible affordance, matching jQuery UI's resizable
+   defaults — just an invisible hit area with a resize cursor. */
+.ui-resizable-handle {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 14px;
-  height: 14px;
+}
+
+:host([resizable="false"]) .ui-resizable-handle {
+  display: none;
+}
+
+.ui-resizable-n,
+.ui-resizable-s {
+  left: 6px;
+  right: 6px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.ui-resizable-n {
+  top: -3px;
+}
+
+.ui-resizable-s {
+  bottom: -3px;
+}
+
+.ui-resizable-e,
+.ui-resizable-w {
+  top: 6px;
+  bottom: 6px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.ui-resizable-e {
+  right: -3px;
+}
+
+.ui-resizable-w {
+  left: -3px;
+}
+
+.ui-resizable-ne,
+.ui-resizable-nw,
+.ui-resizable-se,
+.ui-resizable-sw {
+  width: 12px;
+  height: 12px;
+}
+
+.ui-resizable-ne {
+  top: -3px;
+  right: -3px;
+  cursor: nesw-resize;
+}
+
+.ui-resizable-nw {
+  top: -3px;
+  left: -3px;
   cursor: nwse-resize;
 }
 
-.ui-dialog-resize-handle::after {
-  content: "";
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 7px;
-  height: 7px;
-  border-right: 2px solid #9b9b9b;
-  border-bottom: 2px solid #9b9b9b;
+.ui-resizable-se {
+  bottom: -3px;
+  right: -3px;
+  cursor: nwse-resize;
+}
+
+.ui-resizable-sw {
+  bottom: -3px;
+  left: -3px;
+  cursor: nesw-resize;
+}
+
+:host([minimized]) .ui-resizable-handle {
+  display: none;
 }
