@@ -19,7 +19,17 @@ export interface OceanLayerStyle extends SemanticFillStyle {
 
 export interface CellLayerStyle {
   fallbackColor: string;
+  filter: string | null;
   opacity: number;
+  stroke: SemanticLineStyle;
+}
+
+export interface StateLayerStyle extends CellLayerStyle {
+  halo: {
+    blur: number;
+    opacity: number;
+    width: number;
+  };
 }
 
 export interface HeightBandStyle {
@@ -52,6 +62,7 @@ export interface SemanticLineStyle {
   cap: CanvasLineCap;
   color: string;
   dash: string;
+  join?: CanvasLineJoin;
   opacity: number;
   width: number;
 }
@@ -221,6 +232,7 @@ export interface MapStyle {
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
   emblems: EmblemLayerStyle;
+  filter: string | null;
   goods: GoodsLayerStyle;
   grid: GridLayerStyle;
   height: HeightLayerStyle;
@@ -238,7 +250,7 @@ export interface MapStyle {
   religions: CellLayerStyle;
   rivers: RiverLayerStyle;
   routes: SemanticRoleStyles<SemanticLineStyle>;
-  states: CellLayerStyle;
+  states: StateLayerStyle;
   temperature: TemperatureLayerStyle;
   texture: TextureLayerStyle;
   trade: TradeLayerStyle;
@@ -248,7 +260,12 @@ export interface MapStyle {
 export type PixiMapSemanticStyle = MapStyle;
 
 export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
-  biomes: { fallbackColor: "#888888", opacity: 1 },
+  biomes: {
+    fallbackColor: "#888888",
+    filter: null,
+    opacity: 1,
+    stroke: { cap: "round", color: "#777777", dash: "", opacity: 1, width: 0 }
+  },
   borders: {
     province: { cap: "butt", color: "#777777", dash: "", opacity: 1, width: 0.5 },
     state: { cap: "butt", color: "#555555", dash: "", opacity: 1, width: 1 }
@@ -391,7 +408,12 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     stroke: { cap: "butt", color: "#d4d4d4", dash: "5", opacity: 1, width: 1 }
   },
   cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
-  cultures: { fallbackColor: "#888888", opacity: 0.6 },
+  cultures: {
+    fallbackColor: "#888888",
+    filter: null,
+    opacity: 0.6,
+    stroke: { cap: "round", color: "#777777", dash: "", opacity: 1, width: 0.5 }
+  },
   emblems: {
     automaticVisibility: true,
     burgSize: 1,
@@ -401,6 +423,7 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     stateSize: 1,
     strokeWidth: 1
   },
+  filter: null,
   goods: {
     burgs: {
       fill: "#f5f5f5",
@@ -529,9 +552,19 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     rural: { cap: "butt", color: "#0000ff", dash: "", opacity: 1, width: 1.6 },
     urban: { cap: "butt", color: "#ff0000", dash: "", opacity: 1, width: 1.6 }
   },
-  provinces: { fallbackColor: "#888888", opacity: 0.7 },
+  provinces: {
+    fallbackColor: "#888888",
+    filter: null,
+    opacity: 0.7,
+    stroke: { cap: "round", color: "#777777", dash: "", opacity: 1, width: 0 }
+  },
   relief: { opacity: 1 },
-  religions: { fallbackColor: "#888888", opacity: 0.7 },
+  religions: {
+    fallbackColor: "#888888",
+    filter: null,
+    opacity: 0.7,
+    stroke: { cap: "round", color: "#777777", dash: "", opacity: 1, width: 0 }
+  },
   rivers: { fill: { color: "#5d97bb", opacity: 1 }, opacity: 1 },
   routes: {
     default: { cap: "butt", color: "#d06324", dash: "2", opacity: 0.9, width: 0.7 },
@@ -541,7 +574,13 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
       trails: { cap: "butt", color: "#d06324", dash: ".8 1.6", opacity: 0.9, width: 0.25 }
     }
   },
-  states: { fallbackColor: "#888888", opacity: 0.4 },
+  states: {
+    fallbackColor: "#888888",
+    filter: null,
+    halo: { blur: 3.5, opacity: 0.4, width: 10 },
+    opacity: 0.4,
+    stroke: { cap: "round", color: "#777777", dash: "", opacity: 1, width: 0 }
+  },
   temperature: {
     bandOpacity: 0.3,
     labels: { color: "#000000", fontFamily: "Arial, sans-serif", fontSize: 8, fontWeight: "bold", opacity: 1 },

@@ -29,7 +29,7 @@ describe("map renderer style state", () => {
 
     const hydrated = getMapRendererStyle(appStyle);
 
-    expect(hydrated.states).toEqual({ fallbackColor: "#123456", opacity: 0.25 });
+    expect(hydrated.states).toEqual({ ...DEFAULT_PIXI_MAP_STYLE.states, fallbackColor: "#123456", opacity: 0.25 });
     expect(hydrated.cultures).toEqual(DEFAULT_PIXI_MAP_STYLE.cultures);
     expect(hydrated.religions).toEqual(DEFAULT_PIXI_MAP_STYLE.religions);
     expect(hydrated.provinces).toEqual(DEFAULT_PIXI_MAP_STYLE.provinces);

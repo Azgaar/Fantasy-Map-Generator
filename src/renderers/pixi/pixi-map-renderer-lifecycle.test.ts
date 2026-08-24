@@ -55,6 +55,10 @@ vi.mock("pixi.js", () => {
     sepia() {}
   }
 
+  class BlurFilter {
+    destroy() {}
+  }
+
   class Application {
     canvas = Object.assign(new EventTarget(), { style: {} });
     renderer = {
@@ -156,11 +160,16 @@ vi.mock("pixi.js", () => {
 
   class Text extends DisplayObject {
     anchor = { set: vi.fn() };
+    style: { fontFamily?: string | string[] };
+    constructor(options?: { style?: { fontFamily?: string | string[] } }) {
+      super();
+      this.style = { ...options?.style };
+    }
   }
 
   class BitmapText extends Text {
-    constructor(options: unknown) {
-      super();
+    constructor(options: { style?: { fontFamily?: string | string[] } }) {
+      super(options);
       applicationState.bitmapTextCreate(options);
     }
   }
@@ -178,6 +187,7 @@ vi.mock("pixi.js", () => {
     Buffer,
     BufferUsage: { COPY_DST: 1, INDEX: 2, STATIC: 4, VERTEX: 8 },
     Container,
+    BlurFilter,
     ColorMatrixFilter,
     Geometry,
     Graphics,
@@ -234,7 +244,10 @@ describe("PixiMapRenderer lifecycle", () => {
     );
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it("mounts once, rejects a second surface, and destroys deterministically", async () => {
     const renderer = new PixiMapRenderer();
@@ -269,8 +282,8 @@ describe("PixiMapRenderer lifecycle", () => {
     renderer.setCamera({ height: 2160, scale: 1, width: 3840, x: 0, y: 0 });
     await renderer.mount(createSurface());
 
-    expect(applicationState.init).toHaveBeenCalledWith(expect.objectContaining({ resolution: 1.01 }));
-    expect(renderer.getSnapshot().resolution).toBe(1.01);
+    expect(applicationState.init).toHaveBeenCalledWith(expect.objectContaining({ antialias: true, resolution: 1.74 }));
+    expect(renderer.getSnapshot().resolution).toBe(1.74);
 
     devicePixelRatio = 1;
     renderer.resize({ height: 600, width: 800 });
@@ -354,7 +367,7 @@ describe("PixiMapRenderer lifecycle", () => {
       coalesceInvalidations([{ kind: "world" }])
     );
 
-    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 18, textureCacheEntries: 3 });
+    expect(renderer.getSnapshot()).toMatchObject({ resourceCount: 21, textureCacheEntries: 3 });
     expect(applicationState.assetLoad).toHaveBeenCalledTimes(3);
 
     renderer.clear();
@@ -369,7 +382,7 @@ describe("PixiMapRenderer lifecycle", () => {
     await renderer.mount(createSurface());
     await renderer.render(STATIC_VIEWER_WORLD, style, coalesceInvalidations([{ kind: "world" }]));
 
-    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 17 });
+    expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 20 });
     expect(applicationState.stage?.children.map(child => child.label)).toEqual([
       "ocean",
       "landmass",
@@ -695,8 +708,20 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(renderer.getSnapshot().missingLabelFonts).toEqual(["Almendra SC", "Arial"]);
     expect(applicationState.bitmapFontInstall).toHaveBeenCalledTimes(2);
     expect(applicationState.bitmapTextCreate).toHaveBeenCalledTimes(5);
+
+    vi.useFakeTimers();
+    renderer.setLayerVisibility("routes", true);
+    renderer.setCamera({ height: 600, scale: 7, width: 800, x: 0, y: 0 });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(applicationState.bitmapFontInstall).toHaveBeenCalledTimes(3);
+    expect(applicationState.bitmapFontInstall.mock.calls.at(-1)?.[0].resolution).toBe(4);
+    const refreshedText = labels?.children[1].children[0] as { children: Array<{ style: { fontFamily: string } }> };
+    expect(refreshedText.children[0].style.fontFamily).toBe(
+      applicationState.bitmapFontInstall.mock.calls.at(-1)?.[0].name
+    );
     renderer.destroy();
-    expect(applicationState.bitmapFontUninstall).toHaveBeenCalledTimes(2);
+    expect(applicationState.bitmapFontUninstall).toHaveBeenCalledTimes(3);
   });
 
   it("builds camera-aware coordinates with pinned bitmap labels and one visible density group", async () => {

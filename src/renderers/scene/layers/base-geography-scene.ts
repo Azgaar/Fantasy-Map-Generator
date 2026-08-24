@@ -1,5 +1,7 @@
 import type { Feature } from "@/generators/features";
+import { fractalizeCoastline, sampleCoastlineShape } from "@/renderers/coastline-fractal";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { simplifyPolyline } from "@/utils/simplify";
 import type {
   LineBatchPrimitive,
   LinePathPrimitive,
@@ -24,6 +26,7 @@ export interface BaseGeographyScene {
 
 export interface BaseGeographySource {
   features: readonly (Feature | null | undefined)[];
+  seed?: string;
   vertices: Pick<PackedGraph["vertices"], "p">;
 }
 
@@ -31,9 +34,10 @@ export function buildBaseGeographyScene(
   source: BaseGeographySource,
   mapBounds: MapBounds,
   revision: SceneRevision = 0,
-  shapeOptions: FeatureShapeOptions = {}
+  shapeOptions?: FeatureShapeOptions
 ): BaseGeographyScene {
   validateBounds(mapBounds);
+  const resolvedShapeOptions = shapeOptions ?? createDefaultShapeOptions(source, mapBounds);
   const sceneBounds: SceneBounds = { maxX: mapBounds.width, maxY: mapBounds.height, minX: 0, minY: 0 };
   const landPolygons: PolygonPathPrimitive[] = [];
   const lakePolygons: PolygonPathPrimitive[] = [];
@@ -43,7 +47,7 @@ export function buildBaseGeographyScene(
 
   for (const feature of source.features) {
     if (!feature || feature.type === "ocean" || !Array.isArray(feature.vertices)) continue;
-    const shape = buildFeatureShape(feature, source.vertices, mapBounds, shapeOptions);
+    const shape = buildFeatureShape(feature, source.vertices, mapBounds, resolvedShapeOptions);
     if (!shape) continue;
 
     const role = getFeatureRole(feature);
@@ -68,6 +72,18 @@ export function buildBaseGeographyScene(
     landmass: createPolygonPathBatch("landmass", landPolygons, sceneBounds, revision),
     ocean: createMapRectangle(mapBounds, revision),
     waterMask: createMask("ocean", waterRegions, sceneBounds, revision)
+  };
+}
+
+function createDefaultShapeOptions(source: BaseGeographySource, mapBounds: MapBounds): FeatureShapeOptions {
+  return {
+    fractalize: (points, feature) =>
+      sampleCoastlineShape(
+        fractalizeCoastline(points, feature.i, feature.type, { bounds: mapBounds, seed: source.seed })
+      ),
+    secureBoundary: true,
+    simplify: simplifyPolyline,
+    simplifyTolerance: 0.3
   };
 }
 

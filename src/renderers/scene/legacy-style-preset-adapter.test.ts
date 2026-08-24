@@ -31,6 +31,9 @@ describe("legacy style preset adapter", () => {
       "#oceanHeights": { "data-render": 1, scheme: "blue" },
       "#roads": { opacity: 0.5, stroke: "#aa5500", "stroke-width": 1.1 },
       "#statesBody": { opacity: 0.42 },
+      "#statesHalo": { "data-width": 12, filter: "blur(6px)", opacity: 0.3 },
+      "#cults": { filter: null, opacity: 0.6, stroke: "#765432", "stroke-width": 0.8 },
+      "#map": { filter: "url(#filter-sepia)" },
       "#texture": { "data-href": "texture.png", "data-x": 8, mask: "url(#land)" },
       "#tradeAnimation": { opacity: 0.35 }
     };
@@ -42,6 +45,9 @@ describe("legacy style preset adapter", () => {
     expect(result.height.land).toMatchObject({ curve: "curveLinear", opacity: 0.9, scheme: "natural", skip: 2 });
     expect(result.height.ocean).toMatchObject({ render: true, scheme: "blue" });
     expect(result.states.opacity).toBe(0.42);
+    expect(result.states.halo).toEqual({ blur: 6, opacity: 0.3, width: 12 });
+    expect(result.cultures.stroke).toMatchObject({ color: "#765432", width: 0.8 });
+    expect(result.filter).toBe("url(#filter-sepia)");
     expect(result.grid).toMatchObject({ dx: 3, opacity: 0.75, type: "square" });
     expect(result.grid.stroke).toMatchObject({ dash: "2 1", width: 1.25 });
     expect(result.routes.roles.roads).toMatchObject({ color: "#aa5500", opacity: 0.5, width: 1.1 });

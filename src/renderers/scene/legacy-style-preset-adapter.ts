@@ -78,6 +78,7 @@ export function serializeMapStyleToLegacyPreset(
   burgGroupNames: readonly string[] = []
 ): LegacyStylePreset {
   const preset: LegacyStylePreset = {
+    "#map": { filter: rendererStyle.filter },
     "#armies": {
       "box-size": rendererStyle.military.boxSize,
       "fill-opacity": rendererStyle.military.fillOpacity,
@@ -86,7 +87,11 @@ export function serializeMapStyleToLegacyPreset(
       stroke: rendererStyle.military.stroke,
       "stroke-width": rendererStyle.military.strokeWidth
     },
-    "#biomes": { opacity: rendererStyle.biomes.opacity },
+    "#biomes": {
+      ...serializeLine(rendererStyle.biomes.stroke),
+      filter: rendererStyle.biomes.filter,
+      opacity: rendererStyle.biomes.opacity
+    },
     "#cells": { opacity: rendererStyle.cells.opacity, ...serializeLine(rendererStyle.cells) },
     "#compass": { opacity: rendererStyle.compass.opacity },
     "#compass > use": {
@@ -99,7 +104,11 @@ export function serializeMapStyleToLegacyPreset(
       "font-size": rendererStyle.coordinates.fontSize,
       opacity: rendererStyle.coordinates.opacity
     },
-    "#cults": { opacity: rendererStyle.cultures.opacity },
+    "#cults": {
+      ...serializeLine(rendererStyle.cultures.stroke),
+      filter: rendererStyle.cultures.filter,
+      opacity: rendererStyle.cultures.opacity
+    },
     "#emblems": {
       "data-automatic-visibility": Number(rendererStyle.emblems.automaticVisibility),
       filter: rendererStyle.emblems.filter,
@@ -172,12 +181,30 @@ export function serializeMapStyleToLegacyPreset(
       opacity: rendererStyle.precipitation.opacity
     },
     "#provinceBorders": serializeLine(rendererStyle.borders.province),
-    "#provs": { opacity: rendererStyle.provinces.opacity },
-    "#relig": { opacity: rendererStyle.religions.opacity },
+    "#provs": {
+      ...serializeLine(rendererStyle.provinces.stroke),
+      filter: rendererStyle.provinces.filter,
+      opacity: rendererStyle.provinces.opacity
+    },
+    "#relig": {
+      ...serializeLine(rendererStyle.religions.stroke),
+      filter: rendererStyle.religions.filter,
+      opacity: rendererStyle.religions.opacity
+    },
     "#rivers": { fill: rendererStyle.rivers.fill.color, opacity: rendererStyle.rivers.opacity },
     "#rural": { stroke: rendererStyle.population.rural.color },
     "#stateBorders": serializeLine(rendererStyle.borders.state),
-    "#statesBody": { opacity: rendererStyle.states.opacity },
+    "#statesBody": {
+      ...serializeLine(rendererStyle.states.stroke),
+      filter: rendererStyle.states.filter,
+      opacity: rendererStyle.states.opacity
+    },
+    "#statesHalo": {
+      "data-width": rendererStyle.states.halo.width,
+      filter: `blur(${rendererStyle.states.halo.blur}px)`,
+      opacity: rendererStyle.states.halo.opacity,
+      "stroke-width": rendererStyle.states.halo.width
+    },
     "#temperature": {
       ...serializeLine(rendererStyle.temperature.stroke),
       fill: rendererStyle.temperature.labels.color,
@@ -238,6 +265,8 @@ export function serializeMapStyleToLegacyPreset(
 }
 
 function applyPhysicalStyles(next: MapStyle, preset: LegacyStylePreset): void {
+  const map = preset["#map"];
+  if (map) next.filter = textOrNull(map.filter);
   const oceanBase = preset["#oceanBase"];
   const oceanLayers = preset["#oceanLayers"];
   const oceanPattern = preset["#oceanicPattern"];
@@ -300,7 +329,19 @@ function applyCellStyles(next: MapStyle, preset: LegacyStylePreset): void {
   ] as const) {
     const attributes = preset[selector];
     if (!attributes) continue;
-    next[layer] = { ...next[layer], opacity: number(attributes.opacity, 1) };
+    const layerStyle = next[layer];
+    layerStyle.filter = textOrNull(attributes.filter);
+    layerStyle.opacity = number(attributes.opacity, layerStyle.opacity);
+    layerStyle.stroke = readLine(attributes, layerStyle.stroke);
+  }
+
+  const statesHalo = preset["#statesHalo"];
+  if (statesHalo) {
+    next.states.halo = {
+      blur: readBlur(statesHalo.filter, next.states.halo.blur),
+      opacity: number(statesHalo.opacity, next.states.halo.opacity),
+      width: number(statesHalo["data-width"] ?? statesHalo["stroke-width"], next.states.halo.width)
+    };
   }
 
   const cells = preset["#cells"];
@@ -611,6 +652,7 @@ function readLine(
     cap: cap === "round" || cap === "square" ? cap : "butt",
     color: text(attributes.stroke, fallback.color),
     dash: text(attributes["stroke-dasharray"], ""),
+    join: lineJoin(attributes["stroke-linejoin"], fallback.join ?? "round"),
     opacity,
     width: number(attributes["stroke-width"], fallback.width)
   };
@@ -661,8 +703,19 @@ function serializeLine(line: SemanticLineStyle): LegacyStylePresetAttributes {
     stroke: line.color,
     "stroke-dasharray": line.dash,
     "stroke-linecap": line.cap,
+    "stroke-linejoin": line.join ?? "round",
     "stroke-width": line.width
   };
+}
+
+function lineJoin(value: LegacyStylePresetValue, fallback: CanvasLineJoin): CanvasLineJoin {
+  const join = text(value, fallback);
+  return join === "bevel" || join === "miter" ? join : "round";
+}
+
+function readBlur(value: LegacyStylePresetValue, fallback: number): number {
+  const match = text(value, "").match(/blur\(\s*([\d.]+)px\s*\)/i);
+  return match ? number(match[1], fallback) : fallback;
 }
 
 function serializePointSymbol(symbol: PointSymbolStyle, includeIcon: boolean): LegacyStylePresetAttributes {

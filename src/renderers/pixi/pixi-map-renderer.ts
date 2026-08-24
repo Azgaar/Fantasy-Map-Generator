@@ -5,6 +5,7 @@ import {
   Assets,
   BitmapFontManager,
   BitmapText,
+  BlurFilter,
   ColorMatrixFilter,
   Container,
   Graphics,
@@ -44,6 +45,7 @@ import {
   type TradeAnimationSnapshot,
   type TradeMarkerType
 } from "../draw-trade-animation";
+import { buildAssignmentBoundaryScene } from "../scene/layers/assignment-boundary-scene";
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
 import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
@@ -90,7 +92,12 @@ import {
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
 import { ensureFontFamiliesReady } from "../text/font-readiness";
 import { monitorWebGlContext } from "./context-recovery";
-import { GlyphAtlasCache, type GlyphAtlasDescriptor } from "./glyph-atlas-cache";
+import {
+  GlyphAtlasCache,
+  type GlyphAtlasDescriptor,
+  type GlyphAtlasHandle,
+  selectLabelAtlasResolution
+} from "./glyph-atlas-cache";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 import { MapPickingIndex } from "./map-picking-index";
 
@@ -145,6 +152,15 @@ interface LabelDisplay {
   textDisplays: readonly BitmapText[];
 }
 
+interface LabelAtlasDisplay {
+  container: Container;
+  group: LabelSceneGroup;
+  handle: GlyphAtlasHandle;
+  resolution: number;
+  resolvedFontFamily: string;
+  textDisplays: readonly BitmapText[];
+}
+
 interface LabelGroupDisplay {
   active: boolean;
   container: Container;
@@ -173,6 +189,7 @@ interface CoordinateLabelDisplay {
 }
 
 const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cultures", "states", "provinces"];
+const LABEL_ATLAS_REFRESH_DELAY_MS = 100;
 
 export interface PixiMapRendererOptions {
   deviceMemoryGb?: number;
@@ -218,14 +235,22 @@ export class PixiMapRenderer implements MapRenderer {
   private camera: MapCamera = { ...DEFAULT_MAP_CAMERA };
   private contextRecoveryRelease: (() => void) | null = null;
   private diagnostics = new RenderDiagnostics();
-  private cellMeshes = new Map<CellFillLayer, { container: Container; retained: RetainedCellMesh }>();
+  private cellMeshes = new Map<
+    CellFillLayer,
+    { container: Container; halo?: RetainedCellMesh; retained: RetainedCellMesh }
+  >();
   private coordinateGroupDisplays: CoordinateGroupDisplay[] = [];
   private coordinateLabelDisplays: CoordinateLabelDisplay[] = [];
   private coordinateLongitudeSpan = 0;
   private layerOrder = MAP_LAYER_REGISTRY.map(layer => layer.id);
   private layerVisibility = new Map<MapLayerId, boolean>();
+  private labelAtlasDisplays: LabelAtlasDisplay[] = [];
+  private labelAtlasQueuedResolution = 0;
+  private labelAtlasRefreshSequence = 0;
+  private labelAtlasRefreshTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private labelDisplays: LabelDisplay[] = [];
   private labelGroupDisplays: LabelGroupDisplay[] = [];
+  private labelResizeOnZoom = true;
   private emblemGroupDisplays: EmblemGroupDisplay[] = [];
   private emblemSourceCache = new Map<string, Promise<string | null>>();
   private emblemTextureHandles = new Set<RendererResourceHandle<Texture>>();
@@ -237,7 +262,7 @@ export class PixiMapRenderer implements MapRenderer {
   private rebuildSequence = 0;
   private retainedCellMeshes = new Set<RetainedCellMesh>();
   private reliefTextureHandles = new Set<RendererResourceHandle<Texture>>();
-  private rendererFilters = new Set<ColorMatrixFilter>();
+  private rendererFilters = new Set<{ destroy(): void }>();
   private resizeFrameId: number | null = null;
   private resources = new RendererResourceTracker();
   private resizeObserver: ResizeObserver | null = null;
@@ -422,6 +447,7 @@ export class PixiMapRenderer implements MapRenderer {
       militaryContainer,
       markerContainer
     );
+    if (this.semanticStyle.filter) this.applyPhysicalFilter(this.app.stage, this.semanticStyle.filter);
     this.applyLayerOrder();
     const burgSymbols = this.getWorld().burgs.filter(burg => burg.i && !burg.removed && burg.group).length;
     const markerSymbols = markerContainer.children.length;
@@ -487,6 +513,7 @@ export class PixiMapRenderer implements MapRenderer {
       if (isMapLayerId(child.label)) child.visible = this.layerVisibility.get(child.label) ?? true;
     }
     this.updateLabelGroupVisibility();
+    this.scheduleLabelAtlasRefresh();
     if (render) {
       this.app.render();
       this.rendererOptions.onSceneChange?.();
@@ -513,7 +540,10 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.viewportWidth = normalized.width;
     // The editor already coalesces zoom events into an animation frame. Render here so the canvas and SVG overlay
     // commit the same camera in the same frame instead of introducing a second-frame delay through the scheduler.
-    if (this.stats.enabled) this.applyCamera();
+    if (this.stats.enabled) {
+      this.applyCamera();
+      this.scheduleLabelAtlasRefresh();
+    }
   }
 
   private applyCamera(): void {
@@ -705,7 +735,7 @@ export class PixiMapRenderer implements MapRenderer {
     const viewport = getViewportSize(this.surface, this.camera);
     this.app = new Application();
     await this.app.init({
-      antialias: false,
+      antialias: true,
       autoDensity: true,
       autoStart: false,
       backgroundAlpha: 1,
@@ -775,11 +805,47 @@ export class PixiMapRenderer implements MapRenderer {
 
     const container = new Container();
     container.label = layer;
-    container.alpha = style.opacity;
+    const fillSource = {
+      ...this.getCellFillSource(layer),
+      fallbackColor: style.fallbackColor,
+      heights: this.getWorld().cells.h
+    };
+    let halo: RetainedCellMesh | undefined;
+    const stateStyle = layer === "states" ? this.semanticStyle.states : null;
+    if (stateStyle && stateStyle.halo.opacity > 0 && stateStyle.halo.width > 0) {
+      halo = new RetainedCellMesh(this.getCellTopology(), fillSource, layer, this.resources);
+      const haloContainer = new Container();
+      const haloFilter = new BlurFilter({
+        quality: 3,
+        strength: stateStyle.halo.blur + stateStyle.halo.width / 2
+      });
+      haloContainer.label = "statesHalo";
+      haloContainer.alpha = stateStyle.halo.opacity;
+      haloContainer.filters = [haloFilter];
+      halo.mesh.label = "states-halo-retained-cells";
+      haloContainer.addChild(halo.mesh);
+      container.addChild(haloContainer);
+      this.rendererFilters.add(haloFilter);
+      this.retainedCellMeshes.add(halo);
+    }
+    retained.mesh.alpha = style.opacity;
     retained.mesh.label = `${layer}-retained-cells`;
     this.retainedCellMeshes.add(retained);
     container.addChild(retained.mesh);
-    this.cellMeshes.set(layer, { container, retained });
+    if (style.stroke.width > 0 && style.stroke.opacity > 0) {
+      const boundaries = buildAssignmentBoundaryScene(
+        this.getWorld(),
+        fillSource.assignments,
+        layer,
+        this.sceneRevisions.getLayerRevision(layer)
+      );
+      const outlines = createLineGraphic(boundaries.paths, style.stroke);
+      outlines.alpha = style.opacity;
+      outlines.label = `${layer}-boundaries`;
+      container.addChild(outlines);
+    }
+    if (style.filter) this.applyPhysicalFilter(container, style.filter);
+    this.cellMeshes.set(layer, { container, halo, retained });
     return container;
   }
 
@@ -1163,6 +1229,7 @@ export class PixiMapRenderer implements MapRenderer {
     if (!state) return container;
 
     const scene = buildLabelScene(state, this.sceneRevisions.getLayerRevision("labels"));
+    this.labelResizeOnZoom = scene.resizeOnZoom;
     const fontResults = await ensureFontFamiliesReady(scene.groups.map(group => group.style.fontFamily));
     if (sequence !== this.rebuildSequence) return container;
     this.stats.missingLabelFonts = fontResults.filter(result => !result.ready).map(result => result.family);
@@ -1170,15 +1237,13 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.unsupportedLabelEffects = [...scene.unsupportedEffects];
 
     const fontReadiness = new Map(fontResults.map(result => [result.family, result.ready]));
+    const resolvedFontFamilies = scene.groups.map(group =>
+      fontReadiness.get(group.style.fontFamily) ? group.style.fontFamily : "Arial"
+    );
+    const atlasResolution = this.stats.resolution;
     const atlases = await Promise.all(
-      scene.groups.map(group =>
-        group.labels.length
-          ? this.glyphAtlasCache.acquire(
-              group,
-              this.stats.resolution,
-              fontReadiness.get(group.style.fontFamily) ? group.style.fontFamily : "Arial"
-            )
-          : null
+      scene.groups.map((group, index) =>
+        group.labels.length ? this.glyphAtlasCache.acquire(group, atlasResolution, resolvedFontFamilies[index]) : null
       )
     );
     if (sequence !== this.rebuildSequence) {
@@ -1188,9 +1253,8 @@ export class PixiMapRenderer implements MapRenderer {
 
     for (let index = 0; index < scene.groups.length; index++) {
       const atlas = atlases[index];
-      if (atlas) this.glyphAtlasHandles.add(atlas);
       container.addChild(
-        this.buildLabelGroup(scene.groups[index], scene.resizeOnZoom, scene.showAll, atlas?.value.name ?? "Arial")
+        this.buildLabelGroup(scene.groups[index], scene.resizeOnZoom, scene.showAll, atlas, resolvedFontFamilies[index])
       );
     }
     this.updateLabelDisplays();
@@ -1202,9 +1266,12 @@ export class PixiMapRenderer implements MapRenderer {
     group: LabelSceneGroup,
     resizeOnZoom: boolean,
     showAll: boolean,
-    atlasFontFamily: string
+    atlas: GlyphAtlasHandle | null,
+    resolvedFontFamily: string
   ): Container {
     const container = new Container();
+    const atlasFontFamily = atlas?.value.name ?? resolvedFontFamily;
+    const groupTextDisplays: BitmapText[] = [];
     container.label = `labels:${group.name}`;
     container.alpha = group.style.opacity;
     this.labelGroupDisplays.push({
@@ -1235,12 +1302,14 @@ export class PixiMapRenderer implements MapRenderer {
           text.rotation = glyph.angle;
           labelContainer.addChild(text);
           textDisplays.push(text);
+          groupTextDisplays.push(text);
         }
       } else {
         const text = createLabelText(label.text, label.fontSize, label.letterSpacing, group.style, atlasFontFamily);
         text.anchor.set(0.5, label.type === "burg" ? 1 : 0.5);
         labelContainer.addChild(text);
         textDisplays.push(text);
+        groupTextDisplays.push(text);
       }
       container.addChild(labelContainer);
       this.labelDisplays.push({
@@ -1252,6 +1321,17 @@ export class PixiMapRenderer implements MapRenderer {
         offsetYEm: group.style.offsetYEm,
         rescale: resizeOnZoom,
         textDisplays
+      });
+    }
+    if (atlas) {
+      this.glyphAtlasHandles.add(atlas);
+      this.labelAtlasDisplays.push({
+        container,
+        group,
+        handle: atlas,
+        resolution: atlas.value.installOptions.resolution ?? 1,
+        resolvedFontFamily,
+        textDisplays: groupTextDisplays
       });
     }
     return container;
@@ -1797,6 +1877,11 @@ export class PixiMapRenderer implements MapRenderer {
     this.coordinateGroupDisplays = [];
     this.coordinateLabelDisplays = [];
     this.coordinateLongitudeSpan = 0;
+    if (this.labelAtlasRefreshTimeoutId !== null) clearTimeout(this.labelAtlasRefreshTimeoutId);
+    this.labelAtlasRefreshTimeoutId = null;
+    this.labelAtlasRefreshSequence++;
+    this.labelAtlasDisplays = [];
+    this.labelAtlasQueuedResolution = 0;
     this.labelDisplays = [];
     this.labelGroupDisplays = [];
     this.emblemGroupDisplays = [];
@@ -1820,6 +1905,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.tradeDisplays.clear();
     this.tradeTextures.clear();
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
+    this.app.stage.filters = null;
     for (const filter of this.rendererFilters) filter.destroy();
     this.rendererFilters.clear();
     for (const handle of this.glyphAtlasHandles) handle.release();
@@ -1913,6 +1999,66 @@ export class PixiMapRenderer implements MapRenderer {
     }
   }
 
+  private scheduleLabelAtlasRefresh(): void {
+    if (!(this.layerVisibility.get("labels") ?? true)) return;
+    const displays = this.labelAtlasDisplays.filter(display => display.container.visible);
+    if (!displays.length) return;
+    const resolution = this.getLabelAtlasResolution(displays);
+    if (displays.every(display => display.resolution >= resolution) || resolution <= this.labelAtlasQueuedResolution)
+      return;
+
+    this.labelAtlasQueuedResolution = resolution;
+    if (this.labelAtlasRefreshTimeoutId !== null) clearTimeout(this.labelAtlasRefreshTimeoutId);
+    this.labelAtlasRefreshTimeoutId = setTimeout(() => {
+      this.labelAtlasRefreshTimeoutId = null;
+      void this.refreshLabelAtlases(resolution);
+    }, LABEL_ATLAS_REFRESH_DELAY_MS);
+  }
+
+  private async refreshLabelAtlases(resolution: number): Promise<void> {
+    const started = performance.now();
+    const requestSequence = ++this.labelAtlasRefreshSequence;
+    const rebuildSequence = this.rebuildSequence;
+    const displays = this.labelAtlasDisplays.filter(
+      display => display.container.visible && display.resolution < resolution
+    );
+    if (!displays.length) {
+      if (this.labelAtlasQueuedResolution <= resolution) this.labelAtlasQueuedResolution = 0;
+      return;
+    }
+    const results = await Promise.allSettled(
+      displays.map(display => this.glyphAtlasCache.acquire(display.group, resolution, display.resolvedFontFamily))
+    );
+    const handles = results.flatMap(result => (result.status === "fulfilled" ? [result.value] : []));
+    const isStale = requestSequence !== this.labelAtlasRefreshSequence || rebuildSequence !== this.rebuildSequence;
+    if (isStale || results.some(result => result.status === "rejected")) {
+      for (const handle of handles) handle.release();
+      if (!isStale && this.labelAtlasQueuedResolution <= resolution) this.labelAtlasQueuedResolution = 0;
+      return;
+    }
+
+    const previousHandles = displays.map(display => display.handle);
+    const replacements = new Map<LabelAtlasDisplay, GlyphAtlasHandle>();
+    displays.forEach((display, index) => {
+      const handle = handles[index];
+      for (const text of display.textDisplays) text.style.fontFamily = handle.value.name;
+      this.glyphAtlasHandles.add(handle);
+      replacements.set(display, handle);
+    });
+    this.labelAtlasDisplays = this.labelAtlasDisplays.map(display => {
+      const handle = replacements.get(display);
+      return handle ? { ...display, handle, resolution } : display;
+    });
+    for (const handle of previousHandles) {
+      this.glyphAtlasHandles.delete(handle);
+      handle.release();
+    }
+    if (this.labelAtlasQueuedResolution <= resolution) this.labelAtlasQueuedResolution = 0;
+    this.app?.render();
+    this.rendererOptions.onSceneChange?.();
+    this.recordPerformance("pixi:label-atlas", performance.now() - started);
+  }
+
   private updateCoordinateDisplays(): void {
     if (!this.coordinateLongitudeSpan) return;
     const selectedStep = selectCoordinateStep(this.coordinateLongitudeSpan, this.camera.scale);
@@ -1979,6 +2125,7 @@ export class PixiMapRenderer implements MapRenderer {
       const target = this.cellMeshes.get(layer);
       if (!target) return false;
       const style = this.semanticStyle[layer];
+      if (style.stroke.width > 0) return false;
       const layerInvalidations = assignments.filter(invalidation => invalidation.layer === layer);
       target.retained.update(
         {
@@ -1990,7 +2137,17 @@ export class PixiMapRenderer implements MapRenderer {
           ? world.cells.i
           : layerInvalidations.flatMap(invalidation => invalidation.cellIds ?? [])
       );
-      target.container.alpha = style.opacity;
+      target.retained.mesh.alpha = style.opacity;
+      target.halo?.update(
+        {
+          ...this.getCellFillSource(layer),
+          fallbackColor: style.fallbackColor,
+          heights: world.cells.h
+        },
+        layerInvalidations.some(invalidation => !invalidation.cellIds)
+          ? world.cells.i
+          : layerInvalidations.flatMap(invalidation => invalidation.cellIds ?? [])
+      );
     }
     this.app.render();
     this.rendererOptions.onSceneChange?.();
@@ -2039,6 +2196,31 @@ export class PixiMapRenderer implements MapRenderer {
       },
       this.rendererOptions.resolutionPolicy ?? { ...DEFAULT_RENDERER_RESOLUTION_POLICY }
     );
+  }
+
+  private getLabelAtlasResolution(displays: readonly LabelAtlasDisplay[]): number {
+    const replacementHandles = new Set(displays.map(display => display.handle));
+    const retainedKeys = new Set(
+      [...this.glyphAtlasHandles].filter(handle => !replacementHandles.has(handle)).map(handle => handle.value.key)
+    );
+    const heldAtlases = new Map(
+      [...this.glyphAtlasHandles].map(handle => [handle.value.key, handle.value.bytes] as const)
+    );
+    const replaceableAtlases = new Map(
+      [...replacementHandles]
+        .filter(handle => !retainedKeys.has(handle.value.key))
+        .map(handle => [handle.value.key, handle.value.bytes] as const)
+    );
+    const replaceableBytes = [...replaceableAtlases.values()].reduce((total, bytes) => total + bytes, 0);
+    const heldBytes = [...heldAtlases.values()].reduce((total, bytes) => total + bytes, 0);
+    const totalBudget = this.rendererOptions.glyphBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.glyph;
+    return selectLabelAtlasResolution({
+      budgetBytes: Math.max(0, totalBudget - heldBytes + replaceableBytes),
+      cameraScale: this.camera.scale,
+      groups: displays.map(display => display.group),
+      rendererResolution: this.stats.resolution,
+      resizeOnZoom: this.labelResizeOnZoom
+    });
   }
 
   private applyPhysicalFilter(target: Container, value: string): boolean {
@@ -2128,6 +2310,7 @@ function createPolygonGraphic(polygons: readonly PolygonPathPrimitive[], style: 
       alpha: style.stroke.opacity,
       cap: style.stroke.cap,
       color: style.stroke.color,
+      join: style.stroke.join ?? "round",
       width: style.stroke.width
     });
   }
@@ -2160,7 +2343,14 @@ function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticL
   const context = new GraphicsContext();
   for (const path of paths) traceLinePath(context, path, style.dash);
   if (style.width > 0 && style.opacity > 0) {
-    context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, pixelLine, width: style.width });
+    context.stroke({
+      alpha: style.opacity,
+      cap: style.cap,
+      color: style.color,
+      join: style.join ?? "round",
+      pixelLine,
+      width: style.width
+    });
   }
   return new Graphics(context);
 }

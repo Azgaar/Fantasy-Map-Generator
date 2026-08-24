@@ -154,7 +154,8 @@ const getWorld = () =>
     Production,
     urbanization,
     getLabelRenderState(),
-    { extent: mapCoordinates, height: graphHeight, width: graphWidth }
+    { extent: mapCoordinates, height: graphHeight, width: graphWidth },
+    seed
   );
 
 const api: PixiRendererControllerApi = {

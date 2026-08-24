@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { LabelSceneGroup, ResolvedLabelGroupStyle } from "../scene/layers/label-scene";
-import { collectGlyphCharacters, createGlyphAtlasDescriptor, GlyphAtlasCache } from "./glyph-atlas-cache";
+import {
+  collectGlyphCharacters,
+  createGlyphAtlasDescriptor,
+  estimateGlyphAtlasBytes,
+  GlyphAtlasCache,
+  selectLabelAtlasResolution
+} from "./glyph-atlas-cache";
 
 describe("GlyphAtlasCache", () => {
   it("builds deterministic DPR-aware atlases from the exact straight and curved character set", () => {
@@ -39,6 +45,25 @@ describe("GlyphAtlasCache", () => {
     cache.clear();
     expect(cache.getSnapshot()).toEqual({ bytes: 0, entries: 0, referenced: 0 });
     expect(installer.uninstall).toHaveBeenCalledWith(second.value.name);
+  });
+
+  it("raises atlas detail with zoom while respecting the glyph budget", () => {
+    const group = labelGroup("North Realm");
+    const request = {
+      budgetBytes: Number.POSITIVE_INFINITY,
+      cameraScale: 7,
+      groups: [group],
+      rendererResolution: 1,
+      resizeOnZoom: true
+    };
+
+    expect(selectLabelAtlasResolution({ ...request, cameraScale: 1 })).toBe(1);
+    expect(selectLabelAtlasResolution(request)).toBe(4);
+    expect(selectLabelAtlasResolution({ ...request, cameraScale: 20 })).toBe(8);
+    expect(selectLabelAtlasResolution({ ...request, cameraScale: 7, resizeOnZoom: false })).toBe(8);
+
+    const fourXBudget = estimateGlyphAtlasBytes([...collectGlyphCharacters(group)].length, group.style, 4);
+    expect(selectLabelAtlasResolution({ ...request, cameraScale: 20, budgetBytes: fourXBudget })).toBe(4);
   });
 });
 

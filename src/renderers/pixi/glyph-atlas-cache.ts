@@ -23,6 +23,17 @@ export interface GlyphAtlasCacheOptions {
   tracker?: RendererResourceTracker;
 }
 
+export interface LabelAtlasResolutionRequest {
+  budgetBytes: number;
+  cameraScale: number;
+  groups: readonly LabelSceneGroup[];
+  rendererResolution: number;
+  resizeOnZoom: boolean;
+}
+
+const MAX_LABEL_ATLAS_RESOLUTION = 8;
+const LABEL_ATLAS_RESOLUTION_MULTIPLIERS = [1, 1.5, 2, 3, 4, 6, 8] as const;
+
 export class GlyphAtlasCache {
   private readonly cache: RendererResourceCache<GlyphAtlasDescriptor>;
 
@@ -121,7 +132,35 @@ export function estimateGlyphAtlasBytes(
   const shadowPadding = style.shadow ? style.shadow.blur * 2 + style.shadow.distance : 0;
   const effectPadding = 4 + style.strokeWidth + shadowPadding;
   const glyphSide = Math.max(1, Math.ceil((style.fontSize + effectPadding * 2) * resolution));
-  return Math.max(1, characterCount) * glyphSide * glyphSide * 4;
+  const glyphPixels = Math.max(1, characterCount) * glyphSide * glyphSide;
+  const pagePixels = Math.ceil(512 * resolution) ** 2;
+  return Math.max(1, Math.ceil(glyphPixels / pagePixels)) * pagePixels * 4;
+}
+
+export function selectLabelAtlasResolution(request: LabelAtlasResolutionRequest): number {
+  const rendererResolution = Math.max(1, request.rendererResolution);
+  const cameraScale = Math.max(1, request.cameraScale);
+  const renderedScale = request.resizeOnZoom ? (cameraScale + 1) / 2 : cameraScale;
+  const desiredResolution = Math.min(rendererResolution * renderedScale, MAX_LABEL_ATLAS_RESOLUTION);
+  const candidates = [
+    ...new Set(
+      LABEL_ATLAS_RESOLUTION_MULTIPLIERS.map(multiplier =>
+        Math.min(Math.round(rendererResolution * multiplier * 100) / 100, MAX_LABEL_ATLAS_RESOLUTION)
+      )
+    )
+  ].sort((left, right) => left - right);
+  const desiredCandidate = candidates.find(candidate => candidate >= desiredResolution) ?? MAX_LABEL_ATLAS_RESOLUTION;
+  const groups = request.groups.filter(group => group.labels.length);
+  const affordable = candidates.filter(
+    candidate =>
+      candidate <= desiredCandidate &&
+      groups.reduce(
+        (bytes, group) =>
+          bytes + estimateGlyphAtlasBytes([...collectGlyphCharacters(group)].length, group.style, candidate),
+        0
+      ) <= request.budgetBytes
+  );
+  return affordable.at(-1) ?? rendererResolution;
 }
 
 function toBitmapFontStyle(style: ResolvedLabelGroupStyle, fontFamily: string): BitmapFontInstallOptions["style"] {

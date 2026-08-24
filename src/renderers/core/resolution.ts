@@ -15,11 +15,11 @@ export interface RendererResolutionRequest extends ViewportSize {
 }
 
 export const DEFAULT_RENDERER_RESOLUTION_POLICY: Readonly<RendererResolutionPolicy> = {
-  maxCanvasPixels: 8 * 1024 * 1024,
-  maxResolution: 2,
-  mediumMemoryMaxResolution: 1.5,
+  maxCanvasPixels: 24 * 1024 * 1024,
+  maxResolution: 2.5,
+  mediumMemoryMaxResolution: 2,
   mediumMemoryThresholdGb: 4,
-  lowMemoryMaxResolution: 1,
+  lowMemoryMaxResolution: 1.5,
   lowMemoryThresholdGb: 2
 };
 

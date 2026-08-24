@@ -20,6 +20,7 @@ export interface MapRenderWorld extends PackedGraph {
   goodsProduction?: GoodsProductionSource;
   labelRenderState?: LabelRenderState;
   markerRenderState?: MarkerRenderState;
+  seed?: string;
   urbanization?: number;
 }
 
@@ -30,7 +31,8 @@ export function createMapRenderWorld(
   goodsProduction?: GoodsProductionSource,
   urbanization?: number,
   labelRenderState?: LabelRenderState,
-  coordinateRenderState?: CoordinateRenderState
+  coordinateRenderState?: CoordinateRenderState,
+  seed?: string
 ): MapRenderWorld {
   return {
     ...packed,
@@ -45,6 +47,7 @@ export function createMapRenderWorld(
     goodsProduction,
     labelRenderState,
     markerRenderState,
+    seed,
     urbanization
   };
 }

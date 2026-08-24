@@ -105,4 +105,27 @@ describe("base geography scene", () => {
     expect(() => buildBaseGeographyScene(source, { height: 10, width: 0 })).toThrow("Invalid map bounds");
     expect(() => buildBaseGeographyScene(source, { height: Number.NaN, width: 10 })).toThrow("Invalid map bounds");
   });
+
+  it("uses deterministic high-detail shaping by default", () => {
+    const source = {
+      features: [feature(1, "island", [0, 1, 2, 3, 4])],
+      seed: "scene-coast",
+      vertices: {
+        p: [
+          [10, 10],
+          [80, 12],
+          [88, 55],
+          [50, 85],
+          [12, 60]
+        ] as [number, number][]
+      }
+    };
+
+    const first = buildBaseGeographyScene(source, { height: 100, width: 100 });
+    const second = buildBaseGeographyScene(source, { height: 100, width: 100 });
+
+    expect(first.coastline.paths[0].points.length).toBeGreaterThan(source.vertices.p.length);
+    expect(second.coastline.paths[0].points).toEqual(first.coastline.paths[0].points);
+    expect(first.landmass.polygons[0].points).toEqual(first.coastline.paths[0].points);
+  });
 });
