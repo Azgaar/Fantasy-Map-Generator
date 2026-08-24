@@ -36,7 +36,7 @@ type Opener = (target: SVGElement, parent: SVGElement) => void;
 const PARENT_EDITORS: Record<string, Opener> = {
   rivers: target => Controllers.RiverEditor.open(Number(target.dataset.id ?? target.id.slice(5))),
   ice: target => Controllers.IceEditor.open(target),
-  terrain: target => Controllers.ReliefEditor.open(target),
+  terrain: target => Controllers.ReliefEditor.open(Number(target.dataset.id)),
   goodsCells: () => Controllers.GoodsEditor.open()
 };
 
@@ -46,8 +46,8 @@ const GRAND_EDITORS: Record<string, Opener> = {
   ruler: () => Controllers.MeasurersEditor.open(),
   goodsIcons: () => Controllers.GoodsEditor.open(),
   goodsBurgs: (_target, parent) => Controllers.ProductionOverview.open(Number(parent.dataset.id)),
-  coastline: target => Controllers.CoastlineVertexEditor.open(target),
-  lakes: target => Controllers.LakesEditor.open(target),
+  coastline: target => Controllers.CoastlineVertexEditor.open(Number(target.dataset.f)),
+  lakes: target => Controllers.LakesEditor.open(Number(target.dataset.f)),
   markets: (target, parent) => {
     if (target.tagName !== "path") Controllers.MarketOverview.open(Number(parent.dataset.id));
   }

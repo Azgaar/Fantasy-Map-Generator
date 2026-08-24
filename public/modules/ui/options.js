@@ -193,7 +193,6 @@ optionsContent.addEventListener("click", event => {
   else if (id === "optionsCopySeed") copyMapURL();
   else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "templateInputContainer") openTemplateSelectionDialog();
-  else if (id === "generateMapFromSetup") regeneratePrompt({ fromSetup: true });
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
@@ -779,7 +778,8 @@ function regeneratePrompt(options) {
     else regenerateMap(options);
   };
 
-  const workingTime = (Date.now() - last(mapHistory).created) / 60000; // minutes
+  const lastGeneratedMap = last(mapHistory);
+  const workingTime = lastGeneratedMap ? (Date.now() - lastGeneratedMap.created) / 60000 : Infinity; // minutes
   if (workingTime < 1) return generateSelectedMap();
 
   confirmationDialog({

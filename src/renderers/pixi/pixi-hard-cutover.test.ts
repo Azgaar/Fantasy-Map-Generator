@@ -5,11 +5,19 @@ import styleUiSource from "../../../public/modules/ui/style.js?raw";
 import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
 import mapTooltipSource from "../../components/map-tooltip.ts?raw";
 import zoomSource from "../../components/zoom.ts?raw";
+import biomesEditorSource from "../../controllers/biomes-editor.ts?raw";
 import burgEditorSource from "../../controllers/burg-editor.ts?raw";
+import coastlineVertexEditorSource from "../../controllers/coastline-vertex-editor.ts?raw";
+import culturesEditorSource from "../../controllers/cultures-editor.ts?raw";
 import goodsEditorSource from "../../controllers/goods-editor.ts?raw";
 import iceEditorSource from "../../controllers/ice-editor.ts?raw";
+import lakesEditorSource from "../../controllers/lakes-editor.ts?raw";
+import labelsEditorSource from "../../controllers/labels-editor.ts?raw";
 import markerEditorSource from "../../controllers/markers-editor.ts?raw";
 import marketsOverviewSource from "../../controllers/markets-overview.ts?raw";
+import provincesEditorSource from "../../controllers/provinces-editor.ts?raw";
+import reliefEditorSource from "../../controllers/relief-editor.ts?raw";
+import religionsEditorSource from "../../controllers/religions-editor.ts?raw";
 import riverCreatorSource from "../../controllers/river-creator.ts?raw";
 import riverEditorSource from "../../controllers/river-editor.ts?raw";
 import riversOverviewSource from "../../controllers/rivers-overview.ts?raw";
@@ -17,6 +25,9 @@ import routeCreatorSource from "../../controllers/route-creator.ts?raw";
 import routeEditorSource from "../../controllers/route-editor.ts?raw";
 import routeGroupsEditorSource from "../../controllers/route-groups-editor.ts?raw";
 import routesOverviewSource from "../../controllers/routes-overview.ts?raw";
+import statesEditorSource from "../../controllers/states-editor.ts?raw";
+import territoryEditorUtilsSource from "../../controllers/territory-editor-utils.ts?raw";
+import zonesEditorSource from "../../controllers/zones-editor.ts?raw";
 import riverGeneratorSource from "../../generators/river-generator.ts?raw";
 import routesGeneratorSource from "../../generators/routes-generator.ts?raw";
 import exportSource from "../../services/io/export.ts?raw";
@@ -41,6 +52,7 @@ import emblemSceneSource from "../scene/layers/emblem-scene.ts?raw";
 import labelSceneSource from "../scene/layers/label-scene.ts?raw";
 import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
 import populationMilitarySceneSource from "../scene/layers/population-military-scene.ts?raw";
+import reliefSceneSource from "../scene/layers/relief-sprite-scene.ts?raw";
 import staticOverlaySceneSource from "../scene/layers/static-overlay-scene.ts?raw";
 import denseOverlaysSource from "../viewport/dense-overlays.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
@@ -121,6 +133,54 @@ describe("Pixi hard cutover", () => {
     expect(riverEditorSource.includes('selectedRiver.attr("id")')).toBe(false);
     expect(riverGeneratorSource.includes('select("#rivers")')).toBe(false);
     expect(routesGeneratorSource.includes('select("#viewbox").select(`#route')).toBe(false);
+  });
+
+  it("previews territory assignments from typed working copies instead of temporary SVG polygons", () => {
+    const territorySources = [
+      biomesEditorSource,
+      culturesEditorSource,
+      religionsEditorSource,
+      statesEditorSource,
+      provincesEditorSource,
+      zonesEditorSource
+    ];
+    for (const source of territorySources) {
+      expect(source.includes('select("#temp")')).toBe(false);
+      expect(source.includes('attr("id", "temp")')).toBe(false);
+      expect(source.includes("getPackPolygon")).toBe(false);
+      expect(source.includes("getPointer")).toBe(false);
+    }
+    expect(territoryEditorUtilsSource.includes("TerritoryAssignmentSession")).toBe(true);
+    expect(territoryEditorUtilsSource.includes("ZoneAssignmentSession")).toBe(true);
+    expect(culturesEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(religionsEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+  });
+
+  it("edits feature vertices by domain ID without legacy paths or debug circles", () => {
+    for (const source of [lakesEditorSource, coastlineVertexEditorSource]) {
+      expect(source.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+      expect(source.includes('select("#debug")')).toBe(false);
+      expect(source.includes("getFeaturePath")).toBe(false);
+      expect(source.includes("getPackPolygon")).toBe(false);
+      expect(source.includes("moveFeatureVertex")).toBe(true);
+    }
+  });
+
+  it("edits stable relief entities through Pixi picking and overlay handles", () => {
+    expect(reliefEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(reliefEditorSource.includes('select("#terrain")')).toBe(false);
+    expect(reliefEditorSource.includes("getPointer")).toBe(false);
+    expect(reliefEditorSource.includes("moveReliefIcon")).toBe(true);
+    expect(reliefSceneSource.includes("relief[index].i ?? index")).toBe(true);
+  });
+
+  it("edits Pixi labels from domain data and shared overlay handles", () => {
+    expect(labelsEditorSource.includes("getSceneLabel(type, id)")).toBe(true);
+    expect(labelsEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(labelsEditorSource.includes("setLabelOverride")).toBe(true);
+    expect(labelsEditorSource.includes('querySelector<SVGTextElement>(`#labels')).toBe(false);
+    expect(labelsEditorSource.includes('select("#debug")')).toBe(false);
+    expect(labelsEditorSource.includes("getPointer")).toBe(false);
   });
 
   it("renders burgs and markers only through renderer-neutral Pixi point symbols", () => {

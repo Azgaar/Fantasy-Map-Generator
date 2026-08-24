@@ -1,3 +1,5 @@
+import type { Label, LabelType } from "@/generators/labels-generator";
+import { getNextReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
 import type { River } from "@/generators/river-generator";
 import type { Route } from "@/generators/routes-generator";
 import type { Zone } from "@/generators/zones-generator";
@@ -6,6 +8,19 @@ import type { PackedGraph, TypedArray } from "@/types/PackedGraph";
 
 type RouteControlPoint = [number, number, number];
 type RiverControlPoint = [number, number];
+
+const FEATURE_GEOMETRY_LAYERS: MapLayerId[] = [
+  "landmass",
+  "lakes",
+  "biomes",
+  "cells",
+  "religions",
+  "cultures",
+  "states",
+  "provinces",
+  "borders",
+  "coastline"
+];
 
 export interface EditorMutationResult {
   affectedCellIds: number[];
@@ -167,6 +182,128 @@ export function setZoneCells(zones: Zone[], zoneId: number, cellIds: readonly nu
   return changed("zones", [zoneId], affectedCellIds);
 }
 
+export function moveFeatureVertex(
+  graph: Pick<PackedGraph, "features" | "vertices">,
+  featureId: number,
+  vertexId: number,
+  point: [number, number]
+): EditorMutationResult {
+  const feature = graph.features.find(candidate => candidate.i === featureId);
+  const previous = graph.vertices.p[vertexId];
+  if (!feature?.vertices.includes(vertexId) || !previous) return unchangedFeatureGeometry();
+  if (previous[0] === point[0] && previous[1] === point[1]) return unchangedFeatureGeometry();
+  graph.vertices.p[vertexId] = point;
+  feature.area = Math.abs(getPolygonArea(feature.vertices.map(id => graph.vertices.p[id])));
+  return {
+    affectedCellIds: graph.vertices.c[vertexId]?.filter(cellId => cellId >= 0) ?? [],
+    affectedDomainIds: [featureId],
+    changed: true,
+    layers: FEATURE_GEOMETRY_LAYERS
+  };
+}
+
+export function setFeatureGroup(
+  graph: Pick<PackedGraph, "features">,
+  featureId: number,
+  group: string
+): EditorMutationResult {
+  const feature = graph.features.find(candidate => candidate.i === featureId);
+  const layer = feature?.type === "lake" ? "lakes" : "coastline";
+  if (!feature || feature.group === group) return unchanged(layer);
+  feature.group = group;
+  return changed(layer, [featureId]);
+}
+
+export function moveReliefIcon(
+  graph: Pick<PackedGraph, "relief">,
+  reliefId: number,
+  point: { x: number; y: number }
+): EditorMutationResult {
+  const icon = graph.relief.find(candidate => candidate.i === reliefId);
+  if (!icon || (icon.x === point.x && icon.y === point.y)) return unchanged("relief");
+  icon.x = point.x;
+  icon.y = point.y;
+  return changed("relief", [reliefId]);
+}
+
+export function resizeReliefIcon(
+  graph: Pick<PackedGraph, "relief">,
+  reliefId: number,
+  size: number
+): EditorMutationResult {
+  const icon = graph.relief.find(candidate => candidate.i === reliefId);
+  if (!icon || icon.s === size) return unchanged("relief");
+  const shift = (size - icon.s) / 2;
+  icon.s = size;
+  icon.x -= shift;
+  icon.y -= shift;
+  return changed("relief", [reliefId]);
+}
+
+export function setReliefIconType(
+  graph: Pick<PackedGraph, "relief">,
+  reliefId: number,
+  iconType: string
+): EditorMutationResult {
+  const icon = graph.relief.find(candidate => candidate.i === reliefId);
+  if (!icon || icon.icon === iconType) return unchanged("relief");
+  icon.icon = iconType;
+  return changed("relief", [reliefId]);
+}
+
+export function insertReliefIcon(
+  graph: Pick<PackedGraph, "relief">,
+  icon: ReliefIcon,
+  index = graph.relief.length
+): EditorMutationResult {
+  icon.i ??= getNextReliefIconId(graph.relief);
+  if (graph.relief.some(candidate => candidate.i === icon.i)) return unchanged("relief");
+  graph.relief.splice(Math.max(0, Math.min(index, graph.relief.length)), 0, icon);
+  return changed("relief", [icon.i]);
+}
+
+export function removeReliefIcons(
+  graph: Pick<PackedGraph, "relief">,
+  reliefIds: ReadonlySet<number>
+): EditorMutationResult {
+  const removed = graph.relief.filter(icon => icon.i !== undefined && reliefIds.has(icon.i));
+  if (!removed.length) return unchanged("relief");
+  graph.relief = graph.relief.filter(icon => icon.i === undefined || !reliefIds.has(icon.i));
+  return changed(
+    "relief",
+    removed.map(icon => icon.i!)
+  );
+}
+
+export function reorderReliefIcon(
+  graph: Pick<PackedGraph, "relief">,
+  reliefId: number,
+  direction: "back" | "front"
+): EditorMutationResult {
+  const index = graph.relief.findIndex(icon => icon.i === reliefId);
+  if (
+    index < 0 ||
+    (direction === "front" && index === graph.relief.length - 1) ||
+    (direction === "back" && index === 0)
+  ) {
+    return unchanged("relief");
+  }
+  const [icon] = graph.relief.splice(index, 1);
+  if (direction === "front") graph.relief.push(icon);
+  else graph.relief.unshift(icon);
+  return changed("relief", [reliefId]);
+}
+
+export function setLabelOverride(
+  entity: { i: number; label?: Label },
+  type: LabelType,
+  label: Label
+): EditorMutationResult {
+  if (sameLabel(entity.label, label)) return unchanged("labels");
+  entity.label = structuredClone(label);
+  return changed("labels", [`${type}:${entity.i}`]);
+}
+
 export function insertRoutePoint(route: Route, index: number, point: RouteControlPoint): EditorMutationResult {
   if (index < 0 || index > route.points.length) return unchanged("routes");
   route.points.splice(index, 0, point);
@@ -238,6 +375,10 @@ function unchanged(layer: MapLayerId): EditorMutationResult {
   return { affectedCellIds: [], affectedDomainIds: [], changed: false, layers: [layer] };
 }
 
+function unchangedFeatureGeometry(): EditorMutationResult {
+  return { affectedCellIds: [], affectedDomainIds: [], changed: false, layers: FEATURE_GEOMETRY_LAYERS };
+}
+
 function uniqueIds(ids: number[]): number[] {
   return [...new Set(ids)];
 }
@@ -249,4 +390,19 @@ function samePoints(left: number[][], right: number[][]): boolean {
       (point, index) => point[0] === right[index][0] && point[1] === right[index][1] && point[2] === right[index][2]
     )
   );
+}
+
+function getPolygonArea(points: readonly [number, number][]): number {
+  let area = 0;
+  for (let index = 0; index < points.length; index++) {
+    const [x1, y1] = points[index];
+    const [x2, y2] = points[(index + 1) % points.length];
+    area += x1 * y2 - x2 * y1;
+  }
+  return area / 2;
+}
+
+function sameLabel(left: Label | undefined, right: Label): boolean {
+  if (!left) return false;
+  return JSON.stringify(left) === JSON.stringify(right);
 }

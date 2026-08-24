@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ManualAssignmentHistory,
-  TerritoryAssignmentSession,
-  ZoneAssignmentSession
-} from "./territory-editor-utils";
+import { ManualAssignmentHistory, TerritoryAssignmentSession, ZoneAssignmentSession } from "./territory-editor-utils";
 
 describe("ManualAssignmentHistory", () => {
   it("keeps only the most recent snapshots", () => {

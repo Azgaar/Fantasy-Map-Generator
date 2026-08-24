@@ -2,6 +2,7 @@ import { select } from "d3";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { ensureReliefIconIds } from "@/generators/relief-generator";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";
@@ -448,6 +449,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
+    ensureReliefIconIds(pack.relief);
 
     if (data[31]) {
       const namesDL = data[31].split("/");

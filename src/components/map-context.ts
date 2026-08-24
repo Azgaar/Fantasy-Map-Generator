@@ -145,7 +145,7 @@ function addHitEntity(entities: MapContextEntity[], hit: MapHit, pack: PackedGra
       return;
     }
     case "relief": {
-      addEntity(entities, { key: `relief:${hit.domainId}`, kind: "relief", label: "Relief icon" });
+      addEntity(entities, { id, key: `relief:${id}`, kind: "relief", label: "Relief icon" });
       return;
     }
     case "river": {

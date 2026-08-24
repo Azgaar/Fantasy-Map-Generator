@@ -4,6 +4,7 @@ import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { ensureReliefIconIds } from "@/generators/relief-generator";
 import type { Point } from "@/generators/voronoi";
 import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
@@ -1495,6 +1496,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
           y: rn(Number(useEl.getAttribute("y")), 2),
           s: rn(Number(useEl.getAttribute("width")), 2)
         }));
+        ensureReliefIconIds(pack.relief);
         terrainEl.replaceChildren();
       }
 

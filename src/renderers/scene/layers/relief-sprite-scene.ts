@@ -4,7 +4,7 @@ import { mergeSceneBounds, type SceneRevision, type SpriteBatchPrimitive } from 
 export function buildReliefSpriteScene(relief: readonly ReliefIcon[], revision: SceneRevision): SpriteBatchPrimitive {
   let bounds: SpriteBatchPrimitive["bounds"] = null;
   const instances = relief.map(({ icon, s, x, y }, index) => {
-    const domainId = `relief:${index}`;
+    const domainId = relief[index].i ?? index;
     bounds = mergeSceneBounds(bounds, { maxX: x + s, maxY: y + s, minX: x, minY: y });
     return { domainId, height: s, icon, width: s, x, y };
   });

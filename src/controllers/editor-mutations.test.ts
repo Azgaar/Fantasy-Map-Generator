@@ -3,18 +3,27 @@ import type { PackedGraph } from "@/types/PackedGraph";
 import {
   commitMarketAssignments,
   commitTerritoryAssignments,
+  insertReliefIcon,
   insertRiverPoint,
   insertRoutePoint,
+  moveFeatureVertex,
   moveIce,
   moveMarker,
+  moveReliefIcon,
   moveRiverPoint,
   moveRoutePoint,
   moveTerritoryCenter,
   paintMarketAssignments,
   paintTerritoryAssignments,
+  removeReliefIcons,
   removeRiverPoint,
   removeRoutePoint,
+  reorderReliefIcon,
   replaceRoutePoints,
+  resizeReliefIcon,
+  setFeatureGroup,
+  setLabelOverride,
+  setReliefIconType,
   setZoneCells,
   toggleCellGood
 } from "./editor-mutations";
@@ -171,5 +180,69 @@ describe("editor mutations", () => {
       layers: ["zones"]
     });
     expect(zones[1].cells).toEqual([2, 4]);
+  });
+
+  it("moves a feature vertex and reports dependent geometry layers", () => {
+    const graph = {
+      features: [{ area: 4, i: 2, vertices: [0, 1, 2, 3] }],
+      vertices: {
+        c: [[0], [0, 1], [0], [0]],
+        p: [
+          [0, 0],
+          [2, 0],
+          [2, 2],
+          [0, 2]
+        ]
+      }
+    } as unknown as Pick<PackedGraph, "features" | "vertices">;
+    expect(moveFeatureVertex(graph, 2, 1, [3, 0])).toMatchObject({
+      affectedCellIds: [0, 1],
+      affectedDomainIds: [2],
+      changed: true
+    });
+    expect(graph.features[0].area).toBe(5);
+    expect(graph.vertices.p[1]).toEqual([3, 0]);
+  });
+
+  it("changes a feature's semantic renderer group", () => {
+    const graph = {
+      features: [{ group: "freshwater", i: 2, type: "lake" }]
+    } as unknown as Pick<PackedGraph, "features">;
+    expect(setFeatureGroup(graph, 2, "salt")).toMatchObject({
+      affectedDomainIds: [2],
+      changed: true,
+      layers: ["lakes"]
+    });
+    expect(graph.features[0].group).toBe("salt");
+  });
+
+  it("mutates stable relief entities without relying on array position", () => {
+    const graph = {
+      relief: [
+        { i: 2, icon: "relief-hill-1", s: 4, x: 0, y: 0 },
+        { i: 8, icon: "relief-mount-1", s: 6, x: 10, y: 10 }
+      ]
+    } as Pick<PackedGraph, "relief">;
+    expect(moveReliefIcon(graph, 8, { x: 12, y: 13 })).toMatchObject({ affectedDomainIds: [8], changed: true });
+    resizeReliefIcon(graph, 8, 8);
+    expect(graph.relief[1]).toMatchObject({ s: 8, x: 11, y: 12 });
+    setReliefIconType(graph, 8, "relief-mount-2");
+    reorderReliefIcon(graph, 8, "back");
+    expect(graph.relief[0].i).toBe(8);
+    const inserted: Parameters<typeof insertReliefIcon>[1] = { icon: "relief-hill-2", s: 3, x: 4, y: 5 };
+    insertReliefIcon(graph, inserted);
+    expect(inserted.i).toBe(9);
+    removeReliefIcons(graph, new Set([2, 9]));
+    expect(graph.relief.map(icon => icon.i)).toEqual([8]);
+  });
+
+  it("stores label overrides with a stable typed entity result", () => {
+    const entity = { i: 4 };
+    expect(setLabelOverride(entity, "state", { dx: 2, dy: 3, text: "North" })).toMatchObject({
+      affectedDomainIds: ["state:4"],
+      changed: true,
+      layers: ["labels"]
+    });
+    expect(entity).toEqual({ i: 4, label: { dx: 2, dy: 3, text: "North" } });
   });
 });

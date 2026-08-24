@@ -1,29 +1,39 @@
-import { type D3DragEvent, drag, polygonArea, type Selection, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { moveFeatureVertex, setFeatureGroup } from "@/controllers/editor-mutations";
 import type { Feature } from "@/generators/features";
-import { drawBiomes } from "@/renderers/draw-biomes";
-import { drawBorders } from "@/renderers/draw-borders";
-import { getFeaturePath } from "@/renderers/draw-features";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import {
+  clearMapInteractionOverlay,
+  invalidatePixiRendererLayer,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { isPixiOwnedLayer } from "@/renderers/pixi/pixi-renderer-ownership";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { getArea, getAreaUnit } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, rn, si, unique } from "../utils";
+import { ensureEl, rn, si, unique } from "../utils";
 
-let selectedCoastline: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let selectedFeatureId = 0;
+let activeVertex: { initialPoint: [number, number]; vertexId: number } | null = null;
 
-function open(element: SVGElement): void {
+function open(featureId: number): void {
   if (customization) return;
   closeDialogs(".stable");
   if (layerIsOn("toggleCells")) toggleCells();
 
   renderDialog();
 
-  select("#debug").append("g").attr("id", "vertices");
-  selectedCoastline = select<SVGElement, unknown>(element) as unknown as typeof selectedCoastline;
-  selectCoastlineGroup(element);
+  const feature = pack.features.find(candidate => candidate.i === featureId && candidate.type === "island");
+  if (!feature) return;
+  selectedFeatureId = featureId;
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editCoastlineVertex as EventListener);
+  selectCoastlineGroup();
   drawCoastlineVertices();
-  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
   showDomDialog({
     content: ensureEl("coastlineEditor"),
@@ -65,83 +75,66 @@ function renderDialog(): void {
 }
 
 function getFeature(): Feature {
-  const featureId = +selectedCoastline.attr("data-f");
-  return pack.features[featureId];
+  return pack.features.find(feature => feature.i === selectedFeatureId) as Feature;
 }
 
 function drawCoastlineVertices(): void {
-  const { vertices, area } = getFeature();
+  const feature = getFeature();
+  const { vertices, area } = feature;
 
   const cellsNumber = pack.cells.i.length;
   const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v])).filter(cellId => cellId < cellsNumber);
-  select("#debug")
-    .select("#vertices")
-    .selectAll<SVGPolygonElement, number>("polygon")
-    .data(neibCells)
-    .enter()
-    .append("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack))
-    .attr("data-c", (d: number) => d);
-
-  select<SVGGElement, unknown>("#debug")
-    .select("#vertices")
-    .selectAll<SVGCircleElement, number>("circle")
-    .data(vertices)
-    .enter()
-    .append("circle")
-    .attr("cx", (d: number) => pack.vertices.p[d][0])
-    .attr("cy", (d: number) => pack.vertices.p[d][1])
-    .attr("r", 0.4)
-    .attr("data-v", (d: number) => d)
-    .call(drag<SVGCircleElement, number>().on("drag", handleVertexDrag).on("end", handleVertexDragEnd))
-    .on("mousemove", () =>
-      tip("Drag to move the vertex. Please use for fine-tuning only. Edit heightmap to change actual cell heights!")
-    );
+  updateMapInteractionOverlay({
+    handles: vertices.map(vertexId => {
+      const [x, y] = pack.vertices.p[vertexId];
+      return {
+        id: `coastline-vertex:${vertexId}`,
+        label: `Move coastline vertex ${vertexId}`,
+        point: { x, y }
+      };
+    }),
+    selection: [
+      { kind: "polygon", points: vertices.map(vertexId => toPoint(pack.vertices.p[vertexId])) },
+      ...neibCells.filter(cellId => cellId >= 0).map(cellPolygon)
+    ]
+  });
 
   ensureEl("coastlineArea").innerHTML = `${si(getArea(area))} ${getAreaUnit()}`;
 }
 
-function handleVertexDrag(
-  this: SVGCircleElement,
-  event: D3DragEvent<SVGCircleElement, number, number>,
-  vertexId: number
-): void {
-  const { vertices, features } = pack;
+function editCoastlineVertex(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const serializedId = String(event.detail.handleId);
+  if (!serializedId.startsWith("coastline-vertex:")) return;
+  const vertexId = Number(serializedId.split(":")[1]);
+  if (!getFeature().vertices.includes(vertexId)) return;
 
-  const x = rn(event.x, 2);
-  const y = rn(event.y, 2);
-  this.setAttribute("cx", String(x));
-  this.setAttribute("cy", String(y));
-
-  vertices.p[vertexId] = [x, y];
-
-  const featureId = +selectedCoastline.attr("data-f");
-  const feature = features[featureId];
-
-  // change coastline path
-  select<SVGElement, unknown>("#deftemp")
-    .select(`#featurePaths > path#feature_${featureId}`)
-    .attr("d", getFeaturePath(feature));
-
-  // update area
-  const points = feature.vertices.map(vertex => vertices.p[vertex] as [number, number]);
-  feature.area = Math.abs(polygonArea(points));
-  ensureEl("coastlineArea").innerHTML = `${si(getArea(feature.area))} ${getAreaUnit()}`;
-
-  // update cell
-  select("#debug")
-    .select("#vertices")
-    .selectAll<SVGPolygonElement, number>("polygon")
-    .attr("points", d => getPackPolygon(d, pack));
+  if (event.detail.phase === "start") {
+    activeVertex = { initialPoint: [...pack.vertices.p[vertexId]], vertexId };
+    tip("Drag to fine-tune the coastline vertex; use the heightmap editor for topological changes", true);
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (activeVertex?.vertexId === vertexId) {
+      applyFeatureVertexMutation(vertexId, activeVertex.initialPoint);
+      activeVertex = null;
+      drawCoastlineVertices();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    applyFeatureVertexMutation(vertexId, [rn(event.detail.worldPoint.x, 2), rn(event.detail.worldPoint.y, 2)]);
+    return;
+  }
+  if (event.detail.phase !== "end" || activeVertex?.vertexId !== vertexId) return;
+  activeVertex = null;
+  drawCoastlineVertices();
 }
 
-function handleVertexDragEnd(): void {
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleCultures")) drawCultures();
+function applyFeatureVertexMutation(vertexId: number, point: [number, number]): void {
+  const mutation = moveFeatureVertex(pack, selectedFeatureId, vertexId, point);
+  if (!mutation.changed) return;
+  for (const layer of mutation.layers) if (isPixiOwnedLayer(layer)) invalidatePixiRendererLayer(layer);
+  ensureEl("coastlineArea").innerHTML = `${si(getArea(getFeature().area))} ${getAreaUnit()}`;
 }
 
 function showGroupSection(): void {
@@ -161,20 +154,19 @@ function hideGroupSection(): void {
   ensureEl("coastlineGroup").style.display = "inline-block";
 }
 
-function selectCoastlineGroup(node: SVGElement): void {
-  const group = (node.parentNode as SVGGElement).id;
+function selectCoastlineGroup(): void {
+  const group = getFeature().group;
   const groupSelect = ensureEl<HTMLSelectElement>("coastlineGroup");
-  groupSelect.options.length = 0; // remove all options
-
-  select<SVGGElement, unknown>("#coastline")
-    .selectAll<SVGGElement, unknown>("g")
-    .each(function () {
-      groupSelect.options.add(new Option(this.id, this.id, false, this.id === group));
-    });
+  groupSelect.options.length = 0;
+  const groups = new Set([
+    ...Object.keys(getMapRendererStyle(style).coastline.roles),
+    ...pack.features.filter(feature => feature.type === "island").map(feature => feature.group)
+  ]);
+  for (const role of groups) groupSelect.options.add(new Option(role, role, false, role === group));
 }
 
 function changeCoastlineGroup(this: HTMLSelectElement): void {
-  ensureEl(this.value).appendChild(selectedCoastline.node()!);
+  if (setFeatureGroup(pack, selectedFeatureId, this.value).changed) invalidatePixiRendererLayer("coastline");
 }
 
 function toggleNewGroupInput(): void {
@@ -201,8 +193,13 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/ /g, "_")
     .replace(/[^\w\s]/gi, "");
 
-  if (findEl(group)) {
-    tip("Element with this id already exists. Please provide a unique name", false, "error");
+  const mapStyle = getMapRendererStyle(style);
+  const groups = new Set([
+    ...Object.keys(mapStyle.coastline.roles),
+    ...pack.features.filter(feature => feature.type === "island").map(feature => feature.group)
+  ]);
+  if (groups.has(group)) {
+    tip("A coastline group with this name already exists. Please provide a unique name", false, "error");
     return;
   }
 
@@ -212,61 +209,70 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   // just rename if only 1 element left
-  const oldGroup = selectedCoastline.node()!.parentNode as SVGGElement;
-  const basic = ["sea_island", "lake_island"].includes(oldGroup.id);
-  if (!basic && oldGroup.childElementCount === 1) {
-    ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
-    ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
-    oldGroup.id = group;
-    toggleNewGroupInput();
-    ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
-    return;
-  }
-
-  // create a new group
-  const newGroup = (selectedCoastline.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
-  ensureEl("coastline").appendChild(newGroup);
-  newGroup.id = group;
-  ensureEl<HTMLSelectElement>("coastlineGroup").options.add(new Option(group, group, false, true));
-  ensureEl(group).appendChild(selectedCoastline.node()!);
+  const feature = getFeature();
+  const oldGroup = feature.group;
+  const basic = ["sea_island", "lake_island"].includes(oldGroup);
+  const groupFeatures = pack.features.filter(candidate => candidate.type === "island" && candidate.group === oldGroup);
+  mapStyle.coastline.roles[group] = structuredClone(mapStyle.coastline.roles[oldGroup] ?? mapStyle.coastline.default);
+  if (!basic && groupFeatures.length === 1) delete mapStyle.coastline.roles[oldGroup];
+  setFeatureGroup(pack, feature.i, group);
+  style.mapRenderer = mapStyle;
+  invalidatePixiRendererLayer("coastline");
+  selectCoastlineGroup();
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("coastlineGroupName").value = "";
 }
 
 function removeCoastlineGroup(): void {
-  const group = (selectedCoastline.node()!.parentNode as SVGGElement).id;
+  const group = getFeature().group;
   if (["sea_island", "lake_island"].includes(group)) {
     tip("This is one of the default groups, it cannot be removed", false, "error");
     return;
   }
 
-  const count = (selectedCoastline.node()!.parentNode as SVGGElement).childElementCount;
+  const groupFeatures = pack.features.filter(feature => feature.type === "island" && feature.group === group);
+  const count = groupFeatures.length;
   confirmationDialog({
     confirm: "Remove",
     message: /* html */ `Are you sure you want to remove the group? All coastline elements of the group (${count}) will be moved under
       <i>sea_island</i> group`,
     onConfirm: () => {
-      const sea = ensureEl("sea_island");
-      const groupEl = ensureEl(group);
-      while (groupEl.childNodes.length) sea.appendChild(groupEl.childNodes[0]);
-      groupEl.remove();
-      ensureEl<HTMLSelectElement>("coastlineGroup").selectedOptions[0].remove();
-      ensureEl<HTMLSelectElement>("coastlineGroup").value = "sea_island";
+      for (const feature of groupFeatures) setFeatureGroup(pack, feature.i, "sea_island");
+      const mapStyle = getMapRendererStyle(style);
+      delete mapStyle.coastline.roles[group];
+      style.mapRenderer = mapStyle;
+      invalidatePixiRendererLayer("coastline");
+      selectCoastlineGroup();
     },
     title: "Remove coastline group"
   });
 }
 
 function editGroupStyle(): void {
-  const g = (selectedCoastline.node()!.parentNode as SVGGElement).id;
-  editStyle("coastline", g);
+  editStyle("coastline", getFeature().group);
 }
 
 function closeCoastlineEditor(): void {
-  select("#debug").select("#vertices").remove();
+  document
+    .getElementById("map")
+    ?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editCoastlineVertex as EventListener);
+  clearMapInteractionOverlay();
+  activeVertex = null;
+  selectedFeatureId = 0;
   applyDefaultViewboxEvents();
   destroyDialog("coastlineEditor");
+}
+
+function cellPolygon(cellId: number) {
+  return {
+    kind: "polygon" as const,
+    points: pack.cells.v[cellId].map(vertexId => toPoint(pack.vertices.p[vertexId]))
+  };
+}
+
+function toPoint([x, y]: readonly number[]): { x: number; y: number } {
+  return { x, y };
 }
 
 export const CoastlineVertexEditor = { open };

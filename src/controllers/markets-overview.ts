@@ -390,8 +390,7 @@ function exitMarketsManualAssignment(apply: boolean): void {
   if (apply && marketsWorking) {
     if (marketsOriginal) pack.cells.market.set(marketsOriginal);
     commitMarketAssignments(pack, marketsWorking);
-  }
-  else if (marketsOriginal) pack.cells.market.set(marketsOriginal);
+  } else if (marketsOriginal) pack.cells.market.set(marketsOriginal);
 
   marketsWorking = null;
   marketsOriginal = null;

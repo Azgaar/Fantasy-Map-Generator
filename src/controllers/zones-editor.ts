@@ -317,7 +317,6 @@ function enterZonesManualAssignent(): void {
     .on("touchmove mousemove", moveZoneBrush);
 
   body.querySelector("div")?.classList.add("selected");
-
 }
 
 function selectZoneOnMapClick(event: MouseEvent): void {
@@ -405,6 +404,20 @@ function exitZonesManualAssignment(close?: string): void {
 
   const selected = ensureEl("zonesBodySection").querySelector("div.selected");
   if (selected) selected.classList.remove("selected");
+}
+
+function getVisibleZones(): Zone[] {
+  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
+  const isFiltered = filterBy && filterBy !== "all";
+  return pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
+}
+
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
 }
 
 function changeFill(fillBox: FillBoxElement, zone: Zone): void {

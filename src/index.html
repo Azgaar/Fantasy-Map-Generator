@@ -1721,7 +1721,12 @@
               >
                 Configure World
               </button>
-              <button id="generateMapFromSetup" data-tip="Generate a new map from the selected world and settings">
+              <button
+                id="generateMapFromSetup"
+                type="button"
+                data-tip="Generate a new map from the selected world and settings"
+                onclick="regeneratePrompt({fromSetup: true})"
+              >
                 Generate Map
               </button>
             </div>
@@ -5335,8 +5340,8 @@
     <script defer src="libs/simplify.js?v1.105.6"></script>
     <script defer src="modules/ui/layers.js?v=1.143.2"></script>
     <script defer src="modules/ui/style-presets.js?v=1.142.0"></script>
-    <script defer src="modules/ui/options.js?v=1.140.0"></script>
-    <script defer src="main.js?v=1.142.0"></script>
+    <script defer src="modules/ui/options.js?v=1.143.2"></script>
+    <script defer src="main.js?v=1.143.2"></script>
     <script defer src="modules/ui/style.js?v=1.142.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
   </body>

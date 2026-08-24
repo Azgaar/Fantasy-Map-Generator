@@ -166,7 +166,7 @@ function editEntity(entity: MapContextEntity): unknown {
     case "burg":
       return Controllers.BurgEditor.open(id!);
     case "coastline":
-      return Controllers.CoastlineVertexEditor.open(element!);
+      return Controllers.CoastlineVertexEditor.open(id!);
     case "emblem":
       return Controllers.EmblemsEditor.open(undefined, undefined, undefined, element);
     case "goods":
@@ -176,7 +176,7 @@ function editEntity(entity: MapContextEntity): unknown {
     case "label":
       return Controllers.LabelsEditor.open(entity.labelType!, id!);
     case "lake":
-      return Controllers.LakesEditor.open(element!);
+      return Controllers.LakesEditor.open(id!);
     case "market":
       return Controllers.MarketOverview.open(id!);
     case "marker":
@@ -188,7 +188,7 @@ function editEntity(entity: MapContextEntity): unknown {
     case "regiment":
       return Controllers.RegimentEditor.open(`#${element!.id}`);
     case "relief":
-      return Controllers.ReliefEditor.open(element!);
+      return Controllers.ReliefEditor.open(id!);
     case "river":
       return Controllers.RiverEditor.open(id!);
     case "route":

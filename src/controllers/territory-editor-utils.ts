@@ -125,9 +125,7 @@ export class ZoneAssignmentSession {
   }
 
   private apply(assignments: Map<number, number[]>): EditorMutationResult {
-    return mergeZoneMutations(
-      [...assignments].map(([zoneId, cells]) => setZoneCells(this.zones, zoneId, cells))
-    );
+    return mergeZoneMutations([...assignments].map(([zoneId, cells]) => setZoneCells(this.zones, zoneId, cells)));
   }
 
   private restore(assignments: Map<number, number[]>): void {
