@@ -92,6 +92,9 @@ function prepareMapData(): string {
 
   const cloneRuler = cloneEl.querySelector("#ruler");
   if (cloneRuler) cloneRuler.innerHTML = ""; // always remove rulers
+  cloneEl.querySelector("#emblems")?.replaceChildren();
+  cloneEl.querySelector("#coas")?.replaceChildren();
+  cloneEl.querySelector("#defs-emblems")?.replaceChildren();
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;

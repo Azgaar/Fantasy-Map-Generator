@@ -9,6 +9,7 @@ export type PixiOwnedLayer =
   | "coastline"
   | "compass"
   | "cultures"
+  | "emblems"
   | "grid"
   | "goods"
   | "ice"
@@ -56,6 +57,7 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "markets",
   "precipitation",
   "population",
+  "emblems",
   "labels",
   "burgIcons",
   "military",

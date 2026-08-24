@@ -2,6 +2,7 @@ import { drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import { drawEmblems } from "@/renderers/draw-emblems";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, openURL } from "@/utils";
 import { ensureEl, rn } from "../utils";
@@ -392,6 +393,7 @@ function changeShape(): void {
   const coaEl = document.getElementById(currentId);
   if (coaEl) coaEl.remove();
   COArenderer.trigger(currentId, currentEl.coa);
+  drawEmblems();
 }
 
 function showArea(): void {
@@ -405,23 +407,7 @@ function changeSize(ev: Event): void {
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 
-  const g = select<SVGElement, unknown>("#emblems").select(`#${currentType}Emblems`);
-  g.select(`[data-i='${currentEl.i}']`).remove();
-  if (!size) return;
-
-  // re-append use element
-  const categotySize = +g.attr("font-size");
-  const shift = (categotySize * size) / 2;
-  const x = currentEl.coa.x || currentEl.x || currentEl.pole[0];
-  const y = currentEl.coa.y || currentEl.y || currentEl.pole[1];
-
-  g.append("use")
-    .attr("data-i", currentEl.i)
-    .attr("x", rn(x - shift, 2))
-    .attr("y", rn(y - shift, 2))
-    .attr("width", `${size}em`)
-    .attr("height", `${size}em`)
-    .attr("href", `#${currentId}`);
+  drawEmblems();
 }
 
 function regenerate(): void {
@@ -443,6 +429,7 @@ function regenerate(): void {
   const coaEl = document.getElementById(currentId);
   if (coaEl) coaEl.remove();
   COArenderer.trigger(currentId, el.coa);
+  drawEmblems();
 }
 
 function openInArmoria(): void {
@@ -507,13 +494,17 @@ function upload(type: "image" | "svg"): void {
 
     if (oldEmblem) oldEmblem.remove();
 
-    const customCoa: { custom: true; size?: number; x?: number; y?: number } = { custom: true };
+    const customCoa: { custom: true; customData: string; size?: number; x?: number; y?: number } = {
+      custom: true,
+      customData: href
+    };
     if (el.coa.size) customCoa.size = el.coa.size;
     if (el.coa.x) customCoa.x = el.coa.x;
     if (el.coa.y) customCoa.y = el.coa.y;
     el.coa = customCoa;
 
     ensureEl<HTMLSelectElement>("emblemShapeSelector").disabled = true;
+    drawEmblems();
   };
 
   if (type === "image") reader.readAsDataURL(file);

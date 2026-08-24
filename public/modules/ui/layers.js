@@ -794,13 +794,10 @@ function drawZones() {
 function toggleEmblems(event) {
   if (!layerIsOn("toggleEmblems")) {
     turnButtonOn("toggleEmblems");
-    if (!emblems.selectAll("use").size()) drawEmblems();
-    ensureEl("emblems").style.display = "";
-    invokeActiveZooming();
+    redrawPixiLayer("emblems", "emblems");
     if (event && isCtrlClick(event)) editStyle("emblems");
   } else {
     if (event && isCtrlClick(event)) return editStyle("emblems");
-    ensureEl("emblems").style.display = "none";
     turnButtonOff("toggleEmblems");
   }
 }

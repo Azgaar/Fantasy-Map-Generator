@@ -1,6 +1,7 @@
 import type { TemperatureScale } from "@/utils/temperature";
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
+import { emblemRenderer } from "../emblems/renderer";
 import { getLabelRenderState } from "../labels/label-render-state";
 import { getMarkerRenderState } from "../marker-render-state";
 import { getMapRendererStyle } from "../scene/map-style-state";
@@ -54,6 +55,7 @@ const OWNED_SVG_SELECTORS = [
   "#temperature",
   "#coastline",
   "#prec",
+  "#emblems",
   "#labels",
   "#textPaths"
 ] as const;
@@ -80,6 +82,7 @@ const REMOVED_SVG_SELECTORS = [
 const clearOwnedSvgLayers = (): void => {
   for (const selector of OWNED_SVG_SELECTORS) document.querySelector(selector)?.replaceChildren();
   for (const selector of REMOVED_SVG_SELECTORS) document.querySelector(selector)?.remove();
+  document.querySelector("#coas")?.replaceChildren();
 };
 
 const getInstance = async (): Promise<PixiMapRenderer> => {
@@ -90,6 +93,13 @@ const getInstance = async (): Promise<PixiMapRenderer> => {
       recordPerformance: (name, duration) => window.MapPerformance?.record(name, duration),
       resolveReliefIcon: readReliefSvgDataUri,
       resolveCompassIcon: () => readSvgElementDataUri("defs-compass-rose", "-220 -220 440 440"),
+      resolveEmblemIcon: (id, coa, strokeWidth) => {
+        if (coa.custom && !coa.customData) {
+          const legacyId = id.replace(/_[^_]+$/, "");
+          return readSvgElementDataUri(legacyId, "0 0 200 200");
+        }
+        return emblemRenderer.renderDataUri(id, coa, { strokeWidth });
+      },
       resolveSymbolIcon: readSvgSymbolDataUri
     });
     return instance;
@@ -137,6 +147,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("markets", layerIsOn("toggleMarketsLayer"));
   renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));
   renderer.setLayerVisibility("population", layerIsOn("togglePopulation"));
+  renderer.setLayerVisibility("emblems", layerIsOn("toggleEmblems"));
   renderer.setLayerVisibility("labels", layerIsOn("toggleLabels"));
   renderer.setLayerVisibility("burgIcons", layerIsOn("toggleBurgIcons"));
   renderer.setLayerVisibility("military", layerIsOn("toggleMilitary"));
@@ -192,12 +203,12 @@ const api: PixiRendererControllerApi = {
   start: async () => {
     if (!pack?.cells?.i?.length) return;
     if (!pack.relief?.length) Relief.generate();
-    clearOwnedSvgLayers();
     const renderer = await getInstance();
     renderer.setCamera(getCamera());
     await renderer.mount(prepareSurface());
     syncVisibility(renderer);
     await renderer.render(getWorld(), getMapRendererStyle(style), coalesceInvalidations([{ kind: "world" }]));
+    clearOwnedSvgLayers();
     document.getElementById("map")?.classList.add("pixi-renderer-active");
   },
   syncCamera: () => instance?.setCamera(getCamera())

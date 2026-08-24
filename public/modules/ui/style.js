@@ -98,6 +98,7 @@ function selectStyleElement() {
     armies: "toggleMilitary",
     burgIcons: "toggleBurgIcons",
     compass: "toggleCompass",
+    emblems: "toggleEmblems",
     goodsBurgs: "toggleGoods",
     goodsCells: "toggleGoods",
     goodsIcons: "toggleGoods",
@@ -431,12 +432,16 @@ function selectStyleElement() {
   }
 
   if (styleElement === "emblems") {
+    const emblemStyle = style.mapRenderer?.emblems;
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 1;
-    emblemsStateSizeInput.value = emblems.select("#stateEmblems").attr("data-size") || 1;
-    emblemsProvinceSizeInput.value = emblems.select("#provinceEmblems").attr("data-size") || 1;
-    emblemsBurgSizeInput.value = emblems.select("#burgEmblems").attr("data-size") || 1;
+    styleOpacityInput.value = emblemStyle?.opacity ?? 0.9;
+    styleStrokeWidthInput.value = emblemStyle?.strokeWidth ?? 1;
+    styleFilterInput.value = emblemStyle?.filter || "";
+    emblemsStateSizeInput.value = emblemStyle?.stateSize ?? 1;
+    emblemsProvinceSizeInput.value = emblemStyle?.provinceSize ?? 1;
+    emblemsBurgSizeInput.value = emblemStyle?.burgSize ?? 1;
+    hideEmblems.checked = emblemStyle?.automaticVisibility ?? true;
   }
 
   if (styleElement === "goodsIcons") {
@@ -641,6 +646,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
     setPixiPopulationLineStyle("urban", "width", Number(e.target.value));
   }
   if (styleElementSelect.value === "armies") setPixiMilitaryStyle("strokeWidth", Number(e.target.value));
+  if (styleElementSelect.value === "emblems") setPixiEmblemStyle("strokeWidth", Number(e.target.value));
   if (styleElementSelect.value === "routes") {
     setPixiRouteLineStyle(styleGroupSelect.value || "roads", "width", Number(e.target.value));
   }
@@ -699,6 +705,7 @@ styleOpacityInput.addEventListener("input", e => {
     biomes: "biomes",
     cells: "cells",
     compass: "compass",
+    emblems: "emblems",
     cults: "cultures",
     gridOverlay: "grid",
     ice: "ice",
@@ -728,6 +735,7 @@ styleOpacityInput.addEventListener("input", e => {
 styleFilterInput.addEventListener("change", function () {
   if (styleGroupSelect.value === "ocean") return oceanLayers.attr("filter", this.value);
   getEl().attr("filter", this.value);
+  if (styleElementSelect.value === "emblems") setPixiEmblemStyle("filter", this.value || null);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) {
     if (this.value) groupStyle.filter = this.value;
@@ -1221,7 +1229,7 @@ function setPixiLayerOpacity(layer, opacity) {
   style.mapRenderer[layer] = {
     ...current,
     ...(
-      ["cells", "compass", "grid", "ice", "markers", "military", "population", "precipitation", "rivers", "temperature", "trade", "zones"].includes(
+      ["cells", "compass", "emblems", "grid", "ice", "markers", "military", "population", "precipitation", "rivers", "temperature", "trade", "zones"].includes(
         layer
       )
       ? {}
@@ -1283,6 +1291,12 @@ function setPixiMilitaryStyle(property, value) {
   style.mapRenderer ||= {};
   style.mapRenderer.military = {...(style.mapRenderer.military || {}), [property]: value};
   invalidateSemanticLayer("military");
+}
+
+function setPixiEmblemStyle(property, value) {
+  style.mapRenderer ||= {};
+  style.mapRenderer.emblems = {...(style.mapRenderer.emblems || {}), [property]: value};
+  invalidateSemanticLayer("emblems");
 }
 
 function setPixiLineStyle(layer, property, value) {
@@ -1402,18 +1416,19 @@ styleArmiesSize.addEventListener("input", e => {
 });
 
 emblemsStateSizeInput.addEventListener("change", e => {
-  emblems.select("#stateEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  setPixiEmblemStyle("stateSize", Number(e.target.value));
 });
 
 emblemsProvinceSizeInput.addEventListener("change", e => {
-  emblems.select("#provinceEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  setPixiEmblemStyle("provinceSize", Number(e.target.value));
 });
 
 emblemsBurgSizeInput.addEventListener("change", e => {
-  emblems.select("#burgEmblems").attr("data-size", e.target.value);
-  drawEmblems();
+  setPixiEmblemStyle("burgSize", Number(e.target.value));
+});
+
+hideEmblems.addEventListener("change", function () {
+  setPixiEmblemStyle("automaticVisibility", this.checked);
 });
 
 styleGoodsCircle.addEventListener("change", function () {

@@ -471,6 +471,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const { migrateMap } = await import("./map-migrations");
       migrateMap(mapVersion!, data);
     }
+    migrateLegacyCustomEmblemData();
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
@@ -530,7 +531,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       );
       turnOnPixiLayer("ice", "toggleIce", Boolean(pack.ice.length));
       turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
-      if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
+      turnOnPixiLayer(
+        "emblems",
+        "toggleEmblems",
+        Boolean(isVisible(select("#emblems")) && hasChild(select("#emblems"), "use"))
+      );
       turnOnPixiLayer("labels", "toggleLabels", Boolean(hasChildren(select("#labels"))));
       turnOnPixiLayer(
         "burgIcons",
@@ -825,8 +830,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
     // draw data layers (not kept in svg)
     if (layerIsOn("toggleRulers")) drawMeasurers();
     if (layerIsOn("toggleGrid")) drawGrid();
@@ -862,6 +865,22 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     });
   } finally {
     if (loadGroupOpen) console.groupEnd();
+  }
+}
+
+function migrateLegacyCustomEmblemData(): void {
+  const groups = [
+    ["state", pack.states],
+    ["province", pack.provinces],
+    ["burg", pack.burgs]
+  ] as const;
+  for (const [type, entities] of groups) {
+    for (const entity of entities) {
+      if (!entity?.i || !entity.coa?.custom || entity.coa.customData) continue;
+      const image = document.querySelector<SVGImageElement>(`#${type}COA${entity.i} image`);
+      const source = image?.getAttribute("href") || image?.getAttribute("xlink:href");
+      if (source) entity.coa.customData = source;
+    }
   }
 }
 

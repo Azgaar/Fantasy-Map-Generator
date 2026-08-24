@@ -1,5 +1,4 @@
 import type { ZoomBehavior } from "d3";
-import { renderGroupCOAs } from "@/renderers/draw-emblems";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { syncPixiRendererCamera } from "@/renderers/pixi/pixi-renderer-controller";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -131,17 +130,6 @@ function redrawTracedImage(): void {
 /** Rescale zoom-dependent map content to the settled scale. TODO: Legacy, to be reworked */
 function invokeActiveZooming(): void {
   const isOptimized = ensureEl<HTMLSelectElement>("shapeRendering").value === "optimizeSpeed";
-
-  if (emblems.style("display") !== "none") {
-    const hideSmallEmblems = ensureEl<HTMLInputElement>("hideEmblems").checked;
-    for (const group of emblems.selectAll<SVGGElement, unknown>("g").nodes()) {
-      const size = Number(group.getAttribute("font-size")) * scale;
-      const hidden = hideSmallEmblems && (size < 25 || size > 300);
-      group.classList.toggle("hidden", hidden);
-      const emblem = group.children[0];
-      if (!hidden && window.COArenderer && emblem && !emblem.getAttribute("href")) renderGroupCOAs(group);
-    }
-  }
 
   if (!customization && !isOptimized) {
     const desired = Number(statesHalo.attr("data-width"));

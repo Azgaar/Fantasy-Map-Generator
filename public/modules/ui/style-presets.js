@@ -387,6 +387,25 @@ function syncPixiCellStylePreset(presetJson) {
       textColor: style.mapRenderer.military?.textColor || "#ffffff"
     };
   }
+  const emblemsPreset = presetJson["#emblems"];
+  const stateEmblemsPreset = presetJson["#emblems > #stateEmblems"];
+  const provinceEmblemsPreset = presetJson["#emblems > #provinceEmblems"];
+  const burgEmblemsPreset = presetJson["#emblems > #burgEmblems"];
+  if (emblemsPreset || stateEmblemsPreset || provinceEmblemsPreset || burgEmblemsPreset) {
+    const current = style.mapRenderer.emblems || {};
+    style.mapRenderer.emblems = {
+      ...current,
+      automaticVisibility: Boolean(
+        Number(emblemsPreset?.["data-automatic-visibility"] ?? Number(current.automaticVisibility ?? true))
+      ),
+      burgSize: Number(burgEmblemsPreset?.["data-size"] ?? current.burgSize ?? 1),
+      filter: emblemsPreset?.filter || null,
+      opacity: Number(emblemsPreset?.opacity ?? current.opacity ?? 0.9),
+      provinceSize: Number(provinceEmblemsPreset?.["data-size"] ?? current.provinceSize ?? 1),
+      stateSize: Number(stateEmblemsPreset?.["data-size"] ?? current.stateSize ?? 1),
+      strokeWidth: Number(emblemsPreset?.["stroke-width"] ?? current.strokeWidth ?? 1)
+    };
+  }
   const compassPreset = presetJson["#compass"];
   const compassUsePreset = presetJson["#compass > use"];
   if (compassPreset || compassUsePreset) {
@@ -585,7 +604,7 @@ function addStylePreset() {
         "filter"
       ],
       "#ice": ["opacity", "fill", "stroke", "stroke-width", "filter"],
-      "#emblems": ["opacity", "stroke-width", "filter"],
+      "#emblems": ["opacity", "stroke-width", "filter", "data-automatic-visibility"],
       "#emblems > #stateEmblems": ["data-size"],
       "#emblems > #provinceEmblems": ["data-size"],
       "#emblems > #burgEmblems": ["data-size"],
@@ -779,6 +798,18 @@ function addStylePreset() {
         "fill-opacity": militaryStyle.fillOpacity,
         filter: null
       };
+    }
+    const emblemsStyle = style.mapRenderer?.emblems;
+    if (emblemsStyle) {
+      presetStyle["#emblems"] = {
+        "data-automatic-visibility": Number(emblemsStyle.automaticVisibility),
+        opacity: emblemsStyle.opacity,
+        "stroke-width": emblemsStyle.strokeWidth,
+        filter: emblemsStyle.filter
+      };
+      presetStyle["#emblems > #stateEmblems"] = {"data-size": emblemsStyle.stateSize};
+      presetStyle["#emblems > #provinceEmblems"] = {"data-size": emblemsStyle.provinceSize};
+      presetStyle["#emblems > #burgEmblems"] = {"data-size": emblemsStyle.burgSize};
     }
     const compassStyle = style.mapRenderer?.compass;
     if (compassStyle) {

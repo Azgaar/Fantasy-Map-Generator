@@ -11,6 +11,7 @@ import {
   Text,
   type Texture
 } from "pixi.js";
+import type { Emblem } from "@/generators/emblems/generator";
 import { camerasEqual, DEFAULT_MAP_CAMERA, type MapCamera, normalizeCamera, type ViewportSize } from "../core/camera";
 import type { RenderInvalidation, RenderInvalidationBatch } from "../core/invalidation";
 import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
@@ -41,6 +42,7 @@ import {
   buildMarketScene,
   type GoodsBurgSceneItem
 } from "../scene/layers/economic-ice-scene";
+import { buildEmblemScene } from "../scene/layers/emblem-scene";
 import { buildGridScene } from "../scene/layers/grid-scene";
 import { buildLabelScene, type LabelSceneGroup, type ResolvedLabelGroupStyle } from "../scene/layers/label-scene";
 import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
@@ -79,7 +81,9 @@ export interface PixiRendererSnapshot {
   diagnostics: RenderDiagnosticsSnapshot;
   enabled: boolean;
   burgSymbols: number;
+  emblemSymbols: number;
   labelGlyphs: number;
+  missingEmblemAssets: readonly string[];
   missingLabelFonts: readonly string[];
   markerSymbols: number;
   reliefSprites: number;
@@ -89,6 +93,7 @@ export interface PixiRendererSnapshot {
   renderer: string | null;
   textureCacheEntries: number;
   unsupportedLabelEffects: readonly string[];
+  unsupportedEmblemEffects: readonly string[];
   viewportHeight: number;
   viewportWidth: number;
 }
@@ -115,6 +120,12 @@ interface LabelGroupDisplay {
   showAll: boolean;
 }
 
+interface EmblemGroupDisplay {
+  automaticVisibility: boolean;
+  baseSize: number;
+  container: Container;
+}
+
 const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cultures", "states", "provinces"];
 
 export interface PixiMapRendererOptions {
@@ -126,6 +137,7 @@ export interface PixiMapRendererOptions {
   resolveReliefIcon?: (icon: string) => string | null;
   resolveSymbolIcon?: (icon: string) => string | null;
   resolveCompassIcon?: () => string | null;
+  resolveEmblemIcon?: (id: string, coa: Emblem, strokeWidth: number) => Promise<string | null> | string | null;
   textureBudgetBytes?: number;
 }
 
@@ -138,6 +150,9 @@ export class PixiMapRenderer implements MapRenderer {
   private layerVisibility = new Map<MapLayerId, boolean>();
   private labelDisplays: LabelDisplay[] = [];
   private labelGroupDisplays: LabelGroupDisplay[] = [];
+  private emblemGroupDisplays: EmblemGroupDisplay[] = [];
+  private emblemSourceCache = new Map<string, Promise<string | null>>();
+  private emblemTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private markerDisplays = new Map<number, { container: Container; baseSize: number; rescale: boolean }>();
   private pointTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private rebuildSequence = 0;
@@ -169,7 +184,9 @@ export class PixiMapRenderer implements MapRenderer {
     diagnostics: {},
     enabled: false,
     burgSymbols: 0,
+    emblemSymbols: 0,
     labelGlyphs: 0,
+    missingEmblemAssets: [],
     missingLabelFonts: [],
     markerSymbols: 0,
     reliefSprites: 0,
@@ -179,6 +196,7 @@ export class PixiMapRenderer implements MapRenderer {
     renderer: null,
     textureCacheEntries: 0,
     unsupportedLabelEffects: [],
+    unsupportedEmblemEffects: [],
     viewportHeight: 0,
     viewportWidth: 0
   };
@@ -251,6 +269,8 @@ export class PixiMapRenderer implements MapRenderer {
     const marketsContainer = this.buildMarketsContainer();
     const precipitationContainer = this.buildPrecipitationContainer();
     const populationContainer = this.buildPopulationContainer();
+    const emblemsContainer = await this.buildEmblemsContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const labelsContainer = await this.buildLabelsContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     const burgContainer = this.buildBurgIconsContainer();
@@ -283,6 +303,7 @@ export class PixiMapRenderer implements MapRenderer {
       marketsContainer,
       precipitationContainer,
       populationContainer,
+      emblemsContainer,
       labelsContainer,
       burgContainer,
       militaryContainer,
@@ -307,6 +328,7 @@ export class PixiMapRenderer implements MapRenderer {
       buildDuration,
       burgSymbols,
       cells: world.cells.i.length,
+      emblemSymbols: emblemsContainer.children.reduce((total, group) => total + group.children.length, 0),
       enabled: true,
       labelGlyphs: this.labelDisplays.reduce((total, display) => total + display.textDisplays.length, 0),
       markerSymbols,
@@ -358,6 +380,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.app.stage.position.set(this.camera.x, this.camera.y);
     this.app.stage.scale.set(this.camera.scale);
     this.updateMarkerScales();
+    this.updateEmblemGroupVisibility();
     this.updateLabelDisplays();
     this.updateLabelGroupVisibility();
     this.app.render();
@@ -368,6 +391,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.rebuildSequence++;
     this.scheduler?.clear();
     this.clearStage();
+    this.emblemSourceCache.clear();
     this.textureCache.clear();
     this.app?.render();
     this.rendererOptions.onSceneChange?.();
@@ -387,6 +411,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.tradeSubscriptionRelease?.();
     this.tradeSubscriptionRelease = null;
     this.clearStage();
+    this.emblemSourceCache.clear();
     this.textureCache.clear();
     this.app?.destroy({ removeView: true }, { children: true });
     this.app = null;
@@ -399,6 +424,7 @@ export class PixiMapRenderer implements MapRenderer {
       ...this.stats,
       batches: 0,
       burgSymbols: 0,
+      emblemSymbols: 0,
       enabled: false,
       markerSymbols: 0,
       reliefSprites: 0,
@@ -623,6 +649,77 @@ export class PixiMapRenderer implements MapRenderer {
     const container = this.buildLineContainer("grid", scene.paths, () => gridStyle.stroke);
     container.alpha = gridStyle.opacity;
     return container;
+  }
+
+  private async buildEmblemsContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "emblems";
+    const scene = buildEmblemScene(
+      this.getWorld(),
+      getWorldBounds(this.getWorld()),
+      this.semanticStyle.emblems,
+      this.sceneRevisions.getLayerRevision("emblems")
+    );
+    container.alpha = scene.opacity;
+    this.stats.unsupportedEmblemEffects = [...scene.unsupportedEffects];
+    const activeTextureKeys = new Set(scene.groups.flatMap(group => group.items.map(item => item.textureKey)));
+    for (const key of this.emblemSourceCache.keys()) {
+      if (!activeTextureKeys.has(key)) this.emblemSourceCache.delete(key);
+    }
+
+    const missingAssets: string[] = [];
+    for (const group of scene.groups) {
+      const groupContainer = new Container();
+      groupContainer.label = `emblems:${group.type}`;
+      this.emblemGroupDisplays.push({
+        automaticVisibility: scene.automaticVisibility,
+        baseSize: group.baseSize,
+        container: groupContainer
+      });
+      const displays = await Promise.all(
+        group.items.map(async item => {
+          let handle: RendererResourceHandle<Texture> | null = null;
+          try {
+            const source = await this.getEmblemSource(item.textureKey, item.svgId, item.coa);
+            if (source) handle = await this.textureCache.acquire(source, () => Assets.load<Texture>(source));
+          } catch {
+            // Failed or unsupported emblem assets receive a deterministic placeholder below.
+          }
+          if (!handle) missingAssets.push(item.domainId);
+          return { handle, item };
+        })
+      );
+      if (sequence !== this.rebuildSequence) {
+        for (const { handle } of displays) handle?.release();
+        return container;
+      }
+      for (const { handle, item } of displays) {
+        const display = handle
+          ? new Sprite({ height: item.size, texture: handle.value, width: item.size })
+          : createMissingEmblemGraphic(item.size);
+        display.cullable = true;
+        display.eventMode = "none";
+        display.label = `emblem:${item.domainId}`;
+        display.position.set(item.x, item.y);
+        if (display instanceof Sprite) display.anchor.set(0.5);
+        groupContainer.addChild(display);
+        if (handle) this.emblemTextureHandles.add(handle);
+      }
+      container.addChild(groupContainer);
+    }
+    this.stats.missingEmblemAssets = missingAssets;
+    this.updateEmblemGroupVisibility();
+    return container;
+  }
+
+  private getEmblemSource(textureKey: string, svgId: string, coa: Emblem): Promise<string | null> {
+    const cached = this.emblemSourceCache.get(textureKey);
+    if (cached) return cached;
+    const source = Promise.resolve(
+      this.rendererOptions.resolveEmblemIcon?.(svgId, coa, this.semanticStyle.emblems.strokeWidth) ?? null
+    ).catch(() => null);
+    this.emblemSourceCache.set(textureKey, source);
+    return source;
   }
 
   private async buildLabelsContainer(sequence: number): Promise<Container> {
@@ -1169,8 +1266,12 @@ export class PixiMapRenderer implements MapRenderer {
     this.cellMeshes.clear();
     this.labelDisplays = [];
     this.labelGroupDisplays = [];
+    this.emblemGroupDisplays = [];
+    this.stats.emblemSymbols = 0;
     this.stats.labelGlyphs = 0;
+    this.stats.missingEmblemAssets = [];
     this.stats.missingLabelFonts = [];
+    this.stats.unsupportedEmblemEffects = [];
     this.stats.unsupportedLabelEffects = [];
     this.markerDisplays.clear();
     this.tradeContainer = null;
@@ -1179,6 +1280,8 @@ export class PixiMapRenderer implements MapRenderer {
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
     for (const handle of this.reliefTextureHandles) handle.release();
     this.reliefTextureHandles.clear();
+    for (const handle of this.emblemTextureHandles) handle.release();
+    this.emblemTextureHandles.clear();
     for (const handle of this.pointTextureHandles) handle.release();
     this.pointTextureHandles.clear();
   }
@@ -1259,6 +1362,13 @@ export class PixiMapRenderer implements MapRenderer {
         display.anchorY + display.offsetYEm * display.groupFontSize * textScale
       );
       for (const text of display.textDisplays) text.scale.set(textScale);
+    }
+  }
+
+  private updateEmblemGroupVisibility(): void {
+    for (const group of this.emblemGroupDisplays) {
+      const renderedSize = group.baseSize * this.camera.scale;
+      group.container.visible = !group.automaticVisibility || (renderedSize >= 25 && renderedSize <= 300);
     }
   }
 
@@ -1482,6 +1592,37 @@ function createSymbolSprite(texture: Texture | undefined, size: number): Sprite 
     new GraphicsContext()
       .poly([0, -size / 2, size / 2, 0, 0, size / 2, -size / 2, 0], true)
       .stroke({ color: "#c13119", width: Math.max(0.2, size / 12) })
+  );
+}
+
+function createMissingEmblemGraphic(size: number): Graphics {
+  const radius = size / 2;
+  return new Graphics(
+    new GraphicsContext()
+      .poly(
+        [
+          0,
+          -radius,
+          radius * 0.82,
+          -radius * 0.45,
+          radius * 0.68,
+          radius * 0.5,
+          0,
+          radius,
+          -radius * 0.68,
+          radius * 0.5,
+          -radius * 0.82,
+          -radius * 0.45
+        ],
+        true
+      )
+      .fill({ alpha: 0.65, color: "#eeeeee" })
+      .stroke({ color: "#c13119", width: Math.max(0.4, size / 24) })
+      .moveTo(-radius * 0.4, -radius * 0.35)
+      .lineTo(radius * 0.4, radius * 0.45)
+      .moveTo(radius * 0.4, -radius * 0.35)
+      .lineTo(-radius * 0.4, radius * 0.45)
+      .stroke({ color: "#c13119", width: Math.max(0.4, size / 24) })
   );
 }
 

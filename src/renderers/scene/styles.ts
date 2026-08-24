@@ -142,6 +142,16 @@ export interface CompassLayerStyle {
   y: number;
 }
 
+export interface EmblemLayerStyle {
+  automaticVisibility: boolean;
+  burgSize: number;
+  filter: string | null;
+  opacity: number;
+  provinceSize: number;
+  stateSize: number;
+  strokeWidth: number;
+}
+
 export interface TradeLayerStyle {
   highlight: SemanticLineStyle;
   opacity: number;
@@ -158,6 +168,7 @@ export interface MapStyle {
   compass: CompassLayerStyle;
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
+  emblems: EmblemLayerStyle;
   goods: GoodsLayerStyle;
   grid: GridLayerStyle;
   ice: SemanticRoleStyles<SemanticAreaStyle> & { opacity: number };
@@ -317,6 +328,15 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
   compass: { opacity: 0.8, scale: 0.25, x: 80, y: 80 },
   cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
   cultures: { fallbackColor: "#888888", opacity: 0.6 },
+  emblems: {
+    automaticVisibility: true,
+    burgSize: 1,
+    filter: null,
+    opacity: 0.9,
+    provinceSize: 1,
+    stateSize: 1,
+    strokeWidth: 1
+  },
   goods: {
     burgs: {
       fill: "#f5f5f5",

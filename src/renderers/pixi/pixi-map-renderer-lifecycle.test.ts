@@ -343,6 +343,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "markets",
       "precipitation",
       "population",
+      "emblems",
       "labels",
       "burgIcons",
       "military",
@@ -448,6 +449,32 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.find(child => child.label === "population")?.children.length).toBe(1);
     expect(applicationState.stage?.children.find(child => child.label === "military")?.children.length).toBe(1);
     expect(renderer.getSnapshot().textureCacheEntries).toBe(3);
+    renderer.clear();
+    expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
+  });
+
+  it("builds and caches Pixi-owned emblems from domain heraldry", async () => {
+    const renderer = new PixiMapRenderer({
+      resolveEmblemIcon: async id => `data:image/svg+xml,${id}`
+    });
+    const world = createWorld();
+    world.burgs = [0 as never, { cell: 0, coa: { t1: "vert" }, i: 1, x: 2, y: 2 }];
+    world.provinces = [0 as never, { center: 0, coa: { t1: "or" }, i: 1, pole: [2, 2] } as never];
+    world.states = [0 as never, { center: 0, coa: { t1: "gules" }, i: 1, pole: [2, 2] } as never];
+    await renderer.mount(createSurface());
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    const emblems = applicationState.stage?.children.find(child => child.label === "emblems") as
+      | { children: Array<{ label: string }> }
+      | undefined;
+    expect(emblems?.children.map(group => group.label)).toEqual(["emblems:burg", "emblems:province", "emblems:state"]);
+    expect(renderer.getSnapshot()).toMatchObject({
+      emblemSymbols: 3,
+      missingEmblemAssets: [],
+      unsupportedEmblemEffects: []
+    });
+    expect(renderer.getSnapshot().textureCacheEntries).toBe(5);
     renderer.clear();
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
     renderer.destroy();

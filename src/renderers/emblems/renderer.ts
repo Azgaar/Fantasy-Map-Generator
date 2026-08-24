@@ -1,4 +1,4 @@
-import { select } from "d3";
+import type { Emblem, EmblemCharge, EmblemOrdinary } from "@/generators/emblems/generator";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -12,42 +12,11 @@ declare global {
   var COArenderer: EmblemRenderModule;
 }
 
-interface Division {
-  division: string;
-  line?: string;
-  t: string;
+export interface EmblemRenderOptions {
+  strokeWidth?: number;
 }
 
-interface Ordinary {
-  ordinary: string;
-  line?: string;
-  t: string;
-  divided?: "field" | "division" | "counter";
-  above?: boolean;
-}
-
-interface Charge {
-  stroke: string;
-  charge: string;
-  t: string;
-  size?: number;
-  sinister?: boolean;
-  reversed?: boolean;
-  line?: string;
-  divided?: "field" | "division" | "counter";
-  p: number[]; // position on shield from 1 to 9
-}
-
-interface Emblem {
-  shield: string;
-  t1: string;
-  division?: Division;
-  ordinaries?: Ordinary[];
-  charges?: Charge[];
-  custom?: boolean; // if true, coa will not be rendered
-}
-
-class EmblemRenderModule {
+export class EmblemRenderModule {
   get shieldPaths() {
     return shieldPaths;
   }
@@ -153,7 +122,12 @@ class EmblemRenderModule {
       .join("");
   }
 
-  private async draw(id: string, coa: Emblem) {
+  async renderSvg(id: string, coa: Emblem, options: EmblemRenderOptions = {}): Promise<string | null> {
+    if (!coa) return null;
+    if (coa.custom) {
+      if (!coa.customData) return null;
+      return `<svg id="${id}" width="200" height="200" viewBox="0 0 200 200"><image width="200" height="200" href="${escapeXmlAttribute(coa.customData)}"/></svg>`;
+    }
     const { shield = "heater", division, ordinaries = [], charges = [] } = coa;
 
     const ordinariesRegular = ordinaries.filter(o => !o.above);
@@ -179,7 +153,7 @@ class EmblemRenderModule {
     </style>`;
 
     const templateCharge = (
-      charge: Charge,
+      charge: EmblemCharge,
       tincture: string,
       secondaryTincture?: string,
       tertiaryTincture?: string
@@ -200,7 +174,7 @@ class EmblemRenderModule {
       }
       return `${svg}</g>`;
 
-      function getElTransform(c: Charge, p: string | number) {
+      function getElTransform(c: EmblemCharge, p: string | number) {
         const s = (c.size || 1) * sizeModifier;
         const sx = c.sinister ? -s : s;
         const sy = c.reversed ? -s : s;
@@ -212,7 +186,7 @@ class EmblemRenderModule {
       }
     };
 
-    const templateOrdinary = (ordinary: Ordinary, tincture: string) => {
+    const templateOrdinary = (ordinary: EmblemOrdinary, tincture: string) => {
       const fill = this.clr(tincture);
       let svg = `<g fill="${fill}" stroke="none">`;
       if (ordinary.ordinary === "bordure")
@@ -291,35 +265,43 @@ class EmblemRenderModule {
     };
 
     const divisionGroup = division ? templateDivision() : "";
-    const overlay = `<path d="${shieldPath}" fill="url(#backlight_${id})" stroke="#333"/>`;
+    const strokeWidth = Number.isFinite(options.strokeWidth) ? Math.max(0, options.strokeWidth ?? 1) : 1;
+    const overlay = `<path d="${shieldPath}" fill="url(#backlight_${id})" stroke="#333" stroke-width="${strokeWidth}"/>`;
 
     const svg = `<svg id="${id}" width="200" height="200" viewBox="${viewBox}">
         <defs>${shieldClip}${divisionClip}${loadedCharges}${loadedPatterns}${blacklight}${style}</defs>
         <g clip-path="url(#${shield}_${id})">${field}${divisionGroup}${templateAboveAll()}</g>
         ${overlay}</svg>`;
 
-    // insert coa svg to defs
-    document.getElementById("coas")!.insertAdjacentHTML("beforeend", svg);
-    return true;
+    return svg;
+  }
+
+  async renderDataUri(id: string, coa: Emblem, options: EmblemRenderOptions = {}): Promise<string | null> {
+    const svg = await this.renderSvg(id, coa, options);
+    return svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` : null;
   }
 
   // render coa if does not exist
   async trigger(id: string, coa: Emblem) {
     if (!coa) return console.warn(`Emblem ${id} is undefined`);
-    if (coa.custom) return console.warn("Cannot render custom emblem", coa);
-    if (!document.getElementById(id)) return this.draw(id, coa);
+    if (document.getElementById(id)) return;
+    const svg = await this.renderSvg(id, coa);
+    if (!svg) return console.warn("Cannot render custom emblem without embedded source data", coa);
+    document.getElementById("coas")?.insertAdjacentHTML("beforeend", svg);
   }
 
-  async add(type: string, i: number, coa: Emblem, x: number, y: number) {
-    const id = `${type}COA${i}`;
-    const g: HTMLElement = document.getElementById(`${type}Emblems`) as HTMLElement;
-
-    if (select("#emblems").selectAll("use").size()) {
-      const size = parseFloat(g.getAttribute("font-size") || "50");
-      const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
-      g.insertAdjacentHTML("beforeend", use);
-    }
-    if (layerIsOn("toggleEmblems")) this.trigger(id, coa);
+  async add(_type: string, _i: number, _coa: Emblem, _x: number, _y: number) {
+    window.dispatchEvent(
+      new CustomEvent("map:pixi-renderer:command", {
+        detail: { command: "invalidate-layer", layer: "emblems" }
+      })
+    );
   }
 }
-window.COArenderer = new EmblemRenderModule();
+
+function escapeXmlAttribute(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+}
+
+export const emblemRenderer = new EmblemRenderModule();
+window.COArenderer = emblemRenderer;

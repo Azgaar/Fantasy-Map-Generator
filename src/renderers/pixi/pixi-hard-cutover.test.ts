@@ -3,6 +3,7 @@ import mainSource from "../../../public/main.js?raw";
 import layersSource from "../../../public/modules/ui/layers.js?raw";
 import styleUiSource from "../../../public/modules/ui/style.js?raw";
 import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
+import zoomSource from "../../components/zoom.ts?raw";
 import burgEditorSource from "../../controllers/burg-editor.ts?raw";
 import markerEditorSource from "../../controllers/markers-editor.ts?raw";
 import riverCreatorSource from "../../controllers/river-creator.ts?raw";
@@ -19,6 +20,7 @@ import loadSource from "../../services/io/load.ts?raw";
 import saveSource from "../../services/io/save.ts?raw";
 import drawBiomesSource from "../draw-biomes.ts?raw";
 import drawBordersSource from "../draw-borders.ts?raw";
+import drawEmblemsSource from "../draw-emblems.ts?raw";
 import drawGoodsSource from "../draw-goods.ts?raw";
 import drawIceSource from "../draw-ice.ts?raw";
 import drawMarketsSource from "../draw-markets.ts?raw";
@@ -28,6 +30,7 @@ import drawTradeSource from "../draw-trade-animation.ts?raw";
 import renderersIndex from "../index.ts?raw";
 import labelsRendererSource from "../labels/labels-renderer.ts?raw";
 import pointSymbolsSource from "../point-symbols.ts?raw";
+import emblemSceneSource from "../scene/layers/emblem-scene.ts?raw";
 import labelSceneSource from "../scene/layers/label-scene.ts?raw";
 import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
 import populationMilitarySceneSource from "../scene/layers/population-military-scene.ts?raw";
@@ -167,6 +170,18 @@ describe("Pixi hard cutover", () => {
     expect(labelSceneSource.includes("buildLabelScene")).toBe(true);
     expect(controllerSource.includes('"#labels"')).toBe(true);
     expect(controllerSource.includes('"#textPaths"')).toBe(true);
+  });
+
+  it("renders emblems through cached Pixi textures without a live SVG emblem layer", () => {
+    expect(layersSource.includes('redrawPixiLayer("emblems", "emblems")')).toBe(true);
+    expect(drawEmblemsSource.includes('invalidatePixiRendererLayer("emblems")')).toBe(true);
+    expect(drawEmblemsSource.includes('from "d3"')).toBe(false);
+    expect(emblemSceneSource.includes("buildEmblemScene")).toBe(true);
+    expect(emblemSceneSource.includes("document.")).toBe(false);
+    expect(emblemSceneSource.includes("pixi.js")).toBe(false);
+    expect(zoomSource.includes("renderGroupCOAs")).toBe(false);
+    expect(controllerSource.includes('"#emblems"')).toBe(true);
+    expect(loadSource.includes('turnOnPixiLayer(\n        "emblems"')).toBe(true);
   });
 
   it("renders compass and trade through Pixi without live SVG transitions", () => {

@@ -8,7 +8,7 @@ import {
 
 describe("Pixi layer visibility state", () => {
   it("captures every toggleable owned layer without discarding future visibility entries", () => {
-    const appStyle = { mapLayerVisibility: { emblems: false } } as Pick<Style, "mapLayerVisibility">;
+    const appStyle = { mapLayerVisibility: { vignette: false } } as Pick<Style, "mapLayerVisibility">;
     capturePixiLayerVisibility(appStyle, controlId => controlId !== "toggleReligions");
 
     expect(Object.keys(PIXI_LAYER_CONTROL_IDS)).toEqual([
@@ -18,6 +18,7 @@ describe("Pixi layer visibility state", () => {
       "cells",
       "compass",
       "cultures",
+      "emblems",
       "goods",
       "grid",
       "ice",
@@ -39,11 +40,12 @@ describe("Pixi layer visibility state", () => {
       "zones"
     ]);
     expect(appStyle.mapLayerVisibility).toMatchObject({
-      emblems: false,
+      emblems: true,
       labels: true,
       religions: false,
       cultures: true,
-      states: true
+      states: true,
+      vignette: false
     });
   });
 

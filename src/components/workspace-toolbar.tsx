@@ -289,6 +289,15 @@ function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSect
       {close => (
         <>
           <MenuItem
+            icon="document"
+            onClick={() => {
+              close();
+              executeLegacyCommand("newMapButton");
+            }}
+            text="New Map"
+          />
+          <MenuDivider />
+          <MenuItem
             icon="globe-network"
             onClick={() => {
               close();
