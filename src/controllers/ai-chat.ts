@@ -12,7 +12,7 @@ import {
   select,
   touch
 } from "@/services/agent/conversations";
-import { DEFAULT_MODEL, KEY_LINK, KEY_STORAGE, MODELS } from "@/services/agent/providers";
+import { DEFAULT_MODEL, keyStorageFor, PROVIDERS, providerOf } from "@/services/agent/providers";
 import type { RunResult } from "@/services/agent/runtime";
 import { createSession } from "@/services/agent/session";
 import { openURL } from "@/utils";
@@ -75,7 +75,9 @@ function renderDialog(): void {
   });
   ensureEl("aiChatNew").addEventListener("click", startNewConversation);
   ensureEl("aiChatRemove").addEventListener("click", removeConversation);
-  ensureEl("aiChatKeyHelp").addEventListener("click", () => openURL(KEY_LINK));
+  ensureEl("aiChatKeyHelp").addEventListener("click", () =>
+    openURL(providerOf(ensureEl<HTMLSelectElement>("aiChatModel").value).keyLink)
+  );
   ensureEl("aiChatSend").addEventListener("click", () => {
     if (busy) session.cancel();
     else void send();
@@ -178,13 +180,28 @@ function dialogHtml(): string {
 function setInitialValues(): void {
   const select = ensureEl<HTMLSelectElement>("aiChatModel");
   select.options.length = 0;
-  MODELS.forEach(model => {
-    select.options.add(new Option(model, model));
+  PROVIDERS.forEach(provider => {
+    const group = document.createElement("optgroup");
+    group.label = provider.label;
+    provider.models.forEach(model => {
+      group.append(new Option(model, model));
+    });
+    select.append(group);
   });
-  select.value = localStorage.getItem(MODEL_STORAGE) ?? "";
-  if (!MODELS.includes(select.value)) select.value = DEFAULT_MODEL;
+  const stored = localStorage.getItem(MODEL_STORAGE) ?? "";
+  select.value = PROVIDERS.some(provider => provider.models.includes(stored)) ? stored : DEFAULT_MODEL;
 
-  ensureEl<HTMLInputElement>("aiChatKey").value = localStorage.getItem(KEY_STORAGE) ?? "";
+  select.addEventListener("change", loadKeyForModel);
+  loadKeyForModel();
+  updateSendButton();
+}
+
+// Each provider has its own key slot, so switching models swaps the key field with it
+function loadKeyForModel(): void {
+  const model = ensureEl<HTMLSelectElement>("aiChatModel").value;
+  const key = ensureEl<HTMLInputElement>("aiChatKey");
+  key.value = localStorage.getItem(keyStorageFor(model)) ?? "";
+  key.dataset.tip = `${providerOf(model).label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
   updateSendButton();
 }
 
@@ -211,8 +228,9 @@ async function send(text?: string): Promise<void> {
     tip("Please enter an API key", true, "error", 4000);
     return;
   }
-  localStorage.setItem(KEY_STORAGE, key);
-  localStorage.setItem(MODEL_STORAGE, ensureEl<HTMLSelectElement>("aiChatModel").value);
+  const model = ensureEl<HTMLSelectElement>("aiChatModel").value;
+  localStorage.setItem(keyStorageFor(model), key);
+  localStorage.setItem(MODEL_STORAGE, model);
 
   input.value = "";
   input.style.height = "auto";
