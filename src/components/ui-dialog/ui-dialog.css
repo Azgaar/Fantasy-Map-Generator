@@ -1,11 +1,15 @@
 :host {
   display: none;
+  flex-direction: column;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1000;
   max-width: 93vw;
+  max-height: 93vh;
   width: max-content;
+  min-width: 150px;
+  min-height: 4em;
   outline: 0;
   background-color: var(--bg-dialogs, #ffffff);
   border: 1px solid var(--dark-solid, #999999);
@@ -15,15 +19,25 @@
 }
 
 :host([open]) {
-  display: block;
+  display: flex;
 }
 
 :host([minimized]) .ui-dialog-content {
   display: none;
 }
 
+:host([minimized]) .ui-dialog-resize-handle {
+  display: none;
+}
+
+:host(.resized) .ui-dialog-content {
+  flex: 1 1 auto;
+  max-height: none;
+}
+
 .ui-dialog-titlebar {
   display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
   align-items: center;
   padding: 0.3em 0.8em;
@@ -76,6 +90,8 @@
 
 .ui-dialog-content {
   position: relative;
+  flex: 0 1 auto;
+  min-height: 0;
   padding: 0.5em 1em;
   max-height: 80vh;
   overflow-x: auto;
@@ -99,6 +115,7 @@
 
 .ui-dialog-buttonpane {
   display: none;
+  flex-shrink: 0;
   text-align: left;
   margin-top: 0.5em;
   padding: 0.3em 1em 0.5em 0.4em;
@@ -124,4 +141,24 @@
 
 ::slotted(button:hover) {
   background: #e0e0e0;
+}
+
+.ui-dialog-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+}
+
+.ui-dialog-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid #9b9b9b;
+  border-bottom: 2px solid #9b9b9b;
 }

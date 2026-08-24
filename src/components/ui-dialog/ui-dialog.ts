@@ -28,6 +28,7 @@ function parseAnchor(token: string): Anchor {
 
 class UiDialog extends HTMLElement {
   private built = false;
+  private resizedHeight: string | null = null;
 
   constructor() {
     super();
@@ -55,6 +56,9 @@ class UiDialog extends HTMLElement {
     const closeButton = shadow.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-close")!;
     closeButton.addEventListener("click", () => this.close());
 
+    const resizeHandle = shadow.querySelector<HTMLElement>(".ui-dialog-resize-handle")!;
+    resizeHandle.addEventListener("pointerdown", this.handleResizeStart.bind(this));
+
     this.classList.toggle("has-actions", this.querySelectorAll('[slot="actions"]').length > 0);
     this.addEventListener("pointerdown", () => this.bringToFront());
   }
@@ -72,6 +76,36 @@ class UiDialog extends HTMLElement {
     const handleMove = (moveEvent: PointerEvent) => {
       this.style.left = `${startLeft + moveEvent.clientX - startX}px`;
       this.style.top = `${startTop + moveEvent.clientY - startY}px`;
+    };
+
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+  }
+
+  private handleResizeStart(event: PointerEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const rect = this.getBoundingClientRect();
+    const startWidth = rect.width;
+    const startHeight = rect.height;
+    // Clamp to both a viewport-relative cap and the space actually available from the
+    // dialog's current position, so resizing never pushes it past the viewport edge.
+    const maxWidth = Math.min(window.innerWidth * 0.93, window.innerWidth - rect.left - 8);
+    const maxHeight = Math.min(window.innerHeight * 0.93, window.innerHeight - rect.top - 8);
+    this.bringToFront();
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      this.classList.add("resized");
+      this.style.width = `${Math.min(maxWidth, Math.max(150, startWidth + moveEvent.clientX - startX))}px`;
+      this.style.height = `${Math.min(maxHeight, Math.max(100, startHeight + moveEvent.clientY - startY))}px`;
     };
 
     const handleUp = () => {
@@ -132,6 +166,15 @@ class UiDialog extends HTMLElement {
   toggleMinimize(force?: boolean) {
     const shouldMinimize = force ?? !this.hasAttribute("minimized");
     this.toggleAttribute("minimized", shouldMinimize);
+
+    // A manually resized height would otherwise persist as an inline style, leaving an
+    // empty box the size of the resized dialog instead of collapsing to the title bar.
+    if (shouldMinimize) {
+      this.resizedHeight = this.style.height || null;
+      this.style.height = "";
+    } else if (this.resizedHeight) {
+      this.style.height = this.resizedHeight;
+    }
   }
 
   get dialogTitle(): string {
