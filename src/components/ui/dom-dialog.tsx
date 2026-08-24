@@ -116,16 +116,20 @@ function DomDialogView({
     const mutationObserver = new MutationObserver(scheduleMeasurement);
     mutationObserver.observe(content, {
       attributes: true,
+      attributeFilter: ["hidden", "style"],
       childList: true,
       subtree: true
     });
-    window.addEventListener("resize", scheduleMeasurement);
+    const handleViewportResize = (event: UIEvent) => {
+      if (event.isTrusted) scheduleMeasurement();
+    };
+    window.addEventListener("resize", handleViewportResize);
     scheduleMeasurement();
 
     return () => {
       window.cancelAnimationFrame(measureFrame);
       mutationObserver.disconnect();
-      window.removeEventListener("resize", scheduleMeasurement);
+      window.removeEventListener("resize", handleViewportResize);
       if (destroyOnClose || content.parentNode !== host) return;
       content.style.display = origin.display;
       content.hidden = origin.hidden;

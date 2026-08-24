@@ -18,6 +18,6 @@ jobs:
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
         with:
-          version: latest
+          version: 2.4.15
       - name: Run Biome
         run: biome ci .
