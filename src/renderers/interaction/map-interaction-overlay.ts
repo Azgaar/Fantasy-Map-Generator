@@ -144,7 +144,12 @@ export class MapInteractionOverlay {
     if ("handles" in patch) this.state.handles = patch.handles ? [...patch.handles] : [];
     if ("highlight" in patch) this.state.highlight = patch.highlight ? [...patch.highlight] : [];
     if ("selection" in patch) this.state.selection = patch.selection ? [...patch.selection] : [];
-    this.render();
+    if (!this.root) return;
+    if ("selection" in patch) this.replaceGeometryChannel("selection");
+    if ("highlight" in patch) this.replaceGeometryChannel("highlight");
+    if ("brush" in patch) this.replaceChannel("brush", this.renderBrush());
+    if ("handles" in patch)
+      this.replaceChannel("handles", this.renderHandles(getMapInteractionOverlayLayout(this.camera).handleRadius));
   }
 
   clear(): void {
@@ -198,6 +203,14 @@ export class MapInteractionOverlay {
     group.dataset.overlayChannel = channel;
     for (const geometry of geometries) group.append(renderGeometry(geometry, this.camera.scale));
     return group;
+  }
+
+  private replaceGeometryChannel(channel: "highlight" | "selection"): void {
+    this.replaceChannel(channel, this.renderGeometryChannel(channel, this.state[channel]));
+  }
+
+  private replaceChannel(channel: string, replacement: SVGGElement): void {
+    this.root?.querySelector(`[data-overlay-channel="${channel}"]`)?.replaceWith(replacement);
   }
 
   private renderBrush(): SVGGElement {

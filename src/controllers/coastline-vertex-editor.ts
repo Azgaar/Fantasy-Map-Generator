@@ -4,6 +4,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { moveFeatureVertex, setFeatureGroup } from "@/controllers/editor-mutations";
 import type { Feature } from "@/generators/features";
+import type { MapLayerId } from "@/renderers/core/layer-registry";
 import {
   MAP_INTERACTION_HANDLE_EVENT,
   type MapInteractionHandleEventDetail
@@ -19,7 +20,7 @@ import { getArea, getAreaUnit } from "@/utils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 let selectedFeatureId = 0;
-let activeVertex: { initialPoint: [number, number]; vertexId: number } | null = null;
+let activeVertex: { initialPoint: [number, number]; invalidationLayers: MapLayerId[]; vertexId: number } | null = null;
 
 function open(featureId: number): void {
   if (customization) return;
@@ -82,8 +83,6 @@ function drawCoastlineVertices(): void {
   const feature = getFeature();
   const { vertices, area } = feature;
 
-  const cellsNumber = pack.cells.i.length;
-  const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v])).filter(cellId => cellId < cellsNumber);
   updateMapInteractionOverlay({
     handles: vertices.map(vertexId => {
       const [x, y] = pack.vertices.p[vertexId];
@@ -93,10 +92,7 @@ function drawCoastlineVertices(): void {
         point: { x, y }
       };
     }),
-    selection: [
-      { kind: "polygon", points: vertices.map(vertexId => toPoint(pack.vertices.p[vertexId])) },
-      ...neibCells.filter(cellId => cellId >= 0).map(cellPolygon)
-    ]
+    selection: getCoastlineSelection(vertices)
   });
 
   ensureEl("coastlineArea").innerHTML = `${si(getArea(area))} ${getAreaUnit()}`;
@@ -109,7 +105,7 @@ function editCoastlineVertex(event: CustomEvent<MapInteractionHandleEventDetail>
   if (!getFeature().vertices.includes(vertexId)) return;
 
   if (event.detail.phase === "start") {
-    activeVertex = { initialPoint: [...pack.vertices.p[vertexId]], vertexId };
+    activeVertex = { initialPoint: [...pack.vertices.p[vertexId]], invalidationLayers: [], vertexId };
     tip("Drag to fine-tune the coastline vertex; use the heightmap editor for topological changes", true);
     return;
   }
@@ -122,19 +118,31 @@ function editCoastlineVertex(event: CustomEvent<MapInteractionHandleEventDetail>
     return;
   }
   if (event.detail.phase === "move") {
-    applyFeatureVertexMutation(vertexId, [rn(event.detail.worldPoint.x, 2), rn(event.detail.worldPoint.y, 2)]);
+    const layers = applyFeatureVertexMutation(vertexId, [
+      rn(event.detail.worldPoint.x, 2),
+      rn(event.detail.worldPoint.y, 2)
+    ]);
+    if (layers && activeVertex?.vertexId === vertexId) {
+      activeVertex.invalidationLayers = layers;
+      updateMapInteractionOverlay({ selection: getCoastlineSelection(getFeature().vertices, vertexId) });
+    }
     return;
   }
   if (event.detail.phase !== "end" || activeVertex?.vertexId !== vertexId) return;
+  invalidateFeatureGeometry(activeVertex.invalidationLayers);
   activeVertex = null;
   drawCoastlineVertices();
 }
 
-function applyFeatureVertexMutation(vertexId: number, point: [number, number]): void {
+function applyFeatureVertexMutation(vertexId: number, point: [number, number]): MapLayerId[] | null {
   const mutation = moveFeatureVertex(pack, selectedFeatureId, vertexId, point);
-  if (!mutation.changed) return;
-  for (const layer of mutation.layers) if (isPixiOwnedLayer(layer)) invalidatePixiRendererLayer(layer);
+  if (!mutation.changed) return null;
   ensureEl("coastlineArea").innerHTML = `${si(getArea(getFeature().area))} ${getAreaUnit()}`;
+  return mutation.layers;
+}
+
+function invalidateFeatureGeometry(layers: readonly MapLayerId[]): void {
+  for (const layer of layers) if (isPixiOwnedLayer(layer)) invalidatePixiRendererLayer(layer);
 }
 
 function showGroupSection(): void {
@@ -257,11 +265,24 @@ function closeCoastlineEditor(): void {
   document
     .getElementById("map")
     ?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editCoastlineVertex as EventListener);
+  if (activeVertex) invalidateFeatureGeometry(activeVertex.invalidationLayers);
   clearMapInteractionOverlay();
   activeVertex = null;
   selectedFeatureId = 0;
   applyDefaultViewboxEvents();
   destroyDialog("coastlineEditor");
+}
+
+function getCoastlineSelection(vertices: readonly number[], activeVertexId?: number) {
+  const cellsNumber = pack.cells.i.length;
+  const relevantVertices = activeVertexId === undefined ? vertices : [activeVertexId];
+  const cells = unique(relevantVertices.flatMap(vertexId => pack.vertices.c[vertexId])).filter(
+    cellId => cellId >= 0 && cellId < cellsNumber
+  );
+  return [
+    { kind: "polygon" as const, points: vertices.map(vertexId => toPoint(pack.vertices.p[vertexId])) },
+    ...cells.map(cellPolygon)
+  ];
 }
 
 function cellPolygon(cellId: number) {

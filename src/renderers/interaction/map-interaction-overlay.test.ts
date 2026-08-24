@@ -4,6 +4,7 @@ import {
   ensureMapInteractionSurface,
   getMapInteractionOverlayLayout,
   MAP_INTERACTION_SURFACE_ID,
+  MapInteractionOverlay,
   nudgeMapInteractionPoint,
   resolveMapInteractionPointer
 } from "./map-interaction-overlay";
@@ -76,6 +77,44 @@ describe("map interaction overlay", () => {
       expect(attributes.get("width")).toBe("1600");
       expect(attributes.get("height")).toBe("900");
       expect(insertBefore).toHaveBeenCalledOnce();
+    } finally {
+      document.createElementNS = createElementNS;
+    }
+  });
+
+  it("updates only the changed overlay channel", () => {
+    const createElementNS = document.createElementNS;
+    const selectionChannel = { replaceWith: vi.fn() };
+    const querySelector = vi.fn((selector: string) =>
+      selector === '[data-overlay-channel="selection"]' ? selectionChannel : null
+    );
+    document.createElementNS = vi.fn(() => ({
+      append: vi.fn(),
+      classList: { add: vi.fn() },
+      dataset: {},
+      setAttribute: vi.fn(),
+      style: { setProperty: vi.fn() }
+    })) as unknown as typeof document.createElementNS;
+    const overlay = new MapInteractionOverlay();
+    (overlay as unknown as { root: { querySelector: typeof querySelector } }).root = { querySelector };
+
+    try {
+      overlay.update({
+        selection: [
+          {
+            kind: "polygon",
+            points: [
+              { x: 0, y: 0 },
+              { x: 25, y: 0 },
+              { x: 10, y: 20 }
+            ]
+          }
+        ]
+      });
+
+      expect(querySelector).toHaveBeenCalledOnce();
+      expect(querySelector).toHaveBeenCalledWith('[data-overlay-channel="selection"]');
+      expect(selectionChannel.replaceWith).toHaveBeenCalledOnce();
     } finally {
       document.createElementNS = createElementNS;
     }
