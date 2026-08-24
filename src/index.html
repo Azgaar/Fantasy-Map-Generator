@@ -375,13 +375,12 @@
           >
             ×
           </button>
-          <button id="layersTab" data-tip="Click to change map layers" class="options active">Layers</button>
-          <button id="styleTab" data-tip="Click to open style editor" class="options">Style</button>
+          <button id="styleTab" data-tip="Click to open style editor" class="options active">Style</button>
           <button id="optionsTab" data-tip="Click to change generation and UI options" class="options">Options</button>
           <button id="toolsTab" data-tip="Click to open tools menu" class="options">Tools</button>
           <button id="aboutTab" data-tip="Click to see Generator info" class="options">About</button>
         </div>
-        <div id="layersContent" class="tabcontent" style="display: block">
+        <div id="layersContent" class="tabcontent" style="display: none" aria-hidden="true">
           <button
             id="savePresetButton"
             data-tip="Click to save displayed layers as a new preset"
@@ -647,7 +646,7 @@
             <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
           </div>
         </div>
-        <div id="styleContent" class="tabcontent">
+        <div id="styleContent" class="tabcontent" style="display: block">
           <p
             data-tip="Select a style preset. State labels may required regeneration if font is changed"
             style="display: inline-block"

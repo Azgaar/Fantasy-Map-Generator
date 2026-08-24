@@ -35,7 +35,6 @@ const optionsRoot = ensureEl("options");
 const optionsTrigger = ensureEl("optionsTrigger");
 const regenerate = ensureEl("regenerate");
 const collapsible = ensureEl("collapsible");
-const layersContent = ensureEl("layersContent");
 const styleContent = ensureEl("styleContent");
 const toolsContent = ensureEl("toolsContent");
 const aboutContent = ensureEl("aboutContent");
@@ -151,9 +150,7 @@ optionsRoot.querySelector<HTMLElement>("div.tab")?.addEventListener("click", eve
     e.style.display = "none";
   });
 
-  if (id === "layersTab") {
-    layersContent.style.display = "block";
-  } else if (id === "styleTab") {
+  if (id === "styleTab") {
     styleContent.style.display = "block";
     window.StyleEditor.refresh();
   } else if (id === "optionsTab") {
@@ -169,7 +166,6 @@ optionsRoot.querySelector<HTMLElement>("div.tab")?.addEventListener("click", eve
 });
 
 const workspaceSections = {
-  layersTab: "layers",
   styleTab: "style",
   aboutTab: "about"
 };
@@ -178,7 +174,6 @@ const workspaceSectionTitles = {
   create: "Create",
   edit: "Edit",
   inspect: "Inspect",
-  layers: "Layers",
   style: "Style",
   "world-setup": "World Setup",
   regenerate: "Regenerate",
@@ -189,7 +184,7 @@ const workspaceSectionTitles = {
 function getWorkspaceSection(activeId?: string): string {
   if (activeId === "optionsTab") return ensureEl("optionsContent").dataset.workspaceView || "preferences";
   if (activeId === "toolsTab") return ensureEl("toolsContent").dataset.workspaceView || "edit";
-  return workspaceSections[activeId as keyof typeof workspaceSections] || "layers";
+  return workspaceSections[activeId as keyof typeof workspaceSections] || "style";
 }
 
 function notifyWorkspacePanelChange(tabId?: string): void {
@@ -198,7 +193,7 @@ function notifyWorkspacePanelChange(tabId?: string): void {
   const title =
     workspaceSectionTitles[section as keyof typeof workspaceSectionTitles] ||
     (activeId ? document.getElementById(activeId)?.textContent?.trim() : null) ||
-    "Layers";
+    "Style";
   window.dispatchEvent(new CustomEvent("workspace-panel-change", { detail: { section, title } }));
 }
 

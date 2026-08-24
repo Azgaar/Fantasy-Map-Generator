@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { LayersPanel } from "./layers/layers-panel";
 import { MapMinimap } from "./map-minimap";
 import {
   getToolCommands,
@@ -27,8 +26,8 @@ import "./workspace-sidebar.css";
 
 type ToolWorkspaceSection = "create" | "edit" | "inspect" | "regenerate";
 type OptionsWorkspaceSection = "world-setup" | "preferences";
-type WorkspaceSection = "layers" | "style" | ToolWorkspaceSection | OptionsWorkspaceSection;
-type LegacyWorkspaceSection = WorkspaceSection | "options" | "tools" | "about";
+type WorkspaceSection = "style" | ToolWorkspaceSection | OptionsWorkspaceSection;
+type LegacyWorkspaceSection = WorkspaceSection | "layers" | "options" | "tools" | "about";
 
 interface WorkspacePanelChangeDetail {
   section: LegacyWorkspaceSection | null;
@@ -37,7 +36,7 @@ interface WorkspacePanelChangeDetail {
 
 interface WorkspaceSectionConfig {
   route: string;
-  tabId: "layersTab" | "styleTab" | "optionsTab" | "toolsTab";
+  tabId: "styleTab" | "optionsTab" | "toolsTab";
   title: string;
 }
 
@@ -51,7 +50,6 @@ const WORKSPACE_SECTIONS: Record<WorkspaceSection, WorkspaceSectionConfig> = {
   create: { route: "/create", tabId: "toolsTab", title: "Create" },
   edit: { route: "/edit", tabId: "toolsTab", title: "Edit" },
   inspect: { route: "/inspect", tabId: "toolsTab", title: "Inspect" },
-  layers: { route: "/layers", tabId: "layersTab", title: "Layers" },
   style: { route: "/style", tabId: "styleTab", title: "Style" },
   "world-setup": { route: "/world-setup", tabId: "optionsTab", title: "World Setup" },
   regenerate: { route: "/regenerate", tabId: "toolsTab", title: "Regenerate" },
@@ -99,6 +97,7 @@ function isToolWorkspaceSection(section: WorkspaceSection): section is ToolWorks
 
 function normalizeWorkspaceSection(section: LegacyWorkspaceSection | null): WorkspaceSection | null {
   if (!section || section === "about") return null;
+  if (section === "layers") return "style";
   if (section === "tools") {
     const view = document.getElementById("toolsContent")?.dataset.workspaceView as WorkspaceSection | undefined;
     return view && isToolWorkspaceSection(view) ? view : "edit";
@@ -151,7 +150,7 @@ function openWorkspaceSection(section: WorkspaceSection): void {
 window.addEventListener("new-map:open", () => openWorkspaceSection("world-setup"));
 
 function WorkspaceHeader(): React.JSX.Element {
-  const [title, setTitle] = useState(WORKSPACE_SECTIONS.layers.title);
+  const [title, setTitle] = useState(WORKSPACE_SECTIONS.style.title);
 
   useEffect(() => {
     const handlePanelChange = (event: Event) => {
@@ -357,7 +356,6 @@ function ToolsPanel(): React.JSX.Element {
 }
 
 const headerRoot = document.getElementById("workspacePanelHeaderRoot");
-const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
 const mapPreviewRoot = document.getElementById("mapPreviewRoot");
 const worldSetupSection = document.querySelector<HTMLElement>('[data-options-section="world-setup"]');
@@ -370,7 +368,6 @@ if (worldSetupSection) {
 }
 
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
-if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
 if (mapPreviewRoot) {
   createRoot(mapPreviewRoot).render(

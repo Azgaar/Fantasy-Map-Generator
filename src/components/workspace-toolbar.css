@@ -232,6 +232,19 @@
   list-style: none;
 }
 
+.fmg-floating-menu__menu .bp6-menu-header {
+  padding: 7px 8px 3px;
+  color: var(--kui-text-muted);
+  list-style: none;
+}
+
+.fmg-floating-menu__menu .bp6-menu-header > h6 {
+  margin: 0;
+  font: 600 10px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .fmg-floating-menu__menu kbd {
   color: var(--kui-text-muted);
   font: 10px/1.2 "SF Mono", Consolas, monospace;

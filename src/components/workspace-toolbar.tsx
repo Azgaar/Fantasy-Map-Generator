@@ -1,9 +1,12 @@
+import { Controllers } from "@/controllers";
+import { type ViewMode, VIEW_MODE_CHANGE_EVENT } from "@/controllers/view-mode-events";
 import { Icon, type IconName, IconSize, Icons } from "@patkepa/kantzen-ui/icons";
 import { Menu, MenuDivider, MenuItem } from "@patkepa/kantzen-ui/primitives";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   type LayerControlsSnapshot,
   LAYER_CONTROLS_CHANGE_EVENT,
+  type LayerView,
   type LegacyLayerControls
 } from "./layers/layer-controls";
 import { getToolCommands, TOOL_GROUPS } from "./tool-registry";
@@ -14,7 +17,6 @@ export type ToolbarWorkspaceSection =
   | "create"
   | "edit"
   | "inspect"
-  | "layers"
   | "style"
   | "world-setup"
   | "regenerate"
@@ -37,8 +39,84 @@ interface FloatingMenuProps {
   tip: string;
 }
 
+interface LayerMenuProps {
+  initialMapSnapshot?: LayerControlsSnapshot;
+  mapControls?: LegacyLayerControls;
+}
+
+interface LayerMenuState {
+  controls: LegacyLayerControls;
+  snapshot: LayerControlsSnapshot;
+}
+
+interface MapLayerMenuGroup {
+  icon: IconName;
+  ids: readonly string[];
+  label: string;
+}
+
 const EDIT_GROUPS = TOOL_GROUPS.filter(group => ["world", "politics", "settlements", "geography"].includes(group.id));
-const TOOLBAR_ICONS: IconName[] = ["folder-open", "chart", "refresh", "plus", "map", "eye-open", "chevron-down"];
+const MAP_LAYER_MENU_GROUPS: readonly MapLayerMenuGroup[] = [
+  {
+    label: "Terrain & climate",
+    icon: "mountain",
+    ids: [
+      "toggleTexture",
+      "toggleHeight",
+      "toggleLakes",
+      "toggleBiomes",
+      "toggleCells",
+      "toggleGrid",
+      "toggleRivers",
+      "toggleRelief",
+      "toggleTemperature",
+      "toggleIce",
+      "togglePrecipitation"
+    ]
+  },
+  {
+    label: "Politics & population",
+    icon: "people",
+    ids: [
+      "toggleReligions",
+      "toggleCultures",
+      "toggleStates",
+      "toggleProvinces",
+      "toggleZones",
+      "toggleBorders",
+      "togglePopulation",
+      "toggleMilitary"
+    ]
+  },
+  {
+    label: "Features & trade",
+    icon: "flows",
+    ids: [
+      "toggleRoutes",
+      "toggleGoods",
+      "toggleMarketsLayer",
+      "toggleTrade",
+      "toggleEmblems",
+      "toggleBurgIcons",
+      "toggleLabels",
+      "toggleMarkers"
+    ]
+  },
+  {
+    label: "Map decorations",
+    icon: "map",
+    ids: ["toggleCoordinates", "toggleCompass", "toggleRulers", "toggleScaleBar", "toggleVignette"]
+  }
+];
+const MAP_LAYER_GROUP_INDEX = new Map(
+  MAP_LAYER_MENU_GROUPS.flatMap((group, index) => group.ids.map(id => [id, index] as const))
+);
+const VIEW_MODES: readonly { id: ViewMode; label: string; tip: string }[] = [
+  { id: "viewStandard", label: "Standard", tip: "Edit the map in the standard 2D view" },
+  { id: "viewMesh", label: "3D scene", tip: "Present the map as a 3D terrain scene" },
+  { id: "viewGlobe", label: "Globe", tip: "Project the map onto a globe" }
+];
+const TOOLBAR_ICONS: IconName[] = ["folder-open", "chart", "refresh", "plus", "edit", "eye-open", "chevron-down"];
 
 const PROJECT_ACTIONS = [
   { label: "New Map", icon: "document", targetId: "newMapButton", shortcut: "F2" },
@@ -180,48 +258,9 @@ function ToolMenu({
   );
 }
 
-function MapMenu(): React.JSX.Element {
-  return (
-    <FloatingMenu
-      align="right"
-      icon="map"
-      id="workspaceMapTrigger"
-      label="Map"
-      route="/edit"
-      tip="Edit map features"
-    >
-      {close =>
-        EDIT_GROUPS.map(group => (
-          <MenuItem icon={group.icon} key={group.id} text={group.label}>
-            {getToolCommands(group.id).map(command => (
-              <MenuItem
-                key={command.id}
-                labelElement={command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined}
-                onClick={() => {
-                  close();
-                  command.invoke();
-                }}
-                text={command.label}
-              />
-            ))}
-          </MenuItem>
-        ))
-      }
-    </FloatingMenu>
-  );
-}
-
-function ViewsMenu({
-  initialMapSnapshot,
-  mapControls,
-  onOpenSection
-}: WorkspaceToolbarProps): React.JSX.Element {
+function useLayerMenu({ initialMapSnapshot, mapControls }: LayerMenuProps): LayerMenuState {
   const controls = mapControls ?? window.LayerControls;
   const [snapshot, setSnapshot] = useState(() => initialMapSnapshot ?? controls.getSnapshot());
-  const presetOptions = snapshot.presetOptions.filter(
-    option => !option.hidden || option.value === snapshot.selectedPreset
-  );
-  const selectedPreset = presetOptions.find(option => option.value === snapshot.selectedPreset);
 
   useEffect(() => {
     const handleControlsChange = (event: Event) => {
@@ -231,49 +270,186 @@ function ViewsMenu({
     return () => window.removeEventListener(LAYER_CONTROLS_CHANGE_EVENT, handleControlsChange);
   }, []);
 
+  return { controls, snapshot };
+}
+
+function getCurrentViewMode(): ViewMode {
+  if (typeof document === "undefined") return "viewStandard";
+  const mode = document.getElementById("canvas3d")?.dataset.type;
+  return mode === "viewMesh" || mode === "viewGlobe" ? mode : "viewStandard";
+}
+
+export function EditMenuItems({ close }: { close: () => void }): React.JSX.Element {
+  return (
+    <>
+      {EDIT_GROUPS.map(group => (
+        <MenuItem icon={group.icon} key={group.id} text={group.label}>
+          {getToolCommands(group.id).map(command => (
+            <MenuItem
+              key={command.id}
+              labelElement={command.shortcut ? <kbd>{command.shortcut.replace("Shift + ", "⇧")}</kbd> : undefined}
+              onClick={() => {
+                close();
+                command.invoke();
+              }}
+              text={command.label}
+            />
+          ))}
+        </MenuItem>
+      ))}
+    </>
+  );
+}
+
+export function LayerMenuItems({
+  controls,
+  snapshot
+}: {
+  controls: LegacyLayerControls;
+  snapshot: LayerControlsSnapshot;
+}): React.JSX.Element {
+  const renderLayer = (layer: LayerView) => (
+    <MenuItem
+      active={layer.visible}
+      icon={layer.visible ? "eye-open" : "eye-off"}
+      key={layer.id}
+      labelElement={layer.shortcut ? <kbd>{layer.shortcut}</kbd> : undefined}
+      onClick={() => controls.toggleLayer(layer.id)}
+      text={layer.label}
+    />
+  );
+  const groupedLayers = MAP_LAYER_MENU_GROUPS.map((): LayerView[] => []);
+  const otherLayers: LayerView[] = [];
+  for (const layer of snapshot.layers) {
+    const groupIndex = MAP_LAYER_GROUP_INDEX.get(layer.id);
+    if (groupIndex === undefined) otherLayers.push(layer);
+    else groupedLayers[groupIndex]?.push(layer);
+  }
+
+  return (
+    <>
+      {MAP_LAYER_MENU_GROUPS.map((group, index) => {
+        const layers = groupedLayers[index];
+        return layers.length ? (
+          <MenuItem icon={group.icon} key={group.label} text={group.label}>
+            {layers.map(renderLayer)}
+          </MenuItem>
+        ) : null;
+      })}
+      {otherLayers.length ? (
+        <MenuItem icon="layers" text="Other">
+          {otherLayers.map(renderLayer)}
+        </MenuItem>
+      ) : null}
+    </>
+  );
+}
+
+function EditMenu(): React.JSX.Element {
+  return (
+    <FloatingMenu
+      align="right"
+      icon="edit"
+      id="workspaceMapTrigger"
+      label="Edit"
+      route="/edit"
+      tip="Edit map features"
+    >
+      {close => <EditMenuItems close={close} />}
+    </FloatingMenu>
+  );
+}
+
+export function ViewsMenuItems({
+  close,
+  controls,
+  onChangeViewMode,
+  onOpenSection,
+  snapshot,
+  viewMode
+}: Pick<WorkspaceToolbarProps, "onOpenSection"> &
+  LayerMenuState & {
+    close: () => void;
+    onChangeViewMode: (mode: ViewMode) => void;
+    viewMode: ViewMode;
+  }): React.JSX.Element {
+  const presetOptions = snapshot.presetOptions.filter(
+    option => !option.hidden || option.value === snapshot.selectedPreset
+  );
+  const selectedPreset = presetOptions.find(option => option.value === snapshot.selectedPreset);
+
+  return (
+    <>
+      <MenuDivider title="Map preset" />
+      <MenuItem icon="layers" text={selectedPreset?.label ?? "Custom map"}>
+        {presetOptions.map(option => (
+          <MenuItem
+            active={option.value === snapshot.selectedPreset}
+            disabled={snapshot.presetSelectionDisabled}
+            icon={option.value === snapshot.selectedPreset ? "tick" : "blank"}
+            key={option.value}
+            onClick={() => {
+              close();
+              controls.applyPreset(option.value);
+            }}
+            text={option.label}
+          />
+        ))}
+      </MenuItem>
+      <MenuDivider title="Show on map" />
+      <LayerMenuItems controls={controls} snapshot={snapshot} />
+      <MenuDivider />
+      <MenuItem
+        icon="style"
+        onClick={() => {
+          close();
+          onOpenSection("style");
+        }}
+        text="Style"
+      />
+      <MenuDivider title="View mode" />
+      {VIEW_MODES.map(option => (
+        <MenuItem
+          active={option.id === viewMode}
+          data-tip={option.tip}
+          icon={option.id === viewMode ? "tick" : "blank"}
+          key={option.id}
+          onClick={() => {
+            close();
+            onChangeViewMode(option.id);
+          }}
+          text={option.label}
+        />
+      ))}
+    </>
+  );
+}
+
+function ViewsMenu(props: Pick<WorkspaceToolbarProps, "onOpenSection"> & LayerMenuState): React.JSX.Element {
+  const [viewMode, setViewMode] = useState(getCurrentViewMode);
+
+  useEffect(() => {
+    const handleViewModeChange = (event: Event) => setViewMode((event as CustomEvent<ViewMode>).detail);
+    window.addEventListener(VIEW_MODE_CHANGE_EVENT, handleViewModeChange);
+    return () => window.removeEventListener(VIEW_MODE_CHANGE_EVENT, handleViewModeChange);
+  }, []);
+
+  const changeViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    if (mode === "viewStandard") void Controllers.View3d.enterStandard();
+    else void Controllers.View3d.open(mode);
+  };
+
   return (
     <FloatingMenu
       align="right"
       icon="eye-open"
       id="workspaceViewsTrigger"
       label="Views"
-      tip="Map views, layers, and style"
+      tip="Map presets, visible layers, view modes, and style"
     >
       {close => (
-        <>
-          <MenuItem icon="layers" text={selectedPreset?.label ?? "Custom map"}>
-            {presetOptions.map(option => (
-              <MenuItem
-                active={option.value === snapshot.selectedPreset}
-                disabled={snapshot.presetSelectionDisabled}
-                icon={option.value === snapshot.selectedPreset ? "tick" : "blank"}
-                key={option.value}
-                onClick={() => {
-                  close();
-                  controls.applyPreset(option.value);
-                }}
-                text={option.label}
-              />
-            ))}
-          </MenuItem>
-          <MenuDivider />
-          <MenuItem
-            icon="layers"
-            onClick={() => {
-              close();
-              onOpenSection("layers");
-            }}
-            text="Layers"
-          />
-          <MenuItem
-            icon="style"
-            onClick={() => {
-              close();
-              onOpenSection("style");
-            }}
-            text="Style"
-          />
-        </>
+        <ViewsMenuItems {...props} close={close} onChangeViewMode={changeViewMode} viewMode={viewMode} />
       )}
     </FloatingMenu>
   );
@@ -357,6 +533,7 @@ function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSect
 
 export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Element {
   const [, setIconsLoaded] = useState(false);
+  const layerMenu = useLayerMenu(props);
 
   useEffect(() => {
     let active = true;
@@ -392,8 +569,8 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
         />
       </div>
       <div className="fmg-workspace-toolbar__group fmg-workspace-toolbar__group--right">
-        <MapMenu />
-        <ViewsMenu {...props} />
+        <EditMenu />
+        <ViewsMenu {...layerMenu} onOpenSection={props.onOpenSection} />
       </div>
     </nav>
   );
