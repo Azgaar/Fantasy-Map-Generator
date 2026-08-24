@@ -3,6 +3,8 @@ import { interpolateSpectral } from "d3-scale-chromatic";
 import {
   Application,
   Assets,
+  BitmapFontManager,
+  BitmapText,
   Container,
   Graphics,
   GraphicsContext,
@@ -37,6 +39,11 @@ import { buildBorderScene } from "../scene/layers/border-paths";
 import { buildCellOutlineScene } from "../scene/layers/cell-outline-scene";
 import { buildPrecipitationScene, buildTemperatureScene } from "../scene/layers/climate-scene";
 import {
+  buildCoordinateScene,
+  type CoordinateSceneLabel,
+  selectCoordinateStep
+} from "../scene/layers/coordinate-scene";
+import {
   buildGoodsScene,
   buildIceScene,
   buildMarketScene,
@@ -59,6 +66,7 @@ import { buildZoneScene } from "../scene/layers/zone-scene";
 import type { LinePathPrimitive, PointSymbolInstancePrimitive, PolygonPathPrimitive } from "../scene/primitives";
 import type { MapRenderWorld } from "../scene/render-world";
 import {
+  type CoordinateLayerStyle,
   DEFAULT_PIXI_MAP_STYLE,
   type GoodsLayerStyle,
   type MapStyle,
@@ -70,6 +78,7 @@ import {
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
 import { ensureFontFamiliesReady } from "../text/font-readiness";
 import { monitorWebGlContext } from "./context-recovery";
+import { GlyphAtlasCache, type GlyphAtlasDescriptor } from "./glyph-atlas-cache";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 
 export interface PixiRendererSnapshot {
@@ -81,8 +90,13 @@ export interface PixiRendererSnapshot {
   diagnostics: RenderDiagnosticsSnapshot;
   enabled: boolean;
   burgSymbols: number;
+  coordinateLabels: number;
+  coordinateLines: number;
   emblemSymbols: number;
+  glyphAtlasBytes: number;
+  glyphAtlasEntries: number;
   labelGlyphs: number;
+  missingCoordinateFonts: readonly string[];
   missingEmblemAssets: readonly string[];
   missingLabelFonts: readonly string[];
   markerSymbols: number;
@@ -92,6 +106,7 @@ export interface PixiRendererSnapshot {
   resourceCount: number;
   renderer: string | null;
   textureCacheEntries: number;
+  unsupportedCoordinateEffects: readonly string[];
   unsupportedLabelEffects: readonly string[];
   unsupportedEmblemEffects: readonly string[];
   viewportHeight: number;
@@ -108,7 +123,7 @@ interface LabelDisplay {
   offsetXEm: number;
   offsetYEm: number;
   rescale: boolean;
-  textDisplays: readonly Text[];
+  textDisplays: readonly BitmapText[];
 }
 
 interface LabelGroupDisplay {
@@ -126,6 +141,18 @@ interface EmblemGroupDisplay {
   container: Container;
 }
 
+interface CoordinateGroupDisplay {
+  container: Container;
+  step: number;
+}
+
+interface CoordinateLabelDisplay {
+  axis: CoordinateSceneLabel["axis"];
+  display: BitmapText;
+  x: number;
+  y: number;
+}
+
 const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cultures", "states", "provinces"];
 
 export interface PixiMapRendererOptions {
@@ -138,6 +165,7 @@ export interface PixiMapRendererOptions {
   resolveSymbolIcon?: (icon: string) => string | null;
   resolveCompassIcon?: () => string | null;
   resolveEmblemIcon?: (id: string, coa: Emblem, strokeWidth: number) => Promise<string | null> | string | null;
+  glyphBudgetBytes?: number;
   textureBudgetBytes?: number;
 }
 
@@ -147,12 +175,17 @@ export class PixiMapRenderer implements MapRenderer {
   private contextRecoveryRelease: (() => void) | null = null;
   private diagnostics = new RenderDiagnostics();
   private cellMeshes = new Map<CellFillLayer, { container: Container; retained: RetainedCellMesh }>();
+  private coordinateGroupDisplays: CoordinateGroupDisplay[] = [];
+  private coordinateLabelDisplays: CoordinateLabelDisplay[] = [];
+  private coordinateLongitudeSpan = 0;
   private layerVisibility = new Map<MapLayerId, boolean>();
   private labelDisplays: LabelDisplay[] = [];
   private labelGroupDisplays: LabelGroupDisplay[] = [];
   private emblemGroupDisplays: EmblemGroupDisplay[] = [];
   private emblemSourceCache = new Map<string, Promise<string | null>>();
   private emblemTextureHandles = new Set<RendererResourceHandle<Texture>>();
+  private glyphAtlasCache: GlyphAtlasCache;
+  private glyphAtlasHandles = new Set<RendererResourceHandle<GlyphAtlasDescriptor>>();
   private markerDisplays = new Map<number, { container: Container; baseSize: number; rescale: boolean }>();
   private pointTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private rebuildSequence = 0;
@@ -184,8 +217,13 @@ export class PixiMapRenderer implements MapRenderer {
     diagnostics: {},
     enabled: false,
     burgSymbols: 0,
+    coordinateLabels: 0,
+    coordinateLines: 0,
     emblemSymbols: 0,
+    glyphAtlasBytes: 0,
+    glyphAtlasEntries: 0,
     labelGlyphs: 0,
+    missingCoordinateFonts: [],
     missingEmblemAssets: [],
     missingLabelFonts: [],
     markerSymbols: 0,
@@ -195,6 +233,7 @@ export class PixiMapRenderer implements MapRenderer {
     resourceCount: 0,
     renderer: null,
     textureCacheEntries: 0,
+    unsupportedCoordinateEffects: [],
     unsupportedLabelEffects: [],
     unsupportedEmblemEffects: [],
     viewportHeight: 0,
@@ -202,6 +241,11 @@ export class PixiMapRenderer implements MapRenderer {
   };
 
   constructor(private readonly rendererOptions: PixiMapRendererOptions = {}) {
+    this.glyphAtlasCache = new GlyphAtlasCache({
+      budgetBytes: rendererOptions.glyphBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.glyph,
+      installer: BitmapFontManager,
+      tracker: this.resources
+    });
     this.textureCache = new RendererResourceCache<Texture>({
       budgetBytes: rendererOptions.textureBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.texture,
       destroy: (texture, source) => {
@@ -248,6 +292,8 @@ export class PixiMapRenderer implements MapRenderer {
     const biomeContainer = this.buildFillContainer("biomes");
     const cellsContainer = this.buildCellsContainer();
     const gridContainer = this.buildGridContainer();
+    const coordinatesContainer = await this.buildCoordinatesContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const compassContainer = await this.buildCompassContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
     const riverContainer = this.buildRiversContainer();
@@ -285,6 +331,7 @@ export class PixiMapRenderer implements MapRenderer {
       biomeContainer,
       cellsContainer,
       gridContainer,
+      coordinatesContainer,
       compassContainer,
       riverContainer,
       reliefContainer,
@@ -381,6 +428,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.app.stage.scale.set(this.camera.scale);
     this.updateMarkerScales();
     this.updateEmblemGroupVisibility();
+    this.updateCoordinateDisplays();
     this.updateLabelDisplays();
     this.updateLabelGroupVisibility();
     this.app.render();
@@ -392,6 +440,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.scheduler?.clear();
     this.clearStage();
     this.emblemSourceCache.clear();
+    this.glyphAtlasCache.clear();
     this.textureCache.clear();
     this.app?.render();
     this.rendererOptions.onSceneChange?.();
@@ -412,6 +461,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.tradeSubscriptionRelease = null;
     this.clearStage();
     this.emblemSourceCache.clear();
+    this.glyphAtlasCache.clear();
     this.textureCache.clear();
     this.app?.destroy({ removeView: true }, { children: true });
     this.app = null;
@@ -434,10 +484,13 @@ export class PixiMapRenderer implements MapRenderer {
 
   getSnapshot(): PixiRendererSnapshot {
     const resources = this.resources.getSnapshot();
+    const glyphAtlases = this.glyphAtlasCache.getSnapshot();
     const textures = this.textureCache.getSnapshot();
     return {
       ...this.stats,
       diagnostics: this.diagnostics.getSnapshot(),
+      glyphAtlasBytes: glyphAtlases.bytes,
+      glyphAtlasEntries: glyphAtlases.entries,
       resourceBytes: resources.totalBytes,
       resourceCount: resources.totalCount,
       textureCacheEntries: textures.entries
@@ -651,6 +704,65 @@ export class PixiMapRenderer implements MapRenderer {
     return container;
   }
 
+  private async buildCoordinatesContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "coordinates";
+    const state = this.getWorld().coordinateRenderState;
+    if (!state) return container;
+
+    const scene = buildCoordinateScene(state, this.sceneRevisions.getLayerRevision("coordinates"));
+    this.coordinateLongitudeSpan = Number(state.extent.lonT) || 0;
+    this.stats.coordinateLines = scene.groups.reduce((total, group) => total + group.paths.length, 0);
+    this.stats.coordinateLabels = scene.groups.reduce((total, group) => total + group.labels.length, 0);
+    this.stats.unsupportedCoordinateEffects = this.semanticStyle.coordinates.filter
+      ? [`filter:${this.semanticStyle.coordinates.filter}`]
+      : [];
+    if (!scene.valid) return container;
+
+    const [fontResult] = await ensureFontFamiliesReady([this.semanticStyle.coordinates.fontFamily]);
+    if (sequence !== this.rebuildSequence) return container;
+    this.stats.missingCoordinateFonts = fontResult?.ready ? [] : [this.semanticStyle.coordinates.fontFamily];
+    const atlas = await this.glyphAtlasCache.acquireCharacters(
+      collectCoordinateCharacters(scene.groups.flatMap(group => group.labels)),
+      coordinateAtlasStyle(this.semanticStyle.coordinates),
+      this.stats.resolution,
+      fontResult?.ready ? this.semanticStyle.coordinates.fontFamily : "Arial"
+    );
+    if (sequence !== this.rebuildSequence) {
+      atlas.release();
+      return container;
+    }
+    this.glyphAtlasHandles.add(atlas);
+
+    for (const group of scene.groups) {
+      const groupContainer = new Container();
+      groupContainer.label = `coordinates:${group.step}`;
+      groupContainer.alpha = this.semanticStyle.coordinates.opacity;
+      const lines = createLineGraphic(group.paths, this.semanticStyle.coordinates.stroke, true);
+      lines.label = `coordinates:${group.step}:grid`;
+      groupContainer.addChild(lines);
+      for (const label of group.labels) {
+        const display = new BitmapText({
+          style: {
+            align: "center",
+            fill: this.semanticStyle.coordinates.fontColor,
+            fontFamily: atlas.value.name,
+            fontSize: this.semanticStyle.coordinates.fontSize
+          },
+          text: label.text
+        });
+        display.anchor.set(0.5);
+        display.label = label.domainId;
+        groupContainer.addChild(display);
+        this.coordinateLabelDisplays.push({ axis: label.axis, display, x: label.x, y: label.y });
+      }
+      this.coordinateGroupDisplays.push({ container: groupContainer, step: group.step });
+      container.addChild(groupContainer);
+    }
+    this.updateCoordinateDisplays();
+    return container;
+  }
+
   private async buildEmblemsContainer(sequence: number): Promise<Container> {
     const container = new Container();
     container.label = "emblems";
@@ -734,14 +846,41 @@ export class PixiMapRenderer implements MapRenderer {
     this.stats.missingLabelFonts = fontResults.filter(result => !result.ready).map(result => result.family);
     this.stats.unsupportedLabelEffects = [...scene.unsupportedEffects];
 
-    for (const group of scene.groups)
-      container.addChild(this.buildLabelGroup(group, scene.resizeOnZoom, scene.showAll));
+    const fontReadiness = new Map(fontResults.map(result => [result.family, result.ready]));
+    const atlases = await Promise.all(
+      scene.groups.map(group =>
+        group.labels.length
+          ? this.glyphAtlasCache.acquire(
+              group,
+              this.stats.resolution,
+              fontReadiness.get(group.style.fontFamily) ? group.style.fontFamily : "Arial"
+            )
+          : null
+      )
+    );
+    if (sequence !== this.rebuildSequence) {
+      for (const atlas of atlases) atlas?.release();
+      return container;
+    }
+
+    for (let index = 0; index < scene.groups.length; index++) {
+      const atlas = atlases[index];
+      if (atlas) this.glyphAtlasHandles.add(atlas);
+      container.addChild(
+        this.buildLabelGroup(scene.groups[index], scene.resizeOnZoom, scene.showAll, atlas?.value.name ?? "Arial")
+      );
+    }
     this.updateLabelDisplays();
     this.updateLabelGroupVisibility();
     return container;
   }
 
-  private buildLabelGroup(group: LabelSceneGroup, resizeOnZoom: boolean, showAll: boolean): Container {
+  private buildLabelGroup(
+    group: LabelSceneGroup,
+    resizeOnZoom: boolean,
+    showAll: boolean,
+    atlasFontFamily: string
+  ): Container {
     const container = new Container();
     container.label = `labels:${group.name}`;
     container.alpha = group.style.opacity;
@@ -758,10 +897,16 @@ export class PixiMapRenderer implements MapRenderer {
       const labelContainer = new Container();
       labelContainer.cullable = true;
       labelContainer.label = label.domainId;
-      const textDisplays: Text[] = [];
+      const textDisplays: BitmapText[] = [];
       if (label.curvedGlyphs) {
         for (const glyph of label.curvedGlyphs) {
-          const text = createLabelText(glyph.character, label.fontSize, label.letterSpacing, group.style);
+          const text = createLabelText(
+            glyph.character,
+            label.fontSize,
+            label.letterSpacing,
+            group.style,
+            atlasFontFamily
+          );
           text.anchor.set(0.5);
           text.position.set(glyph.x - label.anchorX, glyph.y - label.anchorY);
           text.rotation = glyph.angle;
@@ -769,7 +914,7 @@ export class PixiMapRenderer implements MapRenderer {
           textDisplays.push(text);
         }
       } else {
-        const text = createLabelText(label.text, label.fontSize, label.letterSpacing, group.style);
+        const text = createLabelText(label.text, label.fontSize, label.letterSpacing, group.style, atlasFontFamily);
         text.anchor.set(0.5, label.type === "burg" ? 1 : 0.5);
         labelContainer.addChild(text);
         textDisplays.push(text);
@@ -1264,13 +1409,20 @@ export class PixiMapRenderer implements MapRenderer {
     for (const retained of this.retainedCellMeshes) retained.destroy();
     this.retainedCellMeshes.clear();
     this.cellMeshes.clear();
+    this.coordinateGroupDisplays = [];
+    this.coordinateLabelDisplays = [];
+    this.coordinateLongitudeSpan = 0;
     this.labelDisplays = [];
     this.labelGroupDisplays = [];
     this.emblemGroupDisplays = [];
+    this.stats.coordinateLabels = 0;
+    this.stats.coordinateLines = 0;
     this.stats.emblemSymbols = 0;
     this.stats.labelGlyphs = 0;
+    this.stats.missingCoordinateFonts = [];
     this.stats.missingEmblemAssets = [];
     this.stats.missingLabelFonts = [];
+    this.stats.unsupportedCoordinateEffects = [];
     this.stats.unsupportedEmblemEffects = [];
     this.stats.unsupportedLabelEffects = [];
     this.markerDisplays.clear();
@@ -1278,6 +1430,8 @@ export class PixiMapRenderer implements MapRenderer {
     this.tradeDisplays.clear();
     this.tradeTextures.clear();
     for (const child of this.app.stage.removeChildren()) child.destroy({ children: true });
+    for (const handle of this.glyphAtlasHandles) handle.release();
+    this.glyphAtlasHandles.clear();
     for (const handle of this.reliefTextureHandles) handle.release();
     this.reliefTextureHandles.clear();
     for (const handle of this.emblemTextureHandles) handle.release();
@@ -1362,6 +1516,25 @@ export class PixiMapRenderer implements MapRenderer {
         display.anchorY + display.offsetYEm * display.groupFontSize * textScale
       );
       for (const text of display.textDisplays) text.scale.set(textScale);
+    }
+  }
+
+  private updateCoordinateDisplays(): void {
+    if (!this.coordinateLongitudeSpan) return;
+    const selectedStep = selectCoordinateStep(this.coordinateLongitudeSpan, this.camera.scale);
+    for (const group of this.coordinateGroupDisplays) group.container.visible = group.step === selectedStep;
+
+    const style = this.semanticStyle.coordinates;
+    const scale = Math.max(this.camera.scale, 0.01);
+    const labelScale = Math.max(1 / scale ** 0.8, 0.1 / Math.max(style.fontSize, 0.1));
+    const pinnedX = (style.fontSize + 3 - this.camera.x) / scale;
+    const pinnedY = (style.fontSize / 2 + 1 - this.camera.y) / scale;
+    for (const label of this.coordinateLabelDisplays) {
+      label.display.position.set(
+        label.axis === "latitude" ? pinnedX : label.x,
+        label.axis === "longitude" ? pinnedY : label.y
+      );
+      label.display.scale.set(labelScale);
     }
   }
 
@@ -1477,24 +1650,44 @@ function isMapLayerId(label: unknown): label is MapLayerId {
   return typeof label === "string" && MAP_LAYER_IDS.has(label as MapLayerId);
 }
 
-function createLabelText(text: string, fontSize: number, letterSpacing: number, style: ResolvedLabelGroupStyle): Text {
-  return new Text({
+function collectCoordinateCharacters(labels: readonly CoordinateSceneLabel[]): string {
+  const characters = new Set<string>([" ", "?"]);
+  for (const label of labels) for (const character of label.text) characters.add(character);
+  return [...characters].sort((left, right) => (left.codePointAt(0) ?? 0) - (right.codePointAt(0) ?? 0)).join("");
+}
+
+function coordinateAtlasStyle(style: CoordinateLayerStyle): ResolvedLabelGroupStyle {
+  return {
+    fill: style.fontColor,
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    letterSpacing: 0,
+    offsetXEm: 0,
+    offsetYEm: 0,
+    opacity: style.opacity,
+    shadow:
+      style.shadowBlur > 0
+        ? { blur: style.shadowBlur, color: style.shadowColor, distance: 0, offsetX: 0, offsetY: 0 }
+        : null,
+    stroke: style.fontColor,
+    strokeWidth: 0
+  };
+}
+
+function createLabelText(
+  text: string,
+  fontSize: number,
+  letterSpacing: number,
+  style: ResolvedLabelGroupStyle,
+  atlasFontFamily: string
+): BitmapText {
+  return new BitmapText({
     style: {
       align: "center",
-      dropShadow: style.shadow
-        ? {
-            alpha: 1,
-            angle: Math.atan2(style.shadow.offsetY, style.shadow.offsetX),
-            blur: style.shadow.blur,
-            color: style.shadow.color,
-            distance: style.shadow.distance
-          }
-        : undefined,
       fill: style.fill,
-      fontFamily: style.fontFamily,
+      fontFamily: atlasFontFamily,
       fontSize,
-      letterSpacing,
-      stroke: style.strokeWidth > 0 ? { color: style.stroke, width: style.strokeWidth } : undefined
+      letterSpacing
     },
     text
   });
@@ -1526,11 +1719,11 @@ function createPolygonGraphic(polygons: readonly PolygonPathPrimitive[], style: 
   return new Graphics(context);
 }
 
-function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticLineStyle): Graphics {
+function createLineGraphic(paths: readonly LinePathPrimitive[], style: SemanticLineStyle, pixelLine = false): Graphics {
   const context = new GraphicsContext();
   for (const path of paths) traceLinePath(context, path, style.dash);
   if (style.width > 0 && style.opacity > 0) {
-    context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, width: style.width });
+    context.stroke({ alpha: style.opacity, cap: style.cap, color: style.color, pixelLine, width: style.width });
   }
   return new Graphics(context);
 }

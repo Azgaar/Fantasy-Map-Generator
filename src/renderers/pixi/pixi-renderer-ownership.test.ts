@@ -17,6 +17,7 @@ describe("Pixi renderer ownership", () => {
       "biomes",
       "cells",
       "grid",
+      "coordinates",
       "compass",
       "rivers",
       "relief",

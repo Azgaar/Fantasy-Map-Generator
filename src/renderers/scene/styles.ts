@@ -142,6 +142,17 @@ export interface CompassLayerStyle {
   y: number;
 }
 
+export interface CoordinateLayerStyle {
+  filter: string | null;
+  fontColor: string;
+  fontFamily: string;
+  fontSize: number;
+  opacity: number;
+  shadowBlur: number;
+  shadowColor: string;
+  stroke: SemanticLineStyle;
+}
+
 export interface EmblemLayerStyle {
   automaticVisibility: boolean;
   burgSize: number;
@@ -166,6 +177,7 @@ export interface MapStyle {
   burgIcons: BurgLayerStyle;
   coastline: SemanticRoleStyles<SemanticLineStyle>;
   compass: CompassLayerStyle;
+  coordinates: CoordinateLayerStyle;
   cells: SemanticLineStyle;
   cultures: CellLayerStyle;
   emblems: EmblemLayerStyle;
@@ -326,6 +338,16 @@ export const DEFAULT_PIXI_MAP_STYLE: Readonly<MapStyle> = {
     }
   },
   compass: { opacity: 0.8, scale: 0.25, x: 80, y: 80 },
+  coordinates: {
+    filter: null,
+    fontColor: "#333333",
+    fontFamily: "monospace",
+    fontSize: 12,
+    opacity: 1,
+    shadowBlur: 4,
+    shadowColor: "#ffffff",
+    stroke: { cap: "butt", color: "#d4d4d4", dash: "5", opacity: 1, width: 1 }
+  },
   cells: { cap: "butt", color: "#808080", dash: "", opacity: 1, width: 0.1 },
   cultures: { fallbackColor: "#888888", opacity: 0.6 },
   emblems: {

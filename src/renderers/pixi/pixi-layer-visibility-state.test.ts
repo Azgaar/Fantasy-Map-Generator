@@ -17,6 +17,7 @@ describe("Pixi layer visibility state", () => {
       "burgIcons",
       "cells",
       "compass",
+      "coordinates",
       "cultures",
       "emblems",
       "goods",

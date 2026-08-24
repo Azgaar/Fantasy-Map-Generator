@@ -503,7 +503,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("biomes", "toggleBiomes", Boolean(hasChildren(select("#biomes"))));
       turnOnPixiLayer("cells", "toggleCells", Boolean(hasChildren(select("#cells"))));
       turnOnPixiLayer("grid", "toggleGrid", Boolean(hasChildren(select("#gridOverlay"))));
-      if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
+      turnOnPixiLayer("coordinates", "toggleCoordinates", Boolean(hasChildren(select("#coordinates"))));
       turnOnPixiLayer(
         "compass",
         "toggleCompass",

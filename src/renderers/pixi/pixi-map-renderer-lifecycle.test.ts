@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const applicationState = vi.hoisted(() => ({
   assetLoad: vi.fn(async () => ({ destroy: vi.fn(), height: 8, width: 8 })),
   assetUnload: vi.fn(async () => undefined),
+  bitmapFontInstall: vi.fn(),
+  bitmapFontUninstall: vi.fn(),
+  bitmapTextCreate: vi.fn(),
   destroy: vi.fn(),
   init: vi.fn(),
   positionSet: vi.fn(),
@@ -124,11 +127,23 @@ vi.mock("pixi.js", () => {
     anchor = { set: vi.fn() };
   }
 
+  class BitmapText extends Text {
+    constructor(options: unknown) {
+      super();
+      applicationState.bitmapTextCreate(options);
+    }
+  }
+
   class Rectangle {}
 
   return {
     Application,
     Assets: { load: applicationState.assetLoad, unload: applicationState.assetUnload },
+    BitmapFontManager: {
+      install: applicationState.bitmapFontInstall,
+      uninstall: applicationState.bitmapFontUninstall
+    },
+    BitmapText,
     Buffer,
     BufferUsage: { COPY_DST: 1, INDEX: 2, STATIC: 4, VERTEX: 8 },
     Container,
@@ -164,6 +179,9 @@ describe("PixiMapRenderer lifecycle", () => {
     applicationState.destroy.mockClear();
     applicationState.assetLoad.mockClear();
     applicationState.assetUnload.mockClear();
+    applicationState.bitmapFontInstall.mockClear();
+    applicationState.bitmapFontUninstall.mockClear();
+    applicationState.bitmapTextCreate.mockClear();
     applicationState.init.mockClear();
     applicationState.positionSet.mockClear();
     applicationState.render.mockClear();
@@ -325,6 +343,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "biomes",
       "cells",
       "grid",
+      "coordinates",
       "compass",
       "rivers",
       "relief",
@@ -543,9 +562,16 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(labels?.children.map(group => group.label)).toEqual(["labels:state", "labels:route"]);
     expect(labels?.children[0].children).toHaveLength(1);
     expect(labels?.children[1].visible).toBe(false);
-    expect(renderer.getSnapshot()).toMatchObject({ labelGlyphs: 5, unsupportedLabelEffects: [] });
+    expect(renderer.getSnapshot()).toMatchObject({
+      glyphAtlasEntries: 2,
+      labelGlyphs: 5,
+      unsupportedLabelEffects: []
+    });
     expect(renderer.getSnapshot().missingLabelFonts).toEqual(["Almendra SC", "Arial"]);
+    expect(applicationState.bitmapFontInstall).toHaveBeenCalledTimes(2);
+    expect(applicationState.bitmapTextCreate).toHaveBeenCalledTimes(5);
     renderer.destroy();
+    expect(applicationState.bitmapFontUninstall).toHaveBeenCalledTimes(2);
   });
 });
 

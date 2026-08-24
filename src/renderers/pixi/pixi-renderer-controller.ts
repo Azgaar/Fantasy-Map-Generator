@@ -40,6 +40,7 @@ const OWNED_SVG_SELECTORS = [
   "#biomes",
   "#cells",
   "#gridOverlay",
+  "#coordinates",
   "#rivers",
   "#terrain",
   "#relig",
@@ -129,6 +130,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("biomes", layerIsOn("toggleBiomes"));
   renderer.setLayerVisibility("cells", layerIsOn("toggleCells"));
   renderer.setLayerVisibility("grid", layerIsOn("toggleGrid"));
+  renderer.setLayerVisibility("coordinates", layerIsOn("toggleCoordinates"));
   renderer.setLayerVisibility("compass", layerIsOn("toggleCompass"));
   renderer.setLayerVisibility("rivers", layerIsOn("toggleRivers"));
   renderer.setLayerVisibility("relief", layerIsOn("toggleRelief"));
@@ -177,7 +179,8 @@ const getWorld = () =>
     getMarkerRenderState(),
     Production,
     urbanization,
-    getLabelRenderState()
+    getLabelRenderState(),
+    { extent: mapCoordinates, height: graphHeight, width: graphWidth }
   );
 
 const api: PixiRendererControllerApi = {

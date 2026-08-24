@@ -8,6 +8,7 @@ export type PixiOwnedLayer =
   | "cells"
   | "coastline"
   | "compass"
+  | "coordinates"
   | "cultures"
   | "emblems"
   | "grid"
@@ -39,6 +40,7 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "biomes",
   "cells",
   "grid",
+  "coordinates",
   "compass",
   "rivers",
   "relief",

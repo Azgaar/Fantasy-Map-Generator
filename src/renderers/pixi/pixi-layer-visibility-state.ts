@@ -7,6 +7,7 @@ export const PIXI_LAYER_CONTROL_IDS = {
   burgIcons: "toggleBurgIcons",
   cells: "toggleCells",
   compass: "toggleCompass",
+  coordinates: "toggleCoordinates",
   cultures: "toggleCultures",
   emblems: "toggleEmblems",
   goods: "toggleGoods",
