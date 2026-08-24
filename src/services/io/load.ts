@@ -429,10 +429,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
     }
 
-    if (data[48]) {
-      const parsed = safeParseJSON(data[48]);
-      if (isStoreStyles(parsed)) Styles.set(Styles.parse(parsed));
-      else if (parsed) stylesFromLegacy(parsed);
+    const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (styleRecord) {
+      if (isStoreStyles(styleRecord)) Styles.set(Styles.parse(styleRecord));
+      else stylesFromLegacy(styleRecord);
     }
 
     {
@@ -443,7 +443,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
     if (data[50]) Layers.restore(JSON.parse(data[50]));
 
-    if (data[48] && isStoreStyles(safeParseJSON(data[48]))) (window as any).applyStoredStyles();
+    if (isStoreStyles(styleRecord)) (window as any).applyStoredStyles();
 
     Goods.sync();
     Markets.sync();

@@ -319,27 +319,28 @@ function harvestValue(value: string): string | number {
   return Number.isNaN(n) ? value : n;
 }
 
-function harvestBag(el: Element, attrs: string[]): Record<string, string | number> {
-  const bag: Record<string, string | number> = {};
+// schemaAttrs backfills an explicit null for an attribute the element carries neither inline
+// nor as an attribute, so a preset-nulled attr round-trips as null instead of the seeded
+// DEFAULT_STYLES value; options (not passed in schemaAttrs) keep omit-means-default semantics
+function harvestBag(
+  el: Element,
+  attrs: string[],
+  schemaAttrs: string[] = attrs
+): Record<string, string | number | null> {
+  const bag: Record<string, string | number | null> = {};
   for (const attr of attrs) {
     const inline = (el as HTMLElement).style?.[attr as any];
     const value = inline ? inline : el.getAttribute(attr);
     if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
+    else if (schemaAttrs.includes(attr)) bag[attr] = null;
   }
   return bag;
 }
 
-const LABEL_ATTRS = [
-  ...Object.keys(Object.values(DEFAULT_STYLES.labels.groups)[0].attrs),
-  "data-dx",
-  "data-dy",
-  "data-size"
-];
-const BURG_ATTRS = [
-  ...Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs),
-  "font-size",
-  "data-icon"
-];
+const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.labels.groups)[0].attrs);
+const LABEL_ATTRS = [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"];
+const BURG_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs);
+const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "data-icon"];
 
 // builds legacy-shaped selector-keyed bags off the live SVG (old maps only ever carry the
 // dynamic label/burg/anchor groups in the DOM) and routes them through presetFromLegacy
@@ -348,29 +349,40 @@ export function stylesFromMap(root: ParentNode = document): Styles {
 
   for (const [selector, attrs] of Object.entries(harvestAttributes())) {
     const el = root.querySelector(selector);
-    if (el) bags[selector] = harvestBag(el, attrs);
+    if (!el) continue;
+    const route = PRESET_ROUTES[selector];
+    const schemaAttrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
+    bags[selector] = harvestBag(el, attrs, schemaAttrs);
   }
   for (const el of root.querySelectorAll("#labels > *")) {
     const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
-    if (name) bags[`#labels > #${name}`] = harvestBag(el, LABEL_ATTRS);
+    if (name) bags[`#labels > #${name}`] = harvestBag(el, LABEL_ATTRS, LABEL_SCHEMA_ATTRS);
   }
   for (const el of root.querySelectorAll("#burgIcons > g")) {
-    if (el.id) bags[`#burgIcons > g#${el.id}`] = harvestBag(el, BURG_ATTRS);
+    if (el.id) bags[`#burgIcons > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
   }
   for (const el of root.querySelectorAll("#anchors > g")) {
-    if (el.id) bags[`#anchors > g#${el.id}`] = harvestBag(el, BURG_ATTRS);
+    if (el.id) bags[`#anchors > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
   }
 
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
 
 // the map's saved style record: harvest the DOM (the editor writes most layers there until the
-// absorption step), then overlay the domains the store already owns before committing
+// absorption step), then overlay the domains the store already owns before committing. Runs on
+// both edges - save, and migrating a record-less old map's harvest on load - so every overlay
+// here must stay store-authoritative on both, not just the save path.
 export function syncStylesFromMap(): void {
   const harvested = stylesFromMap();
   harvested.labels = structuredClone(styles.labels);
   harvested.burgIcons = structuredClone(styles.burgIcons);
-  harvested.relief = structuredClone(styles.relief);
+  for (const el of document.querySelectorAll("#burgIcons > g")) {
+    if (el.id) harvested.burgIcons.burgIcons.groups[el.id] = burgGroupFromElement(el);
+  }
+  for (const el of document.querySelectorAll("#anchors > g")) {
+    if (el.id) harvested.burgIcons.anchors.groups[el.id] = burgGroupFromElement(el);
+  }
+  harvested.relief.options = structuredClone(styles.relief.options);
   Styles.set(harvested);
 }
 

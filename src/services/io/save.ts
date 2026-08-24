@@ -131,7 +131,9 @@ function prepareMapData(): string {
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
   syncStylesFromMap();
-  const styleData = JSON.stringify(styles);
+  // pre-store-format builds read a top-level anchors key off the style record and crash in
+  // createIconGroups without one; parseStyles ignores unknown keys, so this is free on our side
+  const styleData = JSON.stringify({ ...styles, anchors: {} });
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
