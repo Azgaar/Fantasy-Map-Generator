@@ -22,6 +22,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import type { Burg } from "@/generators/burgs-generator";
+import { bindWorldGenerationController } from "@/generators/world-generation-controller";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
@@ -31,7 +32,6 @@ import { initiateAutosave } from "@/services/autosave";
 import { cleanupData } from "@/services/versioning";
 import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { bindWorldGenerationController } from "@/generators/world-generation-controller";
 import {
   calculateVoronoi,
   createTypedArray,

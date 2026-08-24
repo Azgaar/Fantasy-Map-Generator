@@ -13,8 +13,8 @@ import { ensureEl } from "@/utils";
 import { enableVerticalSortable } from "../dialog/vertical-sortable";
 import {
   bindLayerControls,
-  LayerControls,
   LAYER_CONTROLS_CHANGE_EVENT,
+  LayerControls,
   type LayerControlsSnapshot,
   type LegacyLayerControls
 } from "./layer-controls";
