@@ -1,8 +1,8 @@
 _The current stable version is available [here](https://azgaar.github.io/Fantasy-Map-Generator)._
 
-Notable changes to the project should be documented in this file. The purpose of a changelog entry is to document the noteworthy difference and communicate them clearly to end users.
+Notable used-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document the noteworthy difference and communicate them clearly to end users.
 
-Compatible `.gz` and `.map` files from `v0.70.0` onward are checked and auto-updated when loaded. Maps older than `v0.70.0` are considered ancient by the current loader and require the matching old Generator version. To use an old version click on a link to download an archive. Unzip all files and [run the Tool locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally).
+Compatible `.gz` and `.map` files from `v0.70.0` onward are checked and auto-updated when loaded. Maps older than `v0.70.0` are considered ancient and require the matching old Generator version. To use an old version click on a link to download an archive. Unzip all files and [run the Tool locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally).
 
 For older maps use the [old version](https://azgaar.github.io/Fantasy-Map-Generator-old).
 
@@ -21,13 +21,13 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Configurable table columns in the overview editors by _[barrulus](https://github.com/barrulus)_ [1.143.0]
 - Relief icons: improved performance [1.142.0]
 - Burg Editor: zoom and pan in the preview by _[barrulus](https://github.com/barrulus)_ [1.141.0]
-- Fixes: river labels removal, layer styles stripped from saved maps, custom heightmap color schemes, map loading crashes
 
 # Releases
 
 **[1.140](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.140.zip) - 2026-06-12**:
 
 - Label update [1.140.0]
+- Overview editors: pagination for large datasets by _[barrulus](https://github.com/barrulus)_ [1.139.12]
 - Reload prompt when the Generator is updated mid-session by _[barrulus](https://github.com/barrulus)_ [1.139.10]
 - Party location marker with travel range rings by _[msuyar](https://github.com/msuyar)_ [1.139.7]
 - Markers Overview: filter by state, culture and type by _[msuyar](https://github.com/msuyar)_ [1.139.4]
@@ -42,6 +42,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 - Eroded Terrain and Satellite Texture [1.123.0]
 - Adding UI Tour feature by _[JoeMcMahon87](https://github.com/JoeMcMahon87)_ [1.122.0]
+- Province merging in the Provinces Editor [1.122.9]
 - Elevation profile improvement [1.119.0]
 
 **[1.119](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/tags/v1.119.zip) - 2026-04-27**:
@@ -50,6 +51,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Minimap [1.117.0]
 - Heightmap “Fill” brush [1.116.0]
 - Undo functionality to some Editors [1.116.0]
+- Lakes layer: toggle and reorder lakes independently [1.114.6]
 - Ice Layer Data Model by _[StempunkDev](https://github.com/StempunkDev)_
 - Dropbox authentication fix
 - Refactor: modules migrations by _[SheepFromHeaven](https://github.com/SheepFromHeaven)_

@@ -1,14 +1,14 @@
-Each culture gets a type assigned on generation. The type define how culture will grow and what territories it will get, but also serves world-building needs and affects multiple systems.  
+Each culture gets a type assigned on generation. The type defines how the culture will grow and what territories it will get, but also serves world-building needs and affects multiple systems.
 
 ## Culture generation
 
 When a culture is generated, its type is determined by the geographical features it spawned in. A culture is assigned the first culture type that meets the criteria in the listed order, except that Naval also requires a random probability check.
 
 ### Nomadic
-Nomadic cultures are generated in hot desert, cold desert, or grassland biomes with height less than 70 points.
+Nomadic cultures are generated in Hot desert, Cold desert or Grassland biomes with height below 70 points.
 
 ### Highland
-Highland cultures are generated in cells where height is over 50 points. 
+Highland cultures are generated in cells where height is over 50 points.
 
 ### Lake
 Lake cultures are generated in cells around lakes that are over 5 cells in size.
@@ -20,17 +20,17 @@ Naval cultures can be generated in coastal cells. The generator checks a 10% cha
 River cultures are generated in cells with a river of over 100 flux points.
 
 ### Hunting
-Hunting cultures are generated in cells whose coast distance is greater than two and whose biome is Savanna, Tropical rainforest, Temperate rainforest, Taiga, Tundra, or Wetland.
+Hunting cultures are generated in cells further than two cells from the coast whose biome is Savanna, Tropical rainforest, Temperate rainforest, Taiga, Tundra or Wetland.
 
 ### Generic
- A culture is set to be generic when its spawn location is ineligible for any other culture types, or in the case of the Naval culture type, failed a random probability check. 
+A culture is set to Generic when its spawn location is ineligible for any other culture type, or when it was eligible for Naval but failed the random probability check.
 
 ## Culture spread
 Culture spread is a competitive system, where each culture tries to get more cells considering the cost of it. Culture type is crucial in defining cell "cost" and the way culture will spread.
 
 ### Culture expansionism
 
-Every culture has a randomly generated expansionism value. The random value is then multiplied according to the culture type:
+Every culture gets an expansionism value of `(random × sizeVariety / 2 + 1) × base`, where `sizeVariety` is the _Cultures size variety_ option and `base` depends on the culture type:
 * Generic: 1
 * Lake: 0.8
 * Naval: 1.5
@@ -39,7 +39,7 @@ Every culture has a randomly generated expansionism value. The random value is t
 * Hunting: 0.7
 * Highland: 1.2
 
-The more expansionism values is, the less cell cost is for the culture. So Nomadic cultures generally tends to occupy vast territories, while Hunting and Lake cultures are usually pretty limited in area.
+The higher the expansionism value, the lower the effective cell cost for the culture. So Nomadic cultures generally tend to occupy vast territories, while Hunting and Lake cultures are usually pretty limited in area.
 
 ### Biome cost
 
@@ -57,13 +57,29 @@ The base biome costs are as follows:
 * Glacier: 5000
 * Wetland: 150
 
-The cost is reduced to 10 if it's the culture's native biome type. The cost is multiplied by 5 for Hunting cultures in all non-native biome types. The cost is multiplied by 10 for Nomadic cultures in biome IDs 5–9 (the forest biome range used by the generator). Otherwise, the cost is multiplied by 2. Additionally, if the cell has a different biome type than the one the culture is spreading from, 20 is added to the final cost.
+The cost is a flat 10 if the biome matches the biome of the culture center (its native biome). Otherwise the base cost is multiplied by 5 for Hunting cultures, by 10 for Nomadic cultures in the forest biomes (Tropical seasonal forest, Temperate deciduous forest, Tropical rainforest, Temperate rainforest and Taiga), and by 2 in all other cases. Additionally, if the target cell has a different biome than the cell the culture is spreading from, 20 is added.
 
-### Water crossing cost
-Lake cultures crossing a lake has a flat cost of 10. Naval cultures crossing water costs 2 times the size of the cell in pixels. Nomadic cultures crossing water costs 50 times the size of the cell in pixels. All other cultures crossing water (and Lake cultures crossing a sea) costs 6 times the size of the cell in pixels. Highland cultures also receive height-specific penalties: 3,000 below height 44, 200 below height 62, and no height penalty at or above 62; other cultures pay additional mountain and hill penalties at heights 67 and 44.
+### Height cost
+This cost covers both water crossing and elevation. It is checked in order:
+* Lake culture crossing a lake: flat 10
+* Naval culture crossing water: 2 × cell area
+* Nomadic culture crossing water: 50 × cell area
+* Any other culture crossing water (including a Lake culture crossing a sea): 6 × cell area
+* Highland culture on land below height 44: 3000
+* Highland culture on land below height 62: 200
+* Highland culture at height 62 and above: 0
+* Any other culture at height 67 and above (mountains): 200
+* Any other culture at height 44 and above (hills): 30
+* Any other culture below height 44: 0
 
-### River crossing cost
-For non-River cultures, river cells costs 20-100 more to cross, depending on the flux of the river. For River cultures, river cells don't cost extra, but non-river cells cost 100 more.
+### River cost
+For non-River cultures, a river cell costs 20 to 100 more, depending on the river flux (`flux / 10`, clamped to that range). For River cultures a river cell costs nothing extra, but a cell without a river costs 100 more.
 
 ### Distance to coast cost
-Coastal cells cost 60 more for Nomadic cultures, and 20 for other non-Naval non-River cultures. Cells next to coastal cells costs 30 more for Naval and Nomadic cultures. Cells further inland costs 100 more for Naval and River cultures. The costs are added together then divided by expansionism of the culture. When the total cost exceeds the budget, expansion stops.
+The cost depends on how far a cell is from the coastline:
+* Coastal cells: free for Naval and Lake cultures, 60 for Nomadic cultures, 20 for everyone else
+* Cells one step inland: 30 for Naval and Nomadic cultures, free for everyone else
+* Cells further inland: 100 for Naval and Lake cultures, free for everyone else
+
+### Total cost
+All the costs above are added together and divided by the culture expansionism to get the cost of entering the cell. Costs accumulate along the expansion path, and a culture stops spreading once the accumulated cost exceeds the budget of `cells count × 0.6 × growth rate`, where the growth rate is the _Growth rate_ option — lowering it leaves more land culture-less. Only populated cells get a culture assigned, so unpopulated cells stay culture-less regardless of the cost.

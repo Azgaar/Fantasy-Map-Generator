@@ -1,8 +1,8 @@
-The unsorted list of used libraries. Many thanks to authors.
+The unsorted list of used libraries. Many thanks to the authors.
 
 ## Current npm dependencies
 
-The source build currently uses these runtime packages:
+The source build uses these runtime packages:
 
 * [D3.js v7](https://d3js.org) by Mike Bostock and contributors
 * [Delaunator](https://github.com/mapbox/delaunator) by Vladimir Agafonkin
@@ -12,13 +12,27 @@ The source build currently uses these runtime packages:
 * [Driver.js](https://driverjs.com) for the guided UI tour
 * [Alea](https://github.com/coverslide/node-alea) for seeded random numbers
 
-The project also uses Vite, TypeScript, Vitest, Playwright, and Biome as development tools.
+Vite, TypeScript, Vitest, Playwright and Biome are used as development tools. Node.js 24 or newer is required to build.
 
-## Legacy browser bundles
+## Vendored browser bundles
 
-The `public/libs` directory still contains vendored browser bundles used by parts of the legacy UI, including jQuery/jQuery UI, JSZip, OrbitControls, OpenWidget, `flatqueue`, and other utilities. Their presence does not mean they are current npm dependencies; check `package.json` and the individual imports before adding or removing one.
+`public/libs/` holds vendored browser bundles that legacy, non-migrated code still loads as classic scripts. They are not npm dependencies — check `package.json` and the individual imports before adding or removing one.
 
-* [jQuery](https://code.jquery.com/jquery-3.1.1.min.js) and [jQuery-ui](https://jqueryui.com) by jQuery team
-* [OrbitControls](https://github.com/mrdoob/three.js/blob/master/examples/js/controls/OrbitControls.js) by qiao, mrdoob, alteredq, WestLangley, erich666 and ScieCode
-* [JSZip](https://github.com/Stuk/jszip) by Stuart Knightley, David Duponchel, Franz Buchinger and António Afonso
-* [Alea](https://github.com/coverslide/node-alea) is also available as a vendored browser bundle.
+Loaded on page load from `src/index.html`:
+
+* [jQuery](https://jquery.com) and [jQuery UI](https://jqueryui.com) by the jQuery team — dialogs and sortable lists
+* [jQuery UI Touch Punch](https://github.com/furf/jquery-ui-touch-punch) — touch support for the jQuery UI widgets
+* D3.js v5 — the global `d3` used by the non-migrated modules
+* [flatqueue](https://github.com/mourner/flatqueue) by Volodymyr Agafonkin — priority queue used by the generators
+* Delaunator, Alea and Polylabel browser builds
+* `indexedDB.js` — a thin wrapper around IndexedDB used for browser storage
+* [simplify.js](https://mourner.github.io/simplify-js/) by Volodymyr Agafonkin — coastline simplification
+* [RgbQuant.js](https://github.com/leeoniya/RgbQuant.js) by Leon Sorokin — color quantization for the heightmap image converter
+
+Loaded on demand:
+
+* [Three.js](https://threejs.org) with `OrbitControls`, `mapControls`, `loopsubdivison` and `OBJExporter` — the 3D scene
+* [JSZip](https://github.com/Stuk/jszip) by Stuart Knightley, David Duponchel, Franz Buchinger and António Afonso — tile export
+* [Dropbox SDK](https://github.com/dropbox/dropbox-sdk-js) — saving to and loading from Dropbox
+* [TinyMCE](https://www.tiny.cloud) — the rich text editor in the Notes editor
+* [OpenWidget](https://openwidget.com) — the optional in-app assistant

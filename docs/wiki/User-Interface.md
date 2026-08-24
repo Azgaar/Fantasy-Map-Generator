@@ -109,13 +109,13 @@ By dragging the mouse, or by the navigation keys (right, left, up and down).
 
 # Menu
 
-FMG menu contain 5 tabs: Layers, Style, Option, Tools, About.
+FMG menu contains 5 tabs: Layers, Style, Options, Tools and About.
 
 Any of the tabs contain the Lower Menu Section.
 
-## Increasing the menu size
+## Changing the menu size
 
-Increase by shortcut keys ctrl & +, and decrease by ctrl & -.
+Use the _Interface size_ slider in the Options tab.
 
 ## Tabs shortcuts
 
@@ -231,7 +231,7 @@ A dropdown that displays a set of predefined layers.
 
 For example, the group of layers called "political map", contains (and toggle) the layers of the states, borders, rivers, etc.
 
-Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods, Trade, Military map, Emblems, and Pure landmass.
+Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods map, Trade animation, Military map, Emblems and Pure landmass.
 
 ## Biomes
 
@@ -239,19 +239,22 @@ This layer shows the division of the land into biomes.
 
 When this layer is on, when hovering a cell, its biome will be displayed in the tooltip. Biome is a term from the field of ecology that describes a large-scale ecosystem that is characterized by environmental conditions such as climate, the type of soil, and the flora and fauna that characterize it. For example, tropical rainforests, deserts, tundra, savannas, etc. Each of the biomes is characterized by a unique ecosystem of living species found in it naturally and in the environmental conditions that prevail there.
 
-Default biomes:
-* Tropical rainforest  
-* Tropical seasonal forest  
-* Hot desert  
-* Savanna  
-* Grassland  
-* Temperate rainforest  
-* Temperate deciduous forest  
-* Cold desert  
-* Taiga  
-* Tundra  
-* Glacier  
+Default biomes, in generator order:
+* Marine (id 0, water cells)
+* Hot desert
+* Cold desert
+* Savanna
+* Grassland
+* Tropical seasonal forest
+* Temperate deciduous forest
+* Tropical rainforest
+* Temperate rainforest
+* Taiga
+* Tundra
+* Glacier
 * Wetland
+
+Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>).
 
 In general, the biomes are derived from the topographical map (which can be edited in tools or options), and from the temperature (which can be edited in configure world).
 
@@ -306,7 +309,7 @@ For example, Blur 1 creates a light blur around the element, while Blur 3 create
 
 This is known as a filter, because you put a "lens" over the object that makes a visual effect on it, for example a blur, or a wrinkled look. It could be called "effect" (on the element).
 
-Filters: none, Blur 0.2, Blur 1, Blur 3, Blur 5, Blur 7, Blur 10, Splotch, Blurred Splotch, Shadow 2, Shadow 0.1, Shadow 0.5, Outline, Pencil, Turbulence, Paper, Crumpled, Grayscale, Sepia, Dingy.
+Filters: none, Blur 0.2, Blur 1, Blur 3, Blur 5, Blur 7, Blur 10, Splotch, Blurred Splotch, Shadow 2, Shadow 0.1, Shadow 0.5, Outline, Pencil, Turbulence, Paper, Crumpled, Grayscale, Sepia, Dingy and Tint.
 
 ### Clipping 
 
@@ -384,7 +387,7 @@ Dropdown that allows you to choose a set of design settings for all elements.
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: Default, Ancient, Gloom, Pale, Light, Watercolor, Clean, Atlas, DarkSeas, Cyberpunk, Night, Monochrome.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night and monochrome. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
 
 **+ button** Allows you to add your own set of settings.
 
@@ -421,7 +424,7 @@ The higher the number of layers, the more uneven the map will look.
 
 The smaller the number of layers, the more uniform the map will look, when neighboring height cells will be the same color more likely.
 
-Note: this does not affect the height of the map cells, only the display. If you hover neighboring cells on the map, you will see that although they appear to have the same height because of the color, the [Lower Menu Section](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/2.3.2-(Menu)-Lower-Section) will show a different height.
+Note: this does not affect the height of the map cells, only the display. If you hover neighboring cells on the map, you will see that although they appear to have the same height because of the color, the bottom tooltip will show a different height.
 
 Increasing the reduction rate value increases the performance of fmg.
 
@@ -467,7 +470,7 @@ Dropdown that allows changing the color scheme, so that each height will be repr
 
 For example, in the default set (Bright), the dark burgundy color represents the highest cell, while in the natural set, the highest cell will have a white color. And so each height will have a slightly different color in the different color schemes.
 
-Available color schemes: Bright, Light, Natural, Green, Olive, Livid, Monochrome.
+Available color schemes: bright, light, natural, green, olive, livid and monochrome. The **+** button next to the dropdown lets you define a custom scheme from a list of color stops.
 
 # Map Settings
 
@@ -477,7 +480,7 @@ These settings are applied when you generate a new map.
 
 * Map seed: A number that defines the generation of random values. Every time you generate a new map, a new seed number is set here, which together with the size of the map and the options in the map settings menu, creates a random map. Please note – for 2 maps that have the same map size and the same options and the same number of seed, the maps will be identical. The button on the left side allows you to browse between seed values ​​of previous generators.
 
-* Points number: A slider that defines the number of points (cells). The higher the number of points, the more detailed the map is, and is divided into more cells (where each cell is smaller), but on the other hand it negatively affects performance. In terms of performance, the recommended value is 10k. If your computer is powerful and you don't experience performance issues, choose a higher value until you experience performance issues.
+* Points number: A slider that defines the number of points (cells), from 1K up to the largest step on the slider. The higher the number of points, the more detailed the map and the smaller each cell, but the worse the performance. The default is 10K. If your computer is powerful and you do not experience performance issues, choose a higher value.
 
 * Map name: This will be the name under which the map will be saved. On the right, there is a button that allows you to replace with a new generator name.
 
@@ -497,8 +500,23 @@ These settings are applied when you generate a new map.
 
 * Growth rate: A slider that defines how far countries and civilizations will expand into neutral lands after a generation. The lower its value, the more land will remain politically neutral.
 
-* Towns number. A slider that determines the number of towns.
+* Burgs number: A slider that determines the number of burgs (settlements). Set it to `auto` to let the generator decide.
 
 * Religions number: A slider that determines the number of religions and sects.
 
-* States labels: Dropdown that defines whether full names or a shortened version of the state names are displayed when there is no room for the full name.
+# UI settings
+
+Below the map settings, the Options tab holds settings that apply immediately and are not tied to map generation:
+
+* Interface size and Tooltip size: scale the menu and the bottom tooltip.
+* Theme color and Transparency: the color and opacity of the dialogs.
+* Autosave interval: how often the map is saved to browser storage.
+* Onload behavior: generate a new map or load the last saved one when the page opens.
+* Azgaar assistant: show or hide the in-app chat assistant.
+* Speaker voice: the voice used by the speaker buttons next to names.
+* Emblem shape: the default coat of arms shield shape.
+* Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
+* Rendering: SVG shape-rendering mode, trading quality for speed.
+* Language: the interface language.
+
+The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation. The **Restore default options** button resets everything and reloads the page.

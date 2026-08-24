@@ -25,22 +25,25 @@ Sure, there are a number of available options:
 * Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
 
 * Export .svg: save a full map as a scalable vector image. You can open the file in a browser or edit it using a vector graphics editor.
-* Export .png: save the currently displayed map fragment as a raster image. You can edit the file in any raster graphics editor.
+* Export .png or .jpeg: save the currently displayed map fragment as a raster image, at up to 8× resolution. You can edit the file in any raster graphics editor.
 * Export to tiles as .zip: split map on .png chunks and save them all as a single .zip file. it allows to save giant raster images once chunks are combined.
-* Export to .json: save the map data to be used in GIS software.
+* Export to GeoJSON: save cells, routes, rivers, markers or zones to be used in GIS software (see [GIS data export](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export)).
+* Export to JSON: save the raw map data (full, minimal, pack cells or grid cells) for your own tooling.
 
 ### How can I open a saved .gz or .map file?
 Open the generator, click on _Load_ and select the file. Or just drag and drop the file onto the Generator window.
 
-### Can I manually edit save file?
-Yes, you can do it using any text editor. However, if you break the formatting the file won't be loading. The common error is that most text editors automatically split embedded svg into separate lines.
+### Can I manually edit a save file?
+`.map` files are plain text, so yes, you can edit them in any text editor. `.gz` files are gzip-compressed and have to be decompressed first. However, if you break the formatting the file won't be loading. The common error is that most text editors automatically split embedded svg into separate lines.
 
 ### Can I use the Generator offline?
 Yes, but it's more complex. You must have a source code editor ([VS Code](https://code.visualstudio.com/) is the best free one) and [node.js](https://nodejs.org) installed.
 
 Download the [source code](https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip) and unzip _all files_ from the archive.
 
-Open the folder in VS Code and run `npm install` in terminal to install dependencies. Then run `npm run dev` to start the development server. The Tool will normally be available at `http://localhost:5173/Fantasy-Map-Generator/` (open the URL printed by Vite in your browser).
+Open the folder in VS Code and run `npm install` in the terminal to install dependencies. Then run `npm run dev` to start the development server. The tool will normally be available at `http://localhost:5173/Fantasy-Map-Generator/` — open the URL printed by Vite in your browser. Node.js 24 or newer is required.
+
+See [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) for details.
 
 ### Is there a desktop version?
 The supported desktop-like option is a PWA. Chromium-based browsers (Chrome, Edge, etc.) may offer an **Install** button; the installed app can be opened from the desktop or app launcher. A normal browser shortcut is also possible, but this repository does not build a separate Electron app.
@@ -52,7 +55,7 @@ The Generator targets modern browsers. Chromium browsers are the primary tested 
 You can, but I doubt you will enjoy the experience. The Generator GUI is not suitable for mobile devices and performance is subpar. In general, I would say mobile devices are not supported.
 
 ### What about non-English localization?
-Localization is planned, but not ready from the coding side. Once my part with code support is done, I will inform the community to help me with actual translations. Preparation can take a lot of time as it's not a current priority.
+There is no hand-written localization yet. As a workaround, the Options tab has a _Language_ row with an **Init Google Translate** button that loads Google Translate and lets you pick a language. Automatic translation can break some of the page functionality — if that happens, use the reset icon to go back to English or refresh the page.
 
 ### Can I embed the map to my website?
 Yes, you can and it's easy to do. Please follow the guide [here](https://sites.google.com/view/fantasy-map-generator-embedded/home).
