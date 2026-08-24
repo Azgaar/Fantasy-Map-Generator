@@ -1,17 +1,15 @@
 ## Which file do I need?
 
-| You have | Download |
-| --- | --- |
-| Mac with Apple Silicon (M1–M4) | `fmg-…-mac-arm64.dmg` |
-| Mac with Intel | `fmg-…-mac-x64.dmg` |
-| Windows | `fmg-…-win-x64.exe` |
-| Windows on ARM (Snapdragon, Surface Pro X) | `fmg-…-win-arm64.exe` |
-| Linux, any distribution | `fmg-…-linux-x64.AppImage` |
-| Debian or Ubuntu | `fmg-…-linux-x64.deb` |
+| You have                                   | Download                      |
+| ------------------------------------------ | ----------------------------- |
+| Mac with Apple Silicon (M1–MX)             | `fmg-…-mac-arm64.dmg`         |
+| Mac with Intel                             | `fmg-…-mac-x64.dmg`           |
+| Windows                                    | `fmg-…-win-x64.exe`           |
+| Windows on ARM (Snapdragon, Surface Pro X) | `fmg-…-win-arm64.exe`         |
+| Linux                                      | `fmg-…-linux-x86_64.AppImage` |
+| Debian or Ubuntu                           | `fmg-…-linux-amd64.deb`       |
 
 The `.zip`, `.blockmap` and `latest*.yml` files are for the built-in updater — you do not need to download them.
-
-The app checks for updates on its own and offers to install them, so this is a one-time download.
 
 ### First launch
 

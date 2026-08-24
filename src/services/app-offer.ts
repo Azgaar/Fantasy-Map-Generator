@@ -8,19 +8,22 @@ type Os = "windows" | "mac" | "linux";
 type Asset = { name: string; browser_download_url: string; size: number };
 type Release = { version: string; assets: Asset[] };
 
-/** Suffix of the artifact name each system needs, see electron-builder.yml */
+/**
+ * Suffix of the artifact name each system needs, see electron-builder.yml. Note that electron-builder
+ * spells x64 the way each package format does: `x86_64` for AppImage, `amd64` for deb
+ */
 const DOWNLOADS: { os: Os; label: string; suffix: string }[] = [
   { os: "windows", label: "Windows", suffix: "-win-x64.exe" },
   { os: "windows", label: "Windows on ARM", suffix: "-win-arm64.exe" },
   { os: "mac", label: "Mac with Apple silicon", suffix: "-mac-arm64.dmg" },
   { os: "mac", label: "Mac with Intel", suffix: "-mac-x64.dmg" },
-  { os: "linux", label: "Linux", suffix: "-linux-x64.AppImage" },
-  { os: "linux", label: "Debian or Ubuntu", suffix: "-linux-x64.deb" }
+  { os: "linux", label: "Linux", suffix: "-linux-x86_64.AppImage" },
+  { os: "linux", label: "Debian or Ubuntu", suffix: "-linux-amd64.deb" }
 ];
 
 const INTRO = /* html */ `<p>The Desktop App is the Generator packaged as a program for your computer. It has the
-  same features as this page, but runs in its own window, works without an internet connection, and updates itself
-  when a new version comes out.</p>`;
+  same features as this page, but runs in its own window and works without an internet connection. It checks for new
+  versions on its own and installs them for you, except on macOS and Debian, where it points you at the download.</p>`;
 
 async function open(): Promise<void> {
   $("#alert").dialog({
@@ -65,7 +68,7 @@ async function detectTarget(): Promise<string | undefined> {
 
   if (os === "windows") return arm ? "-win-arm64.exe" : "-win-x64.exe";
   if (os === "mac") return arm ? "-mac-arm64.dmg" : "-mac-x64.dmg";
-  return "-linux-x64.AppImage";
+  return "-linux-x86_64.AppImage";
 }
 
 async function loadRelease(): Promise<Release | undefined> {

@@ -17,7 +17,7 @@ export default {
   publicDir: false, // public/ belongs to the renderer build, not to the main process
   build: {
     outDir: resolve("../dist-electron"),
-    emptyOutDir: false,
+    emptyOutDir: true, // runs before the renderer build, so nothing of it is lost
     target: "node22",
     minify: false,
     lib: {

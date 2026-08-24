@@ -4,14 +4,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { MenuItemConstructorOptions } from "electron";
-import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, shell } from "electron";
+import { app, BrowserWindow, dialog, Menu, nativeImage, net, protocol, screen, shell } from "electron";
 import { initUpdater } from "./updater";
 
 const SCHEME = "app";
-const APP_URL = `${SCHEME}://fmg/index.html`;
+const HOST = "fmg";
+const APP_URL = `${SCHEME}://${HOST}/index.html`;
 const RENDERER_DIR = path.join(__dirname, "renderer");
 const ICON_PATH = path.join(__dirname, "icon.png");
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+const WIKI_URL = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
+const DISCORD_URL = "https://discord.gg/X7E84HU";
 
 /**
  * The app is named after `productName`, but its data stays in the folder the name would have
@@ -28,7 +31,7 @@ app.setAboutPanelOptions({
 
 type WindowState = { width: number; height: number; x?: number; y?: number; maximized: boolean; fullscreen: boolean };
 
-const DEFAULT_STATE: WindowState = { width: 1440, height: 900, maximized: true, fullscreen: true };
+const DEFAULT_STATE: WindowState = { width: 1440, height: 900, maximized: true, fullscreen: false };
 
 const stateFile = () => path.join(app.getPath("userData"), "window-state.json");
 
@@ -36,10 +39,28 @@ function readState(): WindowState {
   try {
     const { width, height, x, y, maximized, fullscreen } = JSON.parse(fs.readFileSync(stateFile(), "utf8"));
     if (!width || !height) return DEFAULT_STATE;
-    return { width, height, x, y, maximized: Boolean(maximized), fullscreen: Boolean(fullscreen) };
+    return fitToDisplay({ width, height, x, y, maximized: Boolean(maximized), fullscreen: Boolean(fullscreen) });
   } catch {
     return DEFAULT_STATE;
   }
+}
+
+/** A window restored onto a monitor that is no longer attached would open out of sight: keep it on a real display */
+function fitToDisplay(state: WindowState): WindowState {
+  if (!Number.isFinite(state.x) || !Number.isFinite(state.y)) return { ...state, x: undefined, y: undefined };
+
+  const { x = 0, y = 0 } = state;
+  const { workArea } = screen.getDisplayMatching({ x, y, width: state.width, height: state.height });
+  const width = Math.min(state.width, workArea.width);
+  const height = Math.min(state.height, workArea.height);
+
+  return {
+    ...state,
+    width,
+    height,
+    x: Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - width),
+    y: Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - height)
+  };
 }
 
 function saveState(window: BrowserWindow): void {
@@ -61,12 +82,44 @@ protocol.registerSchemesAsPrivileged([
   { scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, codeCache: true } }
 ]);
 
+/**
+ * A .map file is shared like a document, and the app builds markup out of what is inside it, so the one
+ * directive that matters is `script-src`: no origin but the build itself may supply code, save for the
+ * Assistant widget the user opts into. The rest stays permissive, because maps embed data/blob images and
+ * fonts and the AI providers are fetched over https. `unsafe-eval` is required by the goods distribution
+ * formulas, which compile to `new Function`
+ */
+const ASSISTANT_ORIGINS = "https://*.openwidget.com";
+
+const CSP = [
+  "default-src 'self' data: blob:",
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ASSISTANT_ORIGINS}`,
+  "style-src 'self' 'unsafe-inline' https:",
+  "font-src 'self' data: https:",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' data: blob:",
+  "connect-src 'self' data: blob: https: wss:",
+  "frame-src 'self' https:"
+].join("; ");
+
 function serveRenderer(): void {
   protocol.handle(SCHEME, request => {
-    const { pathname } = new URL(request.url);
-    const filePath = path.join(RENDERER_DIR, decodeURIComponent(pathname));
+    const { host, pathname } = new URL(request.url);
+    if (host !== HOST) return new Response("Not found", { status: 404 });
+
+    let filePath: string;
+    try {
+      filePath = path.join(RENDERER_DIR, decodeURIComponent(pathname));
+    } catch {
+      return new Response("Bad request", { status: 400 }); // a malformed percent-escape
+    }
     if (!filePath.startsWith(RENDERER_DIR + path.sep)) return new Response("Forbidden", { status: 403 });
-    return net.fetch(pathToFileURL(filePath).toString());
+
+    return net.fetch(pathToFileURL(filePath).toString()).then(response => {
+      const headers = new Headers(response.headers);
+      headers.set("Content-Security-Policy", CSP);
+      return new Response(response.body, { status: response.status, headers });
+    });
   });
 }
 
@@ -114,19 +167,60 @@ function enableDevTools(window: BrowserWindow): void {
 }
 
 /**
+ * The default menu offers Reload, which throws the map away without the browser's "leave site?" prompt.
+ * This one drops it and keeps what the app needs: the Edit roles carry the clipboard shortcuts on macOS
+ */
+function buildMenu(): void {
+  const isMac = process.platform === "darwin";
+
+  const template: MenuItemConstructorOptions[] = [
+    ...(isMac ? ([{ role: "appMenu" }] satisfies MenuItemConstructorOptions[]) : []),
+    { role: "editMenu" },
+    {
+      label: "View",
+      submenu: [
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+        { role: "toggleDevTools" }
+      ]
+    },
+    { role: "windowMenu" },
+    {
+      role: "help",
+      submenu: [
+        { label: "Wiki", click: () => shell.openExternal(WIKI_URL) },
+        { label: "Discord", click: () => shell.openExternal(DISCORD_URL) },
+        ...(isMac ? [] : ([{ type: "separator" }, { role: "about" }] satisfies MenuItemConstructorOptions[]))
+      ]
+    }
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+let quitting = false; // set on Cmd+Q, where closing the window alone would leave the app running
+let skipConfirmation = false; // set once the user has confirmed, and by the updater to install on restart
+
+app.on("before-quit", () => {
+  quitting = true;
+});
+
+/** Closes the window without the quit confirmation, so the installer can restart the app */
+function allowClose(): void {
+  skipConfirmation = true;
+}
+
+/**
  * The web app warns before navigating away via `onbeforeunload`, but Electron cancels the close
  * silently instead of prompting, which would make the window unclosable. Ask natively instead
  */
-function confirmOnClose(window: BrowserWindow): () => void {
-  let confirmed = false;
-  let quitting = false; // set on Cmd+Q, where closing the window alone would leave the app running
-  app.on("before-quit", () => {
-    quitting = true;
-  });
-
+function confirmOnClose(window: BrowserWindow): void {
   window.on("close", event => {
     saveState(window);
-    if (confirmed) return;
+    if (skipConfirmation) return;
     event.preventDefault();
 
     dialog
@@ -144,15 +238,16 @@ function confirmOnClose(window: BrowserWindow): () => void {
           quitting = false;
           return;
         }
-        confirmed = true;
+        skipConfirmation = true;
         if (quitting) app.quit();
         else window.close();
       });
   });
 
-  return () => {
-    confirmed = true;
-  };
+  // on macOS the app outlives its window: the next one has to ask again
+  window.on("closed", () => {
+    skipConfirmation = false;
+  });
 }
 
 function createWindow(): void {
@@ -181,7 +276,7 @@ function createWindow(): void {
   window.once("ready-to-show", () => window.show());
   enableDevTools(window);
   routeExternalLinks(window);
-  initUpdater(window, confirmOnClose(window));
+  confirmOnClose(window);
   window.loadURL(DEV_SERVER_URL ?? APP_URL);
 }
 
@@ -199,7 +294,9 @@ if (!app.requestSingleInstanceLock()) {
     // a dev run borrows the Electron bundle, so its dock icon has to be replaced by hand
     if (!app.isPackaged) app.dock?.setIcon(nativeImage.createFromPath(ICON_PATH));
     serveRenderer();
+    buildMenu();
     createWindow();
+    initUpdater(allowClose); // app-wide, so re-opening a window on macOS does not start a second updater
     app.on("activate", () => BrowserWindow.getAllWindows().length === 0 && createWindow());
   });
 

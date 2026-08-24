@@ -103,7 +103,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v$(node -p "require('./package.json').version")"
+          TAG="${{ github.ref_name }}"
           BODY=$(gh release view "$TAG" --json body -q .body || echo "")
 
           if [ -n "$BODY" ]; then

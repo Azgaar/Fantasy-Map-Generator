@@ -32,6 +32,12 @@ async function buildMain() {
   await viteBuild({ configFile: "electron/vite.config.ts" });
 }
 
+/** The renderer is the same code the web build ships, and `vite build` alone would not typecheck it */
+async function buildRenderer() {
+  await run(TSC, ["--noEmit"]);
+  await viteBuild({ mode: "electron" });
+}
+
 async function dev() {
   await buildMain();
 
@@ -50,7 +56,7 @@ if (task === "dev") {
   await dev();
 } else if (task === "build" || task === "dist") {
   await buildMain();
-  await viteBuild({ mode: "electron" });
+  await buildRenderer();
   if (task === "dist") await run(ELECTRON_BUILDER, builderArgs);
 } else {
   console.error(`Unknown task "${task}". Expected: dev, build or dist`);

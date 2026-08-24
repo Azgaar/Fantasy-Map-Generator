@@ -17,10 +17,12 @@
 
 import { dialogState } from "@/components/dialog/state";
 import { tip } from "@/components/tooltips";
+import { isElectron } from "./platform";
 
 export const VERSION = "1.148.3";
 
 const latestPublicChanges = [
+  "Desktop App",
   "Emblems rendering optimization",
   "Dialogs state preserved between sessions",
   "Paint Area dialogs rework",
@@ -121,7 +123,7 @@ function showUpdateWindow(storedVersion: string | null): void {
       ${latestPublicChanges.map(change => `<li>${change}</li>`).join("")}
     </ul>
 
-    <p>The Generator is also available as a <a href="#" onclick="window.Services.AppOffer.open(); return false">desktop app</a> that works offline.</p>
+    ${isElectron() ? "" : `<p>The Generator is also available as a <a href="#" onclick="window.Services.AppOffer.open(); return false">desktop app</a> that works offline.</p>`}
 
     <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.</p>
     <span><i>Thanks for all supporters on <a href="${patreon}" target="_blank">Patreon</a>!</i></span>`;
