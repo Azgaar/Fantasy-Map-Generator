@@ -11,8 +11,7 @@ export const Services = createRegistry({
   ExportMap: () => import("@/services/io/export").then(m => m.ExportMap),
   Installation: () => import("@/services/installation").then(m => m.Installation),
   Load: () => import("@/services/io/load").then(m => m.Load),
-  Save: () => import("@/services/io/save").then(m => m.Save),
-  UiTour: () => import("@/services/ui-tour").then(m => m.UiTour)
+  Save: () => import("@/services/io/save").then(m => m.Save)
 });
 
 type ServicesRegistry = typeof Services;

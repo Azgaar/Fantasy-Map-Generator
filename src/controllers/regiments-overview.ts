@@ -1,4 +1,4 @@
-import { select, sum } from "d3";
+import { sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -13,11 +13,18 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { insertMilitaryRegiment } from "@/controllers/editor-mutations";
 import type { State } from "@/generators/states-generator";
-import { drawRegiment } from "@/renderers/draw-military";
+import { drawMilitary } from "@/renderers/draw-military";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
+import { capitalize, ensureEl, findEl, last, si } from "../utils";
 
 const dialogId = "regimentsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -28,7 +35,7 @@ const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData,
 function open(state = -1): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (!window.LayerControls.isLayerOn("toggleMilitary")) window.LayerControls.toggleLayer("toggleMilitary");
 
   renderDialog();
   updateFilter(state);
@@ -91,12 +98,13 @@ function renderDialog(): void {
   body.addEventListener("click", async event => {
     const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
     if (!target) return;
-    Controllers.RegimentEditor.open(`#${target.dataset.editRegiment}`);
+    Controllers.RegimentEditor.open(Number(target.dataset.stateId), Number(target.dataset.regimentId));
   });
 }
 
 function closeRegimentsOverview(): void {
   if (ensureEl("regimentsAddNew").classList.contains("pressed")) toggleAdd();
+  clearMapInteractionOverlay();
   destroyDialog(dialogId);
 }
 
@@ -188,7 +196,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         <input data-col="name" data-tip="Regiment's name" value="${regiment.name}" readonly />
         ${unitCells}
         <div data-col="total" data-tip="Total military personnel (not considering crew)" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
-        <div data-col="actions"><span data-tip="Edit regiment" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span></div>
+        <div data-col="actions"><span data-tip="Edit regiment" data-edit-regiment data-state-id="${state.i}" data-regiment-id="${regiment.i}" class="icon-pencil pointer"></span></div>
       </div>`;
     })
     .join("");
@@ -222,24 +230,25 @@ function updateFilter(state: number): void {
 }
 
 function regimentHighlightOn(event: Event): void {
-  const target = event.target as HTMLElement;
+  const target = event.currentTarget as HTMLElement;
   const state = +target.dataset.s!;
   const id = +target.dataset.id!;
   if (customization || !state) return;
-  select<SVGGElement, unknown>(`#armies > g > g#regiment${state}-${id}`)
-    .transition()
-    .duration(2000)
-    .style("fill", "#ff0000");
+  const regiment = pack.states[state]?.military?.find(candidate => candidate.i === id);
+  if (!regiment) return;
+  updateMapInteractionOverlay({
+    highlight: [
+      {
+        center: { x: regiment.x, y: regiment.y },
+        kind: "circle",
+        radius: getMapRendererStyle(style).military.boxSize * (regiment.n ? 3 : 4)
+      }
+    ]
+  });
 }
 
-function regimentHighlightOff(event: Event): void {
-  const target = event.target as HTMLElement;
-  const state = +target.dataset.s!;
-  const id = +target.dataset.id!;
-  select<SVGGElement, unknown>(`#armies > g > g#regiment${state}-${id}`)
-    .transition()
-    .duration(1000)
-    .style("fill", null);
+function regimentHighlightOff(): void {
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function togglePercentageMode(): void {
@@ -252,26 +261,33 @@ function toggleAdd(): void {
   const button = ensureEl("regimentsAddNew");
   button.classList.toggle("pressed");
   if (button.classList.contains("pressed")) {
-    select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addRegimentOnClick);
+    const viewbox = ensureEl("viewbox");
+    viewbox.style.cursor = "crosshair";
+    viewbox.addEventListener("click", addRegimentOnClick, true);
     tip("Click on map to create new regiment or fleet", true);
     findEl("regimentAdd")?.classList.add("pressed");
   } else {
     clearMainTip();
+    const viewbox = ensureEl("viewbox");
+    viewbox.removeEventListener("click", addRegimentOnClick, true);
     applyDefaultViewboxEvents();
     refreshRegimentsOverview();
     findEl("regimentAdd")?.classList.remove("pressed");
   }
 }
 
-function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
+function addRegimentOnClick(event: MouseEvent): void {
+  event.preventDefault();
+  event.stopImmediatePropagation();
   const state = +ensureEl<HTMLSelectElement>("regimentsFilter").value;
   if (state === -1) {
     tip("Please select state from the list", false, "error");
     return;
   }
 
-  const point = getPointer(event, this);
-  const cell = findCell(point[0], point[1]);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cell = findCell(point.x, point.y);
   if (cell === undefined) return;
   const x = pack.cells.p[cell][0];
   const y = pack.cells.p[cell][1];
@@ -296,9 +312,9 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
     type: ""
   };
   reg.name = Military.getName(reg, military);
-  military.push(reg);
+  insertMilitaryRegiment(military, reg);
   Military.generateNote(reg, pack.states[state]); // add legend
-  drawRegiment(reg, state);
+  drawMilitary();
   toggleAdd();
 }
 

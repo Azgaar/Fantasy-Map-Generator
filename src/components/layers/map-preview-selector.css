@@ -1,0 +1,177 @@
+.fmg-map-preview {
+  position: relative;
+  box-sizing: border-box;
+  width: 188px;
+}
+
+.fmg-map-preview__trigger {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  grid-template-columns: 24px minmax(0, 1fr) 12px;
+  gap: 9px;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--kui-line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--kui-surface-panel) 94%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.fmg-map-preview__trigger:hover,
+.fmg-map-preview__trigger:focus-visible,
+.fmg-map-preview__trigger[aria-expanded="true"] {
+  border-color: var(--kui-line-strong);
+  background: var(--kui-surface-panel);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.34);
+}
+
+.fmg-map-preview__trigger:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+.fmg-map-preview__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.fmg-map-preview__icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: hsl(var(--accent) / 0.14);
+  color: hsl(var(--accent));
+  place-items: center;
+  pointer-events: none;
+}
+
+.fmg-map-preview__value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kui-text);
+  font: 600 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmg-map-preview__chevron {
+  color: var(--kui-text-muted);
+  pointer-events: none;
+  transition: transform 120ms ease;
+}
+
+.fmg-map-preview__trigger[aria-expanded="true"] .fmg-map-preview__chevron {
+  transform: rotate(180deg);
+}
+
+.fmg-map-preview__legacy-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fmg-map-preview__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-height: calc(100vh - 80px);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--kui-line);
+  border-radius: 8px;
+  background: var(--kui-surface-panel);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 0.38);
+  animation: fmg-map-preview-dropdown-in 100ms ease-out;
+}
+
+.fmg-map-preview__dropdown-title {
+  padding: 5px 8px 7px;
+  color: var(--kui-text-muted);
+  font: 700 10px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fmg-map-preview__option {
+  display: grid;
+  width: 100%;
+  min-height: 34px;
+  grid-template-columns: minmax(0, 1fr) 14px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 5px;
+  outline: 0;
+  background: transparent;
+  color: var(--kui-text-secondary);
+  cursor: pointer;
+  font: 500 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: left;
+}
+
+.fmg-map-preview__option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmg-map-preview__option:hover,
+.fmg-map-preview__option:focus-visible {
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+.fmg-map-preview__option[data-active="true"] {
+  background: hsl(var(--accent) / 0.16);
+  color: var(--kui-text);
+}
+
+.fmg-map-preview__option[data-active="true"] svg {
+  color: hsl(var(--accent));
+}
+
+@keyframes fmg-map-preview-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .fmg-map-preview {
+    width: 152px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fmg-map-preview__trigger,
+  .fmg-map-preview__chevron {
+    transition: none;
+  }
+
+  .fmg-map-preview__dropdown {
+    animation: none;
+  }
+}

@@ -45,11 +45,10 @@ const FOCUSABLE_SELECTOR = [
 const MIN_WORKSPACE_DIALOG_WIDTH = 280;
 
 function getWorkspaceRightEdge(): number {
-  const sidebar = document.querySelector<HTMLElement>("#workspaceNavigationRoot .app-sidebar");
   const panel = document.body.classList.contains("workspace-panel-open")
     ? document.getElementById("options")
     : null;
-  return Math.max(sidebar?.getBoundingClientRect().right ?? 0, panel?.getBoundingClientRect().right ?? 0);
+  return panel?.getBoundingClientRect().right ?? 0;
 }
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {

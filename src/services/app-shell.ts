@@ -1,5 +1,6 @@
 // Browser-level behaviours of the app window: resizing and navigating away
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { OptionsController } from "@/components/options/options-controller";
 import { stored } from "@/utils/preferences";
 
 const isLocalhost = () => location.hostname === "localhost" || location.hostname === "127.0.0.1";
@@ -10,7 +11,7 @@ function onResize(): void {
 
   (document.getElementById("mapWidthInput") as HTMLInputElement).value = String(window.innerWidth);
   (document.getElementById("mapHeightInput") as HTMLInputElement).value = String(window.innerHeight);
-  fitMapToScreen();
+  OptionsController.fitMapToScreen();
 }
 
 /**

@@ -14,6 +14,7 @@ declare global {
 
 export interface EmblemCharge {
   charge: string;
+  stroke?: string;
   t: string;
   p: string;
   t2?: string;
@@ -45,6 +46,10 @@ export interface Emblem {
   ordinaries?: EmblemOrdinary[];
   charges?: EmblemCharge[];
   custom?: boolean;
+  customData?: string;
+  size?: number;
+  x?: number;
+  y?: number;
 }
 
 class EmblemGeneratorModule {

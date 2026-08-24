@@ -1,7 +1,8 @@
 import { gauss, rn } from "@/utils";
+import { WorldGenerationController } from "./world-generation-controller";
 
 function regenerate(): void {
-  rankCells();
+  WorldGenerationController.rankCells();
 
   pack.burgs.forEach(burg => {
     if (!burg.i || burg.removed || burg.lock) return;

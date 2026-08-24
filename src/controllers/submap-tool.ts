@@ -1,6 +1,9 @@
+import { ApplicationController } from "@/application/application-controller";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { OptionsController } from "@/components/options/options-controller";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Resample } from "@/generators/resample";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { getLatitude, getLongitude } from "@/utils";
 import { ensureEl, minmax, rn } from "../utils";
 
@@ -23,7 +26,7 @@ function renderDialog(): void {
   destroyDialog("submapTool");
 
   const pointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  const cells = cellsDensityMap[+pointsValue];
+  const cells = OptionsController.getCellsDensity(pointsValue);
 
   const html = /* html */ `<div id="submapTool" class="dialog">
     <p style="font-weight: bold">
@@ -35,7 +38,7 @@ function renderDialog(): void {
         <div>Points number</div>
         <div>
           <input id="submapPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
-          <output id="submapPointsFormatted" style="color: ${getCellsDensityColor(cells)}">${cells / 1000}K</output>
+          <output id="submapPointsFormatted" style="color: ${OptionsController.getCellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>
       <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
@@ -56,10 +59,10 @@ function cleanup(): void {
 }
 
 function handlePointsInput(e: Event): void {
-  const cells = cellsDensityMap[+(e.target as HTMLInputElement).value];
+  const cells = OptionsController.getCellsDensity((e.target as HTMLInputElement).value);
   const output = ensureEl<HTMLOutputElement>("submapPointsFormatted");
   output.value = `${cells / 1000}K`;
-  output.style.color = getCellsDensityColor(cells);
+  output.style.color = OptionsController.getCellsDensityColor(cells);
 }
 
 function generateSubmap(): void {
@@ -70,19 +73,19 @@ function generateSubmap(): void {
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
   const globalPointsValue = ensureEl<HTMLInputElement>("pointsInput").value;
-  if (submapPointsValue !== globalPointsValue) changeCellsDensity(submapPointsValue);
+  if (submapPointsValue !== globalPointsValue) OptionsController.changeCellsDensity(submapPointsValue);
 
   const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
   const inverse = (x: number, y: number): [number, number] => [x / scale + x0, y / scale + y0];
 
-  applyGraphSize();
-  fitMapToScreen();
+  OptionsController.applyGraphSize();
+  OptionsController.fitMapToScreen();
   resetZoom(0);
-  undraw();
+  ApplicationController.undraw();
   Resample.process({ projection, inverse, scale });
 
   if (ensureEl<HTMLInputElement>("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
-  drawLayers();
+  window.LayerControls.drawActiveLayers();
 
   INFO && console.groupEnd();
 }
@@ -105,16 +108,14 @@ function recalculateMapSize(x0: number, y0: number): void {
 }
 
 function rescaleBurgStyles(scale: number): void {
-  for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
-    const iconStyle: Record<string, string> = { ...style.burgIcons[group.id] };
-    for (const { name, value } of group.attributes) iconStyle[name] = value;
-
-    const size = Number(iconStyle["font-size"]) || 1;
-    iconStyle["font-size"] = String(rn(minmax(size * scale, 0.2, 10), 2));
-
-    style.burgIcons[group.id] = iconStyle;
-    group.remove();
+  const rendererStyle = getMapRendererStyle(style);
+  const burgStyles = rendererStyle.burgIcons;
+  for (const symbols of [burgStyles.icons, burgStyles.anchors]) {
+    for (const symbol of [symbols.default, ...Object.values(symbols.roles)]) {
+      symbol.size = rn(minmax(symbol.size * scale, 0.2, 10), 2);
+    }
   }
+  style.mapRenderer = rendererStyle;
 
   const burgLabelGroups = new Set(
     pack.burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.label?.group || burg.group || "burg")

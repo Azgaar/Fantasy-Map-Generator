@@ -16,21 +16,19 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { ZoneAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { getCellsOverlay, getCellsPath } from "@/renderers/interaction/map-domain-overlay";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
+import { getPixiMapPointAtClient, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
-
-interface ZoneCellDatum {
-  cell: number;
-  zoneId: number;
-  fill: string;
-}
+import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let zonesAssignment: ZoneAssignmentSession | null = null;
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
   { key: "description", label: "Description", width: "13em", permanent: true },
@@ -44,7 +42,7 @@ const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: r
 
 function open(): void {
   closeDialogs("#zonesEditor, .stable");
-  if (!layerIsOn("toggleZones")) toggleZones();
+  if (!window.LayerControls.isLayerOn("toggleZones")) window.LayerControls.toggleLayer("toggleZones");
 
   renderDialog();
   updateFilters();
@@ -125,16 +123,15 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
-  applyLineHighlighting("zonesEditor", ({ target }) => {
-    const zone = target.closest<SVGElement>("#zones [id^='zone']");
-    return zone && /^zone\d+$/.test(zone.id) ? Number(zone.id.slice(4)) : undefined;
-  });
+  applyLineHighlighting("zonesEditor", ({ cellId }) =>
+    cellId === undefined ? undefined : pack.zones.findLast(zone => zone.cells.includes(cellId))?.i
+  );
 
   const body = ensureEl("zonesBodySection");
   ensureEl("zonesFilterType").addEventListener("click", updateFilters);
   ensureEl("zonesFilterType").addEventListener("change", filterZonesByType);
   ensureEl("zonesEditorRefresh").addEventListener("click", zonesTable.refresh);
-  ensureEl("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
+  ensureEl("zonesEditStyle").addEventListener("click", () => window.StyleEditor.edit("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
   ensureEl("zonesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("zonesManually").addEventListener("click", enterZonesManualAssignent);
@@ -263,17 +260,18 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
 }
 
 function zoneHighlightOn(this: HTMLElement): void {
-  const zoneId = this.dataset.id;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zoneId}`).style("outline", "1px solid red");
+  const zone = pack.zones.find(zone => zone.i === Number(this.dataset.id));
+  updateMapInteractionOverlay({
+    highlight: zone ? getCellsOverlay(zone.cells, { fill: "none", stroke: "red", strokeWidth: 1 }) : null
+  });
 }
 
-function zoneHighlightOff(this: HTMLElement): void {
-  const zoneId = this.dataset.id;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zoneId}`).style("outline", null);
+function zoneHighlightOff(): void {
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function filterZonesByType(): void {
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
   zonesTable.reset();
 }
 
@@ -288,12 +286,17 @@ function moveZone(item: HTMLElement): void {
   const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
   const newIndex = nextIndex >= 0 ? nextIndex : previousIndex >= 0 ? previousIndex + 1 : pack.zones.length;
   pack.zones.splice(newIndex, 0, zone);
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
 }
 
 function enterZonesManualAssignent(): void {
-  if (!layerIsOn("toggleZones")) toggleZones();
+  if (!window.LayerControls.isLayerOn("toggleZones")) window.LayerControls.toggleLayer("toggleZones");
   customization = 10;
+  const visibleZones = getVisibleZones();
+  zonesAssignment = new ZoneAssignmentSession(
+    pack.zones,
+    visibleZones.map(zone => zone.i)
+  );
   const body = ensureEl("zonesBodySection");
 
   document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
@@ -315,29 +318,15 @@ function enterZonesManualAssignent(): void {
     .on("touchmove mousemove", moveZoneBrush);
 
   body.querySelector("div")?.classList.add("selected");
-
-  // draw zones as individual cells
-  select<SVGGElement, unknown>("#zones").selectAll("*").remove();
-
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  const data = visibleZones.flatMap(({ i, cells, color }) => cells.map(cell => ({ cell, zoneId: i, fill: color })));
-  select<SVGGElement, unknown>("#zones")
-    .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-    .data(data, d => `${d.zoneId}-${d.cell}`)
-    .enter()
-    .append("polygon")
-    .attr("points", d => getPackPolygon(d.cell, pack))
-    .attr("fill", d => d.fill)
-    .attr("data-zone", d => d.zoneId)
-    .attr("data-cell", d => d.cell);
 }
 
-function selectZoneOnMapClick(event: any): void {
-  const target = event.target as HTMLElement;
-  if ((target.parentElement as HTMLElement).id !== "zones") return;
-  const zoneId = target.dataset.zone;
+function selectZoneOnMapClick(event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y);
+  if (cellId === undefined) return;
+  const zoneId = zonesAssignment?.getZoneIdsAtCell(cellId).at(-1);
+  if (zoneId === undefined) return;
   const el = ensureEl("zonesBodySection").querySelector(`div[data-id='${zoneId}']`);
 
   ensureEl("zonesBodySection").querySelector("div.selected")?.classList.remove("selected");
@@ -351,7 +340,9 @@ function dragZoneBrush(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = getPointer(dragEvent, this);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    const { x, y } = point;
     moveCircle(x, y, radius);
 
     let selection = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)!];
@@ -359,68 +350,41 @@ function dragZoneBrush(this: SVGElement, event: any): void {
     if (!selection.length) return;
 
     const zoneId = +ensureEl("zonesBodySection").querySelector<HTMLElement>("div.selected")!.dataset.id!;
-    const zone = pack.zones.find(z => z.i === zoneId);
-    if (!zone) return;
-
-    if (eraseMode) {
-      const data = select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data()
-        .filter(d => !(d.zoneId === zoneId && selection.includes(d.cell)));
-      select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data(data, d => `${d.zoneId}-${d.cell}`)
-        .exit()
-        .remove();
-    } else {
-      const data: ZoneCellDatum[] = selection.map(cell => ({ cell, zoneId, fill: zone.color }));
-      select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data(data, d => `${d.zoneId}-${d.cell}`)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d.cell, pack))
-        .attr("fill", d => d.fill)
-        .attr("data-zone", d => d.zoneId)
-        .attr("data-cell", d => d.cell);
-    }
+    const mutation = zonesAssignment?.paint(zoneId, selection, eraseMode);
+    if (mutation?.changed) window.LayerControls.redrawLayer("toggleZones");
   });
 }
 
-function moveZoneBrush(this: SVGElement, event: any): void {
+function moveZoneBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const [x, y] = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("zonesBrush").value;
-  moveCircle(x, y, radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyZonesManualAssignent(): void {
-  const data = select<SVGGElement, unknown>("#zones").selectAll<SVGPolygonElement, ZoneCellDatum>("polygon").data();
-  const zoneCells = data.reduce<Record<number, number[]>>((acc, d) => {
-    if (!acc[d.zoneId]) acc[d.zoneId] = [];
-    acc[d.zoneId].push(d.cell);
-    return acc;
-  }, {});
-
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  visibleZones.forEach(zone => {
-    zone.cells = zoneCells[zone.i] || [];
-  });
-
-  drawZones();
+  zonesAssignment?.commit();
+  zonesAssignment = null;
+  window.LayerControls.redrawLayer("toggleZones");
   zonesTable.refresh();
   exitZonesManualAssignment();
 }
 
 function cancelZonesManualAssignent(): void {
-  drawZones();
+  zonesAssignment?.cancel();
+  zonesAssignment = null;
+  window.LayerControls.redrawLayer("toggleZones");
   exitZonesManualAssignment();
 }
 
 function exitZonesManualAssignment(close?: string): void {
   customization = 0;
+  if (zonesAssignment) {
+    zonesAssignment.cancel();
+    zonesAssignment = null;
+    window.LayerControls.redrawLayer("toggleZones");
+  }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
     el.style.display = "inline-block";
@@ -443,13 +407,27 @@ function exitZonesManualAssignment(close?: string): void {
   if (selected) selected.classList.remove("selected");
 }
 
+function getVisibleZones(): Zone[] {
+  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
+  const isFiltered = filterBy && filterBy !== "all";
+  return pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
+}
+
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
+}
+
 function changeFill(fillBox: FillBoxElement, zone: Zone): void {
   const currentFill = fillBox.getAttribute("fill")!;
 
   const callback = (newFill: string): void => {
     fillBox.fill = newFill;
     zone.color = newFill;
-    drawZones();
+    window.LayerControls.redrawLayer("toggleZones");
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -459,7 +437,7 @@ function toggleVisibility(zone: Zone): void {
   if (zone.hidden) delete zone.hidden;
   else zone.hidden = true;
 
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
   zonesTable.refresh();
 }
 
@@ -468,8 +446,7 @@ function toggleFog(zone: Zone, cl: DOMTokenList): void {
   cl.toggle("inactive");
 
   if (inactive) {
-    const path = select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("d");
-    fog(`focusZone${zone.i}`, path);
+    fog(`focusZone${zone.i}`, getCellsPath(zone.cells));
   } else {
     unfog(`focusZone${zone.i}`);
   }
@@ -502,7 +479,7 @@ function addZonesLayer(): void {
   pack.zones.push({ i: zoneId, name, type, color, cells: [] });
 
   zonesTable.refresh();
-  drawZones();
+  window.LayerControls.redrawLayer("toggleZones");
 }
 
 function downloadZonesData(): void {
@@ -519,12 +496,10 @@ function downloadZonesData(): void {
 
 function changeDescription(zone: Zone, value: string): void {
   zone.name = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", value);
 }
 
 function changeType(zone: Zone, value: string): void {
   zone.type = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", value);
 }
 
 function changePopulation(zone: Zone): void {
@@ -605,7 +580,7 @@ function changePopulation(zone: Zone): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
     zonesTable.refresh();
   }
 }
@@ -617,8 +592,8 @@ function zoneRemove(zone: Zone): void {
     confirm: "Remove",
     onConfirm: () => {
       pack.zones = pack.zones.filter(z => z.i !== zone.i);
-      select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
       unfog(`focusZone${zone.i}`);
+      window.LayerControls.redrawLayer("toggleZones");
       zonesTable.refresh();
     }
   });

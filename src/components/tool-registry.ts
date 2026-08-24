@@ -4,6 +4,8 @@ import {
   type ToolCommandResult,
   type ToolControllerCommandId
 } from "./tool-command-executor";
+import type { DomDialogPresentation } from "./ui/dialog-placement-context";
+import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 import { dispatchRegenerationCommand, type RegenerationCommandTarget } from "./ui/regeneration-command";
 
 export type ToolGroupId = "world" | "politics" | "settlements" | "geography" | "analysis" | "create" | "regenerate";
@@ -17,6 +19,8 @@ export interface ToolGroup {
 
 export interface ToolCommandContext {
   ctrlKey?: boolean;
+  dialogPlacement?: WorkspaceDialogPlacement;
+  dialogPresentation?: DomDialogPresentation;
   metaKey?: boolean;
   regenerationTarget?: RegenerationCommandTarget;
 }
@@ -79,7 +83,10 @@ function controllerCommand(options: ControllerCommandOptions): ToolCommand {
   return {
     ...options,
     icon: GROUPS_BY_ID[options.group].icon,
-    invoke: () => invokeToolControllerCommand(options.controlId),
+    invoke: context =>
+      context?.dialogPlacement || context?.dialogPresentation
+        ? invokeToolControllerCommand(options.controlId, context.dialogPlacement, context.dialogPresentation)
+        : invokeToolControllerCommand(options.controlId),
     searchTerms: options.searchTerms ?? []
   };
 }
@@ -322,14 +329,6 @@ export const TOOL_COMMANDS: readonly ToolCommand[] = [
     group: "analysis",
     shortcut: "Shift + A",
     searchTerms: ["statistics", "graphs", "data"]
-  }),
-  controllerCommand({
-    id: "analysis.minimap",
-    controlId: "openMinimapButton",
-    label: "Minimap",
-    description: "Open a navigable map overview",
-    group: "analysis",
-    searchTerms: ["overview", "navigate", "viewport"]
   }),
   controllerCommand({
     id: "analysis.notes",

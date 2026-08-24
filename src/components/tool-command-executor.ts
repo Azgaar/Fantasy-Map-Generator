@@ -1,5 +1,11 @@
 import { Controllers } from "@/controllers";
 import { tip } from "./tooltips";
+import {
+  type DomDialogPresentation,
+  withDomDialogPlacement,
+  withDomDialogPresentation
+} from "./ui/dialog-placement-context";
+import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 
 const TOOL_COMMAND_HANDLERS = {
   addBurgTool: () => Controllers.BurgCreator.toggle(),
@@ -24,7 +30,6 @@ const TOOL_COMMAND_HANDLERS = {
   editTradeAnimationButton: () => Controllers.TradeAnimationEditor.open(),
   editUnitsButton: () => Controllers.UnitsEditor.open(),
   editZonesButton: () => Controllers.ZonesEditor.open(),
-  openMinimapButton: () => Controllers.Minimap.open(),
   openSubmapTool: () => Controllers.SubmapTool.open(),
   openTransformTool: () => Controllers.TransformTool.open(),
   overviewBurgsButton: () => Controllers.BurgsOverview.open(),
@@ -47,12 +52,18 @@ export function toolsAreAvailable(): boolean {
   return false;
 }
 
-export function invokeToolControllerCommand(commandId: string): ToolCommandResult {
+export function invokeToolControllerCommand(
+  commandId: string,
+  dialogPlacement?: WorkspaceDialogPlacement,
+  dialogPresentation?: DomDialogPresentation
+): ToolCommandResult {
   if (!toolsAreAvailable()) return "blocked";
 
   const handler = TOOL_COMMAND_HANDLERS[commandId as ToolControllerCommandId];
   if (!handler) return "missing";
 
-  void handler();
+  const openDialog = () => (dialogPlacement ? withDomDialogPlacement(dialogPlacement, handler) : handler());
+  if (dialogPresentation) void withDomDialogPresentation(dialogPresentation, openDialog);
+  else void openDialog();
   return "executed";
 }

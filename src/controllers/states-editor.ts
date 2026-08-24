@@ -1,4 +1,4 @@
-import { drag, interpolateString, max, pack as packLayout, select, stratify } from "d3";
+import { drag, max, pack as packLayout, select, stratify } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -17,7 +17,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
-import { ManualAssignmentHistory, selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
+import { selectTerritoryEditorRow, TerritoryAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { renderBurgAdded, renderBurgChanged } from "@/renderers/burg-mutations";
@@ -25,10 +25,16 @@ import { drawBorders } from "@/renderers/draw-borders";
 import { clearEmblems, drawEmblems } from "@/renderers/draw-emblems";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { drawMilitary } from "@/renderers/draw-military";
+import { getAssignmentOverlay, getAssignmentPath } from "@/renderers/interaction/map-domain-overlay";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   ensureEl,
@@ -36,8 +42,6 @@ import {
   formatPrice,
   getAdjective,
   getMixedColor,
-  getPackPolygon,
-  getPointer,
   getRandomColor,
   isLand,
   P,
@@ -47,7 +51,7 @@ import {
   si
 } from "../utils";
 
-const statesManualHistory = new ManualAssignmentHistory();
+let statesAssignment: TerritoryAssignmentSession | null = null;
 
 const dialogId = "statesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -154,11 +158,11 @@ function open(): void {
   if (customization) return;
 
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleStates")) toggleStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
+  if (!window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (!window.LayerControls.isLayerOn("toggleBorders")) window.LayerControls.toggleLayer("toggleBorders");
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
+  if (window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
 
   renderDialog();
   States.collectStatistics();
@@ -244,7 +248,7 @@ function renderDialog(): void {
   });
 
   ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
-  ensureEl("statesEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("statesEditStyle").addEventListener("click", () => window.StyleEditor.edit("regions"));
   ensureEl("statesLegend").addEventListener("click", toggleLegend);
   ensureEl("statesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("statesChart").addEventListener("click", showStatesChart);
@@ -276,8 +280,7 @@ function renderDialog(): void {
     else if (classList.contains("statePopulation")) changePopulation(stateId);
     else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
-    else if (classList.contains("icon-target"))
-      highlightElement(select("#regions").select(`#state${stateId}`).node() as Element, 4);
+    else if (classList.contains("icon-target")) showStateHighlight(stateId);
     else if (classList.contains("icon-trash-empty")) stateRemovePrompt(stateId);
     else if (classList.contains("icon-lock") || classList.contains("icon-lock-open"))
       updateLockStatus(stateId, classList);
@@ -298,7 +301,7 @@ function renderDialog(): void {
 function closeStatesEditor(): void {
   if (customization === 2) exitStatesManualAssignment(true);
   if (customization === 3) exitAddStateMode();
-  select("#debug").selectAll(".highlight").remove();
+  clearMapInteractionOverlay();
   destroyDialog(dialogId);
 }
 
@@ -507,38 +510,26 @@ function getTypeOptions(type: string | number): string {
 }
 
 function stateHighlightOn(event: any): void {
-  if (!layerIsOn("toggleStates")) return;
+  if (!window.LayerControls.isLayerOn("toggleStates")) return;
   if (select("#deftemp").select("#fog path").size()) return;
 
-  const state = +event.target.dataset.id;
-  if (customization || !state) return;
-  const d = select("#regions").select(`#state${state}`).attr("d");
-
-  const path = select("#debug")
-    .append("path")
-    .attr("class", "highlight")
-    .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", "red")
-    .attr("stroke-width", 1)
-    .attr("opacity", 1)
-    .attr("filter", "url(#blur1)");
-
-  const totalLength = (path.node() as SVGPathElement).getTotalLength();
-  const duration = (totalLength + 5000) / 2;
-  const interpolate = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
-  path
-    .transition()
-    .duration(duration)
-    .attrTween("stroke-dasharray", () => interpolate);
+  const stateId = Number(event.currentTarget.dataset.id);
+  if (customization || !stateId) return;
+  showStateHighlight(stateId);
 }
 
 function stateHighlightOff(): void {
-  select("#debug")
-    .selectAll(".highlight")
-    .each(function (this: any) {
-      select(this).transition().duration(1000).attr("opacity", 0).remove();
-    });
+  updateMapInteractionOverlay({ highlight: null });
+}
+
+function showStateHighlight(stateId: number): void {
+  updateMapInteractionOverlay({
+    highlight: getAssignmentOverlay(pack.cells.state, stateId, {
+      fill: "none",
+      stroke: "red",
+      strokeWidth: 1
+    })
+  });
 }
 
 function stateChangeFill(fillBox: FillBoxElement): void {
@@ -548,8 +539,8 @@ function stateChangeFill(fillBox: FillBoxElement): void {
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
     pack.states[state].color = newFill;
-    drawStates();
-    if (layerIsOn("toggleMilitary")) drawMilitary();
+    window.LayerControls.redrawLayer("toggleStates");
+    if (window.LayerControls.isLayerOn("toggleMilitary")) drawMilitary();
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -887,7 +878,7 @@ function changePopulation(stateId: number): void {
       });
     }
 
-    if (layerIsOn("togglePopulation")) drawPopulation();
+    if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
     refreshStatesEditor();
   }
 }
@@ -977,9 +968,8 @@ function stateChangeExpansionism(state: number, line: HTMLElement, value: string
 
 function toggleFog(state: number, cl: DOMTokenList): void {
   if (customization) return;
-  const path = select("#statesBody").select(`#state${state}`).attr("d");
   const id = `focusState${state}`;
-  cl.contains("inactive") ? fog(id, path) : unfog(id);
+  cl.contains("inactive") ? fog(id, getAssignmentPath(pack.cells.state, state)) : unfog(id);
   cl.toggle("inactive");
 }
 
@@ -995,9 +985,6 @@ function stateRemovePrompt(state: number): void {
 }
 
 function stateRemove(stateId: number): void {
-  select("#statesBody").select(`#state${stateId}`).remove();
-  select("#statesBody").select(`#state-gap${stateId}`).remove();
-  select("#statesHalo").select(`#state-border${stateId}`).remove();
   delete pack.states[stateId].label;
 
   unfog(`focusState${stateId}`);
@@ -1019,8 +1006,7 @@ function stateRemove(stateId: number): void {
 
   // remove emblem
   const coaId = `stateCOA${stateId}`;
-  ensureEl(coaId).remove();
-  select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
+  document.getElementById(coaId)?.remove();
 
   // remove provinces
   (pack.states[stateId].provinces || []).forEach((p: number) => {
@@ -1030,11 +1016,7 @@ function stateRemove(stateId: number): void {
     });
 
     const coaId = `provinceCOA${p}`;
-    if (document.getElementById(coaId)) ensureEl(coaId).remove();
-    select("#emblems").select(`#provinceEmblems > use[data-i='${p}']`).remove();
-    const g = select("#provs").select("#provincesBody");
-    g.select(`#province${p}`).remove();
-    g.select(`#province-gap${p}`).remove();
+    document.getElementById(coaId)?.remove();
   });
 
   // remove military
@@ -1043,8 +1025,6 @@ function stateRemove(stateId: number): void {
     const index = notes.findIndex(n => n.id === id);
     if (index !== -1) notes.splice(index, 1);
   });
-  armies.select(`g#army${stateId}`).remove();
-
   // clean up neighbors references from other states
   pack.states.forEach(state => {
     if (!state.i || state.removed || !state.neighbors) return;
@@ -1053,11 +1033,13 @@ function stateRemove(stateId: number): void {
 
   pack.states[stateId] = { i: stateId, removed: true } as State;
 
-  select("#debug").selectAll(".highlight").remove();
+  clearMapInteractionOverlay();
 
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
+  drawEmblems();
+  drawMilitary();
 
   refreshStatesEditor();
 }
@@ -1264,15 +1246,15 @@ function recalculateStates(must?: boolean): void {
   Provinces.getPoles();
   States.getPoles();
 
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
     for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
     drawLabels();
   }
-  if (layerIsOn("toggleGoods")) drawGoods();
-  if (layerIsOn("toggleEmblems")) {
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("toggleEmblems")) {
     clearEmblems(["state", "province"]);
     drawEmblems();
   }
@@ -1303,9 +1285,9 @@ function exitRegenerationMenu(): void {
 }
 
 function enterStatesManualAssignent(): void {
-  if (!layerIsOn("toggleStates")) toggleStates();
+  if (!window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
   customization = 2;
-  select("#statesBody").append("g").attr("id", "temp");
+  statesAssignment = new TerritoryAssignmentSession("states", pack.cells.state);
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "none";
   });
@@ -1332,7 +1314,6 @@ function enterStatesManualAssignent(): void {
     .on("touchmove mousemove", moveStateBrush);
 
   ensureEl("statesBodySection").querySelector(".states")?.classList.add("selected");
-  statesManualHistory.reset();
 }
 
 function selectStateOnLineClick(this: HTMLElement): void {
@@ -1341,13 +1322,13 @@ function selectStateOnLineClick(this: HTMLElement): void {
   selectTerritoryEditorRow(ensureEl("statesBodySection"), this);
 }
 
-function selectStateOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
+function selectStateOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y);
   if (pack.cells.h[i!] < 20) return;
 
-  const assigned = select("#statesBody").select("#temp").select(`polygon[data-cell='${i}']`);
-  const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
+  const state = statesAssignment?.get(i!) ?? pack.cells.state[i!];
 
   const body = ensureEl("statesBodySection");
   selectTerritoryEditorRow(body, body.querySelector(`div[data-id='${state}']`));
@@ -1355,76 +1336,58 @@ function selectStateOnMapClick(this: any, event: any): void {
 
 function dragStateBrush(this: any, event: any): void {
   const r = +ensureEl<HTMLInputElement>("statesBrush").value;
-  saveStatesManualSnapshot();
+  statesAssignment?.beginStroke();
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])];
+    const found = r > 5 ? findAllCellsInRadius(point.x, point.y, r, pack) : [findCell(point.x, point.y)];
     const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeStateForSelection(selection);
+    if (selection.length) changeStateForSelection(selection);
   });
 }
 
 // change state within selection
 function changeStateForSelection(selection: number[]): void {
-  const temp = select("#statesBody").select("#temp");
-
   const $selected = ensureEl("statesBodySection").querySelector<HTMLElement>("div.selected")!;
   const stateNew = +$selected.dataset.id!;
-  const color = pack.states[stateNew].color || "#ffffff";
   const preventOverwrite = (document.getElementById("statesManuallyProtect") as HTMLInputElement | null)?.checked;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const stateOld = exists.size() ? +exists.attr("data-state") : pack.cells.state[i];
-    if (stateNew === stateOld) return;
-    if (preventOverwrite && stateOld) return;
-    if (i === pack.states[stateOld].center) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-state", stateNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-state", stateNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
+  const cells = selection.filter(cellId => {
+    const previousStateId = statesAssignment?.get(cellId) ?? pack.cells.state[cellId];
+    if (preventOverwrite && previousStateId) return false;
+    return cellId !== pack.states[previousStateId]?.center;
   });
+  const mutation = statesAssignment?.paint(cells, stateNew);
+  if (mutation?.changed) window.LayerControls.redrawLayer("toggleStates");
 }
 
-function moveStateBrush(this: any, event: any): void {
+function moveStateBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const point = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("statesBrush").value;
-  moveCircle(point[0], point[1], radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyStatesManualAssignent(): void {
-  const { cells } = pack as any;
-  const affectedStates: number[] = [];
-  const affectedProvinces: number[] = [];
-
-  select("#statesBody")
-    .select("#temp")
-    .selectAll<SVGPolygonElement, unknown>("polygon")
-    .each(function () {
-      const i = +this.dataset.cell!;
-      const c = +this.dataset.state!;
-      affectedStates.push(cells.state[i], c);
-      affectedProvinces.push(cells.province[i]);
-      cells.state[i] = c;
-      if (cells.burg[i]) pack.burgs[cells.burg[i]].state = c;
-    });
+  const mutation = statesAssignment?.commit();
+  statesAssignment = null;
+  const affectedStates = mutation?.affectedDomainIds.map(Number) ?? [];
+  const affectedProvinces = mutation?.affectedCellIds.map(cellId => pack.cells.province[cellId]) ?? [];
+  for (const cellId of mutation?.affectedCellIds ?? []) {
+    const burgId = pack.cells.burg[cellId];
+    if (burgId) pack.burgs[burgId].state = pack.cells.state[cellId];
+  }
 
   if (affectedStates.length) {
     refreshStatesEditor();
     States.getPoles();
-    layerIsOn("toggleStates") ? drawStates() : toggleStates();
+    window.LayerControls.isLayerOn("toggleStates")
+      ? window.LayerControls.redrawLayer("toggleStates")
+      : window.LayerControls.toggleLayer("toggleStates");
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
       const statesToRefit = [...new Set(affectedStates)];
       for (const stateId of statesToRefit) {
@@ -1433,8 +1396,8 @@ function applyStatesManualAssignent(): void {
       drawLabels();
     }
     adjustProvinces([...new Set(affectedProvinces)]);
-    layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
-    if (layerIsOn("toggleProvinces")) drawProvinces();
+    window.LayerControls.isLayerOn("toggleBorders") ? drawBorders() : window.LayerControls.toggleLayer("toggleBorders");
+    if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
   }
 
   exitStatesManualAssignment(false);
@@ -1591,8 +1554,11 @@ function adjustProvinces(affectedProvinces: number[]): void {
 
 function exitStatesManualAssignment(close: boolean): void {
   customization = 0;
-  statesManualHistory.reset();
-  select("#statesBody").select("#temp").remove();
+  if (statesAssignment) {
+    statesAssignment.cancel();
+    statesAssignment = null;
+    window.LayerControls.redrawLayer("toggleStates");
+  }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "inline-block";
@@ -1615,18 +1581,16 @@ function exitStatesManualAssignment(close: boolean): void {
   if (selected) selected.classList.remove("selected");
 }
 
-function saveStatesManualSnapshot(): void {
-  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp) return;
-
-  statesManualHistory.push(temp.innerHTML);
+function undoStatesManualAssignment(): void {
+  if (statesAssignment?.undo()) window.LayerControls.redrawLayer("toggleStates");
 }
 
-function undoStatesManualAssignment(): void {
-  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp || !statesManualHistory.hasSnapshots) return;
-
-  temp.innerHTML = statesManualHistory.pop()!;
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
 }
 
 function enterAddStateMode(this: HTMLElement): void {
@@ -1647,8 +1611,9 @@ function enterAddStateMode(this: HTMLElement): void {
 
 function addState(this: SVGElement, event: MouseEvent): void {
   const { cells, states, burgs } = pack as any;
-  const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const center = findCell(point.x, point.y)!;
   if (cells.h[center] < 20) {
     tip("You cannot place state into the water. Please click on a land cell", false, "error");
     return;
@@ -1660,7 +1625,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
     return;
   }
 
-  const addedBurg = burgId ? undefined : Burgs.add(point as [number, number]);
+  const addedBurg = burgId ? undefined : Burgs.add([point.x, point.y]);
   if (addedBurg) burgId = addedBurg.burgId;
 
   const oldState = cells.state[center];
@@ -1740,9 +1705,11 @@ function addState(this: SVGElement, event: MouseEvent): void {
   drawLabels();
   COArenderer.add("state", newState, coa as any, states[newState].pole[0], states[newState].pole[1]);
 
-  layerIsOn("toggleProvinces") && toggleProvinces();
-  layerIsOn("toggleStates") ? drawStates() : toggleStates();
-  layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
+  window.LayerControls.isLayerOn("toggleProvinces") && window.LayerControls.toggleLayer("toggleProvinces");
+  window.LayerControls.isLayerOn("toggleStates")
+    ? window.LayerControls.redrawLayer("toggleStates")
+    : window.LayerControls.toggleLayer("toggleStates");
+  window.LayerControls.isLayerOn("toggleBorders") ? drawBorders() : window.LayerControls.toggleLayer("toggleBorders");
 
   statesTable.refresh();
 }
@@ -1804,31 +1771,10 @@ function openStateMergeDialog(): void {
   applyLineHighlighting("mergeStatesForm", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
-    if (!layerIsOn("toggleStates")) return;
+    if (!window.LayerControls.isLayerOn("toggleStates")) return;
     const state = +event.currentTarget.dataset.id;
     if (!state) return;
-    const d = select("#regions").select(`#state${state}`).attr("d");
-    if (!d) return;
-
-    stateHighlightOff();
-
-    const path = select("#debug")
-      .append("path")
-      .attr("class", "highlight")
-      .attr("d", d)
-      .attr("fill", "none")
-      .attr("stroke", "red")
-      .attr("stroke-width", 1)
-      .attr("opacity", 1)
-      .attr("filter", "url(#blur1)");
-
-    const totalLength = (path.node() as SVGPathElement).getTotalLength();
-    const duration = (totalLength + 5000) / 2;
-    const interpolate = interpolateString(`0, ${totalLength}`, `${totalLength}, ${totalLength}`);
-    path
-      .transition()
-      .duration(duration)
-      .attrTween("stroke-dasharray", () => interpolate);
+    showStateHighlight(state);
   }
 
   showDomDialog({
@@ -1876,41 +1822,31 @@ function openStateMergeDialog(): void {
 
   function mergeStates(statesToMerge: number[], rulingStateId: number) {
     const rulingState = pack.states[rulingStateId];
-    const rulingStateArmy = ensureEl(`army${rulingStateId}`);
+    if (!rulingState.military) rulingState.military = [];
+    const rulingStateMilitary = rulingState.military;
+    let nextRegimentId = rulingStateMilitary.length
+      ? Math.max(...rulingStateMilitary.map(regiment => regiment.i)) + 1
+      : 0;
 
     // remove states to be merged
     statesToMerge.forEach(stateId => {
       const state = pack.states[stateId];
       state.removed = true;
 
-      select("#statesBody").select(`#state${stateId}`).remove();
-      select("#statesBody").select(`#state-gap${stateId}`).remove();
-      select("#statesHalo").select(`#state-border${stateId}`).remove();
       delete pack.states[stateId].label;
 
-      ensureEl(`stateCOA${stateId}`).remove();
-      select("#emblems").select(`#stateEmblems > use[data-i='${stateId}']`).remove();
+      document.getElementById(`stateCOA${stateId}`)?.remove();
 
       // add merged state regiments to the ruling state
       (state.military || []).forEach((regiment: any) => {
         const oldId = `regiment${stateId}-${regiment.i}`;
-        const newIndex = (rulingState.military || []).length;
-        (rulingState.military || []).push({ ...regiment, i: newIndex });
-        const newId = `regiment${rulingStateId}-${newIndex}`;
+        const newRegimentId = nextRegimentId++;
+        rulingStateMilitary.push({ ...regiment, i: newRegimentId, state: rulingStateId });
+        const newId = `regiment${rulingStateId}-${newRegimentId}`;
 
         const note = notes.find(n => n.id === oldId);
         if (note) note.id = newId;
-
-        const element = document.getElementById(oldId);
-        if (element) {
-          element.id = newId;
-          element.dataset.state = String(rulingStateId);
-          element.dataset.id = String(newIndex);
-          rulingStateArmy.appendChild(element);
-        }
       });
-
-      armies.select(`g#army${stateId}`).remove();
     });
 
     // reassing burgs
@@ -1928,6 +1864,9 @@ function openStateMergeDialog(): void {
     pack.provinces.forEach(province => {
       if (statesToMerge.includes(province.state)) province.state = rulingStateId;
     });
+    rulingState.provinces = pack.provinces
+      .filter(province => province.i && !province.removed && province.state === rulingStateId)
+      .map(province => province.i);
 
     // reassing cells
     pack.cells.state.forEach((s: number, i: number) => {
@@ -1935,16 +1874,20 @@ function openStateMergeDialog(): void {
     });
 
     unfog();
-    select("#debug").selectAll(".highlight").remove();
+    clearMapInteractionOverlay();
 
     States.getPoles();
-    layerIsOn("toggleStates") ? drawStates() : toggleStates();
-    layerIsOn("toggleBorders") ? drawBorders() : toggleBorders();
-    layerIsOn("toggleProvinces") && drawProvinces();
+    window.LayerControls.isLayerOn("toggleStates")
+      ? window.LayerControls.redrawLayer("toggleStates")
+      : window.LayerControls.toggleLayer("toggleStates");
+    window.LayerControls.isLayerOn("toggleBorders") ? drawBorders() : window.LayerControls.toggleLayer("toggleBorders");
+    window.LayerControls.isLayerOn("toggleProvinces") && window.LayerControls.redrawLayer("toggleProvinces");
 
     if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
     drawLabels();
+    drawEmblems();
+    drawMilitary();
     refreshStatesEditor();
   }
 }

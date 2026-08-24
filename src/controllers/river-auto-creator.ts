@@ -17,7 +17,7 @@ function toggle(): void {
     "Click on map to place new river or extend an existing one. Hold Shift to place multiple rivers",
     "warn"
   );
-  if (!layerIsOn("toggleRivers")) toggleRivers();
+  if (!window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.toggleLayer("toggleRivers");
 }
 
 function addOnClick(event: MouseEvent): void {
@@ -47,7 +47,7 @@ function addAt(point: Point, finalize = true): boolean {
     return false;
   }
 
-  drawRivers();
+  window.LayerControls.redrawLayer("toggleRivers");
   if (finalize) {
     Lakes.cleanupLakeData();
     refreshEditors();

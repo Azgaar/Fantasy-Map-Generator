@@ -1,10 +1,12 @@
 import type { LabelType } from "@/generators/labels-generator";
+import type { MapHit } from "@/renderers/core/map-renderer";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
 
 export type MapContextEntityKind =
   | "burg"
   | "coastline"
+  | "compass"
   | "emblem"
   | "goods"
   | "ice"
@@ -22,11 +24,13 @@ export type MapContextEntityKind =
 
 export interface MapContextEntity {
   element?: SVGElement;
+  emblemType?: "burg" | "province" | "state";
   id?: number;
   key: string;
   kind: MapContextEntityKind;
   label: string;
   labelType?: LabelType;
+  stateId?: number;
 }
 
 export type MapContextAreaKind = "biome" | "culture" | "province" | "religion" | "state";
@@ -51,15 +55,29 @@ interface MapContextInput {
   cellId: number;
   clientX: number;
   clientY: number;
-  elements: Element[];
+  elements?: Element[];
+  hit?: MapHit | null;
   pack: PackedGraph;
   point: Point;
 }
 
 const capitalize = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
 
-export function buildMapContext({ cellId, clientX, clientY, elements, pack, point }: MapContextInput): MapContext {
+export function buildMapContext({
+  cellId,
+  clientX,
+  clientY,
+  elements = [],
+  hit,
+  pack,
+  point
+}: MapContextInput): MapContext {
   const entities = collectEntities(elements, pack);
+  if (hit) addHitEntity(entities, hit, pack);
+  const riverId = pack.cells.r?.[cellId];
+  if (riverId) addEntity(entities, getRiverEntity(riverId, pack));
+  const routeIds = Object.values(pack.cells.routes?.[cellId] || {});
+  for (const routeId of new Set(routeIds)) addEntity(entities, getRouteEntity(routeId, pack));
   const cellBurgId = pack.cells.burg[cellId];
   if (cellBurgId) addEntity(entities, getBurgEntity(cellBurgId, pack));
 
@@ -70,6 +88,116 @@ export function buildMapContext({ cellId, clientX, clientY, elements, pack, poin
   return { areas, cellId, clientX, clientY, entities, point, title };
 }
 
+function addHitEntity(entities: MapContextEntity[], hit: MapHit, pack: PackedGraph): void {
+  const id = Number(hit.domainId);
+  switch (hit.domainKind) {
+    case "burg": {
+      addEntity(entities, getBurgEntity(id, pack));
+      return;
+    }
+    case "coastline": {
+      addEntity(entities, getCoastlineEntity(id, pack));
+      return;
+    }
+    case "compass": {
+      addEntity(entities, { key: "compass", kind: "compass", label: "Wind rose" });
+      return;
+    }
+    case "emblem": {
+      const type = String(hit.subPart?.type || "state") as "burg" | "province" | "state";
+      const ownerName =
+        type === "burg"
+          ? pack.burgs[id]?.name
+          : type === "province"
+            ? pack.provinces[id]?.fullName || pack.provinces[id]?.name
+            : pack.states[id]?.fullName || pack.states[id]?.name;
+      addEntity(entities, {
+        emblemType: type,
+        id,
+        key: `emblem:${type}:${id}`,
+        kind: "emblem",
+        label: `${ownerName || type} emblem`
+      });
+      if (type === "burg") addEntity(entities, getBurgEntity(id, pack));
+      return;
+    }
+    case "good": {
+      const burgId = Number(hit.subPart?.burgId);
+      if (Number.isFinite(burgId)) addEntity(entities, getProductionEntity(burgId, pack));
+      else addEntity(entities, { key: "goods", kind: "goods", label: "Goods" });
+      return;
+    }
+    case "ice": {
+      addEntity(entities, getIceEntity(id, pack));
+      return;
+    }
+    case "label": {
+      addHitLabelEntities(entities, hit, pack);
+      return;
+    }
+    case "lake": {
+      addEntity(entities, getLakeEntity(id, pack));
+      return;
+    }
+    case "market": {
+      addEntity(entities, getMarketEntity(id, pack));
+      return;
+    }
+    case "marker": {
+      const marker = pack.markers.find(item => item.i === id);
+      addEntity(entities, {
+        id,
+        key: `marker:${id}`,
+        kind: "marker",
+        label: marker?.type ? `${capitalize(marker.type.replaceAll("_", " "))} marker` : `Marker ${id}`
+      });
+      return;
+    }
+    case "regiment": {
+      addEntity(entities, getRegimentEntityById(Number(hit.subPart?.stateId), Number(hit.subPart?.regimentId), pack));
+      return;
+    }
+    case "relief": {
+      addEntity(entities, { id, key: `relief:${id}`, kind: "relief", label: "Relief icon" });
+      return;
+    }
+    case "river": {
+      addEntity(entities, getRiverEntity(id, pack));
+      return;
+    }
+    case "route": {
+      addEntity(entities, getRouteEntity(id, pack));
+      return;
+    }
+    case "zone": {
+      addEntity(entities, getZoneEntity(id, pack));
+      return;
+    }
+  }
+}
+
+function addHitLabelEntities(entities: MapContextEntity[], hit: MapHit, pack: PackedGraph): void {
+  const id = Number(hit.subPart?.entityId);
+  const labelType = String(hit.subPart?.type || "state") as LabelType;
+  const entityNames: Partial<Record<LabelType, string | undefined>> = {
+    burg: pack.burgs[id]?.name,
+    province: pack.provinces[id]?.fullName || pack.provinces[id]?.name,
+    river: pack.rivers.find(item => item.i === id)?.name,
+    route: pack.routes.find(item => item.i === id)?.name,
+    state: pack.states[id]?.fullName || pack.states[id]?.name
+  };
+  addEntity(entities, {
+    id,
+    key: `label:${labelType}:${id}`,
+    kind: "label",
+    label: `${entityNames[labelType] || capitalize(labelType)} label`,
+    labelType
+  });
+  if (labelType === "burg") addEntity(entities, getBurgEntity(id, pack));
+  else if (labelType === "river") addEntity(entities, getRiverEntity(id, pack));
+  else if (labelType === "route") addEntity(entities, getRouteEntity(id, pack));
+}
+
 function collectEntities(elements: Element[], pack: PackedGraph): MapContextEntity[] {
   const entities: MapContextEntity[] = [];
 
@@ -77,22 +205,8 @@ function collectEntities(elements: Element[], pack: PackedGraph): MapContextEnti
     const label = element.closest<SVGTextElement>("#labels text[data-label-type][data-id]");
     if (label) addLabelEntities(entities, label, pack);
 
-    const burg = element.closest<SVGElement>("#burgIcons [data-id]");
-    if (burg) addEntity(entities, getBurgEntity(Number(burg.dataset.id), pack, burg));
-
     const emblem = element.closest<SVGElement>("#emblems use[data-i]");
     if (emblem) addEmblemEntities(entities, emblem, pack);
-
-    const river = element.closest<SVGElement>("#rivers [id^='river']");
-    if (river && /^river\d+$/.test(river.id))
-      addEntity(entities, getRiverEntity(Number(river.id.slice(5)), pack, river));
-
-    const route = element.closest<SVGElement>("#routes [id^='route']");
-    if (route && /^route\d+$/.test(route.id))
-      addEntity(entities, getRouteEntity(Number(route.id.slice(5)), pack, route));
-
-    const marker = element.closest<SVGElement>("#markers [data-id]");
-    if (marker) addEntity(entities, getMarkerEntity(Number(marker.dataset.id), pack, marker));
 
     const lake = element.closest<SVGElement>("#lakes [data-f]");
     if (lake) addEntity(entities, getLakeEntity(Number(lake.dataset.f), pack, lake));
@@ -159,6 +273,7 @@ function addEmblemEntities(entities: MapContextEntity[], element: SVGElement, pa
         ? pack.provinces[id]?.fullName || pack.provinces[id]?.name
         : pack.states[id]?.fullName || pack.states[id]?.name;
   addEntity(entities, {
+    emblemType: type,
     element,
     id,
     key: `emblem:${type}:${id}`,
@@ -182,24 +297,18 @@ function getRouteEntity(id: number, pack: PackedGraph, element?: SVGElement): Ma
   return { element, id, key: `route:${id}`, kind: "route", label: route?.name || `Route ${id}` };
 }
 
-function getMarkerEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
-  const marker = pack.markers.find(item => item.i === id);
-  const label = marker?.type ? `${capitalize(marker.type)} marker` : `Marker ${id}`;
-  return { element, id, key: `marker:${id}`, kind: "marker", label };
-}
-
-function getLakeEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getLakeEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const lake = pack.features[id];
   return { element, id, key: `lake:${id}`, kind: "lake", label: lake?.name || `Lake ${id}` };
 }
 
-function getCoastlineEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getCoastlineEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const feature = pack.features[id];
   const label = feature?.name || (feature?.group ? capitalize(feature.group.replaceAll("_", " ")) : `Coastline ${id}`);
   return { element, id, key: `coastline:${id}`, kind: "coastline", label };
 }
 
-function getIceEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getIceEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const ice = pack.ice.find(item => item.i === id);
   return { element, id, key: `ice:${id}`, kind: "ice", label: `${capitalize(ice?.type || "ice")} ${id}` };
 }
@@ -207,28 +316,33 @@ function getIceEntity(id: number, pack: PackedGraph, element: SVGElement): MapCo
 function getRegimentEntity(element: SVGElement, pack: PackedGraph): MapContextEntity {
   const stateId = Number(element.dataset.state);
   const id = Number(element.dataset.id);
+  return getRegimentEntityById(stateId, id, pack, element);
+}
+
+function getRegimentEntityById(stateId: number, id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const regiment = pack.states[stateId]?.military?.find(item => item.i === id);
   return {
     element,
     id,
     key: `regiment:${stateId}:${id}`,
     kind: "regiment",
-    label: regiment?.name || element.dataset.name || `Regiment ${id}`
+    label: regiment?.name || element?.dataset.name || `Regiment ${id}`,
+    stateId
   };
 }
 
-function getZoneEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getZoneEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const zone = pack.zones.find(item => item.i === id);
   return { element, id, key: `zone:${id}`, kind: "zone", label: zone?.name || `Zone ${id}` };
 }
 
-function getMarketEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getMarketEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   const market = pack.markets.find(item => item.i === id);
   const burg = market && pack.burgs[market.centerBurgId];
   return { element, id, key: `market:${id}`, kind: "market", label: `${burg?.name || `Market ${id}`} market` };
 }
 
-function getProductionEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getProductionEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   return {
     element,
     id,

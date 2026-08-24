@@ -48,12 +48,9 @@ function createOverlappingHit(): Element {
     dataset: { id: "2", labelType: "burg" },
     textContent: "West|watch"
   } as unknown as SVGTextElement;
-  const route = { id: "route7" } as SVGElement;
-
   return {
     closest: (selector: string) => {
       if (selector === "#labels text[data-label-type][data-id]") return label;
-      if (selector === "#routes [id^='route']") return route;
       return null;
     }
   } as unknown as Element;
@@ -61,12 +58,14 @@ function createOverlappingHit(): Element {
 
 describe("buildMapContext", () => {
   test("collects and de-duplicates overlapping objects at a cell", () => {
+    const pack = createPack();
+    pack.cells.routes = [{ 1: 7 }];
     const context = buildMapContext({
       cellId: 0,
       clientX: 400,
       clientY: 300,
       elements: [createOverlappingHit()],
-      pack: createPack(),
+      pack,
       point: [120.25, 84.5]
     });
 
@@ -96,5 +95,29 @@ describe("buildMapContext", () => {
       { id: 1, kind: "religion", label: "Old Faith" },
       { id: 1, kind: "biome", label: "Temperate grassland" }
     ]);
+  });
+
+  test("collects Pixi hits without reading SVG event targets", () => {
+    const pack = createPack();
+    const context = buildMapContext({
+      cellId: 0,
+      clientX: 20,
+      clientY: 30,
+      hit: {
+        distance: 0,
+        domainId: "burg-label:2",
+        domainKind: "label",
+        kind: "label",
+        layer: "labels",
+        mapPoint: { x: 10, y: 15 },
+        screenPoint: { x: 20, y: 30 },
+        subPart: { entityId: 2, type: "burg" }
+      },
+      pack,
+      point: [10, 15]
+    });
+
+    expect(context.entities.map(entity => entity.key)).toEqual(["label:burg:2", "burg:2"]);
+    expect(context.title).toBe("Westwatch label");
   });
 });

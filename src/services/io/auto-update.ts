@@ -1,22 +1,24 @@
 // Legacy SVG/DOM migrations for old map files. State-only migrations live in data-migrations.ts.
 import { color, min, select } from "d3";
+import { CUSTOM_STYLE_PRESET_PREFIX } from "@/components/style/style-preset-constants";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
-import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { ensureMeasurerIds, type Measurer, type MeasurerType } from "@/generators/measurers-generator";
+import { ensureReliefIconIds } from "@/generators/relief-generator";
 import type { Point } from "@/generators/voronoi";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawEmblems } from "@/renderers/draw-emblems";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { drawIce } from "@/renderers/draw-ice";
-import { drawMarkers } from "@/renderers/draw-markers";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawMilitary } from "@/renderers/draw-military";
 import { setReliefLayerActive } from "@/renderers/draw-relief-icons";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
+import { invalidateBurgSymbols, invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
 import type { LabelGroupStyle } from "@/types/style";
@@ -28,11 +30,11 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
 
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
-    relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+    select("#viewbox").insert("g", "#terrain").attr("id", "relig");
     Religions.generate();
 
     // v1.0 added a legend box
-    legend = svg.append("g").attr("id", "legend");
+    select("#map").append("g").attr("id", "legend");
     select("#legend")
       .attr("font-family", "Almendra SC")
       .attr("font-size", 13)
@@ -45,8 +47,8 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       .attr("stroke-linecap", "round");
 
     // v1.0 separated drawBorders fron drawStates()
-    stateBorders = borders.append("g").attr("id", "stateBorders");
-    provinceBorders = borders.append("g").attr("id", "provinceBorders");
+    select("#borders").append("g").attr("id", "stateBorders");
+    select("#borders").append("g").attr("id", "provinceBorders");
     select("#borders")
       .attr("opacity", null)
       .attr("stroke", null)
@@ -68,18 +70,19 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       .attr("stroke-linecap", "butt");
 
     // v1.0 added state relations, provinces, forms and full names
-    provs = viewbox.insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
+    select("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
     States.collectStatistics();
     States.generateCampaigns();
     States.generateDiplomacy();
     States.defineStateForms();
     Provinces.generate();
     Provinces.getPoles();
-    if (!layerIsOn("toggleBorders")) select("#borders").style("display", "none");
-    if (!layerIsOn("toggleStates")) select("#regions").attr("display", "none").selectAll("path").remove();
+    if (!window.LayerControls.isLayerOn("toggleBorders")) select("#borders").style("display", "none");
+    if (!window.LayerControls.isLayerOn("toggleStates"))
+      select("#regions").attr("display", "none").selectAll("path").remove();
 
     // v1.0 added zones layer
-    zones = viewbox.insert("g", "#borders").attr("id", "zones").attr("display", "none");
+    select("#viewbox").insert("g", "#borders").attr("id", "zones").attr("display", "none");
     select("#zones")
       .attr("opacity", 0.6)
       .attr("stroke", null)
@@ -87,13 +90,13 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
     Zones.generate();
-    if (!select("#markers").selectAll("*").size()) {
+    if (!pack.markers?.length) {
       Markers.generate();
-      turnButtonOn("toggleMarkers");
+      window.LayerControls.setLayerVisibility("toggleMarkers", true);
     }
 
     // v1.0 add fogging layer (state focus)
-    fogging = viewbox
+    select("#viewbox")
       .insert("g", "#ruler")
       .attr("id", "fogging-cont")
       .attr("mask", "url(#fog)")
@@ -129,7 +132,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
 
   if (isOlderThan("1.1.0")) {
     // v1.0 code had a bug with religion layer id
-    if (!select("#relig").size()) relig = viewbox.insert("g", "#terrain").attr("id", "relig");
+    if (!select("#relig").size()) select("#viewbox").insert("g", "#terrain").attr("id", "relig");
 
     // v1.0 had Sympathy status then relaced with Friendly
     for (const s of pack.states) {
@@ -246,6 +249,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     unfog();
 
     // v1.2 added new terrain attributes
+    const terrain = select("#terrain");
     if (!terrain.attr("set")) terrain.attr("set", "simple");
     if (!terrain.attr("size")) terrain.attr("size", 1);
     if (!terrain.attr("density")) terrain.attr("density", 0.4);
@@ -299,7 +303,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     States.generateCampaigns();
 
     // v1.3 added militry layer
-    armies = viewbox.insert("g", "#icons").attr("id", "armies");
+    const armies = select("#viewbox").insert("g", "#icons").attr("id", "armies");
     armies
       .attr("opacity", 1)
       .attr("fill-opacity", 1)
@@ -307,7 +311,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       .attr("box-size", 3)
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
-    turnButtonOn("toggleMilitary");
+    window.LayerControls.setLayerVisibility("toggleMilitary", true);
     Military.generate();
   }
 
@@ -325,7 +329,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     }
 
     // v1.4 added ice layer
-    ice = viewbox.insert("g", "#coastline").attr("id", "ice").style("display", "none");
+    select("#viewbox").insert("g", "#coastline").attr("id", "ice").style("display", "none");
     select("#ice")
       .attr("opacity", null)
       .attr("fill", "#e8f0f6")
@@ -382,25 +386,24 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
 
     // v1.5 added emblems
     select("#deftemp").append("g").attr("id", "defs-emblems");
-    emblems = viewbox
-      .insert("g", "#population")
-      .attr("id", "emblems")
-      .style("display", "none") as unknown as typeof emblems;
+    select("#viewbox").insert("g", "#population").attr("id", "emblems").style("display", "none");
     select("#emblems").append("g").attr("id", "burgEmblems");
     select("#emblems").append("g").attr("id", "provinceEmblems");
     select("#emblems").append("g").attr("id", "stateEmblems");
     COA.regenerate();
     drawEmblems();
-    toggleEmblems();
+    window.LayerControls.toggleLayer("toggleEmblems");
 
     // v1.5 changed releif icons data
-    terrain.selectAll<SVGUseElement, unknown>("use").each(function () {
-      const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
-      this.removeAttribute("xlink:href");
-      this.removeAttribute("data-type");
-      this.removeAttribute("data-size");
-      if (type) this.setAttribute("href", type);
-    });
+    select("#terrain")
+      .selectAll<SVGUseElement, unknown>("use")
+      .each(function () {
+        const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
+        this.removeAttribute("xlink:href");
+        this.removeAttribute("data-type");
+        this.removeAttribute("data-size");
+        if (type) this.setAttribute("href", type);
+      });
   }
 
   if (isOlderThan("1.6.0")) {
@@ -486,9 +489,9 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     select("#ruler").selectAll("*").remove();
 
     if (pack.measurers.length) {
-      turnButtonOn("toggleRulers");
+      window.LayerControls.setLayerVisibility("toggleRulers", true);
       drawMeasurers();
-    } else turnButtonOff("toggleRulers");
+    } else window.LayerControls.setLayerVisibility("toggleRulers", false);
 
     // 1.61 changed oceanicPattern from rect to image
     const pattern = document.getElementById("oceanic")!;
@@ -623,7 +626,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       markerElements.forEach(el => {
         el.remove();
       });
-      if (layerIsOn("markers")) drawMarkers();
+      if (window.LayerControls.isLayerOn("toggleMarkers")) invalidateMarkerSymbols();
     }
   }
 
@@ -632,7 +635,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     const storedStyles = Object.keys(localStorage).filter(key => key.startsWith("style"));
     storedStyles.forEach(styleName => {
       const style = localStorage.getItem(styleName)!;
-      const newStyleName = styleName.replace(/^style/, customPresetPrefix);
+      const newStyleName = styleName.replace(/^style/, CUSTOM_STYLE_PRESET_PREFIX);
       localStorage.setItem(newStyleName, style);
       localStorage.removeItem(styleName);
     });
@@ -758,7 +761,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       select("#texture").attr("data-href", href).attr("data-x", x).attr("data-y", y);
       // recreate image in expected format
       textureImage.remove();
-      drawTexture();
+      invalidatePixiRendererLayer("texture");
     }
   }
 
@@ -836,12 +839,12 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       .attr("curve", curve)
       .attr("mask", "url(#land)");
 
-    if (layerIsOn("toggleHeight")) drawHeightmap();
+    if (window.LayerControls.isLayerOn("toggleHeight")) drawHeightmap();
 
     // v1.96.00 moved scaleBar options from units editor to style
     select("#scaleBar").remove();
 
-    scaleBar = svg
+    select("#map")
       .insert("g", "#viewbox + *")
       .attr("id", "scaleBar")
       .attr("opacity", 1)
@@ -868,30 +871,20 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     drawScaleBar(select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], scale);
     fitScaleBar(select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], svgWidth, svgHeight);
 
-    if (!layerIsOn("toggleScaleBar")) select("#scaleBar").style("display", "none");
+    if (!window.LayerControls.isLayerOn("toggleScaleBar")) select("#scaleBar").style("display", "none");
 
     // v1.96.00 changed coloring approach for regiments
-    armies.selectAll<SVGGElement, unknown>(":scope > g").each(function () {
-      const fill = this.getAttribute("fill");
-      if (!fill) return;
-      const darkerColor = color(fill)!.darker().formatHex();
-      this.setAttribute("color", darkerColor);
-      this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
-        rect.setAttribute("fill", "currentColor");
+    select("#armies")
+      .selectAll<SVGGElement, unknown>(":scope > g")
+      .each(function () {
+        const fill = this.getAttribute("fill");
+        if (!fill) return;
+        const darkerColor = color(fill)!.darker().formatHex();
+        this.setAttribute("color", darkerColor);
+        this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
+          rect.setAttribute("fill", "currentColor");
+        });
       });
-    });
-  }
-
-  if (isOlderThan("1.98.0")) {
-    // v1.98.00 changed compass layer and rose element id
-    const rose = select("#compass").select("use");
-    rose.attr("xlink:href", "#defs-compass-rose");
-
-    if (!select("#compass").selectAll("*").size()) {
-      select("#compass").style("display", "none");
-      select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
-      shiftCompass();
-    }
   }
 
   if (isOlderThan("1.99.0")) {
@@ -938,7 +931,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       }
     }
     select("#routes").selectAll("path").remove();
-    if (layerIsOn("toggleRoutes")) drawRoutes();
+    if (window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.redrawLayer("toggleRoutes");
 
     pack.cells.routes = {};
     const links = pack.cells.routes;
@@ -972,7 +965,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
         pack.zones.push({ i, name, type, cells, color } as unknown as (typeof pack.zones)[number]);
       });
     select("#zones").style("display", null).selectAll("*").remove();
-    if (layerIsOn("toggleZones")) drawZones();
+    if (window.LayerControls.isLayerOn("toggleZones")) window.LayerControls.redrawLayer("toggleZones");
   }
 
   if (isOlderThan("1.104.0")) {
@@ -1012,8 +1005,8 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
 
   if (isOlderThan("1.107.0")) {
     // v1.107.0 allowed custom images for markers and regiments
-    if (layerIsOn("toggleMarkers")) drawMarkers();
-    if (layerIsOn("toggleMilitary")) drawMilitary();
+    if (window.LayerControls.isLayerOn("toggleMarkers")) invalidateMarkerSymbols();
+    if (window.LayerControls.isLayerOn("toggleMilitary")) drawMilitary();
   }
 
   if (isOlderThan("1.108.0")) {
@@ -1093,8 +1086,8 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       }
     });
 
-    layerIsOn("toggleBurgIcons") && drawBurgIcons();
-    const opts = options as Record<string, unknown>;
+    window.LayerControls.isLayerOn("toggleBurgIcons") && invalidateBurgSymbols();
+    const opts = options as unknown as Record<string, unknown>;
     delete opts.showBurgPreview;
     delete opts.showMFCGMap;
     delete opts.villageMaxPopulation;
@@ -1157,7 +1150,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
         });
       } else {
         // If ice layer element doesn't exist, create it
-        ice = viewbox.insert("g", "#coastline").attr("id", "ice");
+        select("#viewbox").insert("g", "#coastline").attr("id", "ice");
         select("#ice")
           .attr("opacity", null)
           .attr("fill", "#e8f0f6")
@@ -1167,7 +1160,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       }
 
       // Re-render ice from migrated data
-      if (layerIsOn("toggleIce")) drawIce();
+      if (window.LayerControls.isLayerOn("toggleIce")) drawIce();
     }
   }
 
@@ -1180,7 +1173,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
 
   if (isOlderThan("1.124.0")) {
     // v1.124.0 added goods, markets, deals and trade animation data
-    goods = viewbox
+    select("#viewbox")
       .insert("g", "#emblems")
       .attr("id", "goods")
       .style("display", "none")
@@ -1189,9 +1182,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
     select("#goods").append("g").attr("id", "goodsCells");
     select("#goods").append("g").attr("id", "goodsIcons").attr("data-circle", "1");
     select("#goods").append("g").attr("id", "goodsBurgs");
-    markets = viewbox.insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
-    tradeAnimation = viewbox.insert("g", "#goods").attr("id", "tradeAnimation");
-
+    select("#viewbox").insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
     options.trade = { animation: TradeAnimation.getDefaultOptions() };
 
     for (const state of pack.states) {
@@ -1262,7 +1253,7 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
         .attr("relax", null)
         .attr("curve", null)
         .attr("mask", null);
-      if (layerIsOn("toggleHeight")) drawHeightmap();
+      if (window.LayerControls.isLayerOn("toggleHeight")) drawHeightmap();
     }
   }
 
@@ -1510,10 +1501,12 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
           y: rn(Number(useEl.getAttribute("y")), 2),
           s: rn(Number(useEl.getAttribute("width")), 2)
         }));
+        ensureReliefIconIds(pack.relief);
         terrainEl.replaceChildren();
       }
 
       setReliefLayerActive(iconElements.length > 0 && getComputedStyle(terrainEl).display !== "none");
     }
   }
+  ensureMeasurerIds(pack.measurers);
 }

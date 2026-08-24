@@ -7,12 +7,20 @@ import "./zoom";
 import "./viewbox-events";
 import "./tools";
 import "./hotkeys";
+import "./options/options-runtime";
 import { destroyDialog, updateDialog } from "./dialog/dialog-helpers";
+import { initializeLayerControlsRuntime } from "./layers/layer-controls-runtime";
+import { initializeMapStyleControls } from "./style/map-style-controls";
+import "./style/style-editor-loader";
+import "./style/style-presets-runtime";
 import "./dialog/sorting";
 import { enableVerticalSortable } from "./dialog/vertical-sortable";
 import { enableElementDragging } from "./element-dragging";
 import "./fill-box";
 import "./slider-input";
+import { svgDefinitionsReady } from "./svg-definitions-loader";
+
+void svgDefinitionsReady;
 
 Object.assign(window, {
   destroyDialog,
@@ -24,8 +32,11 @@ Object.assign(window, {
     import("./ui/message-dialog").then(({ showMessageDialog }) => showMessageDialog(options)),
   updateDialog
 });
+initializeLayerControlsRuntime();
+initializeMapStyleControls();
 
-// Keep React and the workspace UI out of the map generation startup path.
+// Load the workspace as soon as the DOM is available. Waiting for `window.load`
+// can leave the map without its controls when an unrelated asset stalls.
 const loadWorkspace = () => void import("./workspace-sidebar");
 if (document.readyState === "complete") loadWorkspace();
-else window.addEventListener("load", loadWorkspace, { once: true });
+else document.addEventListener("DOMContentLoaded", loadWorkspace, { once: true });

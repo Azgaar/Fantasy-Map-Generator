@@ -1,6 +1,7 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
 
 import { tip } from "@/components/tooltips";
+import { MAP_CONTENT_CHANGED_EVENT } from "@/renderers/pixi/pixi-renderer-controller";
 import { Services } from "@/services";
 import { ensureEl, ra } from "@/utils";
 
@@ -8,6 +9,22 @@ const MINUTE = 60000; // minute in milliseconds
 
 export function initiateAutosave(): void {
   let lastSavedAt = Date.now();
+  let dirty = false;
+  const markDirty = () => {
+    dirty = true;
+  };
+
+  window.addEventListener(MAP_CONTENT_CHANGED_EVENT, markDirty);
+  window.addEventListener("map:generated", markDirty);
+  document.addEventListener("change", markDirty, { capture: true });
+  document.addEventListener("input", markDirty, { capture: true });
+  window.addEventListener("map:loaded", () => {
+    dirty = false;
+  });
+  window.addEventListener("map:saved", () => {
+    dirty = false;
+    lastSavedAt = Date.now();
+  });
 
   async function autosave() {
     const timeoutMinutes = ensureEl<HTMLInputElement>("autosaveIntervalOutput").valueAsNumber;
@@ -15,6 +32,7 @@ export function initiateAutosave(): void {
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
     if (diffInMinutes < timeoutMinutes) return;
+    if (!dirty) return;
     if (customization) return tip("Autosave: map cannot be saved in edit mode", false, "warn", 2000);
 
     try {
@@ -23,6 +41,7 @@ export function initiateAutosave(): void {
       tip("Autosave: map is saved", false, "success", 2000);
 
       lastSavedAt = Date.now();
+      dirty = false;
     } catch (error) {
       ERROR && console.error(error);
       tip(`Autosave failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 4000);

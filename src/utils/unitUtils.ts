@@ -2,8 +2,9 @@ import type { PackedGraph } from "../types/PackedGraph";
 import { findClosestCell, findGridCell } from "./graphUtils";
 import { ensureEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
+import { formatTemperature, type TemperatureScale } from "./temperature";
 
-type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
+export type { TemperatureScale } from "./temperature";
 /**
  * Convert temperature from Celsius to other scales
  * @param {number} temperatureInCelsius - Temperature in Celsius
@@ -12,17 +13,7 @@ type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" |
  */
 export const convertTemperature = (temperatureInCelsius: number, targetScale?: TemperatureScale) => {
   const scale = targetScale || (ensureEl<HTMLSelectElement>("temperatureScale").value as TemperatureScale) || "°C";
-  const temperatureConversionMap: { [key: string]: (temp: number) => string } = {
-    "°C": (temp: number) => `${rn(temp)}°C`,
-    "°F": (temp: number) => `${rn((temp * 9) / 5 + 32)}°F`,
-    K: (temp: number) => `${rn(temp + 273.15)}K`,
-    "°R": (temp: number) => `${rn(((temp + 273.15) * 9) / 5)}°R`,
-    "°De": (temp: number) => `${rn(((100 - temp) * 3) / 2)}°De`,
-    "°N": (temp: number) => `${rn((temp * 33) / 100)}°N`,
-    "°Ré": (temp: number) => `${rn((temp * 4) / 5)}°Ré`,
-    "°Rø": (temp: number) => `${rn((temp * 21) / 40 + 7.5)}°Rø`
-  };
-  return temperatureConversionMap[scale](temperatureInCelsius);
+  return formatTemperature(temperatureInCelsius, scale);
 };
 
 /**

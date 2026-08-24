@@ -12,7 +12,7 @@ import { getToolCommands, matchesToolCommand, TOOL_COMMANDS, TOOL_GROUPS } from 
 
 describe("tool registry", () => {
   test("gives every command stable unique identifiers and required metadata", () => {
-    expect(TOOL_COMMANDS).toHaveLength(52);
+    expect(TOOL_COMMANDS).toHaveLength(51);
     expect(new Set(TOOL_COMMANDS.map(command => command.id)).size).toBe(TOOL_COMMANDS.length);
     expect(new Set(TOOL_COMMANDS.map(command => command.controlId)).size).toBe(TOOL_COMMANDS.length);
 
@@ -59,5 +59,8 @@ describe("tool registry", () => {
       { ctrlKey: true, metaKey: false },
       regenerationTarget
     );
+
+    TOOL_COMMANDS.find(command => command.id === "politics.states")?.invoke({ dialogPresentation: "panel" });
+    expect(mocks.invokeController).toHaveBeenCalledWith("editStatesButton", undefined, "panel");
   });
 });

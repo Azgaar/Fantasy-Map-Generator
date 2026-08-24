@@ -1,5 +1,7 @@
-import { select } from "d3";
+import type { LabelType } from "@/generators/labels-generator";
+import type { MapHit } from "@/renderers/core/map-renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
+import { getPixiMapPointAtClient, pickPixiRenderer } from "@/renderers/pixi/pixi-renderer-controller";
 import type { Point } from "@/types/global";
 import {
   convertTemperature,
@@ -7,42 +9,38 @@ import {
   findEl,
   findGridCell,
   getCellPopulation,
-  getComposedPath,
   getFriendlyHeight,
   getFriendlyPrecipitation,
-  getPointer,
   si
 } from "@/utils";
 import { showMainTip, tip } from "./tooltips";
 
 export function handleMouseMove(event: MouseEvent | TouchEvent): void {
-  const node = event.currentTarget as SVGElement | null;
-  if (!node || !pack.cells?.p) return;
+  if (!pack.cells?.p) return;
+  const clientPoint = getClientPoint(event);
+  if (!clientPoint) return;
 
-  const point = getPointer(event, node);
-  const cellId = findClosestCell(point[0], point[1], undefined, pack);
+  const mapPoint = getPixiMapPointAtClient(clientPoint.x, clientPoint.y);
+  if (!mapPoint) return;
+  const point: Point = [mapPoint.x, mapPoint.y];
+  const cellId = findClosestCell(mapPoint.x, mapPoint.y, undefined, pack);
   if (cellId === undefined) return;
+  const hit = pickPixiRenderer(clientPoint.x, clientPoint.y);
 
-  showNotes(event);
+  showNotes(hit, event);
 
   const gridCellId = findGridCell(point[0], point[1], grid);
   if (findEl("tooltip")?.dataset.main) showMainTip();
-  else showMapTooltip(point, event, cellId, gridCellId);
+  else showMapTooltip(point, event, cellId, gridCellId, hit);
 }
 
 let currentNoteId: string | null = null; // currently displayed note, to not rerender too often
 
 /** Show the note box for the hovered element, if it has a note */
-export function showNotes(event: Event): void {
+export function showNotes(hit: MapHit | null, event: Event): void {
   if (findEl("notesEditor")) return;
 
-  const target = event.target as HTMLElement;
-  const parent = target.parentNode as HTMLElement;
-  const grand = parent?.parentNode as HTMLElement;
-
-  const burg = target.closest<HTMLElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
-  const id = burg ? `burg${burg.dataset.id}` : target.id || parent?.id || grand?.id;
-
+  const id = getMapHitNoteId(hit);
   const note = notes.find(note => note.id === id);
 
   if (note?.legend) {
@@ -75,18 +73,17 @@ function getPopulationTip(cellId: number): string {
 }
 
 /** Show the tooltip for the hovered map element or, failing that, for the active layer */
-export function showMapTooltip(point: Point, event: Event, cellId: number, gridCellId: number): void {
+export function showMapTooltip(
+  point: Point,
+  event: Event,
+  cellId: number,
+  gridCellId: number,
+  hit: MapHit | null
+): void {
   tip(""); // clear tip
 
-  const target = event.target as SVGElement;
-  const path = (event.composedPath ? event.composedPath() : getComposedPath(target)) as HTMLElement[];
-  if (!path[path.length - 8]) return;
-
-  const group = path[path.length - 7].id;
-  const subgroup = path[path.length - 8].id;
   const isLand = pack.cells.h[cellId] >= 20;
-
-  const elementTip = getElementTip({ group, subgroup, target, event, path, cellId });
+  const elementTip = getMapHitTip(hit, event, cellId);
   if (elementTip !== undefined) {
     tip(elementTip);
     return;
@@ -95,111 +92,71 @@ export function showMapTooltip(point: Point, event: Event, cellId: number, gridC
   showLayerTip(point, cellId, gridCellId, isLand);
 }
 
-interface TipContext {
-  group: string;
-  subgroup: string;
-  target: SVGElement;
-  event: Event;
-  path: HTMLElement[];
-  cellId: number;
-}
-
 /**
- * Get the tooltip for the hovered element.
- * Returns undefined if the element is not interactive, so the layer tip is shown instead
+ * Get the tooltip for a renderer hit. Returns undefined for area hits so the active layer tip is shown instead.
  */
-function getElementTip({ group, subgroup, target, event, path, cellId }: TipContext): string | undefined {
-  const parent = target.parentNode as SVGElement;
-  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
-  if (burgElement) {
-    const burgId = Number(burgElement.dataset.id);
-    const burg = pack.burgs[burgId];
-    if (!burg) return "Click to edit the Burg";
-    const population = si((burg.population || 0) * populationRate * urbanization);
-    return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
+function getMapHitTip(hit: MapHit | null, event: Event, cellId: number): string | undefined {
+  if (!hit) return undefined;
+  const id = Number(hit.domainId);
+
+  if (hit.domainKind === "burg") return getBurgTip(id);
+  if (hit.domainKind === "compass") return "Wind rose. Click to move or resize";
+  if (hit.domainKind === "label") return getLabelTip(hit);
+  if (hit.domainKind === "regiment") {
+    const stateId = Number(hit.subPart?.stateId);
+    const regimentId = Number(hit.subPart?.regimentId);
+    const regiment = pack.states[stateId]?.military?.find(item => item.i === regimentId);
+    return `${regiment?.name || `Regiment ${regimentId}`}. Click to edit`;
   }
-
-  const text = target.textContent.replaceAll("|", "");
-  if (target.closest("#labels [data-label-type]")) return `${text}. Click to edit the label`;
-
-  if (group === "armies") return `${(parent as SVGElement & { dataset: DOMStringMap }).dataset.name}. Click to edit`;
-
-  if (group === "emblems" && target.tagName === "use") return getEmblemTip(target, parent, event);
-
-  if (group === "rivers") {
-    const riverId = Number(target.id.slice(5));
-    const river = pack.rivers.find(river => river.i === riverId);
+  if (hit.domainKind === "emblem") return getEmblemTip(hit, event);
+  if (hit.domainKind === "river") {
+    const river = pack.rivers.find(river => river.i === id);
     return `${river ? `${river.name} ${river.type}` : ""}. Click to edit`;
   }
-
-  if (group === "routes") {
-    const routeId = Number(target.id.slice(5));
-    const route = pack.routes.find(route => route.i === routeId);
+  if (hit.domainKind === "route") {
+    const route = pack.routes.find(route => route.i === id);
     if (route) return route.name ? `${route.name}. Click to edit the Route` : "Click to edit the Route";
     return undefined;
   }
-
-  if (group === "terrain") return "Click to edit the Relief Icon";
-
-  if (group === "markers") return "Click to edit the Marker. Hold Shift to not close the assosiated note";
-
-  if (group === "ruler")
-    return findEl("measurersEditor") ? "Drag the measurer or its points to edit" : "Click to open the Measurers Editor";
-
-  // markets and goods swallow the tip even when there is nothing to say, layer values are not shown below them
-  if (group === "markets") return getMarketTip(target) ?? "";
-
-  if (group === "goods") return getGoodsTip(target, cellId) ?? "";
-
-  if (group === "lakes" && pack.cells.h[cellId] < 20) {
-    const lakeId = Number(target.dataset.f);
-    const name = pack.features[lakeId]?.name;
-    return `${subgroup === "freshwater" ? name : `${name} ${subgroup}`} lake. Click to edit`;
+  if (hit.domainKind === "relief") return "Click to edit the Relief Icon";
+  if (hit.domainKind === "marker") return "Click to edit the Marker. Hold Shift to keep the associated note open";
+  if (hit.domainKind === "market") return getMarketTip(id) ?? "";
+  if (hit.domainKind === "good") return getGoodsTip(hit, cellId) ?? "";
+  if (hit.domainKind === "lake" && pack.cells.h[cellId] < 20) {
+    const lake = pack.features[id];
+    const name = lake?.name || `Lake ${id}`;
+    const type = lake?.group === "freshwater" ? "" : ` ${lake?.group || ""}`;
+    return `${name}${type} lake. Click to edit`;
   }
-
-  if (group === "coastline") return "Click to edit the coastline";
-
-  if (group === "zones") {
-    const zoneId = Number(path[path.length - 8].dataset.id);
-    const zone = pack.zones.find(zone => zone.i === zoneId);
+  if (hit.domainKind === "coastline") return "Click to edit the coastline";
+  if (hit.domainKind === "zone") {
+    const zone = pack.zones.find(zone => zone.i === id);
     return zone?.name;
   }
-
-  if (group === "ice") return "Click to edit the Ice";
-
+  if (hit.domainKind === "ice") return "Click to edit the Ice";
   return undefined;
 }
 
-function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): string {
-  const [elements, type] =
-    parent.id === "burgEmblems"
-      ? ([pack.burgs, "burg"] as const)
-      : parent.id === "provinceEmblems"
-        ? ([pack.provinces, "province"] as const)
-        : ([pack.states, "state"] as const);
-
-  const element = elements[Number(target.dataset.i)];
+function getEmblemTip(hit: MapHit, event: Event): string {
+  const id = Number(hit.domainId);
+  const type = String(hit.subPart?.type || "state") as "burg" | "province" | "state";
+  const elements = type === "burg" ? pack.burgs : type === "province" ? pack.provinces : pack.states;
+  const element = elements[id];
+  if (!element) return `${type} emblem. Click to edit`;
   if ((event as MouseEvent).shiftKey) highlightEmblemElement(type, element);
-
-  select(target).raise();
-  select(parent).raise();
-
   const name = "fullName" in element ? element.fullName || element.name : element.name;
   return `${name} ${type} emblem. Click to edit. Hold Shift to show associated area or place`;
 }
 
-function getMarketTip(target: SVGElement): string | undefined {
-  const marketEl = target.closest<SVGElement>("[data-id]");
-  if (!marketEl) return undefined;
-
-  const market = Markets.get(Number(marketEl.dataset.id));
+function getMarketTip(marketId: number): string | undefined {
+  const market = Markets.get(marketId);
   const centerBurg = market && pack.burgs[market.centerBurgId];
   if (!centerBurg) return undefined;
 
   return `${centerBurg.name} market. Click to view`;
 }
 
-function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
+function getGoodsTip(hit: MapHit, cellId: number): string | undefined {
   const bonusGoodId = pack.cells.good[cellId];
 
   const formatProduction = (produced: Record<string, number>) =>
@@ -211,55 +168,95 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
       })
       .join(", ");
 
-  if (target.closest("#goodsIcons")) {
-    const good = Goods.get(Number(target.closest<SVGElement>("[data-i]")?.dataset.i));
-    return `${good?.name} bonus resource. Click to open Goods Editor and select displayed goods`;
+  if (hit.subPart?.type === "icon") {
+    const good = Goods.get(Number(hit.domainId));
+    return `${good?.name || "Unknown"} bonus resource. Click to open Goods Editor and select displayed goods`;
   }
-
-  if (target.closest("#goodsCells")) {
-    const produced = Production.getCellProduction(cellId, Goods.getBiomesProduction());
-    return `Cell rural production: ${formatProduction(produced)}. Click to select displayed goods in Goods Editor`;
-  }
-
-  if (target.closest("#goodsBurgs")) {
-    const burgEl = target.closest<SVGElement>("[data-id]");
-    const burg = burgEl && pack.burgs[Number(burgEl.dataset.id)];
+  if (hit.subPart?.type === "burg") {
+    const burg = pack.burgs[Number(hit.subPart.burgId)];
     if (!burg || burg.removed) return undefined;
-
-    select(burgEl).raise();
     return `${burg.name} urban production: ${formatProduction(Production.getBurgProduction(burg))}. Click to view`;
   }
+  const sourceCellId = Number(hit.subPart?.cellId);
+  const resolvedCellId = Number.isFinite(sourceCellId) ? sourceCellId : cellId;
+  const produced = Production.getCellProduction(resolvedCellId, Goods.getBiomesProduction());
+  return `Cell rural production: ${formatProduction(produced)}. Click to select displayed goods in Goods Editor`;
+}
 
-  return undefined;
+function getBurgTip(id: number): string {
+  const burg = pack.burgs[id];
+  if (!burg) return "Click to edit the Burg";
+  const population = si((burg.population || 0) * populationRate * urbanization);
+  return `${burg.name} ${burg.group}. Population: ${population}. Click to edit`;
+}
+
+function getLabelTip(hit: MapHit): string {
+  const entityId = Number(hit.subPart?.entityId);
+  const type = String(hit.subPart?.type || "added") as LabelType;
+  if (type === "burg") return getBurgTip(entityId);
+  const text =
+    type === "state"
+      ? pack.states[entityId]?.fullName || pack.states[entityId]?.name
+      : type === "province"
+        ? pack.provinces[entityId]?.fullName || pack.provinces[entityId]?.name
+        : type === "river"
+          ? pack.rivers.find(item => item.i === entityId)?.name
+          : type === "route"
+            ? pack.routes.find(item => item.i === entityId)?.name
+            : pack.addedLabels.find(item => item.i === entityId)?.label.text;
+  return `${text || "Label"}. Click to edit the label`;
+}
+
+function getMapHitNoteId(hit: MapHit | null): string {
+  if (!hit) return "";
+  if (hit.domainKind === "label") {
+    const type = String(hit.subPart?.type || "added");
+    const entityId = Number(hit.subPart?.entityId);
+    return type === "burg" ? `burg${entityId}` : String(hit.domainId);
+  }
+  if (hit.domainKind === "regiment") return `regiment${hit.subPart?.stateId}-${hit.subPart?.regimentId}`;
+  if (hit.domainKind === "emblem") return `${hit.subPart?.type || "state"}COA${hit.domainId}`;
+  return `${hit.domainKind}${hit.domainId}`;
+}
+
+function getClientPoint(event: MouseEvent | TouchEvent): { x: number; y: number } | null {
+  if ("touches" in event) {
+    const touch = event.touches[0] || event.changedTouches[0];
+    return touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+  return { x: event.clientX, y: event.clientY };
 }
 
 /** Show the value of the active data layer in the hovered cell */
 function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: boolean): void {
   const { cells } = pack;
 
-  if (layerIsOn("togglePrecipitation") && isLand) {
+  if (window.LayerControls.isLayerOn("togglePrecipitation") && isLand) {
     return void tip(`Annual Precipitation: ${getFriendlyPrecipitation(cellId, pack, grid)}`);
   }
 
-  if (layerIsOn("togglePopulation")) return void tip(getPopulationTip(cellId));
+  if (window.LayerControls.isLayerOn("togglePopulation")) return void tip(getPopulationTip(cellId));
 
-  if (layerIsOn("toggleTemperature")) {
+  if (window.LayerControls.isLayerOn("toggleTemperature")) {
     return void tip(`Temperature: ${convertTemperature(grid.cells.temp[gridCellId])}`);
   }
 
-  if (layerIsOn("toggleBiomes") && cells.biome[cellId]) {
+  if (window.LayerControls.isLayerOn("toggleBiomes") && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
     return void tip(`Biome: ${pack.biomes[biomeId].name}`);
   }
 
-  if (layerIsOn("toggleReligions") && cells.religion[cellId]) {
+  if (window.LayerControls.isLayerOn("toggleReligions") && cells.religion[cellId]) {
     const religionId = cells.religion[cellId];
     const religion = pack.religions[religionId];
     const type = religion.type === "Cult" || religion.type === "Heresy" ? religion.type : `${religion.type} religion`;
     return void tip(`${type}: ${religion.name}`);
   }
 
-  if (cells.state[cellId] && (layerIsOn("toggleProvinces") || layerIsOn("toggleStates"))) {
+  if (
+    cells.state[cellId] &&
+    (window.LayerControls.isLayerOn("toggleProvinces") || window.LayerControls.isLayerOn("toggleStates"))
+  ) {
     const stateId = cells.state[cellId];
     const provinceId = cells.province[cellId];
     const province = provinceId ? `${pack.provinces[provinceId].fullName}, ` : "";
@@ -267,10 +264,11 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     return void tip(province + pack.states[stateId].fullName);
   }
 
-  if (layerIsOn("toggleCultures") && cells.culture[cellId]) {
+  if (window.LayerControls.isLayerOn("toggleCultures") && cells.culture[cellId]) {
     const cultureId = cells.culture[cellId];
     return void tip(`Culture: ${pack.cultures[cultureId].name}`);
   }
 
-  if (layerIsOn("toggleHeight")) return void tip(`Height: ${getFriendlyHeight(point, pack, grid)}`);
+  if (window.LayerControls.isLayerOn("toggleHeight"))
+    return void tip(`Height: ${getFriendlyHeight(point, pack, grid)}`);
 }

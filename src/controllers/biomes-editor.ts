@@ -1,4 +1,4 @@
-import { drag, easeSinIn, select, sum, transition } from "d3";
+import { drag, select, sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -16,19 +16,23 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { TerritoryAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawGoods } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import { getAssignmentOverlay } from "@/renderers/interaction/map-domain-overlay";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { getPixiMapPointAtClient, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, rn, si } from "../utils";
+import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let currentBiomeStatistics: BiomeStatistics[] = [];
+let biomesAssignment: TerritoryAssignmentSession | null = null;
 const columns: EditorColumn<Biome>[] = [
   {
     key: "name",
@@ -84,11 +88,11 @@ const biomesTable = initEditorTable<Biome>({
 function open(): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleStates")) toggleStates();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleReligions")) toggleReligions();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
 
   renderDialog();
   currentBiomeStatistics = biomesCollectStatistics();
@@ -167,7 +171,7 @@ function renderDialog(): void {
   });
 
   ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
-  ensureEl("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
+  ensureEl("biomesEditStyle").addEventListener("click", () => window.StyleEditor.edit("biomes"));
   ensureEl("biomesLegend").addEventListener("click", toggleLegend);
   ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("biomesManually").addEventListener("click", enterBiomesCustomizationMode);
@@ -314,16 +318,19 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
 
 function biomeHighlightOn(event: Event): void {
   if (customization === 6) return;
-  const biome = +(event.target as HTMLElement).dataset.id!;
-  const animate = transition().duration(2000).ease(easeSinIn);
-  select(`#biomes > #biome${biome}`).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
+  const biomeId = Number((event.currentTarget as HTMLElement).dataset.id);
+  updateMapInteractionOverlay({
+    highlight: getAssignmentOverlay(pack.cells.biome, biomeId, {
+      fill: "none",
+      stroke: "#cd4c11",
+      strokeWidth: 2
+    })
+  });
 }
 
-function biomeHighlightOff(event: Event): void {
+function biomeHighlightOff(): void {
   if (customization === 6) return;
-  const biome = +(event.target as HTMLElement).dataset.id!;
-  const color = pack.biomes[biome].color;
-  select(`#biomes > #biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function biomeChangeColor(fillBox: FillBoxElement): void {
@@ -489,10 +496,10 @@ function downloadBiomesData(): void {
 }
 
 function enterBiomesCustomizationMode(): void {
-  if (!layerIsOn("toggleBiomes")) toggleBiomes();
+  if (!window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
   customization = 6;
+  biomesAssignment = new TerritoryAssignmentSession("biomes", pack.cells.biome);
   setModeHiddenColumns(dialogId, ["habitability", "cells", "area", "population", "actions"]);
-  select("#biomes").append("g").attr("id", "temp");
 
   document.querySelectorAll<HTMLElement>("#biomesBottom > button").forEach(el => {
     el.style.display = "none";
@@ -529,16 +536,16 @@ function selectBiomeOnLineClick(line: HTMLElement): void {
   line.classList.add("selected");
 }
 
-function selectBiomeOnMapClick(this: SVGElement, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1])!;
+function selectBiomeOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y)!;
   if (pack.cells.h[i] < 20) {
     tip("You cannot reassign water via biomes. Please edit the Heightmap to change water", false, "error");
     return;
   }
 
-  const assigned = select("#biomes").select("#temp").select(`polygon[data-cell='${i}']`);
-  const biome = assigned.size() ? +assigned.attr("data-biome") : pack.cells.biome[i];
+  const biome = biomesAssignment?.get(i) ?? pack.cells.biome[i];
 
   ensureEl("biomesBody").querySelector("div.selected")?.classList.remove("selected");
   ensureEl("biomesBody").querySelector(`div[data-id='${biome}']`)!.classList.add("selected");
@@ -546,60 +553,40 @@ function selectBiomeOnMapClick(this: SVGElement, event: any): void {
 
 function dragBiomeBrush(this: SVGElement, event: any): void {
   const r = +ensureEl<HTMLInputElement>("biomesBrush").value;
+  biomesAssignment?.beginStroke();
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
+    const found = r > 5 ? findAllCellsInRadius(point.x, point.y, r, pack) : [findCell(point.x, point.y)!];
     const selection = found.filter(i => isLand(i, pack));
-    if (selection) changeBiomeForSelection(selection);
+    if (selection.length) changeBiomeForSelection(selection);
   });
 }
 
 // change region within selection
 function changeBiomeForSelection(selection: number[]): void {
-  const temp = select("#biomes").select("#temp");
   const selected = ensureEl("biomesBody").querySelector<HTMLElement>("div.selected")!;
-
-  const biomeNew = selected.dataset.id!;
-  const color = pack.biomes[+biomeNew].color;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const biomeOld = exists.size() ? exists.attr("data-biome") : String(pack.cells.biome[i]);
-    if (biomeNew === biomeOld) return;
-
-    // change or append new element
-    if (exists.size()) exists.attr("data-biome", biomeNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-biome", biomeNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
-  });
+  const biomeId = Number(selected.dataset.id);
+  const mutation = biomesAssignment?.paint(selection, biomeId);
+  if (mutation?.changed) drawBiomes();
 }
 
-function moveBiomeBrush(this: SVGElement, event: any): void {
+function moveBiomeBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const point = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("biomesBrush").value;
-  moveCircle(point[0], point[1], radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyBiomesChange(): void {
-  const changed = select("#biomes").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
-  changed.each(function () {
-    const i = +this.dataset.cell!;
-    const b = +this.dataset.biome!;
-    pack.cells.biome[i] = b;
-  });
-
-  if (changed.size()) {
+  const mutation = biomesAssignment?.commit();
+  biomesAssignment = null;
+  if (mutation?.changed) {
     drawBiomes();
     refreshBiomesEditor();
   }
@@ -609,7 +596,11 @@ function applyBiomesChange(): void {
 function exitBiomesCustomizationMode(close?: boolean): void {
   customization = 0;
   setModeHiddenColumns(dialogId, []);
-  select("#biomes").select("#temp").remove();
+  if (biomesAssignment) {
+    biomesAssignment.cancel();
+    biomesAssignment = null;
+    drawBiomes();
+  }
   removeCircle();
 
   document.querySelectorAll<HTMLElement>("#biomesBottom > button").forEach(el => {
@@ -638,6 +629,14 @@ function exitBiomesCustomizationMode(close?: boolean): void {
   if (selected) selected.classList.remove("selected");
 }
 
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
+}
+
 function restoreInitialBiomes(): void {
   pack.biomes = Biomes.getDefault();
   Biomes.define();
@@ -653,8 +652,8 @@ function closeBiomesEditor(): void {
 
 function regeneratePopulation(): void {
   Population.regenerate();
-  if (layerIsOn("togglePopulation")) drawPopulation();
-  if (layerIsOn("toggleGoods")) drawGoods();
+  if (window.LayerControls.isLayerOn("togglePopulation")) window.LayerControls.redrawLayer("togglePopulation");
+  if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
 }
 
 export const BiomesEditor = { open };

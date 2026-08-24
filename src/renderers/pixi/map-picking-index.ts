@@ -1,0 +1,763 @@
+import { findClosestCell } from "@/utils/graphUtils";
+import { MAP_LAYER_REGISTRY, type MapLayerId, normalizeMapLayerOrder } from "../core/layer-registry";
+import type { MapDomainKind, MapHitKind, ScreenPoint } from "../core/map-renderer";
+import { estimateTextWidth } from "../labels/fit-state-label";
+import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
+import { buildGoodsScene, buildIceScene, buildMarketScene } from "../scene/layers/economic-ice-scene";
+import { buildEmblemScene } from "../scene/layers/emblem-scene";
+import { buildLabelScene } from "../scene/layers/label-scene";
+import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
+import { buildMilitaryScene, buildPopulationScene } from "../scene/layers/population-military-scene";
+import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
+import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
+import { buildCompassScene } from "../scene/layers/static-overlay-scene";
+import { buildZoneScene } from "../scene/layers/zone-scene";
+import type { MapRenderWorld } from "../scene/render-world";
+import type { MapStyle } from "../scene/styles";
+
+interface PickEntryBase {
+  active?: boolean;
+  dependency?: MapLayerId | null;
+  domainId: number | string;
+  domainKind: MapDomainKind;
+  kind: MapHitKind;
+  layer: MapLayerId;
+  maxScale?: number | null;
+  minScale?: number | null;
+  priorityOffset?: number;
+  subPart?: Readonly<Record<string, boolean | number | string>>;
+}
+
+export interface PointPickEntry extends PickEntryBase {
+  offsetX?: number;
+  offsetY?: number;
+  radius: number;
+  rescale?: boolean;
+  shape: "point";
+  x: number;
+  y: number;
+}
+
+export interface LinePickEntry extends PickEntryBase {
+  hitWidth: number;
+  points: readonly (readonly [number, number])[];
+  shape: "line";
+}
+
+export interface PolygonPickEntry extends PickEntryBase {
+  hitWidth?: number;
+  points: readonly (readonly [number, number])[];
+  shape: "polygon";
+  strict?: boolean;
+}
+
+export interface BoxPickEntry extends PickEntryBase {
+  anchorX?: number;
+  anchorY?: number;
+  height: number;
+  offsetX?: number;
+  offsetY?: number;
+  rescale?: boolean;
+  shape: "box";
+  width: number;
+  x: number;
+  y: number;
+}
+
+export type MapPickEntry = PointPickEntry | LinePickEntry | PolygonPickEntry | BoxPickEntry;
+
+export interface IndexedMapHit {
+  distance: number;
+  domainId: number | string;
+  domainKind: MapDomainKind;
+  kind: MapHitKind;
+  layer: MapLayerId;
+  mapPoint: ScreenPoint;
+  subPart?: Readonly<Record<string, boolean | number | string>>;
+}
+
+export interface MapPickingQuery {
+  cameraScale: number;
+  isLayerVisible: (layer: MapLayerId) => boolean;
+  tolerance: number;
+}
+
+interface Bounds {
+  maxX: number;
+  maxY: number;
+  minX: number;
+  minY: number;
+}
+
+const createLayerPriority = (order: readonly MapLayerId[]): Map<MapLayerId, number> =>
+  new Map(normalizeMapLayerOrder(order).map((layer, index) => [layer, index * 10]));
+
+export class MapPickingIndex {
+  private readonly entriesByLayer = new Map<MapLayerId, MapPickEntry[]>();
+  private layerPriority = createLayerPriority(MAP_LAYER_REGISTRY.map(layer => layer.id));
+  private maxRescaledExtent = 0;
+  private readonly spatialByLayer = new Map<MapLayerId, BoundsSpatialIndex<MapPickEntry>>();
+  private world: MapRenderWorld | null = null;
+  private worldBounds: Bounds | null = null;
+
+  replace(world: MapRenderWorld, style: MapStyle, requestedLayers?: ReadonlySet<MapLayerId>): void {
+    this.replaceEntries(buildMapPickEntries(world, style, requestedLayers), world);
+  }
+
+  replaceEntries(entries: readonly MapPickEntry[], areaWorld: MapRenderWorld | null = null): void {
+    this.world = areaWorld;
+    this.worldBounds = areaWorld ? getWorldBounds(areaWorld) : null;
+    this.entriesByLayer.clear();
+    for (const entry of entries) {
+      const layerEntries = this.entriesByLayer.get(entry.layer);
+      if (layerEntries) layerEntries.push(entry);
+      else this.entriesByLayer.set(entry.layer, [entry]);
+    }
+    this.spatialByLayer.clear();
+    for (const layer of this.entriesByLayer.keys()) this.replaceLayerSpatialIndex(layer);
+    this.updateMaxRescaledExtent();
+  }
+
+  updateLayers(
+    world: MapRenderWorld,
+    style: MapStyle,
+    layers: Iterable<MapLayerId>,
+    activeLayers?: ReadonlySet<MapLayerId>
+  ): void {
+    this.world = world;
+    this.worldBounds = getWorldBounds(world);
+    const requested = new Set(layers);
+    for (const layer of requested) {
+      this.entriesByLayer.delete(layer);
+      this.spatialByLayer.delete(layer);
+    }
+    const layersToBuild = activeLayers ? new Set([...requested].filter(layer => activeLayers.has(layer))) : requested;
+    for (const entry of buildMapPickEntries(world, style, layersToBuild)) {
+      const layerEntries = this.entriesByLayer.get(entry.layer);
+      if (layerEntries) layerEntries.push(entry);
+      else this.entriesByLayer.set(entry.layer, [entry]);
+    }
+    for (const layer of layersToBuild) this.replaceLayerSpatialIndex(layer);
+    this.updateMaxRescaledExtent();
+  }
+
+  private replaceLayerSpatialIndex(layer: MapLayerId): void {
+    const entries = this.entriesByLayer.get(layer);
+    if (!entries?.length) {
+      this.spatialByLayer.delete(layer);
+      return;
+    }
+    const spatial = new BoundsSpatialIndex<MapPickEntry>();
+    spatial.replace(entries, getEntryBounds);
+    this.spatialByLayer.set(layer, spatial);
+  }
+
+  private updateMaxRescaledExtent(): void {
+    this.maxRescaledExtent = 0;
+    for (const entries of this.entriesByLayer.values()) {
+      for (const entry of entries) {
+        if ((entry.shape === "point" || entry.shape === "box") && entry.rescale) {
+          this.maxRescaledExtent = Math.max(this.maxRescaledExtent, getEntryRescaledExtent(entry));
+        }
+      }
+    }
+  }
+
+  clear(): void {
+    this.world = null;
+    this.worldBounds = null;
+    this.maxRescaledExtent = 0;
+    this.entriesByLayer.clear();
+    this.spatialByLayer.clear();
+  }
+
+  getSize(): number {
+    let size = 0;
+    for (const spatial of this.spatialByLayer.values()) size += spatial.size;
+    return size;
+  }
+
+  setLayerOrder(order: readonly MapLayerId[]): void {
+    this.layerPriority = createLayerPriority(order);
+  }
+
+  pick(mapPoint: ScreenPoint, query: MapPickingQuery): IndexedMapHit | null {
+    const cameraScale = Math.max(query.cameraScale, 0.01);
+    const displayScale = Math.max((1 + 1 / cameraScale) / 2, 0.01);
+    const searchRadius = query.tolerance + 24 / cameraScale + this.maxRescaledExtent * Math.max(0, displayScale - 1);
+    const bounds = {
+      maxX: mapPoint.x + searchRadius,
+      maxY: mapPoint.y + searchRadius,
+      minX: mapPoint.x - searchRadius,
+      minY: mapPoint.y - searchRadius
+    };
+    const candidates = [...this.spatialByLayer.values()]
+      .flatMap(spatial => spatial.query(bounds))
+      .filter(entry => isEntryVisible(entry, query, cameraScale))
+      .map(entry => ({ distance: distanceToEntry(mapPoint, entry, cameraScale), entry }))
+      .filter(candidate => Number.isFinite(candidate.distance) && candidate.distance <= query.tolerance)
+      .sort((left, right) => compareCandidates(left, right, this.layerPriority));
+    const candidate = candidates[0];
+    if (candidate) {
+      const { entry, distance } = candidate;
+      return {
+        distance,
+        domainId: entry.domainId,
+        domainKind: entry.domainKind,
+        kind: entry.kind,
+        layer: entry.layer,
+        mapPoint,
+        subPart: entry.subPart
+      };
+    }
+    return this.pickArea(mapPoint, query);
+  }
+
+  private pickArea(mapPoint: ScreenPoint, query: MapPickingQuery): IndexedMapHit | null {
+    const world = this.world;
+    const bounds = this.worldBounds;
+    if (!world || !bounds || !containsPoint(bounds, mapPoint)) return null;
+    const cellId = findClosestCell(mapPoint.x, mapPoint.y, undefined, world);
+    if (cellId === undefined) return null;
+
+    const areaLayers = [
+      ["provinces", "province", world.cells.province],
+      ["states", "state", world.cells.state],
+      ["cultures", "culture", world.cells.culture],
+      ["religions", "religion", world.cells.religion],
+      ["biomes", "biome", world.cells.biome]
+    ] as const;
+    for (const [layer, domainKind, assignments] of [...areaLayers].sort(
+      (left, right) => this.getLayerPriority(right[0]) - this.getLayerPriority(left[0])
+    )) {
+      const domainId = Number(assignments[cellId]);
+      if (domainId && query.isLayerVisible(layer)) {
+        return {
+          distance: 0,
+          domainId,
+          domainKind,
+          kind: "area",
+          layer,
+          mapPoint,
+          subPart: { cellId }
+        };
+      }
+    }
+
+    if (query.isLayerVisible("cells")) {
+      return {
+        distance: 0,
+        domainId: cellId,
+        domainKind: "cell",
+        kind: "area",
+        layer: "cells",
+        mapPoint,
+        subPart: { cellId }
+      };
+    }
+    const layer = Number(world.cells.h[cellId]) >= 20 ? "landmass" : "ocean";
+    if (!query.isLayerVisible(layer)) return null;
+    return {
+      distance: 0,
+      domainId: cellId,
+      domainKind: "cell",
+      kind: "area",
+      layer,
+      mapPoint,
+      subPart: { featureId: Number(world.cells.f[cellId]) || 0 }
+    };
+  }
+
+  private getLayerPriority(layer: MapLayerId): number {
+    return this.layerPriority.get(layer) ?? 0;
+  }
+}
+
+export function buildMapPickEntries(
+  world: MapRenderWorld,
+  style: MapStyle,
+  requestedLayers?: ReadonlySet<MapLayerId>
+): MapPickEntry[] {
+  const bounds = getWorldBounds(world);
+  if (!bounds) return [];
+  const mapBounds = { height: bounds.maxY - bounds.minY, width: bounds.maxX - bounds.minX };
+  const entries: MapPickEntry[] = [];
+  const wants = (layer: MapLayerId) => !requestedLayers || requestedLayers.has(layer);
+
+  if (wants("compass") && style.compass.opacity > 0 && style.compass.scale > 0) {
+    const compass = buildCompassScene(style.compass, 0);
+    const size = 440 * compass.scale;
+    entries.push({
+      domainId: compass.domainId,
+      domainKind: "compass",
+      height: size,
+      kind: "point",
+      layer: "compass",
+      shape: "box",
+      width: size,
+      x: compass.x,
+      y: compass.y
+    });
+  }
+
+  if (wants("lakes") || wants("coastline")) {
+    const geography = buildBaseGeographyScene(world, mapBounds);
+    if (wants("lakes")) {
+      for (const polygon of geography.lakes.polygons) {
+        entries.push(polygonEntry("lakes", "lake", polygon.domainId, polygon.points, true));
+      }
+    }
+    if (wants("coastline")) {
+      for (const path of geography.coastline.paths) {
+        entries.push(
+          lineEntry("coastline", "coastline", path.domainId, path.points, lineWidth(style.coastline, path.role))
+        );
+      }
+    }
+  }
+
+  if (wants("rivers") && style.rivers.opacity > 0 && style.rivers.fill.opacity > 0) {
+    const rivers = buildRiverScene(world, mapBounds);
+    for (const polygon of rivers.polygons) {
+      entries.push(polygonEntry("rivers", "river", polygon.domainId, polygon.points, false, 1));
+    }
+  }
+  if (wants("routes")) {
+    const routes = buildRouteScene(world);
+    for (const path of routes.paths) {
+      const routeStyle = style.routes.roles[path.role ?? ""] ?? style.routes.default;
+      if (routeStyle.opacity > 0 && routeStyle.width > 0) {
+        entries.push(lineEntry("routes", "route", path.domainId, path.points, routeStyle.width));
+      }
+    }
+  }
+
+  if (wants("zones") && style.zones.opacity > 0) {
+    const zones = buildZoneScene(world, 0, { filterType: style.zones.filterType });
+    for (const zone of zones.zones) {
+      for (const polygon of zone.polygons) {
+        entries.push(polygonEntry("zones", "zone", zone.zoneId, polygon.points, true));
+      }
+    }
+  }
+  if (wants("ice") && style.ice.opacity > 0) {
+    const ice = buildIceScene(world, 0);
+    for (const polygon of ice.polygons)
+      entries.push(polygonEntry("ice", "ice", polygon.domainId, polygon.points, true));
+  }
+
+  if (wants("goods") && style.goods.opacity > 0) {
+    const goods = buildGoodsScene(world, world.goodsProduction, 0);
+    for (const cell of goods.cells) {
+      entries.push({
+        ...polygonEntry("goods", "good", cell.goodId, cell.points, true),
+        subPart: { cellId: cell.cellId, type: "cell" }
+      });
+    }
+    for (const icon of goods.icons) {
+      entries.push({
+        ...pointEntry("goods", "good", icon.goodId, icon.x, icon.y, style.goods.icons.size / 2),
+        subPart: { cellId: icon.cellId, type: "icon" }
+      });
+    }
+    for (const burg of goods.burgs) {
+      entries.push({
+        ...pointEntry("goods", "good", burg.burgId, burg.x, burg.y, style.goods.burgs.iconSize * 1.5),
+        subPart: { burgId: burg.burgId, type: "burg" }
+      });
+    }
+  }
+
+  if (wants("relief") && style.relief.opacity > 0) {
+    const relief = buildReliefSpriteScene(world.relief, 0);
+    for (const icon of relief.instances) {
+      entries.push({
+        domainId: icon.domainId,
+        domainKind: "relief",
+        height: icon.height,
+        kind: "point",
+        layer: "relief",
+        shape: "box",
+        width: icon.width,
+        x: icon.x + icon.width / 2,
+        y: icon.y + icon.height / 2
+      });
+    }
+  }
+
+  if (wants("burgIcons")) {
+    const burgs = buildBurgPointSymbolScene(world.burgs, style.burgIcons, 0);
+    for (const symbol of burgs.icons.instances) {
+      if (style.burgIcons.opacity > 0 && symbol.opacity > 0) {
+        entries.push(pointEntry("burgIcons", "burg", symbol.domainId, symbol.x, symbol.y, symbol.size / 2));
+      }
+    }
+  }
+  if (wants("markers")) {
+    const markers = buildMarkerPointSymbolScene(
+      world.markers,
+      style.markers,
+      world.markerRenderState ?? { pinnedOnly: false, visibleIds: null },
+      0
+    );
+    for (const marker of markers.instances) {
+      if (style.markers.opacity > 0 && marker.opacity > 0) {
+        entries.push({
+          ...pointEntry("markers", "marker", marker.domainId, marker.x, marker.y, marker.size / 2),
+          rescale: marker.rescale
+        });
+      }
+    }
+  }
+
+  if (wants("markets") && style.markets.opacity > 0) {
+    const markets = buildMarketScene(world, 0);
+    for (const market of markets.markets) {
+      for (const polygon of market.polygons) {
+        entries.push(polygonEntry("markets", "market", market.marketId, polygon.points, true));
+      }
+      if (!market.center) continue;
+      entries.push({
+        ...pointEntry(
+          "markets",
+          "market",
+          market.marketId,
+          market.center.x,
+          market.center.y,
+          Math.max(style.markets.iconSize / 2, style.markets.radius)
+        ),
+        priorityOffset: 1,
+        subPart: { burgId: market.center.burgId, type: "center" }
+      });
+    }
+  }
+  if (wants("population") && style.population.opacity > 0) {
+    const population = buildPopulationScene(world, world.urbanization ?? 1, 0);
+    for (const path of population.paths) {
+      const [type, serializedId] = String(path.domainId).split(":");
+      const id = Number(serializedId);
+      const lineStyle = type === "urban" ? style.population.urban : style.population.rural;
+      entries.push({
+        ...lineEntry("population", type === "urban" ? "burg" : "cell", id, path.points, lineStyle.width),
+        subPart: type === "urban" ? { burgId: id, type } : { cellId: id, type }
+      });
+    }
+  }
+  if (wants("military") && style.military.opacity > 0) {
+    const military = buildMilitaryScene(world, 0);
+    for (const regiment of military.regiments) {
+      entries.push({
+        ...pointEntry("military", "regiment", regiment.domainId, regiment.x, regiment.y, style.military.boxSize * 2),
+        subPart: { regimentId: regiment.regimentId, stateId: regiment.stateId }
+      });
+    }
+  }
+
+  if (wants("emblems") && style.emblems.opacity > 0) {
+    const emblems = buildEmblemScene(world, mapBounds, style.emblems, 0);
+    for (const group of emblems.groups) {
+      for (const emblem of group.items) {
+        entries.push({
+          ...pointEntry("emblems", "emblem", emblem.entityId, emblem.x, emblem.y, emblem.size / 2),
+          maxScale: style.emblems.automaticVisibility ? 300 / Math.max(group.baseSize, 0.01) : null,
+          minScale: style.emblems.automaticVisibility ? 25 / Math.max(group.baseSize, 0.01) : null,
+          subPart: { type: emblem.type }
+        });
+      }
+    }
+  }
+
+  if (wants("labels") && world.labelRenderState) {
+    const labels = buildLabelScene(world.labelRenderState, 0);
+    for (const group of labels.groups) {
+      if (!group.active || group.style.opacity <= 0) continue;
+      for (const label of group.labels) {
+        const common = {
+          active: group.active,
+          dependency: group.dependency,
+          domainId: label.domainId,
+          domainKind: "label" as const,
+          kind: "label" as const,
+          layer: "labels" as const,
+          maxScale: labels.showAll ? null : group.maxScale,
+          minScale: labels.showAll ? null : group.minScale,
+          rescale: labels.resizeOnZoom,
+          subPart: { entityId: label.entityId, type: label.type }
+        };
+        const offsetX = group.style.offsetXEm * group.style.fontSize;
+        const offsetY = group.style.offsetYEm * group.style.fontSize;
+        if (label.curvedGlyphs?.length) {
+          for (const glyph of label.curvedGlyphs) {
+            entries.push({
+              ...common,
+              offsetX,
+              offsetY,
+              radius: label.fontSize / 2,
+              shape: "point",
+              x: glyph.x,
+              y: glyph.y
+            });
+          }
+        } else {
+          const lines = label.text.split("\n");
+          entries.push({
+            ...common,
+            anchorY: label.type === "burg" ? 1 : 0.5,
+            height: lines.length * label.fontSize,
+            offsetX,
+            offsetY,
+            shape: "box",
+            width: Math.max(...lines.map(line => estimateTextWidth(line) * label.fontSize)),
+            x: label.anchorX,
+            y: label.anchorY
+          });
+        }
+      }
+    }
+  }
+  return entries;
+}
+
+class BoundsSpatialIndex<T> {
+  private readonly buckets = new Map<string, number[]>();
+  private items: T[] = [];
+
+  constructor(private readonly bucketSize = 64) {}
+
+  get size(): number {
+    return this.items.length;
+  }
+
+  replace(items: readonly T[], getBounds: (item: T) => Bounds): void {
+    this.clear();
+    this.items = [...items];
+    items.forEach((item, index) => {
+      const bounds = getBounds(item);
+      for (
+        let column = Math.floor(bounds.minX / this.bucketSize);
+        column <= Math.floor(bounds.maxX / this.bucketSize);
+        column++
+      ) {
+        for (
+          let row = Math.floor(bounds.minY / this.bucketSize);
+          row <= Math.floor(bounds.maxY / this.bucketSize);
+          row++
+        ) {
+          const key = `${column}:${row}`;
+          const bucket = this.buckets.get(key);
+          if (bucket) bucket.push(index);
+          else this.buckets.set(key, [index]);
+        }
+      }
+    });
+  }
+
+  query(bounds: Bounds): T[] {
+    const indexes = new Set<number>();
+    for (
+      let column = Math.floor(bounds.minX / this.bucketSize);
+      column <= Math.floor(bounds.maxX / this.bucketSize);
+      column++
+    ) {
+      for (
+        let row = Math.floor(bounds.minY / this.bucketSize);
+        row <= Math.floor(bounds.maxY / this.bucketSize);
+        row++
+      ) {
+        for (const index of this.buckets.get(`${column}:${row}`) ?? []) indexes.add(index);
+      }
+    }
+    return [...indexes].sort((left, right) => left - right).map(index => this.items[index]);
+  }
+
+  clear(): void {
+    this.buckets.clear();
+    this.items = [];
+  }
+}
+
+function isEntryVisible(entry: MapPickEntry, query: MapPickingQuery, cameraScale: number): boolean {
+  if (entry.active === false || !query.isLayerVisible(entry.layer)) return false;
+  if (entry.dependency && !query.isLayerVisible(entry.dependency)) return false;
+  if (entry.minScale != null && cameraScale < entry.minScale) return false;
+  if (entry.maxScale != null && cameraScale > entry.maxScale) return false;
+  return true;
+}
+
+function compareCandidates(
+  left: { distance: number; entry: MapPickEntry },
+  right: { distance: number; entry: MapPickEntry },
+  layerPriority: ReadonlyMap<MapLayerId, number>
+): number {
+  const priority = getPriority(right.entry, layerPriority) - getPriority(left.entry, layerPriority);
+  if (priority) return priority;
+  const distance = left.distance - right.distance;
+  if (distance) return distance;
+  return `${left.entry.domainKind}:${left.entry.domainId}`.localeCompare(
+    `${right.entry.domainKind}:${right.entry.domainId}`
+  );
+}
+
+function getPriority(entry: MapPickEntry, layerPriority: ReadonlyMap<MapLayerId, number>): number {
+  return (layerPriority.get(entry.layer) ?? 0) + (entry.priorityOffset ?? 0);
+}
+
+function distanceToEntry(point: ScreenPoint, entry: MapPickEntry, cameraScale: number): number {
+  if (entry.shape === "point") {
+    const radius = entry.rescale ? Math.max((entry.radius * 2) / 5 + 24 / cameraScale, 1) / 2 : entry.radius;
+    const offsetScale = entry.rescale ? Math.max((1 + 1 / cameraScale) / 2, 0.01) : 1;
+    const x = entry.x + (entry.offsetX ?? 0) * offsetScale;
+    const y = entry.y + (entry.offsetY ?? 0) * offsetScale;
+    return Math.max(0, Math.hypot(point.x - x, point.y - y) - radius);
+  }
+  if (entry.shape === "box") {
+    const scale = entry.rescale ? Math.max((1 + 1 / cameraScale) / 2, 0.01) : 1;
+    return distanceToBox(point, getBoxBounds(entry, scale));
+  }
+  if (entry.shape === "line") return Math.max(0, distanceToPolyline(point, entry.points, false) - entry.hitWidth / 2);
+  if (pointInPolygon(point, entry.points)) return 0;
+  if (entry.strict) return Number.POSITIVE_INFINITY;
+  return Math.max(0, distanceToPolyline(point, entry.points, true) - (entry.hitWidth ?? 0) / 2);
+}
+
+function getEntryBounds(entry: MapPickEntry): Bounds {
+  if (entry.shape === "point") {
+    const x = entry.x + (entry.offsetX ?? 0);
+    const y = entry.y + (entry.offsetY ?? 0);
+    return {
+      maxX: x + entry.radius,
+      maxY: y + entry.radius,
+      minX: x - entry.radius,
+      minY: y - entry.radius
+    };
+  }
+  if (entry.shape === "box") return getBoxBounds(entry, 1);
+  return getPointsBounds(entry.points);
+}
+
+function getEntryRescaledExtent(entry: MapPickEntry): number {
+  if (entry.shape === "point") {
+    return Math.hypot(entry.offsetX ?? 0, entry.offsetY ?? 0) + entry.radius;
+  }
+  if (entry.shape === "box") {
+    return Math.hypot(entry.offsetX ?? 0, entry.offsetY ?? 0) + Math.max(entry.width, entry.height);
+  }
+  return 0;
+}
+
+function getBoxBounds(entry: BoxPickEntry, scale: number): Bounds {
+  const anchorX = entry.anchorX ?? 0.5;
+  const anchorY = entry.anchorY ?? 0.5;
+  const x = entry.x + (entry.offsetX ?? 0) * scale;
+  const y = entry.y + (entry.offsetY ?? 0) * scale;
+  return {
+    maxX: x + entry.width * scale * (1 - anchorX),
+    maxY: y + entry.height * scale * (1 - anchorY),
+    minX: x - entry.width * scale * anchorX,
+    minY: y - entry.height * scale * anchorY
+  };
+}
+
+function distanceToBox(point: ScreenPoint, bounds: Bounds): number {
+  const dx = Math.max(bounds.minX - point.x, 0, point.x - bounds.maxX);
+  const dy = Math.max(bounds.minY - point.y, 0, point.y - bounds.maxY);
+  return Math.hypot(dx, dy);
+}
+
+function distanceToPolyline(
+  point: ScreenPoint,
+  points: readonly (readonly [number, number])[],
+  closed: boolean
+): number {
+  let distance = Number.POSITIVE_INFINITY;
+  const segmentCount = Math.max(0, points.length - 1) + (closed && points.length > 2 ? 1 : 0);
+  for (let index = 0; index < segmentCount; index++) {
+    distance = Math.min(distance, distanceToSegment(point, points[index], points[(index + 1) % points.length]));
+  }
+  return distance;
+}
+
+function distanceToSegment(
+  point: ScreenPoint,
+  start: readonly [number, number],
+  end: readonly [number, number]
+): number {
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const lengthSquared = dx * dx + dy * dy;
+  const progress = lengthSquared
+    ? Math.max(0, Math.min(1, ((point.x - start[0]) * dx + (point.y - start[1]) * dy) / lengthSquared))
+    : 0;
+  return Math.hypot(point.x - (start[0] + progress * dx), point.y - (start[1] + progress * dy));
+}
+
+function pointInPolygon(point: ScreenPoint, points: readonly (readonly [number, number])[]): boolean {
+  let inside = false;
+  for (let index = 0, previous = points.length - 1; index < points.length; previous = index++) {
+    const [x, y] = points[index];
+    const [previousX, previousY] = points[previous];
+    if (y > point.y === previousY > point.y) continue;
+    const intersectionX = ((previousX - x) * (point.y - y)) / (previousY - y) + x;
+    if (point.x < intersectionX) inside = !inside;
+  }
+  return inside;
+}
+
+function pointEntry(
+  layer: MapLayerId,
+  domainKind: MapDomainKind,
+  domainId: number | string,
+  x: number,
+  y: number,
+  radius: number
+): PointPickEntry {
+  return { domainId, domainKind, kind: "point", layer, radius: Math.max(0, radius), shape: "point", x, y };
+}
+
+function lineEntry(
+  layer: MapLayerId,
+  domainKind: MapDomainKind,
+  domainId: number | string,
+  points: readonly (readonly [number, number])[],
+  hitWidth: number
+): LinePickEntry {
+  return { domainId, domainKind, hitWidth, kind: "line", layer, points, shape: "line" };
+}
+
+function polygonEntry(
+  layer: MapLayerId,
+  domainKind: MapDomainKind,
+  domainId: number | string,
+  points: readonly (readonly [number, number])[],
+  strict: boolean,
+  hitWidth = 0
+): PolygonPickEntry {
+  return { domainId, domainKind, hitWidth, kind: "area", layer, points, shape: "polygon", strict };
+}
+
+function lineWidth(style: MapStyle["coastline"], role: string | undefined): number {
+  return (role ? style.roles[role] : undefined)?.width ?? style.default.width;
+}
+
+function getPointsBounds(points: readonly (readonly [number, number])[]): Bounds {
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const [x, y] of points) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  return { maxX, maxY, minX, minY };
+}
+
+function getWorldBounds(world: MapRenderWorld): Bounds | null {
+  if (!world.vertices.p.length) return null;
+  return getPointsBounds(world.vertices.p);
+}
+
+function containsPoint(bounds: Bounds, point: ScreenPoint): boolean {
+  return point.x >= bounds.minX && point.x <= bounds.maxX && point.y >= bounds.minY && point.y <= bounds.maxY;
+}

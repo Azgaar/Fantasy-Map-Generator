@@ -35,7 +35,6 @@ const LAYER_TOGGLES: { id: string; label: string }[] = [
   { id: "toggleRoutes", label: "Routes" },
   { id: "toggleRulers", label: "Rulers" },
   { id: "toggleScaleBar", label: "Scale Bar" },
-  { id: "toggleTexture", label: "Texture" },
   { id: "toggleTemperature", label: "Temperature" },
   { id: "toggleTrade", label: "Trade" },
   { id: "toggleVignette", label: "Vignette" },
@@ -239,7 +238,7 @@ function onBodyClick(event: Event): void {
   }
   if (button.name === "style") {
     const name = row.querySelector<HTMLInputElement>('[name="name"]')!.value.trim();
-    if (name) editStyle("labels", name);
+    if (name) window.StyleEditor.edit("labels", name);
     return;
   }
   if (button.name === "list") {

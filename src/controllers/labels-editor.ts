@@ -1,44 +1,54 @@
-import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
+import { select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { showMainTip, tip } from "@/components/tooltips";
+import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { setLabelOverride } from "@/controllers/editor-mutations";
 import type { Label, LabelType } from "@/generators/labels-generator";
 import { UNNAMED_ROUTE } from "@/generators/routes-generator";
 import type { Point } from "@/generators/voronoi";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
 import { createLabelArc } from "@/renderers/labels/label-arc";
-import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { drawLabels, getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import { speak } from "@/utils";
-import { ensureEl, getPointer, round } from "../utils";
+import { ensureEl, getSegmentId, rn } from "../utils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels
 let label: LabelData;
+let activeHandle:
+  | { initialOffset: Point; kind: "label" }
+  | { index: number; initialPoint: Point; kind: "path" }
+  | null = null;
 
 function open(type: LabelType, id: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleLabels")) toggleLabels();
-
-  const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
-  if (!textEl) return;
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
   const cachedLabel = getSceneLabel(type, id);
   if (!cachedLabel) return;
   label = { ...cachedLabel }; // the editor owns its copy and hands it back to the renderer on every change
 
-  makeLabelDraggable(textEl.id);
-  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", showEditorTips);
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editLabelHandle as EventListener);
+  select<SVGElement, unknown>("#viewbox").on("click.labelEditor", addInterimControlPoint);
 
   renderDialog();
 
   showDomDialog({
     content: ensureEl("labelEditor"),
     onClose: closeLabelEditor,
-    placement: "below-center",
-    placementTarget: textEl,
+    placement: "top-center",
+    placementTarget: document.getElementById("map"),
     resizable: false,
     title: "Edit Label",
     width: "fit-content"
@@ -234,121 +244,133 @@ function showTopButtons(): void {
   updateControls();
 }
 
-function showEditorTips(event: MouseEvent): void {
-  showMainTip();
-  const target = event.target as SVGElement;
-  const parent = target.parentNode as Element | null;
-  if (target.closest(`#${label.id}`)) {
-    tip("Drag to move the label");
-  } else if (parent?.id === "controlPoints") {
-    if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
-    if (target.tagName === "path") tip("Click to add a control point");
-  }
-}
-
 function drawControlPointsAndLine(): void {
-  select("#debug").select("#controlPoints").remove();
-  if (!hasLabelPath()) return;
-
-  const transform = label.dx || label.dy ? `translate(${label.dx || 0}, ${label.dy || 0})` : null;
-  select<SVGGElement, unknown>("#debug")
-    .append("g")
-    .attr("id", "controlPoints")
-    .attr("transform", transform)
-    .append("path")
-    .attr("d", getLabelPath(label))
-    .style("stroke-width", Math.max(2.2 / scale, 0.2))
-    .on("click", addInterimControlPoint);
-  label.pathPoints?.forEach(drawControlPoint);
+  renderLabelOverlay();
 }
 
-function drawControlPoint(point: Point): void {
-  select<SVGGElement, unknown>("#debug")
-    .select("#controlPoints")
-    .append("circle")
-    .attr("cx", point[0])
-    .attr("cy", point[1])
-    .attr("r", Math.max(3 / scale, 0.35))
-    .style("stroke-width", Math.max(1 / scale, 0.15))
-    .call(drag<SVGCircleElement, unknown>().on("drag", dragControlPoint))
-    .on("click", clickControlPoint);
-}
-
-function dragControlPoint(this: SVGCircleElement, event: any): void {
-  this.setAttribute("cx", event.x);
-  this.setAttribute("cy", event.y);
-  redrawLabelPath();
-}
-
-function redrawLabelPath(): void {
-  const points: Point[] = [];
-  select("#debug > #controlPoints")
-    .selectAll<SVGCircleElement, unknown>("circle")
-    .each(function () {
-      const x = rn(+this.getAttribute("cx")!, 2);
-      const y = rn(+this.getAttribute("cy")!, 2);
-      points.push([x, y]);
-    });
-  const lineGen = line<[number, number]>().curve(curveNatural);
-  const d = round(lineGen(points) || "");
-  select("#debug").select("#controlPoints > path").attr("d", d);
-  label.pathPoints = points;
+function addInterimControlPoint(this: SVGElement, event: MouseEvent): void {
+  if (!label.pathPoints?.length) return;
+  const worldPoint = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!worldPoint) return;
+  const point: Point = [worldPoint.x - (label.dx || 0), worldPoint.y - (label.dy || 0)];
+  if (distanceToPolyline(point, label.pathPoints) > 6 / scale) return;
+  const index = getSegmentId(label.pathPoints, point, 2);
+  label.pathPoints.splice(index, 0, [rn(point[0], 2), rn(point[1], 2)]);
   applyLabelChanges();
-  if (!points.length) drawControlPointsAndLine(); // last control point removed, the label became a plain text
 }
 
-function clickControlPoint(this: SVGCircleElement): void {
-  this.remove();
-  redrawLabelPath();
-}
-
-function addInterimControlPoint(this: SVGPathElement, event: any): void {
-  const point = getPointer(event, this);
-
-  const dists: number[] = [];
-  select("#debug #controlPoints")
-    .selectAll<SVGCircleElement, unknown>("circle")
-    .each(function () {
-      const x = +this.getAttribute("cx")!;
-      const y = +this.getAttribute("cy")!;
-      dists.push((point[0] - x) ** 2 + (point[1] - y) ** 2);
-    });
-
-  let index = dists.length;
-  if (dists.length > 1) {
-    const sorted = dists.slice(0).sort((a, b) => a - b);
-    const closest = dists.indexOf(sorted[0]);
-    const next = dists.indexOf(sorted[1]);
-    index = closest <= next ? closest + 1 : next + 1;
+function editLabelHandle(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const handleId = String(event.detail.handleId);
+  if (handleId === "label-anchor") {
+    editLabelAnchor(event);
+    return;
   }
-
-  const before = `:nth-child(${index + 2})`;
-  select<SVGGElement, unknown>("#debug")
-    .select("#controlPoints")
-    .insert("circle", before)
-    .attr("cx", point[0])
-    .attr("cy", point[1])
-    .attr("r", 2.5)
-    .attr("stroke-width", 0.8)
-    .call(drag<SVGCircleElement, unknown>().on("drag", dragControlPoint))
-    .on("click", clickControlPoint);
-
-  redrawLabelPath();
+  if (!handleId.startsWith("label-path:")) return;
+  const index = Number(handleId.split(":")[1]);
+  editLabelPathPoint(event, index);
 }
 
-function dragLabel(this: SVGElement, event: D3DragEvent<SVGGElement, unknown, unknown>) {
-  const dx0 = (label.dx || 0) - event.x;
-  const dy0 = (label.dy || 0) - event.y;
+function editLabelAnchor(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  if (event.detail.phase === "start") {
+    activeHandle = { initialOffset: [label.dx || 0, label.dy || 0], kind: "label" };
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (activeHandle?.kind === "label") {
+      [label.dx, label.dy] = activeHandle.initialOffset;
+      activeHandle = null;
+      applyLabelChanges();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    label.dx = rn(event.detail.worldPoint.x - label.anchor[0], 2);
+    label.dy = rn(event.detail.worldPoint.y - label.anchor[1], 2);
+    applyLabelChanges(false);
+    return;
+  }
+  if (event.detail.phase !== "end" || activeHandle?.kind !== "label") return;
+  activeHandle = null;
+  applyLabelChanges();
+}
 
-  event.on("drag", (dragEvent: D3DragEvent<SVGGElement, unknown, unknown>) => {
-    label.dx = rn(dx0 + dragEvent.x, 2);
-    label.dy = rn(dy0 + dragEvent.y, 2);
-    const transform = `translate(${label.dx}, ${label.dy})`;
-    this.setAttribute("transform", transform);
-    select("#debug #controlPoints").attr("transform", transform);
+function editLabelPathPoint(event: CustomEvent<MapInteractionHandleEventDetail>, index: number): void {
+  const point = label.pathPoints?.[index];
+  if (!point) return;
+  if (event.detail.phase === "activate") {
+    removeLabelPathPoint(index);
+    return;
+  }
+  if (event.detail.phase === "start") {
+    activeHandle = { index, initialPoint: [...point], kind: "path" };
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (activeHandle?.kind === "path" && activeHandle.index === index) {
+      label.pathPoints![index] = [...activeHandle.initialPoint];
+      activeHandle = null;
+      applyLabelChanges();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    label.pathPoints![index] = [
+      rn(event.detail.worldPoint.x - (label.dx || 0), 2),
+      rn(event.detail.worldPoint.y - (label.dy || 0), 2)
+    ];
+    applyLabelChanges(false);
+    return;
+  }
+  if (event.detail.phase !== "end" || activeHandle?.kind !== "path" || activeHandle.index !== index) return;
+  const moved = Math.hypot(point[0] - activeHandle.initialPoint[0], point[1] - activeHandle.initialPoint[1]) > 0.01;
+  activeHandle = null;
+  if (!moved) removeLabelPathPoint(index);
+  else applyLabelChanges();
+}
+
+function removeLabelPathPoint(index: number): void {
+  label.pathPoints?.splice(index, 1);
+  applyLabelChanges();
+}
+
+function renderLabelOverlay(): void {
+  const dx = label.dx || 0;
+  const dy = label.dy || 0;
+  const path = label.pathPoints?.map(([x, y]) => ({ x: x + dx, y: y + dy })) ?? [];
+  updateMapInteractionOverlay({
+    handles: [
+      {
+        id: "label-anchor",
+        label: `Move ${label.text || "label"}`,
+        point: { x: label.anchor[0] + dx, y: label.anchor[1] + dy }
+      },
+      ...path.map((point, index) => ({
+        id: `label-path:${index}`,
+        label: `Edit label path point ${index + 1}`,
+        point
+      }))
+    ],
+    selection:
+      path.length > 1
+        ? [{ kind: "polyline", points: path }]
+        : [{ kind: "point", point: { x: label.anchor[0] + dx, y: label.anchor[1] + dy } }]
   });
+}
 
-  event.on("end", () => applyLabelChanges());
+function distanceToPolyline(point: Point, points: Point[]): number {
+  let distance = Infinity;
+  for (let index = 1; index < points.length; index++) {
+    distance = Math.min(distance, distanceToSegment(point, points[index - 1], points[index]));
+  }
+  return distance;
+}
+
+function distanceToSegment([x, y]: Point, [x1, y1]: Point, [x2, y2]: Point): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  if (!dx && !dy) return Math.hypot(x - x1, y - y1);
+  const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
 }
 
 function showGroupSection(): void {
@@ -433,7 +455,7 @@ function generateRandomName(): void {
 }
 
 function editGroupStyle(): void {
-  editStyle("labels", label.group);
+  window.StyleEditor.edit("labels", label.group);
 }
 
 function showSizeSection(): void {
@@ -525,26 +547,20 @@ function removeSelectedLabel(): void {
       if (label.type !== "added") return;
       AddedLabels.remove(label.entityId);
       drawLabels();
-      destroyDialog("labelEditor");
+      closeLabelEditor();
     },
     title: "Remove label"
   });
 }
 
-function applyLabelChanges(): void {
+function applyLabelChanges(renderOverlay = true): void {
   const entity = Labels.getEntity(label.type, label.entityId);
   if (!entity) return;
 
-  entity.label = getLabelOverride();
-  redrawLabel(label);
-  makeLabelDraggable(label.id);
+  const mutation = setLabelOverride(entity, label.type, getLabelOverride());
+  if (mutation.changed) redrawLabel(label);
   updateControls();
-}
-
-function makeLabelDraggable(id: string): void {
-  select<SVGElement, unknown>(`#${id}`)
-    .call(drag<SVGElement, unknown>().on("start", dragLabel))
-    .classed("draggable", true);
+  if (renderOverlay) renderLabelOverlay();
 }
 
 function resetSelectedLabel(): void {
@@ -553,7 +569,6 @@ function resetSelectedLabel(): void {
 
   drawLabels();
   label = { ...(getSceneLabel(type, entityId) ?? label) };
-  makeLabelDraggable(label.id);
   selectLabelGroup(label.group);
   updateValues();
   updateControls();
@@ -561,8 +576,10 @@ function resetSelectedLabel(): void {
 }
 
 function closeLabelEditor(): void {
-  select("#debug").select("#controlPoints").remove();
-  select(`#${label.id}`).on(".drag", null).classed("draggable", false);
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editLabelHandle as EventListener);
+  select<SVGElement, unknown>("#viewbox").on("click.labelEditor", null);
+  clearMapInteractionOverlay();
+  activeHandle = null;
   applyDefaultViewboxEvents();
   destroyDialog("labelEditor");
 }

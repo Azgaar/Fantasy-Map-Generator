@@ -63,7 +63,7 @@ const labelsTable = initEditorTable<LabelData>({
 function open(group: string = ALL): void {
   if (customization) return;
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
   isBulkMode = false;
   resetSpreadPreview();

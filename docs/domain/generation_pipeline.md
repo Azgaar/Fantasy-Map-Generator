@@ -1,6 +1,6 @@
 # Generation Pipeline
 
-The canonical "build a world from scratch" routine lives in [`public/main.js`](../../public/main.js) → `async function generate(options)`. Several other code paths rebuild large portions of `grid` and `pack`, and each must replicate the relevant slice of that pipeline. When a new global generator step is added (e.g. `Goods.generate` / `Production.produce`), every replication site that reaches the same lifecycle phase has to be updated as well, or features will silently fail when entered through that path.
+The canonical "build a world from scratch" routine lives in [`src/application/main-runtime.ts`](../../src/application/main-runtime.ts) → `async function generate(options)`. Several other code paths rebuild large portions of `grid` and `pack`, and each must replicate the relevant slice of that pipeline. When a new global generator step is added (e.g. `Goods.generate` / `Production.produce`), every replication site that reaches the same lifecycle phase has to be updated as well, or features will silently fail when entered through that path.
 
 ## Canonical sequence
 
@@ -94,7 +94,7 @@ When extending the pipeline, audit each of these for whether their scope reaches
 
 ## Adding a new global generation step — checklist
 
-1. Add the call in `public/main.js` `generate()` at the correct phase boundary.
+1. Add the call in `src/application/main-runtime.ts` `generate()` at the correct phase boundary.
 2. If the step runs **after phase 5 (`reGraph`)**, add it to `heightmap-editor.js` `regenerateErasedData()` at the matching boundary.
 3. If the step's output depends on **cell-indexed data** (anything in `pack.cells.*`) or on entity identities that the restore path re-maps, also add it to `heightmap-editor.js` `restoreRiskedData()`.
 4. For `src/generators/resample.ts`: if the step writes to a **per-cell array**, add it to `restoreCellData` (parent-quadtree mapping). If it writes to a **list keyed by an entity id** (markets, deals, etc.), add it to `Resampler.restoreEconomy` (or a sibling restore method) with the appropriate validity filter for removed entities. Only call the generator directly if the output is irrecoverable from the parent (e.g. depends on a re-flood across the new cell graph) — in that case prefer exposing a partial method (cf. `Markets.expandTerritories`) over running the full generator.

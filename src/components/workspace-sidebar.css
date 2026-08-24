@@ -1,11 +1,7 @@
 :root {
-  --fmg-sidebar-width: 260px;
-  --fmg-sidebar-collapsed-width: 60px;
   --fmg-panel-width: 420px;
 }
 
-#workspaceNavigationRoot,
-#workspaceNavigationRoot *,
 #options,
 #options * {
   box-sizing: border-box;
@@ -18,19 +14,6 @@
   pointer-events: none;
 }
 
-#workspaceNavigationRoot {
-  position: fixed;
-  z-index: 32;
-  inset: 0 auto 0 0;
-  width: var(--fmg-sidebar-width);
-  color: var(--kui-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 13px;
-  pointer-events: auto;
-}
-
-#workspaceNavigationRoot .kui-icon,
-#workspaceNavigationRoot .bp6-icon,
 #toolsContent .kui-icon,
 #toolsContent .bp6-icon {
   display: inline-flex;
@@ -41,193 +24,10 @@
   line-height: 1;
 }
 
-#workspaceNavigationRoot .kui-menu,
-#workspaceNavigationRoot .bp6-menu {
-  min-width: 0;
-  margin: 0;
-  padding: 5px;
-  list-style: none;
-}
-
-#workspaceNavigationRoot .kui-menu-item-shell {
-  position: relative;
-  list-style: none;
-}
-
-#workspaceNavigationRoot .kui-menu-item,
-#workspaceNavigationRoot .bp6-menu-item {
-  display: flex;
-  width: 100%;
-  min-height: 32px;
-  align-items: center;
-  gap: 8px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  text-decoration: none;
-}
-
-#workspaceNavigationRoot .bp6-text-overflow-ellipsis {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#workspaceNavigationRoot .app-sidebar {
-  width: var(--fmg-sidebar-width);
-  min-width: var(--fmg-sidebar-collapsed-width);
-  box-shadow: 8px 0 28px rgb(0 0 0 / 0.22);
-}
-
-#workspaceNavigationRoot .app-sidebar.collapsed {
-  width: var(--fmg-sidebar-collapsed-width);
-}
-
-#workspaceNavigationRoot .sidebar-menu .sidebar-item-active {
-  border-left-color: hsl(var(--accent));
-  background: hsl(var(--accent) / 0.32) !important;
-  color: var(--kui-text);
-}
-
-#workspaceNavigationRoot [data-href="/regenerate"] {
-  color: color-mix(in srgb, var(--kui-danger, #dc5a67) 78%, var(--kui-text-secondary));
-}
-
-#workspaceNavigationRoot [data-href="/regenerate"].sidebar-item-active {
-  border-left-color: var(--kui-danger, #dc5a67);
-  background: color-mix(in srgb, var(--kui-danger, #dc5a67) 18%, transparent) !important;
-  color: var(--kui-danger, #dc5a67);
-}
-
-#workspaceNavigationRoot .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-}
-
-#workspaceNavigationRoot .sidebar-header {
-  height: 52px;
-}
-
-#workspaceNavigationRoot .sidebar-header::after {
-  width: 17px;
-  height: 17px;
-  margin-left: auto;
-  border: 1px solid var(--kui-line);
-  color: var(--kui-text-muted);
-  content: "‹";
-  font-size: 15px;
-  line-height: 14px;
-  text-align: center;
-}
-
-#workspaceNavigationRoot .collapsed .sidebar-header::after {
-  display: none;
-}
-
-.fmg-sidebar-actions {
-  margin: auto 10px 6px;
-  padding-top: 9px;
-  border-top: 1px solid var(--kui-line-soft);
-}
-
-.fmg-sidebar-actions__label {
-  padding: 2px 10px 5px;
-  color: var(--kui-text-muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
-  text-transform: uppercase;
-}
-
-.fmg-sidebar-action {
-  display: flex;
-  width: 100%;
-  min-height: 34px;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  border: 0;
-  border-left: 2px solid transparent;
-  background: transparent;
-  color: var(--kui-text-secondary);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-}
-
-.fmg-sidebar-action:hover,
-.fmg-sidebar-action:focus-visible {
-  background: var(--kui-surface-hover);
-  color: var(--kui-text);
-}
-
-.fmg-sidebar-action span:nth-child(2) {
-  flex: 1;
-}
-
-.fmg-sidebar-action kbd,
 #layersSearch kbd {
   color: var(--kui-text-muted);
   font: 10px/1.2 "SF Mono", Consolas, monospace;
   white-space: nowrap;
-}
-
-#workspaceNavigationRoot .collapsed .fmg-sidebar-actions {
-  margin-inline: 8px;
-}
-
-#workspaceNavigationRoot .collapsed .fmg-sidebar-action {
-  justify-content: center;
-  padding-inline: 8px;
-}
-
-#workspaceNavigationRoot .collapsed .fmg-sidebar-action span,
-#workspaceNavigationRoot .collapsed .fmg-sidebar-action kbd,
-#workspaceNavigationRoot .collapsed .fmg-sidebar-actions__label {
-  display: none;
-}
-
-#canvasControlsRoot {
-  position: fixed;
-  z-index: 29;
-  right: 30px;
-  bottom: 32px;
-  color: var(--kui-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  pointer-events: auto;
-}
-
-.fmg-canvas-controls {
-  display: flex;
-  border: 1px solid var(--kui-line);
-  background: var(--kui-surface-panel);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.32);
-}
-
-.fmg-canvas-control {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--kui-text-secondary);
-  cursor: pointer;
-}
-
-.fmg-canvas-control:hover,
-.fmg-canvas-control:focus-visible {
-  outline: 0;
-  background: var(--kui-surface-hover);
-  color: var(--kui-text);
 }
 
 #collapsible {
@@ -237,18 +37,18 @@
 #options {
   position: fixed;
   z-index: 31;
-  top: 0;
-  bottom: 0;
-  left: var(--fmg-sidebar-width);
-  width: min(var(--fmg-panel-width), calc(100vw - var(--fmg-sidebar-width)));
-  height: 100vh;
+  top: 64px;
+  bottom: auto;
+  left: 24px;
+  width: min(var(--fmg-panel-width), calc(100vw - 48px));
+  height: min(720px, calc(100vh - 88px));
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 0;
-  border-right: 1px solid var(--kui-line);
+  border: 1px solid var(--kui-line);
+  border-radius: 8px;
   background: var(--kui-surface-panel);
-  box-shadow: 10px 0 34px rgb(0 0 0 / 0.28);
+  box-shadow: 0 18px 52px rgb(0 0 0 / 0.42);
   color: var(--kui-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 13px;
@@ -263,9 +63,16 @@
   }
 }
 
-.workspace-sidebar-collapsed #options {
-  left: var(--fmg-sidebar-collapsed-width);
-  width: min(var(--fmg-panel-width), calc(100vw - var(--fmg-sidebar-collapsed-width)));
+body[data-workspace-section="preferences"] #options {
+  right: 24px;
+  left: auto;
+  width: min(460px, calc(100vw - 48px)) !important;
+  min-width: 0;
+  max-width: 460px;
+}
+
+body[data-workspace-section="preferences"] #options .tabcontent {
+  height: calc(100% - 52px);
 }
 
 #options > .drag-trigger {
@@ -286,7 +93,7 @@
 }
 
 #options .tabcontent {
-  height: calc(100vh - 52px);
+  height: calc(100% - 52px);
   padding: 16px 18px 22px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -436,13 +243,8 @@
 }
 
 .workspace-panel-open #tooltip {
-  left: calc(var(--fmg-sidebar-width) + var(--fmg-panel-width) + 2vw);
-  width: calc(96vw - var(--fmg-sidebar-width) - var(--fmg-panel-width));
-}
-
-.workspace-sidebar-collapsed.workspace-panel-open #tooltip {
-  left: calc(var(--fmg-sidebar-collapsed-width) + var(--fmg-panel-width) + 2vw);
-  width: calc(96vw - var(--fmg-sidebar-collapsed-width) - var(--fmg-panel-width));
+  left: calc(var(--fmg-panel-width) + 48px);
+  width: calc(100vw - var(--fmg-panel-width) - 72px);
 }
 
 #toolsContent {
@@ -490,16 +292,7 @@
 
 @media (max-width: 760px) {
   :root {
-    --fmg-panel-width: calc(100vw - var(--fmg-sidebar-collapsed-width));
-  }
-
-  #workspaceNavigationRoot {
-    width: var(--fmg-sidebar-collapsed-width);
-  }
-
-  #canvasControlsRoot {
-    right: 16px;
-    bottom: 24px;
+    --fmg-panel-width: calc(100vw - 24px);
   }
 
   .fmg-tools-layout {
@@ -510,20 +303,17 @@
     grid-template-columns: 1fr;
   }
 
-  .workspace-panel-open #tooltip,
-  .workspace-panel-open #tourPromptButton {
+  .workspace-panel-open #tooltip {
     display: none !important;
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  #workspaceNavigationRoot .app-sidebar {
-    transition: none;
-  }
-}
-
-@media print {
-  #canvasControlsRoot {
-    display: none;
+  #options,
+  body[data-workspace-section="preferences"] #options {
+    top: 60px;
+    right: 12px;
+    left: 12px;
+    width: auto !important;
+    height: calc(100vh - 72px);
+    max-width: none;
   }
 }

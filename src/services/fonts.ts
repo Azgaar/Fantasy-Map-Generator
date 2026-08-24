@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { tip } from "@/components/tooltips";
 import { ensureEl } from "../utils";
 
@@ -353,8 +352,11 @@ export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
     const font = labelGroup.getAttribute("font-family");
     if (font) usedFontFamilies.add(font);
   }
+  for (const groupStyle of Object.values(style.labels.groups)) {
+    if (groupStyle["font-family"]) usedFontFamilies.add(groupStyle["font-family"]);
+  }
 
-  const provinceFont = select("#provs").attr("font-family");
+  const provinceFont = svg.querySelector("#provs")?.getAttribute("font-family");
   if (provinceFont) usedFontFamilies.add(provinceFont);
 
   const legend = svg.querySelector("#legend");
@@ -389,7 +391,7 @@ window.addGoogleFont = async (family: string) => {
       addFontOption(family);
       const select = ensureEl<HTMLSelectElement>("styleSelectFont");
       if (select) select.value = family;
-      changeFont();
+      window.StyleEditor.changeFont();
     })
     .catch(err => {
       tip(`Failed to load Google font ${family}`, true, "error", 4000);
@@ -408,7 +410,7 @@ window.addLocalFont = (family: string) => {
   addFontOption(family);
   const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
-  changeFont();
+  window.StyleEditor.changeFont();
 };
 
 window.addWebFont = (family: string, url: string) => {
@@ -421,5 +423,5 @@ window.addWebFont = (family: string, url: string) => {
   addFontOption(family);
   const select = ensureEl<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
-  changeFont();
+  window.StyleEditor.changeFont();
 };

@@ -21,12 +21,14 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawMarkets } from "@/renderers/draw-markets";
+import { getPixiMapPointAtClient } from "@/renderers/pixi/pixi-renderer-controller";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { drawGoods, toggleGoods } from "../renderers/draw-goods";
-import { ensureEl, getPointer, unique } from "../utils";
+import { drawGoods } from "../renderers/draw-goods";
+import { ensureEl, unique } from "../utils";
+import { toggleCellGood } from "./editor-mutations";
 
 const visibleTags = new Set<string>();
 let production: ReturnType<typeof getProduction> = {};
@@ -85,7 +87,7 @@ function open() {
   if (customization) return;
   closeDialogs("#goodsEditor, .stable");
 
-  if (!layerIsOn("toggleGoods")) toggleGoods();
+  if (!window.LayerControls.isLayerOn("toggleGoods")) window.LayerControls.toggleLayer("toggleGoods");
   else drawGoods();
 
   renderDialog();
@@ -517,9 +519,9 @@ function goodsRestoreDefaults() {
       Goods.restoreDefaults();
       Goods.generate();
       Production.regenerateEconomy();
-      if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
       refreshEditors();
     }
   });
@@ -535,10 +537,10 @@ function enterResourceAssignMode(this: HTMLElement) {
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
   customization = 14;
   this.classList.add("pressed");
-  if (!layerIsOn("toggleGoods")) toggleGoods();
-  if (!layerIsOn("toggleCells")) {
+  if (!window.LayerControls.isLayerOn("toggleGoods")) window.LayerControls.toggleLayer("toggleGoods");
+  if (!window.LayerControls.isLayerOn("toggleCells")) {
     ensureEl<HTMLButtonElement>("toggleCells").dataset.forced = "true";
-    toggleCells();
+    window.LayerControls.toggleLayer("toggleCells");
   }
 
   setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "actions"]);
@@ -559,24 +561,16 @@ function selectResourceOnLineClick(this: HTMLElement) {
 
 function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
   const body = ensureEl("goodsBody");
-  const point = getPointer(event, this);
-  const cellId = findCell(...point);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y);
   if (cellId === undefined) return;
 
   const selected = body.querySelector<HTMLElement>("div.selected");
   if (!selected) return;
 
-  if (pack.cells.good[cellId]) {
-    pack.cells.good[cellId] = 0;
-  } else {
-    const resourceId = +selected.dataset.id!;
-    const resource = Goods.get(resourceId);
-    if (!resource) return;
-    pack.cells.good[cellId] = resourceId;
-    resource.visible = true;
-  }
-
-  drawGoods();
+  const mutation = toggleCellGood(pack, cellId, Number(selected.dataset.id));
+  if (mutation.changed) drawGoods();
 }
 
 function exitResourceAssignMode(close?: string) {
@@ -584,9 +578,9 @@ function exitResourceAssignMode(close?: string) {
   customization = 0;
   ensureEl("goodsAssign").classList.remove("pressed");
 
-  if (layerIsOn("toggleCells")) {
+  if (window.LayerControls.isLayerOn("toggleCells")) {
     const toggler = ensureEl<HTMLButtonElement>("toggleCells");
-    if (toggler.dataset.forced) toggleCells();
+    if (toggler.dataset.forced) window.LayerControls.toggleLayer("toggleCells");
     delete toggler.dataset.forced;
   }
 
@@ -667,7 +661,7 @@ function requestGoodsRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Goods.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
       refreshEditors();
     }
   });
@@ -681,8 +675,8 @@ function requestProductionRegeneration() {
     confirm: "Regenerate",
     onConfirm: () => {
       Production.regenerate();
-      if (layerIsOn("toggleGoods")) drawGoods();
-      if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+      if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+      if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
       refreshEditors();
     }
   });

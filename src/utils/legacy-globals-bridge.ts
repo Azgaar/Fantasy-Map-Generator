@@ -65,7 +65,7 @@ legacyWindow.wiki = wiki;
 legacyWindow.link = link;
 legacyWindow.isCtrlClick = isCtrlClick;
 legacyWindow.drawCellsValue = drawCellsValue;
-legacyWindow.drawPolygons = data => drawPolygons(data, terrs, grid);
+legacyWindow.drawPolygons = data => drawPolygons(data, grid);
 legacyWindow.drawRouteConnections = () =>
   drawRouteConnections((legacyWindow as typeof legacyWindow & { packedGraph: unknown }).packedGraph);
 legacyWindow.drawPoint = drawPoint;

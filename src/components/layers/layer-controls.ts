@@ -1,3 +1,5 @@
+import type { MapLayerId } from "@/renderers/core/layer-registry";
+
 export const LAYER_CONTROLS_CHANGE_EVENT = "fmg-layer-controls-change";
 
 export interface LayerView {
@@ -19,6 +21,7 @@ export interface LayerControlsSnapshot {
   canRemovePreset: boolean;
   canSavePreset: boolean;
   layers: LayerView[];
+  presetSelectionDisabled: boolean;
   presetOptions: LayerPresetOption[];
   selectedPreset: string;
 }
@@ -30,12 +33,57 @@ export interface LayerToggleModifiers {
 
 export interface LegacyLayerControls {
   applyPreset: (preset: string) => void;
+  drawActiveLayers: () => void;
+  getLayerOrder: () => MapLayerId[];
   getSnapshot: () => LayerControlsSnapshot;
+  isLayerOn: (id: string) => boolean;
   moveLayer: (id: string, previousId?: string, nextId?: string) => void;
+  redrawLayer: (id: string) => boolean;
   removePreset: () => void;
+  restoreSavedPreset: () => void;
   savePreset: (name: string) => void;
+  setLayerOrder: (order: readonly MapLayerId[]) => void;
+  setPresetState: (preset: string, disabled: boolean) => void;
+  setLayerVisibility: (id: string, visible: boolean) => void;
+  syncPreset: (disabled?: boolean) => void;
   toggleLayer: (id: string, modifiers?: LayerToggleModifiers) => boolean;
 }
+
+let target: LegacyLayerControls | null = null;
+
+function getTarget(): LegacyLayerControls {
+  if (!target) throw new Error("Layer controls runtime is not initialized");
+  return target;
+}
+
+export function bindLayerControls(nextTarget: LegacyLayerControls): () => void {
+  target = nextTarget;
+  return () => {
+    if (target === nextTarget) target = null;
+  };
+}
+
+/**
+ * Stable typed entry point for bundled callers. `window.LayerControls` remains a
+ * compatibility alias until the remaining legacy-oriented modules import this facade.
+ */
+export const LayerControls: LegacyLayerControls = {
+  applyPreset: preset => getTarget().applyPreset(preset),
+  drawActiveLayers: () => getTarget().drawActiveLayers(),
+  getLayerOrder: () => getTarget().getLayerOrder(),
+  getSnapshot: () => getTarget().getSnapshot(),
+  isLayerOn: id => getTarget().isLayerOn(id),
+  moveLayer: (id, previousId, nextId) => getTarget().moveLayer(id, previousId, nextId),
+  redrawLayer: id => getTarget().redrawLayer(id),
+  removePreset: () => getTarget().removePreset(),
+  restoreSavedPreset: () => getTarget().restoreSavedPreset(),
+  savePreset: name => getTarget().savePreset(name),
+  setLayerOrder: order => getTarget().setLayerOrder(order),
+  setPresetState: (preset, disabled) => getTarget().setPresetState(preset, disabled),
+  setLayerVisibility: (id, visible) => getTarget().setLayerVisibility(id, visible),
+  syncPreset: disabled => getTarget().syncPreset(disabled),
+  toggleLayer: (id, modifiers) => getTarget().toggleLayer(id, modifiers)
+};
 
 export type LayerMoveDirection = -1 | 1;
 

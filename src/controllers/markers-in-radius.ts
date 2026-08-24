@@ -4,8 +4,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
-import { drawMarkers, setMarkersFilter } from "@/renderers/draw-markers";
-import { highlightElement } from "@/renderers/overlays/highlight";
+import { filterMarkerSymbols, showOnlyPinnedMarkers } from "@/renderers/point-symbols";
 import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
 
 let center: Marker | null = null;
@@ -30,7 +29,7 @@ function markerName(marker: Marker): string {
 function open(marker: Marker): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  if (!window.LayerControls.isLayerOn("toggleMarkers")) window.LayerControls.toggleLayer("toggleMarkers");
 
   center = marker;
   renderDialog();
@@ -91,8 +90,7 @@ function applyRadius(distance: number): void {
   drawMarkerRadius(center.x, center.y, radiusPx);
 
   const inRange = pack.markers.filter(marker => Math.hypot(marker.x - center!.x, marker.y - center!.y) <= radiusPx);
-  setMarkersFilter(inRange.map(marker => marker.i));
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  filterMarkerSymbols(inRange.map(marker => marker.i));
   renderMarkersList(inRange);
 }
 
@@ -139,21 +137,17 @@ function onMarkerListClick(event: MouseEvent): void {
   if (target.classList.contains("icon-trash-empty")) return void confirmRemove(marker);
 
   zoomTo(marker.x, marker.y, 8, 1600);
-  const el = document.getElementById(`marker${i}`);
-  if (el) highlightElement(el, 2);
 }
 
 function togglePin(marker: Marker, el: HTMLElement): void {
-  const markerGroup = ensureEl("markers");
   if (marker.pinned) {
     delete marker.pinned;
-    if (!pack.markers.some(m => m.pinned)) markerGroup.removeAttribute("pinned");
+    showOnlyPinnedMarkers(pack.markers.some(m => m.pinned));
   } else {
     marker.pinned = true;
-    markerGroup.setAttribute("pinned", "1");
+    showOnlyPinnedMarkers(true);
   }
   el.classList.toggle("inactive");
-  drawMarkers();
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {
@@ -208,8 +202,7 @@ function locateCenter(): void {
 
 function closeMarkersInRadius(): void {
   clearMarkerRadius();
-  setMarkersFilter(null);
-  if (layerIsOn("toggleMarkers")) drawMarkers();
+  filterMarkerSymbols(null);
   inRangeMarkers = [];
   center = null;
   clearMainTip();

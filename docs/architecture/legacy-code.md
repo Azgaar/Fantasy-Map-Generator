@@ -19,50 +19,30 @@ everything described as legacy.
 
 ## 1. Classic runtime
 
-The application currently mixes Vite-bundled TypeScript with five classic application
-scripts:
+The former application scripts `public/main.js`, `public/modules/ui/layers.js`,
+`options.js`, `style-presets.js`, and `style.js` have been ported to bundled TypeScript and
+deleted. The editor bootstrap is now `src/application/main-runtime.ts`; it initializes the
+typed application state and the small SVG viewport surface while Pixi owns persistent map
+content. The page no longer loads a global D3 build.
 
-- `public/main.js`
-- `public/modules/ui/layers.js`
-- `public/modules/ui/options.js`
-- `public/modules/ui/style-presets.js`
-- `public/modules/ui/style.js`
+The remaining classic-runtime concerns are narrower:
 
-At version 1.143.2 these files total about 5,058 source lines. This number is an audit snapshot,
-not a target to preserve; remeasure it when planning migration work.
+- typed compatibility accessors for ambient state such as `pack`, `grid`, and `options`;
+- explicit `window.*` aliases retained for existing integrations and older migrated modules;
+- static UI markup in `src/index.html` that is shown or hidden rather than lifecycle-owned;
+- vendored third-party libraries and the service worker under `public/`;
+- saved-map migrations that intentionally understand historical SVG data.
 
-`src/index.html` first loads global libraries and bundled modules, then loads these classic
-scripts. The order is significant: classic code expects the bundled modules to have
-registered globals, while bundled modules must avoid reading globals declared later by
-`main.js` during module evaluation.
-
-Classic code relies on:
-
-- ambient state such as `pack`, `grid`, `options`, SVG selections, and generation settings;
-- functions and registries exposed through `window`;
-- the global D3 v5 calling convention, including `d3.event`;
-- shared React dialogs and native DOM helpers exposed through `window`;
-- UI markup pre-built in `src/index.html` and shown or hidden rather than created and
-  destroyed by its owner.
-
-These are active dependencies, not an archive. Follow [migration_guide.md](./migration_guide.md)
-when porting a feature. A completed port updates all call sites and removes the replaced
-classic file in the same change so two implementations cannot drift.
+These are active compatibility surfaces, not a second renderer. Follow
+[migration_guide.md](./migration_guide.md) when porting a feature, and remove an alias only
+with its final caller and corresponding global type.
 
 ### Global libraries
 
-New bundled code should import dependencies from npm. Global scripts in `public/libs/`
-remain because classic code and a shrinking set of compatibility seams still use them.
-
-Two important cases are:
-
-- **D3 v5.** `src/components/zoom.ts` still uses `window.d3`, `d3.event`, and v5 selections.
-  Map loading deliberately recreates the shared SVG selections with global D3 v5 because
-  classic mouse and zoom handlers depend on that event model. Migrate zoom and all remaining
-  classic D3 consumers to imported D3 v7 before removing `public/libs/d3.min.js`.
-- **Dialogs and interactions.** jQuery and jQuery UI have been removed. Classic scripts call
-  the typed bridges registered on `window`; bundled controllers import the shared React dialog
-  components and native drag/sort helpers directly. Do not reintroduce a global DOM toolkit.
+New bundled code should import dependencies from npm. D3 uses named v7 imports throughout;
+`public/libs/d3.min.js`, `window.d3`, `d3.event`, and shared global D3 selections are gone.
+Dialogs and interactions likewise use the shared React/native modules rather than jQuery.
+Other vendored libraries may remain for features that have not yet moved to npm.
 
 Other vendored libraries may be loaded at startup or on demand. Remove one only after a
 repository-wide caller audit and a runtime test of the affected feature.
@@ -87,6 +67,11 @@ Bundled modules expose selected APIs to classic code through several mechanisms:
   `ensureEl`, and graph helpers.
 - `src/controllers/index.ts` and `src/services/index.ts` publish the typed lazy registries as
   `window.Controllers` and `window.Services`.
+- `src/application/application-state.ts` owns mutable bootstrap/world state and publishes
+  typed compatibility accessors for modules that still use the historical bare names.
+- The application, world-generation, layer-controls, style-presets, options, and renderer
+  facades provide typed module entry points; selected `window.*` aliases remain compatibility
+  handles rather than primary bundled call paths.
 - Generators, renderers, and shared components register feature-specific globals such as
   `window.Markets`, `window.drawRoutes`, and `window.tip`.
 - `src/types/global.ts` describes ambient state from classic scripts and the `Window` surface
@@ -101,8 +86,8 @@ or UI module merely to avoid a global call.
 
 Remove a global bridge only when all of the following are true:
 
-1. Search `public/main.js`, `public/modules/`, `src/index.html`, and dynamically constructed
-   markup for classic or inline callers.
+1. Search `public/`, `src/index.html`, and dynamically constructed markup for classic or
+   inline callers.
 2. Search bundled code and replace inappropriate `window.*` calls with legal downward imports.
 3. Check tests and documentation for an intentionally supported browser API.
 4. Decide whether integrations, plugins, user scripts, or console workflows treat the symbol
@@ -179,14 +164,13 @@ Instead:
 
 ## Removal priority
 
-Use this order to reduce risk and unlock later cleanup:
+The renderer/bootstrap migration has removed the classic application scripts, D3 v5, and the
+jQuery UI layer. Future cleanup should proceed independently of that completed cutover:
 
-1. Port the remaining classic feature modules one at a time.
-2. Migrate zoom and shared SVG selections from global D3 v5 to imported D3 v7.
-3. Delete D3 v5 only after every classic/v5 consumer is gone.
-4. Replace the jQuery UI dialog layer and migrate static panels to controller-owned lifecycle.
-5. Prune `window.*` bridges as their final callers disappear.
-6. Redesign serialization separately if the benefit justifies a versioned format transition.
+1. Move static panels to controller-owned lifecycle when those panels are otherwise changed.
+2. Prune typed compatibility accessors and `window.*` aliases as their final callers disappear.
+3. Move remaining vendored libraries to npm only with focused runtime coverage.
+4. Redesign serialization separately if the benefit justifies a versioned format transition.
 
 Map migrations and runtime modernization are separate concerns: finishing the JavaScript to
 TypeScript migration does not make old-map conversion code obsolete.

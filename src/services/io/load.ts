@@ -1,11 +1,28 @@
 import { select } from "d3";
+import { ApplicationController } from "@/application/application-controller";
+import { getViewportSurface } from "@/application/viewport-surface";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { LayerControls } from "@/components/layers/layer-controls";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { Controllers } from "@/controllers";
+import { ensureMeasurerIds } from "@/generators/measurers-generator";
+import { ensureReliefIconIds } from "@/generators/relief-generator";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { clearLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import {
+  getLegacyRendererLayerVisibility,
+  importLegacyRendererStyle,
+  removeLegacyRendererGroups
+} from "@/renderers/pixi/legacy-svg-import";
+import { getStoredPixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
+import {
+  addCustomHeightColorScheme as addCustomColorScheme,
+  HEIGHT_COLOR_SCHEMES
+} from "@/renderers/scene/height-color-schemes";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -91,7 +108,7 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
         ? "Cannot load map from URL: request timed out"
         : (error as Error).message;
     showUploadErrorMessage(message, maplink, random);
-    if (random) generateMapOnLoad();
+    if (random) void ApplicationController.generateMapOnLoad();
   } finally {
     clearTimeout(timeoutId);
   }
@@ -144,52 +161,58 @@ function uploadMap(file: Blob, callback?: () => void): void {
   fileReader.readAsArrayBuffer(file);
 }
 
-async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | null> {
-  try {
-    const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
-
-    let uncompressedData: number[] = [];
-    for await (const chunk of uncompressedStream) {
-      uncompressedData = uncompressedData.concat(Array.from(chunk));
-    }
-
-    return new Uint8Array(uncompressedData);
-  } catch (error) {
-    ERROR && console.error(error);
-    return null;
-  }
-}
-
 async function parseLoadedResult(
-  result: ArrayBuffer | Uint8Array
+  result: ArrayBuffer
 ): Promise<{ mapData: string[] | null; mapVersion: string | null }> {
   try {
-    const resultAsString = new TextDecoder().decode(result);
-
-    // data can be in FMG internal format or base64 encoded
-    const isDelimited = resultAsString.substring(0, 10).includes("|");
-    let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
-
-    // fix if svg part has CRLF line endings instead of LF
-    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
-    const svgContent = svgMatch![0];
-    const hasCrlfEndings = svgContent.includes("\r\n");
-    if (hasCrlfEndings) {
-      const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
-      content = content.replace(svgContent, correctedSvgContent);
-    }
-
-    const mapData = content.split("\r\n"); // split by CRLF
+    const mapData = await decodeMapFileInWorker(result);
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
-
     return { mapData, mapVersion };
   } catch (error) {
-    const uncompressedData = await uncompress(result as ArrayBuffer); // file can be gzip compressed
-    if (uncompressedData) return parseLoadedResult(uncompressedData);
-
     ERROR && console.error(error);
     return { mapData: null, mapVersion: null };
   }
+}
+
+async function decodeMapFileInWorker(result: ArrayBuffer): Promise<string[]> {
+  if (typeof Worker === "undefined") {
+    const { decodeMapFile } = await import("./map-file-decoder");
+    return decodeMapFile(result);
+  }
+
+  const worker = new Worker(new URL("./map-file-decoder-worker.ts", import.meta.url), { type: "module" });
+  return new Promise((resolve, reject) => {
+    worker.onmessage = ({ data }: MessageEvent<{ error?: string; id: number; mapData?: string[] }>) => {
+      worker.terminate();
+      if (data.error) reject(new Error(data.error));
+      else if (data.mapData) resolve(data.mapData);
+      else reject(new Error("Map decoder returned no data"));
+    };
+    worker.onerror = event => {
+      worker.terminate();
+      reject(event.error || new Error(event.message));
+    };
+    worker.postMessage({ buffer: result, id: 1 }, [result]);
+  });
+}
+
+type NumericTypedArray = Float32Array | Int8Array | Uint8Array | Uint16Array;
+type NumericTypedArrayConstructor<T extends NumericTypedArray> = new (length: number) => T;
+
+function parseNumericArray<T extends NumericTypedArray>(source: string, ArrayType: NumericTypedArrayConstructor<T>): T {
+  if (!source) return new ArrayType(0);
+  let length = 1;
+  for (let index = 0; index < source.length; index++) if (source.charCodeAt(index) === 44) length++;
+
+  const values = new ArrayType(length);
+  let valueStart = 0;
+  let valueIndex = 0;
+  for (let index = 0; index <= source.length; index++) {
+    if (index < source.length && source.charCodeAt(index) !== 44) continue;
+    values[valueIndex++] = Number(source.slice(valueStart, index));
+    valueStart = index + 1;
+  }
+  return values;
 }
 
 function showUploadMessage(type: string, mapData: string[] | null, mapVersion: string | null): void {
@@ -225,10 +248,12 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
   let loadGroupOpen = false;
+  const sessionThreeDOptions = options.threeD;
 
   try {
     // exit customization
     if (typeof window.closeDialogs === "function") closeDialogs();
+    if (document.getElementById("canvas3d")) await Controllers.View3d.enterStandard();
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
@@ -268,6 +293,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         urbanization = +settings[13];
       }
       if (settings[19]) options = JSON.parse(settings[19]);
+      options.threeD = sessionThreeDOptions;
       // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
       if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
       if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
@@ -312,89 +338,23 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    svg.remove();
+    getViewportSurface().svg.remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
-    // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
-    // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
-    // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
-    // v5 global `d3.event`, breaking mouse/zoom handlers after a map load (#1508).
-    // Every layer selection below chains off `svg`, so they all inherit v5.
-    svg = (window as any).d3.select("#map") as typeof svg;
-    defs = svg.select<SVGDefsElement>("#deftemp");
-    viewbox = svg.select<SVGElement>("#viewbox");
-    scaleBar = svg.select<SVGGElement>("#scaleBar");
-    legend = svg.select("#legend");
-    ocean = viewbox.select<SVGGElement>("#ocean");
-    oceanLayers = ocean.select<SVGGElement>("#oceanLayers");
-    oceanPattern = ocean.select<SVGGElement>("#oceanPattern");
-    lakes = viewbox.select<SVGGElement>("#lakes");
-    landmass = viewbox.select<SVGGElement>("#landmass");
-    texture = viewbox.select<SVGGElement>("#texture");
-    terrs = viewbox.select<SVGGElement>("#terrs");
-    biomes = viewbox.select<SVGGElement>("#biomes");
-    ice = viewbox.select<SVGGElement>("#ice");
-    cells = viewbox.select<SVGGElement>("#cells");
-    gridOverlay = viewbox.select<SVGGElement>("#gridOverlay");
-    coordinates = viewbox.select<SVGGElement>("#coordinates");
-    compass = viewbox.select<SVGGElement>("#compass");
-    rivers = viewbox.select<SVGElement>("#rivers");
-    terrain = viewbox.select<SVGGElement>("#terrain");
-    relig = viewbox.select<SVGGElement>("#relig");
-    cults = viewbox.select<SVGGElement>("#cults");
-    regions = viewbox.select<SVGGElement>("#regions");
-    statesBody = regions.select<SVGGElement>("#statesBody");
-    statesHalo = regions.select<SVGGElement>("#statesHalo");
-    provs = viewbox.select<SVGGElement>("#provs");
-    zones = viewbox.select<SVGGElement>("#zones");
-    borders = viewbox.select<SVGGElement>("#borders");
-    stateBorders = borders.select<SVGGElement>("#stateBorders");
-    provinceBorders = borders.select<SVGGElement>("#provinceBorders");
-    routes = viewbox.select<SVGElement>("#routes");
-    roads = routes.select<SVGGElement>("#roads");
-    trails = routes.select<SVGGElement>("#trails");
-    searoutes = routes.select<SVGGElement>("#searoutes");
-    temperature = viewbox.select<SVGGElement>("#temperature");
-    coastline = viewbox.select<SVGGElement>("#coastline");
-    prec = viewbox.select<SVGGElement>("#prec");
-    population = viewbox.select<SVGGElement>("#population");
-    goods = viewbox.select<SVGGElement>("#goods");
-    markets = viewbox.select<SVGGElement>("#markets");
-    emblems = viewbox.select<SVGElement>("#emblems");
-    labels = viewbox.select<SVGGElement>("#labels");
-    icons = viewbox.select<SVGGElement>("#icons");
-    burgIcons = icons.select<SVGGElement>("#burgIcons");
-    anchors = icons.select<SVGGElement>("#anchors");
-    armies = viewbox.select<SVGGElement>("#armies");
-    markers = viewbox.select<SVGGElement>("#markers");
-    tradeAnimation = viewbox.select<SVGGElement>("#tradeAnimation");
-    ruler = viewbox.select<SVGGElement>("#ruler");
-    fogging = viewbox.select<SVGGElement>("#fogging");
-    debug = viewbox.select<SVGElement>("#debug");
-    if (!texture.size()) {
-      texture = viewbox
-        .insert("g", "#landmass")
-        .attr("id", "texture")
-        .attr("data-href", "./images/textures/plaster.jpg");
-    }
-    if (!emblems.size()) {
-      emblems = viewbox
-        .insert("g", "#labels")
-        .attr("id", "emblems")
-        .style("display", "none") as unknown as typeof emblems;
-    }
+    // Pixi-owned groups remain import data and are queried locally by versioned migrations.
+    // Viewport overlays are queried on demand, so replacing the SVG creates no stale global selections.
 
     {
       grid = JSON.parse(data[6]);
       const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
-      grid.cells.h = Uint8Array.from(data[7].split(","), Number);
-      grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
-      grid.cells.f = Uint16Array.from(data[9].split(","), Number);
-      grid.cells.t = Int8Array.from(data[10].split(","), Number);
-      grid.cells.temp = Int8Array.from(data[11].split(","), Number);
+      grid.cells.h = parseNumericArray(data[7], Uint8Array);
+      grid.cells.prec = parseNumericArray(data[8], Uint8Array);
+      grid.cells.f = parseNumericArray(data[9], Uint16Array);
+      grid.cells.t = parseNumericArray(data[10], Int8Array);
+      grid.cells.temp = parseNumericArray(data[11], Int8Array);
     }
-    reGraph();
+    WorldGenerationController.reGraph();
     Features.markupPack();
     if (data[3]?.startsWith("[")) {
       type LoadedBiome = (typeof pack.biomes)[number] & {
@@ -424,34 +384,32 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.markers = data[35] ? JSON.parse(data[35]) : [];
     pack.routes = data[37] ? JSON.parse(data[37]) : [];
     pack.zones = data[38] ? JSON.parse(data[38]) : [];
-    pack.cells.biome = Uint8Array.from(data[16].split(","), Number);
-    pack.cells.burg = Uint16Array.from(data[17].split(","), Number);
-    pack.cells.conf = Uint8Array.from(data[18].split(","), Number);
-    pack.cells.culture = Uint16Array.from(data[19].split(","), Number);
-    pack.cells.fl = Uint16Array.from(data[20].split(","), Number);
-    pack.cells.pop = Float32Array.from(data[21].split(","), Number);
-    pack.cells.r = Uint16Array.from(data[22].split(","), Number);
+    pack.cells.biome = parseNumericArray(data[16], Uint8Array);
+    pack.cells.burg = parseNumericArray(data[17], Uint16Array);
+    pack.cells.conf = parseNumericArray(data[18], Uint8Array);
+    pack.cells.culture = parseNumericArray(data[19], Uint16Array);
+    pack.cells.fl = parseNumericArray(data[20], Uint16Array);
+    pack.cells.pop = parseNumericArray(data[21], Float32Array);
+    pack.cells.r = parseNumericArray(data[22], Uint16Array);
     // data[23] had deprecated cells.road
-    pack.cells.s = Uint16Array.from(data[24].split(","), Number);
-    pack.cells.state = Uint16Array.from(data[25].split(","), Number);
-    pack.cells.religion = data[26]
-      ? Uint16Array.from(data[26].split(","), Number)
-      : new Uint16Array(pack.cells.i.length);
-    pack.cells.province = data[27]
-      ? Uint16Array.from(data[27].split(","), Number)
-      : new Uint16Array(pack.cells.i.length);
+    pack.cells.s = parseNumericArray(data[24], Uint16Array);
+    pack.cells.state = parseNumericArray(data[25], Uint16Array);
+    pack.cells.religion = data[26] ? parseNumericArray(data[26], Uint16Array) : new Uint16Array(pack.cells.i.length);
+    pack.cells.province = data[27] ? parseNumericArray(data[27], Uint16Array) : new Uint16Array(pack.cells.i.length);
     // data[28] had deprecated cells.crossroad
     // data[33] had deprecated rulers, now replaced by pack.measurers
     pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
     pack.ice = data[39] ? JSON.parse(data[39]) : [];
-    pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.cells.good = data[40] ? parseNumericArray(data[40], Uint16Array) : new Uint16Array(pack.cells.i.length);
     pack.goods = data[41] ? JSON.parse(data[41]) : [];
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
-    pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.cells.market = data[44] ? parseNumericArray(data[44], Uint16Array) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
+    ensureMeasurerIds(pack.measurers);
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
+    ensureReliefIconIds(pack.relief);
 
     if (data[31]) {
       const namesDL = data[31].split("/");
@@ -475,6 +433,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const { migrateMap } = await import("./map-migrations");
       migrateMap(mapVersion!, data);
     }
+    options.threeD = sessionThreeDOptions;
+    migrateLegacyCustomEmblemData();
+    importLegacyRendererStyle(
+      style,
+      document,
+      options.burgs.groups.map(group => group.name)
+    );
+    if (style.mapLayerOrder) LayerControls.setLayerOrder(style.mapLayerOrder);
 
     {
       const isVisible = (selection: { node(): Element | null; style(name: string): string }) =>
@@ -484,6 +450,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const hasChild = (selection: { node(): Element | null }, selector: string) =>
         selection.node()?.querySelector(selector);
       const turnOn = (el: string) => ensureEl(el).classList.remove("buttonoff");
+      const turnOnPixiLayer = (
+        layer: Parameters<typeof getStoredPixiLayerVisibility>[1],
+        controlId: string,
+        legacyVisible: boolean
+      ) => {
+        if (getStoredPixiLayerVisibility(style, layer) ?? legacyVisible) turnOn(controlId);
+      };
 
       // turn all layers off
       ensureEl("mapLayers")
@@ -493,40 +466,51 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         });
 
       // turn on active layers
-      if (hasChild(select("#texture"), "image")) turnOn("toggleTexture");
-      if (hasChildren(select("#terrs").select("#landHeights"))) turnOn("toggleHeight");
-      if (isVisible(select("#lakes"))) turnOn("toggleLakes");
-      if (hasChildren(select("#biomes"))) turnOn("toggleBiomes");
-      if (hasChildren(select("#cells"))) turnOn("toggleCells");
-      if (hasChildren(select("#gridOverlay"))) turnOn("toggleGrid");
-      if (hasChildren(select("#coordinates"))) turnOn("toggleCoordinates");
-      if (isVisible(select("#compass")) && hasChild(select("#compass"), "use")) turnOn("toggleCompass");
-      if (hasChildren(select("#rivers"))) turnOn("toggleRivers");
-      if (isVisible(select("#terrain"))) turnOn("toggleRelief");
-      if (hasChildren(select("#relig"))) turnOn("toggleReligions");
-      if (hasChildren(select("#cults"))) turnOn("toggleCultures");
-      if (hasChildren(select("#statesBody"))) turnOn("toggleStates");
-      if (hasChildren(select("#provs"))) turnOn("toggleProvinces");
-      if (hasChildren(select("#zones")) && isVisible(select("#zones"))) turnOn("toggleZones");
-      if (isVisible(select("#borders")) && hasChild(select("#borders"), "path")) turnOn("toggleBorders");
-      if (isVisible(select("#routes")) && hasChild(select("#routes"), "path")) turnOn("toggleRoutes");
-      if (hasChildren(select("#temperature"))) turnOn("toggleTemperature");
-      if (hasChild(select("#population"), "line")) turnOn("togglePopulation");
-      if (isVisible(select("#ice"))) turnOn("toggleIce");
-      if (hasChild(select("#prec"), "circle")) turnOn("togglePrecipitation");
-      if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
-      if (hasChildren(select("#labels"))) turnOn("toggleLabels");
-      if (isVisible(select("#icons"))) turnOn("toggleBurgIcons");
-      if (hasChildren(armies) && isVisible(armies)) turnOn("toggleMilitary");
-      if (hasChild(select("#markers"), "svg")) turnOn("toggleMarkers");
-      if (isVisible(select("#tradeAnimation"))) turnOn("toggleTrade");
-      if (isVisible(select("#goods")) && hasChildren(select("#goods"))) turnOn("toggleGoods");
-      if (isVisible(select("#markets")) && hasChildren(select("#markets"))) turnOn("toggleMarketsLayer");
+      turnOnPixiLayer("height", "toggleHeight", Boolean(hasChildren(select("#terrs").select("#landHeights"))));
+      turnOnPixiLayer("lakes", "toggleLakes", Boolean(isVisible(select("#lakes"))));
+      turnOnPixiLayer("biomes", "toggleBiomes", Boolean(hasChildren(select("#biomes"))));
+      turnOnPixiLayer("cells", "toggleCells", Boolean(hasChildren(select("#cells"))));
+      turnOnPixiLayer("grid", "toggleGrid", Boolean(hasChildren(select("#gridOverlay"))));
+      turnOnPixiLayer("coordinates", "toggleCoordinates", Boolean(hasChildren(select("#coordinates"))));
+      turnOnPixiLayer(
+        "compass",
+        "toggleCompass",
+        Boolean(isVisible(select("#compass")) && hasChild(select("#compass"), "use"))
+      );
+      turnOnPixiLayer("rivers", "toggleRivers", getLegacyRendererLayerVisibility(document, "rivers"));
+      turnOnPixiLayer("relief", "toggleRelief", Boolean(isVisible(select("#terrain"))));
+      turnOnPixiLayer("religions", "toggleReligions", Boolean(hasChildren(select("#relig"))));
+      turnOnPixiLayer("cultures", "toggleCultures", Boolean(hasChildren(select("#cults"))));
+      turnOnPixiLayer("states", "toggleStates", Boolean(hasChildren(select("#statesBody"))));
+      turnOnPixiLayer("provinces", "toggleProvinces", Boolean(hasChildren(select("#provs"))));
+      turnOnPixiLayer("zones", "toggleZones", Boolean(hasChildren(select("#zones")) && isVisible(select("#zones"))));
+      turnOnPixiLayer(
+        "borders",
+        "toggleBorders",
+        Boolean(isVisible(select("#borders")) && hasChild(select("#borders"), "path"))
+      );
+      turnOnPixiLayer("routes", "toggleRoutes", getLegacyRendererLayerVisibility(document, "routes"));
+      turnOnPixiLayer("temperature", "toggleTemperature", Boolean(hasChildren(select("#temperature"))));
+      turnOnPixiLayer("population", "togglePopulation", getLegacyRendererLayerVisibility(document, "population"));
+      turnOnPixiLayer("ice", "toggleIce", getLegacyRendererLayerVisibility(document, "ice"));
+      turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
+      turnOnPixiLayer(
+        "emblems",
+        "toggleEmblems",
+        Boolean(isVisible(select("#emblems")) && hasChild(select("#emblems"), "use"))
+      );
+      turnOnPixiLayer("labels", "toggleLabels", Boolean(hasChildren(select("#labels"))));
+      turnOnPixiLayer("burgIcons", "toggleBurgIcons", getLegacyRendererLayerVisibility(document, "burgIcons"));
+      turnOnPixiLayer("military", "toggleMilitary", getLegacyRendererLayerVisibility(document, "military"));
+      turnOnPixiLayer("markers", "toggleMarkers", getLegacyRendererLayerVisibility(document, "markers"));
+      turnOnPixiLayer("trade", "toggleTrade", Boolean(isVisible(select("#tradeAnimation"))));
+      turnOnPixiLayer("goods", "toggleGoods", getLegacyRendererLayerVisibility(document, "goods"));
+      turnOnPixiLayer("markets", "toggleMarketsLayer", getLegacyRendererLayerVisibility(document, "markets"));
       if (isVisible(select("#ruler"))) turnOn("toggleRulers");
       if (isVisible(select("#scaleBar"))) turnOn("toggleScaleBar");
       if (isVisibleNode(ensureEl<SVGGElement>("vignette"))) turnOn("toggleVignette");
 
-      getCurrentPreset();
+      LayerControls.syncPreset(false);
       Goods.sync();
       Markets.sync();
       Routes.sync();
@@ -543,16 +527,16 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (heightmapColorSchemes) {
       const oceanHeights = document.getElementById("oceanHeights");
       const oceanScheme = oceanHeights?.getAttribute("scheme");
-      if (oceanScheme && !(oceanScheme in heightmapColorSchemes)) addCustomColorScheme(oceanScheme);
+      if (oceanScheme && !(oceanScheme in HEIGHT_COLOR_SCHEMES)) addCustomColorScheme(oceanScheme);
       const landHeights = document.getElementById("landHeights");
       const landScheme = landHeights?.getAttribute("scheme");
-      if (landScheme && !(landScheme in heightmapColorSchemes)) addCustomColorScheme(landScheme);
+      if (landScheme && !(landScheme in HEIGHT_COLOR_SCHEMES)) addCustomColorScheme(landScheme);
     }
 
     {
       // add custom texture if any
       const textureHref = select("#texture").attr("data-href");
-      if (textureHref) updateTextureSelectValue(textureHref);
+      if (textureHref) window.StyleEditor.updateTextureSelectValue(textureHref);
     }
 
     // data integrity checks
@@ -797,21 +781,20 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         pack.markers.sort((a, b) => a.i - b.i);
       }
     }
-    // remove href from emblems, to trigger rendering on load
-    select("#emblems").selectAll("use").attr("href", null);
+    removeLegacyRendererGroups();
     // draw data layers (not kept in svg)
-    if (layerIsOn("toggleRulers")) drawMeasurers();
-    if (layerIsOn("toggleGrid")) drawGrid();
-    if (layerIsOn("toggleLabels")) drawLabels();
-    if (layerIsOn("toggleRelief")) drawRelief();
+    if (window.LayerControls.isLayerOn("toggleRulers")) drawMeasurers();
+    if (window.LayerControls.isLayerOn("toggleGrid")) window.LayerControls.redrawLayer("toggleGrid");
+    if (window.LayerControls.isLayerOn("toggleLabels")) drawLabels();
+    if (window.LayerControls.isLayerOn("toggleRelief")) drawRelief();
     if (typeof window.applyDefaultViewboxEvents === "function") applyDefaultViewboxEvents();
-    focusOn(); // based on searchParams focus on point, cell or burg
-    invokeActiveZooming();
-    fitMapToScreen();
+    ApplicationController.focusOn(); // based on searchParams focus on point, cell or burg
+    window.OptionsController.fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
-    showStatistics();
+    WorldGenerationController.showStatistics();
     tip("Map is successfully loaded", true, "success", 7000);
+    window.dispatchEvent(new CustomEvent("map:loaded", { detail: { mapVersion } }));
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
@@ -823,7 +806,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       actions: [
         { close: false, label: "Clear cache", onClick: cleanupData },
         { label: "Select file", onClick: () => ensureEl("mapToLoad").click() },
-        { label: "New map", onClick: () => regenerateMap("loading error") },
+        { label: "New map", onClick: () => ApplicationController.regenerateMap("loading error") },
         { label: "Cancel" }
       ],
       id: "mapLoadingErrorDialog",
@@ -833,6 +816,22 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     });
   } finally {
     if (loadGroupOpen) console.groupEnd();
+  }
+}
+
+function migrateLegacyCustomEmblemData(): void {
+  const groups = [
+    ["state", pack.states],
+    ["province", pack.provinces],
+    ["burg", pack.burgs]
+  ] as const;
+  for (const [type, entities] of groups) {
+    for (const entity of entities) {
+      if (!entity?.i || !entity.coa?.custom || entity.coa.customData) continue;
+      const image = document.querySelector<SVGImageElement>(`#${type}COA${entity.i} image`);
+      const source = image?.getAttribute("href") || image?.getAttribute("xlink:href");
+      if (source) entity.coa.customData = source;
+    }
   }
 }
 

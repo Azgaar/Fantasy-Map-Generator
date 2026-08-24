@@ -6,8 +6,19 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Route } from "@/generators/routes-generator";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  invalidatePixiRendererLayer,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import type { Point } from "@/types/global";
-import { ensureEl, getPackPolygon, getPointer, rn } from "../utils";
+import { ensureEl, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
 
@@ -15,27 +26,26 @@ function open(defaultGroup?: string): void {
   if (customization) return;
   stopMapPlacement();
   closeDialogs();
-  if (!layerIsOn("toggleRoutes")) toggleRoutes();
+  if (!window.LayerControls.isLayerOn("toggleRoutes")) window.LayerControls.toggleLayer("toggleRoutes");
 
-  ensureEl("toggleCells").dataset.forced = String(+!layerIsOn("toggleCells"));
-  if (!layerIsOn("toggleCells")) toggleCells();
+  ensureEl("toggleCells").dataset.forced = String(+!window.LayerControls.isLayerOn("toggleCells"));
+  if (!window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   tip("Click to add route point", true);
-  select("#debug").append("g").attr("id", "controlCells");
-  select("#debug").append("g").attr("id", "controlPoints");
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, moveCreatorPoint as EventListener);
 
   creatorPoints = [];
   renderDialog();
 
   // update route groups
-  ensureEl("routeCreatorGroupSelect").innerHTML = select("#routes")
-    .selectAll<SVGGElement, unknown>("g")
-    .nodes()
-    .map(el => {
-      const selected = defaultGroup || "roads";
-      return `<option value="${el.id}" ${el.id === selected ? "selected" : ""}>${el.id}</option>`;
-    })
+  const groups = new Set([
+    ...Object.keys(getMapRendererStyle(style).routes.roles),
+    ...pack.routes.map((route: Route) => route.group)
+  ]);
+  const selected = defaultGroup || "roads";
+  ensureEl("routeCreatorGroupSelect").innerHTML = [...groups]
+    .map(group => `<option value="${group}" ${group === selected ? "selected" : ""}>${group}</option>`)
     .join("");
 
   showDomDialog({
@@ -89,7 +99,7 @@ function openRouteGroupsEditor(): void {
 }
 
 function cancelCreation(): void {
-  destroyDialog("routeCreator");
+  closeRouteCreator();
 }
 
 function onBodyClick(ev: Event): void {
@@ -98,7 +108,8 @@ function onBodyClick(ev: Event): void {
 }
 
 function onClick(this: any, event: any): void {
-  addPoint(getPointer(event, this));
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (point) addPoint([point.x, point.y]);
 }
 
 function addPoint([x, y]: Point): boolean {
@@ -108,51 +119,25 @@ function addPoint([x, y]: Point): boolean {
   creatorPoints.push(point);
 
   drawRoute(creatorPoints);
-
-  ensureEl("routeCreatorBody").innerHTML +=
-    `<div class="editorLine" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1em;" data-point="${point.join(
-      "-"
-    )}">
-      <span><b>Cell</b>: ${cellId}</span>
-      <span><b>X</b>: ${point[0]}</span>
-      <span><b>Y</b>: ${point[1]}</span>
-      <span data-tip="Remove the point" class="icon-trash-empty pointer"></span>
-    </div>`;
+  renderCreatorRows();
   return true;
 }
 
 function removePoint(pointString: string): void {
   creatorPoints = creatorPoints.filter(p => p.join("-") !== pointString);
   drawRoute(creatorPoints);
-  ensureEl("routeCreatorBody").querySelector(`[data-point='${pointString}']`)?.remove();
+  renderCreatorRows();
 }
 
 function drawRoute(points: number[][]): void {
-  select("#debug")
-    .select("#controlCells")
-    .selectAll("polygon")
-    .data(points)
-    .join("polygon")
-    .attr("points", (p: number[]) => getPackPolygon(p[2], pack))
-    .attr("class", "current");
-
-  select("#debug")
-    .select("#controlPoints")
-    .selectAll("circle")
-    .data(points)
-    .join("circle")
-    .attr("cx", (d: number[]) => d[0])
-    .attr("cy", (d: number[]) => d[1])
-    .attr("r", 0.6);
-
-  const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
-
-  select("#routes").select("#routeTemp").remove();
-  select("#routes")
-    .select(`#${group}`)
-    .append("path")
-    .attr("d", Routes.getPath({ group, points }))
-    .attr("id", "routeTemp");
+  updateMapInteractionOverlay({
+    handles: points.map(([x, y], index) => ({
+      id: `route-create:${index}`,
+      label: `Move route point ${index + 1}`,
+      point: { x, y }
+    })),
+    selection: points.length ? [{ kind: "polyline", points: points.map(([x, y]) => ({ x, y })) }] : null
+  });
 }
 
 function completeCreation(): void {
@@ -185,23 +170,49 @@ function completeCreation(): void {
     }
   }
 
-  select("#routes").select("#routeTemp").attr("id", `route${routeId}`);
-  void Controllers.RouteEditor.open(`route${routeId}`);
+  clearMapInteractionOverlay();
+  invalidatePixiRendererLayer("routes");
+  void Controllers.RouteEditor.open(routeId);
 }
 
 function closeRouteCreator(): void {
-  select("#debug").select("#controlCells").remove();
-  select("#debug").select("#controlPoints").remove();
-  select("#routes").select("#routeTemp").remove();
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, moveCreatorPoint as EventListener);
+  clearMapInteractionOverlay();
 
   applyDefaultViewboxEvents();
   clearMainTip();
 
   const forced = +ensureEl("toggleCells").dataset.forced!;
   ensureEl("toggleCells").dataset.forced = "0";
-  if (forced && layerIsOn("toggleCells")) toggleCells();
+  if (forced && window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   destroyDialog("routeCreator");
+}
+
+function moveCreatorPoint(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  if (!["move", "end"].includes(event.detail.phase) || !String(event.detail.handleId).startsWith("route-create:"))
+    return;
+  const index = Number(String(event.detail.handleId).split(":")[1]);
+  const cellId = findCell(event.detail.worldPoint.x, event.detail.worldPoint.y);
+  if (!creatorPoints[index] || cellId === undefined) return;
+  creatorPoints[index] = [rn(event.detail.worldPoint.x, 2), rn(event.detail.worldPoint.y, 2), cellId];
+  if (event.detail.phase === "end") {
+    queueMicrotask(() => drawRoute(creatorPoints));
+    renderCreatorRows();
+  }
+}
+
+function renderCreatorRows(): void {
+  ensureEl("routeCreatorBody").innerHTML = creatorPoints
+    .map(
+      point => `<div class="editorLine" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1em;" data-point="${point.join("-")}">
+        <span><b>Cell</b>: ${point[2]}</span>
+        <span><b>X</b>: ${point[0]}</span>
+        <span><b>Y</b>: ${point[1]}</span>
+        <span data-tip="Remove the point" class="icon-trash-empty pointer"></span>
+      </div>`
+    )
+    .join("");
 }
 
 export const RouteCreator = { open, openAt };

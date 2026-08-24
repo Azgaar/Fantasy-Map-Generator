@@ -1,4 +1,5 @@
-import { curveBundle, line, max, min } from "d3";
+import { curveBundle, line, max, min, select } from "d3";
+import { getHeightColorScheme } from "@/renderers/scene/height-color-schemes";
 import type { Point } from "../generators/voronoi";
 import { C_12 } from "./colorUtils";
 import { getGridPolygon } from "./graphUtils";
@@ -11,29 +12,30 @@ import { round } from "./stringUtils";
  * @param {Point[]} points - Array of points representing the positions of each cell
  */
 export const drawCellsValue = (data: unknown[], points: Point[]): void => {
-  window.debug.selectAll("text").remove();
-  window.debug
+  const debug = select<SVGGElement, unknown>("#debug");
+  debug.selectAll("text").remove();
+  debug
     .selectAll("text")
     .data(data)
     .enter()
     .append("text")
     .attr("x", (_d: unknown, i: number) => points[i][0])
     .attr("y", (_d: unknown, i: number) => points[i][1])
-    .text((d: unknown) => d);
+    .text((d: unknown) => String(d));
 };
 /**
  * Drawing polygons colored according to data values for debugging purposes
  * @param {number[]} data - Array of numerical values corresponding to each cell
- * @param {any} terrs - The SVG group element where the polygons will be drawn
  */
-export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
+export const drawPolygons = (data: number[], grid: any): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
-  const scheme = window.getColorScheme(terrs.select("#landHeights").attr("scheme"));
+  const scheme = getHeightColorScheme(window.MapStyleControls.getStyle().height.land.scheme);
 
   data = data.map(d => 1 - normalize(d, minimum, maximum));
-  window.debug.selectAll("polygon").remove();
-  window.debug
+  const debug = select<SVGGElement, unknown>("#debug");
+  debug.selectAll("polygon").remove();
+  debug
     .selectAll("polygon")
     .data(data)
     .enter()
@@ -48,8 +50,9 @@ export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
  * @param {any} pack - The packed graph object containing cell positions and routes
  */
 export const drawRouteConnections = (packedGraph: any): void => {
-  window.debug.select("#connections").remove();
-  const routes = window.debug.append("g").attr("id", "connections").attr("stroke-width", 0.8);
+  const debug = select<SVGGElement, unknown>("#debug");
+  debug.select("#connections").remove();
+  const routes = debug.append("g").attr("id", "connections").attr("stroke-width", 0.8);
 
   const points = packedGraph.cells.p;
   const links = packedGraph.cells.routes;
@@ -81,7 +84,12 @@ export const drawRouteConnections = (packedGraph: any): void => {
  * @param {number} options.radius - Radius of the point
  */
 export const drawPoint = ([x, y]: [number, number], { color = "red", radius = 0.5 }): void => {
-  window.debug.append("circle").attr("cx", x).attr("cy", y).attr("r", radius).attr("fill", color);
+  select<SVGGElement, unknown>("#debug")
+    .append("circle")
+    .attr("cx", x)
+    .attr("cy", y)
+    .attr("r", radius)
+    .attr("fill", color);
 };
 
 /**
@@ -93,7 +101,7 @@ export const drawPoint = ([x, y]: [number, number], { color = "red", radius = 0.
  */
 export const drawPath = (points: [number, number][], { color = "red", width = 0.5 }): void => {
   const lineGen = line().curve(curveBundle);
-  window.debug
+  select<SVGGElement, unknown>("#debug")
     .append("path")
     .attr("d", round(lineGen(points) as string))
     .attr("stroke", color)
@@ -103,9 +111,6 @@ export const drawPath = (points: [number, number][], { color = "red", width = 0.
 
 declare global {
   interface Window {
-    debug: any;
-    getColorScheme: (name: string) => (t: number) => string;
-
     drawCellsValue: typeof drawCellsValue;
     drawPolygons: typeof drawPolygons;
     drawRouteConnections: typeof drawRouteConnections;

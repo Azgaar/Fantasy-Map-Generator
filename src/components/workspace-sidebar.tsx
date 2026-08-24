@@ -1,9 +1,6 @@
-import { WorkspaceSidebar } from "@patkepa/kantzen-ui/app-shell";
-import { Icon, type IconName } from "@patkepa/kantzen-ui/icons";
-import type { NavGroup } from "@patkepa/kantzen-ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { LayersPanel } from "./layers/layers-panel";
+import { MapMinimap } from "./map-minimap";
 import {
   getToolCommands,
   type ToolCommand,
@@ -13,6 +10,8 @@ import {
 } from "./tool-registry";
 import { WorkspaceConfirmDialog } from "./ui/confirm-dialog";
 import { executeLegacyCommand } from "./ui/legacy-command";
+import { WorkspaceToolbar } from "./workspace-toolbar";
+import { WorldPresetGallery } from "./world-preset-gallery";
 import {
   WorkspacePanel,
   WorkspacePanelAction,
@@ -22,14 +21,13 @@ import {
   WorkspacePanelSection
 } from "./ui/workspace-panel";
 import "@patkepa/kantzen-ui/theme.css";
-import "@patkepa/kantzen-ui/app-shell/styles.css";
 import "./ui/workspace-panel.css";
 import "./workspace-sidebar.css";
 
 type ToolWorkspaceSection = "create" | "edit" | "inspect" | "regenerate";
 type OptionsWorkspaceSection = "world-setup" | "preferences";
-type WorkspaceSection = "layers" | "style" | ToolWorkspaceSection | OptionsWorkspaceSection;
-type LegacyWorkspaceSection = WorkspaceSection | "options" | "tools" | "about";
+type WorkspaceSection = "style" | ToolWorkspaceSection | OptionsWorkspaceSection;
+type LegacyWorkspaceSection = WorkspaceSection | "layers" | "options" | "tools" | "about";
 
 interface WorkspacePanelChangeDetail {
   section: LegacyWorkspaceSection | null;
@@ -38,7 +36,7 @@ interface WorkspacePanelChangeDetail {
 
 interface WorkspaceSectionConfig {
   route: string;
-  tabId: "layersTab" | "styleTab" | "optionsTab" | "toolsTab";
+  tabId: "styleTab" | "optionsTab" | "toolsTab";
   title: string;
 }
 
@@ -52,16 +50,11 @@ const WORKSPACE_SECTIONS: Record<WorkspaceSection, WorkspaceSectionConfig> = {
   create: { route: "/create", tabId: "toolsTab", title: "Create" },
   edit: { route: "/edit", tabId: "toolsTab", title: "Edit" },
   inspect: { route: "/inspect", tabId: "toolsTab", title: "Inspect" },
-  layers: { route: "/layers", tabId: "layersTab", title: "Layers" },
   style: { route: "/style", tabId: "styleTab", title: "Style" },
   "world-setup": { route: "/world-setup", tabId: "optionsTab", title: "World Setup" },
   regenerate: { route: "/regenerate", tabId: "toolsTab", title: "Regenerate" },
   preferences: { route: "/preferences", tabId: "optionsTab", title: "Preferences" }
 };
-
-const SECTION_BY_ROUTE = new Map(
-  Object.entries(WORKSPACE_SECTIONS).map(([section, config]) => [config.route, section as WorkspaceSection])
-);
 
 const TOOL_GROUPS_BY_SECTION: Record<ToolWorkspaceSection, readonly ToolGroupId[]> = {
   create: ["create"],
@@ -85,7 +78,7 @@ const TOOL_PANEL_COPY: Record<
     searchLabel: "Search editors"
   },
   inspect: {
-    emptyDescription: "Try cells, charts, minimap, or notes.",
+    emptyDescription: "Try cells, charts, or notes.",
     placeholder: "Search inspection tools",
     searchLabel: "Search inspection tools"
   },
@@ -96,35 +89,6 @@ const TOOL_PANEL_COPY: Record<
   }
 };
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Create & Edit",
-    items: [
-      { label: "Create", icon: "plus", href: WORKSPACE_SECTIONS.create.route },
-      { label: "Edit", icon: "build", href: WORKSPACE_SECTIONS.edit.route },
-      { label: "Inspect", icon: "chart", href: WORKSPACE_SECTIONS.inspect.route }
-    ]
-  },
-  {
-    label: "Map View",
-    items: [
-      { label: "Layers", icon: "layers", href: WORKSPACE_SECTIONS.layers.route },
-      { label: "Style", icon: "style", href: WORKSPACE_SECTIONS.style.route }
-    ]
-  },
-  {
-    label: "Generation",
-    items: [
-      { label: "World Setup", icon: "globe-network", href: WORKSPACE_SECTIONS["world-setup"].route },
-      { label: "Regenerate", icon: "refresh", href: WORKSPACE_SECTIONS.regenerate.route }
-    ]
-  },
-  {
-    label: "App",
-    items: [{ label: "Preferences", icon: "settings", href: WORKSPACE_SECTIONS.preferences.route }]
-  }
-];
-
 const OPTIONS_SECTIONS = new Set<WorkspaceSection>(["world-setup", "preferences"]);
 
 function isToolWorkspaceSection(section: WorkspaceSection): section is ToolWorkspaceSection {
@@ -133,6 +97,7 @@ function isToolWorkspaceSection(section: WorkspaceSection): section is ToolWorks
 
 function normalizeWorkspaceSection(section: LegacyWorkspaceSection | null): WorkspaceSection | null {
   if (!section || section === "about") return null;
+  if (section === "layers") return "style";
   if (section === "tools") {
     const view = document.getElementById("toolsContent")?.dataset.workspaceView as WorkspaceSection | undefined;
     return view && isToolWorkspaceSection(view) ? view : "edit";
@@ -146,6 +111,14 @@ function normalizeWorkspaceSection(section: LegacyWorkspaceSection | null): Work
 
 function setWorkspaceView(section: WorkspaceSection): void {
   document.body.dataset.workspaceSection = section;
+  const options = document.getElementById("options");
+  if (section === "preferences") {
+    options?.setAttribute("role", "dialog");
+    options?.setAttribute("aria-label", "Preferences");
+  } else {
+    options?.removeAttribute("role");
+    options?.removeAttribute("aria-label");
+  }
   if (isToolWorkspaceSection(section)) {
     const toolsContent = document.getElementById("toolsContent");
     if (toolsContent) toolsContent.dataset.workspaceView = section;
@@ -174,104 +147,10 @@ function openWorkspaceSection(section: WorkspaceSection): void {
   else tab?.click();
 }
 
-const SIDEBAR_ACTIONS = [
-  { label: "New Map", icon: "document", targetId: "newMapButton", shortcut: "F2" },
-  { label: "Load", icon: "import", targetId: "loadButton" },
-  { label: "Save", icon: "floppy-disk", targetId: "saveButton", shortcut: "Ctrl+S" },
-  { label: "Export", icon: "export", targetId: "exportButton" }
-] satisfies { label: string; icon: IconName; targetId: string; shortcut?: string }[];
-
-function SidebarActions(): React.JSX.Element {
-  return (
-    <div className="fmg-sidebar-actions" aria-label="Project actions">
-      <div className="fmg-sidebar-actions__label">Project</div>
-      {SIDEBAR_ACTIONS.map(action => (
-        <button
-          type="button"
-          className="fmg-sidebar-action"
-          key={action.targetId}
-          data-target-id={action.targetId}
-          onClick={() => executeLegacyCommand(action.targetId)}
-        >
-          <Icon icon={action.icon} size={16} />
-          <span>{action.label}</span>
-          {action.shortcut ? <kbd>{action.shortcut}</kbd> : null}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function CanvasControls(): React.JSX.Element {
-  return (
-    <div className="fmg-canvas-controls" aria-label="Canvas controls">
-      <button
-        type="button"
-        className="fmg-canvas-control"
-        aria-label="Reset zoom"
-        data-target-id="zoomReset"
-        onClick={() => executeLegacyCommand("zoomReset")}
-        title="Reset zoom (0)"
-      >
-        <Icon icon="reset" size={16} />
-      </button>
-    </div>
-  );
-}
-
-function WorkspaceNavigation(): React.JSX.Element {
-  const [collapsed, setCollapsed] = useState(() =>
-    window.innerWidth < 720 || localStorage.getItem("fmg_workspace_sidebar_collapsed") === "true"
-  );
-  const [currentPath, setCurrentPath] = useState(WORKSPACE_SECTIONS.edit.route);
-
-  useEffect(() => {
-    document.body.classList.toggle("workspace-sidebar-collapsed", collapsed);
-    localStorage.setItem("fmg_workspace_sidebar_collapsed", String(collapsed));
-  }, [collapsed]);
-
-  useEffect(() => {
-    const handlePanelChange = (event: Event) => {
-      const detail = (event as CustomEvent<WorkspacePanelChangeDetail>).detail;
-      const section = normalizeWorkspaceSection(detail.section);
-      setCurrentPath(section ? WORKSPACE_SECTIONS[section].route : "");
-    };
-    const openDefaultPanel = () => openWorkspaceSection("edit");
-
-    window.addEventListener("workspace-panel-change", handlePanelChange);
-    if (document.readyState === "complete") openDefaultPanel();
-    else window.addEventListener("load", openDefaultPanel, { once: true });
-
-    return () => {
-      window.removeEventListener("workspace-panel-change", handlePanelChange);
-      window.removeEventListener("load", openDefaultPanel);
-    };
-  }, []);
-
-  const navigate = (href: string) => {
-    const section = SECTION_BY_ROUTE.get(href);
-    if (!section) return;
-    setCurrentPath(href);
-    openWorkspaceSection(section);
-  };
-
-  return (
-    <WorkspaceSidebar
-      isCollapsed={collapsed}
-      productName="Fantasy Map Generator"
-      collapsedProductName="FM"
-      currentPath={currentPath}
-      navGroups={NAV_GROUPS}
-      onExpandSidebar={() => setCollapsed(value => !value)}
-      onNavigate={navigate}
-      navigationFooter={<SidebarActions />}
-      sidebarShortcutLabel="click"
-    />
-  );
-}
+window.addEventListener("new-map:open", () => openWorkspaceSection("world-setup"));
 
 function WorkspaceHeader(): React.JSX.Element {
-  const [title, setTitle] = useState(WORKSPACE_SECTIONS.layers.title);
+  const [title, setTitle] = useState(WORKSPACE_SECTIONS.style.title);
 
   useEffect(() => {
     const handlePanelChange = (event: Event) => {
@@ -289,15 +168,20 @@ function WorkspaceHeader(): React.JSX.Element {
 
 function ToolButton({
   command,
+  dockEditor,
   onRegenerate
 }: {
   command: ToolCommand;
+  dockEditor: boolean;
   onRegenerate?: (command: ToolCommand, event: MouseEvent) => void;
 }): React.JSX.Element {
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (onRegenerate) onRegenerate(command, event.nativeEvent);
-    else command.invoke();
+    else {
+      const result = command.invoke(dockEditor ? { dialogPresentation: "panel" } : undefined);
+      if (dockEditor && result === "executed") executeLegacyCommand("optionsHide");
+    }
   };
 
   return (
@@ -326,11 +210,13 @@ function ToolButton({
 }
 
 function ToolSection({
+  dockEditor,
   group,
   hidden,
   onRegenerate,
   query
 }: {
+  dockEditor: boolean;
   group: ToolGroup;
   hidden: boolean;
   onRegenerate: (command: ToolCommand, event: MouseEvent) => void;
@@ -355,6 +241,7 @@ function ToolSection({
         {commands.map(command => (
           <ToolButton
             command={command}
+            dockEditor={dockEditor}
             key={command.id}
             onRegenerate={command.destructive ? onRegenerate : undefined}
           />
@@ -444,6 +331,7 @@ function ToolsPanel(): React.JSX.Element {
         <div className="fmg-tools-layout">
           {TOOL_GROUPS.map(group => (
             <ToolSection
+              dockEditor={section === "edit"}
               group={group}
               hidden={!groupIds.includes(group.id)}
               key={group.id}
@@ -476,14 +364,25 @@ function ToolsPanel(): React.JSX.Element {
   );
 }
 
-const navigationRoot = document.getElementById("workspaceNavigationRoot");
 const headerRoot = document.getElementById("workspacePanelHeaderRoot");
-const layersRoot = document.getElementById("layersContent");
 const toolsRoot = document.getElementById("toolsContent");
-const canvasControlsRoot = document.getElementById("canvasControlsRoot");
+const mapPreviewRoot = document.getElementById("mapPreviewRoot");
+const worldSetupSection = document.querySelector<HTMLElement>('[data-options-section="world-setup"]');
 
-if (navigationRoot) createRoot(navigationRoot).render(<WorkspaceNavigation />);
+if (worldSetupSection) {
+  const worldPresetGalleryRoot = document.createElement("div");
+  worldPresetGalleryRoot.id = "worldPresetGalleryRoot";
+  worldSetupSection.prepend(worldPresetGalleryRoot);
+  createRoot(worldPresetGalleryRoot).render(<WorldPresetGallery />);
+}
+
 if (headerRoot) createRoot(headerRoot).render(<WorkspaceHeader />);
-if (layersRoot) createRoot(layersRoot).render(<LayersPanel />);
 if (toolsRoot) createRoot(toolsRoot).render(<ToolsPanel />);
-if (canvasControlsRoot) createRoot(canvasControlsRoot).render(<CanvasControls />);
+if (mapPreviewRoot) {
+  createRoot(mapPreviewRoot).render(
+    <>
+      <WorkspaceToolbar onOpenSection={openWorkspaceSection} />
+      <MapMinimap />
+    </>
+  );
+}

@@ -1,32 +1,43 @@
-import { drag, mean, min, polygonArea, polygonLength, type Selection, select } from "d3";
+import { mean, min, polygonLength } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { moveFeatureVertex, setFeatureGroup } from "@/controllers/editor-mutations";
 import type { Feature } from "@/generators/features";
-import { drawBiomes } from "@/renderers/draw-biomes";
-import { drawBorders } from "@/renderers/draw-borders";
-import { getFeaturePath } from "@/renderers/draw-features";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import {
+  clearMapInteractionOverlay,
+  invalidatePixiRendererLayer,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { isPixiOwnedLayer } from "@/renderers/pixi/pixi-renderer-ownership";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { getArea, getAreaUnit, speak } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, rand, rn, si, unique } from "../utils";
+import { ensureEl, rand, rn, si, unique } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
-let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let selectedLakeId = 0;
+let activeVertex: { initialPoint: [number, number]; vertexId: number } | null = null;
 
-function open(element: SVGElement): void {
+function open(lakeId: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (layerIsOn("toggleCells")) toggleCells();
+  if (window.LayerControls.isLayerOn("toggleCells")) window.LayerControls.toggleLayer("toggleCells");
 
   renderDialog();
 
-  select("#debug").append("g").attr("id", "vertices");
-  selectedLake = select<SVGElement, unknown>(element) as unknown as typeof selectedLake;
+  const lake = pack.features.find(feature => feature.i === lakeId && feature.type === "lake");
+  if (!lake) return;
+  selectedLakeId = lakeId;
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editLakeVertex as EventListener);
   updateLakeValues();
   selectLakeGroup();
   drawLakeVertices();
-  select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", null);
 
   showDomDialog({
     content: ensureEl("lakeEditor"),
@@ -117,8 +128,7 @@ function renderDialog(): void {
 }
 
 function getLake(): Feature {
-  const lakeId = +selectedLake.attr("data-f");
-  return pack.features.find(feature => feature.i === lakeId) as Feature;
+  return pack.features.find(feature => feature.i === selectedLakeId) as Feature;
 }
 
 function updateLakeValues(): void {
@@ -150,68 +160,60 @@ function updateLakeValues(): void {
 }
 
 function drawLakeVertices(): void {
-  const vertices = getLake().vertices;
-
-  const neibCells: number[] = unique(vertices.flatMap(v => pack.vertices.c[v]));
-  select("#debug")
-    .select("#vertices")
-    .selectAll<SVGPolygonElement, number>("polygon")
-    .data(neibCells)
-    .enter()
-    .append("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack))
-    .attr("data-c", (d: number) => d);
-
-  select<SVGGElement, unknown>("#debug")
-    .select("#vertices")
-    .selectAll<SVGCircleElement, number>("circle")
-    .data(vertices)
-    .enter()
-    .append("circle")
-    .attr("cx", (d: number) => pack.vertices.p[d][0])
-    .attr("cy", (d: number) => pack.vertices.p[d][1])
-    .attr("r", 0.4)
-    .attr("data-v", (d: number) => d)
-    .call(drag<SVGCircleElement, number>().on("drag", handleVertexDrag).on("end", handleVertexDragEnd))
-    .on("mousemove", () =>
-      tip("Drag to move the vertex. Please use for fine-tuning only! Edit heightmap to change actual cell heights")
-    );
+  const lake = getLake();
+  const cells = unique(lake.vertices.flatMap(vertexId => pack.vertices.c[vertexId])).filter(
+    cellId => cellId >= 0 && cellId < pack.cells.i.length
+  );
+  updateMapInteractionOverlay({
+    handles: lake.vertices.map(vertexId => {
+      const [x, y] = pack.vertices.p[vertexId];
+      return {
+        id: `lake-vertex:${vertexId}`,
+        label: `Move vertex ${vertexId} of ${lake.name || "lake"}`,
+        point: { x, y }
+      };
+    }),
+    selection: [
+      { kind: "polygon", points: lake.vertices.map(vertexId => toPoint(pack.vertices.p[vertexId])) },
+      ...cells.map(cellPolygon)
+    ]
+  });
 }
 
-function handleVertexDrag(this: SVGCircleElement, event: any, vertexId: number): void {
-  const x = rn(event.x, 2);
-  const y = rn(event.y, 2);
-  this.setAttribute("cx", String(x));
-  this.setAttribute("cy", String(y));
+function editLakeVertex(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const serializedId = String(event.detail.handleId);
+  if (!serializedId.startsWith("lake-vertex:")) return;
+  const vertexId = Number(serializedId.split(":")[1]);
+  if (!getLake().vertices.includes(vertexId)) return;
 
-  pack.vertices.p[vertexId] = [x, y];
-
-  const feature = getLake();
-
-  // update lake path
-  select<SVGElement, unknown>("#deftemp")
-    .select(`#featurePaths > path#feature_${feature.i}`)
-    .attr("d", getFeaturePath(feature));
-
-  // update area
-  const points = feature.vertices.map(vertex => pack.vertices.p[vertex] as [number, number]);
-  feature.area = Math.abs(polygonArea(points));
-  ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(feature.area))} ${getAreaUnit()}`;
-
-  // update cell
-  select("#debug")
-    .select("#vertices")
-    .selectAll<SVGPolygonElement, number>("polygon")
-    .attr("points", d => getPackPolygon(d, pack));
+  if (event.detail.phase === "start") {
+    activeVertex = { initialPoint: [...pack.vertices.p[vertexId]], vertexId };
+    tip("Drag to move the vertex. Use this for fine-tuning; edit the heightmap for topological changes", true);
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (activeVertex?.vertexId === vertexId) {
+      applyFeatureVertexMutation(vertexId, activeVertex.initialPoint);
+      activeVertex = null;
+      drawLakeVertices();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    applyFeatureVertexMutation(vertexId, [rn(event.detail.worldPoint.x, 2), rn(event.detail.worldPoint.y, 2)]);
+    return;
+  }
+  if (event.detail.phase !== "end" || activeVertex?.vertexId !== vertexId) return;
+  activeVertex = null;
+  updateLakeValues();
+  drawLakeVertices();
 }
 
-function handleVertexDragEnd(): void {
-  if (layerIsOn("toggleStates")) drawStates();
-  if (layerIsOn("toggleProvinces")) drawProvinces();
-  if (layerIsOn("toggleBorders")) drawBorders();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleReligions")) drawReligions();
-  if (layerIsOn("toggleCultures")) drawCultures();
+function applyFeatureVertexMutation(vertexId: number, point: [number, number]): void {
+  const mutation = moveFeatureVertex(pack, selectedLakeId, vertexId, point);
+  if (!mutation.changed) return;
+  for (const layer of mutation.layers) if (isPixiOwnedLayer(layer)) invalidatePixiRendererLayer(layer);
+  ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(getLake().area))} ${getAreaUnit()}`;
 }
 
 function changeName(this: HTMLInputElement): void {
@@ -232,17 +234,16 @@ function selectLakeGroup(): void {
   const lake = getLake();
 
   const groupSelect = ensureEl<HTMLSelectElement>("lakeGroup");
-  groupSelect.options.length = 0; // remove all options
-  select<SVGGElement, unknown>("#lakes")
-    .selectAll<SVGGElement, unknown>("g")
-    .each(function () {
-      groupSelect.options.add(new Option(this.id, this.id, false, this.id === lake.group));
-    });
+  groupSelect.options.length = 0;
+  const groups = new Set([
+    ...Object.keys(getMapRendererStyle(style).lakes.roles),
+    ...pack.features.filter(feature => feature.type === "lake").map(feature => feature.group)
+  ]);
+  for (const group of groups) groupSelect.options.add(new Option(group, group, false, group === lake.group));
 }
 
 function changeLakeGroup(this: HTMLSelectElement): void {
-  ensureEl(this.value).appendChild(selectedLake.node()!);
-  getLake().group = this.value;
+  if (setFeatureGroup(pack, selectedLakeId, this.value).changed) invalidatePixiRendererLayer("lakes");
 }
 
 function toggleNewGroupInput(): void {
@@ -268,8 +269,13 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/ /g, "_")
     .replace(/[^\w\s]/gi, "");
 
-  if (findEl(group)) {
-    tip("Element with this id already exists. Please provide a unique name", false, "error");
+  const mapStyle = getMapRendererStyle(style);
+  const groups = new Set([
+    ...Object.keys(mapStyle.lakes.roles),
+    ...pack.features.filter(feature => feature.type === "lake").map(feature => feature.group)
+  ]);
+  if (groups.has(group)) {
+    tip("A lake group with this name already exists. Please provide a unique name", false, "error");
     return;
   }
 
@@ -279,65 +285,72 @@ function createNewGroup(this: HTMLInputElement): void {
   }
 
   // just rename if only 1 element left
-  const oldGroup = selectedLake.node()!.parentNode as SVGGElement;
-  const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup.id);
-  if (!basic && oldGroup.childElementCount === 1) {
-    ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
-    ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
-    oldGroup.id = group;
-    toggleNewGroupInput();
-    ensureEl<HTMLInputElement>("lakeGroupName").value = "";
-    return;
-  }
-
-  // create a new group
-  const newGroup = (selectedLake.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
-  ensureEl("lakes").appendChild(newGroup);
-  newGroup.id = group;
-  ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
-  ensureEl(group).appendChild(selectedLake.node()!);
+  const lake = getLake();
+  const oldGroup = lake.group;
+  const basic = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(oldGroup);
+  const groupFeatures = pack.features.filter(feature => feature.type === "lake" && feature.group === oldGroup);
+  mapStyle.lakes.roles[group] = structuredClone(mapStyle.lakes.roles[oldGroup] ?? mapStyle.lakes.default);
+  if (!basic && groupFeatures.length === 1) delete mapStyle.lakes.roles[oldGroup];
+  setFeatureGroup(pack, lake.i, group);
+  style.mapRenderer = mapStyle;
+  invalidatePixiRendererLayer("lakes");
+  selectLakeGroup();
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("lakeGroupName").value = "";
 }
 
 function removeLakeGroup(): void {
-  const group = (selectedLake.node()!.parentNode as SVGGElement).id;
+  const group = getLake().group;
   if (["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"].includes(group)) {
     tip("This is one of the default groups, it cannot be removed", false, "error");
     return;
   }
 
-  const count = (selectedLake.node()!.parentNode as SVGGElement).childElementCount;
+  const groupFeatures = pack.features.filter(feature => feature.type === "lake" && feature.group === group);
+  const count = groupFeatures.length;
   confirmationDialog({
     confirm: "Remove",
     message: `Are you sure you want to remove the group? All lakes of the group (${count}) will be turned into Freshwater`,
     onConfirm: () => {
-      const freshwater = ensureEl("freshwater");
-      const groupEl = ensureEl(group);
-      while (groupEl.childNodes.length) freshwater.appendChild(groupEl.childNodes[0]);
-      groupEl.remove();
-      ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
-      ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
+      for (const feature of groupFeatures) setFeatureGroup(pack, feature.i, "freshwater");
+      const mapStyle = getMapRendererStyle(style);
+      delete mapStyle.lakes.roles[group];
+      style.mapRenderer = mapStyle;
+      invalidatePixiRendererLayer("lakes");
+      selectLakeGroup();
     },
     title: "Remove lake group"
   });
 }
 
 function editGroupStyle(): void {
-  const g = (selectedLake.node()!.parentNode as SVGGElement).id;
-  editStyle("lakes", g);
+  window.StyleEditor.edit("lakes", getLake().group);
 }
 
 function editLakeLegend(): void {
-  const id = selectedLake.attr("id");
-  void Controllers.NotesEditor.open(id, `${getLake().name} ${ensureEl<HTMLSelectElement>("lakeGroup").value} lake`);
+  const lake = getLake();
+  void Controllers.NotesEditor.open(`feature_${lake.i}`, `${lake.name} ${lake.group} lake`);
 }
 
 function closeLakesEditor(): void {
-  select("#debug").select("#vertices").remove();
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editLakeVertex as EventListener);
+  clearMapInteractionOverlay();
+  activeVertex = null;
+  selectedLakeId = 0;
   applyDefaultViewboxEvents();
   destroyDialog("lakeEditor");
+}
+
+function cellPolygon(cellId: number) {
+  return {
+    kind: "polygon" as const,
+    points: pack.cells.v[cellId].map(vertexId => toPoint(pack.vertices.p[vertexId]))
+  };
+}
+
+function toPoint([x, y]: readonly number[]): { x: number; y: number } {
+  return { x, y };
 }
 
 export const LakesEditor = { open };

@@ -258,7 +258,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!Markets.relocateMarket(activeMarketId, burgId)) return;
 
   toggleRelocateMarket();
-  if (layerIsOn("toggleMarketsLayer")) drawMarkets();
+  if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
 
   refreshNameInput(market);
   updateDialog(dialogId, { title: `Market Stock: ${Markets.getName(market)}` });

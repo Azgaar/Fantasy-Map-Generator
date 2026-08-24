@@ -4,6 +4,7 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { createLabelElements } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getVisibleLabels } from "@/renderers/labels/labels-renderer";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import type { Point } from "@/types/global";
 
 type PathLabelType = Extract<LabelType, "river" | "route">;
@@ -349,41 +350,24 @@ function getPatches(labels: LabelData[], selected: Map<string, LabelPlacementCan
 }
 
 function getDisplayedBurgIconBounds(): Map<number, LabelBounds> {
-  const mapRect = document.querySelector<SVGSVGElement>("#map")?.getBoundingClientRect();
-  const viewbox = document.querySelector<SVGGraphicsElement>("#viewbox");
-  const screenMatrix = viewbox?.getScreenCTM();
-  if (!mapRect || !screenMatrix) return new Map();
-
-  const inverse = screenMatrix.inverse();
+  const burgStyle = getMapRendererStyle(style).burgIcons;
   const boundsByBurg = new Map<number, LabelBounds>();
-  const icons = document.querySelectorAll<SVGGraphicsElement>("#burgIcons use[data-id], #anchors use[data-id]");
-  for (const icon of icons) {
-    const id = Number(icon.dataset.id);
-    const rect = icon.getBoundingClientRect();
-    if (!Number.isInteger(id) || !intersectsScreenRect(rect, mapRect)) continue;
-
-    const burg = pack.burgs[id];
-    if (burg?.i !== id || burg.removed) continue;
-    const bounds = screenRectToMapBounds(rect, inverse);
-    if (!isDrawnOn(bounds, burg.x, burg.y)) continue;
-
-    const existing = boundsByBurg.get(id);
-    boundsByBurg.set(id, existing ? unionBounds(existing, bounds) : bounds);
+  for (const burg of pack.burgs) {
+    if (!burg.i || burg.removed || !burg.group) continue;
+    const icon = burgStyle.icons.roles[burg.group] ?? burgStyle.icons.default;
+    let radius = (icon.size + icon.strokeWidth) / 2;
+    if (burg.port) {
+      const anchor = burgStyle.anchors.roles[burg.group] ?? burgStyle.anchors.default;
+      radius = Math.max(radius, (anchor.size + anchor.strokeWidth) / 2);
+    }
+    boundsByBurg.set(burg.i, {
+      x1: burg.x - radius,
+      x2: burg.x + radius,
+      y1: burg.y - radius,
+      y2: burg.y + radius
+    });
   }
   return boundsByBurg;
-}
-
-/**
- * The icons layer can lag behind the world state, and then a `data-id` still resolves to an icon
- * left over from an earlier map. Anchoring a name to one of those throws it clear across the map,
- * so an icon only counts as a Burg's own when it is actually drawn on that Burg. The tolerance
- * leaves room for symbols whose artwork hangs off the point they are placed at.
- */
-function isDrawnOn(bounds: LabelBounds, x: number, y: number): boolean {
-  const tolerance = Math.max(bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
-  return (
-    x >= bounds.x1 - tolerance && x <= bounds.x2 + tolerance && y >= bounds.y1 - tolerance && y <= bounds.y2 + tolerance
-  );
 }
 
 function getBurgIconObstacles(boundsByBurg: Map<number, LabelBounds>): LabelPlacementItem[] {
@@ -392,23 +376,6 @@ function getBurgIconObstacles(boundsByBurg: Map<number, LabelBounds>): LabelPlac
     obstacle: true,
     candidates: [{ placement: {}, bounds, collisionBounds: bounds, preference: 0 }]
   }));
-}
-
-function intersectsScreenRect(rect: DOMRect, mapRect: DOMRect): boolean {
-  return (
-    rect.width > 0 &&
-    rect.height > 0 &&
-    rect.right > mapRect.left &&
-    rect.left < mapRect.right &&
-    rect.bottom > mapRect.top &&
-    rect.top < mapRect.bottom
-  );
-}
-
-function screenRectToMapBounds(rect: DOMRect, inverse: DOMMatrix): LabelBounds {
-  const topLeft = new DOMPoint(rect.left, rect.top).matrixTransform(inverse);
-  const bottomRight = new DOMPoint(rect.right, rect.bottom).matrixTransform(inverse);
-  return { x1: topLeft.x, y1: topLeft.y, x2: bottomRight.x, y2: bottomRight.y };
 }
 
 function unionBounds(first: LabelBounds, second: LabelBounds): LabelBounds {
@@ -466,11 +433,8 @@ class LabelMeasurementSandbox {
     this.root.setAttribute("height", String(graphHeight));
     this.root.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
     this.root.setAttribute("aria-hidden", "true");
+    this.root.setAttribute("font-size", "100px");
     this.root.style.cssText = `position:fixed;left:0;top:0;width:${graphWidth}px;height:${graphHeight}px;overflow:visible;opacity:0;pointer-events:none;z-index:-1`;
-    const renderedLabels = document.querySelector<SVGGElement>("#labels");
-    const fontSize =
-      renderedLabels?.getAttribute("font-size") || (renderedLabels && getComputedStyle(renderedLabels).fontSize);
-    if (fontSize) this.root.setAttribute("font-size", fontSize);
     document.body.appendChild(this.root);
 
     for (const groupName of new Set(labels.map(label => label.group)))
@@ -1020,7 +984,6 @@ function nextFrame(): Promise<void> {
 /** Internal seam for focused geometry tests. Production callers use calculateLabelSpread. */
 export const labelSpreadInternals = {
   getBurgLabelCandidates,
-  isDrawnOn,
   getPathStartOffsetCandidates,
   getPathStartOffsetPreference,
   isPathTextUpright,

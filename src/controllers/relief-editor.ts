@@ -3,16 +3,34 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/di
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import {
+  insertReliefIcon,
+  moveReliefIcon,
+  removeReliefIcons,
+  reorderReliefIcon,
+  resizeReliefIcon,
+  setReliefIconType
+} from "@/controllers/editor-mutations";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
-import { getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
-import { getSceneReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
+import { ensureReliefIconIds, getReliefIconId, type ReliefIcon } from "@/generators/relief-generator";
+import { redrawRelief } from "@/renderers/draw-relief-icons";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import type { ReliefSet } from "@/types/relief";
-import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
+import { capitalize, ensureEl, findAllInQuadtree, rn } from "../utils";
 
 const ICON_BOX = 40; // icon preview box size in px, as defined in css
 
 let selectedIcon: ReliefIcon | null = null;
+let activeIcon: { initialPoint: { x: number; y: number }; reliefId: number } | null = null;
 
 const setsHtml = (): string =>
   Object.entries(RELIEF_SETS)
@@ -41,15 +59,15 @@ const setIconsHtml = (set: ReliefSet): string =>
     })
     .join("");
 
-function open(element: SVGElement): void {
+function open(reliefId: number): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleRelief")) toggleRelief();
+  if (!window.LayerControls.isLayerOn("toggleRelief")) window.LayerControls.toggleLayer("toggleRelief");
 
-  selectedIcon = getIconData(element);
-  select<SVGGElement, unknown>("#terrain")
-    .call(drag<SVGGElement, unknown>().on("start", dragReliefIcon))
-    .classed("draggable", true);
+  ensureReliefIconIds(pack.relief);
+  selectedIcon = pack.relief.find(icon => icon.i === reliefId) ?? null;
+  if (!selectedIcon) return;
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editReliefIcon as EventListener);
 
   renderDialog();
   restoreEditMode();
@@ -147,27 +165,13 @@ ${iconsHtml()}
       el.addEventListener("click", changeIcon);
     });
 
-  ensureEl("reliefEditStyle").addEventListener("click", () => editStyle("terrain"));
+  ensureEl("reliefEditStyle").addEventListener("click", () => window.StyleEditor.edit("terrain"));
   ensureEl("reliefCopy").addEventListener("click", copyIcon);
   ensureEl("reliefMoveFront").addEventListener("click", () => moveIcon("front"));
   ensureEl("reliefMoveBack").addEventListener("click", () => moveIcon("back"));
   ensureEl("reliefRemove").addEventListener("click", removeIcon);
 
   changeIconsSet(); // all sets are hidden in markup, show the selected one
-}
-
-function dragReliefIcon(event: any): void {
-  const icon = getIconData(event.sourceEvent?.target);
-  if (!icon) return;
-
-  const dx = icon.x - event.x;
-  const dy = icon.y - event.y;
-
-  event.on("drag", (dragEvent: any) => {
-    icon.x = rn(dx + dragEvent.x, 2);
-    icon.y = rn(dy + dragEvent.y, 2);
-    redrawRelief();
-  });
 }
 
 function restoreEditMode(): void {
@@ -218,6 +222,7 @@ function enterIndividualMode(): void {
   updateReliefSizeInput();
   applyDefaultViewboxEvents();
   clearMainTip();
+  renderReliefOverlay();
 }
 
 function enterBulkAddMode(): void {
@@ -245,14 +250,16 @@ function enterBulkAddMode(): void {
     .style("cursor", "crosshair")
     .call(drag<SVGElement, unknown>().on("start", dragToAdd))
     .on("touchmove mousemove", moveBrush);
+  updateMapInteractionOverlay({ handles: [], selection: null });
   tip("Drag to place relief icons within radius", true);
 }
 
-function moveBrush(this: SVGElement, event: any): void {
+function moveBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const point = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
-  moveCircle(point[0], point[1], radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function dragToAdd(this: SVGElement, event: any): void {
@@ -270,14 +277,15 @@ function dragToAdd(this: SVGElement, event: any): void {
   const tree = quadtree(pack.relief.map(({ x, y, s }) => [x + s / 2, y + s / 2] as [number, number]));
 
   event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getReliefMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
     range(Math.ceil(r / 10)).forEach(() => {
       const a = Math.PI * 2 * Math.random();
       const rad = r * Math.random();
-      const cx = p[0] + rad * Math.cos(a);
-      const cy = p[1] + rad * Math.sin(a);
+      const cx = point.x + rad * Math.cos(a);
+      const cy = point.y + rad * Math.sin(a);
 
       if (tree.find(cx, cy, spacing)) return; // too close to existing icon
       if (pack.cells.h[findCell(cx, cy)!] < 20) return; // on water cell
@@ -301,7 +309,7 @@ function insertIcon(icon: ReliefIcon): void {
     if (pack.relief[mid].y + pack.relief[mid].s <= bottom) low = mid + 1;
     else high = mid;
   }
-  pack.relief.splice(low, 0, icon);
+  insertReliefIcon(pack, icon, low);
 }
 
 function enterBulkRemoveMode(): void {
@@ -321,6 +329,7 @@ function enterBulkRemoveMode(): void {
     .style("cursor", "crosshair")
     .call(drag<SVGElement, unknown>().on("start", dragToRemove))
     .on("touchmove mousemove", moveBrush);
+  updateMapInteractionOverlay({ handles: [], selection: null });
   tip("Drag to remove relief icons in radius", true);
 }
 
@@ -340,29 +349,29 @@ function dragToRemove(this: SVGElement, event: any): void {
   }
 
   event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getReliefMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const found: [number, number, ReliefIcon][] = findAllInQuadtree(p[0], p[1], r, tree);
+    const found: [number, number, ReliefIcon][] = findAllInQuadtree(point.x, point.y, r, tree);
     if (!found.length) return;
 
     const removed = new Set(found.map(entry => entry[2]));
     for (const entry of found) tree.remove(entry);
-    pack.relief = pack.relief.filter(reliefIcon => !removed.has(reliefIcon));
+    removeReliefIcons(pack, new Set([...removed].flatMap(icon => (icon.i === undefined ? [] : [icon.i]))));
     if (selectedIcon && removed.has(selectedIcon)) selectedIcon = null;
     redrawRelief();
   });
 }
 
 function changeIconSize(): void {
-  if (!selectedIcon || !ensureEl("reliefIndividual").classList.contains("pressed")) return;
+  if (!selectedIcon?.i || !ensureEl("reliefIndividual").classList.contains("pressed")) return;
 
   const size = +ensureEl<HTMLInputElement>("reliefSizeNumber").value;
-  const shift = (size - selectedIcon.s) / 2;
-  selectedIcon.s = size;
-  selectedIcon.x = rn(selectedIcon.x - shift, 2);
-  selectedIcon.y = rn(selectedIcon.y - shift, 2);
-  redrawRelief();
+  if (resizeReliefIcon(pack, selectedIcon.i, size).changed) {
+    redrawRelief();
+    renderReliefOverlay();
+  }
 }
 
 function changeIconsSet(): void {
@@ -384,9 +393,8 @@ function changeIcon(this: SVGElement): void {
     });
   this.classList.add("pressed");
 
-  if (ensureEl("reliefIndividual").classList.contains("pressed") && selectedIcon) {
-    selectedIcon.icon = this.dataset.type!;
-    redrawRelief();
+  if (ensureEl("reliefIndividual").classList.contains("pressed") && selectedIcon?.i) {
+    if (setReliefIconType(pack, selectedIcon.i, this.dataset.type!).changed) redrawRelief();
   }
 }
 
@@ -399,23 +407,18 @@ function copyIcon(): void {
     y -= 3;
   } while (pack.relief.some(icon => icon.x === x && icon.y === y));
 
-  const copy = { ...selectedIcon, x, y };
-  pack.relief.push(copy); // the copy is placed on top of the other icons
+  const copy = { ...selectedIcon, i: undefined, x, y };
+  insertReliefIcon(pack, copy);
   selectedIcon = copy;
   redrawRelief();
+  renderReliefOverlay();
 }
 
 // move the icon to the top (front) or to the bottom (back) of the drawing order
 function moveIcon(direction: "front" | "back"): void {
   if (!selectedIcon) return;
 
-  const index = pack.relief.indexOf(selectedIcon);
-  if (index < 0) return;
-
-  pack.relief.splice(index, 1);
-  if (direction === "front") pack.relief.push(selectedIcon);
-  else pack.relief.unshift(selectedIcon);
-  redrawRelief();
+  if (selectedIcon.i && reorderReliefIcon(pack, selectedIcon.i, direction).changed) redrawRelief();
 }
 
 function removeIcon(): void {
@@ -436,7 +439,10 @@ function removeIcon(): void {
     confirm: "Remove",
     message,
     onConfirm: () => {
-      pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
+      removeReliefIcons(
+        pack,
+        new Set([...doomed].flatMap(reliefIcon => (reliefIcon.i === undefined ? [] : [reliefIcon.i])))
+      );
       selectedIcon = null;
       redrawRelief();
       destroyDialog("reliefEditor");
@@ -445,17 +451,76 @@ function removeIcon(): void {
   });
 }
 
-function getIconData(element?: Element): ReliefIcon | null {
-  if (element?.tagName !== "use") return null;
-  const id = (element as SVGUseElement).dataset.id;
-  return (id && getSceneReliefIcon(id)) || null;
+function editReliefIcon(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const serializedId = String(event.detail.handleId);
+  if (!serializedId.startsWith("relief-icon:")) return;
+  const reliefId = Number(serializedId.split(":")[1]);
+  const icon = pack.relief.find(candidate => candidate.i === reliefId);
+  if (!icon || selectedIcon?.i !== reliefId) return;
+
+  if (event.detail.phase === "start") {
+    activeIcon = { initialPoint: { x: icon.x, y: icon.y }, reliefId };
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (activeIcon?.reliefId === reliefId) {
+      moveReliefIcon(pack, reliefId, activeIcon.initialPoint);
+      activeIcon = null;
+      redrawRelief();
+      renderReliefOverlay();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    const point = {
+      x: rn(event.detail.worldPoint.x - icon.s / 2, 2),
+      y: rn(event.detail.worldPoint.y - icon.s / 2, 2)
+    };
+    if (moveReliefIcon(pack, reliefId, point).changed) redrawRelief();
+    return;
+  }
+  if (event.detail.phase !== "end" || activeIcon?.reliefId !== reliefId) return;
+  activeIcon = null;
+  renderReliefOverlay();
+}
+
+function renderReliefOverlay(): void {
+  if (!selectedIcon?.i || !ensureEl("reliefIndividual").classList.contains("pressed")) return;
+  updateMapInteractionOverlay({
+    handles: [
+      {
+        id: `relief-icon:${selectedIcon.i}`,
+        label: `Move relief icon ${selectedIcon.i}`,
+        point: { x: selectedIcon.x + selectedIcon.s / 2, y: selectedIcon.y + selectedIcon.s / 2 }
+      }
+    ],
+    selection: [
+      {
+        height: selectedIcon.s,
+        kind: "bounds",
+        width: selectedIcon.s,
+        x: selectedIcon.x,
+        y: selectedIcon.y
+      }
+    ]
+  });
+}
+
+function getReliefMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
 }
 
 function closeReliefEditor(): void {
   const wasUsingBrush = !ensureEl("reliefIndividual").classList.contains("pressed");
-  select<SVGGElement, unknown>("#terrain").on(".drag", null).classed("draggable", false);
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editReliefIcon as EventListener);
   selectedIcon = null;
+  activeIcon = null;
   removeCircle();
+  clearMapInteractionOverlay();
   if (wasUsingBrush) applyDefaultViewboxEvents();
   clearMainTip();
   destroyDialog("reliefEditor");

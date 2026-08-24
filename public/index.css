@@ -93,6 +93,34 @@ iframe {
   text-rendering: optimizeSpeed;
 }
 
+/* Pixi owns migrated persistent layers. SVG remains only for layers and interaction overlays not migrated yet. */
+#map.pixi-renderer-active {
+  position: relative;
+  z-index: 0;
+  background-color: transparent;
+}
+
+#map.pixi-renderer-active #ocean,
+#map.pixi-renderer-active #landmass,
+#map.pixi-renderer-active #lakes,
+#map.pixi-renderer-active #biomes,
+#map.pixi-renderer-active #terrain,
+#map.pixi-renderer-active #borders,
+#map.pixi-renderer-active #coastline {
+  visibility: hidden;
+}
+
+#pixi-map-renderer {
+  position: absolute;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#pixi-map-renderer canvas {
+  display: block;
+}
+
 #canvas {
   position: absolute;
   pointer-events: none;
@@ -135,7 +163,6 @@ a {
   user-select: none;
 }
 
-#population,
 #cells,
 #compass {
   fill: none;
@@ -152,20 +179,8 @@ a {
 
 #lakes,
 #coastline,
-#armies,
-#ice,
-#emblems,
-#goodsCells,
-#goodsIcons,
-#goodsBurgs,
-#markets {
+#emblems {
   cursor: pointer;
-}
-
-#markets > g > path,
-#markets > g > text {
-  user-select: none;
-  pointer-events: none;
 }
 
 #temperature {
@@ -202,22 +217,6 @@ t,
 #gridOverlay,
 #fogging {
   pointer-events: none;
-}
-
-#armies text {
-  pointer-events: none;
-  user-select: none;
-  stroke: none;
-  fill: #fff;
-  text-shadow: 0 0 4px #000;
-  dominant-baseline: central;
-  text-anchor: middle;
-  font-family: var(--sans-serif);
-  fill-opacity: 1;
-}
-
-#armies text.regimentIcon {
-  font-size: 0.8em;
 }
 
 #statesHalo {
@@ -2403,6 +2402,57 @@ svg.button {
   opacity: 0.8;
 }
 
+#mapInteractionOverlay .map-interaction-selection > * {
+  fill: rgb(208 36 15 / 8%);
+  stroke: #d0240f;
+  stroke-width: 2;
+}
+
+#mapInteractionOverlay .map-interaction-highlight > * {
+  fill: none;
+  stroke: #ffbf47;
+  stroke-dasharray: 5 3;
+  stroke-width: 2;
+}
+
+#mapInteractionOverlay .map-interaction-brush > * {
+  fill: rgb(255 255 255 / 8%);
+  stroke: #111;
+  stroke-dasharray: 3 2;
+  stroke-width: 1.5;
+}
+
+#mapInteractionOverlay .map-interaction-handle {
+  cursor: grab;
+  fill: #fff;
+  stroke: #d0240f;
+  stroke-width: 2;
+}
+
+.pixi-renderer-failure {
+  position: absolute;
+  z-index: 20;
+  max-width: min(36rem, calc(100% - 2rem));
+  padding: 0.75rem 1rem;
+  margin: 1rem;
+  color: #5b160f;
+  background: #fff4ed;
+  border: 1px solid #d0240f;
+  border-radius: 0.35rem;
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 18%);
+}
+
+#mapInteractionOverlay .map-interaction-handle:active {
+  cursor: grabbing;
+}
+
+#mapInteractionOverlay .map-interaction-handle:focus-visible {
+  fill: #ffef8a;
+  outline: none;
+  stroke: #111;
+  stroke-width: 3;
+}
+
 #markerTypeSelector {
   font-size: 0.85em;
 }
@@ -2461,55 +2511,6 @@ svg.button {
   margin-left: 0.25em;
 }
 
-@keyframes clockwiseBorderPulse {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-#tourPromptButton {
-  position: fixed;
-  bottom: 100px;
-  right: 36px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--bg-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-  opacity: 0;
-  animation: fadeIn 1s ease-in 1s forwards;
-  z-index: 9999;
-}
-
-#tourPromptButton button {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-#tourPromptButton svg path {
-  fill: #000000;
-  stroke: #000000;
-  fill-opacity: 1;
-  stroke-width: 0;
-  transition: all 0.3s ease-out;
-  stroke-linejoin: round;
-}
-
-#tourPromptButton:hover svg path {
-  fill-opacity: 0;
-  stroke-width: 5;
-}
-
 @media print {
   div,
   canvas {
@@ -2559,59 +2560,4 @@ div.states .marketBadge {
   font-size: 0.8em;
   font-weight: bold;
   line-height: 1.35;
-}
-
-.fmg-tour.driver-popover {
-  border-radius: 4px;
-}
-
-.fmg-tour .driver-popover-title {
-  font-size: 1.1em;
-  border-bottom: 1px solid;
-  padding-bottom: 0.4em;
-  margin-bottom: 0.5em;
-}
-
-.fmg-tour .driver-popover-description {
-  font-size: 0.9em;
-  line-height: 1.5;
-}
-
-.fmg-tour .driver-popover-footer button {
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.fmg-tour .driver-popover-footer button:hover {
-  background-color: #e0e0e0;
-}
-
-.fmg-tour .driver-popover-progress-text {
-  font-size: 0.8em;
-}
-
-/* Tooltip demo step: hide overlay and restore all pointer events so the map is fully hoverable */
-body.tour-free-roam .driver-overlay {
-  opacity: 0 !important;
-}
-
-body.tour-free-roam * {
-  pointer-events: auto !important;
-}
-
-#startTourButton {
-  display: block;
-  margin: 0.8em auto 0.4em auto;
-  padding: 0.4em 1.2em;
-  background-color: #3a3a5c;
-  border: 1px solid #5a5a7a;
-  color: #e8d5a3;
-  font-family: Georgia, serif;
-  cursor: pointer;
-  border-radius: 3px;
-  font-size: 0.95em;
-}
-
-#startTourButton:hover {
-  background-color: #4a4a6c;
 }

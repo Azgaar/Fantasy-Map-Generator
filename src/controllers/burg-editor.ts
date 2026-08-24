@@ -1,4 +1,4 @@
-import { type Selection, select } from "d3";
+import { select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
@@ -6,15 +6,22 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { renderBurgChanged, renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { invalidateBurgSymbols } from "@/renderers/point-symbols";
+import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
-import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
+import { convertTemperature, ensureEl, findEl, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
-let selected: Selection<any, any, any, any> | null = null;
+let selectedBurgId = 0;
 let previewTransform: PanZoom = { ...PAN_ZOOM_IDENTITY };
 let previewMaxZoom = MAX_ZOOM;
 let previewCommittedK = 1;
@@ -24,11 +31,11 @@ let previewLayoutLocked = false;
 function open(id: number | string): void {
   if (customization) return;
   closeDialogs(".stable");
-  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleBurgIcons")) window.LayerControls.toggleLayer("toggleBurgIcons");
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
-  selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
-  if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
+  selectedBurgId = Number(id);
+  if (!pack.burgs[selectedBurgId]?.i || pack.burgs[selectedBurgId].removed) return;
 
   renderDialog();
   updateGroupsList();
@@ -279,7 +286,7 @@ function renderDialog(): void {
 }
 
 function getSelectedId(): number {
-  return +selected!.attr("data-id");
+  return selectedBurgId;
 }
 
 function updateGroupsList(): void {
@@ -402,6 +409,7 @@ function toggleFeature(this: HTMLElement): void {
   this.classList.toggle("inactive", !(burg as any)[feature]);
 
   ensureEl("burgEditAnchorStyle").style.display = burg.port ? "inline-block" : "none";
+  renderBurgChanged(burg);
   updateBurgPreview(burg);
 }
 
@@ -409,9 +417,6 @@ function togglePort(burgId: number): void {
   const burg = pack.burgs[burgId];
   if (burg.port) {
     burg.port = 0;
-
-    const anchor = document.querySelector(`#anchors [data-id='${burgId}']`);
-    if (anchor) anchor.remove();
   } else {
     const { cells, features } = pack;
     const haven = cells.haven[burg.cell];
@@ -433,15 +438,6 @@ function togglePort(burgId: number): void {
     }
 
     burg.port = portFeatureId;
-
-    select("#anchors")
-      .select(`#${burg.group}`)
-      .append("use")
-      .attr("href", "#icon-anchor")
-      .attr("id", `anchor${burg.i}`)
-      .attr("data-id", burg.i)
-      .attr("x", burg.x)
-      .attr("y", burg.y);
   }
 }
 
@@ -508,9 +504,9 @@ function hideStyleSection(): void {
 }
 
 function editGroupLabelStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
+  const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  editStyle("labels", g.id);
+  window.StyleEditor.edit("labels", burg.label?.group || burg.group || "burg");
 }
 
 function editBurgLabel(): void {
@@ -520,15 +516,80 @@ function editBurgLabel(): void {
 }
 
 function editGroupIconStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
-  closeDialogs(".stable");
-  editStyle("burgIcons", g.id);
+  openBurgSymbolStyle("icons");
 }
 
 function editGroupAnchorStyle(): void {
-  const g = (selected!.node() as Element).parentNode as HTMLElement;
-  closeDialogs(".stable");
-  editStyle("anchors", g.id);
+  openBurgSymbolStyle("anchors");
+}
+
+function openBurgSymbolStyle(kind: "anchors" | "icons"): void {
+  const burg = pack.burgs[getSelectedId()];
+  const group = burg.group || "town";
+  const rendererStyle = getMapRendererStyle(style);
+  style.mapRenderer = rendererStyle;
+  const groupStyles = rendererStyle.burgIcons[kind];
+  let symbolStyle = groupStyles.roles[group];
+  if (!symbolStyle) {
+    symbolStyle = structuredClone(groupStyles.default);
+    groupStyles.roles[group] = symbolStyle;
+  }
+  destroyDialog("burgSymbolStyleEditor");
+  const shapeControl =
+    kind === "icons"
+      ? `<div><div class="label">Shape:</div><select id="burgSymbolShape" style="width:10em">
+          ${["circle", "square", "triangle", "cross", "star", "circled", "squared", "star-circled"]
+            .map(shape => `<option value="${shape}" ${shape === symbolStyle.icon ? "selected" : ""}>${shape}</option>`)
+            .join("")}
+        </select></div>`
+      : "";
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    `<div id="burgSymbolStyleEditor" class="dialog">
+      <div style="padding:.4em; display:grid; gap:.35em">
+        <strong>${group} ${kind === "icons" ? "burg symbol" : "port anchor"}</strong>
+        ${shapeControl}
+        <div><div class="label">Size:</div><input id="burgSymbolSize" type="number" min=".1" max="20" step=".1" value="${symbolStyle.size}" /></div>
+        <div><div class="label">Opacity:</div><input id="burgSymbolOpacity" type="number" min="0" max="1" step=".05" value="${symbolStyle.opacity}" /></div>
+        <div><div class="label">Fill:</div><input id="burgSymbolFill" type="color" value="${symbolStyle.fill}" /></div>
+        <div><div class="label">Fill opacity:</div><input id="burgSymbolFillOpacity" type="number" min="0" max="1" step=".05" value="${symbolStyle.fillOpacity}" /></div>
+        <div><div class="label">Stroke:</div><input id="burgSymbolStroke" type="color" value="${symbolStyle.stroke}" /></div>
+        <div><div class="label">Stroke width:</div><input id="burgSymbolStrokeWidth" type="number" min="0" max="10" step=".1" value="${symbolStyle.strokeWidth}" /></div>
+      </div>
+    </div>`
+  );
+
+  const updateNumber = (id: string, property: "fillOpacity" | "opacity" | "size" | "strokeWidth") => {
+    ensureEl<HTMLInputElement>(id).addEventListener("input", event => {
+      symbolStyle[property] = Number((event.target as HTMLInputElement).value);
+      invalidateBurgSymbols();
+    });
+  };
+  updateNumber("burgSymbolSize", "size");
+  updateNumber("burgSymbolOpacity", "opacity");
+  updateNumber("burgSymbolFillOpacity", "fillOpacity");
+  updateNumber("burgSymbolStrokeWidth", "strokeWidth");
+  for (const [id, property] of [
+    ["burgSymbolFill", "fill"],
+    ["burgSymbolStroke", "stroke"]
+  ] as const) {
+    ensureEl<HTMLInputElement>(id).addEventListener("input", event => {
+      symbolStyle[property] = (event.target as HTMLInputElement).value;
+      invalidateBurgSymbols();
+    });
+  }
+  findEl<HTMLSelectElement>("burgSymbolShape")?.addEventListener("change", event => {
+    symbolStyle.icon = (event.target as HTMLSelectElement).value;
+    invalidateBurgSymbols();
+  });
+
+  showDomDialog({
+    content: ensureEl("burgSymbolStyleEditor"),
+    placement: "top-right",
+    placementTarget: ensureEl("burgEditor"),
+    resizable: false,
+    title: "Pixi symbol style"
+  });
 }
 
 function getPreviewViewport(): { width: number; height: number } {
@@ -714,15 +775,20 @@ function toggleRelocateBurg(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateBurgOnClick);
     tip("Click on map to relocate burg. Hold Shift for continuous move", true);
-    if (!layerIsOn("toggleCells")) {
-      toggleCells();
+    const burg = pack.burgs[getSelectedId()];
+    updateMapInteractionOverlay({
+      selection: [{ center: { x: burg.x, y: burg.y }, kind: "circle", radius: 5 }]
+    });
+    if (!window.LayerControls.isLayerOn("toggleCells")) {
+      window.LayerControls.toggleLayer("toggleCells");
       toggler.dataset.forced = "true";
     }
   } else {
+    clearMapInteractionOverlay();
     clearMainTip();
     applyDefaultViewboxEvents();
-    if (layerIsOn("toggleCells") && toggler.dataset.forced) {
-      toggleCells();
+    if (window.LayerControls.isLayerOn("toggleCells") && toggler.dataset.forced) {
+      window.LayerControls.toggleLayer("toggleCells");
       toggler.dataset.forced = "false";
     }
   }
@@ -730,8 +796,9 @@ function toggleRelocateBurg(): void {
 
 function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const cells = pack.cells;
-  const point = getPointer(event, this);
-  const cellId = findCell(point[0], point[1])!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y)!;
   const id = getSelectedId();
   const burg = pack.burgs[id];
 
@@ -751,19 +818,8 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
     return;
   }
 
-  // change UI
-  const x = rn(point[0], 2);
-  const y = rn(point[1], 2);
-
-  select("#burgIcons").select(`#burg${id}`).attr("x", x).attr("y", y);
-
-  const anchor = select("#anchors").select(`use[data-id='${id}']`);
-  if (anchor.size()) {
-    const size = +anchor.attr("width");
-    const xa = rn(x - size * 0.47, 2);
-    const ya = rn(y - size * 0.47, 2);
-    anchor.attr("transform", null).attr("x", xa).attr("y", ya);
-  }
+  const x = rn(point.x, 2);
+  const y = rn(point.y, 2);
 
   // change data
   cells.burg[burg.cell] = 0;
@@ -773,23 +829,24 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   burg.x = x;
   burg.y = y;
   if (burg.capital) pack.states[newState].center = burg.cell;
+  renderBurgChanged(burg);
 
   // the label snaps back to the relocated burg, so its custom path is no longer valid
   if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined });
   drawLabels();
 
   if (event.shiftKey === false) toggleRelocateBurg();
+  else updateMapInteractionOverlay({ selection: [{ center: { x, y }, kind: "circle", radius: 5 }] });
 }
 
 function editBurgLegend(): void {
-  const id = selected!.attr("data-id");
-  const name = selected!.text();
+  const id = getSelectedId();
+  const name = pack.burgs[id].name || `Burg ${id}`;
   void Controllers.NotesEditor.open(`burg${id}`, name);
 }
 
 function showTemperatureGraph(): void {
-  const id = +selected!.attr("data-id");
-  void Controllers.TemperatureGraph.open(id);
+  void Controllers.TemperatureGraph.open(getSelectedId());
 }
 
 function showProductionOverview(): void {
@@ -832,7 +889,7 @@ function editBurgGroups(): void {
 
 function closeBurgEditor(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
-  selected = null;
+  selectedBurgId = 0;
   destroyDialog("burgEditor");
 }
 

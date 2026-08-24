@@ -8,6 +8,7 @@ declare global {
 }
 
 export interface ReliefIcon {
+  i?: number; // stable editor/picking id; assigned on generation or legacy load
   icon: string; // symbol id without the leading "#", e.g. "relief-mount-3"
   x: number;
   y: number;
@@ -80,6 +81,7 @@ class ReliefModule {
 
     // sort icons by the bottom edge, so the closer ones are drawn on top
     relief.sort((a, b) => a.y + a.s - (b.y + b.s));
+    ensureReliefIconIds(relief);
     pack.relief = relief;
 
     TIME && console.timeEnd("generateRelief");
@@ -117,6 +119,23 @@ class ReliefModule {
 
 export const getReliefIconId = (type: string, variant: number, set: ReliefSet): string =>
   `relief-${type}-${variant}${RELIEF_SETS[set].suffix}`;
+
+export function ensureReliefIconIds(icons: ReliefIcon[]): void {
+  const used = new Set<number>();
+  let nextId = icons.reduce((maxId, icon) => Math.max(maxId, icon.i ?? 0), 0) + 1;
+  for (const icon of icons) {
+    if (icon.i && !used.has(icon.i)) used.add(icon.i);
+    else {
+      while (used.has(nextId)) nextId++;
+      icon.i = nextId++;
+      used.add(icon.i);
+    }
+  }
+}
+
+export function getNextReliefIconId(icons: readonly ReliefIcon[]): number {
+  return icons.reduce((maxId, icon) => Math.max(maxId, icon.i ?? 0), 0) + 1;
+}
 
 // icons of the type available in the set, falling back to the closest type the set has
 function getTypeIcons(type: string, set: ReliefSet): ReliefTypeIcons | null {

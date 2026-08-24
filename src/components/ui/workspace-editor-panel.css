@@ -1,0 +1,368 @@
+.fmg-editor-panel {
+  position: fixed;
+  z-index: 2060;
+  top: 76px;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  width: min(560px, calc(100vw - 40px));
+  max-width: calc(100vw - 40px);
+  min-width: min(460px, calc(100vw - 40px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--kui-line);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--kui-surface-panel);
+  box-shadow: var(--kui-overlay-shadow, 0 18px 52px rgb(0 0 0 / 0.56));
+  color: var(--kui-text-secondary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  animation: fmg-editor-panel-in 150ms ease-out;
+}
+
+.fmg-editor-panel__header {
+  display: grid;
+  min-height: 70px;
+  flex: 0 0 auto;
+  grid-template-columns: 34px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--kui-line);
+  background: var(--kui-surface-panel);
+}
+
+.fmg-editor-panel__icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--kui-line);
+  border-radius: 5px;
+  background: var(--kui-surface-raised);
+  color: hsl(var(--accent-hover));
+}
+
+.fmg-editor-panel__heading {
+  min-width: 0;
+}
+
+.fmg-editor-panel__heading h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--kui-text);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fmg-editor-panel__heading p {
+  margin: 2px 0 0;
+  color: var(--kui-text-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.fmg-editor-panel .fmg-editor-panel__close {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--kui-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--kui-text-muted);
+}
+
+.fmg-editor-panel .fmg-editor-panel__close:hover,
+.fmg-editor-panel .fmg-editor-panel__close:focus-visible {
+  border-color: var(--kui-line-strong);
+  outline: 0;
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+.fmg-editor-panel__search {
+  position: relative;
+  display: flex;
+  min-height: 54px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--kui-line);
+  background: var(--kui-surface-panel);
+}
+
+.fmg-editor-panel__search .bp6-input-group {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.fmg-editor-panel__search .bp6-input-group > .bp6-icon {
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  display: inline-flex;
+  pointer-events: none;
+}
+
+.fmg-editor-panel__search .bp6-input {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 34px 6px 32px;
+  border: 1px solid var(--kui-line);
+  border-radius: 4px;
+  outline: 0;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  font: 500 12px/1.2 inherit;
+}
+
+.fmg-editor-panel__search .bp6-input:focus {
+  border-color: hsl(var(--accent));
+  box-shadow: 0 0 0 1px hsl(var(--accent));
+}
+
+.fmg-editor-panel__search .bp6-input::placeholder {
+  color: var(--kui-text-muted);
+}
+
+.fmg-editor-panel__search .bp6-input-action {
+  position: absolute;
+  z-index: 2;
+  right: 4px;
+  display: inline-flex;
+}
+
+.fmg-editor-panel__search .bp6-input-action .bp6-button {
+  min-width: 26px;
+  min-height: 26px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--kui-text-muted);
+}
+
+.fmg-editor-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fmg-editor-panel__footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+}
+
+.fmg-editor-panel__footer .bp6-button {
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--kui-line);
+  border-radius: 4px;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  font: 600 12px/18px inherit;
+}
+
+.workspace-editor-panel-open .fmg-map-minimap {
+  right: calc(var(--fmg-active-editor-panel-width, 560px) + 40px);
+}
+
+.fmg-editor-panel .fmg-dom-dialog__content,
+.fmg-editor-panel .fmg-dom-dialog__content > .dialog {
+  height: 100%;
+  max-width: none;
+}
+
+.fmg-editor-panel .fmg-dom-dialog__content > .dialog {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  overflow: auto;
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  scrollbar-color: var(--kui-line) transparent;
+  scrollbar-width: thin;
+}
+
+.fmg-editor-panel .fmg-dom-dialog__content > .dialog:not(.editorDialog) {
+  padding: 16px;
+}
+
+.fmg-editor-panel .dialog > div {
+  width: auto;
+}
+
+.fmg-editor-panel .editorDialog > .table {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  flex: 1;
+  padding: 10px 12px 0;
+  overflow: auto;
+}
+
+.fmg-editor-panel .editorDialog .header,
+.fmg-editor-panel .editorDialog .states {
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 100%;
+  column-gap: 10px;
+  color: var(--kui-text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fmg-editor-panel .editorDialog .header {
+  top: -10px;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.fmg-editor-panel div.states {
+  min-height: 34px;
+  margin: 0;
+  padding: 3px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--kui-line-soft);
+  background: transparent;
+}
+
+.fmg-editor-panel div.states:hover,
+.fmg-editor-panel div.states.hovered {
+  border: 0;
+  border-bottom: 1px solid var(--kui-line-soft);
+  background: var(--kui-surface-hover);
+  color: var(--kui-text);
+}
+
+.fmg-editor-panel .editorDialog .states[hidden] {
+  display: none;
+}
+
+.fmg-editor-panel .editorDialog .states [data-col] input:not([type="checkbox"]),
+.fmg-editor-panel .editorDialog .states [data-col] select,
+.fmg-editor-panel div.states > input:not([type="checkbox"]),
+.fmg-editor-panel div.states > select {
+  min-height: 26px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: 500 12px/1.35 inherit;
+}
+
+.fmg-editor-panel input,
+.fmg-editor-panel select,
+.fmg-editor-panel textarea,
+.fmg-editor-panel button {
+  border: 1px solid var(--kui-line);
+  border-radius: 4px;
+  background: var(--kui-surface-raised);
+  color: var(--kui-text);
+  font-family: inherit;
+}
+
+.fmg-editor-panel input:focus-visible,
+.fmg-editor-panel select:focus-visible,
+.fmg-editor-panel textarea:focus-visible,
+.fmg-editor-panel button:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: -2px;
+}
+
+.fmg-editor-panel .totalLine {
+  width: 100%;
+  margin: 0;
+  padding: 9px 16px;
+  border-top: 1px solid var(--kui-line);
+  color: var(--kui-text-muted);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.fmg-editor-panel .editorToolbar {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--kui-line);
+  background: var(--kui-surface-raised);
+}
+
+.fmg-editor-panel .editorToolbar > button,
+.fmg-editor-panel .editorToolbar > div > button {
+  min-width: 32px;
+  min-height: 30px;
+  margin: 0;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.fmg-editor-panel .editorToolbar > button:hover,
+.fmg-editor-panel .editorToolbar > div > button:hover {
+  border-color: var(--kui-line-strong);
+  background: var(--kui-surface-hover);
+}
+
+@keyframes fmg-editor-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fmg-editor-panel {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .fmg-editor-panel {
+    top: 60px;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    min-width: 0;
+  }
+
+  .fmg-editor-panel__header {
+    min-height: 60px;
+  }
+
+  .workspace-editor-panel-open .fmg-map-minimap {
+    display: none;
+  }
+}

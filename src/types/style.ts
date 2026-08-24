@@ -1,10 +1,12 @@
+import type { MapLayerId } from "@/renderers/core/layer-registry";
+import type { MapStyle } from "@/renderers/scene/styles";
 import type { ReliefSet } from "@/types/relief";
 
 export interface Style {
-  // TODO: style = {burgs: { icons, anchors }, labels } is more semantic
-  burgIcons: { [key: string]: { [key: string]: string } };
-  anchors: { [key: string]: { [key: string]: string } };
   labels: { groups: Record<string, LabelGroupStyle> };
+  mapLayerOrder?: MapLayerId[];
+  mapLayerVisibility?: Partial<Record<MapLayerId, boolean>>;
+  mapRenderer?: MapStyle;
   relief: ReliefStyle;
 }
 

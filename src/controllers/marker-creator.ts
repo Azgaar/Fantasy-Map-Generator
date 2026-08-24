@@ -2,7 +2,7 @@ import { pointer } from "d3";
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
-import { drawMarkers } from "@/renderers/draw-markers";
+import { invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import type { Point } from "@/types/global";
 import { ensureEl, findEl, rn } from "@/utils";
 
@@ -22,7 +22,7 @@ function toggle(baseMarker?: Marker): void {
   );
   document.getElementById("markersAddFromOverview")?.classList.add("pressed");
   document.getElementById("markerAdd")?.classList.add("pressed");
-  if (!layerIsOn("toggleMarkers")) toggleMarkers();
+  if (!window.LayerControls.isLayerOn("toggleMarkers")) window.LayerControls.toggleLayer("toggleMarkers");
 }
 
 function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
@@ -46,7 +46,7 @@ function addAt(point: Point, baseMarker?: Marker): boolean {
 
   selectedConfig?.add(`marker${marker.i}`, cell);
 
-  drawMarkers();
+  invalidateMarkerSymbols();
   refreshEditors();
   return true;
 }

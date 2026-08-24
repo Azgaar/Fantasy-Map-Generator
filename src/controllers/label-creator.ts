@@ -13,7 +13,7 @@ function toggle(): void {
 
   closeDialogs(".stable");
   toggleMapPlacement("addLabel", addOnClick, "Click on map to place label. Hold Shift to add multiple");
-  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 }
 
 async function addOnClick(event: MouseEvent): Promise<void> {

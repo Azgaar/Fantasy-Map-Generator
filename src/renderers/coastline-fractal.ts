@@ -103,18 +103,26 @@ function subdivideEdge(
 }
 
 export interface FractalizedShape {
+  maxOffset?: number; // greatest sampled distance from the original coastline
   points: [number, number][];
   origIndices: number[]; // index in points[] where original vertex i lives
+}
+
+export interface CoastlineFractalContext {
+  bounds?: { height: number; width: number };
+  seed?: string;
 }
 
 export function fractalizeCoastline(
   points: [number, number][],
   featureIndex: number,
-  featureType: "ocean" | "lake" | "island" = "island"
+  featureType: "ocean" | "lake" | "island" = "island",
+  context: CoastlineFractalContext = {}
 ): FractalizedShape {
   if (points.length < 3) return { points, origIndices: points.map((_, i) => i) };
   if (!defaultCoastSettings.enabled) return { points, origIndices: points.map((_, i) => i) };
-  const rand = Alea(`${seed}_c${featureIndex}`);
+  const runtimeSeed = context.seed ?? (globalThis as typeof globalThis & { seed?: string }).seed ?? "0";
+  const rand = Alea(`${runtimeSeed}_c${featureIndex}`);
   const settings =
     featureType === "lake" && defaultCoastSettings.lakeSmoothThreshMult !== 1
       ? {
@@ -122,13 +130,14 @@ export function fractalizeCoastline(
           smoothThreshold: Math.min(1, defaultCoastSettings.smoothThreshold * defaultCoastSettings.lakeSmoothThreshMult)
         }
       : defaultCoastSettings;
-  return fractalize(points, rand, settings);
+  return fractalize(points, rand, settings, context.bounds);
 }
 
 export function fractalize(
   points: [number, number][],
   rand: () => number,
-  settings: CoastlineSettings
+  settings: CoastlineSettings,
+  bounds?: { height: number; width: number }
 ): FractalizedShape {
   const profile = makeRoughnessProfile(rand, settings.roughnessContrast, settings.profileHarmonics);
 
@@ -159,7 +168,7 @@ export function fractalize(
   for (let i = 0; i < n; i++) {
     origIndices.push(resultPts.length);
     resultPts.push(points[i]);
-    if (isOnBorder(points[i]) && isOnBorder(points[(i + 1) % n])) continue; // Skip edges running along the map border
+    if (isOnBorder(points[i], bounds) && isOnBorder(points[(i + 1) % n], bounds)) continue; // Skip edges running along the map border
 
     const [x0, y0] = points[i];
     const [x1, y1] = points[(i + 1) % n];
@@ -182,8 +191,148 @@ export function fractalize(
   return { points: resultPts, origIndices };
 }
 
-function isOnBorder([x, y]: [number, number]) {
-  return x === 0 || x === graphWidth || y === 0 || y === graphHeight;
+function isOnBorder([x, y]: [number, number], bounds?: { height: number; width: number }): boolean {
+  const runtime = globalThis as typeof globalThis & { graphHeight?: number; graphWidth?: number };
+  const width = bounds?.width ?? runtime.graphWidth;
+  const height = bounds?.height ?? runtime.graphHeight;
+  return x === 0 || x === width || y === 0 || y === height;
+}
+
+/**
+ * Flattens the same hybrid curves used by the legacy SVG renderer into a high-detail polyline.
+ * The adaptive tolerance keeps curves smooth at deep editor zoom while avoiding a fixed point explosion.
+ */
+export function sampleCoastlineShape(shape: FractalizedShape, tolerance = 0.025): FractalizedShape {
+  const { origIndices, points } = shape;
+  const pointCount = points.length;
+  const originalCount = origIndices.length;
+  if (pointCount < 3 || originalCount < 3) return shape;
+
+  const smooth = origIndices.map((index, originalIndex) => {
+    const next = origIndices[(originalIndex + 1) % originalCount];
+    return (next > index ? next - index : next + pointCount - index) === 1;
+  });
+  const first = points[origIndices[0]];
+  const last = points[origIndices[originalCount - 1]];
+  let atMidpoint = smooth[originalCount - 1];
+  let cursor: [number, number] = atMidpoint
+    ? [(last[0] + first[0]) / 2, (last[1] + first[1]) / 2]
+    : [first[0], first[1]];
+  const sampled: [number, number][] = [cursor];
+  let maxOffset = shape.maxOffset ?? 0;
+
+  for (let originalIndex = 0; originalIndex < originalCount; originalIndex++) {
+    const currentIndex = origIndices[originalIndex];
+    const nextIndex = origIndices[(originalIndex + 1) % originalCount];
+    const current = points[currentIndex];
+    const previousOriginal = points[origIndices[(originalIndex - 1 + originalCount) % originalCount]];
+    const nextOriginal = points[nextIndex];
+
+    if (smooth[originalIndex]) {
+      const midpoint: [number, number] = [(current[0] + nextOriginal[0]) / 2, (current[1] + nextOriginal[1]) / 2];
+      const sampledFrom = sampled.length;
+      if (atMidpoint) flattenQuadratic(cursor, current, midpoint, tolerance, sampled);
+      else sampled.push(midpoint);
+      for (let index = sampledFrom; index < sampled.length; index++) {
+        maxOffset = Math.max(
+          maxOffset,
+          Math.min(
+            pointSegmentDistance(sampled[index], previousOriginal, current),
+            pointSegmentDistance(sampled[index], current, nextOriginal)
+          )
+        );
+      }
+      cursor = midpoint;
+      atMidpoint = true;
+      continue;
+    }
+
+    if (atMidpoint) {
+      sampled.push(current);
+      cursor = current;
+    }
+    const end = nextIndex > currentIndex ? nextIndex : nextIndex + pointCount;
+    for (let pointIndex = currentIndex; pointIndex < end; pointIndex++) {
+      const a = points[pointIndex % pointCount];
+      const b = points[(pointIndex + 1) % pointCount];
+      const previous = points[(pointIndex - 1 + pointCount) % pointCount];
+      const following = points[(pointIndex + 2) % pointCount];
+      const control1: [number, number] = [a[0] + (b[0] - previous[0]) / 8, a[1] + (b[1] - previous[1]) / 8];
+      const control2: [number, number] = [b[0] - (following[0] - a[0]) / 8, b[1] - (following[1] - a[1]) / 8];
+      const sampledFrom = sampled.length;
+      flattenCubic(cursor, control1, control2, b, tolerance, sampled);
+      for (let index = sampledFrom; index < sampled.length; index++) {
+        maxOffset = Math.max(maxOffset, pointSegmentDistance(sampled[index], current, nextOriginal));
+      }
+      cursor = b;
+    }
+    atMidpoint = false;
+  }
+
+  if (samePoint(sampled[0], sampled.at(-1))) sampled.pop();
+  return { maxOffset, origIndices: sampled.map((_, index) => index), points: sampled };
+}
+
+function flattenQuadratic(
+  start: [number, number],
+  control: [number, number],
+  end: [number, number],
+  tolerance: number,
+  output: [number, number][],
+  depth = 0
+): void {
+  if (depth >= 10 || pointSegmentDistance(control, start, end) <= tolerance) {
+    output.push(end);
+    return;
+  }
+  const startControl = midpoint(start, control);
+  const controlEnd = midpoint(control, end);
+  const center = midpoint(startControl, controlEnd);
+  flattenQuadratic(start, startControl, center, tolerance, output, depth + 1);
+  flattenQuadratic(center, controlEnd, end, tolerance, output, depth + 1);
+}
+
+function flattenCubic(
+  start: [number, number],
+  control1: [number, number],
+  control2: [number, number],
+  end: [number, number],
+  tolerance: number,
+  output: [number, number][],
+  depth = 0
+): void {
+  const flatness = Math.max(pointSegmentDistance(control1, start, end), pointSegmentDistance(control2, start, end));
+  if (depth >= 10 || flatness <= tolerance) {
+    output.push(end);
+    return;
+  }
+  const a = midpoint(start, control1);
+  const b = midpoint(control1, control2);
+  const c = midpoint(control2, end);
+  const d = midpoint(a, b);
+  const e = midpoint(b, c);
+  const center = midpoint(d, e);
+  flattenCubic(start, a, d, center, tolerance, output, depth + 1);
+  flattenCubic(center, e, c, end, tolerance, output, depth + 1);
+}
+
+function midpoint(a: [number, number], b: [number, number]): [number, number] {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}
+
+function pointSegmentDistance(point: [number, number], start: [number, number], end: [number, number]): number {
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  if (dx === 0 && dy === 0) return Math.hypot(point[0] - start[0], point[1] - start[1]);
+  const ratio = Math.max(
+    0,
+    Math.min(1, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / (dx * dx + dy * dy))
+  );
+  return Math.hypot(point[0] - (start[0] + ratio * dx), point[1] - (start[1] + ratio * dy));
+}
+
+function samePoint(a: [number, number] | undefined, b: [number, number] | undefined): boolean {
+  return Boolean(a && b && Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9);
 }
 
 /**

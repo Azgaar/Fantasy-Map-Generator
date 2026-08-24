@@ -1,0 +1,59 @@
+.fmg-map-minimap {
+  position: fixed;
+  z-index: 31;
+  right: 8px;
+  bottom: 8px;
+  width: clamp(150px, 16vw, 200px);
+  min-height: 80px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--kui-line-strong);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--kui-surface-canvas);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.34);
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+.fmg-map-minimap:hover,
+.fmg-map-minimap:focus-visible {
+  border-color: hsl(var(--accent));
+}
+
+.fmg-map-minimap:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+.fmg-map-minimap canvas,
+.fmg-map-minimap svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fmg-map-minimap__viewport {
+  fill: hsl(var(--accent) / 0.12);
+  stroke: hsl(var(--accent));
+  stroke-dasharray: 5 3;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+@media (max-width: 760px) {
+  .fmg-map-minimap {
+    right: 6px;
+    bottom: 6px;
+    width: min(136px, 35vw);
+  }
+}
+
+@media print {
+  .fmg-map-minimap {
+    display: none;
+  }
+}

@@ -23,7 +23,7 @@ properties are its public methods.
   Each entry resolves to the module's `ModuleType` export: `Controllers.MarketOverview.open(id)`.
 - **`Services`** (in `src/services/index.ts`) — service- and IO-layer app-shell modules. IO lives
   under `src/services/io/`. Each module likewise exports one object (`Save`, `Load`, `ExportMap`,
-  `ExportJson`, `Installation`, `CloudStorage`, `UiTour`): `Services.Save.saveMap("machine")`.
+  `ExportJson`, `Installation`, `CloudStorage`): `Services.Save.saveMap("machine")`.
 
 The mechanism is **dispatch-only**: callers invoke methods, they don't read properties off the
 resolved object. A module that exposes data or a nested object must wrap it in a method facade (e.g.
@@ -84,8 +84,8 @@ site changes. (All controllers are currently lazy; `eager` exists for future tun
 - An entry must never be made thenable: the factory's per-entry proxy returns `undefined` for `then`
   and for symbol keys, so `await Registry.Name` is a no-op rather than a phantom method call. Keep
   that guard if you touch `registry.ts`.
-- If a lazy module needs another not-yet-declared global, add it to `src/types/global.ts` under the
-  existing `// Global variables defined in main.js` convention — don't `as any` around it.
+- If a lazy module needs a transitional application-state accessor, declare it in
+  `src/types/global.ts` and document its owner and removal condition — don't `as any` around it.
 - Use **d3 v7 via named imports** (`import { select } from "d3"`), not the `window.d3` global. See
   [migration_guide.md](./migration_guide.md#d3-v7-named-imports-only).
 

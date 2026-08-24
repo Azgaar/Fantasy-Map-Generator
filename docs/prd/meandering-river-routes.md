@@ -66,7 +66,7 @@ The pathfinder already restricts route hops to river-adjacent steps along the ac
 
 ### `addMeandering` moves to `pathUtils` and becomes pure
 
-Current shape: an instance method on `RiverModule` that reaches into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, `graphHeight`. Three callers exist ([layers.js drawRivers](../../public/modules/ui/layers.js:816), [rivers-editor.js](../../public/modules/ui/rivers-editor.js), [export.js](../../public/modules/io/export.js:587), [rivers-creator.js](../../public/modules/ui/rivers-creator.js), [resample.ts](../../src/generators/resample.ts:35), [tools.ts](../../src/components/tools.ts)). New shape:
+At the time of this proposal, the implementation was an instance method on `RiverModule` that reached into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, and `graphHeight`; rendering, editors, export, resampling, and tools all called it. The renderer migration later moved those callers into bundled modules, but the proposed pure shape remains:
 
 ```ts
 // src/utils/pathUtils.ts

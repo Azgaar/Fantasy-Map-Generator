@@ -3,7 +3,7 @@ import { capitalize, findEl } from "@/utils";
 const EDITOR_PAGE_SIZE = 100;
 const EDITOR_PAGE_SIZE_MOBILE = 20;
 
-// MOBILE is a bare global set by main.js after ES modules evaluate, so it must be read lazily here, never at module scope
+// MOBILE is a compatibility accessor initialized by the application state bootstrap, so read it lazily.
 const defaultPageSize = () => (typeof MOBILE !== "undefined" && MOBILE ? EDITOR_PAGE_SIZE_MOBILE : EDITOR_PAGE_SIZE);
 
 export type TableView<T> = { rows: T[]; all: T[]; page: number; totalPages: number; total: number };

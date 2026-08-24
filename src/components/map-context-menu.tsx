@@ -166,17 +166,27 @@ function editEntity(entity: MapContextEntity): unknown {
     case "burg":
       return Controllers.BurgEditor.open(id!);
     case "coastline":
-      return Controllers.CoastlineVertexEditor.open(element!);
+      return Controllers.CoastlineVertexEditor.open(id!);
+    case "compass":
+      return Controllers.CompassEditor.open();
     case "emblem":
-      return Controllers.EmblemsEditor.open(undefined, undefined, undefined, element);
+      return Controllers.EmblemsEditor.open(
+        entity.emblemType,
+        `${entity.emblemType}COA${id}`,
+        entity.emblemType === "burg"
+          ? pack.burgs[id!]
+          : entity.emblemType === "province"
+            ? pack.provinces[id!]
+            : pack.states[id!]
+      );
     case "goods":
       return Controllers.GoodsEditor.open();
     case "ice":
-      return Controllers.IceEditor.open(element!);
+      return Controllers.IceEditor.open(id!);
     case "label":
       return Controllers.LabelsEditor.open(entity.labelType!, id!);
     case "lake":
-      return Controllers.LakesEditor.open(element!);
+      return Controllers.LakesEditor.open(id!);
     case "market":
       return Controllers.MarketOverview.open(id!);
     case "marker":
@@ -186,13 +196,13 @@ function editEntity(entity: MapContextEntity): unknown {
     case "production":
       return Controllers.ProductionOverview.open(id!);
     case "regiment":
-      return Controllers.RegimentEditor.open(`#${element!.id}`);
+      return Controllers.RegimentEditor.open(entity.stateId!, id!);
     case "relief":
-      return Controllers.ReliefEditor.open(element!);
+      return Controllers.ReliefEditor.open(id!);
     case "river":
-      return Controllers.RiverEditor.open(element?.id || `river${id}`);
+      return Controllers.RiverEditor.open(id!);
     case "route":
-      return Controllers.RouteEditor.open(element?.id || `route${id}`);
+      return Controllers.RouteEditor.open(id!);
     case "zone":
       return Controllers.ZonesEditor.open();
   }
@@ -217,6 +227,7 @@ function getEntityIcon(entity: MapContextEntity): MenuIcon {
   const icons: Record<MapContextEntity["kind"], MenuIcon> = {
     burg: "home",
     coastline: "path",
+    compass: "compass",
     emblem: "shield",
     goods: "shop",
     ice: "snowflake",

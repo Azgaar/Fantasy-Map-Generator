@@ -393,14 +393,11 @@ New bundled code imports third-party dependencies from **npm**; Vite tree-shakes
 into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no vendored
 `libs/` under `src/`**.
 
-`public/libs/*.min.js` (d3 v5, three, …) is loaded via `<script>` tags for classic
-`public/**/*.js` and a shrinking set of bundled compatibility seams that still depend on
-runtime globals. It is legacy-only and shrinks as modules migrate: when a feature ports to
-`src/`, its dependency flips from a vendored global script to an npm import, and the vendored
-script is dropped once nothing classic or transitional needs it. In particular, global D3 v5
-cannot be removed until zoom/shared SVG selections and all classic D3 consumers use imported
-D3 v7. The jQuery and jQuery UI globals were removed after dialogs, sorting, dragging, and
-remaining classic callers migrated to native browser APIs and shared React components.
+Remaining `public/libs/*.min.js` files are loaded only for third-party libraries that have not
+yet moved to npm. D3 is no longer one of them: application modules and the shared zoom/input
+surface use named imports from D3 v7, and the old global D3 v5 script has been removed. The
+jQuery and jQuery UI globals were likewise removed after dialogs, sorting, dragging, and
+remaining callers migrated to native browser APIs and shared React components.
 See [legacy-code.md](./legacy-code.md) for the inventory and removal policy.
 
 ## Where does my file go?

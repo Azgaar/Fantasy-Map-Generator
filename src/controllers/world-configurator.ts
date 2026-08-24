@@ -2,6 +2,7 @@ import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, sca
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawTemperature } from "@/renderers/draw-temperature";
 import { stored } from "@/utils/preferences";
@@ -364,8 +365,8 @@ function updateInputValues(): void {
 function updateWorld(): void {
   updateGlobeTemperature();
   updateGlobePosition();
-  calculateTemperatures();
-  generatePrecipitation();
+  WorldGenerationController.calculateTemperatures();
+  WorldGenerationController.generatePrecipitation();
   const heights = new Uint8Array(pack.cells.h);
   Rivers.generate();
   Rivers.specify();
@@ -374,18 +375,18 @@ function updateWorld(): void {
   Features.defineGroups();
   Lakes.defineNames();
 
-  if (layerIsOn("toggleTemperature")) drawTemperature();
-  if (layerIsOn("togglePrecipitation")) drawPrecipitation();
-  if (layerIsOn("toggleBiomes")) drawBiomes();
-  if (layerIsOn("toggleCoordinates")) drawCoordinates();
-  if (layerIsOn("toggleRivers")) drawRivers();
+  if (window.LayerControls.isLayerOn("toggleTemperature")) drawTemperature();
+  if (window.LayerControls.isLayerOn("togglePrecipitation")) window.LayerControls.redrawLayer("togglePrecipitation");
+  if (window.LayerControls.isLayerOn("toggleBiomes")) drawBiomes();
+  if (window.LayerControls.isLayerOn("toggleCoordinates")) window.LayerControls.redrawLayer("toggleCoordinates");
+  if (window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.redrawLayer("toggleRivers");
   if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
 }
 
 function updateGlobePosition(): void {
   const eqD = ((graphHeight / 2) * 100) / options.mapSize;
 
-  calculateMapCoordinates();
+  WorldGenerationController.calculateMapCoordinates();
   const mc = mapCoordinates;
   const unit = distanceUnitInput.value;
   const meridian = toKilometer(eqD * 2 * distanceScale);

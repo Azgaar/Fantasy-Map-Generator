@@ -1,4 +1,4 @@
-import { color as d3Color, interpolateString, select } from "d3";
+import { color as d3Color, select } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -14,8 +14,14 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { State } from "@/generators/states-generator";
+import { getAssignmentOverlay } from "@/renderers/interaction/map-domain-overlay";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import { downloadFile, getFileName } from "@/utils";
-import { ensureEl, findEl, getAdjective, getPointer } from "../utils";
+import { ensureEl, findEl, getAdjective } from "../utils";
 
 interface Relation {
   inText: string;
@@ -109,12 +115,12 @@ function open(): void {
   }
 
   closeDialogs(`#${dialogId}, .stable`);
-  if (!layerIsOn("toggleStates")) toggleStates();
-  if (!layerIsOn("toggleBorders")) toggleBorders();
-  if (layerIsOn("toggleProvinces")) toggleProvinces();
-  if (layerIsOn("toggleCultures")) toggleCultures();
-  if (layerIsOn("toggleBiomes")) toggleBiomes();
-  if (layerIsOn("toggleReligions")) toggleReligions();
+  if (!window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
+  if (!window.LayerControls.isLayerOn("toggleBorders")) window.LayerControls.toggleLayer("toggleBorders");
+  if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.toggleLayer("toggleProvinces");
+  if (window.LayerControls.isLayerOn("toggleCultures")) window.LayerControls.toggleLayer("toggleCultures");
+  if (window.LayerControls.isLayerOn("toggleBiomes")) window.LayerControls.toggleLayer("toggleBiomes");
+  if (window.LayerControls.isLayerOn("toggleReligions")) window.LayerControls.toggleLayer("toggleReligions");
 
   renderDialog();
   refreshDiplomacyEditor();
@@ -170,7 +176,7 @@ function renderDialog(): void {
   });
 
   ensureEl("diplomacyEditorRefresh").addEventListener("click", refreshDiplomacyEditor);
-  ensureEl("diplomacyEditStyle").addEventListener("click", () => editStyle("regions"));
+  ensureEl("diplomacyEditStyle").addEventListener("click", () => window.StyleEditor.edit("regions"));
   ensureEl("diplomacyRegenerate").addEventListener("click", regenerateRelations);
   ensureEl("diplomacyReset").addEventListener("click", resetRelations);
   ensureEl("diplomacyShowMatrix").addEventListener("click", showRelationsMatrix);
@@ -252,71 +258,52 @@ function renderDiplomacyPage(view: TableView<State>): void {
 }
 
 function stateHighlightOn(event: Event): void {
-  if (!layerIsOn("toggleStates")) return;
-  const state = +(event.target as HTMLElement).dataset.id!;
-  if (customization || !state) return;
-  const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
-
-  const path = select("#debug")
-    .append("path")
-    .attr("class", "highlight")
-    .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", "red")
-    .attr("stroke-width", 1)
-    .attr("opacity", 1)
-    .attr("filter", "url(#blur1)");
-
-  const l = (path.node() as SVGPathElement).getTotalLength();
-  const dur = (l + 5000) / 2;
-  const i = interpolateString(`0,${l}`, `${l},${l}`);
-  path
-    .transition()
-    .duration(dur)
-    .attrTween("stroke-dasharray", () => t => i(t));
+  if (!window.LayerControls.isLayerOn("toggleStates")) return;
+  const stateId = Number((event.currentTarget as HTMLElement).dataset.id);
+  if (customization || !stateId) return;
+  updateMapInteractionOverlay({
+    highlight: getAssignmentOverlay(pack.cells.state, stateId, {
+      fill: "none",
+      stroke: "red",
+      strokeWidth: 1
+    })
+  });
 }
 
 function stateHighlightOff(): void {
-  select("#debug")
-    .selectAll<SVGElement, unknown>(".highlight")
-    .each(function () {
-      select(this).transition().duration(1000).attr("opacity", 0).remove();
-    });
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function showStateRelations(): void {
   const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self");
   const sel = selectedLine ? +selectedLine.dataset.id! : pack.states.find(s => s.i && !s.removed)!.i;
   if (!sel) return;
-  if (!layerIsOn("toggleStates")) toggleStates();
+  if (!window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.toggleLayer("toggleStates");
 
-  select<SVGGElement, unknown>("#statesBody")
-    .selectAll<SVGPathElement, unknown>("path")
-    .each(function () {
-      if (this.id.slice(0, 9) === "state-gap") return; // exclude state gap element
-      const id = +this.id.slice(5); // state id
-
-      const relation = pack.states[id].diplomacy![sel];
-      const color = relations[relation]?.color || "#4682b4";
-
-      this.setAttribute("fill", color);
-      select<SVGGElement, unknown>("#statesBody").select(`#state-gap${id}`).attr("stroke", color);
-      select<SVGGElement, unknown>("#statesHalo")
-        .select(`#state-border${id}`)
-        .attr("stroke", d3Color(color)!.darker().hex());
+  const selection = pack.states
+    .filter(state => state.i && !state.removed)
+    .flatMap(state => {
+      const relation = state.i === sel ? null : state.diplomacy?.[sel];
+      const color = relation ? relations[relation]?.color || "#4682b4" : "#4682b4";
+      return getAssignmentOverlay(pack.cells.state, state.i, {
+        fill: color,
+        fillOpacity: 0.75,
+        stroke: d3Color(color)?.darker().hex() ?? color,
+        strokeWidth: 0.5
+      });
     });
+  updateMapInteractionOverlay({ selection });
 }
 
-function selectStateOnMapClick(this: SVGElement, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1])!;
+function selectStateOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y);
+  if (i === undefined) return;
   const state = pack.cells.state[i];
   if (!state) return;
-  const selectedLine = ensureEl("diplomacyBodySection").querySelector<HTMLElement>("div.Self")!;
-  if (+selectedLine.dataset.id! === state) return;
-
-  selectedLine.classList.remove("Self");
-  ensureEl("diplomacyBodySection").querySelector(`div[data-id='${state}']`)!.classList.add("Self");
+  if (selectedDiplomacyId === state) return;
+  selectedDiplomacyId = state;
   refreshDiplomacyEditor();
 }
 
@@ -653,9 +640,9 @@ function closeDiplomacyEditor(): void {
   clearMainTip();
   const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");
   if (selected) selected.classList.remove("Self");
-  if (layerIsOn("toggleStates")) drawStates();
-  else toggleStates();
-  select("#debug").selectAll(".highlight").remove();
+  if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
+  else window.LayerControls.toggleLayer("toggleStates");
+  clearMapInteractionOverlay();
   destroyDialog(dialogId);
 }
 

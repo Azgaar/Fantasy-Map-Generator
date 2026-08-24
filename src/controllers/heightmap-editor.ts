@@ -1,20 +1,32 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
+import { ApplicationController } from "@/application/application-controller";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { enableVerticalSortable } from "@/components/dialog/vertical-sortable";
+import { LayerControls } from "@/components/layers/layer-controls";
+import { OptionsController } from "@/components/options/options-controller";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
+import { commitHeightValues } from "@/controllers/editor-mutations";
 import { HeightmapHistory } from "@/controllers/heightmap-history";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawFeatures } from "@/renderers/draw-features";
 import { drawGoods } from "@/renderers/draw-goods";
+import { drawIce } from "@/renderers/draw-ice";
 import { drawMarkets } from "@/renderers/draw-markets";
 import { drawHeightmapPreview as renderHeightmapPreview } from "@/renderers/heightmap-preview";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { getHeightColorScheme as getColorScheme } from "@/renderers/scene/height-color-schemes";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
 import {
@@ -24,7 +36,6 @@ import {
   findGridCell,
   generateSeed,
   getGridPolygon,
-  getPointer,
   lim,
   link,
   minmax,
@@ -37,15 +48,22 @@ import type { PromptOptions } from "../utils/commonUtils";
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 let defaultCellTypeFilter: "all" | "land" | "water" = "all";
 const history = new HeightmapHistory();
+let linearFeatureStart: { cell: number; point: { x: number; y: number } } | null = null;
 
 function open(options?: { mode?: string; tool?: string }): void {
   const { mode, tool } = options || {};
   restartHistory();
+  clearMapInteractionOverlay();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
   select<SVGElement, unknown>("#viewbox").insert("g", "#terrs").attr("id", "heights");
 
   if (!mode) showModeDialog(tool);
   else enterHeightmapEditMode(mode, tool);
+}
+
+function openBlank(): void {
+  open({ mode: "erase" });
+  startFromScratch();
 }
 
 addToolbarListeners();
@@ -60,6 +78,7 @@ function renderTemplateEditor(): void {
           <option value="volcano">Volcano</option>
           <option value="highIsland">High Island</option>
           <option value="lowIsland">Low Island</option>
+          <option value="loneIsland">Lone Island</option>
           <option value="continents">Continents</option>
           <option value="archipelago">Archipelago</option>
           <option value="atoll">Atoll</option>
@@ -293,7 +312,7 @@ function addToolbarListeners(): void {
   ensureEl("applyTemplate").addEventListener("click", openTemplateEditor);
   ensureEl("convertImage").addEventListener("click", openImageConverter);
   ensureEl("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
-  ensureEl("heightmap3DView").addEventListener("click", changeViewMode);
+  ensureEl("heightmap3DView").addEventListener("click", OptionsController.changeViewMode);
   ensureEl("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
   ensureEl("renderOcean").addEventListener("click", mockHeightmap);
 }
@@ -346,7 +365,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   ensureEl("heightmapEditMode").innerHTML = mode;
 
   if (mode === "erase") {
-    undraw();
+    ApplicationController.undraw();
     defaultCellTypeFilter = "all";
   } else if (mode === "keep") {
     select<SVGElement, unknown>("#viewbox").selectAll("#landmass, #lakes").style("display", "none");
@@ -389,10 +408,8 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("transform", "scale(1)");
   } else exitCustomization.style.display = "block";
 
-  turnButtonOn("toggleHeight");
-  const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
-  layersPreset.value = "heightmap";
-  layersPreset.disabled = true;
+  LayerControls.setLayerVisibility("toggleHeight", true);
+  LayerControls.setPresetState("heightmap", true);
   mockHeightmap();
 
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
@@ -404,7 +421,9 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
 }
 
 function moveCursor(this: SVGElement, event: any): void {
-  const [x, y] = getPointer(event, this);
+  const point = getHeightmapPoint(event);
+  if (!point) return;
+  const { x, y } = point;
   const cell = findGridCell(x, y, grid);
   ensureEl("heightmapInfoX").innerHTML = String(rn(x));
   ensureEl("heightmapInfoY").innerHTML = String(rn(y));
@@ -417,7 +436,11 @@ function moveCursor(this: SVGElement, event: any): void {
   if (!pressed) return;
 
   if (pressed.id === "brushLine") {
-    select("#debug").select("line").attr("x2", x).attr("y2", y);
+    if (linearFeatureStart) {
+      updateMapInteractionOverlay({
+        selection: [{ kind: "polyline", points: [linearFeatureStart.point, { x, y }] }]
+      });
+    }
     return;
   }
 
@@ -462,10 +485,10 @@ function finalizeHeightmap(): void {
   ensureEl("customizationMenu").style.display = "none";
   if (ensureEl("options").querySelector<HTMLElement>(".tab > button.active")!.id === "toolsTab")
     ensureEl("toolsContent").style.display = "block";
-  ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
   ensureEl("exitCustomization").style.display = "none"; // hide finalize button
 
   applyDefaultViewboxEvents();
+  clearMapInteractionOverlay();
   clearMainTip();
   closeDialogs();
   resetZoom();
@@ -482,18 +505,14 @@ function finalizeHeightmap(): void {
   drawFeatures();
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
 
-  turnButtonOff("toggleHeight");
+  LayerControls.setLayerVisibility("toggleHeight", false);
   ensureEl("mapLayers")
     .querySelectorAll<HTMLElement>("li")
     .forEach(e => {
       const wasOn = storedLayers.includes(e.id);
-      if ((wasOn && !layerIsOn(e.id)) || (!wasOn && layerIsOn(e.id))) e.click();
+      if ((wasOn && !LayerControls.isLayerOn(e.id)) || (!wasOn && LayerControls.isLayerOn(e.id))) e.click();
     });
-  if (!layerIsOn("toggleBorders")) select("#borders").selectAll("path").remove();
-  if (!layerIsOn("toggleStates")) select("#regions").selectAll("path").remove();
-  if (!layerIsOn("toggleRivers")) select("#rivers").selectAll("*").remove();
-
-  getCurrentPreset();
+  LayerControls.syncPreset(false);
 }
 
 function regenerateErasedData(): void {
@@ -510,13 +529,13 @@ function regenerateErasedData(): void {
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
   Features.markupGrid();
   if (erosionAllowed) {
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
+    WorldGenerationController.addLakesInDeepDepressions();
+    WorldGenerationController.openNearSeaLakes();
   }
   OceanLayers();
-  calculateTemperatures();
-  generatePrecipitation();
-  reGraph();
+  WorldGenerationController.calculateTemperatures();
+  WorldGenerationController.generatePrecipitation();
+  WorldGenerationController.reGraph();
   Features.markupPack();
 
   Rivers.generate(erosionAllowed);
@@ -534,7 +553,7 @@ function regenerateErasedData(): void {
 
   Goods.generate();
 
-  rankCells();
+  WorldGenerationController.rankCells();
   Cultures.generate();
   Cultures.expand(getCultureGenerationSettings());
 
@@ -558,6 +577,7 @@ function regenerateErasedData(): void {
   States.collectTaxes();
 
   Ice.generate();
+  drawIce();
 
   Military.generate();
   Markers.generate();
@@ -663,11 +683,11 @@ function restoreRiskedData(): void {
   }
 
   Features.markupGrid();
-  if (erosionAllowed) addLakesInDeepDepressions();
+  if (erosionAllowed) WorldGenerationController.addLakesInDeepDepressions();
   OceanLayers();
-  calculateTemperatures();
-  generatePrecipitation();
-  reGraph();
+  WorldGenerationController.calculateTemperatures();
+  WorldGenerationController.generatePrecipitation();
+  WorldGenerationController.reGraph();
   Features.markupPack();
 
   if (erosionAllowed) {
@@ -809,9 +829,9 @@ function restoreRiskedData(): void {
       return Boolean(centerBurg && !centerBurg.removed);
     });
     Production.regenerateEconomy();
-    if (layerIsOn("toggleMarketsLayer")) drawMarkets();
-    if (layerIsOn("toggleGoods")) drawGoods();
-    if (layerIsOn("toggleTrade")) tradeAnimation.restart();
+    if (window.LayerControls.isLayerOn("toggleMarketsLayer")) drawMarkets();
+    if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
+    if (window.LayerControls.isLayerOn("toggleTrade")) tradeAnimation.restart();
     refreshEditors();
   } else {
     Goods.generate();
@@ -822,7 +842,7 @@ function restoreRiskedData(): void {
 
   // recalculate ice
   Ice.generate();
-  select("#ice").selectAll("*").remove();
+  drawIce();
 
   TIME && console.timeEnd("restoreRiskedData");
   INFO && console.groupEnd();
@@ -1124,7 +1144,8 @@ function exitBrushMode(): void {
   applyDefaultViewboxEvents();
   select<SVGSVGElement, unknown>("#map").on("dblclick.zoom", null);
   select<SVGElement, unknown>("#viewbox").on("touchmove mousemove", moveCursor);
-  select("#debug").selectAll(".lineCircle").remove();
+  linearFeatureStart = null;
+  updateMapInteractionOverlay({ selection: null });
   removeCircle();
 
   ensureEl("brushesSliders").style.display = "none";
@@ -1160,30 +1181,20 @@ function toggleBrushMode(event: Event): void {
 }
 
 function placeLinearFeature(this: SVGElement, event: any): void {
-  const [x, y] = getPointer(event, this);
+  const point = getHeightmapPoint(event);
+  if (!point) return;
+  const { x, y } = point;
   const toCell = findGridCell(x, y, grid);
 
-  const lineCircle = select("#debug").selectAll(".lineCircle");
-  if (!lineCircle.size()) {
-    // first click: add 1st control point
-    select("#debug").append("line").attr("id", "brushCircle").attr("x1", x).attr("y1", y).attr("x2", x).attr("y2", y);
-
-    select("#debug")
-      .append("circle")
-      .attr("data-cell", toCell)
-      .attr("class", "lineCircle")
-      .attr("r", 6)
-      .attr("cx", x)
-      .attr("cy", y)
-      .attr("fill", "yellow")
-      .attr("stroke", "#333")
-      .attr("stroke-width", 2);
+  if (!linearFeatureStart) {
+    linearFeatureStart = { cell: toCell, point: { x, y } };
+    updateMapInteractionOverlay({ selection: [{ kind: "point", point: { x, y } }] });
     return;
   }
 
-  // second click: execute operation and remove control points
-  const fromCell = +lineCircle.attr("data-cell");
-  select("#debug").selectAll("*").remove();
+  const fromCell = linearFeatureStart.cell;
+  linearFeatureStart = null;
+  updateMapInteractionOverlay({ selection: null });
 
   const power = ensureEl<HTMLInputElement>("heightmapLinePower").valueAsNumber;
   if (power === 0) {
@@ -1209,16 +1220,17 @@ function placeLinearFeature(this: SVGElement, event: any): void {
     if (changedHeights[i] === heights[i]) continue;
     if (cellTypeFilter === "land" && heights[i] < 20) continue;
     if (cellTypeFilter === "water" && heights[i] >= 20) continue;
-    heights[i] = changedHeights[i];
     selection.push(i);
   }
-
-  mockHeightmapSelection(selection);
+  const mutation = commitHeightValues(heights, changedHeights, selection);
+  mockHeightmapSelection(mutation.affectedCellIds);
   updateHistory();
 }
 
 function applyFillBrush(this: SVGElement, event: any): void {
-  const [x, y] = getPointer(event, this);
+  const point = getHeightmapPoint(event);
+  if (!point) return;
+  const { x, y } = point;
   const start = findGridCell(x, y, grid);
   const startHeight = grid.cells.h[start];
   const isWaterFill = startHeight < 20;
@@ -1285,7 +1297,7 @@ function applyConeToSelection(selection: number[], isWaterFill: boolean, targetH
   const { h: heights, c: neighbors, i: cells } = grid.cells;
   const inSelection = new Uint8Array(cells.length);
   const edgeDistance = new Uint16Array(cells.length);
-  const changed: number[] = [];
+  const working = Uint8Array.from(heights);
 
   selection.forEach(cell => {
     inSelection[cell] = 1;
@@ -1319,25 +1331,24 @@ function applyConeToSelection(selection: number[], isWaterFill: boolean, targetH
     const ratio = maxDistance ? edgeDistance[cell] / maxDistance : 1;
     const rise = Math.max(1, Math.round(power * ratio));
     const nextHeight = minmax(baseHeight + rise, 0, 100);
-    if (nextHeight === heights[cell]) return;
-
-    heights[cell] = nextHeight;
-    changed.push(cell);
+    working[cell] = nextHeight;
   });
-
-  return changed;
+  return commitHeightValues(heights, working, selection).affectedCellIds;
 }
 
 function dragBrush(this: SVGElement, event: any): void {
   const r = ensureEl<HTMLInputElement>("heightmapBrushRadius").valueAsNumber;
-  const [startX, startY] = getPointer(event, this);
+  const startPoint = getHeightmapPoint(event);
+  if (!startPoint) return;
+  const { x: startX, y: startY } = startPoint;
   const start = findGridCell(startX, startY, grid); // fixed once per drag: Align replicates this cell's height
 
   const applyBrush = (pointerEvent: any) => {
-    const p = getPointer(pointerEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getHeightmapPoint(pointerEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const inRadius = findGridAll(p[0], p[1], r, grid);
+    const inRadius = findGridAll(point.x, point.y, r, grid);
     let selection = inRadius;
     const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
     if (cellTypeFilter === "land") selection = inRadius.filter((i: number) => grid.cells.h[i] >= 20);
@@ -1350,6 +1361,14 @@ function dragBrush(this: SVGElement, event: any): void {
   event.on("end", updateHeightmap);
 }
 
+function getHeightmapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
+}
+
 function changeHeightForSelection(selection: number[], start: number): void {
   const power = ensureEl<HTMLInputElement>("heightmapBrushPower").valueAsNumber;
 
@@ -1358,37 +1377,38 @@ function changeHeightForSelection(selection: number[], start: number): void {
   const ocean = ensureEl<HTMLSelectElement>("cellTypeFilter").value === "water";
   const limit = (v: number): number => minmax(v, land ? 20 : 0, ocean ? 19 : 100);
   const heights = grid.cells.h;
+  const working = Uint8Array.from(heights);
 
   const brush = document.querySelector<HTMLElement>("#brushesButtons > button.pressed")!.id;
   if (brush === "brushRaise")
     selection.forEach(i => {
-      heights[i] = !ocean && heights[i] < 20 ? 20 : limit(heights[i] + power);
+      working[i] = !ocean && working[i] < 20 ? 20 : limit(working[i] + power);
     });
   else if (brush === "brushElevate")
     selection.forEach((i, d) => {
-      heights[i] = limit(heights[i] + interpolate(d / Math.max(selection.length - 1, 1)));
+      working[i] = limit(working[i] + interpolate(d / Math.max(selection.length - 1, 1)));
     });
   else if (brush === "brushLower")
     selection.forEach(i => {
-      heights[i] = limit(heights[i] - power);
+      working[i] = limit(working[i] - power);
     });
   else if (brush === "brushDepress")
     selection.forEach((i, d) => {
-      heights[i] = limit(heights[i] - interpolate(d / Math.max(selection.length - 1, 1)));
+      working[i] = limit(working[i] - interpolate(d / Math.max(selection.length - 1, 1)));
     });
   else if (brush === "brushAlign")
     selection.forEach(i => {
-      heights[i] = limit(heights[start]);
+      working[i] = limit(working[start]);
     });
   else if (brush === "brushSmooth")
     selection.forEach(i => {
-      heights[i] = rn(
+      working[i] = rn(
         ((mean(
           grid.cells.c[i]
-            .filter((c: number) => (land ? heights[c] >= 20 : ocean ? heights[c] < 20 : true))
-            .map((c: number) => heights[c])
+            .filter((c: number) => (land ? working[c] >= 20 : ocean ? working[c] < 20 : true))
+            .map((c: number) => working[c])
         ) ?? 0) +
-          heights[i] * (10 - power) +
+          working[i] * (10 - power) +
           0.6) /
           (11 - power),
         1
@@ -1396,10 +1416,11 @@ function changeHeightForSelection(selection: number[], start: number): void {
     });
   else if (brush === "brushDisrupt")
     selection.forEach(i => {
-      heights[i] = heights[i] < 15 ? heights[i] : limit(heights[i] + power / 1.6 - Math.random() * power);
+      working[i] = working[i] < 15 ? working[i] : limit(working[i] + power / 1.6 - Math.random() * power);
     });
 
-  mockHeightmapSelection(selection);
+  const mutation = commitHeightValues(heights, working, selection);
+  mockHeightmapSelection(mutation.affectedCellIds);
 }
 
 function cellTypeFilterChange(): void {
@@ -2129,4 +2150,4 @@ function downloadPreview(): void {
   };
 }
 
-export const HeightmapEditor = { open };
+export const HeightmapEditor = { open, openBlank };
