@@ -26,13 +26,27 @@ function parseAnchor(token: string): Anchor {
   return { edge: match[1] as Anchor["edge"], offset: match[2] ? Number(match[2]) : 0 };
 }
 
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+/** The true focused element, resolved through any nested open shadow roots
+ * (document.activeElement stops at the outermost shadow host). */
+function getDeepActiveElement(): Element | null {
+  let active = document.activeElement;
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+  return active;
+}
+
 class UiDialog extends HTMLElement {
   private built = false;
   private resizedHeight: string | null = null;
+  private opener: HTMLElement | null = null;
 
   constructor() {
     super();
     this.attachShadow({ mode: "open" }).appendChild(template.content.cloneNode(true));
+    this.setAttribute("role", "dialog");
+    this.setAttribute("aria-modal", "false");
+    if (!this.hasAttribute("tabindex")) this.setAttribute("tabindex", "-1");
   }
 
   connectedCallback() {
@@ -46,6 +60,7 @@ class UiDialog extends HTMLElement {
 
     const titleEl = shadow.querySelector<HTMLElement>(".ui-dialog-title")!;
     titleEl.textContent = this.getAttribute("dialog-title") || "";
+    this.setAttribute("aria-label", this.getAttribute("dialog-title") || "");
 
     const titlebar = shadow.querySelector<HTMLElement>(".ui-dialog-titlebar")!;
     titlebar.addEventListener("pointerdown", this.handleDragStart.bind(this));
@@ -56,11 +71,42 @@ class UiDialog extends HTMLElement {
     const closeButton = shadow.querySelector<HTMLButtonElement>(".ui-dialog-titlebar-close")!;
     closeButton.addEventListener("click", () => this.close());
 
-    const resizeHandle = shadow.querySelector<HTMLElement>(".ui-dialog-resize-handle")!;
-    resizeHandle.addEventListener("pointerdown", this.handleResizeStart.bind(this));
+    for (const handle of shadow.querySelectorAll<HTMLElement>(".ui-resizable-handle")) {
+      const direction = handle.dataset.dir!;
+      handle.addEventListener("pointerdown", event => this.handleResizeStart(event, direction));
+    }
 
     this.classList.toggle("has-actions", this.querySelectorAll('[slot="actions"]').length > 0);
     this.addEventListener("pointerdown", () => this.bringToFront());
+    this.addEventListener("keydown", this.handleKeydown.bind(this));
+  }
+
+  /** Every focusable element inside the dialog, in visual order: title bar
+   * buttons (shadow DOM) first, then the slotted content and action buttons. */
+  private getFocusableElements(): HTMLElement[] {
+    const shadowFocusable = Array.from(this.shadowRoot!.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    const lightFocusable = Array.from(this.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    return [...shadowFocusable, ...lightFocusable].filter(el => !el.hasAttribute("disabled") && el.offsetParent !== null);
+  }
+
+  /** Trap Tab/Shift+Tab inside the dialog while it's open, matching jQuery UI dialogs. */
+  private handleKeydown(event: KeyboardEvent) {
+    if (event.key !== "Tab") return;
+
+    const focusable = this.getFocusableElements();
+    if (!focusable.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = getDeepActiveElement();
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   private handleDragStart(event: PointerEvent) {
@@ -87,7 +133,10 @@ class UiDialog extends HTMLElement {
     window.addEventListener("pointerup", handleUp);
   }
 
-  private handleResizeStart(event: PointerEvent) {
+  /** Resize from any of the 8 handles, jQuery UI resizable-style: dragging from the
+   * top or left edge/corner keeps the opposite edge anchored by adjusting left/top
+   * as the size changes, instead of only growing away from a fixed origin. */
+  private handleResizeStart(event: PointerEvent, direction: string) {
     event.preventDefault();
     event.stopPropagation();
 
@@ -96,16 +145,34 @@ class UiDialog extends HTMLElement {
     const rect = this.getBoundingClientRect();
     const startWidth = rect.width;
     const startHeight = rect.height;
-    // Clamp to both a viewport-relative cap and the space actually available from the
-    // dialog's current position, so resizing never pushes it past the viewport edge.
-    const maxWidth = Math.min(window.innerWidth * 0.93, window.innerWidth - rect.left - 8);
-    const maxHeight = Math.min(window.innerHeight * 0.93, window.innerHeight - rect.top - 8);
+    const startLeft = rect.left;
+    const startTop = rect.top;
+    const minWidth = 150;
+    const minHeight = 100;
     this.bringToFront();
 
     const handleMove = (moveEvent: PointerEvent) => {
       this.classList.add("resized");
-      this.style.width = `${Math.min(maxWidth, Math.max(150, startWidth + moveEvent.clientX - startX))}px`;
-      this.style.height = `${Math.min(maxHeight, Math.max(100, startHeight + moveEvent.clientY - startY))}px`;
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      if (direction.includes("e")) {
+        const maxWidth = window.innerWidth - startLeft - 8;
+        this.style.width = `${Math.min(maxWidth, Math.max(minWidth, startWidth + dx))}px`;
+      } else if (direction.includes("w")) {
+        const width = Math.max(minWidth, Math.min(startWidth - dx, startLeft + startWidth));
+        this.style.width = `${width}px`;
+        this.style.left = `${startLeft + startWidth - width}px`;
+      }
+
+      if (direction.includes("s")) {
+        const maxHeight = window.innerHeight - startTop - 8;
+        this.style.height = `${Math.min(maxHeight, Math.max(minHeight, startHeight + dy))}px`;
+      } else if (direction.includes("n")) {
+        const height = Math.max(minHeight, Math.min(startHeight - dy, startTop + startHeight));
+        this.style.height = `${height}px`;
+        this.style.top = `${startTop + startHeight - height}px`;
+      }
     };
 
     const handleUp = () => {
@@ -152,15 +219,23 @@ class UiDialog extends HTMLElement {
 
   open(options?: { title?: string }) {
     if (options?.title) this.dialogTitle = options.title;
+    this.opener = getDeepActiveElement() as HTMLElement | null;
     this.removeAttribute("minimized");
     this.setAttribute("open", "");
     this.bringToFront();
     this.dispatchEvent(new CustomEvent("ui-dialog-open", { bubbles: true }));
+
+    requestAnimationFrame(() => {
+      const [firstFocusable] = this.getFocusableElements();
+      (firstFocusable ?? this).focus();
+    });
   }
 
   close() {
     this.removeAttribute("open");
     this.dispatchEvent(new CustomEvent("ui-dialog-close", { bubbles: true }));
+    this.opener?.focus();
+    this.opener = null;
   }
 
   toggleMinimize(force?: boolean) {
@@ -183,6 +258,7 @@ class UiDialog extends HTMLElement {
 
   set dialogTitle(value: string) {
     this.setAttribute("dialog-title", value);
+    this.setAttribute("aria-label", value);
     const titleEl = this.shadowRoot?.querySelector<HTMLElement>(".ui-dialog-title");
     if (titleEl) titleEl.textContent = value;
   }
