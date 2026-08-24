@@ -158,7 +158,7 @@ You can, but I doubt you will enjoy the experience. The Generator GUI is not sui
 
 ### What about non-English localization?
 
-Localization is planned, but not ready from the coding side. Preparation can take a lot of time as it's not a current priority. As for now, open Options and click on the 'Init Google Translate' button in the Language row, then select a language. It's machine translation and it can break some of the page functionality; use the reset icon or refresh the page to get back to English
+Localization is planned, but not ready from the coding side. Preparation can take a lot of time as it's not a current priority. As for now, open Options and click on the 'Init Google Translate' button in the Language row, then select a language. It's machine translation and it can break some of the page functionality; use the reset icon or refresh the page to get back to English. There is also a community-made Chinese localization at https://www.8desk.top
 
 ### What does Azgaar mean?
 
@@ -639,3 +639,171 @@ Reload the page: the version is displayed under the logo on the loading screen a
 ### How to see the whole map? I can only see a portion of it
 
 To see the whole map set the zoom to a minimal level. You can also press the '-' key to zoom out. If it's still not the whole map, try changing the Zoom Extent min value to a fraction of 1, e.g. 0.6. This will help is the map canvas you are working is bigger than your browser window.
+
+### Does the Generator simulate economy and trade?
+
+Yes. FMG has an economy layer: cells can hold a resource (good), rural population produces raw goods, burgs manufacture goods from recipes, markets collect and price everything, surpluses are traded between markets and states collect taxes from the deals. It's a single calculated cycle, not a running simulation - the numbers change only when you regenerate the economy, not over time. Toggle the Goods, Markets and Trade layers to see it on the map
+
+### What are goods?
+
+Goods are resources and products like grain, iron, wood or wine. Raw goods are produced by the rural population depending on the biome, and a cell can also hold a bonus resource that boosts one specific good there. Manufactured goods are produced in burgs from recipes, using ingredients bought on the market. Open Tools -> Goods to see the full list with production and stock numbers, filter goods by tags, add your own good, or click on a good to edit its value, demand and multipliers
+
+### What is a market?
+
+A market is a regional economic hub anchored at a burg. Markets are placed on the biggest burgs (capitals and ports get a bonus) and their territories expand over the surrounding cells following routes and avoiding mountains and state borders. Every flow of goods passes through a market: rural cells deliver their production, burgs buy ingredients and sell products, and markets trade surpluses with each other. Toggle the Markets layer to see the territories, click on a territory to open the Market Stock dialog, or open Tools -> Markets for the overview
+
+### How is production calculated?
+
+Rural cells produce raw goods based on population, biome output and multipliers (culture type, culture, state, religion and biome). Burgs produce manufactured goods: for each recipe they buy the ingredients from their market and sell the output back to it. Prices are set per market from supply and demand, so the same good costs differently in different places. Click on a burg plate in the Goods layer or use the production button in the Burg Editor to open the Production Overview for that burg. Tools -> Goods -> production chains shows how goods depend on each other
+
+### How does trade work? What is the Trade layer?
+
+After production every market compares its prices with other markets and buys where a good is cheap and sells where it's expensive, if the route makes it profitable - distance, land and sea friction and the exporter's sales tax are all taken into account. Each transaction is stored as a deal. The Trade layer animates deals as flows moving between burgs; click on a flow to see the deals behind it. Tools -> Trade opens the Trade Animation editor where you can change the speed and the look of the animation
+
+### Where can I see how rich a state is? What are the taxes?
+
+Open Tools -> States: there is a Treasury column, and clicking on a value opens the taxes dialog for that state. Each state has a Sales tax, applied to deals where the state is the seller, and a Poll tax, a flat fee per population point. Base rates depend on the state form (a Theocracy taxes sales heavily, a Monarchy taxes people more, an Anarchy collects nothing) and are randomized a bit per state. Neutral lands collect nothing
+
+### How do I regenerate the economy?
+
+Tools -> Regenerate has the relevant buttons: Goods re-places bonus resources on the cells, Markets rebuilds markets and their territories, Production recalculates production and trade deals, and Economy does all of it at once, including state taxes. The Goods and Markets editors have the same buttons at the bottom of the dialog
+
+### Can I place a resource where I want? How to assign goods to cells manually?
+
+Yes. Open Tools -> Goods, click on the brush button and paint the good on the map. A cell can hold only one good. Where a good can appear automatically is defined by its distribution expression, which you can edit in the good's own dialog - see the Goods spread functions wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions
+
+### Where can I compare prices between markets?
+
+Open Tools -> Markets and click on the compare button, or open a good in the Goods Editor and use the compare option there. The Compare Prices dialog shows the stock and the price of the selected good in every market, so you can find where it's cheap and where it's expensive
+
+### Is there a 3D view?
+
+Yes. Open the Layers tab and use the View mode buttons at its bottom: Standard, 3D scene and Globe. The 3D scene shows your heightmap as a 3D landscape. The settings dialog opens with it (press O to toggle it) and lets you change height scale, lighting, sun position, time of day presets, sky and water, 3D labels and more. The 3D view is presentation-only, you cannot edit the map while it's open
+
+### Can I see my map as a globe?
+
+Yes, open the Layers tab and switch the View mode to Globe. The map is projected onto a sphere with an equirectangular projection, so maps with a 2:1 aspect ratio look best and distortion is the strongest near the poles. Texture resolution and auto-rotation speed can be set in the 3D settings dialog
+
+### Can I make the 3D terrain look more realistic?
+
+There are two options for that in the 3D settings. 'Eroded terrain' bakes a dense detailed mesh with ridges, gullies and carved river valleys (mesh detail, gully strength and river valleys depth are configurable). 'Satellite texture' replaces the map texture with a procedural satellite-like render: biome colors, rock and snow on slopes, and animated water. Both are display-only, they never change your heightmap data
+
+### Can I export the 3D scene?
+
+Yes. The 3D settings dialog has a screenshot button that saves the current view as a .jpeg, and an OBJ export button that saves the terrain mesh as an .obj file for Blender and similar tools (the eroded mesh produces large files). OBJ export is not available in Globe mode
+
+### How do I switch between political, cultural and other map types?
+
+Use the Layers preset select at the top of the Layers tab: Political, Cultural, Religions, Provinces, Biomes, Heightmap, Physical, Places of interest, Goods, Trade animation, Military, Emblems and Pure landmass. You can also toggle individual layers and save the current combination as your own preset with the plus button
+
+### Is there a minimap?
+
+Yes, Tools -> Show -> Minimap. It displays the whole map with the current viewport marked, click anywhere on the minimap to center the view there
+
+### How can I see all the data for a particular cell?
+
+Open Tools -> Cells (Shift + E) and move the pointer over the map. The Cell info panel shows the cell id, coordinates, latitude, longitude, geozone, area, feature type, elevation and depth, temperature, precipitation, river, biome, population, state, province, culture, religion, burg, assigned good, market and production
+
+### Are there any statistics or charts?
+
+Yes, Tools -> Show -> Charts (Shift + A). You can plot states, cultures, religions, provinces, biomes and other entities by total, urban or rural population, land area or number of cells, group them by another entity and display the result as a stacked or normalized bar chart
+
+### How do I quickly open the style of a layer?
+
+Ctrl + click on a layer button in the Layers tab opens the Style tab with that element already selected. Most editors also have a style button (brush or adjust icon) that opens the Style editor for their layer
+
+### How do religions work?
+
+Religions are generated on top of cultures. A Folk religion belongs to a single culture and spreads with it, an Organized religion spreads across cultures and states, a Cult is small and local, and a Heresy splits off from an existing organized religion. Open Tools -> Religions to rename and recolor them, change type and expansion, repaint the borders with the brush, add or remove religions, see the hierarchy tree and toggle extinct ones
+
+### What are zones?
+
+Zones are arbitrary highlighted areas used for events and world-building: invasions, rebels, proselytism, crusades, diseases, disasters, eruptions, avalanches, faults, floods and tsunamis. They are generated automatically and edited in Tools -> Zones (Shift + Z), where you can add a zone, paint its cells, change its type, color and description, filter zones by type and hide the ones you don't need
+
+### How are routes generated? Can I add a road?
+
+Routes are generated between burgs and grouped into roads, trails and sea routes. Open Tools -> Routes to browse them, lock the ones you want to keep and remove the unlocked ones. To add a route use Tools -> Add -> Route (Shift + 5), or the 'create a new route selecting route cells' button in the Routes Overview, and click the cells the route should pass. Click on a route on the map to edit its points, group and name, or to see its elevation profile
+
+### Can I create my own type of road?
+
+Yes, route groups are configurable. Open a route (or the Routes Overview) and go to the route groups editor: there you can add a group, set its style and move routes between groups
+
+### How do I add my own description to a state, burg or marker?
+
+Every map object can have a note (legend). Click on the object and use its notes button, or open Tools -> Notes to browse all notes. The notes editor is a rich text editor, so you can add formatting, links, images, and raw HTML through the source code button
+
+### Can AI generate descriptions for my world?
+
+Yes. The Notes editor has a 'Generate note with AI' button. You can use OpenAI, Anthropic or a local Ollama model; the model and the API key are entered in the dialog and stored in your browser only. See the Ollama text generation wiki page for a local setup that needs no API key: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation
+
+### How do emblems (coats of arms) work?
+
+Emblems are generated for states, provinces and burgs and drawn in the Emblems layer. Click on an emblem or open Tools -> Emblems to regenerate it, change its shape and size, edit it in Armoria (a dedicated heraldry editor), download it as an image or upload your own png, jpg or svg. Tools -> Regenerate -> Emblems re-rolls all of them, and the editor can export the whole gallery as an html document
+
+### How do markers work? Can I add my own marker types?
+
+Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (any emoji or an image URL), size, pin shape and colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
+
+### How do I protect my manual changes from being overwritten by regeneration?
+
+Use locks. States, provinces, cultures, religions, burgs, routes and markers have a lock icon, and locked elements are skipped by the corresponding Regenerate command. Options rows have lock icons too - a locked option keeps its value when you generate a new map
+
+### What are burg groups?
+
+Burg groups (capital, city, town, village, hamlet, fort, monastery and others) define which icon and label style a burg gets and which preview generator is used for it. Groups are assigned automatically by population and burg features, but you can change the group of a particular burg in the Burg Editor and edit the criteria, order and icons in the Burg Groups configurator
+
+### Can I see a city map for my burg?
+
+Yes. Click on a burg to open the Burg Editor - it shows a live preview generated by Watabou's generators: the City generator for cities, the Village generator for smaller settlements and Dwellings for the smallest ones. You can zoom and pan the preview, open the full generator in a new tab, or set a custom link for the burg
+
+### How do I save my own map style?
+
+Open the Style tab and click on the plus button next to the preset select to save the current style as a custom preset. The Style Saver dialog also lets you download the style as a .json file and load a style file back, so styles can be reused and shared between maps
+
+### Can I use my own font?
+
+Yes. In the Style editor, next to a font select there is a plus button that opens the Add font dialog. You can add a Google font by name, use a font installed on your machine, or provide a font name together with a direct URL to a font file (woff2). Fonts loaded from external URLs require an internet connection
+
+### What is the Legend box and how do I use it?
+
+The Legend box is a text box drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that fills it with the list of the corresponding elements. The box can be dragged around the map and restyled in Style -> Legend
+
+### Can I highlight one state and dim the rest?
+
+Yes, use the focus (pin) icon. Open Tools -> States (or Provinces) and click on the pin icon of the element you want to focus on - everything else gets covered by the fog of war. Click the pin again to remove the fog
+
+### Are there any keyboard shortcuts?
+
+Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors
+
+### Where can I find the documentation?
+
+The wiki is the main documentation: https://github.com/Azgaar/Fantasy-Map-Generator/wiki. It covers the Quick Start Tutorial, hotkeys, the user interface, heightmap customization and the template editor, culture sets and types, military forces, markers, the battle simulator, scale and distance, URL parameters, GIS data export and more. The About tab in the app links to the key pages
+
+### Is there a guided tour for beginners?
+
+Yes. Open the About tab in the menu and click on 'Take an Interactive Tour'. It walks you through the map, the menu tabs, layers and presets, and the main tools step by step
+
+### How do I generate the same map again? What is the seed?
+
+The seed is the number that defines the random generation, it's shown in Options -> Map seed. The same seed reproduces the same map only if the canvas size, the generation options and the Generator version are the same. Click on the hourglass icon next to the seed to open the seed history and re-apply a previous seed, or use the copy icon to get a URL that reproduces the map. To share the exact map it's still safer to share the .map file
+
+### How do I share my map with a link?
+
+Save the map to Dropbox (Save -> Dropbox, or Ctrl + C), then open the Load dialog and use the Share button to create a sharable link. Anyone who opens the link gets the map loaded into FMG. The file has to be hosted on a server that allows CORS requests - Dropbox does, Google Drive doesn't
+
+### How do I stop the 'don't forget to save' reminder?
+
+Press Ctrl + Q to turn the save reminder off, and press it again to turn it back on. The reminder shows up every 15 minutes and is independent of the autosave
+
+### How do I get my map into QGIS or another GIS software?
+
+Use Export -> Export to GeoJSON: cells, routes, rivers, markers and zones can be saved as separate GeoJSON files and opened in QGIS, ArcGIS and similar tools. There is a step-by-step guide in the wiki: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export
+
+### How do I find a specific state, burg or river in a long list?
+
+Overview dialogs (Burgs, Rivers, Routes, Markers, Labels, States and others) have a search field that filters the table, sortable columns, and pagination for big maps. The sliders button in the dialog header lets you show or hide columns. Click on the target icon in a row to zoom to that element on the map
+
+### Can I contribute code to the project?
+
+Yes, the project is open source and pull requests are welcome. Discuss your idea on our Discord first, then follow CONTRIBUTING.md in the repository
