@@ -9,8 +9,9 @@ describe("component startup order", () => {
   });
 
   it("starts loading the workspace when the DOM is ready without waiting for every asset", () => {
-    expect(componentsIndexSource.includes('document.readyState === "complete"')).toBe(true);
+    expect(componentsIndexSource.includes('document.readyState === "loading"')).toBe(true);
     expect(componentsIndexSource.includes('document.addEventListener("DOMContentLoaded", loadWorkspace')).toBe(true);
+    expect(componentsIndexSource.includes("else loadWorkspace()")).toBe(true);
     expect(componentsIndexSource.includes('window.addEventListener("load", loadWorkspace')).toBe(false);
   });
 });

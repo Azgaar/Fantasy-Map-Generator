@@ -38,5 +38,5 @@ initializeMapStyleControls();
 // Load the workspace as soon as the DOM is available. Waiting for `window.load`
 // can leave the map without its controls when an unrelated asset stalls.
 const loadWorkspace = () => void import("./workspace-sidebar");
-if (document.readyState === "complete") loadWorkspace();
-else document.addEventListener("DOMContentLoaded", loadWorkspace, { once: true });
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadWorkspace, { once: true });
+else loadWorkspace();

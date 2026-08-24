@@ -87,6 +87,12 @@ function DomDialogView({
     host.appendChild(content);
 
     let measureFrame = 0;
+    const observerOptions: MutationObserverInit = {
+      attributes: true,
+      attributeFilter: ["hidden", "style"],
+      childList: true,
+      subtree: true
+    };
     const measurePanel = () => {
       if (window.innerWidth <= 760) {
         setPanelWidth(undefined);
@@ -99,27 +105,47 @@ function DomDialogView({
         return;
       }
 
-      const maximumWidth = window.innerWidth - 40;
-      if (table.scrollWidth <= table.clientWidth + 1) {
-        setPanelWidth(undefined);
-        return;
+      mutationObserver.disconnect();
+      const measurementTable = table.cloneNode(true) as HTMLElement;
+      let intrinsicTableWidth = 0;
+      try {
+        measurementTable.removeAttribute("id");
+        measurementTable.querySelectorAll<HTMLElement>("[id]").forEach(element => element.removeAttribute("id"));
+        measurementTable.style.setProperty("position", "fixed", "important");
+        measurementTable.style.setProperty("top", "0", "important");
+        measurementTable.style.setProperty("left", "-100000px", "important");
+        measurementTable.style.setProperty("width", "max-content", "important");
+        measurementTable.style.setProperty("min-width", "0", "important");
+        measurementTable.style.setProperty("max-width", "none", "important");
+        measurementTable.style.setProperty("height", "auto", "important");
+        measurementTable.style.setProperty("max-height", "none", "important");
+        measurementTable.style.setProperty("overflow", "visible", "important");
+        measurementTable.style.setProperty("visibility", "hidden", "important");
+        measurementTable.style.setProperty("pointer-events", "none", "important");
+        measurementTable.querySelectorAll<HTMLElement>(":scope > .header, :scope > .states").forEach(row => {
+          row.style.setProperty("width", "max-content", "important");
+          row.style.setProperty("min-width", "0", "important");
+        });
+        content.appendChild(measurementTable);
+        intrinsicTableWidth = measurementTable.scrollWidth;
+      } finally {
+        measurementTable.remove();
+        mutationObserver.takeRecords();
+        mutationObserver.observe(content, observerOptions);
       }
 
-      const expandedWidth = Math.min(Math.max(560, Math.ceil(table.scrollWidth) + 24), maximumWidth);
+      const panel = host.closest<HTMLElement>(".fmg-editor-panel");
+      const panelChromeWidth = panel ? Math.max(0, panel.offsetWidth - table.clientWidth) : 0;
+      const maximumWidth = window.innerWidth - 40;
+      const expandedWidth = Math.min(Math.max(560, Math.ceil(intrinsicTableWidth + panelChromeWidth)), maximumWidth);
       setPanelWidth(expandedWidth > 560 ? expandedWidth : undefined);
     };
     const scheduleMeasurement = () => {
       window.cancelAnimationFrame(measureFrame);
-      setPanelWidth(undefined);
       measureFrame = window.requestAnimationFrame(measurePanel);
     };
     const mutationObserver = new MutationObserver(scheduleMeasurement);
-    mutationObserver.observe(content, {
-      attributes: true,
-      attributeFilter: ["hidden", "style"],
-      childList: true,
-      subtree: true
-    });
+    mutationObserver.observe(content, observerOptions);
     const handleViewportResize = (event: UIEvent) => {
       if (event.isTrusted) scheduleMeasurement();
     };
