@@ -430,6 +430,7 @@ async function generate(config?: string | RegenerateOptions) {
       app.grid.cells.h = await measureStep("generation:grid:heightmap", () => HeightmapGenerator.generate(app.grid));
       app.pack = {} as PackedGraph;
     });
+    await yieldGeneration("grid");
 
     measureStep("generation:climate", () => {
       measureStep("generation:features:grid", () => Features.markupGrid());
@@ -443,6 +444,7 @@ async function generate(config?: string | RegenerateOptions) {
       measureStep("generation:temperature", () => calculateTemperatures());
       measureStep("generation:precipitation", () => generatePrecipitation());
     });
+    await yieldGeneration("climate");
 
     measureStep("generation:repack", () => {
       measureStep("generation:graph:repack", () => reGraph());
@@ -454,6 +456,7 @@ async function generate(config?: string | RegenerateOptions) {
       measureStep("generation:ice", () => Ice.generate());
       measureStep("generation:goods", () => Goods.generate());
     });
+    await yieldGeneration("repack");
 
     measureStep("generation:settlements", () => {
       rankCells();
@@ -473,6 +476,7 @@ async function generate(config?: string | RegenerateOptions) {
       Rivers.specify();
       Lakes.defineNames();
     });
+    await yieldGeneration("settlements");
 
     measureStep("generation:economy-and-overlays", () => {
       measureStep("generation:markets", () => Markets.generate());
@@ -512,6 +516,14 @@ async function generate(config?: string | RegenerateOptions) {
   } finally {
     if (generationGroupOpen) console.groupEnd();
   }
+}
+
+async function yieldGeneration(stage: string): Promise<void> {
+  window.dispatchEvent(new CustomEvent("map:generation-progress", { detail: { stage } }));
+  const browserScheduler = (globalThis as typeof globalThis & { scheduler?: { yield?: () => Promise<void> } })
+    .scheduler;
+  if (browserScheduler?.yield) return browserScheduler.yield();
+  await new Promise<void>(resolve => setTimeout(resolve, 0));
 }
 
 // set map seed (string!)
@@ -603,6 +615,14 @@ function openNearSeaLakes() {
   if (!features.find(f => f.type === "lake")) return; // no lakes
   TIME && console.time("openLakes");
   const LIMIT = 22; // max height that can be breached by water
+  const lakeCells = new Map<number, number[]>();
+  for (const cellId of cells.i) {
+    const featureId = cells.f[cellId];
+    if (features[featureId].type !== "lake") continue;
+    const indexed = lakeCells.get(featureId);
+    if (indexed) indexed.push(cellId);
+    else lakeCells.set(featureId, [cellId]);
+  }
 
   for (const i of cells.i) {
     const lakeFeatureId = cells.f[i];
@@ -628,9 +648,7 @@ function openNearSeaLakes() {
       if (cells.h[c] >= 20) cells.t[c] = 1; // mark as coastline
     });
 
-    cells.i.forEach(i => {
-      if (cells.f[i] === lakeFeatureId) cells.f[i] = oceanFeatureId;
-    });
+    for (const cellId of lakeCells.get(lakeFeatureId) ?? []) cells.f[cellId] = oceanFeatureId;
     features[lakeFeatureId].type = "ocean"; // mark former lake as ocean
   }
 

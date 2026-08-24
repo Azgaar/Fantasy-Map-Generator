@@ -7,7 +7,9 @@ import { capturePixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibili
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
-import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
+import { ensureEl, getFileName, link, parseError } from "@/utils";
+import type { MapDataSection } from "./map-data-serializer";
+import { serializeMapSectionsInWorker } from "./map-data-serializer-client";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
@@ -16,12 +18,13 @@ async function saveMap(method: SaveMethod): Promise<void> {
   closeDialogs("#alert");
 
   try {
-    const mapData = prepareMapData();
+    const mapData = await prepareMapData();
     const filename = `${getFileName()}.map`;
 
     if (method === "storage") await saveToStorage(mapData, true);
     if (method === "machine") saveToMachine(mapData, filename);
     if (method === "dropbox") await saveToDropbox(mapData, filename);
+    window.dispatchEvent(new Event("map:saved"));
   } catch (error) {
     ERROR && console.error(error);
     const messageHtml = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
@@ -39,7 +42,8 @@ async function saveMap(method: SaveMethod): Promise<void> {
   }
 }
 
-function prepareMapData(): string {
+async function prepareMapData(): Promise<string> {
+  await waitForMainThreadIdle();
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
@@ -73,10 +77,7 @@ function prepareMapData(): string {
     "", // previously used for longitudeOutput.value, part of options now
     ensureEl<HTMLInputElement>("growthRate").value
   ].join("|");
-  const coords = JSON.stringify(mapCoordinates);
-  const notesData = JSON.stringify(notes);
-  const measurers = JSON.stringify(pack.measurers ?? []);
-  const fonts = JSON.stringify(getUsedFonts(ensureEl("map") as Element as SVGSVGElement));
+  const fonts = getUsedFonts(ensureEl("map") as Element as SVGSVGElement);
 
   // The SVG slot is retained temporarily for unmigrated overlay data. Pixi-owned layers are intentionally absent.
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
@@ -103,28 +104,9 @@ function prepareMapData(): string {
   const serializedSVG = new XMLSerializer().serializeToString(cloneEl);
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
-  const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
-  const packFeatures = JSON.stringify(pack.features);
-  const biomes = JSON.stringify(pack.biomes);
-  const cultures = JSON.stringify(pack.cultures);
-  const states = JSON.stringify(pack.states);
-  const burgs = JSON.stringify(pack.burgs);
-  const religions = JSON.stringify(pack.religions);
-  const provinces = JSON.stringify(pack.provinces);
-  const rivers = JSON.stringify(pack.rivers);
-  const relief = JSON.stringify(pack.relief || []);
-  const markers = JSON.stringify(pack.markers);
-  const cellRoutes = JSON.stringify(pack.cells.routes);
-  const routes = JSON.stringify(pack.routes);
-  const zones = JSON.stringify(pack.zones);
-  const ice = JSON.stringify(pack.ice);
-  const goods = JSON.stringify(pack.goods);
-  const markets = JSON.stringify(pack.markets || []);
-  const deals = JSON.stringify(pack.deals || []);
-  const labels = JSON.stringify(pack.addedLabels || []);
+  const gridGeneral = { spacing, cellsX, cellsY, boundary, points, features, cellsDesired };
   capturePixiLayerVisibility(style, controlId => window.LayerControls.isLayerOn(controlId));
   style.mapLayerOrder = LayerControls.getLayerOrder();
-  const styleData = JSON.stringify(style);
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");
@@ -142,63 +124,66 @@ function prepareMapData(): string {
     })
     .join("/");
 
-  // round population to save space
-  const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
+  const text = (value = ""): MapDataSection => ({ kind: "text", value });
+  const json = (value: unknown): MapDataSection => ({ kind: "json", value });
+  const csv = (value: ArrayLike<number>): MapDataSection => ({ kind: "csv", value });
+  return serializeMapSectionsInWorker([
+    text(params),
+    text(settings),
+    json(mapCoordinates),
+    json(pack.biomes),
+    json(notes),
+    text(serializedSVG),
+    json(gridGeneral),
+    csv(grid.cells.h),
+    csv(grid.cells.prec),
+    csv(grid.cells.f),
+    csv(grid.cells.t),
+    csv(grid.cells.temp),
+    json(pack.features),
+    json(pack.cultures),
+    json(pack.states),
+    json(pack.burgs),
+    csv(pack.cells.biome),
+    csv(pack.cells.burg),
+    csv(pack.cells.conf),
+    csv(pack.cells.culture),
+    csv(pack.cells.fl),
+    { kind: "rounded-csv", value: pack.cells.pop },
+    csv(pack.cells.r),
+    text(),
+    csv(pack.cells.s),
+    csv(pack.cells.state),
+    csv(pack.cells.religion),
+    csv(pack.cells.province),
+    text(),
+    json(pack.religions),
+    json(pack.provinces),
+    text(namesData),
+    json(pack.rivers),
+    text(),
+    json(fonts),
+    json(pack.markers),
+    json(pack.cells.routes),
+    json(pack.routes),
+    json(pack.zones),
+    json(pack.ice),
+    csv(pack.cells.good),
+    json(pack.goods),
+    json(pack.markets || []),
+    json(pack.deals || []),
+    csv(pack.cells.market),
+    text(customGoodIcons),
+    json(pack.measurers ?? []),
+    json(pack.addedLabels || []),
+    json(style),
+    json(pack.relief || [])
+  ]);
+}
 
-  // data format as below
-  const mapData = [
-    params,
-    settings,
-    coords,
-    biomes,
-    notesData,
-    serializedSVG,
-    gridGeneral,
-    grid.cells.h,
-    grid.cells.prec,
-    grid.cells.f,
-    grid.cells.t,
-    grid.cells.temp,
-    packFeatures,
-    cultures,
-    states,
-    burgs,
-    pack.cells.biome,
-    pack.cells.burg,
-    pack.cells.conf,
-    pack.cells.culture,
-    pack.cells.fl,
-    pop,
-    pack.cells.r,
-    [], // deprecated pack.cells.road
-    pack.cells.s,
-    pack.cells.state,
-    pack.cells.religion,
-    pack.cells.province,
-    [], // deprecated pack.cells.crossroad
-    religions,
-    provinces,
-    namesData,
-    rivers,
-    "", // rulers are deprecated, use pack.measurers instead
-    fonts,
-    markers,
-    cellRoutes,
-    routes,
-    zones,
-    ice,
-    pack.cells.good,
-    goods,
-    markets,
-    deals,
-    pack.cells.market,
-    customGoodIcons,
-    measurers,
-    labels,
-    styleData,
-    relief
-  ].join("\r\n");
-  return mapData;
+function waitForMainThreadIdle(): Promise<void> {
+  if (!("requestIdleCallback" in window)) return Promise.resolve();
+  return new Promise(resolve => window.requestIdleCallback(() => resolve(), { timeout: 250 }));
 }
 
 // save map file to indexedDB

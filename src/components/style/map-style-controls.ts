@@ -1,4 +1,4 @@
-import { invalidatePixiRendererLayer, queuePixiRendererRebuild } from "@/renderers/pixi/pixi-renderer-controller";
+import { invalidatePixiRendererStyle, queuePixiRendererRebuild } from "@/renderers/pixi/pixi-renderer-controller";
 import type { PixiOwnedLayer } from "@/renderers/pixi/pixi-renderer-ownership";
 import {
   applyLegacyStylePresetToMapStyle,
@@ -121,7 +121,7 @@ export function initializeMapStyleControls(): void {
     getTemperatureStyle() {
       return structuredClone(getMapRendererStyle(style).temperature);
     },
-    invalidateLayer: invalidatePixiRendererLayer,
+    invalidateLayer: invalidatePixiRendererStyle,
     setAreaFillColor(layer, color) {
       updateStyle(layer, rendererStyle => {
         rendererStyle[layer].fill.color = color;
@@ -283,7 +283,7 @@ function updateStyle(
   const rendererStyle = getMapRendererStyle(style);
   update(rendererStyle);
   style.mapRenderer = rendererStyle;
-  invalidatePixiRendererLayer(layer);
+  invalidatePixiRendererStyle(layer);
 }
 
 function assignStyleValue<T extends object>(target: T, property: string | number | symbol, value: StyleValue): void {

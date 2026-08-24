@@ -26,21 +26,19 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
       await page.goto(`/?${query}`);
       await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), { timeout: 120_000 });
 
+      const timeToMapStarted = performance.now();
       await loadFixture(page, fixture);
       await page.waitForFunction(() => (window as any).MapPerformance?.getRendererSnapshot()?.enabled === true, {
         timeout: 120_000
       });
+      const timeToMap = performance.now() - timeToMapStarted;
 
       const firstPaint = await page.evaluate(async () => {
+        const before = (window as any).MapPerformance.getRendererSnapshot()?.commitSequence ?? 0;
         const started = performance.now();
         (window as any).drawLayers();
-        await nextPaint();
+        await (window as any).MapPerformance.whenRendererCommitted(before);
         return performance.now() - started;
-
-        async function nextPaint(): Promise<void> {
-          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-        }
       });
 
       const cameraFrames = await page.evaluate(async sampleCount => {
@@ -57,10 +55,10 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
       const layerChanges = await page.evaluate(async sampleCount => {
         const durations: number[] = [];
         for (let index = 0; index < sampleCount; index++) {
+          const before = (window as any).MapPerformance.getRendererSnapshot()?.commitSequence ?? 0;
           const started = performance.now();
           (window as any).toggleStates();
-          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+          await (window as any).MapPerformance.whenRendererCommitted(before);
           durations.push(performance.now() - started);
         }
         return durations;
@@ -80,7 +78,7 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
               }
             : null,
           deviceMemoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
-          domNodes: document.querySelectorAll("#map *").length,
+          domNodes: document.querySelectorAll("*").length,
           hardwareConcurrency: navigator.hardwareConcurrency,
           jsHeapBytes: memory?.usedJSHeapSize ?? null,
           layerSet: Array.from(document.querySelectorAll<HTMLElement>("#mapLayers > li:not(.buttonoff)"), layer => layer.id),
@@ -92,6 +90,7 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
       });
 
       const observations: RendererBenchmarkObservation[] = [
+        { duration: timeToMap, phase: "time-to-map", sequence: 0 },
         { duration: firstPaint, phase: "first-paint", sequence: 0 },
         ...toObservations("camera-frame", cameraFrames),
         ...toObservations("layer-change", layerChanges),
@@ -131,6 +130,9 @@ for (const { backend, fixture, run } of BENCHMARK_CASES) {
       };
 
       expect(report.observations.length).toBeGreaterThan(CAMERA_SAMPLES + LAYER_SAMPLES);
+      expect(report.summaries["camera-frame"]?.p95 ?? Infinity).toBeLessThan(150);
+      expect(report.summaries["layer-change"]?.p95 ?? Infinity).toBeLessThan(fixture.kind === "generated" ? 2500 : 3000);
+      expect(report.summaries["time-to-map"]?.p95 ?? Infinity).toBeLessThan(120_000);
       await testInfo.attach("renderer-benchmark-report", {
         body: JSON.stringify(report),
         contentType: "application/json"

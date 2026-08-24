@@ -36,7 +36,7 @@ import {
   type RendererResolutionPolicy,
   selectRendererResolution
 } from "../core/resolution";
-import { DEFAULT_RENDERER_RESOURCE_BUDGET, RendererResourceTracker } from "../core/resource-budget";
+import { RendererResourceTracker, selectRendererResourceBudget } from "../core/resource-budget";
 import { RendererResourceCache, type RendererResourceHandle } from "../core/resource-cache";
 import {
   clear as clearTradeAnimation,
@@ -106,6 +106,7 @@ export interface PixiRendererSnapshot {
   buildDuration: number;
   cameraScale: number;
   cells: number;
+  commitSequence: number;
   contextLost: boolean;
   diagnostics: RenderDiagnosticsSnapshot;
   enabled: boolean;
@@ -138,6 +139,8 @@ export interface PixiRendererSnapshot {
   viewportHeight: number;
   viewportWidth: number;
 }
+
+export type PixiSceneChangeKind = "animation" | "content";
 
 type CellFillLayer = "biomes" | "cultures" | "provinces" | "religions" | "states";
 
@@ -189,12 +192,26 @@ interface CoordinateLabelDisplay {
 }
 
 const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cultures", "states", "provinces"];
+const INCREMENTAL_LAYERS = new Set<MapLayerId>([
+  ...CELL_FILL_LAYERS,
+  "borders",
+  "cells",
+  "grid",
+  "ice",
+  "markets",
+  "population",
+  "precipitation",
+  "rivers",
+  "routes",
+  "temperature",
+  "zones"
+]);
 const LABEL_ATLAS_REFRESH_DELAY_MS = 100;
 
 export interface PixiMapRendererOptions {
   deviceMemoryGb?: number;
   getDevicePixelRatio?: () => number;
-  onSceneChange?: () => void;
+  onSceneChange?: (kind: PixiSceneChangeKind) => void;
   pickTolerancePixels?: number;
   preference?: "webgl" | "webgpu";
   recordPerformance?: (name: string, duration: number) => void;
@@ -243,7 +260,10 @@ export class PixiMapRenderer implements MapRenderer {
   private coordinateLabelDisplays: CoordinateLabelDisplay[] = [];
   private coordinateLongitudeSpan = 0;
   private layerOrder = MAP_LAYER_REGISTRY.map(layer => layer.id);
+  private layerContainers = new Map<MapLayerId, Container>();
   private layerVisibility = new Map<MapLayerId, boolean>();
+  private dirtyLayers = new Set<MapLayerId>();
+  private hiddenLayerCleanupTimer: ReturnType<typeof setTimeout> | null = null;
   private labelAtlasDisplays: LabelAtlasDisplay[] = [];
   private labelAtlasQueuedResolution = 0;
   private labelAtlasRefreshSequence = 0;
@@ -255,6 +275,7 @@ export class PixiMapRenderer implements MapRenderer {
   private emblemSourceCache = new Map<string, Promise<string | null>>();
   private emblemTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private glyphAtlasCache: GlyphAtlasCache;
+  private glyphBudgetBytes: number;
   private glyphAtlasHandles = new Set<RendererResourceHandle<GlyphAtlasDescriptor>>();
   private markerDisplays = new Map<number, { container: Container; baseSize: number; rescale: boolean }>();
   private pointTextureHandles = new Set<RendererResourceHandle<Texture>>();
@@ -264,10 +285,11 @@ export class PixiMapRenderer implements MapRenderer {
   private reliefTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private rendererFilters = new Set<{ destroy(): void }>();
   private resizeFrameId: number | null = null;
-  private resources = new RendererResourceTracker();
+  private resources: RendererResourceTracker;
   private resizeObserver: ResizeObserver | null = null;
   private scheduler: RenderScheduler | null = null;
   private semanticStyle: MapStyle = structuredClone(DEFAULT_PIXI_MAP_STYLE);
+  private queuedStyle: MapStyle | null = null;
   private sceneRevisions = new WorldSceneRevisionTracker();
   private surface: HTMLElement | null = null;
   private topologyCache = new RetainedCellTopologyCache();
@@ -280,11 +302,13 @@ export class PixiMapRenderer implements MapRenderer {
   private tradeSubscriptionRelease: (() => void) | null = null;
   private textureCache: RendererResourceCache<Texture>;
   private world: MapRenderWorld | null = null;
+  private commitWaiters = new Set<{ after: number; resolve: (sequence: number) => void }>();
   private stats: PixiRendererSnapshot = {
     batches: 0,
     buildDuration: 0,
     cameraScale: 1,
     cells: 0,
+    commitSequence: 0,
     contextLost: false,
     diagnostics: {},
     enabled: false,
@@ -319,13 +343,16 @@ export class PixiMapRenderer implements MapRenderer {
   };
 
   constructor(private readonly rendererOptions: PixiMapRendererOptions = {}) {
+    const budget = selectRendererResourceBudget(rendererOptions.deviceMemoryGb);
+    this.resources = new RendererResourceTracker(budget);
+    this.glyphBudgetBytes = rendererOptions.glyphBudgetBytes ?? budget.glyph;
     this.glyphAtlasCache = new GlyphAtlasCache({
-      budgetBytes: rendererOptions.glyphBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.glyph,
+      budgetBytes: this.glyphBudgetBytes,
       installer: BitmapFontManager,
       tracker: this.resources
     });
     this.textureCache = new RendererResourceCache<Texture>({
-      budgetBytes: rendererOptions.textureBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.texture,
+      budgetBytes: rendererOptions.textureBudgetBytes ?? budget.texture,
       destroy: (texture, source) => {
         void Assets.unload(source).catch(() => texture.destroy(true));
       },
@@ -353,7 +380,7 @@ export class PixiMapRenderer implements MapRenderer {
 
   queueRender(world: MapRenderWorld, style: MapStyle, invalidation: RenderInvalidation): void {
     this.world = world;
-    this.semanticStyle = structuredClone(style);
+    this.queuedStyle = style;
     this.scheduler?.invalidate(invalidation);
   }
 
@@ -369,49 +396,52 @@ export class PixiMapRenderer implements MapRenderer {
     const geography = this.buildGeographyContainers();
     await this.decorateOceanContainer(sequence, geography.ocean, geography.bounds);
     if (sequence !== this.rebuildSequence) return;
-    const textureContainer = await this.buildTextureContainer(
-      sequence,
-      geography.landPolygons,
-      geography.lakePolygons,
-      geography.bounds
+    const textureContainer = await this.buildVisibleLayerAsync("texture", () =>
+      this.buildTextureContainer(sequence, geography.landPolygons, geography.lakePolygons, geography.bounds)
     );
     if (sequence !== this.rebuildSequence) return;
-    const heightContainer = this.buildHeightContainer(geography.landPolygons, geography.bounds);
-    const biomeContainer = this.buildFillContainer("biomes");
-    const cellsContainer = this.buildCellsContainer();
-    const gridContainer = this.buildGridContainer();
-    const coordinatesContainer = await this.buildCoordinatesContainer(sequence);
+    const heightContainer = this.buildVisibleLayer("height", () =>
+      this.buildHeightContainer(geography.landPolygons, geography.bounds)
+    );
+    const biomeContainer = this.buildVisibleLayer("biomes", () => this.buildFillContainer("biomes"));
+    const cellsContainer = this.buildVisibleLayer("cells", () => this.buildCellsContainer());
+    const gridContainer = this.buildVisibleLayer("grid", () => this.buildGridContainer());
+    const coordinatesContainer = await this.buildVisibleLayerAsync("coordinates", () =>
+      this.buildCoordinatesContainer(sequence)
+    );
     if (sequence !== this.rebuildSequence) return;
-    const compassContainer = await this.buildCompassContainer(sequence);
+    const compassContainer = await this.buildVisibleLayerAsync("compass", () => this.buildCompassContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const riverContainer = this.buildRiversContainer();
-    const reliefContainer = await this.buildReliefContainer(sequence);
+    const riverContainer = this.buildVisibleLayer("rivers", () => this.buildRiversContainer());
+    const reliefContainer = await this.buildVisibleLayerAsync("relief", () => this.buildReliefContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const religionContainer = this.buildFillContainer("religions");
-    const cultureContainer = this.buildFillContainer("cultures");
-    const stateContainer = this.buildFillContainer("states");
-    const provinceContainer = this.buildFillContainer("provinces");
-    const tradeContainer = await this.buildTradeContainer(sequence);
+    const religionContainer = this.buildVisibleLayer("religions", () => this.buildFillContainer("religions"));
+    const cultureContainer = this.buildVisibleLayer("cultures", () => this.buildFillContainer("cultures"));
+    const stateContainer = this.buildVisibleLayer("states", () => this.buildFillContainer("states"));
+    const provinceContainer = this.buildVisibleLayer("provinces", () => this.buildFillContainer("provinces"));
+    const tradeContainer = await this.buildVisibleLayerAsync("trade", () => this.buildTradeContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const zoneContainer = this.buildZonesContainer();
-    const borderContainer = this.buildBordersContainer();
-    const routeContainer = this.buildRoutesContainer();
-    const temperatureContainer = this.buildTemperatureContainer();
-    const iceContainer = this.buildIceContainer();
-    const goodsContainer = await this.buildGoodsContainer(sequence);
+    const zoneContainer = this.buildVisibleLayer("zones", () => this.buildZonesContainer());
+    const borderContainer = this.buildVisibleLayer("borders", () => this.buildBordersContainer());
+    const routeContainer = this.buildVisibleLayer("routes", () => this.buildRoutesContainer());
+    const temperatureContainer = this.buildVisibleLayer("temperature", () => this.buildTemperatureContainer());
+    const iceContainer = this.buildVisibleLayer("ice", () => this.buildIceContainer());
+    const goodsContainer = await this.buildVisibleLayerAsync("goods", () => this.buildGoodsContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const marketsContainer = this.buildMarketsContainer();
-    const precipitationContainer = this.buildPrecipitationContainer();
-    const populationContainer = this.buildPopulationContainer();
-    const emblemsContainer = await this.buildEmblemsContainer(sequence);
+    const marketsContainer = this.buildVisibleLayer("markets", () => this.buildMarketsContainer());
+    const precipitationContainer = this.buildVisibleLayer("precipitation", () => this.buildPrecipitationContainer());
+    const populationContainer = this.buildVisibleLayer("population", () => this.buildPopulationContainer());
+    const emblemsContainer = await this.buildVisibleLayerAsync("emblems", () => this.buildEmblemsContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const labelsContainer = await this.buildLabelsContainer(sequence);
+    const labelsContainer = await this.buildVisibleLayerAsync("labels", () => this.buildLabelsContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const burgContainer = await this.buildBurgIconsContainer(sequence);
+    const burgContainer = await this.buildVisibleLayerAsync("burgIcons", () => this.buildBurgIconsContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
-    const militaryContainer = await this.buildMilitaryContainer(sequence);
+    const militaryContainer = await this.buildVisibleLayerAsync("military", () =>
+      this.buildMilitaryContainer(sequence)
+    );
     if (sequence !== this.rebuildSequence) return;
-    const markerContainer = await this.buildMarkersContainer(sequence);
+    const markerContainer = await this.buildVisibleLayerAsync("markers", () => this.buildMarkersContainer(sequence));
     if (sequence !== this.rebuildSequence) return;
     this.app.stage.addChild(
       geography.ocean,
@@ -447,13 +477,18 @@ export class PixiMapRenderer implements MapRenderer {
       militaryContainer,
       markerContainer
     );
+    this.layerContainers = new Map(
+      this.app.stage.children
+        .filter(child => isMapLayerId(child.label))
+        .map(child => [child.label as MapLayerId, child])
+    );
     if (this.semanticStyle.filter) this.applyPhysicalFilter(this.app.stage, this.semanticStyle.filter);
     this.applyLayerOrder();
     const burgSymbols = this.getWorld().burgs.filter(burg => burg.i && !burg.removed && burg.group).length;
     const markerSymbols = markerContainer.children.length;
     const reliefSprites = reliefContainer.children.length;
     const batches = this.app.stage.children.reduce((total, child) => total + Math.max(1, child.children.length), 0);
-    this.pickingIndex.replace(world, this.semanticStyle);
+    this.pickingIndex.replace(world, this.semanticStyle, this.getVisibleLayers());
 
     this.recordPerformance("pixi:scene-build", performance.now() - started);
 
@@ -477,15 +512,30 @@ export class PixiMapRenderer implements MapRenderer {
       reliefSprites,
       renderer: this.app.renderer.constructor.name
     };
-    this.rendererOptions.onSceneChange?.();
+    this.commitSceneChange("content");
     this.recordPerformance("pixi:rebuild", buildDuration);
   }
 
   setLayerVisibility(layer: MapLayerId, visible: boolean): void {
     if (this.layerVisibility.get(layer) === visible) return;
     this.layerVisibility.set(layer, visible);
+    let awaitingMaterialization = false;
+    let materializedImmediately = false;
     if (layer === "trade" && !visible) clearTradeAnimation();
-    this.applyVisibility();
+    if (!visible) {
+      this.dirtyLayers.add(layer);
+      if (INCREMENTAL_LAYERS.has(layer)) this.replaceLayerContainer(layer, this.createLayerPlaceholder(layer));
+      else this.scheduleHiddenLayerCleanup();
+    } else if (this.dirtyLayers.has(layer)) {
+      if (INCREMENTAL_LAYERS.has(layer) && this.world) {
+        this.rebuildLayers(new Set([layer]));
+        materializedImmediately = true;
+      } else {
+        awaitingMaterialization = true;
+        this.scheduler?.invalidate({ kind: "geometry", layer });
+      }
+    }
+    this.applyVisibility(!awaitingMaterialization && !materializedImmediately);
   }
 
   setLayerOrder(order: readonly MapLayerId[]): void {
@@ -494,7 +544,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.applyLayerOrder();
     if (this.stats.enabled) {
       this.app?.render();
-      this.rendererOptions.onSceneChange?.();
+      this.commitSceneChange("content");
     }
   }
 
@@ -516,7 +566,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.scheduleLabelAtlasRefresh();
     if (render) {
       this.app.render();
-      this.rendererOptions.onSceneChange?.();
+      this.commitSceneChange("content");
     }
   }
 
@@ -569,7 +619,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.pickingIndex.clear();
     this.textureCache.clear();
     this.app?.render();
-    this.rendererOptions.onSceneChange?.();
+    this.commitSceneChange("content");
     if (this.surface) this.surface.style.display = "none";
   }
 
@@ -623,6 +673,11 @@ export class PixiMapRenderer implements MapRenderer {
       resourceCount: resources.totalCount,
       textureCacheEntries: textures.entries
     };
+  }
+
+  whenCommitted(after = this.stats.commitSequence): Promise<number> {
+    if (this.stats.commitSequence > after) return Promise.resolve(this.stats.commitSequence);
+    return new Promise(resolve => this.commitWaiters.add({ after, resolve }));
   }
 
   getCanvas(): CanvasImageSource | null {
@@ -849,6 +904,37 @@ export class PixiMapRenderer implements MapRenderer {
     return container;
   }
 
+  private buildVisibleLayer(layer: MapLayerId, build: () => Container): Container {
+    if (!(this.layerVisibility.get(layer) ?? true)) {
+      this.dirtyLayers.add(layer);
+      return this.createLayerPlaceholder(layer);
+    }
+    this.dirtyLayers.delete(layer);
+    return build();
+  }
+
+  private async buildVisibleLayerAsync(layer: MapLayerId, build: () => Promise<Container>): Promise<Container> {
+    if (!(this.layerVisibility.get(layer) ?? true)) {
+      this.dirtyLayers.add(layer);
+      return this.createLayerPlaceholder(layer);
+    }
+    this.dirtyLayers.delete(layer);
+    return build();
+  }
+
+  private createLayerPlaceholder(layer: MapLayerId): Container {
+    const container = new Container();
+    container.label = layer;
+    container.visible = false;
+    return container;
+  }
+
+  private getVisibleLayers(): Set<MapLayerId> {
+    return new Set(
+      MAP_LAYER_REGISTRY.filter(layer => this.layerVisibility.get(layer.id) ?? true).map(layer => layer.id)
+    );
+  }
+
   private buildGeographyContainers(): {
     bounds: { height: number; width: number };
     coastline: Container;
@@ -868,10 +954,12 @@ export class PixiMapRenderer implements MapRenderer {
         scene.coastline.paths,
         role => this.semanticStyle.coastline.roles[role] ?? this.semanticStyle.coastline.default
       ),
-      lakes: this.buildPolygonContainer(
-        "lakes",
-        scene.lakes.polygons,
-        role => this.semanticStyle.lakes.roles[role] ?? this.semanticStyle.lakes.default
+      lakes: this.buildVisibleLayer("lakes", () =>
+        this.buildPolygonContainer(
+          "lakes",
+          scene.lakes.polygons,
+          role => this.semanticStyle.lakes.roles[role] ?? this.semanticStyle.lakes.default
+        )
       ),
       lakePolygons: scene.lakes.polygons,
       landPolygons: scene.landmass.polygons,
@@ -1871,6 +1959,11 @@ export class PixiMapRenderer implements MapRenderer {
 
   private clearStage(): void {
     if (!this.app) return;
+    if (this.hiddenLayerCleanupTimer !== null) clearTimeout(this.hiddenLayerCleanupTimer);
+    this.hiddenLayerCleanupTimer = null;
+    this.queuedStyle = null;
+    this.layerContainers.clear();
+    this.dirtyLayers.clear();
     for (const retained of this.retainedCellMeshes) retained.destroy();
     this.retainedCellMeshes.clear();
     this.cellMeshes.clear();
@@ -1926,7 +2019,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.syncTradeDisplays(snapshot);
     if (this.layerVisibility.get("trade") ?? true) {
       this.app.render();
-      this.rendererOptions.onSceneChange?.();
+      this.commitSceneChange("animation");
     }
   }
 
@@ -2055,7 +2148,7 @@ export class PixiMapRenderer implements MapRenderer {
     }
     if (this.labelAtlasQueuedResolution <= resolution) this.labelAtlasQueuedResolution = 0;
     this.app?.render();
-    this.rendererOptions.onSceneChange?.();
+    this.commitSceneChange("content");
     this.recordPerformance("pixi:label-atlas", performance.now() - started);
   }
 
@@ -2103,6 +2196,10 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   private async renderInvalidations(batch: RenderInvalidationBatch): Promise<void> {
+    if (this.queuedStyle) {
+      this.semanticStyle = structuredClone(this.queuedStyle);
+      this.queuedStyle = null;
+    }
     this.sceneRevisions.apply(batch.invalidations);
     const assignments = batch.invalidations.filter(
       (invalidation): invalidation is Extract<RenderInvalidation, { kind: "assignment" }> =>
@@ -2111,17 +2208,127 @@ export class PixiMapRenderer implements MapRenderer {
     if (assignments.length && assignments.length === batch.invalidations.length && this.updateCellMeshes(assignments)) {
       return;
     }
-    if (batch.requiresSceneBuild) {
+    const requiresFullBuild = batch.invalidations.some(
+      invalidation =>
+        invalidation.kind === "topology" ||
+        invalidation.kind === "world" ||
+        ("layer" in invalidation && !INCREMENTAL_LAYERS.has(invalidation.layer))
+    );
+    if (requiresFullBuild) {
       await this.rebuild();
+      return;
+    }
+    const layers = new Set(
+      batch.invalidations.flatMap(invalidation => ("layer" in invalidation ? [invalidation.layer] : []))
+    );
+    if (layers.size) {
+      this.rebuildLayers(layers);
       return;
     }
     if (batch.invalidations.some(invalidation => invalidation.kind === "camera")) this.applyCamera();
   }
 
+  private rebuildLayers(layers: ReadonlySet<MapLayerId>): void {
+    if (!this.app || !this.world) return;
+    const started = performance.now();
+    for (const layer of layers) {
+      if (!(this.layerVisibility.get(layer) ?? true)) {
+        this.dirtyLayers.add(layer);
+        continue;
+      }
+      const container = this.buildIncrementalLayer(layer);
+      if (!container) continue;
+      this.replaceLayerContainer(layer, container);
+      this.dirtyLayers.delete(layer);
+    }
+    this.pickingIndex.updateLayers(this.world, this.semanticStyle, layers, this.getVisibleLayers());
+    this.applyLayerOrder();
+    this.applyVisibility(false);
+    this.app.render();
+    const duration = performance.now() - started;
+    this.stats.buildDuration = duration;
+    this.stats.pickingEntries = this.pickingIndex.getSize();
+    this.stats.batches = this.app.stage.children.reduce(
+      (total, child) => total + Math.max(1, child.children.length),
+      0
+    );
+    this.recordPerformance("pixi:layer-build", duration);
+    this.commitSceneChange("content");
+  }
+
+  private buildIncrementalLayer(layer: MapLayerId): Container | null {
+    if (CELL_FILL_LAYERS.includes(layer as CellFillLayer)) return this.buildFillContainer(layer as CellFillLayer);
+    if (layer === "borders") return this.buildBordersContainer();
+    if (layer === "cells") return this.buildCellsContainer();
+    if (layer === "grid") return this.buildGridContainer();
+    if (layer === "ice") return this.buildIceContainer();
+    if (layer === "markets") return this.buildMarketsContainer();
+    if (layer === "population") return this.buildPopulationContainer();
+    if (layer === "precipitation") return this.buildPrecipitationContainer();
+    if (layer === "rivers") return this.buildRiversContainer();
+    if (layer === "routes") return this.buildRoutesContainer();
+    if (layer === "temperature") return this.buildTemperatureContainer();
+    if (layer === "zones") return this.buildZonesContainer();
+    return null;
+  }
+
+  private replaceLayerContainer(layer: MapLayerId, container: Container): void {
+    const app = this.app;
+    if (!app) return;
+    const previous = this.layerContainers.get(layer);
+    if (previous === container) return;
+    if (previous) this.destroyLayerContainer(layer, previous);
+    app.stage.addChild(container);
+    this.layerContainers.set(layer, container);
+  }
+
+  private destroyLayerContainer(layer: MapLayerId, container: Container): void {
+    if (CELL_FILL_LAYERS.includes(layer as CellFillLayer)) {
+      const meshes = this.cellMeshes.get(layer as CellFillLayer);
+      if (meshes) {
+        meshes.retained.destroy();
+        this.retainedCellMeshes.delete(meshes.retained);
+        if (meshes.halo) {
+          meshes.halo.destroy();
+          this.retainedCellMeshes.delete(meshes.halo);
+        }
+        this.cellMeshes.delete(layer as CellFillLayer);
+      }
+    }
+    this.destroyContainerFilters(container);
+    container.removeFromParent();
+    const staleIndex = this.app?.stage.children.indexOf(container) ?? -1;
+    if (staleIndex !== -1) this.app?.stage.children.splice(staleIndex, 1);
+    container.destroy({ children: true });
+    this.layerContainers.delete(layer);
+  }
+
+  private destroyContainerFilters(container: Container): void {
+    const visit = (display: Container) => {
+      for (const filter of display.filters ?? []) {
+        if (!this.rendererFilters.delete(filter)) continue;
+        filter.destroy();
+      }
+      for (const child of display.children) if (child instanceof Container) visit(child);
+    };
+    visit(container);
+  }
+
+  private scheduleHiddenLayerCleanup(): void {
+    if (this.hiddenLayerCleanupTimer !== null) return;
+    this.hiddenLayerCleanupTimer = setTimeout(() => {
+      this.hiddenLayerCleanupTimer = null;
+      if ([...this.dirtyLayers].some(layer => !INCREMENTAL_LAYERS.has(layer))) {
+        this.scheduler?.invalidate({ kind: "world" });
+      }
+    }, 15_000);
+  }
+
   private updateCellMeshes(assignments: readonly Extract<RenderInvalidation, { kind: "assignment" }>[]): boolean {
     if (!this.app) return false;
     const world = this.getWorld();
-    for (const layer of new Set(assignments.map(invalidation => invalidation.layer as CellFillLayer))) {
+    const layers = new Set(assignments.map(invalidation => invalidation.layer as CellFillLayer));
+    for (const layer of layers) {
       const target = this.cellMeshes.get(layer);
       if (!target) return false;
       const style = this.semanticStyle[layer];
@@ -2149,9 +2356,23 @@ export class PixiMapRenderer implements MapRenderer {
           : layerInvalidations.flatMap(invalidation => invalidation.cellIds ?? [])
       );
     }
+    this.pickingIndex.updateLayers(world, this.semanticStyle, layers, this.getVisibleLayers());
+    this.stats.pickingEntries = this.pickingIndex.getSize();
     this.app.render();
-    this.rendererOptions.onSceneChange?.();
+    this.commitSceneChange("content");
     return true;
+  }
+
+  private commitSceneChange(kind: PixiSceneChangeKind): void {
+    if (kind === "content") {
+      const sequence = ++this.stats.commitSequence;
+      for (const waiter of this.commitWaiters) {
+        if (sequence <= waiter.after) continue;
+        this.commitWaiters.delete(waiter);
+        waiter.resolve(sequence);
+      }
+    }
+    this.rendererOptions.onSceneChange?.(kind);
   }
 
   private getCellFillSource(layer: CellFillLayer): {
@@ -2213,7 +2434,7 @@ export class PixiMapRenderer implements MapRenderer {
     );
     const replaceableBytes = [...replaceableAtlases.values()].reduce((total, bytes) => total + bytes, 0);
     const heldBytes = [...heldAtlases.values()].reduce((total, bytes) => total + bytes, 0);
-    const totalBudget = this.rendererOptions.glyphBudgetBytes ?? DEFAULT_RENDERER_RESOURCE_BUDGET.glyph;
+    const totalBudget = this.glyphBudgetBytes;
     return selectLabelAtlasResolution({
       budgetBytes: Math.max(0, totalBudget - heldBytes + replaceableBytes),
       cameraScale: this.camera.scale,

@@ -1,4 +1,4 @@
-import { getPixiRendererSnapshot } from "@/renderers/pixi/pixi-renderer-controller";
+import { getPixiRendererSnapshot, whenPixiRendererCommitted } from "@/renderers/pixi/pixi-renderer-controller";
 
 export interface PerformanceSample {
   name: string;
@@ -92,12 +92,16 @@ export class MapPerformanceMonitor {
     return {
       samples: [...this.samples],
       longTasks: [...this.longTasks],
-      domNodes: document.querySelectorAll("#map *").length
+      domNodes: document.querySelectorAll("*").length
     };
   }
 
   getRendererSnapshot() {
     return getPixiRendererSnapshot();
+  }
+
+  whenRendererCommitted(after?: number): Promise<number> {
+    return whenPixiRendererCommitted(after);
   }
 }
 

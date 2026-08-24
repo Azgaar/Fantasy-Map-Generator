@@ -445,6 +445,25 @@ describe("PixiMapRenderer lifecycle", () => {
     renderer.destroy();
   });
 
+  it("rebuilds an invalidated retained layer without rebuilding unrelated layers", async () => {
+    const renderer = new PixiMapRenderer();
+    const style = structuredClone(DEFAULT_PIXI_MAP_STYLE);
+    await renderer.mount(createSurface());
+    await renderer.render(STATIC_VIEWER_WORLD, style, coalesceInvalidations([{ kind: "world" }]));
+    const previousStates = applicationState.stage?.children.find(child => child.label === "states");
+    const previousRoutes = applicationState.stage?.children.find(child => child.label === "routes");
+    const assetLoads = applicationState.assetLoad.mock.calls.length;
+
+    style.routes.default.width += 1;
+    await renderer.render(STATIC_VIEWER_WORLD, style, coalesceInvalidations([{ kind: "style", layer: "routes" }]));
+
+    expect(applicationState.stage?.children.find(child => child.label === "states")).toBe(previousStates);
+    expect(applicationState.stage?.children.find(child => child.label === "routes")).not.toBe(previousRoutes);
+    expect(applicationState.assetLoad).toHaveBeenCalledTimes(assetLoads);
+    expect(renderer.getSnapshot().commitSequence).toBe(2);
+    renderer.destroy();
+  });
+
   it("renders compound and Watabou burg symbols from their SVG definitions", async () => {
     const resolveSymbolIcon = vi.fn(() => "data:image/svg+xml,burg-symbol");
     const renderer = new PixiMapRenderer({ resolveSymbolIcon });

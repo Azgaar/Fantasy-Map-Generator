@@ -15,7 +15,7 @@
   "main": "main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node scripts/check-bundle-size.mts",
     "build:viewer": "tsc && vite build --config vite.viewer.config.ts",
     "benchmark:renderer": "playwright test --config=playwright.benchmark.config.ts",
     "preview": "vite preview",

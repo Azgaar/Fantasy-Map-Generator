@@ -93,38 +93,88 @@ const createLayerPriority = (order: readonly MapLayerId[]): Map<MapLayerId, numb
   new Map(normalizeMapLayerOrder(order).map((layer, index) => [layer, index * 10]));
 
 export class MapPickingIndex {
+  private readonly entriesByLayer = new Map<MapLayerId, MapPickEntry[]>();
   private layerPriority = createLayerPriority(MAP_LAYER_REGISTRY.map(layer => layer.id));
   private maxRescaledExtent = 0;
-  private readonly spatial = new BoundsSpatialIndex<MapPickEntry>();
+  private readonly spatialByLayer = new Map<MapLayerId, BoundsSpatialIndex<MapPickEntry>>();
   private world: MapRenderWorld | null = null;
   private worldBounds: Bounds | null = null;
 
-  replace(world: MapRenderWorld, style: MapStyle): void {
-    this.replaceEntries(buildMapPickEntries(world, style), world);
+  replace(world: MapRenderWorld, style: MapStyle, requestedLayers?: ReadonlySet<MapLayerId>): void {
+    this.replaceEntries(buildMapPickEntries(world, style, requestedLayers), world);
   }
 
   replaceEntries(entries: readonly MapPickEntry[], areaWorld: MapRenderWorld | null = null): void {
     this.world = areaWorld;
     this.worldBounds = areaWorld ? getWorldBounds(areaWorld) : null;
-    this.maxRescaledExtent = entries.reduce(
-      (maximum, entry) =>
-        (entry.shape === "point" || entry.shape === "box") && entry.rescale
-          ? Math.max(maximum, getEntryRescaledExtent(entry))
-          : maximum,
-      0
-    );
-    this.spatial.replace(entries, getEntryBounds);
+    this.entriesByLayer.clear();
+    for (const entry of entries) {
+      const layerEntries = this.entriesByLayer.get(entry.layer);
+      if (layerEntries) layerEntries.push(entry);
+      else this.entriesByLayer.set(entry.layer, [entry]);
+    }
+    this.spatialByLayer.clear();
+    for (const layer of this.entriesByLayer.keys()) this.replaceLayerSpatialIndex(layer);
+    this.updateMaxRescaledExtent();
+  }
+
+  updateLayers(
+    world: MapRenderWorld,
+    style: MapStyle,
+    layers: Iterable<MapLayerId>,
+    activeLayers?: ReadonlySet<MapLayerId>
+  ): void {
+    this.world = world;
+    this.worldBounds = getWorldBounds(world);
+    const requested = new Set(layers);
+    for (const layer of requested) {
+      this.entriesByLayer.delete(layer);
+      this.spatialByLayer.delete(layer);
+    }
+    const layersToBuild = activeLayers ? new Set([...requested].filter(layer => activeLayers.has(layer))) : requested;
+    for (const entry of buildMapPickEntries(world, style, layersToBuild)) {
+      const layerEntries = this.entriesByLayer.get(entry.layer);
+      if (layerEntries) layerEntries.push(entry);
+      else this.entriesByLayer.set(entry.layer, [entry]);
+    }
+    for (const layer of layersToBuild) this.replaceLayerSpatialIndex(layer);
+    this.updateMaxRescaledExtent();
+  }
+
+  private replaceLayerSpatialIndex(layer: MapLayerId): void {
+    const entries = this.entriesByLayer.get(layer);
+    if (!entries?.length) {
+      this.spatialByLayer.delete(layer);
+      return;
+    }
+    const spatial = new BoundsSpatialIndex<MapPickEntry>();
+    spatial.replace(entries, getEntryBounds);
+    this.spatialByLayer.set(layer, spatial);
+  }
+
+  private updateMaxRescaledExtent(): void {
+    this.maxRescaledExtent = 0;
+    for (const entries of this.entriesByLayer.values()) {
+      for (const entry of entries) {
+        if ((entry.shape === "point" || entry.shape === "box") && entry.rescale) {
+          this.maxRescaledExtent = Math.max(this.maxRescaledExtent, getEntryRescaledExtent(entry));
+        }
+      }
+    }
   }
 
   clear(): void {
     this.world = null;
     this.worldBounds = null;
     this.maxRescaledExtent = 0;
-    this.spatial.clear();
+    this.entriesByLayer.clear();
+    this.spatialByLayer.clear();
   }
 
   getSize(): number {
-    return this.spatial.size;
+    let size = 0;
+    for (const spatial of this.spatialByLayer.values()) size += spatial.size;
+    return size;
   }
 
   setLayerOrder(order: readonly MapLayerId[]): void {
@@ -135,13 +185,14 @@ export class MapPickingIndex {
     const cameraScale = Math.max(query.cameraScale, 0.01);
     const displayScale = Math.max((1 + 1 / cameraScale) / 2, 0.01);
     const searchRadius = query.tolerance + 24 / cameraScale + this.maxRescaledExtent * Math.max(0, displayScale - 1);
-    const candidates = this.spatial
-      .query({
-        maxX: mapPoint.x + searchRadius,
-        maxY: mapPoint.y + searchRadius,
-        minX: mapPoint.x - searchRadius,
-        minY: mapPoint.y - searchRadius
-      })
+    const bounds = {
+      maxX: mapPoint.x + searchRadius,
+      maxY: mapPoint.y + searchRadius,
+      minX: mapPoint.x - searchRadius,
+      minY: mapPoint.y - searchRadius
+    };
+    const candidates = [...this.spatialByLayer.values()]
+      .flatMap(spatial => spatial.query(bounds))
       .filter(entry => isEntryVisible(entry, query, cameraScale))
       .map(entry => ({ distance: distanceToEntry(mapPoint, entry, cameraScale), entry }))
       .filter(candidate => Number.isFinite(candidate.distance) && candidate.distance <= query.tolerance)
@@ -222,13 +273,18 @@ export class MapPickingIndex {
   }
 }
 
-export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): MapPickEntry[] {
+export function buildMapPickEntries(
+  world: MapRenderWorld,
+  style: MapStyle,
+  requestedLayers?: ReadonlySet<MapLayerId>
+): MapPickEntry[] {
   const bounds = getWorldBounds(world);
   if (!bounds) return [];
   const mapBounds = { height: bounds.maxY - bounds.minY, width: bounds.maxX - bounds.minX };
   const entries: MapPickEntry[] = [];
+  const wants = (layer: MapLayerId) => !requestedLayers || requestedLayers.has(layer);
 
-  if (style.compass.opacity > 0 && style.compass.scale > 0) {
+  if (wants("compass") && style.compass.opacity > 0 && style.compass.scale > 0) {
     const compass = buildCompassScene(style.compass, 0);
     const size = 440 * compass.scale;
     entries.push({
@@ -244,31 +300,39 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
     });
   }
 
-  const geography = buildBaseGeographyScene(world, mapBounds);
-  for (const polygon of geography.lakes.polygons) {
-    entries.push(polygonEntry("lakes", "lake", polygon.domainId, polygon.points, true));
-  }
-  for (const path of geography.coastline.paths) {
-    entries.push(
-      lineEntry("coastline", "coastline", path.domainId, path.points, lineWidth(style.coastline, path.role))
-    );
+  if (wants("lakes") || wants("coastline")) {
+    const geography = buildBaseGeographyScene(world, mapBounds);
+    if (wants("lakes")) {
+      for (const polygon of geography.lakes.polygons) {
+        entries.push(polygonEntry("lakes", "lake", polygon.domainId, polygon.points, true));
+      }
+    }
+    if (wants("coastline")) {
+      for (const path of geography.coastline.paths) {
+        entries.push(
+          lineEntry("coastline", "coastline", path.domainId, path.points, lineWidth(style.coastline, path.role))
+        );
+      }
+    }
   }
 
-  if (style.rivers.opacity > 0 && style.rivers.fill.opacity > 0) {
+  if (wants("rivers") && style.rivers.opacity > 0 && style.rivers.fill.opacity > 0) {
     const rivers = buildRiverScene(world, mapBounds);
     for (const polygon of rivers.polygons) {
       entries.push(polygonEntry("rivers", "river", polygon.domainId, polygon.points, false, 1));
     }
   }
-  const routes = buildRouteScene(world);
-  for (const path of routes.paths) {
-    const routeStyle = style.routes.roles[path.role ?? ""] ?? style.routes.default;
-    if (routeStyle.opacity > 0 && routeStyle.width > 0) {
-      entries.push(lineEntry("routes", "route", path.domainId, path.points, routeStyle.width));
+  if (wants("routes")) {
+    const routes = buildRouteScene(world);
+    for (const path of routes.paths) {
+      const routeStyle = style.routes.roles[path.role ?? ""] ?? style.routes.default;
+      if (routeStyle.opacity > 0 && routeStyle.width > 0) {
+        entries.push(lineEntry("routes", "route", path.domainId, path.points, routeStyle.width));
+      }
     }
   }
 
-  if (style.zones.opacity > 0) {
+  if (wants("zones") && style.zones.opacity > 0) {
     const zones = buildZoneScene(world, 0, { filterType: style.zones.filterType });
     for (const zone of zones.zones) {
       for (const polygon of zone.polygons) {
@@ -276,13 +340,13 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
       }
     }
   }
-  if (style.ice.opacity > 0) {
+  if (wants("ice") && style.ice.opacity > 0) {
     const ice = buildIceScene(world, 0);
     for (const polygon of ice.polygons)
       entries.push(polygonEntry("ice", "ice", polygon.domainId, polygon.points, true));
   }
 
-  if (style.goods.opacity > 0) {
+  if (wants("goods") && style.goods.opacity > 0) {
     const goods = buildGoodsScene(world, world.goodsProduction, 0);
     for (const cell of goods.cells) {
       entries.push({
@@ -304,7 +368,7 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
     }
   }
 
-  if (style.relief.opacity > 0) {
+  if (wants("relief") && style.relief.opacity > 0) {
     const relief = buildReliefSpriteScene(world.relief, 0);
     for (const icon of relief.instances) {
       entries.push({
@@ -321,28 +385,32 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
     }
   }
 
-  const burgs = buildBurgPointSymbolScene(world.burgs, style.burgIcons, 0);
-  for (const symbol of burgs.icons.instances) {
-    if (style.burgIcons.opacity > 0 && symbol.opacity > 0) {
-      entries.push(pointEntry("burgIcons", "burg", symbol.domainId, symbol.x, symbol.y, symbol.size / 2));
+  if (wants("burgIcons")) {
+    const burgs = buildBurgPointSymbolScene(world.burgs, style.burgIcons, 0);
+    for (const symbol of burgs.icons.instances) {
+      if (style.burgIcons.opacity > 0 && symbol.opacity > 0) {
+        entries.push(pointEntry("burgIcons", "burg", symbol.domainId, symbol.x, symbol.y, symbol.size / 2));
+      }
     }
   }
-  const markers = buildMarkerPointSymbolScene(
-    world.markers,
-    style.markers,
-    world.markerRenderState ?? { pinnedOnly: false, visibleIds: null },
-    0
-  );
-  for (const marker of markers.instances) {
-    if (style.markers.opacity > 0 && marker.opacity > 0) {
-      entries.push({
-        ...pointEntry("markers", "marker", marker.domainId, marker.x, marker.y, marker.size / 2),
-        rescale: marker.rescale
-      });
+  if (wants("markers")) {
+    const markers = buildMarkerPointSymbolScene(
+      world.markers,
+      style.markers,
+      world.markerRenderState ?? { pinnedOnly: false, visibleIds: null },
+      0
+    );
+    for (const marker of markers.instances) {
+      if (style.markers.opacity > 0 && marker.opacity > 0) {
+        entries.push({
+          ...pointEntry("markers", "marker", marker.domainId, marker.x, marker.y, marker.size / 2),
+          rescale: marker.rescale
+        });
+      }
     }
   }
 
-  if (style.markets.opacity > 0) {
+  if (wants("markets") && style.markets.opacity > 0) {
     const markets = buildMarketScene(world, 0);
     for (const market of markets.markets) {
       for (const polygon of market.polygons) {
@@ -363,7 +431,7 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
       });
     }
   }
-  if (style.population.opacity > 0) {
+  if (wants("population") && style.population.opacity > 0) {
     const population = buildPopulationScene(world, world.urbanization ?? 1, 0);
     for (const path of population.paths) {
       const [type, serializedId] = String(path.domainId).split(":");
@@ -375,7 +443,7 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
       });
     }
   }
-  if (style.military.opacity > 0) {
+  if (wants("military") && style.military.opacity > 0) {
     const military = buildMilitaryScene(world, 0);
     for (const regiment of military.regiments) {
       entries.push({
@@ -385,7 +453,7 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
     }
   }
 
-  if (style.emblems.opacity > 0) {
+  if (wants("emblems") && style.emblems.opacity > 0) {
     const emblems = buildEmblemScene(world, mapBounds, style.emblems, 0);
     for (const group of emblems.groups) {
       for (const emblem of group.items) {
@@ -399,7 +467,7 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
     }
   }
 
-  if (world.labelRenderState) {
+  if (wants("labels") && world.labelRenderState) {
     const labels = buildLabelScene(world.labelRenderState, 0);
     for (const group of labels.groups) {
       if (!group.active || group.style.opacity <= 0) continue;

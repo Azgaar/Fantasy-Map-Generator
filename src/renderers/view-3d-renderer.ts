@@ -21,7 +21,7 @@ let threeLoadPromise: Promise<boolean> | null = null;
 
 type Controls = {
   dispose: () => void;
-  update?: () => void;
+  update?: () => boolean | undefined;
   addEventListener: (type: string, listener: () => void) => void;
   autoRotate: boolean;
   autoRotateSpeed: number;
@@ -108,6 +108,7 @@ const update = () => {
 const stop = () => {
   if (controls) controls.dispose();
   cancelAnimationFrame(animationFrame);
+  animationFrame = 0;
   if (texture) texture.dispose();
   if (geometry) geometry.dispose();
   if (material) material.dispose();
@@ -161,7 +162,14 @@ const setSunColor = (color: string) => {
   render();
 };
 
-const clampTextureResolution = (value: number) => minmax(value, 512, 8192);
+const getDeviceTextureCap = () => {
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  if (memory !== undefined && memory <= 2) return 2048;
+  if (memory !== undefined && memory <= 4) return 4096;
+  return 8192;
+};
+
+const clampTextureResolution = (value: number) => minmax(value, 512, getDeviceTextureCap());
 
 const clampToRendererLimit = (value: number) => {
   const maxTextureSize = Renderer?.capabilities?.maxTextureSize;
@@ -203,7 +211,11 @@ const setRotation = (speed: number) => {
   controls.autoRotate = Boolean(speed);
 
   if (startAnimation) animate();
-  if (endAnimation) cancelAnimationFrame(animationFrame);
+  if (endAnimation) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+    render();
+  }
 };
 
 const toggleSky = () => {
@@ -311,13 +323,20 @@ const setResolution = (resolution: number) => {
 
 // download screenshot
 const saveScreenshot = async () => {
-  const URL = Renderer.domElement.toDataURL("image/jpeg");
+  render();
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    Renderer.domElement.toBlob(
+      value => (value ? resolve(value) : reject(new Error("Cannot capture 3D view"))),
+      "image/jpeg"
+    )
+  );
+  const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.download = `${getFileName()}.jpeg`;
-  link.href = URL;
+  link.href = url;
   link.click();
   window.tip(`Screenshot is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
-  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
 };
 
 const saveOBJ = async () => {
@@ -339,12 +358,13 @@ async function newMesh(canvas: HTMLCanvasElement) {
   spotLight = new Three.SpotLight(options.threeD.sunColor, 0.8, 2000, 0.8, 0, 0);
   spotLight.position.set(options.threeD.sun.x, options.threeD.sun.y, options.threeD.sun.z);
   spotLight.castShadow = true;
-  spotLight.shadow.mapSize.width = 2048;
-  spotLight.shadow.mapSize.height = 2048;
+  const shadowSize = getDeviceTextureCap() <= 2048 ? 1024 : 2048;
+  spotLight.shadow.mapSize.width = shadowSize;
+  spotLight.shadow.mapSize.height = shadowSize;
   scene.add(spotLight);
 
   // Renderer
-  Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer = new Three.WebGLRenderer({ canvas, antialias: true });
   Renderer.setSize(canvas.width, canvas.height);
   Renderer.shadowMap.enabled = true;
   Renderer.shadowMap.type = Three.PCFSoftShadowMap;
@@ -382,9 +402,11 @@ async function newMesh(canvas: HTMLCanvasElement) {
 
   controls.autoRotate = Boolean(options.threeD.rotateMesh);
   controls.autoRotateSpeed = options.threeD.rotateMesh;
-  animate();
+  if (controls.autoRotate) animate();
+  else render();
 
   controls.addEventListener("change", render);
+  controls.addEventListener("end", animate);
   return true;
 }
 
@@ -879,7 +901,7 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   );
 
   // Renderer
-  Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer = new Three.WebGLRenderer({ canvas, antialias: true });
   Renderer.setSize(canvas.width, canvas.height);
 
   // texture size must fit the GPU's limit
@@ -915,6 +937,7 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   controls.maxPolarAngle = Math.PI;
 
   controls.addEventListener("change", render);
+  controls.addEventListener("end", animate);
 
   return true;
 }
@@ -1017,8 +1040,13 @@ function doWorkOnRender() {
 
 // animate 3d scene and camera
 function animate() {
-  animationFrame = requestAnimationFrame(animate);
-  if (controls?.update) controls.update();
+  if (animationFrame) return;
+  const tick = () => {
+    animationFrame = 0;
+    const changed = controls?.update?.() === true;
+    if (controls?.autoRotate || changed) animationFrame = requestAnimationFrame(tick);
+  };
+  animationFrame = requestAnimationFrame(tick);
 }
 
 // continuous render loop driving the satellite water shimmer; runs only

@@ -161,52 +161,58 @@ function uploadMap(file: Blob, callback?: () => void): void {
   fileReader.readAsArrayBuffer(file);
 }
 
-async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | null> {
-  try {
-    const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
-
-    let uncompressedData: number[] = [];
-    for await (const chunk of uncompressedStream) {
-      uncompressedData = uncompressedData.concat(Array.from(chunk));
-    }
-
-    return new Uint8Array(uncompressedData);
-  } catch (error) {
-    ERROR && console.error(error);
-    return null;
-  }
-}
-
 async function parseLoadedResult(
-  result: ArrayBuffer | Uint8Array
+  result: ArrayBuffer
 ): Promise<{ mapData: string[] | null; mapVersion: string | null }> {
   try {
-    const resultAsString = new TextDecoder().decode(result);
-
-    // data can be in FMG internal format or base64 encoded
-    const isDelimited = resultAsString.substring(0, 10).includes("|");
-    let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
-
-    // fix if svg part has CRLF line endings instead of LF
-    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
-    const svgContent = svgMatch![0];
-    const hasCrlfEndings = svgContent.includes("\r\n");
-    if (hasCrlfEndings) {
-      const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
-      content = content.replace(svgContent, correctedSvgContent);
-    }
-
-    const mapData = content.split("\r\n"); // split by CRLF
+    const mapData = await decodeMapFileInWorker(result);
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
-
     return { mapData, mapVersion };
   } catch (error) {
-    const uncompressedData = await uncompress(result as ArrayBuffer); // file can be gzip compressed
-    if (uncompressedData) return parseLoadedResult(uncompressedData);
-
     ERROR && console.error(error);
     return { mapData: null, mapVersion: null };
   }
+}
+
+async function decodeMapFileInWorker(result: ArrayBuffer): Promise<string[]> {
+  if (typeof Worker === "undefined") {
+    const { decodeMapFile } = await import("./map-file-decoder");
+    return decodeMapFile(result);
+  }
+
+  const worker = new Worker(new URL("./map-file-decoder-worker.ts", import.meta.url), { type: "module" });
+  return new Promise((resolve, reject) => {
+    worker.onmessage = ({ data }: MessageEvent<{ error?: string; id: number; mapData?: string[] }>) => {
+      worker.terminate();
+      if (data.error) reject(new Error(data.error));
+      else if (data.mapData) resolve(data.mapData);
+      else reject(new Error("Map decoder returned no data"));
+    };
+    worker.onerror = event => {
+      worker.terminate();
+      reject(event.error || new Error(event.message));
+    };
+    worker.postMessage({ buffer: result, id: 1 }, [result]);
+  });
+}
+
+type NumericTypedArray = Float32Array | Int8Array | Uint8Array | Uint16Array;
+type NumericTypedArrayConstructor<T extends NumericTypedArray> = new (length: number) => T;
+
+function parseNumericArray<T extends NumericTypedArray>(source: string, ArrayType: NumericTypedArrayConstructor<T>): T {
+  if (!source) return new ArrayType(0);
+  let length = 1;
+  for (let index = 0; index < source.length; index++) if (source.charCodeAt(index) === 44) length++;
+
+  const values = new ArrayType(length);
+  let valueStart = 0;
+  let valueIndex = 0;
+  for (let index = 0; index <= source.length; index++) {
+    if (index < source.length && source.charCodeAt(index) !== 44) continue;
+    values[valueIndex++] = Number(source.slice(valueStart, index));
+    valueStart = index + 1;
+  }
+  return values;
 }
 
 function showUploadMessage(type: string, mapData: string[] | null, mapVersion: string | null): void {
@@ -342,11 +348,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const { cells, vertices } = calculateVoronoi(grid.points, grid.boundary);
       grid.cells = cells;
       grid.vertices = vertices;
-      grid.cells.h = Uint8Array.from(data[7].split(","), Number);
-      grid.cells.prec = Uint8Array.from(data[8].split(","), Number);
-      grid.cells.f = Uint16Array.from(data[9].split(","), Number);
-      grid.cells.t = Int8Array.from(data[10].split(","), Number);
-      grid.cells.temp = Int8Array.from(data[11].split(","), Number);
+      grid.cells.h = parseNumericArray(data[7], Uint8Array);
+      grid.cells.prec = parseNumericArray(data[8], Uint8Array);
+      grid.cells.f = parseNumericArray(data[9], Uint16Array);
+      grid.cells.t = parseNumericArray(data[10], Int8Array);
+      grid.cells.temp = parseNumericArray(data[11], Int8Array);
     }
     WorldGenerationController.reGraph();
     Features.markupPack();
@@ -378,31 +384,27 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.markers = data[35] ? JSON.parse(data[35]) : [];
     pack.routes = data[37] ? JSON.parse(data[37]) : [];
     pack.zones = data[38] ? JSON.parse(data[38]) : [];
-    pack.cells.biome = Uint8Array.from(data[16].split(","), Number);
-    pack.cells.burg = Uint16Array.from(data[17].split(","), Number);
-    pack.cells.conf = Uint8Array.from(data[18].split(","), Number);
-    pack.cells.culture = Uint16Array.from(data[19].split(","), Number);
-    pack.cells.fl = Uint16Array.from(data[20].split(","), Number);
-    pack.cells.pop = Float32Array.from(data[21].split(","), Number);
-    pack.cells.r = Uint16Array.from(data[22].split(","), Number);
+    pack.cells.biome = parseNumericArray(data[16], Uint8Array);
+    pack.cells.burg = parseNumericArray(data[17], Uint16Array);
+    pack.cells.conf = parseNumericArray(data[18], Uint8Array);
+    pack.cells.culture = parseNumericArray(data[19], Uint16Array);
+    pack.cells.fl = parseNumericArray(data[20], Uint16Array);
+    pack.cells.pop = parseNumericArray(data[21], Float32Array);
+    pack.cells.r = parseNumericArray(data[22], Uint16Array);
     // data[23] had deprecated cells.road
-    pack.cells.s = Uint16Array.from(data[24].split(","), Number);
-    pack.cells.state = Uint16Array.from(data[25].split(","), Number);
-    pack.cells.religion = data[26]
-      ? Uint16Array.from(data[26].split(","), Number)
-      : new Uint16Array(pack.cells.i.length);
-    pack.cells.province = data[27]
-      ? Uint16Array.from(data[27].split(","), Number)
-      : new Uint16Array(pack.cells.i.length);
+    pack.cells.s = parseNumericArray(data[24], Uint16Array);
+    pack.cells.state = parseNumericArray(data[25], Uint16Array);
+    pack.cells.religion = data[26] ? parseNumericArray(data[26], Uint16Array) : new Uint16Array(pack.cells.i.length);
+    pack.cells.province = data[27] ? parseNumericArray(data[27], Uint16Array) : new Uint16Array(pack.cells.i.length);
     // data[28] had deprecated cells.crossroad
     // data[33] had deprecated rulers, now replaced by pack.measurers
     pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
     pack.ice = data[39] ? JSON.parse(data[39]) : [];
-    pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.cells.good = data[40] ? parseNumericArray(data[40], Uint16Array) : new Uint16Array(pack.cells.i.length);
     pack.goods = data[41] ? JSON.parse(data[41]) : [];
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
-    pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    pack.cells.market = data[44] ? parseNumericArray(data[44], Uint16Array) : new Uint16Array(pack.cells.i.length);
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     ensureMeasurerIds(pack.measurers);
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];

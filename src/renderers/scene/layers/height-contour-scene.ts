@@ -165,10 +165,19 @@ function buildContourPaths(
 ): readonly (string | undefined)[] {
   const paths: (string | undefined)[] = new Array(101);
   const used = new Uint8Array(cells.i.length);
-  const heights = Array.from(cells.i).sort((left, right) => cells.h[left] - cells.h[right]);
+  const heights = orderCellsByHeight(cells.i, cells.h);
   appendScopePaths("ocean", style.ocean, heights, cells, vertices, used, paths);
   appendScopePaths("land", style.land, heights, cells, vertices, used, paths);
   return paths;
+}
+
+function orderCellsByHeight(cellIds: ArrayLike<number>, heights: ArrayLike<number>): number[] {
+  const buckets = Array.from({ length: 101 }, () => [] as number[]);
+  for (let index = 0; index < cellIds.length; index++) {
+    const cellId = Number(cellIds[index]);
+    buckets[Math.max(0, Math.min(100, Number(heights[cellId]) || 0))].push(cellId);
+  }
+  return buckets.flat();
 }
 
 function appendScopePaths(

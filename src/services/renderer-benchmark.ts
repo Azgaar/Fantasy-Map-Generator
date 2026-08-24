@@ -5,7 +5,8 @@ export type RendererBenchmarkPhase =
   | "generation"
   | "gpu-upload"
   | "layer-change"
-  | "scene-build";
+  | "scene-build"
+  | "time-to-map";
 
 export interface RendererBenchmarkObservation {
   duration: number;

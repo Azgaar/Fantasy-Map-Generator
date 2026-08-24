@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RendererResourceTracker } from "./resource-budget";
+import { RendererResourceTracker, selectRendererResourceBudget } from "./resource-budget";
 
 describe("RendererResourceTracker", () => {
   it("accounts resources and reports per-kind budget overflow", () => {
@@ -34,5 +34,15 @@ describe("RendererResourceTracker", () => {
     tracker.clear();
     expect(tracker.getSnapshot().totalCount).toBe(0);
     expect(tracker.getSnapshot().totalBytes).toBe(0);
+  });
+
+  it("scales renderer budgets down on constrained-memory devices", () => {
+    expect(selectRendererResourceBudget(2)).toEqual({
+      geometry: 64 * 1024 * 1024,
+      glyph: 24 * 1024 * 1024,
+      texture: 96 * 1024 * 1024
+    });
+    expect(selectRendererResourceBudget(4).texture).toBe(192 * 1024 * 1024);
+    expect(selectRendererResourceBudget(8).texture).toBe(256 * 1024 * 1024);
   });
 });

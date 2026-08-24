@@ -77,6 +77,15 @@ export function MapMinimap(): React.JSX.Element {
       updateViewport();
     };
 
+    let overviewTimer: number | null = null;
+    const scheduleOverview = () => {
+      if (overviewTimer !== null) return;
+      overviewTimer = window.setTimeout(() => {
+        overviewTimer = null;
+        updateOverview();
+      }, 120);
+    };
+
     const updateScaleBarPosition = () => fitScaleBar(getViewportSurface().scaleBar, svgWidth, svgHeight);
     const updateMap = () => {
       syncDimensions();
@@ -88,7 +97,7 @@ export function MapMinimap(): React.JSX.Element {
     if (buttonRef.current) resizeObserver.observe(buttonRef.current);
 
     window.updateMinimap = updateViewport;
-    window.addEventListener(PIXI_RENDERER_SCENE_CHANGE_EVENT, updateOverview);
+    window.addEventListener(PIXI_RENDERER_SCENE_CHANGE_EVENT, scheduleOverview);
     window.addEventListener("map:generated", updateMap);
     window.addEventListener("map:loaded", updateMap);
     window.addEventListener("resize", updateScaleBarPosition);
@@ -98,8 +107,9 @@ export function MapMinimap(): React.JSX.Element {
 
     return () => {
       if (window.updateMinimap === updateViewport) delete window.updateMinimap;
+      if (overviewTimer !== null) window.clearTimeout(overviewTimer);
       resizeObserver.disconnect();
-      window.removeEventListener(PIXI_RENDERER_SCENE_CHANGE_EVENT, updateOverview);
+      window.removeEventListener(PIXI_RENDERER_SCENE_CHANGE_EVENT, scheduleOverview);
       window.removeEventListener("map:generated", updateMap);
       window.removeEventListener("map:loaded", updateMap);
       window.removeEventListener("resize", updateScaleBarPosition);

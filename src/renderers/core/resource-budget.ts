@@ -20,6 +20,18 @@ export const DEFAULT_RENDERER_RESOURCE_BUDGET: Readonly<RendererResourceBudget> 
   texture: 256 * 1024 * 1024
 };
 
+export function selectRendererResourceBudget(deviceMemoryGb?: number): RendererResourceBudget {
+  if (deviceMemoryGb !== undefined && Number.isFinite(deviceMemoryGb)) {
+    if (deviceMemoryGb <= 2) {
+      return { geometry: 64 * 1024 * 1024, glyph: 24 * 1024 * 1024, texture: 96 * 1024 * 1024 };
+    }
+    if (deviceMemoryGb <= 4) {
+      return { geometry: 96 * 1024 * 1024, glyph: 48 * 1024 * 1024, texture: 192 * 1024 * 1024 };
+    }
+  }
+  return { ...DEFAULT_RENDERER_RESOURCE_BUDGET };
+}
+
 interface TrackedResource {
   bytes: number;
   kind: RendererResourceKind;
