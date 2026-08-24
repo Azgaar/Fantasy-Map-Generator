@@ -314,6 +314,75 @@ function applyPresetBag(
   for (const key of Object.keys(rest)) fail(onUnknown, `unknown legacy attribute "${key}" on "${selector}"`);
 }
 
+function attrKeysAt(path: string[]): string[] {
+  const node = getPath(DEFAULT_STYLES, path) as { attrs?: object } | undefined;
+  return node?.attrs ? Object.keys(node.attrs) : [];
+}
+
+// selector -> harvestable attribute names: schema attrs at the route's path (none for
+// ownAttrs === false, which only ever contributes its options/drops) plus its option keys and drops
+export function harvestAttributes(): Record<string, string[]> {
+  const table: Record<string, string[]> = {};
+  for (const [selector, route] of Object.entries(PRESET_ROUTES)) {
+    const attrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
+    table[selector] = [...new Set([...attrs, ...Object.keys(route.options ?? {}), ...(route.drop ?? [])])];
+  }
+  return table;
+}
+
+// mirrors public/modules/ui/style-presets.js's parseValue: "" stays "", a numeric string becomes
+// a number, everything else stays a string
+function harvestValue(value: string): string | number {
+  if (value === "") return "";
+  const n = Number(value);
+  return Number.isNaN(n) ? value : n;
+}
+
+function harvestBag(el: Element, attrs: string[]): Record<string, string | number> {
+  const bag: Record<string, string | number> = {};
+  for (const attr of attrs) {
+    const inline = (el as HTMLElement).style?.[attr as any];
+    const value = inline ? inline : el.getAttribute(attr);
+    if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
+  }
+  return bag;
+}
+
+const LABEL_ATTRS = [
+  ...Object.keys(Object.values(DEFAULT_STYLES.labels.groups)[0].attrs),
+  "data-dx",
+  "data-dy",
+  "data-size"
+];
+const BURG_ATTRS = [
+  ...Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs),
+  "font-size",
+  "data-icon"
+];
+
+// builds legacy-shaped selector-keyed bags off the live SVG (old maps only ever carry the
+// dynamic label/burg/anchor groups in the DOM) and routes them through presetFromLegacy
+export function stylesFromMap(root: ParentNode = document): Styles {
+  const bags: Record<string, Record<string, unknown>> = {};
+
+  for (const [selector, attrs] of Object.entries(harvestAttributes())) {
+    const el = root.querySelector(selector);
+    if (el) bags[selector] = harvestBag(el, attrs);
+  }
+  for (const el of root.querySelectorAll("#labels > *")) {
+    const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
+    if (name) bags[`#labels > #${name}`] = harvestBag(el, LABEL_ATTRS);
+  }
+  for (const el of root.querySelectorAll("#burgIcons > g")) {
+    if (el.id) bags[`#burgIcons > g#${el.id}`] = harvestBag(el, BURG_ATTRS);
+  }
+  for (const el of root.querySelectorAll("#anchors > g")) {
+    if (el.id) bags[`#anchors > g#${el.id}`] = harvestBag(el, BURG_ATTRS);
+  }
+
+  return presetFromLegacy(bags, { onUnknown: "skip" });
+}
+
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
 }
@@ -408,5 +477,7 @@ globalThis.stylesLegacy = {
   stylesFromLegacy,
   presetFromLegacy,
   presetToLegacy,
-  isLegacyPreset
+  isLegacyPreset,
+  harvestAttributes,
+  stylesFromMap
 };
