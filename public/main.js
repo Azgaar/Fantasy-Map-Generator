@@ -251,6 +251,8 @@ function focusOn() {
 
 let isAssistantLoaded = false;
 function toggleAssistant() {
+  if (window.electron) return;
+
   const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
   if (showAssistant) {
     if (isAssistantLoaded) {

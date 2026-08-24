@@ -33,6 +33,8 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+  # otherwise a third installer carrying both architectures is built next to the per-arch ones
+  buildUniversalInstaller: false
 publish:
   provider: github
   releaseType: draft

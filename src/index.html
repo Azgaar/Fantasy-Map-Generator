@@ -2449,7 +2449,12 @@
           >
             machine
           </button>
-          <button onclick="window.Services.Save.saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button
+            id="saveToDropboxButton"
+            onclick="window.Services.Save.saveMap('dropbox')"
+            data-tip="Save map file to your Dropbox"
+            data-shortcut="Ctrl + C"
+          >
             dropbox
           </button>
           <button onclick="window.Services.Save.saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">

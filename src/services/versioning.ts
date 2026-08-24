@@ -90,11 +90,13 @@ export function compareVersions(
 }
 
 export async function clearCache(): Promise<void> {
-  const cacheNames = await caches.keys();
-  await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+  if (!isElectron()) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
 
-  const registrations = (await navigator.serviceWorker?.getRegistrations()) ?? [];
-  await Promise.all(registrations.map(registration => registration.unregister()));
+    const registrations = (await navigator.serviceWorker?.getRegistrations()) ?? [];
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  }
 
   location.reload();
 }

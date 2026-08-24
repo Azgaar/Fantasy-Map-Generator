@@ -103,30 +103,36 @@ const CSP = [
 ].join("; ");
 
 function serveRenderer(): void {
-  protocol.handle(SCHEME, request => {
+  protocol.handle(SCHEME, async request => {
     const { host, pathname } = new URL(request.url);
     if (host !== HOST) return new Response("Not found", { status: 404 });
 
     let filePath: string;
     try {
-      filePath = path.join(RENDERER_DIR, decodeURIComponent(pathname));
+      // a directory holds no file to serve: hand out the app itself, the way a web server would
+      const requestedPath = decodeURIComponent(pathname);
+      filePath = path.join(RENDERER_DIR, requestedPath.endsWith("/") ? `${requestedPath}index.html` : requestedPath);
     } catch {
       return new Response("Bad request", { status: 400 }); // a malformed percent-escape
     }
     if (!filePath.startsWith(RENDERER_DIR + path.sep)) return new Response("Forbidden", { status: 403 });
 
-    return net.fetch(pathToFileURL(filePath).toString()).then(response => {
+    try {
+      const response = await net.fetch(pathToFileURL(filePath).toString());
       const headers = new Headers(response.headers);
       headers.set("Content-Security-Policy", CSP);
       return new Response(response.body, { status: response.status, headers });
-    });
+    } catch {
+      // net.fetch rejects on a missing file, and the rejection would reach the page as an opaque network error
+      return new Response("Not found", { status: 404 });
+    }
   });
 }
 
 /** Keep the app itself in the window, hand every external link to the default browser */
 function routeExternalLinks(window: BrowserWindow): void {
   const openExternal = (url: string) => {
-    if (url.startsWith("https:") || url.startsWith("http:")) shell.openExternal(url);
+    if (/^(https?|mailto):/.test(url)) shell.openExternal(url);
   };
 
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -277,7 +283,7 @@ function createWindow(): void {
   enableDevTools(window);
   routeExternalLinks(window);
   confirmOnClose(window);
-  window.loadURL(DEV_SERVER_URL ?? APP_URL);
+  window.loadURL(DEV_SERVER_URL || APP_URL); // an empty variable is no dev server either
 }
 
 if (!app.requestSingleInstanceLock()) {

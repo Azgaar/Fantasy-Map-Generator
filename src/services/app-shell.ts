@@ -51,8 +51,14 @@ function initialize(): void {
   // Electron silently cancels the close on `onbeforeunload` instead of prompting, it asks natively instead
   if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
 
-  // the desktop app has no use for a button offering the desktop app
-  if (isElectron()) findEl("getAppButton")?.remove();
+  if (isElectron()) removeWebOnlyControls();
+}
+
+function removeWebOnlyControls(): void {
+  findEl("getAppButton")?.remove();
+  findEl("azgaarAssistant")?.closest("tr")?.remove();
+  findEl("saveToDropboxButton")?.remove();
+  findEl("loadFromDropbox")?.remove();
 }
 
 initialize();

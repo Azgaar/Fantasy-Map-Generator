@@ -42,6 +42,12 @@ async function open(): Promise<void> {
   alertMessage.innerHTML = await renderOffer();
 }
 
+/** A narrow desktop window is not a phone: ask the device before trusting the viewport width */
+function isHandheld(): boolean {
+  const mobile = (navigator as any).userAgentData?.mobile;
+  return mobile ?? (MOBILE && matchMedia("(pointer: coarse)").matches);
+}
+
 /** Which file this visitor needs, so that nobody has to know what an architecture is */
 async function detectTarget(): Promise<string | undefined> {
   const agent = (navigator as any).userAgentData;
@@ -103,13 +109,13 @@ function renderDownloads(release: Release, target: string | undefined): string {
   const others = DOWNLOADS.filter(({ suffix }) => suffix !== target)
     .map(({ label, suffix }) => ({ label, asset: find(suffix) }))
     .filter(({ asset }) => asset)
-    .map(({ label, asset }) => `<a href="${asset!.browser_download_url}">${label}</a>`)
+    .map(({ label, asset }) => `<a href="${asset!.browser_download_url}" target="_blank">${label}</a>`)
     .join(" &middot; ");
   if (!primary && !others) return "";
 
   const main = primary
     ? /* html */ `<p>Your system is ${primaryLabel}:
-        <b><a href="${primary.browser_download_url}">download version ${release.version}</a></b>
+        <b><a href="${primary.browser_download_url}" target="_blank">download version ${release.version}</a></b>
         (${Math.round(primary.size / 1024 / 1024)} MB). The file goes to your Downloads folder, open it to install the app.</p>`
     : "";
 
@@ -117,7 +123,7 @@ function renderDownloads(release: Release, target: string | undefined): string {
 }
 
 async function renderOffer(): Promise<string> {
-  if (MOBILE) return "<p>The Desktop App is made for computers, there is no phone or tablet version.</p>";
+  if (isHandheld()) return "<p>The Desktop App is made for computers, there is no phone or tablet version.</p>";
 
   const [release, target] = await Promise.all([loadRelease(), detectTarget()]);
   const downloads = release ? renderDownloads(release, target) : "";
