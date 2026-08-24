@@ -58,10 +58,12 @@ describe("layer controls facade", () => {
 
     expect(LayerControls.isLayerOn("toggleLabels")).toBe(true);
     LayerControls.drawActiveLayers();
+    LayerControls.setLayerOrder(["markers", "labels"]);
     LayerControls.syncPreset(false);
 
     expect(runtime.isLayerOn).toHaveBeenCalledWith("toggleLabels");
     expect(runtime.drawActiveLayers).toHaveBeenCalledOnce();
+    expect(runtime.setLayerOrder).toHaveBeenCalledWith(["markers", "labels"]);
     expect(runtime.syncPreset).toHaveBeenCalledWith(false);
     release();
   });

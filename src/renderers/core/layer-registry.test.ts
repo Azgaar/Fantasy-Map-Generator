@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MAP_LAYER_REGISTRY, resolveMapLayerOrder, validateLayerRegistry } from "./layer-registry";
+import {
+  MAP_LAYER_REGISTRY,
+  normalizeMapLayerOrder,
+  resolveMapLayerOrder,
+  validateLayerRegistry
+} from "./layer-registry";
 import { RendererCoordinator } from "./renderer-coordinator";
 
 describe("map layer registry", () => {
@@ -32,6 +37,14 @@ describe("map layer registry", () => {
 
     expect(order.slice(0, 7)).toEqual(["ocean", "landmass", "states", "texture", "biomes", "height", "lakes"]);
     expect(order[21]).toBe("coastline");
+    expect(new Set(order).size).toBe(MAP_LAYER_REGISTRY.length);
+  });
+
+  it("normalizes serialized order by dropping invalid duplicates and appending missing layers", () => {
+    const order = normalizeMapLayerOrder(["markers", "states", "markers", "unknown"]);
+
+    expect(order.slice(0, 3)).toEqual(["markers", "states", "ocean"]);
+    expect(order).toHaveLength(MAP_LAYER_REGISTRY.length);
     expect(new Set(order).size).toBe(MAP_LAYER_REGISTRY.length);
   });
 });

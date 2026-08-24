@@ -365,12 +365,9 @@ describe("PixiMapRenderer lifecycle", () => {
 
   it("renders the editor-independent static viewer fixture through the production lifecycle", async () => {
     const renderer = new PixiMapRenderer();
+    const style = structuredClone(DEFAULT_PIXI_MAP_STYLE);
     await renderer.mount(createSurface());
-    await renderer.render(
-      STATIC_VIEWER_WORLD,
-      structuredClone(DEFAULT_PIXI_MAP_STYLE),
-      coalesceInvalidations([{ kind: "world" }])
-    );
+    await renderer.render(STATIC_VIEWER_WORLD, style, coalesceInvalidations([{ kind: "world" }]));
 
     expect(renderer.getSnapshot()).toMatchObject({ cells: 2, enabled: true, resourceCount: 17 });
     expect(applicationState.stage?.children.map(child => child.label)).toEqual([
@@ -413,6 +410,8 @@ describe("PixiMapRenderer lifecycle", () => {
     const reversedOrder = [...(applicationState.stage?.children.map(child => child.label) ?? [])].reverse();
     renderer.setLayerOrder(reversedOrder as Parameters<typeof renderer.setLayerOrder>[0]);
     expect(applicationState.stage?.children.map(child => child.label)).toEqual(reversedOrder);
+    await renderer.render(STATIC_VIEWER_WORLD, style, coalesceInvalidations([{ kind: "world" }]));
+    expect(applicationState.stage?.children.map(child => child.label)).toEqual(reversedOrder);
     renderer.destroy();
     expect(renderer.getSnapshot()).toMatchObject({ enabled: false, resourceBytes: 0, resourceCount: 0 });
   });
@@ -430,6 +429,25 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(applicationState.stage?.children.find(child => child.label === "markers")?.children.length).toBe(1);
     renderer.clear();
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
+  });
+
+  it("renders compound and Watabou burg symbols from their SVG definitions", async () => {
+    const resolveSymbolIcon = vi.fn(() => "data:image/svg+xml,burg-symbol");
+    const renderer = new PixiMapRenderer({ resolveSymbolIcon });
+    const world = createWorld();
+    world.burgs = [0 as never, { cell: 0, group: "capital", i: 1, x: 2, y: 2 }];
+    const style = structuredClone(DEFAULT_PIXI_MAP_STYLE);
+    style.burgIcons.icons.roles.capital!.icon = "watabou-capital";
+    await renderer.mount(createSurface());
+    await renderer.render(world, style, coalesceInvalidations([{ kind: "world" }]));
+
+    expect(resolveSymbolIcon).toHaveBeenCalledWith(
+      "icon-watabou-capital",
+      expect.objectContaining({ fill: "#ffffff", viewBox: undefined })
+    );
+    expect(applicationState.assetLoad).toHaveBeenCalledWith("data:image/svg+xml,burg-symbol");
+    expect(applicationState.stage?.children.find(child => child.label === "burgIcons")?.children.length).toBe(1);
     renderer.destroy();
   });
 

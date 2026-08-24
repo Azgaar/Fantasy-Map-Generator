@@ -150,7 +150,9 @@ describe("Pixi hard cutover", () => {
 
   it("persists migrated visibility and semantic opacity instead of deriving them from SVG paths", () => {
     expect(saveSource.includes("capturePixiLayerVisibility(style")).toBe(true);
+    expect(saveSource.includes("style.mapLayerOrder = LayerControls.getLayerOrder()")).toBe(true);
     expect(loadSource.includes("getStoredPixiLayerVisibility(style, layer)")).toBe(true);
+    expect(loadSource.includes("LayerControls.setLayerOrder(style.mapLayerOrder)")).toBe(true);
     expect(styleUiSource.includes("window.MapStyleControls.setLayerOpacity")).toBe(true);
     expect(styleUiSource.includes("function setPixiLayerOpacity")).toBe(false);
     expect(stylePresetsSource.includes("window.MapStyleControls.applyLegacyPreset(presetJson)")).toBe(true);

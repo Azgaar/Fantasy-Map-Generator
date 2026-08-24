@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MapLayerId } from "../core/layer-registry";
+import { MAP_LAYER_REGISTRY, type MapLayerId } from "../core/layer-registry";
 import { type MapPickEntry, MapPickingIndex } from "./map-picking-index";
 
 const visible =
@@ -20,6 +20,48 @@ describe("MapPickingIndex", () => {
       domainKind: "marker",
       layer: "markers"
     });
+  });
+
+  it("updates overlap precedence when the visual layer order changes", () => {
+    const index = new MapPickingIndex();
+    index.replaceEntries([
+      point("labels", "label", "label:1", 10, 10, 5, "label"),
+      point("markers", "marker", 7, 10, 10, 5)
+    ]);
+    index.setLayerOrder([
+      ...MAP_LAYER_REGISTRY.map(layer => layer.id).filter(layer => layer !== "labels" && layer !== "markers"),
+      "markers",
+      "labels"
+    ]);
+
+    expect(index.pick({ x: 10, y: 10 }, { cameraScale: 1, isLayerVisible: visible(), tolerance: 8 })).toMatchObject({
+      domainId: "label:1",
+      layer: "labels"
+    });
+  });
+
+  it("picks label boxes at their rendered offset and vertical anchor", () => {
+    const index = new MapPickingIndex();
+    index.replaceEntries([
+      {
+        anchorY: 1,
+        domainId: "burg:1",
+        domainKind: "label",
+        height: 10,
+        kind: "label",
+        layer: "labels",
+        offsetY: -5,
+        shape: "box",
+        width: 20,
+        x: 20,
+        y: 20
+      }
+    ]);
+
+    expect(index.pick({ x: 20, y: 6 }, { cameraScale: 1, isLayerVisible: visible(), tolerance: 0 })).toMatchObject({
+      domainId: "burg:1"
+    });
+    expect(index.pick({ x: 20, y: 19 }, { cameraScale: 1, isLayerVisible: visible(), tolerance: 0 })).toBeNull();
   });
 
   it("excludes invisible layers and respects dependency visibility", () => {

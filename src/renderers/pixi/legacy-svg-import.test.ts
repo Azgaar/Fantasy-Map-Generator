@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Style } from "@/types/style";
 import {
+  getLegacyRendererLayerVisibility,
   importLegacyRendererStyle,
   LEGACY_RENDERER_GROUP_SELECTORS,
   removeLegacyRendererGroups
@@ -48,5 +49,37 @@ describe("legacy SVG renderer import", () => {
 
     expect(remove).toHaveBeenCalledTimes(LEGACY_RENDERER_GROUP_SELECTORS.length);
     expect(replaceChildren).toHaveBeenCalledOnce();
+  });
+
+  it("imports legacy visibility from rendered SVG content instead of domain data", () => {
+    const legacyElement = (options: { children?: boolean; display?: string; matches?: string[] } = {}) =>
+      ({
+        getAttribute: (name: string) => (name === "display" ? (options.display ?? null) : null),
+        hasChildNodes: () => Boolean(options.children),
+        querySelector: (selector: string) => (options.matches?.includes(selector) ? {} : null),
+        style: { display: options.display ?? "" }
+      }) as unknown as Element;
+    const elements = new Map<string, Element>([
+      ["#rivers", legacyElement()],
+      ["#routes", legacyElement({ children: true, matches: ["path"] })],
+      ["#population", legacyElement({ matches: ["line"] })],
+      ["#ice", legacyElement({ display: "none" })],
+      ["#icons", legacyElement({ display: "none" })],
+      ["#armies", legacyElement({ children: true })],
+      ["#markers", legacyElement({ matches: ["svg"] })],
+      ["#goods", legacyElement({ children: true })],
+      ["#markets", legacyElement({ children: true, display: "none" })]
+    ]);
+    const root = { querySelector: (selector: string) => elements.get(selector) ?? null } as unknown as ParentNode;
+
+    expect(getLegacyRendererLayerVisibility(root, "rivers")).toBe(false);
+    expect(getLegacyRendererLayerVisibility(root, "routes")).toBe(true);
+    expect(getLegacyRendererLayerVisibility(root, "population")).toBe(true);
+    expect(getLegacyRendererLayerVisibility(root, "ice")).toBe(false);
+    expect(getLegacyRendererLayerVisibility(root, "burgIcons")).toBe(false);
+    expect(getLegacyRendererLayerVisibility(root, "military")).toBe(true);
+    expect(getLegacyRendererLayerVisibility(root, "markers")).toBe(true);
+    expect(getLegacyRendererLayerVisibility(root, "goods")).toBe(true);
+    expect(getLegacyRendererLayerVisibility(root, "markets")).toBe(false);
   });
 });

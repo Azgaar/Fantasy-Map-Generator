@@ -19,6 +19,22 @@ describe("point symbol scenes", () => {
     expect(scene.anchors.instances[0]).toMatchObject({ domainId: 1, shape: "anchor" });
   });
 
+  it("preserves compound burg icon variants and their SVG asset ids", () => {
+    const style = structuredClone(DEFAULT_PIXI_MAP_STYLE.burgIcons);
+    style.icons.roles.capital!.icon = "#icon-star-circled-empty";
+    const burgs: Burg[] = [
+      { cell: 0, i: 0, x: 0, y: 0 },
+      { cell: 1, group: "capital", i: 1, x: 12, y: 8 }
+    ];
+
+    const scene = buildBurgPointSymbolScene(burgs, style, 1);
+
+    expect(scene.icons.instances[0]).toMatchObject({
+      icon: "icon-star-circled-empty",
+      shape: "star-circled-empty"
+    });
+  });
+
   it("applies marker visibility state without mutating entities", () => {
     const markers: Marker[] = [
       { cell: 1, i: 1, icon: "🌋", pinned: true, type: "volcano", x: 10, y: 20 },

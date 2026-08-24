@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { createRasterExportPlan, throwIfRasterExportAborted } from "./raster-export";
+import { createRasterExportPlan, getRasterExportHiddenLayers, throwIfRasterExportAborted } from "./raster-export";
 
 describe("raster export plan", () => {
+  it("hides baked burg icons when labels are replaced by 3D labels", () => {
+    expect(getRasterExportHiddenLayers({ noIce: true, noLabels: true, noWater: true })).toEqual([
+      "ice",
+      "labels",
+      "burgIcons",
+      "ocean"
+    ]);
+  });
+
   it("covers every output pixel once while keeping overlapped frames within the texture limit", () => {
     const plan = createRasterExportPlan({
       columns: 2,
