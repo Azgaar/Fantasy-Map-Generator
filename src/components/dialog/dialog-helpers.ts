@@ -1,6 +1,7 @@
 // Building blocks shared by every editor dialog
-import { ensureEl, findEl } from "@/utils";
+
 import type { UiDialogElement } from "@/components/ui-dialog/ui-dialog";
+import { ensureEl, findEl } from "@/utils";
 
 /** Close all open dialogs except the stated one */
 export function closeDialogs(except = "#except"): void {
