@@ -1006,7 +1006,7 @@ class CulturesGenerator {
         shield: "banner"
       },
       {
-        name: "Hebrew",
+        name: "Levent",
         base: 42,
         odd: 0.2,
         sort: (i: number) => (n(i) / td(i, 18)) * sf(i),

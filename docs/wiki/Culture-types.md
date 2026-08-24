@@ -2,10 +2,10 @@ Each culture gets a type assigned on generation. The type define how culture wil
 
 ## Culture generation
 
-When a culture is generated, its type is determined by the geographical features it spawned in. A culture is guaranteed to be assigned the first culture type that meets the criteria in the listed order, except the Naval culture type which has a random probability check in addition to its normal requirement. 
+When a culture is generated, its type is determined by the geographical features it spawned in. A culture is assigned the first culture type that meets the criteria in the listed order, except that Naval also requires a random probability check.
 
 ### Nomadic
-Nomadic cultures are generated in deserts or grassland with height less than 70 points.
+Nomadic cultures are generated in hot desert, cold desert, or grassland biomes with height less than 70 points.
 
 ### Highland
 Highland cultures are generated in cells where height is over 50 points. 
@@ -14,13 +14,13 @@ Highland cultures are generated in cells where height is over 50 points.
 Lake cultures are generated in cells around lakes that are over 5 cells in size.
 
 ### Naval
-Naval cultures have a chance of being generated in coastal cells. The chance is slightly higher if the cell is next to an ocean (as opposed to a lake), and significantly higher if the cell is an island.
+Naval cultures can be generated in coastal cells. The generator checks a 10% chance for a non-lake coast, a 60% chance for a one-cell harbor, and a 40% chance for an island subtype. These checks are evaluated in this order, after Nomadic, Highland, and Lake.
 
 ### River
 River cultures are generated in cells with a river of over 100 flux points.
 
 ### Hunting
-Hunting cultures are generated in cells that are more than two cells away from a coast and the biome is either Savannah, Rain forest, Taiga, Tundra, or Wetland.
+Hunting cultures are generated in cells whose coast distance is greater than two and whose biome is Savanna, Tropical rainforest, Temperate rainforest, Taiga, Tundra, or Wetland.
 
 ### Generic
  A culture is set to be generic when its spawn location is ineligible for any other culture types, or in the case of the Naval culture type, failed a random probability check. 
@@ -57,10 +57,10 @@ The base biome costs are as follows:
 * Glacier: 5000
 * Wetland: 150
 
-The cost is reduced to 10 if it's the culture's native biome type. The cost is multiplied by 5 for Hunting cultures in all non-native biome types. The cost is multiplied by 10 for Nomadic cultures in the five forest biome types. Otherwise, the cost is multiplied by 2. Additionally, if the cell has a different biome type than the one the culture is spreading from, 20 is added to the final cost.
+The cost is reduced to 10 if it's the culture's native biome type. The cost is multiplied by 5 for Hunting cultures in all non-native biome types. The cost is multiplied by 10 for Nomadic cultures in biome IDs 5–9 (the forest biome range used by the generator). Otherwise, the cost is multiplied by 2. Additionally, if the cell has a different biome type than the one the culture is spreading from, 20 is added to the final cost.
 
 ### Water crossing cost
-Lake cultures crossing a lake has a flat cost of 10. Naval cultures crossing water costs 2 times the size of the cell in pixels. Nomadic cultures crossing water costs 50 times the size of the cell in pixels. All other cultures crossing water (and Lake cultures crossing a sea) costs 6 times the size of the cell in pixels.
+Lake cultures crossing a lake has a flat cost of 10. Naval cultures crossing water costs 2 times the size of the cell in pixels. Nomadic cultures crossing water costs 50 times the size of the cell in pixels. All other cultures crossing water (and Lake cultures crossing a sea) costs 6 times the size of the cell in pixels. Highland cultures also receive height-specific penalties: 3,000 below height 44, 200 below height 62, and no height penalty at or above 62; other cultures pay additional mountain and hill penalties at heights 67 and 44.
 
 ### River crossing cost
 For non-River cultures, river cells costs 20-100 more to cross, depending on the flux of the river. For River cultures, river cells don't cost extra, but non-river cells cost 100 more.

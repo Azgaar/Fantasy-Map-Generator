@@ -51,12 +51,12 @@ The Heightmap Editor includes tools to help you create and customize your map. B
   - You can click the image to download it.
 
 - **3D Scene**:
-  - Opens a 3D version of the map in a new window.
+  - Opens the map in the app's 3D preview.
   - Allows for a more immersive view of the map's shape and features.
 
-- **Enable Ocean Cells**:
-  - Enable or disable ocean cells on your map.
-  - Useful for defining water bodies and coastlines.
+- **Render Ocean Cells**:
+  - Renders or hides ocean cells in the editor preview.
+  - It does not enable or disable ocean cells in the map.
 
 - **Allow Water Erosion**:
   - Simulate water erosion effects on the terrain.
@@ -129,7 +129,7 @@ Once opened, you'll be asked to select an image from your files.
 
 - **Set Maximum Amount of Colors**:
   - Allows you to set the number of colors you can assign.
-  - Can be any number from 3 to 255.
+  - The converter may produce fewer colors than the requested maximum, depending on the source image and palette.
 
 - **Cancel the Conversion**:
   - Cancel the image conversion and revert back to the previous map.

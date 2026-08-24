@@ -8,14 +8,14 @@ Possible actions are:
 * Add a **strait** (a vertical or horizontal lowered section)
 * **Mask** heightmap (lower all cells along map edge or in map center)
 * **Invert** heightmap (mirror by X, Y or both axes) 
-* **Add** or subtract from all heights
-* **Multiply** all heights
+* **Add** or subtract from heights, with a target of all cells, land cells, or an interval
+* **Multiply** heights, with a target of all cells, land cells, or an interval
 * **Smooth** all heights
 
 Once you have given all the instructions, you can then run the template (process all instructions in sequence).
 There are also options to download and upload templates.
 
-When running a template, the map is cleared first. Undo / redo buttons can be used to check the heightmap on each step. In seed is locked, it will be used for heightmap generation, so the map will be the same on each execution.
+When running a template, the map is cleared first. Undo / redo buttons can be used to check the heightmap on each step. If you enter a seed, it will be used for heightmap generation, so the map will be the same on each execution.
 
 Step can be skipped by clicking on the checkbox on the left. To execute the template click on the Execute button or just press <kbd>Enter</kbd>.
 

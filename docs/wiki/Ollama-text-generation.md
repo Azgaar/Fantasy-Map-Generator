@@ -44,7 +44,7 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 3. **Click "Environment Variables..." button**
 7. **Click "New..." and enter:**
    - Variable name: `OLLAMA_ORIGINS`
-   - Variable value: `https://azgaar.github.io,https://*afmg.netlify.app,http://127.0.0.1:5501`
+   - Variable value: the FMG origins you use, for example `https://azgaar.github.io,http://localhost:5173`
 8. **Click "OK" on everything**
 9. **Restart ollama sever if it's running. You may need to restart you computer as well**
 
@@ -53,7 +53,7 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 2. **Type this command:** `nano ~/.zshrc`
 3. **Add these two lines at the end:**
    ```
-   export OLLAMA_ORIGINS="https://azgaar.github.io,https://*afmg.netlify.app,http://127.0.0.1:5501"
+   export OLLAMA_ORIGINS="https://azgaar.github.io,http://localhost:5173"
    ```
 4. **Save and exit:**
    - Press `Ctrl + X`
@@ -71,7 +71,7 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 2. **Type these commands one by one:**
    ```
    echo 'export OLLAMA_HOST="0.0.0.0"' >> ~/.bashrc
-   echo 'export OLLAMA_ORIGINS="https://azgaar.github.io,https://*afmg.netlify.app,http://127.0.0.1:5501"' >> ~/.bashrc
+   echo 'export OLLAMA_ORIGINS="https://azgaar.github.io,http://localhost:5173"' >> ~/.bashrc
    source ~/.bashrc
    ```
 3. **Restart your computer**
@@ -79,11 +79,11 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 ## Step 4: Start the server
 
 1. Open Command Prompt/Terminal. Type: `ollama serve`. Leave this window open** - Ollama is now running!
-2. Open Fantasy Map Generator. Open AI notes generator and select "ollama" from the AI model list
-3. In the key field, type: `llama3.2` (or whatever model you downloaded)
+2. Open Fantasy Map Generator. Open the AI notes generator and select **ollama (local models)** from the AI model list.
+3. In the key field, type the model name: `llama3.2` (or whatever model you downloaded). This field is a model name, not an API key.
 4. Update the prompt and click on `generate`
 
-**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, you can modify the endpoint in the FMG `ai-generator.js` file.
+**Important:** Fantasy Map Generator connects to Ollama at `http://localhost:11434/api/generate`. This should work automatically by default. If you need to change the connection address, modify the endpoint in `src/controllers/ai-generator.ts` in a local source build.
 
 That's It! You can now generate text using your local AI model.
 

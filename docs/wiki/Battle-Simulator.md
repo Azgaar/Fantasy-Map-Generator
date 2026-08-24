@@ -39,12 +39,12 @@ Naval battle type is auto-selected when both attacker and defender regiments are
 | 💣 Shelling   |   0   |   0.2  |    0    |     2     |   2   |    0    |    0.1   |   0.5   |
 | ⚔️ Boarding   |   1   |   0.5  |   0.5   |     0     |  0.5  |   0.4   |     0    |   0.2   |
 | 🏳️ Withdrawal |   0   |  0.15  |    0    |     1     |   1   |    0    |   0.15   |   0.5   |
-| ⛵ Chase      |   0   |  0.02  |    0    |    0.5    |  0.1  |    0    |    0.1   |   0.3   |
+| ⛵ Chase      |   0   |  0.15  |    0    |     1     |   1   |    0    |   0.15   |   0.5   |
 
 
 #### 🏰 Siege
 
-If attacked regiment is located in a walled town, the system automatically selects siege as a battle type. Siege is the most complex type with a number of optional phases and different variants for attackers and defenders. 
+If the defending regiment is located in a burg with walls or a citadel, the system automatically selects siege as a battle type. Siege is the most complex type with a number of optional phases and different variants for attackers and defenders.
 
 For attackers siege always starts with a ⏳ _blockade_ phase. This is an inactive phase, where attackers prepare or hold a blockade. No damage dealt until attackers are ready to start a 💣 _bombardment_ or ⚔️ _storm_ the town. Machinery units excel at bombardment phase, while storming is risky and does not provide good results if attackers are not dominating in numbers.
 
@@ -62,14 +62,14 @@ If siege is not successful, which is a pretty common case, attacker may decide t
 | 💣 Bombardment  |  0.2  |   0.5  |   0.2   |     3     |   1   |   0.5   |     1    |    1    |
 | ⚔️ Storming     |   1   |   0.6  |   0.5   |     1     |  0.1  |   0.1   |    0.5   |   0.5   |
 | 🛡️ Defense      |   2   |    3   |    1    |     1     |  0.1  |    1    |    0.5   |    1    |
-| 🏳️ Surrendering |  0.1  |   0.1  |   0.05  |    0.01   |  0.01 |   0.02  |    0.1   |   0.3   |
+| 🏳️ Surrendering |  0.1  |   0.1  |   0.05  |    0.01   |  0.01 |   0.02  |   0.01   |   0.03  |
 | ☠️ Looting      |  1.6  |   1.6  |   0.5   |    0.2    |  0.02 |   0.2   |    0.1   |   0.3   |
 | 🏳️ Retreat      |  0.1  |  0.01  |   0.5   |    0.01   |  0.2  |   0.1   |    0.8   |   0.05  |
 | 🐎 Pursue       |   1   |    1   |    4    |    0.05   |   1   |    1    |    1.5   |   0.6   |
 
 #### 🌳 Ambush
 
-Ambush is getting auto-selected with a 20% chance if defenders are in forest or marshes biomes. It starts with a ⚡ _surprise attack_ of the defenders that causes attackers' 💫 _shock_. Defenders get a huge advantage with the surprise factor, but if attackers army is still stronger, the shock will end quickly. Once shock is over, sides enter a standard ⚔️ _melee_ phase, which usually ends with a 🏳️ _retreat_ of the side with dropped morale. Other side start a 🐎 _pursue_ where mounted units excel.
+Ambush is getting auto-selected with a 10% chance if the defender is in biome IDs 5, 6, 7, 8, 9, or 12 (forest, taiga, or wetland groups used by the generator). It starts with a ⚡ _surprise attack_ of the defenders that causes attackers' 💫 _shock_. Defenders get a huge advantage with the surprise factor, but if attackers army is still stronger, the shock will end quickly. Once shock is over, sides enter a standard ⚔️ _melee_ phase, which usually ends with a 🏳️ _retreat_ of the side with dropped morale. Other side start a 🐎 _pursue_ where mounted units excel.
 
 |               | Melee | Ranged | Mounted | Machinery | Naval | Armored | Aviation | Magical |
 |---------------|-------|--------|---------|-----------|-------|---------|----------|---------|

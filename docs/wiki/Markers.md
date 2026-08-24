@@ -2,7 +2,7 @@
 Markers are icons on the map representing a point of interest, e.g. a battlefield, a bridge, an inn, etc.  You can toggle the markers layer on or off using the button on the Layers tab.
 
 ## Marker generation and editing
-After map generation, the markers are randomly generated according to a set of criteria (e.g. bridges can only appear on rivers), and you can add your own markers anywhere you want.  Each randomly generated marker has some randomly generated relevant notes attached.  Notes on both randomly generated markers and manually added markers can be edited.  Notes can have different fonts which you can edit in the notes editor.  You can also edit properties for markers like the icon, icon size, and position.  Icons have to be from a list of icons, or you can add a new icon which must be a unicode character.  Custom icons are not possible at the moment.  To edit a marker, click the marker icon.  A small window with marker properties will appear.  You can edit notes using the bottom-left button.
+After map generation, the markers are randomly generated according to a set of criteria (e.g. bridges can only appear on rivers), and you can add your own markers anywhere you want. Each randomly generated marker has relevant notes attached. Notes on both randomly generated markers and manually added markers can be edited. Notes can have different fonts which you can edit in the notes editor. You can also edit properties for markers like the icon, icon size, and position. Icons can be Unicode characters or image URLs/data-image icons where the editor accepts them; custom image icons are supported. To edit a marker, click the marker icon. A small window with marker properties will appear. You can edit notes using the bottom-left button.
 
 ## Special markers
 There are special markers for dungeons, which link to Watabou's one-page dungeon generator (https://watabou.itch.io/one-page-dungeon).  These special markers show a preview in the notes.  In the notes editor, click on the <> button to show the HTML code used for the preview.  You can use the same text to generate your own previews to dungeons.  The text is below:
@@ -28,7 +28,7 @@ You can also make a clickable link with an image preview:
 
 
 ## Marker criteria
-Criteria and types of randomly added markers are below:
+Criteria and types of randomly added markers are defined in the generator and can change between versions. The current generator includes the following types:
 
 * Battlefields: These are areas within a state that have a noticeable population, found in mid-elevation regions.
 * Bridges: These are found in cities located near rivers, especially where the river is not close to the ocean and the water flow is significant.
@@ -58,4 +58,4 @@ Criteria and types of randomly added markers are below:
 * Statues: These monuments appear in low to mid-elevation regions.
 * Volcanoes: Found in very high mountain regions, representing active or dormant volcanic activity.
 * Waterfalls: Located in hilly or mountainous areas with rivers, especially where there’s a sharp drop in terrain nearby.
-
+* Water sources, Libraries, Fairs, Caves, Disturbed burials, Necropolises, Encounters, and Party markers: generated from their corresponding location, settlement, or configuration rules.

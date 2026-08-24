@@ -4,9 +4,9 @@ A culture set is a collection of cultures to be displayed in the same map.
 * European: A list of 15 cultures from Europe.
 * Oriental: A list of 13 cultures from Asia.
 * English: A group of 10 cultures all with English culture.
-* Antique: A list of 15 cultures from ancient europe.
-* High fantasy: A list of 13 fictional and 4 human cultures for fantasy settings.
-* Dark fantasy: A list of 6 english, 5 european, 14 ethnic, and 9 fictional cultures for human ruled fantasies.
+* Antique: A pool of 16 ancient-culture definitions; the current UI allows up to 10.
+* High fantasy: A list of 13 fictional and 4 human cultures for fantasy settings (17 total).
+* Dark fantasy: A pool of 34 hard-coded cultures; the current UI allows up to 18.
 
 ### All-world
 * Shwazen: It represents proto-Germanic and Germanic peoples of different times and places. Namesbase: German. [More info about Germanic culture](https://en.wikipedia.org/wiki/Germanic_culture).
@@ -92,6 +92,7 @@ This contains a pool of ten cultures all of english culture. Useful for making m
 * Cantabrian: Namesbase: Basque.
 * Estian: Namesbase: Finnic.
 * Carthaginian: Namesbase: Berber.
+* Hebrew: Namesbase: Levantine.
 * Mesopotamian
 
 ### High fantasy

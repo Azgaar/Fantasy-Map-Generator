@@ -151,7 +151,7 @@ There is also a buttons to download a zip of several tiles (in a separate png fi
 
 ### Export to GeoJSON
 
-There are several buttons for downloading some data in GeoJSON formats (data can be cells, routes, rivers, markers.
+There are several buttons for downloading data in GeoJSON format: cells, routes, rivers, markers, or zones.
 
 ### Export To JSON
 
@@ -195,7 +195,7 @@ Each layer is a toggle, which means that clicking on a certain layer will cause 
 
 For example, the "Rivers" layer will display the rivers on the map. Clicking again on the rivers layer will hide them.
 
-There are layers that cannot be represented together with others (For example, Heightmap and Biomes layers).
+Some full-map layers, such as Heightmap, Biomes, and Texture, compete for the same visual area; opacity, clipping, and layer order determine how they combine.
 
 You can drag the different layers and thus change their display order.
 
@@ -207,21 +207,21 @@ In addition, you can press ctrl and a certain layer, to navigate to the style ta
 
 ## Layers classification
 
-### Opaque layers
+### Full-map layers
 
 Texture, Heightmap, Biomes.
 
-Each of these layers is drawn on the entire map in an opaque manner, that is, it comes at the expense of the other, so that they hide each other.
+These layers cover the map area and can obscure other layers depending on their current opacity and clipping settings.
 
 The one that will be displayed is the one that appears last in the order of the layers (to change, you can drag the layers and change their display order).
 
 The other layers can hide parts of other layers, but they cannot hide the entire map.
 
-Note: you can change the design of the above layers so that they are not opaque, this is in the style editor tab. But by default, the above layers are opaque.
+Note: their opacity and clipping can be changed in the Style tab.
 
 ### semi opaque layers
 
-Religion, Cultures,  States, States, Temperature.
+Religion, Cultures, States, and Temperature are generally semi-opaque overlays and can be combined, subject to their styles and layer order.
 
 These layers are drawn on the entire map, but they do not completely hide the above 3 layers, and they can work with each other without full hiding.
 
@@ -231,7 +231,7 @@ A dropdown that displays a set of predefined layers.
 
 For example, the group of layers called "political map", contains (and toggle) the layers of the states, borders, rivers, etc.
 
-Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Military map, Emblems, Pure landmass.
+Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods, Trade, Military map, Emblems, and Pure landmass.
 
 ## Biomes
 
@@ -481,7 +481,7 @@ These settings are applied when you generate a new map.
 
 * Map name: This will be the name under which the map will be saved. On the right, there is a button that allows you to replace with a new generator name.
 
-* Year and era: The current year and the name of the current era. Don't affect a lot as there is no time simulation in the FMG.
+* Year and era: The current year and the name of the current era. They are used by some generated names and text, but FMG does not run a time simulation.
 
 * Heightmap: Opens the topographic map selector, which is intended for selecting a template intended for creating a topographic map. For example an archipelago, a group of continents, etc. You can create your own template, or modify the existing templates.
 

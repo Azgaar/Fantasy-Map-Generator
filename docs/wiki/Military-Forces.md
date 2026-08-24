@@ -31,7 +31,7 @@ For any change you have to click on _Apply_ and it will trigger generation. It's
 ## Generation logic
 Fantasy Map Generator regiments creation logic is pretty advanced and considers different aspects such as state diplomacy, type, culture and religion, cell biome and elevation, as well as military unit specific.
 
-For each state _War Alert_ is getting calculated. It shows how much state is willing to wage a war. War Alert acts as a modifier to all military forces of the state. For example if state has 1000 infantry generated and War Alert is 2, total infantry number will be 2000. War Alert rate is a combination of _Expansion Fulfillment_ (State Expansionism / State Area) and _Diplomatic alert_ (rate of diplomatic relations). It means that expansionist states with relatively small area get higher War Alert rate than big states with moderate expansionism. Diplomatic alert is a sum of relations rates, where bad relations increase the value, while good decrease it. Diplomatic alert is calculated separately for neighboring and all states, so relations with neighbors have more impact on War Alert. Diplomatic relations modifiers are:
+For each state _War Alert_ is getting calculated. It shows how much state is willing to wage a war. War Alert acts as a modifier to all military forces of the state. For example if state has 1000 infantry generated and War Alert is 2, total infantry number will be 2000. War Alert rate is a combination of _Expansion Fulfillment_ (State Expansionism / State Area) and diplomatic factors. It means that expansionist states with relatively small area get higher War Alert rate than big states with moderate expansionism. Direct diplomatic statuses are mapped to alert tiers, and neighboring relations also contribute through a separate neighbor factor, so relations with neighbors have more impact on War Alert. Diplomatic relations modifiers are:
 
 `Ally: -0.2, Friendly: -0.1, Neutral: 0, Suspicion: 0.1, Enemy: 1, Unknown: 0, Rival: 0.5, Vassal: 0.5, Suzerain: -0.5`
 
@@ -47,7 +47,7 @@ War Alert is not the only state-specific modifier. The other one depends on _Sta
 | Hunting  | 1.2   | 2      | 0.7     | 0.4       | 0.7   | 0.7     | 0.6      | 1       |
 | River    | 1.1   | 0.8    | 0.8     | 1.1       | 1.2   | 1.1     | 1.2      | 1       |
 
-Some state forms have an additional modifier. _Hordes_ get x2 mounted units, while _Republics_ get x1.2 naval units.
+Some state forms have an additional modifier. State forms whose name contains _Horde_ get x2 mounted units, while _Republics_ get x1.2 naval units. The larger modifier matrix above is based on the state's culture-derived type, not its form.
 
 The next step is to calculate troops number for each cell and burg. Calculation is done separately for each unit and  considers possession-specific divider, unit percentage set in military options, state modifier calculated above and hard-coded unit type matrix. For example mounted units have x3 modifier in cells with nomadic biomes, while their number is reduced in highlands. The formula is:
 
@@ -82,7 +82,7 @@ Here are generic troops number for 10000 population if state modifier is 1 and s
 | Wetland burg  |   20  |   32   |    1    |     4     |   1   |
 | Highland burg |   24  |   40   |    1    |     9     |   0   |
 
-Please also note that _Naval_ units can be generated only in port burgs. 
+Please also note that rural naval units are generated only in cells adjacent to a haven, while burg naval units require both a port and an adjacent haven. They are not limited to port burgs alone.
 
 Troops for each cell and burg form a _platoon_. As number of platoons is too high, they are getting sorted by troops number and aggregated to _regiments_ based on distance between platoons and expected size. Regiment expected size is calculated by a simple formula of `3 * Population_rate`. If the current regiment is big enough, new one is getting created. Then system generates names and a few details for regiments and place them on a map.
 

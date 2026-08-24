@@ -1,4 +1,4 @@
-_The tutorial is for version 1.98_
+_The tutorial describes the current UI; exact labels and screenshots may change._
 
 ![loading_screen](https://github.com/user-attachments/assets/154617dd-a690-4da5-a36c-187cd51a5c04)
 
@@ -15,7 +15,7 @@ The map is generated fully zoomed out. Double click on the map to zoom into the 
 The same operations can be performed using keyboard. Press <kbd>+</kbd> to zoom in, <kbd>-</kbd> to zoom out. Use <kbd>1</kbd>-<kbd>9</kbd> number keys to set an exact zoom level. Press <kbd>0</kbd> to reset zoom to default. Use arrows keys to move around.
 
 ## Map layers
-By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. There are number of presets available by default: political, cultural, religions, biomes, provinces, heightmap, places of interest, and other. You can either select one of the presets or use buttons below to display or hide a particular layer.
+By default the map shows the world’s political situation, but it’s not the only available preset. Open the first tab of the menu – _Layers_ – to change the preset. _Preset_ is a set of layers to be toggled on. The default presets include political, cultural, religions, provinces, biomes, heightmap, physical, places of interest, goods, trade, military, and emblems. You can either select one of the presets or use buttons below to display or hide a particular layer.
 
 ![menu](https://github.com/user-attachments/assets/70171c15-a44e-4460-9e33-4f4eed7f1b2a)
 

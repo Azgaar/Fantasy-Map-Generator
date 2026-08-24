@@ -38,7 +38,7 @@ When you click on "custom name" a popup appears A popup will appear that says "P
 
 ### How to change the scale of your map
 
-The value who decides how big is your map is the ratio between pixels and your distance unit. By default this ratio is: "1 pixel is 3 km" but you can change it on the slider. Accepted values are from 0.01 where your whole map is only a few tens of units (10-20 units) to 19.91. that makes your map a few something units.
+The value that decides how large your map is represents distance units per map pixel. The default is 3 units per pixel (the displayed unit defaults to miles or kilometers based on locale), and the input accepts values from 0.01 to 20. This value is not intrinsically kilometers: the selected distance unit defines how it is displayed.
 
 ### Altitude
 
@@ -152,7 +152,7 @@ to show/hide the grid go to: menu → layers → grid. You can customize the loo
     * Hex grid (flat). They are joined vertically at the sides. They show two horizontal vertices.
     * Square grid. Squares parallel to the ground.
 * **Scale**. Default 1. Min: 0.1. Max: 10. Set the scale of the grid overlay.
-* Next to the scale is the **distance** between grid cell centers in map scale. Default: scale 1 → 75 km. Min: 0.1 → 7.5 km. Max: 10 → 750 km.
+* Next to the scale is the **distance** between grid cell centers in map scale. At the default distance scale of 3, scale 1 corresponds to 75 distance units; scale 0.1 to 7.5, and scale 10 to 750. The selected distance unit is used for the label.
 * **Shift by axes**. The input fields are shifting in X or Y axis in pixels. By default 0, 0.
 * **Stroke color** of the grid. Color selector.
 * **Stroke width**. The line that draws the grid. By default 0.5. Min: 0. Max: 5.

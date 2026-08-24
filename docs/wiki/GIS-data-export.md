@@ -30,7 +30,7 @@ You are not, of course, limited to only QGIS. Data exported can also be used in 
 Fantasy Map Generator allows to export some data in GIS-compatible format. 
 
 ## Cell Data
-In the Save... menu of the Generator there is an option _.json_ to save the cell data into as a GeoJSON file. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._
+In the Generator's Export dialog there are GeoJSON buttons for cells, routes, rivers, markers, and zones. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._. The separate JSON buttons export full, minimal, pack-cell, or grid-cell data rather than GeoJSON.
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_vectorlayer.png)
 
@@ -44,7 +44,7 @@ Unfortunately, there are sometimes gaps or overlaps in the cell export data. You
 
 
 ## Burg Data
-Burg data can be downloaded as _.csv_ file using the button in the _Burgs Editor_ . The downloaded file contains position information (longitude, latitude and height) for burgs. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
+Burg data can be downloaded as a _.csv_ file from the _Burgs Overview_. The downloaded file contains position information (longitude, latitude and height) for burgs. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_csv.png)
 
