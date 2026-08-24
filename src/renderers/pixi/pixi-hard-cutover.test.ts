@@ -26,7 +26,9 @@ import drawMilitarySource from "../draw-military.ts?raw";
 import drawTemperatureSource from "../draw-temperature.ts?raw";
 import drawTradeSource from "../draw-trade-animation.ts?raw";
 import renderersIndex from "../index.ts?raw";
+import labelsRendererSource from "../labels/labels-renderer.ts?raw";
 import pointSymbolsSource from "../point-symbols.ts?raw";
+import labelSceneSource from "../scene/layers/label-scene.ts?raw";
 import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
 import populationMilitarySceneSource from "../scene/layers/population-military-scene.ts?raw";
 import staticOverlaySceneSource from "../scene/layers/static-overlay-scene.ts?raw";
@@ -156,6 +158,15 @@ describe("Pixi hard cutover", () => {
       expect(controllerSource.includes(selector)).toBe(true);
     }
     expect(exportSource.includes("#armies image")).toBe(false);
+  });
+
+  it("renders labels through renderer-neutral scenes after deterministic font readiness", () => {
+    expect(layersSource.includes("drawLabels();")).toBe(true);
+    expect(labelsRendererSource.includes('invalidatePixiRendererLayer("labels")')).toBe(true);
+    expect(labelsRendererSource.includes("createLabelElements")).toBe(false);
+    expect(labelSceneSource.includes("buildLabelScene")).toBe(true);
+    expect(controllerSource.includes('"#labels"')).toBe(true);
+    expect(controllerSource.includes('"#textPaths"')).toBe(true);
   });
 
   it("renders compass and trade through Pixi without live SVG transitions", () => {

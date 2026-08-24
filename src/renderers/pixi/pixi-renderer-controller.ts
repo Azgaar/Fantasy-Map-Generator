@@ -1,6 +1,7 @@
 import type { TemperatureScale } from "@/utils/temperature";
 import type { MapCamera } from "../core/camera";
 import { coalesceInvalidations } from "../core/invalidation";
+import { getLabelRenderState } from "../labels/label-render-state";
 import { getMarkerRenderState } from "../marker-render-state";
 import { getMapRendererStyle } from "../scene/map-style-state";
 import { createMapRenderWorld } from "../scene/render-world";
@@ -52,7 +53,9 @@ const OWNED_SVG_SELECTORS = [
   "#routes",
   "#temperature",
   "#coastline",
-  "#prec"
+  "#prec",
+  "#labels",
+  "#textPaths"
 ] as const;
 
 // Serialized legacy maps may still contain these groups. They are import input only and are removed before Pixi paints.
@@ -134,6 +137,7 @@ const syncVisibility = (renderer: PixiMapRenderer): void => {
   renderer.setLayerVisibility("markets", layerIsOn("toggleMarketsLayer"));
   renderer.setLayerVisibility("precipitation", layerIsOn("togglePrecipitation"));
   renderer.setLayerVisibility("population", layerIsOn("togglePopulation"));
+  renderer.setLayerVisibility("labels", layerIsOn("toggleLabels"));
   renderer.setLayerVisibility("burgIcons", layerIsOn("toggleBurgIcons"));
   renderer.setLayerVisibility("military", layerIsOn("toggleMilitary"));
   renderer.setLayerVisibility("markers", layerIsOn("toggleMarkers"));
@@ -161,7 +165,8 @@ const getWorld = () =>
     },
     getMarkerRenderState(),
     Production,
-    urbanization
+    urbanization,
+    getLabelRenderState()
   );
 
 const api: PixiRendererControllerApi = {

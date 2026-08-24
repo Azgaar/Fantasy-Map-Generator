@@ -35,6 +35,7 @@ describe("Pixi renderer ownership", () => {
       "markets",
       "precipitation",
       "population",
+      "labels",
       "burgIcons",
       "military",
       "markers"
@@ -47,6 +48,6 @@ describe("Pixi renderer ownership", () => {
 
   it("leaves not-yet-migrated layers with their current owner", () => {
     activatePixiRendererOwnership();
-    expect(rendererCoordinator.isOwnedBy("labels", "svg")).toBe(true);
+    expect(rendererCoordinator.isOwnedBy("emblems", "svg")).toBe(true);
   });
 });

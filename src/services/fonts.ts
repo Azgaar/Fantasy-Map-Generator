@@ -353,6 +353,9 @@ export function getUsedFonts(svg: SVGSVGElement): FontDefinition[] {
     const font = labelGroup.getAttribute("font-family");
     if (font) usedFontFamilies.add(font);
   }
+  for (const groupStyle of Object.values(style.labels.groups)) {
+    if (groupStyle["font-family"]) usedFontFamilies.add(groupStyle["font-family"]);
+  }
 
   const provinceFont = select("#provs").attr("font-family");
   if (provinceFont) usedFontFamilies.add(provinceFont);

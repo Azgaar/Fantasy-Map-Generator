@@ -14,6 +14,7 @@ export type PixiOwnedLayer =
   | "ice"
   | "lakes"
   | "landmass"
+  | "labels"
   | "markers"
   | "markets"
   | "military"
@@ -55,6 +56,7 @@ export const PIXI_OWNED_LAYER_IDS: readonly PixiOwnedLayer[] = [
   "markets",
   "precipitation",
   "population",
+  "labels",
   "burgIcons",
   "military",
   "markers"

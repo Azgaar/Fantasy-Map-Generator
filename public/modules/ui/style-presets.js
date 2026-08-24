@@ -145,6 +145,7 @@ function applyStylePreset(presetJson) {
   }
 
   syncPixiCellStylePreset(presetJson);
+  drawLabels();
 
   function getStyleAttributes(attributes) {
     return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));

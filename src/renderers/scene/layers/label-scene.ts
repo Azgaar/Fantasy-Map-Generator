@@ -237,7 +237,7 @@ function samplePolyline(
 
 function parseTextShadow(value: string | null | undefined): LabelShadowStyle | null {
   if (!value) return null;
-  const match = value.match(/^(.+?)\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px$/);
+  const match = value.match(/(?:^|;)\s*(?:text-shadow:\s*)?(.+?)\s+(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px(?:;|$)/);
   if (!match) return null;
   const offsetX = Number(match[2]);
   const offsetY = Number(match[3]);

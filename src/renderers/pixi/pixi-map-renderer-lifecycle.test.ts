@@ -343,6 +343,7 @@ describe("PixiMapRenderer lifecycle", () => {
       "markets",
       "precipitation",
       "population",
+      "labels",
       "burgIcons",
       "military",
       "markers"
@@ -449,6 +450,74 @@ describe("PixiMapRenderer lifecycle", () => {
     expect(renderer.getSnapshot().textureCacheEntries).toBe(3);
     renderer.clear();
     expect(renderer.getSnapshot()).toMatchObject({ resourceBytes: 0, resourceCount: 0, textureCacheEntries: 0 });
+    renderer.destroy();
+  });
+
+  it("builds straight and curved Pixi labels with semantic group visibility", async () => {
+    const renderer = new PixiMapRenderer();
+    const world = createWorld() as ReturnType<typeof createWorld> & {
+      labelRenderState: NonNullable<import("../scene/render-world").MapRenderWorld["labelRenderState"]>;
+    };
+    world.labelRenderState = {
+      groups: [
+        { name: "state", type: "state", zoom: { max: 4, min: null } },
+        { layerDependency: "toggleRoutes", name: "route", type: "route", zoom: { max: 40, min: 2 } }
+      ],
+      labels: [
+        { anchor: [2, 2], entityId: 1, group: "state", id: "stateLabel1", text: "North|Realm", type: "state" },
+        {
+          anchor: [2, 2],
+          entityId: 2,
+          group: "route",
+          id: "routeLabel2",
+          pathPoints: [
+            [0, 2],
+            [2, 1],
+            [4, 2]
+          ],
+          text: "Road",
+          type: "route"
+        }
+      ],
+      resizeOnZoom: true,
+      showAll: false,
+      styles: {
+        route: {
+          fill: "#333333",
+          filter: null,
+          "font-family": "Arial",
+          "font-size": "3%",
+          "letter-spacing": 0,
+          opacity: 1,
+          stroke: "#ffffff",
+          "stroke-width": 0,
+          style: null
+        },
+        state: {
+          fill: "#222222",
+          filter: null,
+          "font-family": "Almendra SC",
+          "font-size": "20%",
+          "letter-spacing": 1,
+          opacity: 0.8,
+          stroke: "#ffffff",
+          "stroke-width": 0.5,
+          style: "text-shadow: white 0px 1px 4px"
+        }
+      }
+    };
+    await renderer.mount(createSurface());
+    renderer.setLayerVisibility("routes", false);
+    await renderer.render(world, structuredClone(DEFAULT_PIXI_MAP_STYLE), coalesceInvalidations([{ kind: "world" }]));
+
+    const labels = applicationState.stage?.children.find(child => child.label === "labels") as
+      | { children: Array<{ children: unknown[]; label: string; visible: boolean }> }
+      | undefined;
+    expect(labels?.children.map(group => group.label)).toEqual(["labels:state", "labels:route"]);
+    expect(labels?.children[0].children).toHaveLength(1);
+    expect(labels?.children[1].visible).toBe(false);
+    expect(renderer.getSnapshot()).toMatchObject({ labelGlyphs: 5, unsupportedLabelEffects: [] });
+    expect(renderer.getSnapshot().missingLabelFonts).toEqual(["Almendra SC", "Arial"]);
     renderer.destroy();
   });
 });

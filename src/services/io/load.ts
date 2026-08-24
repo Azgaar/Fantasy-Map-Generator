@@ -531,7 +531,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       turnOnPixiLayer("ice", "toggleIce", Boolean(pack.ice.length));
       turnOnPixiLayer("precipitation", "togglePrecipitation", Boolean(hasChild(select("#prec"), "circle")));
       if (isVisible(select("#emblems")) && hasChild(select("#emblems"), "use")) turnOn("toggleEmblems");
-      if (hasChildren(select("#labels"))) turnOn("toggleLabels");
+      turnOnPixiLayer("labels", "toggleLabels", Boolean(hasChildren(select("#labels"))));
       turnOnPixiLayer(
         "burgIcons",
         "toggleBurgIcons",

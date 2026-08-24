@@ -42,6 +42,7 @@ import {
   type GoodsBurgSceneItem
 } from "../scene/layers/economic-ice-scene";
 import { buildGridScene } from "../scene/layers/grid-scene";
+import { buildLabelScene, type LabelSceneGroup, type ResolvedLabelGroupStyle } from "../scene/layers/label-scene";
 import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
 import {
   buildMilitaryScene,
@@ -65,6 +66,7 @@ import {
   type SemanticLineStyle
 } from "../scene/styles";
 import { WorldSceneRevisionTracker } from "../scene/world-scene";
+import { ensureFontFamiliesReady } from "../text/font-readiness";
 import { monitorWebGlContext } from "./context-recovery";
 import { RetainedCellMesh } from "./layers/retained-cell-mesh";
 
@@ -77,6 +79,8 @@ export interface PixiRendererSnapshot {
   diagnostics: RenderDiagnosticsSnapshot;
   enabled: boolean;
   burgSymbols: number;
+  labelGlyphs: number;
+  missingLabelFonts: readonly string[];
   markerSymbols: number;
   reliefSprites: number;
   resolution: number;
@@ -84,11 +88,32 @@ export interface PixiRendererSnapshot {
   resourceCount: number;
   renderer: string | null;
   textureCacheEntries: number;
+  unsupportedLabelEffects: readonly string[];
   viewportHeight: number;
   viewportWidth: number;
 }
 
 type CellFillLayer = "biomes" | "cultures" | "provinces" | "religions" | "states";
+
+interface LabelDisplay {
+  anchorX: number;
+  anchorY: number;
+  container: Container;
+  groupFontSize: number;
+  offsetXEm: number;
+  offsetYEm: number;
+  rescale: boolean;
+  textDisplays: readonly Text[];
+}
+
+interface LabelGroupDisplay {
+  active: boolean;
+  container: Container;
+  dependency: MapLayerId | null;
+  maxScale: number | null;
+  minScale: number | null;
+  showAll: boolean;
+}
 
 const CELL_FILL_LAYERS: readonly CellFillLayer[] = ["biomes", "religions", "cultures", "states", "provinces"];
 
@@ -111,6 +136,8 @@ export class PixiMapRenderer implements MapRenderer {
   private diagnostics = new RenderDiagnostics();
   private cellMeshes = new Map<CellFillLayer, { container: Container; retained: RetainedCellMesh }>();
   private layerVisibility = new Map<MapLayerId, boolean>();
+  private labelDisplays: LabelDisplay[] = [];
+  private labelGroupDisplays: LabelGroupDisplay[] = [];
   private markerDisplays = new Map<number, { container: Container; baseSize: number; rescale: boolean }>();
   private pointTextureHandles = new Set<RendererResourceHandle<Texture>>();
   private rebuildSequence = 0;
@@ -142,6 +169,8 @@ export class PixiMapRenderer implements MapRenderer {
     diagnostics: {},
     enabled: false,
     burgSymbols: 0,
+    labelGlyphs: 0,
+    missingLabelFonts: [],
     markerSymbols: 0,
     reliefSprites: 0,
     resolution: 1,
@@ -149,6 +178,7 @@ export class PixiMapRenderer implements MapRenderer {
     resourceCount: 0,
     renderer: null,
     textureCacheEntries: 0,
+    unsupportedLabelEffects: [],
     viewportHeight: 0,
     viewportWidth: 0
   };
@@ -221,6 +251,8 @@ export class PixiMapRenderer implements MapRenderer {
     const marketsContainer = this.buildMarketsContainer();
     const precipitationContainer = this.buildPrecipitationContainer();
     const populationContainer = this.buildPopulationContainer();
+    const labelsContainer = await this.buildLabelsContainer(sequence);
+    if (sequence !== this.rebuildSequence) return;
     const burgContainer = this.buildBurgIconsContainer();
     const militaryContainer = await this.buildMilitaryContainer(sequence);
     if (sequence !== this.rebuildSequence) return;
@@ -251,6 +283,7 @@ export class PixiMapRenderer implements MapRenderer {
       marketsContainer,
       precipitationContainer,
       populationContainer,
+      labelsContainer,
       burgContainer,
       militaryContainer,
       markerContainer
@@ -275,6 +308,7 @@ export class PixiMapRenderer implements MapRenderer {
       burgSymbols,
       cells: world.cells.i.length,
       enabled: true,
+      labelGlyphs: this.labelDisplays.reduce((total, display) => total + display.textDisplays.length, 0),
       markerSymbols,
       reliefSprites,
       renderer: this.app.renderer.constructor.name
@@ -295,6 +329,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const child of this.app.stage.children) {
       if (isMapLayerId(child.label)) child.visible = this.layerVisibility.get(child.label) ?? true;
     }
+    this.updateLabelGroupVisibility();
     if (render) {
       this.app.render();
       this.rendererOptions.onSceneChange?.();
@@ -323,6 +358,8 @@ export class PixiMapRenderer implements MapRenderer {
     this.app.stage.position.set(this.camera.x, this.camera.y);
     this.app.stage.scale.set(this.camera.scale);
     this.updateMarkerScales();
+    this.updateLabelDisplays();
+    this.updateLabelGroupVisibility();
     this.app.render();
     this.recordPerformance("pixi:camera", performance.now() - started);
   }
@@ -585,6 +622,73 @@ export class PixiMapRenderer implements MapRenderer {
     );
     const container = this.buildLineContainer("grid", scene.paths, () => gridStyle.stroke);
     container.alpha = gridStyle.opacity;
+    return container;
+  }
+
+  private async buildLabelsContainer(sequence: number): Promise<Container> {
+    const container = new Container();
+    container.label = "labels";
+    const state = this.getWorld().labelRenderState;
+    if (!state) return container;
+
+    const scene = buildLabelScene(state, this.sceneRevisions.getLayerRevision("labels"));
+    const fontResults = await ensureFontFamiliesReady(scene.groups.map(group => group.style.fontFamily));
+    if (sequence !== this.rebuildSequence) return container;
+    this.stats.missingLabelFonts = fontResults.filter(result => !result.ready).map(result => result.family);
+    this.stats.unsupportedLabelEffects = [...scene.unsupportedEffects];
+
+    for (const group of scene.groups)
+      container.addChild(this.buildLabelGroup(group, scene.resizeOnZoom, scene.showAll));
+    this.updateLabelDisplays();
+    this.updateLabelGroupVisibility();
+    return container;
+  }
+
+  private buildLabelGroup(group: LabelSceneGroup, resizeOnZoom: boolean, showAll: boolean): Container {
+    const container = new Container();
+    container.label = `labels:${group.name}`;
+    container.alpha = group.style.opacity;
+    this.labelGroupDisplays.push({
+      active: group.active,
+      container,
+      dependency: group.dependency,
+      maxScale: group.maxScale,
+      minScale: group.minScale,
+      showAll
+    });
+
+    for (const label of group.labels) {
+      const labelContainer = new Container();
+      labelContainer.cullable = true;
+      labelContainer.label = label.domainId;
+      const textDisplays: Text[] = [];
+      if (label.curvedGlyphs) {
+        for (const glyph of label.curvedGlyphs) {
+          const text = createLabelText(glyph.character, label.fontSize, label.letterSpacing, group.style);
+          text.anchor.set(0.5);
+          text.position.set(glyph.x - label.anchorX, glyph.y - label.anchorY);
+          text.rotation = glyph.angle;
+          labelContainer.addChild(text);
+          textDisplays.push(text);
+        }
+      } else {
+        const text = createLabelText(label.text, label.fontSize, label.letterSpacing, group.style);
+        text.anchor.set(0.5, label.type === "burg" ? 1 : 0.5);
+        labelContainer.addChild(text);
+        textDisplays.push(text);
+      }
+      container.addChild(labelContainer);
+      this.labelDisplays.push({
+        anchorX: label.anchorX,
+        anchorY: label.anchorY,
+        container: labelContainer,
+        groupFontSize: group.style.fontSize,
+        offsetXEm: group.style.offsetXEm,
+        offsetYEm: group.style.offsetYEm,
+        rescale: resizeOnZoom,
+        textDisplays
+      });
+    }
     return container;
   }
 
@@ -1063,6 +1167,11 @@ export class PixiMapRenderer implements MapRenderer {
     for (const retained of this.retainedCellMeshes) retained.destroy();
     this.retainedCellMeshes.clear();
     this.cellMeshes.clear();
+    this.labelDisplays = [];
+    this.labelGroupDisplays = [];
+    this.stats.labelGlyphs = 0;
+    this.stats.missingLabelFonts = [];
+    this.stats.unsupportedLabelEffects = [];
     this.markerDisplays.clear();
     this.tradeContainer = null;
     this.tradeDisplays.clear();
@@ -1139,6 +1248,29 @@ export class PixiMapRenderer implements MapRenderer {
       revision: `${this.sceneRevisions.getTopologyRevision()}:source:${this.topologyRevision}`,
       vertexPoints: inputs.vertexPoints
     });
+  }
+
+  private updateLabelDisplays(): void {
+    const resizeScale = Math.max((1 + 1 / this.camera.scale) / 2, 0.01);
+    for (const display of this.labelDisplays) {
+      const textScale = display.rescale ? resizeScale : 1;
+      display.container.position.set(
+        display.anchorX + display.offsetXEm * display.groupFontSize * textScale,
+        display.anchorY + display.offsetYEm * display.groupFontSize * textScale
+      );
+      for (const text of display.textDisplays) text.scale.set(textScale);
+    }
+  }
+
+  private updateLabelGroupVisibility(): void {
+    for (const group of this.labelGroupDisplays) {
+      const dependencyVisible = !group.dependency || (this.layerVisibility.get(group.dependency) ?? true);
+      const zoomVisible =
+        group.showAll ||
+        ((group.minScale === null || this.camera.scale >= group.minScale) &&
+          (group.maxScale === null || this.camera.scale <= group.maxScale));
+      group.container.visible = group.active && dependencyVisible && zoomVisible;
+    }
   }
 
   private createScheduler(): RenderScheduler {
@@ -1233,6 +1365,29 @@ const MAP_LAYER_IDS = new Set(MAP_LAYER_REGISTRY.map(layer => layer.id));
 
 function isMapLayerId(label: unknown): label is MapLayerId {
   return typeof label === "string" && MAP_LAYER_IDS.has(label as MapLayerId);
+}
+
+function createLabelText(text: string, fontSize: number, letterSpacing: number, style: ResolvedLabelGroupStyle): Text {
+  return new Text({
+    style: {
+      align: "center",
+      dropShadow: style.shadow
+        ? {
+            alpha: 1,
+            angle: Math.atan2(style.shadow.offsetY, style.shadow.offsetX),
+            blur: style.shadow.blur,
+            color: style.shadow.color,
+            distance: style.shadow.distance
+          }
+        : undefined,
+      fill: style.fill,
+      fontFamily: style.fontFamily,
+      fontSize,
+      letterSpacing,
+      stroke: style.strokeWidth > 0 ? { color: style.stroke, width: style.strokeWidth } : undefined
+    },
+    text
+  });
 }
 
 function groupByRole<T extends { role?: string }>(items: readonly T[]): Map<string, T[]> {

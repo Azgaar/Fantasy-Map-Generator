@@ -2,13 +2,11 @@ import type { Burg } from "@/generators/burgs-generator";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
 import { type ViewportBounds, ViewportLayers } from "@/renderers/viewport/viewport-renderer";
-import { getLabelsData } from "./label-data";
+import { getSceneLabels, refreshLabelRenderState } from "./label-render-state";
 import type { LabelData } from "./labels";
 
-let sceneLabels: LabelData[] = [];
-
 export function drawLabels(): void {
-  sceneLabels = layerIsOn("toggleLabels") ? getLabelsData() : [];
+  refreshLabelRenderState();
   invalidatePixiRendererLayer("labels");
 }
 
@@ -17,18 +15,16 @@ export function redrawLabel(_label: LabelData): void {
 }
 
 export function getSceneLabel(type: LabelType, id: number): LabelData | undefined {
-  if (!sceneLabels.length) sceneLabels = getLabelsData();
-  return sceneLabels.find(label => label.type === type && label.entityId === id);
+  return getSceneLabels().find(label => label.type === type && label.entityId === id);
 }
 
 export function getVisibleLabels(): LabelData[] {
   if (!layerIsOn("toggleLabels")) return [];
-  if (!sceneLabels.length) sceneLabels = getLabelsData();
   const bounds = ViewportLayers.getVisibleBounds();
   const visibleGroups = new Set(
     options.labels.groups.filter(group => isGroupVisible(group, bounds)).map(({ name }) => name)
   );
-  return sceneLabels.filter(label => visibleGroups.has(label.group) && isLabelVisible(bounds, label));
+  return getSceneLabels().filter(label => visibleGroups.has(label.group) && isLabelVisible(bounds, label));
 }
 
 function isGroupVisible(group: LabelGroup, bounds: ViewportBounds): boolean {

@@ -86,6 +86,10 @@ function selectStyleElement() {
   const routeGroups = styleElement === "routes" ? getPixiRouteGroups() : [];
   const requestedRouteGroup = styleGroupSelect.value;
   const routeGroup = routeGroups.includes(requestedRouteGroup) ? requestedRouteGroup : routeGroups[0];
+  const requestedLabelGroup = styleGroupSelect.value;
+  const labelGroup = options.labels.groups.some(group => group.name === requestedLabelGroup)
+    ? requestedLabelGroup
+    : options.labels.groups[0]?.name;
 
   styleElements.querySelectorAll("tbody").forEach(e => (e.style.display = "none")); // hide all sections
 
@@ -98,6 +102,7 @@ function selectStyleElement() {
     goodsCells: "toggleGoods",
     goodsIcons: "toggleGoods",
     ice: "toggleIce",
+    labels: "toggleLabels",
     markers: "toggleMarkers",
     markets: "toggleMarketsLayer",
     population: "togglePopulation",
@@ -114,8 +119,7 @@ function selectStyleElement() {
     const group = styleGroupSelect.value;
     const defaultGroupSelector = styleElement === "terrs" ? "#landHeights" : "g";
     if (styleElement === "labels") {
-      const selected = group && el.select(`[data-group="${CSS.escape(group)}"]`);
-      el = selected && selected.size() ? selected : el.select(defaultGroupSelector);
+      el = d3.select(null);
     } else if (styleElement !== "routes") {
       el = group && el.select("#" + group).size() ? el.select("#" + group) : el.select(defaultGroupSelector);
     }
@@ -308,6 +312,7 @@ function selectStyleElement() {
   }
 
   if (styleElement === "labels") {
+    const labelStyle = style.labels.groups[labelGroup] || {};
     styleFill.style.display = "block";
     styleStroke.style.display = "block";
     styleStrokeWidth.style.display = "block";
@@ -315,19 +320,21 @@ function selectStyleElement() {
 
     styleShadow.style.display = "block";
     styleSize.style.display = "block";
-    styleFillInput.value = styleFillOutput.value = el.attr("fill") || "#3e3e4b";
-    styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#3a3a3a";
-    styleStrokeWidthInput.value = el.attr("stroke-width") || 0;
-    styleLetterSpacingInput.value = el.attr("letter-spacing") || 0;
-    styleShadowInput.value = el.style("text-shadow") || "";
+    styleOpacityInput.value = labelStyle.opacity ?? 1;
+    styleFilterInput.value = labelStyle.filter || "";
+    styleFillInput.value = styleFillOutput.value = labelStyle.fill || "#3e3e4b";
+    styleStrokeInput.value = styleStrokeOutput.value = labelStyle.stroke || "#3a3a3a";
+    styleStrokeWidthInput.value = labelStyle["stroke-width"] || 0;
+    styleLetterSpacingInput.value = labelStyle["letter-spacing"] || 0;
+    styleShadowInput.value = labelStyle.style?.match(/text-shadow:\s*([^;]+)/)?.[1] || "";
 
     styleFont.style.display = "block";
-    styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
+    styleSelectFont.value = labelStyle["font-family"] || "Almendra SC";
+    styleFontSize.value = parseFloat(labelStyle["font-size"]) || 18;
 
     styleFontShift.style.display = "block";
-    styleFontShiftX.value = el.attr("data-dx") || 0;
-    styleFontShiftY.value = el.attr("data-dy") || 0;
+    styleFontShiftX.value = labelStyle["data-dx"] || 0;
+    styleFontShiftY.value = labelStyle["data-dy"] || 0;
   }
 
   if (styleElement === "burgIcons") {
@@ -481,11 +488,9 @@ function selectStyleElement() {
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     if (styleElement === "labels") {
       options.labels.groups.forEach(group => {
-        const groupElement = ensureEl("labels").querySelector(`[data-group="${CSS.escape(group.name)}"]`);
-        const count = groupElement?.childElementCount || 0;
-        styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
+        styleGroupSelect.options.add(new Option(group.name, group.name, false, false));
       });
-      styleGroupSelect.value = el.attr("data-group");
+      styleGroupSelect.value = labelGroup;
     } else if (styleElement === "routes") {
       for (const group of routeGroups) {
         const count = pack.routes.filter(route => route.group === group).length;
@@ -560,7 +565,7 @@ function getEl() {
 
 function updateLabelGroupInlineStyle(group) {
   const groupStyle = style.labels.groups[styleGroupSelect.value];
-  if (!groupStyle) return;
+  if (!groupStyle || !group.node()) return;
 
   const inlineStyle = group.node().style;
   const value = Array.from(inlineStyle)
@@ -577,6 +582,7 @@ styleFillInput.addEventListener("input", function () {
   getEl().attr("fill", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.fill = this.value;
+  redrawLabelsOnStyleChange();
   const pixiFillLayer = {prec: "precipitation", rivers: "rivers"}[styleElementSelect.value];
   if (pixiFillLayer) setPixiAreaFillColor(pixiFillLayer, this.value);
   if (styleElementSelect.value === "ice") setPixiIceStyle("fill", "color", this.value);
@@ -587,6 +593,7 @@ styleStrokeInput.addEventListener("input", function () {
   getEl().attr("stroke", this.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.stroke = this.value;
+  redrawLabelsOnStyleChange();
   if (styleElementSelect.value === "gridOverlay") drawGrid();
   const pixiStrokeLayer = {cells: "cells", prec: "precipitation", zones: "zones"}[styleElementSelect.value];
   if (pixiStrokeLayer) {
@@ -603,6 +610,10 @@ styleStrokeInput.addEventListener("input", function () {
 // measurers are rendered with baked-in sizes, so a style change requires a redraw
 function redrawMeasurersOnStyleChange() {
   if (styleElementSelect.value === "ruler" && layerIsOn("toggleRulers")) drawMeasurers();
+}
+
+function redrawLabelsOnStyleChange() {
+  if (styleElementSelect.value === "labels") drawLabels();
 }
 
 styleStrokeWidthInput.addEventListener("input", e => {
@@ -633,6 +644,7 @@ styleStrokeWidthInput.addEventListener("input", e => {
   if (styleElementSelect.value === "routes") {
     setPixiRouteLineStyle(styleGroupSelect.value || "roads", "width", Number(e.target.value));
   }
+  redrawLabelsOnStyleChange();
   redrawMeasurersOnStyleChange();
 });
 
@@ -640,6 +652,7 @@ styleLetterSpacingInput.addEventListener("input", e => {
   getEl().attr("letter-spacing", e.target.value);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["letter-spacing"] = e.target.value;
+  redrawLabelsOnStyleChange();
 });
 
 styleStrokeDasharrayInput.addEventListener("input", function () {
@@ -709,6 +722,7 @@ styleOpacityInput.addEventListener("input", e => {
   }
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle.opacity = e.target.value;
+  redrawLabelsOnStyleChange();
 });
 
 styleFilterInput.addEventListener("change", function () {
@@ -719,6 +733,7 @@ styleFilterInput.addEventListener("change", function () {
     if (this.value) groupStyle.filter = this.value;
     else delete groupStyle.filter;
   }
+  redrawLabelsOnStyleChange();
 });
 
 styleTextureInput.addEventListener("change", function () {
@@ -1074,13 +1089,17 @@ function changeFont() {
   getEl().attr("font-family", family);
   const groupStyle = style.labels.groups[styleGroupSelect.value];
   if (groupStyle) groupStyle["font-family"] = family;
+  redrawLabelsOnStyleChange();
 
   if (styleElementSelect.value === "legend") redrawLegend();
 }
 
 styleShadowInput.addEventListener("input", function () {
   const group = getEl().style("text-shadow", this.value);
+  const groupStyle = style.labels.groups[styleGroupSelect.value];
+  if (groupStyle) groupStyle.style = this.value ? `text-shadow: ${this.value}` : null;
   updateLabelGroupInlineStyle(group);
+  redrawLabelsOnStyleChange();
 });
 
 styleFontAdd.addEventListener("click", function () {
@@ -1153,6 +1172,7 @@ function changeFontSize(el, size) {
       delete groupStyle["data-size"];
       groupStyle["font-size"] = `${size}%`;
     }
+    redrawLabelsOnStyleChange();
     return;
   }
 
@@ -1177,6 +1197,7 @@ styleFontShiftX.addEventListener("input", e => {
   const dx = e.target.value || 0;
   const dy = group.attr("data-dy") || 0;
   group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
+  redrawLabelsOnStyleChange();
 });
 
 styleFontShiftY.addEventListener("input", e => {
@@ -1186,6 +1207,7 @@ styleFontShiftY.addEventListener("input", e => {
   const dx = group.attr("data-dx") || 0;
   const dy = e.target.value || 0;
   group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
+  redrawLabelsOnStyleChange();
 });
 
 styleStatesBodyOpacity.addEventListener("input", e => {

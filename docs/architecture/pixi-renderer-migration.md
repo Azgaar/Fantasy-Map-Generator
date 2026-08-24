@@ -76,6 +76,12 @@ The former opt-in experiment is retained only as historical context in
   a Pixi path highlight. The live `#tradeAnimation` group, D3 transitions, SVG marker-symbol loader, and compass/trade
   save/export fixups are deleted. Marker picking and draggable compass placement remain M9/M10 work rather than
   compatibility shims.
+- The first M8 text slice moves straight, multiline, and curved labels to Pixi ownership. Label groups retain semantic
+  font, fill, stroke, shadow, opacity, offset, dependency, zoom-bound, and resize-on-zoom state; renderer startup waits
+  for the referenced font families and exposes missing fonts and unsupported SVG filters in diagnostics. The live
+  `#labels` and `#textPaths` contents are now import data only and are cleared before Pixi paints. Explicit glyph-atlas
+  budgeting, visual acceptance across presets/custom fonts, label picking/editing, emblems, and other viewport
+  decoration remain M8/M9/M10 work.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.

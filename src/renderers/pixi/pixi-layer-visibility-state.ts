@@ -12,6 +12,7 @@ export const PIXI_LAYER_CONTROL_IDS = {
   grid: "toggleGrid",
   ice: "toggleIce",
   lakes: "toggleLakes",
+  labels: "toggleLabels",
   markers: "toggleMarkers",
   markets: "toggleMarketsLayer",
   military: "toggleMilitary",
