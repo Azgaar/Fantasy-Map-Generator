@@ -4,11 +4,11 @@ import { MAP_LAYER_REGISTRY } from "../core/layer-registry";
 import type { MapDomainKind, MapHitKind, ScreenPoint } from "../core/map-renderer";
 import { estimateTextWidth } from "../labels/fit-state-label";
 import { buildBaseGeographyScene } from "../scene/layers/base-geography-scene";
-import { buildIceScene, buildMarketScene } from "../scene/layers/economic-ice-scene";
+import { buildGoodsScene, buildIceScene, buildMarketScene } from "../scene/layers/economic-ice-scene";
 import { buildEmblemScene } from "../scene/layers/emblem-scene";
 import { buildLabelScene } from "../scene/layers/label-scene";
 import { buildBurgPointSymbolScene, buildMarkerPointSymbolScene } from "../scene/layers/point-symbol-scene";
-import { buildMilitaryScene } from "../scene/layers/population-military-scene";
+import { buildMilitaryScene, buildPopulationScene } from "../scene/layers/population-military-scene";
 import { buildReliefSpriteScene } from "../scene/layers/relief-sprite-scene";
 import { buildRiverScene, buildRouteScene } from "../scene/layers/river-route-scene";
 import { buildZoneScene } from "../scene/layers/zone-scene";
@@ -237,6 +237,28 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
       entries.push(polygonEntry("ice", "ice", polygon.domainId, polygon.points, true));
   }
 
+  if (style.goods.opacity > 0) {
+    const goods = buildGoodsScene(world, world.goodsProduction, 0);
+    for (const cell of goods.cells) {
+      entries.push({
+        ...polygonEntry("goods", "good", cell.goodId, cell.points, true),
+        subPart: { cellId: cell.cellId, type: "cell" }
+      });
+    }
+    for (const icon of goods.icons) {
+      entries.push({
+        ...pointEntry("goods", "good", icon.goodId, icon.x, icon.y, style.goods.icons.size / 2),
+        subPart: { cellId: icon.cellId, type: "icon" }
+      });
+    }
+    for (const burg of goods.burgs) {
+      entries.push({
+        ...pointEntry("goods", "good", burg.burgId, burg.x, burg.y, style.goods.burgs.iconSize * 1.5),
+        subPart: { burgId: burg.burgId, type: "burg" }
+      });
+    }
+  }
+
   if (style.relief.opacity > 0) {
     const relief = buildReliefSpriteScene(world.relief, 0);
     for (const icon of relief.instances) {
@@ -278,10 +300,34 @@ export function buildMapPickEntries(world: MapRenderWorld, style: MapStyle): Map
   if (style.markets.opacity > 0) {
     const markets = buildMarketScene(world, 0);
     for (const market of markets.markets) {
+      for (const polygon of market.polygons) {
+        entries.push(polygonEntry("markets", "market", market.marketId, polygon.points, true));
+      }
       if (!market.center) continue;
-      entries.push(
-        pointEntry("markets", "market", market.marketId, market.center.x, market.center.y, style.markets.iconSize / 2)
-      );
+      entries.push({
+        ...pointEntry(
+          "markets",
+          "market",
+          market.marketId,
+          market.center.x,
+          market.center.y,
+          Math.max(style.markets.iconSize / 2, style.markets.radius)
+        ),
+        priority: (LAYER_PRIORITY.get("markets") ?? 0) + 1,
+        subPart: { burgId: market.center.burgId, type: "center" }
+      });
+    }
+  }
+  if (style.population.opacity > 0) {
+    const population = buildPopulationScene(world, world.urbanization ?? 1, 0);
+    for (const path of population.paths) {
+      const [type, serializedId] = String(path.domainId).split(":");
+      const id = Number(serializedId);
+      const lineStyle = type === "urban" ? style.population.urban : style.population.rural;
+      entries.push({
+        ...lineEntry("population", type === "urban" ? "burg" : "cell", id, path.points, lineStyle.width),
+        subPart: type === "urban" ? { burgId: id, type } : { cellId: id, type }
+      });
     }
   }
   if (style.military.opacity > 0) {

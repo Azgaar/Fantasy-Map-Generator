@@ -24,25 +24,19 @@ import { Controllers } from "@/controllers";
 import { drawGoods } from "@/renderers/draw-goods";
 import { drawMarkets, toggleMarketsLayer } from "@/renderers/draw-markets";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import { getPixiMapPointAtClient, pickPixiRenderer } from "@/renderers/pixi/pixi-renderer-controller";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName } from "@/utils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
 import { highlightMarketOff, highlightMarketOn } from "../renderers/draw-markets";
-import {
-  ensureEl,
-  findAllCellsInRadius,
-  findClosestCell,
-  formatPrice,
-  getIsolines,
-  getPointer,
-  getVertexPath,
-  rn
-} from "../utils";
+import { ensureEl, findAllCellsInRadius, findClosestCell, formatPrice, rn } from "../utils";
+import { commitMarketAssignments, paintMarketAssignments } from "./editor-mutations";
 
 // Working copy of pack.cells.market mutated during manual assignment; applied on commit.
 let marketsWorking: Uint16Array | null = null;
 let marketsManualHistory: Uint16Array[] = [];
+let marketsOriginal: Uint16Array | null = null;
 const dialogId = "marketsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 
@@ -273,10 +267,9 @@ function enterMarketsManualAssignment(): void {
   customization = 15;
   marketsManualHistory = [];
 
-  document.getElementById("marketsTemp")?.remove();
-  select("#markets").append("g").attr("id", "marketsTemp").style("fill-opacity", "0.7");
+  marketsOriginal = Uint16Array.from(pack.cells.market);
   marketsWorking = Uint16Array.from(pack.cells.market);
-  renderMarketsTemp();
+  previewMarketsWorking();
 
   document.querySelectorAll<HTMLElement>("#marketsOverviewBottom > button").forEach(b => {
     b.style.display = "none";
@@ -329,8 +322,9 @@ function renderNoMarketRow(
 }
 
 function selectMarketOnMapClick(this: SVGElement, event: MouseEvent): void {
-  const [x, y] = getPointer(event, this);
-  const cellId = findCell(x, y);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y);
   if (cellId === undefined) return;
 
   const marketId = (marketsWorking ?? pack.cells.market)[cellId];
@@ -352,10 +346,12 @@ function startMarketsBrushDrag(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = getPointer(dragEvent, this);
-    moveCircle(x, y, r);
+    const point = getDragMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const found = r > 5 ? findAllCellsInRadius(x, y, r, pack) : [findClosestCell(x, y, Infinity, pack)];
+    const found =
+      r > 5 ? findAllCellsInRadius(point.x, point.y, r, pack) : [findClosestCell(point.x, point.y, Infinity, pack)];
     const selection = found.filter(cellId => cellId !== undefined);
     if (!selection.length) return;
     paintMarketCells(selection, marketId);
@@ -364,92 +360,43 @@ function startMarketsBrushDrag(this: SVGElement, event: any): void {
 
 function paintMarketCells(selection: number[], targetMarketId: number) {
   if (!marketsWorking) return;
-
-  const affected = new Set<number>([targetMarketId]);
-  let changed = false;
-  for (const cellId of selection) {
-    const prev = marketsWorking[cellId];
-    if (prev === targetMarketId) continue;
-    if (prev) affected.add(prev); // previous owner loses a cell
-    marketsWorking[cellId] = targetMarketId;
-    changed = true;
-  }
-
-  if (changed) updateMarketTempPaths(affected);
+  const mutation = paintMarketAssignments(marketsWorking, selection, targetMarketId);
+  if (mutation.changed) previewMarketsWorking();
 }
 
-// Render every market's territory as a single combined path (one DOM node per market).
-function renderMarketsTemp(): void {
-  const temp = document.getElementById("marketsTemp");
-  if (!temp || !marketsWorking) return;
-
-  const working = marketsWorking;
-  const isolines = getIsolines(pack, cellId => working[cellId] || null, { fill: true });
-  temp.innerHTML = pack.markets
-    .map(market => `<path data-market="${market.i}" fill="${market.color}" d="${isolines[market.i]?.fill || ""}"/>`)
-    .join("");
-}
-
-// Recompute the combined path only for the markets whose territory changed.
-function updateMarketTempPaths(marketIds: Iterable<number>): void {
-  const temp = document.getElementById("marketsTemp");
-  if (!temp || !marketsWorking) return;
-
-  const cellsByMarket = new Map<number, number[]>();
-  for (const id of marketIds) cellsByMarket.set(id, []);
-
-  for (let cellId = 0; cellId < marketsWorking.length; cellId++) {
-    const cells = cellsByMarket.get(marketsWorking[cellId]);
-    if (cells) cells.push(cellId);
-  }
-
-  for (const [marketId, cells] of cellsByMarket) {
-    if (!marketId) continue; // market 0 = "no market": those cells are left unpainted
-    const d = cells.length ? getVertexPath(cells, pack) : "";
-    setMarketTempPath(temp, marketId, d);
-  }
-}
-
-function setMarketTempPath(temp: HTMLElement, marketId: number, d: string): void {
-  let path = temp.querySelector<SVGPathElement>(`path[data-market="${marketId}"]`);
-  if (!path) {
-    path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("data-market", String(marketId));
-    const market = Markets.get(marketId);
-    if (market) path.setAttribute("fill", market.color);
-    temp.appendChild(path);
-  }
-  path.setAttribute("d", d);
+function previewMarketsWorking(): void {
+  if (!marketsWorking) return;
+  pack.cells.market.set(marketsWorking);
+  drawMarkets();
 }
 
 function onMarketsBrushMove(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const [x, y] = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const r = +ensureEl<HTMLInputElement>("marketsBrush").value;
-  moveCircle(x, y, r);
+  moveCircle(point.x, point.y, r);
 }
 
 function undoMarketsManualStep(): void {
   if (!marketsManualHistory.length) return;
   marketsWorking = marketsManualHistory.pop()!;
-  renderMarketsTemp();
+  previewMarketsWorking();
 }
 
 function exitMarketsManualAssignment(apply: boolean): void {
   customization = 0;
 
   if (apply && marketsWorking) {
-    for (let cellId = 0; cellId < marketsWorking.length; cellId++) {
-      const marketId = marketsWorking[cellId];
-      pack.cells.market[cellId] = marketId;
-      const burgId = pack.cells.burg[cellId];
-      if (burgId) (pack.burgs as Burg[])[burgId].market = marketId;
-    }
+    if (marketsOriginal) pack.cells.market.set(marketsOriginal);
+    commitMarketAssignments(pack, marketsWorking);
   }
+  else if (marketsOriginal) pack.cells.market.set(marketsOriginal);
 
   marketsWorking = null;
+  marketsOriginal = null;
   marketsManualHistory = [];
-  document.getElementById("marketsTemp")?.remove();
+  drawMarkets();
 
   setModeHiddenColumns(dialogId, []);
   ensureEl("marketsOverviewFooter").style.display = "";
@@ -489,11 +436,13 @@ function exitAddMarketMode(): void {
 }
 
 function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
-  const [x, y] = getPointer(ev, this);
-  const cellId = findCell(x, y);
-  if (cellId === undefined) return;
-
-  const burgId = pack.cells.burg[cellId];
+  const hit = pickPixiRenderer(ev.clientX, ev.clientY);
+  const burgId =
+    hit?.domainKind === "burg"
+      ? Number(hit.domainId)
+      : hit?.domainKind === "label" && hit.subPart?.type === "burg"
+        ? Number(hit.subPart.entityId)
+        : 0;
   if (!burgId) {
     tip("Click on a burg to create a new market — no burg found here", false, "error");
     return;
@@ -506,6 +455,14 @@ function addMarketOnClick(this: SVGElement, ev: MouseEvent): void {
 
   if (layerIsOn("toggleMarketsLayer")) drawMarkets();
   marketsTable.refresh();
+}
+
+function getDragMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
 }
 
 function confirmRemoveMarket(marketId: number): void {

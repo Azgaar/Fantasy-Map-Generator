@@ -1,14 +1,18 @@
-import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import { clearMapInteractionOverlay, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { ensureEl, findEl, rn } from "../utils";
+import { moveMarker as moveMarkerEntity } from "./editor-mutations";
 
-let selectedElement: SVGCircleElement | null = null;
 let selectedMarker: Marker;
 
 function open(markerI?: number, target?: Element): void {
@@ -19,11 +23,8 @@ function open(markerI?: number, target?: Element): void {
   const marker = pack.markers.find(({ i }) => i === targetId);
   if (!marker) return;
   selectedMarker = marker;
-  selectedElement = createEditControl(marker);
-
-  select<SVGCircleElement, unknown>(selectedElement)
-    .call(drag<SVGCircleElement, unknown>().on("start", dragMarker))
-    .classed("draggable", true);
+  renderMarkerOverlay();
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, moveSelectedMarker as EventListener);
 
   if (findEl("notesEditor")) {
     const id = `marker${selectedMarker.i}`;
@@ -119,45 +120,20 @@ function renderDialog(): void {
   ensureEl("markerRemove").addEventListener("click", confirmMarkerDeletion);
 }
 
-function createEditControl(marker: Marker): SVGCircleElement {
-  document.getElementById("marker-edit-control")?.remove();
-  return select<SVGGElement, unknown>("#debug")
-    .append("circle")
-    .attr("id", "marker-edit-control")
-    .attr("data-id", marker.i)
-    .attr("cx", marker.x)
-    .attr("cy", marker.y)
-    .attr("r", Math.max(2, (marker.size ?? 30) / 2))
-    .attr("fill", "transparent")
-    .attr("stroke", "#c13119")
-    .attr("stroke-dasharray", "2 1")
-    .attr("stroke-width", 1 / scale)
-    .node()!;
-}
-
 function getSameTypeMarkers(): Marker[] {
   const currentType = selectedMarker.type;
   if (!currentType) return [selectedMarker];
   return pack.markers.filter(({ type }) => type === currentType);
 }
 
-function dragMarker(this: SVGCircleElement, event: any): void {
-  const dx = +this.getAttribute("cx")! - event.x;
-  const dy = +this.getAttribute("cy")! - event.y;
-
-  event.on("drag", function (this: SVGCircleElement, dragEvent: any) {
-    this.setAttribute("cx", String(dx + dragEvent.x));
-    this.setAttribute("cy", String(dy + dragEvent.y));
-  });
-
-  event.on("end", function (this: SVGCircleElement, dragEvent: any) {
-    selectedMarker.x = rn(dx + dragEvent.x, 1);
-    selectedMarker.y = rn(dy + dragEvent.y, 1);
-    this.setAttribute("cx", String(selectedMarker.x));
-    this.setAttribute("cy", String(selectedMarker.y));
-    selectedMarker.cell = findCell(selectedMarker.x, selectedMarker.y)!;
-    invalidateMarkerSymbols();
-  });
+function moveSelectedMarker(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  if (event.detail.handleId !== "marker-move" || !["move", "end"].includes(event.detail.phase)) return;
+  const point = { x: rn(event.detail.worldPoint.x, 1), y: rn(event.detail.worldPoint.y, 1) };
+  const cellId = findCell(point.x, point.y);
+  if (cellId === undefined) return;
+  const mutation = moveMarkerEntity(pack, selectedMarker.i, point, cellId);
+  if (mutation.changed) invalidateMarkerSymbols();
+  if (event.detail.phase === "end") queueMicrotask(renderMarkerOverlay);
 }
 
 function updateInputs(): void {
@@ -225,7 +201,7 @@ function changeMarkerSize(this: HTMLInputElement): void {
   getSameTypeMarkers().forEach(marker => {
     marker.size = size;
   });
-  selectedElement?.setAttribute("r", String(Math.max(2, size / 2)));
+  renderMarkerOverlay();
   invalidateMarkerSymbols();
 }
 
@@ -284,20 +260,27 @@ function confirmMarkerDeletion(): void {
 
 function deleteMarker(): void {
   Markers.deleteMarker(selectedMarker.i);
-  selectedElement?.remove();
-  selectedElement = null;
   invalidateMarkerSymbols();
-  destroyDialog("markerEditor");
+  closeMarkerEditor();
   refreshEditors();
 }
 
 function closeMarkerEditor(): void {
-  if (selectedElement) select(selectedElement).on(".drag", null);
-  selectedElement?.remove();
-  selectedElement = null;
+  document
+    .getElementById("map")
+    ?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, moveSelectedMarker as EventListener);
+  clearMapInteractionOverlay();
   if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
   destroyDialog("markerEditor");
+}
+
+function renderMarkerOverlay(): void {
+  const point = { x: selectedMarker.x, y: selectedMarker.y };
+  updateMapInteractionOverlay({
+    handles: [{ id: "marker-move", label: `Move marker ${selectedMarker.i}`, point }],
+    selection: [{ center: point, kind: "circle", radius: Math.max(2, (selectedMarker.size ?? 30) / 2) }]
+  });
 }
 
 export const MarkersEditor = { open };

@@ -16,21 +16,18 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { ZoneAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
+import { getPixiMapPointAtClient } from "@/renderers/pixi/pixi-renderer-controller";
 import { downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, rn, si, unique } from "../utils";
-
-interface ZoneCellDatum {
-  cell: number;
-  zoneId: number;
-  fill: string;
-}
+import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let zonesAssignment: ZoneAssignmentSession | null = null;
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
   { key: "description", label: "Description", width: "13em", permanent: true },
@@ -294,6 +291,11 @@ function moveZone(item: HTMLElement): void {
 function enterZonesManualAssignent(): void {
   if (!layerIsOn("toggleZones")) toggleZones();
   customization = 10;
+  const visibleZones = getVisibleZones();
+  zonesAssignment = new ZoneAssignmentSession(
+    pack.zones,
+    visibleZones.map(zone => zone.i)
+  );
   const body = ensureEl("zonesBodySection");
 
   document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
@@ -316,28 +318,15 @@ function enterZonesManualAssignent(): void {
 
   body.querySelector("div")?.classList.add("selected");
 
-  // draw zones as individual cells
-  select<SVGGElement, unknown>("#zones").selectAll("*").remove();
-
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  const data = visibleZones.flatMap(({ i, cells, color }) => cells.map(cell => ({ cell, zoneId: i, fill: color })));
-  select<SVGGElement, unknown>("#zones")
-    .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-    .data(data, d => `${d.zoneId}-${d.cell}`)
-    .enter()
-    .append("polygon")
-    .attr("points", d => getPackPolygon(d.cell, pack))
-    .attr("fill", d => d.fill)
-    .attr("data-zone", d => d.zoneId)
-    .attr("data-cell", d => d.cell);
 }
 
-function selectZoneOnMapClick(event: any): void {
-  const target = event.target as HTMLElement;
-  if ((target.parentElement as HTMLElement).id !== "zones") return;
-  const zoneId = target.dataset.zone;
+function selectZoneOnMapClick(event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y);
+  if (cellId === undefined) return;
+  const zoneId = zonesAssignment?.getZoneIdsAtCell(cellId).at(-1);
+  if (zoneId === undefined) return;
   const el = ensureEl("zonesBodySection").querySelector(`div[data-id='${zoneId}']`);
 
   ensureEl("zonesBodySection").querySelector("div.selected")?.classList.remove("selected");
@@ -351,7 +340,9 @@ function dragZoneBrush(this: SVGElement, event: any): void {
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = getPointer(dragEvent, this);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    const { x, y } = point;
     moveCircle(x, y, radius);
 
     let selection = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y)!];
@@ -359,68 +350,41 @@ function dragZoneBrush(this: SVGElement, event: any): void {
     if (!selection.length) return;
 
     const zoneId = +ensureEl("zonesBodySection").querySelector<HTMLElement>("div.selected")!.dataset.id!;
-    const zone = pack.zones.find(z => z.i === zoneId);
-    if (!zone) return;
-
-    if (eraseMode) {
-      const data = select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data()
-        .filter(d => !(d.zoneId === zoneId && selection.includes(d.cell)));
-      select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data(data, d => `${d.zoneId}-${d.cell}`)
-        .exit()
-        .remove();
-    } else {
-      const data: ZoneCellDatum[] = selection.map(cell => ({ cell, zoneId, fill: zone.color }));
-      select<SVGGElement, unknown>("#zones")
-        .selectAll<SVGPolygonElement, ZoneCellDatum>("polygon")
-        .data(data, d => `${d.zoneId}-${d.cell}`)
-        .enter()
-        .append("polygon")
-        .attr("points", d => getPackPolygon(d.cell, pack))
-        .attr("fill", d => d.fill)
-        .attr("data-zone", d => d.zoneId)
-        .attr("data-cell", d => d.cell);
-    }
+    const mutation = zonesAssignment?.paint(zoneId, selection, eraseMode);
+    if (mutation?.changed) drawZones();
   });
 }
 
-function moveZoneBrush(this: SVGElement, event: any): void {
+function moveZoneBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const [x, y] = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("zonesBrush").value;
-  moveCircle(x, y, radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyZonesManualAssignent(): void {
-  const data = select<SVGGElement, unknown>("#zones").selectAll<SVGPolygonElement, ZoneCellDatum>("polygon").data();
-  const zoneCells = data.reduce<Record<number, number[]>>((acc, d) => {
-    if (!acc[d.zoneId]) acc[d.zoneId] = [];
-    acc[d.zoneId].push(d.cell);
-    return acc;
-  }, {});
-
-  const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
-  const isFiltered = filterBy && filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  visibleZones.forEach(zone => {
-    zone.cells = zoneCells[zone.i] || [];
-  });
-
+  zonesAssignment?.commit();
+  zonesAssignment = null;
   drawZones();
   zonesTable.refresh();
   exitZonesManualAssignment();
 }
 
 function cancelZonesManualAssignent(): void {
+  zonesAssignment?.cancel();
+  zonesAssignment = null;
   drawZones();
   exitZonesManualAssignment();
 }
 
 function exitZonesManualAssignment(close?: string): void {
   customization = 0;
+  if (zonesAssignment) {
+    zonesAssignment.cancel();
+    zonesAssignment = null;
+    drawZones();
+  }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#zonesBottom > *").forEach(el => {
     el.style.display = "inline-block";

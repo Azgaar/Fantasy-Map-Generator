@@ -5,8 +5,17 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/generators/voronoi";
-import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
-import { ensureEl, getPackPolygon, getPointer, last, rn } from "../utils";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  invalidatePixiRendererLayer,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { ensureEl, last, rn } from "../utils";
 
 let creatorCells: number[] = [];
 
@@ -19,8 +28,8 @@ function open(): void {
   if (!layerIsOn("toggleCells")) toggleCells();
 
   tip("Click to add river point, click again to remove", true);
-  select("#debug").append("g").attr("id", "controlCells");
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onCellClick);
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, moveCreatorCell as EventListener);
 
   creatorCells = [];
   renderDialog();
@@ -55,7 +64,7 @@ function renderDialog(): void {
 }
 
 function cancelCreation(): void {
-  destroyDialog("riverCreator");
+  closeRiverCreator();
 }
 
 function onBodyClick(ev: Event): void {
@@ -67,7 +76,10 @@ function onBodyClick(ev: Event): void {
 }
 
 function onCellClick(this: any, event: any): void {
-  const cell = findCell(...(getPointer(event, this) as [number, number]))!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cell = findCell(point.x, point.y);
+  if (cell === undefined) return;
 
   if (creatorCells.includes(cell)) removeCell(cell);
   else addCell(cell);
@@ -76,31 +88,34 @@ function onCellClick(this: any, event: any): void {
 function addCell(cell: number): void {
   creatorCells.push(cell);
   drawCells(creatorCells);
-
-  const flux = pack.cells.fl[cell];
-  const line = `<div class="editorLine" data-cell="${cell}">
-      <span>Cell ${cell}</span>
-      <span data-tip="Set flux affects river width" style="margin-left: 0.4em">Flux</span>
-      <input type="number" min=0 value="${flux}" class="editFlux" style="width: 5em"/>
-      <span data-tip="Remove the cell" class="icon-trash-empty pointer"></span>
-    </div>`;
-  ensureEl("riverCreatorBody").innerHTML += line;
+  renderCreatorCells();
 }
 
 function removeCell(cell: number): void {
   creatorCells = creatorCells.filter(c => c !== cell);
   drawCells(creatorCells);
-  ensureEl("riverCreatorBody").querySelector(`div[data-cell='${cell}']`)?.remove();
+  renderCreatorCells();
 }
 
 function drawCells(cells: number[]): void {
-  select("#debug")
-    .select("#controlCells")
-    .selectAll(`polygon`)
-    .data(cells)
-    .join("polygon")
-    .attr("points", (d: number) => getPackPolygon(d, pack))
-    .attr("class", "current");
+  const points = cells.map(cellId => pack.cells.p[cellId]).filter(Boolean);
+  updateMapInteractionOverlay({
+    handles: points.map(([x, y], index) => ({
+      id: `river-create:${index}`,
+      label: `Move river point ${index + 1}`,
+      point: { x, y }
+    })),
+    selection: [
+      ...cells.map(cellId => ({
+        kind: "polygon" as const,
+        points: pack.cells.v[cellId].map(vertexId => {
+          const [x, y] = pack.vertices.p[vertexId];
+          return { x, y };
+        })
+      })),
+      ...(points.length ? [{ kind: "polyline" as const, points: points.map(([x, y]) => ({ x, y })) }] : [])
+    ]
+  });
 }
 
 function addRiver(): void {
@@ -159,7 +174,8 @@ function addRiver(): void {
 }
 
 function closeRiverCreator(): void {
-  select("#debug").select("#controlCells").remove();
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, moveCreatorCell as EventListener);
+  clearMapInteractionOverlay();
   applyDefaultViewboxEvents();
   clearMainTip();
 
@@ -168,6 +184,33 @@ function closeRiverCreator(): void {
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
   destroyDialog("riverCreator");
+}
+
+function moveCreatorCell(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  if (!["move", "end"].includes(event.detail.phase) || !String(event.detail.handleId).startsWith("river-create:"))
+    return;
+  const index = Number(String(event.detail.handleId).split(":")[1]);
+  const cellId = findCell(event.detail.worldPoint.x, event.detail.worldPoint.y);
+  if (creatorCells[index] === undefined || cellId === undefined) return;
+  if (creatorCells.includes(cellId) && creatorCells[index] !== cellId) return;
+  creatorCells[index] = cellId;
+  if (event.detail.phase === "end") {
+    queueMicrotask(() => drawCells(creatorCells));
+    renderCreatorCells();
+  }
+}
+
+function renderCreatorCells(): void {
+  ensureEl("riverCreatorBody").innerHTML = creatorCells
+    .map(
+      cell => `<div class="editorLine" data-cell="${cell}">
+        <span>Cell ${cell}</span>
+        <span data-tip="Set flux affects river width" style="margin-left: 0.4em">Flux</span>
+        <input type="number" min=0 value="${pack.cells.fl[cell]}" class="editFlux" style="width: 5em"/>
+        <span data-tip="Remove the cell" class="icon-trash-empty pointer"></span>
+      </div>`
+    )
+    .join("");
 }
 
 export const RiverCreator = { open };

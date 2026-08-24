@@ -26,7 +26,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
+import { selectTerritoryEditorRow, TerritoryAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Province } from "@/generators/provinces-generator";
 import { renderBurgChanged } from "@/renderers/burg-mutations";
 import { drawBorders } from "@/renderers/draw-borders";
@@ -34,11 +34,13 @@ import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
+import { getPixiMapPointAtClient, updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { applyOption, downloadFile, findAllCellsInRadius, getArea, getAreaUnit, getFileName, speak } from "@/utils";
-import { ensureEl, getPackPolygon, getPointer, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
+import { ensureEl, getRandomColor, isLand, P, rand, rn, si, unique } from "../utils";
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let provincesAssignment: TerritoryAssignmentSession | null = null;
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
   rn(province.rural! * populationRate + province.urban! * populationRate * urbanization);
@@ -1083,24 +1085,8 @@ function enterProvincesManualAssignent(): void {
   if (!layerIsOn("toggleProvinces")) toggleProvinces();
   if (!layerIsOn("toggleBorders")) toggleBorders();
 
-  // make province and state borders more visible
-  select<SVGGElement, unknown>("#provinceBorders").select("path").attr("stroke", "#000").attr("stroke-width", 0.5);
-  select<SVGGElement, unknown>("#stateBorders").select("path").attr("stroke", "#000").attr("stroke-width", 1.2);
-
   customization = 11;
-  const provincesOverlay = select<SVGGElement, unknown>("#provs")
-    .selectAll<SVGGElement, null>("g#provincesBody")
-    .data([null])
-    .join("g")
-    .attr("id", "provincesBody")
-    .attr("data-renderer-overlay", "transient");
-  provincesOverlay.append("g").attr("id", "temp").attr("stroke-width", 0.3);
-  provincesOverlay
-    .append("g")
-    .attr("id", "centers")
-    .attr("fill", "none")
-    .attr("stroke", "#ff0000")
-    .attr("stroke-width", 1);
+  provincesAssignment = new TerritoryAssignmentSession("provinces", pack.cells.province);
 
   document.querySelectorAll<HTMLElement>("#provincesBottom > *").forEach(el => {
     el.style.display = "none";
@@ -1136,13 +1122,13 @@ function selectProvinceOnLineClick(this: HTMLElement): void {
   }
 }
 
-function selectProvinceOnMapClick(this: SVGElement, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1])!;
+function selectProvinceOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y)!;
   if (pack.cells.h[i] < 20 || !pack.cells.state[i]) return;
 
-  const assigned = select<SVGGElement, unknown>("#provs").select("g#temp").select(`polygon[data-cell='${i}']`);
-  const province = assigned.size() ? +assigned.attr("data-province") : pack.cells.province[i];
+  const province = provincesAssignment?.get(i) ?? pack.cells.province[i];
 
   const editorLine = ensureEl("provincesBodySection").querySelector(`div[data-id='${province}']`);
   if (!editorLine) {
@@ -1155,78 +1141,62 @@ function selectProvinceOnMapClick(this: SVGElement, event: any): void {
 }
 
 function selectProvince(p: number): void {
-  select("#debug").selectAll("path.selected").remove();
-  const path = select<SVGGElement, unknown>("#provs").select(`#province${p}`).attr("d");
-  select("#debug").append("path").attr("class", "selected").attr("d", path);
+  const assignments = provincesAssignment;
+  updateMapInteractionOverlay({
+    selection: pack.cells.i
+      .filter(cellId => (assignments?.get(cellId) ?? pack.cells.province[cellId]) === p)
+      .map(cellPolygon)
+  });
 }
 
 function dragBrush(this: SVGElement, event: any): void {
   const r = +ensureEl<HTMLInputElement>("provincesBrush").value;
+  provincesAssignment?.beginStroke();
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])!];
+    const found = r > 5 ? findAllCellsInRadius(point.x, point.y, r, pack) : [findCell(point.x, point.y)!];
     const selection = found.filter(i => isLand(i, pack));
-    if (selection) changeForSelection(selection);
+    if (selection.length) changeForSelection(selection);
   });
 }
 
 // change province within selection
 function changeForSelection(selection: number[]): void {
-  const temp = select<SVGGElement, unknown>("#provs").select("#temp");
-  const centers = select<SVGGElement, unknown>("#provs").select("#centers");
   const selected = ensureEl("provincesBodySection").querySelector<HTMLElement>("div.selected")!;
 
   const provinceNew = +selected.dataset.id!;
   const state = pack.provinces[provinceNew].state;
-  const fill = pack.provinces[provinceNew].color || "#ffffff";
-
-  selection.forEach(i => {
-    if (!pack.cells.state[i] || pack.cells.state[i] !== state) return;
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const provinceOld = exists.size() ? +exists.attr("data-province") : pack.cells.province[i];
-    if (provinceNew === provinceOld) return;
-    if (i === pack.provinces[provinceOld].center) {
-      const center = centers.select(`polygon[data-center='${i}']`);
-      if (!center.size()) centers.append("polygon").attr("data-center", i).attr("points", getPackPolygon(i, pack));
-      tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
-      return;
-    }
-
-    // change or append new element
-    if (exists.size()) {
-      if (pack.cells.province[i] === provinceNew) exists.remove();
-      else exists.attr("data-province", provinceNew).attr("fill", fill);
-    } else {
-      temp
-        .append("polygon")
-        .attr("points", getPackPolygon(i, pack))
-        .attr("data-cell", i)
-        .attr("data-province", provinceNew)
-        .attr("fill", fill)
-        .attr("stroke", "#555");
-    }
+  const cells = selection.filter(cellId => {
+    if (!pack.cells.state[cellId] || pack.cells.state[cellId] !== state) return false;
+    const provinceOld = provincesAssignment?.get(cellId) ?? pack.cells.province[cellId];
+    if (cellId !== pack.provinces[provinceOld]?.center) return true;
+    updateMapInteractionOverlay({ highlight: [cellPolygon(cellId)] });
+    tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
+    return false;
   });
+  const mutation = provincesAssignment?.paint(cells, provinceNew);
+  if (mutation?.changed) {
+    drawProvinces();
+    selectProvince(provinceNew);
+  }
 }
 
-function moveBrush(this: SVGElement, event: any): void {
+function moveBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const point = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("provincesBrush").value;
-  moveCircle(point[0], point[1], radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyProvincesManualAssignent(): void {
-  select<SVGGElement, unknown>("#provs")
-    .select("#temp")
-    .selectAll<SVGPolygonElement, unknown>("polygon")
-    .each(function () {
-      const i = +this.dataset.cell!;
-      pack.cells.province[i] = +this.dataset.province!;
-    });
+  provincesAssignment?.commit();
+  provincesAssignment = null;
 
   Provinces.getPoles();
   if (layerIsOn("toggleBorders")) drawBorders();
@@ -1239,14 +1209,13 @@ function applyProvincesManualAssignent(): void {
 
 function exitProvincesManualAssignment(close?: string): void {
   customization = 0;
-  select<SVGGElement, unknown>("#provs").select("#temp").remove();
-  select<SVGGElement, unknown>("#provs").select("#centers").remove();
+  if (provincesAssignment) {
+    provincesAssignment.cancel();
+    provincesAssignment = null;
+    drawProvinces();
+  }
   removeCircle();
-
-  // restore borders style
-  select<SVGGElement, unknown>("#provinceBorders").select("path").attr("stroke", null).attr("stroke-width", null);
-  select<SVGGElement, unknown>("#stateBorders").select("path").attr("stroke", null).attr("stroke-width", null);
-  select("#debug").selectAll("path.selected").remove();
+  updateMapInteractionOverlay({ highlight: null, selection: null });
 
   document.querySelectorAll<HTMLElement>("#provincesBottom > *").forEach(el => {
     el.style.display = "inline-block";
@@ -1268,6 +1237,24 @@ function exitProvincesManualAssignment(close?: string): void {
   if (selected) selected.classList.remove("selected");
 }
 
+function cellPolygon(cellId: number) {
+  return {
+    kind: "polygon" as const,
+    points: pack.cells.v[cellId].map(vertexId => {
+      const [x, y] = pack.vertices.p[vertexId];
+      return { x, y };
+    })
+  };
+}
+
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
+}
+
 function enterAddProvinceMode(this: HTMLElement): void {
   if (this.classList.contains("pressed")) {
     exitAddProvinceMode();
@@ -1285,10 +1272,11 @@ function enterAddProvinceMode(this: HTMLElement): void {
     });
 }
 
-function addProvince(this: SVGElement, event: any): void {
+function addProvince(this: SVGElement, event: MouseEvent): void {
   const { cells, provinces } = pack;
-  const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const center = findCell(point.x, point.y)!;
   if (cells.h[center] < 20) {
     tip("You cannot place province into the water. Please click on a land cell", false, "error");
     return;
@@ -1325,7 +1313,7 @@ function addProvince(this: SVGElement, event: any): void {
   const type = Burgs.getType(center, parent.port);
   const coa = COA.generate(parent, kinship, +P(0.1), type);
   coa.shield = COA.getShield(c, state);
-  COArenderer.add("province", province, coa as any, point[0], point[1]);
+  COArenderer.add("province", province, coa as any, point.x, point.y);
 
   provinces.push({ i: province, state, center, burg, name, formName, fullName, color, coa } as Province);
 

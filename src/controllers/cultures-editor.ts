@@ -1,4 +1,4 @@
-import { csvParse, drag, easeSinIn, select, transition } from "d3";
+import { csvParse, drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -17,30 +17,27 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
-import { ManualAssignmentHistory, selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
+import { moveTerritoryCenter } from "@/controllers/editor-mutations";
+import { selectTerritoryEditorRow, TerritoryAssignmentSession } from "@/controllers/territory-editor-utils";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
-  abbreviate,
-  capitalize,
-  debounce,
-  ensureEl,
-  findAllCellsInRadius,
-  getPackPolygon,
-  getPointer,
-  isLand,
-  parseTransform,
-  ra,
-  rn,
-  si
-} from "../utils";
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { abbreviate, capitalize, debounce, ensureEl, findAllCellsInRadius, isLand, ra, rn, si } from "../utils";
 
-const culturesManualHistory = new ManualAssignmentHistory();
 let selectedCultureId: number | null = null;
+let culturesAssignment: TerritoryAssignmentSession | null = null;
+let activeCultureCenter: { cultureId: number; initialCell: number } | null = null;
 
 const dialogId = "culturesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -130,6 +127,7 @@ function open(): void {
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   renderDialog();
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editCultureCenter as EventListener);
   culturesCollectStatistics();
   drawCultureCenters();
   culturesTable.reset();
@@ -483,27 +481,12 @@ const cultureHighlightOn = debounce((event: any) => {
   if (!layerIsOn("toggleCultures")) return;
   if (customization) return;
 
-  const animate = transition().duration(2000).ease(easeSinIn);
-  select("#cults")
-    .select(`#culture${cultureId}`)
-    .raise()
-    .transition(animate)
-    .attr("stroke-width", 2.5)
-    .attr("stroke", "#d0240f");
-  select("#debug")
-    .select(`#cultureCenter${cultureId}`)
-    .raise()
-    .transition(animate)
-    .attr("r", 3)
-    .attr("stroke", "#d0240f");
+  updateCultureHighlight(cultureId);
 }, 200);
 
-function cultureHighlightOff(event: any): void {
-  const cultureId = Number(event.id || event.target.dataset.id);
-
+function cultureHighlightOff(_event: any): void {
   if (!layerIsOn("toggleCultures")) return;
-  select("#cults").select(`#culture${cultureId}`).transition().attr("stroke-width", null).attr("stroke", null);
-  select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function cultureChangeColor(this: FillBoxElement): void {
@@ -514,7 +497,6 @@ function cultureChangeColor(this: FillBoxElement): void {
     this.fill = newFill;
     pack.cultures[cultureId].color = newFill;
     drawCultures();
-    select("#debug").select(`#cultureCenter${cultureId}`).attr("fill", newFill);
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -735,9 +717,6 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
 }
 
 function removeCulture(cultureId: number): void {
-  select("#cults").select(`#culture${cultureId}`).remove();
-  select("#debug").select(`#cultureCenter${cultureId}`).remove();
-
   const { burgs, states, cells, cultures } = pack as any;
 
   burgs
@@ -759,12 +738,27 @@ function removeCulture(cultureId: number): void {
       c.origins = (c.origins ?? []).filter((origin: number) => origin !== cultureId);
       if (!c.origins.length) c.origins = [0];
     });
+  drawCultures();
   refreshCulturesEditor();
 }
 
 function cultureHighlightElement(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  highlightElement(select("#cults").select(`#culture${cultureId}`).node() as Element, 4);
+  updateCultureHighlight(cultureId);
+  window.setTimeout(() => updateMapInteractionOverlay({ highlight: null }), 4000);
+}
+
+function updateCultureHighlight(cultureId: number): void {
+  const highlight = pack.cells.i
+    .filter(cellId => pack.cells.culture[cellId] === cultureId)
+    .map(cellId => ({
+      kind: "polygon" as const,
+      points: pack.cells.v[cellId].map(vertexId => {
+        const [x, y] = pack.vertices.p[vertexId];
+        return { x, y };
+      })
+    }));
+  updateMapInteractionOverlay({ highlight });
 }
 
 function cultureRemovePrompt(this: HTMLElement): void {
@@ -780,59 +774,49 @@ function cultureRemovePrompt(this: HTMLElement): void {
 }
 
 function drawCultureCenters(): void {
-  const tooltip = "Drag to move the culture center (ancestral home)";
-  const debugLayer = select("#debug");
-  debugLayer.select("#cultureCenters").remove();
-  const cultureCenters = debugLayer
-    .append("g")
-    .attr("id", "cultureCenters")
-    .attr("stroke-width", 0.8)
-    .attr("stroke", "#444444")
-    .style("cursor", "move");
-
-  const data = pack.cultures.filter(c => c.i && !c.removed);
-  cultureCenters
-    .selectAll("circle")
-    .data(data)
-    .enter()
-    .append("circle")
-    .attr("id", (d: any) => `cultureCenter${d.i}`)
-    .attr("data-id", (d: any) => d.i)
-    .attr("r", 2)
-    .attr("fill", (d: any) => d.color)
-    .attr("cx", (d: any) => pack.cells.p[d.center][0])
-    .attr("cy", (d: any) => pack.cells.p[d.center][1])
-    .on("mouseenter", (event: any, d: any) => {
-      tip(tooltip, true);
-      ensureEl("culturesBody").querySelector(`div[data-id='${d.i}']`)?.classList.add("selected");
-      cultureHighlightOn(event);
-    })
-    .on("mouseleave", (event: any, d: any) => {
-      tip("", true);
-      ensureEl("culturesBody").querySelector(`div[data-id='${d.i}']`)?.classList.remove("selected");
-      cultureHighlightOff(event);
-    })
-    .call(drag<SVGCircleElement, any>().on("start", cultureCenterDrag));
+  updateMapInteractionOverlay({
+    handles: pack.cultures
+      .filter(culture => culture.i && !culture.removed && culture.center !== undefined)
+      .map(culture => {
+        const [x, y] = pack.cells.p[culture.center!];
+        return {
+          id: `culture-center:${culture.i}`,
+          label: `Move ${culture.name || "culture"} center`,
+          point: { x, y }
+        };
+      })
+  });
 }
 
-function cultureCenterDrag(this: any, event: any): void {
-  const cultureId = +this.id.slice(13);
-  const tr = parseTransform(this.getAttribute("transform"));
-  const x0 = +tr[0] - event.x;
-  const y0 = +tr[1] - event.y;
+function editCultureCenter(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const serializedId = String(event.detail.handleId);
+  if (!serializedId.startsWith("culture-center:")) return;
+  const cultureId = Number(serializedId.split(":")[1]);
+  const culture = pack.cultures.find(candidate => candidate.i === cultureId);
+  if (!culture || culture.center === undefined) return;
 
-  function handleDrag(this: any, dragEvent: any) {
-    const { x, y } = dragEvent;
-    this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
-    const cell = findCell(x, y);
-    if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
-
-    pack.cultures[cultureId].center = cell;
-    recalculateCultures();
+  if (event.detail.phase === "start") {
+    activeCultureCenter = { cultureId, initialCell: culture.center };
+    return;
   }
-
-  const dragDebounced = debounce(handleDrag, 50);
-  event.on("drag", dragDebounced);
+  if (event.detail.phase === "cancel") {
+    if (activeCultureCenter?.cultureId === cultureId) {
+      moveTerritoryCenter("cultures", pack.cultures, cultureId, activeCultureCenter.initialCell);
+      activeCultureCenter = null;
+      drawCultureCenters();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    const cellId = findCell(event.detail.worldPoint.x, event.detail.worldPoint.y);
+    if (cellId === undefined || pack.cells.h[cellId] < 20) return;
+    moveTerritoryCenter("cultures", pack.cultures, cultureId, cellId);
+    return;
+  }
+  if (event.detail.phase !== "end" || activeCultureCenter?.cultureId !== cultureId) return;
+  activeCultureCenter = null;
+  recalculateCultures();
+  drawCultureCenters();
 }
 
 function toggleLegend(): void {
@@ -916,12 +900,12 @@ function recalculateCultures(force?: boolean): void {
 function enterCultureManualAssignent(): void {
   if (!layerIsOn("toggleCultures")) toggleCultures();
   customization = 4;
-  select("#cults").append("g").attr("id", "temp");
+  culturesAssignment = new TerritoryAssignmentSession("cultures", pack.cells.culture);
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
     el.style.display = "none";
   });
   ensureEl("culturesManuallyButtons").style.display = "inline-block";
-  select("#debug").select("#cultureCenters").style("display", "none");
+  updateMapInteractionOverlay({ handles: [] });
 
   setModeHiddenColumns(
     dialogId,
@@ -947,7 +931,6 @@ function enterCultureManualAssignent(): void {
     firstLine.classList.add("selected");
     selectedCultureId = +firstLine.dataset.id!;
   }
-  culturesManualHistory.reset();
 }
 
 function selectCultureOnLineClick(this: HTMLElement): void {
@@ -956,13 +939,13 @@ function selectCultureOnLineClick(this: HTMLElement): void {
   selectedCultureId = +this.dataset.id!;
 }
 
-function selectCultureOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
+function selectCultureOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y);
   if (pack.cells.h[i!] < 20) return;
 
-  const assigned = select("#cults").select("#temp").select(`polygon[data-cell='${i}']`);
-  const culture = assigned.size() ? +assigned.attr("data-culture") : pack.cells.culture[i!];
+  const culture = culturesAssignment?.get(i!) ?? pack.cells.culture[i!];
 
   const body = ensureEl("culturesBody");
   selectedCultureId = culture;
@@ -972,61 +955,44 @@ function selectCultureOnMapClick(this: any, event: any): void {
 
 function dragCultureBrush(this: any, event: any): void {
   const radius = +ensureEl<HTMLInputElement>("culturesBrush").value;
-  saveCulturesManualSnapshot();
+  culturesAssignment?.beginStroke();
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], radius);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, radius);
 
-    const found = radius > 5 ? findAllCellsInRadius(p[0], p[1], radius, pack) : [findCell(p[0], p[1], radius)];
+    const found =
+      radius > 5 ? findAllCellsInRadius(point.x, point.y, radius, pack) : [findCell(point.x, point.y, radius)];
     const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeCultureForSelection(selection);
+    if (selection.length) changeCultureForSelection(selection);
   });
 }
 
 function changeCultureForSelection(selection: number[]): void {
   if (selectedCultureId === null) return;
 
-  const temp = select("#cults").select("#temp");
-  const cultureNew = selectedCultureId;
-  const color = pack.cultures[cultureNew].color || "#ffffff";
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const cultureOld = exists.size() ? +exists.attr("data-culture") : pack.cells.culture[i];
-    if (cultureNew === cultureOld) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-culture", cultureNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-culture", cultureNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
-  });
+  const mutation = culturesAssignment?.paint(selection, selectedCultureId);
+  if (mutation?.changed) drawCultures();
 }
 
-function moveCultureBrush(this: any, event: any): void {
+function moveCultureBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const point = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("culturesBrush").value;
-  moveCircle(point[0], point[1], radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyCultureManualAssignent(): void {
-  const changed = select("#cults").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
-  changed.each(function () {
-    const i = +this.dataset.cell!;
-    const c = +this.dataset.culture!;
-    pack.cells.culture[i] = c;
-    if (pack.cells.burg[i]) pack.burgs[pack.cells.burg[i]].culture = c;
-  });
-
-  if (changed.size()) {
+  const mutation = culturesAssignment?.commit();
+  culturesAssignment = null;
+  if (mutation?.changed) {
+    for (const cellId of mutation.affectedCellIds) {
+      const burgId = pack.cells.burg[cellId];
+      if (burgId) pack.burgs[burgId].culture = pack.cells.culture[cellId];
+    }
     drawCultures();
     refreshCulturesEditor();
   }
@@ -1035,8 +1001,11 @@ function applyCultureManualAssignent(): void {
 
 function exitCulturesManualAssignment(close?: string): void {
   customization = 0;
-  culturesManualHistory.reset();
-  select("#cults").select("#temp").remove();
+  if (culturesAssignment) {
+    culturesAssignment.cancel();
+    culturesAssignment = null;
+    drawCultures();
+  }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#culturesBottom > *").forEach(el => {
     el.style.display = "inline-block";
@@ -1052,7 +1021,7 @@ function exitCulturesManualAssignment(close?: string): void {
     });
   if (!close) updateDialog(dialogId, { position });
 
-  select("#debug").select("#cultureCenters").style("display", null);
+  if (!close) drawCultureCenters();
   applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("culturesBody").querySelector("div.selected");
@@ -1065,18 +1034,16 @@ function canSelectCultureEmblemShape(): boolean {
   return group === "Diversiform";
 }
 
-function saveCulturesManualSnapshot(): void {
-  const temp = select("#cults").select("#temp").node() as HTMLElement | null;
-  if (!temp) return;
-
-  culturesManualHistory.push(temp.innerHTML);
+function undoCulturesManualAssignment(): void {
+  if (culturesAssignment?.undo()) drawCultures();
 }
 
-function undoCulturesManualAssignment(): void {
-  const temp = select("#cults").select("#temp").node() as HTMLElement | null;
-  if (!temp || !culturesManualHistory.hasSnapshots) return;
-
-  temp.innerHTML = culturesManualHistory.pop()!;
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
 }
 
 function enterAddCulturesMode(this: HTMLElement): void {
@@ -1110,8 +1077,9 @@ function exitAddCultureMode(): void {
 }
 
 function addCulture(this: SVGElement, event: MouseEvent): void {
-  const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const center = findCell(point.x, point.y)!;
 
   if (pack.cells.h[center] < 20) {
     tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
@@ -1164,9 +1132,11 @@ function downloadCulturesCsv(): void {
 }
 
 function closeCulturesEditor(): void {
-  select("#debug #cultureCenters").remove();
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editCultureCenter as EventListener);
   exitCulturesManualAssignment("close");
   exitAddCultureMode();
+  clearMapInteractionOverlay();
+  activeCultureCenter = null;
   destroyDialog(dialogId);
 }
 

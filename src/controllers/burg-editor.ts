@@ -6,12 +6,17 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { renderBurgChanged, renderBurgRemoved } from "@/renderers/burg-mutations";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import { invalidateBurgSymbols } from "@/renderers/point-symbols";
 import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { getHeight, openURL, speak } from "@/utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import type { Burg } from "../generators/burgs-generator";
-import { convertTemperature, ensureEl, findEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
+import { convertTemperature, ensureEl, findEl, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -770,11 +775,16 @@ function toggleRelocateBurg(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateBurgOnClick);
     tip("Click on map to relocate burg. Hold Shift for continuous move", true);
+    const burg = pack.burgs[getSelectedId()];
+    updateMapInteractionOverlay({
+      selection: [{ center: { x: burg.x, y: burg.y }, kind: "circle", radius: 5 }]
+    });
     if (!layerIsOn("toggleCells")) {
       toggleCells();
       toggler.dataset.forced = "true";
     }
   } else {
+    clearMapInteractionOverlay();
     clearMainTip();
     applyDefaultViewboxEvents();
     if (layerIsOn("toggleCells") && toggler.dataset.forced) {
@@ -786,8 +796,9 @@ function toggleRelocateBurg(): void {
 
 function relocateBurgOnClick(this: SVGGElement, event: any): void {
   const cells = pack.cells;
-  const point = getPointer(event, this);
-  const cellId = findCell(point[0], point[1])!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y)!;
   const id = getSelectedId();
   const burg = pack.burgs[id];
 
@@ -807,8 +818,8 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
     return;
   }
 
-  const x = rn(point[0], 2);
-  const y = rn(point[1], 2);
+  const x = rn(point.x, 2);
+  const y = rn(point.y, 2);
 
   // change data
   cells.burg[burg.cell] = 0;
@@ -825,6 +836,7 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   drawLabels();
 
   if (event.shiftKey === false) toggleRelocateBurg();
+  else updateMapInteractionOverlay({ selection: [{ center: { x, y }, kind: "circle", radius: 5 }] });
 }
 
 function editBurgLegend(): void {

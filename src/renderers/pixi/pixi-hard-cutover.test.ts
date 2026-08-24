@@ -3,9 +3,13 @@ import mainSource from "../../../public/main.js?raw";
 import layersSource from "../../../public/modules/ui/layers.js?raw";
 import styleUiSource from "../../../public/modules/ui/style.js?raw";
 import stylePresetsSource from "../../../public/modules/ui/style-presets.js?raw";
+import mapTooltipSource from "../../components/map-tooltip.ts?raw";
 import zoomSource from "../../components/zoom.ts?raw";
 import burgEditorSource from "../../controllers/burg-editor.ts?raw";
+import goodsEditorSource from "../../controllers/goods-editor.ts?raw";
+import iceEditorSource from "../../controllers/ice-editor.ts?raw";
 import markerEditorSource from "../../controllers/markers-editor.ts?raw";
+import marketsOverviewSource from "../../controllers/markets-overview.ts?raw";
 import riverCreatorSource from "../../controllers/river-creator.ts?raw";
 import riverEditorSource from "../../controllers/river-editor.ts?raw";
 import riversOverviewSource from "../../controllers/rivers-overview.ts?raw";
@@ -28,7 +32,9 @@ import drawMilitarySource from "../draw-military.ts?raw";
 import drawTemperatureSource from "../draw-temperature.ts?raw";
 import drawTradeSource from "../draw-trade-animation.ts?raw";
 import renderersIndex from "../index.ts?raw";
+import interactionOverlaySource from "../interaction/map-interaction-overlay.ts?raw";
 import labelsRendererSource from "../labels/labels-renderer.ts?raw";
+import brushCircleSource from "../overlays/brush-circle.ts?raw";
 import pointSymbolsSource from "../point-symbols.ts?raw";
 import coordinateSceneSource from "../scene/layers/coordinate-scene.ts?raw";
 import emblemSceneSource from "../scene/layers/emblem-scene.ts?raw";
@@ -98,9 +104,18 @@ describe("Pixi hard cutover", () => {
     ].join("\n");
     expect(editorSources.includes('select("#rivers")')).toBe(false);
     expect(editorSources.includes('select("#routes")')).toBe(false);
-    expect(riverEditorSource.includes('data-renderer-overlay", "transient"')).toBe(true);
-    expect(routeEditorSource.includes('data-renderer-overlay", "transient"')).toBe(true);
-    expect(routeCreatorSource.includes('data-renderer-overlay", "transient"')).toBe(true);
+    expect(riverEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(riverEditorSource.includes('select("#debug")')).toBe(false);
+    expect(riverEditorSource.includes("getPointer")).toBe(false);
+    expect(routeEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(routeEditorSource.includes('select("#debug")')).toBe(false);
+    expect(routeEditorSource.includes("getPointer")).toBe(false);
+    expect(routeCreatorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(routeCreatorSource.includes('select("#debug")')).toBe(false);
+    expect(routeCreatorSource.includes("getPointer")).toBe(false);
+    expect(riverCreatorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(riverCreatorSource.includes('select("#debug")')).toBe(false);
+    expect(riverCreatorSource.includes("getPointer")).toBe(false);
     expect(riverEditorSource.includes("getTotalLength")).toBe(false);
     expect(routeEditorSource.includes('selectedRoute.attr("id")')).toBe(false);
     expect(riverEditorSource.includes('selectedRiver.attr("id")')).toBe(false);
@@ -120,7 +135,8 @@ describe("Pixi hard cutover", () => {
     expect(burgEditorSource.includes('select("#burgIcons")')).toBe(false);
     expect(burgEditorSource.includes('select("#anchors")')).toBe(false);
     expect(markerEditorSource.includes('select("#markers")')).toBe(false);
-    expect(markerEditorSource.includes('select<SVGGElement, unknown>("#debug")')).toBe(true);
+    expect(markerEditorSource.includes('from "d3"')).toBe(false);
+    expect(markerEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
     expect(mainSource.includes('attr("id", "burgIcons")')).toBe(false);
     expect(mainSource.includes('attr("id", "anchors")')).toBe(false);
     expect(mainSource.includes('attr("id", "markers")')).toBe(false);
@@ -144,6 +160,14 @@ describe("Pixi hard cutover", () => {
     for (const selector of ['"#ice"', '"#goods"', '"#goodsCells"', '"#goodsIcons"', '"#goodsBurgs"', '"#markets"']) {
       expect(controllerSource.includes(selector)).toBe(true);
     }
+    expect(iceEditorSource.includes('select<SVGGElement, unknown>("#ice")')).toBe(false);
+    expect(iceEditorSource.includes("getPointer")).toBe(false);
+    expect(iceEditorSource.includes("MAP_INTERACTION_HANDLE_EVENT")).toBe(true);
+    expect(goodsEditorSource.includes("getPointer")).toBe(false);
+    expect(marketsOverviewSource.includes("marketsTemp")).toBe(false);
+    expect(marketsOverviewSource.includes('select("#markets")')).toBe(false);
+    expect(marketsOverviewSource.includes("getPointer")).toBe(false);
+    expect(drawMarketsSource.includes("updateMapInteractionOverlay")).toBe(true);
   });
 
   it("renders population and military only through renderer-neutral Pixi scenes", () => {
@@ -216,6 +240,20 @@ describe("Pixi hard cutover", () => {
       exportSource.indexOf("context.drawImage(overlay")
     );
     expect(exportSource.includes('throw new Error("Pixi renderer is not ready for raster export")')).toBe(true);
+  });
+
+  it("uses renderer picking and a transient accessible overlay for map inspection and brushes", () => {
+    expect(mapTooltipSource.includes("pickPixiRenderer")).toBe(true);
+    expect(mapTooltipSource.includes("getPixiMapPointAtClient")).toBe(true);
+    expect(mapTooltipSource.includes("event.target")).toBe(false);
+    expect(mapTooltipSource.includes("getPointer")).toBe(false);
+    expect(mapTooltipSource.includes("getComposedPath")).toBe(false);
+    expect(interactionOverlaySource.includes("setPointerCapture")).toBe(true);
+    expect(interactionOverlaySource.includes('setAttribute("tabindex"')).toBe(true);
+    expect(interactionOverlaySource.includes("screenToWorld")).toBe(true);
+    expect(brushCircleSource.includes("#debug")).toBe(false);
+    expect(saveSource.includes('querySelector("#mapInteractionOverlay")?.remove()')).toBe(true);
+    expect(exportSource.includes('select("#mapInteractionOverlay").remove()')).toBe(true);
   });
 
   it("uses the production surface and contains no prototype identifiers", () => {

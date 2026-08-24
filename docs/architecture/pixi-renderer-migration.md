@@ -94,6 +94,14 @@ The former opt-in experiment is retained only as historical context in
   world geometry. Current SVG export owns their vector serialization; viewport PNG/JPEG export composites that overlay
   once over the authoritative Pixi canvas. M11 tiled/full-map export must place this overlay exactly once in final-image
   coordinates. These three groups are the intended overlay boundary, not SVG fallbacks for Pixi-owned content.
+- M9 provides one normalized screen/client/world transform for Pixi, context menus, hover inspection, and editing
+  overlays. A bounds-bucket spatial index resolves visible point, line, polygon, label, goods, market, population, and
+  military hits with canonical layer precedence and zoom-normalized tolerance, then falls back to cell/Voronoi area
+  lookup. The returned `MapHit` contains stable domain and sub-part IDs without exposing Pixi display objects. Map
+  hover and context inspection no longer read SVG event targets or paths. A single non-serialized SVG interaction
+  overlay owns transient selection/highlight/brush geometry and accessible handles; handles use Pointer Events,
+  pointer capture, touch-safe input, keyboard nudging, and the same camera transform as Pixi. Existing brush tools and
+  emblem highlighting now use this API, and save/export explicitly remove the overlay.
 - Current-format saves explicitly serialize migrated layer visibility. Loading prefers that state instead of inferring
   visibility from SVG child paths, while older files may still use their SVG contents as a best-effort import hint.
   The style UI and style presets now write thematic opacity into semantic renderer style and invalidate Pixi.

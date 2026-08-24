@@ -108,6 +108,12 @@ function addHitEntity(entities: MapContextEntity[], hit: MapHit, pack: PackedGra
       if (type === "burg") addEntity(entities, getBurgEntity(id, pack));
       return;
     }
+    case "good": {
+      const burgId = Number(hit.subPart?.burgId);
+      if (Number.isFinite(burgId)) addEntity(entities, getProductionEntity(burgId, pack));
+      else addEntity(entities, { key: "goods", kind: "goods", label: "Goods" });
+      return;
+    }
     case "ice": {
       addEntity(entities, getIceEntity(id, pack));
       return;
@@ -321,7 +327,7 @@ function getMarketEntity(id: number, pack: PackedGraph, element?: SVGElement): M
   return { element, id, key: `market:${id}`, kind: "market", label: `${burg?.name || `Market ${id}`} market` };
 }
 
-function getProductionEntity(id: number, pack: PackedGraph, element: SVGElement): MapContextEntity {
+function getProductionEntity(id: number, pack: PackedGraph, element?: SVGElement): MapContextEntity {
   return {
     element,
     id,

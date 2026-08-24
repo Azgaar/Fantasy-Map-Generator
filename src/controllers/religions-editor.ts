@@ -1,4 +1,4 @@
-import { drag, easeSinIn, select, transition } from "d3";
+import { drag, select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -15,26 +15,26 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
+import { moveTerritoryCenter } from "@/controllers/editor-mutations";
+import { selectTerritoryEditorRow, TerritoryAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend } from "@/renderers/draw-legend";
-import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
 import {
-  abbreviate,
-  debounce,
-  ensureEl,
-  findAllCellsInRadius,
-  getPackPolygon,
-  getPointer,
-  isLand,
-  parseTransform,
-  rn,
-  si
-} from "../utils";
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { abbreviate, debounce, ensureEl, findAllCellsInRadius, isLand, rn, si } from "../utils";
 
 let selectedReligionId: number | null = null;
+let religionsAssignment: TerritoryAssignmentSession | null = null;
+let activeReligionCenter: { initialCell: number; religionId: number } | null = null;
 
 const dialogId = "religionsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -126,6 +126,7 @@ function open(): void {
   if (layerIsOn("toggleProvinces")) toggleProvinces();
 
   renderDialog();
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editReligionCenter as EventListener);
   religionsCollectStatistics();
   drawReligionCenters();
   religionsTable.reset();
@@ -496,19 +497,7 @@ const religionHighlightOn = debounce((event: any) => {
   if (!layerIsOn("toggleReligions")) return;
   if (customization) return;
 
-  const animate = transition().duration(2000).ease(easeSinIn);
-  select("#relig")
-    .select(`#religion${religionId}`)
-    .raise()
-    .transition(animate)
-    .attr("stroke-width", 2.5)
-    .attr("stroke", "#d0240f");
-  select("#debug")
-    .select(`#religionsCenter${religionId}`)
-    .raise()
-    .transition(animate)
-    .attr("r", 3)
-    .attr("stroke", "#d0240f");
+  updateReligionHighlight(religionId);
 }, 200);
 
 function religionHighlightOff(event: any): void {
@@ -516,8 +505,7 @@ function religionHighlightOff(event: any): void {
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.remove("active");
 
-  select("#relig").select(`#religion${religionId}`).transition().attr("stroke-width", null).attr("stroke", null);
-  select("#debug").select(`#religionsCenter${religionId}`).transition().attr("r", 2).attr("stroke", null);
+  updateMapInteractionOverlay({ highlight: null });
 }
 
 function religionChangeColor(this: HTMLElement): void {
@@ -528,7 +516,6 @@ function religionChangeColor(this: HTMLElement): void {
     (this as any).fill = newFill;
     pack.religions[religionId].color = newFill;
     drawReligions();
-    select("#debug").select(`#religionsCenter${religionId}`).attr("fill", newFill);
   };
 
   void Controllers.ColorPicker.open(currentFill, callback);
@@ -696,10 +683,6 @@ function religionRemovePrompt(this: HTMLElement): void {
 }
 
 function removeReligion(religionId: number): void {
-  select("#relig").select(`#religion${religionId}`).remove();
-  select("#relig").select(`#religion-gap${religionId}`).remove();
-  select("#debug").select(`#religionsCenter${religionId}`).remove();
-
   pack.cells.religion.forEach((r: number, i: number) => {
     if (r === religionId) pack.cells.religion[i] = 0;
   });
@@ -712,63 +695,55 @@ function removeReligion(religionId: number): void {
       if (!r.origins.length) r.origins = [0];
     });
 
+  drawReligions();
   refreshReligionsEditor();
 }
 
 function drawReligionCenters(): void {
-  const debugLayer = select("#debug");
-  debugLayer.select("#religionCenters").remove();
-  const religionCenters = debugLayer
-    .append("g")
-    .attr("id", "religionCenters")
-    .attr("stroke-width", 0.8)
-    .attr("stroke", "#444444")
-    .style("cursor", "move");
-
   let data = pack.religions.filter(r => r.i && r.center && !r.removed);
   const showExtinct = ensureEl("religionsBody").dataset.extinct === "show";
   if (!showExtinct) data = data.filter(r => (r.cells ?? 0) > 0);
-
-  religionCenters
-    .selectAll("circle")
-    .data(data)
-    .enter()
-    .append("circle")
-    .attr("id", (d: any) => `religionsCenter${d.i}`)
-    .attr("data-id", (d: any) => d.i)
-    .attr("r", 2)
-    .attr("fill", (d: any) => d.color)
-    .attr("cx", (d: any) => pack.cells.p[d.center][0])
-    .attr("cy", (d: any) => pack.cells.p[d.center][1])
-    .on("mouseenter", (event: any, d: any) => {
-      tip(`${d.name}. Drag to move the religion center`, true);
-      religionHighlightOn(event);
+  updateMapInteractionOverlay({
+    handles: data.map(religion => {
+      const [x, y] = pack.cells.p[religion.center!];
+      return {
+        id: `religion-center:${religion.i}`,
+        label: `Move ${religion.name || "religion"} center`,
+        point: { x, y }
+      };
     })
-    .on("mouseleave", (event: any) => {
-      tip("", true);
-      religionHighlightOff(event);
-    })
-    .call(drag<SVGCircleElement, any>().on("start", religionCenterDrag));
+  });
 }
 
-function religionCenterDrag(this: any, event: any): void {
-  const religionId = +this.dataset.id;
-  const tr = parseTransform(this.getAttribute("transform"));
-  const x0 = +tr[0] - event.x;
-  const y0 = +tr[1] - event.y;
+function editReligionCenter(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const serializedId = String(event.detail.handleId);
+  if (!serializedId.startsWith("religion-center:")) return;
+  const religionId = Number(serializedId.split(":")[1]);
+  const religion = pack.religions.find(candidate => candidate.i === religionId);
+  if (!religion || religion.center === undefined) return;
 
-  function handleDrag(this: any, dragEvent: any) {
-    const { x, y } = dragEvent;
-    this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
-    const cell = findCell(x, y);
-    if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
-
-    pack.religions[religionId].center = cell;
-    recalculateReligions();
+  if (event.detail.phase === "start") {
+    activeReligionCenter = { initialCell: religion.center, religionId };
+    return;
   }
-
-  const dragDebounced = debounce(handleDrag, 50);
-  event.on("drag", dragDebounced);
+  if (event.detail.phase === "cancel") {
+    if (activeReligionCenter?.religionId === religionId) {
+      moveTerritoryCenter("religions", pack.religions, religionId, activeReligionCenter.initialCell);
+      activeReligionCenter = null;
+      drawReligionCenters();
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    const cellId = findCell(event.detail.worldPoint.x, event.detail.worldPoint.y);
+    if (cellId === undefined || pack.cells.h[cellId] < 20) return;
+    moveTerritoryCenter("religions", pack.religions, religionId, cellId);
+    return;
+  }
+  if (event.detail.phase !== "end" || activeReligionCenter?.religionId !== religionId) return;
+  activeReligionCenter = null;
+  recalculateReligions();
+  drawReligionCenters();
 }
 
 function toggleLegend(): void {
@@ -850,12 +825,12 @@ function toggleExtinct(): void {
 function enterReligionsManualAssignent(): void {
   if (!layerIsOn("toggleReligions")) toggleReligions();
   customization = 7;
-  select("#relig").append("g").attr("id", "temp");
+  religionsAssignment = new TerritoryAssignmentSession("religions", pack.cells.religion);
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
     el.style.display = "none";
   });
   ensureEl("religionsManuallyButtons").style.display = "inline-block";
-  select("#debug").select("#religionCenters").style("display", "none");
+  updateMapInteractionOverlay({ handles: [] });
 
   setModeHiddenColumns(
     dialogId,
@@ -889,13 +864,13 @@ function selectReligionOnLineClick(this: HTMLElement): void {
   selectedReligionId = +this.dataset.id!;
 }
 
-function selectReligionOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
+function selectReligionOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y);
   if (pack.cells.h[i!] < 20) return;
 
-  const assigned = select("#relig").select("#temp").select(`polygon[data-cell='${i}']`);
-  const religion = assigned.size() ? +assigned.attr("data-religion") : pack.cells.religion[i!];
+  const religion = religionsAssignment?.get(i!) ?? pack.cells.religion[i!];
 
   const body = ensureEl("religionsBody");
   selectedReligionId = religion;
@@ -905,15 +880,18 @@ function selectReligionOnMapClick(this: any, event: any): void {
 
 function dragReligionBrush(this: any, event: any): void {
   const radius = +ensureEl<HTMLInputElement>("religionsBrush").value;
+  religionsAssignment?.beginStroke();
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const [x, y] = getPointer(dragEvent, this);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    const { x, y } = point;
     moveCircle(x, y, radius);
 
     const found = radius > 5 ? findAllCellsInRadius(x, y, radius, pack) : [findCell(x, y, radius)];
     const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeReligionForSelection(selection);
+    if (selection.length) changeReligionForSelection(selection);
   });
 }
 
@@ -921,45 +899,24 @@ function dragReligionBrush(this: any, event: any): void {
 function changeReligionForSelection(selection: number[]): void {
   if (selectedReligionId === null) return;
 
-  const temp = select("#relig").select("#temp");
-  const religionNew = selectedReligionId;
-  const color = pack.religions[religionNew].color || "#ffffff";
   const preventOverwrite = (document.getElementById("religionsManuallyProtect") as HTMLInputElement | null)?.checked;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const religionOld = exists.size() ? +exists.attr("data-religion") : pack.cells.religion[i];
-    if (religionNew === religionOld) return;
-    if (preventOverwrite && religionOld) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-religion", religionNew).attr("fill", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-religion", religionNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color);
-  });
+  const cells = preventOverwrite ? selection.filter(cellId => !religionsAssignment?.get(cellId)) : selection;
+  const mutation = religionsAssignment?.paint(cells, selectedReligionId);
+  if (mutation?.changed) drawReligions();
 }
 
-function moveReligionBrush(this: any, event: any): void {
+function moveReligionBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const [x, y] = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("religionsBrush").value;
-  moveCircle(x, y, radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyReligionsManualAssignent(): void {
-  const changed = select("#relig").select("#temp").selectAll<SVGPolygonElement, unknown>("polygon");
-  changed.each(function () {
-    const i = +this.dataset.cell!;
-    const r = +this.dataset.religion!;
-    pack.cells.religion[i] = r;
-  });
-
-  if (changed.size()) {
+  const mutation = religionsAssignment?.commit();
+  religionsAssignment = null;
+  if (mutation?.changed) {
     drawReligions();
     refreshReligionsEditor();
     drawReligionCenters();
@@ -969,7 +926,11 @@ function applyReligionsManualAssignent(): void {
 
 function exitReligionsManualAssignment(close?: string): void {
   customization = 0;
-  select("#relig").select("#temp").remove();
+  if (religionsAssignment) {
+    religionsAssignment.cancel();
+    religionsAssignment = null;
+    drawReligions();
+  }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#religionsBottom > *").forEach(el => {
     el.style.display = "inline-block";
@@ -985,7 +946,7 @@ function exitReligionsManualAssignment(close?: string): void {
     });
   if (!close) updateDialog(dialogId, { position });
 
-  select("#debug").select("#religionCenters").style("display", null);
+  if (!close) drawReligionCenters();
   applyDefaultViewboxEvents();
   clearMainTip();
   const $selected = ensureEl("religionsBody").querySelector("div.selected");
@@ -1024,8 +985,9 @@ function exitAddReligionMode(): void {
 }
 
 function addReligion(this: SVGElement, event: MouseEvent): void {
-  const [x, y] = getPointer(event, this);
-  const center = findCell(x, y)!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const center = findCell(point.x, point.y)!;
   if (pack.cells.h[center] < 20) {
     tip("You cannot place religion center into the water. Please click on a land cell", false, "error");
     return;
@@ -1077,10 +1039,31 @@ function downloadReligionsCsv(): void {
   downloadFile(csvData, name);
 }
 
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
+}
+
+function updateReligionHighlight(religionId: number): void {
+  const highlight = pack.cells.i
+    .filter(cellId => pack.cells.religion[cellId] === religionId)
+    .map(cellId => ({
+      kind: "polygon" as const,
+      points: pack.cells.v[cellId].map(vertexId => {
+        const [x, y] = pack.vertices.p[vertexId];
+        return { x, y };
+      })
+    }));
+  updateMapInteractionOverlay({ highlight });
+}
+
 function highlightReligion(this: HTMLElement): void {
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const el = select("#relig").select(`#religion${religionId}`).node() as Element | null;
-  if (el) highlightElement(el, 4);
+  updateReligionHighlight(religionId);
+  window.setTimeout(() => updateMapInteractionOverlay({ highlight: null }), 4000);
 }
 
 function updateLockStatus(this: HTMLElement): void {
@@ -1106,9 +1089,13 @@ function recalculateReligions(must?: boolean): void {
 }
 
 function closeReligionsEditor(): void {
-  select("#debug").select("#religionCenters").remove();
+  document
+    .getElementById("map")
+    ?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editReligionCenter as EventListener);
   exitReligionsManualAssignment("close");
   exitAddReligionMode();
+  clearMapInteractionOverlay();
+  activeReligionCenter = null;
   destroyDialog(dialogId);
 }
 

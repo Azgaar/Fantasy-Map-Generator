@@ -172,7 +172,7 @@ function editEntity(entity: MapContextEntity): unknown {
     case "goods":
       return Controllers.GoodsEditor.open();
     case "ice":
-      return Controllers.IceEditor.open(element!);
+      return Controllers.IceEditor.open(id!);
     case "label":
       return Controllers.LabelsEditor.open(entity.labelType!, id!);
     case "lake":

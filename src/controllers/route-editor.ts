@@ -1,17 +1,29 @@
-import { drag, type Selection, select } from "d3";
+import { select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
+import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { insertRoutePoint, moveRoutePoint, removeRoutePoint, replaceRoutePoints } from "@/controllers/editor-mutations";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
-import { invalidatePixiRendererLayer } from "@/renderers/pixi/pixi-renderer-controller";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  invalidatePixiRendererLayer,
+  pickPixiRenderer,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
 import { getMapRendererStyle } from "@/renderers/scene/map-style-state";
 import { speak } from "@/utils";
-import { ensureEl, findEl, getPackPolygon, getPointer, getSegmentId, rn } from "../utils";
+import { ensureEl, findEl, getSegmentId, rn } from "../utils";
 
-let selectedRoute: Selection<SVGPathElement, unknown, HTMLElement, unknown>;
 let selectedRouteId = 0;
+let activePoint: { index: number; initialCell: number; initialPoint: [number, number] } | null = null;
 
 function open(routeId: number): void {
   if (customization) return;
@@ -30,20 +42,8 @@ function open(routeId: number): void {
     "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
     true
   );
-  select("#debug").append("g").attr("id", "controlCells");
-  const controlPoints = select<SVGGElement, unknown>("#debug")
-    .append("g")
-    .attr("id", "controlPoints")
-    .attr("data-renderer-overlay", "transient");
-  selectedRoute = controlPoints
-    .append("path")
-    .attr("class", "active-editor-path")
-    .attr("data-domain-kind", "route")
-    .attr("data-domain-id", routeId)
-    .attr("d", Routes.getPath(route))
-    .style("fill", "transparent")
-    .style("pointer-events", "all")
-    .on("click", addControlPoint);
+  select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addControlPoint);
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, editRoutePoint as EventListener);
 
   renderDialog();
 
@@ -147,80 +147,37 @@ function updateRouteLength(route: Route): void {
 }
 
 function drawControlPoints(points: number[][]): void {
-  select<SVGGElement, unknown>("#controlPoints")
-    .selectAll<SVGCircleElement, number[]>("circle")
-    .data(points)
-    .join("circle")
-    .attr("cx", (d: number[]) => d[0])
-    .attr("cy", (d: number[]) => d[1])
-    .attr("r", 0.6)
-    .call(drag<SVGCircleElement, number[]>().on("start", dragControlPoint))
-    .on("click", handleControlPointClick);
+  renderRouteOverlay(points);
 }
 
 function drawCells(points: number[][]): void {
-  select<SVGGElement, unknown>("#controlCells")
-    .selectAll("polygon")
-    .data(points)
-    .join("polygon")
-    .attr("points", (p: number[]) => getPackPolygon(p[2], pack));
+  renderRouteOverlay(points);
 }
 
-function dragControlPoint(event: any): void {
-  const route = getRoute();
-  const initCell = event.subject[2];
-  const pointIndex = route.points.indexOf(event.subject);
-
-  event.on("drag", function (this: any, dragEvent: any) {
-    this.setAttribute("cx", dragEvent.x);
-    this.setAttribute("cy", dragEvent.y);
-
-    const x = rn(dragEvent.x, 2);
-    const y = rn(dragEvent.y, 2);
-    const cellId = findCell(x, y);
-
-    this.__data__ = route.points[pointIndex] = [x, y, cellId!];
-    redrawRoute(route);
-    drawCells(route.points);
-  });
-
-  event.on("end", () => {
-    const movedToCell = findCell(event.x, event.y);
-
-    if (movedToCell !== initCell) {
-      const prev = route.points[pointIndex - 1];
-      if (prev) {
-        removeConnection(initCell, prev[2]);
-        addConnection(movedToCell!, prev[2], route.i);
-      }
-
-      const next = route.points[pointIndex + 1];
-      if (next) {
-        removeConnection(initCell, next[2]);
-        addConnection(movedToCell!, next[2], route.i);
-      }
-    }
-  });
-}
-
-function redrawRoute(route: Route): void {
-  selectedRoute.attr("d", Routes.getPath(route));
+function redrawRoute(route: Route, renderOverlay = true): void {
   invalidatePixiRendererLayer("routes");
   updateRouteLength(route);
   if (findEl("elevationProfile")) showRouteElevationProfile();
   drawLabels();
+  if (renderOverlay) renderRouteOverlay(route.points);
 }
 
-function addControlPoint(this: any, event: any): void {
+function addControlPoint(event: MouseEvent): void {
+  const hit = pickPixiRenderer(event.clientX, event.clientY);
+  if (hit?.domainKind !== "route" || Number(hit.domainId) !== selectedRouteId) return;
   const route = getRoute();
-  const [x, y] = getPointer(event, this);
+  const mapPoint = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!mapPoint) return;
+  const { x, y } = mapPoint;
   const cellId = findCell(x, y);
+  if (cellId === undefined) return;
 
-  const point = [rn(x, 2), rn(y, 2), cellId!];
+  const point: [number, number, number] = [rn(x, 2), rn(y, 2), cellId];
   const isNewCell = !route.points.some(p => p[2] === cellId);
 
-  const index = getSegmentId(route.points as [number, number][], point as [number, number], 2);
-  route.points.splice(index, 0, point);
+  const index = getSegmentId(route.points as [number, number][], [point[0], point[1]], 2);
+  const mutation = insertRoutePoint(route, index, point);
+  if (!mutation.changed) return;
 
   // check if added point is in new cell
   if (isNewCell) {
@@ -232,8 +189,8 @@ function addControlPoint(this: any, event: any): void {
     if (!prev || !next) return;
 
     removeConnection(prev[2], next[2]);
-    addConnection(prev[2], cellId!, route.i);
-    addConnection(cellId!, next[2], route.i);
+    addConnection(prev[2], cellId, route.i);
+    addConnection(cellId, next[2], route.i);
 
     drawCells(route.points);
   }
@@ -242,24 +199,22 @@ function addControlPoint(this: any, event: any): void {
   redrawRoute(route);
 }
 
-function handleControlPointClick(this: any): void {
-  const controlPoint = select(this);
-  const point = controlPoint.datum() as number[];
+function activateControlPoint(index: number): void {
   const route = getRoute();
   if (route.points.length < 3) return; // can't remove or split point if only 2 points in route
-
-  const index = route.points.indexOf(point);
+  const point = route.points[index];
+  if (!point) return;
 
   const isSplitMode = ensureEl("routeSplit").classList.contains("pressed");
   if (isSplitMode) splitRoute();
-  else removeControlPoint(controlPoint);
+  else removeControlPoint();
 
   function splitRoute(): void {
     const oldRoutePoints = route.points.slice(0, index + 1);
     const newRoutePoints = route.points.slice(index);
 
     // update old route
-    route.points = oldRoutePoints;
+    replaceRoutePoints(route, oldRoutePoints);
     drawControlPoints(route.points);
     drawCells(route.points);
     redrawRoute(route);
@@ -285,7 +240,7 @@ function handleControlPointClick(this: any): void {
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
-  function removeControlPoint(controlPoint: any): void {
+  function removeControlPoint(): void {
     const isOnlyPointInCell = route.points.filter(p => p[2] === point[2]).length === 1;
     if (isOnlyPointInCell) {
       const prev = route.points[index - 1];
@@ -295,8 +250,7 @@ function handleControlPointClick(this: any): void {
       if (prev && next) addConnection(prev[2], next[2], route.i);
     }
 
-    controlPoint.remove();
-    route.points = route.points.filter(p => p !== point);
+    removeRoutePoint(route, index);
 
     drawCells(route.points);
     redrawRoute(route);
@@ -359,7 +313,7 @@ function openJoinRoutesDialog(): void {
 function joinRoutes(route: Route, joinedRoute: Route): void {
   const mergedPoints = mergeRoutePoints(route.points, joinedRoute.points);
   if (!mergedPoints) return;
-  route.points = mergedPoints;
+  replaceRoutePoints(route, mergedPoints);
 
   for (let i = 0; i < route.points.length; i++) {
     const point = route.points[i];
@@ -472,17 +426,17 @@ function removeRoute(): void {
     confirm: "Remove",
     onConfirm: () => {
       Routes.remove(getRoute());
-      selectedRoute.remove();
-      destroyDialog("routeEditor");
+      invalidatePixiRendererLayer("routes");
+      closeRouteEditor();
     }
   });
 }
 
 function closeRouteEditor(): void {
-  select("#controlPoints").remove();
-  select("#controlCells").remove();
-
-  selectedRoute.on("click", null);
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, editRoutePoint as EventListener);
+  clearMapInteractionOverlay();
+  applyDefaultViewboxEvents();
+  activePoint = null;
   selectedRouteId = 0;
   clearMainTip();
 
@@ -491,6 +445,82 @@ function closeRouteEditor(): void {
   if (forced && layerIsOn("toggleCells")) toggleCells();
 
   destroyDialog("routeEditor");
+}
+
+function editRoutePoint(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  const serializedId = String(event.detail.handleId);
+  if (!serializedId.startsWith("route-point:")) return;
+  const index = Number(serializedId.split(":")[1]);
+  const route = getRoute();
+  const point = route.points[index];
+  if (!point) return;
+
+  if (event.detail.phase === "activate") {
+    activateControlPoint(index);
+    return;
+  }
+  if (event.detail.phase === "start") {
+    activePoint = { index, initialCell: point[2], initialPoint: [point[0], point[1]] };
+    return;
+  }
+  if (event.detail.phase === "cancel") {
+    if (activePoint?.index === index) {
+      moveRoutePoint(route, index, [activePoint.initialPoint[0], activePoint.initialPoint[1], activePoint.initialCell]);
+      activePoint = null;
+      redrawRoute(route);
+    }
+    return;
+  }
+  if (event.detail.phase === "move") {
+    const cellId = findCell(event.detail.worldPoint.x, event.detail.worldPoint.y);
+    if (cellId === undefined) return;
+    moveRoutePoint(route, index, [rn(event.detail.worldPoint.x, 2), rn(event.detail.worldPoint.y, 2), cellId]);
+    redrawRoute(route, false);
+    return;
+  }
+  if (event.detail.phase !== "end" || activePoint?.index !== index) return;
+
+  const moved = Math.hypot(point[0] - activePoint.initialPoint[0], point[1] - activePoint.initialPoint[1]) > 0.01;
+  if (!moved) {
+    activePoint = null;
+    activateControlPoint(index);
+    return;
+  }
+  if (point[2] !== activePoint.initialCell) {
+    const previous = route.points[index - 1];
+    const next = route.points[index + 1];
+    if (previous) {
+      removeConnection(activePoint.initialCell, previous[2]);
+      addConnection(point[2], previous[2], route.i);
+    }
+    if (next) {
+      removeConnection(activePoint.initialCell, next[2]);
+      addConnection(point[2], next[2], route.i);
+    }
+  }
+  activePoint = null;
+  queueMicrotask(() => renderRouteOverlay(route.points));
+}
+
+function renderRouteOverlay(points: number[][]): void {
+  const cells = [...new Set(points.map(point => point[2]))];
+  updateMapInteractionOverlay({
+    handles: points.map(([x, y], index) => ({
+      id: `route-point:${index}`,
+      label: `Edit route point ${index + 1}`,
+      point: { x, y }
+    })),
+    selection: [
+      { kind: "polyline", points: points.map(([x, y]) => ({ x, y })) },
+      ...cells.map(cellId => ({
+        kind: "polygon" as const,
+        points: pack.cells.v[cellId].map(vertexId => {
+          const [x, y] = pack.vertices.p[vertexId];
+          return { x, y };
+        })
+      }))
+    ]
+  });
 }
 
 export const RouteEditor = { open };

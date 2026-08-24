@@ -21,12 +21,14 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawMarkets } from "@/renderers/draw-markets";
+import { getPixiMapPointAtClient } from "@/renderers/pixi/pixi-renderer-controller";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
 import { drawGoods, toggleGoods } from "../renderers/draw-goods";
-import { ensureEl, getPointer, unique } from "../utils";
+import { ensureEl, unique } from "../utils";
+import { toggleCellGood } from "./editor-mutations";
 
 const visibleTags = new Set<string>();
 let production: ReturnType<typeof getProduction> = {};
@@ -559,24 +561,16 @@ function selectResourceOnLineClick(this: HTMLElement) {
 
 function changeResourceOnCellClick(this: SVGElement, event: MouseEvent) {
   const body = ensureEl("goodsBody");
-  const point = getPointer(event, this);
-  const cellId = findCell(...point);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const cellId = findCell(point.x, point.y);
   if (cellId === undefined) return;
 
   const selected = body.querySelector<HTMLElement>("div.selected");
   if (!selected) return;
 
-  if (pack.cells.good[cellId]) {
-    pack.cells.good[cellId] = 0;
-  } else {
-    const resourceId = +selected.dataset.id!;
-    const resource = Goods.get(resourceId);
-    if (!resource) return;
-    pack.cells.good[cellId] = resourceId;
-    resource.visible = true;
-  }
-
-  drawGoods();
+  const mutation = toggleCellGood(pack, cellId, Number(selected.dataset.id));
+  if (mutation.changed) drawGoods();
 }
 
 function exitResourceAssignMode(close?: string) {

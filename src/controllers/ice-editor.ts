@@ -1,24 +1,36 @@
-import { drag, type Selection, select } from "d3";
+import { select } from "d3";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import type { Ice } from "@/generators/ice-generator";
 import { redrawIceberg } from "@/renderers/draw-ice";
-import { ensureEl, findGridCell, getPointer, parseTransform } from "../utils";
+import {
+  MAP_INTERACTION_HANDLE_EVENT,
+  type MapInteractionHandleEventDetail
+} from "@/renderers/interaction/map-interaction-overlay";
+import {
+  clearMapInteractionOverlay,
+  getPixiMapPointAtClient,
+  updateMapInteractionOverlay
+} from "@/renderers/pixi/pixi-renderer-controller";
+import { ensureEl, findGridCell } from "../utils";
+import { moveIce } from "./editor-mutations";
 
-let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
+let selectedIceId: number | null = null;
 
-function open(element: SVGElement): void {
+function open(target: number | SVGElement): void {
   if (customization) return;
-  if (document.getElementById("iceEditor") && element === selectedIce.node()) return;
+  const id = typeof target === "number" ? target : Number(target.dataset.id);
+  if (document.getElementById("iceEditor") && id === selectedIceId) return;
+  const iceElement = getIce(id);
+  if (!iceElement) return;
 
   closeDialogs(".stable");
   if (!layerIsOn("toggleIce")) toggleIce();
 
-  selectedIce = select<SVGElement, unknown>(element) as unknown as typeof selectedIce;
-  const id = +selectedIce.attr("data-id");
-  const iceElement = pack.ice.find(el => el.i === id);
-  const isGlacier = selectedIce.attr("type") === "glacier";
+  selectedIceId = id;
+  const isGlacier = iceElement.type === "glacier";
   const type = isGlacier ? "Glacier" : "Iceberg";
 
   renderDialog();
@@ -27,12 +39,9 @@ function open(element: SVGElement): void {
   const sizeInput = ensureEl<HTMLInputElement>("iceSize");
   randomizeBtn.style.display = isGlacier ? "none" : "inline-block";
   sizeInput.style.display = isGlacier ? "none" : "inline-block";
-  if (!isGlacier) sizeInput.value = String(iceElement && "size" in iceElement ? iceElement.size : "");
-
-  select<SVGGElement, unknown>("#ice")
-    .selectAll<SVGElement, unknown>("*")
-    .classed("draggable", true)
-    .call(drag<SVGElement, unknown>().on("drag", dragElement));
+  if (!isGlacier) sizeInput.value = String(iceElement.size);
+  renderIceOverlay();
+  document.getElementById("map")?.addEventListener(MAP_INTERACTION_HANDLE_EVENT, moveSelectedIce as EventListener);
 
   showDomDialog({
     content: ensureEl("iceEditor"),
@@ -66,16 +75,20 @@ function renderDialog(): void {
 }
 
 function randomizeShape(): void {
-  const selectedId = +selectedIce.attr("data-id");
+  const selectedId = selectedIceId;
+  if (selectedId === null) return;
   Ice.randomizeIcebergShape(selectedId);
   redrawIceberg(selectedId);
+  renderIceOverlay();
 }
 
 function changeSize(this: HTMLInputElement): void {
   const newSize = +this.value;
-  const selectedId = +selectedIce.attr("data-id");
+  const selectedId = selectedIceId;
+  if (selectedId === null) return;
   Ice.changeIcebergSize(selectedId, newSize);
   redrawIceberg(selectedId);
+  renderIceOverlay();
 }
 
 function toggleAdd(): void {
@@ -91,8 +104,9 @@ function toggleAdd(): void {
 }
 
 function addIcebergOnClick(event: PointerEvent): void {
-  const [x, y] = getPointer(event, select<SVGElement, unknown>("#viewbox").node());
-  const i = findGridCell(x, y, grid);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findGridCell(point.x, point.y, grid);
   const size = +ensureEl<HTMLInputElement>("iceSize").value || 1;
 
   Ice.addIceberg(i, size);
@@ -102,46 +116,73 @@ function addIcebergOnClick(event: PointerEvent): void {
 }
 
 function removeIce(): void {
-  const type = selectedIce.attr("type") === "glacier" ? "Glacier" : "Iceberg";
+  const selectedId = selectedIceId;
+  const selected = selectedId === null ? null : getIce(selectedId);
+  if (!selected) return;
+  const type = selected.type === "glacier" ? "Glacier" : "Iceberg";
   confirmationDialog({
     confirm: "Remove",
     message: `Are you sure you want to remove the ${type}?`,
     onConfirm: () => {
-      Ice.removeIce(+selectedIce.attr("data-id"));
-      redrawIceberg(+selectedIce.attr("data-id"));
-      destroyDialog("iceEditor");
+      Ice.removeIce(selected.i);
+      redrawIceberg(selected.i);
+      closeEditor();
     },
     title: `Remove ${type}`
   });
 }
 
-function dragElement(this: SVGElement, event: any): void {
-  const selectedId = +selectedIce.attr("data-id");
-  const initialTransform = parseTransform(this.getAttribute("transform") ?? "");
-  const dx = +initialTransform[0] - event.x;
-  const dy = +initialTransform[1] - event.y;
-
-  event.on("drag", function (this: SVGElement, dragEvent: any) {
-    const x = dragEvent.x;
-    const y = dragEvent.y;
-    this.setAttribute("transform", `translate(${dx + x},${dy + y})`);
-
-    // Store offset for visual positioning; actual geometry stays in points
-    const iceData = pack.ice.find(el => el.i === selectedId);
-    if (iceData) iceData.offset = [dx + x, dy + y];
-  });
+function moveSelectedIce(event: CustomEvent<MapInteractionHandleEventDetail>): void {
+  if (event.detail.handleId !== "ice-move" || !["move", "end"].includes(event.detail.phase)) return;
+  const selected = selectedIceId === null ? null : getIce(selectedIceId);
+  if (!selected) return;
+  const mutation = moveIce(pack, selected.i, event.detail.worldPoint);
+  if (mutation.changed) redrawIceberg(selected.i);
+  if (event.detail.phase === "end") queueMicrotask(renderIceOverlay);
 }
 
 function closeEditor(): void {
   const wasAdding = ensureEl("iceNew").classList.contains("pressed");
-  select<SVGGElement, unknown>("#ice")
-    .selectAll<SVGElement, unknown>("*")
-    .classed("draggable", false)
-    .on(".drag", null);
+  document.getElementById("map")?.removeEventListener(MAP_INTERACTION_HANDLE_EVENT, moveSelectedIce as EventListener);
+  selectedIceId = null;
+  clearMapInteractionOverlay();
   clearMainTip();
   ensureEl("iceNew").classList.remove("pressed");
   if (wasAdding) applyDefaultViewboxEvents();
   destroyDialog("iceEditor");
+}
+
+function renderIceOverlay(): void {
+  const selected = selectedIceId === null ? null : getIce(selectedIceId);
+  if (!selected) {
+    clearMapInteractionOverlay();
+    return;
+  }
+  const [offsetX, offsetY] = selected.offset ?? [0, 0];
+  const points = selected.points.map(([x, y]) => ({ x: x + offsetX, y: y + offsetY }));
+  const center = getIceBaseCenter(selected);
+  updateMapInteractionOverlay({
+    handles: [
+      {
+        id: "ice-move",
+        label: `Move ${selected.type}`,
+        point: { x: center.x + offsetX, y: center.y + offsetY }
+      }
+    ],
+    selection: [{ kind: "polygon", points }]
+  });
+}
+
+function getIce(id: number): Ice | undefined {
+  return pack.ice.find(ice => ice.i === id);
+}
+
+function getIceBaseCenter(ice: Ice): { x: number; y: number } {
+  const count = Math.max(ice.points.length, 1);
+  return {
+    x: ice.points.reduce((sum, [x]) => sum + x, 0) / count,
+    y: ice.points.reduce((sum, [, y]) => sum + y, 0) / count
+  };
 }
 
 export const IceEditor = { open };

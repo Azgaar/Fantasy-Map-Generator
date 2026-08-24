@@ -17,7 +17,7 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
-import { ManualAssignmentHistory, selectTerritoryEditorRow } from "@/controllers/territory-editor-utils";
+import { selectTerritoryEditorRow, TerritoryAssignmentSession } from "@/controllers/territory-editor-utils";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
 import { renderBurgAdded, renderBurgChanged } from "@/renderers/burg-mutations";
@@ -30,6 +30,7 @@ import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement } from "@/renderers/overlays/highlight";
+import { getPixiMapPointAtClient } from "@/renderers/pixi/pixi-renderer-controller";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, speak } from "@/utils";
 import {
   ensureEl,
@@ -37,8 +38,6 @@ import {
   formatPrice,
   getAdjective,
   getMixedColor,
-  getPackPolygon,
-  getPointer,
   getRandomColor,
   isLand,
   P,
@@ -48,7 +47,7 @@ import {
   si
 } from "../utils";
 
-const statesManualHistory = new ManualAssignmentHistory();
+let statesAssignment: TerritoryAssignmentSession | null = null;
 
 const dialogId = "statesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -1306,7 +1305,7 @@ function exitRegenerationMenu(): void {
 function enterStatesManualAssignent(): void {
   if (!layerIsOn("toggleStates")) toggleStates();
   customization = 2;
-  select("#statesBody").append("g").attr("id", "temp");
+  statesAssignment = new TerritoryAssignmentSession("states", pack.cells.state);
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "none";
   });
@@ -1333,7 +1332,6 @@ function enterStatesManualAssignent(): void {
     .on("touchmove mousemove", moveStateBrush);
 
   ensureEl("statesBodySection").querySelector(".states")?.classList.add("selected");
-  statesManualHistory.reset();
 }
 
 function selectStateOnLineClick(this: HTMLElement): void {
@@ -1342,13 +1340,13 @@ function selectStateOnLineClick(this: HTMLElement): void {
   selectTerritoryEditorRow(ensureEl("statesBodySection"), this);
 }
 
-function selectStateOnMapClick(this: any, event: any): void {
-  const point = getPointer(event, this);
-  const i = findCell(point[0], point[1]);
+function selectStateOnMapClick(this: SVGElement, event: MouseEvent): void {
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const i = findCell(point.x, point.y);
   if (pack.cells.h[i!] < 20) return;
 
-  const assigned = select("#statesBody").select("#temp").select(`polygon[data-cell='${i}']`);
-  const state = assigned.size() ? +assigned.attr("data-state") : pack.cells.state[i!];
+  const state = statesAssignment?.get(i!) ?? pack.cells.state[i!];
 
   const body = ensureEl("statesBodySection");
   selectTerritoryEditorRow(body, body.querySelector(`div[data-id='${state}']`));
@@ -1356,71 +1354,51 @@ function selectStateOnMapClick(this: any, event: any): void {
 
 function dragStateBrush(this: any, event: any): void {
   const r = +ensureEl<HTMLInputElement>("statesBrush").value;
-  saveStatesManualSnapshot();
+  statesAssignment?.beginStroke();
 
   event.on("drag", (dragEvent: any) => {
     if (!dragEvent.dx && !dragEvent.dy) return;
-    const p = getPointer(dragEvent, this);
-    moveCircle(p[0], p[1], r);
+    const point = getTerritoryMapPoint(dragEvent);
+    if (!point) return;
+    moveCircle(point.x, point.y, r);
 
-    const found = r > 5 ? findAllCellsInRadius(p[0], p[1], r, pack) : [findCell(p[0], p[1])];
+    const found = r > 5 ? findAllCellsInRadius(point.x, point.y, r, pack) : [findCell(point.x, point.y)];
     const selection = found.filter((i): i is number => i !== undefined && isLand(i, pack));
-    if (selection) changeStateForSelection(selection);
+    if (selection.length) changeStateForSelection(selection);
   });
 }
 
 // change state within selection
 function changeStateForSelection(selection: number[]): void {
-  const temp = select("#statesBody").select("#temp");
-
   const $selected = ensureEl("statesBodySection").querySelector<HTMLElement>("div.selected")!;
   const stateNew = +$selected.dataset.id!;
-  const color = pack.states[stateNew].color || "#ffffff";
   const preventOverwrite = (document.getElementById("statesManuallyProtect") as HTMLInputElement | null)?.checked;
-
-  selection.forEach(i => {
-    const exists = temp.select(`polygon[data-cell='${i}']`);
-    const stateOld = exists.size() ? +exists.attr("data-state") : pack.cells.state[i];
-    if (stateNew === stateOld) return;
-    if (preventOverwrite && stateOld) return;
-    if (i === pack.states[stateOld].center) return;
-
-    // change of append new element
-    if (exists.size()) exists.attr("data-state", stateNew).attr("fill", color).attr("stroke", color);
-    else
-      temp
-        .append("polygon")
-        .attr("data-cell", i)
-        .attr("data-state", stateNew)
-        .attr("points", getPackPolygon(i, pack))
-        .attr("fill", color)
-        .attr("stroke", color);
+  const cells = selection.filter(cellId => {
+    const previousStateId = statesAssignment?.get(cellId) ?? pack.cells.state[cellId];
+    if (preventOverwrite && previousStateId) return false;
+    return cellId !== pack.states[previousStateId]?.center;
   });
+  const mutation = statesAssignment?.paint(cells, stateNew);
+  if (mutation?.changed) drawStates();
 }
 
-function moveStateBrush(this: any, event: any): void {
+function moveStateBrush(this: SVGElement, event: MouseEvent): void {
   showMainTip();
-  const point = getPointer(event, this);
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
   const radius = +ensureEl<HTMLInputElement>("statesBrush").value;
-  moveCircle(point[0], point[1], radius);
+  moveCircle(point.x, point.y, radius);
 }
 
 function applyStatesManualAssignent(): void {
-  const { cells } = pack as any;
-  const affectedStates: number[] = [];
-  const affectedProvinces: number[] = [];
-
-  select("#statesBody")
-    .select("#temp")
-    .selectAll<SVGPolygonElement, unknown>("polygon")
-    .each(function () {
-      const i = +this.dataset.cell!;
-      const c = +this.dataset.state!;
-      affectedStates.push(cells.state[i], c);
-      affectedProvinces.push(cells.province[i]);
-      cells.state[i] = c;
-      if (cells.burg[i]) pack.burgs[cells.burg[i]].state = c;
-    });
+  const mutation = statesAssignment?.commit();
+  statesAssignment = null;
+  const affectedStates = mutation?.affectedDomainIds.map(Number) ?? [];
+  const affectedProvinces = mutation?.affectedCellIds.map(cellId => pack.cells.province[cellId]) ?? [];
+  for (const cellId of mutation?.affectedCellIds ?? []) {
+    const burgId = pack.cells.burg[cellId];
+    if (burgId) pack.burgs[burgId].state = pack.cells.state[cellId];
+  }
 
   if (affectedStates.length) {
     refreshStatesEditor();
@@ -1592,8 +1570,11 @@ function adjustProvinces(affectedProvinces: number[]): void {
 
 function exitStatesManualAssignment(close: boolean): void {
   customization = 0;
-  statesManualHistory.reset();
-  select("#statesBody").select("#temp").remove();
+  if (statesAssignment) {
+    statesAssignment.cancel();
+    statesAssignment = null;
+    drawStates();
+  }
   removeCircle();
   document.querySelectorAll<HTMLElement>("#statesBottom > button").forEach(el => {
     el.style.display = "inline-block";
@@ -1616,18 +1597,16 @@ function exitStatesManualAssignment(close: boolean): void {
   if (selected) selected.classList.remove("selected");
 }
 
-function saveStatesManualSnapshot(): void {
-  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp) return;
-
-  statesManualHistory.push(temp.innerHTML);
+function undoStatesManualAssignment(): void {
+  if (statesAssignment?.undo()) drawStates();
 }
 
-function undoStatesManualAssignment(): void {
-  const temp = select("#statesBody").select("#temp").node() as HTMLElement | null;
-  if (!temp || !statesManualHistory.hasSnapshots) return;
-
-  temp.innerHTML = statesManualHistory.pop()!;
+function getTerritoryMapPoint(event: any): { x: number; y: number } | null {
+  const source = event.sourceEvent ?? event;
+  const touch = source.touches?.[0] ?? source.changedTouches?.[0];
+  const clientX = touch?.clientX ?? source.clientX;
+  const clientY = touch?.clientY ?? source.clientY;
+  return Number.isFinite(clientX) && Number.isFinite(clientY) ? getPixiMapPointAtClient(clientX, clientY) : null;
 }
 
 function enterAddStateMode(this: HTMLElement): void {
@@ -1648,8 +1627,9 @@ function enterAddStateMode(this: HTMLElement): void {
 
 function addState(this: SVGElement, event: MouseEvent): void {
   const { cells, states, burgs } = pack as any;
-  const point = getPointer(event, this);
-  const center = findCell(point[0], point[1])!;
+  const point = getPixiMapPointAtClient(event.clientX, event.clientY);
+  if (!point) return;
+  const center = findCell(point.x, point.y)!;
   if (cells.h[center] < 20) {
     tip("You cannot place state into the water. Please click on a land cell", false, "error");
     return;
@@ -1661,7 +1641,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
     return;
   }
 
-  const addedBurg = burgId ? undefined : Burgs.add(point as [number, number]);
+  const addedBurg = burgId ? undefined : Burgs.add([point.x, point.y]);
   if (addedBurg) burgId = addedBurg.burgId;
 
   const oldState = cells.state[center];

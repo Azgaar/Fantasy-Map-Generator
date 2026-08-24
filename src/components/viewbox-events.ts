@@ -100,6 +100,7 @@ function openMapHit(hit: MapHit): boolean {
     return true;
   }
   if (hit.domainKind === "burg") Controllers.BurgEditor.open(id);
+  else if (hit.domainKind === "ice") Controllers.IceEditor.open(id);
   else if (hit.domainKind === "marker") Controllers.MarkersEditor.open(id);
   else if (hit.domainKind === "river") Controllers.RiverEditor.open(id);
   else if (hit.domainKind === "route") Controllers.RouteEditor.open(id);

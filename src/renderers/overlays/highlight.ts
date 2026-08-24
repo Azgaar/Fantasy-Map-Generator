@@ -1,5 +1,7 @@
-import { easeBounceOut, easeLinear, easeSinIn, select, transition } from "d3";
+import { easeBounceOut, easeLinear, select, transition } from "d3";
 import { parseTransform } from "@/utils";
+import type { MapInteractionGeometry } from "../interaction/map-interaction-overlay";
+import { updateMapInteractionOverlay } from "../pixi/pixi-renderer-controller";
 
 const debugLayer = () => select(debug.node() as SVGGElement);
 
@@ -47,57 +49,35 @@ export function highlightElement(target: Element | null, zoom?: number): void {
 /** Animate the area or place an emblem belongs to */
 export function highlightEmblemElement(type: string, element: { i: number; [key: string]: any }) {
   const { cells } = pack;
-  const animation = transition().duration(1000).ease(easeSinIn);
-  const layer = debugLayer();
 
   if (type === "burg") {
-    layer
-      .append("circle")
-      .attr("cx", element.x)
-      .attr("cy", element.y)
-      .attr("r", 0)
-      .attr("fill", "none")
-      .attr("stroke", "#d0240f")
-      .attr("stroke-width", 1)
-      .attr("opacity", 1)
-      .transition(animation)
-      .attr("r", 20)
-      .attr("opacity", 0.1)
-      .attr("stroke-width", 0)
-      .remove();
+    showMapHighlight([{ center: { x: element.x, y: element.y }, kind: "circle", radius: 20 }]);
     return;
   }
 
   const [x, y] = element.pole || cells.p[element.center];
   const owner = type === "state" ? cells.state : cells.province;
   const borderCells = cells.i.filter(id => owner[id] === element.i && cells.c[id].some(n => owner[n] !== element.i));
-  const rays = borderCells
+  const rays: MapInteractionGeometry[] = borderCells
     .filter((_cellId, index) => !(index % 2))
     .map(cellId => cells.p[cellId])
-    .map(([px, py]) => [px, py, Math.hypot(px - x, py - y)]);
+    .map(([px, py]) => ({
+      kind: "polyline",
+      points: [
+        { x, y },
+        { x: px, y: py }
+      ]
+    }));
+  showMapHighlight(rays);
+}
 
-  layer
-    .selectAll("line")
-    .data(rays)
-    .enter()
-    .append("line")
-    .attr("x1", x)
-    .attr("y1", y)
-    .attr("x2", d => d[0])
-    .attr("y2", d => d[1])
-    .attr("stroke", "#d0240f")
-    .attr("stroke-width", 0.5)
-    .attr("opacity", 0.2)
-    .attr("stroke-dashoffset", d => d[2])
-    .attr("stroke-dasharray", d => d[2])
-    .transition(animation)
-    .attr("stroke-dashoffset", 0)
-    .attr("opacity", 1)
-    .transition()
-    .duration(1000)
-    .ease(easeSinIn)
-    .delay(1000)
-    .attr("stroke-dashoffset", d => d[2])
-    .attr("opacity", 0)
-    .remove();
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+function showMapHighlight(highlight: readonly MapInteractionGeometry[]): void {
+  if (highlightTimer) clearTimeout(highlightTimer);
+  updateMapInteractionOverlay({ highlight });
+  highlightTimer = setTimeout(() => {
+    highlightTimer = null;
+    updateMapInteractionOverlay({ highlight: null });
+  }, 2500);
 }
