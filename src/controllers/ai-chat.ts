@@ -12,7 +12,15 @@ import {
   select,
   touch
 } from "@/services/agent/conversations";
-import { DEFAULT_MODEL, keyStorageFor, PROVIDERS, providerOf } from "@/services/agent/providers";
+import {
+  DEFAULT_LOCAL_URL,
+  DEFAULT_MODEL,
+  keyStorageFor,
+  LOCAL_MODEL_STORAGE,
+  LOCAL_URL_STORAGE,
+  PROVIDERS,
+  providerOf
+} from "@/services/agent/providers";
 import type { RunResult } from "@/services/agent/runtime";
 import { createSession } from "@/services/agent/session";
 import { openURL } from "@/utils";
@@ -117,6 +125,8 @@ function dialogHtml(): string {
       #aiChatEmpty button { padding: 0.25em 0.7em; border-radius: 1em; cursor: pointer; }
       #aiChatInput { resize: none; overflow-y: auto; }
       #aiChatBottom { display: flex; align-items: center; gap: 0.3em; flex-wrap: wrap; }
+      #aiChatLocal { align-items: center; gap: 0.3em; }
+      #aiChatLocal > input { flex: 1; min-width: 8em; }
       #aiChatBottom > select { flex: 1; min-width: 6em; }
       #aiChatBottom > input { flex: 1; min-width: 5em; }
       #aiChat .aiChatUser { align-self: flex-end; max-width: 85%; padding: 0.3em 0.6em; border-radius: 0.8em 0.8em 0.2em 0.8em; background: rgba(128, 128, 128, 0.18); }
@@ -162,6 +172,21 @@ function dialogHtml(): string {
 
     <textarea id="aiChatInput" rows="2" placeholder="Ask about the map…" data-tip="Type a question. Enter to send, Shift + Enter for a new line"></textarea>
 
+    <div id="aiChatLocal" style="display: none">
+      <input
+        id="aiChatLocalUrl"
+        type="text"
+        placeholder="${DEFAULT_LOCAL_URL}"
+        data-tip="Base URL of an OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). For Ollama outside localhost, allow the app origin via OLLAMA_ORIGINS"
+      />
+      <input
+        id="aiChatLocalModel"
+        type="text"
+        placeholder="model name, e.g. llama3.2"
+        data-tip="Name of the model as your local server knows it (e.g. an installed Ollama model)"
+      />
+    </div>
+
     <div id="aiChatBottom">
       <button id="aiChatSend" class="icon-right-open" data-tip="Send the message"></button>
       <select id="aiChatModel" data-tip="Model to ask. Bigger models reason better and cost more"></select>
@@ -184,7 +209,7 @@ function setInitialValues(): void {
     const group = document.createElement("optgroup");
     group.label = provider.label;
     provider.models.forEach(model => {
-      group.append(new Option(model, model));
+      group.append(new Option(provider.id === "local" ? "custom model…" : model, model));
     });
     select.append(group);
   });
@@ -199,9 +224,19 @@ function setInitialValues(): void {
 // Each provider has its own key slot, so switching models swaps the key field with it
 function loadKeyForModel(): void {
   const model = ensureEl<HTMLSelectElement>("aiChatModel").value;
+  const local = providerOf(model).id === "local";
   const key = ensureEl<HTMLInputElement>("aiChatKey");
   key.value = localStorage.getItem(keyStorageFor(model)) ?? "";
-  key.dataset.tip = `${providerOf(model).label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
+  key.placeholder = local ? "API key (optional)" : "API key";
+  key.dataset.tip = local
+    ? "Optional API key — most local servers need none. Sent as a Bearer token when set"
+    : `${providerOf(model).label} API key. It's stored on your machine only (browser storage) and sent directly to the provider`;
+
+  ensureEl("aiChatLocal").style.display = local ? "flex" : "none";
+  if (local) {
+    ensureEl<HTMLInputElement>("aiChatLocalUrl").value = localStorage.getItem(LOCAL_URL_STORAGE) ?? "";
+    ensureEl<HTMLInputElement>("aiChatLocalModel").value = localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "";
+  }
   updateSendButton();
 }
 
@@ -222,13 +257,24 @@ async function send(text?: string): Promise<void> {
   const question = (text ?? input.value).trim();
   if (!question) return;
 
+  const model = ensureEl<HTMLSelectElement>("aiChatModel").value;
+  const local = providerOf(model).id === "local";
   const key = ensureEl<HTMLInputElement>("aiChatKey").value;
-  if (!key) {
+  if (!key && !local) {
     ensureEl("aiChatKey").focus();
     tip("Please enter an API key", true, "error", 4000);
     return;
   }
-  const model = ensureEl<HTMLSelectElement>("aiChatModel").value;
+  if (local) {
+    const localModel = ensureEl<HTMLInputElement>("aiChatLocalModel").value.trim();
+    if (!localModel) {
+      ensureEl("aiChatLocalModel").focus();
+      tip("Please enter the local model name", true, "error", 4000);
+      return;
+    }
+    localStorage.setItem(LOCAL_URL_STORAGE, ensureEl<HTMLInputElement>("aiChatLocalUrl").value.trim());
+    localStorage.setItem(LOCAL_MODEL_STORAGE, localModel);
+  }
   localStorage.setItem(keyStorageFor(model), key);
   localStorage.setItem(MODEL_STORAGE, model);
 

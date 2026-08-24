@@ -94,10 +94,14 @@ export async function completeOpenAI(
   baseUrl: string,
   { key, model, system, messages, tools, signal }: CompletionRequest
 ): Promise<Completion> {
+  // Local servers commonly run without auth, so the header is only sent when there is a key
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (key) headers.Authorization = `Bearer ${key}`;
+
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     signal,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    headers,
     body: JSON.stringify({
       model,
       messages: toChatMessages(system, messages),

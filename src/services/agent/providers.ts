@@ -58,7 +58,7 @@ export interface Completion {
 }
 
 export interface ProviderSpec {
-  id: "anthropic" | "openai" | "mistral" | "qwen" | "deepseek";
+  id: "anthropic" | "openai" | "mistral" | "qwen" | "deepseek" | "local";
   label: string;
   models: string[];
   keyLink: string;
@@ -99,10 +99,23 @@ export const PROVIDERS: ProviderSpec[] = [
     models: ["deepseek-chat"],
     keyLink: "https://platform.deepseek.com/api_keys",
     baseUrl: "https://api.deepseek.com/v1"
+  },
+  {
+    id: "local",
+    label: "Local",
+    models: ["local"],
+    keyLink: "https://ollama.com"
   }
 ];
 
 export const DEFAULT_MODEL = "claude-sonnet-5";
+
+// Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio…). The dropdown holds one
+// sentinel entry; the endpoint and model name are the user's own and live in storage.
+export const LOCAL_MODEL = "local";
+export const LOCAL_URL_STORAGE = "fmg-ai-local-url";
+export const LOCAL_MODEL_STORAGE = "fmg-ai-local-model";
+export const DEFAULT_LOCAL_URL = "http://localhost:11434/v1";
 
 export function providerOf(model: string): ProviderSpec {
   const provider = PROVIDERS.find(candidate => candidate.models.includes(model));
@@ -114,6 +127,13 @@ export const keyStorageFor = (model: string): string => `fmg-ai-kl-${providerOf(
 
 export async function complete(request: CompletionRequest): Promise<Completion> {
   const provider = providerOf(request.model);
+  if (provider.id === "local") {
+    const baseUrl = (localStorage.getItem(LOCAL_URL_STORAGE) || DEFAULT_LOCAL_URL).replace(/\/+$/, "");
+    const model = localStorage.getItem(LOCAL_MODEL_STORAGE) ?? "";
+    if (!model) throw new Error("Enter a local model name (e.g. llama3.2)");
+    const { completeOpenAI } = await import("./providers-openai");
+    return completeOpenAI(baseUrl, { ...request, model });
+  }
   if (!provider.baseUrl) return completeAnthropic(request);
   const { completeOpenAI } = await import("./providers-openai");
   return completeOpenAI(provider.baseUrl, request);
