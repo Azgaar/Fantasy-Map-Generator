@@ -182,4 +182,7 @@ export class LabelsModule {
   }
 }
 
-window.Labels = new LabelsModule();
+const labelsInstance = new LabelsModule();
+window.Labels = labelsInstance;
+
+export { labelsInstance as Labels };

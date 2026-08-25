@@ -5,7 +5,7 @@ import { RELIEF_SETS } from "@/data/relief-icons";
 import { defaultOptions } from "@/data/view-3d-options";
 import { Emblems } from "@/generators/emblems-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
-import type { Label, LabelNameMode } from "@/generators/labels-generator";
+import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 
 import {
@@ -20,8 +20,32 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { compareVersions } from "@/services/versioning";
 import type { ReliefSet } from "@/types/relief";
-import { ensureEl, findEl, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
+import { ensureEl, findEl, minmax, P, parseTransform, rand, rn, rw, safeParseJSON, unique } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
+
+// legacy zoom bounds derive from the group's font size (bigger labels surface earlier), but
+// old size dialects vary wildly - clamp into the modern capital..hamlet envelope so an
+// oversized legacy group can't become always-visible (and a tiny one never-visible)
+export function legacyBurgLabelZoom(fontSize: number): { min: number; max: number } {
+  if (!Number.isFinite(fontSize) || fontSize <= 0) return { min: 2, max: 30 };
+  return { min: minmax(rn(12 / fontSize - 1, 1), 1, 5), max: minmax(rn(120 / fontSize - 1, 1), 25, 60) };
+}
+
+// old-era tier names map onto the modern tiers' visibility, so a migrated map's cities appear
+// at the same zooms a modern city does instead of inheriting formula noise from size dialects
+const LEGACY_BURG_GROUP_EQUIVALENTS: Record<string, string> = {
+  cities: "city",
+  towns: "town",
+  town_small: "village",
+  town_large: "town"
+};
+
+export function legacyBurgGroupZoom(name: string, fontSize: number): { min: number | null; max: number | null } {
+  const modernName = LEGACY_BURG_GROUP_EQUIVALENTS[name];
+  const modern =
+    modernName && LabelsGenerator.getDefaultGroups().find(group => group.type === "burg" && group.name === modernName);
+  return modern ? structuredClone(modern.zoom) : legacyBurgLabelZoom(fontSize);
+}
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
@@ -1299,8 +1323,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;
       const oldStyle = deriveLabelsStyle(burgGroup);
-      const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
-      const zoom = { min: rn(12 / fontSize - 1, 1), max: rn(120 / fontSize - 1, 1) };
+      const zoom = legacyBurgGroupZoom(name, Number.parseFloat(oldStyle["font-size"] as string));
 
       options.labels.groups.push({ name, type: "burg", isDefault: name === "towns", zoom });
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
