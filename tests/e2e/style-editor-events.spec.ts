@@ -237,7 +237,7 @@ test.describe("style editor events drive the store", () => {
     await openStyleElement(page, "markets");
 
     await page.locator("#styleMarketsSize input[type=number]").fill("6");
-    await page.locator("#styleMarketsSize").dispatchEvent("change");
+    await page.locator("#styleMarketsSize").dispatchEvent("input");
 
     const stored = await page.evaluate(() => (window as any).styles.markets.options.size);
     expect(stored).toBe(6);
@@ -364,7 +364,7 @@ test.describe("style editor events drive the store", () => {
 
     await openStyleElement(page, "markets");
     await page.locator("#styleMarketsIconSize input[type=number]").fill("11");
-    await page.locator("#styleMarketsIconSize").dispatchEvent("change");
+    await page.locator("#styleMarketsIconSize").dispatchEvent("input");
 
     expect(await page.evaluate(() => (window as any).styles.markets.options.fontSize)).toBe(11);
     // drawn glyphs derive from the store base plus the zoom term (baseFont + 1/scale)

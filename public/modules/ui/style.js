@@ -1073,12 +1073,12 @@ styleMarketsLayerFillOpacity.addEventListener("input", e => {
   d3.select("#markets").attr("fill-opacity", e.target.value);
 });
 
-styleMarketsSize.addEventListener("change", function () {
+styleMarketsSize.addEventListener("input", function () {
   styles.markets.options.size = +this.value || 3;
   Layers.draw("markets");
 });
 
-styleMarketsIconSize.addEventListener("change", function () {
+styleMarketsIconSize.addEventListener("input", function () {
   styles.markets.options.fontSize = +this.value || 5;
   Layers.draw("markets");
 });
