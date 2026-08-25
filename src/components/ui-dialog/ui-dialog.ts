@@ -35,9 +35,6 @@ class UiDialog extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" }).appendChild(template.content.cloneNode(true));
-    this.setAttribute("role", "dialog");
-    this.setAttribute("aria-modal", "false");
-    if (!this.hasAttribute("tabindex")) this.setAttribute("tabindex", "-1");
   }
 
   connectedCallback() {
@@ -48,6 +45,10 @@ class UiDialog extends HTMLElement {
 
   private build() {
     const shadow = this.shadowRoot!;
+
+    this.setAttribute("role", "dialog");
+    this.setAttribute("aria-modal", "false");
+    if (!this.hasAttribute("tabindex")) this.setAttribute("tabindex", "-1");
 
     const titleEl = shadow.querySelector<HTMLElement>(".ui-dialog-title")!;
     titleEl.textContent = this.getAttribute("dialog-title") || "";

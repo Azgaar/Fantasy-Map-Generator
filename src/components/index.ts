@@ -13,4 +13,3 @@ import "./dialog/sorting";
 import "./fill-box";
 import "./slider-input";
 import "./ui-dialog/ui-dialog";
-import "./units-editor-dialog/units-editor-dialog";
