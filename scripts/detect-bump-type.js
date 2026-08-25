@@ -38,7 +38,7 @@ const MAX_DIFF_CHARS = 20_000;
 // ---------------------------------------------------------------------------
 
 const SYSTEM_PROMPT = `\
-You are a semantic-version expert for Azgaar's Fantasy Map Generator.
+You are a semantic-version expert for Fantasia, a fork of Azgaar's Fantasy Map Generator.
 
 The project uses semantic versioning where the PUBLIC API is the .map save-file format.
 

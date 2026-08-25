@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import { rn } from "@/utils";
+import { PriorityQueue } from "@/utils/priority-queue";
 import { minmax } from "../utils";
 import { getColors, getRandomColor } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -116,7 +117,7 @@ export class MarketsModule {
     const cells = pack.cells;
     const cellMarket = new Uint16Array(cells.i.length);
     const costs: number[] = [];
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ cellId: number; marketId: number; burg: Burg; priority: number }>();
 
     const MIN_COST = 1;
     const BASE_COST = 10;
@@ -139,7 +140,7 @@ export class MarketsModule {
     }
 
     while (queue.length) {
-      const { cellId, marketId, burg, priority } = queue.pop();
+      const { cellId, marketId, burg, priority } = queue.pop()!;
 
       for (const neighborId of cells.c[cellId]) {
         const isWater = cells.h[neighborId] < 20;

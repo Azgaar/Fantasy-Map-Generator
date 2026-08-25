@@ -1,10 +1,10 @@
-**FMG data model** is poorly defined, inconsistent and not well-documented. This page is an attempt to document it. Once everything is documented, it can be used for building a new consistent model. Please note the current document reflect the object model **as is**, so with all its quirks. The model we want to get is covered in the [future_data_model.md](future_data_model.md) page.
+**Fantasia data model** is poorly defined, inconsistent and not well-documented. This page is an attempt to document it. Once everything is documented, it can be used for building a new consistent model. Please note the current document reflect the object model **as is**, so with all its quirks. The model we want to get is covered in the [future_data_model.md](future_data_model.md) page.
 
-FMG exposes most of its data into the global namespace.
+Fantasia exposes most of its data into the global namespace.
 
 # Basic objects
 
-FMG has two meta-objects storing most of the map data:
+Fantasia has two meta-objects storing most of the map data:
 
 - `grid` contains map data before _repacking_
 - `pack` contains map data after _repacking_

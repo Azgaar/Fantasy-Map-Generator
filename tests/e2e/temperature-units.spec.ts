@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // Regression test: temperature must be shown in the scale selected in the Units Editor
-// (https://github.com/Azgaar/Fantasy-Map-Generator/issues — burg CSV export and burg
+// (https://github.com/patkepa/fantasia/issues — burg CSV export and burg
 // editor showed Celsius even when Fahrenheit was selected)
 test.describe("Temperature units", () => {
   test.beforeEach(async ({ context, page }) => {

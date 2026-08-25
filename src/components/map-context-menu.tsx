@@ -21,7 +21,7 @@ interface ActionItemProps {
 export function showMapContextMenu(context: MapContext): void {
   showContextMenu({
     content: <MapContextMenu context={context} />,
-    popoverClassName: "fmg-map-context-menu",
+    popoverClassName: "fantasia-map-context-menu",
     targetOffset: { left: context.clientX, top: context.clientY }
   });
 }
@@ -39,10 +39,10 @@ export function MapContextMenu({ context }: { context: MapContext }): React.JSX.
   ];
 
   return (
-    <Menu className="fmg-map-context-menu-list" aria-label={`Map actions for ${context.title}`}>
+    <Menu className="fantasia-map-context-menu-list" aria-label={`Map actions for ${context.title}`}>
       <MenuDivider
         title={
-          <span className="fmg-map-context-menu-heading">
+          <span className="fantasia-map-context-menu-heading">
             <strong>{pageTitle}</strong>
             <span>
               {page === "main" ? "" : `${context.title} · `}Cell {cellId} · {formatPoint(point)}
@@ -161,7 +161,7 @@ function ActionItem({ disabled, icon, label, onSelect, text }: ActionItemProps):
 function NavigationItem({ icon, onSelect, text }: Omit<ActionItemProps, "disabled" | "label">): React.JSX.Element {
   return (
     <li className="kui-menu-item-shell" role="none">
-      <button className="kui-menu-item bp6-menu-item fmg-map-context-navigation" onClick={onSelect} role="menuitem" type="button">
+      <button className="kui-menu-item bp6-menu-item fantasia-map-context-navigation" onClick={onSelect} role="menuitem" type="button">
         <Icon icon={icon} />
         <span className="bp6-text-overflow-ellipsis">{text}</span>
         {icon === "arrow-left" ? null : <Icon icon="chevron-right" />}

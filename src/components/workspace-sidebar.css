@@ -1,5 +1,5 @@
 :root {
-  --fmg-panel-width: 420px;
+  --fantasia-panel-width: 420px;
 }
 
 #options,
@@ -40,7 +40,7 @@
   top: 64px;
   bottom: auto;
   left: 24px;
-  width: min(var(--fmg-panel-width), calc(100vw - 48px));
+  width: min(var(--fantasia-panel-width), calc(100vw - 48px));
   height: min(720px, calc(100vh - 88px));
   margin: 0;
   padding: 0;
@@ -57,8 +57,8 @@
 
 @media (min-width: 761px) {
   #options {
-    width: var(--fmg-panel-width) !important;
-    min-width: var(--fmg-panel-width);
+    width: var(--fantasia-panel-width) !important;
+    min-width: var(--fantasia-panel-width);
     max-width: none;
   }
 }
@@ -112,11 +112,11 @@ body[data-workspace-section="preferences"] #options .tabcontent {
   background: var(--kui-line);
 }
 
-.fmg-options-section {
+.fantasia-options-section {
   margin: 0;
 }
 
-.fmg-options-actions {
+.fantasia-options-actions {
   display: flex;
   justify-content: flex-start;
   margin-top: 14px;
@@ -242,36 +242,36 @@ body[data-workspace-section="preferences"] #options .tabcontent {
 }
 
 .workspace-panel-open #tooltip {
-  left: calc(var(--fmg-panel-width) + 48px);
-  width: calc(100vw - var(--fmg-panel-width) - 72px);
+  left: calc(var(--fantasia-panel-width) + 48px);
+  width: calc(100vw - var(--fantasia-panel-width) - 72px);
 }
 
 #toolsContent {
   padding: 0 !important;
 }
 
-.fmg-tools-layout {
+.fantasia-tools-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   align-items: start;
 }
 
-.fmg-tools-layout .fmg-panel-section {
+.fantasia-tools-layout .fantasia-panel-section {
   min-width: 0;
 }
 
-.fmg-panel-section--hidden {
+.fantasia-panel-section--hidden {
   display: none;
 }
 
-.fmg-tools-panel--create .fmg-tools-layout,
-.fmg-tools-panel--inspect .fmg-tools-layout,
-.fmg-tools-panel--regenerate .fmg-tools-layout {
+.fantasia-tools-panel--create .fantasia-tools-layout,
+.fantasia-tools-panel--inspect .fantasia-tools-layout,
+.fantasia-tools-panel--regenerate .fantasia-tools-layout {
   grid-template-columns: 1fr;
 }
 
-.fmg-panel-section--destructive {
+.fantasia-panel-section--destructive {
   grid-column: 1 / -1;
   padding: 9px;
   border: 1px solid;
@@ -280,25 +280,25 @@ body[data-workspace-section="preferences"] #options .tabcontent {
   background: color-mix(in srgb, var(--kui-danger, #dc5a67) 5%, transparent);
 }
 
-.fmg-panel-section--destructive .fmg-panel-section__header h2 {
+.fantasia-panel-section--destructive .fantasia-panel-section__header h2 {
   color: var(--kui-danger, #dc5a67);
 }
 
-.fmg-panel-section--destructive .fmg-panel-action-list {
+.fantasia-panel-section--destructive .fantasia-panel-action-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (max-width: 760px) {
   :root {
-    --fmg-panel-width: calc(100vw - 24px);
+    --fantasia-panel-width: calc(100vw - 24px);
   }
 
-  .fmg-tools-layout {
+  .fantasia-tools-layout {
     grid-template-columns: 1fr;
   }
 
-  .fmg-panel-section--destructive .fmg-panel-action-list {
+  .fantasia-panel-section--destructive .fantasia-panel-action-list {
     grid-template-columns: 1fr;
   }
 

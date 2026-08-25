@@ -136,8 +136,6 @@ declare global {
 
   var shiftCompass: () => void;
 
-  var FlatQueue: any;
-
   var THREE: any; // lazy-loaded
 
   var scale: number;
@@ -166,7 +164,6 @@ declare global {
       }
     | undefined;
 
-  var aleaPRNG: (seed: string | number) => () => number;
   var heightmapColorSchemes: Record<string, unknown>;
 
   type MilitaryUnit = ApplicationMilitaryUnit;

@@ -1,4 +1,6 @@
 import { mean, median, quadtree, sum } from "d3";
+import Alea from "alea";
+import { PriorityQueue } from "@/utils/priority-queue";
 import {
   each,
   ensureEl,
@@ -101,7 +103,7 @@ class StatesModule {
   }
 
   private recreate(): { warning?: string; error?: string; states?: State[] } {
-    Math.random = aleaPRNG(generateSeed());
+  Math.random = Alea(generateSeed());
     const statesCount = ensureEl<HTMLInputElement>("statesNumber").valueAsNumber;
     if (!statesCount) return { error: "<i>States Number</i> option value is zero. No counties are generated" };
 
@@ -289,7 +291,7 @@ class StatesModule {
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number; s: number; b: number }>();
     const cost: number[] = [];
 
     const growthRate = (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
@@ -313,7 +315,7 @@ class StatesModule {
     }
 
     while (queue.length) {
-      const next = queue.pop();
+      const next = queue.pop()!;
 
       const { e, p, s, b } = next;
       const { type, culture } = states[s];

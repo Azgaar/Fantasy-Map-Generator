@@ -232,14 +232,14 @@ function ToolSection({
   return (
     <WorkspacePanelSection
       className={
-        [group.id === "regenerate" ? "fmg-panel-section--destructive" : "", hidden ? "fmg-panel-section--hidden" : ""]
+        [group.id === "regenerate" ? "fantasia-panel-section--destructive" : "", hidden ? "fantasia-panel-section--hidden" : ""]
           .filter(Boolean)
           .join(" ") || undefined
       }
       description={group.description}
       title={group.label}
     >
-      <div className="fmg-panel-action-list" id={containerId}>
+      <div className="fantasia-panel-action-list" id={containerId}>
         {commands.map(command => (
           <ToolButton
             command={command}
@@ -320,7 +320,7 @@ function ToolsPanel(): React.JSX.Element {
   };
 
   return (
-    <WorkspacePanel className={`fmg-tools-panel fmg-tools-panel--${section}`}>
+    <WorkspacePanel className={`fantasia-tools-panel fantasia-tools-panel--${section}`}>
       <WorkspacePanelSearch
         ariaLabel={panelCopy.searchLabel}
         inputRef={searchInput}
@@ -330,7 +330,7 @@ function ToolsPanel(): React.JSX.Element {
         value={search}
       />
       {visibleGroups.length ? (
-        <div className="fmg-tools-layout">
+        <div className="fantasia-tools-layout">
           {TOOL_GROUPS.map(group => (
             <ToolSection
               dockEditor={section === "edit"}

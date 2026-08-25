@@ -1,6 +1,6 @@
-# Contributing to Azgaar's Fantasy Map Generator
+# Contributing to Fantasia
 
-Thank you for your interest in contributing to Azgaar's Fantasy Map Generator! Whether you're fixing a bug, adding a feature, or improving documentation, your help is appreciated.
+Thank you for your interest in contributing to Fantasia! Fantasia is a fork of Azgaar's Fantasy Map Generator (FMG); contributions should preserve required upstream attribution and map compatibility.
 
 To keep the project healthy, maintainable, and manageable for maintainers, all contributions must follow the guidelines below.
 
@@ -8,7 +8,7 @@ The short version: **a PR should do one thing, be manually tested, not break exi
 
 ## 1. Before You Begin
 
-Before starting work on a new feature or making significant architectural changes, please **discuss your idea with the community on [Discord](https://discord.com/channels/515358903299735564/515359096925454350) first**.
+Before starting work on a new feature or making significant architectural changes, please discuss the idea in a GitHub issue first.
 
 Aligning on scope and design beforehand prevents wasted effort on changes that might not fit the project's roadmap or vision.
 
@@ -38,15 +38,13 @@ Before opening a Pull Request, ensure your code meets the following technical ga
 ## 4. Pull Request and Review Process
 
 * **Scope Check:** Ensure your PR addresses a single problem or feature.
-* **Maintainer Authority:** Azgaar has the final say on all code merges (Go / No-Go). To preserve maintainer bandwidth, **PRs that do not follow these guidelines may be closed with only a brief explanation.**
+* **Maintainer Authority:** Fantasia maintainers have the final say on all code merges (Go / No-Go). To preserve maintainer bandwidth, **PRs that do not follow these guidelines may be closed with only a brief explanation.**
 * **Commit Squashing:** Note that commits may be squashed into a single clean commit upon merging into the main branch.
 
 ## 5. Contributor Recognition and Perks
 
-We value everyone who contributes to making the Fantasy Map Generator better! When your PR is merged, you will receive:
+We value everyone who contributes to making Fantasia better! When your PR is merged, you will receive:
 
 * **Git History Attribution:** Your name/handle will remain permanently in the Git commit history (even if commits are squashed).
 * **GitHub Contributors Page:** You will be automatically listed on the repository's official GitHub Contributors tab.
-* **Discord Contributor Role:** You get access to an exclusive, private channel on our Discord server. *(Direct message `@azgaar.fmg` on Discord with your merged PR link to claim your role!)*
-
-*Thank you for contributing and helping build the best Map Generator!*
+*Thank you for contributing and helping build Fantasia!*

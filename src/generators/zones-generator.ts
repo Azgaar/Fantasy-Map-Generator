@@ -1,4 +1,5 @@
 import { max, mean } from "d3";
+import { PriorityQueue } from "@/utils/priority-queue";
 import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
 
 declare global {
@@ -257,11 +258,11 @@ class ZonesModule {
     const cost: number[] = [];
     const maxCells = rand(20, 40);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number }>();
     queue.push({ e: burg.cell, p: 0 }, 0);
 
     while (queue.length) {
-      const next = queue.pop();
+      const next = queue.pop()!;
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       usedCells[next.e] = 1;
 
@@ -394,11 +395,11 @@ class ZonesModule {
     const cost: number[] = [];
     const maxCells = rand(5, 25);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number }>();
     queue.push({ e: burg.cell, p: 0 }, 0);
 
     while (queue.length) {
-      const next = queue.pop();
+      const next = queue.pop()!;
       if (cells.burg[next.e] || cells.pop[next.e]) cellsArray.push(next.e);
       usedCells[next.e] = 1;
 

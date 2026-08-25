@@ -51,7 +51,7 @@ function MessageDialogView({
       footer={
         <>
           {options.rememberChoice ? (
-            <div className="fmg-dialog__footer-leading">
+            <div className="fantasia-dialog__footer-leading">
               <WorkspaceToggleField
                 checked={rememberChoice}
                 label={options.rememberChoice.label}
@@ -83,7 +83,7 @@ function MessageDialogView({
       title={options.title}
       width={options.width}
     >
-      <div className="fmg-message-dialog" dangerouslySetInnerHTML={{ __html: options.messageHtml }} />
+      <div className="fantasia-message-dialog" dangerouslySetInnerHTML={{ __html: options.messageHtml }} />
     </WorkspaceDialog>
   );
 }

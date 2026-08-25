@@ -3,7 +3,7 @@
 ## Status
 
 This is an exploratory product and architecture note. It is not an active implementation plan or a commitment to
-turn Fantasy Map Generator (FMG) into a game.
+turn Fantasia into a game.
 
 The goal is to preserve the analysis needed if the project later decides to build an original, procedurally generated
 grand-strategy game inspired by games such as Europa Universalis IV. Any future product should use original names,
@@ -11,7 +11,7 @@ content, art, user interface, and rules rather than copying protected assets or 
 
 ## Summary
 
-FMG is a strong foundation for an original grand-strategy game, but it is currently a map generator and editor rather
+Fantasia is a strong foundation for an original grand-strategy game, but it is currently a map generator and editor rather
 than a persistent game simulation. It already provides much of the difficult world-building and map tooling:
 
 - procedural geography and topology;
@@ -31,7 +31,7 @@ state expansion, production, diplomacy, warfare, or AI.
 ## Scope levels and rough effort
 
 These ranges assume experienced developers working full time, a browser-based single-player game, procedural rather
-than historical worlds, reuse of FMG systems, and a deliberately constrained first release. They are planning ranges,
+than historical worlds, reuse of Fantasia systems, and a deliberately constrained first release. They are planning ranges,
 not delivery commitments.
 
 | Target | Included outcome | Rough effort |
@@ -57,7 +57,7 @@ objects with their own economy, diplomacy, and history.
 
 ### Political and demographic data
 
-FMG already models:
+Fantasia already models:
 
 - states and state-to-cell assignments;
 - administrative provinces;
@@ -101,7 +101,7 @@ month.
 
 ### Diplomacy, campaigns, and military
 
-FMG provides state relationships, generated campaign histories, military compositions, regiment editing, movement
+Fantasia provides state relationships, generated campaign histories, military compositions, regiment editing, movement
 tools, and a battle simulator. These are useful prototypes and content-generation inputs.
 
 They are not yet a persistent war system:
@@ -119,7 +119,7 @@ eventually become a scenario and modding tool if game state remains separate fro
 serializable.
 
 Old `.map` compatibility must not be broken merely to add game state. A game save may initially be a separately
-versioned format that embeds or references an FMG map definition.
+versioned format that embeds or references a Fantasia map definition.
 
 ## PixiJS migration implications
 
@@ -299,7 +299,7 @@ a serializable message contract. Do not introduce that complexity until profilin
 - multiplayer and deterministic network synchronization;
 - feature parity with a mature commercial grand-strategy game;
 - a large historical Earth scenario and researched historical event library;
-- migration of every FMG editor to Pixi;
+- migration of every Fantasia editor to Pixi;
 - replacing accessible HTML application UI with canvas controls;
 - exact compatibility with another game's data, rules, art, or interface.
 
@@ -400,7 +400,7 @@ Exit gate: each added system creates meaningful decisions and remains understand
 | Completing broad feature lists before the core loop | Years of work without proof of fun | Gate expansion on a playable conquest vertical slice |
 | AI becoming an afterthought | Rules work only for a human and require cheats | Use the same command API for player and AI |
 | Scope comparison with a mature commercial game | Unbounded content and balancing demands | Define an original, intentionally smaller product identity |
-| Breaking FMG editor compatibility | Existing users and `.map` files regress | Keep game saves versioned and preserve map migrations |
+| Breaking Fantasia editor compatibility | Existing users and `.map` files regress | Keep game saves versioned and preserve map migrations |
 
 ## Testing strategy
 
@@ -421,12 +421,12 @@ Before implementation starts, decide:
 
 1. Is the product primarily a procedural conquest game, political sandbox, economic simulator, or world-history
    generator?
-2. Is FMG still one application with a game mode, or does it export maps to a separate game entry point?
+2. Is Fantasia still one application with a game mode, or does it export maps to a separate game entry point?
 3. What is the strategic province count and expected campaign duration?
 4. Which three systems create the core player decisions?
 5. Is the first release strictly single-player?
-6. Which existing FMG editors remain available during play, before play, or only in a scenario editor?
-7. What save compatibility is promised between FMG maps and game campaigns?
+6. Which existing Fantasia editors remain available during play, before play, or only in a scenario editor?
+7. What save compatibility is promised between Fantasia maps and game campaigns?
 8. What is the explicit non-goal list for the first playable release?
 
 ## Related documentation

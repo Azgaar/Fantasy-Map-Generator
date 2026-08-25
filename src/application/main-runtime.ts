@@ -1,5 +1,5 @@
 // Azgaar and contributors, 2017-2026. MIT License
-// https://github.com/Azgaar/Fantasy-Map-Generator
+// Fantasia application runtime
 
 import {
   interpolateSpectral,
@@ -13,6 +13,7 @@ import {
   scaleSequential,
   select
 } from "d3";
+import Alea from "alea";
 import { closeDialogs, closeEditDialogs } from "@/components/dialog/dialog-helpers";
 import { LayerControls } from "@/components/layers/layer-controls";
 import { OptionsController, type RegenerateOptions } from "@/components/options/options-controller";
@@ -210,8 +211,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyDefaultViewboxEvents();
 
   if (!location.hostname) {
-    const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-    const messageHtml = /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`;
+    const repository = "https://github.com/patkepa/fantasia";
+    const messageHtml = /* html */ `Fantasia cannot run serverless. Follow the <a href="${repository}" target="_blank">repository instructions</a> to run a local web server.`;
 
     window.showMessageDialog({
       id: "serverlessLoadingErrorDialog",
@@ -588,7 +589,7 @@ function setSeed(precreatedSeed?: string): void {
   }
 
   ensureEl<HTMLInputElement>("optionsSeed").value = app.seed;
-  Math.random = aleaPRNG(app.seed);
+  Math.random = Alea(app.seed);
 }
 
 function addLakesInDeepDepressions() {

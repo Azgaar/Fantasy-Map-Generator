@@ -1,4 +1,5 @@
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import Alea from "alea";
 import { OptionsController } from "@/components/options/options-controller";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { heightmapTemplates } from "@/data/heightmap-templates";
@@ -204,7 +205,7 @@ function insertHtml(): void {
   sections[0].innerHTML = Object.keys(heightmapTemplates)
     .map(key => {
       const name = heightmapTemplates[key].name;
-      Math.random = aleaPRNG(initialSeed);
+      Math.random = Alea(initialSeed);
       const heights = HeightmapGenerator.fromTemplate(graph, key);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
@@ -298,7 +299,7 @@ function regeneratePreview(article: HTMLElement, id: string): void {
   graph = getGraph(graph);
   const seed = generateSeed();
   article.dataset.seed = seed;
-  Math.random = aleaPRNG(seed);
+  Math.random = Alea(seed);
   drawTemplatePreview(id);
 }
 
@@ -308,7 +309,7 @@ function redrawAll(): void {
   for (const article of articles) {
     const { id, seed } = article.dataset;
     if (!id || !seed) continue;
-    Math.random = aleaPRNG(seed);
+    Math.random = Alea(seed);
 
     const isTemplate = id in heightmapTemplates;
     if (isTemplate) drawTemplatePreview(id);

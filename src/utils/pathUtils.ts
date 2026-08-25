@@ -3,6 +3,7 @@ import type { Point } from "@/types/global";
 import type { Vertices } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
+import { PriorityQueue } from "./priority-queue";
 
 /**
  * Generates SVG path data for filling a shape defined by a chain of vertices.
@@ -329,12 +330,12 @@ export const findPath = (
 
   const from: number[] = [];
   const cost: number[] = [];
-  const queue = new window.FlatQueue();
+  const queue = new PriorityQueue<number>();
   queue.push(start, 0);
 
   while (queue.length) {
-    const currentCost = queue.peekValue();
-    const current = queue.pop();
+    const currentCost = queue.peekValue()!;
+    const current = queue.pop()!;
 
     for (const next of packedGraph.cells.c[current]) {
       if (isExit(next, current)) {

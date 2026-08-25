@@ -62,7 +62,7 @@ test.describe("States", () => {
     expect(neighborsAfter).toBe(0);
 
     // Close the States Editor
-    await page.click(".fmg-dialog:has(#statesEditor) .fmg-dialog__close");
+    await page.click(".fantasia-dialog:has(#statesEditor) .fantasia-dialog__close");
     await page.waitForTimeout(200);
 
     // Open Regenerate, confirm the destructive action, and verify no errors

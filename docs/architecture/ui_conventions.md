@@ -15,7 +15,7 @@ This document defines the UI rules for the incremental Kantzen migration. It sup
 ## Kantzen Usage
 
 - Prefer an exported Kantzen component before creating a project-level composition.
-- Project-level components may combine Kantzen primitives with FMG-specific semantics and scoped styles.
+- Project-level components may combine Kantzen primitives with Fantasia-specific semantics and scoped styles.
 - Import the Kantzen theme and only the feature styles in use. Do not import the global reset while legacy UI remains.
 - Keep shared workspace components in `src/components/ui/`.
 - Do not copy Kantzen component implementations into the repository.

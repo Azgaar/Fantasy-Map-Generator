@@ -106,7 +106,7 @@ const scaleBarResize = (scaleBar: ScaleBarSelection, fullWidth: number, fullHeig
   if (!scaleBar.select("rect").size() || scaleBar.style("display") === "none") return;
 
   const bbox = (scaleBar.select("rect").node() as SVGRectElement).getBBox();
-  const minimap = document.querySelector<HTMLElement>(".fmg-map-minimap");
+  const minimap = document.querySelector<HTMLElement>(".fantasia-map-minimap");
   const map = document.getElementById("map");
   const isLiveScaleBar = document.getElementById("scaleBar") === scaleBar.node();
 

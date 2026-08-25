@@ -69,38 +69,38 @@ function open(routeId: number): void {
 function renderDialog(): void {
   destroyDialog("routeEditor");
 
-  const html = /* html */ `<div id="routeEditor" class="dialog fmg-map-feature-editor">
-    <p class="fmg-map-feature-editor__hint">Drag map handles to reshape the route. Click its line to add a point.</p>
-    <section class="fmg-map-feature-editor__section">
-      <h3 class="fmg-map-feature-editor__section-title">Route details</h3>
-      <div class="fmg-map-feature-editor__fields">
-        <div class="fmg-map-feature-editor__field fmg-map-feature-editor__field--wide">
+  const html = /* html */ `<div id="routeEditor" class="dialog fantasia-map-feature-editor">
+    <p class="fantasia-map-feature-editor__hint">Drag map handles to reshape the route. Click its line to add a point.</p>
+    <section class="fantasia-map-feature-editor__section">
+      <h3 class="fantasia-map-feature-editor__section-title">Route details</h3>
+      <div class="fantasia-map-feature-editor__fields">
+        <div class="fantasia-map-feature-editor__field fantasia-map-feature-editor__field--wide">
           <label for="routeName">Name</label>
-          <div class="fmg-map-feature-editor__control">
+          <div class="fantasia-map-feature-editor__control">
             <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
-            <button id="routeNameSpeak" aria-label="Speak route name" data-tip="Speak the name. You can change voice and language in options" class="fmg-map-feature-editor__icon-button speaker">🔊</button>
-            <button id="routeGenerateName" aria-label="Generate route name" data-tip="Generate route name" class="fmg-map-feature-editor__icon-button icon-globe"></button>
+            <button id="routeNameSpeak" aria-label="Speak route name" data-tip="Speak the name. You can change voice and language in options" class="fantasia-map-feature-editor__icon-button speaker">🔊</button>
+            <button id="routeGenerateName" aria-label="Generate route name" data-tip="Generate route name" class="fantasia-map-feature-editor__icon-button icon-globe"></button>
           </div>
         </div>
-        <div class="fmg-map-feature-editor__field fmg-map-feature-editor__field--wide">
+        <div class="fantasia-map-feature-editor__field fantasia-map-feature-editor__field--wide">
           <label for="routeGroup">Group</label>
-          <div class="fmg-map-feature-editor__control">
+          <div class="fantasia-map-feature-editor__control">
             <select id="routeGroup" data-tip="Select route group"></select>
-            <button id="routeGroupEdit" aria-label="Edit route groups" data-tip="Edit route groups" class="fmg-map-feature-editor__icon-button icon-pencil"></button>
-            <button id="routeEditStyle" aria-label="Edit route group style" data-tip="Edit style for this route group" class="fmg-map-feature-editor__icon-button icon-brush"></button>
+            <button id="routeGroupEdit" aria-label="Edit route groups" data-tip="Edit route groups" class="fantasia-map-feature-editor__icon-button icon-pencil"></button>
+            <button id="routeEditStyle" aria-label="Edit route group style" data-tip="Edit style for this route group" class="fantasia-map-feature-editor__icon-button icon-brush"></button>
           </div>
         </div>
-        <div class="fmg-map-feature-editor__field"><label for="routeLength">Length</label><input id="routeLength" data-tip="Route length in selected units" disabled /></div>
+        <div class="fantasia-map-feature-editor__field"><label for="routeLength">Length</label><input id="routeLength" data-tip="Route length in selected units" disabled /></div>
       </div>
     </section>
-    <footer class="fmg-map-feature-editor__toolbar">
-      <button id="routeCreateSelectingCells" data-tip="Create a new route by selecting route cells" class="fmg-map-feature-editor__action icon-map-pin">New route</button>
-      <button id="routeJoin" data-tip="Join this route to another route that shares an endpoint" class="fmg-map-feature-editor__action icon-link">Join</button>
-      <button id="routeSplit" data-tip="Turn on split mode, then click a control point to split the route there" class="fmg-map-feature-editor__action icon-unlink">Split</button>
-      <button id="routeElevationProfile" data-tip="Show the elevation profile for this route" class="fmg-map-feature-editor__action icon-chart-area">Elevation</button>
-      <button id="routeLegend" data-tip="Edit free-text notes for this route" class="fmg-map-feature-editor__action icon-edit">Notes</button>
-      <button id="routeLock" aria-label="Lock route" class="fmg-map-feature-editor__action icon-lock-open" onmouseover="showElementLockTip(event)">Lock</button>
-      <button id="routeRemove" data-tip="Remove this route" data-shortcut="Delete" class="fmg-map-feature-editor__action fmg-map-feature-editor__action--danger icon-trash fastDelete">Remove</button>
+    <footer class="fantasia-map-feature-editor__toolbar">
+      <button id="routeCreateSelectingCells" data-tip="Create a new route by selecting route cells" class="fantasia-map-feature-editor__action icon-map-pin">New route</button>
+      <button id="routeJoin" data-tip="Join this route to another route that shares an endpoint" class="fantasia-map-feature-editor__action icon-link">Join</button>
+      <button id="routeSplit" data-tip="Turn on split mode, then click a control point to split the route there" class="fantasia-map-feature-editor__action icon-unlink">Split</button>
+      <button id="routeElevationProfile" data-tip="Show the elevation profile for this route" class="fantasia-map-feature-editor__action icon-chart-area">Elevation</button>
+      <button id="routeLegend" data-tip="Edit free-text notes for this route" class="fantasia-map-feature-editor__action icon-edit">Notes</button>
+      <button id="routeLock" aria-label="Lock route" class="fantasia-map-feature-editor__action icon-lock-open" onmouseover="showElementLockTip(event)">Lock</button>
+      <button id="routeRemove" data-tip="Remove this route" data-shortcut="Delete" class="fantasia-map-feature-editor__action fantasia-map-feature-editor__action--danger icon-trash fastDelete">Remove</button>
     </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -296,7 +296,9 @@ function openJoinRoutesDialog(): void {
             intent: "primary",
             label: "Join",
             onClick: () => {
-              const select = document.querySelector<HTMLSelectElement>(".fmg-message-dialog [data-route-join-target]");
+              const select = document.querySelector<HTMLSelectElement>(
+                ".fantasia-message-dialog [data-route-join-target]"
+              );
               if (!select) return;
               const selectedRouteId = +select.value;
               const selectedRoute = pack.routes.find((candidate: Route) => candidate.i === selectedRouteId) as Route;

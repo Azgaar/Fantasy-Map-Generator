@@ -45,7 +45,7 @@ describe("WorkspaceToolbar", () => {
   test("stays above modal overlays", () => {
     const toolbarZIndex = Number(workspaceToolbarStyles.match(/#mapPreviewRoot\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
     const overlayZIndices = [dialogStyles, workspacePanelStyles].map(styles =>
-      Number(styles.match(/(?:\.fmg-dialog-overlay|\.kui-overlay)\s*\{[^}]*z-index:\s*(\d+)/s)?.[1])
+      Number(styles.match(/(?:\.fantasia-dialog-overlay|\.kui-overlay)\s*\{[^}]*z-index:\s*(\d+)/s)?.[1])
     );
 
     expect(toolbarZIndex).toBeGreaterThan(Math.max(...overlayZIndices));

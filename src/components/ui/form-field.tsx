@@ -72,25 +72,25 @@ function WorkspaceFieldLayout({
   required
 }: WorkspaceFieldLayoutProps): React.JSX.Element {
   const generatedId = useId();
-  const controlId = id ?? `fmg-field-${generatedId}`;
+  const controlId = id ?? `fantasia-field-${generatedId}`;
   const descriptionId = description ? `${controlId}-description` : undefined;
   const errorId = error ? `${controlId}-error` : undefined;
   const describedBy = [descriptionId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={`fmg-field${error ? " fmg-field--invalid" : ""}`}>
-      <label className="fmg-field__label" htmlFor={controlId}>
+    <div className={`fantasia-field${error ? " fantasia-field--invalid" : ""}`}>
+      <label className="fantasia-field__label" htmlFor={controlId}>
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
       {children({ controlId, describedBy, invalid: error ? true : undefined })}
       {description ? (
-        <small className="fmg-field__description" id={descriptionId}>
+        <small className="fantasia-field__description" id={descriptionId}>
           {description}
         </small>
       ) : null}
       {error ? (
-        <small className="fmg-field__error" id={errorId}>
+        <small className="fantasia-field__error" id={errorId}>
           {error}
         </small>
       ) : null}
@@ -113,7 +113,7 @@ export function WorkspaceTextField({
           {...inputProps}
           aria-describedby={describedBy}
           aria-invalid={invalid}
-          className="fmg-field__input"
+          className="fantasia-field__input"
           fill
           id={controlId}
           required={required}
@@ -139,7 +139,7 @@ export function WorkspaceNumberField({
           {...inputProps}
           aria-describedby={describedBy}
           aria-invalid={invalid}
-          className="fmg-field__input"
+          className="fantasia-field__input"
           fill
           id={controlId}
           required={required}
@@ -166,7 +166,7 @@ export function WorkspaceSelectField({
           {...selectProps}
           aria-describedby={describedBy}
           aria-invalid={invalid}
-          className="fmg-field__select"
+          className="fantasia-field__select"
           id={controlId}
           required={required}
         >
@@ -194,18 +194,18 @@ export function WorkspaceRangeField({
   return (
     <WorkspaceFieldLayout description={description} error={error} id={id} label={label} required={required}>
       {({ controlId, describedBy, invalid }) => (
-        <div className="fmg-field__range-row">
+        <div className="fantasia-field__range-row">
           <input
             {...inputProps}
             aria-describedby={describedBy}
             aria-invalid={invalid}
-            className="fmg-field__range"
+            className="fantasia-field__range"
             id={controlId}
             required={required}
             type="range"
             value={value}
           />
-          <output className="fmg-field__output" htmlFor={controlId}>
+          <output className="fantasia-field__output" htmlFor={controlId}>
             {formatValue(value)}
           </output>
         </div>
@@ -226,18 +226,18 @@ export function WorkspaceColorField({
   return (
     <WorkspaceFieldLayout description={description} error={error} id={id} label={label} required={required}>
       {({ controlId, describedBy, invalid }) => (
-        <div className="fmg-field__color-row">
+        <div className="fantasia-field__color-row">
           <input
             {...inputProps}
             aria-describedby={describedBy}
             aria-invalid={invalid}
-            className="fmg-field__color"
+            className="fantasia-field__color"
             id={controlId}
             required={required}
             type="color"
             value={value}
           />
-          <output className="fmg-field__output" htmlFor={controlId}>
+          <output className="fantasia-field__output" htmlFor={controlId}>
             {value.toUpperCase()}
           </output>
         </div>
@@ -252,12 +252,12 @@ export function WorkspaceToggleField({
   ...inputProps
 }: WorkspaceToggleFieldProps): React.JSX.Element {
   return (
-    <label className="fmg-toggle-field">
+    <label className="fantasia-toggle-field">
       <input {...inputProps} role="switch" type="checkbox" />
-      <span className="fmg-toggle-field__control" aria-hidden="true">
+      <span className="fantasia-toggle-field__control" aria-hidden="true">
         <span />
       </span>
-      <span className="fmg-toggle-field__copy">
+      <span className="fantasia-toggle-field__copy">
         <strong>{label}</strong>
         {description ? <small>{description}</small> : null}
       </span>

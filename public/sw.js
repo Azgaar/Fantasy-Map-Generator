@@ -11,7 +11,7 @@ registerRoute(
   ({request}) => request.mode === "navigate",
   new NetworkFirst({
     networkTimeoutSeconds: 15,
-    cacheName: "fmg-html",
+    cacheName: "fantasia-html",
     plugins: [new CacheableResponsePlugin({statuses: [0, 200]})]
   })
 );
@@ -22,7 +22,7 @@ registerRoute(
     !url.pathname.endsWith("min.js") &&
     !url.pathname.includes("google"),
   new StaleWhileRevalidate({
-    cacheName: "fmg-scripts",
+    cacheName: "fantasia-scripts",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
@@ -33,7 +33,7 @@ registerRoute(
 registerRoute(
   ({request}) => request.destination === "style",
   new CacheFirst({
-    cacheName: "fmg-stylesheets",
+    cacheName: "fantasia-stylesheets",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
@@ -44,7 +44,7 @@ registerRoute(
 registerRoute(
   ({request, url}) => request.destination === "script" && url.pathname.endsWith("min.js"),
   new CacheFirst({
-    cacheName: "fmg-libs",
+    cacheName: "fantasia-libs",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
@@ -55,7 +55,7 @@ registerRoute(
 registerRoute(
   new RegExp(".json$"),
   new CacheFirst({
-    cacheName: "fmg-json",
+    cacheName: "fantasia-json",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 30 * DAY})
@@ -66,7 +66,7 @@ registerRoute(
 registerRoute(
   ({request}) => request.destination === "image",
   new CacheFirst({
-    cacheName: "fmg-images",
+    cacheName: "fantasia-images",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY})
@@ -77,7 +77,7 @@ registerRoute(
 registerRoute(
   new RegExp(".svg$"),
   new CacheFirst({
-    cacheName: "fmg-charges",
+    cacheName: "fantasia-charges",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY})
@@ -88,7 +88,7 @@ registerRoute(
 registerRoute(
   ({request}) => request.destination === "font",
   new CacheFirst({
-    cacheName: "fmg-fonts",
+    cacheName: "fantasia-fonts",
     plugins: [
       new CacheableResponsePlugin({statuses: [0, 200]}),
       new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY})

@@ -1,6 +1,6 @@
 import { requireWorkspaceCapability } from "@/application/workspace-mode";
 
-export const RUN_REGENERATION_EVENT = "fmg-run-regeneration";
+export const RUN_REGENERATION_EVENT = "fantasia-run-regeneration";
 
 export interface RegenerationCommandDetail {
   buttonId: string;

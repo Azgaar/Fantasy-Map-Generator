@@ -1,6 +1,6 @@
 import type { MapLayerId } from "@/renderers/core/layer-registry";
 
-export const LAYER_CONTROLS_CHANGE_EVENT = "fmg-layer-controls-change";
+export const LAYER_CONTROLS_CHANGE_EVENT = "fantasia-layer-controls-change";
 
 export interface LayerView {
   description: string;

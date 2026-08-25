@@ -376,7 +376,7 @@ function open() {
 
   showDomDialog({
     access: "inspect",
-    className: "fmg-charts-dialog",
+    className: "fantasia-charts-dialog",
     content: ensureEl("chartsOverview"),
     isModal: true,
     maxHeight: "calc(100vh - 32px)",
@@ -397,19 +397,19 @@ function renderDialog() {
   const createOption = ([value, label]: [string, string]) => `<option value="${value}">${label}</option>`;
   const createOptions = (values: [string, string][]) => values.map(createOption).join("");
 
-  const html = /* html */ `<div id="chartsOverview" class="dialog stable fmg-charts-overview">
-    <form id="chartsOverview__form" class="fmg-charts-overview__form">
-      <div class="fmg-charts-overview__controls">
-        <button class="fmg-charts-overview__plot" data-tip="Add a chart" type="submit">Plot chart</button>
+  const html = /* html */ `<div id="chartsOverview" class="dialog stable fantasia-charts-overview">
+    <form id="chartsOverview__form" class="fantasia-charts-overview__form">
+      <div class="fantasia-charts-overview__controls">
+        <button class="fantasia-charts-overview__plot" data-tip="Add a chart" type="submit">Plot chart</button>
 
-        <label class="fmg-charts-overview__field" for="chartsOverview__entitiesSelect">
+        <label class="fantasia-charts-overview__field" for="chartsOverview__entitiesSelect">
           <span>Entity</span>
           <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
             ${createOptions(entities)}
           </select>
         </label>
 
-        <label class="fmg-charts-overview__field" for="chartsOverview__plotBySelect" data-tip="Select metric to plot (x axis)">
+        <label class="fantasia-charts-overview__field" for="chartsOverview__plotBySelect" data-tip="Select metric to plot (x axis)">
           <span>Metric</span>
           <select id="chartsOverview__plotBySelect">
             ${createOptions(plotBy)}
@@ -417,14 +417,14 @@ function renderDialog() {
           <i id="chartsOverview__plotByInfo" class="icon-info-circled" style="display: none"></i>
         </label>
 
-        <label class="fmg-charts-overview__field" for="chartsOverview__groupBySelect" data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity">
+        <label class="fantasia-charts-overview__field" for="chartsOverview__groupBySelect" data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity">
           <span>Group by</span>
           <select id="chartsOverview__groupBySelect">
             ${createOptions(entities)}
           </select>
         </label>
 
-        <label class="fmg-charts-overview__field" data-tip="Sorting type" for="chartsOverview__sortingSelect">
+        <label class="fantasia-charts-overview__field" data-tip="Sorting type" for="chartsOverview__sortingSelect">
           <span>Sort</span>
           <select id="chartsOverview__sortingSelect">
             <option value="value">by value</option>
@@ -434,8 +434,8 @@ function renderDialog() {
         </label>
       </div>
 
-      <div class="fmg-charts-overview__options">
-        <label class="fmg-charts-overview__field" data-tip="Select chart type" for="chartsOverview__chartType">
+      <div class="fantasia-charts-overview__options">
+        <label class="fantasia-charts-overview__field" data-tip="Select chart type" for="chartsOverview__chartType">
           <span>Type</span>
           <select id="chartsOverview__chartType">
             <option value="stackedBar" selected>Stacked Bar</option>
@@ -443,7 +443,7 @@ function renderDialog() {
           </select>
         </label>
 
-        <label class="fmg-charts-overview__field" data-tip="Show the charts in 1, 2, 3 or 4 columns" for="chartsOverview__viewColumns">
+        <label class="fantasia-charts-overview__field" data-tip="Show the charts in 1, 2, 3 or 4 columns" for="chartsOverview__viewColumns">
           <span>Columns</span>
           <select id="chartsOverview__viewColumns">
             <option value="1" selected>1</option>
@@ -453,7 +453,7 @@ function renderDialog() {
           </select>
         </label>
 
-        <label class="fmg-charts-overview__checkbox" data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
+        <label class="fantasia-charts-overview__checkbox" data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
           <input id="chartsOverview__excludeNeutral" type="checkbox" class="native" />
           <span>Exclude neutral</span>
         </label>

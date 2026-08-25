@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { PriorityQueue } from "@/utils/priority-queue";
 import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 declare global {
@@ -1240,7 +1241,7 @@ class CulturesGenerator {
     TIME && console.time("expandCultures");
     const { cells, cultures } = pack;
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ cellId: number; cultureId: number; priority: number }>();
     const cost: number[] = [];
 
     const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
@@ -1298,7 +1299,7 @@ class CulturesGenerator {
     };
 
     while (queue.length) {
-      const { cellId, priority, cultureId } = queue.pop();
+      const { cellId, priority, cultureId } = queue.pop()!;
       const { type, expansionism } = cultures[cultureId];
       const sourceBiome = cells.biome[cellId];
 

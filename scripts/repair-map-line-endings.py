@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Repair a Fantasy Map Generator .map file whose line endings were normalized.
+"""Repair a Fantasia .map file whose line endings were normalized.
 
-FMG .map files are sections joined by CRLF (\\r\\n), while the embedded SVG
+Fantasia .map files are sections joined by CRLF (\\r\\n), while the embedded SVG
 section contains bare LF (\\n) newlines inside it. Text editors and git
 (core.autocrlf, .gitattributes text rules, VSCode "files.eol") often strip or
 rewrite the CR bytes, after which the loader's split on \\r\\n yields a single
@@ -39,12 +39,12 @@ def fail(message) -> NoReturn:
 
 
 def parse_sections(text):
-    """Split normalized (LF-only) map text into FMG sections."""
+    """Split normalized (LF-only) map text into Fantasia sections."""
     lines = text.split("\n")
 
     svg_start = next((i for i, line in enumerate(lines) if line.lstrip().startswith("<svg")), None)
     if svg_start is None:
-        fail("no '<svg' line found — this does not look like an FMG .map file")
+        fail("no '<svg' line found — this does not look like a Fantasia .map file")
 
     # gridGeneral is the section right after the SVG and always starts with {"spacing"
     svg_end = None
@@ -69,7 +69,7 @@ def validate(sections):
     if not first.replace(".", "").isdigit():
         fail(f"first section does not start with a version number: {sections[0][:60]!r}")
     if "|" not in sections[0]:
-        fail("first section has no '|' delimiters — not an FMG .map file")
+        fail("first section has no '|' delimiters — not a Fantasia .map file")
 
     for i, section in enumerate(sections):
         if section.startswith(("{", "[")) and i != 5:  # 5 is the SVG slot in modern files, never JSON
@@ -81,7 +81,7 @@ def validate(sections):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Repair an FMG .map file whose CRLF section delimiters were normalized to LF.",
+        description="Repair a Fantasia .map file whose CRLF section delimiters were normalized to LF.",
         epilog='Prevent recurrence: add "*.map -text" to .gitattributes.'
     )
     parser.add_argument("input", type=Path, help="corrupted .map file")

@@ -60,8 +60,8 @@ function getSelectedPreset(): string {
 function PresetPreview({ preset }: { preset: WorldPreset }): React.JSX.Element {
   if (preset.kind === "blank") {
     return (
-      <span aria-hidden="true" className="fmg-world-preset-card__preview fmg-world-preset-card__preview--blank">
-        <span className="fmg-world-preset-card__blank-island" />
+      <span aria-hidden="true" className="fantasia-world-preset-card__preview fantasia-world-preset-card__preview--blank">
+        <span className="fantasia-world-preset-card__blank-island" />
       </span>
     );
   }
@@ -74,10 +74,10 @@ function PresetPreview({ preset }: { preset: WorldPreset }): React.JSX.Element {
         : TEMPLATE_PREVIEWS[preset.id] || "world";
 
   return (
-    <span aria-hidden="true" className="fmg-world-preset-card__preview">
+    <span aria-hidden="true" className="fantasia-world-preset-card__preview">
       <img alt="" loading="lazy" src={`./heightmaps/${previewId}.png`} />
       {preset.kind === "template" || preset.kind === "random" ? (
-        <span className="fmg-world-preset-card__procedural">Procedural</span>
+        <span className="fantasia-world-preset-card__procedural">Procedural</span>
       ) : null}
     </span>
   );
@@ -97,18 +97,18 @@ function WorldPresetCard({
   return (
     <button
       aria-pressed={selected}
-      className={`fmg-world-preset-card${compact ? " fmg-world-preset-card--compact" : ""}`}
+      className={`fantasia-world-preset-card${compact ? " fantasia-world-preset-card--compact" : ""}`}
       data-tip={`Use ${preset.name} as the starting world`}
       onClick={() => onSelect(preset)}
       type="button"
     >
       <PresetPreview preset={preset} />
-      <span className="fmg-world-preset-card__copy">
+      <span className="fantasia-world-preset-card__copy">
         <strong>{preset.name}</strong>
         {preset.description ? <small>{preset.description}</small> : null}
       </span>
       {selected ? (
-        <span aria-hidden="true" className="fmg-world-preset-card__selected">
+        <span aria-hidden="true" className="fantasia-world-preset-card__selected">
           ✓
         </span>
       ) : null}
@@ -161,27 +161,27 @@ export function WorldPresetGallery(): React.JSX.Element {
   );
 
   return (
-    <section aria-labelledby="worldPresetGalleryTitle" className="fmg-world-presets">
-      <div className="fmg-world-presets__heading">
+    <section aria-labelledby="worldPresetGalleryTitle" className="fantasia-world-presets">
+      <div className="fantasia-world-presets__heading">
         <h2 id="worldPresetGalleryTitle">Choose a starting world</h2>
         <p>Pick a ready-made shape, then fine-tune the generation settings below.</p>
       </div>
 
-      <div className="fmg-world-presets__grid fmg-world-presets__grid--quick">
+      <div className="fantasia-world-presets__grid fantasia-world-presets__grid--quick">
         {QUICK_PRESETS.map(preset => renderPreset(preset))}
       </div>
 
-      <details className="fmg-world-presets__more">
+      <details className="fantasia-world-presets__more">
         <summary>Browse all starting worlds</summary>
-        <div className="fmg-world-presets__collection">
+        <div className="fantasia-world-presets__collection">
           <h3>Procedural shapes</h3>
-          <div className="fmg-world-presets__grid">
+          <div className="fantasia-world-presets__grid">
             {PROCEDURAL_PRESETS.map(preset => renderPreset(preset, true))}
           </div>
         </div>
-        <div className="fmg-world-presets__collection">
+        <div className="fantasia-world-presets__collection">
           <h3>Real places</h3>
-          <div className="fmg-world-presets__grid">
+          <div className="fantasia-world-presets__grid">
             {REAL_WORLD_PRESETS.map(preset => renderPreset(preset, true))}
           </div>
         </div>

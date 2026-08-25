@@ -49,15 +49,15 @@ function open(): void {
 function renderDialog(): void {
   destroyDialog("riverCreator");
 
-  const html = /* html */ `<div id="riverCreator" class="dialog fmg-map-feature-editor">
-    <p class="fmg-map-feature-editor__hint">Click map cells to build the river course. Click an added cell again to remove it.</p>
-    <section class="fmg-map-feature-editor__section">
-      <h3 class="fmg-map-feature-editor__section-title">River cells</h3>
-      <div id="riverCreatorBody" class="fmg-map-feature-editor__list"></div>
+  const html = /* html */ `<div id="riverCreator" class="dialog fantasia-map-feature-editor">
+    <p class="fantasia-map-feature-editor__hint">Click map cells to build the river course. Click an added cell again to remove it.</p>
+    <section class="fantasia-map-feature-editor__section">
+      <h3 class="fantasia-map-feature-editor__section-title">River cells</h3>
+      <div id="riverCreatorBody" class="fantasia-map-feature-editor__list"></div>
     </section>
-    <footer class="fmg-map-feature-editor__toolbar">
-      <button id="riverCreatorComplete" data-tip="Create this river from the selected cells" class="fmg-map-feature-editor__action icon-check">Create river</button>
-      <button id="riverCreatorCancel" data-tip="Cancel river creation" class="fmg-map-feature-editor__action icon-cancel">Cancel</button>
+    <footer class="fantasia-map-feature-editor__toolbar">
+      <button id="riverCreatorComplete" data-tip="Create this river from the selected cells" class="fantasia-map-feature-editor__action icon-check">Create river</button>
+      <button id="riverCreatorCancel" data-tip="Cancel river creation" class="fantasia-map-feature-editor__action icon-cancel">Cancel</button>
     </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -209,13 +209,13 @@ function renderCreatorCells(): void {
   ensureEl("riverCreatorBody").innerHTML =
     creatorCells
       .map(
-        cell => `<div class="fmg-map-feature-editor__row" data-cell="${cell}">
+        cell => `<div class="fantasia-map-feature-editor__row" data-cell="${cell}">
         <span>Cell ${cell}</span>
         <input aria-label="Flux for cell ${cell}" data-tip="Set flux; it affects river width" type="number" min=0 value="${pack.cells.fl[cell]}" class="editFlux" />
-        <button aria-label="Remove cell ${cell}" data-tip="Remove this cell from the river" class="fmg-map-feature-editor__icon-button icon-trash-empty"></button>
+        <button aria-label="Remove cell ${cell}" data-tip="Remove this cell from the river" class="fantasia-map-feature-editor__icon-button icon-trash-empty"></button>
       </div>`
       )
-      .join("") || `<div class="fmg-map-feature-editor__empty">No cells selected yet</div>`;
+      .join("") || `<div class="fantasia-map-feature-editor__empty">No cells selected yet</div>`;
 }
 
 export const RiverCreator = { open };

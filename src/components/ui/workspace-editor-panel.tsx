@@ -65,7 +65,7 @@ export function WorkspaceEditorPanel({
   }, []);
 
   useEffect(() => {
-    const property = "--fmg-active-editor-panel-width";
+    const property = "--fantasia-active-editor-panel-width";
     const value = `${width ?? 560}px`;
     document.body.style.setProperty(property, value);
     window.dispatchEvent(new Event("resize"));
@@ -77,30 +77,30 @@ export function WorkspaceEditorPanel({
   return (
     <aside
       aria-labelledby={titleId}
-      className={`fmg-editor-panel${width ? " fmg-editor-panel--wide" : ""}${className ? ` ${className}` : ""}`}
+      className={`fantasia-editor-panel${width ? " fantasia-editor-panel--wide" : ""}${className ? ` ${className}` : ""}`}
       ref={panelRef}
       role="dialog"
       style={width ? ({ width } satisfies CSSProperties) : undefined}
       tabIndex={-1}
     >
-      <header className="fmg-editor-panel__header">
-        <span aria-hidden="true" className="fmg-editor-panel__icon">
+      <header className="fantasia-editor-panel__header">
+        <span aria-hidden="true" className="fantasia-editor-panel__icon">
           <Icon icon="edit" size={18} />
         </span>
-        <div className="fmg-editor-panel__heading">
+        <div className="fantasia-editor-panel__heading">
           <h2 id={titleId}>{panelTitle}</h2>
           <p>Map editor</p>
         </div>
         <Button
           aria-label="Close editor panel"
-          className="fmg-editor-panel__close"
+          className="fantasia-editor-panel__close"
           icon="cross"
           minimal
           onClick={onClose}
         />
       </header>
       {onSearch ? (
-        <div className="fmg-editor-panel__search">
+        <div className="fantasia-editor-panel__search">
           <SearchField
             ariaLabel={`Search ${panelTitle.toLocaleLowerCase()}`}
             onChange={value => {
@@ -112,8 +112,8 @@ export function WorkspaceEditorPanel({
           />
         </div>
       ) : null}
-      <div className="fmg-editor-panel__body">{children}</div>
-      {footer ? <footer className="fmg-editor-panel__footer">{footer}</footer> : null}
+      <div className="fantasia-editor-panel__body">{children}</div>
+      {footer ? <footer className="fantasia-editor-panel__footer">{footer}</footer> : null}
     </aside>
   );
 }

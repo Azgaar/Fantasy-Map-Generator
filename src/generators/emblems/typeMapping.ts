@@ -1,4 +1,4 @@
-// Charges specific to culture or burg type (FMG-only config, not coming from Armoria)
+// Charges specific to culture or burg type (Fantasia-only config, not coming from Armoria)
 export const typeMapping: Record<string, Record<string, number>> = {
   Naval: {
     anchor: 3,

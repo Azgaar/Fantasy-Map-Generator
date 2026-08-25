@@ -3,18 +3,9 @@
 
 import { link } from "@/utils";
 
-const COMMUNITY = {
-  discord: link("https://discordapp.com/invite/X7E84HU", "Discord"),
-  reddit: link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit"),
-  patreon: link("https://www.patreon.com/azgaar", "Patreon")
-};
-
-const PROJECTS = {
-  armoria: link("https://azgaar.github.io/Armoria", "Armoria"),
-  deorum: link("https://deorum.vercel.app", "Deorum")
-};
-
-const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
+const PROJECT_URL = "https://github.com/patkepa/fantasia";
+const UPSTREAM_URL = "https://github.com/Azgaar/Fantasy-Map-Generator";
+const WIKI = `${UPSTREAM_URL}/wiki`;
 const GUIDES = {
   quickStart: link(`${WIKI}/Quick-Start-Tutorial`, "Quick start tutorial"),
   qaa: link(`${WIKI}/Q&A`, "Q&A page"),
@@ -22,38 +13,25 @@ const GUIDES = {
 };
 
 const LINKS = [
-  link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository"),
-  link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License"),
-  link(`${WIKI}/Changelog`, "Changelog"),
-  link(`${WIKI}/Hotkeys`, "Hotkeys"),
-  link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Devboard"),
-  `<a href="mailto:azgaar.fmg@yandex.by" target="_blank">Contact Azgaar</a>`
+  link(PROJECT_URL, "Fantasia repository"),
+  link(`${PROJECT_URL}/blob/main/LICENSE`, "License"),
+  link(`${PROJECT_URL}/issues`, "Report an issue"),
+  link(UPSTREAM_URL, "Upstream FMG repository")
 ];
 
 function render(): string {
-  return /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
-    you wish.
+  return /* html */ `<b>Fantasia</b> is a free, open-source application for creating fantasy maps. You own the maps you create and may use them as you wish.
 
     <p>
-      The development is community-backed, you can donate on ${COMMUNITY.patreon}. You can also help creating overviews, tutorials and spreding the word about the
-      Generator.
+      Fantasia is a fork of <a href="${UPSTREAM_URL}" target="_blank">Azgaar's Fantasy Map Generator (FMG)</a>. Its upstream project remains credited for the original work.
     </p>
 
     <p>
-      The best way to get help is to contact the community on ${COMMUNITY.discord} and ${COMMUNITY.reddit}. Before asking questions, please check out the
-      ${GUIDES.quickStart}, the ${GUIDES.qaa}, and ${GUIDES.video}.
+      Before asking questions, consult the upstream ${GUIDES.quickStart}, ${GUIDES.qaa}, and ${GUIDES.video}.
     </p>
 
     <ul style="columns:2">${LINKS.map(item => `<li>${item}</li>`).join("")}</ul>
-
-    <p>Check out our other projects:
-      <ul>
-        <li>${PROJECTS.armoria}: a tool for creating heraldic coats of arms</li>
-        <li>${PROJECTS.deorum}: a vast gallery of customizable fantasy characters</li>
-      </ul>
-    </p>
-
-    <p>Chinese localization: <a href="https://www.8desk.top" target="_blank">8desk.top</a></p>`;
+`;
 }
 
 /** Show info about the generator in a popup */

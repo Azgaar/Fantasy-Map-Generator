@@ -126,7 +126,7 @@ export function MapMinimap(): React.JSX.Element {
   return (
     <button
       aria-label="Minimap. Click to center the map"
-      className="fmg-map-minimap"
+      className="fantasia-map-minimap"
       data-tip="Click to center the map"
       onClick={recenterMap}
       ref={buttonRef}
@@ -134,7 +134,7 @@ export function MapMinimap(): React.JSX.Element {
     >
       <canvas aria-hidden="true" ref={canvasRef} />
       <svg aria-hidden="true" preserveAspectRatio="none" ref={svgRef} viewBox={getMinimapViewBox()}>
-        <rect className="fmg-map-minimap__viewport" ref={viewportRef} />
+        <rect className="fantasia-map-minimap__viewport" ref={viewportRef} />
       </svg>
     </button>
   );

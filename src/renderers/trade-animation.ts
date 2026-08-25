@@ -2,6 +2,7 @@ import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import type { Point } from "../generators/voronoi";
 import { ra } from "../utils";
+import { PriorityQueue } from "../utils/priority-queue";
 import { clear, draw } from "./draw-trade-animation";
 
 export type TradeBatch = {
@@ -157,7 +158,7 @@ export class TradeAnimationModule {
     distArr[startCell * 2] = 0;
     distArr[startCell * 2 + 1] = 0;
 
-    const queue = new window.FlatQueue();
+    const queue = new PriorityQueue<number>();
     for (const nextStr of Object.keys(startNeighbors)) {
       const next = Number(nextStr);
       const water = isWaterRoute.get(startNeighbors[next]) ?? false;
@@ -171,8 +172,8 @@ export class TradeAnimationModule {
     }
 
     while (queue.length) {
-      const cost: number = queue.peekValue();
-      const stateId: number = queue.pop();
+      const cost = queue.peekValue()!;
+      const stateId = queue.pop()!;
       if (cost > distArr[stateId]) continue;
 
       const cell = stateId >> 1;

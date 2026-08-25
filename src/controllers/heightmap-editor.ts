@@ -1,4 +1,5 @@
 import { drag, easeSinInOut, hsl, interpolateRound, lab, max, mean, quadtree, range, select } from "d3";
+import Alea from "alea";
 import { ApplicationController } from "@/application/application-controller";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { enableVerticalSortable } from "@/components/dialog/vertical-sortable";
@@ -1699,7 +1700,7 @@ function executeTemplate(): void {
   if (!steps.length) return;
 
   const currentSeed = ensureEl<HTMLInputElement>("templateSeed").value;
-  Math.random = aleaPRNG(currentSeed || generateSeed());
+  Math.random = Alea(currentSeed || generateSeed());
 
   grid.cells.h = new Uint8Array(grid.points.length);
   HeightmapGenerator.setGraph(grid);

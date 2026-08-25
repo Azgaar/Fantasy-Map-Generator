@@ -55,7 +55,7 @@ function classes(...values: (string | undefined)[]): string {
 }
 
 export function WorkspacePanel({ children, className }: WorkspacePanelProps): React.JSX.Element {
-  return <div className={classes("fmg-workspace-panel", className)}>{children}</div>;
+  return <div className={classes("fantasia-workspace-panel", className)}>{children}</div>;
 }
 
 export function WorkspacePanelHeader({
@@ -64,11 +64,11 @@ export function WorkspacePanelHeader({
   title
 }: WorkspacePanelHeaderProps): React.JSX.Element {
   return (
-    <header className="fmg-panel-header">
+    <header className="fantasia-panel-header">
       <h1>{title}</h1>
       <Button
         aria-label={closeLabel}
-        className="fmg-panel-header__close"
+        className="fantasia-panel-header__close"
         icon="cross"
         minimal
         onClick={event => {
@@ -89,10 +89,10 @@ export function WorkspacePanelSearch({
   value
 }: WorkspacePanelSearchProps): React.JSX.Element {
   return (
-    <div className="fmg-panel-search">
+    <div className="fantasia-panel-search">
       <SearchField
         ariaLabel={ariaLabel}
-        className="fmg-panel-search__field"
+        className="fantasia-panel-search__field"
         inputRef={inputRef}
         onChange={onChange}
         placeholder={placeholder}
@@ -110,8 +110,8 @@ export function WorkspacePanelSection({
   title
 }: WorkspacePanelSectionProps): React.JSX.Element {
   return (
-    <section className={classes("fmg-panel-section", className)}>
-      <header className="fmg-panel-section__header">
+    <section className={classes("fantasia-panel-section", className)}>
+      <header className="fantasia-panel-section__header">
         <h2>{title}</h2>
         {description ? <p>{description}</p> : null}
       </header>
@@ -129,8 +129,8 @@ export function WorkspacePanelAction({
   ...buttonProps
 }: WorkspacePanelActionProps): React.JSX.Element {
   const action = (
-    <Button {...buttonProps} className={classes("fmg-panel-action", className)} fill icon={icon} minimal>
-      <span className="fmg-panel-action__label">{label}</span>
+    <Button {...buttonProps} className={classes("fantasia-panel-action", className)} fill icon={icon} minimal>
+      <span className="fantasia-panel-action__label">{label}</span>
       {shortcut ? <kbd>{shortcut}</kbd> : null}
     </Button>
   );
@@ -138,11 +138,11 @@ export function WorkspacePanelAction({
   if (!secondaryAction) return action;
 
   return (
-    <div className="fmg-panel-action-group">
+    <div className="fantasia-panel-action-group">
       {action}
       <Button
         aria-label={secondaryAction.ariaLabel}
-        className="fmg-panel-action__secondary"
+        className="fantasia-panel-action__secondary"
         data-command-id={secondaryAction.commandId}
         data-tip={secondaryAction.tip}
         icon={secondaryAction.icon}
@@ -159,5 +159,5 @@ export function WorkspacePanelEmptyState({
   icon = "search",
   title
 }: WorkspacePanelEmptyStateProps): React.JSX.Element {
-  return <EmptyState className="fmg-panel-empty" description={description} icon={icon} title={title} />;
+  return <EmptyState className="fantasia-panel-empty" description={description} icon={icon} title={title} />;
 }

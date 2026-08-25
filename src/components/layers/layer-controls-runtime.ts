@@ -253,7 +253,7 @@ export function initializeLayerControlsRuntime(): void {
   syncRendererLayerOrder();
   enableVerticalSortable({
     container: ensureEl("mapLayers"),
-    handleSelector: ".fmg-layer-row__handle",
+    handleSelector: ".fantasia-layer-row__handle",
     itemSelector: "li:not(.solid)",
     onUpdate: item => {
       syncLayerOrderFromDom();

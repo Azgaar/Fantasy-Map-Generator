@@ -10,7 +10,7 @@ describe("WorkspaceEditorPanel", () => {
       </WorkspaceEditorPanel>
     );
 
-    expect(markup.includes("fmg-editor-panel--wide")).toBe(true);
+    expect(markup.includes("fantasia-editor-panel--wide")).toBe(true);
     expect(markup.includes('style="width:960px"')).toBe(true);
     expect(markup.includes(">States<")).toBe(true);
     expect(markup.includes("Map editor")).toBe(true);

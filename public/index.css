@@ -369,7 +369,7 @@ text.drag {
   cursor: move;
 }
 
-.fmg-dialog,
+.fantasia-dialog,
 #optionsContainer {
   user-select: none;
 }
@@ -804,14 +804,14 @@ fieldset {
   min-width: 0;
 }
 
-.fmg-editor-panel.cell-info-panel {
+.fantasia-editor-panel.cell-info-panel {
   bottom: auto;
   width: min(390px, calc(100vw - 40px));
   min-width: min(390px, calc(100vw - 40px));
   max-height: calc(100vh - 96px);
 }
 
-.fmg-editor-panel.cell-info-panel .fmg-dom-dialog__content > .cell-info {
+.fantasia-editor-panel.cell-info-panel .fantasia-dom-dialog__content > .cell-info {
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -1345,14 +1345,14 @@ i.resetButton:active {
   color: var(--dark-solid);
 }
 
-.fmg-dialog button.pressed {
+.fantasia-dialog button.pressed {
   box-shadow: inset 1px 1px 0 0 #ccc;
   border-color: #a6a6da;
   background-color: #ecd8d8;
   border-radius: 10%;
 }
 
-.fmg-dialog input[type="range"] {
+.fantasia-dialog input[type="range"] {
   padding: 0;
   height: 2px;
   background: #d4d4d4;
@@ -1361,7 +1361,7 @@ i.resetButton:active {
   -webkit-appearance: none;
 }
 
-.fmg-dialog input[type="range"]::-webkit-slider-thumb {
+.fantasia-dialog input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   border-radius: 15%;
   width: 1em;
@@ -1371,7 +1371,7 @@ i.resetButton:active {
   cursor: pointer;
 }
 
-.fmg-dialog input[type="range"]::-moz-range-thumb {
+.fantasia-dialog input[type="range"]::-moz-range-thumb {
   appearance: none;
   border-radius: 15%;
   width: 1em;
@@ -1381,11 +1381,11 @@ i.resetButton:active {
   cursor: pointer;
 }
 
-.fmg-dialog input[type="number"] {
+.fantasia-dialog input[type="number"] {
   width: 4.5em;
 }
 
-.fmg-dialog .disabled {
+.fantasia-dialog .disabled {
   opacity: 0.2;
 }
 

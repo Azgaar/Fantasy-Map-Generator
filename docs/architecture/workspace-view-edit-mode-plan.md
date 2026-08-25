@@ -8,13 +8,13 @@ generation, and mixed editor panels remain capability-gated in Edit mode until t
 presentation. The implementation includes pure style serialization, session-scoped layer overrides, semantic dirty
 events, transition cleanup, and View-mode diagnostics. The release checklist below remains as the design/audit record.
 
-This document defines how Fantasy Map Generator should introduce two workspace access modes:
+This document defines how Fantasia should introduce two workspace access modes:
 
 - **View mode** for exploring a map without changing the serialized map document.
 - **Edit mode** for creating, editing, styling, and regenerating map content.
 
 The work is intentionally incremental. It must preserve existing `.map` compatibility and coexist with legacy
-globals and controllers while the FMG 2.0 migration continues.
+globals and controllers while the Fantasia 2.0 migration continues.
 
 ## Related documents
 

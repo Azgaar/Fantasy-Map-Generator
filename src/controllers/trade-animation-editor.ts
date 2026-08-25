@@ -125,19 +125,19 @@ function buildDialogHTML(): string {
         ? `<select id="${id}" style="width: 100%; font-size: smaller;">${selectOptions.map((opt: string) => `<option value="${opt}" ${opt === current ? "selected" : ""}>${opt}</option>`).join("")}</select>`
         : `<slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${current}"></slider-input>`;
     return /* html */ `
-      <div class="fmg-map-feature-editor__field" data-tip="${tip}">
+      <div class="fantasia-map-feature-editor__field" data-tip="${tip}">
         <label for="${id}">${label}</label>
-        <div class="fmg-map-feature-editor__control">${input}</div>
-        <button id="${id}Reset" aria-label="Reset ${label.toLocaleLowerCase()}" data-tip="Reset ${label.toLocaleLowerCase()} to its default" class="fmg-map-feature-editor__icon-button icon-cw"></button>
+        <div class="fantasia-map-feature-editor__control">${input}</div>
+        <button id="${id}Reset" aria-label="Reset ${label.toLocaleLowerCase()}" data-tip="Reset ${label.toLocaleLowerCase()} to its default" class="fantasia-map-feature-editor__icon-button icon-cw"></button>
       </div>`;
   }).join("");
 
   return /* html */ `
-    <div id="tradeAnimationEditor" class="dialog fmg-map-feature-editor fmg-map-feature-editor--trade" style="display:none">
-      <p class="fmg-map-feature-editor__hint">Adjust the map’s visible trade flows. Changes apply immediately.</p>
-      <section class="fmg-map-feature-editor__section">
-        <h3 class="fmg-map-feature-editor__section-title">Animation settings</h3>
-        <div class="fmg-map-feature-editor__fields">${rows}</div>
+    <div id="tradeAnimationEditor" class="dialog fantasia-map-feature-editor fantasia-map-feature-editor--trade" style="display:none">
+      <p class="fantasia-map-feature-editor__hint">Adjust the map’s visible trade flows. Changes apply immediately.</p>
+      <section class="fantasia-map-feature-editor__section">
+        <h3 class="fantasia-map-feature-editor__section-title">Animation settings</h3>
+        <div class="fantasia-map-feature-editor__fields">${rows}</div>
       </section>
     </div>`;
 }

@@ -12,8 +12,8 @@
   box-sizing: border-box;
 }
 
-.fmg-map-context-menu .kui-icon,
-.fmg-map-context-menu .bp6-icon {
+.fantasia-map-context-menu .kui-icon,
+.fantasia-map-context-menu .bp6-icon {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -36,7 +36,7 @@
   z-index: 1;
 }
 
-.fmg-map-context-menu {
+.fantasia-map-context-menu {
   min-width: 208px;
   max-width: min(280px, calc(100vw - 16px));
   border: 1px solid var(--kui-line, rgb(255 255 255 / 0.16));
@@ -45,23 +45,23 @@
   box-shadow: 0 18px 52px rgb(0 0 0 / 0.56);
 }
 
-.fmg-map-context-menu .bp6-popover-content {
+.fantasia-map-context-menu .bp6-popover-content {
   overflow: visible;
 }
 
-.fmg-map-context-menu-list {
+.fantasia-map-context-menu-list {
   min-width: 208px;
   margin: 0;
   padding: 5px;
   list-style: none;
 }
 
-.fmg-map-context-menu .kui-menu-item-shell {
+.fantasia-map-context-menu .kui-menu-item-shell {
   position: relative;
   list-style: none;
 }
 
-.fmg-map-context-menu .kui-menu-item {
+.fantasia-map-context-menu .kui-menu-item {
   display: flex;
   width: 100%;
   min-height: 28px;
@@ -81,18 +81,18 @@
   text-decoration: none;
 }
 
-.fmg-map-context-menu .kui-menu-item:hover,
-.fmg-map-context-menu .kui-menu-item:focus-visible {
+.fantasia-map-context-menu .kui-menu-item:hover,
+.fantasia-map-context-menu .kui-menu-item:focus-visible {
   outline: none;
   background: var(--kui-surface-hover, #242424);
 }
 
-.fmg-map-context-menu .kui-menu-item[aria-disabled="true"] {
+.fantasia-map-context-menu .kui-menu-item[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.48;
 }
 
-.fmg-map-context-menu .bp6-text-overflow-ellipsis {
+.fantasia-map-context-menu .bp6-text-overflow-ellipsis {
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -100,7 +100,7 @@
   white-space: nowrap;
 }
 
-.fmg-map-context-menu .bp6-menu-item-label {
+.fantasia-map-context-menu .bp6-menu-item-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -109,26 +109,26 @@
   font-size: 11px;
 }
 
-.fmg-map-context-navigation > .kui-icon:last-child {
+.fantasia-map-context-navigation > .kui-icon:last-child {
   margin-left: auto;
 }
 
-.fmg-map-context-menu .bp6-menu-divider {
+.fantasia-map-context-menu .bp6-menu-divider {
   height: 1px;
   margin: 5px;
   background: var(--kui-line-soft, rgb(255 255 255 / 0.1));
 }
 
-.fmg-map-context-menu .bp6-menu-header {
+.fantasia-map-context-menu .bp6-menu-header {
   padding: 5px 6px 4px;
   list-style: none;
 }
 
-.fmg-map-context-menu .bp6-menu-header > h6 {
+.fantasia-map-context-menu .bp6-menu-header > h6 {
   margin: 0;
 }
 
-.fmg-map-context-menu-heading {
+.fantasia-map-context-menu-heading {
   display: grid;
   gap: 2px;
   min-width: 0;
@@ -138,13 +138,13 @@
   text-transform: none;
 }
 
-.fmg-map-context-menu-heading strong {
+.fantasia-map-context-menu-heading strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fmg-map-context-menu-heading span {
+.fantasia-map-context-menu-heading span {
   color: var(--kui-text-muted, #a1a1aa);
   font-size: 10px;
   font-weight: 400;

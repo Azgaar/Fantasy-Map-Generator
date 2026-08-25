@@ -1,4 +1,4 @@
-.fmg-workspace-panel {
+.fantasia-workspace-panel {
   min-height: 100%;
   padding: 14px 16px 20px;
   color: var(--kui-text-secondary);
@@ -9,7 +9,7 @@
   height: 100%;
 }
 
-.fmg-panel-header {
+.fantasia-panel-header {
   display: flex;
   width: 100%;
   height: 100%;
@@ -18,7 +18,7 @@
   gap: 12px;
 }
 
-.fmg-panel-header h1 {
+.fantasia-panel-header h1 {
   min-width: 0;
   margin: 0;
   overflow: hidden;
@@ -31,7 +31,7 @@
   white-space: nowrap;
 }
 
-#options .fmg-panel-header__close {
+#options .fantasia-panel-header__close {
   width: 28px;
   min-width: 28px;
   height: 28px;
@@ -44,15 +44,15 @@
   color: var(--kui-text-muted);
 }
 
-#options .fmg-panel-header__close:hover,
-#options .fmg-panel-header__close:focus-visible {
+#options .fantasia-panel-header__close:hover,
+#options .fantasia-panel-header__close:focus-visible {
   border-color: var(--kui-line-strong);
   outline: 0;
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-panel-search {
+.fantasia-panel-search {
   position: relative;
   display: flex;
   min-height: 34px;
@@ -61,8 +61,8 @@
   color: var(--kui-text-muted);
 }
 
-.fmg-panel-search__field,
-.fmg-panel-search .bp6-input-group {
+.fantasia-panel-search__field,
+.fantasia-panel-search .bp6-input-group {
   position: relative;
   display: flex;
   min-width: 0;
@@ -70,14 +70,14 @@
   align-items: center;
 }
 
-.fmg-panel-search .bp6-input-group > .bp6-icon {
+.fantasia-panel-search .bp6-input-group > .bp6-icon {
   position: absolute;
   z-index: 1;
   left: 9px;
   pointer-events: none;
 }
 
-.fmg-panel-search .bp6-input {
+.fantasia-panel-search .bp6-input {
   width: 100%;
   min-height: 34px;
   padding: 5px 70px 5px 30px;
@@ -88,23 +88,23 @@
   font: 500 12px/1.2 inherit;
 }
 
-.fmg-panel-search .bp6-input:focus {
+.fantasia-panel-search .bp6-input:focus {
   border-color: hsl(var(--accent));
   box-shadow: 0 0 0 1px hsl(var(--accent));
 }
 
-.fmg-panel-search .bp6-input::placeholder {
+.fantasia-panel-search .bp6-input::placeholder {
   color: var(--kui-text-muted);
 }
 
-.fmg-panel-search .bp6-input-action {
+.fantasia-panel-search .bp6-input-action {
   position: absolute;
   z-index: 2;
   right: 38px;
   display: inline-flex;
 }
 
-#options .fmg-panel-search .bp6-input-action .bp6-button {
+#options .fantasia-panel-search .bp6-input-action .bp6-button {
   min-width: 26px;
   min-height: 26px;
   margin: 0;
@@ -114,29 +114,29 @@
   color: var(--kui-text-muted);
 }
 
-.fmg-panel-search > kbd,
-.fmg-panel-action kbd {
+.fantasia-panel-search > kbd,
+.fantasia-panel-action kbd {
   color: var(--kui-text-muted);
   font: 10px/1.2 "SF Mono", Consolas, monospace;
   white-space: nowrap;
 }
 
-.fmg-panel-search > kbd {
+.fantasia-panel-search > kbd {
   position: absolute;
   z-index: 1;
   right: 9px;
   pointer-events: none;
 }
 
-.fmg-panel-section {
+.fantasia-panel-section {
   margin: 0 0 17px;
 }
 
-.fmg-panel-section__header {
+.fantasia-panel-section__header {
   margin-bottom: 6px;
 }
 
-.fmg-panel-section__header h2 {
+.fantasia-panel-section__header h2 {
   margin: 0;
   color: var(--kui-text-muted);
   font-size: 10px;
@@ -145,25 +145,25 @@
   text-transform: uppercase;
 }
 
-.fmg-panel-section__header p {
+.fantasia-panel-section__header p {
   margin: 3px 0 0;
   color: var(--kui-text-muted);
   font-size: 10px;
   line-height: 1.35;
 }
 
-.fmg-panel-action-list {
+.fantasia-panel-action-list {
   display: flex;
   flex-direction: column;
 }
 
-.fmg-panel-action-group {
+.fantasia-panel-action-group {
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid var(--kui-line-soft);
 }
 
-#options .fmg-panel-action {
+#options .fantasia-panel-action {
   display: flex;
   width: 100%;
   min-height: 30px;
@@ -182,13 +182,13 @@
   text-align: left;
 }
 
-.fmg-panel-action-group .fmg-panel-action {
+.fantasia-panel-action-group .fantasia-panel-action {
   min-width: 0;
   flex: 1;
   border-bottom: 0 !important;
 }
 
-#options .fmg-panel-action > .bp6-button-text {
+#options .fantasia-panel-action > .bp6-button-text {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -196,30 +196,30 @@
   gap: 8px;
 }
 
-.fmg-panel-action__label {
+.fantasia-panel-action__label {
   min-width: 0;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-#options .fmg-panel-action:hover,
-#options .fmg-panel-action:focus-visible {
+#options .fantasia-panel-action:hover,
+#options .fantasia-panel-action:focus-visible {
   border-left-color: hsl(var(--accent));
   outline: 0;
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-#options .fmg-panel-action.pressed,
-#options .fmg-panel-action.bp6-active {
+#options .fantasia-panel-action.pressed,
+#options .fantasia-panel-action.bp6-active {
   border-left-color: hsl(var(--accent));
   background: hsl(var(--accent) / 0.22);
   color: var(--kui-text);
   font-style: normal;
 }
 
-#options .fmg-panel-action__secondary {
+#options .fantasia-panel-action__secondary {
   width: 28px;
   min-width: 28px;
   min-height: 28px;
@@ -231,14 +231,14 @@
   color: var(--kui-text-muted);
 }
 
-#options .fmg-panel-action__secondary:hover,
-#options .fmg-panel-action__secondary:focus-visible {
+#options .fantasia-panel-action__secondary:hover,
+#options .fantasia-panel-action__secondary:focus-visible {
   outline: 0;
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-panel-empty {
+.fantasia-panel-empty {
   display: flex;
   min-height: 240px;
   flex-direction: column;
@@ -249,19 +249,19 @@
   text-align: center;
 }
 
-.fmg-panel-empty .bp6-icon {
+.fantasia-panel-empty .bp6-icon {
   margin-bottom: 14px;
   opacity: 0.58;
 }
 
-.fmg-panel-empty h4 {
+.fantasia-panel-empty h4 {
   margin: 0 0 7px;
   color: var(--kui-text);
   font-size: 14px;
   font-weight: 650;
 }
 
-.fmg-panel-empty p {
+.fantasia-panel-empty p {
   max-width: 260px;
   margin: 0;
   font-size: 12px;
@@ -284,7 +284,7 @@
   pointer-events: auto;
 }
 
-.fmg-confirm-dialog {
+.fantasia-confirm-dialog {
   position: relative;
   z-index: 1;
   width: min(420px, calc(100vw - 32px));
@@ -296,43 +296,43 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.fmg-confirm-dialog .bp6-alert-body {
+.fantasia-confirm-dialog .bp6-alert-body {
   display: flex;
   align-items: flex-start;
   gap: 16px;
 }
 
-.fmg-confirm-dialog .bp6-alert-body > .bp6-intent-warning {
+.fantasia-confirm-dialog .bp6-alert-body > .bp6-intent-warning {
   color: hsl(var(--warning));
 }
 
-.fmg-confirm-dialog .bp6-alert-contents {
+.fantasia-confirm-dialog .bp6-alert-contents {
   min-width: 0;
   flex: 1;
 }
 
-.fmg-confirm-dialog h2 {
+.fantasia-confirm-dialog h2 {
   margin: 0 0 8px;
   color: var(--kui-text);
   font-size: 16px;
   font-weight: 650;
 }
 
-.fmg-confirm-dialog p {
+.fantasia-confirm-dialog p {
   margin: 0 0 18px;
   color: var(--kui-text-secondary);
   font-size: 12px;
   line-height: 1.55;
 }
 
-.fmg-confirm-dialog .bp6-alert-footer {
+.fantasia-confirm-dialog .bp6-alert-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
 }
 
-.fmg-confirm-dialog .bp6-button {
+.fantasia-confirm-dialog .bp6-button {
   display: inline-flex;
   min-height: 32px;
   align-items: center;
@@ -345,14 +345,14 @@
   font: 600 12px/18px inherit;
 }
 
-.fmg-confirm-dialog .bp6-button:hover,
-.fmg-confirm-dialog .bp6-button:focus-visible {
+.fantasia-confirm-dialog .bp6-button:hover,
+.fantasia-confirm-dialog .bp6-button:focus-visible {
   border-color: var(--kui-line-strong);
   outline: 0;
   background: var(--kui-surface-hover);
 }
 
-.fmg-confirm-dialog .bp6-button.bp6-intent-warning {
+.fantasia-confirm-dialog .bp6-button.bp6-intent-warning {
   border-color: hsl(var(--warning) / 0.75);
   background: hsl(var(--warning));
   color: hsl(220 25% 4%);

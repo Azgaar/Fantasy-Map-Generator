@@ -1,4 +1,4 @@
-.fmg-editor-panel {
+.fantasia-editor-panel {
   position: fixed;
   z-index: 2060;
   top: 76px;
@@ -17,10 +17,10 @@
   box-shadow: var(--kui-overlay-shadow, 0 18px 52px rgb(0 0 0 / 0.56));
   color: var(--kui-text-secondary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  animation: fmg-editor-panel-in 150ms ease-out;
+  animation: fantasia-editor-panel-in 150ms ease-out;
 }
 
-.fmg-editor-panel__header {
+.fantasia-editor-panel__header {
   display: grid;
   min-height: 70px;
   flex: 0 0 auto;
@@ -32,7 +32,7 @@
   background: var(--kui-surface-panel);
 }
 
-.fmg-editor-panel__icon {
+.fantasia-editor-panel__icon {
   display: inline-flex;
   width: 34px;
   height: 34px;
@@ -44,11 +44,11 @@
   color: hsl(var(--accent-hover));
 }
 
-.fmg-editor-panel__heading {
+.fantasia-editor-panel__heading {
   min-width: 0;
 }
 
-.fmg-editor-panel__heading h2 {
+.fantasia-editor-panel__heading h2 {
   margin: 0;
   overflow: hidden;
   color: var(--kui-text);
@@ -60,14 +60,14 @@
   white-space: nowrap;
 }
 
-.fmg-editor-panel__heading p {
+.fantasia-editor-panel__heading p {
   margin: 2px 0 0;
   color: var(--kui-text-muted);
   font-size: 11px;
   line-height: 1.3;
 }
 
-.fmg-editor-panel .fmg-editor-panel__close {
+.fantasia-editor-panel .fantasia-editor-panel__close {
   width: 30px;
   min-width: 30px;
   height: 30px;
@@ -80,15 +80,15 @@
   color: var(--kui-text-muted);
 }
 
-.fmg-editor-panel .fmg-editor-panel__close:hover,
-.fmg-editor-panel .fmg-editor-panel__close:focus-visible {
+.fantasia-editor-panel .fantasia-editor-panel__close:hover,
+.fantasia-editor-panel .fantasia-editor-panel__close:focus-visible {
   border-color: var(--kui-line-strong);
   outline: 0;
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-editor-panel__search {
+.fantasia-editor-panel__search {
   position: relative;
   display: flex;
   min-height: 54px;
@@ -99,14 +99,14 @@
   background: var(--kui-surface-panel);
 }
 
-.fmg-editor-panel__search .bp6-input-group {
+.fantasia-editor-panel__search .bp6-input-group {
   position: relative;
   display: flex;
   width: 100%;
   align-items: center;
 }
 
-.fmg-editor-panel__search .bp6-input-group > .bp6-icon {
+.fantasia-editor-panel__search .bp6-input-group > .bp6-icon {
   position: absolute;
   z-index: 1;
   left: 10px;
@@ -114,7 +114,7 @@
   pointer-events: none;
 }
 
-.fmg-editor-panel__search .bp6-input {
+.fantasia-editor-panel__search .bp6-input {
   width: 100%;
   min-height: 34px;
   padding: 6px 34px 6px 32px;
@@ -126,23 +126,23 @@
   font: 500 12px/1.2 inherit;
 }
 
-.fmg-editor-panel__search .bp6-input:focus {
+.fantasia-editor-panel__search .bp6-input:focus {
   border-color: hsl(var(--accent));
   box-shadow: 0 0 0 1px hsl(var(--accent));
 }
 
-.fmg-editor-panel__search .bp6-input::placeholder {
+.fantasia-editor-panel__search .bp6-input::placeholder {
   color: var(--kui-text-muted);
 }
 
-.fmg-editor-panel__search .bp6-input-action {
+.fantasia-editor-panel__search .bp6-input-action {
   position: absolute;
   z-index: 2;
   right: 4px;
   display: inline-flex;
 }
 
-.fmg-editor-panel__search .bp6-input-action .bp6-button {
+.fantasia-editor-panel__search .bp6-input-action .bp6-button {
   min-width: 26px;
   min-height: 26px;
   padding: 4px;
@@ -151,13 +151,13 @@
   color: var(--kui-text-muted);
 }
 
-.fmg-editor-panel__body {
+.fantasia-editor-panel__body {
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
-.fmg-editor-panel__footer {
+.fantasia-editor-panel__footer {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
@@ -168,7 +168,7 @@
   background: var(--kui-surface-raised);
 }
 
-.fmg-editor-panel__footer .bp6-button {
+.fantasia-editor-panel__footer .bp6-button {
   min-height: 30px;
   padding: 4px 10px;
   border: 1px solid var(--kui-line);
@@ -178,17 +178,17 @@
   font: 600 12px/18px inherit;
 }
 
-.workspace-editor-panel-open .fmg-map-minimap {
-  right: calc(var(--fmg-active-editor-panel-width, 560px) + 40px);
+.workspace-editor-panel-open .fantasia-map-minimap {
+  right: calc(var(--fantasia-active-editor-panel-width, 560px) + 40px);
 }
 
-.fmg-editor-panel .fmg-dom-dialog__content,
-.fmg-editor-panel .fmg-dom-dialog__content > .dialog {
+.fantasia-editor-panel .fantasia-dom-dialog__content,
+.fantasia-editor-panel .fantasia-dom-dialog__content > .dialog {
   height: 100%;
   max-width: none;
 }
 
-.fmg-editor-panel .fmg-dom-dialog__content > .dialog {
+.fantasia-editor-panel .fantasia-dom-dialog__content > .dialog {
   display: flex;
   width: 100%;
   min-width: 0;
@@ -200,15 +200,15 @@
   scrollbar-width: thin;
 }
 
-.fmg-editor-panel .fmg-dom-dialog__content > .dialog:not(.editorDialog) {
+.fantasia-editor-panel .fantasia-dom-dialog__content > .dialog:not(.editorDialog) {
   padding: 16px;
 }
 
-.fmg-editor-panel .dialog > div {
+.fantasia-editor-panel .dialog > div {
   width: auto;
 }
 
-.fmg-editor-panel .editorDialog > .table {
+.fantasia-editor-panel .editorDialog > .table {
   box-sizing: border-box;
   width: 100%;
   max-width: none;
@@ -219,8 +219,8 @@
   overflow: auto;
 }
 
-.fmg-editor-panel .editorDialog .header,
-.fmg-editor-panel .editorDialog .states {
+.fantasia-editor-panel .editorDialog .header,
+.fantasia-editor-panel .editorDialog .states {
   box-sizing: border-box;
   width: max-content;
   min-width: 100%;
@@ -230,7 +230,7 @@
   line-height: 1.35;
 }
 
-.fmg-editor-panel .editorDialog .header {
+.fantasia-editor-panel .editorDialog .header {
   top: -10px;
   min-height: 32px;
   align-items: center;
@@ -246,7 +246,7 @@
   text-transform: uppercase;
 }
 
-.fmg-editor-panel div.states {
+.fantasia-editor-panel div.states {
   min-height: 34px;
   margin: 0;
   padding: 3px 8px;
@@ -255,22 +255,22 @@
   background: transparent;
 }
 
-.fmg-editor-panel div.states:hover,
-.fmg-editor-panel div.states.hovered {
+.fantasia-editor-panel div.states:hover,
+.fantasia-editor-panel div.states.hovered {
   border: 0;
   border-bottom: 1px solid var(--kui-line-soft);
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-editor-panel .editorDialog .states[hidden] {
+.fantasia-editor-panel .editorDialog .states[hidden] {
   display: none;
 }
 
-.fmg-editor-panel .editorDialog .states [data-col] input:not([type="checkbox"]),
-.fmg-editor-panel .editorDialog .states [data-col] select,
-.fmg-editor-panel div.states > input:not([type="checkbox"]),
-.fmg-editor-panel div.states > select {
+.fantasia-editor-panel .editorDialog .states [data-col] input:not([type="checkbox"]),
+.fantasia-editor-panel .editorDialog .states [data-col] select,
+.fantasia-editor-panel div.states > input:not([type="checkbox"]),
+.fantasia-editor-panel div.states > select {
   min-height: 26px;
   border: 0;
   outline: 0;
@@ -279,10 +279,10 @@
   font: 500 12px/1.35 inherit;
 }
 
-.fmg-editor-panel input,
-.fmg-editor-panel select,
-.fmg-editor-panel textarea,
-.fmg-editor-panel button {
+.fantasia-editor-panel input,
+.fantasia-editor-panel select,
+.fantasia-editor-panel textarea,
+.fantasia-editor-panel button {
   border: 1px solid var(--kui-line);
   border-radius: 4px;
   background: var(--kui-surface-raised);
@@ -290,15 +290,15 @@
   font-family: inherit;
 }
 
-.fmg-editor-panel input:focus-visible,
-.fmg-editor-panel select:focus-visible,
-.fmg-editor-panel textarea:focus-visible,
-.fmg-editor-panel button:focus-visible {
+.fantasia-editor-panel input:focus-visible,
+.fantasia-editor-panel select:focus-visible,
+.fantasia-editor-panel textarea:focus-visible,
+.fantasia-editor-panel button:focus-visible {
   outline: 2px solid hsl(var(--accent));
   outline-offset: -2px;
 }
 
-.fmg-editor-panel .totalLine {
+.fantasia-editor-panel .totalLine {
   width: 100%;
   margin: 0;
   padding: 9px 16px;
@@ -309,7 +309,7 @@
   line-height: 1.4;
 }
 
-.fmg-editor-panel .editorToolbar {
+.fantasia-editor-panel .editorToolbar {
   width: 100%;
   min-width: 0;
   max-width: none;
@@ -320,8 +320,8 @@
   background: var(--kui-surface-raised);
 }
 
-.fmg-editor-panel .editorToolbar > button,
-.fmg-editor-panel .editorToolbar > div > button {
+.fantasia-editor-panel .editorToolbar > button,
+.fantasia-editor-panel .editorToolbar > div > button {
   min-width: 32px;
   min-height: 30px;
   margin: 0;
@@ -329,13 +329,13 @@
   cursor: pointer;
 }
 
-.fmg-editor-panel .editorToolbar > button:hover,
-.fmg-editor-panel .editorToolbar > div > button:hover {
+.fantasia-editor-panel .editorToolbar > button:hover,
+.fantasia-editor-panel .editorToolbar > div > button:hover {
   border-color: var(--kui-line-strong);
   background: var(--kui-surface-hover);
 }
 
-@keyframes fmg-editor-panel-in {
+@keyframes fantasia-editor-panel-in {
   from {
     opacity: 0;
     transform: translateX(12px);
@@ -343,13 +343,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fmg-editor-panel {
+  .fantasia-editor-panel {
     animation: none;
   }
 }
 
 @media (max-width: 760px) {
-  .fmg-editor-panel {
+  .fantasia-editor-panel {
     top: 60px;
     right: 12px;
     bottom: 12px;
@@ -358,11 +358,11 @@
     min-width: 0;
   }
 
-  .fmg-editor-panel__header {
+  .fantasia-editor-panel__header {
     min-height: 60px;
   }
 
-  .workspace-editor-panel-open .fmg-map-minimap {
+  .workspace-editor-panel-open .fantasia-map-minimap {
     display: none;
   }
 }

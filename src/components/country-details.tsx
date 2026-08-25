@@ -18,7 +18,7 @@ function getCountryPopulation(country: State): number {
 
 function CountryMetric({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="fmg-country-details__metric">
+    <div className="fantasia-country-details__metric">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
@@ -33,24 +33,24 @@ function CountryDetailsPanel({ country, onClose }: { country: State; onClose: ()
   const form = country.formName || country.form || "State";
 
   return (
-    <section aria-label={`${country.fullName || country.name} details`} className="fmg-country-details">
-      <header className="fmg-country-details__header">
+    <section aria-label={`${country.fullName || country.name} details`} className="fantasia-country-details">
+      <header className="fantasia-country-details__header">
         <div>
           <p>Selected country</p>
           <h2>{country.fullName || country.name}</h2>
         </div>
-        <button aria-label="Close country details" className="fmg-country-details__close" onClick={onClose} type="button">
+        <button aria-label="Close country details" className="fantasia-country-details__close" onClick={onClose} type="button">
           <Icon icon="cross" size={15} />
         </button>
       </header>
-      <div className="fmg-country-details__identity">
-        <span aria-hidden="true" className="fmg-country-details__color" style={{ background: country.color || "#697386" }} />
+      <div className="fantasia-country-details__identity">
+        <span aria-hidden="true" className="fantasia-country-details__color" style={{ background: country.color || "#697386" }} />
         <div>
           <strong>{form}</strong>
           <span>{culture} culture</span>
         </div>
       </div>
-      <dl className="fmg-country-details__facts">
+      <dl className="fantasia-country-details__facts">
         <div>
           <dt>Capital</dt>
           <dd>{capital}</dd>
@@ -68,7 +68,7 @@ function CountryDetailsPanel({ country, onClose }: { country: State; onClose: ()
           <dd>{formatPrice(country.pollTax || 0)}</dd>
         </div>
       </dl>
-      <div className="fmg-country-details__metrics">
+      <div className="fantasia-country-details__metrics">
         <CountryMetric label="Population" value={si(getCountryPopulation(country))} />
         <CountryMetric label="Treasury" value={formatPrice(country.treasury || 0)} />
         <CountryMetric label="Land" value={`${si(getArea(country.area || 0))} ${getAreaUnit()}`} />
@@ -76,7 +76,7 @@ function CountryDetailsPanel({ country, onClose }: { country: State; onClose: ()
         <CountryMetric label="Regiments" value={si(military)} />
         <CountryMetric label="Relations" value={si(diplomacy)} />
       </div>
-      <footer className="fmg-country-details__actions">
+      <footer className="fantasia-country-details__actions">
         <button onClick={() => executeLegacyCommand("editStatesButton")} type="button">Manage country</button>
         <button onClick={() => executeLegacyCommand("editDiplomacyButton")} type="button">Diplomacy</button>
       </footer>
@@ -101,16 +101,16 @@ export function CountrySelection(): React.JSX.Element | null {
   const title = country.fullName || country.name;
 
   return (
-    <div className="fmg-country-selection">
+    <div className="fantasia-country-selection">
       <button
         aria-expanded={detailsOpen}
         aria-label={`Selected country: ${title}. Open country details`}
-        className="fmg-country-selection__trigger"
+        className="fantasia-country-selection__trigger"
         onClick={() => setDetailsOpen(open => !open)}
         type="button"
       >
-        <span aria-hidden="true" className="fmg-country-selection__color" style={{ background: country.color || "#697386" }} />
-        <span className="fmg-country-selection__content">
+        <span aria-hidden="true" className="fantasia-country-selection__color" style={{ background: country.color || "#697386" }} />
+        <span className="fantasia-country-selection__content">
           <small>Selected country</small>
           <strong>{title}</strong>
         </span>

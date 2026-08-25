@@ -136,7 +136,7 @@ may store ciphertext if end-to-end encrypted map content is desired, but authori
 invite revocation, metadata exposure, and recovery keys still need an explicit product
 decision.
 
-Candidate conflict/sync libraries include Automerge and Yjs. Either must sit behind an FMG
+Candidate conflict/sync libraries include Automerge and Yjs. Either must sit behind a Fantasia
 sync adapter and operate on semantic documents or operations, never on renderer state or
 the full packed graph. No library should be added until an initial collaboration slice
 defines its document boundaries, operation schemas, and tests.
@@ -148,7 +148,7 @@ public-key-addressed QUIC connectivity, hole punching, and relay fallback. It is
 primary transport for the current browser application: browsers do not directly speak the
 custom Iroh QUIC/ALPN protocol, so an Iroh-aware relay/bridge is still required.
 
-Reconsider Iroh if FMG gains a Tauri/native desktop host, a self-hosted local session host,
+Reconsider Iroh if Fantasia gains a Tauri/native desktop host, a self-hosted local session host,
 or a native companion service. For the browser product, prioritize standard WebSocket plus
 WebRTC transport options first.
 

@@ -68,24 +68,24 @@ function openAt(point: Point, defaultGroup?: string): void {
 function renderDialog(): void {
   destroyDialog("routeCreator");
 
-  const html = /* html */ `<div id="routeCreator" class="dialog fmg-map-feature-editor">
-    <p class="fmg-map-feature-editor__hint">Click the map to add route points. Drag handles to reposition them.</p>
-    <section class="fmg-map-feature-editor__section">
-      <div class="fmg-map-feature-editor__field">
+  const html = /* html */ `<div id="routeCreator" class="dialog fantasia-map-feature-editor">
+    <p class="fantasia-map-feature-editor__hint">Click the map to add route points. Drag handles to reposition them.</p>
+    <section class="fantasia-map-feature-editor__section">
+      <div class="fantasia-map-feature-editor__field">
         <label for="routeCreatorGroupSelect">Route group</label>
-        <div class="fmg-map-feature-editor__control">
+        <div class="fantasia-map-feature-editor__control">
           <select id="routeCreatorGroupSelect" data-tip="Choose the visual group for this route"></select>
-          <button id="routeCreatorGroupEdit" aria-label="Edit route groups" data-tip="Edit route groups" class="fmg-map-feature-editor__icon-button icon-pencil"></button>
+          <button id="routeCreatorGroupEdit" aria-label="Edit route groups" data-tip="Edit route groups" class="fantasia-map-feature-editor__icon-button icon-pencil"></button>
         </div>
       </div>
     </section>
-    <section class="fmg-map-feature-editor__section">
-      <h3 class="fmg-map-feature-editor__section-title">Route points</h3>
-      <div id="routeCreatorBody" class="fmg-map-feature-editor__list"></div>
+    <section class="fantasia-map-feature-editor__section">
+      <h3 class="fantasia-map-feature-editor__section-title">Route points</h3>
+      <div id="routeCreatorBody" class="fantasia-map-feature-editor__list"></div>
     </section>
-    <footer class="fmg-map-feature-editor__toolbar">
-      <button id="routeCreatorComplete" data-tip="Create this route from the selected points" class="fmg-map-feature-editor__action icon-check">Create route</button>
-      <button id="routeCreatorCancel" data-tip="Cancel route creation" class="fmg-map-feature-editor__action icon-cancel">Cancel</button>
+    <footer class="fantasia-map-feature-editor__toolbar">
+      <button id="routeCreatorComplete" data-tip="Create this route from the selected points" class="fantasia-map-feature-editor__action icon-check">Create route</button>
+      <button id="routeCreatorCancel" data-tip="Cancel route creation" class="fantasia-map-feature-editor__action icon-cancel">Cancel</button>
     </footer>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -214,13 +214,13 @@ function renderCreatorRows(): void {
   ensureEl("routeCreatorBody").innerHTML =
     creatorPoints
       .map(
-        point => `<div class="fmg-map-feature-editor__row" data-point="${point.join("-")}">
+        point => `<div class="fantasia-map-feature-editor__row" data-point="${point.join("-")}">
         <span>Cell ${point[2]} · ${point[0]}, ${point[1]}</span>
         <span></span>
-        <button aria-label="Remove point in cell ${point[2]}" data-tip="Remove this route point" class="fmg-map-feature-editor__icon-button icon-trash-empty"></button>
+        <button aria-label="Remove point in cell ${point[2]}" data-tip="Remove this route point" class="fantasia-map-feature-editor__icon-button icon-trash-empty"></button>
       </div>`
       )
-      .join("") || `<div class="fmg-map-feature-editor__empty">No points selected yet</div>`;
+      .join("") || `<div class="fantasia-map-feature-editor__empty">No points selected yet</div>`;
 }
 
 export const RouteCreator = { open, openAt };

@@ -30,7 +30,7 @@ export function WorkspaceConfirmDialog({
     <Alert
       cancelButtonText={cancelLabel}
       canEscapeKeyCancel
-      className="fmg-confirm-dialog"
+      className="fantasia-confirm-dialog"
       confirmButtonText={confirmLabel}
       icon="warning-sign"
       intent="warning"

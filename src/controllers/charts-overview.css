@@ -1,19 +1,19 @@
-.fmg-charts-dialog {
+.fantasia-charts-dialog {
   width: min(100%, 1120px) !important;
 }
 
-.fmg-charts-dialog .fmg-dialog__body {
+.fantasia-charts-dialog .fantasia-dialog__body {
   padding: 0;
 }
 
-.fmg-charts-overview {
+.fantasia-charts-overview {
   display: grid;
   height: min(720px, calc(100vh - 150px));
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
 
-.fmg-charts-overview__form {
+.fantasia-charts-overview__form {
   display: grid;
   gap: 12px;
   padding: 16px 18px;
@@ -21,20 +21,20 @@
   background: var(--kui-surface-raised);
 }
 
-.fmg-charts-overview__controls,
-.fmg-charts-overview__options {
+.fantasia-charts-overview__controls,
+.fantasia-charts-overview__options {
   display: flex;
   align-items: end;
   flex-wrap: wrap;
   gap: 8px 12px;
 }
 
-.fmg-charts-overview__options {
+.fantasia-charts-overview__options {
   align-items: center;
 }
 
-.fmg-charts-overview__field,
-.fmg-charts-overview__checkbox {
+.fantasia-charts-overview__field,
+.fantasia-charts-overview__checkbox {
   display: grid;
   gap: 4px;
   color: var(--kui-text-secondary);
@@ -42,7 +42,7 @@
   line-height: 1.2;
 }
 
-.fmg-charts-overview__field > span {
+.fantasia-charts-overview__field > span {
   color: var(--kui-text-muted);
   font-size: 10px;
   font-weight: 600;
@@ -50,8 +50,8 @@
   text-transform: uppercase;
 }
 
-.fmg-charts-overview select,
-.fmg-charts-overview button {
+.fantasia-charts-overview select,
+.fantasia-charts-overview button {
   min-height: 30px;
   border: 1px solid var(--kui-line);
   border-radius: 0;
@@ -60,12 +60,12 @@
   font: 600 12px/18px inherit;
 }
 
-.fmg-charts-overview select {
+.fantasia-charts-overview select {
   min-width: 116px;
   padding: 4px 26px 4px 8px;
 }
 
-.fmg-charts-overview button {
+.fantasia-charts-overview button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -73,22 +73,22 @@
   cursor: pointer;
 }
 
-.fmg-charts-overview button:hover,
-.fmg-charts-overview button:focus-visible,
-.fmg-charts-overview select:hover,
-.fmg-charts-overview select:focus-visible {
+.fantasia-charts-overview button:hover,
+.fantasia-charts-overview button:focus-visible,
+.fantasia-charts-overview select:hover,
+.fantasia-charts-overview select:focus-visible {
   border-color: var(--kui-line-strong);
   outline: 0;
   background: var(--kui-surface-hover);
 }
 
-.fmg-charts-overview__plot {
+.fantasia-charts-overview__plot {
   border-color: var(--kui-accent, var(--kui-line-strong)) !important;
   background: var(--kui-accent, var(--kui-surface-hover)) !important;
   color: var(--kui-accent-contrast, var(--kui-text)) !important;
 }
 
-.fmg-charts-overview__checkbox {
+.fantasia-charts-overview__checkbox {
   display: inline-flex;
   min-height: 30px;
   align-items: center;
@@ -98,7 +98,7 @@
   white-space: nowrap;
 }
 
-.fmg-charts-overview__checkbox input {
+.fantasia-charts-overview__checkbox input {
   width: 14px;
   height: 14px;
   margin: 0;
@@ -168,18 +168,18 @@
 }
 
 @media (max-width: 760px) {
-  .fmg-charts-overview {
+  .fantasia-charts-overview {
     height: min(760px, calc(100vh - 130px));
   }
 
-  .fmg-charts-overview__form,
+  .fantasia-charts-overview__form,
   #chartsOverview__charts figure {
     padding-right: 14px;
     padding-left: 14px;
   }
 
-  .fmg-charts-overview__field,
-  .fmg-charts-overview__field select {
+  .fantasia-charts-overview__field,
+  .fantasia-charts-overview__field select {
     flex: 1 1 140px;
     min-width: 0;
   }

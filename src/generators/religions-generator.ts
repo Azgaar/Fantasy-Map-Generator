@@ -1,4 +1,5 @@
 import { quadtree } from "d3";
+import { PriorityQueue } from "@/utils/priority-queue";
 import {
   abbreviate,
   each,
@@ -906,7 +907,7 @@ class ReligionsModule {
     const { cells } = pack;
     const religionIds = this.spreadFolkReligions(religions);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number; r: number; s: number }>();
     const cost: number[] = [];
 
     // limit cost for organized religions growth
@@ -923,7 +924,7 @@ class ReligionsModule {
     const religionsMap = new Map(religions.map(r => [r.i, r]));
 
     while (queue.length) {
-      const { e: cellId, p, r, s: state } = queue.pop();
+      const { e: cellId, p, r, s: state } = queue.pop()!;
       const religion = religionsMap.get(r)!;
       const { culture, expansion, expansionism } = religion;
 

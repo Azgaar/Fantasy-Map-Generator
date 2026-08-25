@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { max } from "d3";
+import { PriorityQueue } from "@/utils/priority-queue";
 import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
 
@@ -153,7 +154,7 @@ class ProvinceModule {
     });
 
     // expand generated provinces
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number; province: number; state: number }>();
     const cost: number[] = [];
 
     provinces.forEach(p => {
@@ -164,7 +165,7 @@ class ProvinceModule {
     });
 
     while (queue.length) {
-      const { e, p, province, state } = queue.pop();
+      const { e, p, province, state } = queue.pop()!;
 
       cells.c[e].forEach(e => {
         if (isProvinceCellLocked(e)) return; // do not overwrite cell of locked provinces
@@ -236,7 +237,7 @@ class ProvinceModule {
         cost[center] = 1;
         queue.push({ e: center, p: 0 }, 0);
         while (queue.length) {
-          const { e, p } = queue.pop();
+          const { e, p } = queue.pop()!;
 
           cells.c[e].forEach(nextCellId => {
             if (provinceIds[nextCellId]) return;

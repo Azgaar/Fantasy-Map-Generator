@@ -5,9 +5,9 @@ This document outlines the expected data structure. Current data model described
 ```json
 {
   "meta": {
-    "copyright": "Azgaar's Fantasy Map Generator",
+    "copyright": "Fantasia (a fork of Azgaar's Fantasy Map Generator)",
     "license": "MIT",
-    "source": "http://azgaar.github.io/Fantasy-Map-Generator",
+    "source": "https://github.com/patkepa/fantasia",
     "initial": {
       "timestamp": "2023-09-11T23:36:17.227Z",
       "version": "2.1.12",

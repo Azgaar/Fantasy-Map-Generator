@@ -1,10 +1,10 @@
-.fmg-country-selection {
+.fantasia-country-selection {
   position: relative;
   pointer-events: auto;
 }
 
-.fmg-country-selection__trigger,
-.fmg-country-details {
+.fantasia-country-selection__trigger,
+.fantasia-country-details {
   border: 1px solid var(--kui-line);
   border-radius: 8px;
   background: color-mix(in srgb, var(--kui-surface-panel) 94%, transparent);
@@ -12,7 +12,7 @@
   backdrop-filter: blur(12px);
 }
 
-.fmg-country-selection__trigger {
+.fantasia-country-selection__trigger {
   display: grid;
   min-width: 196px;
   max-width: 290px;
@@ -26,14 +26,14 @@
   text-align: left;
 }
 
-.fmg-country-selection__trigger:hover,
-.fmg-country-selection__trigger:focus-visible {
+.fantasia-country-selection__trigger:hover,
+.fantasia-country-selection__trigger:focus-visible {
   border-color: var(--kui-line-strong);
   outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
 }
 
-.fmg-country-selection__color {
+.fantasia-country-selection__color {
   width: 24px;
   height: 24px;
   border: 1px solid rgb(255 255 255 / 0.4);
@@ -41,19 +41,19 @@
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
 }
 
-.fmg-country-selection__content {
+.fantasia-country-selection__content {
   min-width: 0;
 }
 
-.fmg-country-selection small,
-.fmg-country-selection strong {
+.fantasia-country-selection small,
+.fantasia-country-selection strong {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fmg-country-selection small {
+.fantasia-country-selection small {
   margin-bottom: 2px;
   color: var(--kui-text-muted);
   font: 600 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -61,12 +61,12 @@
   text-transform: uppercase;
 }
 
-.fmg-country-selection strong {
+.fantasia-country-selection strong {
   color: var(--kui-text);
   font: 700 13px/1.15 Georgia, serif;
 }
 
-.fmg-country-details {
+.fantasia-country-details {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -75,7 +75,7 @@
   color: var(--kui-text-secondary);
 }
 
-.fmg-country-details__header {
+.fantasia-country-details__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -84,12 +84,12 @@
   border-bottom: 1px solid var(--kui-line-soft);
 }
 
-.fmg-country-details__header p,
-.fmg-country-details__header h2 {
+.fantasia-country-details__header p,
+.fantasia-country-details__header h2 {
   margin: 0;
 }
 
-.fmg-country-details__header p {
+.fantasia-country-details__header p {
   margin-bottom: 4px;
   color: var(--kui-text-muted);
   font: 600 10px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -97,12 +97,12 @@
   text-transform: uppercase;
 }
 
-.fmg-country-details__header h2 {
+.fantasia-country-details__header h2 {
   color: var(--kui-text);
   font: 700 20px/1.15 Georgia, serif;
 }
 
-.fmg-country-details__close {
+.fantasia-country-details__close {
   display: grid;
   width: 28px;
   height: 28px;
@@ -116,21 +116,21 @@
   place-items: center;
 }
 
-.fmg-country-details__close:hover,
-.fmg-country-details__close:focus-visible {
+.fantasia-country-details__close:hover,
+.fantasia-country-details__close:focus-visible {
   outline: 0;
   background: var(--kui-surface-hover);
   color: var(--kui-text);
 }
 
-.fmg-country-details__identity {
+.fantasia-country-details__identity {
   display: flex;
   gap: 10px;
   align-items: center;
   padding: 13px 16px;
 }
 
-.fmg-country-details__color {
+.fantasia-country-details__color {
   width: 36px;
   height: 36px;
   border: 1px solid rgb(255 255 255 / 0.4);
@@ -138,23 +138,23 @@
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
 }
 
-.fmg-country-details__identity strong,
-.fmg-country-details__identity span {
+.fantasia-country-details__identity strong,
+.fantasia-country-details__identity span {
   display: block;
 }
 
-.fmg-country-details__identity strong {
+.fantasia-country-details__identity strong {
   margin-bottom: 3px;
   color: var(--kui-text);
   font-size: 13px;
 }
 
-.fmg-country-details__identity span {
+.fantasia-country-details__identity span {
   color: var(--kui-text-muted);
   font-size: 12px;
 }
 
-.fmg-country-details__facts {
+.fantasia-country-details__facts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin: 0;
@@ -162,20 +162,20 @@
   border-left: 1px solid var(--kui-line-soft);
 }
 
-.fmg-country-details__facts > div {
+.fantasia-country-details__facts > div {
   min-width: 0;
   padding: 10px 12px;
   border-right: 1px solid var(--kui-line-soft);
   border-bottom: 1px solid var(--kui-line-soft);
 }
 
-.fmg-country-details__facts dt {
+.fantasia-country-details__facts dt {
   margin-bottom: 3px;
   color: var(--kui-text-muted);
   font-size: 10px;
 }
 
-.fmg-country-details__facts dd {
+.fantasia-country-details__facts dd {
   overflow: hidden;
   margin: 0;
   color: var(--kui-text);
@@ -185,7 +185,7 @@
   white-space: nowrap;
 }
 
-.fmg-country-details__metrics {
+.fantasia-country-details__metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
@@ -193,38 +193,38 @@
   background: var(--kui-line-soft);
 }
 
-.fmg-country-details__metric {
+.fantasia-country-details__metric {
   min-width: 0;
   padding: 10px 12px;
   background: var(--kui-surface-panel);
 }
 
-.fmg-country-details__metric span,
-.fmg-country-details__metric strong {
+.fantasia-country-details__metric span,
+.fantasia-country-details__metric strong {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fmg-country-details__metric span {
+.fantasia-country-details__metric span {
   margin-bottom: 3px;
   color: var(--kui-text-muted);
   font-size: 10px;
 }
 
-.fmg-country-details__metric strong {
+.fantasia-country-details__metric strong {
   color: var(--kui-text);
   font-size: 12px;
 }
 
-.fmg-country-details__actions {
+.fantasia-country-details__actions {
   display: flex;
   gap: 8px;
   padding: 12px 16px 16px;
 }
 
-.fmg-country-details__actions button {
+.fantasia-country-details__actions button {
   flex: 1;
   min-height: 32px;
   border: 1px solid var(--kui-line);
@@ -235,8 +235,8 @@
   font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.fmg-country-details__actions button:hover,
-.fmg-country-details__actions button:focus-visible {
+.fantasia-country-details__actions button:hover,
+.fantasia-country-details__actions button:focus-visible {
   border-color: hsl(var(--accent) / 0.55);
   outline: 0;
   background: hsl(var(--accent) / 0.2);
@@ -244,28 +244,28 @@
 }
 
 @media (max-width: 920px) {
-  .fmg-country-selection__trigger {
+  .fantasia-country-selection__trigger {
     width: 40px;
     min-width: 40px;
     grid-template-columns: 24px;
     padding: 0 7px;
   }
 
-  .fmg-country-selection__content,
-  .fmg-country-selection__trigger > .kui-icon {
+  .fantasia-country-selection__content,
+  .fantasia-country-selection__trigger > .kui-icon {
     display: none;
   }
 }
 
 @media (max-width: 760px) {
-  .fmg-country-selection__trigger {
+  .fantasia-country-selection__trigger {
     width: 36px;
     min-width: 36px;
     height: 36px;
     padding: 0 5px;
   }
 
-  .fmg-country-details {
+  .fantasia-country-details {
     width: min(344px, calc(100vw - 24px));
   }
 }

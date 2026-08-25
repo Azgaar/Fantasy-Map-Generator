@@ -8,7 +8,7 @@ consistent Kantzen UI workspace without coupling React components to map generat
 Shared visual, accessibility, and interaction rules are documented in `docs/architecture/ui_conventions.md`.
 
 The migration is intentionally incremental. Existing controllers and renderers remain authoritative until their
-responsibilities are migrated separately under the FMG 2.0 architecture.
+responsibilities are migrated separately under the Fantasia 2.0 architecture.
 
 ## Current State
 

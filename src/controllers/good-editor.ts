@@ -541,7 +541,7 @@ function uploadImage(type: "image" | "svg", callback: (type: string, id: string)
       const svg = el.querySelector("svg");
       if (!svg)
         return void tip(
-          "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload raster image",
+          "The file should be prepared for load to Fantasia. If you don't know why it's happening, try to upload a raster image",
           false,
           "error"
         );

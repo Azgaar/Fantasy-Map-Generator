@@ -416,7 +416,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
     ensureEl("epstats").textContent =
       `Elev: ${chartData.mi}\u2013${chartData.ma} ${heightUnit.value}\u2002\u2191\u202f${totalAscent}\u2002\u2193\u202f${totalDescent} ${heightUnit.value}`;
 
-    // Crosshair + FMG tooltip on hover
+    // Crosshair + Fantasia tooltip on hover
     const crosshairG = chart.append("g").attr("id", "epcrosshair").style("pointer-events", "none");
     const vLine = crosshairG
       .append("line")

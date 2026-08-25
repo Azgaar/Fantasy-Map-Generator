@@ -247,7 +247,7 @@ export function WorkspaceDialog({
       aria-describedby={description ? descriptionId : undefined}
       aria-labelledby={titleId}
       aria-modal={isModal || undefined}
-      className={`fmg-dialog fmg-dialog--${size}${isModal ? "" : " fmg-dialog--modeless"}${resizable ? " fmg-dialog--resizable" : ""}${className ? ` ${className}` : ""}`}
+      className={`fantasia-dialog fantasia-dialog--${size}${isModal ? "" : " fantasia-dialog--modeless"}${resizable ? " fantasia-dialog--resizable" : ""}${className ? ` ${className}` : ""}`}
       id={dialogId}
       ref={dialogRef}
       role="dialog"
@@ -255,7 +255,7 @@ export function WorkspaceDialog({
       tabIndex={-1}
     >
       <header
-        className={`fmg-dialog__header${canDrag ? " fmg-dialog__header--draggable" : ""}`}
+        className={`fantasia-dialog__header${canDrag ? " fantasia-dialog__header--draggable" : ""}`}
         onPointerCancel={handleDragEnd}
         onPointerDown={handleDragStart}
         onPointerMove={handleDrag}
@@ -265,17 +265,17 @@ export function WorkspaceDialog({
           <h2 id={titleId}>{title}</h2>
           {description ? <p id={descriptionId}>{description}</p> : null}
         </div>
-        <Button aria-label="Close dialog" className="fmg-dialog__close" icon="cross" minimal onClick={onClose} />
+        <Button aria-label="Close dialog" className="fantasia-dialog__close" icon="cross" minimal onClick={onClose} />
       </header>
-      <div className="fmg-dialog__body">{children}</div>
-      {footer ? <footer className="fmg-dialog__footer">{footer}</footer> : null}
+      <div className="fantasia-dialog__body">{children}</div>
+      {footer ? <footer className="fantasia-dialog__footer">{footer}</footer> : null}
     </div>
   );
 
   return createPortal(
     isModal ? (
       <div
-        className="fmg-dialog-overlay"
+        className="fantasia-dialog-overlay"
         onMouseDown={event => {
           if (canOutsideClickClose && event.target === event.currentTarget) onClose();
         }}

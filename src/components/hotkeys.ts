@@ -8,7 +8,7 @@ import { OptionsController } from "./options/options-controller";
 import { TOOL_COMMANDS } from "./tool-registry";
 import { changeMapZoom, panMap, setMapZoom } from "./zoom";
 
-// Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
+// Hotkeys follow the upstream documentation at github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.addEventListener("keydown", handleKeydown);
 document.addEventListener("keyup", handleKeyup);
 
@@ -38,7 +38,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") OptionsController.toggle(event);
   else if (code === "Escape") {
-    if (document.activeElement instanceof Element && document.activeElement.closest(".fmg-dialog")) return;
+    if (document.activeElement instanceof Element && document.activeElement.closest(".fantasia-dialog")) return;
     closeDialogs();
     OptionsController.hide();
   } else if (code === "Delete") {

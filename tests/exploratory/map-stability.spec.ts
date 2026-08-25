@@ -35,7 +35,7 @@ test("Q1: submap keeps icon stroke proportional", async ({page}) => {
     const usedScale = Number((0, eval)("scale"));
     await w.Controllers.SubmapTool.open();
     await new Promise(r => setTimeout(r, 600));
-    const buttons = [...document.querySelectorAll(".fmg-dialog:has(#submapTool) .fmg-dialog__footer button")] as HTMLElement[];
+    const buttons = [...document.querySelectorAll(".fantasia-dialog:has(#submapTool) .fantasia-dialog__footer button")] as HTMLElement[];
     buttons.find(b => b.textContent!.trim() === "Submap")!.click();
     await new Promise(r => setTimeout(r, 14000));
     return {before, after: read(), usedScale};

@@ -29,7 +29,7 @@ async function saveMap(method: SaveMethod): Promise<void> {
   } catch (error) {
     ERROR && console.error(error);
     const messageHtml = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
-      "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
+      "https://github.com/patkepa/fantasia/issues",
       "GitHub"
     )}. <p id="errorBox">${parseError(error as Error)}</p>`;
     const { showMessageDialog } = await import("@/components/ui/message-dialog");
@@ -47,7 +47,7 @@ async function prepareMapData(): Promise<string> {
   await waitForMainThreadIdle();
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+  const license = "File can be loaded in patkepa.github.io/fantasia";
   const params = [VERSION, license, dateString, seed, graphWidth, graphHeight, mapId].join("|");
   const settings = [
     distanceUnitInput.value,

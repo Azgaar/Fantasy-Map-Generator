@@ -161,13 +161,13 @@ function FloatingMenu({
   const close = () => setOpen(false);
 
   return (
-    <div className={`fmg-floating-menu fmg-floating-menu--align-${align}`} ref={root}>
+    <div className={`fantasia-floating-menu fantasia-floating-menu--align-${align}`} ref={root}>
       <button
         aria-controls={menuId}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={label}
-        className="fmg-floating-menu__trigger"
+        className="fantasia-floating-menu__trigger"
         data-href={route}
         data-tip={tip}
         id={id}
@@ -175,14 +175,14 @@ function FloatingMenu({
         ref={trigger}
         type="button"
       >
-        <span className="fmg-workspace-toolbar__icon" aria-hidden="true">
+        <span className="fantasia-workspace-toolbar__icon" aria-hidden="true">
           <Icon icon={icon} size={17} />
         </span>
-        <span className="fmg-floating-menu__label">{label}</span>
-        <Icon aria-hidden="true" className="fmg-floating-menu__chevron" icon="chevron-down" size={12} />
+        <span className="fantasia-floating-menu__label">{label}</span>
+        <Icon aria-hidden="true" className="fantasia-floating-menu__chevron" icon="chevron-down" size={12} />
       </button>
       {open ? (
-        <Menu aria-label={label} className="fmg-floating-menu__menu" id={menuId}>
+        <Menu aria-label={label} className="fantasia-floating-menu__menu" id={menuId}>
           {children(close)}
         </Menu>
       ) : null}
@@ -458,11 +458,11 @@ function MapIdentity({ initialMapName }: Pick<WorkspaceToolbarProps, "initialMap
   }, [initialMapName]);
 
   return (
-    <div aria-label={`Current map: ${mapName}`} className="fmg-fantasia" data-tip="Current map name">
-      <span className="fmg-fantasia__mark" aria-hidden="true">
+    <div aria-label={`Current map: ${mapName}`} className="fantasia-brand" data-tip="Current map name">
+      <span className="fantasia-brand__mark" aria-hidden="true">
         {mapName.charAt(0).toLocaleUpperCase() || "M"}
       </span>
-      <span className="fmg-fantasia__label">{mapName}</span>
+      <span className="fantasia-brand__label">{mapName}</span>
     </div>
   );
 }
@@ -511,13 +511,13 @@ function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSect
 
 function WorkspaceModeSwitch({ mode }: { mode: WorkspaceMode }): React.JSX.Element {
   return (
-    <div aria-label="Workspace mode" className="fmg-workspace-mode" role="group">
-      <span aria-live="polite" className="fmg-workspace-mode__status" role="status">
+    <div aria-label="Workspace mode" className="fantasia-workspace-mode" role="group">
+      <span aria-live="polite" className="fantasia-workspace-mode__status" role="status">
         Workspace is in {mode === "view" ? "View" : "Edit"} mode
       </span>
       <button
         aria-pressed={mode === "view"}
-        className={mode === "view" ? "fmg-workspace-mode__button fmg-workspace-mode__button--active" : "fmg-workspace-mode__button"}
+        className={mode === "view" ? "fantasia-workspace-mode__button fantasia-workspace-mode__button--active" : "fantasia-workspace-mode__button"}
         onClick={() => void setWorkspaceMode("view")}
         type="button"
       >
@@ -525,7 +525,7 @@ function WorkspaceModeSwitch({ mode }: { mode: WorkspaceMode }): React.JSX.Eleme
       </button>
       <button
         aria-pressed={mode === "edit"}
-        className={mode === "edit" ? "fmg-workspace-mode__button fmg-workspace-mode__button--active" : "fmg-workspace-mode__button"}
+        className={mode === "edit" ? "fantasia-workspace-mode__button fantasia-workspace-mode__button--active" : "fantasia-workspace-mode__button"}
         onClick={() => void setWorkspaceMode("edit")}
         type="button"
       >
@@ -553,9 +553,9 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
   useEffect(() => subscribeToWorkspaceMode(setMode), []);
 
   return (
-    <nav aria-label="Map workspace" className="fmg-workspace-toolbar">
-      <div className="fmg-workspace-toolbar__group">
-        <div className="fmg-workspace-toolbar__identity">
+    <nav aria-label="Map workspace" className="fantasia-workspace-toolbar">
+      <div className="fantasia-workspace-toolbar__group">
+        <div className="fantasia-workspace-toolbar__identity">
           <MapIdentity initialMapName={props.initialMapName} />
           <CountrySelection />
         </div>
@@ -572,7 +572,7 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
           />
         ) : null}
       </div>
-      <div className="fmg-workspace-toolbar__group fmg-workspace-toolbar__group--right">
+      <div className="fantasia-workspace-toolbar__group fantasia-workspace-toolbar__group--right">
         <WorkspaceModeSwitch mode={mode} />
         {mode === "edit" ? <EditMenu /> : null}
         <ViewsMenu {...layerMenu} mode={mode} onOpenSection={props.onOpenSection} />
