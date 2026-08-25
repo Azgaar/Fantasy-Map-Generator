@@ -225,6 +225,13 @@ class UiDialog extends HTMLElement {
     this.opener = null;
   }
 
+  destroy() {
+    this.opener?.focus();
+    this.opener = null;
+    this.dispatchEvent(new CustomEvent("ui-dialog-destroy", { bubbles: true }));
+    this.remove();
+  }
+
   toggleMinimize(force?: boolean) {
     const shouldMinimize = force ?? !this.hasAttribute("minimized");
     this.toggleAttribute("minimized", shouldMinimize);
