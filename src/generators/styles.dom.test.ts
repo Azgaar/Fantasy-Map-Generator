@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 
 import { Layers } from "@/components/layers";
-import { applyStyles, styles } from "./styles";
+import { Styles } from "./styles";
 
 const SVG = "http://www.w3.org/2000/svg";
 
@@ -32,20 +32,20 @@ describe("applyStyles", () => {
     styles.rivers.attrs.fill = "#123456";
     styles.rivers.attrs.filter = null;
     el.setAttribute("filter", "url(#stale)");
-    applyStyles("rivers");
+    Styles.apply("rivers");
     expect(el.getAttribute("fill")).toBe("#123456");
     expect(el.hasAttribute("filter")).toBe(false);
     expect(Layers.draw).toHaveBeenCalledWith("rivers");
 
     const routes = mount("routes", ["roads", "trails", "searoutes"]);
     styles.routes.roads.attrs.stroke = "#803a2b";
-    applyStyles("routes");
+    Styles.apply("routes");
     expect(routes.querySelector('[data-group="roads"]')?.getAttribute("stroke")).toBe("#803a2b");
   });
 
   test("options never reach the DOM", () => {
     const el = mount("markers");
-    applyStyles("markers");
+    Styles.apply("markers");
     expect(el.hasAttribute("rescale")).toBe(false);
     expect(el.hasAttribute("options")).toBe(false);
   });
@@ -53,7 +53,7 @@ describe("applyStyles", () => {
   test("a dynamic group present in styles but absent from the DOM is skipped", () => {
     mount("labels");
     styles.labels.groups.capital = structuredClone(Object.values(styles.labels.groups)[0]);
-    expect(() => applyStyles("labels")).not.toThrow();
+    expect(() => Styles.apply("labels")).not.toThrow();
   });
 
   test("burg icon and anchor groups are addressed through their containers", () => {
@@ -65,7 +65,7 @@ describe("applyStyles", () => {
     }
     styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#111111";
     styles.burgIcons.anchors.groups.capital.attrs.fill = "#222222";
-    applyStyles("burgIcons");
+    Styles.apply("burgIcons");
     expect(el.querySelector('[data-group="burgIcons"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#111111");
     expect(el.querySelector('[data-group="anchors"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#222222");
   });
@@ -73,7 +73,15 @@ describe("applyStyles", () => {
   test("a missing layer element is a no-op, the rest still apply", () => {
     const el = mount("rivers");
     styles.rivers.attrs.fill = "#654321";
-    expect(() => applyStyles("compass", "rivers")).not.toThrow();
+    expect(() => Styles.apply("compass", "rivers")).not.toThrow();
     expect(el.getAttribute("fill")).toBe("#654321");
+  });
+
+  test("writeStyles writes attrs without drawing", () => {
+    const el = mount("rivers");
+    styles.rivers.attrs.fill = "hotpink";
+    Styles.write("rivers");
+    expect(el.getAttribute("fill")).toBe("hotpink");
+    expect(Layers.draw).not.toHaveBeenCalled();
   });
 });

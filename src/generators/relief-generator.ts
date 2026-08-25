@@ -1,6 +1,5 @@
 import { extent, polygonContains } from "d3";
 import { RELIEF_ICONS, RELIEF_SETS } from "@/data/relief-icons";
-import { styles } from "@/styles/styles";
 import type { ReliefSet, ReliefTypeIcons } from "@/types/relief";
 import { getPackPolygon, minmax, poissonDiscSampler, ra, rn } from "@/utils";
 

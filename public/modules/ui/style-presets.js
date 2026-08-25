@@ -16,7 +16,6 @@ const systemPresets = [
   "monochrome"
 ];
 const customPresetPrefix = "fmgStyle_";
-const RELIEF_STYLE_ATTRIBUTES = ["set", "size", "density"];
 
 // add style presets to list
 {
@@ -64,6 +63,8 @@ async function getStylePreset(desiredPreset) {
 }
 
 async function fetchSystemPreset(preset) {
+  // the default preset ships in the bundle (src/generators/default-styles.json), not as a fetchable asset
+  if (preset === "default") return Styles.defaults;
   try {
     const res = await fetch(`./styles/${preset}.json?v=${VERSION}`);
     return await res.json();
@@ -73,79 +74,33 @@ async function fetchSystemPreset(preset) {
 }
 
 function applyStylePreset(presetJson) {
-  for (const selector in presetJson) {
-    let labelGroup = null;
-    if (selector.startsWith("#labels > #")) {
-      labelGroup = selector.split("#").pop();
-      styles.labels.groups[labelGroup] = stylesLegacy.labelGroupFromLegacy(getStyleAttributes(presetJson[selector]));
-    }
+  const parsed = stylesLegacy.isLegacyPreset(presetJson)
+    ? stylesLegacy.presetFromLegacy(presetJson, {onUnknown: "skip"})
+    : Styles.parse(presetJson);
 
-    if (selector.startsWith("#burgIcons")) {
-      const group = selector.split("#").pop();
-      styles.burgIcons.burgIcons.groups[group] = stylesLegacy.burgGroupFromLegacy(presetJson[selector]);
-    }
+  const previousReliefSize = styles.relief.options.size;
+  Styles.set(parsed);
+  Styles.write(...Object.keys(styles));
 
-    if (selector.startsWith("#anchors")) {
-      const group = selector.split("#").pop();
-      styles.burgIcons.anchors.groups[group] = stylesLegacy.burgGroupFromLegacy(presetJson[selector]);
-    }
+  projectPresetOptions();
+  applyReliefOptions(previousReliefSize);
+  registerCustomScheme();
+  fillMissingLabelGroups();
+}
 
-    if (selector === "#terrain") {
-      const { set, size, density } = presetJson[selector];
+function applyReliefOptions(previousSize) {
+  const {set, size} = styles.relief.options;
+  if (size && size / previousSize !== 1) Relief.changeSize(size);
+  if (set) Relief.changeSet(set);
+}
 
-      if (size) {
-        const ratio = size / styles.relief.options.size;
-        styles.relief.options.size = size;
-        if (ratio !== 1) Relief.changeSize(size);
-      }
-
-      if (set) {
-        styles.relief.options.set = set;
-        Relief.changeSet(set);
-      }
-
-      if (density) styles.relief.options.density = density; // no model change as it would require regeneration
-    }
-
-    const el = labelGroup
-      ? document.querySelector(`#labels > [data-group="${CSS.escape(labelGroup)}"]`)
-      : document.querySelector(selector);
-    if (!el) continue;
-
-    for (const attribute in presetJson[selector]) {
-      if (attribute === "id") continue;
-      if (selector === "#terrain" && RELIEF_STYLE_ATTRIBUTES.includes(attribute)) continue; // stored in styles.relief.options
-      const value = presetJson[selector][attribute];
-
-      if (value === "null" || value === null) {
-        el.removeAttribute(attribute);
-        continue;
-      }
-
-      el.setAttribute(attribute, value);
-
-      if (selector === "#texture") {
-        const image = document.querySelector("#texture > image");
-        if (image) {
-          if (attribute === "data-x") image.setAttribute("x", value);
-          if (attribute === "data-y") image.setAttribute("y", value);
-          if (attribute === "data-href") image.setAttribute("href", value);
-        }
-      }
-
-      // add custom heightmap color scheme
-      if (selector === "#terrs" && attribute === "scheme" && !(value in heightmapColorSchemes)) {
-        addCustomColorScheme(value);
-      }
-    }
-
-    if (selector.startsWith("#labels > #")) {
-      const dx = el.dataset.dx || 0;
-      const dy = el.dataset.dy || 0;
-      el.style.transform = +dx || +dy ? `translate(${dx}em, ${dy}em)` : "";
-    }
+function registerCustomScheme() {
+  for (const {options} of [styles.heightmap.landHeights, styles.heightmap.oceanHeights]) {
+    if (!(options.scheme in heightmapColorSchemes)) addCustomColorScheme(options.scheme);
   }
+}
 
+function fillMissingLabelGroups() {
   // a group the preset doesn't cover takes the style of the default group of its type. It's left without a
   // style if there is none: getGroupStyle falls back to the built-in style, an empty one would win over it
   for (const group of options.labels.groups) {
@@ -153,9 +108,135 @@ function applyStylePreset(presetJson) {
     const defaultGroupStyle = styles.labels.groups[Labels.getFallbackGroup(group.type).name];
     if (defaultGroupStyle) styles.labels.groups[group.name] = structuredClone(defaultGroupStyle);
   }
+}
 
-  function getStyleAttributes(attributes) {
-    return Object.fromEntries(Object.entries(attributes).filter(([attribute]) => attribute !== "id"));
+function setOrRemove(el, attribute, value) {
+  if (el == null) return;
+  if (value == null) el.removeAttribute(attribute);
+  else el.setAttribute(attribute, value);
+}
+
+function writeAttrsById(id, attrs) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (const [attribute, value] of Object.entries(attrs)) setOrRemove(el, attribute, value);
+}
+
+// Transitional: renderers that still read these options from DOM attributes (not yet
+// migrated to read `styles` directly) get them written here, byte-for-byte where the legacy
+// selector-keyed loop wrote them. Each row dies once its owning renderer is ported.
+function projectPresetOptions() {
+  const byId = id => document.getElementById(id);
+
+  setOrRemove(byId("map"), "data-filter", styles.map.options.dataFilter);
+
+  const armies = byId("armies");
+  setOrRemove(armies, "font-size", styles.military.options.fontSize);
+  setOrRemove(armies, "box-size", styles.military.options.boxSize);
+
+  const coordinates = byId("coordinates");
+  setOrRemove(coordinates, "data-size", styles.coordinates.options.fontSize);
+  setOrRemove(coordinates, "font-size", styles.coordinates.options.fontSize);
+
+  setOrRemove(byId("sea_island"), "auto-filter", styles.coastline.sea_island.options.autoFilter);
+
+  const gridOverlay = byId("gridOverlay");
+  setOrRemove(gridOverlay, "type", styles.grid.options.type);
+  setOrRemove(gridOverlay, "scale", styles.grid.options.scale);
+  setOrRemove(gridOverlay, "dx", styles.grid.options.dx);
+  setOrRemove(gridOverlay, "dy", styles.grid.options.dy);
+
+  const landHeights = byId("landHeights");
+  setOrRemove(landHeights, "scheme", styles.heightmap.landHeights.options.scheme);
+  setOrRemove(landHeights, "terracing", styles.heightmap.landHeights.options.terracing);
+  setOrRemove(landHeights, "skip", styles.heightmap.landHeights.options.skip);
+  setOrRemove(landHeights, "relax", styles.heightmap.landHeights.options.relax);
+  setOrRemove(landHeights, "curve", styles.heightmap.landHeights.options.curve);
+
+  const oceanHeights = byId("oceanHeights");
+  setOrRemove(oceanHeights, "scheme", styles.heightmap.oceanHeights.options.scheme);
+  setOrRemove(oceanHeights, "terracing", styles.heightmap.oceanHeights.options.terracing);
+  setOrRemove(oceanHeights, "skip", styles.heightmap.oceanHeights.options.skip);
+  setOrRemove(oceanHeights, "relax", styles.heightmap.oceanHeights.options.relax);
+  setOrRemove(oceanHeights, "curve", styles.heightmap.oceanHeights.options.curve);
+  setOrRemove(oceanHeights, "data-render", Number(styles.heightmap.oceanHeights.options.render));
+
+  setOrRemove(byId("statesHalo"), "data-width", styles.states.statesHalo.options.width);
+
+  setOrRemove(byId("stateEmblems"), "data-size", styles.emblems.stateEmblems.options.size);
+  setOrRemove(byId("provinceEmblems"), "data-size", styles.emblems.provinceEmblems.options.size);
+  setOrRemove(byId("burgEmblems"), "data-size", styles.emblems.burgEmblems.options.size);
+
+  const goodsIcons = byId("goodsIcons");
+  setOrRemove(goodsIcons, "data-size", styles.goods.goodsIcons.options.size);
+  setOrRemove(goodsIcons, "data-circle", Number(styles.goods.goodsIcons.options.circle));
+
+  setOrRemove(byId("goodsBurgs"), "data-size", styles.goods.goodsBurgs.options.size);
+
+  const markets = byId("markets");
+  setOrRemove(markets, "data-size", styles.markets.options.size);
+  setOrRemove(markets, "font-size", styles.markets.options.fontSize);
+  setOrRemove(markets, "data-icon", styles.markets.options.icon);
+
+  setOrRemove(byId("markers"), "rescale", styles.markers.options.rescale);
+
+  const ruler = byId("ruler");
+  setOrRemove(ruler, "data-size", styles.rulers.options.fontSize);
+  setOrRemove(ruler, "font-size", styles.rulers.options.fontSize);
+
+  const scaleBar = byId("scaleBar");
+  setOrRemove(scaleBar, "data-bar-size", styles.scaleBar.options.barSize);
+  setOrRemove(scaleBar, "data-x", styles.scaleBar.options.x);
+  setOrRemove(scaleBar, "data-y", styles.scaleBar.options.y);
+  setOrRemove(scaleBar, "data-label", styles.scaleBar.options.label);
+
+  const scaleBarBack = byId("scaleBarBack");
+  setOrRemove(scaleBarBack, "data-top", styles.scaleBar.back.options.top);
+  setOrRemove(scaleBarBack, "data-right", styles.scaleBar.back.options.right);
+  setOrRemove(scaleBarBack, "data-bottom", styles.scaleBar.back.options.bottom);
+  setOrRemove(scaleBarBack, "data-left", styles.scaleBar.back.options.left);
+  writeAttrsById("scaleBarBack", styles.scaleBar.back.attrs);
+
+  const legend = byId("legend");
+  setOrRemove(legend, "data-size", styles.legend.options.fontSize);
+  setOrRemove(legend, "font-size", styles.legend.options.fontSize);
+  setOrRemove(legend, "data-x", styles.legend.options.x);
+  setOrRemove(legend, "data-y", styles.legend.options.y);
+  setOrRemove(legend, "data-columns", styles.legend.options.columns);
+
+  writeAttrsById("legendBox", styles.legend.box.attrs);
+
+  const vignetteRect = byId("vignette-rect");
+  setOrRemove(vignetteRect, "x", styles.vignette.options.x);
+  setOrRemove(vignetteRect, "y", styles.vignette.options.y);
+  setOrRemove(vignetteRect, "width", styles.vignette.options.width);
+  setOrRemove(vignetteRect, "height", styles.vignette.options.height);
+  setOrRemove(vignetteRect, "rx", styles.vignette.options.rx);
+  setOrRemove(vignetteRect, "ry", styles.vignette.options.ry);
+  setOrRemove(vignetteRect, "filter", styles.vignette.options.filter);
+
+  setOrRemove(byId("oceanLayers"), "layers", styles.ocean.oceanLayers.options.outline);
+
+  const oceanicPattern = byId("oceanicPattern");
+  setOrRemove(oceanicPattern, "href", styles.ocean.options.pattern);
+  setOrRemove(oceanicPattern, "opacity", styles.ocean.options.patternOpacity);
+
+  const texture = byId("texture");
+  setOrRemove(texture, "data-href", styles.texture.options.href);
+  setOrRemove(texture, "data-x", styles.texture.options.x);
+  setOrRemove(texture, "data-y", styles.texture.options.y);
+  const textureImage = texture ? texture.querySelector("image") : null;
+  setOrRemove(textureImage, "href", styles.texture.options.href);
+  setOrRemove(textureImage, "x", styles.texture.options.x);
+  setOrRemove(textureImage, "y", styles.texture.options.y);
+
+  for (const [group, style] of Object.entries(styles.labels.groups)) {
+    const el = document.querySelector(`#labels > [data-group="${CSS.escape(group)}"]`);
+    if (!el) continue;
+    const {dx, dy} = style.options;
+    setOrRemove(el, "data-dx", dx);
+    setOrRemove(el, "data-dy", dy);
+    el.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
   }
 }
 
