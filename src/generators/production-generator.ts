@@ -12,6 +12,7 @@ const BONUS_RURAL_PRODUCTION = 0.25;
 const BONUS_URBAN_PRODUCTION = 1;
 const MIN_BONUS_PRODUCTION = 1;
 const MAX_BONUS_PRODUCTION = 5;
+const MAX_WORKERS = 1000;
 
 export class ProductionModule {
   private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers
@@ -97,7 +98,14 @@ export class ProductionModule {
   }
 
   private createBurgProductionState(burg: Burg, market: Market, index: ProductionIndex): BurgProductionState {
-    const population = rn(burg.population || 0, 2);
+    const burgPopulation = rn(burg.population || 0, 2);
+    const population = Math.min(burgPopulation, MAX_WORKERS);
+    if (population < burgPopulation) {
+      WARN &&
+        console.warn(
+          `Burg ${burg.name} (${burg.i}) population ${burgPopulation} is capped at ${MAX_WORKERS} for production`
+        );
+    }
     const inventory: number[] = [];
     const demandTargets = getDemandTargets(population);
     const demandCoverage = this.calculateDemandCoverage(inventory, index.demandCoverageByGood);

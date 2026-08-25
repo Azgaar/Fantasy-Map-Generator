@@ -13,21 +13,13 @@ const ERROR = true;
 // detect device
 const MOBILE = window.innerWidth < 600 || navigator.userAgentData?.mobile;
 
-if (PRODUCTION && "serviceWorker" in navigator) {
+// the desktop app ships its own copy of the assets, so it has nothing to cache offline
+if (PRODUCTION && !window.electron && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(err => {
       console.error("ServiceWorker registration failed: ", err);
     });
   });
-
-  window.addEventListener(
-    "beforeinstallprompt",
-    async event => {
-      event.preventDefault();
-      window.Services.Installation.init(event);
-    },
-    { once: true }
-  );
 }
 
 Layers.init(); // create the svg layer groups
@@ -259,6 +251,8 @@ function focusOn() {
 
 let isAssistantLoaded = false;
 function toggleAssistant() {
+  if (window.electron) return;
+
   const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
   if (showAssistant) {
     if (isAssistantLoaded) {

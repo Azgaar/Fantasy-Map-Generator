@@ -6,6 +6,7 @@ import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
+import { savedMessage } from "@/services/platform";
 import {
   connectVertices,
   downloadFile,
@@ -46,7 +47,7 @@ async function exportToSvg(): Promise<void> {
     link.href = url;
     link.click();
 
-    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check`;
+    const message = savedMessage(link.download);
     tip(message, true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -88,7 +89,7 @@ async function exportToPng(): Promise<void> {
       window.URL.revokeObjectURL(link.href);
     }, 1000);
 
-    const message = `${link.download} is saved. Open 'Downloads' screen (CTRL + J) to check. You can set image scale in options`;
+    const message = `${savedMessage(link.download)}. You can set image scale in options`;
     tip(message, true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -130,7 +131,7 @@ async function exportToJpeg(): Promise<void> {
     link.download = `${getFileName()}.jpeg`;
     link.href = window.URL.createObjectURL(blob);
     link.click();
-    tip(`${link.download} is saved. Open "Downloads" screen (CTRL + J) to check`, true, "success", 7000);
+    tip(savedMessage(link.download), true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
   } catch (error) {
     ERROR && console.error(error);
@@ -212,7 +213,7 @@ async function exportToPngTiles(): Promise<void> {
       link.click();
       link.remove();
 
-      status.innerHTML = 'Done. Check .zip file in "Downloads" (CTRL + J)';
+      status.innerHTML = savedMessage("The .zip file");
       setTimeout(() => URL.revokeObjectURL(link.href), 5000);
     })
     .catch((error: Error) => {

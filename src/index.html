@@ -2018,21 +2018,30 @@
           </div>
         </div>
         <div id="aboutContent" class="tabcontent">
-          <p style="text-align: center; margin-top: 1em">
+          <div class="aboutActions">
             <button
               id="startTourButton"
               onclick="window.Services.UiTour.start()"
               data-tip="Take an interactive tour of the map generator"
+              style="flex: 1; background-color: var(--header);"
             >
-              &#9654; Take an Interactive Tour
+              Interactive Tour
             </button>
-          </p>
+            <button
+              id="getAppButton"
+              onclick="window.Services.AppOffer.open()"
+              data-tip="Install the Generator on your computer"
+              style="flex: 1; background-color: var(--header);"
+            >
+              Desktop App
+            </button>
+          </div>
           <p>
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank"
               >open source</a
             >
-            tool by Azgaar. You may use auto-generated maps as they are, edit them or even create a new map from
+            tool by Azgaar and Team. You may use maps as they are, edit them or even create a new map from
             scratch. Check out the
             <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank"
               >Quick start</a
@@ -2087,12 +2096,12 @@
             Special thanks to
             <a data-tip="Click to see list of supporters" onclick="showSupporters()">all supporters</a> on Patreon!
           </p>
-          <div style="display: flex; justify-content: center; padding: 0.8em 0.4em 0.4em; font-family: cursive">
+          <div style="display: flex; justify-content: center; padding: 0.4em; font-family: cursive">
             <a href="https://u24.gov.ua/" style="width: 80%" data-tip="Support Ukraine" target="_blank">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 350">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
                 <rect width="100%" height="100%" fill="#005bbb"></rect>
                 <rect y="50%" width="100%" height="50%" fill="#ffd500"></rect>
-                <text x="50%" text-anchor="middle" font-size="8em" y="32%" fill="#f5f5f5">Support Ukraine</text>
+                <text x="50%" text-anchor="middle" font-size="6em" y="32%" fill="#f5f5f5">Support Ukraine</text>
                 <text x="50%" text-anchor="middle" font-size="4em" y="78%" fill="#005bdd">u24.gov.ua</text>
               </svg>
             </a>
@@ -2440,7 +2449,12 @@
           >
             machine
           </button>
-          <button onclick="window.Services.Save.saveMap('dropbox')" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+          <button
+            id="saveToDropboxButton"
+            onclick="window.Services.Save.saveMap('dropbox')"
+            data-tip="Save map file to your Dropbox"
+            data-shortcut="Ctrl + C"
+          >
             dropbox
           </button>
           <button onclick="window.Services.Save.saveMap('storage')" data-tip="Save the project to browser storage only" data-shortcut="F6">
@@ -5159,7 +5173,7 @@
     <script defer src="libs/simplify.js?v1.105.6"></script>
     <script defer src="modules/ui/style-presets.js?v=1.148.0"></script>
     <script defer src="modules/ui/options.js?v=1.148.0"></script>
-    <script defer src="main.js?v=1.148.0"></script>
+    <script defer src="main.js?v=1.148.3"></script>
     <script defer src="modules/ui/style.js?v=1.148.0"></script>
     <script defer src="libs/rgbquant.min.js"></script>
     <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
