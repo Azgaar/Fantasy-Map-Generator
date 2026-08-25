@@ -27,7 +27,6 @@ test.describe("map layers", () => {
     await sharedPage.goto("/?seed=test-seed&&width=1280&height=720");
 
     // Wait for map generation to complete by checking window.mapId
-    // mapId is exposed on window at the very end of showStatistics()
     await sharedPage.waitForFunction(() => (window as any).mapId !== undefined, { timeout: 60000 });
 
     // Additional wait for any rendering/animations to settle

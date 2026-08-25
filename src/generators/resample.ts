@@ -442,7 +442,6 @@ class Resampler {
     addLakesInDeepDepressions();
     openNearSeaLakes();
 
-    Layers.draw("ocean");
     calculateMapCoordinates();
     calculateTemperatures();
 
@@ -476,7 +475,7 @@ class Resampler {
       };
     });
 
-    showStatistics();
+    logStats();
   }
 }
 

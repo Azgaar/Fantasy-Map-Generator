@@ -12,7 +12,7 @@ interface GenerationContext {
 
 const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
   {
-    id: "generateGrid",
+    id: "grid",
     run: (context: GenerationContext) => {
       if (shouldRegenerateGrid(grid, context.seed, graphWidth, graphHeight)) {
         grid = context.graph ?? generateGrid(seed, graphWidth, graphHeight);
@@ -25,21 +25,16 @@ const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
     id: "heightmap",
     run: async () => {
       grid.cells.h = await HeightmapGenerator.generate(grid);
-      pack = {} as PackedGraph;
     }
   },
   { id: "markupGrid", run: () => Features.markupGrid() },
   { id: "addLakesInDeepDepressions", run: () => addLakesInDeepDepressions() },
   { id: "openNearSeaLakes", run: () => openNearSeaLakes() },
-  {
-    id: "mapCoordinates",
-    run: () => {
-      defineMapSize();
-      calculateMapCoordinates();
-    }
-  },
+  { id: "mapSize", run: () => defineMapSize() },
+  { id: "mapCoordinates", run: () => calculateMapCoordinates() },
   { id: "temperatures", run: () => calculateTemperatures() },
   { id: "precipitation", run: () => generatePrecipitation() },
+  { id: "clearPack", run: () => (pack = {} as PackedGraph) },
   { id: "regraph", run: () => reGraph() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },

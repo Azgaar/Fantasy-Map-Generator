@@ -131,7 +131,7 @@ declare global {
   var calculateMapCoordinates: () => void;
   var calculateTemperatures: () => void;
   var reGraph: () => void;
-  var showStatistics: () => void;
+  var logStats: () => void;
   var applyGraphSize: () => void;
   var cellsDensityMap: Record<number, number>;
   var changeCellsDensity: (value: string) => void;

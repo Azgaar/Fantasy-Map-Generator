@@ -8,12 +8,12 @@ _is_ the dependency graph**: a step depends on every earlier step that last wrot
 That order used to live as a hardcoded call list in `generate()`, retyped by hand at every site that
 rebuilds part of a map. It is now declared once, as data:
 
-| File | Role |
-| --- | --- |
-| [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts) | The runner. Generic, knows nothing about generators, `pack` or `grid` |
-| [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts) | The configuration: `GenerationPipeline` and `ErasePipeline` step lists |
-| [`public/main.js`](../../public/main.js) → `generate()` | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
-| [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline` |
+| File                                                                                                          | Role                                                                                               |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts)                                              | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
+| [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts)                        | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
+| [`public/main.js`](../../public/main.js) → `generate()`                                                       | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
+| [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
 
 ## The runner
 
@@ -49,27 +49,27 @@ anything but a straight line — so it added validation logic and API surface wi
 ## `GenerationPipeline` — build a world from scratch
 
 `generate(options)` in `main.js` resolves what the pipeline doesn't own (`setSeed`, `applyGraphSize`,
-`randomizeOptions`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`showStatistics`,
+`randomizeOptions`), calls `await GenerationPipeline.run({seed, graph})`, then reports (`logStats`,
 `TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
 `window.GenerationPipeline` because `main.js` is a classic script.
 
-| Phase | Step ids | Writes (selection) |
-| --- | --- | --- |
-| Grid + heightmap | `generateGrid`, `heightmap` | `grid`, `grid.cells.h`; resets `pack` |
-| Hydrology base | `markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes` | `grid.cells.f/t/b`, lake and ocean topology |
-| World position & climate | `mapCoordinates`, `temperatures`, `precipitation` | `mapCoordinates`, `grid.cells.temp/prec` |
-| Repack | `regraph`, `markupPack`, `defaultRuler` | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
-| Rivers & biomes | `rivers`, `biomes`, `featureGroups` | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome` |
-| Climate art | `ice` | `pack.ice` |
-| Goods catalogue | `goods` | `pack.goods` (map-independent), `cells.good` |
-| Ranking & cultures | `rankCells`, `cultures`, `culturesExpand` | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture` |
-| Settlement & politics | `burgs`, `states`, `routes`, `religions` | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions` |
-| Specification | `burgsSpecify`, `stateStatistics`, `stateForms` | burg types, state stats and forms |
-| Provinces | `provinces`, `provincePoles` | `pack.provinces` |
-| Naming polish | `riversSpecify`, `lakeNames` | river and lake names |
-| Economy | `markets`, `production`, `taxes` | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries |
-| Overlays | `military`, `markers`, `zones`, `addedLabels` | regiments, markers, zones, labels |
-| Finalise | `mapName` | map name |
+| Phase                    | Step ids                                                      | Writes (selection)                                                              |
+| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Grid + heightmap         | `generateGrid`, `heightmap`                                   | `grid`, `grid.cells.h`; resets `pack`                                           |
+| Hydrology base           | `markupGrid`, `addLakesInDeepDepressions`, `openNearSeaLakes` | `grid.cells.f/t/b`, lake and ocean topology                                     |
+| World position & climate | `mapCoordinates`, `temperatures`, `precipitation`             | `mapCoordinates`, `grid.cells.temp/prec`                                        |
+| Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
+| Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
+| Climate art              | `ice`                                                         | `pack.ice`                                                                      |
+| Goods catalogue          | `goods`                                                       | `pack.goods` (map-independent), `cells.good`                                    |
+| Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`                     | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
+| Settlement & politics    | `burgs`, `states`, `routes`, `religions`                      | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                    |
+| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms`               | burg types, state stats and forms                                               |
+| Provinces                | `provinces`, `provincePoles`                                  | `pack.provinces`                                                                |
+| Naming polish            | `riversSpecify`, `lakeNames`                                  | river and lake names                                                            |
+| Economy                  | `markets`, `production`, `taxes`                              | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
+| Overlays                 | `military`, `markers`, `zones`, `addedLabels`                 | regiments, markers, zones, labels                                               |
+| Finalise                 | `mapName`                                                     | map name                                                                        |
 
 Two constraints are easy to break when replicating a slice of this:
 
@@ -170,21 +170,21 @@ sync by hand. Differences, all deliberate:
 Three other places rebuild a large slice of a map by hand. They are not (yet) expressed as pipelines,
 and each one is a site that can silently fall behind when a generation step is added.
 
-| Concern | Full generate | Erase | [Keep](../../src/controllers/heightmap-editor.ts) | [Risk](../../src/controllers/heightmap-editor.ts) | [Resample](../../src/generators/resample.ts) |
-| --- | --- | --- | --- | --- | --- |
-| Driver | `GenerationPipeline` | `ErasePipeline` | `restoreKeptData()` | `restoreRiskedData()` | `Resampler.process()` |
-| Grid rebuilt | ✅ | ❌ | ❌ | ❌ | ✅ (new dimensions) |
-| `markupGrid` | ✅ | ✅ | ❌ | ✅ | ✅ |
-| `regraph` (pack rebuilt) | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Rivers | generate | generate (parameterized) | keep | generate *or* restore | restored from parent meanders |
-| Biomes | `generate` (new catalogue) | `define` (reuse catalogue) | keep | recompute where missing | restored per cell |
-| Cultures / burgs / states / … | generate | generate | keep | **remap onto the new pack** | restored from parent |
-| Economy | generate | generate | keep | rebuild (cell ids changed) | rebuild (`restoreEconomy` + `Production.produce`) |
-| Coastline can change | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Concern                       | Full generate              | Erase                      | [Keep](../../src/controllers/heightmap-editor.ts) | [Risk](../../src/controllers/heightmap-editor.ts) | [Resample](../../src/generators/resample.ts)      |
+| ----------------------------- | -------------------------- | -------------------------- | ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                               | `restoreRiskedData()`                             | `Resampler.process()`                             |
+| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                | ❌                                                | ✅ (new dimensions)                               |
+| `markupGrid`                  | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
+| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
+| Rivers                        | generate                   | generate (parameterized)   | keep                                              | generate _or_ restore                             | restored from parent meanders                     |
+| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                              | recompute where missing                           | restored per cell                                 |
+| Cultures / burgs / states / … | generate                   | generate                   | keep                                              | **remap onto the new pack**                       | restored from parent                              |
+| Economy                       | generate                   | generate                   | keep                                              | rebuild (cell ids changed)                        | rebuild (`restoreEconomy` + `Production.produce`) |
+| Coastline can change          | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
 
 - **Keep** is the minimal path: it copies edited grid heights into the existing pack cells via
   `pack.cells.g` and touches nothing else, which is why the coastline cannot change.
-- **Risk** rebuilds the graph but *preserves entities*: it snapshots every per-cell array against grid
+- **Risk** rebuilds the graph but _preserves entities_: it snapshots every per-cell array against grid
   indices, re-runs hydrology/climate/repack, calls `GraphOverride.restore()`, then re-attaches the
   snapshot and re-locates each burg, culture and province centre in the new pack. The economy is
   rebuilt because cell ids no longer match.

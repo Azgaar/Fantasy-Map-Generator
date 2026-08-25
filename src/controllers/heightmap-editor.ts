@@ -595,7 +595,6 @@ function restoreRiskedData(): void {
 
   Features.markupGrid();
   if (erosionAllowed) addLakesInDeepDepressions();
-  Layers.draw("ocean");
   calculateTemperatures();
   generatePrecipitation();
   reGraph();
