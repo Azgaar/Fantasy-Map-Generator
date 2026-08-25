@@ -1875,4 +1875,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   document.getElementById("markers")?.removeAttribute("rescale");
   document.getElementById("statesHalo")?.removeAttribute("data-width");
   document.getElementById("coordinates")?.removeAttribute("data-size");
+  document.getElementById("ruler")?.removeAttribute("data-size");
+  document.getElementById("ruler")?.removeAttribute("font-size");
+  document.getElementById("legend")?.removeAttribute("data-size");
 }

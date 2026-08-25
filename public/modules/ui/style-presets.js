@@ -176,10 +176,6 @@ function projectPresetOptions() {
   setOrRemove(markets, "font-size", styles.markets.options.fontSize);
   setOrRemove(markets, "data-icon", styles.markets.options.icon);
 
-  const ruler = byId("ruler");
-  setOrRemove(ruler, "data-size", styles.rulers.options.fontSize);
-  setOrRemove(ruler, "font-size", styles.rulers.options.fontSize);
-
   const scaleBar = byId("scaleBar");
   setOrRemove(scaleBar, "data-bar-size", styles.scaleBar.options.barSize);
   setOrRemove(scaleBar, "data-x", styles.scaleBar.options.x);
@@ -194,8 +190,6 @@ function projectPresetOptions() {
   writeAttrsById("scaleBarBack", styles.scaleBar.back.attrs);
 
   const legend = byId("legend");
-  setOrRemove(legend, "data-size", styles.legend.options.fontSize);
-  setOrRemove(legend, "font-size", styles.legend.options.fontSize);
   setOrRemove(legend, "data-x", styles.legend.options.x);
   setOrRemove(legend, "data-y", styles.legend.options.y);
   setOrRemove(legend, "data-columns", styles.legend.options.columns);

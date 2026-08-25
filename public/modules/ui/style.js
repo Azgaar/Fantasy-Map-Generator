@@ -334,7 +334,7 @@ function selectStyleElement() {
 
     styleFont.style.display = "block";
     styleSelectFont.value = el.attr("font-family");
-    styleFontSize.value = el.attr("data-size");
+    styleFontSize.value = styles.legend.options.fontSize;
   }
 
   if (styleElement === "ocean") {
@@ -369,7 +369,7 @@ function selectStyleElement() {
     styleStrokeLinecapInput.value = el.attr("stroke-linecap") || "inherit";
 
     styleSize.style.display = "block";
-    styleFontSize.value = el.attr("data-size") || 20;
+    styleFontSize.value = styles.rulers.options.fontSize;
   }
 
   if (styleElement === "armies") {
@@ -971,11 +971,18 @@ function changeFontSize(el, size) {
     Layers.draw("coordinates");
     return;
   }
+  if (styleElementSelect.value === "legend") {
+    styles.legend.options.fontSize = size;
+    Layers.draw("legend");
+    return;
+  }
+  if (styleElementSelect.value === "ruler") {
+    styles.rulers.options.fontSize = size;
+    Layers.draw("rulers");
+    return;
+  }
 
   el.attr("data-size", size).attr("font-size", size);
-
-  if (styleElementSelect.value === "legend") Layers.draw("legend");
-  if (styleElementSelect.value === "ruler") Layers.draw("rulers");
 }
 
 styleFontShiftX.addEventListener("input", e => {

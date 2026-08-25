@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -152,5 +152,38 @@ test.describe("style editor events drive the store", () => {
 
     // (4) the retired attribute is gone from the element
     expect(await page.locator("#coordinates").getAttribute("data-size")).toBeNull();
+  });
+
+  test("ruler size input writes the store and sizes drawn rulers", async ({ page }) => {
+    await page.evaluate(() => {
+      (window as any).Measurers.createDefaultRuler();
+      (window as any).Layers.show("rulers");
+    });
+    await openStyleElement(page, "ruler");
+
+    await page.locator("#styleFontSize").fill("26");
+    await page.locator("#styleFontSize").dispatchEvent("change");
+
+    const stored = await page.evaluate(() => (window as any).styles.rulers.options.fontSize);
+    expect(stored).toBe(26);
+    expect(typeof stored).toBe("number");
+
+    await expect(page.locator("#ruler > .ruler").first()).toHaveAttribute("font-size", "26");
+
+    expect(await page.locator("#ruler").getAttribute("data-size")).toBeNull();
+    expect(await page.locator("#ruler").getAttribute("font-size")).toBeNull();
+  });
+
+  test("legend size input writes the store", async ({ page }) => {
+    await openStyleElement(page, "legend");
+
+    await page.locator("#styleFontSize").fill("17");
+    await page.locator("#styleFontSize").dispatchEvent("change");
+
+    const stored = await page.evaluate(() => (window as any).styles.legend.options.fontSize);
+    expect(stored).toBe(17);
+    expect(typeof stored).toBe("number");
+
+    expect(await page.locator("#legend").getAttribute("data-size")).toBeNull();
   });
 });

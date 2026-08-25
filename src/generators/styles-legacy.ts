@@ -383,6 +383,11 @@ export function syncStylesFromMap(): void {
   // gated on data-size alone: #coordinates' font-size is the zoom-derived render value, never the base
   if (!document.getElementById("coordinates")?.hasAttribute("data-size"))
     harvested.coordinates.options = structuredClone(styles.coordinates.options);
+  if (!document.getElementById("ruler")?.hasAttribute("data-size"))
+    harvested.rulers.options = structuredClone(styles.rulers.options);
+  // per-key: legend geometry (x/y/columns) stays attr-authoritative until its own family
+  if (!document.getElementById("legend")?.hasAttribute("data-size"))
+    harvested.legend.options.fontSize = styles.legend.options.fontSize;
   Styles.set(harvested);
 }
 

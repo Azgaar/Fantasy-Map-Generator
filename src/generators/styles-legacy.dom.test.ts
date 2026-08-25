@@ -95,6 +95,27 @@ test("save sync keeps the store's coordinates size when data-size is absent, eve
   expect(styles.coordinates.options.fontSize).toBe(20);
 });
 
+test("save sync keeps store ruler and legend sizes when data-size is absent", () => {
+  document.body.innerHTML = `<svg id="map"><g id="ruler"></g><g id="legend" font-size="13" font-family="Almendra SC" data-x="88" data-columns="8"></g></svg>`;
+  styles.rulers.options.fontSize = 26;
+  styles.legend.options.fontSize = 17;
+  styles.legend.options.x = 50;
+  syncStylesFromMap();
+  expect(styles.rulers.options.fontSize).toBe(26);
+  expect(styles.legend.options.fontSize).toBe(17);
+  // legend geometry is not in this family: the data-x attr stays authoritative
+  expect(styles.legend.options.x).toBe(88);
+});
+
+test("save sync lets an old map's ruler and legend data-size win", () => {
+  document.body.innerHTML = `<svg id="map"><g id="ruler" data-size="30" font-size="30"></g><g id="legend" data-size="11" font-size="11" font-family="Almendra SC"></g></svg>`;
+  styles.rulers.options.fontSize = 26;
+  styles.legend.options.fontSize = 17;
+  syncStylesFromMap();
+  expect(styles.rulers.options.fontSize).toBe(30);
+  expect(styles.legend.options.fontSize).toBe(11);
+});
+
 test("save sync lets an old map's coordinates data-size win over the store", () => {
   document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
   styles.coordinates.options.fontSize = 20;

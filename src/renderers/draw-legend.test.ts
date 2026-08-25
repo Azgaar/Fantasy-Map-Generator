@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import "@/generators/styles";
 import { drawLegend, redrawLegend } from "./draw-legend";
 
 beforeEach(() => {
@@ -27,6 +28,13 @@ const items = [
 ];
 
 describe("drawLegend", () => {
+  it("sizes the legend from the store and stamps the group font-size", () => {
+    styles.legend.options.fontSize = 20;
+    drawLegend("States", items);
+    expect(document.getElementById("legend")!.getAttribute("font-size")).toBe("20");
+    styles.legend.options.fontSize = 13;
+  });
+
   it("takes the styling from the style inputs when the legend is drawn anew", () => {
     drawLegend("States", items);
 
