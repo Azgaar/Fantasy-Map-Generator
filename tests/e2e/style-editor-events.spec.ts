@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels" | "lakes" | "rivers" | "compass"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -469,10 +469,48 @@ test.describe("style editor events drive the store", () => {
 
   test("legend column input writes the store", async ({ page }) => {
     await openStyleElement(page, "legend");
-    await page.locator("#styleLegendColItems").fill("3");
+    await page.locator("#styleLegendColItems input[type=number]").fill("3");
     await page.locator("#styleLegendColItems").dispatchEvent("input");
 
     expect(await page.evaluate(() => (window as any).styles.legend.options.columns)).toBe(3);
     expect(await page.locator("#legend").getAttribute("data-columns")).toBeNull();
+  });
+
+  test("generic attr controls write the store for any selection", async ({ page }) => {
+    // nested group selection: lakes > freshwater
+    await openStyleElement(page, "lakes");
+    await page.locator("#styleGroupSelect").selectOption("freshwater");
+    await page.locator("#styleFillInput").fill("#123456");
+    await page.locator("#styleFillInput").dispatchEvent("input");
+    await page.locator("#styleStrokeWidthInput input[type=number]").fill("3");
+
+    // flat element selection: rivers
+    await openStyleElement(page, "rivers");
+    await page.locator("#styleOpacityInput input[type=number]").fill("0.4");
+
+    const stored = await page.evaluate(() => ({
+      lakeFill: (window as any).styles.lakes.freshwater.attrs.fill,
+      lakeStrokeWidth: (window as any).styles.lakes.freshwater.attrs["stroke-width"],
+      riversOpacity: (window as any).styles.rivers.attrs.opacity
+    }));
+    expect(stored).toEqual({ lakeFill: "#123456", lakeStrokeWidth: 3, riversOpacity: 0.4 });
+    expect(typeof stored.lakeStrokeWidth).toBe("number");
+    expect(typeof stored.riversOpacity).toBe("number");
+
+    // the DOM presentation is written identically
+    await expect(page.locator('#lakes [data-group="freshwater"], #freshwater').first()).toHaveAttribute("fill", "#123456");
+    await expect(page.locator("#rivers")).toHaveAttribute("opacity", "0.4");
+  });
+
+  test("compass shift writes the rose transform through the store", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("compass"));
+    await openStyleElement(page, "compass");
+
+    await page.locator("#styleCompassShiftX").fill("30");
+    await page.locator("#styleCompassShiftX").dispatchEvent("input");
+
+    const stored = await page.evaluate(() => (window as any).styles.compass.compassRose.attrs.transform);
+    expect(stored).toContain("translate(30");
+    await expect(page.locator("#compass use")).toHaveAttribute("transform", stored);
   });
 });

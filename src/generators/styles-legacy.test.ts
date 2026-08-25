@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { Styles } from "./styles";
-import { isLegacyPreset, isStoreStyles, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
+import {
+  isLegacyPreset,
+  isStoreStyles,
+  labelGroupFromLegacy,
+  presetFromLegacy,
+  presetToLegacy,
+  styleNodeFor
+} from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
 import { DEFAULT_STYLES } from "./styles-schema";
@@ -95,6 +102,29 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
     "data-render" in (serializerFixture as any)["#terrs #landHeights"],
     "data-render was ruled out for landHeights (only #oceanHeights ever wrote it) - it must not appear in the dialect fixture at all, not even as a dropped key"
   ).toBe(false);
+});
+
+test("styleNodeFor resolves editor selections to live store nodes", () => {
+  expect(styleNodeFor("rivers", "")).toEqual({ node: styles.rivers, layer: "rivers" });
+  expect(styleNodeFor("rivers", "rivers")).toEqual({ node: styles.rivers, layer: "rivers" });
+  expect(styleNodeFor("lakes", "freshwater")).toEqual({ node: styles.lakes.freshwater, layer: "lakes" });
+  expect(styleNodeFor("terrs", "landHeights")).toEqual({ node: styles.heightmap.landHeights, layer: "heightmap" });
+  expect(styleNodeFor("labels", "capital")).toEqual({ node: styles.labels.groups.capital, layer: "labels" });
+  expect(styleNodeFor("burgIcons", "town")).toEqual({
+    node: styles.burgIcons.burgIcons.groups.town,
+    layer: "burgIcons"
+  });
+  expect(styleNodeFor("anchors", "capital")).toEqual({
+    node: styles.burgIcons.anchors.groups.capital,
+    layer: "burgIcons"
+  });
+  expect(styleNodeFor("regions", "statesHalo")).toEqual({ node: styles.states.statesHalo, layer: "states" });
+});
+
+test("styleNodeFor returns undefined for structural parents and unknown groups", () => {
+  expect(styleNodeFor("icons", "")).toBeUndefined();
+  expect(styleNodeFor("labels", "no-such-group")).toBeUndefined();
+  expect(styleNodeFor("burgIcons", "no-such-group")).toBeUndefined();
 });
 
 test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {

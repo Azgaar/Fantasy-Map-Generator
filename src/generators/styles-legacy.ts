@@ -245,6 +245,25 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#landmass": { path: ["landmass"] }
 };
 
+// The style editor's element/group selection resolves through the same route table the preset
+// upgrader uses; the first path segment is the store layer to rewrite.
+export function styleNodeFor(element: string, group: string): { node: object; layer: keyof Styles } | undefined {
+  const selector =
+    !group || group === element
+      ? `#${element}`
+      : element === "labels"
+        ? `#labels > #${group}`
+        : element === "burgIcons" || element === "anchors"
+          ? `#${element} > g#${group}`
+          : element === "terrs"
+            ? `#terrs > #${group}`
+            : `#${group}`;
+  const route = routeFor(selector);
+  if (!route) return undefined;
+  const node = getPath(styles, route.path);
+  return node ? { node, layer: route.path[0] as keyof Styles } : undefined;
+}
+
 function routeFor(selector: string): PresetRoute | undefined {
   if (selector in PRESET_ROUTES) return PRESET_ROUTES[selector];
   const label = selector.match(/^#labels > #(.+)$/);
@@ -533,6 +552,7 @@ export function presetToLegacy(source: Styles): Record<string, Record<string, st
 
 // the legacy preset pipeline (public/modules/ui/style-presets.js) converts through these
 globalThis.stylesLegacy = {
+  styleNodeFor,
   labelGroupFromLegacy,
   labelGroupToLegacy,
   labelGroupsFromLegacy,
