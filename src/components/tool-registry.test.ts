@@ -12,7 +12,7 @@ import { getToolCommands, matchesToolCommand, TOOL_COMMANDS, TOOL_GROUPS } from 
 
 describe("tool registry", () => {
   test("gives every command stable unique identifiers and required metadata", () => {
-    expect(TOOL_COMMANDS).toHaveLength(51);
+    expect(TOOL_COMMANDS).toHaveLength(50);
     expect(new Set(TOOL_COMMANDS.map(command => command.id)).size).toBe(TOOL_COMMANDS.length);
     expect(new Set(TOOL_COMMANDS.map(command => command.controlId)).size).toBe(TOOL_COMMANDS.length);
 
@@ -32,6 +32,7 @@ describe("tool registry", () => {
     for (const group of TOOL_GROUPS) expect(getToolCommands(group.id).length).toBeGreaterThan(0);
     expect(getToolCommands("politics").some(command => command.id === "politics.states")).toBe(true);
     expect(getToolCommands("settlements").some(command => command.id === "settlements.burgs")).toBe(true);
+    expect(getToolCommands("analysis").some(command => command.id === "analysis.cells")).toBe(false);
     expect(getToolCommands("regenerate").every(command => command.destructive)).toBe(true);
   });
 

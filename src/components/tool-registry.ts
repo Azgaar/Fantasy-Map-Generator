@@ -326,16 +326,6 @@ export const TOOL_COMMANDS: readonly ToolCommand[] = [
     searchTerms: ["ruler", "distance", "area"]
   }),
   controllerCommand({
-    id: "analysis.cells",
-    controlId: "overviewCellsButton",
-    label: "Cell Details",
-    description: "Inspect data for an individual map cell",
-    group: "analysis",
-    requiredCapability: "map:inspect",
-    shortcut: "Shift + E",
-    searchTerms: ["inspect", "details", "data"]
-  }),
-  controllerCommand({
     id: "analysis.charts",
     controlId: "overviewChartsButton",
     label: "Charts",

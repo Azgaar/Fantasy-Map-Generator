@@ -1,14 +1,10 @@
-// The Cell Info panel: everything known about the cell under the cursor
-import { select } from "d3";
-import { flushSync } from "react-dom";
-import { createRoot, type Root } from "react-dom/client";
-import { registerManagedDialog } from "@/components/dialog/dialog-helpers";
-import { WorkspaceDialog } from "@/components/ui/dialog";
+// The Cell Info panel: everything known about a selected cell
+import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import type { Feature } from "@/generators/features";
 import type { Point } from "@/generators/voronoi";
 import {
   convertTemperature,
-  debounce,
   ensureEl,
   findClosestCell,
   findGridCell,
@@ -19,7 +15,6 @@ import {
   getHeight,
   getLatitude,
   getLongitude,
-  getPointer,
   rn,
   si
 } from "@/utils";
@@ -48,86 +43,36 @@ const INFO_FIELDS = [
   ["Burg Production", "infoBurgProduction", "n/a"]
 ] as const;
 
-let dialogHost: HTMLDivElement | null = null;
-let dialogRoot: Root | null = null;
-let unregisterDialog: (() => void) | null = null;
-
-function open(): void {
-  cleanup();
-  renderDialog();
-  select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
-}
-
 function openAt(point: Point): void {
-  cleanup();
-  renderDialog();
-
   const cellId = findClosestCell(...point, undefined, pack);
   if (cellId === undefined) return;
+  closeDialogs(".stable");
+  destroyDialog("cellInfo");
+
+  const provinceId = pack.cells.province[cellId];
+  const province = pack.provinces[provinceId];
+  const title = province ? `Province: ${province.fullName || province.name}` : `Cell ${cellId}`;
+  const fields = INFO_FIELDS.map(
+    ([label, id, initialValue]) => `<p><b>${label}:</b> <span id="${id}">${initialValue}</span></p>`
+  ).join("");
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    /* html */ `<div id="cellInfo" class="dialog stable">
+      <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
+      ${fields}
+    </div>`
+  );
   updateFields(point, cellId, findGridCell(point[0], point[1], grid));
-}
-
-function cleanup(): void {
-  select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
-  unregisterDialog?.();
-  unregisterDialog = null;
-
-  const root = dialogRoot;
-  const host = dialogHost;
-  dialogRoot = null;
-  dialogHost = null;
-  if (!root) return;
-
-  queueMicrotask(() => {
-    root.unmount();
-    host?.remove();
+  showDomDialog({
+    access: "inspect",
+    content: ensureEl("cellInfo"),
+    placement: "top-right",
+    placementTarget: document.getElementById("map"),
+    presentation: "panel",
+    resizable: false,
+    title
   });
 }
-
-function renderDialog(): void {
-  dialogHost = document.createElement("div");
-  dialogHost.dataset.dialogHost = "cellInfo";
-  ensureEl("dialogs").appendChild(dialogHost);
-  dialogRoot = createRoot(dialogHost);
-  unregisterDialog = registerManagedDialog("cellInfo", cleanup, true, undefined, undefined, "inspect");
-
-  flushSync(() => {
-    dialogRoot?.render(
-      <WorkspaceDialog
-        className="dialog stable"
-        dialogId="cellInfo"
-        isModal={false}
-        isOpen
-        onClose={cleanup}
-        placement="top-right"
-        placementTarget={document.querySelector("svg")}
-        title="Cell Details"
-        width="22em"
-      >
-        <p>
-          <b>Cell:</b> <span id="infoCell" /> <b>X:</b> <span id="infoX" /> <b>Y:</b> <span id="infoY" />
-        </p>
-        {INFO_FIELDS.map(([label, id, initialValue]) => (
-          <p key={id}>
-            <b>{label}:</b> <span id={id}>{initialValue}</span>
-          </p>
-        ))}
-      </WorkspaceDialog>
-    );
-  });
-}
-
-const updateCellInfo = debounce((event: MouseEvent | TouchEvent): void => {
-  const node = event.currentTarget as SVGElement | null;
-  if (!node || !pack.cells?.p) return;
-
-  const point = getPointer(event, node);
-  const packCellId = findClosestCell(...point, undefined, pack);
-  if (packCellId === undefined) return;
-
-  const gridCellId = findGridCell(point[0], point[1], grid);
-  updateFields(point, packCellId, gridCellId);
-}, 100);
 
 function updateFields(point: Point, cellId: number, gridCellId: number): void {
   const { cells } = pack;
@@ -252,4 +197,4 @@ function getFriendlyPopulation(cellId: number): string {
   return `${si(rural + urban)} (${si(rural)} rural, urban ${si(urban)})`;
 }
 
-export const CellInfo = { open, openAt };
+export const CellInfo = { openAt };

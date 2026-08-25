@@ -79,7 +79,7 @@ const TOOL_PANEL_COPY: Record<
     searchLabel: "Search editors"
   },
   inspect: {
-    emptyDescription: "Try cells, charts, or notes.",
+    emptyDescription: "Try charts or notes.",
     placeholder: "Search inspection tools",
     searchLabel: "Search inspection tools"
   },

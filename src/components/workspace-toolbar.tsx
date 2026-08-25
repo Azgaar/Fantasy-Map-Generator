@@ -507,6 +507,9 @@ function GenerateMenu({ onOpenSection }: Pick<WorkspaceToolbarProps, "onOpenSect
 function WorkspaceModeSwitch({ mode }: { mode: WorkspaceMode }): React.JSX.Element {
   return (
     <div aria-label="Workspace mode" className="fmg-workspace-mode" role="group">
+      <span aria-live="polite" className="fmg-workspace-mode__status" role="status">
+        Workspace is in {mode === "view" ? "View" : "Edit"} mode
+      </span>
       <button
         aria-pressed={mode === "view"}
         className={mode === "view" ? "fmg-workspace-mode__button fmg-workspace-mode__button--active" : "fmg-workspace-mode__button"}

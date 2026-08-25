@@ -34,7 +34,6 @@ const TOOL_COMMAND_HANDLERS = {
   openSubmapTool: () => Controllers.SubmapTool.open(),
   openTransformTool: () => Controllers.TransformTool.open(),
   overviewBurgsButton: () => Controllers.BurgsOverview.open(),
-  overviewCellsButton: () => Controllers.CellInfo.open(),
   overviewChartsButton: () => Controllers.ChartsOverview.open(),
   overviewLabelsButton: () => Controllers.LabelsOverview.open(),
   overviewMarketsButton: () => Controllers.MarketsOverview.open(),

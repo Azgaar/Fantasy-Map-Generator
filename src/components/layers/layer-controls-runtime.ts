@@ -522,10 +522,11 @@ function handleLayersPresetChange(preset: string): void {
 function setLayersPreset(preset: string): void {
   selectedPreset = preset;
   syncLegacyPresetControl();
-  localStorage.setItem("preset", preset);
+  if (getWorkspaceMode() === "edit") localStorage.setItem("preset", preset);
 }
 
 function savePresetByName(name: string): void {
+  if (!requireWorkspaceCapability("map:edit")) return;
   const preset = name.trim();
   if (!preset) return;
   presets[preset] = [...ensureEl("mapLayers").querySelectorAll("li:not(.buttonoff)")]
@@ -544,6 +545,7 @@ function savePresetByName(name: string): void {
 }
 
 function removePreset(): void {
+  if (!requireWorkspaceCapability("map:edit")) return;
   const preset = selectedPreset;
   if (preset === "custom" || DEFAULT_PRESETS[preset as keyof typeof DEFAULT_PRESETS]) return;
   delete presets[preset];
@@ -556,6 +558,7 @@ function removePreset(): void {
 }
 
 function promptAndSavePreset(): void {
+  if (!requireWorkspaceCapability("map:edit")) return;
   const legacyPrompt = window.prompt as unknown as (
     message: string,
     options: { default: string },

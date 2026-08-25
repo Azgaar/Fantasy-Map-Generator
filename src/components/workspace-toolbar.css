@@ -62,6 +62,16 @@
   backdrop-filter: blur(12px);
 }
 
+.fmg-workspace-mode__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .fmg-workspace-mode__button {
   min-width: 48px;
   border: 0;

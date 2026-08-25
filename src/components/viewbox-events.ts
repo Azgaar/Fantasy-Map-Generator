@@ -80,7 +80,10 @@ function onClick(event: MouseEvent): void {
   const grand = parent?.parentElement as SVGElement | null;
   const great = grand?.parentElement as SVGElement | null;
   const ancestor = great?.parentElement as SVGElement | null;
-  if (!target || !parent || !grand || !great || !ancestor) return;
+  if (!target || !parent || !grand || !great || !ancestor) {
+    inspectMapPoint(event, hit);
+    return;
+  }
 
   const label = target.closest<SVGTextElement>("#labels text[data-label-type]");
   if (label) {
@@ -96,7 +99,11 @@ function onClick(event: MouseEvent): void {
   }
 
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
-  open?.(target, parent);
+  if (open) {
+    open(target, parent);
+    return;
+  }
+  inspectMapPoint(event, hit);
 }
 
 function inspectMapPoint(event: MouseEvent, hit: MapHit | null): void {

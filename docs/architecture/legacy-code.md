@@ -82,6 +82,14 @@ for classic or explicitly supported external callers, not a substitute for a mod
 Layering can create temporary exceptions: for example, a generator must not import a renderer
 or UI module merely to avoid a global call.
 
+### Workspace mode compatibility boundary
+
+`src/application/workspace-mode.ts` is intentionally **not** exposed as a new `window.*` API. Bundled UI adapters
+use its capability checks before invoking legacy controls: the tool executor, legacy-command adapter, hotkeys,
+options runtime, layer controls, and map input all enforce the same View/Edit policy. Existing classic controls stay
+available in Edit mode while they are incrementally migrated; any newly discovered classic mutation entry point must
+call `requireWorkspaceCapability` before opening its workflow or committing its mutation.
+
 ### When a bridge can be deleted
 
 Remove a global bridge only when all of the following are true:
