@@ -1059,12 +1059,12 @@ styleGoodsCircle.addEventListener("change", function () {
   Layers.draw("goods");
 });
 
-styleGoodsSize.addEventListener("change", function () {
+styleGoodsSize.addEventListener("input", function () {
   styles.goods.goodsIcons.options.size = +this.value || 6;
   Layers.draw("goods");
 });
 
-styleGoodsBurgsSize.addEventListener("change", function () {
+styleGoodsBurgsSize.addEventListener("input", function () {
   styles.goods.goodsBurgs.options.size = +this.value || 3;
   Layers.draw("goods");
 });

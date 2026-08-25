@@ -216,11 +216,11 @@ test.describe("style editor events drive the store", () => {
     await openStyleElement(page, "goodsIcons");
 
     await page.locator("#styleGoodsSize input[type=number]").fill("9");
-    await page.locator("#styleGoodsSize").dispatchEvent("change");
+    await page.locator("#styleGoodsSize").dispatchEvent("input");
 
     await openStyleElement(page, "goodsBurgs");
     await page.locator("#styleGoodsBurgsSize input[type=number]").fill("7");
-    await page.locator("#styleGoodsBurgsSize").dispatchEvent("change");
+    await page.locator("#styleGoodsBurgsSize").dispatchEvent("input");
 
     const stored = await page.evaluate(() => ({
       icons: (window as any).styles.goods.goodsIcons.options.size,
