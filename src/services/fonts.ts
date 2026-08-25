@@ -284,13 +284,38 @@ function declareDefaultFonts() {
   });
 }
 
+let fontOptionsPending = false;
+
 function addFontOption(family: string) {
-  const options = document.getElementById("styleSelectFont")!;
+  // The Style panel is mounted independently from this app-shell service.
+  // Fonts may be registered before that panel is available.
+  const options = document.getElementById("styleSelectFont");
+  if (!(options instanceof HTMLSelectElement)) {
+    scheduleFontOptions();
+    return;
+  }
+  if (Array.from(options.options).some(option => option.value === family)) return;
+
   const option = document.createElement("option");
   option.value = family;
   option.innerText = family;
   option.style.fontFamily = family;
   options.append(option);
+}
+
+function scheduleFontOptions(): void {
+  if (fontOptionsPending || document.readyState === "complete") return;
+  fontOptionsPending = true;
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      fontOptionsPending = false;
+      fonts.forEach(font => {
+        addFontOption(font.family);
+      });
+    },
+    { once: true }
+  );
 }
 
 async function fetchGoogleFont(family: string) {

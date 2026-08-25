@@ -9,8 +9,12 @@ const isLocalhost = () => location.hostname === "localhost" || location.hostname
 function onResize(): void {
   if (stored("mapWidth") && stored("mapHeight")) return;
 
-  (document.getElementById("mapWidthInput") as HTMLInputElement).value = String(window.innerWidth);
-  (document.getElementById("mapHeightInput") as HTMLInputElement).value = String(window.innerHeight);
+  const mapWidthInput = document.getElementById("mapWidthInput");
+  const mapHeightInput = document.getElementById("mapHeightInput");
+  if (!(mapWidthInput instanceof HTMLInputElement) || !(mapHeightInput instanceof HTMLInputElement)) return;
+
+  mapWidthInput.value = String(window.innerWidth);
+  mapHeightInput.value = String(window.innerHeight);
   OptionsController.fitMapToScreen();
   window.dispatchEvent(new Event("map:viewport-resized"));
 }
