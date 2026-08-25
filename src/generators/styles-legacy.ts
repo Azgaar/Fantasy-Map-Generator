@@ -407,6 +407,14 @@ export function syncStylesFromMap(): void {
     if (!document.getElementById(key)?.hasAttribute("scheme"))
       harvested.heightmap[key].options = structuredClone(styles.heightmap[key].options);
   }
+  if (!document.getElementById("armies")?.hasAttribute("box-size"))
+    harvested.military.options = structuredClone(styles.military.options);
+  if (!document.getElementById("gridOverlay")?.hasAttribute("type"))
+    harvested.grid.options = structuredClone(styles.grid.options);
+  if (!document.getElementById("map")?.hasAttribute("data-filter"))
+    harvested.map.options.dataFilter = styles.map.options.dataFilter;
+  if (!document.getElementById("sea_island")?.hasAttribute("auto-filter"))
+    harvested.coastline.sea_island.options.autoFilter = styles.coastline.sea_island.options.autoFilter;
   Styles.set(harvested);
 }
 

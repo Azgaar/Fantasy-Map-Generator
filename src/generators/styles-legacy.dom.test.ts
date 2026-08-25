@@ -171,6 +171,33 @@ test("save sync lets an old map's heightmap attrs win when scheme is present", (
   expect(styles.heightmap.oceanHeights.options.render).toBe(true);
 });
 
+test("save sync keeps store armies, grid, map-filter and auto-filter options when their marker attrs are absent", () => {
+  document.body.innerHTML = `<svg id="map"><g id="armies" font-size="8"></g><g id="gridOverlay"></g><g id="sea_island"></g></svg>`;
+  styles.military.options.boxSize = 4;
+  styles.military.options.fontSize = 8;
+  styles.grid.options.scale = 2;
+  styles.map.options.dataFilter = "sepia";
+  styles.coastline.sea_island.options.autoFilter = 0;
+  syncStylesFromMap();
+  expect(styles.military.options.boxSize).toBe(4);
+  expect(styles.grid.options.scale).toBe(2);
+  expect(styles.map.options.dataFilter).toBe("sepia");
+  expect(styles.coastline.sea_island.options.autoFilter).toBe(0);
+});
+
+test("save sync lets an old map's armies, grid, map-filter and auto-filter attrs win", () => {
+  document.body.innerHTML = `<svg id="map" data-filter="tint"><g id="armies" box-size="5" font-size="10"></g><g id="gridOverlay" type="square" scale="3" dx="1" dy="2"></g><g id="sea_island" auto-filter="1"></g></svg>`;
+  styles.military.options.boxSize = 4;
+  styles.grid.options.scale = 2;
+  styles.map.options.dataFilter = null;
+  styles.coastline.sea_island.options.autoFilter = 0;
+  syncStylesFromMap();
+  expect(styles.military.options.boxSize).toBe(5);
+  expect(styles.grid.options).toEqual({ type: "square", scale: 3, dx: 1, dy: 2 });
+  expect(styles.map.options.dataFilter).toBe("tint");
+  expect(styles.coastline.sea_island.options.autoFilter).toBe(1);
+});
+
 test("save sync lets an old map's coordinates data-size win over the store", () => {
   document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
   styles.coordinates.options.fontSize = 20;

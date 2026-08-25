@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -290,5 +290,68 @@ test.describe("style editor events drive the store", () => {
         expect(await page.locator(id).getAttribute(attr), `${id} ${attr}`).toBeNull();
       }
     }
+  });
+
+  test("armies size input writes the store and the renderer derives from it", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("military"));
+    await openStyleElement(page, "armies");
+
+    await page.locator("#styleArmiesSize input[type=number]").fill("4");
+
+    const stored = await page.evaluate(() => ({
+      boxSize: (window as any).styles.military.options.boxSize,
+      fontSize: (window as any).styles.military.options.fontSize
+    }));
+    expect(stored).toEqual({ boxSize: 4, fontSize: 8 });
+
+    // renderer derives from the store: a regiment box is 2x boxSize tall
+    const boxHeight = await page.locator("#armies > g > g rect").first().getAttribute("height");
+    expect(Number(boxHeight)).toBe(8);
+
+    expect(await page.locator("#armies").getAttribute("box-size")).toBeNull();
+    // font-size is renderer-stamped from the store (regiment labels size by inheritance)
+    expect(await page.locator("#armies").getAttribute("font-size")).toBe("8");
+  });
+
+  test("grid controls write the store and restyle the pattern", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("grid"));
+    await openStyleElement(page, "gridOverlay");
+
+    await page.locator("#styleGridType").selectOption("pointyHex");
+    for (const [input, value] of [
+      ["#styleGridScale", "2"],
+      ["#styleGridShiftX", "10"],
+      ["#styleGridShiftY", "5"]
+    ] as const) {
+      await page.locator(input).fill(value);
+      await page.locator(input).dispatchEvent("input");
+    }
+
+    const stored = await page.evaluate(() => (window as any).styles.grid.options);
+    expect(stored).toEqual({ type: "pointyHex", scale: 2, dx: 10, dy: 5 });
+
+    await expect(page.locator("#pattern_pointyHex")).toHaveAttribute(
+      "patternTransform",
+      "scale(2) translate(10 5)"
+    );
+
+    for (const attr of ["type", "scale", "dx", "dy"]) {
+      expect(await page.locator("#gridOverlay").getAttribute(attr), attr).toBeNull();
+    }
+  });
+
+  test("map filter buttons write the store and only the filter attr lands on #map", async ({ page }) => {
+    await page.evaluate(() => (window as any).showOptions());
+    await page.locator("#styleTab").click();
+    await page.locator("#mapFilters #sepia").click();
+
+    expect(await page.evaluate(() => (window as any).styles.map.options.dataFilter)).toBe("sepia");
+    expect(await page.locator("#map").getAttribute("filter")).toBe("url(#filter-sepia)");
+    expect(await page.locator("#map").getAttribute("data-filter")).toBeNull();
+
+    // toggling off clears the store
+    await page.locator("#mapFilters #sepia").click();
+    expect(await page.evaluate(() => (window as any).styles.map.options.dataFilter)).toBeNull();
+    expect(await page.locator("#map").getAttribute("filter")).toBeNull();
   });
 });

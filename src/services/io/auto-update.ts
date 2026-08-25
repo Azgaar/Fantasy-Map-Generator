@@ -1887,4 +1887,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
   }
   document.getElementById("oceanHeights")?.removeAttribute("data-render");
+  document.getElementById("armies")?.removeAttribute("box-size");
+  for (const attr of ["type", "scale", "dx", "dy"]) document.getElementById("gridOverlay")?.removeAttribute(attr);
+  document.getElementById("map")?.removeAttribute("data-filter");
+  document.getElementById("sea_island")?.removeAttribute("auto-filter");
 }

@@ -215,10 +215,10 @@ function selectStyleElement() {
 
   if (styleElement === "gridOverlay") {
     styleGrid.style.display = "block";
-    styleGridType.value = el.attr("type");
-    styleGridScale.value = el.attr("scale") || 1;
-    styleGridShiftX.value = el.attr("dx") || 0;
-    styleGridShiftY.value = el.attr("dy") || 0;
+    styleGridType.value = styles.grid.options.type;
+    styleGridScale.value = styles.grid.options.scale;
+    styleGridShiftX.value = styles.grid.options.dx;
+    styleGridShiftY.value = styles.grid.options.dy;
     calculateFriendlyGridSize();
   }
 
@@ -375,7 +375,7 @@ function selectStyleElement() {
   if (styleElement === "armies") {
     styleArmies.style.display = "block";
     styleArmiesFillOpacity.value = el.attr("fill-opacity");
-    styleArmiesSize.value = el.attr("box-size");
+    styleArmiesSize.value = styles.military.options.boxSize;
   }
 
   if (styleElement === "emblems") {
@@ -601,13 +601,13 @@ styleClippingInput.addEventListener("change", function () {
 });
 
 styleGridType.addEventListener("change", function () {
-  getEl().attr("type", this.value);
+  styles.grid.options.type = this.value;
   Layers.draw("grid");
   calculateFriendlyGridSize();
 });
 
 styleGridScale.addEventListener("input", function () {
-  getEl().attr("scale", this.value);
+  styles.grid.options.scale = +this.value || 1;
   Layers.draw("grid");
   calculateFriendlyGridSize();
 });
@@ -619,12 +619,12 @@ function calculateFriendlyGridSize() {
 }
 
 styleGridShiftX.addEventListener("input", function () {
-  getEl().attr("dx", this.value);
+  styles.grid.options.dx = +this.value || 0;
   Layers.draw("grid");
 });
 
 styleGridShiftY.addEventListener("input", function () {
-  getEl().attr("dy", this.value);
+  styles.grid.options.dy = +this.value || 0;
   Layers.draw("grid");
 });
 
@@ -1035,10 +1035,8 @@ styleArmiesFillOpacity.addEventListener("input", e => {
 
 styleArmiesSize.addEventListener("input", e => {
   const value = Number(e.target.value);
-  d3.select("#armies")
-    .attr("box-size", value)
-    .attr("font-size", value * 2);
-
+  styles.military.options.boxSize = value;
+  styles.military.options.fontSize = value * 2;
   Layers.draw("military");
 });
 
@@ -1237,12 +1235,12 @@ mapFilters.addEventListener("click", applyMapFilter);
 function applyMapFilter(event) {
   if (event.target.tagName !== "BUTTON") return;
   const button = event.target;
-  d3.select("#map").attr("data-filter", null).attr("filter", null);
+  styles.map.options.dataFilter = null;
+  d3.select("#map").attr("filter", null);
   if (button.classList.contains("pressed")) return button.classList.remove("pressed");
 
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
-  d3.select("#map")
-    .attr("data-filter", button.id)
-    .attr("filter", "url(#filter-" + button.id + ")");
+  styles.map.options.dataFilter = button.id;
+  d3.select("#map").attr("filter", "url(#filter-" + button.id + ")");
 }

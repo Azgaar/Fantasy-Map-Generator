@@ -132,20 +132,6 @@ function writeAttrsById(id, attrs) {
 function projectPresetOptions() {
   const byId = id => document.getElementById(id);
 
-  setOrRemove(byId("map"), "data-filter", styles.map.options.dataFilter);
-
-  const armies = byId("armies");
-  setOrRemove(armies, "font-size", styles.military.options.fontSize);
-  setOrRemove(armies, "box-size", styles.military.options.boxSize);
-
-  setOrRemove(byId("sea_island"), "auto-filter", styles.coastline.sea_island.options.autoFilter);
-
-  const gridOverlay = byId("gridOverlay");
-  setOrRemove(gridOverlay, "type", styles.grid.options.type);
-  setOrRemove(gridOverlay, "scale", styles.grid.options.scale);
-  setOrRemove(gridOverlay, "dx", styles.grid.options.dx);
-  setOrRemove(gridOverlay, "dy", styles.grid.options.dy);
-
   setOrRemove(byId("goodsIcons"), "data-circle", Number(styles.goods.goodsIcons.options.circle));
 
   const markets = byId("markets");
@@ -514,6 +500,16 @@ function addStylePreset() {
       for (const key of ["scheme", "terracing", "skip", "relax", "curve"]) presetStyle[selector][key] = heights[key];
       if (selector === "#terrs #oceanHeights") presetStyle[selector]["data-render"] = Number(heights.render);
     }
+    if (presetStyle["#armies"]) {
+      presetStyle["#armies"]["box-size"] = styles.military.options.boxSize;
+      presetStyle["#armies"]["font-size"] = styles.military.options.fontSize;
+    }
+    if (presetStyle["#gridOverlay"]) {
+      for (const key of ["type", "scale", "dx", "dy"]) presetStyle["#gridOverlay"][key] = styles.grid.options[key];
+    }
+    if (presetStyle["#map"]) presetStyle["#map"]["data-filter"] = styles.map.options.dataFilter;
+    if (presetStyle["#sea_island"])
+      presetStyle["#sea_island"]["auto-filter"] = styles.coastline.sea_island.options.autoFilter;
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));
@@ -619,7 +615,7 @@ function removeStylePreset() {
 }
 
 function updateMapFilter() {
-  const filter = d3.select("#map").attr("data-filter");
+  const filter = styles.map.options.dataFilter;
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   if (!filter) return;
   mapFilters.querySelector("#" + filter).classList.add("pressed");
