@@ -502,6 +502,33 @@ test.describe("style editor events drive the store", () => {
     await expect(page.locator("#rivers")).toHaveAttribute("opacity", "0.4");
   });
 
+  test("label group dropdown counts come from the label data, not the culled DOM", async ({ page }) => {
+    // zoom in so some label tiers are culled from the DOM while their data still exists
+    await page.evaluate(() => (window as any).setMapZoom(6));
+    await page.waitForTimeout(200);
+    await openStyleElement(page, "labels");
+
+    const { optionCounts, dataCounts } = await page.evaluate(() => {
+      const dataCounts: Record<string, number> = {};
+      for (const label of (window as any).getLabelsData()) {
+        dataCounts[label.group] = (dataCounts[label.group] || 0) + 1;
+      }
+      const optionCounts: Record<string, number> = {};
+      for (const option of (document.getElementById("styleGroupSelect") as HTMLSelectElement).options) {
+        const match = option.text.match(/^(.*) \((\d+)\)$/);
+        if (match) optionCounts[match[1]] = Number(match[2]);
+      }
+      return { optionCounts, dataCounts };
+    });
+
+    expect(Object.keys(optionCounts).length).toBeGreaterThan(0);
+    for (const [group, count] of Object.entries(optionCounts)) {
+      expect(count, `dropdown count for ${group}`).toBe(dataCounts[group] || 0);
+    }
+    // at least one group must have labels in data at all, or the test proves nothing
+    expect(Object.values(dataCounts).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+  });
+
   test("compass shift writes the rose transform through the store", async ({ page }) => {
     await page.evaluate(() => (window as any).Layers.show("compass"));
     await openStyleElement(page, "compass");

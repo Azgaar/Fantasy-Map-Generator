@@ -419,9 +419,11 @@ function selectStyleElement() {
   styleGroupSelect.options.length = 0; // remove all options
   if (["anchors", "borders", "burgIcons", "coastline", "lakes", "labels", "routes", "terrs"].includes(styleElement)) {
     if (styleElement === "labels") {
+      // count from the label data: the culled DOM only holds labels rendered at this zoom
+      const labelCounts = {};
+      for (const label of window.getLabelsData()) labelCounts[label.group] = (labelCounts[label.group] || 0) + 1;
       options.labels.groups.forEach(group => {
-        const groupElement = ensureEl("labels").querySelector(`[data-group="${CSS.escape(group.name)}"]`);
-        const count = groupElement?.childElementCount || 0;
+        const count = labelCounts[group.name] || 0;
         styleGroupSelect.options.add(new Option(`${group.name} (${count})`, group.name, false, false));
       });
       styleGroupSelect.value = el.attr("data-group");

@@ -40,6 +40,7 @@ declare global {
     changeMapZoom: typeof import("../components/zoom").changeMapZoom;
     setZoomExtent: typeof import("../components/zoom").setZoomExtent;
     setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
+    getLabelsData: typeof import("../renderers/labels/label-data").getLabelsData;
   }
 
   var mapId: number;
