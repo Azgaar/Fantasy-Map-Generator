@@ -24,8 +24,8 @@ import {
   HEIGHT_COLOR_SCHEMES
 } from "@/renderers/scene/height-color-schemes";
 import { Services } from "@/services";
-import { LocalMapStorage } from "@/services/io/local-map-storage";
 import { declareFont } from "@/services/fonts";
+import { LocalMapStorage } from "@/services/io/local-map-storage";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 

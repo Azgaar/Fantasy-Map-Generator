@@ -1837,10 +1837,10 @@ function loadImage(this: HTMLInputElement): void {
   img.style.display = "none";
   document.body.appendChild(img);
 
-  img.onload = () => {
+  img.onload = async () => {
     const ctx = ensureEl<HTMLCanvasElement>("canvas").getContext("2d")!;
     ctx.drawImage(img, 0, 0, graphWidth, graphHeight);
-    heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
+    await heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     resetZoom();
   };
 
@@ -1850,7 +1850,8 @@ function loadImage(this: HTMLInputElement): void {
   reader.readAsDataURL(file);
 }
 
-function heightsFromImage(count: number): void {
+async function heightsFromImage(count: number): Promise<void> {
+  await loadRgbQuant();
   const sourceImage = ensureEl<HTMLCanvasElement>("canvas");
   const sampleCanvas = document.createElement("canvas");
   sampleCanvas.width = grid.cellsX;
@@ -1891,6 +1892,26 @@ function heightsFromImage(count: number): void {
     .on("click", colorClicked);
 
   ensureEl("colorsUnassignedNumber").innerHTML = String(colors.length);
+}
+
+function loadRgbQuant(): Promise<void> {
+  if (window.RgbQuant) return Promise.resolve();
+  const existing = document.querySelector<HTMLScriptElement>('script[data-runtime-library="rgbquant"]');
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Unable to load image quantizer")), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.dataset.runtimeLibrary = "rgbquant";
+    script.src = "libs/rgbquant.min.js";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Unable to load image quantizer"));
+    document.head.appendChild(script);
+  });
 }
 
 function mapClicked(this: SVGElement): void {
@@ -1960,7 +1981,7 @@ function autoAssing(type: string): void {
   const colorsUnassignedContainer = ensureEl("colorsUnassignedContainer");
   let unassigned = colorsUnassignedContainer.querySelectorAll<HTMLElement>("div");
   if (!unassigned.length) {
-    heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
+    void heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     unassigned = colorsUnassignedContainer.querySelectorAll<HTMLElement>("div");
     if (!unassigned.length) {
       tip("No unassigned colors. Please load an image and click the button again", false, "error");
@@ -2031,7 +2052,7 @@ function setConvertColorsNumber(): void {
     { default: +ensureEl<HTMLInputElement>("convertColors").value, step: 1, min: 3, max: 255 },
     number => {
       ensureEl<HTMLInputElement>("convertColors").value = String(number);
-      heightsFromImage(+number);
+      void heightsFromImage(+number);
     }
   );
 }

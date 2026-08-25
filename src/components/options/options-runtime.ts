@@ -6,11 +6,14 @@ import { getViewportSurface } from "@/application/viewport-surface";
 import { getWorkspaceMode, requireWorkspaceCapability } from "@/application/workspace-mode";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { enableElementDragging } from "@/components/element-dragging";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { fitScaleBar } from "@/renderers/draw-scalebar";
 import { applyOption, ensureEl, gauss, last, minmax, P, rand, rn, rw } from "@/utils";
 import { lock, stored, unlock } from "@/utils/preferences";
+import { getUnitSettings } from "@/services/units-settings";
+import { createExportMapDialog, createLoadMapDialog, createPngTilesDialog, createSaveMapDialog } from "./io-dialogs";
 import {
   bindOptionsController,
   OptionsController,
@@ -31,6 +34,8 @@ interface GoogleTranslateApi {
     };
   };
 }
+
+getUnitSettings();
 
 const optionsRoot = ensureEl("options");
 const optionsTrigger = ensureEl("optionsTrigger");
@@ -72,16 +77,6 @@ regenerate.addEventListener("click", () => regeneratePrompt());
 ensureEl("optionsHide").addEventListener("click", hideOptions);
 ensureEl("generateMapFromSetup").addEventListener("click", () => regeneratePrompt({ fromSetup: true }));
 ensureEl("showSupporters").addEventListener("click", () => void showSupporters());
-ensureEl("openExportToPngTiles").addEventListener("click", openExportToPngTiles);
-ensureEl("loadMapFromUrl").addEventListener("click", loadURL);
-ensureEl("dropboxConnectButton").addEventListener("click", () => void connectToDropbox());
-ensureEl("copySharableLink").addEventListener("click", copyLinkToClickboard);
-document.querySelectorAll<HTMLButtonElement>("[data-export-json]").forEach(button => {
-  button.addEventListener("click", () => {
-    const type = button.dataset.exportJson as "Full" | "GridCells" | "Minimal" | "PackCells";
-    void exportToJson(type);
-  });
-});
 document.addEventListener("click", event => {
   const target = (event.target as Element | null)?.closest<HTMLElement>("[data-seed-history-index]");
   if (target) restoreSeed(Number(target.dataset.seedHistoryIndex));
@@ -940,13 +935,15 @@ function regenerateBlankMap(options: RegenerateOptions): void {
 }
 
 function showSavePane(): void {
-  const sharableLinkContainer = ensureEl("sharableLinkContainer");
-  sharableLinkContainer.style.display = "none";
-
-  window.showDomDialog({
+  const content = createSaveMapDialog();
+  content.querySelectorAll<HTMLButtonElement>("[data-save-method]").forEach(button => {
+    button.addEventListener("click", () => {
+      void window.Services.Save.saveMap(button.dataset.saveMethod as "storage" | "machine" | "dropbox");
+    });
+  });
+  showDomDialog({
     actions: [{ label: "Close" }],
-    content: ensureEl("saveMapData"),
-    destroyOnClose: false,
+    content,
     placement: "center",
     placementTarget: document.getElementById("map"),
     resizable: false,
@@ -962,19 +959,35 @@ function copyLinkToClickboard(): void {
   navigator.clipboard.writeText(link).then(() => tip("Link is copied to the clipboard", true, "success", 8000));
 }
 
-ensureEl<HTMLInputElement>("showLabels").addEventListener("change", event => {
-  options.labels.showAll = (event.currentTarget as HTMLInputElement).checked;
-  localStorage.setItem("label-groups", JSON.stringify(options.labels));
-  drawLabels();
-});
-
 function showExportPane(): void {
-  ensureEl<HTMLInputElement>("showLabels").checked = options.labels.showAll;
-
-  window.showDomDialog({
+  const content = createExportMapDialog();
+  const showLabels = content.querySelector<HTMLInputElement>("#showLabels")!;
+  showLabels.checked = options.labels.showAll;
+  showLabels.addEventListener("change", () => {
+    options.labels.showAll = showLabels.checked;
+    localStorage.setItem("label-groups", JSON.stringify(options.labels));
+    drawLabels();
+  });
+  content.querySelector("#openExportToPngTiles")!.addEventListener("click", openExportToPngTiles);
+  content.querySelectorAll<HTMLButtonElement>("[data-export-map]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (button.dataset.exportMap === "png") void window.Services.ExportMap.exportToPng();
+      else void window.Services.ExportMap.exportToJpeg();
+    });
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-export-geo]").forEach(button => {
+    button.addEventListener("click", () => {
+      const type = button.dataset.exportGeo!;
+      const method = `saveGeoJson${type[0].toUpperCase()}${type.slice(1)}`;
+      void (window.Services.ExportMap as Record<string, () => void>)[method]();
+    });
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-export-json]").forEach(button => {
+    button.addEventListener("click", () => void exportToJson(button.dataset.exportJson as "Full" | "GridCells" | "Minimal" | "PackCells"));
+  });
+  showDomDialog({
     actions: [{ label: "Close" }],
-    content: ensureEl("exportMapData"),
-    destroyOnClose: false,
+    content,
     placement: "center",
     placementTarget: document.getElementById("map"),
     resizable: false,
@@ -988,10 +1001,28 @@ async function exportToJson(type: "Full" | "GridCells" | "Minimal" | "PackCells"
 }
 
 async function showLoadPane(): Promise<void> {
-  window.showDomDialog({
+  const content = createLoadMapDialog();
+  const dropboxConnectButton = content.querySelector<HTMLElement>("#dropboxConnectButton")!;
+  const loadFromDropboxSelect = content.querySelector<HTMLSelectElement>("#loadFromDropboxSelect")!;
+  const loadFromDropboxButtons = content.querySelector<HTMLElement>("#loadFromDropboxButtons")!;
+  content.querySelector<HTMLButtonElement>('[data-load-method="machine"]')!.addEventListener("click", () => {
+    ensureEl("mapToLoad").click();
+  });
+  content.querySelector<HTMLButtonElement>('[data-load-method="storage"]')!.addEventListener("click", () => {
+    void window.Services.Load.quickLoad();
+  });
+  content.querySelector("#loadMapFromUrl")!.addEventListener("click", loadURL);
+  dropboxConnectButton.addEventListener("click", () => void connectToDropbox());
+  content.querySelector<HTMLButtonElement>('[data-dropbox-action="load"]')!.addEventListener("click", () => {
+    void window.Services.Load.loadFromDropbox();
+  });
+  content.querySelector<HTMLButtonElement>('[data-dropbox-action="share"]')!.addEventListener("click", () => {
+    void window.Services.Load.createSharableDropboxLink();
+  });
+  content.querySelector("#copySharableLink")!.addEventListener("click", copyLinkToClickboard);
+  showDomDialog({
     actions: [{ label: "Close" }],
-    content: ensureEl("loadMapData"),
-    destroyOnClose: false,
+    content,
     placement: "center",
     placementTarget: document.getElementById("map"),
     resizable: false,
@@ -1001,42 +1032,43 @@ async function showLoadPane(): Promise<void> {
 
   // already connected to Dropbox: list saved maps
   if (await window.Services.Cloud.isConnected()) {
-    ensureEl("dropboxConnectButton").style.display = "none";
-    ensureEl("loadFromDropboxSelect").style.display = "block";
-    const loadFromDropboxButtons = ensureEl("loadFromDropboxButtons");
-    const fileSelect = ensureEl<HTMLSelectElement>("loadFromDropboxSelect");
-    fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
+    dropboxConnectButton.style.display = "none";
+    loadFromDropboxSelect.style.display = "block";
+    loadFromDropboxSelect.innerHTML = /* html */ `<option value="" disabled selected>Loading...</option>`;
 
     const files = await window.Services.Cloud.list();
 
     if (!files) {
       loadFromDropboxButtons.style.display = "none";
-      fileSelect.innerHTML = /* html */ `<option value="" disabled selected>Save files to Dropbox first</option>`;
+      loadFromDropboxSelect.innerHTML = /* html */ `<option value="" disabled selected>Save files to Dropbox first</option>`;
       return;
     }
 
     loadFromDropboxButtons.style.display = "block";
-    fileSelect.innerHTML = "";
+    loadFromDropboxSelect.innerHTML = "";
     files.forEach(({ name, updated, size, path }) => {
       const sizeMB = `${rn(size / 1024 / 1024, 2)} MB`;
       const updatedOn = new Date(updated).toLocaleDateString();
       const nameFormatted = `${updatedOn}: ${name} [${sizeMB}]`;
       const option = new Option(nameFormatted, path);
-      fileSelect.options.add(option);
+      loadFromDropboxSelect.options.add(option);
     });
 
     return;
   }
 
   // not connected to Dropbox: show connect button
-  ensureEl("dropboxConnectButton").style.display = "inline-block";
-  ensureEl("loadFromDropboxButtons").style.display = "none";
-  ensureEl("loadFromDropboxSelect").style.display = "none";
+  dropboxConnectButton.style.display = "inline-block";
+  loadFromDropboxButtons.style.display = "none";
+  loadFromDropboxSelect.style.display = "none";
 }
 
 async function connectToDropbox(): Promise<void> {
   await window.Services.Cloud.connect();
-  if (await window.Services.Cloud.isConnected()) showLoadPane();
+  if (await window.Services.Cloud.isConnected()) {
+    closeDialogs();
+    void showLoadPane();
+  }
 }
 
 function loadURL(): void {
@@ -1086,22 +1118,21 @@ ensureEl<HTMLInputElement>("mapToLoad").addEventListener("change", event => {
 });
 
 function openExportToPngTiles(): void {
-  ensureEl("tileStatus").innerHTML = "";
   closeDialogs();
-  updateTilesOptions();
+  const content = createPngTilesDialog();
+  content.querySelector<HTMLElement>("#tileStatus")!.innerHTML = "";
 
-  const inputs = ensureEl("exportToPngTilesScreen").querySelectorAll<HTMLInputElement>("input");
+  const inputs = content.querySelectorAll<HTMLInputElement>("input");
   inputs.forEach(input => {
     input.addEventListener("input", updateTilesOptions);
   });
 
-  window.showDomDialog({
+  showDomDialog({
     actions: [
       { close: false, label: "Download", onClick: () => window.Services.ExportMap.exportToPngTiles() },
       { label: "Cancel" }
     ],
-    content: ensureEl("exportToPngTilesScreen"),
-    destroyOnClose: false,
+    content,
     onClose: () => {
       window.Services.ExportMap.cancelPngTilesExport();
       inputs.forEach(input => {
@@ -1115,6 +1146,7 @@ function openExportToPngTiles(): void {
     title: "Download tiles",
     width: "23em"
   });
+  updateTilesOptions();
 }
 
 function updateTilesOptions(event?: Event): void {

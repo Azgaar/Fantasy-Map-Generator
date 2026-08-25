@@ -4,8 +4,8 @@ import { showDomDialog } from "@/components/ui/dom-dialog";
 import { WorldGenerationController } from "@/generators/world-generation-controller";
 import { drawScaleBar, fitScaleBar } from "@/renderers/draw-scalebar";
 import { drawTemperature } from "@/renderers/draw-temperature";
+import { getUnitSettings } from "@/services/units-settings";
 import { lock, unlock } from "@/utils/preferences";
-import { ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 // Custom app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor).
@@ -13,16 +13,17 @@ declare const prompt: (text: string, options: PromptOptions, callback: (value: s
 
 type ScaleBarSelection = Selection<SVGGElement, unknown, HTMLElement, unknown>;
 
-// The #unitsEditor inputs (distanceUnitInput, heightUnit, temperatureScale, …) are app-wide
-// settings cached as globals at load and read across the codebase, so this module does NOT
-// own that markup — it stays in index.html. Listeners are wired once behind this flag.
+const unitSettings = getUnitSettings();
+
+// The legacy global bindings point at these controller-owned elements while the migration removes
+// direct DOM lookups from other modules incrementally.
 let initialized = false; // TODO: refactor to eliminate initialization arc
 
 function open(): void {
   closeDialogs("#unitsEditor, .stable");
 
   showDomDialog({
-    content: ensureEl("unitsEditor"),
+    content: unitSettings.content,
     destroyOnClose: false,
     placement: "top-right",
     placementTarget: document.querySelector("svg"),
@@ -33,17 +34,15 @@ function open(): void {
   if (initialized) return;
   initialized = true;
 
-  ensureEl("distanceUnitInput").addEventListener("change", changeDistanceUnit);
-  ensureEl("distanceScaleInput").addEventListener("change", changeDistanceScale);
-  ensureEl("heightUnit").addEventListener("change", changeHeightUnit);
-  ensureEl("heightExponentInput").addEventListener("input", changeHeightExponent);
-  ensureEl("temperatureScale").addEventListener("change", changeTemperatureScale);
-
-  ensureEl("populationRateInput").addEventListener("change", changePopulationRate);
-  ensureEl("urbanizationInput").addEventListener("change", changeUrbanizationRate);
-  ensureEl("urbanDensityInput").addEventListener("change", changeUrbanDensity);
-
-  ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
+  unitSettings.distanceUnitInput.addEventListener("change", changeDistanceUnit);
+  unitSettings.distanceScaleInput.addEventListener("change", changeDistanceScale);
+  unitSettings.heightUnit.addEventListener("change", changeHeightUnit);
+  unitSettings.heightExponentInput.addEventListener("input", changeHeightExponent);
+  unitSettings.temperatureScale.addEventListener("change", changeTemperatureScale);
+  unitSettings.populationRateInput.addEventListener("change", changePopulationRate);
+  unitSettings.urbanizationInput.addEventListener("change", changeUrbanizationRate);
+  unitSettings.urbanDensityInput.addEventListener("change", changeUrbanDensity);
+  unitSettings.unitsRestore.addEventListener("click", restoreDefaultUnits);
 }
 
 function renderScaleBar(): void {
@@ -105,7 +104,7 @@ function changeUrbanDensity(this: HTMLInputElement): void {
 
 function restoreDefaultUnits(): void {
   distanceScale = 3;
-  ensureEl<HTMLInputElement>("distanceScaleInput").value = String(distanceScale);
+  unitSettings.distanceScaleInput.value = String(distanceScale);
   unlock("distanceScale");
 
   // units
@@ -130,11 +129,11 @@ function restoreDefaultUnits(): void {
 
   // population
   populationRate = 1000;
-  ensureEl<HTMLInputElement>("populationRateInput").value = String(populationRate);
+  unitSettings.populationRateInput.value = String(populationRate);
   urbanization = 1;
-  ensureEl<HTMLInputElement>("urbanizationInput").value = String(urbanization);
+  unitSettings.urbanizationInput.value = String(urbanization);
   urbanDensity = 10;
-  ensureEl<HTMLInputElement>("urbanDensityInput").value = String(urbanDensity);
+  unitSettings.urbanDensityInput.value = String(urbanDensity);
   localStorage.removeItem("populationRate");
   localStorage.removeItem("urbanization");
   localStorage.removeItem("urbanDensity");

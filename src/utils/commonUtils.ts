@@ -285,7 +285,9 @@ export const initializePrompt = (): void => {
     if (options.default === undefined)
       return window.ERROR && console.error("Prompt: options object does not have default value defined");
 
-    void import("@/components/dialog/prompt-dialog").then(({ showPrompt }) => showPrompt(promptText, options, callback));
+    void import("@/components/dialog/prompt-dialog").then(({ showPrompt }) =>
+      showPrompt(promptText, options, callback)
+    );
   };
 };
 

@@ -13,11 +13,11 @@ import {
 afterEach(() => resetWorkspaceModeForTests());
 
 describe("workspace mode", () => {
-  test("defaults to Edit mode with its complete capability set", () => {
-    expect(getWorkspaceMode()).toBe("edit");
+  test("defaults to View mode with inspect-only capabilities", () => {
+    expect(getWorkspaceMode()).toBe("view");
     expect(hasWorkspaceCapability("map:inspect")).toBe(true);
-    expect(hasWorkspaceCapability("map:edit")).toBe(true);
-    expect(hasWorkspaceCapability("map:generate")).toBe(true);
+    expect(hasWorkspaceCapability("map:edit")).toBe(false);
+    expect(hasWorkspaceCapability("map:generate")).toBe(false);
   });
 
   test("updates the application root and notifies subscribers on a mode change", async () => {
@@ -29,14 +29,14 @@ describe("workspace mode", () => {
     initializeWorkspaceMode({ root });
     const unsubscribe = subscribeToWorkspaceMode(listener);
 
-    await expect(setWorkspaceMode("view")).resolves.toBe(true);
+    await expect(setWorkspaceMode("edit")).resolves.toBe(true);
 
-    expect(root.setAttribute).toHaveBeenLastCalledWith("data-workspace-mode", "view");
+    expect(root.setAttribute).toHaveBeenLastCalledWith("data-workspace-mode", "edit");
     expect(listener).toHaveBeenCalledOnce();
-    expect(listener).toHaveBeenCalledWith("view");
+    expect(listener).toHaveBeenCalledWith("edit");
 
     unsubscribe();
-    await setWorkspaceMode("edit");
+    await setWorkspaceMode("view");
     expect(listener).toHaveBeenCalledOnce();
   });
 
@@ -44,7 +44,7 @@ describe("workspace mode", () => {
     const listener = vi.fn();
     subscribeToWorkspaceMode(listener);
 
-    await expect(setWorkspaceMode("edit")).resolves.toBe(true);
+    await expect(setWorkspaceMode("view")).resolves.toBe(true);
 
     expect(listener).not.toHaveBeenCalled();
   });
@@ -52,7 +52,6 @@ describe("workspace mode", () => {
   test("denies document mutation capabilities in View mode with concise feedback", async () => {
     const onCapabilityDenied = vi.fn();
     initializeWorkspaceMode({ onCapabilityDenied });
-    await setWorkspaceMode("view");
 
     expect(hasWorkspaceCapability("map:inspect")).toBe(true);
     expect(hasWorkspaceCapability("map:edit")).toBe(false);
@@ -65,9 +64,9 @@ describe("workspace mode", () => {
     const handler = vi.fn(() => false);
     registerWorkspaceModeTransitionHandler(handler);
 
-    await expect(setWorkspaceMode("view")).resolves.toBe(false);
+    await expect(setWorkspaceMode("edit")).resolves.toBe(false);
 
-    expect(handler).toHaveBeenCalledWith("view", "edit");
-    expect(getWorkspaceMode()).toBe("edit");
+    expect(handler).toHaveBeenCalledWith("edit", "view");
+    expect(getWorkspaceMode()).toBe("view");
   });
 });

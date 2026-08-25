@@ -24,7 +24,7 @@ const CAPABILITY_MESSAGES: Readonly<Record<Exclude<WorkspaceCapability, "map:ins
 };
 const WORKSPACE_MODE_STORAGE_KEY = "workspace-mode";
 
-let mode: WorkspaceMode = "edit";
+let mode: WorkspaceMode = "view";
 let root: HTMLElement | null = null;
 let onCapabilityDenied: (message: string) => void = () => undefined;
 const listeners = new Set<WorkspaceModeListener>();
@@ -109,7 +109,7 @@ function applyModeAttribute(): void {
 }
 
 export function resetWorkspaceModeForTests(): void {
-  mode = "edit";
+  mode = "view";
   root = null;
   onCapabilityDenied = () => undefined;
   listeners.clear();

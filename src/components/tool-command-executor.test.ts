@@ -23,9 +23,10 @@ import { invokeToolControllerCommand } from "./tool-command-executor";
 afterEach(() => resetWorkspaceModeForTests());
 
 describe("invokeToolControllerCommand", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     (globalThis as Record<string, unknown>).customization = 0;
     vi.clearAllMocks();
+    await setWorkspaceMode("edit");
   });
 
   test("invokes a controller without a legacy control click", () => {

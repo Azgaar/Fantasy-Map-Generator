@@ -32,6 +32,7 @@ import { clearMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-contr
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { initiateAutosave } from "@/services/autosave";
 import { LocalMapStorage } from "@/services/io/local-map-storage";
+import { getUnitSettings } from "@/services/units-settings";
 import { notifyMapMutation } from "@/services/map-mutation";
 import { cleanupData } from "@/services/versioning";
 import type { Grid } from "@/types/grid";
@@ -65,6 +66,8 @@ import {
   registerWorkspaceModeTransitionHandler,
   requireWorkspaceCapability
 } from "./workspace-mode";
+
+getUnitSettings();
 
 // set debug options
 const PRODUCTION = Boolean(location.hostname && location.hostname !== "localhost" && location.hostname !== "127.0.0.1");

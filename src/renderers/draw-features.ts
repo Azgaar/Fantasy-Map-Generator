@@ -1,10 +1,10 @@
 import { select } from "d3";
+import { simplifyPolyline } from "@/utils/simplify";
 import type { Feature } from "../generators/features";
 import { round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 import { pixiOwnsLayer } from "./pixi/pixi-renderer-ownership";
 import { buildFeatureShape } from "./scene/layers/feature-shapes";
-import { simplifyPolyline } from "@/utils/simplify";
 
 declare global {
   var drawFeatures: () => void;

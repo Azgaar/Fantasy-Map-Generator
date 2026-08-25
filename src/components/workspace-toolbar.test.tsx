@@ -51,7 +51,8 @@ describe("WorkspaceToolbar", () => {
     expect(toolbarZIndex).toBeGreaterThan(Math.max(...overlayZIndices));
   });
 
-  test("renders the floating workspace menus in the requested order", () => {
+  test("renders the floating workspace menus in the requested order in Edit mode", async () => {
+    await setWorkspaceMode("edit");
     const markup = renderToStaticMarkup(
       <WorkspaceToolbar
         initialMapName="Eldoria"

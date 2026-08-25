@@ -1,7 +1,7 @@
 import { getViewportSurface } from "@/application/viewport-surface";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { showDomDialog } from "@/components/ui/dom-dialog";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
 import { redrawLegend } from "@/renderers/draw-legend";

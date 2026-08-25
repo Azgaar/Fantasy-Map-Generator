@@ -424,12 +424,69 @@
 }
 
 @media (max-width: 480px) {
+  #mapPreviewRoot {
+    --fantasia-phone-control-size: clamp(36px, 11.3vw, 44px);
+  }
+
+  .fantasia-workspace-toolbar {
+    display: flex;
+    gap: 2px;
+  }
+
+  .fantasia-workspace-toolbar__group {
+    justify-content: flex-start;
+    gap: 2px;
+  }
+
+  .fantasia-workspace-toolbar__group--right {
+    justify-self: auto;
+  }
+
   .fantasia-brand,
   .fantasia-floating-menu__trigger,
-  .fantasia-workspace-mode,
   #workspaceProjectTrigger,
   #workspaceGenerateTrigger {
-    height: 44px;
+    width: var(--fantasia-phone-control-size);
+    min-width: var(--fantasia-phone-control-size);
+    height: var(--fantasia-phone-control-size);
+    padding: 0;
+  }
+
+  .fantasia-brand,
+  .fantasia-floating-menu__trigger {
+    grid-template-columns: 1fr;
+    place-items: center;
+  }
+
+  .fantasia-brand__mark,
+  .fantasia-workspace-toolbar__icon {
+    width: calc(var(--fantasia-phone-control-size) - 10px);
+    height: calc(var(--fantasia-phone-control-size) - 10px);
+  }
+
+  .fantasia-brand__mark {
+    font-size: calc(var(--fantasia-phone-control-size) - 24px);
+  }
+
+  .fantasia-workspace-toolbar__icon > .kui-icon > svg {
+    width: calc(var(--fantasia-phone-control-size) - 18px);
+    height: calc(var(--fantasia-phone-control-size) - 18px);
+  }
+
+  .fantasia-floating-menu__chevron {
+    display: none;
+  }
+
+  .fantasia-workspace-mode {
+    width: calc(var(--fantasia-phone-control-size) * 2);
+    min-width: calc(var(--fantasia-phone-control-size) * 2);
+    height: var(--fantasia-phone-control-size);
+  }
+
+  .fantasia-workspace-mode__button {
+    min-width: var(--fantasia-phone-control-size);
+    padding: 0 4px;
+    font-size: 12px;
   }
 
   .fantasia-workspace-toolbar__group:first-child .fantasia-floating-menu--align-right > .fantasia-floating-menu__menu.kui-menu {
@@ -460,11 +517,20 @@
 
   .fantasia-brand,
   .fantasia-floating-menu__trigger,
-  .fantasia-workspace-mode,
   #workspaceProjectTrigger,
   #workspaceGenerateTrigger {
-    width: 34px;
-    min-width: 34px;
+    width: var(--fantasia-phone-control-size);
+    min-width: var(--fantasia-phone-control-size);
+  }
+
+  .fantasia-workspace-mode {
+    width: calc(var(--fantasia-phone-control-size) * 2);
+    min-width: calc(var(--fantasia-phone-control-size) * 2);
+  }
+
+  .fantasia-workspace-mode__button {
+    min-width: var(--fantasia-phone-control-size);
+    font-size: 11px;
   }
 }
 
@@ -473,12 +539,40 @@
     top: max(8px, env(safe-area-inset-top));
   }
 
+  .fantasia-workspace-toolbar {
+    display: flex;
+  }
+
+  .fantasia-workspace-toolbar__group--right {
+    justify-self: auto;
+  }
+
   .fantasia-brand,
   .fantasia-floating-menu__trigger,
   .fantasia-workspace-mode,
   #workspaceProjectTrigger,
   #workspaceGenerateTrigger {
     height: 36px;
+  }
+}
+
+@media (max-width: 360px) and (max-height: 520px) and (orientation: landscape) {
+  .fantasia-brand,
+  .fantasia-floating-menu__trigger,
+  #workspaceProjectTrigger,
+  #workspaceGenerateTrigger {
+    width: 34px;
+    min-width: 34px;
+  }
+
+  .fantasia-workspace-mode {
+    width: 68px;
+    min-width: 68px;
+  }
+
+  .fantasia-workspace-mode__button {
+    min-width: 34px;
+    font-size: 10px;
   }
 }
 

@@ -1,8 +1,8 @@
 import { interpolateRgb, interpolateRgbBasis, type Selection, scaleSequential, select } from "d3";
 import { getViewportSurface } from "@/application/viewport-surface";
 import { OptionsController } from "@/components/options/options-controller";
-import { showDomDialog } from "@/components/ui/dom-dialog";
 import { tip } from "@/components/tooltips";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { redrawLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
 import { drawRelief } from "@/renderers/draw-relief-icons";

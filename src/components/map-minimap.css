@@ -46,15 +46,9 @@
 
 @media (max-width: 760px) {
   .fantasia-map-minimap {
-    right: max(8px, env(safe-area-inset-right));
-    bottom: max(8px, env(safe-area-inset-bottom));
-    width: min(136px, 32vw);
-  }
-}
-
-@media (max-width: 360px) {
-  .fantasia-map-minimap {
-    width: min(112px, 32vw);
+    right: 6px;
+    bottom: 6px;
+    width: min(136px, 35vw);
   }
 }
 

@@ -3,11 +3,7 @@ import type { PromptOptions } from "@/utils/commonUtils";
 
 type PromptCallback = (value: number | string) => void;
 
-export function showPrompt(
-  text: string,
-  options: PromptOptions,
-  callback?: PromptCallback
-): void {
+export function showPrompt(text: string, options: PromptOptions, callback?: PromptCallback): void {
   if (options.default === undefined) {
     ERROR && console.error("Prompt: options object does not have default value defined");
     return;

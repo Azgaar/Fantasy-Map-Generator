@@ -17,6 +17,7 @@ describe("application controller", () => {
       undraw: vi.fn()
     } satisfies ApplicationControllerApi;
     const release = bindApplicationController(target);
+    await setWorkspaceMode("edit");
 
     ApplicationController.focusOn();
     ApplicationController.regenerateMap("test");
@@ -37,7 +38,6 @@ describe("application controller", () => {
     } satisfies ApplicationControllerApi;
     const release = bindApplicationController(target);
 
-    await setWorkspaceMode("view");
     ApplicationController.regenerateMap("test");
 
     expect(target.regenerateMap).not.toHaveBeenCalled();
