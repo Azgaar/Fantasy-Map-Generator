@@ -168,7 +168,7 @@ async function checkLoadParameters() {
 
   // if there is a seed (user of MFCG provided), generate map for it
   if (params.get("seed")) {
-    WARN && console.warn("Generate map for seed");
+    WARN && console.warn("Generate map for seed", params.get("seed"));
     await generateMapOnLoad();
     return;
   }
@@ -406,26 +406,16 @@ void (function addDragToUpload() {
 })();
 
 async function generate(options) {
-  let generationGroupOpen = false;
-
   try {
-    const timeStart = performance.now();
     const { seed: precreatedSeed, graph: precreatedGraph } = options || {};
-
-    invokeActiveZooming();
     setSeed(precreatedSeed);
-    if (INFO) {
-      console.group("Generated Map " + seed);
-      generationGroupOpen = true;
-    }
-
     applyGraphSize();
     randomizeOptions();
 
     await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
-    WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
-    showStatistics();
+    logStats();
+    invokeActiveZooming();
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error);
@@ -449,8 +439,6 @@ async function generate(options) {
       },
       position: { my: "center", at: "center", of: "svg" }
     });
-  } finally {
-    if (generationGroupOpen) console.groupEnd();
   }
 }
 
@@ -472,7 +460,6 @@ function setSeed(precreatedSeed) {
 }
 
 function addLakesInDeepDepressions() {
-  TIME && console.time("addLakesInDeepDepressions");
   const elevationLimit = +ensureEl("lakeElevationLimitOutput").value;
   if (elevationLimit === 80) return;
 
@@ -527,8 +514,6 @@ function addLakesInDeepDepressions() {
 
     features.push({ i: f, land: false, border: false, type: "lake" });
   }
-
-  TIME && console.timeEnd("addLakesInDeepDepressions");
 }
 
 // near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
@@ -538,7 +523,6 @@ function openNearSeaLakes() {
   const cells = grid.cells;
   const features = grid.features;
   if (!features.find(f => f.type === "lake")) return; // no lakes
-  TIME && console.time("openLakes");
   const LIMIT = 22; // max height that can be breached by water
 
   for (const i of cells.i) {
@@ -570,8 +554,6 @@ function openNearSeaLakes() {
     });
     features[lakeFeatureId].type = "ocean"; // mark former lake as ocean
   }
-
-  TIME && console.timeEnd("openLakes");
 }
 
 // define map size and position based on template and random factor
@@ -652,7 +634,6 @@ function calculateMapCoordinates() {
 // temperature model, trying to follow real-world data
 // based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
 function calculateTemperatures() {
-  TIME && console.time("calculateTemperatures");
   const cells = grid.cells;
   cells.temp = new Int8Array(cells.i.length); // temperature array
 
@@ -695,13 +676,10 @@ function calculateTemperatures() {
     const height = Math.pow(h - 18, exponent);
     return rn((height / 1000) * 6.5);
   }
-
-  TIME && console.timeEnd("calculateTemperatures");
 }
 
 // simplest precipitation model
 function generatePrecipitation() {
-  TIME && console.time("generatePrecipitation");
   d3.select("#prec").selectAll("*").remove();
   const { cells, cellsX, cellsY } = grid;
   cells.prec = new Uint8Array(cells.i.length); // precipitation array
@@ -859,13 +837,10 @@ function generatePrecipitation() {
         .attr("y", graphHeight - 20)
         .text("\u21C8");
   })();
-
-  TIME && console.timeEnd("generatePrecipitation");
 }
 
 // recalculate Voronoi Graph to pack cells
 function reGraph() {
-  TIME && console.time("reGraph");
   const { cells: gridCells, points, features } = grid;
   const newCells = { p: [], g: [], h: [] }; // store new data
   const spacing2 = grid.spacing ** 2;
@@ -914,8 +889,6 @@ function reGraph() {
       return Math.min(area, TYPED_ARRAY_MAX.UINT16);
     }
   );
-
-  TIME && console.timeEnd("reGraph");
 }
 
 function isWetLand(moisture, temperature, height) {
@@ -926,7 +899,6 @@ function isWetLand(moisture, temperature, height) {
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
-  TIME && console.time("rankCells");
   const { cells, features } = pack;
   cells.s = new Int16Array(cells.i.length); // cell suitability array
   cells.pop = new Float32Array(cells.i.length); // cell population array
@@ -978,12 +950,9 @@ function rankCells() {
     // cell rural population is suitability adjusted by cell area
     cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
   }
-
-  TIME && console.timeEnd("rankCells");
 }
 
-// show map stats on generation complete
-function showStatistics() {
+function logStats() {
   const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";

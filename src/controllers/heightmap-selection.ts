@@ -275,7 +275,7 @@ function getName(id: string): string {
 }
 
 function getGraph(currentGraph: any): any {
-  const newGraph = shouldRegenerateGrid(currentGraph, seed as unknown as number, graphWidth, graphHeight)
+  const newGraph = shouldRegenerateGrid(currentGraph, seed, graphWidth, graphHeight)
     ? generateGrid(seed, graphWidth, graphHeight)
     : structuredClone(currentGraph);
   delete newGraph.cells.h;

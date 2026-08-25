@@ -165,7 +165,11 @@ export class LayersRegistry<Id extends string = string> {
   }
 
   drawAll(): void {
+    INFO && console.group("Layers Rendering");
+    TIME && console.time("Layers Rendering");
     this.draw(...this.layers.map(layer => layer.id));
+    TIME && console.timeEnd("Layers Rendering");
+    INFO && console.groupEnd();
   }
 
   eraseAll(): void {

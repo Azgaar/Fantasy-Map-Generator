@@ -547,13 +547,11 @@ class HeightmapModule {
   }
 
   async generate(graph: any): Promise<Uint8Array> {
-    TIME && console.time("defineHeightmap");
     const id = (ensureEl("templateInput")! as HTMLInputElement).value;
     Math.random = Alea(seed);
     const isTemplate = id in heightmapTemplates;
 
     const heights = isTemplate ? this.fromTemplate(graph, id) : await this.fromPrecreated(graph, id);
-    TIME && console.timeEnd("defineHeightmap");
 
     this.clearData();
     return heights as Uint8Array;

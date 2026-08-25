@@ -41,7 +41,6 @@ export class MarketsModule {
   }
 
   generate(regenerate: boolean = false): Market[] {
-    TIME && console.time("generateMarkets");
     if (!regenerate) Math.random = Alea(seed);
     const markets = this.createMarkets();
     this.expandMarkets(markets);
@@ -49,7 +48,6 @@ export class MarketsModule {
     pack.markets = markets;
     pack.deals = [];
 
-    TIME && console.timeEnd("generateMarkets");
     return markets;
   }
 

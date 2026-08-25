@@ -97,7 +97,6 @@ class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid() {
-    TIME && console.time("markupGrid");
     Math.random = Alea(seed); // get the same result on heightmap edit in Erase mode
 
     const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
@@ -148,8 +147,6 @@ class FeatureModule {
     grid.cells.t = distanceField;
     grid.cells.f = featureIds;
     grid.features = [0, ...features];
-
-    TIME && console.timeEnd("markupGrid");
   }
 
   /**
@@ -248,8 +245,6 @@ class FeatureModule {
       } as Feature;
     };
 
-    TIME && console.time("markupPack");
-
     const { cells, vertices } = pack;
     const { c: neighbors, b: borderCells, i } = cells;
     const packCellsNumber = i.length;
@@ -322,7 +317,6 @@ class FeatureModule {
     pack.cells.haven = haven;
     pack.cells.harbor = harbor;
     pack.features = [0 as unknown as Feature, ...features];
-    TIME && console.timeEnd("markupPack");
   }
 
   /**

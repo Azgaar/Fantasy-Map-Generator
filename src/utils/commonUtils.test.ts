@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCoordinates, getLatitude, getLongitude } from "./commonUtils";
+import { getCoordinates, getLatitude, getLongitude, parseError } from "./commonUtils";
 
 describe("getLongitude", () => {
   const mapCoordinates = { lonW: -10, lonT: 20 };
@@ -93,5 +93,26 @@ describe("getCoordinates", () => {
     const globalMap = { lonW: -180, lonT: 360, latN: 90, latT: 180 };
     const result = getCoordinates(500, 400, globalMap, graphWidth, graphHeight, 2);
     expect(result).toEqual([0, 0]); // center of the world
+  });
+});
+
+describe("parseError", () => {
+  it("should report the error itself", () => {
+    expect(parseError(new Error("boom")).includes("boom")).toBe(true);
+  });
+
+  it("should report the causes the error was wrapped over", () => {
+    const original = new Error("cell 42 is not defined");
+    const wrapped = new Error('Generation Pipeline failed at step "rivers"', { cause: original });
+
+    const parsed = parseError(wrapped);
+
+    expect(parsed.includes('step "rivers"')).toBe(true); // "at " is reformatted, so the message is matched in parts
+    expect(parsed.includes("Caused by:")).toBe(true);
+    expect(parsed.includes("cell 42 is not defined")).toBe(true);
+  });
+
+  it("should not follow a cause that is not an error", () => {
+    expect(parseError(new Error("boom", { cause: "just a string" })).includes("Caused by:")).toBe(false);
   });
 });

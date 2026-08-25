@@ -23,7 +23,8 @@ export class Pipeline<Id extends string = string, TContext = void> {
         try {
           await step.run(context);
         } catch (error) {
-          throw new Error(`${this.name} failed at step "${step.id}"`, { cause: error });
+          const reason = error instanceof Error ? error.message : String(error);
+          throw new Error(`${this.name} failed at step "${step.id}": ${reason}`, { cause: error });
         } finally {
           TIME && console.timeEnd(step.id);
         }

@@ -471,9 +471,16 @@ async function finalizeHeightmap(): Promise<void> {
   }
 
   const mode = ensureEl("heightmapEditMode").innerHTML;
-  if (mode === "erase") await regenerateErasedData();
-  else if (mode === "keep") restoreKeptData();
-  else if (mode === "risk") restoreRiskedData();
+
+  try {
+    if (mode === "erase") await regenerateErasedData();
+    else if (mode === "keep") restoreKeptData();
+    else if (mode === "risk") restoreRiskedData();
+  } catch (error) {
+    // the map is left partially rebuilt, but the editor must still be exited, so the user isn't stuck in it
+    ERROR && console.error(error);
+    tip(`Failed to apply the edited heightmap: ${(error as Error).message}`, false, "error", 6000);
+  }
 
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
   Layers.draw("ocean", "landmass", "lakes", "coastline");

@@ -52,7 +52,6 @@ type PortCandidate = {
 
 class BurgModule {
   generate() {
-    TIME && console.time("generateBurgs");
     const { cells } = pack;
 
     let burgs: Burg[] = [0 as any]; // burgs array
@@ -150,8 +149,6 @@ class BurgModule {
 
     pack.burgs = burgs;
     this.assignPorts();
-
-    TIME && console.timeEnd("generateBurgs");
 
     function getCapitalsNumber() {
       let number = (ensureEl("statesNumber") as HTMLInputElement).valueAsNumber;
@@ -524,8 +521,6 @@ class BurgModule {
   }
 
   specify() {
-    TIME && console.time("specifyBurgs");
-
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed || burg.lock) return;
       this.definePopulation(burg);
@@ -542,8 +537,6 @@ class BurgModule {
       if (!burg.i || burg.removed) return;
       this.defineGroup(burg, populations);
     });
-
-    TIME && console.timeEnd("specifyBurgs");
   }
 
   private createWatabouCityLinks(burg: Burg) {

@@ -129,6 +129,7 @@ seed → terrain → climate → hydrology → cultures → states → burgs →
 ```
 
 This creates a clearer simulation pipeline and enables partial regeneration.
+The sequence as it exists today is declared as a pipeline — see [generation-pipeline.md](./generation-pipeline.md).
 
 ---
 

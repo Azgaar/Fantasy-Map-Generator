@@ -1016,7 +1016,6 @@ class CulturesGenerator {
   }
 
   generate() {
-    TIME && console.time("generateCultures");
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
@@ -1203,8 +1202,6 @@ class CulturesGenerator {
     cultures.forEach((c: Culture) => {
       c.base = c.base % Names.nameBases.length;
     });
-
-    TIME && console.timeEnd("generateCultures");
   }
 
   add(center: number) {
@@ -1246,7 +1243,6 @@ class CulturesGenerator {
   }
 
   expand() {
-    TIME && console.time("expandCultures");
     const { cells, cultures } = pack;
 
     const queue = new FlatQueue();
@@ -1336,8 +1332,6 @@ class CulturesGenerator {
         }
       });
     }
-
-    TIME && console.timeEnd("expandCultures");
   }
 
   regenerate(): void {

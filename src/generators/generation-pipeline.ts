@@ -1,5 +1,5 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list.
-// See docs/prd/generator-dependency-graph.md and docs/domain/generation_pipeline.md.
+// See docs/architecture/generation-pipeline.md.
 
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import type { PackedGraph } from "@/types/PackedGraph";
@@ -14,7 +14,7 @@ const pipelineSteps: PipelineStep<string, GenerationContext>[] = [
   {
     id: "generateGrid",
     run: (context: GenerationContext) => {
-      if (shouldRegenerateGrid(grid, context.seed as unknown as number, graphWidth, graphHeight)) {
+      if (shouldRegenerateGrid(grid, context.seed, graphWidth, graphHeight)) {
         grid = context.graph ?? generateGrid(seed, graphWidth, graphHeight);
       } else {
         delete grid.cells.h;
