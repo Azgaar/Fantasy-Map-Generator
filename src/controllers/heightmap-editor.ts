@@ -5,7 +5,7 @@ import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { createErasePipeline } from "@/generators/generation-pipeline";
+import { ErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -474,9 +474,6 @@ async function finalizeHeightmap(): Promise<void> {
 }
 
 async function regenerateErasedData(): Promise<void> {
-  INFO && console.group("Edit Heightmap");
-  TIME && console.time("regenerateErasedData");
-
   // remove data
   pack.cultures = [];
   pack.burgs = [];
@@ -486,10 +483,7 @@ async function regenerateErasedData(): Promise<void> {
 
   const erosionAllowed = ensureEl<HTMLInputElement>("allowErosion").checked;
 
-  await createErasePipeline(erosionAllowed).runFrom("markupGrid");
-
-  TIME && console.timeEnd("regenerateErasedData");
-  INFO && console.groupEnd();
+  await ErasePipeline.runFrom("markupGrid", { erosion: erosionAllowed });
 }
 
 function restoreKeptData(): void {

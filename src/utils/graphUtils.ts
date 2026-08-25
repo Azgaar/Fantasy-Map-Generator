@@ -540,8 +540,6 @@ export const drawHeights = ({
 declare global {
   var TIME: boolean;
   interface Window {
-    shouldRegenerateGrid: typeof shouldRegenerateGrid;
-    generateGrid: typeof generateGrid;
     findCell: typeof findClosestCell;
     calculateVoronoi: typeof calculateVoronoi;
     getPackPolygon: typeof getPackPolygon;

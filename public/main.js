@@ -427,10 +427,7 @@ async function generate(options) {
     applyGraphSize();
     randomizeOptions();
 
-    if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
-    else delete grid.cells.h;
-
-    await GenerationPipeline.run();
+    await GenerationPipeline.run({ seed: precreatedSeed, graph: precreatedGraph });
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
     showStatistics();
