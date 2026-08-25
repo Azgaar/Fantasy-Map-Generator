@@ -509,6 +509,18 @@ function addStylePreset() {
     if (presetStyle["#markers"]) presetStyle["#markers"].rescale = styles.markers.options.rescale;
     if (presetStyle["#statesHalo"])
       presetStyle["#statesHalo"]["data-width"] = styles.states.statesHalo.options.width;
+    if (presetStyle["#coordinates"]) {
+      presetStyle["#coordinates"]["data-size"] = styles.coordinates.options.fontSize;
+      presetStyle["#coordinates"]["font-size"] = styles.coordinates.options.fontSize;
+    }
+    if (presetStyle["#ruler"]) {
+      presetStyle["#ruler"]["data-size"] = styles.rulers.options.fontSize;
+      presetStyle["#ruler"]["font-size"] = styles.rulers.options.fontSize;
+    }
+    if (presetStyle["#legend"]) {
+      presetStyle["#legend"]["data-size"] = styles.legend.options.fontSize;
+      presetStyle["#legend"]["font-size"] = styles.legend.options.fontSize;
+    }
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));

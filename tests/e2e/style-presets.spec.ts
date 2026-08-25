@@ -125,3 +125,27 @@ test("relief icon size round-trips through a preset switch and back", async ({pa
   const revertedWidth = await reliefIconWidth(page, id as string);
   expect(revertedWidth, "relief icon width after switching back to default (size 1)").toBeCloseTo(baselineWidth!, 1);
 });
+
+test("a saved custom preset carries the retired sizes from the store", async ({page}) => {
+  await page.goto("/?seed=test-seed&width=1280&height=720");
+  await page.waitForFunction(() => (window as any).mapId !== undefined, {timeout: 60000});
+
+  await page.evaluate(() => {
+    styles.coordinates.options.fontSize = 23;
+    styles.rulers.options.fontSize = 24;
+    styles.legend.options.fontSize = 25;
+    (window as any).addStylePreset();
+  });
+
+  const raw = await page.locator("#styleSaverJSON").inputValue();
+  const roundTripped = await page.evaluate(rawJson => {
+    const upgraded = (window as any).stylesLegacy.presetFromLegacy(JSON.parse(rawJson), {onUnknown: "skip"});
+    return {
+      coordinates: upgraded.coordinates.options.fontSize,
+      rulers: upgraded.rulers.options.fontSize,
+      legend: upgraded.legend.options.fontSize
+    };
+  }, raw);
+
+  expect(roundTripped).toEqual({coordinates: 23, rulers: 24, legend: 25});
+});
