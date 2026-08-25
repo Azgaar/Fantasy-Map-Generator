@@ -107,6 +107,10 @@ function onClick(event: MouseEvent): void {
 }
 
 function inspectMapPoint(event: MouseEvent, hit: MapHit | null): void {
+  if (hit?.domainKind === "burg") {
+    Controllers.BurgInfo.open(Number(hit.domainId));
+    return;
+  }
   const point = getPixiMapPointAtClient(event.clientX, event.clientY);
   if (!point) return;
   const cellId = findClosestCell(point.x, point.y, undefined, pack);

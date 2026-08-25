@@ -31,6 +31,7 @@ export function MapContextMenu({ context }: { context: MapContext }): React.JSX.
   const { cellId, entities, point } = context;
   const isLand = pack.cells.h[cellId] >= 20;
   const isViewMode = getWorkspaceMode() === "view";
+  const burg = entities.find(entity => entity.kind === "burg");
   const canAddBurg = isLand && !pack.cells.burg[cellId];
   const canAddRiver = isLand && !pack.cells.b[cellId] && !pack.cells.r[cellId];
   const pageTitle = { add: "Add here", areas: "Edit map data", copy: "Copy", entities: "Edit object", main: context.title }[
@@ -63,6 +64,9 @@ export function MapContextMenu({ context }: { context: MapContext }): React.JSX.
           ) : null}
           {!isViewMode && entities.length > 1 ? (
             <NavigationItem icon="select" onSelect={() => setPage("entities")} text={`Edit object (${entities.length})`} />
+          ) : null}
+          {isViewMode && burg ? (
+            <ActionItem icon="home" onSelect={() => Controllers.BurgInfo.open(burg.id!)} text={`Inspect ${burg.label}`} />
           ) : null}
           <ActionItem icon="info-sign" onSelect={() => Controllers.CellInfo.openAt(point)} text="Inspect this cell" />
           {!isViewMode && context.areas.length ? (

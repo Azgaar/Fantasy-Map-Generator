@@ -800,6 +800,100 @@ fieldset {
   user-select: text;
 }
 
+.cell-info {
+  min-width: 0;
+}
+
+.fmg-editor-panel.cell-info-panel {
+  bottom: auto;
+  width: min(390px, calc(100vw - 40px));
+  min-width: min(390px, calc(100vw - 40px));
+  max-height: calc(100vh - 96px);
+}
+
+.fmg-editor-panel.cell-info-panel .fmg-dom-dialog__content > .cell-info {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.cell-info__coordinates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8em;
+  margin: -3px 0 12px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--kui-line);
+  color: var(--kui-text-muted);
+  font-size: 0.92em;
+}
+
+.cell-info__coordinates span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.cell-info__coordinates i,
+.cell-info__item > i {
+  color: hsl(var(--accent-hover));
+}
+
+.cell-info__coordinates b {
+  color: var(--kui-text);
+  font-weight: 600;
+}
+
+.cell-info__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--kui-line-soft);
+  border-radius: 5px;
+  background: var(--kui-line-soft);
+}
+
+.cell-info__item {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1.1em minmax(0, 1fr);
+  column-gap: 0.45em;
+  padding: 0.55em 0.65em;
+  background: var(--kui-surface-raised);
+  line-height: 1.2;
+}
+
+.cell-info__item--wide {
+  grid-column: span 2;
+}
+
+.cell-info__item > i {
+  grid-row: span 2;
+  padding-top: 0.08em;
+}
+
+.cell-info__label {
+  overflow: hidden;
+  color: var(--kui-text-muted);
+  font-size: 0.83em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-info__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--kui-text);
+  font-size: 0.95em;
+  font-weight: 500;
+}
+
+@media (max-width: 440px) {
+  .cell-info__coordinates {
+    gap: 0.55em;
+  }
+}
+
 #tooltip {
   position: fixed;
   text-align: center;

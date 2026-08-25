@@ -7,6 +7,7 @@ export const Controllers = createRegistry({
   BiomesEditor: () => import("@/controllers/biomes-editor").then(m => m.BiomesEditor),
   BurgCreator: () => import("@/controllers/burg-creator").then(m => m.BurgCreator),
   BurgEditor: () => import("@/controllers/burg-editor").then(m => m.BurgEditor),
+  BurgInfo: () => import("@/controllers/burg-info").then(m => m.BurgInfo),
   BurgGroupEditor: () => import("@/controllers/burg-group-editor").then(m => m.BurgGroupEditor),
   BurgsOverview: () => import("@/controllers/burgs-overview").then(m => m.BurgsOverview),
   CellInfo: () => import("@/controllers/cell-info").then(m => m.CellInfo),

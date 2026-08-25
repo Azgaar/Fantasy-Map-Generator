@@ -20,27 +20,27 @@ import {
 } from "@/utils";
 
 const INFO_FIELDS = [
-  ["Latitude", "infoLat", ""],
-  ["Longitude", "infoLon", ""],
-  ["Geozone", "infoGeozone", ""],
-  ["Area", "infoArea", "0"],
-  ["Type", "infoFeature", "n/a"],
-  ["Precipitation", "infoPrec", "0"],
-  ["River", "infoRiver", "no"],
-  ["Population", "infoPopulation", "0"],
-  ["Elevation", "infoElevation", "0"],
-  ["Depth", "infoDepth", "0"],
-  ["Temperature", "infoTemp", "0"],
-  ["Biome", "infoBiome", "n/a"],
-  ["State", "infoState", "n/a"],
-  ["Province", "infoProvince", "n/a"],
-  ["Culture", "infoCulture", "n/a"],
-  ["Religion", "infoReligion", "n/a"],
-  ["Burg", "infoBurg", "n/a"],
-  ["Good", "infoGood", "n/a"],
-  ["Market", "infoMarket", "n/a"],
-  ["Cell Production", "infoCellProduction", "n/a"],
-  ["Burg Production", "infoBurgProduction", "n/a"]
+  ["Latitude", "infoLat", "", "icon-compass"],
+  ["Longitude", "infoLon", "", "icon-target"],
+  ["Geozone", "infoGeozone", "", "icon-globe"],
+  ["Area", "infoArea", "0", "icon-map-o"],
+  ["Type", "infoFeature", "n/a", "icon-layer-group"],
+  ["Precipitation", "infoPrec", "0", "icon-umbrella"],
+  ["River", "infoRiver", "no", "icon-bezier-curve"],
+  ["Population", "infoPopulation", "0", "icon-users"],
+  ["Elevation", "infoElevation", "0", "icon-mountain"],
+  ["Depth", "infoDepth", "0", "icon-anchor"],
+  ["Temperature", "infoTemp", "0", "icon-temperature-high"],
+  ["Biome", "infoBiome", "n/a", "icon-tree"],
+  ["State", "infoState", "n/a", "icon-flag"],
+  ["Province", "infoProvince", "n/a", "icon-map"],
+  ["Culture", "infoCulture", "n/a", "icon-user-friends"],
+  ["Religion", "infoReligion", "n/a", "icon-place-of-worship"],
+  ["Burg", "infoBurg", "n/a", "icon-home"],
+  ["Good", "infoGood", "n/a", "icon-tag"],
+  ["Market", "infoMarket", "n/a", "icon-store"],
+  ["Cell Production", "infoCellProduction", "n/a", "icon-leaf", "wide"],
+  ["Burg Production", "infoBurgProduction", "n/a", "icon-box", "wide"]
 ] as const;
 
 function openAt(point: Point): void {
@@ -53,18 +53,28 @@ function openAt(point: Point): void {
   const province = pack.provinces[provinceId];
   const title = province ? `Province: ${province.fullName || province.name}` : `Cell ${cellId}`;
   const fields = INFO_FIELDS.map(
-    ([label, id, initialValue]) => `<p><b>${label}:</b> <span id="${id}">${initialValue}</span></p>`
+    ([label, id, initialValue, icon, size]) => /* html */ `
+      <div class="cell-info__item${size === "wide" ? " cell-info__item--wide" : ""}">
+        <i aria-hidden="true" class="${icon}"></i>
+        <span class="cell-info__label">${label}</span>
+        <span class="cell-info__value" id="${id}">${initialValue}</span>
+      </div>`
   ).join("");
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
-    /* html */ `<div id="cellInfo" class="dialog stable">
-      <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
-      ${fields}
+    /* html */ `<div id="cellInfo" class="dialog stable cell-info">
+      <div class="cell-info__coordinates">
+        <span><i aria-hidden="true" class="icon-map"></i>Cell <b id="infoCell"></b></span>
+        <span><i aria-hidden="true" class="icon-resize-horizontal"></i>X <b id="infoX"></b></span>
+        <span><i aria-hidden="true" class="icon-resize-vertical"></i>Y <b id="infoY"></b></span>
+      </div>
+      <div class="cell-info__grid">${fields}</div>
     </div>`
   );
   updateFields(point, cellId, findGridCell(point[0], point[1], grid));
   showDomDialog({
     access: "inspect",
+    className: "cell-info-panel",
     content: ensureEl("cellInfo"),
     placement: "top-right",
     placementTarget: document.getElementById("map"),
