@@ -138,6 +138,8 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.goods.goodsIcons.options.size = 9;
     styles.goods.goodsBurgs.options.size = 7;
     styles.markets.options.size = 8;
+    styles.heightmap.landHeights.options.terracing = 5;
+    styles.heightmap.oceanHeights.options.render = true;
     (window as any).addStylePreset();
   });
 
@@ -151,7 +153,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
       provinceEmblems: upgraded.emblems.provinceEmblems.options.size,
       goodsIcons: upgraded.goods.goodsIcons.options.size,
       goodsBurgs: upgraded.goods.goodsBurgs.options.size,
-      markets: upgraded.markets.options.size
+      markets: upgraded.markets.options.size,
+      landTerracing: upgraded.heightmap.landHeights.options.terracing,
+      oceanRender: upgraded.heightmap.oceanHeights.options.render
     };
   }, raw);
 
@@ -162,6 +166,8 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     provinceEmblems: 1.4,
     goodsIcons: 9,
     goodsBurgs: 7,
-    markets: 8
+    markets: 8,
+    landTerracing: 5,
+    oceanRender: true
   });
 });

@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -246,5 +246,49 @@ test.describe("style editor events drive the store", () => {
     // fontSize and icon are not in this family: their attrs must survive on the element
     expect(await page.locator("#markets").getAttribute("data-size")).toBeNull();
     expect(await page.locator("#markets").getAttribute("font-size")).not.toBeNull();
+  });
+
+  test("heightmap controls write the store per group and the renderer derives from it", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("heightmap"));
+    await openStyleElement(page, "terrs");
+
+    // ocean group: scheme select, terracing slider, render-ocean checkbox
+    await page.locator("#styleGroupSelect").selectOption("oceanHeights");
+    await page.locator("#styleHeightmapScheme").selectOption("monochrome");
+    await page.locator("#styleHeightmapTerracing input[type=number]").fill("3");
+    await page.locator('label[for="styleHeightmapRenderOcean"]').click();
+
+    // land group: skip, relax, curve
+    await page.locator("#styleGroupSelect").selectOption("landHeights");
+    await page.locator("#styleHeightmapSkip input[type=number]").fill("2");
+    await page.locator("#styleHeightmapSimplification input[type=number]").fill("1");
+    await page.locator("#styleHeightmapCurve").selectOption("curveLinear");
+
+    const stored = await page.evaluate(() => ({
+      oceanScheme: (window as any).styles.heightmap.oceanHeights.options.scheme,
+      oceanTerracing: (window as any).styles.heightmap.oceanHeights.options.terracing,
+      oceanRender: (window as any).styles.heightmap.oceanHeights.options.render,
+      landSkip: (window as any).styles.heightmap.landHeights.options.skip,
+      landRelax: (window as any).styles.heightmap.landHeights.options.relax,
+      landCurve: (window as any).styles.heightmap.landHeights.options.curve
+    }));
+    expect(stored).toEqual({
+      oceanScheme: "monochrome",
+      oceanTerracing: 3,
+      oceanRender: true,
+      landSkip: 2,
+      landRelax: 1,
+      landCurve: "curveLinear"
+    });
+
+    // renderer derives from the store: render=true draws the ocean base rect
+    expect(await page.locator("#oceanHeights rect").count()).toBeGreaterThan(0);
+
+    // the retired attrs are gone from both groups
+    for (const id of ["#landHeights", "#oceanHeights"]) {
+      for (const attr of ["scheme", "terracing", "skip", "relax", "curve", "data-render"]) {
+        expect(await page.locator(id).getAttribute(attr), `${id} ${attr}`).toBeNull();
+      }
+    }
   });
 });

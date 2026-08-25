@@ -199,13 +199,13 @@ function selectStyleElement() {
   if (styleElement === "terrs") {
     styleHeightmap.style.display = "block";
     styleHeightmapRenderOceanOption.style.display = el.attr("id") === "oceanHeights" ? "block" : "none";
-    styleHeightmapRenderOcean.checked = +el.attr("data-render");
-
-    styleHeightmapScheme.value = el.attr("scheme");
-    styleHeightmapTerracing.value = el.attr("terracing");
-    styleHeightmapSkip.value = el.attr("skip");
-    styleHeightmapSimplification.value = el.attr("relax");
-    styleHeightmapCurve.value = el.attr("curve");
+    const heights = styles.heightmap[el.attr("id")].options;
+    styleHeightmapRenderOcean.checked = heights.render;
+    styleHeightmapScheme.value = heights.scheme;
+    styleHeightmapTerracing.value = heights.terracing;
+    styleHeightmapSkip.value = heights.skip;
+    styleHeightmapSimplification.value = heights.relax;
+    styleHeightmapCurve.value = heights.curve;
   }
 
   if (styleElement === "markers") {
@@ -651,14 +651,16 @@ outlineLayers.addEventListener("change", function () {
   Layers.draw("ocean");
 });
 
+const heightsOptions = () => styles.heightmap[getEl().attr("id")].options;
+
 styleHeightmapScheme.addEventListener("change", function () {
-  getEl().attr("scheme", this.value);
+  heightsOptions().scheme = this.value;
   Layers.draw("heightmap");
 });
 
 openCreateHeightmapSchemeButton.addEventListener("click", function () {
   // start with current scheme
-  const scheme = getEl().attr("scheme");
+  const scheme = heightsOptions().scheme;
   this.dataset.stops = scheme.startsWith("#")
     ? scheme
     : (() => [0, 0.25, 0.5, 0.75, 1].map(heightmapColorSchemes[scheme]).map(toHEX).join(","))();
@@ -753,7 +755,7 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
     if (stops in heightmapColorSchemes) return tip("This scheme already exists", false, "error");
 
     addCustomColorScheme(stops);
-    getEl().attr("scheme", stops);
+    heightsOptions().scheme = stops;
     Layers.draw("heightmap");
 
     handleClose();
@@ -776,28 +778,27 @@ openCreateHeightmapSchemeButton.addEventListener("click", function () {
 });
 
 styleHeightmapRenderOcean.addEventListener("change", e => {
-  const checked = +e.target.checked;
-  getEl().attr("data-render", checked);
+  heightsOptions().render = e.target.checked;
   Layers.draw("heightmap");
 });
 
 styleHeightmapTerracing.addEventListener("input", e => {
-  getEl().attr("terracing", e.target.value);
+  heightsOptions().terracing = +e.target.value || 0;
   Layers.draw("heightmap");
 });
 
 styleHeightmapSkip.addEventListener("input", e => {
-  getEl().attr("skip", e.target.value);
+  heightsOptions().skip = +e.target.value || 0;
   Layers.draw("heightmap");
 });
 
 styleHeightmapSimplification.addEventListener("input", e => {
-  getEl().attr("relax", e.target.value);
+  heightsOptions().relax = +e.target.value || 0;
   Layers.draw("heightmap");
 });
 
 styleHeightmapCurve.addEventListener("change", e => {
-  getEl().attr("curve", e.target.value);
+  heightsOptions().curve = e.target.value;
   Layers.draw("heightmap");
 });
 

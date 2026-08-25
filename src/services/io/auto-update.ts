@@ -1881,4 +1881,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   for (const id of ["stateEmblems", "provinceEmblems", "burgEmblems", "goodsIcons", "goodsBurgs", "markets"]) {
     document.getElementById(id)?.removeAttribute("data-size");
   }
+  for (const id of ["landHeights", "oceanHeights"]) {
+    for (const attr of ["scheme", "terracing", "skip", "relax", "curve"]) {
+      document.getElementById(id)?.removeAttribute(attr);
+    }
+  }
+  document.getElementById("oceanHeights")?.removeAttribute("data-render");
 }

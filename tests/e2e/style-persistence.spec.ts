@@ -209,7 +209,9 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="stateEmblems"', '<g id="stateEmblems" data-size="4"')
       .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-size="66"')
       .replace('<g id="goodsBurgs"', '<g id="goodsBurgs" data-size="66"')
-      .replace('<g id="markets"', '<g id="markets" data-size="66"');
+      .replace('<g id="markets"', '<g id="markets" data-size="66"')
+      .replace('<g id="landHeights"', '<g id="landHeights" scheme="olive" terracing="2" skip="1" relax="1" curve="curveLinear"')
+      .replace('<g id="oceanHeights"', '<g id="oceanHeights" scheme="bright" terracing="0" skip="0" relax="0" curve="curveBasisClosed" data-render="1"');
     const staleBuffer = Buffer.from(lines.join("\r\n"), "utf8");
 
     await reload(page, staleBuffer, "style-persistence-step4-era-reloaded");
@@ -224,6 +226,11 @@ test.describe("style persistence round trips", () => {
         document.getElementById(id)?.getAttribute("data-size")
       ),
       marketsSize: styles.markets.options.size,
+      landHeightsAttrs: ["scheme", "terracing", "skip", "relax", "curve"].map(a =>
+        document.getElementById("landHeights")?.getAttribute(a)
+      ),
+      oceanRenderAttr: document.getElementById("oceanHeights")?.getAttribute("data-render"),
+      landScheme: styles.heightmap.landHeights.options.scheme,
       rescale: styles.markers.options.rescale,
       haloWidth: styles.states.statesHalo.options.width,
       coordinatesSize: styles.coordinates.options.fontSize
@@ -237,6 +244,10 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.legendSizeAttr).toBeNull();
     expect(afterLoad.familySizeAttrs).toEqual([null, null, null, null]);
     expect(afterLoad.marketsSize).toBe(3);
+    expect(afterLoad.landHeightsAttrs).toEqual([null, null, null, null, null]);
+    expect(afterLoad.oceanRenderAttr).toBeNull();
+    // the record's own scheme won, not the stale injected attr
+    expect(afterLoad.landScheme).not.toBe("olive");
     expect(afterLoad.rescale).toBe(1);
     expect(afterLoad.haloWidth).toBe(10);
     expect(afterLoad.coordinatesSize).toBe(12);

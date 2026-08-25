@@ -403,6 +403,10 @@ export function syncStylesFromMap(): void {
     harvested.goods.goodsBurgs.options = structuredClone(styles.goods.goodsBurgs.options);
   if (!document.getElementById("markets")?.hasAttribute("data-size"))
     harvested.markets.options.size = styles.markets.options.size;
+  for (const key of ["landHeights", "oceanHeights"] as const) {
+    if (!document.getElementById(key)?.hasAttribute("scheme"))
+      harvested.heightmap[key].options = structuredClone(styles.heightmap[key].options);
+  }
   Styles.set(harvested);
 }
 

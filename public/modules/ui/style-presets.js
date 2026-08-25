@@ -146,21 +146,6 @@ function projectPresetOptions() {
   setOrRemove(gridOverlay, "dx", styles.grid.options.dx);
   setOrRemove(gridOverlay, "dy", styles.grid.options.dy);
 
-  const landHeights = byId("landHeights");
-  setOrRemove(landHeights, "scheme", styles.heightmap.landHeights.options.scheme);
-  setOrRemove(landHeights, "terracing", styles.heightmap.landHeights.options.terracing);
-  setOrRemove(landHeights, "skip", styles.heightmap.landHeights.options.skip);
-  setOrRemove(landHeights, "relax", styles.heightmap.landHeights.options.relax);
-  setOrRemove(landHeights, "curve", styles.heightmap.landHeights.options.curve);
-
-  const oceanHeights = byId("oceanHeights");
-  setOrRemove(oceanHeights, "scheme", styles.heightmap.oceanHeights.options.scheme);
-  setOrRemove(oceanHeights, "terracing", styles.heightmap.oceanHeights.options.terracing);
-  setOrRemove(oceanHeights, "skip", styles.heightmap.oceanHeights.options.skip);
-  setOrRemove(oceanHeights, "relax", styles.heightmap.oceanHeights.options.relax);
-  setOrRemove(oceanHeights, "curve", styles.heightmap.oceanHeights.options.curve);
-  setOrRemove(oceanHeights, "data-render", Number(styles.heightmap.oceanHeights.options.render));
-
   setOrRemove(byId("goodsIcons"), "data-circle", Number(styles.goods.goodsIcons.options.circle));
 
   const markets = byId("markets");
@@ -521,6 +506,14 @@ function addStylePreset() {
     if (presetStyle["#goodsIcons"]) presetStyle["#goodsIcons"]["data-size"] = styles.goods.goodsIcons.options.size;
     if (presetStyle["#goodsBurgs"]) presetStyle["#goodsBurgs"]["data-size"] = styles.goods.goodsBurgs.options.size;
     if (presetStyle["#markets"]) presetStyle["#markets"]["data-size"] = styles.markets.options.size;
+    for (const [selector, heights] of [
+      ["#terrs #landHeights", styles.heightmap.landHeights.options],
+      ["#terrs #oceanHeights", styles.heightmap.oceanHeights.options]
+    ]) {
+      if (!presetStyle[selector]) continue;
+      for (const key of ["scheme", "terracing", "skip", "relax", "curve"]) presetStyle[selector][key] = heights[key];
+      if (selector === "#terrs #oceanHeights") presetStyle[selector]["data-render"] = Number(heights.render);
+    }
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));
