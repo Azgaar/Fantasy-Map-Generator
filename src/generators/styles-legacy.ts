@@ -56,10 +56,6 @@ export function labelGroupsFromLegacy(groups: Record<string, object>): Record<st
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, labelGroupFromLegacy(group)]));
 }
 
-export function labelGroupsToLegacy(groups: Record<string, LabelGroupStyle>): Record<string, object> {
-  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, labelGroupToLegacy(group)]));
-}
-
 type BurgGroupStyle = Styles["burgIcons"]["burgIcons"]["groups"][string];
 
 // legacy wrote stored burg-group bags to the DOM verbatim with no per-key defaults; only
@@ -102,27 +98,12 @@ export function burgGroupsFromLegacy(groups: Record<string, object>): Record<str
   return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupFromLegacy(group)]));
 }
 
-export function burgGroupsToLegacy(groups: Record<string, BurgGroupStyle>, withIcon: boolean): Record<string, object> {
-  return Object.fromEntries(Object.entries(groups).map(([name, group]) => [name, burgGroupToLegacy(group, withIcon)]));
-}
-
 export function reliefFromLegacy(legacy: object): Styles["relief"]["options"] {
   const bag = legacy as Record<string, unknown>;
   return {
     set: strOr(bag.set, null) ?? "simple",
     size: toNumber(bag.size, 1),
     density: toNumber(bag.density, 0.4)
-  };
-}
-
-// the map file's style record keeps the legacy shape until persistence migrates, so files
-// stay loadable on master in both directions
-export function stylesToLegacy(): Record<string, unknown> {
-  return {
-    labels: { groups: labelGroupsToLegacy(styles.labels.groups) },
-    burgIcons: burgGroupsToLegacy(styles.burgIcons.burgIcons.groups, true),
-    anchors: burgGroupsToLegacy(styles.burgIcons.anchors.groups, false),
-    relief: { ...styles.relief.options }
   };
 }
 
@@ -314,8 +295,94 @@ function applyPresetBag(
   for (const key of Object.keys(rest)) fail(onUnknown, `unknown legacy attribute "${key}" on "${selector}"`);
 }
 
+function attrKeysAt(path: string[]): string[] {
+  const node = getPath(DEFAULT_STYLES, path) as { attrs?: object } | undefined;
+  return node?.attrs ? Object.keys(node.attrs) : [];
+}
+
+export function harvestAttributes(): Record<string, string[]> {
+  const table: Record<string, string[]> = {};
+  for (const [selector, route] of Object.entries(PRESET_ROUTES)) {
+    const attrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
+    table[selector] = [...new Set([...attrs, ...Object.keys(route.options ?? {}), ...(route.drop ?? [])])];
+  }
+  return table;
+}
+
+function harvestValue(value: string): string | number {
+  if (value === "") return "";
+  const n = Number(value);
+  return Number.isNaN(n) ? value : n;
+}
+
+// a schema attr the element does not carry becomes an explicit null, so a preset-nulled
+// attr round-trips as null instead of the seeded default; options keep omit-means-default
+function harvestBag(
+  el: Element,
+  attrs: string[],
+  schemaAttrs: string[] = attrs
+): Record<string, string | number | null> {
+  const bag: Record<string, string | number | null> = {};
+  for (const attr of attrs) {
+    const inline = (el as HTMLElement).style?.[attr as any];
+    const value = inline ? inline : el.getAttribute(attr);
+    if (value !== null && value !== undefined) bag[attr] = harvestValue(value);
+    else if (schemaAttrs.includes(attr)) bag[attr] = null;
+  }
+  return bag;
+}
+
+const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.labels.groups)[0].attrs);
+const LABEL_ATTRS = [...LABEL_SCHEMA_ATTRS, "data-dx", "data-dy", "data-size"];
+const BURG_SCHEMA_ATTRS = Object.keys(Object.values(DEFAULT_STYLES.burgIcons.burgIcons.groups)[0].attrs);
+const BURG_ATTRS = [...BURG_SCHEMA_ATTRS, "font-size", "data-icon"];
+
+export function stylesFromMap(root: ParentNode = document): Styles {
+  const bags: Record<string, Record<string, unknown>> = {};
+
+  for (const [selector, attrs] of Object.entries(harvestAttributes())) {
+    const el = root.querySelector(selector);
+    if (!el) continue;
+    const route = PRESET_ROUTES[selector];
+    const schemaAttrs = route.ownAttrs === false ? [] : attrKeysAt(route.path);
+    bags[selector] = harvestBag(el, attrs, schemaAttrs);
+  }
+  for (const el of root.querySelectorAll("#labels > *")) {
+    const name = (el as HTMLElement).dataset.group || el.id.replace(/^labels-/, "");
+    if (name) bags[`#labels > #${name}`] = harvestBag(el, LABEL_ATTRS, LABEL_SCHEMA_ATTRS);
+  }
+  for (const el of root.querySelectorAll("#burgIcons > g")) {
+    if (el.id) bags[`#burgIcons > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
+  }
+  for (const el of root.querySelectorAll("#anchors > g")) {
+    if (el.id) bags[`#anchors > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
+  }
+
+  return presetFromLegacy(bags, { onUnknown: "skip" });
+}
+
+// runs on both edges (save, and record-less old-map migration on load): harvest the
+// DOM-authoritative layers, overlay the domains the store owns
+export function syncStylesFromMap(): void {
+  const harvested = stylesFromMap();
+  harvested.labels = structuredClone(styles.labels);
+  harvested.burgIcons = structuredClone(styles.burgIcons);
+  for (const el of document.querySelectorAll("#burgIcons > g")) {
+    if (el.id) harvested.burgIcons.burgIcons.groups[el.id] = burgGroupFromElement(el);
+  }
+  for (const el of document.querySelectorAll("#anchors > g")) {
+    if (el.id) harvested.burgIcons.anchors.groups[el.id] = burgGroupFromElement(el);
+  }
+  harvested.relief.options = structuredClone(styles.relief.options);
+  Styles.set(harvested);
+}
+
 export function isLegacyPreset(json: object): boolean {
   return Object.keys(json).some(key => key.startsWith("#"));
+}
+
+export function isStoreStyles(json: unknown): boolean {
+  return typeof json === "object" && json !== null && "map" in json;
 }
 
 export function presetFromLegacy(
@@ -397,16 +464,17 @@ globalThis.stylesLegacy = {
   labelGroupFromLegacy,
   labelGroupToLegacy,
   labelGroupsFromLegacy,
-  labelGroupsToLegacy,
   burgGroupFromLegacy,
   burgGroupFromElement,
   burgGroupToLegacy,
   burgGroupsFromLegacy,
-  burgGroupsToLegacy,
   reliefFromLegacy,
-  stylesToLegacy,
   stylesFromLegacy,
   presetFromLegacy,
   presetToLegacy,
-  isLegacyPreset
+  isLegacyPreset,
+  isStoreStyles,
+  harvestAttributes,
+  stylesFromMap,
+  syncStylesFromMap
 };

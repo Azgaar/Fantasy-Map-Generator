@@ -4,7 +4,7 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
-import { stylesToLegacy } from "@/generators/styles-legacy";
+import { syncStylesFromMap } from "@/generators/styles-legacy";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
@@ -130,7 +130,10 @@ function prepareMapData(): string {
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
-  const styleData = JSON.stringify(stylesToLegacy());
+  syncStylesFromMap();
+  // pre-store-format builds read a top-level anchors key off the style record and crash in
+  // createIconGroups without one; parseStyles ignores unknown keys, so this is free on our side
+  const styleData = JSON.stringify({ ...styles, anchors: {} });
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");

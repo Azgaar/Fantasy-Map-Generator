@@ -1,0 +1,72 @@
+import { expect, test } from "vitest";
+import { harvestAttributes, stylesFromMap, syncStylesFromMap } from "./styles-legacy";
+import { DEFAULT_STYLES } from "./styles-schema";
+
+test("harvestAttributes derives from routes and schema", () => {
+  const table = harvestAttributes();
+  expect(table["#rivers"]).toEqual(expect.arrayContaining(["opacity", "fill", "filter"]));
+  expect(table["#gridOverlay"]).toEqual(expect.arrayContaining(["stroke", "type", "scale", "dx", "dy"]));
+  expect(table["#vignette-rect"]).not.toEqual(expect.arrayContaining(["fill"]));
+});
+
+test("stylesFromMap harvests attrs, options and dynamic groups with legacy precedence", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="rivers" fill="#5d97bb" opacity="0.9"></g>
+    <g id="gridOverlay" stroke="#777" type="pointyHex"></g>
+    <g id="labels"><g id="labels-state" data-group="state" font-size="22" data-size="22"></g></g>
+    <g id="burgIcons"><g id="capital" fill="#ffffff" font-size="2"></g></g>
+  </svg>`;
+  const styles = stylesFromMap(document);
+  expect(styles.rivers.attrs.fill).toBe("#5d97bb");
+  expect(styles.rivers.attrs.opacity).toBe(0.9);
+  expect(styles.grid.options.type).toBe("pointyHex");
+  expect(styles.labels.groups.state.attrs["font-size"]).toBe("22");
+  expect(styles.burgIcons.burgIcons.groups.capital.options.size).toBe(2);
+});
+
+test("inline style wins over the attribute; empty attribute still counts", () => {
+  document.body.innerHTML = `<svg id="map"><g id="rivers" fill="#aaa" style="fill: #bbb"></g>
+    <g id="scaleBar" data-label=""></g></svg>`;
+  const styles = stylesFromMap(document);
+  // real browsers normalize an inline color declaration to rgb(); the fixture is real DOM
+  // (browser test mode), so we pin to that rather than the literal "#bbb" spelling
+  expect(styles.rivers.attrs.fill).toBe("rgb(187, 187, 187)");
+  expect(styles.scaleBar.options.label).toBe("");
+});
+
+test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains", () => {
+  document.body.innerHTML = `<svg id="map"><g id="rivers" fill="#123456"></g></svg>`;
+  styles.labels.groups.custom = structuredClone(styles.labels.groups.capital);
+  styles.relief.options.size = 0.7;
+  syncStylesFromMap();
+  expect(styles.rivers.attrs.fill).toBe("#123456");
+  expect(styles.labels.groups.custom).toBeDefined();
+  expect(styles.relief.options.size).toBe(0.7);
+});
+
+test("a schema attr the element omits harvests as an explicit null, not the seeded default", () => {
+  document.body.innerHTML = `<svg id="map"><g id="rivers" opacity="0.9"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(DEFAULT_STYLES.rivers.attrs.fill).not.toBeNull();
+  expect(result.rivers.attrs.fill).toBeNull();
+  expect(result.rivers.attrs.opacity).toBe(0.9);
+});
+
+test("an omitted option still defaults, unlike a schema attr", () => {
+  document.body.innerHTML = `<svg id="map"><g id="gridOverlay" stroke="#777"></g></svg>`;
+  const result = stylesFromMap(document);
+  expect(result.grid.options.type).toBe(DEFAULT_STYLES.grid.options.type);
+});
+
+test("syncStylesFromMap harvests burg/anchor groups present in the DOM over the live store", () => {
+  document.body.innerHTML = `<svg id="map">
+    <g id="burgIcons"><g id="capital" fill="#00ff00" font-size="3"></g></g>
+    <g id="anchors"><g id="capital" fill="#00ff00" font-size="3"></g></g>
+  </svg>`;
+  styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#000000";
+  styles.burgIcons.burgIcons.groups.town = structuredClone(styles.burgIcons.burgIcons.groups.capital);
+  syncStylesFromMap();
+  expect(styles.burgIcons.burgIcons.groups.capital.attrs.fill).toBe("#00ff00");
+  expect(styles.burgIcons.anchors.groups.capital.attrs.fill).toBe("#00ff00");
+  expect(styles.burgIcons.burgIcons.groups.town).toBeDefined();
+});

@@ -80,12 +80,16 @@ function applyStylePreset(presetJson) {
 
   const previousReliefSize = styles.relief.options.size;
   Styles.set(parsed);
-  Styles.write(...Object.keys(styles));
+  applyStoredStyles();
 
-  projectPresetOptions();
   applyReliefOptions(previousReliefSize);
   registerCustomScheme();
   fillMissingLabelGroups();
+}
+
+function applyStoredStyles() {
+  Styles.write(...Object.keys(styles));
+  projectPresetOptions();
 }
 
 function applyReliefOptions(previousSize) {
