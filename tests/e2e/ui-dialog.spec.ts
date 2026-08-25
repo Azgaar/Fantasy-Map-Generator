@@ -57,6 +57,28 @@ test.describe("<ui-dialog>", () => {
     await expect(dialog).not.toHaveAttribute("open", "");
   });
 
+  test("destroy removes the dialog from the DOM and restores focus to the opener", async ({ page }) => {
+    await page.evaluate(() => {
+      const opener = document.createElement("button");
+      opener.id = "test-opener";
+      document.body.appendChild(opener);
+      opener.focus();
+
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = '<ui-dialog id="test-dialog" dialog-title="Test Dialog"></ui-dialog>';
+      const el = wrapper.firstElementChild!;
+      document.body.appendChild(el);
+      (el as any).open();
+    });
+
+    const dialog = page.locator("ui-dialog#test-dialog");
+    await expect(dialog).toBeVisible();
+
+    await dialog.evaluate(el => (el as any).destroy());
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator("#test-opener")).toBeFocused();
+  });
+
   test("resizing from the corner grows the dialog and keeps it within the viewport", async ({ page }) => {
     const dialog = await openTestDialog(page);
 
