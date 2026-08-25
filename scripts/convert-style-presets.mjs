@@ -1,3 +1,5 @@
+// Converts legacy selector-keyed preset JSONs in public/styles to the store format, in place.
+// Run with: npx vite-node scripts/convert-style-presets.mjs
 import fs from "node:fs";
 import path from "node:path";
 
@@ -14,7 +16,7 @@ if (typeof globalThis.document === "undefined") {
   };
 }
 
-const { isLegacyPreset, presetFromLegacy } = await import("../src/styles/legacy");
+const { isLegacyPreset, presetFromLegacy } = await import("../src/generators/styles-legacy.ts");
 
 const dir = "public/styles";
 for (const file of fs.readdirSync(dir).filter(f => f.endsWith(".json"))) {
