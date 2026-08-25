@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
-import { DEFAULT_STYLES } from "./defaults";
+import { DEFAULT_STYLES } from "./styles-defaults";
 
 // Semantic attribute schemas. Attrs are written to the DOM; null = attribute not set.
 const opacity = z.number().nullable();

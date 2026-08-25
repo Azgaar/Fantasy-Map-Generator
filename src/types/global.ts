@@ -87,13 +87,13 @@ declare global {
   var svgHeight: number;
 
   var notes: any[]; // TODO: correct type
-  var styles: import("@/styles/styles").Styles;
-  var stylesLegacy: typeof import("@/styles/legacy");
+  var styles: import("@/generators/styles").Styles;
+  var stylesLegacy: typeof import("@/generators/styles-legacy");
   var stylesStore: {
-    parseStyles: typeof import("@/styles/styles").parseStyles;
-    setStyles: typeof import("@/styles/styles").setStyles;
-    writeStyles: typeof import("@/styles/styles").writeStyles;
-    applyStyles: typeof import("@/styles/styles").applyStyles;
+    parseStyles: typeof import("@/generators/styles").parseStyles;
+    setStyles: typeof import("@/generators/styles").setStyles;
+    writeStyles: typeof import("@/generators/styles").writeStyles;
+    applyStyles: typeof import("@/generators/styles").applyStyles;
   };
 
   // IO / loading helpers defined in classic public/ scripts

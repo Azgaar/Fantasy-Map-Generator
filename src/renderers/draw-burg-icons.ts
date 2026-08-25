@@ -1,6 +1,6 @@
 import { select } from "d3";
-import { burgGroupFromElement } from "@/styles/legacy";
-import { styles } from "@/styles/styles";
+import { styles } from "@/generators/styles";
+import { burgGroupFromElement } from "@/generators/styles-legacy";
 
 export const drawBurgIcons = (): void => {
   TIME && console.time("drawBurgIcons");

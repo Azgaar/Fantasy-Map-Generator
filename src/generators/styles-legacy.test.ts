@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
-import { DEFAULT_STYLES } from "./defaults";
-import { isLegacyPreset, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./legacy";
-import fixture from "./legacy-default.fixture.json";
-import serializerFixture from "./legacy-serializer.fixture.json";
 import { parseStyles } from "./styles";
+import { DEFAULT_STYLES } from "./styles-defaults";
+import { isLegacyPreset, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
+import fixture from "./styles-legacy-default.fixture.json";
+import serializerFixture from "./styles-legacy-serializer.fixture.json";
 
 test("detects the legacy selector-keyed format", () => {
   expect(isLegacyPreset(fixture)).toBe(true);

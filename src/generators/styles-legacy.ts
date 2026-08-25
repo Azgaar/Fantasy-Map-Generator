@@ -1,8 +1,9 @@
 // Conversions between the legacy `style` object shapes and the styles store. Only migration
 // edges use this: map-file save/load and legacy preset routing. Dies when those write the new
 // format natively.
-import { DEFAULT_STYLES } from "./defaults";
+
 import { parseStyles, type Styles, styles } from "./styles";
+import { DEFAULT_STYLES } from "./styles-defaults";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 

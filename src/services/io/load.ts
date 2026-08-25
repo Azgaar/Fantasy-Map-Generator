@@ -4,12 +4,12 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { GraphOverride } from "@/generators/graph-override";
+import { stylesFromLegacy } from "@/generators/styles-legacy";
 import { invalidateEmblems } from "@/renderers/draw-emblems";
 import { clearLegend } from "@/renderers/draw-legend";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { stylesFromLegacy } from "@/styles/legacy";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {

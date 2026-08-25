@@ -1,5 +1,5 @@
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
-import { type Styles, styles } from "@/styles/styles";
+import { type Styles, styles } from "@/generators/styles";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 
