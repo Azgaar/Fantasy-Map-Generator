@@ -12,6 +12,7 @@ function onResize(): void {
   (document.getElementById("mapWidthInput") as HTMLInputElement).value = String(window.innerWidth);
   (document.getElementById("mapHeightInput") as HTMLInputElement).value = String(window.innerHeight);
   OptionsController.fitMapToScreen();
+  window.dispatchEvent(new Event("map:viewport-resized"));
 }
 
 /**

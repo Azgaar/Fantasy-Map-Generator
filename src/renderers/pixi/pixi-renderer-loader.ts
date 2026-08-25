@@ -1,6 +1,11 @@
 import { LAYER_CONTROLS_CHANGE_EVENT } from "@/components/layers/layer-controls";
 import { bindRendererCommands, rendererCommands } from "@/renderers/core/renderer-commands";
-import { pixiRendererController, preloadPixiRenderer, syncPixiRendererVisibility } from "./pixi-renderer-controller";
+import {
+  pixiRendererController,
+  preloadPixiRenderer,
+  syncPixiRendererViewport,
+  syncPixiRendererVisibility
+} from "./pixi-renderer-controller";
 import { activatePixiRendererOwnership } from "./pixi-renderer-ownership";
 
 activatePixiRendererOwnership();
@@ -30,3 +35,4 @@ window.addEventListener("map:loaded", scheduleStart);
 window.addEventListener(LAYER_CONTROLS_CHANGE_EVENT, () => {
   requestAnimationFrame(syncPixiRendererVisibility);
 });
+window.addEventListener("map:viewport-resized", syncPixiRendererViewport);

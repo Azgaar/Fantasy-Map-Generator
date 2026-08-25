@@ -54,7 +54,7 @@ function renderBurgInfo(burg: Burg): HTMLElement {
   content.style.maxWidth = "min(62vw, 42em)";
   const body = document.createElement("div");
   body.style.cssText = "display:flex;align-items:flex-start;gap:1em";
-  body.append(renderBurgVisuals(burg));
+  body.append(renderBurgEmblem(burg));
   const details = document.createElement("dl");
   details.style.cssText = "display:grid;grid-template-columns:auto 1fr;gap:.35em .8em;margin:0";
 
@@ -70,12 +70,12 @@ function renderBurgInfo(burg: Burg): HTMLElement {
 
   body.append(details);
   content.append(body);
+  const preview = renderBurgPreview(burg);
+  if (preview) content.append(preview);
   return content;
 }
 
-function renderBurgVisuals(burg: Burg): HTMLElement {
-  const visuals = document.createElement("div");
-  visuals.style.cssText = "display:grid;gap:.5em;min-width:9em";
+function renderBurgEmblem(burg: Burg): SVGSVGElement {
   const emblemId = `burgCOA${burg.i}`;
   COArenderer.trigger(emblemId, burg.coa);
   const emblem = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -87,18 +87,19 @@ function renderBurgVisuals(burg: Burg): HTMLElement {
   const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
   use.setAttribute("href", `#${emblemId}`);
   emblem.append(use);
-  visuals.append(emblem);
+  return emblem;
+}
 
+function renderBurgPreview(burg: Burg): HTMLIFrameElement | null {
   const preview = Burgs.getPreview(burg).preview;
-  if (!preview) return visuals;
+  if (!preview) return null;
 
   const previewFrame = document.createElement("iframe");
   previewFrame.setAttribute("aria-label", `${burg.name || "Burg"} map preview`);
   previewFrame.setAttribute("sandbox", "allow-scripts allow-same-origin");
   previewFrame.src = preview;
-  previewFrame.style.cssText = "border:0;height:12em;pointer-events:none;width:16em";
-  visuals.append(previewFrame);
-  return visuals;
+  previewFrame.style.cssText = "border:0;display:block;height:18em;margin-top:1em;pointer-events:none;width:100%";
+  return previewFrame;
 }
 
 export function getBurgFeatures(

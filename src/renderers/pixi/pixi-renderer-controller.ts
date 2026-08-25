@@ -59,6 +59,7 @@ let instance: PixiMapRenderer | null = null;
 let layerOrder = MAP_LAYER_REGISTRY.map(layer => layer.id);
 let lastWorld: MapRenderWorld | null = null;
 const interactionOverlay = new MapInteractionOverlay();
+let viewportSyncFrameId: number | null = null;
 
 const getInstance = async (): Promise<PixiMapRenderer> => {
   instancePromise ??= import("./pixi-map-renderer").then(({ PixiMapRenderer }) => {
@@ -148,6 +149,29 @@ const getCamera = (): MapCamera => {
     x: viewX,
     y: viewY
   };
+};
+
+const syncViewport = (): void => {
+  if (viewportSyncFrameId !== null) return;
+  viewportSyncFrameId = requestAnimationFrame(() => {
+    viewportSyncFrameId = null;
+    const map = document.getElementById("map");
+    const surface = document.getElementById("pixi-map-renderer");
+    if (!map || !surface || !instance) return;
+
+    const bounds = map.getBoundingClientRect();
+    const width = Math.max(1, Math.round(bounds.width));
+    const height = Math.max(1, Math.round(bounds.height));
+    surface.style.height = `${height}px`;
+    surface.style.left = `${bounds.left + window.scrollX}px`;
+    surface.style.top = `${bounds.top + window.scrollY}px`;
+    surface.style.width = `${width}px`;
+
+    const camera = getCamera();
+    instance.resize({ height, width });
+    instance.setCamera(camera);
+    interactionOverlay.setCamera(camera);
+  });
 };
 
 const getRendererScreenPoint = (clientX: number, clientY: number): ScreenPoint | null => {
@@ -269,6 +293,7 @@ export const renderPixiRasterFrame = api.renderRasterFrame;
 export const setPixiRendererLayerOrder = api.setLayerOrder;
 export const whenPixiRendererCommitted = api.whenCommitted;
 export const syncPixiRendererCamera = api.syncCamera;
+export const syncPixiRendererViewport = syncViewport;
 export const getPixiMapPointAtClient = api.toMapPoint;
 export const updateMapInteractionOverlay = api.updateInteraction;
 export const pixiRendererController = api;
