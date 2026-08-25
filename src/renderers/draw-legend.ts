@@ -1,6 +1,7 @@
 // The legend box: a titled, multi-column list of color swatches drawn over the map
 
 import { type D3DragEvent, select } from "d3";
+import { requireWorkspaceCapability } from "@/application/workspace-mode";
 import { ensureEl, parseTransform, rn } from "@/utils";
 
 // [id, color, label] as stored in the legend `data` attribute
@@ -102,6 +103,7 @@ export function fitLegendBox(): void {
 
 /** Drag handler moving the legend box and storing its relative position */
 export function dragLegendBox(event: D3DragEvent<SVGGElement, unknown, unknown>): void {
+  if (!requireWorkspaceCapability("map:edit")) return;
   const legend = getLegend();
   const transform = parseTransform(legend.attr("transform"));
   const x = Number(transform[0]) - event.x;

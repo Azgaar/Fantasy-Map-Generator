@@ -89,7 +89,7 @@ function renderDialog(): void {
   dialogHost.dataset.dialogHost = "cellInfo";
   ensureEl("dialogs").appendChild(dialogHost);
   dialogRoot = createRoot(dialogHost);
-  unregisterDialog = registerManagedDialog("cellInfo", cleanup, true);
+  unregisterDialog = registerManagedDialog("cellInfo", cleanup, true, undefined, undefined, "inspect");
 
   flushSync(() => {
     dialogRoot?.render(

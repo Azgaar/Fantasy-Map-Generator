@@ -1,9 +1,9 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
 
+import { getWorkspaceMode } from "@/application/workspace-mode";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { ensureEl, ra } from "@/utils";
-import { getWorkspaceMode } from "@/application/workspace-mode";
 import { MAP_MUTATED_EVENT } from "./map-mutation";
 
 const MINUTE = 60000; // minute in milliseconds
@@ -12,18 +12,18 @@ export function initiateAutosave(): void {
   let lastSavedAt = Date.now();
   let dirty = false;
   const markDirty = () => {
+    if (getWorkspaceMode() === "view") return;
     dirty = true;
   };
 
   window.addEventListener(MAP_MUTATED_EVENT, markDirty);
-  window.addEventListener("map:generated", markDirty);
   document.addEventListener("change", markLegacyDocumentControlDirty, { capture: true });
   document.addEventListener("input", markLegacyDocumentControlDirty, { capture: true });
 
   function markLegacyDocumentControlDirty(event: Event): void {
     if (getWorkspaceMode() !== "edit") return;
     const target = event.target as Element | null;
-    if (!target || target.closest("#mapLayers, #mapPreviewRoot, .fmg-dialog")) return;
+    if (!target || target.closest("#mapLayers, #mapPreviewRoot")) return;
     markDirty();
   }
   window.addEventListener("map:loaded", () => {

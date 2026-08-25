@@ -8,7 +8,10 @@ export interface WorkspaceModeOptions {
 }
 
 type WorkspaceModeListener = (mode: WorkspaceMode) => void;
-type WorkspaceModeTransitionHandler = (nextMode: WorkspaceMode, previousMode: WorkspaceMode) => boolean | Promise<boolean>;
+type WorkspaceModeTransitionHandler = (
+  nextMode: WorkspaceMode,
+  previousMode: WorkspaceMode
+) => boolean | Promise<boolean>;
 
 const CAPABILITIES: Readonly<Record<WorkspaceMode, ReadonlySet<WorkspaceCapability>>> = {
   view: new Set(["map:inspect"]),
@@ -19,6 +22,7 @@ const CAPABILITY_MESSAGES: Readonly<Record<Exclude<WorkspaceCapability, "map:ins
   "map:edit": "Switch to Edit mode to change this map",
   "map:generate": "Switch to Edit mode to generate or regenerate map content"
 };
+const WORKSPACE_MODE_STORAGE_KEY = "workspace-mode";
 
 let mode: WorkspaceMode = "edit";
 let root: HTMLElement | null = null;
@@ -27,6 +31,7 @@ const listeners = new Set<WorkspaceModeListener>();
 const transitionHandlers = new Set<WorkspaceModeTransitionHandler>();
 
 export function initializeWorkspaceMode(options: WorkspaceModeOptions = {}): () => void {
+  mode = getStoredWorkspaceMode() ?? mode;
   root = options.root ?? getDefaultRoot();
   onCapabilityDenied = options.onCapabilityDenied ?? (() => undefined);
   applyModeAttribute();
@@ -50,6 +55,7 @@ export async function setWorkspaceMode(nextMode: WorkspaceMode): Promise<boolean
   }
 
   mode = nextMode;
+  storeWorkspaceMode();
   applyModeAttribute();
   for (const listener of listeners) listener(mode);
   return true;
@@ -79,6 +85,23 @@ export function registerWorkspaceModeTransitionHandler(handler: WorkspaceModeTra
 function getDefaultRoot(): HTMLElement | null {
   if (typeof document === "undefined") return null;
   return document.body ?? document.documentElement;
+}
+
+function getStoredWorkspaceMode(): WorkspaceMode | null {
+  try {
+    const stored = sessionStorage.getItem(WORKSPACE_MODE_STORAGE_KEY);
+    return stored === "view" || stored === "edit" ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeWorkspaceMode(): void {
+  try {
+    sessionStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, mode);
+  } catch {
+    // Session storage is optional; workspace mode remains in memory when it is unavailable.
+  }
 }
 
 function applyModeAttribute(): void {

@@ -1,6 +1,7 @@
 import { select } from "d3";
 import { ApplicationController } from "@/application/application-controller";
 import { getViewportSurface } from "@/application/viewport-surface";
+import { requireWorkspaceCapability } from "@/application/workspace-mode";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { LayerControls } from "@/components/layers/layer-controls";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -516,10 +517,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
     select("#scaleBar")
       .on("mousemove", () => tip("Click to open Units Editor"))
-      .on("click", () => window.Controllers.UnitsEditor.open());
+      .on("click", () => {
+        if (requireWorkspaceCapability("map:edit")) window.Controllers.UnitsEditor.open();
+      });
     select("#legend")
       .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-      .on("click", () => clearLegend());
+      .on("click", () => {
+        if (requireWorkspaceCapability("map:edit")) clearLegend();
+      });
 
     // add custom heightmap color scheme if any
     if (heightmapColorSchemes) {

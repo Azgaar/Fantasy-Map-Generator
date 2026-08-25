@@ -8,6 +8,7 @@ import type { Route } from "@/generators/routes-generator";
 import type { Zone } from "@/generators/zones-generator";
 import type { MapLayerId } from "@/renderers/core/layer-registry";
 import type { CompassLayerStyle } from "@/renderers/scene/styles";
+import { notifyMapMutation } from "@/services/map-mutation";
 import type { PackedGraph, TypedArray } from "@/types/PackedGraph";
 
 type RouteControlPoint = [number, number, number];
@@ -96,7 +97,9 @@ export function paintMarketAssignments(
     assignments[cellId] = marketId;
     affectedCellIds.push(cellId);
   }
-  return affectedCellIds.length ? changed("markets", [...affectedMarkets], affectedCellIds) : unchanged("markets");
+  return affectedCellIds.length
+    ? changed("markets", [...affectedMarkets], affectedCellIds, false)
+    : unchanged("markets");
 }
 
 export function commitMarketAssignments(
@@ -135,7 +138,7 @@ export function paintTerritoryAssignments(
     assignments[cellId] = domainId;
     affectedCellIds.push(cellId);
   }
-  return affectedCellIds.length ? changed(layer, [...affectedDomainIds], affectedCellIds) : unchanged(layer);
+  return affectedCellIds.length ? changed(layer, [...affectedDomainIds], affectedCellIds, false) : unchanged(layer);
 }
 
 export function commitTerritoryAssignments(
@@ -522,8 +525,10 @@ export function removeRiverPoint(river: River, index: number, cellId: number): E
 function changed(
   layer: MapLayerId,
   affectedDomainIds: Array<number | string>,
-  affectedCellIds: number[] = []
+  affectedCellIds: number[] = [],
+  committed = true
 ): EditorMutationResult {
+  if (committed) notifyMapMutation(`editor:${layer}`);
   return { affectedCellIds, affectedDomainIds, changed: true, layers: [layer] };
 }
 

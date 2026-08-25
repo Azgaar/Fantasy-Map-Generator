@@ -1,10 +1,11 @@
-import { Controllers } from "@/controllers";
+import { requireWorkspaceCapability } from "@/application/workspace-mode";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { findEl, minmax } from "@/utils";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
 import { OptionsController } from "./options/options-controller";
+import { TOOL_COMMANDS } from "./tool-registry";
 import { changeMapZoom, panMap, setMapZoom } from "./zoom";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
@@ -31,47 +32,30 @@ function handleKeyup(event: KeyboardEvent): void {
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
 
   if (code === "F1") showInfo();
-  else if (code === "F2") OptionsController.regenerate();
-  else if (code === "F6") Services.Save.saveMap("storage");
+  else if (code === "F2") {
+    if (requireWorkspaceCapability("map:generate")) OptionsController.regenerate();
+  } else if (code === "F6") Services.Save.saveMap("storage");
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") OptionsController.toggle(event);
   else if (code === "Escape") {
     if (document.activeElement instanceof Element && document.activeElement.closest(".fmg-dialog")) return;
     closeDialogs();
     OptionsController.hide();
-  } else if (code === "Delete") removeElementOnKey();
-  else if (ctrl && code === "KeyQ") toggleSaveReminder();
+  } else if (code === "Delete") {
+    if (requireWorkspaceCapability("map:edit")) removeElementOnKey();
+  } else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") Services.Save.saveMap("machine");
   else if (ctrl && code === "KeyC") Services.Save.saveMap("dropbox");
-  else if (ctrl && code === "KeyZ") findEl("undo")?.click();
-  else if (ctrl && code === "KeyY") findEl("redo")?.click();
-  else if ((shift || altShift) && code === "KeyH") Controllers.HeightmapEditor.open();
-  else if ((shift || altShift) && code === "KeyB") Controllers.BiomesEditor.open();
-  else if ((shift || altShift) && code === "KeyS") Controllers.StatesEditor.open();
-  else if ((shift || altShift) && code === "KeyP") Controllers.ProvincesEditor.open();
-  else if ((shift || altShift) && code === "KeyD") Controllers.DiplomacyEditor.open();
-  else if ((shift || altShift) && code === "KeyL") Controllers.LabelsOverview.open();
-  else if ((shift || altShift) && code === "KeyC") Controllers.CulturesEditor.open();
-  else if ((shift || altShift) && code === "KeyN") Controllers.NamesbaseEditor.open();
-  else if ((shift || altShift) && code === "KeyZ") Controllers.ZonesEditor.open();
-  else if ((shift || altShift) && code === "KeyR") Controllers.ReligionsEditor.open();
-  else if ((shift || altShift) && code === "KeyY") Controllers.EmblemsEditor.openDefault();
-  else if ((shift || altShift) && code === "KeyQ") Controllers.UnitsEditor.open();
-  else if ((shift || altShift) && code === "KeyO") Controllers.NotesEditor.open();
-  else if ((shift || altShift) && code === "KeyA") Controllers.ChartsOverview.open();
-  else if ((shift || altShift) && code === "KeyT") Controllers.BurgsOverview.open();
-  else if ((shift || altShift) && code === "KeyU") Controllers.RoutesOverview.open();
-  else if ((shift || altShift) && code === "KeyV") Controllers.RiversOverview.open();
-  else if ((shift || altShift) && code === "KeyM") Controllers.MilitaryOverview.open();
-  else if ((shift || altShift) && code === "KeyK") Controllers.MarkersOverview.open();
-  else if ((shift || altShift) && code === "KeyE") Controllers.CellInfo.open();
-  else if ((shift || altShift) && code === "KeyG") Controllers.GoodsEditor.open();
-  else if ((shift || altShift) && code === "Equal") Controllers.MeasurersEditor.open();
-  else if (key === "!") Controllers.BurgCreator.toggle();
-  else if (key === "@") Controllers.LabelCreator.toggle();
-  else if (key === "#") Controllers.MarkerCreator.toggle();
-  else if (key === "$") Controllers.RiverAutoCreator.toggle();
-  else if (key === "%") Controllers.RouteCreator.open();
+  else if (ctrl && code === "KeyZ") {
+    if (requireWorkspaceCapability("map:edit")) findEl("undo")?.click();
+  } else if (ctrl && code === "KeyY") {
+    if (requireWorkspaceCapability("map:edit")) findEl("redo")?.click();
+  } else if (shift || altShift) invokeShiftToolCommand(code);
+  else if (key === "!") invokeToolCommand("create.burg");
+  else if (key === "@") invokeToolCommand("create.label");
+  else if (key === "#") invokeToolCommand("create.marker");
+  else if (key === "$") invokeToolCommand("create.river");
+  else if (key === "%") invokeToolCommand("create.route");
   else if (code === "KeyH") window.LayerControls.toggleLayer("toggleHeight");
   else if (code === "KeyQ") window.LayerControls.toggleLayer("toggleLakes");
   else if (code === "KeyB") window.LayerControls.toggleLayer("toggleBiomes");
@@ -119,6 +103,15 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "8") setMapZoom(8);
   else if (key === "9") setMapZoom(9);
   else if (ctrl) findEl("zonesRemove")?.classList.toggle("pressed");
+}
+
+function invokeShiftToolCommand(code: string): void {
+  const shortcut = code === "Equal" ? "Shift + =" : `Shift + ${code.replace("Key", "")}`;
+  TOOL_COMMANDS.find(command => command.shortcut === shortcut)?.invoke();
+}
+
+function invokeToolCommand(id: string): void {
+  TOOL_COMMANDS.find(command => command.id === id)?.invoke();
 }
 
 function allowHotkeys(): boolean {

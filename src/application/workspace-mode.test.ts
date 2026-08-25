@@ -3,6 +3,7 @@ import {
   getWorkspaceMode,
   hasWorkspaceCapability,
   initializeWorkspaceMode,
+  registerWorkspaceModeTransitionHandler,
   requireWorkspaceCapability,
   resetWorkspaceModeForTests,
   setWorkspaceMode,
@@ -58,5 +59,15 @@ describe("workspace mode", () => {
     expect(hasWorkspaceCapability("map:generate")).toBe(false);
     expect(requireWorkspaceCapability("map:edit")).toBe(false);
     expect(onCapabilityDenied).toHaveBeenCalledWith("Switch to Edit mode to change this map");
+  });
+
+  test("does not change mode when a transition handler rejects it", async () => {
+    const handler = vi.fn(() => false);
+    registerWorkspaceModeTransitionHandler(handler);
+
+    await expect(setWorkspaceMode("view")).resolves.toBe(false);
+
+    expect(handler).toHaveBeenCalledWith("view", "edit");
+    expect(getWorkspaceMode()).toBe("edit");
   });
 });

@@ -1,6 +1,7 @@
 import { Icon } from "@patkepa/kantzen-ui/icons";
 import { Menu, MenuDivider, MenuItem, showContextMenu, type MenuItemProps } from "@patkepa/kantzen-ui/primitives";
 import { type ReactNode, useState } from "react";
+import { getWorkspaceMode } from "@/application/workspace-mode";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { MapContext, MapContextArea, MapContextEntity } from "./map-context";
@@ -29,6 +30,7 @@ export function MapContextMenu({ context }: { context: MapContext }): React.JSX.
   const [page, setPage] = useState<MenuPage>("main");
   const { cellId, entities, point } = context;
   const isLand = pack.cells.h[cellId] >= 20;
+  const isViewMode = getWorkspaceMode() === "view";
   const canAddBurg = isLand && !pack.cells.burg[cellId];
   const canAddRiver = isLand && !pack.cells.b[cellId] && !pack.cells.r[cellId];
   const pageTitle = { add: "Add here", areas: "Edit map data", copy: "Copy", entities: "Edit object", main: context.title }[
@@ -52,23 +54,27 @@ export function MapContextMenu({ context }: { context: MapContext }): React.JSX.
 
       {page === "main" ? (
         <>
-          {entities.length === 1 ? (
+          {!isViewMode && entities.length === 1 ? (
             <ActionItem
               icon={getEntityIcon(entities[0])}
               onSelect={() => editEntity(entities[0])}
               text={`Edit ${entities[0].label}`}
             />
           ) : null}
-          {entities.length > 1 ? (
+          {!isViewMode && entities.length > 1 ? (
             <NavigationItem icon="select" onSelect={() => setPage("entities")} text={`Edit object (${entities.length})`} />
           ) : null}
           <ActionItem icon="info-sign" onSelect={() => Controllers.CellInfo.openAt(point)} text="Inspect this cell" />
-          {context.areas.length ? (
+          {!isViewMode && context.areas.length ? (
             <NavigationItem icon="layers" onSelect={() => setPage("areas")} text="Edit map data" />
           ) : null}
-          <MenuDivider />
-          <NavigationItem icon="add" onSelect={() => setPage("add")} text="Add here" />
-          <ActionItem icon="geotime" onSelect={() => Controllers.MeasurersEditor.addRulerAt(point)} text="Measure from here" />
+          {!isViewMode ? (
+            <>
+              <MenuDivider />
+              <NavigationItem icon="add" onSelect={() => setPage("add")} text="Add here" />
+              <ActionItem icon="geotime" onSelect={() => Controllers.MeasurersEditor.addRulerAt(point)} text="Measure from here" />
+            </>
+          ) : null}
           <ActionItem icon="locate" onSelect={() => zoomTo(point[0], point[1], scale, 450)} text="Center here" />
           <NavigationItem icon="clipboard" onSelect={() => setPage("copy")} text="Copy" />
         </>

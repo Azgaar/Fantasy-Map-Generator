@@ -20,6 +20,7 @@ describe("tool registry", () => {
       expect(command.label.length).toBeGreaterThan(0);
       expect(command.description.length).toBeGreaterThan(0);
       expect(command.icon.length).toBeGreaterThan(0);
+      expect(["map:inspect", "map:edit", "map:generate"].includes(command.requiredCapability)).toBe(true);
       expect(typeof command.invoke).toBe("function");
     }
 
@@ -46,7 +47,7 @@ describe("tool registry", () => {
 
   test("invokes direct and regeneration command boundaries", () => {
     TOOL_COMMANDS.find(command => command.id === "world.biomes")?.invoke();
-    expect(mocks.invokeController).toHaveBeenCalledWith("editBiomesButton");
+    expect(mocks.invokeController).toHaveBeenCalledWith("editBiomesButton", undefined, undefined, "map:edit");
 
     const regenerationTarget = { dispatchEvent: vi.fn(() => true) };
     TOOL_COMMANDS.find(command => command.id === "regenerate.zones")?.invoke({
@@ -61,6 +62,6 @@ describe("tool registry", () => {
     );
 
     TOOL_COMMANDS.find(command => command.id === "politics.states")?.invoke({ dialogPresentation: "panel" });
-    expect(mocks.invokeController).toHaveBeenCalledWith("editStatesButton", undefined, "panel");
+    expect(mocks.invokeController).toHaveBeenCalledWith("editStatesButton", undefined, "panel", "map:edit");
   });
 });

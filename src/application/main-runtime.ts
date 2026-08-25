@@ -13,7 +13,7 @@ import {
   scaleSequential,
   select
 } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, closeEditDialogs } from "@/components/dialog/dialog-helpers";
 import { LayerControls } from "@/components/layers/layer-controls";
 import { OptionsController, type RegenerateOptions } from "@/components/options/options-controller";
 import { StylePresets } from "@/components/style/style-presets-controller";
@@ -27,8 +27,10 @@ import { clearLegend } from "@/renderers/draw-legend";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
+import { clearMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { initiateAutosave } from "@/services/autosave";
+import { notifyMapMutation } from "@/services/map-mutation";
 import { cleanupData } from "@/services/versioning";
 import type { Grid } from "@/types/grid";
 import type { PackedGraph } from "@/types/PackedGraph";
@@ -53,12 +55,13 @@ import {
 import { stored } from "@/utils/preferences";
 import { bindApplicationController } from "./application-controller";
 import { initializeApplicationState } from "./application-state";
-import { getViewportSurface, initializeViewportSurface } from "./viewport-surface";
 import { endViewSession, startViewSession } from "./view-session-state";
+import { getViewportSurface, initializeViewportSurface } from "./viewport-surface";
 import {
   getWorkspaceMode,
   initializeWorkspaceMode,
-  registerWorkspaceModeTransitionHandler
+  registerWorkspaceModeTransitionHandler,
+  requireWorkspaceCapability
 } from "./workspace-mode";
 
 // set debug options
@@ -88,10 +91,14 @@ const initialViewport = initializeViewportSurface();
 // assign events separately as not a viewbox child
 initialViewport.scaleBar
   .on("mousemove", () => tip("Click to open Units Editor"))
-  .on("click", () => window.Controllers.UnitsEditor.open());
+  .on("click", () => {
+    if (requireWorkspaceCapability("map:edit")) window.Controllers.UnitsEditor.open();
+  });
 initialViewport.legend
   .on("mousemove", () => tip("Drag to change the position. Click to hide the legend"))
-  .on("click", () => clearLegend());
+  .on("click", () => {
+    if (requireWorkspaceCapability("map:edit")) clearLegend();
+  });
 
 const mapWidthInput = ensureEl<HTMLInputElement>("mapWidthInput");
 const mapHeightInput = ensureEl<HTMLInputElement>("mapHeightInput");
@@ -162,16 +169,32 @@ registerWorkspaceModeTransitionHandler(nextMode => {
       tip("Finish or cancel the active editing workflow before entering View mode", false, "error");
       return false;
     }
-    startViewSession(new Map(LayerControls.getSnapshot().layers.map(layer => [layer.id, layer.visible])));
+    closeEditDialogs();
+    clearMapInteractionOverlay();
+    if (
+      ["create", "edit", "style", "world-setup", "regenerate"].includes(document.body.dataset.workspaceSection ?? "")
+    ) {
+      OptionsController.hide();
+    }
+    startViewSession(
+      new Map(LayerControls.getSnapshot().layers.map(layer => [layer.id, layer.visible])),
+      LayerControls.getLayerOrder()
+    );
     return true;
   }
 
-  endViewSession((layerId, visible) => LayerControls.setLayerVisibility(layerId, visible));
+  endViewSession(
+    (layerId, visible) => LayerControls.setLayerVisibility(layerId, visible),
+    order => LayerControls.setLayerOrder(order as Parameters<typeof LayerControls.setLayerOrder>[0])
+  );
   return true;
 });
 window.addEventListener("map:loaded", () => {
   if (getWorkspaceMode() === "view") {
-    startViewSession(new Map(LayerControls.getSnapshot().layers.map(layer => [layer.id, layer.visible])));
+    startViewSession(
+      new Map(LayerControls.getSnapshot().layers.map(layer => [layer.id, layer.visible])),
+      LayerControls.getLayerOrder()
+    );
   }
 });
 
@@ -1068,6 +1091,7 @@ function showStatistics() {
     template: heightmap,
     created: app.mapId
   });
+  notifyMapMutation("generation");
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations

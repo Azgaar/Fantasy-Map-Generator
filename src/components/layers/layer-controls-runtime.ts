@@ -1,5 +1,5 @@
-import { getWorkspaceMode } from "@/application/workspace-mode";
 import { setViewSessionLayerVisibility } from "@/application/view-session-state";
+import { getWorkspaceMode, requireWorkspaceCapability } from "@/application/workspace-mode";
 import { tip } from "@/components/tooltips";
 import type { MapLayerId } from "@/renderers/core/layer-registry";
 import { MAP_LAYER_REGISTRY, normalizeMapLayerOrder, resolveMapLayerOrder } from "@/renderers/core/layer-registry";
@@ -392,6 +392,7 @@ function disableLayer(id: LayerToggleId): void {
 }
 
 function openLayerStyle(id: LayerToggleId): void {
+  if (!requireWorkspaceCapability("map:edit")) return;
   const target = STYLE_TARGET_BY_TOGGLE[id];
   if (target) window.StyleEditor.edit(target);
   else if (id === "toggleMarkers" || id === "toggleBurgIcons") {
@@ -475,10 +476,12 @@ function drawGrid(): void {
 function drawZones(): void {
   const filterBy = ensureEl<HTMLSelectElement>("zonesFilterType").value;
   const current = getMapRendererStyle(style).zones;
-  style.mapRenderer!.zones = {
-    ...current,
-    filterType: filterBy && filterBy !== "all" ? filterBy : null
-  };
+  if (getWorkspaceMode() === "edit") {
+    style.mapRenderer!.zones = {
+      ...current,
+      filterType: filterBy && filterBy !== "all" ? filterBy : null
+    };
+  }
   invalidatePixiRendererLayer("zones");
 }
 

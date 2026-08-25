@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { closeDialogs, destroyDialog, registerManagedDialog, updateDialog } from "./dialog-helpers";
+import { closeDialogs, closeEditDialogs, destroyDialog, registerManagedDialog, updateDialog } from "./dialog-helpers";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -42,5 +42,26 @@ describe("managed dialogs", () => {
     expect(requestClose).toHaveBeenCalledOnce();
     expect(close).not.toHaveBeenCalled();
     unregister();
+  });
+
+  test("closes only edit dialogs during a View-mode transition", () => {
+    const closeEditor = vi.fn();
+    const closeInspector = vi.fn();
+    const unregisterEditor = registerManagedDialog("editor", closeEditor);
+    const unregisterInspector = registerManagedDialog(
+      "inspector",
+      closeInspector,
+      false,
+      undefined,
+      undefined,
+      "inspect"
+    );
+
+    closeEditDialogs();
+
+    expect(closeEditor).toHaveBeenCalledOnce();
+    expect(closeInspector).not.toHaveBeenCalled();
+    unregisterEditor();
+    unregisterInspector();
   });
 });

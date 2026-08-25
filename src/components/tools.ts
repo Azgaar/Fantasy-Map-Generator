@@ -1,3 +1,4 @@
+import { requireWorkspaceCapability } from "@/application/workspace-mode";
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { getStateExpansionSettings } from "@/controllers/state-generation-settings";
@@ -13,6 +14,7 @@ import { drawLabels } from "@/renderers/labels/labels-renderer";
 import { unfog } from "@/renderers/overlays/fogging";
 import { invalidateBurgSymbols, invalidateMarkerSymbols } from "@/renderers/point-symbols";
 import { tradeAnimation } from "@/renderers/trade-animation";
+import { notifyMapMutation } from "@/services/map-mutation";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 import { invokeToolControllerCommand, toolsAreAvailable } from "./tool-command-executor";
 import { type RegenerationCommandDetail, RUN_REGENERATION_EVENT } from "./ui/regeneration-command";
@@ -28,7 +30,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
   const buttonId = action.id;
   const parentId = button?.parentElement?.id;
   if (parentId === "regenerateFeature") {
-    if (toolsAreAvailable()) confirmRegeneration(event, buttonId);
+    if (toolsAreAvailable() && requireWorkspaceCapability("map:generate")) confirmRegeneration(event, buttonId);
     return;
   }
 
@@ -36,7 +38,7 @@ ensureEl("toolsContent").addEventListener("click", event => {
 });
 
 window.addEventListener(RUN_REGENERATION_EVENT, event => {
-  if (!toolsAreAvailable()) return;
+  if (!toolsAreAvailable() || !requireWorkspaceCapability("map:generate")) return;
   const detail = (event as CustomEvent<RegenerationCommandDetail>).detail;
   if (!detail?.buttonId) return;
   const { buttonId, ctrlKey, metaKey } = detail;
@@ -91,6 +93,7 @@ function regenerate(event: MouseEvent, button: string): void {
   else if (button === "regenerateMarkers") regenerateMarkers();
   else if (button === "regenerateZones") regenerateZones(event);
   refreshEditors();
+  notifyMapMutation("regenerate");
 }
 
 function regenerateStateLabels(): void {

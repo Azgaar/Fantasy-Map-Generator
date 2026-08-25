@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import {
+  type DialogAccess,
   type DialogParams,
   registerManagedDialog
 } from "@/components/dialog/dialog-helpers";
@@ -17,6 +18,7 @@ import type { WorkspaceDialogOffset, WorkspaceDialogPlacement } from "./dialog-p
 import { WorkspaceEditorPanel } from "./workspace-editor-panel";
 
 export interface DomDialogOptions {
+  access?: DialogAccess;
   actions?: DomDialogAction[];
   beforeClose?: () => boolean | void;
   className?: string;
@@ -313,7 +315,8 @@ export function showDomDialog(initialOptions: DomDialogOptions): DomDialogHandle
     handle.close,
     initialOptions.content.classList.contains("stable"),
     handle.update,
-    requestClose
+    requestClose,
+    options.access
   );
   activeDialogs.set(id, handle);
   flushSync(render);

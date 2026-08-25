@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { MAP_MUTATED_EVENT } from "@/services/map-mutation";
 import type { PackedGraph } from "@/types/PackedGraph";
 import {
   commitHeightValues,
@@ -66,6 +67,22 @@ const createGraph = () =>
   }) as unknown as PackedGraph;
 
 describe("editor mutations", () => {
+  it("publishes a semantic mutation event only after document mutation helpers commit", () => {
+    const graph = createGraph();
+    const dispatchEvent = vi.fn();
+    const globalWindow = window as unknown as { dispatchEvent?: (event: Event) => boolean };
+    const originalDispatchEvent = globalWindow.dispatchEvent;
+    globalWindow.dispatchEvent = dispatchEvent;
+
+    const working = Uint16Array.from(graph.cells.market);
+    paintMarketAssignments(working, [0], 3);
+    expect(dispatchEvent).not.toHaveBeenCalled();
+
+    toggleCellGood(graph, 1, 4);
+    expect(dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: MAP_MUTATED_EVENT }));
+    globalWindow.dispatchEvent = originalDispatchEvent;
+  });
+
   it("moves point entities and reports stable affected IDs", () => {
     const graph = createGraph();
     expect(moveMarker(graph, 8, { x: 10, y: 20 }, 2)).toMatchObject({

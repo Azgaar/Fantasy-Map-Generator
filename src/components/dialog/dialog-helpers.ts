@@ -15,7 +15,10 @@ export type DialogParams = {
   width?: number | string;
 };
 
+export type DialogAccess = "inspect" | "edit";
+
 interface ManagedDialog {
+  access: DialogAccess;
   close: () => void;
   requestClose?: () => void;
   stable: boolean;
@@ -29,9 +32,10 @@ export function registerManagedDialog(
   close: () => void,
   stable = false,
   update?: (params: DialogParams) => void,
-  requestClose?: () => void
+  requestClose?: () => void,
+  access: DialogAccess = "edit"
 ): () => void {
-  const dialog = { close, requestClose, stable, update };
+  const dialog = { access, close, requestClose, stable, update };
   managedDialogs.set(id, dialog);
   return () => {
     if (managedDialogs.get(id) === dialog) managedDialogs.delete(id);
@@ -49,6 +53,12 @@ function isExcepted(id: string, dialog: ManagedDialog, except: string): boolean 
 export function closeDialogs(except = "#except"): void {
   for (const [id, dialog] of [...managedDialogs]) {
     if (!isExcepted(id, dialog, except)) (dialog.requestClose ?? dialog.close)();
+  }
+}
+
+export function closeEditDialogs(): void {
+  for (const dialog of managedDialogs.values()) {
+    if (dialog.access === "edit") (dialog.requestClose ?? dialog.close)();
   }
 }
 

@@ -1,7 +1,9 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { resetWorkspaceModeForTests, setWorkspaceMode } from "@/application/workspace-mode";
 import { executeLegacyCommand, type LegacyCommandRoot } from "./legacy-command";
 
 describe("executeLegacyCommand", () => {
+  afterEach(() => resetWorkspaceModeForTests());
   test("clicks an available legacy control", () => {
     const click = vi.fn();
     const root: LegacyCommandRoot = { getElementById: () => ({ click }) };
@@ -22,5 +24,14 @@ describe("executeLegacyCommand", () => {
     const root: LegacyCommandRoot = { getElementById: () => null };
 
     expect(executeLegacyCommand("missingButton", root)).toBe("missing");
+  });
+
+  test("enforces a requested workspace capability before clicking", async () => {
+    const click = vi.fn();
+    const root: LegacyCommandRoot = { getElementById: () => ({ click }) };
+    await setWorkspaceMode("view");
+
+    expect(executeLegacyCommand("newMapButton", root, "map:generate")).toBe("blocked");
+    expect(click).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@
 import { hsl } from "d3";
 import { ApplicationController } from "@/application/application-controller";
 import { getViewportSurface } from "@/application/viewport-surface";
+import { getWorkspaceMode, requireWorkspaceCapability } from "@/application/workspace-mode";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { enableElementDragging } from "@/components/element-dragging";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -94,6 +95,10 @@ if (stored("disable_click_arrow_tooltip")) {
 
 // Show options pane on trigger click
 function showOptions(event?: Event): void {
+  if (getWorkspaceMode() === "view") {
+    tip("Switch to Edit mode to change map options", false, "error");
+    return;
+  }
   if (!stored("disable_click_arrow_tooltip")) {
     clearMainTip();
     localStorage.setItem("disable_click_arrow_tooltip", "true");
@@ -875,6 +880,7 @@ ensureEl("sticked").addEventListener("click", event => {
 });
 
 function regeneratePrompt(options?: RegenerateOptions): void {
+  if (!requireWorkspaceCapability("map:generate")) return;
   if (customization) {
     tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
     return;

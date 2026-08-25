@@ -1,3 +1,4 @@
+import { requireWorkspaceCapability, type WorkspaceCapability } from "@/application/workspace-mode";
 import { Controllers } from "@/controllers";
 import { tip } from "./tooltips";
 import {
@@ -55,9 +56,11 @@ export function toolsAreAvailable(): boolean {
 export function invokeToolControllerCommand(
   commandId: string,
   dialogPlacement?: WorkspaceDialogPlacement,
-  dialogPresentation?: DomDialogPresentation
+  dialogPresentation?: DomDialogPresentation,
+  requiredCapability: WorkspaceCapability = "map:edit"
 ): ToolCommandResult {
   if (!toolsAreAvailable()) return "blocked";
+  if (!requireWorkspaceCapability(requiredCapability)) return "blocked";
 
   const handler = TOOL_COMMAND_HANDLERS[commandId as ToolControllerCommandId];
   if (!handler) return "missing";

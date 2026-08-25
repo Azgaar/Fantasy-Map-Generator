@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { requireWorkspaceCapability, type WorkspaceCapability } from "@/application/workspace-mode";
 import { MapMinimap } from "./map-minimap";
 import {
   getToolCommands,
@@ -137,6 +138,8 @@ function dispatchWorkspacePanelChange(section: WorkspaceSection): void {
 }
 
 function openWorkspaceSection(section: WorkspaceSection): void {
+  const requiredCapability = getWorkspaceSectionCapability(section);
+  if (requiredCapability && !requireWorkspaceCapability(requiredCapability)) return;
   setWorkspaceView(section);
 
   const options = document.getElementById("options");
@@ -145,6 +148,13 @@ function openWorkspaceSection(section: WorkspaceSection): void {
   const tab = document.getElementById(WORKSPACE_SECTIONS[section].tabId);
   if (tab?.classList.contains("active")) dispatchWorkspacePanelChange(section);
   else tab?.click();
+}
+
+function getWorkspaceSectionCapability(section: WorkspaceSection): WorkspaceCapability | undefined {
+  if (section === "inspect") return "map:inspect";
+  if (["create", "edit", "style", "preferences"].includes(section)) return "map:edit";
+  if (["world-setup", "regenerate"].includes(section)) return "map:generate";
+  return undefined;
 }
 
 window.addEventListener("new-map:open", () => openWorkspaceSection("world-setup"));

@@ -2,7 +2,8 @@
 
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { resetWorkspaceModeForTests, setWorkspaceMode } from "@/application/workspace-mode";
 import type { LayerControlsSnapshot, LegacyLayerControls } from "./layers/layer-controls";
 import { getToolCommands } from "./tool-registry";
 import { EditMenuItems, LayerMenuItems, ViewsMenuItems, WorkspaceToolbar } from "./workspace-toolbar";
@@ -37,6 +38,8 @@ const controls: LegacyLayerControls = {
   syncPreset: vi.fn(),
   toggleLayer: vi.fn(() => true)
 };
+
+afterEach(() => resetWorkspaceModeForTests());
 
 describe("WorkspaceToolbar", () => {
   test("stays above modal overlays", () => {
@@ -127,6 +130,7 @@ describe("WorkspaceToolbar", () => {
     const viewsItems = ViewsMenuItems({
       close: closeViews,
       controls,
+      mode: "edit",
       onOpenSection,
       snapshot: menuSnapshot
     });
@@ -161,7 +165,7 @@ describe("WorkspaceToolbar", () => {
     temperatureLayer.props.onClick();
     expect(controls.toggleLayer).toHaveBeenCalledWith("toggleTemperature");
 
-    viewsItems.props.children[5].props.onClick();
+    viewsItems.props.children[4].props.children[1].props.onClick();
     expect(closeViews).toHaveBeenCalledOnce();
     expect(onOpenSection).toHaveBeenCalledWith("style");
   });
@@ -179,5 +183,18 @@ describe("WorkspaceToolbar", () => {
     expect(close).toHaveBeenCalledOnce();
     expect(invoke).toHaveBeenCalledWith({ dialogPresentation: "panel" });
     invoke.mockRestore();
+  });
+
+  test("keeps the View/Edit switch visible while removing authoring menus in View mode", async () => {
+    await setWorkspaceMode("view");
+    const markup = renderToStaticMarkup(
+      <WorkspaceToolbar initialMapSnapshot={snapshot} mapControls={controls} onOpenSection={vi.fn()} />
+    );
+
+    expect(markup.includes('aria-label="Workspace mode"')).toBe(true);
+    expect(markup.includes('aria-pressed="true"')).toBe(true);
+    expect(markup.includes('id="workspaceCreateTrigger"')).toBe(false);
+    expect(markup.includes('id="workspaceMapTrigger"')).toBe(false);
+    expect(markup.includes('id="workspaceGenerateTrigger"')).toBe(false);
   });
 });

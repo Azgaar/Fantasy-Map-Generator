@@ -1,4 +1,5 @@
 import type { IconName } from "@patkepa/kantzen-ui/icons";
+import type { WorkspaceCapability } from "@/application/workspace-mode";
 import {
   invokeToolControllerCommand,
   type ToolCommandResult,
@@ -32,6 +33,7 @@ export interface ToolSecondaryAction {
   id: string;
   invoke: () => ToolCommandResult;
   label: string;
+  requiredCapability: WorkspaceCapability;
 }
 
 export interface ToolCommand {
@@ -43,6 +45,7 @@ export interface ToolCommand {
   id: string;
   invoke: (context?: ToolCommandContext) => ToolCommandResult | boolean;
   label: string;
+  requiredCapability: WorkspaceCapability;
   searchTerms: readonly string[];
   secondaryAction?: ToolSecondaryAction;
   shortcut?: string;
@@ -66,6 +69,7 @@ interface ControllerCommandOptions {
   group: Exclude<ToolGroupId, "regenerate">;
   id: string;
   label: string;
+  requiredCapability?: WorkspaceCapability;
   searchTerms?: readonly string[];
   shortcut?: string;
 }
@@ -80,13 +84,20 @@ interface RegenerationCommandOptions {
 }
 
 function controllerCommand(options: ControllerCommandOptions): ToolCommand {
+  const requiredCapability = options.requiredCapability ?? "map:edit";
   return {
     ...options,
     icon: GROUPS_BY_ID[options.group].icon,
+    requiredCapability,
     invoke: context =>
       context?.dialogPlacement || context?.dialogPresentation
-        ? invokeToolControllerCommand(options.controlId, context.dialogPlacement, context.dialogPresentation)
-        : invokeToolControllerCommand(options.controlId),
+        ? invokeToolControllerCommand(
+            options.controlId,
+            context.dialogPlacement,
+            context.dialogPresentation,
+            requiredCapability
+          )
+        : invokeToolControllerCommand(options.controlId, undefined, undefined, requiredCapability),
     searchTerms: options.searchTerms ?? []
   };
 }
@@ -97,6 +108,7 @@ function regenerationCommand(options: RegenerationCommandOptions): ToolCommand {
     destructive: true,
     group: "regenerate",
     icon: GROUPS_BY_ID.regenerate.icon,
+    requiredCapability: "map:generate",
     invoke: context =>
       dispatchRegenerationCommand(
         options.controlId,
@@ -112,8 +124,9 @@ const MARKER_SETTINGS_ACTION: ToolSecondaryAction = {
   controlId: "configRegenerateMarkers",
   icon: "settings",
   id: "regenerate.markers.settings",
-  invoke: () => invokeToolControllerCommand("configRegenerateMarkers"),
-  label: "Settings"
+  invoke: () => invokeToolControllerCommand("configRegenerateMarkers", undefined, undefined, "map:generate"),
+  label: "Settings",
+  requiredCapability: "map:generate"
 };
 
 export const TOOL_COMMANDS: readonly ToolCommand[] = [
@@ -318,6 +331,7 @@ export const TOOL_COMMANDS: readonly ToolCommand[] = [
     label: "Cell Details",
     description: "Inspect data for an individual map cell",
     group: "analysis",
+    requiredCapability: "map:inspect",
     shortcut: "Shift + E",
     searchTerms: ["inspect", "details", "data"]
   }),
@@ -327,6 +341,7 @@ export const TOOL_COMMANDS: readonly ToolCommand[] = [
     label: "Charts",
     description: "Explore map data in charts",
     group: "analysis",
+    requiredCapability: "map:inspect",
     shortcut: "Shift + A",
     searchTerms: ["statistics", "graphs", "data"]
   }),

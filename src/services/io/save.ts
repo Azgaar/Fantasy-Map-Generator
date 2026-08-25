@@ -1,16 +1,16 @@
 // Save the whole .map project to storage, machine or cloud
 
+import { getDocumentLayerOrder, getDocumentLayerVisibility } from "@/application/view-session-state";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { LayerControls } from "@/components/layers/layer-controls";
 import { tip } from "@/components/tooltips";
-import { getDocumentLayerVisibility } from "@/application/view-session-state";
-import { getCapturedPixiLayerVisibility } from "@/renderers/pixi/pixi-layer-visibility-state";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError } from "@/utils";
 import type { MapDataSection } from "./map-data-serializer";
 import { serializeMapSectionsInWorker } from "./map-data-serializer-client";
+import { createSerializedMapStyle } from "./serialized-map-style";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
@@ -93,6 +93,17 @@ async function prepareMapData(): Promise<string> {
       "data-layer-active",
       String(getDocumentLayerVisibility("toggleLabels", window.LayerControls.isLayerOn("toggleLabels")))
     );
+  for (const [controlId, selector] of [
+    ["toggleRulers", "#ruler"],
+    ["toggleScaleBar", "#scaleBar"],
+    ["toggleVignette", "#vignette"]
+  ] as const) {
+    const layer = cloneEl.querySelector<SVGElement>(selector);
+    if (layer)
+      layer.style.display = getDocumentLayerVisibility(controlId, window.LayerControls.isLayerOn(controlId))
+        ? ""
+        : "none";
+  }
   cloneEl.querySelector("#mapInteractionOverlay")?.remove();
   cloneEl.querySelector("#mapInteractionSurface")?.remove();
 
@@ -109,13 +120,11 @@ async function prepareMapData(): Promise<string> {
 
   const { spacing, cellsX, cellsY, boundary, points, features, cellsDesired } = grid;
   const gridGeneral = { spacing, cellsX, cellsY, boundary, points, features, cellsDesired };
-  const serializedStyle = {
-    ...structuredClone(style),
-    mapLayerOrder: [...LayerControls.getLayerOrder()],
-    mapLayerVisibility: getCapturedPixiLayerVisibility(style, controlId =>
-      getDocumentLayerVisibility(controlId, window.LayerControls.isLayerOn(controlId))
-    )
-  };
+  const serializedStyle = createSerializedMapStyle(
+    style,
+    getDocumentLayerOrder(LayerControls.getLayerOrder()),
+    controlId => getDocumentLayerVisibility(controlId, window.LayerControls.isLayerOn(controlId))
+  );
 
   // store custom good icons
   const goodIconsEl = ensureEl("good-icons");

@@ -374,6 +374,7 @@ function open() {
   else for (const chart of charts) renderChart(chart);
 
   showDomDialog({
+    access: "inspect",
     content: ensureEl("chartsOverview"),
     onClose: handleClose,
     placement: "center",
