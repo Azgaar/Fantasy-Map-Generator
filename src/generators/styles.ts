@@ -1,14 +1,11 @@
 import { type LayerId, Layers } from "@/components/layers";
 import { DEFAULT_STYLES, type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
-// The active styles, a plain global. Read and write directly:
-// styles.labels.groups[id].attrs.opacity. Replaces the legacy `style` global when that retires.
-// A clone, so edits before the first preset apply can't taint Styles.defaults.
+// the active styles global; a clone, so pre-preset edits can't taint Styles.defaults
 globalThis.styles = structuredClone(DEFAULT_STYLES);
 
-// New format only; legacy selector-keyed presets are converted by migration code, not here.
-// An invalid or missing layer falls back to the default with one warning, so the result is
-// always complete.
+// new format only (legacy presets are converted by migration code first); an invalid or
+// missing layer falls back to the default with one warning, so the result is always complete
 function parse(json: unknown): StylesData {
   const input = typeof json === "object" && json !== null ? (json as Record<string, unknown>) : {};
   const result = {} as Record<string, unknown>;
@@ -27,8 +24,7 @@ function set(data: StylesData): void {
   globalThis.styles = data;
 }
 
-// Write the layers' attrs onto the DOM, addressed by data-layer/data-group. Options are never
-// written; renderers read them from `styles` directly. Does not redraw.
+// attrs go onto the DOM by data-layer/data-group; options never do (renderers read the store)
 function write(...ids: StyleLayerId[]): void {
   for (const id of ids) {
     const root = document.querySelector(`[data-layer="${id}"]`);
@@ -37,7 +33,6 @@ function write(...ids: StyleLayerId[]): void {
   }
 }
 
-// write, then redraw the layers
 function apply(...ids: StyleLayerId[]): void {
   write(...ids);
   Layers.draw(...ids.filter((id): id is StyleLayerId & LayerId => id !== "map"));
