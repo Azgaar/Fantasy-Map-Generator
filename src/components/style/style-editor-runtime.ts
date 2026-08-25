@@ -1,6 +1,7 @@
 import { interpolateRgb, interpolateRgbBasis, type Selection, scaleSequential, select } from "d3";
 import { getViewportSurface } from "@/application/viewport-surface";
 import { OptionsController } from "@/components/options/options-controller";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { tip } from "@/components/tooltips";
 import { redrawLegend } from "@/renderers/draw-legend";
 import { drawMeasurers } from "@/renderers/draw-measurers";
@@ -72,7 +73,6 @@ const styleBurgIconsStrokeLinejoin = ensureEl<HTMLSelectElement>("styleBurgIcons
 const styleStrokeLinecapInput = ensureEl<HTMLSelectElement>("styleStrokeLinecapInput");
 const styleSelectFont = ensureEl<HTMLSelectElement>("styleSelectFont");
 const styleClippingInput = ensureEl<HTMLSelectElement>("styleClippingInput");
-const addFontMethod = ensureEl<HTMLSelectElement>("addFontMethod");
 
 const styleHeightmapRenderOcean = checkboxElement("styleHeightmapRenderOcean");
 const styleRescaleMarkers = checkboxElement("styleRescaleMarkers");
@@ -237,9 +237,7 @@ const valueIds = [
   "styleScaleBarBackgroundPaddingTop",
   "styleScaleBarBackgroundPaddingRight",
   "styleScaleBarBackgroundPaddingBottom",
-  "styleScaleBarBackgroundPaddingLeft",
-  "addFontNameInput",
-  "addFontURLInput"
+  "styleScaleBarBackgroundPaddingLeft"
 ] as const;
 const valueElements = Object.fromEntries(valueIds.map(id => [id, valueElement(id)])) as Record<
   (typeof valueIds)[number],
@@ -324,9 +322,7 @@ const {
   styleScaleBarBackgroundPaddingTop,
   styleScaleBarBackgroundPaddingRight,
   styleScaleBarBackgroundPaddingBottom,
-  styleScaleBarBackgroundPaddingLeft,
-  addFontNameInput,
-  addFontURLInput
+  styleScaleBarBackgroundPaddingLeft
 } = valueElements;
 
 const styleMarketsIcon = ensureEl<HTMLButtonElement>("styleMarketsIcon");
@@ -1745,10 +1741,12 @@ styleShadowInput.addEventListener("input", function () {
 });
 
 styleFontAdd.addEventListener("click", () => {
-  addFontNameInput.value = "";
-  addFontURLInput.value = "";
+  const content = createAddFontDialog();
+  const addFontMethod = content.querySelector<HTMLSelectElement>("#addFontMethod")!;
+  const addFontNameInput = content.querySelector<HTMLInputElement>("#addFontNameInput")!;
+  const addFontURLInput = content.querySelector<HTMLInputElement>("#addFontURLInput")!;
 
-  window.showDomDialog({
+  const dialog = showDomDialog({
     actions: [
       {
         close: false,
@@ -1770,25 +1768,37 @@ styleFontAdd.addEventListener("click", () => {
           else if (method === "googleFont") addGoogleFont(family);
           else if (method === "localFont") addLocalFont(family);
 
-          addFontNameInput.value = "";
-          addFontURLInput.value = "";
-          window.destroyDialog("addFontDialog");
+          dialog.close();
         }
       },
       { label: "Cancel" }
     ],
-    content: ensureEl("addFontDialog"),
-    destroyOnClose: false,
+    content,
     placement: "center",
     placementTarget: document.getElementById("map"),
     title: "Add custom font",
     width: "26em"
   });
+
+  addFontMethod.addEventListener("change", () => {
+    addFontURLInput.style.display = addFontMethod.value === "fontURL" ? "inline" : "none";
+  });
 });
 
-addFontMethod.addEventListener("change", function () {
-  addFontURLInput.style.display = this.value === "fontURL" ? "inline" : "none";
-});
+function createAddFontDialog(): HTMLDivElement {
+  const content = document.createElement("div");
+  content.id = "addFontDialog";
+  content.innerHTML = /* html */ `<span>There are 3 ways to add a custom font:</span>
+    <p><strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name below.</p>
+    <p><strong>Local font</strong>. Provide the installed font name. It will not work on machines where it is unavailable.</p>
+    <p><strong>Font URL</strong>. Provide a font name and a link to a hosted font file.</p>
+    <div style="margin-top: 0.3em" data-tip="Select font adding method">
+      <select id="addFontMethod"><option value="googleFont" selected>Google font</option><option value="localFont">Local font</option><option value="fontURL">Font URL</option></select>
+      <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
+      <div><input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em; display: none" /></div>
+    </div>`;
+  return content;
+}
 
 styleFontSize.addEventListener("change", function () {
   changeFontSize(+this.value);

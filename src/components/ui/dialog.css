@@ -158,3 +158,32 @@
 .fantasia-message-dialog > :last-child {
   margin-bottom: 0;
 }
+
+@media (max-width: 480px) {
+  .fantasia-dialog-overlay {
+    padding:
+      max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+
+  .fantasia-dialog {
+    max-width: 100%;
+    max-height: calc(100dvh - 16px);
+  }
+
+  .fantasia-dialog__header {
+    min-height: 48px;
+    gap: 10px;
+    padding: 10px 12px 9px;
+  }
+
+  .fantasia-dialog__body {
+    max-height: none;
+    padding: 12px;
+  }
+
+  .fantasia-dialog__footer {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+}

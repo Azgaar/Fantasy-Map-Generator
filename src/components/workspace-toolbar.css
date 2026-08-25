@@ -382,9 +382,9 @@
 
 @media (max-width: 760px) {
   #mapPreviewRoot {
-    top: 12px;
-    right: 12px;
-    left: 12px;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
   }
 
   .fantasia-workspace-toolbar {
@@ -420,6 +420,65 @@
   .fantasia-workspace-mode__button {
     padding: 0 2px;
     font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fantasia-brand,
+  .fantasia-floating-menu__trigger,
+  .fantasia-workspace-mode,
+  #workspaceProjectTrigger,
+  #workspaceGenerateTrigger {
+    height: 44px;
+  }
+
+  .fantasia-workspace-toolbar__group:first-child .fantasia-floating-menu--align-right > .fantasia-floating-menu__menu.kui-menu {
+    right: auto;
+    left: 0;
+  }
+
+  .fantasia-floating-menu__menu.kui-menu,
+  .fantasia-floating-menu__menu .kui-submenu {
+    max-height: calc(100dvh - 72px);
+  }
+}
+
+@media (max-width: 360px) {
+  #mapPreviewRoot {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    left: max(8px, env(safe-area-inset-left));
+  }
+
+  .fantasia-workspace-toolbar {
+    gap: 2px;
+  }
+
+  .fantasia-workspace-toolbar__group {
+    gap: 2px;
+  }
+
+  .fantasia-brand,
+  .fantasia-floating-menu__trigger,
+  .fantasia-workspace-mode,
+  #workspaceProjectTrigger,
+  #workspaceGenerateTrigger {
+    width: 34px;
+    min-width: 34px;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 520px) and (orientation: landscape) {
+  #mapPreviewRoot {
+    top: max(8px, env(safe-area-inset-top));
+  }
+
+  .fantasia-brand,
+  .fantasia-floating-menu__trigger,
+  .fantasia-workspace-mode,
+  #workspaceProjectTrigger,
+  #workspaceGenerateTrigger {
+    height: 36px;
   }
 }
 

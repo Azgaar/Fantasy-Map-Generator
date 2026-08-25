@@ -234,10 +234,11 @@ class ProvinceModule {
 
         // expand province
         const cost: number[] = [];
+        const provinceQueue = new PriorityQueue<{ e: number; p: number }>();
         cost[center] = 1;
-        queue.push({ e: center, p: 0 }, 0);
-        while (queue.length) {
-          const { e, p } = queue.pop()!;
+        provinceQueue.push({ e: center, p: 0 }, 0);
+        while (provinceQueue.length) {
+          const { e, p } = provinceQueue.pop()!;
 
           cells.c[e].forEach(nextCellId => {
             if (provinceIds[nextCellId]) return;
@@ -250,7 +251,7 @@ class ProvinceModule {
             if (!cost[nextCellId] || totalCost < cost[nextCellId]) {
               if (land && cells.state[nextCellId] === s.i) provinceIds[nextCellId] = provinceId; // assign province to a cell
               cost[nextCellId] = totalCost;
-              queue.push({ e: nextCellId, p: totalCost }, totalCost);
+              provinceQueue.push({ e: nextCellId, p: totalCost }, totalCost);
             }
           });
         }

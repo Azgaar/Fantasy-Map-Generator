@@ -4,10 +4,10 @@ import { round } from "../utils";
 import { buildCoastlinePath, fractalizeCoastline } from "./coastline-fractal";
 import { pixiOwnsLayer } from "./pixi/pixi-renderer-ownership";
 import { buildFeatureShape } from "./scene/layers/feature-shapes";
+import { simplifyPolyline } from "@/utils/simplify";
 
 declare global {
   var drawFeatures: () => void;
-  var simplify: (points: [number, number][], tolerance: number, highestQuality?: boolean) => [number, number][];
 }
 
 interface FeaturesHtml {
@@ -88,7 +88,7 @@ function featurePathRenderer(feature: Feature): string {
     {
       fractalize: (points, currentFeature) => fractalizeCoastline(points, currentFeature.i, currentFeature.type),
       secureBoundary: true,
-      simplify
+      simplify: simplifyPolyline
     }
   );
   if (!shape) {

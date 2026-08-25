@@ -20,15 +20,6 @@ describe("StatesModule.collectTaxes", () => {
     // Stub Names/COA data not needed for this test
     globalThis.Names = { getCultureShort: () => "X", getState: () => "X" } as any;
     globalThis.COA = { generate: () => ({}), getShield: () => "" } as any;
-    globalThis.FlatQueue = class {
-      length = 0;
-      pop() {
-        return undefined as any;
-      }
-      push() {
-        /* noop */
-      }
-    } as any;
     globalThis.Routes = { areConnected: () => false } as any;
     globalThis.Markets = {
       get: (marketId: number | undefined) =>

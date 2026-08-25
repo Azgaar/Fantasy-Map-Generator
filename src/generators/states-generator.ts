@@ -1,5 +1,5 @@
-import { mean, median, quadtree, sum } from "d3";
 import Alea from "alea";
+import { mean, median, quadtree, sum } from "d3";
 import { PriorityQueue } from "@/utils/priority-queue";
 import {
   each,
@@ -103,7 +103,7 @@ class StatesModule {
   }
 
   private recreate(): { warning?: string; error?: string; states?: State[] } {
-  Math.random = Alea(generateSeed());
+    Math.random = Alea(generateSeed());
     const statesCount = ensureEl<HTMLInputElement>("statesNumber").valueAsNumber;
     if (!statesCount) return { error: "<i>States Number</i> option value is zero. No counties are generated" };
 

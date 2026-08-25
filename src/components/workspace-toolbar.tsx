@@ -434,8 +434,8 @@ function ViewsMenu(props: Pick<WorkspaceToolbarProps, "onOpenSection"> & LayerMe
 }
 
 function getCurrentMapName(fallback?: string): string {
-  if (typeof document === "undefined") return fallback?.trim() || "Untitled map";
-  return document.querySelector<HTMLInputElement>("#mapName")?.value.trim() || fallback?.trim() || "Untitled map";
+  if (typeof document === "undefined") return fallback?.trim() || "Fantasia";
+  return document.querySelector<HTMLInputElement>("#mapName")?.value.trim() || fallback?.trim() || "Fantasia";
 }
 
 function MapIdentity({ initialMapName }: Pick<WorkspaceToolbarProps, "initialMapName">): React.JSX.Element {

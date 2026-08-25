@@ -2435,89 +2435,6 @@
           <button id="unitsRestore" data-tip="Restore default units settings" class="icon-ccw"></button>
         </div>
       </div>
-      <div id="styleSaver" class="dialog stable textual" style="display: none">
-        <div id="styleSaverHeader" style="padding: 2px 0">
-          <span>Preset name:</span>
-          <input
-            id="styleSaverName"
-            data-tip="Enter style preset name"
-            placeholder="Preset name"
-            style="width: 12em"
-            required
-          />
-          <span
-            id="styleSaverTip"
-            data-tip="Shows whether there is already a preset with this name"
-            class="italic"
-          ></span>
-        </div>
-        <div id="styleSaverBody" style="padding: 2px 0; width: 100%">
-          <span>Style JSON:</span>
-          <textarea
-            id="styleSaverJSON"
-            rows="18"
-            data-tip="Style JSON is getting formed based the current settings, but can be entered manually"
-            placeholder="Paste any valid style data in JSON format"
-            autocorrect="off"
-            spellcheck="false"
-          ></textarea>
-        </div>
-        <div id="styleSaverBottom">
-          <button id="styleSaverSave" data-tip="Save current JSON as a new style preset" class="icon-check"></button>
-          <button
-            id="styleSaverDownload"
-            data-tip="Download the style as a .json file (can be opened in any text editor)"
-            class="icon-download"
-          ></button>
-          <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
-          <button
-            id="styleSaverCA"
-            data-tip="Find or share custom style preset on Cartography Assets portal"
-            class="icon-drafting-compass"
-            onclick="openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/styles/')"
-          ></button>
-        </div>
-      </div>
-      <div id="addFontDialog" style="display: none" class="dialog">
-        <span>There are 3 ways to add a custom font:</span>
-        <p>
-          <strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find
-          a font you like and enter its name to the field below.
-        </p>
-        <p>
-          <strong>Local font</strong>. If you have a font
-          <a
-            href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer"
-            target="_blank"
-            >installed on your computer</a
-          >, just provide the font name. Make sure the browser is reloaded after the installation. The font won't work
-          on machines not having it installed. Good source of fonts are
-          <a href="https://fontesk.com" target="_blank">Fontdesk</a> and
-          <a href="https://www.dafont.com" target="_blank">DaFont</a>.
-        </p>
-        <p>
-          <strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font
-          hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and
-          <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css
-          provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another
-          variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL
-        </p>
-        <div style="margin-top: 0.3em" data-tip="Select font adding method">
-          <select id="addFontMethod">
-            <option value="googleFont" selected>Google font</option>
-            <option value="localFont">Local font</option>
-            <option value="fontURL">Font URL</option>
-          </select>
-          <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
-          <div>
-            <input
-              id="addFontURLInput"
-              placeholder="font file URL"
-              style="width: 22.6em; margin-top: 0.1em; display: none"
-            />
-          </div>
-        </div>
-      </div>
       <div id="exportMapData" style="display: none" class="dialog">
         <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
         <div>
@@ -2701,17 +2618,6 @@
         </div>
         <div id="tileStatus" style="font-style: italic"></div>
       </div>
-      <div id="alert" style="display: none" class="dialog">
-        <p id="alertMessage">Warning!</p>
-      </div>
-      <div id="prompt" style="display: none" class="dialog">
-        <form id="promptForm">
-          <div id="promptText"></div>
-          <input id="promptInput" type="number" step=".01" placeholder="type value" autocomplete="off" />
-          <button type="submit">Confirm</button>
-          <button type="button" id="promptCancel" formnovalidate>Cancel</button>
-        </form>
-      </div>
     </div>
     <div id="notes">
       <div id="notesHeader"></div>
@@ -2733,7 +2639,6 @@
       <input type="file" accept=".svg" id="emblemSVGToLoad" />
       <input type="file" accept=".txt" id="templateToLoad" />
       <input type="file" accept=".txt" id="namesbaseToLoad" />
-      <input type="file" accept=".json" id="styleToLoad" />
       <input type="file" accept=".csv" id="culturesCSVToLoad" />
     </div>
     <!-- reusable svg elements -->
@@ -5241,7 +5146,6 @@
         <g id="trade-markers"></g>
       </defs>
     </svg>
-    <script src="libs/indexedDB.js?v=1.99.00"></script>
     <script type="module" src="components/index.ts"></script>
     <script type="module" src="data/supporters.ts"></script>
     <script type="module" src="data/heightmap-templates.ts"></script>

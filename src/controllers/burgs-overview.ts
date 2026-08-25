@@ -766,8 +766,6 @@ function importBurgNames(dataLoaded: string): void {
   message += `</tr></table>`;
 
   if (!change.length) message = "No changes found in the file. Please change some names to get a result";
-  alertMessage.innerHTML = message;
-
   const onConfirm = () => {
     for (let i = 0; i < change.length; i++) {
       const id = change[i].id;

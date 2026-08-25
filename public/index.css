@@ -2619,6 +2619,28 @@ svg.button {
   }
 }
 
+@media only screen and (max-width: 480px) {
+  .dialog {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  .dialog > div {
+    max-width: 100%;
+  }
+
+  .table {
+    max-width: calc(100vw - 32px);
+  }
+
+  #notes {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    width: min(280px, calc(100vw - 16px));
+    max-height: calc(100dvh - 16px);
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     background: #25252a;

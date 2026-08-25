@@ -6,6 +6,7 @@ import { LayerControls } from "@/components/layers/layer-controls";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
+import { LocalMapStorage } from "@/services/io/local-map-storage";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError } from "@/utils";
 import type { MapDataSection } from "./map-data-serializer";
@@ -16,7 +17,7 @@ type SaveMethod = "storage" | "machine" | "dropbox";
 
 async function saveMap(method: SaveMethod): Promise<void> {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
-  closeDialogs("#alert");
+  closeDialogs();
 
   try {
     const mapData = await prepareMapData();
@@ -207,7 +208,7 @@ function waitForMainThreadIdle(): Promise<void> {
 // save map file to indexedDB
 async function saveToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
-  await ldb.set("lastMap", blob);
+  await LocalMapStorage.set("lastMap", blob);
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 

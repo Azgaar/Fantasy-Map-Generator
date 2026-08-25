@@ -17,7 +17,7 @@ function exportToJson(type: ExportJsonType): void {
     tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
     return;
   }
-  closeDialogs("#alert");
+  closeDialogs();
 
   TIME && console.time("exportToJson");
   const mapData = typeMap[type]();

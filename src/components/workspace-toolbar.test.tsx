@@ -77,6 +77,15 @@ describe("WorkspaceToolbar", () => {
     expect(markup.includes("Fantasia")).toBe(false);
   });
 
+  test("uses Fantasia as the default map identity", () => {
+    const markup = renderToStaticMarkup(
+      <WorkspaceToolbar initialMapSnapshot={snapshot} mapControls={controls} onOpenSection={vi.fn()} />
+    );
+
+    expect(markup.includes('aria-label="Current map: Fantasia"')).toBe(true);
+    expect(markup.includes(">Fantasia<")).toBe(true);
+  });
+
   test("keeps Edit focused and consolidates 2D layers in Views", () => {
     const menuSnapshot: LayerControlsSnapshot = {
       ...snapshot,

@@ -308,11 +308,20 @@ body[data-workspace-section="preferences"] #options .tabcontent {
 
   #options,
   body[data-workspace-section="preferences"] #options {
-    top: 60px;
-    right: 12px;
-    left: 12px;
+    top: max(64px, calc(env(safe-area-inset-top) + 52px));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
     width: auto !important;
-    height: calc(100vh - 72px);
+    height: auto;
     max-width: none;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 520px) and (orientation: landscape) {
+  #options,
+  body[data-workspace-section="preferences"] #options {
+    top: max(52px, calc(env(safe-area-inset-top) + 44px));
+    bottom: max(8px, env(safe-area-inset-bottom));
   }
 }

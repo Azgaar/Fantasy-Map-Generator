@@ -24,12 +24,13 @@ import {
   HEIGHT_COLOR_SCHEMES
 } from "@/renderers/scene/height-color-schemes";
 import { Services } from "@/services";
+import { LocalMapStorage } from "@/services/io/local-map-storage";
 import { declareFont } from "@/services/fonts";
 import { cleanupData, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { applyOption, calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
-  const blob = await ldb.get("lastMap");
+  const blob = await LocalMapStorage.get("lastMap");
   if (blob) loadMapPrompt(blob);
   else {
     tip("No map stored. Save map to browser storage first", true, "error", 2000);

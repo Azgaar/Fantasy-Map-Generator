@@ -1,6 +1,7 @@
 // Azgaar and contributors, 2017-2026. MIT License
 // Fantasia application runtime
 
+import Alea from "alea";
 import {
   interpolateSpectral,
   leastIndex,
@@ -13,7 +14,6 @@ import {
   scaleSequential,
   select
 } from "d3";
-import Alea from "alea";
 import { closeDialogs, closeEditDialogs } from "@/components/dialog/dialog-helpers";
 import { LayerControls } from "@/components/layers/layer-controls";
 import { OptionsController, type RegenerateOptions } from "@/components/options/options-controller";
@@ -31,6 +31,7 @@ import { unfog } from "@/renderers/overlays/fogging";
 import { clearMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { tradeAnimation } from "@/renderers/trade-animation";
 import { initiateAutosave } from "@/services/autosave";
+import { LocalMapStorage } from "@/services/io/local-map-storage";
 import { notifyMapMutation } from "@/services/map-mutation";
 import { cleanupData } from "@/services/versioning";
 import type { Grid } from "@/types/grid";
@@ -268,7 +269,7 @@ async function checkLoadParameters() {
   // check if there is a map saved to indexedDB
   if (ensureEl<HTMLSelectElement>("onloadBehavior").value === "lastSaved") {
     try {
-      const blob = await ldb.get("lastMap");
+      const blob = await LocalMapStorage.get("lastMap");
       if (blob) {
         WARN && console.warn("Loading last stored map");
         window.Services.Load.uploadMap(blob);

@@ -350,10 +350,10 @@
 
 @media (max-width: 760px) {
   .fantasia-editor-panel {
-    top: 60px;
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
+    top: max(64px, calc(env(safe-area-inset-top) + 52px));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
     width: auto;
     min-width: 0;
   }
@@ -364,5 +364,12 @@
 
   .workspace-editor-panel-open .fantasia-map-minimap {
     display: none;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 520px) and (orientation: landscape) {
+  .fantasia-editor-panel {
+    top: max(52px, calc(env(safe-area-inset-top) + 44px));
+    bottom: max(8px, env(safe-area-inset-bottom));
   }
 }

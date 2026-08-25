@@ -1260,7 +1260,7 @@ class CulturesGenerator {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed || culture.lock) continue;
-      queue.push({ cellId: culture.center, cultureId: culture.i, priority: 0 }, 0);
+      queue.push({ cellId: culture.center!, cultureId: culture.i, priority: 0 }, 0);
     }
 
     const getBiomeCost = (c: number, biome: number, type: string) => {

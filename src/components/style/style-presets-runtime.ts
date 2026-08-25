@@ -1,5 +1,6 @@
 import { getViewportSurface } from "@/application/viewport-surface";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { showDomDialog } from "@/components/ui/dom-dialog";
 import { tip } from "@/components/tooltips";
 import { RELIEF_SETS } from "@/data/relief-icons";
 import { drawHeightmap } from "@/renderers/draw-heightmap";
@@ -37,10 +38,6 @@ const systemPresets = [
   "monochrome"
 ];
 const RELIEF_STYLE_ATTRIBUTES = ["set", "size", "density"];
-const styleSaverName = ensureEl<HTMLInputElement>("styleSaverName");
-const styleSaverJSON = ensureEl<HTMLTextAreaElement>("styleSaverJSON");
-const styleSaverTip = ensureEl("styleSaverTip");
-const styleToLoad = ensureEl<HTMLInputElement>("styleToLoad");
 const styleElementSelect = ensureEl<HTMLSelectElement>("styleElementSelect");
 const stylePreset = ensureEl<HTMLSelectElement>("stylePreset");
 const mapFilters = ensureEl("mapFilters");
@@ -251,9 +248,13 @@ function applyStyleWithUiRefresh(preset: LegacyStylePreset): void {
 }
 
 function addStylePreset(): void {
-  window.showDomDialog({
-    content: ensureEl("styleSaver"),
-    destroyOnClose: false,
+  const content = createStyleSaverDialog();
+  const styleSaverName = content.querySelector<HTMLInputElement>("#styleSaverName")!;
+  const styleSaverJSON = content.querySelector<HTMLTextAreaElement>("#styleSaverJSON")!;
+  const styleSaverTip = content.querySelector<HTMLElement>("#styleSaverTip")!;
+  const styleToLoad = content.querySelector<HTMLInputElement>("#styleToLoad")!;
+  const dialog = showDomDialog({
+    content,
     placement: "center",
     placementTarget: document.getElementById("map"),
     title: "Style Saver",
@@ -265,14 +266,13 @@ function addStylePreset(): void {
   styleSaverJSON.value = JSON.stringify(collectStyleData(), null, 2);
   checkName();
 
-  if (modules.saveStyle) return;
-  modules.saveStyle = true;
-
-  // add listeners
   styleSaverName.addEventListener("input", checkName);
-  ensureEl("styleSaverSave").addEventListener("click", saveStyle);
-  ensureEl("styleSaverDownload").addEventListener("click", styleDownload);
-  ensureEl("styleSaverLoad").addEventListener("click", () => styleToLoad.click());
+  content.querySelector<HTMLButtonElement>("#styleSaverSave")!.addEventListener("click", saveStyle);
+  content.querySelector<HTMLButtonElement>("#styleSaverDownload")!.addEventListener("click", styleDownload);
+  content.querySelector<HTMLButtonElement>("#styleSaverLoad")!.addEventListener("click", () => styleToLoad.click());
+  content.querySelector<HTMLButtonElement>("#styleSaverCA")!.addEventListener("click", () => {
+    window.open("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/styles/", "_blank");
+  });
   styleToLoad.addEventListener("change", loadStyleFile);
 
   function collectStyleData(): LegacyStylePreset {
@@ -398,7 +398,7 @@ function addStylePreset(): void {
 
     applyStyleWithUiRefresh(JSON.parse(styleJSON) as LegacyStylePreset);
     tip("Style preset is saved and applied", false, "success", 4000);
-    window.destroyDialog("styleSaver");
+    dialog.close();
   }
 
   function styleDownload(): void {
@@ -442,6 +442,29 @@ function addStylePreset(): void {
       tip("Style preset is uploaded", false, "success", 4000);
     }
   }
+}
+
+function createStyleSaverDialog(): HTMLDivElement {
+  const content = document.createElement("div");
+  content.id = "styleSaver";
+  content.className = "textual";
+  content.innerHTML = /* html */ `<div style="padding: 2px 0">
+      <span>Preset name:</span>
+      <input id="styleSaverName" data-tip="Enter style preset name" placeholder="Preset name" style="width: 12em" required />
+      <span id="styleSaverTip" data-tip="Shows whether there is already a preset with this name" class="italic"></span>
+    </div>
+    <div style="padding: 2px 0; width: 100%">
+      <span>Style JSON:</span>
+      <textarea id="styleSaverJSON" rows="18" data-tip="Style JSON is getting formed based the current settings, but can be entered manually" placeholder="Paste any valid style data in JSON format" autocorrect="off" spellcheck="false"></textarea>
+    </div>
+    <div>
+      <button id="styleSaverSave" data-tip="Save current JSON as a new style preset" class="icon-check"></button>
+      <button id="styleSaverDownload" data-tip="Download the style as a .json file" class="icon-download"></button>
+      <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
+      <button id="styleSaverCA" data-tip="Find or share custom style preset on Cartography Assets portal" class="icon-drafting-compass"></button>
+      <input id="styleToLoad" type="file" accept="application/json,.json" hidden />
+    </div>`;
+  return content;
 }
 
 function requestRemoveStylePreset(): void {

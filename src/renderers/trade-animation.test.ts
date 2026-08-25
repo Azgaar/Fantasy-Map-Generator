@@ -44,34 +44,12 @@ function makePack(
 let ta: TradeAnimationModule;
 const isLayerOn = vi.fn(() => true);
 
-// Minimal FlatQueue polyfill (correct, not optimised — tests only).
-class TestFlatQueue {
-  private items: Array<{ id: number; value: number }> = [];
-  get length() {
-    return this.items.length;
-  }
-  push(id: number, value: number) {
-    this.items.push({ id, value });
-    this.items.sort((a, b) => a.value - b.value);
-  }
-  pop() {
-    return this.items.shift()?.id;
-  }
-  peek() {
-    return this.items[0]?.id;
-  }
-  peekValue() {
-    return this.items[0]?.value;
-  }
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   ta = new TradeAnimationModule();
   globalThis.pack = makePack() as any;
   isLayerOn.mockReturnValue(true);
-  vi.stubGlobal("window", { FlatQueue: TestFlatQueue, LayerControls: { isLayerOn } });
-  (globalThis as any).FlatQueue = TestFlatQueue;
+  vi.stubGlobal("window", { LayerControls: { isLayerOn } });
   globalThis.Markets = {
     get: vi.fn((id: number) => {
       if (id === 1) return { centerBurgId: 1 } as any;

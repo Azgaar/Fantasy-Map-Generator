@@ -275,6 +275,10 @@ class NamesGenerator {
   getMapName(force: boolean) {
     if (!force && stored("mapName")) return;
     if (force && stored("mapName")) unlock("mapName");
+    if (!force) {
+      mapName.value = "Fantasia";
+      return;
+    }
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
       tip("Namebase is not found", false, "error");
