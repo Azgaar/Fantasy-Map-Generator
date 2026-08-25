@@ -25,7 +25,7 @@ import "@patkepa/kantzen-ui/theme.css";
 import "./ui/workspace-panel.css";
 import "./workspace-sidebar.css";
 
-type ToolWorkspaceSection = "create" | "edit" | "inspect" | "regenerate";
+type ToolWorkspaceSection = "create" | "edit" | "regenerate";
 type OptionsWorkspaceSection = "world-setup" | "preferences";
 type WorkspaceSection = "style" | ToolWorkspaceSection | OptionsWorkspaceSection;
 type LegacyWorkspaceSection = WorkspaceSection | "layers" | "options" | "tools" | "about";
@@ -50,7 +50,6 @@ interface PendingRegeneration {
 const WORKSPACE_SECTIONS: Record<WorkspaceSection, WorkspaceSectionConfig> = {
   create: { route: "/create", tabId: "toolsTab", title: "Create" },
   edit: { route: "/edit", tabId: "toolsTab", title: "Edit" },
-  inspect: { route: "/inspect", tabId: "toolsTab", title: "Inspect" },
   style: { route: "/style", tabId: "styleTab", title: "Style" },
   "world-setup": { route: "/world-setup", tabId: "optionsTab", title: "World Setup" },
   regenerate: { route: "/regenerate", tabId: "toolsTab", title: "Regenerate" },
@@ -60,7 +59,6 @@ const WORKSPACE_SECTIONS: Record<WorkspaceSection, WorkspaceSectionConfig> = {
 const TOOL_GROUPS_BY_SECTION: Record<ToolWorkspaceSection, readonly ToolGroupId[]> = {
   create: ["create"],
   edit: ["world", "politics", "settlements", "geography"],
-  inspect: ["analysis"],
   regenerate: ["regenerate"]
 };
 
@@ -77,11 +75,6 @@ const TOOL_PANEL_COPY: Record<
     emptyDescription: "Try a feature such as states, routes, cultures, or markets.",
     placeholder: "Search editors",
     searchLabel: "Search editors"
-  },
-  inspect: {
-    emptyDescription: "Try charts or notes.",
-    placeholder: "Search inspection tools",
-    searchLabel: "Search inspection tools"
   },
   regenerate: {
     emptyDescription: "Try a generated feature such as states, rivers, burgs, or markets.",
@@ -151,7 +144,6 @@ function openWorkspaceSection(section: WorkspaceSection): void {
 }
 
 function getWorkspaceSectionCapability(section: WorkspaceSection): WorkspaceCapability | undefined {
-  if (section === "inspect") return "map:inspect";
   if (["create", "edit", "style", "preferences"].includes(section)) return "map:edit";
   if (["world-setup", "regenerate"].includes(section)) return "map:generate";
   return undefined;

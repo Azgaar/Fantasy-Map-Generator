@@ -9,7 +9,7 @@ import type { DomDialogPresentation } from "./ui/dialog-placement-context";
 import type { WorkspaceDialogPlacement } from "./ui/dialog-position";
 import { dispatchRegenerationCommand, type RegenerationCommandTarget } from "./ui/regeneration-command";
 
-export type ToolGroupId = "world" | "politics" | "settlements" | "geography" | "analysis" | "create" | "regenerate";
+export type ToolGroupId = "world" | "politics" | "settlements" | "geography" | "create" | "regenerate";
 
 export interface ToolGroup {
   description: string;
@@ -55,8 +55,7 @@ export const TOOL_GROUPS: readonly ToolGroup[] = [
   { id: "world", label: "World", icon: "globe-network", description: "Terrain, climate, biomes, and map units" },
   { id: "politics", label: "Politics", icon: "people", description: "States, cultures, faiths, and diplomacy" },
   { id: "settlements", label: "Settlements", icon: "home", description: "Burgs, markets, trade, and goods" },
-  { id: "geography", label: "Geography", icon: "map", description: "Rivers, routes, labels, and map features" },
-  { id: "analysis", label: "Analysis", icon: "chart", description: "Inspect and compare map data" },
+  { id: "geography", label: "Geography", icon: "map", description: "Rivers, routes, labels, notes, and map features" },
   { id: "create", label: "Create", icon: "plus", description: "Place features or derive a new map" },
   { id: "regenerate", label: "Regenerate", icon: "refresh", description: "Rebuild generated map data" }
 ] as const;
@@ -326,21 +325,11 @@ export const TOOL_COMMANDS: readonly ToolCommand[] = [
     searchTerms: ["ruler", "distance", "area"]
   }),
   controllerCommand({
-    id: "analysis.charts",
-    controlId: "overviewChartsButton",
-    label: "Charts",
-    description: "Explore map data in charts",
-    group: "analysis",
-    requiredCapability: "map:inspect",
-    shortcut: "Shift + A",
-    searchTerms: ["statistics", "graphs", "data"]
-  }),
-  controllerCommand({
-    id: "analysis.notes",
+    id: "geography.notes",
     controlId: "editNotesButton",
     label: "Notes",
     description: "Review and edit feature notes",
-    group: "analysis",
+    group: "geography",
     shortcut: "Shift + O",
     searchTerms: ["annotations", "text", "information"]
   }),

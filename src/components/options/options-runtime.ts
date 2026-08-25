@@ -177,7 +177,6 @@ const workspaceSections = {
 const workspaceSectionTitles = {
   create: "Create",
   edit: "Edit",
-  inspect: "Inspect",
   style: "Style",
   "world-setup": "World Setup",
   regenerate: "Regenerate",

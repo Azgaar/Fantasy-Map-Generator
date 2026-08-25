@@ -14,6 +14,7 @@ import {
   type LegacyLayerControls
 } from "./layers/layer-controls";
 import { CountrySelection } from "./country-details";
+import { invokeToolControllerCommand } from "./tool-command-executor";
 import { getToolCommands, TOOL_GROUPS } from "./tool-registry";
 import { executeLegacyCommand } from "./ui/legacy-command";
 import "./workspace-toolbar.css";
@@ -21,7 +22,6 @@ import "./workspace-toolbar.css";
 export type ToolbarWorkspaceSection =
   | "create"
   | "edit"
-  | "inspect"
   | "style"
   | "world-setup"
   | "regenerate"
@@ -115,7 +115,7 @@ const MAP_LAYER_MENU_GROUPS: readonly MapLayerMenuGroup[] = [
 const MAP_LAYER_GROUP_INDEX = new Map(
   MAP_LAYER_MENU_GROUPS.flatMap((group, index) => group.ids.map(id => [id, index] as const))
 );
-const TOOLBAR_ICONS: IconName[] = ["folder-open", "chart", "refresh", "plus", "edit", "eye-open", "chevron-down"];
+const TOOLBAR_ICONS: IconName[] = ["folder-open", "refresh", "plus", "edit", "eye-open", "chevron-down"];
 
 const PROJECT_ACTIONS = [
   { label: "New Map", icon: "document", targetId: "newMapButton", shortcut: "F2" },
@@ -240,19 +240,15 @@ function ToolMenu({
   icon,
   id,
   label,
-  mode,
   route,
   tip
 }: Pick<FloatingMenuProps, "icon" | "id" | "label" | "route" | "tip"> & {
-  groupId: "analysis" | "create";
-  mode: WorkspaceMode;
+  groupId: "create";
 }): React.JSX.Element {
   return (
     <FloatingMenu icon={icon} id={id} label={label} route={route} tip={tip}>
       {close =>
-        getToolCommands(groupId)
-          .filter(command => mode === "edit" || command.requiredCapability === "map:inspect")
-          .map(command => (
+        getToolCommands(groupId).map(command => (
             <MenuItem
               icon={command.icon}
               key={command.id}
@@ -397,6 +393,15 @@ export function ViewsMenuItems({
       </MenuItem>
       <MenuDivider title="Show on map" />
       <LayerMenuItems controls={controls} snapshot={snapshot} />
+      <MenuDivider title="Explore" />
+      <MenuItem
+        icon="chart"
+        onClick={() => {
+          close();
+          invokeToolControllerCommand("overviewChartsButton", undefined, undefined, "map:inspect");
+        }}
+        text="Charts"
+      />
       {mode === "edit" ? (
         <>
           <MenuDivider />
@@ -555,15 +560,6 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
           <CountrySelection />
         </div>
         <ProjectMenu mode={mode} onOpenSection={props.onOpenSection} />
-        <ToolMenu
-          groupId="analysis"
-          icon="chart"
-          id="workspaceInspectTrigger"
-          label="Inspect"
-          mode={mode}
-          route="/inspect"
-          tip="Inspect map data"
-        />
         {mode === "edit" ? <GenerateMenu onOpenSection={props.onOpenSection} /> : null}
         {mode === "edit" ? (
           <ToolMenu
@@ -571,7 +567,6 @@ export function WorkspaceToolbar(props: WorkspaceToolbarProps): React.JSX.Elemen
             icon="plus"
             id="workspaceCreateTrigger"
             label="Create"
-            mode={mode}
             route="/create"
             tip="Create map features"
           />

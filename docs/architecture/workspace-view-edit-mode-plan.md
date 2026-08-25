@@ -2,9 +2,11 @@
 
 ## Status
 
-In progress. Milestone 1 foundation is implemented: the workspace mode store defaults to Edit mode, exposes the
-capability API, and publishes the current mode as an application-root diagnostic attribute. The mode switch remains
-intentionally unavailable until persisted layer state and serializer purity are separated in milestone 2.
+Implemented. The workspace now defaults to Edit mode and stores the current View/Edit choice only for the browser
+session. View mode exposes the 2D map, layer exploration, Cell Info, and Charts while all authoring, styling,
+generation, and mixed editor panels remain capability-gated in Edit mode until they have a dedicated read-only
+presentation. The implementation includes pure style serialization, session-scoped layer overrides, semantic dirty
+events, transition cleanup, and View-mode diagnostics. The release checklist below remains as the design/audit record.
 
 This document defines how Fantasy Map Generator should introduce two workspace access modes:
 

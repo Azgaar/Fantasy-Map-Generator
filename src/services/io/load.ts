@@ -809,7 +809,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       actions: [
         { close: false, label: "Clear cache", onClick: cleanupData },
         { label: "Select file", onClick: () => ensureEl("mapToLoad").click() },
-        { label: "New map", onClick: () => ApplicationController.regenerateMap("loading error") },
+        {
+          label: "New map",
+          onClick: () => {
+            if (requireWorkspaceCapability("map:generate")) ApplicationController.regenerateMap("loading error");
+          }
+        },
         { label: "Cancel" }
       ],
       id: "mapLoadingErrorDialog",

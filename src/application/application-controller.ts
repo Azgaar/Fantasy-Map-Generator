@@ -1,4 +1,5 @@
 import type { RegenerateOptions } from "@/components/options/options-controller";
+import { requireWorkspaceCapability } from "./workspace-mode";
 
 export interface ApplicationControllerApi {
   focusOn: () => void;
@@ -19,6 +20,9 @@ export function bindApplicationController(nextTarget: ApplicationControllerApi):
 export const ApplicationController: ApplicationControllerApi = {
   focusOn: () => target?.focusOn(),
   generateMapOnLoad: () => target?.generateMapOnLoad() ?? Promise.resolve(),
-  regenerateMap: config => target?.regenerateMap(config),
+  regenerateMap: config => {
+    if (!requireWorkspaceCapability("map:generate")) return;
+    target?.regenerateMap(config);
+  },
   undraw: () => target?.undraw()
 };

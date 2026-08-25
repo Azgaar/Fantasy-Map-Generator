@@ -61,7 +61,7 @@ describe("WorkspaceToolbar", () => {
       />
     );
 
-    const labels = ["Eldoria", "Project", "Inspect", "Generate", "Create", "Edit", "Views"];
+    const labels = ["Eldoria", "Project", "Generate", "Create", "Edit", "Views"];
     labels.reduce((previousIndex, label) => {
       const index = markup.indexOf(`>${label}<`);
       expect(index).toBeGreaterThan(previousIndex);
@@ -70,7 +70,7 @@ describe("WorkspaceToolbar", () => {
 
     expect(markup.includes('id="workspaceProjectTrigger"')).toBe(true);
     expect(markup.includes('id="workspaceCreateTrigger"')).toBe(true);
-    expect(markup.includes('id="workspaceInspectTrigger"')).toBe(true);
+    expect(markup.includes('id="workspaceInspectTrigger"')).toBe(false);
     expect(markup.includes('id="workspaceMapTrigger"')).toBe(true);
     expect(markup.includes('id="workspaceViewsTrigger"')).toBe(true);
     expect(markup.includes('id="workspaceGenerateTrigger"')).toBe(true);
@@ -139,6 +139,7 @@ describe("WorkspaceToolbar", () => {
 
     expect(editMarkup.includes(">World<")).toBe(true);
     expect(editMarkup.includes(">Heightmap<")).toBe(true);
+    expect(editMarkup.includes(">Notes<")).toBe(true);
     expect(editMarkup.includes(">Show on map<")).toBe(false);
     expect(editMarkup.includes(">Temperature<")).toBe(false);
 
@@ -158,6 +159,8 @@ describe("WorkspaceToolbar", () => {
     expect(viewsMarkup.includes(">View mode<")).toBe(false);
     expect(viewsMarkup.includes(">3D scene<")).toBe(false);
     expect(viewsMarkup.includes(">Globe<")).toBe(false);
+    expect(viewsMarkup.includes(">Explore<")).toBe(true);
+    expect(viewsMarkup.includes(">Charts<")).toBe(true);
 
     const layerGroups = layerItems.props.children[0];
     const terrainGroup = layerGroups[0];
@@ -165,7 +168,7 @@ describe("WorkspaceToolbar", () => {
     temperatureLayer.props.onClick();
     expect(controls.toggleLayer).toHaveBeenCalledWith("toggleTemperature");
 
-    viewsItems.props.children[4].props.children[1].props.onClick();
+    viewsItems.props.children[6].props.children[1].props.onClick();
     expect(closeViews).toHaveBeenCalledOnce();
     expect(onOpenSection).toHaveBeenCalledWith("style");
   });
