@@ -68,7 +68,6 @@
     "stroke-width": "1",
     "stroke-dasharray": "6",
     "font-size": "14",
-    "data-size": "14",
     "style": "display: none;"
   },
   "#cults": {
@@ -83,15 +82,9 @@
     "stroke-width": "0.5",
     "style": "display: none;"
   },
-  "#stateEmblems": {
-    "data-size": "1"
-  },
-  "#provinceEmblems": {
-    "data-size": "1"
-  },
-  "#burgEmblems": {
-    "data-size": "1"
-  },
+  "#stateEmblems": {},
+  "#provinceEmblems": {},
+  "#burgEmblems": {},
   "#fogging": {
     "opacity": "0.98",
     "fill": "#1b1423",
@@ -111,8 +104,7 @@
   "#goodsBurgs": {
     "opacity": "1",
     "stroke": "#41414f",
-    "stroke-width": "0.2",
-    "data-size": "3"
+    "stroke-width": "0.2"
   },
   "#gridOverlay": {
     "opacity": "0.8",
@@ -183,7 +175,6 @@
     "stroke-linecap": "round",
     "font-size": "13",
     "font-family": "Almendra SC",
-    "data-size": "13",
     "data-x": "99",
     "data-y": "93",
     "data-columns": "8"
@@ -285,8 +276,6 @@
   "#ruler": {
     "stroke-width": "2",
     "stroke-dasharray": "10",
-    "font-size": "20",
-    "data-size": "20",
     "style": "display: none;"
   },
   "#scaleBar": {
