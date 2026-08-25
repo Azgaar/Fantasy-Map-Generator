@@ -137,6 +137,13 @@ test("numeric-looking string options coerce back to strings, not schema-rejected
   expect(styles.markets.options.icon).toBe("8");
 });
 
+test("labelGroupFromLegacy treats a zoom-faded opacity 0 as visible", () => {
+  const group = labelGroupFromLegacy({ opacity: 0 });
+  expect(group.attrs.opacity).toBe(1);
+  expect(labelGroupFromLegacy({ opacity: 0.5 }).attrs.opacity).toBe(0.5);
+  expect(labelGroupFromLegacy({ opacity: null }).attrs.opacity).toBeNull();
+});
+
 test("labelGroupFromLegacy keeps font-size when data-size is absent", () => {
   const group = labelGroupFromLegacy({ "font-size": "6%" });
   expect(group.attrs["font-size"]).toBe("6%");

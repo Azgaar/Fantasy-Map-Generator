@@ -21,9 +21,12 @@ const strOr = (value: unknown, fallback: string | null): string | null =>
 
 export function labelGroupFromLegacy(legacy: object): LabelGroupStyle {
   const bag = legacy as Record<string, unknown>;
+  // legacy builds rewrote label-group opacity on every zoom, so a saved 0 is the fade state
+  // at save-time, not a preference - the culled renderer would keep the group invisible forever
+  const opacity = numOr(bag.opacity, 1);
   return {
     attrs: {
-      opacity: numOr(bag.opacity, 1),
+      opacity: opacity === 0 ? 1 : opacity,
       fill: strOr(bag.fill, "#3e3e4b"),
       "fill-opacity": numOr(bag["fill-opacity"], null),
       stroke: strOr(bag.stroke, "#3a3a3a"),
