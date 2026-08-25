@@ -382,9 +382,9 @@ function selectStyleElement() {
     styleEmblems.style.display = "block";
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || 1;
-    emblemsStateSizeInput.value = d3.select("#emblems").select("#stateEmblems").attr("data-size") || 1;
-    emblemsProvinceSizeInput.value = d3.select("#emblems").select("#provinceEmblems").attr("data-size") || 1;
-    emblemsBurgSizeInput.value = d3.select("#emblems").select("#burgEmblems").attr("data-size") || 1;
+    emblemsStateSizeInput.value = styles.emblems.stateEmblems.options.size;
+    emblemsProvinceSizeInput.value = styles.emblems.provinceEmblems.options.size;
+    emblemsBurgSizeInput.value = styles.emblems.burgEmblems.options.size;
     showAllEmblems.checked = options.emblems.showAll;
   }
 
@@ -393,7 +393,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "";
     styleGoods.style.display = "block";
     styleGoodsCircle.checked = +el.attr("data-circle");
-    styleGoodsSize.value = el.attr("data-size") || 6;
+    styleGoodsSize.value = styles.goods.goodsIcons.options.size;
   }
 
   if (styleElement === "goodsBurgs") {
@@ -402,7 +402,7 @@ function selectStyleElement() {
     styleStroke.style.display = "block";
     styleStrokeInput.value = styleStrokeOutput.value = el.attr("stroke") || "#41414f";
     styleGoodsBurgs.style.display = "block";
-    styleGoodsBurgsSize.value = el.attr("data-size") || 3;
+    styleGoodsBurgsSize.value = styles.goods.goodsBurgs.options.size;
   }
 
   if (styleElement === "markets") {
@@ -410,7 +410,7 @@ function selectStyleElement() {
     styleStrokeWidthInput.value = el.attr("stroke-width") || "0.5";
     styleMarketsLayer.style.display = "block";
     styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
-    styleMarketsSize.value = el.attr("data-size") || 3;
+    styleMarketsSize.value = styles.markets.options.size;
     styleMarketsIconSize.value = el.attr("font-size") || 5;
     styleMarketsIcon.innerHTML = el.attr("data-icon") || "⚖️";
   }
@@ -1042,17 +1042,17 @@ styleArmiesSize.addEventListener("input", e => {
 });
 
 emblemsStateSizeInput.addEventListener("change", e => {
-  d3.select("#emblems").select("#stateEmblems").attr("data-size", e.target.value);
+  styles.emblems.stateEmblems.options.size = +e.target.value || 1;
   Layers.draw("emblems");
 });
 
 emblemsProvinceSizeInput.addEventListener("change", e => {
-  d3.select("#emblems").select("#provinceEmblems").attr("data-size", e.target.value);
+  styles.emblems.provinceEmblems.options.size = +e.target.value || 1;
   Layers.draw("emblems");
 });
 
 emblemsBurgSizeInput.addEventListener("change", e => {
-  d3.select("#emblems").select("#burgEmblems").attr("data-size", e.target.value);
+  styles.emblems.burgEmblems.options.size = +e.target.value || 1;
   Layers.draw("emblems");
 });
 
@@ -1067,12 +1067,12 @@ styleGoodsCircle.addEventListener("change", function () {
 });
 
 styleGoodsSize.addEventListener("change", function () {
-  d3.select("#goods").select("#goodsIcons").attr("data-size", this.value);
+  styles.goods.goodsIcons.options.size = +this.value || 6;
   Layers.draw("goods");
 });
 
 styleGoodsBurgsSize.addEventListener("change", function () {
-  d3.select("#goods").select("#goodsBurgs").attr("data-size", this.value);
+  styles.goods.goodsBurgs.options.size = +this.value || 3;
   Layers.draw("goods");
 });
 
@@ -1081,7 +1081,7 @@ styleMarketsLayerFillOpacity.addEventListener("input", e => {
 });
 
 styleMarketsSize.addEventListener("change", function () {
-  d3.select("#markets").attr("data-size", this.value);
+  styles.markets.options.size = +this.value || 3;
   Layers.draw("markets");
 });
 

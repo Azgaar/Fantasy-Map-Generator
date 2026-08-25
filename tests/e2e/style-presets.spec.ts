@@ -134,6 +134,10 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.coordinates.options.fontSize = 23;
     styles.rulers.options.fontSize = 24;
     styles.legend.options.fontSize = 25;
+    styles.emblems.provinceEmblems.options.size = 1.4;
+    styles.goods.goodsIcons.options.size = 9;
+    styles.goods.goodsBurgs.options.size = 7;
+    styles.markets.options.size = 8;
     (window as any).addStylePreset();
   });
 
@@ -143,9 +147,21 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     return {
       coordinates: upgraded.coordinates.options.fontSize,
       rulers: upgraded.rulers.options.fontSize,
-      legend: upgraded.legend.options.fontSize
+      legend: upgraded.legend.options.fontSize,
+      provinceEmblems: upgraded.emblems.provinceEmblems.options.size,
+      goodsIcons: upgraded.goods.goodsIcons.options.size,
+      goodsBurgs: upgraded.goods.goodsBurgs.options.size,
+      markets: upgraded.markets.options.size
     };
   }, raw);
 
-  expect(roundTripped).toEqual({coordinates: 23, rulers: 24, legend: 25});
+  expect(roundTripped).toEqual({
+    coordinates: 23,
+    rulers: 24,
+    legend: 25,
+    provinceEmblems: 1.4,
+    goodsIcons: 9,
+    goodsBurgs: 7,
+    markets: 8
+  });
 });

@@ -9,7 +9,6 @@ export function drawMarkets() {
   TIME && console.timeEnd("drawMarkets");
 }
 
-const MARKET_RADIUS = 3;
 const MARKET_FONT = 5;
 const MARKET_ICON = "⚖️";
 
@@ -19,7 +18,7 @@ function buildMarketsContent(): string {
   const isolines = getIsolines(pack, getType, { polygons: true });
 
   // marker circle size, emoji size and emoji icon are independently user-configurable
-  const baseRadius = +select("#markets").attr("data-size") || MARKET_RADIUS;
+  const baseRadius = styles.markets.options.size;
   const baseFont = +select("#markets").attr("font-size") || MARKET_FONT;
   const icon = select("#markets").attr("data-icon") || MARKET_ICON;
 

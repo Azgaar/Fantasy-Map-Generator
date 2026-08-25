@@ -1878,4 +1878,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   document.getElementById("ruler")?.removeAttribute("data-size");
   document.getElementById("ruler")?.removeAttribute("font-size");
   document.getElementById("legend")?.removeAttribute("data-size");
+  for (const id of ["stateEmblems", "provinceEmblems", "burgEmblems", "goodsIcons", "goodsBurgs", "markets"]) {
+    document.getElementById(id)?.removeAttribute("data-size");
+  }
 }

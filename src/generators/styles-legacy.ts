@@ -357,6 +357,10 @@ export function stylesFromMap(root: ParentNode = document): Styles {
   for (const el of root.querySelectorAll("#anchors > g")) {
     if (el.id) bags[`#anchors > g#${el.id}`] = harvestBag(el, BURG_ATTRS, BURG_SCHEMA_ATTRS);
   }
+  for (const name of ["stateEmblems", "provinceEmblems", "burgEmblems"]) {
+    const el = root.querySelector(`#emblems > #${name}`);
+    if (el) bags[`#emblems > #${name}`] = harvestBag(el, ["data-size"], []);
+  }
 
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
@@ -388,6 +392,17 @@ export function syncStylesFromMap(): void {
   // per-key: legend geometry (x/y/columns) stays attr-authoritative until its own family
   if (!document.getElementById("legend")?.hasAttribute("data-size"))
     harvested.legend.options.fontSize = styles.legend.options.fontSize;
+  for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
+    if (!document.getElementById(key)?.hasAttribute("data-size"))
+      harvested.emblems[key].options = structuredClone(styles.emblems[key].options);
+  }
+  // per-key: goodsIcons' circle and markets' fontSize/icon are still attr-authoritative
+  if (!document.getElementById("goodsIcons")?.hasAttribute("data-size"))
+    harvested.goods.goodsIcons.options.size = styles.goods.goodsIcons.options.size;
+  if (!document.getElementById("goodsBurgs")?.hasAttribute("data-size"))
+    harvested.goods.goodsBurgs.options = structuredClone(styles.goods.goodsBurgs.options);
+  if (!document.getElementById("markets")?.hasAttribute("data-size"))
+    harvested.markets.options.size = styles.markets.options.size;
   Styles.set(harvested);
 }
 

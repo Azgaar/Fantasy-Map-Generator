@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -185,5 +185,66 @@ test.describe("style editor events drive the store", () => {
     expect(typeof stored).toBe("number");
 
     expect(await page.locator("#legend").getAttribute("data-size")).toBeNull();
+  });
+
+  test("emblem size inputs write the store per group", async ({ page }) => {
+    await openStyleElement(page, "emblems");
+
+    for (const [input, value] of [
+      ["#emblemsStateSizeInput", "1.5"],
+      ["#emblemsProvinceSizeInput", "0.5"],
+      ["#emblemsBurgSizeInput", "2"]
+    ] as const) {
+      await page.locator(`${input} input[type=number]`).fill(value);
+      await page.locator(input).dispatchEvent("change");
+    }
+
+    const stored = await page.evaluate(() => ({
+      state: (window as any).styles.emblems.stateEmblems.options.size,
+      province: (window as any).styles.emblems.provinceEmblems.options.size,
+      burg: (window as any).styles.emblems.burgEmblems.options.size
+    }));
+    expect(stored).toEqual({ state: 1.5, province: 0.5, burg: 2 });
+
+    for (const id of ["#stateEmblems", "#provinceEmblems", "#burgEmblems"]) {
+      expect(await page.locator(id).getAttribute("data-size")).toBeNull();
+    }
+  });
+
+  test("goods size inputs write the store and size the drawn icons", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("goods"));
+    await openStyleElement(page, "goodsIcons");
+
+    await page.locator("#styleGoodsSize input[type=number]").fill("9");
+    await page.locator("#styleGoodsSize").dispatchEvent("change");
+
+    await openStyleElement(page, "goodsBurgs");
+    await page.locator("#styleGoodsBurgsSize input[type=number]").fill("7");
+    await page.locator("#styleGoodsBurgsSize").dispatchEvent("change");
+
+    const stored = await page.evaluate(() => ({
+      icons: (window as any).styles.goods.goodsIcons.options.size,
+      burgs: (window as any).styles.goods.goodsBurgs.options.size
+    }));
+    expect(stored).toEqual({ icons: 9, burgs: 7 });
+
+    expect(await page.locator("#goodsIcons").getAttribute("data-size")).toBeNull();
+    expect(await page.locator("#goodsBurgs").getAttribute("data-size")).toBeNull();
+  });
+
+  test("markets size input writes the store and sizes the drawn plates", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("markets"));
+    await openStyleElement(page, "markets");
+
+    await page.locator("#styleMarketsSize input[type=number]").fill("6");
+    await page.locator("#styleMarketsSize").dispatchEvent("change");
+
+    const stored = await page.evaluate(() => (window as any).styles.markets.options.size);
+    expect(stored).toBe(6);
+    expect(typeof stored).toBe("number");
+
+    // fontSize and icon are not in this family: their attrs must survive on the element
+    expect(await page.locator("#markets").getAttribute("data-size")).toBeNull();
+    expect(await page.locator("#markets").getAttribute("font-size")).not.toBeNull();
   });
 });

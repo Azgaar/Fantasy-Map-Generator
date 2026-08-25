@@ -205,7 +205,11 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="statesHalo"', '<g id="statesHalo" data-width="7"')
       .replace('<g id="coordinates"', '<g id="coordinates" data-size="55"')
       .replace('<g id="ruler"', '<g id="ruler" data-size="44" font-size="44"')
-      .replace('<g id="legend"', '<g id="legend" data-size="33"');
+      .replace('<g id="legend"', '<g id="legend" data-size="33"')
+      .replace('<g id="stateEmblems"', '<g id="stateEmblems" data-size="4"')
+      .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-size="66"')
+      .replace('<g id="goodsBurgs"', '<g id="goodsBurgs" data-size="66"')
+      .replace('<g id="markets"', '<g id="markets" data-size="66"');
     const staleBuffer = Buffer.from(lines.join("\r\n"), "utf8");
 
     await reload(page, staleBuffer, "style-persistence-step4-era-reloaded");
@@ -216,6 +220,10 @@ test.describe("style persistence round trips", () => {
       coordinatesSizeAttr: document.getElementById("coordinates")?.getAttribute("data-size"),
       rulerSizeAttr: document.getElementById("ruler")?.getAttribute("data-size"),
       legendSizeAttr: document.getElementById("legend")?.getAttribute("data-size"),
+      familySizeAttrs: ["stateEmblems", "goodsIcons", "goodsBurgs", "markets"].map(id =>
+        document.getElementById(id)?.getAttribute("data-size")
+      ),
+      marketsSize: styles.markets.options.size,
       rescale: styles.markers.options.rescale,
       haloWidth: styles.states.statesHalo.options.width,
       coordinatesSize: styles.coordinates.options.fontSize
@@ -227,6 +235,8 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.coordinatesSizeAttr).toBeNull();
     expect(afterLoad.rulerSizeAttr).toBeNull();
     expect(afterLoad.legendSizeAttr).toBeNull();
+    expect(afterLoad.familySizeAttrs).toEqual([null, null, null, null]);
+    expect(afterLoad.marketsSize).toBe(3);
     expect(afterLoad.rescale).toBe(1);
     expect(afterLoad.haloWidth).toBe(10);
     expect(afterLoad.coordinatesSize).toBe(12);

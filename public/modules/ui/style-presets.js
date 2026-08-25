@@ -161,18 +161,9 @@ function projectPresetOptions() {
   setOrRemove(oceanHeights, "curve", styles.heightmap.oceanHeights.options.curve);
   setOrRemove(oceanHeights, "data-render", Number(styles.heightmap.oceanHeights.options.render));
 
-  setOrRemove(byId("stateEmblems"), "data-size", styles.emblems.stateEmblems.options.size);
-  setOrRemove(byId("provinceEmblems"), "data-size", styles.emblems.provinceEmblems.options.size);
-  setOrRemove(byId("burgEmblems"), "data-size", styles.emblems.burgEmblems.options.size);
-
-  const goodsIcons = byId("goodsIcons");
-  setOrRemove(goodsIcons, "data-size", styles.goods.goodsIcons.options.size);
-  setOrRemove(goodsIcons, "data-circle", Number(styles.goods.goodsIcons.options.circle));
-
-  setOrRemove(byId("goodsBurgs"), "data-size", styles.goods.goodsBurgs.options.size);
+  setOrRemove(byId("goodsIcons"), "data-circle", Number(styles.goods.goodsIcons.options.circle));
 
   const markets = byId("markets");
-  setOrRemove(markets, "data-size", styles.markets.options.size);
   setOrRemove(markets, "font-size", styles.markets.options.fontSize);
   setOrRemove(markets, "data-icon", styles.markets.options.icon);
 
@@ -521,6 +512,15 @@ function addStylePreset() {
       presetStyle["#legend"]["data-size"] = styles.legend.options.fontSize;
       presetStyle["#legend"]["font-size"] = styles.legend.options.fontSize;
     }
+    if (presetStyle["#emblems > #stateEmblems"])
+      presetStyle["#emblems > #stateEmblems"]["data-size"] = styles.emblems.stateEmblems.options.size;
+    if (presetStyle["#emblems > #provinceEmblems"])
+      presetStyle["#emblems > #provinceEmblems"]["data-size"] = styles.emblems.provinceEmblems.options.size;
+    if (presetStyle["#emblems > #burgEmblems"])
+      presetStyle["#emblems > #burgEmblems"]["data-size"] = styles.emblems.burgEmblems.options.size;
+    if (presetStyle["#goodsIcons"]) presetStyle["#goodsIcons"]["data-size"] = styles.goods.goodsIcons.options.size;
+    if (presetStyle["#goodsBurgs"]) presetStyle["#goodsBurgs"]["data-size"] = styles.goods.goodsBurgs.options.size;
+    if (presetStyle["#markets"]) presetStyle["#markets"]["data-size"] = styles.markets.options.size;
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));
