@@ -285,8 +285,8 @@ function selectStyleElement() {
     styleFontSize.value = parseFloat(el.attr("font-size")) || 18;
 
     styleFontShift.style.display = "block";
-    styleFontShiftX.value = el.attr("data-dx") || 0;
-    styleFontShiftY.value = el.attr("data-dy") || 0;
+    styleFontShiftX.value = styles.labels.groups[styleGroupSelect.value]?.options.dx || 0;
+    styleFontShiftY.value = styles.labels.groups[styleGroupSelect.value]?.options.dy || 0;
   }
 
   if (styleElement === "burgIcons") {
@@ -324,7 +324,7 @@ function selectStyleElement() {
     styleSize.style.display = "block";
 
     styleLegend.style.display = "block";
-    styleLegendColItems.value = el.attr("data-columns") || 8;
+    styleLegendColItems.value = styles.legend.options.columns;
     const legendBox = el.select("#legendBox");
     styleLegendBack.value = styleLegendBackOutput.value = legendBox.size() ? legendBox.attr("fill") : "#ffffff";
     styleLegendOpacity.value = legendBox.size() ? legendBox.attr("fill-opacity") : 1;
@@ -442,11 +442,11 @@ function selectStyleElement() {
   if (styleElement === "scaleBar") {
     styleScaleBar.style.display = "block";
 
-    styleScaleBarSize.value = el.attr("data-bar-size");
+    styleScaleBarSize.value = styles.scaleBar.options.barSize;
     styleScaleBarFontSize.value = el.attr("font-size");
-    styleScaleBarPositionX.value = el.attr("data-x") || "99";
-    styleScaleBarPositionY.value = el.attr("data-y") || "99";
-    styleScaleBarLabel.value = el.attr("data-label") || "";
+    styleScaleBarPositionX.value = styles.scaleBar.options.x;
+    styleScaleBarPositionY.value = styles.scaleBar.options.y;
+    styleScaleBarLabel.value = styles.scaleBar.options.label;
 
     const scaleBarBack = el.select("#scaleBarBack");
     if (scaleBarBack.size()) {
@@ -455,10 +455,10 @@ function selectStyleElement() {
       styleScaleBarBackgroundStroke.value = styleScaleBarBackgroundStrokeOutput.value = scaleBarBack.attr("stroke");
       styleScaleBarBackgroundStrokeWidth.value = scaleBarBack.attr("stroke-width");
       styleScaleBarBackgroundFilter.value = scaleBarBack.attr("filter");
-      styleScaleBarBackgroundPaddingTop.value = scaleBarBack.attr("data-top");
-      styleScaleBarBackgroundPaddingRight.value = scaleBarBack.attr("data-right");
-      styleScaleBarBackgroundPaddingBottom.value = scaleBarBack.attr("data-bottom");
-      styleScaleBarBackgroundPaddingLeft.value = scaleBarBack.attr("data-left");
+      styleScaleBarBackgroundPaddingTop.value = styles.scaleBar.back.options.top;
+      styleScaleBarBackgroundPaddingRight.value = styles.scaleBar.back.options.right;
+      styleScaleBarBackgroundPaddingBottom.value = styles.scaleBar.back.options.bottom;
+      styleScaleBarBackgroundPaddingLeft.value = styles.scaleBar.back.options.left;
     }
   }
 
@@ -868,7 +868,7 @@ function shiftCompass() {
 }
 
 styleLegendColItems.addEventListener("input", e => {
-  d3.select("#legend").select("#legendBox").attr("data-columns", e.target.value);
+  styles.legend.options.columns = +e.target.value || 8;
   Layers.draw("legend");
 });
 
@@ -980,23 +980,17 @@ function changeFontSize(el, size) {
   el.attr("data-size", size).attr("font-size", size);
 }
 
-styleFontShiftX.addEventListener("input", e => {
-  const group = getEl().attr("data-dx", e.target.value);
+function applyLabelShift(axis, value) {
   const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.options.dx = +e.target.value || 0;
-  const dx = e.target.value || 0;
-  const dy = group.attr("data-dy") || 0;
-  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
-});
+  if (!groupStyle) return;
+  groupStyle.options[axis] = +value || 0;
+  const { dx, dy } = groupStyle.options;
+  getEl().style("transform", dx || dy ? `translate(${dx}em, ${dy}em)` : null);
+}
 
-styleFontShiftY.addEventListener("input", e => {
-  const group = getEl().attr("data-dy", e.target.value);
-  const groupStyle = styles.labels.groups[styleGroupSelect.value];
-  if (groupStyle) groupStyle.options.dy = +e.target.value || 0;
-  const dx = group.attr("data-dx") || 0;
-  const dy = e.target.value || 0;
-  group.style("transform", +dx || +dy ? `translate(${dx}em, ${dy}em)` : null);
-});
+styleFontShiftX.addEventListener("input", e => applyLabelShift("dx", e.target.value));
+
+styleFontShiftY.addEventListener("input", e => applyLabelShift("dy", e.target.value));
 
 styleStatesBodyOpacity.addEventListener("input", e => {
   d3.select("#statesBody").attr("opacity", e.target.value);
@@ -1207,20 +1201,20 @@ styleScaleBar.addEventListener("input", function (event) {
 
   const { id, value } = event.target;
 
-  if (id === "styleScaleBarSize") d3.select("#scaleBar").attr("data-bar-size", value);
+  if (id === "styleScaleBarSize") styles.scaleBar.options.barSize = +value || 1;
   else if (id === "styleScaleBarFontSize") d3.select("#scaleBar").attr("font-size", value);
-  else if (id === "styleScaleBarPositionX") d3.select("#scaleBar").attr("data-x", value);
-  else if (id === "styleScaleBarPositionY") d3.select("#scaleBar").attr("data-y", value);
-  else if (id === "styleScaleBarLabel") d3.select("#scaleBar").attr("data-label", value);
+  else if (id === "styleScaleBarPositionX") styles.scaleBar.options.x = +value || 0;
+  else if (id === "styleScaleBarPositionY") styles.scaleBar.options.y = +value || 0;
+  else if (id === "styleScaleBarLabel") styles.scaleBar.options.label = value;
   else if (id === "styleScaleBarBackgroundOpacity") scaleBarBack.attr("opacity", value);
   else if (id === "styleScaleBarBackgroundFill") scaleBarBack.attr("fill", value);
   else if (id === "styleScaleBarBackgroundStroke") scaleBarBack.attr("stroke", value);
   else if (id === "styleScaleBarBackgroundStrokeWidth") scaleBarBack.attr("stroke-width", value);
   else if (id === "styleScaleBarBackgroundFilter") scaleBarBack.attr("filter", value);
-  else if (id === "styleScaleBarBackgroundPaddingTop") scaleBarBack.attr("data-top", value);
-  else if (id === "styleScaleBarBackgroundPaddingRight") scaleBarBack.attr("data-right", value);
-  else if (id === "styleScaleBarBackgroundPaddingBottom") scaleBarBack.attr("data-bottom", value);
-  else if (id === "styleScaleBarBackgroundPaddingLeft") scaleBarBack.attr("data-left", value);
+  else if (id === "styleScaleBarBackgroundPaddingTop") styles.scaleBar.back.options.top = +value || 0;
+  else if (id === "styleScaleBarBackgroundPaddingRight") styles.scaleBar.back.options.right = +value || 0;
+  else if (id === "styleScaleBarBackgroundPaddingBottom") styles.scaleBar.back.options.bottom = +value || 0;
+  else if (id === "styleScaleBarBackgroundPaddingLeft") styles.scaleBar.back.options.left = +value || 0;
   Layers.draw("scaleBar");
 });
 

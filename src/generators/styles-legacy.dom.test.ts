@@ -227,6 +227,33 @@ test("save sync lets an old map's markets, goods-circle, texture and ocean-outli
   expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
 });
 
+test("save sync keeps store scaleBar and label-shift options when their attrs are absent", () => {
+  document.body.innerHTML = `<svg id="map"><g id="scaleBar" font-size="10"><rect id="scaleBarBack" data-group="back" fill="#ffffff"></rect></g>
+    <g id="labels"><g data-group="capital" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
+  styles.scaleBar.options.x = 50;
+  styles.scaleBar.options.label = "here";
+  styles.scaleBar.back.options.top = 12;
+  styles.labels.groups.capital.options.dx = 1.5;
+  syncStylesFromMap();
+  expect(styles.scaleBar.options.x).toBe(50);
+  expect(styles.scaleBar.options.label).toBe("here");
+  expect(styles.scaleBar.back.options.top).toBe(12);
+  // labels are store-authoritative on save (step 4): the missing attr changes nothing
+  expect(styles.labels.groups.capital.options.dx).toBe(1.5);
+  styles.labels.groups.capital.options.dx = 0;
+});
+
+test("save sync lets an old map's scaleBar and label-shift attrs win", () => {
+  document.body.innerHTML = `<svg id="map"><g id="scaleBar" data-bar-size="2" data-x="40" data-y="41" data-label="old" font-size="10"><rect id="scaleBarBack" data-group="back" data-top="3" data-right="4" data-bottom="5" data-left="6" fill="#ffffff"></rect></g>
+    <g id="labels"><g data-group="capital" data-dx="0.7" data-dy="-0.2" font-size="6%" font-family="Almendra SC"></g></g></svg>`;
+  styles.scaleBar.options.x = 50;
+  syncStylesFromMap();
+  expect(styles.scaleBar.options).toEqual({ barSize: 2, x: 40, y: 41, label: "old" });
+  expect(styles.scaleBar.back.options).toEqual({ top: 3, right: 4, bottom: 5, left: 6 });
+  // the record-less LOAD path still harvests the label shift off an old map's attrs
+  expect(stylesFromMap(document).labels.groups.capital.options).toEqual({ dx: 0.7, dy: -0.2 });
+});
+
 test("save sync lets an old map's coordinates data-size win over the store", () => {
   document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
   styles.coordinates.options.fontSize = 20;

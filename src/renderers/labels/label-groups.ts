@@ -30,8 +30,6 @@ export function writeGroupStyle(group: SVGGElement, groupStyle: LabelGroupStyle)
   }
 
   const { dx, dy } = groupStyle.options;
-  if (dx) group.setAttribute("data-dx", String(dx)); // the style editor reads the shift off the DOM
-  if (dy) group.setAttribute("data-dy", String(dy));
   group.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
 }
 

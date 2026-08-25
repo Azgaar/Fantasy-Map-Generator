@@ -872,6 +872,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     select("#scaleBar")
       .append("rect")
       .attr("id", "scaleBarBack")
+      .attr("data-group", "back")
       .attr("opacity", 0.2)
       .attr("fill", "#ffffff")
       .attr("stroke", "#000000")
@@ -1896,4 +1897,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   document.getElementById("goodsIcons")?.removeAttribute("data-circle");
   for (const attr of ["data-href", "data-x", "data-y"]) document.getElementById("texture")?.removeAttribute(attr);
   document.getElementById("oceanLayers")?.removeAttribute("layers");
+  for (const attr of ["data-bar-size", "data-x", "data-y", "data-label"])
+    document.getElementById("scaleBar")?.removeAttribute(attr);
+  for (const attr of ["data-top", "data-right", "data-bottom", "data-left"])
+    document.getElementById("scaleBarBack")?.removeAttribute(attr);
+  for (const attr of ["data-x", "data-y", "data-columns"]) document.getElementById("legend")?.removeAttribute(attr);
+  for (const el of document.querySelectorAll("#labels > *")) {
+    el.removeAttribute("data-dx");
+    el.removeAttribute("data-dy");
+  }
 }
