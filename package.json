@@ -29,6 +29,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "@playwright/test": "^1.57.0",
     "@types/d3": "^7.4.3",
     "@types/delaunator": "^5.0.3",
