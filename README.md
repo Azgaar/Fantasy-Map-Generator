@@ -1,9 +1,9 @@
-# Fantasy Map Generator
+# Fantasia
 
 
-Hi. This is a fork of great Azgaar's Fantasy Map Generator, available here: https://github.com/Azgaar/Fantasy-Map-Generator
+Fantasia is a fork of [Azgaar's Fantasy Map Generator (FMG)](https://github.com/Azgaar/Fantasy-Map-Generator).
 
-This fork is mainly for personal use, main reason? While og being really nice - I just really didn't like the low performance, and the ui, so I forked it and applied numerous performance optimizations, removed jquery, and redid UI in more of a style of an editor style.
+It focuses on performance and an editor-oriented UI, with numerous performance optimizations and jQuery removed.
 
 Enjoy!
 ![](docs/assets/readme.png)

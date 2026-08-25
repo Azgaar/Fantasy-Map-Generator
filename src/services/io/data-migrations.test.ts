@@ -53,4 +53,33 @@ describe("applyMapDataMigrations", () => {
     expect(existing.shoreline).toEqual([1]);
     expect(ocean.shoreline).toBeUndefined();
   });
+
+  it("removes legacy state label overrides", () => {
+    const pack: MapDataMigrationContext["pack"] = {
+      features: [],
+      states: [
+        {
+          i: 1,
+          label: {
+            text: "Old country label",
+            pathPoints: [
+              [0, 0],
+              [1, 1]
+            ]
+          }
+        },
+        { i: 2 }
+      ]
+    };
+
+    applyMapDataMigrations({
+      mapVersion: "1.143.3",
+      data: [],
+      pack,
+      getDefaultBiomes: () => [],
+      defineLakeShoreline: () => []
+    });
+
+    expect(pack.states).toEqual([{ i: 1 }, { i: 2 }]);
+  });
 });

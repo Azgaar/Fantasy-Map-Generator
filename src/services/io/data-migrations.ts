@@ -12,6 +12,7 @@ type LegacyBiome = {
 };
 
 type LegacyFeature = { type?: string; shoreline?: unknown };
+type LegacyState = { i: number; label?: unknown };
 
 export type MapDataMigrationContext = {
   mapVersion: string;
@@ -19,6 +20,7 @@ export type MapDataMigrationContext = {
   pack: {
     biomes?: LegacyBiome[];
     features: Array<LegacyFeature | null | undefined>;
+    states?: LegacyState[];
   };
   getDefaultBiomes: () => LegacyBiome[];
   defineLakeShoreline: (feature: LegacyFeature) => unknown;
@@ -71,6 +73,8 @@ const migrations: MapDataMigration[] = [
  * legacy migrations rely on the normalized biome data produced by the first entry.
  */
 export function applyMapDataMigrations(context: MapDataMigrationContext): void {
+  // State labels are derived from the state's current name and geometry, never user-owned label data.
+  for (const state of context.pack.states ?? []) delete state.label;
   for (const migration of migrations) {
     if (compareVersions(context.mapVersion, migration.version).isOlder) migration.apply(context);
   }

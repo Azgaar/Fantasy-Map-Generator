@@ -644,10 +644,7 @@ function editStateName(state: number): void {
     s.name = nameInput.value;
     s.formName = formSelect.value;
     s.fullName = fullNameInput.value;
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
-      if (s.label?.text) delete s.label.text;
-      drawLabels();
-    }
+    if (changed) drawLabels();
     refreshStatesEditor();
   }
 }
@@ -779,10 +776,6 @@ function renderNameEditor(): void {
           data-tick="0"
           class="icon-arrows-cw pointer"
         ></span>
-      </div>
-      <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
-        <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
@@ -985,8 +978,6 @@ function stateRemovePrompt(state: number): void {
 }
 
 function stateRemove(stateId: number): void {
-  delete pack.states[stateId].label;
-
   unfog(`focusState${stateId}`);
 
   pack.burgs.forEach(burg => {
@@ -1249,10 +1240,7 @@ function recalculateStates(must?: boolean): void {
   if (window.LayerControls.isLayerOn("toggleStates")) window.LayerControls.redrawLayer("toggleStates");
   if (window.LayerControls.isLayerOn("toggleBorders")) drawBorders();
   if (window.LayerControls.isLayerOn("toggleProvinces")) window.LayerControls.redrawLayer("toggleProvinces");
-  if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
-    for (const state of pack.states) if (state.label) state.label.pathPoints = undefined;
-    drawLabels();
-  }
+  if (ensureEl<HTMLInputElement>("adjustLabels").checked) drawLabels();
   if (window.LayerControls.isLayerOn("toggleGoods")) drawGoods();
   if (window.LayerControls.isLayerOn("toggleEmblems")) {
     clearEmblems(["state", "province"]);
@@ -1389,10 +1377,6 @@ function applyStatesManualAssignent(): void {
       ? window.LayerControls.redrawLayer("toggleStates")
       : window.LayerControls.toggleLayer("toggleStates");
     if (ensureEl<HTMLInputElement>("adjustLabels").checked) {
-      const statesToRefit = [...new Set(affectedStates)];
-      for (const stateId of statesToRefit) {
-        if (pack.states[stateId].label) delete pack.states[stateId].label;
-      }
       drawLabels();
     }
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -1833,8 +1817,6 @@ function openStateMergeDialog(): void {
       const state = pack.states[stateId];
       state.removed = true;
 
-      delete pack.states[stateId].label;
-
       document.getElementById(`stateCOA${stateId}`)?.remove();
 
       // add merged state regiments to the ruling state
@@ -1882,8 +1864,6 @@ function openStateMergeDialog(): void {
       : window.LayerControls.toggleLayer("toggleStates");
     window.LayerControls.isLayerOn("toggleBorders") ? drawBorders() : window.LayerControls.toggleLayer("toggleBorders");
     window.LayerControls.isLayerOn("toggleProvinces") && window.LayerControls.redrawLayer("toggleProvinces");
-
-    if (!pack.states[rulingStateId].label) delete pack.states[rulingStateId].label;
 
     drawLabels();
     drawEmblems();

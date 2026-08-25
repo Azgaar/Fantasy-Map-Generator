@@ -31,7 +31,7 @@ let activeHandle:
   | null = null;
 
 function open(type: LabelType, id: number): void {
-  if (customization) return;
+  if (customization || type === "state") return;
   closeDialogs(".stable");
   if (!window.LayerControls.isLayerOn("toggleLabels")) window.LayerControls.toggleLayer("toggleLabels");
 
@@ -418,7 +418,6 @@ function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
   label.text = input;
   applyLabelChanges();
-  if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
   if (label.type === "province")
     tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
 }

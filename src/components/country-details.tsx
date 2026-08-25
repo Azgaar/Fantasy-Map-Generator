@@ -1,5 +1,6 @@
 import { Icon } from "@patkepa/kantzen-ui/icons";
 import { useEffect, useState } from "react";
+import { getWorkspaceMode } from "@/application/workspace-mode";
 import type { State } from "@/generators/states-generator";
 import { formatPrice, getArea, getAreaUnit, si } from "@/utils";
 import { COUNTRY_SELECTION_CHANGE_EVENT, getSelectedCountryId } from "./country-selection";
@@ -90,7 +91,7 @@ export function CountrySelection(): React.JSX.Element | null {
   useEffect(() => {
     const updateCountry = () => {
       setCountry(getSelectedCountry());
-      setDetailsOpen(false);
+      setDetailsOpen(getWorkspaceMode() === "view" && getSelectedCountryId() !== null);
     };
     window.addEventListener(COUNTRY_SELECTION_CHANGE_EVENT, updateCountry);
     return () => window.removeEventListener(COUNTRY_SELECTION_CHANGE_EVENT, updateCountry);

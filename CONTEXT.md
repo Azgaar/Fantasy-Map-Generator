@@ -2,7 +2,7 @@
 
 - **Purpose**: Procedural generation, editing, and visualization of fantasy maps for writers, game masters, and cartographers.
 - **Main Technologies**: Vanilla JS/TS, SVG for rendering, Vite for bundling, Biome for linting/formatting.
-- **Architecture**: Moving toward FMG 2.0. The system is divided into four major layers:
+- **Architecture**: Moving toward Fantasia 2.0. The system is divided into four major layers:
   1. **State**: The world data (`grid` and `pack` objects).
   2. **Generators**: Procedural simulation logic (Model).
   3. **Editors**: User-driven map mutations (Controllers).
@@ -23,7 +23,7 @@
 - `src/index.html`: **CAUTION**: Currently a 9K-line monolith containing the entire UI structure, SVG `<defs>`, and CSS filters.
 - `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing.
 
-# FMG 2.0 Architecture Rules
+# Fantasia 2.0 Architecture Rules
 
 - **Layering Constraint**: Generators MUST NOT directly manipulate SVG or DOM elements.
 - **Data Flow**: Generators and Editors mutate the World Data (State). The Renderer reacts to State updates.
@@ -75,7 +75,7 @@
 # Important Files
 
 - `docs/glossary.md`: Domain vocabulary definitions.
-- `docs/architecture.md`: The guiding blueprint for FMG 2.0.
+- `docs/architecture.md`: The guiding blueprint for Fantasia 2.0.
 
 # Code Style Rules
 

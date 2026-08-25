@@ -187,7 +187,7 @@ function populateTypeFilter(): void {
   const select = ensureEl<HTMLSelectElement>("labelsFilterType");
   select.options.length = 0;
   select.add(new Option("all", ALL));
-  for (const type of LABEL_TYPES) select.add(new Option(type, type));
+  for (const type of LABEL_TYPES.filter(type => type !== "state")) select.add(new Option(type, type));
   select.value = filters.type;
 }
 
@@ -213,7 +213,7 @@ function populateGroupFilter(): void {
 }
 
 function getFilteredLabels(): LabelData[] {
-  const allLabels = getLabelsData();
+  const allLabels = getLabelsData().filter(label => label.type !== "state");
   totalLabels = allLabels.length;
   let labels = allLabels;
   if (filters.group !== ALL) labels = labels.filter(({ group }) => group === filters.group);

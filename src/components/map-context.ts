@@ -179,6 +179,7 @@ function addHitEntity(entities: MapContextEntity[], hit: MapHit, pack: PackedGra
 function addHitLabelEntities(entities: MapContextEntity[], hit: MapHit, pack: PackedGraph): void {
   const id = Number(hit.subPart?.entityId);
   const labelType = String(hit.subPart?.type || "state") as LabelType;
+  if (labelType === "state") return;
   const entityNames: Partial<Record<LabelType, string | undefined>> = {
     burg: pack.burgs[id]?.name,
     province: pack.provinces[id]?.fullName || pack.provinces[id]?.name,
@@ -247,6 +248,7 @@ function collectEntities(elements: Element[], pack: PackedGraph): MapContextEnti
 function addLabelEntities(entities: MapContextEntity[], element: SVGTextElement, pack: PackedGraph): void {
   const id = Number(element.dataset.id);
   const labelType = element.dataset.labelType as LabelType;
+  if (labelType === "state") return;
   const text = element.textContent?.replaceAll("|", "").trim();
   addEntity(entities, {
     element,

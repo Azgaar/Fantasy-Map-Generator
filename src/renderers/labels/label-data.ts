@@ -64,25 +64,22 @@ function buildProvinceLabel(province: Province): LabelData | undefined {
 
 function buildStateLabel(state: State): LabelData | undefined {
   if (state.removed) return undefined;
-  const group = state.label?.group || "state";
-  const customPath = getCustomPath(state.label);
-
-  const fitted = customPath || isPlainText(state.label) ? null : fitStateLabel(state, group);
+  const group = "state";
+  const fitted = fitStateLabel(state, group);
   if (fitted && !fitted.pathPoints.length) return undefined; // state has no cells to fit the label into
 
-  const text = state.label?.text ?? fitted?.text ?? getStateName(state, group);
+  const text = fitted?.text ?? getStateName(state, group);
   if (!text) return undefined;
 
   return {
-    ...state.label,
     id: `stateLabel${state.i}`,
     entityId: state.i,
     type: "state",
     group,
     text,
-    fontSize: state.label?.fontSize ?? fitted?.fontSize,
+    fontSize: fitted?.fontSize,
     anchor: state.pole || pack.cells.p[state.center],
-    pathPoints: customPath ?? fitted?.pathPoints
+    pathPoints: fitted?.pathPoints
   };
 }
 

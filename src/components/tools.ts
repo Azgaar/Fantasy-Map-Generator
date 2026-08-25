@@ -97,11 +97,6 @@ function regenerate(event: MouseEvent, button: string): void {
 }
 
 function regenerateStateLabels(): void {
-  for (const state of pack.states) {
-    if (!state.i || state.removed) continue;
-    // cleanup custom label data to force recalculation of pathPoints
-    if (state.label) delete state.label;
-  }
   drawLabels();
 }
 

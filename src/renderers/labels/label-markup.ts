@@ -9,6 +9,7 @@ export function createLabelElements(label: LabelData, document: Document) {
   text.id = label.id;
   text.dataset.labelType = label.type;
   text.dataset.id = String(label.entityId);
+  if (label.type === "state") text.style.pointerEvents = "none";
   if (label.dx || label.dy) text.setAttribute("transform", `translate(${label.dx || 0}, ${label.dy || 0})`);
 
   const fontSize = `${label.fontSize ?? 100}%`;
@@ -42,6 +43,7 @@ function createTextPath(label: LabelData, document: Document): SVGPathElement {
   path.id = `textPath_${label.id}`;
   path.dataset.labelType = label.type;
   path.dataset.id = String(label.entityId);
+  if (label.type === "state") path.style.pointerEvents = "none";
   path.setAttribute("d", getLabelPath(label));
   return path;
 }

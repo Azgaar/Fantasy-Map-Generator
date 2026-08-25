@@ -89,6 +89,10 @@ function onClick(event: MouseEvent): void {
   if (label) {
     const id = Number(label.dataset.id);
     const type = label.dataset.labelType as LabelType;
+    if (type === "state") {
+      inspectMapPoint(event, hit);
+      return;
+    }
     if (type === "burg") {
       const burgEditor = document.getElementById("burgEditor");
       const isBurgEditorOpen = burgEditor?.dataset.burgId === String(id);
@@ -115,12 +119,17 @@ function inspectMapPoint(event: MouseEvent, hit: MapHit | null): void {
   if (!point) return;
   const cellId = findClosestCell(point.x, point.y, undefined, pack);
   if (cellId === undefined) return;
+  const countryId = pack.cells.state[cellId];
+  if (!event.shiftKey && getWorkspaceMode() === "view" && countryId && selectCountry(countryId)) {
+    setViewSessionSelection({ cellId, domainId: String(countryId), domainKind: "state" });
+    return;
+  }
   setViewSessionSelection({
     cellId,
     domainId: hit?.domainId === undefined ? undefined : String(hit.domainId),
     domainKind: hit?.domainKind
   });
-  Controllers.CellInfo.openAt([point.x, point.y]);
+  if (event.shiftKey) Controllers.CellInfo.openAt([point.x, point.y]);
 }
 
 function openMapHit(hit: MapHit): boolean {
@@ -128,6 +137,7 @@ function openMapHit(hit: MapHit): boolean {
   if (hit.domainKind === "label") {
     const entityId = Number(hit.subPart?.entityId);
     const type = String(hit.subPart?.type) as LabelType;
+    if (type === "state") return false;
     if (type === "burg") {
       const burgEditor = document.getElementById("burgEditor");
       if (burgEditor?.dataset.burgId === String(entityId)) Controllers.LabelsEditor.open(type, entityId);

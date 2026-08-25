@@ -58,9 +58,7 @@ export function fitStateLabel(state: State, group: string): { pathPoints: Point[
   };
 
   let selected: ReturnType<typeof fitLines>;
-  if (state.label?.text) {
-    selected = fitLines(state.label.text.split("|"), state.label.fontSize ?? 100);
-  } else if (mode === "short") {
+  if (mode === "short") {
     selected = fitLines([state.name]);
   } else {
     const oneLine = fitLines([fullName]);

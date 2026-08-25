@@ -143,8 +143,8 @@ export class LabelsModule {
     return group ?? this.getFallbackGroup(type);
   }
 
-  getEntity(type: LabelType, id: number) {
-    const entities: Record<LabelType, { i: number; label?: Label }[]> = {
+  getEntity(type: LabelType, id: number): { i: number; label?: Label } | undefined {
+    const entities: Record<LabelType, readonly { i: number; label?: Label }[]> = {
       state: pack.states,
       province: pack.provinces,
       burg: pack.burgs,
@@ -156,12 +156,14 @@ export class LabelsModule {
   }
 
   setGroup(label: { type: LabelType; entityId: number; group: string }): void {
+    if (label.type === "state") return;
     const entity = this.getEntity(label.type, label.entityId);
     if (!entity) return;
     entity.label = { ...entity.label, group: label.group };
   }
 
   hasOverride(type: LabelType, id: number): boolean {
+    if (type === "state") return false;
     const label = this.getEntity(type, id)?.label;
     if (!label) return false;
     if (type !== "added") return true;
@@ -171,6 +173,7 @@ export class LabelsModule {
   }
 
   resetOverride(type: LabelType, id: number): void {
+    if (type === "state") return;
     const entity = this.getEntity(type, id);
     if (!entity) return;
 

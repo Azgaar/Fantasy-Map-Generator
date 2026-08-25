@@ -1,14 +1,14 @@
 {
-  "name": "fantasy-map-generator",
+  "name": "fantasia",
   "version": "1.143.3",
-  "description": "Azgaar's _Fantasy Map Generator_ is a free web application that helps fantasy writers, game masters, and cartographers create and edit fantasy maps.",
-  "homepage": "https://github.com/Azgaar/Fantasy-Map-Generator#readme",
+  "description": "Fantasia is a free web application for fantasy writers, game masters, and cartographers to create and edit fantasy maps. It is a fork of Azgaar's Fantasy Map Generator.",
+  "homepage": "https://github.com/patkepa/fantasia#readme",
   "bugs": {
-    "url": "https://github.com/Azgaar/Fantasy-Map-Generator/issues"
+    "url": "https://github.com/patkepa/fantasia/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Azgaar/Fantasy-Map-Generator.git"
+    "url": "git+https://github.com/patkepa/fantasia.git"
   },
   "license": "MIT",
   "author": "Azgaar",

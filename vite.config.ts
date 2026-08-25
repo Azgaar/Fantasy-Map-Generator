@@ -31,7 +31,7 @@ function externalizeSvgDefinitions(): Plugin {
 }
 
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH ?? "/Fantasy-Map-Generator/",
+  base: process.env.VITE_BASE_PATH ?? "/fantasia/",
   build: {
     assetsDir: "./",
     emptyOutDir: true,

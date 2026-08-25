@@ -303,6 +303,9 @@ a serializable message contract. Do not introduce that complexity until profilin
 - replacing accessible HTML application UI with canvas controls;
 - exact compatibility with another game's data, rules, art, or interface.
 
+See [Multiplayer and Collaboration Future Work](../architecture/multiplayer.md) for the
+separate editor-collaboration and game-session networking direction.
+
 ## Suggested vertical slice
 
 Build the smallest loop that proves the project can be enjoyable as a game:
@@ -431,6 +434,7 @@ Before implementation starts, decide:
 - [Project architecture](../architecture/architecture.md)
 - [Current data model](../architecture/data_model.md)
 - [Future data-model direction](../architecture/future_data_model.md)
+- [Multiplayer and collaboration future work](../architecture/multiplayer.md)
 - [Legacy code and compatibility policy](../architecture/legacy-code.md)
 - [PixiJS renderer migration plan](../architecture/pixi-renderer-migration.md)
 - [PixiJS prototype](../architecture/pixi-renderer-prototype.md)

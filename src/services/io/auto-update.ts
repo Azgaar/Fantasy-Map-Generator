@@ -1390,15 +1390,6 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
       style.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
-      const stateId = +textEl.id.slice(10);
-      const state = pack.states[stateId];
-      if (!state) continue;
-
-      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
-      if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [state.name, state.fullName] });
-    }
-
     delete (style as any).burgLabels; // migrated to style.labels.groups
     delete (options as any).stateLabelsMode; // migrated to group settings
 

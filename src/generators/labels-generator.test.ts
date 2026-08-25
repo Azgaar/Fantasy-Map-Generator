@@ -21,8 +21,8 @@ beforeEach(() => {
 });
 
 describe("LabelsModule", () => {
-  it("detects entity label overrides", () => {
-    expect(labels.hasOverride("state", 1)).toBe(true);
+  it("does not expose state label overrides", () => {
+    expect(labels.hasOverride("state", 1)).toBe(false);
     expect(labels.hasOverride("state", 2)).toBe(false);
   });
 
@@ -35,9 +35,9 @@ describe("LabelsModule", () => {
     expect(labels.hasOverride("added", 1)).toBe(true);
   });
 
-  it("restores an entity label to defaults", () => {
+  it("does not mutate state labels through the label module", () => {
     labels.resetOverride("state", 1);
-    expect(pack.states[1].label).toBeUndefined();
+    expect((pack.states[1] as unknown as { label?: unknown }).label).toEqual({});
   });
 
   it("preserves an added label's base data on reset", () => {

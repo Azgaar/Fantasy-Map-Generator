@@ -472,6 +472,7 @@ export function buildMapPickEntries(
     for (const group of labels.groups) {
       if (!group.active || group.style.opacity <= 0) continue;
       for (const label of group.labels) {
+        if (label.type === "state") continue; // country names are automatic map text, not editable objects
         const common = {
           active: group.active,
           dependency: group.dependency,
