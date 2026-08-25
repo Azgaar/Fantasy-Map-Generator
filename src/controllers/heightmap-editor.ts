@@ -475,10 +475,8 @@ async function finalizeHeightmap(): Promise<void> {
   else if (mode === "keep") restoreKeptData();
   else if (mode === "risk") restoreRiskedData();
 
-  // restore initial layers; the landmass, coastline and lakes all follow the edited heightmap
-  Layers.draw("landmass", "coastline", "lakes");
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
-
+  Layers.draw("ocean", "landmass", "lakes", "coastline");
   Layers.set(storedLayers);
 }
 
