@@ -133,8 +133,7 @@ const app = initializeApplicationState({
     military: Military.getDefaultOptions(),
     trade: {
       animation: JSON.safeParse(localStorage.getItem("trade-animation") || "") || tradeAnimation.getDefaultOptions()
-    },
-    threeD: { ...window.ThreeDOptions }
+    }
   },
   populationRate: +ensureEl<HTMLInputElement>("populationRateInput").value,
   scale: 1,
@@ -1056,13 +1055,12 @@ const regenerateMap = debounce(async (config?: string | RegenerateOptions) => {
   const shouldShowLoading = cellsDesired > 10000;
   shouldShowLoading && showLoading();
 
-  closeDialogs("#worldConfigurator, #options3d");
+  closeDialogs("#worldConfigurator");
   app.customization = 0;
   resetZoom(1000);
   undraw();
   await generate(config);
   LayerControls.drawActiveLayers();
-  if (app.options.threeD.isOn) window.Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) window.Controllers.WorldConfigurator.open();
 
   OptionsController.fitMapToScreen();

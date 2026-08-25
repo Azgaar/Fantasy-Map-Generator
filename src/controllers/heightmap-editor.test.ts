@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 (globalThis as Record<string, unknown>).ERROR = false;
-(globalThis as Record<string, unknown>).changeViewMode = () => {};
 const originalGetElementById = document.getElementById;
 document.getElementById = (() =>
   ({

@@ -74,7 +74,7 @@ describe("WorkspaceToolbar", () => {
     expect(markup.includes("Fantasia")).toBe(false);
   });
 
-  test("keeps Edit focused and consolidates layers and view modes in Views", () => {
+  test("keeps Edit focused and consolidates 2D layers in Views", () => {
     const menuSnapshot: LayerControlsSnapshot = {
       ...snapshot,
       layers: [
@@ -121,17 +121,14 @@ describe("WorkspaceToolbar", () => {
       ]
     };
     const closeViews = vi.fn();
-    const onChangeViewMode = vi.fn();
     const onOpenSection = vi.fn();
     const editItems = EditMenuItems({ close: vi.fn() });
     const layerItems = LayerMenuItems({ controls, snapshot: menuSnapshot });
     const viewsItems = ViewsMenuItems({
       close: closeViews,
       controls,
-      onChangeViewMode,
       onOpenSection,
-      snapshot: menuSnapshot,
-      viewMode: "viewStandard"
+      snapshot: menuSnapshot
     });
     const editMarkup = renderToStaticMarkup(editItems);
     const viewsMarkup = renderToStaticMarkup(viewsItems);
@@ -154,10 +151,9 @@ describe("WorkspaceToolbar", () => {
     expect(viewsMarkup.includes(">Other<")).toBe(true);
     expect(viewsMarkup.includes(">Plugin Layer<")).toBe(true);
     expect(viewsMarkup.includes(">Manage Layers…<")).toBe(false);
-    expect(viewsMarkup.includes(">View mode<")).toBe(true);
-    expect(viewsMarkup.includes(">Standard<")).toBe(true);
-    expect(viewsMarkup.includes(">3D scene<")).toBe(true);
-    expect(viewsMarkup.includes(">Globe<")).toBe(true);
+    expect(viewsMarkup.includes(">View mode<")).toBe(false);
+    expect(viewsMarkup.includes(">3D scene<")).toBe(false);
+    expect(viewsMarkup.includes(">Globe<")).toBe(false);
 
     const layerGroups = layerItems.props.children[0];
     const terrainGroup = layerGroups[0];
@@ -168,10 +164,6 @@ describe("WorkspaceToolbar", () => {
     viewsItems.props.children[5].props.onClick();
     expect(closeViews).toHaveBeenCalledOnce();
     expect(onOpenSection).toHaveBeenCalledWith("style");
-
-    viewsItems.props.children[7][2].props.onClick();
-    expect(onChangeViewMode).toHaveBeenCalledWith("viewGlobe");
-    expect(closeViews).toHaveBeenCalledTimes(2);
   });
 
   test("docks editors launched from Edit", () => {

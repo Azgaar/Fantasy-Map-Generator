@@ -5,7 +5,6 @@ const createTarget = (): OptionsControllerApi => ({
   applyGraphSize: vi.fn(),
   applyStoredOptions: vi.fn(),
   changeCellsDensity: vi.fn(),
-  changeViewMode: vi.fn(),
   connectToDropbox: vi.fn(async () => undefined),
   copyLinkToClickboard: vi.fn(),
   exportToJson: vi.fn(async () => undefined),

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRasterExportPlan, getRasterExportHiddenLayers, throwIfRasterExportAborted } from "./raster-export";
 
 describe("raster export plan", () => {
-  it("hides baked burg icons when labels are replaced by 3D labels", () => {
+  it("hides burg icons together with labels", () => {
     expect(getRasterExportHiddenLayers({ noIce: true, noLabels: true, noWater: true })).toEqual([
       "ice",
       "labels",

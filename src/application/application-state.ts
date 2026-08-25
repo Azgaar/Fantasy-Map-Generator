@@ -1,5 +1,4 @@
 import type { ScaleSequential } from "d3";
-import type { ThreeDOptions } from "@/data/view-3d-options";
 import type { LabelGroup } from "@/generators/labels-generator";
 import type { TradeAnimationModule } from "@/renderers/trade-animation";
 import type { BurgGroup } from "@/types/burg-groups";
@@ -40,7 +39,6 @@ export interface ApplicationOptions {
   labels: { resizeOnZoom: boolean; showAll: boolean; groups: LabelGroup[] };
   military: MilitaryUnit[];
   trade: { animation: ReturnType<TradeAnimationModule["getDefaultOptions"]> };
-  threeD: ThreeDOptions;
 }
 
 export interface MapCoordinates {

@@ -2,7 +2,6 @@
 import { color, min, select } from "d3";
 import { CUSTOM_STYLE_PRESET_PREFIX } from "@/components/style/style-preset-constants";
 import { RELIEF_SETS } from "@/data/relief-icons";
-import { defaultOptions } from "@/data/view-3d-options";
 import type { Label, LabelNameMode } from "@/generators/labels-generator";
 import { ensureMeasurerIds, type Measurer, type MeasurerType } from "@/generators/measurers-generator";
 import { ensureReliefIconIds } from "@/generators/relief-generator";
@@ -1210,11 +1209,6 @@ export function applyLegacySvgMigrations(mapVersion: string, data: string[]): vo
   if (isOlderThan("1.127.0")) {
     // goods visibility moved onto the good itself; default to showing the first good
     if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
-  }
-
-  if (isOlderThan("1.132.0")) {
-    // v1.132.0 added global 3D view options
-    options.threeD = { ...defaultOptions };
   }
 
   if (isOlderThan("1.138.0")) {

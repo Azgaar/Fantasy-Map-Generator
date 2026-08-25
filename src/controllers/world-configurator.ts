@@ -380,7 +380,6 @@ function updateWorld(): void {
   if (window.LayerControls.isLayerOn("toggleBiomes")) drawBiomes();
   if (window.LayerControls.isLayerOn("toggleCoordinates")) window.LayerControls.redrawLayer("toggleCoordinates");
   if (window.LayerControls.isLayerOn("toggleRivers")) window.LayerControls.redrawLayer("toggleRivers");
-  if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
 }
 
 function updateGlobePosition(): void {

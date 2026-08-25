@@ -5,7 +5,6 @@ import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-hel
 import { LayerControls } from "@/components/layers/layer-controls";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
-import { Controllers } from "@/controllers";
 import { ensureMeasurerIds } from "@/generators/measurers-generator";
 import { ensureReliefIconIds } from "@/generators/relief-generator";
 import { WorldGenerationController } from "@/generators/world-generation-controller";
@@ -248,12 +247,10 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 
 async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
   let loadGroupOpen = false;
-  const sessionThreeDOptions = options.threeD;
 
   try {
     // exit customization
     if (typeof window.closeDialogs === "function") closeDialogs();
-    if (document.getElementById("canvas3d")) await Controllers.View3d.enterStandard();
     customization = 0;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
@@ -292,8 +289,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ensureEl<HTMLInputElement>("urbanizationInput").value = settings[13];
         urbanization = +settings[13];
       }
-      if (settings[19]) options = JSON.parse(settings[19]);
-      options.threeD = sessionThreeDOptions;
+      if (settings[19]) {
+        options = JSON.parse(settings[19]);
+        delete (options as { threeD?: unknown }).threeD;
+      }
       // settings 14, 15, 18, 25 (world configuration) are part of options now, only read for old maps
       if (settings[14]) options.mapSize = minmax(+settings[14], 1, 100);
       if (settings[15]) options.latitude = minmax(+settings[15], 0, 100);
@@ -433,7 +432,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       const { migrateMap } = await import("./map-migrations");
       migrateMap(mapVersion!, data);
     }
-    options.threeD = sessionThreeDOptions;
     migrateLegacyCustomEmblemData();
     importLegacyRendererStyle(
       style,

@@ -191,7 +191,6 @@ The same world state could theoretically support:
 
 - SVG renderer
 - WebGL renderer
-- 3D renderer
 - External engine export
 - Server-side rendering
 

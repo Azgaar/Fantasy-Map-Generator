@@ -34,9 +34,8 @@ simulation state without receiving permission to rewrite terrain, countries, sty
 
 ## Terminology
 
-The project already uses two concepts that must not be overloaded:
+The project already uses a concept that must not be overloaded:
 
-- `ViewMode` currently means the **standard 2D, 3D mesh, or globe presentation**.
 - `customization` identifies a **temporary editor workflow** such as territory painting or heightmap editing.
 
 The new concept is **workspace mode**:
@@ -45,8 +44,8 @@ The new concept is **workspace mode**:
 export type WorkspaceMode = "view" | "edit";
 ```
 
-As part of this work, rename the existing presentation `ViewMode` to `ProjectionMode` or `MapPresentationMode`, and
-rename its visible "View mode" menu heading to "Projection" or "Display".
+Map presentation remains fixed to the 2D renderer, so workspace mode is the only view/edit mode concept exposed by the
+application.
 
 ## Core contract
 
@@ -74,7 +73,7 @@ mode for backwards compatibility and keep mode selection only for the current br
 
 | Action | View | Edit | Notes |
 | --- | ---: | ---: | --- |
-| Pan, zoom, fit, 2D/3D/globe | yes | yes | Transient view state |
+| Pan, zoom, fit | yes | yes | Transient view state |
 | Hover, select, inspect, open read-only panels | yes | yes | Must not write derived data into `pack` |
 | Sort, filter, search, paginate, copy | yes | yes | UI-local state |
 | Temporarily toggle layers or apply a display preset | yes | yes | Session-only in View; persisted in Edit |
@@ -358,14 +357,14 @@ Scope:
 
 - Add the workspace mode module, types, subscription, and capability checks.
 - Default to Edit mode and keep the value outside `.map` serialization.
-- Rename presentation `ViewMode` and its visible menu heading.
+- Keep map presentation fixed to the 2D renderer.
 - Add mode attributes to the application root for UI styling and diagnostics.
 - Unit-test mode transitions, capability checks, and subscriptions.
 
 Exit criteria:
 
 - Mode can change programmatically without changing document state.
-- Existing standard/mesh/globe behavior is unchanged.
+- Existing 2D map behavior is unchanged.
 - A future capability can be added without changing every caller to a new mode comparison.
 
 Suggested branch: `feat/workspace-mode-foundation`
@@ -549,7 +548,6 @@ would otherwise produce false differences.
 | Generic DOM events mark View dirty | Use semantic `map:mutated` events |
 | `customization` is abandoned halfway through a transition | Block mode change until the workflow applies, cancels, or finalizes |
 | Mode checks spread across the codebase | Central capability API and explicit command metadata |
-| Users confuse workspace mode with 3D/globe | Rename the existing presentation mode and show a prominent View/Edit control |
 | View mode is mistaken for security enforcement | Document that it is a product policy; future shared authority requires server enforcement |
 | Broad refactor destabilizes legacy UI | Ship milestones independently and preserve compatibility bridges until callers migrate |
 
@@ -560,7 +558,7 @@ document snapshots.
 ## Release definition of done
 
 - [ ] View/Edit is visible, keyboard accessible, and understandable without opening another menu.
-- [ ] Existing standard/mesh/globe controls are named as presentation or projection controls.
+- [ ] The workspace presents only the 2D map renderer.
 - [ ] View mode exposes no create, edit, style, option, or regeneration command.
 - [ ] Toolbar, hotkey, click, context-menu, dialog, and legacy entry points enforce the same capability policy.
 - [ ] View mode supports useful map and panel inspection.

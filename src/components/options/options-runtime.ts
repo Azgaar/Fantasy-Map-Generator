@@ -61,7 +61,6 @@ const shapeRendering = ensureEl<HTMLSelectElement>("shapeRendering");
 const yearInput = ensureEl<HTMLInputElement>("yearInput");
 const eraInput = ensureEl<HTMLInputElement>("eraInput");
 const tooltip = ensureEl("tooltip");
-const viewMode = ensureEl("viewMode");
 
 enableElementDragging({ element: ensureEl("optionsContainer"), handleSelector: ".drag-trigger" });
 enableElementDragging({ element: ensureEl("exitCustomization"), handleSelector: "div" });
@@ -1162,21 +1161,10 @@ function updateTilesOptions(event?: Event): void {
   `);
 }
 
-// View mode
-viewMode.addEventListener("click", changeViewMode);
-function changeViewMode(event: Event): void {
-  const button = event.target as HTMLButtonElement;
-  if (!(button instanceof HTMLButtonElement)) return;
-  const pressed = button.classList.contains("pressed");
-  if (!pressed && button.id !== "viewStandard") window.Controllers.View3d.open(button.id);
-  else window.Controllers.View3d.enterStandard();
-}
-
 const runtime: OptionsControllerApi = {
   applyGraphSize,
   applyStoredOptions,
   changeCellsDensity,
-  changeViewMode,
   connectToDropbox,
   copyLinkToClickboard,
   exportToJson,

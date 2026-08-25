@@ -10,7 +10,6 @@ export interface OptionsControllerApi {
   applyGraphSize: () => void;
   applyStoredOptions: () => void;
   changeCellsDensity: (value: string | number) => void;
-  changeViewMode: (event: Event) => void;
   connectToDropbox: () => Promise<void>;
   copyLinkToClickboard: () => void;
   exportToJson: (type: ExportJsonType) => Promise<void>;
@@ -41,7 +40,6 @@ export const OptionsController: OptionsControllerApi = {
   applyGraphSize: () => target?.applyGraphSize(),
   applyStoredOptions: () => target?.applyStoredOptions(),
   changeCellsDensity: value => target?.changeCellsDensity(value),
-  changeViewMode: event => target?.changeViewMode(event),
   connectToDropbox: () => target?.connectToDropbox() ?? Promise.resolve(),
   copyLinkToClickboard: () => target?.copyLinkToClickboard(),
   exportToJson: type => target?.exportToJson(type) ?? Promise.resolve(),

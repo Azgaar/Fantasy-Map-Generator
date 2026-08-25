@@ -504,7 +504,6 @@ function handleLayersPresetChange(preset: string): void {
     const shouldBeVisible = visible.has(id);
     if (isLayerOn(id) !== shouldBeVisible) toggleLayer(id);
   }
-  if (document.getElementById("canvas3d")) window.setTimeout(() => void window.Controllers.View3d.update(), 400);
   notifyLayerControlsChanged();
 }
 

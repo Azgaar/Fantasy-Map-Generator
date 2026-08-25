@@ -40,7 +40,6 @@ function handleKeyup(event: KeyboardEvent): void {
     closeDialogs();
     OptionsController.hide();
   } else if (code === "Delete") removeElementOnKey();
-  else if (code === "KeyO" && findEl("canvas3d")) Controllers.View3d.toggleOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
   else if (ctrl && code === "KeyS") Services.Save.saveMap("machine");
   else if (ctrl && code === "KeyC") Services.Save.saveMap("dropbox");

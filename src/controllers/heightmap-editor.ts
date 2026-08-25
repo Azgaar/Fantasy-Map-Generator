@@ -3,11 +3,9 @@ import { ApplicationController } from "@/application/application-controller";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { enableVerticalSortable } from "@/components/dialog/vertical-sortable";
 import { LayerControls } from "@/components/layers/layer-controls";
-import { OptionsController } from "@/components/options/options-controller";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { showDomDialog } from "@/components/ui/dom-dialog";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
-import { Controllers } from "@/controllers";
 import { getCultureGenerationSettings } from "@/controllers/culture-generation-settings";
 import { commitHeightValues } from "@/controllers/editor-mutations";
 import { HeightmapHistory } from "@/controllers/heightmap-history";
@@ -312,7 +310,6 @@ function addToolbarListeners(): void {
   ensureEl("applyTemplate").addEventListener("click", openTemplateEditor);
   ensureEl("convertImage").addEventListener("click", openImageConverter);
   ensureEl("heightmapPreview").addEventListener("click", toggleHeightmapPreview);
-  ensureEl("heightmap3DView").addEventListener("click", OptionsController.changeViewMode);
   ensureEl("finalizeHeightmap").addEventListener("click", finalizeHeightmap);
   ensureEl("renderOcean").addEventListener("click", mockHeightmap);
 }
@@ -494,7 +491,6 @@ function finalizeHeightmap(): void {
   resetZoom();
 
   document.getElementById("preview")?.remove();
-  if (document.getElementById("canvas3d")) void Controllers.View3d.enterStandard();
 
   const mode = ensureEl("heightmapEditMode").innerHTML;
   if (mode === "erase") regenerateErasedData();
@@ -941,7 +937,6 @@ function updateHistory(noStat?: string): void {
   if (!noStat) {
     updateStatistics();
     if (document.getElementById("preview")) drawHeightmapPreview();
-    if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
   }
 }
 
@@ -955,7 +950,6 @@ function restoreHistory(step: number): void {
   updateStatistics();
 
   if (document.getElementById("preview")) drawHeightmapPreview();
-  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
 }
 
 // restart edits from 1st step
@@ -964,7 +958,6 @@ function restartHistory(): void {
   setHistoryButtonsDisabled(!history.canUndo, !history.canRedo);
   updateStatistics();
   if (document.getElementById("preview")) drawHeightmapPreview();
-  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
 }
 
 function openBrushesPanel(): void {
@@ -1741,7 +1734,6 @@ function executeTemplate(): void {
   updateStatistics();
   mockHeightmap();
   if (document.getElementById("preview")) drawHeightmapPreview();
-  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
 }
 
 function downloadTemplate(): void {

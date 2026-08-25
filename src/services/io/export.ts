@@ -7,10 +7,6 @@ import {
   getPixiRendererCanvas,
   renderPixiRasterFrame
 } from "@/renderers/pixi/pixi-renderer-controller";
-import {
-  getHeightColor as getColor,
-  getHeightColorScheme as getColorScheme
-} from "@/renderers/scene/height-color-schemes";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import {
@@ -22,7 +18,6 @@ import {
   getCoordinates,
   getFileName,
   getFriendlyHeight,
-  getGridPolygon,
   rn,
   unique
 } from "@/utils";
@@ -41,12 +36,10 @@ export interface GetMapURLOptions {
   noIce?: boolean;
   noVignette?: boolean;
   fullMap?: boolean;
-  noViewbox?: boolean; // accepted by some callers (view-3d); currently unused here
 }
 
 export interface FullMapRasterRequest {
   height?: number;
-  overlayType?: "mesh" | "png";
   width?: number;
 }
 
@@ -149,7 +142,7 @@ async function renderFullMapRaster(
   });
 
   try {
-    const overlayUrl = await getMapURL(request.overlayType ?? "png", { ...options, fullMap: true });
+    const overlayUrl = await getMapURL("png", { ...options, fullMap: true });
     const overlay = await loadRasterImage(overlayUrl);
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
@@ -354,8 +347,6 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
       fitScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof fitScaleBar>[0], graphWidth, graphHeight);
     }
   }
-  const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
   if (noLabels) {
     clone.selectAll("#labels [data-label-type]").remove();
     clone.selectAll("#textPaths [data-label-type]").remove();
@@ -369,7 +360,6 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (noScaleBar) clone.select("#scaleBar").remove();
 
   if (type === "svg") removeUnusedElements(clone);
-  if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
 
   // remove unused filters
@@ -509,21 +499,6 @@ function removeUnusedElements(clone: MapSelection): void {
       if (this.hasAttribute("display") && this.style.display === "inline") this.removeAttribute("display");
     });
   }
-}
-
-function updateMeshCells(clone: MapSelection): void {
-  const renderOcean = ensureEl<HTMLInputElement>("renderOcean").checked;
-  const data = renderOcean ? grid.cells.i : grid.cells.i.filter((i: number) => grid.cells.h[i] >= 20);
-  const scheme = getColorScheme(select("#terrs").select("#landHeights").attr("scheme"));
-  clone.select("#heights").attr("filter", "url(#blur1)");
-  clone
-    .select("#heights")
-    .selectAll("polygon")
-    .data(data as number[])
-    .join("polygon")
-    .attr("points", (d: number) => getGridPolygon(d, grid))
-    .attr("id", (d: number) => `cell${d}`)
-    .attr("stroke", (d: number) => getColor(grid.cells.h[d], scheme));
 }
 
 // for each g element get inline style

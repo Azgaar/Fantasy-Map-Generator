@@ -68,7 +68,6 @@ import pointSymbolSceneSource from "../scene/layers/point-symbol-scene.ts?raw";
 import populationMilitarySceneSource from "../scene/layers/population-military-scene.ts?raw";
 import reliefSceneSource from "../scene/layers/relief-sprite-scene.ts?raw";
 import staticOverlaySceneSource from "../scene/layers/static-overlay-scene.ts?raw";
-import view3dSource from "../view-3d-renderer.ts?raw";
 import denseOverlaysSource from "../viewport/dense-overlays.ts?raw";
 import legacySvgImportSource from "./legacy-svg-import.ts?raw";
 import controllerSource from "./pixi-renderer-controller.ts?raw";
@@ -429,8 +428,6 @@ describe("Pixi hard cutover", () => {
     expect(exportSource.includes("renderFullMapRaster")).toBe(true);
     expect(transformToolSource.includes("renderFullMapRaster")).toBe(true);
     expect(transformToolSource.includes("getMapURL")).toBe(false);
-    expect(view3dSource.includes("renderFullMapRaster")).toBe(true);
-    expect(view3dSource.includes("ExportMap.getMapURL")).toBe(false);
     expect(indexSource.includes("ExportMap.exportToSvg")).toBe(false);
     expect(exportSource.includes("SVG export is unavailable with the Pixi renderer")).toBe(true);
   });

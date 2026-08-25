@@ -625,19 +625,6 @@
           </ul>
           <div class="tip">Click to toggle, drag to raise or lower the layer</div>
           <div class="tip">Ctrl + click to edit layer style</div>
-          <div id="viewMode" data-tip="Set view node">
-            <p>View mode:</p>
-            <button data-tip="Standard view mode that allows to edit the map" id="viewStandard" class="pressed">
-              Standard
-            </button>
-            <button
-              data-tip="Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing"
-              id="viewMesh"
-            >
-              3D scene
-            </button>
-            <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
-          </div>
         </div>
         <div id="styleContent" class="tabcontent" style="display: block">
           <p
@@ -2130,7 +2117,6 @@
             <button data-tip="Open template editor" id="applyTemplate" style="display: none">Template Editor</button>
             <button data-tip="Open Image Converter" id="convertImage" style="display: none">Image Converter</button>
             <button data-tip="Render heightmap data as a small monochrome image" id="heightmapPreview">Preview</button>
-            <button data-tip="Preview heightmap in 3D scene" id="heightmap3DView">3D scene</button>
           </div>
           <p>Options:</p>
           <div id="customizeOptions">
@@ -5266,7 +5252,6 @@
     <script src="libs/indexedDB.js?v=1.99.00"></script>
     <script type="module" src="components/index.ts"></script>
     <script type="module" src="data/supporters.ts"></script>
-    <script type="module" src="data/view-3d-options.ts"></script>
     <script type="module" src="data/heightmap-templates.ts"></script>
     <script type="module" src="data/precreated-heightmaps.ts"></script>
     <script type="module" src="utils/legacy-globals-bridge.ts"></script>

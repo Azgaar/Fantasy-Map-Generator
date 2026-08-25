@@ -136,8 +136,8 @@ The former opt-in experiment is retained only as historical context in
 - M11 now has immutable `WorldSnapshot`/`RenderSnapshot` inputs, serialized semantic style and layer visibility,
   Pixi-first viewport PNG/JPEG, capability-aware full-map extraction, overlap-safe tiled PNG export, progress,
   cancellation, and deterministic temporary-canvas cleanup. The shared full-map compositor also supplies transform
-  previews and 3D mesh/globe textures. The small documented SVG viewport overlay is composited once; no migrated
-  feature geometry is reconstructed.
+  previews. The small documented SVG viewport overlay is composited once; no migrated feature geometry is
+  reconstructed.
 - M13 is implemented. The former layer, style, style-preset, options, and main classic scripts are deleted; the editor
   starts through `src/application/main-runtime.ts`, mutable bootstrap/world state has a typed owner, and bundled
   bootstrap calls use typed application, generation, layer, style, options, renderer, and viewport facades. The page

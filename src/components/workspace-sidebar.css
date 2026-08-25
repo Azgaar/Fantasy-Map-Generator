@@ -203,8 +203,7 @@ body[data-workspace-section="preferences"] #options .tabcontent {
 }
 
 #options .tabcontent > button,
-#options .tabcontent td > button,
-#options #viewMode > button {
+#options .tabcontent td > button {
   min-height: 30px;
   border: 1px solid var(--kui-line);
   background: var(--kui-surface-raised);

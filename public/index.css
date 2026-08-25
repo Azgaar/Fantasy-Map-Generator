@@ -759,13 +759,6 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 4px 0;
 }
 
-#viewMode > button {
-  padding: 0.35em;
-  margin: 0.3em 0.3em 0.6em 0.3em;
-  float: left;
-  width: 30.7%;
-}
-
 fieldset {
   border: 1px solid var(--dark-solid);
 }

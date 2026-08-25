@@ -26,8 +26,6 @@ const latestPublicChanges = [
   "Economic simulation",
   "Trade animation",
   "Navigable rivers",
-  "3D view: eroded terrain",
-  "3D view: satellite texture",
   "Jagged coastlines",
   "Heightmap Editor: Fill brush",
   "Editors: undo button",

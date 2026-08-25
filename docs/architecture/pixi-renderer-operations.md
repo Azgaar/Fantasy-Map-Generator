@@ -65,9 +65,9 @@ needed, renders one-pixel overlaps, crops each overlap exactly once, reports pro
 removes temporary canvases deterministically. Scale bar, legend, and vignette are composited once in full-map
 coordinates; migrated feature geometry is never reconstructed in SVG.
 
-The same full-map compositor supplies transform previews and 3D mesh/globe textures, including hidden-layer and
-no-water/no-label requests. SVG download is intentionally unavailable: a vector exporter would have to consume the
-renderer-neutral scenes directly, and cloning the compatibility overlay would produce an incomplete map.
+The same full-map compositor supplies transform previews, including hidden-layer and no-water/no-label requests. SVG
+download is intentionally unavailable: a vector exporter would have to consume the renderer-neutral scenes directly,
+and cloning the compatibility overlay would produce an incomplete map.
 
 ## Diagnostics and benchmarks
 

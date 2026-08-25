@@ -74,7 +74,7 @@ Controllers it primarily serves and is exposed on `window` for legacy JavaScript
 - **Uniform async contract.** Every registry method returns a Promise, including for eager modules. All Controller dialogs are fire-and-forget, so the change from `void` to `Promise<void>` is acceptable; callers that ignore the return value are unaffected.
 - **Lazy/eager transparency via an `eager` adapter.** An `eager(value)` helper produces `() => Promise.resolve(value)` so an already-imported module can be registered without consumers knowing. Switching a module between lazy and eager is a one-line registry edit; no call site changes.
 - **Two buckets, one mechanism.** `Controllers` and `Services` are separate typed objects built from `createRegistry`. Controllers entries resolve to the module's `ModuleType` export (the object with `open`/`refresh`); Services entries resolve to the module namespace (free functions like `saveMap`, `getMapURL`).
-- **Controllers bucket scope.** All Controllers, including the three currently statically-imported sub-dialogs (good editor, production chains, distribution editor), which become lazy as a result. The 3D view module is excluded: it has no dialog `open`, it installs `ThreeD` globals, and it shares mutable state synchronously with its renderer — it stays statically imported.
+- **Controllers bucket scope.** All Controllers, including the three previously statically-imported sub-dialogs (good editor, production chains, distribution editor), become lazy as a result.
 - **Services bucket scope.** The non-Controller modules previously in the loader file: save, load, map export, JSON export, cloud, installation, and supporters.
 - **Location & bootstrap.** The registry is defined in `controllers/index.ts`, which is already loaded eagerly as an entry module script, so `window.Controllers` and `window.Services` are set at startup with no new wiring. The standalone loader file and its dedicated entry script are removed.
 - **Naming.** Registry keys are PascalCase and match the export name they resolve to (Controllers) or a PascalCase module alias (Services), so the key is self-documenting.
@@ -92,7 +92,6 @@ Controllers it primarily serves and is exposed on `window` for legacy JavaScript
 
 ## Out of Scope
 
-- Restructuring the 3D view module into the registry (it is intentionally excluded and stays statically imported).
 - Any change to the controllers' own export shape — they already uniformly export `ModuleType = { open, ... }`.
 - Internal refactors of the IO/service modules themselves (only how they are reached changes).
 - Removing the `window` globals entirely — legacy `public/modules/**/*.js` still needs them; that cleanup belongs to the broader JS→TS migration.

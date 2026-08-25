@@ -68,7 +68,7 @@ async function prepareMapData(): Promise<string> {
     "", // previously used for temperatureEquatorOutput.value
     "", // previously used for tempNorthOutput.value
     "", // previously used for precOutput.value, part of options now
-    JSON.stringify({ ...options, threeD: undefined }),
+    JSON.stringify(options),
     mapName.value,
     "", // previously used for hideLabels
     stylePreset.value,
