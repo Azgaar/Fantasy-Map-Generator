@@ -132,26 +132,6 @@ function writeAttrsById(id, attrs) {
 function projectPresetOptions() {
   const byId = id => document.getElementById(id);
 
-  const scaleBar = byId("scaleBar");
-  setOrRemove(scaleBar, "data-bar-size", styles.scaleBar.options.barSize);
-  setOrRemove(scaleBar, "data-x", styles.scaleBar.options.x);
-  setOrRemove(scaleBar, "data-y", styles.scaleBar.options.y);
-  setOrRemove(scaleBar, "data-label", styles.scaleBar.options.label);
-
-  const scaleBarBack = byId("scaleBarBack");
-  setOrRemove(scaleBarBack, "data-top", styles.scaleBar.back.options.top);
-  setOrRemove(scaleBarBack, "data-right", styles.scaleBar.back.options.right);
-  setOrRemove(scaleBarBack, "data-bottom", styles.scaleBar.back.options.bottom);
-  setOrRemove(scaleBarBack, "data-left", styles.scaleBar.back.options.left);
-  writeAttrsById("scaleBarBack", styles.scaleBar.back.attrs);
-
-  const legend = byId("legend");
-  setOrRemove(legend, "data-x", styles.legend.options.x);
-  setOrRemove(legend, "data-y", styles.legend.options.y);
-  setOrRemove(legend, "data-columns", styles.legend.options.columns);
-
-  writeAttrsById("legendBox", styles.legend.box.attrs);
-
   const vignetteRect = byId("vignette-rect");
   setOrRemove(vignetteRect, "x", styles.vignette.options.x);
   setOrRemove(vignetteRect, "y", styles.vignette.options.y);
@@ -169,8 +149,6 @@ function projectPresetOptions() {
     const el = document.querySelector(`#labels > [data-group="${CSS.escape(group)}"]`);
     if (!el) continue;
     const {dx, dy} = style.options;
-    setOrRemove(el, "data-dx", dx);
-    setOrRemove(el, "data-dy", dy);
     el.style.transform = dx || dy ? `translate(${dx}em, ${dy}em)` : "";
   }
 }
@@ -465,6 +443,9 @@ function addStylePreset() {
     if (presetStyle["#legend"]) {
       presetStyle["#legend"]["data-size"] = styles.legend.options.fontSize;
       presetStyle["#legend"]["font-size"] = styles.legend.options.fontSize;
+      presetStyle["#legend"]["data-x"] = styles.legend.options.x;
+      presetStyle["#legend"]["data-y"] = styles.legend.options.y;
+      presetStyle["#legend"]["data-columns"] = styles.legend.options.columns;
     }
     if (presetStyle["#emblems > #stateEmblems"])
       presetStyle["#emblems > #stateEmblems"]["data-size"] = styles.emblems.stateEmblems.options.size;
@@ -505,6 +486,18 @@ function addStylePreset() {
       presetStyle["#texture"]["data-y"] = styles.texture.options.y;
     }
     if (presetStyle["#oceanLayers"]) presetStyle["#oceanLayers"]["layers"] = styles.ocean.oceanLayers.options.outline;
+    if (presetStyle["#scaleBar"]) {
+      presetStyle["#scaleBar"]["data-bar-size"] = styles.scaleBar.options.barSize;
+      presetStyle["#scaleBar"]["data-x"] = styles.scaleBar.options.x;
+      presetStyle["#scaleBar"]["data-y"] = styles.scaleBar.options.y;
+      presetStyle["#scaleBar"]["data-label"] = styles.scaleBar.options.label;
+    }
+    if (presetStyle["#scaleBarBack"]) {
+      presetStyle["#scaleBarBack"]["data-top"] = styles.scaleBar.back.options.top;
+      presetStyle["#scaleBarBack"]["data-right"] = styles.scaleBar.back.options.right;
+      presetStyle["#scaleBarBack"]["data-bottom"] = styles.scaleBar.back.options.bottom;
+      presetStyle["#scaleBarBack"]["data-left"] = styles.scaleBar.back.options.left;
+    }
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));

@@ -218,7 +218,12 @@ test.describe("style persistence round trips", () => {
       .replace('<g id="markets"', '<g id="markets" font-size="66" data-icon="Z"')
       .replace('<g id="goodsIcons"', '<g id="goodsIcons" data-circle="0"')
       .replace('<g id="texture"', '<g id="texture" data-href="./z.jpg" data-x="66" data-y="66"')
-      .replace('<g id="oceanLayers"', '<g id="oceanLayers" layers="-6"');
+      .replace('<g id="oceanLayers"', '<g id="oceanLayers" layers="-6"')
+      .replace('<g id="scaleBar"', '<g id="scaleBar" data-bar-size="4" data-x="40" data-y="40" data-label="stale"')
+      .replace('<rect id="scaleBarBack"', '<rect id="scaleBarBack" data-top="66" data-right="66" data-bottom="66" data-left="66"')
+      .replace('<g id="legend"', '<g id="legend" data-x="11" data-y="11" data-columns="2"');
+    expect(lines[5], "scaleBar injection must match the serialized svg").toContain('data-bar-size="4"');
+    expect(lines[5], "legend injection must match the serialized svg").toContain('data-columns="2"');
     const staleBuffer = Buffer.from(lines.join("\r\n"), "utf8");
 
     await reload(page, staleBuffer, "style-persistence-step4-era-reloaded");
@@ -253,6 +258,13 @@ test.describe("style persistence round trips", () => {
         document.getElementById("oceanLayers")?.getAttribute("layers")
       ],
       oceanOutline: styles.ocean.oceanLayers.options.outline,
+      geometryAttrs: [
+        document.getElementById("scaleBar")?.getAttribute("data-bar-size"),
+        document.getElementById("scaleBarBack")?.getAttribute("data-top"),
+        document.getElementById("legend")?.getAttribute("data-x"),
+        document.getElementById("legend")?.getAttribute("data-columns")
+      ],
+      scaleBarSize: styles.scaleBar.options.barSize,
       rescale: styles.markers.options.rescale,
       haloWidth: styles.states.statesHalo.options.width,
       coordinatesSize: styles.coordinates.options.fontSize
@@ -274,6 +286,8 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.gridScale).toBe(1);
     expect(afterLoad.contentAttrs).toEqual([null, null, null, null, null]);
     expect(afterLoad.oceanOutline).toBe("-6,-3,-1");
+    expect(afterLoad.geometryAttrs).toEqual([null, null, null, null]);
+    expect(afterLoad.scaleBarSize).not.toBe(4);
     expect(afterLoad.rescale).toBe(1);
     expect(afterLoad.haloWidth).toBe(10);
     expect(afterLoad.coordinatesSize).toBe(12);

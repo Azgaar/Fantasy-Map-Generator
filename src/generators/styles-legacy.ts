@@ -401,9 +401,14 @@ export function syncStylesFromMap(): void {
     harvested.coordinates.options = structuredClone(styles.coordinates.options);
   if (!document.getElementById("ruler")?.hasAttribute("data-size"))
     harvested.rulers.options = structuredClone(styles.rulers.options);
-  // per-key: legend geometry (x/y/columns) stays attr-authoritative until its own family
   if (!document.getElementById("legend")?.hasAttribute("data-size"))
     harvested.legend.options.fontSize = styles.legend.options.fontSize;
+  if (!document.getElementById("legend")?.hasAttribute("data-x")) {
+    harvested.legend.options.x = styles.legend.options.x;
+    harvested.legend.options.y = styles.legend.options.y;
+  }
+  if (!document.getElementById("legend")?.hasAttribute("data-columns"))
+    harvested.legend.options.columns = styles.legend.options.columns;
   for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
     if (!document.getElementById(key)?.hasAttribute("data-size"))
       harvested.emblems[key].options = structuredClone(styles.emblems[key].options);
@@ -437,6 +442,10 @@ export function syncStylesFromMap(): void {
     harvested.texture.options = structuredClone(styles.texture.options);
   if (!document.getElementById("oceanLayers")?.hasAttribute("layers"))
     harvested.ocean.oceanLayers.options.outline = styles.ocean.oceanLayers.options.outline;
+  if (!document.getElementById("scaleBar")?.hasAttribute("data-bar-size"))
+    harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
+  if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
+    harvested.scaleBar.back.options = structuredClone(styles.scaleBar.back.options);
   Styles.set(harvested);
 }
 

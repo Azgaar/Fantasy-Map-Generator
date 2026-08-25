@@ -13,7 +13,7 @@ const waitForMap = (page: Page) =>
 
 const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 
-async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean"): Promise<void> {
+async function openStyleElement(page: Page, element: "markers" | "regions" | "coordinates" | "ruler" | "legend" | "emblems" | "goodsIcons" | "goodsBurgs" | "markets" | "terrs" | "armies" | "gridOverlay" | "texture" | "ocean" | "scaleBar" | "labels"): Promise<void> {
   await page.evaluate(() => (window as any).showOptions());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
@@ -408,5 +408,71 @@ test.describe("style editor events drive the store", () => {
     expect(await page.evaluate(() => (window as any).styles.ocean.oceanLayers.options.outline)).toBe("-6,-4,-2");
     expect(await page.locator("#oceanLayers").getAttribute("layers")).toBeNull();
     expect(await page.evaluate(() => document.querySelectorAll("#oceanLayers > path").length)).toBe(3);
+  });
+
+  test("scale bar controls write the store and the renderer derives from them", async ({ page }) => {
+    await page.evaluate(() => (window as any).Layers.show("scaleBar"));
+    await openStyleElement(page, "scaleBar");
+
+    for (const [input, value] of [
+      ["#styleScaleBarSize", "2.5"],
+      ["#styleScaleBarPositionX", "50"],
+      ["#styleScaleBarBackgroundPaddingTop", "12"]
+    ] as const) {
+      await page.locator(input).fill(value);
+      await page.locator(input).dispatchEvent("input");
+    }
+    await page.locator("#styleScaleBarLabel").fill("here be dragons");
+    await page.locator("#styleScaleBarLabel").dispatchEvent("input");
+
+    const stored = await page.evaluate(() => ({
+      barSize: (window as any).styles.scaleBar.options.barSize,
+      x: (window as any).styles.scaleBar.options.x,
+      label: (window as any).styles.scaleBar.options.label,
+      top: (window as any).styles.scaleBar.back.options.top
+    }));
+    expect(stored).toEqual({ barSize: 2.5, x: 50, label: "here be dragons", top: 12 });
+
+    // renderer derives from the store: bar line stroke-width equals barSize, label text drawn
+    await expect(page.locator("#scaleBarContent line").first()).toHaveAttribute("stroke-width", "2.5");
+    await expect(page.locator("#scaleBarContent text").last()).toHaveText("here be dragons");
+    await expect(page.locator("#scaleBarBack")).toHaveAttribute("y", "-12");
+
+    for (const attr of ["data-bar-size", "data-x", "data-y", "data-label"]) {
+      expect(await page.locator("#scaleBar").getAttribute(attr), attr).toBeNull();
+    }
+    for (const attr of ["data-top", "data-right", "data-bottom", "data-left"]) {
+      expect(await page.locator("#scaleBarBack").getAttribute(attr), attr).toBeNull();
+    }
+  });
+
+  test("label shift inputs write the store and apply the em transform", async ({ page }) => {
+    await openStyleElement(page, "labels");
+    const group = await page.evaluate(() => (window as any).styleGroupSelect.value);
+
+    await page.locator("#styleFontShiftX").fill("1.5");
+    await page.locator("#styleFontShiftX").dispatchEvent("input");
+    await page.locator("#styleFontShiftY").fill("-0.5");
+    await page.locator("#styleFontShiftY").dispatchEvent("input");
+
+    const stored = await page.evaluate(
+      g => (window as any).styles.labels.groups[g].options,
+      group
+    );
+    expect(stored).toEqual({ dx: 1.5, dy: -0.5 });
+
+    const el = page.locator(`#labels > [data-group="${group}"]`);
+    expect(await el.evaluate(node => (node as SVGElement).style.transform)).toBe("translate(1.5em, -0.5em)");
+    expect(await el.getAttribute("data-dx")).toBeNull();
+    expect(await el.getAttribute("data-dy")).toBeNull();
+  });
+
+  test("legend column input writes the store", async ({ page }) => {
+    await openStyleElement(page, "legend");
+    await page.locator("#styleLegendColItems").fill("3");
+    await page.locator("#styleLegendColItems").dispatchEvent("input");
+
+    expect(await page.evaluate(() => (window as any).styles.legend.options.columns)).toBe(3);
+    expect(await page.locator("#legend").getAttribute("data-columns")).toBeNull();
   });
 });

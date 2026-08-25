@@ -145,6 +145,8 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.markets.options.icon = "K";
     styles.texture.options.x = 33;
     styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
+    styles.scaleBar.options.label = "posterity";
+    styles.legend.options.columns = 5;
     (window as any).addStylePreset();
   });
 
@@ -165,7 +167,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
       gridScale: upgraded.grid.options.scale,
       marketsIcon: upgraded.markets.options.icon,
       textureX: upgraded.texture.options.x,
-      oceanOutline: upgraded.ocean.oceanLayers.options.outline
+      oceanOutline: upgraded.ocean.oceanLayers.options.outline,
+      scaleBarLabel: upgraded.scaleBar.options.label,
+      legendColumns: upgraded.legend.options.columns
     };
   }, raw);
 
