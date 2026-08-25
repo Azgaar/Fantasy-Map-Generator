@@ -14,9 +14,10 @@ function zoom(): ZoomBehavior<SVGSVGElement, unknown> {
 }
 
 export function applyZoomBehavior(): void {
-  select<SVGSVGElement, unknown>("#map").call(
-    zoom().on("start", handleZoomStart).on("zoom", onZoom).on("end", handleZoomEnd)
-  );
+  // D3 v5 set this automatically; D3 v7 expects the app to opt out of browser touch gesture handling.
+  select<SVGSVGElement, unknown>("#map")
+    .style("touch-action", "none")
+    .call(zoom().on("start", handleZoomStart).on("zoom", onZoom).on("end", handleZoomEnd));
 }
 
 let frameId: number | null = null;
