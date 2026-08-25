@@ -63,6 +63,8 @@ async function getStylePreset(desiredPreset) {
 }
 
 async function fetchSystemPreset(preset) {
+  // the default preset ships in the bundle (src/generators/default-styles.json), not as a fetchable asset
+  if (preset === "default") return Styles.defaults;
   try {
     const res = await fetch(`./styles/${preset}.json?v=${VERSION}`);
     return await res.json();

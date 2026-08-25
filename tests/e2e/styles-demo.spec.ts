@@ -1,5 +1,5 @@
 import {test, expect} from "@playwright/test";
-import {DEFAULT_STYLES} from "../../src/styles/defaults";
+import {DEFAULT_STYLES} from "../../src/generators/styles-schema";
 
 // The data-layer/data-group addressing contract between src/styles and the app:
 // every address the styles schema can produce must resolve in the real DOM.

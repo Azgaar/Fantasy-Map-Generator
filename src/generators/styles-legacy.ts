@@ -3,8 +3,8 @@
 // format natively.
 
 import "./styles";
-import { DEFAULT_STYLES } from "./styles-defaults";
 import type { Styles } from "./styles-schema";
+import { DEFAULT_STYLES } from "./styles-schema";
 
 type LabelGroupStyle = Styles["labels"]["groups"][string];
 

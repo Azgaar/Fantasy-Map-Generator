@@ -2,10 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test, vi } from "vitest";
 import { Styles } from "./styles";
-import { DEFAULT_STYLES } from "./styles-defaults";
 import { isLegacyPreset, labelGroupFromLegacy, presetFromLegacy, presetToLegacy } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
+import { DEFAULT_STYLES } from "./styles-schema";
 
 test("detects the legacy selector-keyed format", () => {
   expect(isLegacyPreset(fixture)).toBe(true);
@@ -104,12 +104,16 @@ test("labelGroupFromLegacy prefers a numeric data-size over font-size, stringifi
 const presetDir = path.join(__dirname, "../../public/styles");
 
 test("all 12 shipped presets parse as the new format with zero warnings", () => {
-  const files = fs.readdirSync(presetDir).filter(f => f.endsWith(".json"));
+  const files = fs
+    .readdirSync(presetDir)
+    .filter(f => f.endsWith(".json"))
+    .map(f => path.join(presetDir, f));
+  files.push(path.join(__dirname, "default-styles.json"));
   expect(files).toHaveLength(12);
   const warn = vi.spyOn(console, "warn");
   warn.mockClear();
   for (const file of files) {
-    const json = JSON.parse(fs.readFileSync(path.join(presetDir, file), "utf8"));
+    const json = JSON.parse(fs.readFileSync(file, "utf8"));
     expect(isLegacyPreset(json), file).toBe(false);
     Styles.parse(json);
   }
@@ -117,7 +121,7 @@ test("all 12 shipped presets parse as the new format with zero warnings", () => 
 });
 
 test("the shipped default preset is exactly the converted fixture", () => {
-  const shipped = JSON.parse(fs.readFileSync(path.join(presetDir, "default.json"), "utf8"));
+  const shipped = JSON.parse(fs.readFileSync(path.join(__dirname, "default-styles.json"), "utf8"));
   expect(presetFromLegacy(fixture as any)).toEqual(shipped);
 });
 

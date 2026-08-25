@@ -1,10 +1,10 @@
 import { type LayerId, Layers } from "@/components/layers";
-import { DEFAULT_STYLES } from "./styles-defaults";
-import { type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
+import { DEFAULT_STYLES, type StyleLayerId, type Styles as StylesData, stylesSchema } from "./styles-schema";
 
 // The active styles, a plain global. Read and write directly:
 // styles.labels.groups[id].attrs.opacity. Replaces the legacy `style` global when that retires.
-globalThis.styles = DEFAULT_STYLES;
+// A clone, so edits before the first preset apply can't taint Styles.defaults.
+globalThis.styles = structuredClone(DEFAULT_STYLES);
 
 // New format only; legacy selector-keyed presets are converted by migration code, not here.
 // An invalid or missing layer falls back to the default with one warning, so the result is

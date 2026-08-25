@@ -1,7 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 import { Styles } from "./styles";
-import { DEFAULT_STYLES } from "./styles-defaults";
-import { stylesSchema } from "./styles-schema";
+import { DEFAULT_STYLES, stylesSchema } from "./styles-schema";
 
 describe("stylesSchema", () => {
   test("the default styles are valid — defaults and schema cannot drift", () => {

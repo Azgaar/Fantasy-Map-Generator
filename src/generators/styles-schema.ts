@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { LayerId } from "@/components/layers";
+import defaultStyles from "./default-styles.json";
 
 // One shared type per recurring attribute; attrs written to the DOM, null = attribute not set
 const opacity = z.number().nullable();
@@ -231,3 +232,6 @@ export const stylesSchema = z.strictObject({
 export type Styles = z.infer<typeof stylesSchema>;
 // every styled layer is a registry layer; "map" (the svg root) is the one deliberate extra
 export type StyleLayerId = keyof Styles & (LayerId | "map");
+
+// default-styles.json is the single source of style defaults, validated strictly at boot
+export const DEFAULT_STYLES: Styles = stylesSchema.parse(defaultStyles);

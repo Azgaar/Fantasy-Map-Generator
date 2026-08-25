@@ -8,7 +8,9 @@ const PRESETS = [
 ];
 
 function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} {
-  const json = JSON.parse(fs.readFileSync(path.join(__dirname, `../../public/styles/${preset}.json`), "utf8"));
+  const file =
+    preset === "default" ? "../../src/generators/default-styles.json" : `../../public/styles/${preset}.json`;
+  const json = JSON.parse(fs.readFileSync(path.join(__dirname, file), "utf8"));
   return {oceanFill: json.ocean.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
 }
 
