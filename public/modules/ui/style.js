@@ -506,13 +506,13 @@ function updateLabelGroupInlineStyle(group) {
   groupStyle.attrs.style = value || null;
 }
 
-// generic controls: resolve the current selection to its store node and write through the
-// store; structural parents (#icons, ...) have no node and keep the direct DOM write
+// generic controls: mirror the edit into the selection's store node, then write ONLY the
+// edited attribute to the DOM - a whole-layer Styles.write would reset sibling groups'
+// zoom-derived values (label/halo stroke-widths and sizes) to their stored bases
 function writeSelectedAttr(attr, value) {
   const resolved = stylesLegacy.styleNodeFor(styleElementSelect.value, styleGroupSelect.value);
-  if (!resolved || !(attr in resolved.node.attrs)) return void getEl().attr(attr, value ?? null);
-  resolved.node.attrs[attr] = value;
-  Styles.write(resolved.layer);
+  if (resolved && attr in resolved.node.attrs) resolved.node.attrs[attr] = value;
+  getEl().attr(attr, value ?? null);
 }
 
 styleFillInput.addEventListener("input", function () {
@@ -631,7 +631,7 @@ styleRescaleMarkers.addEventListener("change", function () {
 
 styleOceanFill.addEventListener("input", function () {
   styles.ocean.base.attrs.fill = this.value;
-  Styles.write("ocean");
+  d3.select("#oceanLayers").select("rect").attr("fill", this.value);
   styleOceanFillOutput.value = this.value;
 });
 
@@ -824,29 +824,29 @@ styleReliefDensity.addEventListener("change", e => {
 
 styleTemperatureFillOpacityInput.addEventListener("input", e => {
   styles.temperature.attrs["fill-opacity"] = +e.target.value;
-  Styles.write("temperature");
+  d3.select("#temperature").attr("fill-opacity", e.target.value);
 });
 
 styleTemperatureFontSizeInput.addEventListener("input", e => {
   styles.temperature.attrs["font-size"] = e.target.value + "px";
-  Styles.write("temperature");
+  d3.select("#temperature").attr("font-size", e.target.value + "px");
 });
 
 styleTemperatureFillInput.addEventListener("input", e => {
   styles.temperature.attrs.fill = e.target.value;
-  Styles.write("temperature");
+  d3.select("#temperature").attr("fill", e.target.value);
   styleTemperatureFillOutput.value = e.target.value;
 });
 
 stylePopulationRuralStrokeInput.addEventListener("input", e => {
   styles.population.rural.attrs.stroke = e.target.value;
-  Styles.write("population");
+  d3.select("#population").select("#rural").attr("stroke", e.target.value);
   stylePopulationRuralStrokeOutput.value = e.target.value;
 });
 
 stylePopulationUrbanStrokeInput.addEventListener("input", e => {
   styles.population.urban.attrs.stroke = e.target.value;
-  Styles.write("population");
+  d3.select("#population").select("#urban").attr("stroke", e.target.value);
   stylePopulationUrbanStrokeOutput.value = e.target.value;
 });
 
@@ -873,7 +873,7 @@ styleCompassShiftY.addEventListener("input", shiftCompass);
 function shiftCompass() {
   const tr = `translate(${styleCompassShiftX.value} ${styleCompassShiftY.value}) scale(${styleCompassSizeInput.value})`;
   styles.compass.compassRose.attrs.transform = tr;
-  Styles.write("compass");
+  d3.select("#compass").select("use").attr("transform", tr);
 }
 
 styleLegendColItems.addEventListener("input", e => {
@@ -884,12 +884,12 @@ styleLegendColItems.addEventListener("input", e => {
 styleLegendBack.addEventListener("input", e => {
   styleLegendBackOutput.value = e.target.value;
   styles.legend.box.attrs.fill = e.target.value;
-  Styles.write("legend");
+  d3.select("#legend").select("#legendBox").attr("fill", e.target.value);
 });
 
 styleLegendOpacity.addEventListener("input", e => {
   styles.legend.box.attrs["fill-opacity"] = +e.target.value;
-  Styles.write("legend");
+  d3.select("#legend").select("#legendBox").attr("fill-opacity", e.target.value);
 });
 
 styleSelectFont.addEventListener("change", changeFont);
@@ -1001,35 +1001,36 @@ styleFontShiftY.addEventListener("input", e => applyLabelShift("dy", e.target.va
 
 styleStatesBodyOpacity.addEventListener("input", e => {
   styles.states.statesBody.attrs.opacity = +e.target.value;
-  Styles.write("states");
+  d3.select("#statesBody").attr("opacity", e.target.value);
 });
 
 styleStatesBodyFilter.addEventListener("change", function () {
   styles.states.statesBody.attrs.filter = this.value || null;
-  Styles.write("states");
+  d3.select("#statesBody").attr("filter", this.value || null);
 });
 
 styleStatesHaloWidth.addEventListener("input", e => {
   const value = +e.target.value;
   styles.states.statesHalo.options.width = value;
   styles.states.statesHalo.attrs["stroke-width"] = value;
-  Styles.write("states");
+  d3.select("#statesHalo").attr("stroke-width", value);
 });
 
 styleStatesHaloOpacity.addEventListener("input", e => {
   styles.states.statesHalo.attrs.opacity = +e.target.value;
-  Styles.write("states");
+  d3.select("#statesHalo").attr("opacity", e.target.value);
 });
 
 styleStatesHaloBlur.addEventListener("input", e => {
   const value = Number(e.target.value);
-  styles.states.statesHalo.attrs.filter = value > 0 ? `blur(${value}px)` : null;
-  Styles.write("states");
+  const blur = value > 0 ? `blur(${value}px)` : null;
+  styles.states.statesHalo.attrs.filter = blur;
+  d3.select("#statesHalo").attr("filter", blur);
 });
 
 styleArmiesFillOpacity.addEventListener("input", e => {
   styles.military.attrs["fill-opacity"] = +e.target.value;
-  Styles.write("military");
+  d3.select("#armies").attr("fill-opacity", e.target.value);
 });
 
 styleArmiesSize.addEventListener("input", e => {
@@ -1076,7 +1077,7 @@ styleGoodsBurgsSize.addEventListener("input", function () {
 
 styleMarketsLayerFillOpacity.addEventListener("input", e => {
   styles.markets.attrs["fill-opacity"] = +e.target.value;
-  Styles.write("markets");
+  d3.select("#markets").attr("fill-opacity", e.target.value);
 });
 
 styleMarketsSize.addEventListener("input", function () {
@@ -1216,7 +1217,7 @@ styleScaleBar.addEventListener("input", function (event) {
   if (id === "styleScaleBarSize") styles.scaleBar.options.barSize = +value || 1;
   else if (id === "styleScaleBarFontSize") {
     styles.scaleBar.attrs["font-size"] = +value || 10;
-    Styles.write("scaleBar");
+    d3.select("#scaleBar").attr("font-size", value);
   }
   else if (id === "styleScaleBarPositionX") styles.scaleBar.options.x = +value || 0;
   else if (id === "styleScaleBarPositionY") styles.scaleBar.options.y = +value || 0;
@@ -1240,12 +1241,12 @@ function applyMapFilter(event) {
   const button = event.target;
   styles.map.options.dataFilter = null;
   styles.map.attrs.filter = null;
-  Styles.write("map");
+  d3.select("#map").attr("filter", null);
   if (button.classList.contains("pressed")) return button.classList.remove("pressed");
 
   mapFilters.querySelectorAll(".pressed").forEach(button => button.classList.remove("pressed"));
   button.classList.add("pressed");
   styles.map.options.dataFilter = button.id;
   styles.map.attrs.filter = "url(#filter-" + button.id + ")";
-  Styles.write("map");
+  d3.select("#map").attr("filter", "url(#filter-" + button.id + ")");
 }

@@ -529,6 +529,36 @@ test.describe("style editor events drive the store", () => {
     expect(Object.values(dataCounts).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
   });
 
+  test("editing one label group leaves sibling groups' derived DOM values untouched", async ({ page }) => {
+    await openStyleElement(page, "labels");
+    const groups = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("#labels > [data-group]")).map(el => (el as HTMLElement).dataset.group)
+    );
+    const target = groups[0]!;
+    const sibling = groups.find(g => g !== target)!;
+    expect(sibling).toBeTruthy();
+
+    // simulate a zoom-derived sibling value living only on the DOM
+    await page.evaluate(g => {
+      document.querySelector(`#labels > [data-group="${g}"]`)!.setAttribute("stroke-width", "7.77");
+    }, sibling);
+
+    await page.locator("#styleGroupSelect").selectOption(target);
+    await page.locator("#styleStrokeWidthInput input[type=number]").fill("2.5");
+
+    const after = await page.evaluate(
+      ([t, s]) => ({
+        target: document.querySelector(`#labels > [data-group="${t}"]`)!.getAttribute("stroke-width"),
+        sibling: document.querySelector(`#labels > [data-group="${s}"]`)!.getAttribute("stroke-width"),
+        stored: (window as any).styles.labels.groups[t as string].attrs["stroke-width"]
+      }),
+      [target, sibling]
+    );
+    expect(after.stored).toBe(2.5);
+    expect(after.target).toBe("2.5");
+    expect(after.sibling, "sibling derived DOM value must survive").toBe("7.77");
+  });
+
   test("compass shift writes the rose transform through the store", async ({ page }) => {
     await page.evaluate(() => (window as any).Layers.show("compass"));
     await openStyleElement(page, "compass");
