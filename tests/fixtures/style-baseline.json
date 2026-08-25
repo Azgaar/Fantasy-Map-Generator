@@ -190,7 +190,6 @@
   },
   "#markers": {
     "opacity": "0.8",
-    "rescale": "1",
     "style": "display: none;"
   },
   "#markets": {
@@ -247,7 +246,6 @@
     "opacity": "1",
     "stroke-width": "13",
     "filter": "blur(8.25px)",
-    "data-width": "13",
     "style": "display: none;"
   },
   "#relig": {

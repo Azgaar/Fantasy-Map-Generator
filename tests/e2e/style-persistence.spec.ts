@@ -180,6 +180,64 @@ test.describe("style persistence round trips", () => {
     expect(after.dom).toBeNull();
   });
 
+  test("step-4-era map: a store record beside the retired attrs strips them on load and every save after", async ({
+    page,
+    context
+  }) => {
+    await context.clearCookies();
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    await page.goto("/?seed=style-persistence-step4-era&width=1280&height=720");
+    await waitForMap(page);
+
+    // a real save already produces a store record (data[48]) with no rescale/data-width attrs on
+    // the DOM. Mirror a step-4-era build's save by re-injecting both retired attrs into the
+    // serialized #markers/#statesHalo groups (data[5]) beside that record, with values that
+    // diverge from the store's own so a clobber is unambiguous.
+    const buffer = await saveAsDownload(page);
+    const lines = buffer.toString("utf8").split("\r\n");
+    lines[5] = lines[5]
+      .replace('<g id="markers"', '<g id="markers" rescale="0"')
+      .replace('<g id="statesHalo"', '<g id="statesHalo" data-width="7"');
+    const staleBuffer = Buffer.from(lines.join("\r\n"), "utf8");
+
+    await reload(page, staleBuffer, "style-persistence-step4-era-reloaded");
+
+    const afterLoad = await page.evaluate(() => ({
+      markersRescaleAttr: document.getElementById("markers")?.getAttribute("rescale"),
+      statesHaloWidthAttr: document.getElementById("statesHalo")?.getAttribute("data-width"),
+      rescale: styles.markers.options.rescale,
+      haloWidth: styles.states.statesHalo.options.width
+    }));
+
+    // both attrs are gone immediately, and the record's own values won - not the stale attrs
+    expect(afterLoad.markersRescaleAttr).toBeNull();
+    expect(afterLoad.statesHaloWidthAttr).toBeNull();
+    expect(afterLoad.rescale).toBe(1);
+    expect(afterLoad.haloWidth).toBe(10);
+
+    // flip both through the store the way the real editor handlers do, then re-run the save-time
+    // harvest directly: with the attrs already stripped, it must keep the flipped values rather
+    // than reharvesting the (now-absent) stale attrs
+    await page.evaluate(() => {
+      styles.markers.options.rescale = 0;
+      styles.states.statesHalo.options.width = 3;
+      (window as any).stylesLegacy.syncStylesFromMap();
+    });
+
+    const afterSync = await page.evaluate(() => ({
+      rescale: styles.markers.options.rescale,
+      haloWidth: styles.states.statesHalo.options.width
+    }));
+
+    expect(afterSync.rescale).toBe(0);
+    expect(afterSync.haloWidth).toBe(3);
+  });
+
   test("relief attrs persistence: a DOM-only #terrain write survives a save and load", async ({ page, context }) => {
     await context.clearCookies();
     await page.goto("/");

@@ -374,6 +374,12 @@ export function syncStylesFromMap(): void {
     if (el.id) harvested.burgIcons.anchors.groups[el.id] = burgGroupFromElement(el);
   }
   harvested.relief.options = structuredClone(styles.relief.options);
+  // post-migration maps carry no rescale/data-width attrs, so the store owns these
+  // options; a loaded old map's attrs win here until the load-time strip removes them
+  if (!document.getElementById("markers")?.hasAttribute("rescale"))
+    harvested.markers.options = structuredClone(styles.markers.options);
+  if (!document.getElementById("statesHalo")?.hasAttribute("data-width"))
+    harvested.states.statesHalo.options = structuredClone(styles.states.statesHalo.options);
   Styles.set(harvested);
 }
 

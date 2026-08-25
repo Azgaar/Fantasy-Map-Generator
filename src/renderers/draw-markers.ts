@@ -63,7 +63,7 @@ export const setMarkersFilter = (ids: number[] | null): void => {
 export const drawMarkers = (): void => {
   TIME && console.time("drawMarkers");
 
-  const rescale = +select("#markers").attr("rescale");
+  const rescale = styles.markers.options.rescale;
   const pinned = +select("#markers").attr("pinned");
 
   let markersData: Marker[] = pinned

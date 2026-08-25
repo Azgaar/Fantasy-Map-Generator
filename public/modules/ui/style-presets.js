@@ -165,8 +165,6 @@ function projectPresetOptions() {
   setOrRemove(oceanHeights, "curve", styles.heightmap.oceanHeights.options.curve);
   setOrRemove(oceanHeights, "data-render", Number(styles.heightmap.oceanHeights.options.render));
 
-  setOrRemove(byId("statesHalo"), "data-width", styles.states.statesHalo.options.width);
-
   setOrRemove(byId("stateEmblems"), "data-size", styles.emblems.stateEmblems.options.size);
   setOrRemove(byId("provinceEmblems"), "data-size", styles.emblems.provinceEmblems.options.size);
   setOrRemove(byId("burgEmblems"), "data-size", styles.emblems.burgEmblems.options.size);
@@ -181,8 +179,6 @@ function projectPresetOptions() {
   setOrRemove(markets, "data-size", styles.markets.options.size);
   setOrRemove(markets, "font-size", styles.markets.options.fontSize);
   setOrRemove(markets, "data-icon", styles.markets.options.icon);
-
-  setOrRemove(byId("markers"), "rescale", styles.markers.options.rescale);
 
   const ruler = byId("ruler");
   setOrRemove(ruler, "data-size", styles.rulers.options.fontSize);
@@ -338,7 +334,7 @@ function addStylePreset() {
       "#relig": ["opacity", "stroke", "stroke-width", "filter"],
       "#cults": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#landmass": ["opacity", "fill", "filter"],
-      "#markers": ["opacity", "rescale", "filter"],
+      "#markers": ["opacity", "filter"],
       "#prec": ["opacity", "stroke", "stroke-width", "fill", "filter"],
       "#population": ["opacity", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter"],
       "#markets": [
@@ -372,7 +368,7 @@ function addStylePreset() {
       "#trails": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#searoutes": ["opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "filter", "mask"],
       "#statesBody": ["opacity", "filter"],
-      "#statesHalo": ["opacity", "data-width", "stroke-width", "filter"],
+      "#statesHalo": ["opacity", "stroke-width", "filter"],
       "#provs": ["opacity", "fill", "font-size", "font-family", "filter"],
       "#temperature": [
         "opacity",
@@ -520,6 +516,9 @@ function addStylePreset() {
     }
 
     if (presetStyle["#terrain"]) Object.assign(presetStyle["#terrain"], styles.relief.options);
+    if (presetStyle["#markers"]) presetStyle["#markers"].rescale = styles.markers.options.rescale;
+    if (presetStyle["#statesHalo"])
+      presetStyle["#statesHalo"]["data-width"] = styles.states.statesHalo.options.width;
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));

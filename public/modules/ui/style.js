@@ -210,7 +210,7 @@ function selectStyleElement() {
 
   if (styleElement === "markers") {
     styleMarkers.style.display = "block";
-    styleRescaleMarkers.checked = +d3.select("#markers").attr("rescale");
+    styleRescaleMarkers.checked = Boolean(styles.markers.options.rescale);
   }
 
   if (styleElement === "gridOverlay") {
@@ -255,7 +255,7 @@ function selectStyleElement() {
     styleStates.style.display = "block";
     styleStatesBodyOpacity.value = d3.select("#statesBody").attr("opacity") || 1;
     styleStatesBodyFilter.value = d3.select("#statesBody").attr("filter") || "";
-    styleStatesHaloWidth.value = d3.select("#statesHalo").attr("data-width") || 10;
+    styleStatesHaloWidth.value = styles.states.statesHalo.options.width;
     styleStatesHaloOpacity.value = d3.select("#statesHalo").attr("opacity") || 1;
     styleStatesHaloBlur.value =
       parseFloat(
@@ -629,7 +629,7 @@ styleGridShiftY.addEventListener("input", function () {
 });
 
 styleRescaleMarkers.addEventListener("change", function () {
-  d3.select("#markers").attr("rescale", +this.checked);
+  styles.markers.options.rescale = +this.checked;
   invokeActiveZooming();
 });
 
@@ -1000,8 +1000,10 @@ styleStatesBodyFilter.addEventListener("change", function () {
 });
 
 styleStatesHaloWidth.addEventListener("input", e => {
-  const value = e.target.value;
-  d3.select("#statesHalo").attr("data-width", value).attr("stroke-width", value);
+  const value = +e.target.value;
+  styles.states.statesHalo.options.width = value;
+  styles.states.statesHalo.attrs["stroke-width"] = value;
+  d3.select("#statesHalo").attr("stroke-width", value);
 });
 
 styleStatesHaloOpacity.addEventListener("input", e => {

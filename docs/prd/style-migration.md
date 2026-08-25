@@ -20,7 +20,7 @@ One bridge: the map file's legacy style record keeps being written (`stylesToLeg
 
 **4. Persistence.** *(done — this branch)* `JSON.stringify(styles)` becomes its own record in the map file; load parses it and applies over the restored SVG. For older maps, auto-update scrapes the known styling attributes off the restored SVG and feeds them through the upgrader — gated on the record's shape, not a version line (`isStoreStyles`), since version lines lie. The step-2 bridge dies here.
 
-**5. Options, per consumer.** Each decision-attribute moves as one small PR: the renderer read, the style-editor input and the attribute's removal migrate together (`data-size` family; heightmap `scheme/terracing/skip/relax/curve`; `rescale`, halo `data-width`, ocean `layers`; texture/vignette/scale-bar geometry). After each PR that attribute no longer exists in the DOM.
+**5. Options, per consumer.** Each decision-attribute moves as one small PR: the renderer read, the style-editor input and the attribute's removal migrate together (`data-size` family; heightmap `scheme/terracing/skip/relax/curve`; `rescale`, halo `data-width`, ocean `layers`; texture/vignette/scale-bar geometry). After each PR that attribute no longer exists in the DOM. The zoom family (markers `rescale`, states halo `data-width`) is done on this branch; the rest of step 5 stays open.
 
 **6. Editor through `styles`.** `style.js` reads from `styles` and writes by mutation + `applyStyles` — its hand-maintained per-input DOM writes and redraw calls go away. The burg-icon DOM harvest dies here.
 
