@@ -150,6 +150,27 @@ test("save sync lets an old map's emblem, goods and market data-size win", () =>
   expect(styles.markets.options.size).toBe(8);
 });
 
+test("save sync keeps store heightmap options when the scheme attr is absent", () => {
+  document.body.innerHTML = `<svg id="map"><g id="terrs"><g id="landHeights"></g><g id="oceanHeights"></g></g></svg>`;
+  styles.heightmap.landHeights.options.scheme = "#001122,#334455";
+  styles.heightmap.landHeights.options.terracing = 4;
+  styles.heightmap.oceanHeights.options.render = true;
+  syncStylesFromMap();
+  expect(styles.heightmap.landHeights.options.scheme).toBe("#001122,#334455");
+  expect(styles.heightmap.landHeights.options.terracing).toBe(4);
+  expect(styles.heightmap.oceanHeights.options.render).toBe(true);
+});
+
+test("save sync lets an old map's heightmap attrs win when scheme is present", () => {
+  document.body.innerHTML = `<svg id="map"><g id="terrs"><g id="landHeights" scheme="olive" terracing="2" skip="1" relax="1" curve="curveLinear"></g><g id="oceanHeights" scheme="bright" terracing="0" skip="0" relax="0" curve="curveBasisClosed" data-render="1"></g></g></svg>`;
+  styles.heightmap.landHeights.options.scheme = "monochrome";
+  styles.heightmap.oceanHeights.options.render = false;
+  syncStylesFromMap();
+  expect(styles.heightmap.landHeights.options.scheme).toBe("olive");
+  expect(styles.heightmap.landHeights.options.terracing).toBe(2);
+  expect(styles.heightmap.oceanHeights.options.render).toBe(true);
+});
+
 test("save sync lets an old map's coordinates data-size win over the store", () => {
   document.body.innerHTML = `<svg id="map"><g id="coordinates" data-size="14"></g></svg>`;
   styles.coordinates.options.fontSize = 20;

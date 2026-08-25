@@ -319,20 +319,10 @@
   "#terrs": {},
   "#landHeights": {
     "opacity": "0.8",
-    "mask": "url(#land)",
-    "scheme": "livid",
-    "terracing": "6",
-    "skip": "0",
-    "relax": "2",
-    "curve": "curveBasisClosed"
+    "mask": "url(#land)"
   },
   "#oceanHeights": {
-    "opacity": "1",
-    "scheme": "olive",
-    "terracing": "0",
-    "skip": "0",
-    "relax": "1",
-    "curve": "curveBasisClosed"
+    "opacity": "1"
   },
   "#texture": {
     "opacity": "0.2",
