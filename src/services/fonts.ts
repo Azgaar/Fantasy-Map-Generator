@@ -266,6 +266,8 @@ window.fonts = [
   }
 ];
 
+let fontOptionsPending = false;
+
 /** Register a font so the app can use and export it */
 export function declareFont(font: FontDefinition): void {
   const { family, src, ...rest } = font;
@@ -283,8 +285,6 @@ function declareDefaultFonts() {
     declareFont(font);
   });
 }
-
-let fontOptionsPending = false;
 
 function addFontOption(family: string) {
   // The Style panel is mounted independently from this app-shell service.

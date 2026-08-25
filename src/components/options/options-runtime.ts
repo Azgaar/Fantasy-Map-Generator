@@ -40,9 +40,9 @@ interface GoogleTranslateApi {
   };
 }
 
-mountLayerPanel();
 mountStylePanel();
 mountOptionsPanel();
+mountLayerPanel();
 mountCustomizationPanel();
 mountAboutPanel();
 getUnitSettings();

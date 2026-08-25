@@ -27,6 +27,36 @@ describe("map interaction overlay", () => {
     expect(resized).toMatchObject({ height: 900, width: 1200 });
   });
 
+  it("updates the overlay transform without recreating selection geometry on zoom", () => {
+    const setAttribute = vi.fn();
+    const replaceWith = vi.fn();
+    const createElementNS = document.createElementNS;
+    document.createElementNS = vi.fn(() => ({
+      append: vi.fn(),
+      classList: { add: vi.fn() },
+      dataset: {},
+      setAttribute: vi.fn(),
+      style: {}
+    })) as unknown as typeof document.createElementNS;
+    const root = {
+      querySelector: vi.fn(() => ({ replaceWith })),
+      querySelectorAll: vi.fn(() => []),
+      setAttribute
+    } as unknown as SVGGElement;
+    const overlay = new MapInteractionOverlay();
+    (overlay as unknown as { root: SVGGElement }).root = root;
+
+    try {
+      overlay.setCamera(camera);
+
+      expect(setAttribute).toHaveBeenCalledWith("transform", "translate(40 -20) scale(2)");
+      expect(root.querySelectorAll).toHaveBeenCalledTimes(2);
+      expect(replaceWith).toHaveBeenCalledOnce();
+    } finally {
+      document.createElementNS = createElementNS;
+    }
+  });
+
   it("resolves mouse and touch pointer coordinates through the shared transform", () => {
     expect(resolveMapInteractionPointer({ x: 260, y: 170 }, { left: 20, top: 10 }, camera)).toEqual({
       screenPoint: { x: 240, y: 160 },
@@ -115,6 +145,36 @@ describe("map interaction overlay", () => {
       expect(querySelector).toHaveBeenCalledOnce();
       expect(querySelector).toHaveBeenCalledWith('[data-overlay-channel="selection"]');
       expect(selectionChannel.replaceWith).toHaveBeenCalledOnce();
+    } finally {
+      document.createElementNS = createElementNS;
+    }
+  });
+
+  it("allows selection outlines to scale with the map when requested", () => {
+    const setAttribute = vi.fn();
+    const setProperty = vi.fn();
+    const createElementNS = document.createElementNS;
+    document.createElementNS = vi.fn(() => ({
+      append: vi.fn(),
+      classList: { add: vi.fn() },
+      dataset: {},
+      setAttribute,
+      style: { setProperty }
+    })) as unknown as typeof document.createElementNS;
+    const overlay = new MapInteractionOverlay();
+    (overlay as unknown as { camera: MapCamera }).camera = { ...camera };
+    const selectionChannel = { replaceWith: vi.fn() };
+    (overlay as unknown as { root: { querySelector: () => typeof selectionChannel } }).root = {
+      querySelector: () => selectionChannel
+    };
+
+    try {
+      overlay.update({
+        selection: [{ kind: "path", path: "M0,0", style: { strokeScaling: "map", strokeWidth: 2 } }]
+      });
+
+      expect(setAttribute).not.toHaveBeenCalledWith("vector-effect", "non-scaling-stroke");
+      expect(setProperty).toHaveBeenCalledWith("stroke-width", "1.25");
     } finally {
       document.createElementNS = createElementNS;
     }

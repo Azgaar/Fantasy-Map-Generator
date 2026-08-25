@@ -10,7 +10,7 @@ export const ensureEl = <T extends Element = HTMLElement>(id: string): T => {
   const el = document.getElementById(id) ?? (globalElement instanceof Element ? globalElement : null);
   if (!el) {
     // TODO: throw an error instead of logging it, and handle it properly in the caller
-    ERROR && console.error(`Element with id "${id}" not found.`);
+    window.ERROR && console.error(`Element with id "${id}" not found.`);
     // TOBE: throw new Error(`Element with id "${id}" not found.`);
   }
   return el as unknown as T;

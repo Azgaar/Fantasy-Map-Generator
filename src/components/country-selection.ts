@@ -1,4 +1,4 @@
-import { getAssignmentOverlay } from "@/renderers/interaction/map-domain-overlay";
+import { getCountrySelectionOverlay } from "@/renderers/interaction/map-domain-overlay";
 import { updateMapInteractionOverlay } from "@/renderers/pixi/pixi-renderer-controller";
 import { LAYER_CONTROLS_CHANGE_EVENT } from "./layers/layer-controls";
 
@@ -20,11 +20,12 @@ export function selectCountry(countryId: number): boolean {
 
   selectedCountryId = countryId;
   updateMapInteractionOverlay({
-    selection: getAssignmentOverlay(pack.cells.state, countryId, {
+    selection: getCountrySelectionOverlay(countryId, {
       fill: "#ffffff",
       fillOpacity: 0.12,
       stroke: "#ffffff",
       strokeOpacity: 0.9,
+      strokeScaling: "map",
       strokeWidth: 2
     })
   });

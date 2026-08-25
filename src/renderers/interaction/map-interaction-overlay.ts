@@ -13,12 +13,14 @@ export interface MapInteractionGeometryStyle {
   opacity?: number;
   stroke?: string;
   strokeOpacity?: number;
+  strokeScaling?: "fixed" | "map";
   strokeWidth?: number;
 }
 
 type MapInteractionGeometryShape =
   | { center: ScreenPoint; kind: "circle"; radius: number }
   | { height: number; kind: "bounds"; width: number; x: number; y: number }
+  | { kind: "masked-path"; maskPath: string; maskStrokeWidth: number; path: string }
   | { kind: "path"; path: string }
   | { kind: "point"; point: ScreenPoint }
   | { kind: "polygon" | "polyline"; points: readonly ScreenPoint[] };
@@ -136,7 +138,14 @@ export class MapInteractionOverlay {
 
   setCamera(camera: MapCamera): void {
     this.camera = normalizeCamera(camera);
-    this.render();
+    const root = this.root;
+    if (!root) return;
+    const layout = getMapInteractionOverlayLayout(this.camera);
+    root.setAttribute("data-viewport-height", String(layout.height));
+    root.setAttribute("data-viewport-width", String(layout.width));
+    root.setAttribute("transform", layout.transform);
+    this.updateGeometryScales();
+    this.replaceChannel("handles", this.renderHandles(layout.handleRadius));
   }
 
   update(patch: MapInteractionOverlayPatch): void {
@@ -201,7 +210,14 @@ export class MapInteractionOverlay {
     const group = document.createElementNS(SVG_NAMESPACE, "g");
     group.classList.add(`map-interaction-${channel}`);
     group.dataset.overlayChannel = channel;
-    for (const geometry of geometries) group.append(renderGeometry(geometry, this.camera.scale));
+    for (const [index, geometry] of geometries.entries()) {
+      let maskId: string | undefined;
+      if (geometry.kind === "masked-path") {
+        maskId = `mapInteractionMask-${channel}-${index}`;
+        group.append(createPathMask(maskId, geometry));
+      }
+      group.append(renderGeometry(geometry, this.camera.scale, maskId));
+    }
     return group;
   }
 
@@ -211,6 +227,21 @@ export class MapInteractionOverlay {
 
   private replaceChannel(channel: string, replacement: SVGGElement): void {
     this.root?.querySelector(`[data-overlay-channel="${channel}"]`)?.replaceWith(replacement);
+  }
+
+  private updateGeometryScales(): void {
+    const root = this.root;
+    if (!root) return;
+    for (const channel of ["selection", "highlight"] as const) {
+      const elements = root.querySelectorAll<SVGElement>(`[data-overlay-channel="${channel}"] [data-overlay-geometry]`);
+      this.state[channel].forEach((geometry, index) => {
+        const element = elements[index];
+        if (!element) return;
+        if (geometry.kind === "point") element.setAttribute("r", String(4 / Math.max(this.camera.scale, 0.01)));
+        const strokeWidth = getScaledStrokeWidth(geometry.style, this.camera.scale);
+        if (strokeWidth !== undefined) element.style.setProperty("stroke-width", String(strokeWidth));
+      });
+    }
   }
 
   private renderBrush(): SVGGElement {
@@ -419,11 +450,12 @@ export function nudgeMapInteractionPoint(
   return { x: point.x + direction[0] * step, y: point.y + direction[1] * step };
 }
 
-function renderGeometry(geometry: MapInteractionGeometry, scale: number): SVGElement {
+function renderGeometry(geometry: MapInteractionGeometry, scale: number, maskId?: string): SVGElement {
   const element = createGeometryElement(geometry, scale);
   element.dataset.overlayGeometry = geometry.kind;
-  element.setAttribute("vector-effect", "non-scaling-stroke");
-  applyGeometryStyle(element, geometry.style);
+  if (maskId) element.setAttribute("mask", `url(#${maskId})`);
+  if (geometry.style?.strokeScaling !== "map") element.setAttribute("vector-effect", "non-scaling-stroke");
+  applyGeometryStyle(element, geometry.style, scale);
   return element;
 }
 
@@ -448,6 +480,11 @@ function createGeometryElement(geometry: MapInteractionGeometry, scale: number):
     path.setAttribute("d", geometry.path);
     return path;
   }
+  if (geometry.kind === "masked-path") {
+    const path = document.createElementNS(SVG_NAMESPACE, "path");
+    path.setAttribute("d", geometry.path);
+    return path;
+  }
   if (geometry.kind === "point") {
     const circle = document.createElementNS(SVG_NAMESPACE, "circle");
     circle.setAttribute("cx", String(geometry.point.x));
@@ -460,7 +497,23 @@ function createGeometryElement(geometry: MapInteractionGeometry, scale: number):
   return element;
 }
 
-function applyGeometryStyle(element: SVGElement, style: MapInteractionGeometryStyle | undefined): void {
+function createPathMask(
+  id: string,
+  geometry: Extract<MapInteractionGeometry, { kind: "masked-path" }>
+): SVGMaskElement {
+  const mask = document.createElementNS(SVG_NAMESPACE, "mask");
+  mask.id = id;
+  mask.setAttribute("maskContentUnits", "userSpaceOnUse");
+  const path = document.createElementNS(SVG_NAMESPACE, "path");
+  path.setAttribute("d", geometry.maskPath);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "white");
+  path.setAttribute("stroke-width", String(geometry.maskStrokeWidth));
+  mask.append(path);
+  return mask;
+}
+
+function applyGeometryStyle(element: SVGElement, style: MapInteractionGeometryStyle | undefined, scale = 1): void {
   if (!style) return;
   for (const [attribute, value] of [
     ["fill", style.fill],
@@ -468,8 +521,17 @@ function applyGeometryStyle(element: SVGElement, style: MapInteractionGeometrySt
     ["opacity", style.opacity],
     ["stroke", style.stroke],
     ["stroke-opacity", style.strokeOpacity],
-    ["stroke-width", style.strokeWidth]
+    ["stroke-width", getScaledStrokeWidth(style, scale)]
   ] as const) {
     if (value !== undefined) element.style.setProperty(attribute, String(value));
   }
+}
+
+function getScaledStrokeWidth(style: MapInteractionGeometryStyle | undefined, scale: number): number | undefined {
+  if (!style) return undefined;
+  if (style.strokeWidth === undefined) return undefined;
+  if (style.strokeScaling !== "map") return style.strokeWidth;
+  const normalizedScale = Math.max(scale, 0.01);
+  const screenWidth = style.strokeWidth * (1 + (0.5 * Math.max(normalizedScale - 1, 0)) / normalizedScale);
+  return screenWidth / normalizedScale;
 }

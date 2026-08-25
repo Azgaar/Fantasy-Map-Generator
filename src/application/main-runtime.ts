@@ -290,7 +290,7 @@ async function checkLoadParameters() {
 
 async function generateMapOnLoad() {
   await StylePresets.applyOnLoad(); // apply previously selected default or custom style
-  await generate(); // generate map
+  await generate(undefined, false); // generate map without marking a new document as user-modified
   LayerControls.restoreSavedPreset(); // apply saved layers preset and render layers
   LayerControls.drawActiveLayers();
   OptionsController.fitMapToScreen();
@@ -448,7 +448,7 @@ void (function addDragToUpload() {
   });
 })();
 
-async function generate(config?: string | RegenerateOptions) {
+async function generate(config?: string | RegenerateOptions, reportMapMutation: boolean = true) {
   let generationGroupOpen = false;
 
   try {
@@ -547,7 +547,7 @@ async function generate(config?: string | RegenerateOptions) {
     const duration = performance.now() - timeStart;
     window.MapPerformance?.record("generation:total", duration);
     WARN && console.warn(`TOTAL: ${rn(duration / 1000, 2)}s`);
-    showStatistics();
+    showStatistics(reportMapMutation);
   } catch (error) {
     ERROR && console.error(error);
     const parsedError = parseError(error as Error);
@@ -1068,7 +1068,7 @@ function rankCells() {
 }
 
 // show map stats on generation complete
-function showStatistics() {
+function showStatistics(reportMapMutation: boolean = true) {
   const heightmap = ensureEl<HTMLInputElement>("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
@@ -1096,7 +1096,7 @@ function showStatistics() {
     template: heightmap,
     created: app.mapId
   });
-  notifyMapMutation("generation");
+  if (reportMapMutation) notifyMapMutation("generation");
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
