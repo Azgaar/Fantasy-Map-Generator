@@ -90,8 +90,7 @@
   "#goodsIcons": {
     "opacity": "1",
     "stroke-width": "0.3",
-    "filter": "url(#dropShadow01)",
-    "data-circle": "1"
+    "filter": "url(#dropShadow01)"
   },
   "#goodsBurgs": {
     "opacity": "1",
@@ -174,13 +173,9 @@
     "fill-opacity": "0.03",
     "stroke-width": "1",
     "stroke-opacity": "0.8",
-    "font-size": "5",
-    "data-icon": "⚖️",
     "style": "display: none;"
   },
-  "#oceanLayers": {
-    "layers": "-6,-3,-1"
-  },
+  "#oceanLayers": {},
   "#oceanBase": {
     "fill": "#466eab",
     "x": "0",
@@ -309,9 +304,6 @@
   },
   "#texture": {
     "mask": "url(#land)",
-    "data-x": "0",
-    "data-y": "0",
-    "data-href": "./images/textures/marble-big.jpg",
     "style": "display: none;"
   },
   "#tradeAnimation": {

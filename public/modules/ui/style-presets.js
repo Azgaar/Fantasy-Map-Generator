@@ -132,12 +132,6 @@ function writeAttrsById(id, attrs) {
 function projectPresetOptions() {
   const byId = id => document.getElementById(id);
 
-  setOrRemove(byId("goodsIcons"), "data-circle", Number(styles.goods.goodsIcons.options.circle));
-
-  const markets = byId("markets");
-  setOrRemove(markets, "font-size", styles.markets.options.fontSize);
-  setOrRemove(markets, "data-icon", styles.markets.options.icon);
-
   const scaleBar = byId("scaleBar");
   setOrRemove(scaleBar, "data-bar-size", styles.scaleBar.options.barSize);
   setOrRemove(scaleBar, "data-x", styles.scaleBar.options.x);
@@ -167,20 +161,9 @@ function projectPresetOptions() {
   setOrRemove(vignetteRect, "ry", styles.vignette.options.ry);
   setOrRemove(vignetteRect, "filter", styles.vignette.options.filter);
 
-  setOrRemove(byId("oceanLayers"), "layers", styles.ocean.oceanLayers.options.outline);
-
   const oceanicPattern = byId("oceanicPattern");
   setOrRemove(oceanicPattern, "href", styles.ocean.options.pattern);
   setOrRemove(oceanicPattern, "opacity", styles.ocean.options.patternOpacity);
-
-  const texture = byId("texture");
-  setOrRemove(texture, "data-href", styles.texture.options.href);
-  setOrRemove(texture, "data-x", styles.texture.options.x);
-  setOrRemove(texture, "data-y", styles.texture.options.y);
-  const textureImage = texture ? texture.querySelector("image") : null;
-  setOrRemove(textureImage, "href", styles.texture.options.href);
-  setOrRemove(textureImage, "x", styles.texture.options.x);
-  setOrRemove(textureImage, "y", styles.texture.options.y);
 
   for (const [group, style] of Object.entries(styles.labels.groups)) {
     const el = document.querySelector(`#labels > [data-group="${CSS.escape(group)}"]`);
@@ -510,6 +493,18 @@ function addStylePreset() {
     if (presetStyle["#map"]) presetStyle["#map"]["data-filter"] = styles.map.options.dataFilter;
     if (presetStyle["#sea_island"])
       presetStyle["#sea_island"]["auto-filter"] = styles.coastline.sea_island.options.autoFilter;
+    if (presetStyle["#markets"]) {
+      presetStyle["#markets"]["font-size"] = styles.markets.options.fontSize;
+      presetStyle["#markets"]["data-icon"] = styles.markets.options.icon;
+    }
+    if (presetStyle["#goodsIcons"])
+      presetStyle["#goodsIcons"]["data-circle"] = Number(styles.goods.goodsIcons.options.circle);
+    if (presetStyle["#texture"]) {
+      presetStyle["#texture"]["data-href"] = styles.texture.options.href;
+      presetStyle["#texture"]["data-x"] = styles.texture.options.x;
+      presetStyle["#texture"]["data-y"] = styles.texture.options.y;
+    }
+    if (presetStyle["#oceanLayers"]) presetStyle["#oceanLayers"]["layers"] = styles.ocean.oceanLayers.options.outline;
 
     for (const [group, groupStyle] of Object.entries(styles.labels.groups)) {
       addStoredLabelStyle(`#labels > #${group}`, stylesLegacy.labelGroupToLegacy(groupStyle));

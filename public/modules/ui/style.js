@@ -191,9 +191,9 @@ function selectStyleElement() {
   // show specific sections
   if (styleElement === "texture") {
     styleTexture.style.display = "block";
-    styleTextureShiftX.value = el.attr("data-x") || 0;
-    styleTextureShiftY.value = el.attr("data-y") || 0;
-    updateTextureSelectValue(el.attr("data-href"));
+    styleTextureShiftX.value = styles.texture.options.x;
+    styleTextureShiftY.value = styles.texture.options.y;
+    updateTextureSelectValue(styles.texture.options.href);
   }
 
   if (styleElement === "terrs") {
@@ -342,7 +342,7 @@ function selectStyleElement() {
     styleOceanFill.value = styleOceanFillOutput.value = d3.select("#oceanLayers").select("#oceanBase").attr("fill");
     styleOceanPattern.value = ensureEl("oceanicPattern").getAttribute("href");
     styleOceanPatternOpacity.value = ensureEl("oceanicPattern").getAttribute("opacity") || 1;
-    outlineLayers.value = d3.select("#oceanLayers").attr("layers");
+    outlineLayers.value = styles.ocean.oceanLayers.options.outline;
   }
 
   if (styleElement === "temperature") {
@@ -392,7 +392,7 @@ function selectStyleElement() {
     styleStrokeWidth.style.display = "block";
     styleStrokeWidthInput.value = el.attr("stroke-width") || "";
     styleGoods.style.display = "block";
-    styleGoodsCircle.checked = +el.attr("data-circle");
+    styleGoodsCircle.checked = styles.goods.goodsIcons.options.circle;
     styleGoodsSize.value = styles.goods.goodsIcons.options.size;
   }
 
@@ -411,8 +411,8 @@ function selectStyleElement() {
     styleMarketsLayer.style.display = "block";
     styleMarketsLayerFillOpacity.value = el.attr("fill-opacity") || "0";
     styleMarketsSize.value = styles.markets.options.size;
-    styleMarketsIconSize.value = el.attr("font-size") || 5;
-    styleMarketsIcon.innerHTML = el.attr("data-icon") || "⚖️";
+    styleMarketsIconSize.value = styles.markets.options.fontSize;
+    styleMarketsIcon.innerHTML = styles.markets.options.icon;
   }
 
   // update group options
@@ -566,8 +566,8 @@ styleTextureInput.addEventListener("change", function () {
 });
 
 function changeTexture(href) {
-  d3.select("#texture").attr("data-href", href);
-  d3.select("#texture").select("image").attr("href", href);
+  styles.texture.options.href = href;
+  Layers.draw("texture");
 }
 
 function updateTextureSelectValue(href) {
@@ -581,19 +581,13 @@ function updateTextureSelectValue(href) {
 }
 
 styleTextureShiftX.addEventListener("input", function () {
-  d3.select("#texture").attr("data-x", this.value);
-  d3.select("#texture")
-    .select("image")
-    .attr("x", this.value)
-    .attr("width", graphWidth - this.valueAsNumber);
+  styles.texture.options.x = this.valueAsNumber || 0;
+  Layers.draw("texture");
 });
 
 styleTextureShiftY.addEventListener("input", function () {
-  d3.select("#texture").attr("data-y", this.value);
-  d3.select("#texture")
-    .select("image")
-    .attr("y", this.value)
-    .attr("height", graphHeight - this.valueAsNumber);
+  styles.texture.options.y = this.valueAsNumber || 0;
+  Layers.draw("texture");
 });
 
 styleClippingInput.addEventListener("change", function () {
@@ -647,7 +641,7 @@ styleOceanPatternOpacity.addEventListener("input", e => {
 });
 
 outlineLayers.addEventListener("change", function () {
-  d3.select("#oceanLayers").attr("layers", this.value);
+  styles.ocean.oceanLayers.options.outline = this.value;
   Layers.draw("ocean");
 });
 
@@ -1061,16 +1055,16 @@ showAllEmblems.addEventListener("change", e => {
 });
 
 styleGoodsCircle.addEventListener("change", function () {
-  d3.select("#goods").select("#goodsIcons").attr("data-circle", +this.checked);
+  styles.goods.goodsIcons.options.circle = this.checked;
   Layers.draw("goods");
 });
 
-styleGoodsSize.addEventListener("change", function () {
+styleGoodsSize.addEventListener("input", function () {
   styles.goods.goodsIcons.options.size = +this.value || 6;
   Layers.draw("goods");
 });
 
-styleGoodsBurgsSize.addEventListener("change", function () {
+styleGoodsBurgsSize.addEventListener("input", function () {
   styles.goods.goodsBurgs.options.size = +this.value || 3;
   Layers.draw("goods");
 });
@@ -1079,19 +1073,19 @@ styleMarketsLayerFillOpacity.addEventListener("input", e => {
   d3.select("#markets").attr("fill-opacity", e.target.value);
 });
 
-styleMarketsSize.addEventListener("change", function () {
+styleMarketsSize.addEventListener("input", function () {
   styles.markets.options.size = +this.value || 3;
   Layers.draw("markets");
 });
 
-styleMarketsIconSize.addEventListener("change", function () {
-  d3.select("#markets").attr("font-size", this.value);
+styleMarketsIconSize.addEventListener("input", function () {
+  styles.markets.options.fontSize = +this.value || 5;
   Layers.draw("markets");
 });
 
 styleMarketsIcon.addEventListener("click", function () {
-  window.Controllers.IconSelector.open(d3.select("#markets").attr("data-icon") || "⚖️", value => {
-    d3.select("#markets").attr("data-icon", value);
+  window.Controllers.IconSelector.open(styles.markets.options.icon, value => {
+    styles.markets.options.icon = value;
     this.innerHTML = value;
     Layers.draw("markets");
   });

@@ -97,6 +97,16 @@ test("R9: #terrs > #landHeights never legitimately carried data-render, so it st
   ).toBe(false);
 });
 
+test("numeric-looking string options coerce back to strings, not schema-rejected numbers", () => {
+  const styles = presetFromLegacy(
+    { "#oceanLayers": { layers: -6 }, "#scaleBar": { "data-label": 100 }, "#markets": { "data-icon": 8 } } as any,
+    { onUnknown: "skip" }
+  );
+  expect(styles.ocean.oceanLayers.options.outline).toBe("-6");
+  expect(styles.scaleBar.options.label).toBe("100");
+  expect(styles.markets.options.icon).toBe("8");
+});
+
 test("labelGroupFromLegacy keeps font-size when data-size is absent", () => {
   const group = labelGroupFromLegacy({ "font-size": "6%" });
   expect(group.attrs["font-size"]).toBe("6%");

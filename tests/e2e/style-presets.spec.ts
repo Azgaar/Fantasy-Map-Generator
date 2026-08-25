@@ -142,6 +142,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.heightmap.oceanHeights.options.render = true;
     styles.military.options.boxSize = 4;
     styles.grid.options.scale = 2;
+    styles.markets.options.icon = "K";
+    styles.texture.options.x = 33;
+    styles.ocean.oceanLayers.options.outline = "-6,-4,-2";
     (window as any).addStylePreset();
   });
 
@@ -159,7 +162,10 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
       landTerracing: upgraded.heightmap.landHeights.options.terracing,
       oceanRender: upgraded.heightmap.oceanHeights.options.render,
       armiesBox: upgraded.military.options.boxSize,
-      gridScale: upgraded.grid.options.scale
+      gridScale: upgraded.grid.options.scale,
+      marketsIcon: upgraded.markets.options.icon,
+      textureX: upgraded.texture.options.x,
+      oceanOutline: upgraded.ocean.oceanLayers.options.outline
     };
   }, raw);
 
@@ -174,6 +180,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     landTerracing: 5,
     oceanRender: true,
     armiesBox: 4,
-    gridScale: 2
+    gridScale: 2,
+    marketsIcon: "K",
+    textureX: 33,
+    oceanOutline: "-6,-4,-2"
   });
 });

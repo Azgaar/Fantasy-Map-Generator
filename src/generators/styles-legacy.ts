@@ -122,6 +122,9 @@ type PresetRoute = {
   path: string[];
   options?: Record<string, string>;
   bools?: string[];
+  // options that must stay strings: the DOM harvest and legacy preset saver numify
+  // numeric-looking values ("-6", "100"), which the string schema would reject
+  strings?: string[];
   kind?: "label" | "burg";
   drop?: string[];
   ownAttrs?: boolean;
@@ -201,13 +204,18 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     bools: ["circle"]
   },
   "#goodsBurgs": { path: ["goods", "goodsBurgs"], options: { "data-size": "size" } },
-  "#markets": { path: ["markets"], options: { "data-size": "size", "font-size": "fontSize", "data-icon": "icon" } },
+  "#markets": {
+    path: ["markets"],
+    options: { "data-size": "size", "font-size": "fontSize", "data-icon": "icon" },
+    strings: ["icon"]
+  },
   "#tradeAnimation": { path: ["trade"] },
   "#markers": { path: ["markers"], options: { rescale: "rescale" } },
   "#ruler": { path: ["rulers"], options: { "data-size": "fontSize", "font-size": "fontSize" } },
   "#scaleBar": {
     path: ["scaleBar"],
-    options: { "data-bar-size": "barSize", "data-x": "x", "data-y": "y", "data-label": "label" }
+    options: { "data-bar-size": "barSize", "data-x": "x", "data-y": "y", "data-label": "label" },
+    strings: ["label"]
   },
   "#scaleBarBack": {
     path: ["scaleBar", "back"],
@@ -231,7 +239,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
     options: { x: "x", y: "y", width: "width", height: "height", rx: "rx", ry: "ry", filter: "filter" },
     ownAttrs: false
   },
-  "#oceanLayers": { path: ["ocean", "oceanLayers"], options: { layers: "outline" } },
+  "#oceanLayers": { path: ["ocean", "oceanLayers"], options: { layers: "outline" }, strings: ["outline"] },
   "#oceanBase": { path: ["ocean", "base"] },
   "#oceanicPattern": { path: ["ocean"], options: { href: "pattern", opacity: "patternOpacity" } },
   "#landmass": { path: ["landmass"] }
@@ -280,7 +288,11 @@ function applyPresetBag(
       continue;
     }
     seen[optionKey] = value;
-    node.options[optionKey] = route.bools?.includes(optionKey) ? Boolean(Number(value)) : value;
+    node.options[optionKey] = route.bools?.includes(optionKey)
+      ? Boolean(Number(value))
+      : route.strings?.includes(optionKey) && value != null
+        ? String(value)
+        : value;
   }
 
   if (node.attrs && route.ownAttrs !== false) {
@@ -415,6 +427,16 @@ export function syncStylesFromMap(): void {
     harvested.map.options.dataFilter = styles.map.options.dataFilter;
   if (!document.getElementById("sea_island")?.hasAttribute("auto-filter"))
     harvested.coastline.sea_island.options.autoFilter = styles.coastline.sea_island.options.autoFilter;
+  if (!document.getElementById("markets")?.hasAttribute("font-size"))
+    harvested.markets.options.fontSize = styles.markets.options.fontSize;
+  if (!document.getElementById("markets")?.hasAttribute("data-icon"))
+    harvested.markets.options.icon = styles.markets.options.icon;
+  if (!document.getElementById("goodsIcons")?.hasAttribute("data-circle"))
+    harvested.goods.goodsIcons.options.circle = styles.goods.goodsIcons.options.circle;
+  if (!document.getElementById("texture")?.hasAttribute("data-href"))
+    harvested.texture.options = structuredClone(styles.texture.options);
+  if (!document.getElementById("oceanLayers")?.hasAttribute("layers"))
+    harvested.ocean.oceanLayers.options.outline = styles.ocean.oceanLayers.options.outline;
   Styles.set(harvested);
 }
 

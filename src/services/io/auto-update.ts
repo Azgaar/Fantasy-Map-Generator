@@ -1891,4 +1891,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   for (const attr of ["type", "scale", "dx", "dy"]) document.getElementById("gridOverlay")?.removeAttribute(attr);
   document.getElementById("map")?.removeAttribute("data-filter");
   document.getElementById("sea_island")?.removeAttribute("auto-filter");
+  document.getElementById("markets")?.removeAttribute("font-size");
+  document.getElementById("markets")?.removeAttribute("data-icon");
+  document.getElementById("goodsIcons")?.removeAttribute("data-circle");
+  for (const attr of ["data-href", "data-x", "data-y"]) document.getElementById("texture")?.removeAttribute(attr);
+  document.getElementById("oceanLayers")?.removeAttribute("layers");
 }
