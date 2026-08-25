@@ -6,6 +6,8 @@ export const drawMilitary = (): void => {
   TIME && console.time("drawMilitary");
 
   select<SVGGElement, unknown>("#armies").selectAll("g").remove();
+  // regiment labels size by inheritance from the group
+  select<SVGGElement, unknown>("#armies").attr("font-size", styles.military.options.fontSize);
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
     drawRegimentsRenderer(state.military || [], state.i);
@@ -15,7 +17,7 @@ export const drawMilitary = (): void => {
 };
 
 const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = styles.military.options.boxSize;
   const w = (d: Regiment) => (d.n ? size * 4 : size * 6);
   const h = size * 2;
   const x = (d: Regiment) => rn(d.x - w(d) / 2, 2);
@@ -73,7 +75,7 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
 };
 
 export const drawRegiment = (reg: Regiment, stateId: number): void => {
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = styles.military.options.boxSize;
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = rn(reg.x - w / 2, 2);
@@ -136,7 +138,7 @@ export const moveRegiment = (reg: Regiment, x: number, y: number): void => {
   const duration = Math.hypot(reg.x - x, reg.y - y) * 8;
   reg.x = x;
   reg.y = y;
-  const size = +select<SVGGElement, unknown>("#armies").attr("box-size");
+  const size = styles.military.options.boxSize;
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
   const x1 = (x: number) => rn(x - w / 2, 2);

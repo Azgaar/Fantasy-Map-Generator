@@ -140,6 +140,8 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.markets.options.size = 8;
     styles.heightmap.landHeights.options.terracing = 5;
     styles.heightmap.oceanHeights.options.render = true;
+    styles.military.options.boxSize = 4;
+    styles.grid.options.scale = 2;
     (window as any).addStylePreset();
   });
 
@@ -155,7 +157,9 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
       goodsBurgs: upgraded.goods.goodsBurgs.options.size,
       markets: upgraded.markets.options.size,
       landTerracing: upgraded.heightmap.landHeights.options.terracing,
-      oceanRender: upgraded.heightmap.oceanHeights.options.render
+      oceanRender: upgraded.heightmap.oceanHeights.options.render,
+      armiesBox: upgraded.military.options.boxSize,
+      gridScale: upgraded.grid.options.scale
     };
   }, raw);
 
@@ -168,6 +172,8 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     goodsBurgs: 7,
     markets: 8,
     landTerracing: 5,
-    oceanRender: true
+    oceanRender: true,
+    armiesBox: 4,
+    gridScale: 2
   });
 });

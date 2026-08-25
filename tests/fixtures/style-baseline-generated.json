@@ -8,8 +8,6 @@
     "fill-opacity": "1",
     "stroke": "#000",
     "stroke-width": "0.3",
-    "font-size": "6",
-    "box-size": "3",
     "style": "display: none;"
   },
   "#anchors": {},
@@ -104,10 +102,6 @@
     "opacity": "0.8",
     "stroke": "#777777",
     "stroke-width": "0.5",
-    "type": "pointyHex",
-    "scale": "1",
-    "dx": "0",
-    "dy": "0",
     "style": "display: none;"
   },
   "#ice": {

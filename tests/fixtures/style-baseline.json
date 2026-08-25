@@ -9,7 +9,6 @@
     "stroke": "#000000",
     "stroke-width": "0.6",
     "font-size": "8",
-    "box-size": "4",
     "style": "display: none;"
   },
   "#anchors": {},
@@ -110,10 +109,6 @@
     "opacity": "0.8",
     "stroke": "#808080",
     "stroke-width": "0.5",
-    "type": "pointyHex",
-    "scale": "1",
-    "dx": "0",
-    "dy": "0",
     "style": "display: none;"
   },
   "#ice": {
